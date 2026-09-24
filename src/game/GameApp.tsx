@@ -1,4 +1,5 @@
 import { Canvas } from '@react-three/fiber';
+import { NeutralToneMapping } from 'three';
 import { useStore } from 'zustand';
 import { CONFIG } from './config';
 import type { GameController } from './controller';
@@ -36,9 +37,10 @@ export function GameApp({ controller }: { controller: GameController }) {
           shadows="percentage"
           dpr={dpr}
           frameloop={paused ? 'demand' : 'always'}
-          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-          camera={{ fov: C.fov, near: 0.1, far: 80, position: [0, R + Math.sin(pitch) * C.distance, Math.cos(pitch) * C.distance] }}
+          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          camera={{ fov: C.fov, near: 0.1, far: 130, position: [0, R + Math.sin(pitch) * C.distance, Math.cos(pitch) * C.distance] }}
           onCreated={({ gl }) => {
+            gl.toneMapping = NeutralToneMapping;
             const canvas = gl.domElement;
             canvas.setAttribute('aria-hidden', 'true');
             canvas.addEventListener('webglcontextlost', (e) => {

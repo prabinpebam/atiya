@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/game/config';
 import { UP, arcDistance } from '../../src/game/math/sphere';
-import { arrivalOrientation, landmarkGeometry, validateLandmarks } from '../../src/game/math/landmarks';
+import { arrivalOrientation, landmarkGeometry, segmentClearance, validateLandmarks } from '../../src/game/math/landmarks';
 import { PlanetSim } from '../../src/game/systems/movement';
 import { generateProps } from '../../src/game/world/layout';
 import { FIXTURE_LANDMARKS } from './fixtures';
@@ -87,6 +87,25 @@ describe('landmark content', () => {
     for (const t of a.trees) {
       expect(arcDistance(t.n, UP.clone(), CONFIG.planetRadius)).toBeGreaterThan(3.4);
       for (const g of geos) expect(arcDistance(t.n, g.n, CONFIG.planetRadius)).toBeGreaterThan(g.footprintU + 1.9);
+    }
+  });
+
+  it('places a pond, plaza furniture and flower clumps without blocking any route', () => {
+    const geos = FIXTURE_LANDMARKS.map((l) => landmarkGeometry(l));
+    const layout = generateProps(geos);
+    const R = CONFIG.planetRadius;
+    expect(layout.pond).not.toBeNull();
+    for (const g of geos) {
+      expect(arcDistance(layout.pond!.n, g.n, R)).toBeGreaterThan(g.footprintU + layout.pond!.radiusU);
+    }
+    expect(layout.furniture.length).toBeGreaterThanOrEqual(4);
+    expect(layout.furniture.some((f) => f.kind === 'bench')).toBe(true);
+    const flowers = layout.flowers.tulip.length + layout.flowers.cosmos.length + layout.flowers.pansy.length;
+    expect(flowers).toBeGreaterThan(60);
+    expect(layout.grass.length).toBeGreaterThan(300);
+    // every blocking prop leaves every spawn→approach corridor passable
+    for (const g of geos) {
+      for (const o of layout.obstacles) expect(segmentClearance(UP.clone(), g.approach, o)).toBeGreaterThan(0);
     }
   });
 

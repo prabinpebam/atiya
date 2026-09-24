@@ -3,9 +3,11 @@ const KEYS = {
   reduceMotion: 'site.reduceMotion',
   pauseAmbient: 'site.pauseAmbient',
   onboardingSeen: 'site.onboardingSeen',
+  timeMode: 'site.timeMode',
 } as const;
 
 type Mode = 'play' | 'classic';
+type TimeMode = 'cycle' | 'local' | 'day';
 
 function read(key: string): string | null {
   try {
@@ -35,4 +37,9 @@ export const prefs = {
   setPauseAmbient: (v: boolean) => write(KEYS.pauseAmbient, v ? '1' : '0'),
   getOnboardingSeen: () => read(KEYS.onboardingSeen) === '1',
   setOnboardingSeen: () => write(KEYS.onboardingSeen, '1'),
+  getTimeMode: (): TimeMode => {
+    const v = read(KEYS.timeMode);
+    return v === 'local' || v === 'day' ? v : 'cycle';
+  },
+  setTimeMode: (m: TimeMode) => write(KEYS.timeMode, m),
 };

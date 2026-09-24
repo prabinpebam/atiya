@@ -1,46 +1,45 @@
-import { DataTexture, MeshToonMaterial, NearestFilter, RedFormat, type ColorRepresentation } from 'three';
+import { Color, MeshBasicMaterial, MeshStandardMaterial, type Material } from 'three';
 
-let gradient: DataTexture | null = null;
+/** Shared materials for kit-built models (vertex-coloured, soft "toy" lighting). */
+let solid: MeshStandardMaterial | null = null;
+let glow: MeshBasicMaterial | null = null;
+let glass: MeshStandardMaterial | null = null;
 
-/** Shared 3-step toon ramp (spec §4.2). */
-export function toonGradient(): DataTexture {
-  if (!gradient) {
-    gradient = new DataTexture(new Uint8Array([90, 170, 255]), 3, 1, RedFormat);
-    gradient.minFilter = NearestFilter;
-    gradient.magFilter = NearestFilter;
-    gradient.generateMipmaps = false;
-    gradient.needsUpdate = true;
+const GLOW_BASE = new Color(2.2, 2.0, 1.7);
+
+export function kitMaterials(): { solid: Material; glow: Material; glass: Material } {
+  if (!solid) {
+    solid = new MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0 });
+    // HDR multiplier so only lamps/windows exceed the bloom threshold.
+    glow = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, color: GLOW_BASE.clone() });
+    glass = new MeshStandardMaterial({ vertexColors: true, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.38, depthWrite: false });
   }
-  return gradient;
+  return { solid: solid!, glow: glow!, glass: glass! };
 }
 
-const cache = new Map<string, MeshToonMaterial>();
+/**
+ * Emissive "daylight lift" (foliage, water, clouds) must fade at night or those surfaces would
+ * appear to glow in the dark. Materials register their daytime emissive intensity here.
+ */
+const daylit = new Map<MeshStandardMaterial, number>();
 
-export function toon(color: ColorRepresentation, key = String(color)): MeshToonMaterial {
-  let m = cache.get(key);
-  if (!m) {
-    m = new MeshToonMaterial({ color, gradientMap: toonGradient() });
-    cache.set(key, m);
-  }
+export function registerDaylit<T extends MeshStandardMaterial>(m: T): T {
+  daylit.set(m, m.emissiveIntensity);
   return m;
 }
 
+export function unregisterDaylit(m: MeshStandardMaterial): void {
+  daylit.delete(m);
+}
+
+/** Applies the time of day to shared materials: `glow` scales lamps/windows, `night` dims daylight lift. */
+export function applyTimeOfDay(glowMul: number, night: number): void {
+  const g = kitMaterials().glow as MeshBasicMaterial;
+  g.color.copy(GLOW_BASE).multiplyScalar(glowMul);
+  const lift = 1 - 0.8 * night;
+  for (const [m, base] of daylit) m.emissiveIntensity = base * lift;
+}
+
 export const PALETTE = {
-  grass: '#8fcf6b',
-  grassDark: '#88c864',
-  grassLight: '#96d472',
-  path: '#e9d9a6',
-  plaza: '#e8e1d3',
-  trunk: '#8a5a3b',
-  leaf: '#4f9e4a',
-  leafAlt: '#3f8a45',
-  rock: '#a9a9b3',
-  wall: '#fbf4e6',
-  roof: '#c65a3a',
-  wood: '#b07a4f',
   outline: '#2d2a32',
-  skin: '#f1c7a5',
-  shirt: '#4f7cff',
-  pants: '#3a3f58',
-  glass: '#bfe9ff',
 } as const;

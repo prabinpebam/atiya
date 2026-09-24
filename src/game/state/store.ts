@@ -1,4 +1,5 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
+import type { TimeMode } from '../world/timeOfDay';
 
 export type Phase = 'loading' | 'ready' | 'playing';
 
@@ -20,6 +21,12 @@ export interface GameState {
   /** Current device-pixel-ratio cap (adaptive quality). */
   dpr: number;
   adaptiveQuality: boolean;
+  /** Rendering tier: 'high' adds bloom/vignette and larger shadow maps; both tiers keep the tilt-shift. */
+  quality: 'high' | 'low';
+  /** Post-processing level on 'high': 2 = tilt-shift + bloom + vignette, 1 = tilt-shift only (adaptive fallback). */
+  postLevel: 1 | 2;
+  /** Day–night: 'cycle' (a full day ≈ 6 min), 'local' (visitor's clock) or 'day' (always daytime). */
+  timeMode: TimeMode;
 }
 
 export type GameStore = StoreApi<GameState>;
@@ -40,6 +47,9 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     contextLost: false,
     dpr: 1.5,
     adaptiveQuality: true,
+    quality: 'high',
+    postLevel: 2,
+    timeMode: 'cycle',
     ...init,
   }));
 }

@@ -7,9 +7,27 @@ A personal portfolio site with two ways in:
 
 Design docs: [spec](documentation/poc-3d-navigation/spec.md) · [plan](documentation/poc-3d-navigation/plan.md) · [Definition of Done](documentation/poc-3d-navigation/definition-of-done.md) · [research](documentation/poc-3d-navigation/research/). Agent conventions: [AGENTS.md](AGENTS.md).
 
-| Spawn | Proximity preview | Landmark dialog |
+| Spawn plaza | Proximity preview | Landmark dialog |
 |---|---|---|
 | ![Spawn view](documentation/poc-3d-navigation/screenshots/spawn.png) | ![Preview card](documentation/poc-3d-navigation/screenshots/proximity-preview.png) | ![Dialog](documentation/poc-3d-navigation/screenshots/landmark-dialog.png) |
+
+| Lighthouse | Pond | Low quality tier |
+|---|---|---|
+| ![Lighthouse](documentation/poc-3d-navigation/screenshots/lighthouse.png) | ![Pond](documentation/poc-3d-navigation/screenshots/pond.png) | ![Low tier](documentation/poc-3d-navigation/screenshots/low-quality-tier.png) |
+
+![Player character: walking toward the camera, from behind at the Workshop, running, idle](documentation/poc-3d-navigation/screenshots/character.png)
+
+![Trees: leaf-card hardwoods (incl. fruit tree), tiered cedars and leafy bushes](documentation/poc-3d-navigation/screenshots/trees.png)
+
+**Day–night cycle.** One planet day takes about 6 minutes. You can also choose *Match my local time* or *Always daytime* under Menu → Time of day.
+
+| Dawn | Golden hour | Dusk |
+|---|---|---|
+| ![Dawn](documentation/poc-3d-navigation/screenshots/daynight-dawn.png) | ![Golden hour](documentation/poc-3d-navigation/screenshots/daynight-golden-hour.png) | ![Dusk: sun setting right, moon rising left](documentation/poc-3d-navigation/screenshots/daynight-dusk.png) |
+
+| Night at the plaza | Lighthouse at night | Fireflies at the pond |
+|---|---|---|
+| ![Night: lamps, light pools, stars, moon](documentation/poc-3d-navigation/screenshots/daynight-night.png) | ![Lighthouse at night](documentation/poc-3d-navigation/screenshots/daynight-lighthouse-night.png) | ![Pond with fireflies](documentation/poc-3d-navigation/screenshots/daynight-pond-fireflies.png) |
 
 ## Quick start
 
@@ -32,6 +50,7 @@ npm run dev            # http://localhost:4321  (landing) → /play/ (planet) ·
 | `npm run e2e` | Playwright E2E + axe (builds the test bundle, headless Chromium with SwiftShader) |
 | `npm run size` | Bundle budget report for the current `dist/` |
 | `npm run verify:prod` | Production build + budgets + checks the test hook is absent |
+| `npm run build:character` | Rebuild `public/models/character.glb` from the Kenney FBX files. Needs FBX2glTF once: `npm install --prefix "%TEMP%\fbxconv" fbx2gltf@0.9.7`. Pass a skin name to swap outfits, e.g. `node scripts/build-character.mjs skaterFemaleA` |
 
 First-time E2E setup: `npx playwright install chromium`. To use the installed Edge instead, set `PW_CHANNEL=msedge`.
 
@@ -62,8 +81,19 @@ Game keys only work while the planet has focus, and Tab is never captured.
   - Only if the check passes does it `import()` the game bundle ([src/game/game-mount.tsx](src/game/game-mount.tsx)).
   - Unsupported devices get the classic site and never download 3D code.
 - **UI:** everything you can act on is semantic DOM (`<dialog>`, buttons, links), in [src/game/ui/](src/game/ui/). There's a parallel landmark list and an `aria-live` region for announcements. All rules live in [src/game/controller.ts](src/game/controller.ts).
-- **Art:** original low-poly toon primitives; no third-party assets ([assets-src/CREDITS.md](assets-src/CREDITS.md)).
-- **Stack (exact pins):** Astro 7.3.3, React 19.2.8, three 0.186.0 (WebGLRenderer), @react-three/fiber 9.7.0, @react-three/drei 10.7.8, zustand 5.0.15.
+- **Art:** original procedural models in a soft, bevelled "cozy life-sim" style (spec §4.12). A geometry kit merges vertex-coloured primitives into about 3 draw calls per model ([src/game/world/kit.ts](src/game/world/kit.ts), [parts.ts](src/game/world/parts.ts), [models.ts](src/game/world/models.ts), [propModels.ts](src/game/world/propModels.ts)). Trees and bushes use overlapping alpha-tested leaf cards over a dark canopy volume ([foliage.ts](src/game/world/foliage.ts)). The ground is a procedural shader ([planetMaterial.ts](src/game/world/planetMaterial.ts)).
+- **Player character:** the CC0 Kenney "Animated Characters: Protagonists" model ([Player.tsx](src/game/player/Player.tsx)). It is scaled to 1.25 u, and its idle and run clips are blended by speed with the stride matched to movement. It hops when a fast travel lands. The procedural avatar ([Character.tsx](src/game/player/Character.tsx)) stands in while the model loads or if it fails. Credits are in [assets-src/CREDITS.md](assets-src/CREDITS.md).
+- **Day–night cycle** (spec §4.13):
+  - The pure model in [timeOfDay.ts](src/game/world/timeOfDay.ts) keyframes the sky, fog, light and cloud palettes and computes the sun/moon arcs and cycle speed.
+  - The rig in [DayNight.tsx](src/game/world/DayNight.tsx) drives the lights (so shadows move through the day), the sky texture, the sun, moon and stars, and the night extras: glowing lamps and windows, lamp light pools, fireflies and a brighter lighthouse beam.
+  - In cycle mode the clock stops under Reduce motion or Pause ambient motion.
+- **Quality tiers:**
+  - `high`: tilt-shift, bloom, vignette and neutral tone mapping, plus 2048² shadows.
+  - `low`: a cheaper tilt-shift, no bloom or vignette, and 1024² shadows. Chosen automatically for software rendering, Data Saver or coarse pointers.
+  - Adaptive quality never removes the tilt-shift. After a 10 s warm-up it lowers resolution, then drops bloom and vignette, and steps back up when the frame rate recovers.
+  - Everything on the planet is always drawn (no culling), so nothing pops into view.
+  - In dev and test builds, `?quality=high|low` forces a tier.
+- **Stack (exact pins):** Astro 7.3.3, React 19.2.8, three 0.186.0 (WebGLRenderer), @react-three/fiber 9.7.0, @react-three/drei 10.7.8, @react-three/postprocessing 3.1.1 + postprocessing 6.39.5, zustand 5.0.15.
 
 Differences from the spec's proposed structure (§5.7):
 - UI components are grouped into `ui/Hud.tsx` and `ui/Dialogs.tsx`.
@@ -81,14 +111,17 @@ Differences from the spec's proposed structure (§5.7):
 | Proximity: enter/exit hysteresis, nearest wins, switch margin, tie-break, 150/151 ms buffer | `tests/unit/proximity.test.ts`, E2E "proximity preview…" |
 | Content validation, prop layout, **route test: every landmark reached in ≤ 8 s** | `tests/unit/landmarks.test.ts`, E2E "route test" |
 | Workshop base and door on screen at spawn | E2E "spawn view…" |
-| Dialog: E opens, Esc/Back closes, URL `?at=&open=1`, focus returns to whatever opened it | E2E tests 8–10 |
-| Deep links, invalid `?at=` → Plaza + status message | E2E tests 10–11 |
-| Context-preserving classic switch, and back via Explore in 3D | E2E test 12 |
-| Fast travel (menu, parallel nav), reduced-motion fade | E2E tests 13, 14, 16 |
-| Gate: no WebGL2 → fallback with **zero game-bundle requests**; bundle load error → Retry/Classic; `?mode=classic` redirect + saved preference; context lost → Reload/Classic | E2E tests 3–5, 17 |
-| Game keys ignored when HUD focused; Start button doesn't steal focus | E2E test 6 |
-| axe: no serious/critical issues on landing, classic, fallback, dialog, menu | E2E tests 1, 2, 4, 8, 13 |
-| Budgets: landing 0 KB 3D JS; gate 2.6 KB gz; game 304 KB gz (≤ 450); no `__game` in production | `npm run verify:prod` |
+| Dialog: E opens, Esc/Back closes, URL `?at=&open=1`, focus returns to whatever opened it | E2E: "proximity preview, open with E…", "preview-card Open returns focus…", "deep link opens the dialog…" |
+| Deep links, invalid `?at=` → Plaza + status message | E2E: "deep link opens the dialog…", "invalid deep link falls back…" |
+| Context-preserving classic switch, and back via Explore in 3D | E2E: "context-preserving switch to classic…" |
+| Fast travel (menu, parallel nav), reduced-motion fade | E2E: "fast travel from the menu…", "reduced motion makes fast travel a short fade", "parallel landmark nav…" |
+| Gate: no WebGL2 → fallback with **zero game-bundle requests**; bundle load error → Retry/Classic; `?mode=classic` redirect + saved preference; context lost → Reload/Classic | E2E: "capability gate" group, "?mode=classic redirects…", "WebGL context loss…" |
+| Game keys ignored when HUD focused; Start button doesn't steal focus | E2E: "start button, then WASD moves the player…" |
+| axe: no serious/critical issues on landing, classic, fallback, dialog, menu | E2E: landing, classic, no-WebGL2, dialog and menu tests (axe scans) |
+| Budgets: landing 0 KB 3D JS; gate 2.7 KB gz; game 372 KB gz (≤ 450); character model 163 KB; no `__game` in production | `npm run verify:prod` |
+| Render stats (all passes, everything always drawn): ≈ 100–106 draw calls / ≈ 570–590 k triangles on `high` (106 at noon, 99 at night). **This exceeds the original 60 / 100 k target; a waiver is proposed in the plan's §6 and needs owner sign-off.** | `window.__game.renderInfo()` |
+| Player character: rigged CC0 model loads (`character.glb` 200); procedural fallback when the model fails, still playable | E2E: "player character" group |
+| Day–night: continuous palette (incl. midnight wrap), sun↔moon handover at zero intensity, cycle timing; clock runs, night lights the lamps, badge shows the moon; "Always daytime" holds the day and is remembered; Pause ambient motion freezes the clock | `tests/unit/timeOfDay.test.ts`, E2E "day–night" group |
 | Types | `npm run check` → 0 errors |
 
 **Still to do before sign-off** (manual checks, or not yet built):
@@ -102,7 +135,6 @@ Differences from the spec's proposed structure (§5.7):
   - a loader with % progress (there are no heavy assets yet, so there's only a loading message)
   - an in-game timeout and error overlay after mount (the gate covers bundle-load failures)
   - a leva tuning panel
-  - a CC0 animated character (a primitive "bean" stands in, which the spec allows as a fallback)
 - [ ] P1/P2 backlog (M8): juice (squash, dust), follow-lead camera, visited state, `auto` activation experiment, run toggle, joystick, gamepad, zoom, "I'm stuck", quality setting, audio, key remapping, preview deployment.
 
 ## Known issues
@@ -111,3 +143,6 @@ Differences from the spec's proposed structure (§5.7):
 - The React/Astro renderer chunk (`client.*.js`, 0.9 KB) is emitted even though no page uses an Astro React island. It is never requested.
 - `/play` has no Astro React island, so in dev the gate installs React Fast Refresh's preamble itself (`installDevRefreshPreamble` in `gate.ts`). Without it, dev throws `$RefreshSig$ is not defined`. It is stripped from production builds.
 - The console warning `THREE.Clock: This module has been deprecated` comes from @react-three/fiber 9.7 internals and is harmless.
+- A browser tab that is hidden (for example a background tab, or the VS Code integrated browser while its pane isn't visible) pauses `requestAnimationFrame`, so the planet stays on "Loading…" until the tab is visible. This is expected browser behaviour.
+- If the dev server shows `X is not defined` right after an edit, it probably caught a half-saved file. Re-save the file or restart `npm run dev`.
+- Windows file names are case-insensitive, so don't give two modules names that differ only in case (for example `daynight.ts` and `DayNight.tsx`). TypeScript reports an error, and Vite's dev cache may keep serving the old file until the dev server restarts.

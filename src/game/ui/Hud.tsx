@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { GameController } from '../controller';
 import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
+import { SUNRISE, SUNSET, formatHours } from '../world/timeOfDay';
 import { LandmarkDialog, MenuDialog } from './Dialogs';
 
 const toClassic = () => prefs.setMode('classic');
@@ -137,13 +138,34 @@ function LandmarkNav({ controller }: { controller: GameController }) {
   );
 }
 
+/** Little planet clock (updates every few seconds; not a live region). */
+function TimeBadge({ controller }: { controller: GameController }) {
+  const [hours, setHours] = useState(controller.timeOfDay);
+  useEffect(() => {
+    const id = window.setInterval(() => setHours(controller.timeOfDay), 1000);
+    return () => window.clearInterval(id);
+  }, [controller]);
+  const night = hours < SUNRISE || hours >= SUNSET;
+  const text = formatHours(hours);
+  return (
+    <span className="time-badge" data-testid="time-badge" title="Planet time">
+      <span aria-hidden="true">{night ? '☾' : '☀'}</span>
+      <span className="sr-only">Planet time </span>
+      {text}
+    </span>
+  );
+}
+
 function MenuButton({ controller, target }: { controller: GameController; target: HTMLElement | null }) {
   const phase = useStore(controller.store, (s) => s.phase);
   if (!target || phase === 'loading') return null;
   return createPortal(
-    <button type="button" className="btn" aria-haspopup="dialog" onClick={() => controller.openMenu()} data-testid="menu-button">
-      Menu
-    </button>,
+    <>
+      <TimeBadge controller={controller} />
+      <button type="button" className="btn" aria-haspopup="dialog" onClick={() => controller.openMenu()} data-testid="menu-button">
+        Menu
+      </button>
+    </>,
     target,
   );
 }

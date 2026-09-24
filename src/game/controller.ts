@@ -10,6 +10,7 @@ import { KeyboardInput } from './input/keyboard';
 import { createGameStore, selectReducedMotion, type GameStore } from './state/store';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
+import { DAY_HOURS, START_HOURS, localHours, type TimeMode } from './world/timeOfDay';
 
 const PLAY_PATH = '/play/';
 
@@ -40,6 +41,22 @@ export class GameController {
   readonly fadeEl: { current: HTMLDivElement | null } = { current: null };
   region: HTMLDivElement | null = null;
   camera: Camera | null = null;
+  /** Totals for the previous frame (all passes: shadows, scene, post). */
+  lastRenderInfo = { calls: 0, triangles: 0 };
+  /** Called when a fast travel lands (the avatar plays a little hop). */
+  onArrive: (() => void) | null = null;
+  /** Which avatar is on screen: the rigged model, or the procedural fallback (loading / failed). */
+  avatar: 'model' | 'procedural' = 'procedural';
+  /** Adaptive-quality step (set by the Adaptive component; exposed to tests). */
+  adaptiveStep: ((dir: -1 | 1, force?: boolean) => void) | null = null;
+  /** Active post-processing chain (for tests/diagnostics). */
+  postFx = 'none';
+  /** Planet clock in hours [0, 24), advanced by the DayNight rig. */
+  timeOfDay: number;
+  /** Test hook: hold the clock at `timeOfDay`. */
+  timeFrozen = false;
+  /** Latest day–night values shared with scene components (0 = day, 1 = night). */
+  readonly sky = { night: 0, glow: 0.5 };
   paused = false;
   private readonly buffer = new InteractBuffer();
   private invoker: HTMLElement | null = null;
@@ -51,6 +68,7 @@ export class GameController {
   constructor(
     readonly landmarks: LandmarkData[],
     private readonly shell: ShellElements,
+    opts: { quality?: 'high' | 'low' } = {},
   ) {
     const sorted = [...landmarks].sort((a, b) => a.order - b.order);
     this.landmarks = sorted;
@@ -62,10 +80,14 @@ export class GameController {
     this.sim = new PlanetSim(obstacles);
 
     const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    const timeMode = prefs.getTimeMode();
+    this.timeOfDay = timeMode === 'local' ? localHours() : timeMode === 'day' ? DAY_HOURS : START_HOURS;
     this.store = createGameStore({
       reducedMotionSystem: Boolean(mq?.matches),
       reducedMotionUser: prefs.getReduceMotion(),
       pauseAmbient: prefs.getPauseAmbient(),
+      quality: opts.quality ?? 'high',
+      timeMode,
     });
     if (mq) {
       const onChange = () => this.store.setState({ reducedMotionSystem: mq.matches });
@@ -137,6 +159,7 @@ export class GameController {
       if (e.type === 'travel-complete') {
         this.store.setState({ traveling: null });
         this.focusRegion();
+        this.onArrive?.();
       } else if (e.type === 'autowalk-blocked') {
         this.showToast("Can't get through that way — try another path.");
       }
@@ -344,6 +367,12 @@ export class GameController {
   setPauseAmbient(v: boolean): void {
     prefs.setPauseAmbient(v);
     this.store.setState({ pauseAmbient: v });
+  }
+
+  setTimeMode(m: TimeMode): void {
+    prefs.setTimeMode(m);
+    this.timeFrozen = false;
+    this.store.setState({ timeMode: m });
   }
 
   showControls(): void {

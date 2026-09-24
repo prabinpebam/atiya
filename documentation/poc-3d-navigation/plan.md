@@ -63,7 +63,7 @@ Estimates are focused working days for one developer using GitHub Copilot agent 
 | M2.1 | Accel/decel, Shift to run, turn smoothing driven by **actual** velocity, pivot on reversal, `dt` clamp, sub-steps | FR-02, FR-04 |
 | M2.2 | CC0 character plus idle/walk/run clips through the `assets` pipeline; CREDITS.md | FR-06, FR-72 |
 | M2.3 | Speed-based blending with matched `timeScale`; blob shadow | FR-06 |
-| M2.4 | Toon material, outlines, palette texture | — |
+| M2.4 | Soft-lit bevelled "toy" materials, geometry kit, art pass (as built: see spec §4.12) | — |
 | M2.5 | leva tuning panel (dev only) for every constant in the spec's §5.5 | FR-71 (infra) |
 | M2.6 | Frame-rate independence test: 30 vs 120 fps distance within ±2 % | FR-04 |
 
@@ -169,7 +169,7 @@ Defaults are assumed so work can start. The owner confirms or changes each one.
 | D-4 | Landing default | Neutral landing, last-used mode emphasized, no redirects except `?mode=` | Play-first or classic-first | M4 |
 | D-5 | Touch & gamepad in POC | Tap-to-move is P0; joystick and gamepad are M8 | Promote to P0 (+1–1.5 d) | M5 start |
 | D-6 | Preview hosting | Local only for the DoD; optionally Cloudflare Workers static assets or the Azure Static Web Apps free plan | Either | M7 |
-| D-7 | Character | CC0 placeholder (KayKit / Quaternius) or a primitive "bean" | Custom avatar later | M2 |
+| D-7 | Character | Original procedural "designer" avatar (as built); a rigged CC0 humanoid is optional later | Custom modelled avatar later | M2 |
 | D-8 | Bundle strategy | R3F + drei (ADR-1) | Vanilla three runner-up if the M0.5 spike fails the budget | M0 |
 
 ## 5. Risk register
@@ -200,7 +200,7 @@ Budgets in the [spec §7](./spec.md#7-performance-budgets) are P0. Only a row he
 
 | Date | Metric | Budget | Measured | Cause | Decision | Owner sign-off |
 |---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — |
+| 2026-09-24 | Draw calls / triangles per frame | ≤ 60 / ≤ 100 k | ≈ 100–106 / ≈ 570–590 k (high tier, all passes incl. shadows + post; the day–night sky — sun/moon discs, stars, lamp pools, fireflies — adds ≤ 7 calls: 106 at noon, 99 at night) | Detailed art pass (spec §4.12): kit-merged landmarks, leaf-card foliage, ~1 000 instanced props, post-processing passes. Lower-poly details cut the original 1.44 M; horizon culling was then **removed at the owner's request** (it caused pop-in), so the whole planet is always drawn | **Proposed:** raise to ≤ 110 calls / ≤ 650 k triangles on `high`, keep `low` as the fallback for weaker GPUs; re-measure on the reference laptop | ☐ pending |
 
 ## 7. Working agreements
 

@@ -55,7 +55,7 @@ function showOffer(reason: Extract<GateDecision, { kind: 'offer' }>['reason']): 
   );
   bindClassic();
   container.dataset.gate = 'offer';
-  container.querySelector('[data-gate-continue]')?.addEventListener('click', () => void load());
+  container.querySelector('[data-gate-continue]')?.addEventListener('click', () => void load('low'));
 }
 
 function showError(kind: 'load' | 'timeout'): void {
@@ -86,7 +86,12 @@ async function installDevRefreshPreamble(): Promise<void> {
   w.__vite_plugin_react_preamble_installed__ = true;
 }
 
-async function load(): Promise<void> {
+async function load(quality: 'high' | 'low' = 'high'): Promise<void> {
+  // Non-production builds only: ?quality=high|low overrides the tier (visual testing on headless GPUs).
+  if (import.meta.env.MODE !== 'production') {
+    const q = new URLSearchParams(location.search).get('quality');
+    if (q === 'high' || q === 'low') quality = q;
+  }
   container.dataset.gate = 'loading';
   showLoading();
   let timedOut = false;
@@ -100,7 +105,7 @@ async function load(): Promise<void> {
     if (timedOut) return;
     window.clearTimeout(timer);
     container.dataset.gate = 'loaded';
-    await mountGame(container, landmarks());
+    await mountGame(container, landmarks(), { quality });
   } catch (err) {
     window.clearTimeout(timer);
     console.error(err);
@@ -117,7 +122,8 @@ if (url.mode === 'classic') {
 } else {
   if (url.mode === 'play') prefs.setMode('play');
   const decision = decide(probeCapabilities());
-  if (decision.kind === 'load') void load();
+  const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  if (decision.kind === 'load') void load(coarse ? 'low' : 'high');
   else if (decision.kind === 'offer') showOffer(decision.reason);
   else showFallback();
 }

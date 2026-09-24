@@ -4,9 +4,16 @@ import type { GameController } from '../controller';
 import type { LandmarkData } from '../types';
 import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
-import { selectReducedMotion } from '../state/store';
+import { selectAmbientPaused, selectReducedMotion } from '../state/store';
+import type { TimeMode } from '../world/timeOfDay';
 
 const toClassic = () => prefs.setMode('classic');
+
+const TIME_OPTIONS: ReadonlyArray<readonly [TimeMode, string]> = [
+  ['cycle', 'Day–night cycle (a day every ~6 minutes)'],
+  ['local', 'Match my local time'],
+  ['day', 'Always daytime'],
+];
 
 export function LandmarkDialog({ controller }: { controller: GameController }) {
   const openId = useStore(controller.store, (s) => s.openId);
@@ -70,6 +77,8 @@ export function MenuDialog({ controller }: { controller: GameController }) {
   const reducedSystem = useStore(controller.store, (s) => s.reducedMotionSystem);
   const reduced = useStore(controller.store, selectReducedMotion);
   const pauseAmbient = useStore(controller.store, (s) => s.pauseAmbient);
+  const timeMode = useStore(controller.store, (s) => s.timeMode);
+  const ambientPaused = useStore(controller.store, selectAmbientPaused);
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -125,6 +134,16 @@ export function MenuDialog({ controller }: { controller: GameController }) {
             <input type="checkbox" checked={pauseAmbient || reduced} disabled={reduced} onChange={(e) => controller.setPauseAmbient(e.currentTarget.checked)} />
             Pause ambient motion
           </label>
+          <fieldset className="radio-group">
+            <legend>Time of day</legend>
+            {TIME_OPTIONS.map(([value, label]) => (
+              <label key={value} className="check">
+                <input type="radio" name="time-mode" value={value} checked={timeMode === value} onChange={() => controller.setTimeMode(value)} />
+                {label}
+              </label>
+            ))}
+            {timeMode === 'cycle' && ambientPaused && <p className="muted">The cycle is paused while ambient motion is paused.</p>}
+          </fieldset>
         </section>
         <div className="actions">
           <button type="button" className="btn" onClick={() => controller.showControls()}>

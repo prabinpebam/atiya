@@ -34,7 +34,7 @@ This POC proves the **navigation UI and interaction model**, not final art or co
 - Final portfolio content (placeholder copy is used), final art direction, custom character.
 - NPCs, dialogue typing/voice, quests, achievements, multiplayer, day/night cycle, weather.
 - Physics engine, jumping, swimming, terrain deformation.
-- WebGPU renderer, post-processing pipeline.
+- WebGPU renderer. (A small post-processing chain *is* used on the high quality tier — see §4.12.)
 - Localization, analytics, CMS integration, production deployment hardening.
 - Audio beyond a P2 stretch (muted-by-default ambient + footsteps).
 
@@ -70,12 +70,26 @@ This POC proves the **navigation UI and interaction model**, not final art or co
 
 ### 4.2 The planet
 
-- **Shape:** true sphere, radius **R = 10 u** (character height = 1 u). A real sphere provides the "rolling log" curvature naturally; no bend shader needed.
-- **Surface:** low-poly, gently noised grass sphere (vertex colors / palette atlas), a few paths (decals or vertex-painted) leading from the plaza to each landmark.
-- **Props:** instanced trees, rocks, flowers/grass tufts (~150–250 instances, ≤ 6 draw calls total).
-- **Sky & atmosphere:** soft vertical gradient background, light fog to fade the far limb, a few slow clouds (P2).
-- **Lighting:** fixed hemisphere light + one directional "sun" with a single 1024² shadow map covering only the visible cap (the camera never moves relative to the sun — see §5.2), plus an always-directly-below **blob shadow** under the character for grounding.
-- **Style:** toon shading (`MeshToonMaterial`, 3-step gradient map with `NearestFilter`), inverted-hull outlines (drei `<Outlines>`) on character and landmarks, one shared palette texture.
+- **Shape:** true sphere, radius **R = 10 u** (character height ≈ 1.3 u). A real sphere provides the "rolling log" curvature naturally; no bend shader needed.
+- **Ground (as built):** smooth-shaded icosphere (detail 44) with a procedural ground shader (`planetMaterial.ts`) blended by per-vertex surface weights:
+  - speckled grass with soft colour patches
+  - pebbly dirt paths from the plaza to every landmark
+  - cobbled forecourts around each landmark
+  - concentric brick rings with a compass-rose inlay on the spawn plaza
+  - a sand rim around a pond that sits in a shallow basin
+- **Props (as built):** all instanced and always drawn — no culling, so nothing pops in (§5.8):
+  - lobed hardwood trees, including apple and orange fruit trees
+  - tiered cedars
+  - leafy bushes, some flowering
+  - all tree and bush foliage built from overlapping alpha-tested leaf cards (§4.12)
+  - rounded rocks
+  - three kinds of flower clump (tulip, cosmos, pansy) with per-clump colour
+  - about 650 grass tufts
+  - a pond with lily pads, reeds and cattails
+  - butterflies
+- **Sky & atmosphere:** opaque screen-space gradient sky, drifting puffy clouds in the sky band, light fog on the far limb — all driven by the **day–night cycle** (§4.13).
+- **Lighting:** a hemisphere light plus one directional light that is the sun by day and the moon by night, with a single shadow map (1024² on low, 2048² on high) covering the visible cap. Its direction, colour and intensity follow the time of day (§4.13). An always-directly-below **blob shadow** grounds the character.
+- **Style:** soft-lit, bevelled "toy" materials (`MeshStandardMaterial` with vertex colours), with no outlines or toon ramp. See §4.12.
 
 ### 4.3 Landmarks (POC set, placeholder content)
 
@@ -104,9 +118,20 @@ Constraints:
 
 ### 4.4 Character
 
-- CC0 low-poly humanoid (e.g., KayKit Adventurers) with **idle / walk / run** clips (from the pack or Quaternius Universal Animation Library, CC0, retargeted). **Fallback:** primitive "bean" character with procedural bob, so the POC is never blocked on assets.
-- Animation blending by speed: idle ↔ walk ↔ run via `crossFadeTo` (≈ 0.15 s), walk/run `timeScale` scaled with actual speed to avoid foot sliding.
-- Juice (disabled under reduced motion): squash/stretch on start/stop (±5 %, 120 ms), small forward lean when running, dust puffs on run start and sharp turns (pooled sprites, ≤ 8 live).
+- **As built — rigged model:** Kenney "Animated Characters: Protagonists" (CC0), `characterMedium` with the `skaterMaleA` skin (`player/Player.tsx`).
+  - **Pipeline** (`npm run build:character`, `scripts/build-character.mjs`):
+    1. FBX2glTF converts the FBX files.
+    2. The Idle, Run and Jump clips are merged into the model, matched by bone name.
+    3. The skin texture and a soft non-metallic material are applied.
+    4. Resample, dedup and prune produce `public/models/character.glb` (≈ 163 KB).
+  - **Scale:** normalised at runtime from the skinned bounding box to **1.25 u**, about door height plus a head.
+  - **Animation:** Idle/Run blended by speed. The Run clip's timeScale is `speed ÷ 2.5`, clamped to 0.6–1.7; 2.5 u/s is the planted-foot ground speed measured from the skeleton at 1×. A short Jump hop plays when a fast travel lands (off under reduced motion).
+  - **Fetching:** the model is preloaded without Draco or Meshopt, so there are no decoder CDN requests.
+- **Fallback — procedural avatar:** an original chibi "designer" built from procedural parts (`player/Character.tsx`, `ProceduralAvatar`). It shows while the GLB loads and permanently if the GLB fails (error boundary).
+  - **Look:** a big head (≈ 45 % of height) with large blinking eyes, blush and round glasses; a swept fringe; a knit sweater with collar; a crossbody bag; sneakers.
+  - **Animation:** procedural walk and run, idle breathing, and blinking.
+- **Optional later:** swap in a rigged CC0 humanoid (e.g., KayKit Adventurers) with idle/walk/run clips (e.g., Quaternius Universal Animation Library, CC0), blended by speed via `crossFadeTo` (≈ 0.15 s) with `timeScale` matched to speed.
+- Juice (P1, disabled under reduced motion): squash/stretch on start/stop (±5 %, 120 ms), dust puffs on run start and sharp turns (pooled sprites, ≤ 8 live).
 
 ### 4.5 Controls
 
@@ -179,7 +204,8 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 ```
 
 - All HUD elements are real HTML (`<button>`, `<a>`, `<dialog>`, `<nav>`), ≥ 24×24 CSS px targets, 4.5:1 text contrast on a solid/blurred backing, never obscuring the focused element (WCAG 2.4.11).
-- **Menu** (`<dialog>`): Landmarks (fast travel + visited state), Controls, Settings (Reduce motion, Pause ambient motion, Run toggle (P1), Quality Auto/Low/High (P1), Sound (P2)), **Classic site**, Return to Plaza (P1).
+- **Menu** (`<dialog>`): Landmarks (fast travel + visited state), Controls, Settings (Reduce motion, Pause ambient motion, **Time of day** (cycle / local time / always day, §4.13), Run toggle (P1), Quality Auto/Low/High (P1), Sound (P2)), **Classic site**, Return to Plaza (P1). The action row (Show controls / Classic site / Close) stays pinned at the bottom when the menu scrolls.
+- **Time badge** in the header next to Menu: planet time with a sun/moon glyph (hidden below 520 px wide).
 
 ### 4.10 Escape hatch & fallbacks
 
@@ -255,6 +281,52 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-71 | leva tuning panel in dev only | P1 | 5.5 |
 | FR-72 | Optimized asset pipeline script (gltf-transform) + CREDITS.md | P0 | 5.1, 13 |
 
+### 4.12 Art direction (as built)
+
+The cozy life-sim look is achieved with **original** procedural models. The style cues below came from studying reference screenshots (see §13); no assets were copied.
+
+| Cue | How it's implemented |
+|---|---|
+| Soft, bevelled "toy" forms | Every box is a rounded box; blobs are welded, smooth-shaded icospheres; no outlines, no hard toon ramp (`world/kit.ts`) |
+| Architecture vocabulary | Reusable parts (`world/parts.ts`): stone plinths with blocks, corner pilasters, cornice bands, siding, gable roofs from overlapping shingle rows with trim boards, stepped hip roofs, panelled doors with brass handles, arched windows with mullions and sills, wall lanterns, awnings, bunting, flower boxes, steps, benches, barrels, crates, pot plants, sign boards |
+| Landmark silhouettes | Workshop cabin with chimney smoke, workbench and log pile; Town Hall with portico, pediment, clock-tower cupola and waving flag; striped Lighthouse with gallery, lantern room and rotating beam; classical Library with columns, banners and a giant stacked-book sculpture; band-shell Amphitheater with bulbs, spotlights and bunting; glass-dome Greenhouse with plants inside; Post Office with awning, envelope sign and a mailbox whose flag pops up when you're near |
+| Nature | **Trees** (`world/foliage.ts`): a dark inner canopy volume covered with overlapping, drooping leaf cards — greyscale leaf/needle textures drawn at runtime on a canvas, tinted per card from dark undersides to sunlit tops. Cards are lit with the canopy's volume normal so the tree shades as one soft mass, and alpha-tested depth materials cast leaf-shaped shadows. Hardwoods have five rounded lobes on a short, chunky, S-bent trunk with bark streaks, root flares and hidden branches (plus apple/orange variants). Cedars have six tiers of drooping needle scales. Bushes use the same leaf system. Also rounded rocks, clumps of tulips/cosmos/pansies, grass tufts, a pond with lily pads and cattails, and butterflies; trees, bushes and grass sway gently |
+| Ground | Speckled grass, pebbly dirt paths, cobbled forecourts, brick-ring plaza with a compass rose (`world/planetMaterial.ts`) |
+| Sky | Gradient sky, puffy drifting clouds, sun, moon and stars that follow the day–night cycle (§4.13) |
+| Camera "diorama" feel | Fixed-angle camera (§4.6) + **tilt-shift** blur top and bottom, gentle bloom on lamps/windows, vignette, neutral tone mapping (`high` tier only) |
+| Character | Chibi proportions — the rigged CC0 Kenney character (§4.4), with the original procedural "designer" (round glasses, knit sweater, crossbody bag) as its fallback |
+
+All ambient animation (clouds, sway, smoke, beam, flag, butterflies, fireflies, star twinkle, idle breathing, and the day–night clock in cycle mode) stops under **Reduce motion** or **Pause ambient motion**.
+
+### 4.13 Day–night cycle (as built)
+
+The planet has a cozy life-sim day: soft dawn pinks, a bright day, a warm golden hour, a lilac dusk, and a deep-blue starry night.
+
+- **Clock:** hours 0–24, shown in a small header badge (e.g. "☀ 9:12 AM"; not a live region). Three modes, chosen in **Menu → Time of day** and remembered (`localStorage site.timeMode`):
+  - **Day–night cycle** (default): starts at 9:00 AM. A full day takes about 6 minutes: the daytime (6 AM–7 PM) takes about 4.5 minutes and the night about 1.5 minutes, so visitors see a sunset without long stretches of darkness.
+  - **Match my local time:** the visitor's own clock, the way life-sim games follow real time.
+  - **Always daytime:** fixed at 10:30 AM.
+
+  Changing the mode sweeps the sky forward to the new time in a couple of seconds, or instantly under Reduce motion. The sweep plays after the menu closes, because rendering idles while a dialog is open.
+- **What changes:**
+  - sky gradient, fog, hemisphere colours and intensity
+  - sun/moon direction, colour and intensity, so shadows move through the day
+  - cloud tint
+  - lamp and window glow, below the bloom threshold by day and blooming at night
+  - lighthouse beam brightness
+  - warm light pools under the plaza lamps
+  - daylight "lift" emissives (foliage, pond) fade at night
+- **Sky objects:**
+  - The sun and moon rise from behind the planet's limb at the left and set at the right. They are camera-facing discs with soft halos, drawn behind the clouds.
+  - About 170 twinkling stars fade in after dusk.
+  - Fireflies drift over the pond and flower beds at night, and butterflies go to sleep.
+- **Readability:** night is deep blue rather than black: moonlight plus a blue hemisphere light keep the scene legible. All HUD text sits on solid cards, so its contrast doesn't depend on the time of day.
+- **Motion:** in cycle mode the clock stops under Reduce motion or Pause ambient motion; the Menu says so. Local time still follows the clock, because that change is imperceptibly slow.
+- **Implementation:**
+  - `world/timeOfDay.ts` is a pure, unit-tested model: keyframed palettes, sun/moon arcs and cycle speed.
+  - `world/DayNight.tsx` holds the rig: lights, sky texture, sun, moon and stars, plus `Fireflies` and `LampPools`.
+  - The directional light fades to zero at the sun↔moon handover, so the shadow direction never visibly jumps.
+
 ## 5. Technical design
 
 ### 5.1 Stack (pinned versions)
@@ -267,12 +339,14 @@ Install via the Microsoft npm proxy per [AGENTS.md](../../AGENTS.md); always ins
 | React (game UI + JSX tooling) | `@astrojs/react` + React / ReactDOM | `6.0.6` + **`19.2.8`** | R3F 9.7.0 peer range is `react >=19 <19.3` — **do not** use React 19.3 yet |
 | 3D engine | three (**`WebGLRenderer`**) | `0.186.0` (+ `@types/three@0.186.0`) | Official manual still labels `WebGPURenderer` experimental; drei helpers (Outlines, etc.) are WebGL-only |
 | React renderer | `@react-three/fiber` | **`9.7.0`** | Proxy `latest` is a v10 canary — never use it |
-| Helpers | `@react-three/drei` | `10.7.8` | KeyboardControls, useGLTF, useAnimations, Outlines, Html, PerformanceMonitor, AdaptiveDpr, useProgress, Instances |
+| Helpers | `@react-three/drei` | `10.7.8` | KeyboardControls, Html (world labels), PerformanceMonitor, AdaptiveDpr, useProgress; (useGLTF/useAnimations if GLB assets are added later) |
 | State | zustand | `5.0.15` | Tiny, works inside and outside React (`useFrame`) |
 | Smoothing | maath | `0.10.8` | Frame-rate-independent `easing.damp*` |
 | Touch joystick (P1) | nipplejs | `1.0.4` | TS rewrite (2026), ~6 KB gz, MIT |
 | GPU tier | `@pmndrs/detect-gpu` | `6.0.22` | Low-end gating |
 | Dev tuning (dev only) | leva | `0.10.1` | Live-tune movement/camera constants |
+| Post-processing (high tier) | `@react-three/postprocessing` + postprocessing | `3.1.1` + `6.39.5` | Tilt-shift, bloom, vignette, neutral tone mapping (§4.12) |
+| Character pipeline (dev) | `@gltf-transform/core`, `/functions`, `/extensions` + FBX2glTF (`fbx2gltf@0.9.7`, installed to a temp folder, not a project dependency) | `4.5.0` | FBX → merged, optimised GLB (`npm run build:character`) |
 | Asset pipeline (dev) | `@gltf-transform/cli`, gltfjsx | `4.5.0`, `6.5.3` | Meshopt + KTX2 compression; typed JSX |
 | Perf HUD (dev) | stats-gl | `4.2.3` | FPS / GPU timing |
 | Unit tests | vitest, `@react-three/test-renderer` | `5.0.1`, `9.1.1` | Pure math + scene graph |
@@ -431,8 +505,12 @@ personal-site/
 │     ├─ math/sphere.ts  # pure: latLon→vec, step, slide, arcDistance (unit-tested)
 │     ├─ systems/        # movement.ts, proximity.ts, autoWalk.ts (pure + thin hooks)
 │     ├─ input/          # keyboard.ts, pointer.ts, gamepad.ts (P1), joystick.ts (P1)
-│     ├─ world/          # Planet.tsx, Props.tsx (instanced), Landmark.tsx, landmarks/*.tsx
-│     ├─ player/         # Character.tsx (animations, juice), BlobShadow.tsx
+│     ├─ world/          # kit.ts (merged vertex-coloured geometry), parts.ts (roofs, windows, doors, props),
+│     │                  # models.ts (landmark models), propModels.ts (trees, flowers, rocks, clouds…),
+│     │                  # layout.ts (scatter, pond, plaza furniture), planetMaterial.ts (ground shader),
+│     │                  # Planet.tsx, Props.tsx, Plaza.tsx, Landmark.tsx, KitModel.tsx, Sky.tsx (clouds), materials.ts,
+│     │                  # timeOfDay.ts (pure day–night model), DayNight.tsx (lights, sky, sun/moon/stars, fireflies, lamp pools)
+│     ├─ player/         # Player.tsx (rigged Kenney model, idle/run blend, arrival hop), Character.tsx (procedural fallback avatar)
 │     ├─ camera/         # DioramaCamera.tsx
 │     ├─ ui/             # Hud.tsx, PreviewCard.tsx, LandmarkDialog.tsx, Menu.tsx,
 │     │                  # Onboarding.tsx, LiveRegion.tsx, LandmarkNav.tsx, Loader.tsx, Fallback.tsx
@@ -448,7 +526,14 @@ personal-site/
 - One ordered update in a single `useFrame`: **input → auto-walk → movement (sub-stepped, with collision) → proximity → character animation/juice → camera** (deterministic order; simulation logic in pure TS modules).
 - `frameloop="always"` while playing; switch to `"demand"` when a dialog/menu is open or the tab is hidden (`visibilitychange`).
 - `<PerformanceMonitor>` steps DPR down (2 → 1.5 → 1) on sustained drops and back up on recovery, changing at most once per 10 s (no oscillation); `<AdaptiveDpr>` optional. Adaptation can be disabled via the test hook for benchmarking.
-- Instancing for props; merged static geometry per landmark; ≤ 1 shadow-casting light.
+- **Draw-call discipline:** props are instanced. Each landmark and the plaza are merged into one mesh per material layer (solid / glow / glass) with the geometry kit. There is one shadow-casting light.
+- **No distance or horizon culling:** the whole planet (≈ 1 000 instanced props, 7 landmarks, plaza) is always drawn, and the depth buffer hides the far side. Horizon culling was tried and removed: it saved about half the triangles but made objects pop in at the limb, which was distracting. With this little content the cost is acceptable, and `low` tier is the fallback.
+- **Quality tiers:**
+  - `high` (default on capable desktop GPUs) adds the post-processing chain and a 2048² shadow map.
+  - `low` is used for software rendering (the "Continue anyway" path), Data Saver and coarse pointers. It keeps a cheaper tilt-shift (small kernel, 35 % resolution) but no bloom or vignette, and a 1024² shadow map.
+  - **The tilt-shift is never switched off.** Adaptive quality waits 10 s after start (so shader-compile hitches don't count), then on sustained low FPS steps DPR down (2 → 1.5 → 1.25 → 1), and as a last step drops bloom and vignette. It never changes tier and steps back up when FPS recovers.
+  - Non-production builds accept `?quality=high|low` for visual testing.
+- **Sky objects** (clouds z ≈ −30…−38, sun/moon z = −50, stars z ≈ −62…−68) sit on planes behind the planet in the camera frame, inside the camera's far plane (130). The sky gradient is a small canvas texture set as `scene.background`, redrawn only when the clock has moved.
 
 ### 5.9 Loading strategy (capability-gated dynamic import)
 
@@ -481,8 +566,11 @@ A hydrated `client:only` island would import the game bundle as part of hydratio
   interact(): void;
   pause(): void; resume(): void; advance(frames: number, fixedDt?: number): void;
   setAdaptiveQuality(enabled: boolean): void; setDpr(dpr: number): void;   // benchmarking
+  setTime(hours: number | null): void;  // hold the day–night clock (visual tests); null releases it
 }
 ```
+
+`getState()` also reports `hours`, `night` (0–1), `glow` and `timeMode`.
 
 ## 6. Accessibility requirements
 
@@ -516,7 +604,7 @@ Budgets are **P0**. A miss is acceptable only with a **written owner waiver** re
 | Estimated GPU texture memory | ≤ **32 MB** | Asset script: Σ width × height × bytes-per-pixel of the GPU format × 1.33 (mips) |
 | Time to playable | ≤ **3.0 s** median of 5 cold-cache runs | `game:playable` mark minus navigation start. Chrome DevTools custom profile: 50 Mbps down / 10 Mbps up / 20 ms RTT, cache disabled, no CPU throttling |
 | Frame pacing | rAF interval **median ≤ 16.7 ms** and **≥ 95 % of intervals ≤ 20 ms** | 60 s scripted walk loop (test build, minified). DPR forced to 1.5, adaptive quality off, 1920×1080 viewport, 60 Hz display, on AC power. CPU frame time and GPU time (stats-gl) reported separately |
-| Draw calls / triangles | ≤ 60 / ≤ 100 k | `renderer.info.render` at the spawn view and at the busiest landmark |
+| Draw calls / triangles | ≤ 60 / ≤ 100 k (original target) — **as built after the art pass, with no culling: ≈ 100–106 calls / ≈ 570–590 k triangles per frame on high (all passes incl. shadows + post; the day–night sky adds ≤ 7 calls); proposed waiver pending owner sign-off (plan §6)** | `renderInfo()` test hook (`renderer.info`, accumulated across passes) at the spawn view |
 | Memory stability | ≤ 10 MB growth | Post-GC heap snapshots at t = 0 and t = 5 min of scripted play |
 | Input → visible response | ≤ 50 ms | `keydown` timestamp to the first rendered frame with player displacement > 0 (performance marks, test build) |
 | Adaptive quality | Steps down within 3 s under forced load; recovers; ≤ 1 change per 10 s | Test hook forcing a low-fps condition |
@@ -550,6 +638,10 @@ None in the POC (privacy-first). Optional P2: local-only debug overlay showing t
 | ADR-6 | DOM overlay for all actionable UI | In-canvas UI (uikit/Html) | Accessibility, focus, contrast, testability; drei `<Html>` only for world labels |
 | ADR-7 | Astro content collection as single source | Hard-coded game data | Game & classic stay in sync; future CMS-ready |
 | ADR-8 | `/play` route with a **capability-gated dynamic import** (not a hydrated island); landing has no 3D | Game on `/`; `client:only` island | Protects LCP/SEO and recruiter speed; gated-out devices never download 3D code; classic always first-class |
+| ADR-9 | **Procedural, kit-merged models** (vertex-coloured primitives merged per material layer) | CC0 glTF kits; bespoke Blender models | Zero asset licensing risk; no GLB loading; tiny download; each landmark = ~3 draw calls; everything tweakable in code |
+| ADR-10 | **No culling** — everything on the planet is always drawn | Horizon culling (dot-product test per instance/landmark); LOD | Horizon culling halved triangles but caused visible pop-in at the limb; the scene is small enough to draw in full, and nothing ever appears suddenly (owner decision, 2026-09-24) |
+| ADR-11 | **Two quality tiers; tilt-shift on both** | Post only on `high`; always-full post | The tilt-shift *is* the diorama look, so it's always on (cheaper on `low`); bloom and vignette are the optional extras that adaptive quality may drop. An earlier version switched tiers at runtime and made the tilt-shift vanish after a few seconds |
+| ADR-12 | **Compressed day–night cycle by default; local time and always-day as options** | Real local time only; static day | Local time only means most visitors never see dusk or night; a ~6-minute day (short night) shows the whole cycle during a typical visit. The keyframed palette model is pure TS (testable), and sky objects live in the camera frame like the clouds, which suits the rotate-the-planet model (ADR-4) |
 
 ## 11. Risks (summary — full register in [plan](./plan.md#5-risk-register))
 
@@ -562,5 +654,6 @@ D-1 planet/working name · D-2 landmark set & order · D-3 activation mode (`pro
 ## 13. Legal, brand & compliance
 
 - **No Nintendo (or other) IP:** no characters/lookalikes, names, trademarks in titles/SEO/metadata, music, SFX, fonts (e.g., no Seurat/Nook-style UI), or distinctive UI. Game mechanics/feel are not protected by copyright; say "inspired by cozy life-sim games" in prose if needed.
-- **Assets:** CC0 or original only; every third-party asset listed in `assets-src/CREDITS.md` with source URL and license. Avoid Mixamo for anything redistributed as raw files.
+- **Assets:** CC0 or original only; every third-party asset listed in `assets-src/CREDITS.md` with source URL and license. Avoid Mixamo for anything redistributed as raw files. As built, all 3D assets are original procedural geometry except the CC0 Kenney player character.
+- **Style references:** Animal Crossing: New Horizons screenshots (Nookipedia) were studied **only** for general style cues — proportions, bevelled forms, roof/door/window vocabulary, tree and flower shapes, tilt-shift look. They are not stored in the repository and nothing was traced or copied. No Nintendo characters, logos (e.g. the leaf emblem), buildings, names, text or UI appear in the site.
 - **Microsoft employee considerations:** POC uses placeholder content only; no Microsoft logos/brand assets or confidential work; final content subject to the Trust Code and internal Social Media / Outside Work policies (review before publishing).

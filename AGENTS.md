@@ -10,8 +10,8 @@ Personal portfolio site for a Principal Design Manager at Microsoft, showcasing 
 
 Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./documentation/poc-3d-navigation/spec.md). Conventions for agents working on it:
 
-- **Pinned stack (exact versions only):** astro 7.3.3, @astrojs/react 6.0.6, react/react-dom **19.2.8** (R3F 9.7.0 requires `<19.3`), three 0.186.0, @react-three/fiber **9.7.0** (never the proxy's v10 canary), @react-three/drei 10.7.8, zustand 5.0.15, maath 0.10.8. See spec §5.1 for the full list.
-- Use **R3F v9 / drei v10 APIs** (not v8 patterns, not v10 alphas). Use `WebGLRenderer` only: no WebGPU/TSL, no physics engine.
+- **Pinned stack (exact versions only):** astro 7.3.3, @astrojs/react 6.0.6, react/react-dom **19.2.8** (R3F 9.7.0 requires `<19.3`), three 0.186.0, @react-three/fiber **9.7.0** (never the proxy's v10 canary), @react-three/drei 10.7.8, @react-three/postprocessing 3.1.1 + postprocessing 6.39.5 (needs three `<0.187`), zustand 5.0.15. See spec §5.1 for the full list.
+- Use **R3F v9 / drei v10 APIs** (not v8 patterns, not v10 alphas). Use `WebGLRenderer` only: no WebGPU/TSL, no physics engine. The tilt-shift must always be on, on both tiers; bloom and vignette are `high`-only, and adaptive quality may drop them but never the tilt-shift.
 - Movement model: **rotate the planet under a fixed player and camera** (spec §5.2). Keep simulation logic in pure, unit-tested TS modules under `src/game/math` and `src/game/systems`.
 - All actionable UI (prompts, dialogs, menus) is **semantic DOM**, not in-canvas. The classic site must stay reachable from every state.
 - `/play` uses a **capability-gated dynamic import**, not a `client:only` island. `src/game/platform/gate.ts` must never import React or three. Game code is emitted as `game-*` chunks, and gated-out devices must never request them.
@@ -23,6 +23,22 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
 - Run `npm test` after changing anything in `src/game/math`, `src/game/systems` or `src/content/landmarks`. `tests/unit/fixtures.ts` must mirror the landmark frontmatter; a test enforces this.
 - Game keys are active only while the game region has focus. Never intercept Tab.
 - **No third-party game IP** (Nintendo names, characters, music, fonts, UI). Use CC0 or original assets only, and log every asset in `assets-src/CREDITS.md`.
+- **Art pipeline:** build 3D assets procedurally with the geometry kit (`src/game/world/kit.ts` + `parts.ts`): vertex-coloured primitives merged into one mesh per material layer (`solid` / `glow` / `glass`).
+  - Don't add per-part meshes; add parts to the kit instead.
+  - **No culling:** everything on the planet is always drawn, so nothing pops in (owner decision). Don't add distance, horizon or LOD culling that makes things appear or disappear.
+  - Trees and bushes live in `world/foliage.ts` (leaf cards + dark core). Foliage needs its alpha-tested `depthMaterial` for correct shadows.
+  - Keep the canvas opaque (the sky is a scene background). A transparent canvas causes post-processing halos.
+  - Glow parts use the HDR `glow` material so only they exceed the bloom threshold.
+  - **Day–night:** never hard-code sky, fog or light colours in components. `world/DayNight.tsx` owns the lights, fog and `scene.background`, driven by the pure keyframes in `world/timeOfDay.ts`.
+    - Any material with an emissive "daylight lift" must call `registerDaylit()` (`world/materials.ts`) so it dims at night.
+    - Night-only effects read `controller.sky.night` (0–1) in `useFrame`.
+    - Sky objects go on planes behind the planet in the camera frame, inside the camera's far plane (130).
+    - Use `window.__game.setTime(h)` for screenshots and tests.
+  - Check triangle counts with `tests/unit/triangles.report.test.ts` (unskip locally) and `window.__game.renderInfo()`.
+  - Windows is case-insensitive: never create module names that differ only by case.
+- **Player character:** `public/models/character.glb` is generated. Don't hand-edit it; change `scripts/build-character.mjs` and run `npm run build:character`.
+  - FBX2glTF is a native tool installed into `%TEMP%\fbxconv`. Never add it to `package.json`.
+  - Keep `useGLTF(url, false, false)` (no Draco/Meshopt), so no decoder is fetched from a CDN.
 
 ## Package installation: use Microsoft package feed proxy (required)
 

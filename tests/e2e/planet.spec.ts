@@ -10,6 +10,15 @@ type GameState = {
   traveling: string | null;
   atSpawn: boolean;
   autoWalk: boolean;
+  avatar: 'model' | 'procedural';
+  quality: 'high' | 'low';
+  postLevel: 1 | 2;
+  postFx: string;
+  dpr: number;
+  hours: number;
+  night: number;
+  glow: number;
+  timeMode: 'cycle' | 'local' | 'day';
 };
 
 const state = (page: Page) => page.evaluate(() => (window as any).__game.getState() as GameState);
@@ -91,6 +100,100 @@ test.describe('capability gate', () => {
     await expect(page.getByRole('heading', { name: "The planet couldn't be loaded." })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Go to the classic site' })).toBeVisible();
+  });
+});
+
+test.describe('rendering', () => {
+  test('tilt-shift survives adaptive quality falling all the way back', async ({ page }) => {
+    await openPlanet(page, '/play/?quality=high');
+    await page.getByRole('button', { name: 'Start exploring' }).click();
+    await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift+bloom+vignette');
+    await page.evaluate(() => {
+      for (let i = 0; i < 8; i++) (window as any).__game.adaptiveStep(-1);
+    });
+    await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift');
+    const s = await state(page);
+    expect(s.quality).toBe('high');
+    expect(s.dpr).toBe(1);
+    expect(s.postLevel).toBe(1);
+    await page.evaluate(() => (window as any).__game.adaptiveStep(1));
+    await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift+bloom+vignette');
+  });
+
+  test('the low quality tier still has the tilt-shift', async ({ page }) => {
+    await openPlanet(page, '/play/?quality=low');
+    await page.getByRole('button', { name: 'Start exploring' }).click();
+    expect((await state(page)).quality).toBe('low');
+    await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift');
+  });
+});
+
+test.describe('day–night', () => {
+  test('the clock runs, and at night the lamps glow and the badge shows the moon', async ({ page }) => {
+    await startPlanet(page);
+    const start = await state(page);
+    expect(start.timeMode).toBe('cycle');
+    expect(start.night).toBe(0);
+    await expect.poll(async () => (await state(page)).hours, { timeout: 5_000 }).toBeGreaterThan(start.hours + 0.02);
+    await page.evaluate(() => (window as any).__game.setTime(22));
+    await expect.poll(async () => (await state(page)).night).toBeGreaterThan(0.9);
+    expect((await state(page)).glow).toBeGreaterThan(1.3);
+    await expect(page.getByTestId('time-badge')).toContainText('10:00 PM');
+    await expect(page.getByTestId('time-badge')).toContainText('☾');
+  });
+
+  test('“Always daytime” holds the day and is remembered', async ({ page }) => {
+    await startPlanet(page);
+    await page.evaluate(() => {
+      (window as any).__game.setTime(22);
+      (window as any).__game.setTime(null);
+    });
+    await page.getByTestId('menu-button').click();
+    await page.getByRole('radio', { name: 'Always daytime' }).check();
+    // rendering idles while a dialog is open; the sky sweeps to the new time once it closes
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect.poll(async () => (await state(page)).hours, { timeout: 8_000 }).toBeCloseTo(10.5, 2);
+    expect((await state(page)).night).toBe(0);
+    expect(await page.evaluate(() => localStorage.getItem('site.timeMode'))).toBe('day');
+    await page.reload();
+    await startPlanet(page);
+    const s = await state(page);
+    expect(s.timeMode).toBe('day');
+    expect(s.hours).toBeCloseTo(10.5, 2);
+  });
+
+  test('pausing ambient motion freezes the clock', async ({ page }) => {
+    await startPlanet(page);
+    await page.getByTestId('menu-button').click();
+    await page.getByRole('checkbox', { name: 'Pause ambient motion' }).check();
+    await page.getByRole('button', { name: 'Close' }).click();
+    const h = (await state(page)).hours;
+    await page.waitForTimeout(1500);
+    expect((await state(page)).hours).toBe(h);
+  });
+});
+
+test.describe('player character', () => {
+  test('loads the rigged CC0 character model', async ({ page }) => {
+    const glb: string[] = [];
+    page.on('response', (r) => r.url().endsWith('/models/character.glb') && glb.push(String(r.status())));
+    await startPlanet(page);
+    await expect.poll(async () => (await state(page)).avatar, { timeout: 20_000 }).toBe('model');
+    expect(glb).toEqual(['200']);
+  });
+
+  test('falls back to the procedural avatar if the model cannot load', async ({ page }) => {
+    await page.route('**/models/character.glb', (r) => r.abort());
+    await startPlanet(page);
+    await page.waitForTimeout(1500);
+    expect((await state(page)).avatar).toBe('procedural');
+    // still fully playable
+    const before = await state(page);
+    await page.locator('.game-region').focus();
+    await page.keyboard.down('w');
+    await page.waitForTimeout(600);
+    await page.keyboard.up('w');
+    expect((await state(page)).pLocal[2]).toBeLessThan(before.pLocal[2]);
   });
 });
 
@@ -208,8 +311,12 @@ test.describe('planet', () => {
   test('reduced motion makes fast travel a short fade', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await startPlanet(page);
-    await page.evaluate(() => (window as any).__game.travelTo('greenhouse'));
+    await page.evaluate(() => {
+      (window as any).__game.pause();
+      (window as any).__game.travelTo('greenhouse');
+    });
     expect((await state(page)).traveling).toBe('fade');
+    await page.evaluate(() => (window as any).__game.resume());
     await expect.poll(async () => (await state(page)).nearby, { timeout: 5_000 }).toBe('greenhouse');
   });
 

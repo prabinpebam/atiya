@@ -1,231 +1,126 @@
-import { useMemo, useRef, type ReactNode } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Html, Outlines } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 import { useStore } from 'zustand';
-import { AdditiveBlending, Group, MeshBasicMaterial } from 'three';
+import { AdditiveBlending, ConeGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SphereGeometry } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import type { LandmarkData } from '../types';
 import { landmarkObjectQuaternion, type LandmarkGeometry } from '../math/landmarks';
 import { damp } from '../math/sphere';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
-import { PALETTE, toon } from './materials';
+import { KitModel } from './KitModel';
+import { landmarkModel } from './models';
 
 const R = CONFIG.planetRadius;
-const OUTLINE = <Outlines thickness={0.035} color={PALETTE.outline} />;
 
-interface Part {
-  accent: string;
-}
-
-function Box({ size, position, color, outline = true, rotation }: { size: [number, number, number]; position: [number, number, number]; color: string; outline?: boolean; rotation?: [number, number, number] }) {
-  return (
-    <mesh position={position} rotation={rotation} material={toon(color)} castShadow receiveShadow>
-      <boxGeometry args={size} />
-      {outline && OUTLINE}
-    </mesh>
-  );
-}
-
-function Roof({ radius, height, y, color }: { radius: number; height: number; y: number; color: string }) {
-  return (
-    <mesh position={[0, y + height / 2, 0]} rotation={[0, Math.PI / 4, 0]} material={toon(color)} castShadow>
-      <coneGeometry args={[radius, height, 4]} />
-      {OUTLINE}
-    </mesh>
-  );
-}
-
-function Workshop({ accent }: Part) {
-  return (
-    <>
-      <Box size={[2.2, 1.4, 1.8]} position={[0, 0.7, 0]} color={PALETTE.wall} />
-      <Roof radius={1.75} height={1.0} y={1.4} color={accent} />
-      <Box size={[0.32, 0.9, 0.32]} position={[0.62, 2.1, -0.35]} color="#6b5b55" />
-      <Box size={[0.6, 0.9, 0.06]} position={[0, 0.45, 0.91]} color={PALETTE.wood} outline={false} />
-      <Box size={[0.45, 0.4, 0.06]} position={[-0.7, 0.85, 0.91]} color={PALETTE.glass} outline={false} />
-      <Box size={[0.45, 0.4, 0.06]} position={[0.7, 0.85, 0.91]} color={PALETTE.glass} outline={false} />
-    </>
-  );
-}
-
-function TownHall({ accent }: Part) {
-  return (
-    <>
-      <Box size={[2.6, 1.3, 2.0]} position={[0, 0.65, 0]} color={PALETTE.wall} />
-      <Roof radius={1.95} height={0.8} y={1.3} color={PALETTE.roof} />
-      <Box size={[0.8, 1.7, 0.8]} position={[0, 2.0, 0]} color={PALETTE.wall} />
-      <mesh position={[0, 2.35, 0.41]} rotation={[Math.PI / 2, 0, 0]} material={toon('#ffffff')}>
-        <cylinderGeometry args={[0.28, 0.28, 0.05, 16]} />
-        <Outlines thickness={0.03} color={accent} />
-      </mesh>
-      <Roof radius={0.7} height={0.9} y={2.85} color={accent} />
-      <Box size={[0.7, 0.8, 0.06]} position={[0, 0.4, 1.01]} color={accent} outline={false} />
-    </>
-  );
-}
-
-function Lighthouse({ accent, paused }: Part & { paused: boolean }) {
-  const beam = useRef<Group>(null);
-  useFrame((_, dt) => {
-    if (beam.current && !paused) beam.current.rotation.y += dt * 0.8;
-  });
-  const beamMat = useMemo(() => new MeshBasicMaterial({ color: '#fff3a6', transparent: true, opacity: 0.35, depthWrite: false, blending: AdditiveBlending }), []);
-  const stripes = [0, 1, 2, 3];
-  return (
-    <>
-      {stripes.map((i) => (
-        <mesh key={i} position={[0, 0.55 + i * 1.05, 0]} material={toon(i % 2 ? accent : '#ffffff')} castShadow>
-          <cylinderGeometry args={[0.78 - (i + 1) * 0.07, 0.78 - i * 0.07, 1.05, 12]} />
-          {OUTLINE}
-        </mesh>
-      ))}
-      <mesh position={[0, 4.55, 0]} material={toon('#fff7cf')}>
-        <cylinderGeometry args={[0.42, 0.42, 0.55, 12]} />
-        {OUTLINE}
-      </mesh>
-      <mesh position={[0, 5.1, 0]} material={toon(accent)} castShadow>
-        <coneGeometry args={[0.55, 0.6, 12]} />
-        {OUTLINE}
-      </mesh>
-      <group ref={beam} position={[0, 4.55, 0]}>
-        <mesh position={[1.9, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={beamMat}>
-          <coneGeometry args={[0.55, 3.6, 16, 1, true]} />
-        </mesh>
-      </group>
-      <Box size={[0.5, 0.75, 0.06]} position={[0, 0.38, 0.76]} color={PALETTE.wood} outline={false} />
-    </>
-  );
-}
-
-function Library({ accent }: Part) {
-  const books = ['#e05d5d', '#f2b544', '#4f7cff', '#3fb67a'];
-  return (
-    <>
-      <Box size={[2.0, 1.5, 1.6]} position={[0, 0.75, 0]} color={PALETTE.wall} />
-      <Box size={[2.2, 0.18, 1.8]} position={[0, 1.59, 0]} color={accent} />
-      {books.map((c, i) => (
-        <Box key={c} size={[1.3 - i * 0.2, 0.34, 0.9 - i * 0.1]} position={[0, 1.86 + i * 0.36, 0]} rotation={[0, (i % 2 ? 1 : -1) * 0.18, 0]} color={c} />
-      ))}
-      <Box size={[0.6, 0.85, 0.06]} position={[0, 0.43, 0.81]} color={accent} outline={false} />
-    </>
-  );
-}
-
-function Amphitheater({ accent }: Part) {
-  const tiers = [1.0, 1.35, 1.7];
-  return (
-    <>
-      {tiers.map((r, i) => (
-        <mesh key={r} position={[0, 0.12 + i * 0.22, 0]} rotation={[-Math.PI / 2, 0, 0]} material={toon(i % 2 ? '#e8e1d3' : '#d8cdb8')} castShadow receiveShadow>
-          <torusGeometry args={[r, 0.16, 6, 20, Math.PI]} />
-        </mesh>
-      ))}
-      <Box size={[1.3, 0.22, 0.7]} position={[0, 0.11, 0.45]} color={PALETTE.wood} />
-      <mesh position={[-1.35, 1.3, 0.6]} material={toon('#6b6b75')} castShadow>
-        <cylinderGeometry args={[0.07, 0.09, 2.6, 6]} />
-      </mesh>
-      <Box size={[0.4, 0.3, 0.3]} position={[-1.35, 2.65, 0.6]} color={accent} />
-      <mesh position={[1.35, 1.3, 0.6]} material={toon('#6b6b75')} castShadow>
-        <cylinderGeometry args={[0.07, 0.09, 2.6, 6]} />
-      </mesh>
-      <Box size={[0.4, 0.3, 0.3]} position={[1.35, 2.65, 0.6]} color={accent} />
-    </>
-  );
-}
-
-function Greenhouse({ accent }: Part) {
-  const glass = useMemo(() => {
-    const m = toon(PALETTE.glass, 'greenhouse-glass').clone();
-    m.transparent = true;
-    m.opacity = 0.55;
-    m.depthWrite = false;
-    return m;
+function Beam({ at, paused, controller }: { at: [number, number, number]; paused: boolean; controller: GameController }) {
+  const ref = useRef<Group>(null);
+  const { geo, mat } = useMemo(() => {
+    const g = new ConeGeometry(0.55, 3.4, 20, 1, true);
+    g.rotateZ(Math.PI / 2);
+    g.translate(1.75, 0, 0);
+    return { geo: g, mat: new MeshBasicMaterial({ color: '#fff3a6', transparent: true, opacity: 0.28, depthWrite: false, blending: AdditiveBlending, side: DoubleSide }) };
   }, []);
-  return (
-    <>
-      <mesh position={[0, 0.15, 0]} material={toon(PALETTE.wood)} castShadow receiveShadow>
-        <cylinderGeometry args={[1.35, 1.4, 0.3, 16]} />
-        {OUTLINE}
-      </mesh>
-      <mesh position={[-0.4, 0.55, -0.2]} material={toon(accent)}>
-        <coneGeometry args={[0.35, 0.8, 6]} />
-      </mesh>
-      <mesh position={[0.45, 0.5, 0.1]} material={toon('#5cae4f')}>
-        <coneGeometry args={[0.3, 0.65, 6]} />
-      </mesh>
-      <mesh position={[0, 0.3, 0]} material={glass}>
-        <sphereGeometry args={[1.28, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <Outlines thickness={0.03} color={accent} />
-      </mesh>
-      <mesh position={[0, 1.7, 0]} material={toon(accent)}>
-        <sphereGeometry args={[0.14, 8, 6]} />
-      </mesh>
-    </>
-  );
-}
-
-function PostOffice({ accent, active }: Part & { active: boolean }) {
-  const flag = useRef<Group>(null);
   useFrame((_, dt) => {
-    if (flag.current) flag.current.rotation.z = damp(flag.current.rotation.z, active ? 0 : -Math.PI / 2, 10, dt);
+    if (ref.current && !paused) ref.current.rotation.y += dt * 0.7;
+    mat.opacity = 0.2 + 0.35 * controller.sky.night;
   });
   return (
-    <>
-      <Box size={[1.6, 1.2, 1.4]} position={[0, 0.6, -0.2]} color={PALETTE.wall} />
-      <Roof radius={1.25} height={0.7} y={1.2} color={accent} />
-      <Box size={[0.5, 0.7, 0.06]} position={[0, 0.35, 0.51]} color={accent} outline={false} />
-      <mesh position={[1.05, 0.6, 0.55]} material={toon('#6b6b75')}>
-        <cylinderGeometry args={[0.06, 0.06, 1.2, 6]} />
-      </mesh>
-      <Box size={[0.5, 0.4, 0.7]} position={[1.05, 1.3, 0.55]} color="#e05d5d" />
-      <group ref={flag} position={[1.33, 1.3, 0.75]}>
-        <Box size={[0.05, 0.5, 0.05]} position={[0, 0.25, 0]} color="#f2b544" outline={false} />
-        <Box size={[0.05, 0.16, 0.24]} position={[0, 0.45, 0.12]} color="#f2b544" outline={false} />
-      </group>
-    </>
+    <group ref={ref} position={at}>
+      <mesh geometry={geo} material={mat} />
+    </group>
   );
 }
 
-function Generic({ accent }: Part) {
+function Smoke({ at, paused }: { at: [number, number, number]; paused: boolean }) {
+  const puffs = useRef<Mesh[]>([]);
+  const t = useRef(0);
+  const { geo, mats } = useMemo(
+    () => ({
+      geo: new SphereGeometry(0.14, 12, 8),
+      mats: [0, 1, 2].map(() => new MeshStandardMaterial({ color: '#f4f1ec', roughness: 1, transparent: true, opacity: 0.85, depthWrite: false })),
+    }),
+    [],
+  );
+  useFrame((_, dt) => {
+    if (!paused) t.current += dt;
+    puffs.current.forEach((m, i) => {
+      if (!m) return;
+      const p = (t.current * 0.35 + i / 3) % 1;
+      m.position.set(Math.sin((p + i) * 3) * 0.08 + p * 0.25, p * 1.1, 0);
+      m.scale.setScalar(0.6 + p * 1.1);
+      mats[i].opacity = 0.8 * (1 - p);
+      m.visible = !paused;
+    });
+  });
   return (
-    <>
-      <Box size={[1.2, 2.2, 1.2]} position={[0, 1.1, 0]} color={accent} />
-      <Roof radius={1.0} height={0.8} y={2.2} color={PALETTE.roof} />
-    </>
+    <group position={at}>
+      {[0, 1, 2].map((i) => (
+        <mesh
+          key={i}
+          ref={(el) => {
+            if (el) puffs.current[i] = el;
+          }}
+          geometry={geo}
+          material={mats[i]}
+        />
+      ))}
+    </group>
   );
 }
 
-const HEIGHTS: Record<string, number> = {
-  workshop: 3.1,
-  'town-hall': 3.9,
-  lighthouse: 5.5,
-  library: 3.4,
-  amphitheater: 3.0,
-  greenhouse: 2.0,
-  'post-office': 2.2,
-};
+function Flag({ at, color, paused, pole = 2.2 }: { at: [number, number, number]; color: string; paused: boolean; pole?: number }) {
+  const cloth = useRef<Mesh>(null);
+  const t = useRef(0);
+  const { geo, mat, poleMat } = useMemo(() => {
+    const g = new PlaneGeometry(0.55, 0.36, 8, 1);
+    g.translate(0.275, 0, 0);
+    return {
+      geo: g,
+      mat: new MeshStandardMaterial({ color, side: DoubleSide, roughness: 0.8 }),
+      poleMat: new MeshStandardMaterial({ color: '#d8d8dc', roughness: 0.5, metalness: 0.3 }),
+    };
+  }, [color]);
+  useFrame((_, dt) => {
+    if (!cloth.current) return;
+    if (!paused) t.current += dt;
+    const pos = cloth.current.geometry.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      pos.setZ(i, Math.sin(t.current * 3 + x * 7) * 0.05 * x);
+    }
+    pos.needsUpdate = true;
+  });
+  return (
+    <group position={at}>
+      <mesh position={[0, pole / 2, 0]} material={poleMat} castShadow>
+        <cylinderGeometry args={[0.025, 0.03, pole, 8]} />
+      </mesh>
+      <mesh position={[0, pole + 0.03, 0]} material={poleMat}>
+        <sphereGeometry args={[0.05, 8, 6]} />
+      </mesh>
+      <mesh ref={cloth} geometry={geo} material={mat} position={[0.02, pole - 0.22, 0]} castShadow />
+    </group>
+  );
+}
 
-function Variant({ data, active, paused }: { data: LandmarkData; active: boolean; paused: boolean }): ReactNode {
-  const accent = data.accent;
-  switch (data.variant) {
-    case 'workshop':
-      return <Workshop accent={accent} />;
-    case 'town-hall':
-      return <TownHall accent={accent} />;
-    case 'lighthouse':
-      return <Lighthouse accent={accent} paused={paused} />;
-    case 'library':
-      return <Library accent={accent} />;
-    case 'amphitheater':
-      return <Amphitheater accent={accent} />;
-    case 'greenhouse':
-      return <Greenhouse accent={accent} />;
-    case 'post-office':
-      return <PostOffice accent={accent} active={active} />;
-    default:
-      return <Generic accent={accent} />;
-  }
+function MailFlag({ at, active }: { at: [number, number, number]; active: boolean }) {
+  const ref = useRef<Group>(null);
+  const mat = useMemo(() => new MeshStandardMaterial({ color: '#f2b544', roughness: 0.6 }), []);
+  useFrame((_, dt) => {
+    if (ref.current) ref.current.rotation.x = damp(ref.current.rotation.x, active ? 0 : Math.PI / 2, 10, dt);
+  });
+  return (
+    <group ref={ref} position={at}>
+      <mesh position={[0, 0.2, 0]} material={mat}>
+        <boxGeometry args={[0.04, 0.4, 0.04]} />
+      </mesh>
+      <mesh position={[0, 0.34, -0.1]} material={mat}>
+        <boxGeometry args={[0.03, 0.14, 0.2]} />
+      </mesh>
+    </group>
+  );
 }
 
 export function Landmark({ controller, geo, data }: { controller: GameController; geo: LandmarkGeometry; data: LandmarkData }) {
@@ -233,7 +128,8 @@ export function Landmark({ controller, geo, data }: { controller: GameController
   const reduced = useStore(controller.store, selectReducedMotion);
   const paused = useStore(controller.store, selectAmbientPaused);
   const body = useRef<Group>(null);
-  const ring = useMemo(() => new MeshBasicMaterial({ color: data.accent, transparent: true, opacity: 0.25, depthWrite: false }), [data.accent]);
+  const model = useMemo(() => landmarkModel(data.variant, data.accent), [data.variant, data.accent]);
+  const ring = useMemo(() => new MeshBasicMaterial({ color: data.accent, transparent: true, opacity: 0.0, depthWrite: false }), [data.accent]);
 
   const { position, quaternion } = useMemo(
     () => ({ position: geo.n.clone().multiplyScalar(R - 0.01), quaternion: landmarkObjectQuaternion(geo) }),
@@ -241,21 +137,19 @@ export function Landmark({ controller, geo, data }: { controller: GameController
   );
 
   useFrame((_, dt) => {
-    const target = active ? 1.06 : 1;
+    const target = active ? 1.035 : 1;
     const g = body.current;
     if (g) {
       const s = reduced ? target : damp(g.scale.x, target, 12, dt);
       g.scale.setScalar(s);
     }
-    ring.opacity = reduced ? (active ? 0.7 : 0.25) : damp(ring.opacity, active ? 0.7 : 0.25, 8, dt);
+    ring.opacity = reduced ? (active ? 0.65 : 0) : damp(ring.opacity, active ? 0.65 : 0, 8, dt);
   });
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     controller.travelTo(geo.id);
   };
-
-  const height = HEIGHTS[data.variant] ?? 3;
 
   return (
     <group
@@ -268,13 +162,17 @@ export function Landmark({ controller, geo, data }: { controller: GameController
       onPointerOut={() => (document.body.style.cursor = '')}
     >
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} material={ring}>
-        <ringGeometry args={[geo.footprintU + 0.15, geo.footprintU + 0.4, 32]} />
+        <ringGeometry args={[geo.footprintU + 0.2, geo.footprintU + 0.42, 48]} />
       </mesh>
       <group ref={body}>
-        <Variant data={data} active={active} paused={paused} />
+        <KitModel geo={model.geo} />
+        {model.anchors.beam && <Beam at={model.anchors.beam} paused={paused} controller={controller} />}
+        {model.anchors.smoke && <Smoke at={model.anchors.smoke} paused={paused} />}
+        {data.variant === 'town-hall' && model.anchors.flag && <Flag at={model.anchors.flag} color={data.accent} paused={paused} />}
+        {data.variant === 'post-office' && model.anchors.flag && <MailFlag at={model.anchors.flag} active={active} />}
       </group>
       {active && (
-        <Html position={[0, height + 0.5, 0]} center zIndexRange={[20, 0]} className="world-label-wrap">
+        <Html position={[0, model.height + 0.45, 0]} center zIndexRange={[20, 0]} className="world-label-wrap">
           <div className="world-label" aria-hidden="true" style={{ ['--accent' as string]: data.accent }}>
             {data.title}
           </div>
@@ -283,5 +181,3 @@ export function Landmark({ controller, geo, data }: { controller: GameController
     </group>
   );
 }
-
-export const LANDMARK_HEIGHTS = HEIGHTS;
