@@ -92,7 +92,7 @@ ${
 /**
  * Per-surface painted detail for the kit models (landmarks, plaza furniture, bridge). Each part
  * carries `aSurf` (index into SURFACES) and `aSurfUV` (tiles, in its own frame, see kit.ts):
- * wood grain, roof shingles, plaster, stone, brick, iron and canvas come from their own generated
+ * wood grain, roof shingles, plaster, stone, brick, iron, canvas and tree bark come from their own generated
  * greyscale tiles; plain painted parts keep the subtle brush grain (object-space triplanar).
  * Luminance only and normalised by each tile's mean, so every palette colour is kept.
  * Falls back to the brush grain alone if any surface tile is missing.
@@ -105,6 +105,7 @@ const SURFACE_TEX = [
   ['brick', 'surf-brick', 0.7],
   ['metal', 'surf-metal', 0.45],
   ['canvas', 'surf-canvas', 0.45],
+  ['bark', 'surf-bark', 0.62],
 ] as const;
 
 export function withSurfaceDetail(m: MeshStandardMaterial, grainStrength: number, grainScale: number): MeshStandardMaterial {

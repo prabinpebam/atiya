@@ -27,7 +27,7 @@ import { boulder, butterflyWing, flatCard, flowerBlooms, flowerStems, grassCards
 import { pondPlants } from './pondPlants';
 import { RIVER_WATER_U } from './terrain';
 import { Fireflies } from './DayNight';
-import { withStoneDetail } from './rockDetail';
+import { withStoneDetail, withSurfaceDetail } from './rockDetail';
 import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
@@ -57,10 +57,14 @@ function writeInstances(mesh: InstancedMesh, items: readonly PropInstance[], col
 /**
  * Wind sway (ambient motion; frozen under reduced motion). Mutates `material`. Everything that
  * sways shares the wind uniforms, so the whole planet leans the same way and gusts travel across
- * it as waves. `flutter` adds a fast per-vertex rustle (leaf cards).
+ * it as waves. `flutter` adds a fast per-vertex rustle (leaf cards). Chains onto any shader patch
+ * the material already has (e.g. the kit's surface detail on the tree trunks).
  */
 function addSway(material: Material, strength: number, from: number, key: string, flutter = 0): void {
-  material.onBeforeCompile = (shader) => {
+  const prev = material.onBeforeCompile.bind(material);
+  const prevKey = material.customProgramCacheKey.bind(material);
+  material.onBeforeCompile = (shader, renderer) => {
+    prev(shader, renderer);
     Object.assign(shader.uniforms, windUniforms);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${WIND_GLSL}`)
@@ -93,7 +97,7 @@ function addSway(material: Material, strength: number, from: number, key: string
   }`,
       );
   };
-  material.customProgramCacheKey = () => `wind-${key}-${strength}-${from}-${flutter}`;
+  material.customProgramCacheKey = () => `wind-${key}-${strength}-${from}-${flutter}|${prevKey()}`;
 }
 
 function swayMaterial(base: Material, strength: number, from: number, key = 'solid'): Material {
@@ -324,8 +328,11 @@ export function Props({ controller }: { controller: GameController }) {
     } else {
       grass = swayMaterial(base, 0.9, 0.0, 'grass');
     }
+    // trunks keep the kit's surface detail (the painted bark tile) under the sway
+    const tree = withSurfaceDetail((base as MeshStandardMaterial).clone(), 0.36, 1.1);
+    addSway(tree, 0.016, 1.2, 'tree');
     return {
-      tree: swayMaterial(base, 0.016, 1.2, 'tree'),
+      tree,
       bush: swayMaterial(base, 0.06, 0.1, 'bush'),
       grass,
       flower: swayMaterial(base, 0.55, 0.0, 'flower'),

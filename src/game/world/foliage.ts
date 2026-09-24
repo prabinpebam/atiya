@@ -14,7 +14,7 @@ import {
   type Material,
   type Texture,
 } from 'three';
-import { Kit, hash3, mix } from './kit';
+import { Kit, SURFACE_TILE_U, hash3, mix } from './kit';
 import { registerDaylit } from './materials';
 import { gameTexture } from './textures';
 
@@ -278,55 +278,159 @@ interface Ring {
   r: number;
 }
 
+/** World units per bark repeat (the kit's `bark` surface tile). */
+const BARK_TILE = SURFACE_TILE_U.bark;
+
 /**
- * Low-poly faceted tube: an irregular `sides`-gon swept along the spine `rings` (parallel-transport
- * frame, so it never flips), with per-vertex radial jitter and a slight twist. Non-indexed, so
- * `computeVertexNormals` gives flat facets (the chiselled low-poly bark look). The far end is capped.
+ * Builds a tube from rows of vertices (one row per ring, `sides` each, bottom to top). Indexed with
+ * a duplicated seam column, so normals are smooth around and along the tube (the painted bark
+ * texture carries the detail, not the facets). Bark UVs in world units: u wraps a whole number
+ * of bark tiles round the tube (no seam), v is the distance along each column so the grain
+ * follows ridges and roots. `cap` closes the far end with a small cone.
  */
-function facetedTube(rings: Ring[], sides: number, seed: number, jitter = 0.2, twist = 0.18): BufferGeometry {
+function ringStack(rows: Vector3[][], cap?: Vector3): BufferGeometry {
+  const n = rows.length;
+  const sides = rows[0].length;
+  const meanR =
+    rows.reduce((acc, row) => {
+      const c = row.reduce((a, v) => a.add(v), new Vector3()).divideScalar(sides);
+      return acc + row.reduce((a, v) => a + v.distanceTo(c), 0) / sides;
+    }, 0) / n;
+  const around = Math.max(1, Math.round((Math.PI * 2 * meanR) / BARK_TILE)) * BARK_TILE;
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  const along = new Array<number>(sides + 1).fill(0);
+  for (let i = 0; i < n; i++) {
+    for (let s = 0; s <= sides; s++) {
+      const v = rows[i][s % sides];
+      if (i > 0) along[s] += v.distanceTo(rows[i - 1][s % sides]);
+      pos.push(v.x, v.y, v.z);
+      uv.push((s / sides) * around, along[s]);
+    }
+  }
+  const w = sides + 1;
+  for (let i = 0; i < n - 1; i++) {
+    for (let s = 0; s < sides; s++) {
+      const a = i * w + s;
+      const d = a + w;
+      idx.push(a, a + 1, d + 1, a, d + 1, d);
+    }
+  }
+  if (cap) {
+    const top = n - 1;
+    const tip = pos.length / 3;
+    const topV = Math.max(...along);
+    pos.push(cap.x, cap.y, cap.z);
+    uv.push(around / 2, topV + cap.distanceTo(rows[top][0]));
+    // the cap gets its own copy of the last ring so its edge stays crisp
+    const base = pos.length / 3;
+    for (let s = 0; s <= sides; s++) {
+      const v = rows[top][s % sides];
+      pos.push(v.x, v.y, v.z);
+      uv.push((s / sides) * around, along[s]);
+    }
+    for (let s = 0; s < sides; s++) idx.push(base + s, base + s + 1, tip);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  // weld the seam's normals (the duplicated column only saw one side each)
+  const nor = g.getAttribute('normal');
+  const t = new Vector3();
+  for (let i = 0; i < n; i++) {
+    const a = i * w;
+    const b = a + sides;
+    t.set(nor.getX(a) + nor.getX(b), nor.getY(a) + nor.getY(b), nor.getZ(a) + nor.getZ(b)).normalize();
+    nor.setXYZ(a, t.x, t.y, t.z);
+    nor.setXYZ(b, t.x, t.y, t.z);
+  }
+  return g;
+}
+
+/**
+ * Low-poly tube: an irregular `sides`-gon swept along the spine `rings` (parallel-transport frame,
+ * so it never flips) with a little per-vertex radial jitter. Only as many rings as the shape needs
+ * (one per bend or taper change); long, straight panels run with the grain. `capped` closes the
+ * far end (tips that stick out; limbs ending inside the canopy stay open).
+ */
+function barkTube(rings: Ring[], sides: number, seed: number, jitter = 0.12, capped = false): BufferGeometry {
   const n = rings.length;
   const T = rings.map((_, i) => rings[Math.min(n - 1, i + 1)].p.clone().sub(rings[Math.max(0, i - 1)].p).normalize());
   const N = Math.abs(T[0].y) < 0.9 ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0);
   N.addScaledVector(T[0], -N.dot(T[0])).normalize();
   const q = new Quaternion();
-  const verts: Vector3[][] = [];
+  const rows: Vector3[][] = [];
+  const phase = hash3(seed, 2, 9) * Math.PI * 2;
   for (let i = 0; i < n; i++) {
     if (i > 0) N.applyQuaternion(q.setFromUnitVectors(T[i - 1], T[i])).normalize();
     const B = new Vector3().crossVectors(T[i], N);
     const row: Vector3[] = [];
     for (let s = 0; s < sides; s++) {
-      const a = (s / sides) * Math.PI * 2 + i * twist + (hash3(s, i, seed) - 0.5) * 0.35;
-      const rr = rings[i].r * (1 + (hash3(s + 7, i, seed + 3) - 0.5) * jitter);
+      // per-column angle and radius offsets (not per ring), so panels stay long and straight
+      const a = phase + (s / sides) * Math.PI * 2 + (hash3(s, seed, 1) - 0.5) * 0.3;
+      const rr = rings[i].r * (1 + (hash3(s + 7, seed + 3, 2) - 0.5) * jitter + (hash3(s, i, seed) - 0.5) * jitter * 0.4);
       row.push(rings[i].p.clone().addScaledVector(N, Math.cos(a) * rr).addScaledVector(B, Math.sin(a) * rr));
     }
-    verts.push(row);
+    rows.push(row);
   }
-  const pos: number[] = [];
-  const push = (...vs: Vector3[]) => vs.forEach((v) => pos.push(v.x, v.y, v.z));
-  for (let i = 0; i < n - 1; i++) {
-    for (let s = 0; s < sides; s++) {
-      const s2 = (s + 1) % sides;
-      const a = verts[i][s];
-      const b = verts[i][s2];
-      const c = verts[i + 1][s2];
-      const d = verts[i + 1][s];
-      push(a, b, c, a, c, d);
-    }
-  }
-  const end = rings[n - 1].p.clone().addScaledVector(T[n - 1], rings[n - 1].r * 0.5);
-  for (let s = 0; s < sides; s++) push(verts[n - 1][s], verts[n - 1][(s + 1) % sides], end);
-  const g = new BufferGeometry();
-  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
-  g.computeVertexNormals();
-  return g;
+  const cap = capped ? rings[n - 1].p.clone().addScaledVector(T[n - 1], rings[n - 1].r * 0.8) : undefined;
+  return ringStack(rows, cap);
 }
 
-/** Bark paint: each flat facet gets its own tone (hashed from its face normal); darker near the roots. */
+/**
+ * Root flare: the trunk's base as a stack of rings with three columns per buttress root: two for
+ * the root's rounded back and one valley between it and the next root, on the stem's circle (so
+ * the stem shows between the roots). The roots sweep out and down into the ground, so each is one
+ * strip of polygons that follows its own shape; the top ring tucks inside the stem's flats.
+ */
+function rootFlare(roots: number, rb: number, mergeY: number, mergeR: number, seed: number): BufferGeometry {
+  // [height, root reach, valley radius, root width] per ring as multiples of the base radius, bottom (underground) up
+  const profile: [number, number, number, number][] = [
+    [-0.55, 2.15, 1.04, 0.6],
+    [0.3, 1.88, 1.02, 0.85],
+    [0.78, 1.4, 0.97, 1.05],
+  ];
+  const step = (Math.PI * 2) / roots;
+  const phase = hash3(seed, 4, 1) * Math.PI * 2;
+  const angle = (j: number) => phase + j * step + (hash3(j % roots, seed, 3) - 0.5) * step * 0.3;
+  const reach = (j: number) => 0.72 + hash3(j, seed, 2) * 0.4;
+  const rows: Vector3[][] = [];
+  const ring = (y: number, root: (j: number) => number, valley: number, width: number) => {
+    const row: Vector3[] = [];
+    for (let j = 0; j < roots; j++) {
+      const a = angle(j);
+      const r = root(j);
+      const half = Math.min(step * 0.34, width / 2 / Math.max(r, 1e-3));
+      // long roots dip a little deeper as they run out
+      const dy = r > valley * 1.4 ? -(reach(j) - 0.72) * rb * 0.35 : 0;
+      // (angles run from +x towards −z, the same way round as barkTube, so the faces point outwards)
+      for (const da of [-half, half]) row.push(new Vector3(Math.cos(a + da) * r, y + dy, -Math.sin(a + da) * r));
+      const v = valley * (1 + (hash3(j, 5, seed) - 0.5) * 0.08);
+      const mid = (a + angle(j + 1)) / 2;
+      row.push(new Vector3(Math.cos(mid) * v, y, -Math.sin(mid) * v));
+    }
+    rows.push(row);
+  };
+  for (const [y, reachK, valley, width] of profile) {
+    ring(y * rb, (j) => (valley + (reachK - valley) * reach(j)) * rb, valley * rb, width * rb);
+  }
+  ring(mergeY, () => mergeR, mergeR, rb * 0.5);
+  return ringStack(rows);
+}
+
+/**
+ * Bark paint: darker at the roots, lighter up the trunk, with soft vertical streaks (hashed on a
+ * coarse grid that's stretched along y) so the tone runs with the grain rather than per facet.
+ * Upward-facing bark (the tops of the roots) is painted a touch darker, as the sun already lights it.
+ */
 function barkPaint(dark: string, light: string, topY: number) {
   return (p: Vector3, nrm: Vector3) => {
-    const facet = hash3(Math.round(nrm.x * 40), Math.round(nrm.y * 40), Math.round(nrm.z * 40));
+    const streak = hash3(Math.round(p.x * 11), Math.round(p.y * 2.5), Math.round(p.z * 11));
     const up = Math.min(1, Math.max(0, p.y / topY));
-    const t = 0.18 + up * 0.38 + (facet - 0.5) * 0.46 + Math.max(0, nrm.y) * 0.12;
+    const t = 0.2 + up * 0.36 + (streak - 0.5) * 0.24 - Math.max(0, nrm.y) * 0.08;
     return mix(dark, light, Math.min(1, Math.max(0, t)));
   };
 }
@@ -358,7 +462,7 @@ function spine(points: [number, number, number, number][], perSpan = 2): Ring[] 
 }
 
 interface TrunkSpec {
-  /** Trunk spine control points [x, y, z, radius], bottom (below ground) to top. */
+  /** Trunk spine control points [x, y, z, radius] from the root flare's knee to the top; one ring each. */
   trunk: [number, number, number, number][];
   /** Limbs: control points from inside the trunk out to (hidden inside) a canopy lobe. */
   limbs?: [number, number, number, number][][];
@@ -371,51 +475,45 @@ interface TrunkSpec {
   seed: number;
 }
 
-/** Low-poly trunk: faceted, tapering main stem, fin-like buttress roots, limbs and a few stubs. */
+/**
+ * Low-poly trunk, all on the kit's `bark` surface: a smooth-shaded 6-sided stem with one ring per
+ * control point, the buttress roots as one flare (see `rootFlare`), 4-sided limbs and a stub.
+ * Polygons follow the shape (a strip per root, long panels up the stem) and the painted bark tile
+ * fakes the ridges and furrows.
+ */
 function lowPolyTrunk(k: Kit, o: TrunkSpec) {
   const topY = o.trunk[o.trunk.length - 1][1];
   const paint = barkPaint(o.dark, o.light, topY);
-  k.add(facetedTube(spine(o.trunk, 2), 7, o.seed, 0.22, 0.12), paint);
-  const rb = o.base;
-  // buttress roots: start up the trunk, arc out and dive into the ground
-  for (let i = 0; i < o.roots; i++) {
-    const a = (i / o.roots) * Math.PI * 2 + hash3(i, o.seed, 1) * 0.6;
-    const len = 1.7 + hash3(i, o.seed, 2) * 0.6;
-    const dx = Math.cos(a);
-    const dz = Math.sin(a);
-    const pt = (f: number, y: number, r: number): [number, number, number, number] => [dx * rb * f, y, dz * rb * f, r];
-    const root = facetedTube(
-      spine([pt(0.35, rb * 1.3, rb * 0.46), pt(0.95, rb * 0.62, rb * 0.38), pt(len * 0.78, rb * 0.14, rb * 0.27), pt(len, -rb * 0.35, rb * 0.17)], 1),
-      4,
-      o.seed + i * 13,
-      0.25,
-      0.4,
-    );
-    k.add(root, paint);
-  }
-  for (const [i, limb] of (o.limbs ?? []).entries()) {
-    k.add(facetedTube(spine(limb, 2), 5, o.seed + 50 + i * 7, 0.2, 0.2), paint);
-  }
-  // broken-off branch stubs on the trunk
-  for (let i = 0; i < (o.stubs ?? 0); i++) {
-    const f = 0.35 + 0.3 * hash3(i, o.seed, 5);
-    const j = Math.min(o.trunk.length - 2, Math.floor(f * (o.trunk.length - 1)));
-    const [x, y, z, r] = o.trunk[j];
-    const a = hash3(i, o.seed, 6) * Math.PI * 2;
-    const out = new Vector3(Math.cos(a), 0.45, Math.sin(a)).normalize();
-    const s0 = new Vector3(x, y, z).addScaledVector(out, r * 0.5);
-    const s1 = s0.clone().addScaledVector(out, r * 0.9);
-    k.add(facetedTube([{ p: s0, r: r * 0.34 }, { p: s1, r: r * 0.24 }], 5, o.seed + 90 + i, 0.2, 0), paint);
-  }
+  const [x0, y0, z0, r0] = o.trunk[0];
+  const mergeY = Math.max(o.base * 1.8, y0 + 0.06);
+  k.surface('bark', () => {
+    // the stem starts inside the flare; the flare's top ring hides inside the stem's flats
+    k.add(barkTube([{ p: new Vector3(x0, -0.05, z0), r: o.base * 0.9 }, ...spine(o.trunk, 1)], 6, o.seed), paint);
+    k.add(rootFlare(o.roots, o.base, mergeY, r0 * 0.8, o.seed), paint, { p: [x0, 0, z0] });
+    for (const [i, limb] of (o.limbs ?? []).entries()) {
+      k.add(barkTube(spine(limb, 1), 4, o.seed + 50 + i * 7), paint);
+    }
+    // broken-off branch stubs on the trunk
+    for (let i = 0; i < (o.stubs ?? 0); i++) {
+      const f = 0.35 + 0.3 * hash3(i, o.seed, 5);
+      const j = Math.min(o.trunk.length - 2, Math.floor(f * (o.trunk.length - 1)));
+      const [x, y, z, r] = o.trunk[j];
+      const a = hash3(i, o.seed, 6) * Math.PI * 2;
+      const out = new Vector3(Math.cos(a), 0.45, Math.sin(a)).normalize();
+      const s0 = new Vector3(x, y, z).addScaledVector(out, r * 0.5);
+      const s1 = s0.clone().addScaledVector(out, r * 0.9);
+      k.add(barkTube([{ p: s0, r: r * 0.34 }, { p: s1, r: r * 0.24 }], 4, o.seed + 90 + i, 0.12, true), paint);
+    }
+  });
 }
 
 /** A limb from the trunk at height `y0` to a canopy lobe centre (ending well inside it). */
 function limbTo(y0: number, lobe: [number, number, number, number], r0: number, seed: number): [number, number, number, number][] {
   const [x, y, z] = lobe;
   const lift = 0.18 + hash3(seed, 1, 2) * 0.12;
+  // starts just inside the trunk (a hidden first span would only cost triangles)
   return [
-    [x * 0.05, y0 - 0.12, z * 0.05, r0 * 1.05],
-    [x * 0.18, y0, z * 0.18, r0],
+    [x * 0.1, y0 - 0.06, z * 0.1, r0 * 1.02],
     [x * 0.45, y0 + (y - y0) * 0.45 + lift, z * 0.45, r0 * 0.72],
     [x * 0.78, y - 0.05, z * 0.78, r0 * 0.46],
   ];
@@ -434,27 +532,23 @@ export function hardwood(fruit?: string): TreeGeometry {
   // chunky S-bent trunk that forks into a limb per side lobe and runs on up into the crown
   lowPolyTrunk(k, {
     trunk: [
-      [0, -0.12, 0, 0.36],
-      [0.01, 0.16, 0, 0.31],
-      [0.05, 0.55, 0.01, 0.27],
-      [0.07, 0.95, 0.02, 0.24],
-      [0.03, 1.3, 0.01, 0.2],
-      [-0.03, 1.72, -0.01, 0.15],
-      [0, 2.22, 0, 0.09],
+      [0, 0.5, 0, 0.29],
+      [0.07, 0.98, 0.02, 0.24],
+      [0.02, 1.38, 0.01, 0.19],
+      [-0.02, 2.1, 0, 0.1],
     ],
     limbs: lobes.slice(1).map((l, i) => limbTo(1.08 + i * 0.07, l, 0.12, i + 1)),
     roots: 5,
     base: 0.32,
-    stubs: 2,
+    stubs: 1,
     dark: '#6e3d20',
     light: '#c3844d',
     seed: 17,
   });
   // a few twigs poking out between the lobes
   for (const [i, [x, y, z]] of ([[-0.5, 1.55, 0.42], [0.52, 1.5, 0.4], [0.4, 1.62, -0.5]] as const).entries()) {
-    k.add(
-      facetedTube(spine([[x * 0.35, y - 0.18, z * 0.35, 0.05], [x * 0.7, y, z * 0.7, 0.035], [x, y + 0.14, z, 0.018]], 1), 4, 70 + i, 0.2, 0.3),
-      barkPaint('#6e3d20', '#c3844d', 2.2),
+    k.surface('bark', () =>
+      k.add(barkTube([{ p: new Vector3(x * 0.4, y - 0.16, z * 0.4), r: 0.045 }, { p: new Vector3(x, y + 0.14, z), r: 0.02 }], 3, 70 + i, 0.1, true), barkPaint('#6e3d20', '#c3844d', 2.2)),
     );
   }
   const core = (_p: Vector3, n: Vector3) => mix('#1a4724', '#2a6630', 0.4 + n.y * 0.5);
@@ -511,10 +605,8 @@ export function cedar(variant = 0): TreeGeometry {
   const [dark, mid, light] = CEDAR_TONES[variant % CEDAR_TONES.length];
   lowPolyTrunk(k, {
     trunk: [
-      [0, -0.1, 0, 0.24],
-      [0.01, 0.14, 0, 0.2],
-      [0.02, 0.5, 0.01, 0.16],
-      [0.01, 0.95, 0, 0.13],
+      [0.01, 0.34, 0, 0.18],
+      [0.02, 0.9, 0.01, 0.135],
       [0, 1.35, 0, 0.1],
     ],
     roots: 4,

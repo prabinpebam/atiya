@@ -44,6 +44,7 @@ TEXTURES: dict[str, tuple[str, int]] = {
     "surf-brick": ("mask", 512),
     "surf-metal": ("mask", 256),
     "surf-canvas": ("mask", 256),
+    "surf-bark": ("mask", 256),
     "plaza": ("decal", 1024),
     "leaf-broad": ("tint", 256),
     "leaf-single": ("tint", 128),

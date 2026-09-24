@@ -161,6 +161,16 @@ export const TEXTURES = {
     ],
     "bytes": 31724
   },
+  "surf-bark": {
+    "url": "/textures/surf-bark.webp",
+    "kind": "mask",
+    "mean": [
+      0.6089,
+      0.6089,
+      0.6089
+    ],
+    "bytes": 29744
+  },
   "plaza": {
     "url": "/textures/plaza.webp",
     "kind": "decal",

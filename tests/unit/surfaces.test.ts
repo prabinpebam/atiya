@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BoxGeometry, Matrix4 } from 'three';
+import { BoxGeometry, BufferGeometry, Float32BufferAttribute, Matrix4 } from 'three';
 import { Kit, SURFACES, SURFACE_TILE_U, colorize, surfaceUV } from '../../src/game/world/kit';
 
 /** UV span (max − min) of the given triangles' vertices, per axis. */
@@ -57,6 +57,23 @@ describe('kit surfaces', () => {
     // u across the (level) width, v up the height
     expect(du).toBeCloseTo(1 / SURFACE_TILE_U.brick, 5);
     expect(dv).toBeCloseTo(3 / SURFACE_TILE_U.brick, 5);
+  });
+
+  it("wraps bark with the part's own uv (world units → tiles) and drops the uv afterwards", () => {
+    const g = new BufferGeometry();
+    g.setAttribute('position', new Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3));
+    g.setAttribute('uv', new Float32BufferAttribute([0, 0, SURFACE_TILE_U.bark * 2, 0, 0, SURFACE_TILE_U.bark * 3], 2));
+    const geo = colorize(g, '#fff');
+    surfaceUV(geo, new Matrix4(), 'bark', 4);
+    const uv = geo.getAttribute('aSurfUV').array;
+    expect(uv[2] - uv[0]).toBeCloseTo(2, 5);
+    expect(uv[5] - uv[1]).toBeCloseTo(3, 5);
+    expect(geo.getAttribute('aSurf').getX(0)).toBe(SURFACES.indexOf('bark'));
+    expect(geo.getAttribute('uv')).toBeUndefined();
+    // other surfaces ignore (and drop) a primitive's own uv
+    const box = colorize(new BoxGeometry(1, 1, 1), '#fff');
+    surfaceUV(box, new Matrix4(), 'wood', 5);
+    expect(box.getAttribute('uv')).toBeUndefined();
   });
 
   it('measures tiles in world units, so scaled parts keep the same texel size', () => {

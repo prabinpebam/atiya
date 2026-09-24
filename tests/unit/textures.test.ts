@@ -59,7 +59,7 @@ describe('generated textures', () => {
   });
 
   it('ships a detail mask for every textured kit surface and the plaza decal', () => {
-    for (const name of ['surf-wood', 'surf-shingle', 'surf-plaster', 'surf-stone', 'surf-brick', 'surf-metal', 'surf-canvas']) {
+    for (const name of ['surf-wood', 'surf-shingle', 'surf-plaster', 'surf-stone', 'surf-brick', 'surf-metal', 'surf-canvas', 'surf-bark']) {
       const e = (TEXTURES as Record<string, { kind: string; mean?: readonly number[] }>)[name];
       expect(e?.kind, name).toBe('mask');
       // shader divides by the mean so the detail keeps the painted colour's brightness

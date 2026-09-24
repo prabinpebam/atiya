@@ -1,0 +1,6 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-25.
+Seamless tile: imagegen.py tile (base generation, then two masked seam-repair passes with tone-corrected compositing).
+Used as a greyscale detail mask (luminance only, normalised by its mean) on the tree trunks, roots, limbs and twigs (the kit's `bark` surface), wrapped round each tube so the grain runs along it; replaces the dense faceting that used to fake the bark.
+
+Prompt:
+Seamless tileable texture, flat front-on orthographic view of stylised hand-painted tree bark for a cozy storybook video game, like Animal Crossing / Ghibli painted backgrounds. Long vertical ridges and furrows running straight top to bottom, soft rounded plates between shallow dark cracks, a couple of subtle knots, gentle painterly brush strokes. Mid-grey greyscale values only (no colour), even lighting with no directional shadows, no perspective, no moss, no leaves, no text. Uniform density across the whole tile so it repeats without visible seams.

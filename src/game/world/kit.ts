@@ -28,14 +28,15 @@ import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferG
  * Surfaces: every part also records what it's made of (`aSurf`, an index into SURFACES) and a
  * texture coordinate in its own frame (`aSurfUV`, in tiles), so the shared kit material can
  * paint wood grain, roof shingles, plaster, stone, brick, iron or canvas detail per part. Wrap
- * parts in `k.surface('wood', () => …)`; untagged parts are plain painted surfaces.
+ * parts in `k.surface('wood', () => …)`; untagged parts are plain painted surfaces. Tree bark
+ * (`bark`) uses the part's own `uv` (world units, wrapped round the trunk by the tube builder).
  */
 export type Layer = 'solid' | 'glow' | 'glass';
 export type Paint = ColorRepresentation | ((p: Vector3, n: Vector3) => ColorRepresentation);
 export type V3 = [number, number, number];
 
 /** Surface kinds, in shader order (index = `aSurf`). */
-export const SURFACES = ['paint', 'wood', 'roof', 'plaster', 'stone', 'brick', 'metal', 'canvas'] as const;
+export const SURFACES = ['paint', 'wood', 'roof', 'plaster', 'stone', 'brick', 'metal', 'canvas', 'bark'] as const;
 export type Surface = (typeof SURFACES)[number];
 /** World units per texture repeat for each surface. */
 export const SURFACE_TILE_U: Record<Surface, number> = {
@@ -47,6 +48,7 @@ export const SURFACE_TILE_U: Record<Surface, number> = {
   brick: 0.8,
   metal: 0.6,
   canvas: 0.3,
+  bark: 0.9,
 };
 
 export interface Xf {
@@ -71,10 +73,10 @@ export function xfMatrix(xf: Xf = {}): Matrix4 {
   return new Matrix4().compose(new Vector3(...(xf.p ?? [0, 0, 0])), q, scale);
 }
 
-/** Convert to non-indexed position/normal/color so everything can be merged. */
+/** Convert to non-indexed position/normal/color (and `uv`, until surfaceUV consumes it) so everything can be merged. */
 export function colorize(g: BufferGeometry, color: Paint): BufferGeometry {
   const geo = g.index ? g.toNonIndexed() : g;
-  for (const name of Object.keys(geo.attributes)) if (name !== 'position' && name !== 'normal') geo.deleteAttribute(name);
+  for (const name of Object.keys(geo.attributes)) if (name !== 'position' && name !== 'normal' && name !== 'uv') geo.deleteAttribute(name);
   if (!geo.getAttribute('normal')) geo.computeVertexNormals();
   const pos = geo.getAttribute('position');
   const nor = geo.getAttribute('normal');
@@ -102,7 +104,9 @@ export function colorize(g: BufferGeometry, color: Paint): BufferGeometry {
  * own frame before it's transformed by `m`. Each triangle is box-projected onto the plane of its
  * dominant local axis (so a plank or a roof course keeps one orientation). The texture's
  * horizontal runs along the part's longer extent for wood (grain follows the board) and along the
- * more level axis for everything else (courses, shingle rows and weave stay horizontal).
+ * more level axis for everything else (courses, shingle rows and weave stay horizontal). Bark
+ * parts that bring their own `uv` (in world units) keep it, so the grain follows the trunk and roots.
+ * The part's `uv` is always dropped afterwards (merged parts must share one attribute set).
  */
 export function surfaceUV(geo: BufferGeometry, m: Matrix4, surface: Surface, seed: number): void {
   const pos = geo.getAttribute('position');
@@ -120,6 +124,17 @@ export function surfaceUV(geo: BufferGeometry, m: Matrix4, surface: Surface, see
   const uv = new Float32Array(pos.count * 2);
   const off = [hash3(seed, 1.3, 7.1), hash3(seed, 5.9, 2.4)];
   const n = new Vector3();
+  const own = geo.getAttribute('uv');
+  if (own) geo.deleteAttribute('uv');
+  if (surface === 'bark' && own) {
+    for (let v = 0; v < pos.count; v++) {
+      uv[v * 2] = own.getX(v) / tile + off[0];
+      uv[v * 2 + 1] = own.getY(v) / tile + off[1];
+    }
+    geo.setAttribute('aSurf', new Float32BufferAttribute(ids, 1));
+    geo.setAttribute('aSurfUV', new Float32BufferAttribute(uv, 2));
+    return;
+  }
   const pick = (i: number, j: number): [number, number] => {
     if (surface === 'wood') return extent[i] >= extent[j] ? [i, j] : [j, i];
     if (Math.abs(level[i] - level[j]) < 0.05) return extent[i] >= extent[j] ? [i, j] : [j, i];
