@@ -425,6 +425,32 @@ test.describe('landscape & wind', () => {
   });
 });
 
+test.describe('doors', () => {
+  test('a door opens as you walk up and shuts when you leave; after dusk lamplight spills out; the amphitheater raises its curtain', async ({ page }) => {
+    await startPlanet(page);
+    const doors = () => page.evaluate(() => (window as any).__game.doors() as Record<string, number>);
+    const light = () => page.evaluate(() => (window as any).__game.doorLight() as { id: string | null; intensity: number });
+    await page.evaluate(() => (window as any).__game.setTime(11));
+    await expect.poll(async () => Object.keys(await doors()).length).toBe(7);
+    expect(Object.values(await doors()).every((o) => o === 0)).toBe(true);
+    await page.evaluate(() => (window as any).__game.travelTo('workshop'));
+    await expect.poll(async () => (await doors()).workshop, { timeout: 10_000 }).toBe(1);
+    expect((await light()).id).toBeNull(); // daylight: no lamp needed
+    await page.evaluate(() => (window as any).__game.setTime(22));
+    await expect.poll(async () => (await light()).id).toBe('workshop');
+    expect((await light()).intensity).toBeGreaterThan(2);
+    // walk off to the amphitheater: the workshop shuts, the curtain goes up and the light follows
+    await page.evaluate(() => (window as any).__game.travelTo('amphitheater'));
+    await expect.poll(async () => (await doors()).amphitheater, { timeout: 10_000 }).toBe(1);
+    expect((await doors()).workshop).toBe(0);
+    await expect.poll(async () => (await light()).id).toBe('amphitheater');
+    // leaving it: the curtain comes down and the lamp goes out
+    await page.evaluate(() => (window as any).__game.teleport('plaza'));
+    await expect.poll(async () => (await doors()).amphitheater).toBe(0);
+    expect((await light()).id).toBeNull();
+  });
+});
+
 test.describe('player character', () => {
   test('loads the rigged CC0 character model', async ({ page }) => {
     const glb: string[] = [];

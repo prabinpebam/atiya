@@ -61,6 +61,10 @@ export class GameController {
   clockHands: { hour: number; minute: number; second: number } | null = null;
   /** Bridge lanterns: how many there are, how lit they are (0 by day … 1 at night) and their point lights' peak intensity. */
   readonly bridgeLamps = { count: 0, lit: 0, intensity: 0 };
+  /** Landmark doors (the amphitheater's curtain): how open each is (0 shut … 1 open) and where its warm light sits (planet space). */
+  readonly doors = new Map<string, { open: number; light: Vector3 | null }>();
+  /** The shared door light: the landmark it's shining from (null when dark) and its intensity. */
+  readonly doorLight: { id: string | null; intensity: number } = { id: null, intensity: 0 };
   /** Called when a fast travel lands (the avatar plays a little hop). */
   onArrive: (() => void) | null = null;
   /** Which avatar is on screen: the rigged model, or the procedural fallback (loading / failed). */

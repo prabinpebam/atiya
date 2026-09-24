@@ -40,6 +40,10 @@ export interface GameTestHook {
   clockHands(): { hour: number; minute: number; second: number } | null;
   /** Bridge lanterns: count, how lit they are (0…1) and their point lights' current intensity. */
   bridgeLamps(): { count: number; lit: number; intensity: number };
+  /** How open each landmark's door (or curtain) is, 0 shut … 1 open. */
+  doors(): Record<string, number>;
+  /** The shared warm door light: which landmark it's shining from (null when dark) and its intensity. */
+  doorLight(): { id: string | null; intensity: number };
   /** Ground under the player: smoothed lift, terrain height, walk height and distance to the river (u). */
   groundInfo(): {
     lift: number;
@@ -148,6 +152,8 @@ export function installTestHook(c: GameController): void {
     },
     clockHands: () => (c.clockHands ? { ...c.clockHands } : null),
     bridgeLamps: () => ({ ...c.bridgeLamps }),
+    doors: () => Object.fromEntries([...c.doors].map(([id, d]) => [id, d.open])),
+    doorLight: () => ({ ...c.doorLight }),
     groundInfo: () => {
       const p = c.sim.pLocal;
       const river = c.props.river;

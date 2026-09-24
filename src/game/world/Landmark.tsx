@@ -2,7 +2,25 @@ import { useMemo, useRef } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useStore } from 'zustand';
-import { AdditiveBlending, BoxGeometry, ConeGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SphereGeometry } from 'three';
+import {
+  AdditiveBlending,
+  BoxGeometry,
+  BufferGeometry,
+  CircleGeometry,
+  ConeGeometry,
+  CylinderGeometry,
+  DoubleSide,
+  Float32BufferAttribute,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  PlaneGeometry,
+  PointLight,
+  Quaternion,
+  SphereGeometry,
+  Vector3,
+} from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import type { LandmarkData } from '../types';
@@ -10,9 +28,14 @@ import { landmarkObjectQuaternion, type LandmarkGeometry } from '../math/landmar
 import { damp } from '../math/sphere';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import { clockHandAngles } from './clockFace';
+import { lampPoolMaterial, lampsOn } from './DayNight';
+import { curtainColumn, DOOR, smooth, stepOpen } from './doors';
+import type { KitGeometry, V3 } from './kit';
 import { KitModel } from './KitModel';
-import { landmarkModel } from './models';
-import { ARCH } from './parts';
+import { kitMaterials } from './materials';
+import { landmarkModel, type LandmarkModel } from './models';
+import { ARCH, type DoorLeaf } from './parts';
+import { withSurfaceDetail } from './rockDetail';
 
 const R = CONFIG.planetRadius;
 
@@ -176,6 +199,247 @@ function MailFlag({ at, active }: { at: [number, number, number]; active: boolea
   );
 }
 
+// ---------------------------------------------------------------------------
+// Doors that open as you come near, the rooms behind them, and their light at night
+// ---------------------------------------------------------------------------
+
+type Openness = { current: number };
+
+function DoorLeaves({ leaves, open }: { leaves: DoorLeaf[]; open: Openness }) {
+  const refs = useRef<(Group | null)[]>([]);
+  useFrame(() => {
+    const a = DOOR.swing * smooth(open.current);
+    leaves.forEach((l, i) => {
+      const g = refs.current[i];
+      if (g) g.rotation.y = l.dir * a;
+    });
+  });
+  return (
+    <>
+      {leaves.map((l, i) => (
+        <group key={i} position={l.hinge} ref={(el) => void (refs.current[i] = el)} name="door-leaf">
+          <KitModel geo={l.geo} shadows="receive" />
+        </group>
+      ))}
+    </>
+  );
+}
+
+let interiorMat: MeshStandardMaterial | null = null;
+
+/**
+ * Rooms behind the doors: the kit's surface detail plus a warm emissive that is tinted by each
+ * part's own colour (so the room reads as lamplit, not flat orange). Shared by every landmark; the
+ * glow depends only on the time of day.
+ */
+function interiorMaterial(): MeshStandardMaterial {
+  if (!interiorMat) {
+    const m = withSurfaceDetail(new MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0, emissive: '#ffcf96', emissiveIntensity: 0.2 }), 0.36, 1.1);
+    const prev = m.onBeforeCompile;
+    const prevKey = m.customProgramCacheKey.bind(m);
+    m.onBeforeCompile = (shader, renderer) => {
+      prev.call(m, shader, renderer);
+      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= diffuseColor.rgb;');
+    };
+    m.customProgramCacheKey = () => `${prevKey()}|interior-lit`;
+    interiorMat = m;
+  }
+  return interiorMat;
+}
+
+function Interior({ geo, open, controller }: { geo: KitGeometry; open: Openness; controller: GameController }) {
+  const group = useRef<Group>(null);
+  const mat = interiorMaterial();
+  useFrame(() => {
+    if (group.current) group.current.visible = open.current > 0.002;
+    mat.emissiveIntensity = 0.18 + 0.45 * lampsOn(controller.sky.night);
+  });
+  return (
+    <group ref={group} visible={false} name="interior">
+      {geo.solid && <mesh geometry={geo.solid} material={mat} receiveShadow />}
+      {geo.glow && <mesh geometry={geo.glow} material={kitMaterials().glow} />}
+    </group>
+  );
+}
+
+/** Ground height in a landmark's frame (its origin sits 0.01 under the sphere) at local x, z. */
+const groundY = (x: number, z: number) => Math.sqrt(Math.max(0, R * R - x * x - z * z)) - (R - 0.01);
+
+function DoorSpill({ spill, open, controller }: { spill: NonNullable<LandmarkModel['spill']>; open: Openness; controller: GameController }) {
+  const mesh = useRef<Mesh>(null);
+  const { geo, mat } = useMemo(() => {
+    // a soft trapezoid, bright at the threshold and fading outward and at the sides (vertex alpha)
+    const nx = 8;
+    const nz = 12;
+    const pos: number[] = [];
+    const col: number[] = [];
+    const idx: number[] = [];
+    for (let j = 0; j <= nz; j++)
+      for (let i = 0; i <= nx; i++) {
+        const u = i / nx;
+        const v = j / nz;
+        const w = spill.w * (1.1 + 1.5 * v);
+        const x = spill.p[0] + (u - 0.5) * w;
+        const z = spill.p[2] + v * spill.len;
+        pos.push(x, groundY(x, z) + 0.025, z);
+        const side = smooth(Math.min(1, u / 0.3)) * smooth(Math.min(1, (1 - u) / 0.3));
+        col.push(1, 0.78, 0.5, side * Math.pow(1 - v, 1.6));
+      }
+    for (let j = 0; j < nz; j++)
+      for (let i = 0; i < nx; i++) {
+        const a = j * (nx + 1) + i;
+        const b = a + nx + 1;
+        idx.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+    const g = new BufferGeometry();
+    g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new Float32BufferAttribute(col, 4));
+    g.setIndex(idx);
+    const m = new MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      fog: false,
+      opacity: 0,
+    });
+    return { geo: g, mat: m };
+  }, [spill]);
+  useFrame(() => {
+    mat.opacity = smooth(open.current) * lampsOn(controller.sky.night) * 0.8;
+    if (mesh.current) mesh.current.visible = mat.opacity > 0.003;
+  });
+  return <mesh ref={mesh} geometry={geo} material={mat} renderOrder={1} visible={false} name="door-spill" />;
+}
+
+/**
+ * The amphitheater's "door": a velvet festoon curtain across the band shell's arch. Its top follows
+ * the arch; as it opens the hem rises on five lift cords into a scalloped valance and the fabric
+ * gathers. The vertices are rewritten only while it moves.
+ */
+function Curtain({ spec, open }: { spec: NonNullable<LandmarkModel['curtain']>; open: Openness }) {
+  const NX = 41;
+  const NY = 10;
+  const last = useRef(-1);
+  const { geo, mat } = useMemo(() => {
+    const g = new BufferGeometry();
+    g.setAttribute('position', new Float32BufferAttribute(new Float32Array(NX * NY * 3), 3));
+    const col: number[] = [];
+    const red = [0.62, 0.1, 0.16];
+    const gold = [0.89, 0.66, 0.26];
+    for (let j = 0; j < NY; j++)
+      for (let i = 0; i < NX; i++) {
+        const fold = 0.82 + 0.18 * Math.cos((i / (NX - 1)) * Math.PI * 24);
+        const c = j === 0 ? gold : red.map((v) => v * fold);
+        col.push(c[0], c[1], c[2]);
+      }
+    g.setAttribute('color', new Float32BufferAttribute(col, 3));
+    const idx: number[] = [];
+    for (let j = 0; j < NY - 1; j++)
+      for (let i = 0; i < NX - 1; i++) {
+        const a = j * NX + i;
+        const b = a + NX;
+        idx.push(a, a + 1, b, a + 1, b + 1, b);
+      }
+    g.setIndex(idx);
+    return { geo: g, mat: new MeshStandardMaterial({ vertexColors: true, side: DoubleSide, roughness: 0.92 }) };
+  }, []);
+  useFrame(() => {
+    const e = smooth(open.current);
+    if (Math.abs(e - last.current) < 1e-4) return;
+    last.current = e;
+    const pos = geo.getAttribute('position') as Float32BufferAttribute;
+    const [px, py, pz] = spec.p;
+    const r = spec.r;
+    for (let i = 0; i < NX; i++) {
+      const u = i / (NX - 1);
+      const { x, top, bottom } = curtainColumn(u, e, r, py);
+      const pleat = Math.sin(u * Math.PI * 24) * 0.022 * (1 + e);
+      for (let j = 0; j < NY; j++) {
+        const v = j / (NY - 1);
+        const y = bottom + (top - bottom) * v;
+        const ruffle = e * 0.035 * Math.sin(v * Math.PI * 5) * (1 - v);
+        pos.setXYZ(j * NX + i, px + x, y, pz + pleat + ruffle);
+      }
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+    geo.computeBoundingSphere();
+  });
+  return <mesh geometry={geo} material={mat} castShadow name="curtain" />;
+}
+
+/** Stage spotlights for the amphitheater: soft beams and a pool of light on the stage while the curtain is up. */
+function StageLights({ spots, open, controller }: { spots: NonNullable<LandmarkModel['spots']>; open: Openness; controller: GameController }) {
+  const group = useRef<Group>(null);
+  const { beams, beamMat, pool, poolMat } = useMemo(() => {
+    const to = new Vector3(...spots.to);
+    const beamGeos = spots.from.map((f) => {
+      const from = new Vector3(...f);
+      const len = from.distanceTo(to);
+      const g = new ConeGeometry(0.42, len, 20, 1, true);
+      g.translate(0, -len / 2, 0); // apex at the lamp
+      g.applyQuaternion(new Quaternion().setFromUnitVectors(new Vector3(0, -1, 0), to.clone().sub(from).normalize()));
+      g.translate(from.x, from.y, from.z);
+      return g;
+    });
+    const c = new CircleGeometry(spots.pool, 32);
+    c.rotateX(-Math.PI / 2);
+    c.translate(to.x, to.y + 0.012, to.z);
+    return {
+      beams: beamGeos,
+      beamMat: new MeshBasicMaterial({ color: '#fff0c8', transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending, side: DoubleSide, fog: false }),
+      pool: c,
+      poolMat: lampPoolMaterial(),
+    };
+  }, [spots]);
+  useFrame(() => {
+    const e = smooth(open.current);
+    const on = lampsOn(controller.sky.night);
+    beamMat.opacity = e * (0.012 + 0.05 * on);
+    poolMat.opacity = e * (0.2 + 0.45 * on);
+    if (group.current) group.current.visible = e > 0.002;
+  });
+  return (
+    <group ref={group} visible={false} name="stage-lights">
+      {beams.map((g, i) => (
+        <mesh key={i} geometry={g} material={beamMat} renderOrder={2} />
+      ))}
+      <mesh geometry={pool} material={poolMat} renderOrder={1} />
+    </group>
+  );
+}
+
+/**
+ * One warm point light shared by every door: it sits just inside whichever doorway is most open
+ * and shines out after dusk (on the steps, the path and the character). It always stays in the
+ * scene (intensity 0 when unused) so the light count and shader programs never change.
+ */
+export function DoorLight({ controller }: { controller: GameController }) {
+  const light = useMemo(() => {
+    const l = new PointLight('#ffc27a', 0, 2.8, 1.5);
+    l.castShadow = false;
+    return l;
+  }, []);
+  useFrame(() => {
+    let id: string | null = null;
+    let best = 0;
+    for (const [k, d] of controller.doors) {
+      if (d.light && d.open > best) {
+        best = d.open;
+        id = k;
+        light.position.copy(d.light);
+      }
+    }
+    light.intensity = id ? 3.2 * smooth(best) * lampsOn(controller.sky.night) : 0;
+    controller.doorLight.id = light.intensity > 0 ? id : null;
+    controller.doorLight.intensity = light.intensity;
+  });
+  return <primitive object={light} />;
+}
+
 export function Landmark({ controller, geo, data }: { controller: GameController; geo: LandmarkGeometry; data: LandmarkData }) {
   const active = useStore(controller.store, (s) => s.nearbyId === geo.id && !s.traveling);
   const reduced = useStore(controller.store, selectReducedMotion);
@@ -189,7 +453,17 @@ export function Landmark({ controller, geo, data }: { controller: GameController
     [geo],
   );
 
+  const open = useMemo<Openness>(() => ({ current: 0 }), []);
+  const hasDoor = !!(model.doors?.length || model.curtain);
+  const lightAt = useMemo(() => (model.light ? new Vector3(...(model.light as V3)).applyQuaternion(quaternion).add(position) : null), [model, position, quaternion]);
+
   useFrame((_, dt) => {
+    if (hasDoor) {
+      open.current = stepOpen(open.current, active ? 1 : 0, dt, reduced);
+      const d = controller.doors.get(geo.id);
+      if (d) d.open = open.current;
+      else controller.doors.set(geo.id, { open: open.current, light: lightAt });
+    }
     const target = active ? 1.035 : 1;
     const g = body.current;
     if (g) {
@@ -225,7 +499,12 @@ export function Landmark({ controller, geo, data }: { controller: GameController
         {data.variant === 'town-hall' && model.anchors.flag && <Flag at={model.anchors.flag} color={data.accent} paused={paused} />}
         {model.anchors.clock && <ClockHands at={model.anchors.clock} controller={controller} paused={paused} />}
         {data.variant === 'post-office' && model.anchors.flag && <MailFlag at={model.anchors.flag} active={active} />}
+        {model.doors && <DoorLeaves leaves={model.doors} open={open} />}
+        {model.interior && <Interior geo={model.interior} open={open} controller={controller} />}
+        {model.curtain && <Curtain spec={model.curtain} open={open} />}
+        {model.spots && <StageLights spots={model.spots} open={open} controller={controller} />}
       </group>
+      {model.spill && <DoorSpill spill={model.spill} open={open} controller={controller} />}
       {active && (
         <Html position={[0, model.height + 0.45, 0]} center zIndexRange={[20, 0]} className="world-label-wrap">
           <div className="world-label" aria-hidden="true" style={{ ['--accent' as string]: data.accent }}>

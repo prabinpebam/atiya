@@ -1,5 +1,5 @@
-import { CylinderGeometry, type ColorRepresentation } from 'three';
-import { Kit, mix, type Surface, type V3, type Xf } from './kit';
+import { BoxGeometry, CylinderGeometry, type ColorRepresentation } from 'three';
+import { Kit, mix, type KitGeometry, type Surface, type V3, type Xf } from './kit';
 
 /** Shared palette for architecture (warm, pastel, "toy" materials). */
 export const ARCH = {
@@ -141,41 +141,87 @@ export function windowUnit(k: Kit, xf: Xf, o: { w: number; h: number; arch?: boo
   });
 }
 
-/** Panelled door facing +z; origin at the bottom centre of the doorway. */
-export function door(k: Kit, xf: Xf, o: { w: number; h: number; color?: ColorRepresentation; frame?: ColorRepresentation; double?: boolean; arch?: boolean; glassTop?: boolean }) {
+/** A door leaf built on its own so it can swing: `hinge` is its hinge axis (model space) and `dir` the sign of `rotation.y` that opens it inward. */
+export interface DoorLeaf {
+  geo: KitGeometry;
+  hinge: V3;
+  dir: 1 | -1;
+}
+
+/** A doorway in a front wall: centre x of the opening, its width and height above the plinth. */
+export interface Opening {
+  x: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Panelled door facing +z; origin (`xf.p`, translation only) at the bottom centre of the doorway.
+ * The frame (and an arched door's fixed tympanum) goes into `k`; each leaf is built separately with
+ * its hinge on the outer edge and is returned, so the landmark can swing it open into the room.
+ */
+export function door(
+  k: Kit,
+  xf: Xf,
+  o: { w: number; h: number; color?: ColorRepresentation; frame?: ColorRepresentation; double?: boolean; arch?: boolean; glassTop?: boolean; braces?: ColorRepresentation },
+): DoorLeaf[] {
   const color = o.color ?? ARCH.door;
   const frame = o.frame ?? ARCH.cream;
+  const at = xf.p ?? [0, 0, 0];
+  const leaves = o.double ? 2 : 1;
+  const lw = o.w / leaves;
+  const out: DoorLeaf[] = [];
+  for (let i = 0; i < leaves; i++) {
+    // leaf 0 hangs on the left edge and reaches +x; a second leaf hangs on the right edge
+    const side: 1 | -1 = i === 0 ? 1 : -1;
+    const kl = new Kit();
+    // hairline gaps at the hinge and where a pair meets, so the shut door has no slit of light
+    const a = 0.006;
+    const b = lw - (o.double ? 0.002 : 0.006);
+    const cx = (side * (a + b)) / 2;
+    const pw = lw * 0.62;
+    const lh = o.h - 0.015;
+    kl.group({ p: [0, 0.015, 0.04] }, () => {
+      kl.surface('wood', () => {
+        kl.box([b - a, lh, 0.08], color, { p: [cx, lh / 2, 0] }, 0.02);
+        kl.box([pw, lh * 0.34, 0.03], shade(color, 0.08), { p: [cx, lh * 0.27, 0.05] }, 0.015);
+        if (o.glassTop) kl.box([pw, lh * 0.3, 0.03], ARCH.glass, { p: [cx, lh * 0.72, 0.05] }, 0.015);
+        else kl.box([pw, lh * 0.3, 0.03], shade(color, 0.08), { p: [cx, lh * 0.72, 0.05] }, 0.015);
+        // the second leaf of a pair carries the astragal, a strip that covers the meeting edges
+        if (side < 0) kl.box([0.035, lh, 0.02], shade(color, -0.12), { p: [-b, lh / 2, 0.05] }, 0.006);
+        if (o.braces) {
+          // a diagonal brace from corner to corner, kept within the leaf
+          const bx = b - a - 0.08;
+          const by = lh * 0.86;
+          kl.box([0.04, Math.hypot(bx, by), 0.03], o.braces, { p: [cx, lh * 0.48, 0.1], r: [0, 0, -side * Math.atan2(bx, by)] }, 0.01);
+        }
+        // a plain inner face
+        kl.box([pw, lh * 0.8, 0.02], shade(color, -0.06), { p: [cx, lh / 2, -0.045] }, 0.008);
+      });
+      const hx = side * lw * (o.double ? 0.86 : 0.84);
+      kl.surface('metal', () => {
+        if (o.double) kl.box([0.035, 0.22, 0.05], ARCH.brass, { p: [hx, lh * 0.5, 0.07] }, 0.015);
+        else kl.sphere(0.045, ARCH.brass, { p: [hx, lh * 0.48, 0.08] }, [10, 8]);
+        kl.sphere(0.035, ARCH.brass, { p: [hx, lh * 0.48, -0.07] }, [8, 6]);
+      });
+    });
+    out.push({ geo: kl.build(), hinge: [at[0] - (side * o.w) / 2, at[1], at[2] - 0.04], dir: side });
+  }
   k.group(xf, () => {
-    const leaves = o.double ? 2 : 1;
-    const lw = o.w / leaves;
-    for (let i = 0; i < leaves; i++) {
-      const cx = -o.w / 2 + lw * (i + 0.5);
-      const pw = lw * 0.62;
-      k.surface('wood', () => {
-        k.box([lw - 0.02, o.h, 0.08], color, { p: [cx, o.h / 2, 0] }, 0.02);
-        // raised panels
-        k.box([pw, o.h * 0.34, 0.03], shade(color, 0.08), { p: [cx, o.h * 0.27, 0.05] }, 0.015);
-        if (o.glassTop) k.box([pw, o.h * 0.3, 0.03], ARCH.glass, { p: [cx, o.h * 0.72, 0.05] }, 0.015);
-        else k.box([pw, o.h * 0.3, 0.03], shade(color, 0.08), { p: [cx, o.h * 0.72, 0.05] }, 0.015);
-      });
-      // handle
-      const hx = o.double ? cx + (i === 0 ? lw * 0.36 : -lw * 0.36) : cx + lw * 0.34;
-      k.surface('metal', () => {
-        if (o.double) k.box([0.035, 0.22, 0.05], ARCH.brass, { p: [hx, o.h * 0.5, 0.07] }, 0.015);
-        else k.sphere(0.045, ARCH.brass, { p: [hx, o.h * 0.48, 0.08] }, [10, 8]);
-      });
-    }
-    // frame
     const f = 0.1;
     k.box([f, o.h + f, 0.14], frame, { p: [-o.w / 2 - f / 2, (o.h + f) / 2, 0.02] }, 0.03);
     k.box([f, o.h + f, 0.14], frame, { p: [o.w / 2 + f / 2, (o.h + f) / 2, 0.02] }, 0.03);
     if (o.arch) {
-      k.cyl(o.w / 2, o.w / 2, 0.06, shade(color, -0.1), { p: [0, o.h, -0.01], r: [Math.PI / 2, 0, 0] }, 20);
+      // fixed half-disc over the arch (the opening below it is rectangular)
+      k.surface('wood', () =>
+        k.add(new CylinderGeometry(o.w / 2, o.w / 2, 0.06, 20, 1, false, Math.PI / 2, Math.PI), shade(color, -0.1), { p: [0, o.h, -0.01], r: [Math.PI / 2, 0, 0] }),
+      );
       k.torus(o.w / 2 + f / 2, f / 2 + 0.01, frame, { p: [0, o.h, 0.03] }, Math.PI, [6, 20]);
     } else {
       k.box([o.w + f * 2.4, f * 1.3, 0.16], frame, { p: [0, o.h + f * 0.6, 0.03] }, 0.03);
     }
   });
+  return out;
 }
 
 export function steps(k: Kit, xf: Xf, o: { w: number; n: number; rise?: number; tread?: number; color?: ColorRepresentation }) {
@@ -194,13 +240,19 @@ export function steps(k: Kit, xf: Xf, o: { w: number; n: number; rise?: number; 
 // Walls
 // ---------------------------------------------------------------------------
 
+/** Thickness of hollow walls (a building with a doorway you can see into). */
+export const WALL_T = 0.09;
+
 /**
  * Box body with a stone plinth, corner pilasters and a cornice band. Origin at ground centre.
- * The body is `surface` (default plaster, or wood when it has clapboard siding).
+ * The body is `surface` (default plaster, or wood when it has clapboard siding). With an
+ * `opening` the body is hollow: four `WALL_T` walls, the front one a single piece with the
+ * doorway cut out of it (so its texture runs on unbroken round the door), and the pilasters
+ * hide the corner joints. The plinth stays solid and is the room's floor.
  */
 export function walls(
   k: Kit,
-  o: { w: number; d: number; h: number; color: ColorRepresentation; plinth?: number; trim?: ColorRepresentation; siding?: boolean; pilasters?: boolean; surface?: Surface },
+  o: { w: number; d: number; h: number; color: ColorRepresentation; plinth?: number; trim?: ColorRepresentation; siding?: boolean; pilasters?: boolean; surface?: Surface; opening?: Opening },
 ) {
   const plinth = o.plinth ?? 0.28;
   const trim = o.trim ?? ARCH.cream;
@@ -231,14 +283,70 @@ function plinthBlocks(k: Kit, o: { w: number; d: number }, plinth: number) {
   }
 }
 
-function wallBody(k: Kit, o: { w: number; d: number; h: number; color: ColorRepresentation; siding?: boolean }, plinth: number) {
-  k.box([o.w, o.h - plinth, o.d], o.color, { p: [0, plinth + (o.h - plinth) / 2, 0] }, 0.04);
+function wallBody(k: Kit, o: { w: number; d: number; h: number; color: ColorRepresentation; siding?: boolean; opening?: Opening }, plinth: number) {
+  const hh = o.h - plinth;
+  if (!o.opening) k.box([o.w, hh, o.d], o.color, { p: [0, plinth + hh / 2, 0] }, 0.04);
+  else {
+    const t = WALL_T;
+    const b = 0.015; // bevel: the extruded front grows by this on every side
+    const op = o.opening;
+    const x0 = op.x - op.w / 2 - b;
+    const x1 = op.x + op.w / 2 + b;
+    const xe = o.w / 2 - t + b;
+    k.extrude(
+      [
+        [-xe, 0],
+        [x0, 0],
+        [x0, op.h + b],
+        [x1, op.h + b],
+        [x1, 0],
+        [xe, 0],
+        [xe, hh],
+        [-xe, hh],
+      ],
+      t,
+      o.color,
+      { p: [0, plinth, o.d / 2 - t / 2 - b] },
+      b,
+    );
+    k.box([o.w - 2 * t, hh, t], o.color, { p: [0, plinth + hh / 2, -o.d / 2 + t / 2] }, 0.04);
+    for (const s of [-1, 1]) k.box([t, hh, o.d], o.color, { p: [s * (o.w / 2 - t / 2), plinth + hh / 2, 0] }, 0.04);
+  }
   if (o.siding) {
-    const rows = Math.round((o.h - plinth) / 0.2);
-    for (let i = 1; i < rows; i++) {
-      const y = plinth + i * ((o.h - plinth) / rows);
-      k.box([o.w + 0.02, 0.03, o.d + 0.02], shade(o.color, -0.12), { p: [0, y, 0] }, 0.012);
+    const rows = Math.round(hh / 0.2);
+    const ys: number[] = [];
+    for (let i = 1; i < rows; i++) ys.push(plinth + i * (hh / rows));
+    courses(k, { w: o.w, d: o.d, ys, color: shade(o.color, -0.12), th: 0.03, out: 0.01, opening: o.opening, plinth });
+  }
+}
+
+/**
+ * Horizontal course lines (siding boards, brick or stone bands) standing `out` proud of the walls
+ * all round the body. Round a doorway they're separate plain strips (a centimetre proud, so the
+ * bevel wouldn't show), broken at the opening so none of them crosses it.
+ */
+export function courses(k: Kit, o: { w: number; d: number; ys: number[]; color: ColorRepresentation; th: number; out: number; opening?: Opening; plinth?: number }) {
+  const dz = o.out * 2 + 0.02;
+  const strip = (sx: number, sz: number, x: number, y: number, z: number) => k.add(new BoxGeometry(sx, o.th, sz), o.color, { p: [x, y, z] });
+  for (const y of o.ys) {
+    if (!o.opening) {
+      k.box([o.w + o.out * 2, o.th, o.d + o.out * 2], o.color, { p: [0, y, 0] }, Math.min(0.012, o.th / 2 - 1e-3));
+      continue;
     }
+    strip(o.w + o.out * 2, dz, 0, y, -o.d / 2);
+    for (const s of [-1, 1]) strip(dz, o.d + o.out * 2, s * (o.w / 2), y, 0);
+    const op = o.opening;
+    const top = (o.plinth ?? 0.28) + op.h;
+    if (y > top + o.th) {
+      strip(o.w + o.out * 2, dz, 0, y, o.d / 2);
+      continue;
+    }
+    const a = -o.w / 2 - o.out;
+    const b = op.x - op.w / 2;
+    const c = op.x + op.w / 2;
+    const e = o.w / 2 + o.out;
+    if (b - a > 0.02) strip(b - a, dz, (a + b) / 2, y, o.d / 2);
+    if (e - c > 0.02) strip(e - c, dz, (c + e) / 2, y, o.d / 2);
   }
 }
 

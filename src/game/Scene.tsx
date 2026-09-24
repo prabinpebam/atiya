@@ -8,7 +8,7 @@ import type { Group } from 'three';
 import type { GameController } from './controller';
 import { DioramaCamera } from './camera/DioramaCamera';
 import { Player } from './player/Player';
-import { Landmark } from './world/Landmark';
+import { DoorLight, Landmark } from './world/Landmark';
 import { Planet } from './world/Planet';
 import { Plaza } from './world/Plaza';
 import { Props } from './world/Props';
@@ -152,6 +152,7 @@ export function Scene({ controller }: { controller: GameController }) {
         {controller.geos.map((g) => (
           <Landmark key={g.id} controller={controller} geo={g} data={controller.dataById.get(g.id)!} />
         ))}
+        <DoorLight controller={controller} />
       </group>
       <Player controller={controller} />
       <PostFX controller={controller} />
