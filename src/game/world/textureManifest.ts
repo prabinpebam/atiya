@@ -76,11 +76,6 @@ export const TEXTURES = {
     "kind": "tint",
     "bytes": 13410
   },
-  "needle": {
-    "url": "/textures/needle.webp",
-    "kind": "tint",
-    "bytes": 20506
-  },
   "leaf-single": {
     "url": "/textures/leaf-single.webp",
     "kind": "tint",
@@ -95,6 +90,17 @@ export const TEXTURES = {
     "url": "/textures/moon.webp",
     "kind": "sprite",
     "bytes": 15122
+  },
+  "conifer-atlas": {
+    "url": "/textures/conifer-atlas.webp",
+    "kind": "tint",
+    "bytes": 78050,
+    "cells": [
+      "conifer-clump",
+      "conifer-bough",
+      "conifer-tufts",
+      "conifer-crown"
+    ]
   }
 } as const;
 

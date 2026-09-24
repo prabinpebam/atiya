@@ -24,7 +24,7 @@ describe('generated textures', () => {
   const entries = Object.entries(TEXTURES) as [string, { url: string; kind: string; bytes: number; mean?: readonly number[] }][];
 
   it('ships every ground layer, foliage sprite and the moon', () => {
-    for (const name of ['grass', 'dirt', 'cobble', 'sand', 'riverbed', 'rock', 'water', 'leaf-broad', 'needle', 'leaf-single', 'grass-card', 'moon']) {
+    for (const name of ['grass', 'dirt', 'cobble', 'sand', 'riverbed', 'rock', 'water', 'leaf-broad', 'conifer-atlas', 'leaf-single', 'grass-card', 'moon']) {
       expect(TEXTURES).toHaveProperty(name);
     }
   });

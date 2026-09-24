@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+
+Prompt:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A rounded, puffy clump of soft evergreen fir foliage seen from the side: layered drooping sprays of short painterly needles forming an organic, roughly circular cluster with a scalloped, irregular edge, slightly heavier at the bottom, filling the frame; fresh cool greens with lighter tips and darker undersides; clean crisp silhouette; isolated on a transparent background, no trunk, no branch visible, no ground, no shadow

@@ -1,0 +1,14 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, generated 2026-09-24.
+2x2 tintable atlas built by scripts/build-textures.py from four transparent sprites (cells: top-left clump, top-right bough, bottom-left tufts, bottom-right crown).
+
+conifer-clump:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A rounded, puffy clump of soft evergreen fir foliage seen from the side: layered drooping sprays of short painterly needles forming an organic, roughly circular cluster with a scalloped, irregular edge, slightly heavier at the bottom, filling the frame; fresh cool greens with lighter tips and darker undersides; clean crisp silhouette; isolated on a transparent background, no trunk, no branch visible, no ground, no shadow
+
+conifer-bough:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A wide drooping evergreen cedar bough seen from the side: a fan of soft layered needle sprays hanging down and outward from the top centre, with an organic scalloped irregular lower edge, wider than tall, filling the frame; fresh cool greens with lighter tips and darker undersides; clean crisp silhouette; isolated on a transparent background, no trunk, no branch visible, no ground, no shadow
+
+conifer-tufts:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A cloud-shaped cluster of three or four overlapping round tufts of soft short pine needles, lumpy organic outline like a little cumulus cloud, filling the frame; fresh cool greens with lighter tips and darker undersides; clean crisp silhouette; isolated on a transparent background, no trunk, no branch visible, no ground, no shadow
+
+conifer-crown:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. The pointed top of a small evergreen tree: a slender upright cluster of soft layered needle sprays converging to a gently leaning pointed tip at the top centre, organic irregular sides, taller than wide, filling the frame; fresh cool greens with lighter tips and darker undersides; clean crisp silhouette; isolated on a transparent background, no trunk, no branch visible, no ground, no shadow

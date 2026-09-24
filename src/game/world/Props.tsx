@@ -268,7 +268,7 @@ export function Props({ controller }: { controller: GameController }) {
       hardwood: hardwood(),
       apple: hardwood('#e8453c'),
       orange: hardwood('#ff9a2e'),
-      cedar: cedar(),
+      cedars: [cedar(0), cedar(1), cedar(2)],
       bush: leafyBush(),
       flowerBush: leafyBush('#ff7fa8'),
       rock: rock(),
@@ -333,8 +333,15 @@ export function Props({ controller }: { controller: GameController }) {
           <Instanced geometry={g.leaves} material={mats.broad.material} depthMaterial={mats.broad.depth} items={items} colorFor={tint} />
         </group>
       ))}
-      <Instanced geometry={geo.cedar.solid} material={mats.tree} items={layout.cedar} colorFor={tint} />
-      <Instanced geometry={geo.cedar.leaves} material={mats.needle.material} depthMaterial={mats.needle.depth} items={layout.cedar} colorFor={tint} />
+      {geo.cedars.map((g, v) => {
+        const items = layout.cedar.filter((_, i) => i % geo.cedars.length === v);
+        return (
+          <group key={`cedar-${v}`}>
+            <Instanced geometry={g.solid} material={mats.tree} items={items} colorFor={tint} />
+            <Instanced geometry={g.leaves} material={mats.needle.material} depthMaterial={mats.needle.depth} items={items} colorFor={tint} />
+          </group>
+        );
+      })}
       <Instanced geometry={geo.bush.solid} material={mats.bush} items={layout.bushes} colorFor={tint} />
       <Instanced geometry={geo.bush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.bushes} colorFor={tint} />
       <Instanced geometry={geo.flowerBush.solid} material={mats.bush} items={layout.flowerBushes} colorFor={tint} />

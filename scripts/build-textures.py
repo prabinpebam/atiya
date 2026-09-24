@@ -35,15 +35,20 @@ TEXTURES: dict[str, tuple[str, int]] = {
     "water": ("mask", 512),
     "paint-grain": ("mask", 256),
     "leaf-broad": ("tint", 256),
-    "needle": ("tint", 256),
     "leaf-single": ("tint", 128),
     "grass-card": ("tint", 256),
     "moon": ("sprite", 256),
 }
-# how a sprite sits in its square card: bottom = base touches the bottom edge (stems, grass)
-ALIGN = {"leaf-broad": "bottom", "grass-card": "bottom", "needle": "center", "leaf-single": "center", "moon": "center"}
+# tintable 2×2 atlases: name -> (cell sources in order [top-left, top-right, bottom-left, bottom-right], size)
+ATLASES: dict[str, tuple[list[str], int]] = {
+    "conifer-atlas": (["conifer-clump", "conifer-bough", "conifer-tufts", "conifer-crown"], 512),
+}
+# how a sprite sits in its square card: bottom = base touches the bottom edge (stems, grass, crown),
+# top = hangs from the top edge (boughs)
+ALIGN = {"leaf-broad": "bottom", "grass-card": "bottom", "leaf-single": "center", "moon": "center",
+         "conifer-clump": "center", "conifer-bough": "top", "conifer-tufts": "center", "conifer-crown": "bottom"}
 # minimum width/height ratio: narrow sprites are widened so the cards keep their coverage
-MIN_ASPECT = {"needle": 0.8}
+MIN_ASPECT: dict[str, float] = {}
 
 
 def srgb_to_linear(c: np.ndarray) -> np.ndarray:
@@ -102,7 +107,7 @@ def fit_sprite(im: Image.Image, size: int, align: str, min_aspect: float = 0.0) 
     im = im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
     card = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     x = (size - im.width) // 2
-    y = size - im.height if align == "bottom" else (size - im.height) // 2
+    y = size - im.height if align == "bottom" else 0 if align == "top" else (size - im.height) // 2
     card.alpha_composite(im, (x, y))
     return card
 
@@ -156,6 +161,20 @@ def main() -> None:
         entry["bytes"] = n
         manifest[name] = entry
         print(f"{name:12s} {kind:6s} {size:4d}px  {n / 1024:6.1f} KB")
+
+    for name, (cells, size) in ATLASES.items():
+        if not all((SRC / f"{c}.png").exists() for c in cells):
+            print(f"skip {name}: missing a cell source")
+            continue
+        half = size // 2
+        atlas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        for i, c in enumerate(cells):
+            sprite = tint_sprite(fit_sprite(Image.open(SRC / f"{c}.png"), half, ALIGN.get(c, "center"), MIN_ASPECT.get(c, 0.0)))
+            atlas.alpha_composite(sprite, ((i % 2) * half, (i // 2) * half))
+        n = save_webp(bleed(atlas), OUT / f"{name}.webp")
+        total += n
+        manifest[name] = {"url": f"/textures/{name}.webp", "kind": "tint", "bytes": n, "cells": cells}
+        print(f"{name:12s} atlas  {size:4d}px  {n / 1024:6.1f} KB")
 
     # landing key art + social card
     hero = SRC / "landing-hero.png"

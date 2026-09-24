@@ -50,7 +50,7 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
     - Materials read textures with `gameTexture(name)` (preloaded before mount), and **must** fall back to the procedural look when it returns null.
     - Ground layers are divided by the tile's `textureMean` so the palette is unchanged.
     - The kit geometry has no UVs: use triplanar sampling (`TRIPLANAR_GLSL`) in planet- or object-local space, or add a purpose-built UV attribute (like the cliffs' `aRockUV`). Directional patterns such as strata criss-cross under triplanar projection.
-    - Foliage sprites are tintable greyscale, and alpha cards need a matching depth material.
+    - Foliage sprites are tintable greyscale, and alpha cards need a matching depth material. Several sprites can share one texture as a 2×2 atlas (`ATLASES` in the build script; `Cards.add(…, uvRect)` picks the cell), which keeps them to a single draw call. Give repeated props a few seeded geometry variants (like `cedar(variant)`) rather than one identical model.
     - Keep game textures ≤ 512² and the total ≤ 1.5 MB (the unit test enforces this).
   - Check triangle counts with `tests/unit/triangles.report.test.ts` (unskip locally) and `window.__game.renderInfo()`.
   - Windows is case-insensitive: never create module names that differ only by case.
