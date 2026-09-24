@@ -389,9 +389,35 @@ function buildBridge(b: Bridge) {
   // deck height in the flat kit frame: the arch, minus the sphere's fall-off away from the centre
   const deck = (z: number) => bridgeArch(z, L) - (z * z) / (2 * R);
   const slope = (z: number) => (deck(z + 0.01) - deck(z - 0.01)) / 0.02;
+  k.surface('wood', () => bridgeTimber(k, L, W, deck, slope));
+  // stone abutments on both banks
+  for (const s of [-1, 1]) {
+    const z = s * (L - 0.12);
+    const y = deck(z);
+    k.surface('stone', () => {
+      k.box([2 * W + 0.1, 0.38, 0.42], ARCH.stone, { p: [0, y - 0.24, z] }, 0.06);
+      for (let i = 0; i < 4; i++) {
+        k.blob(0.12 + 0.04 * hash3(i, s, 3), shade(ARCH.stoneDark, (hash3(i, 4, s) - 0.5) * 0.2), { p: [(i - 1.5) * 0.46, y - 0.34, z + s * 0.22], s: [1.2, 0.7, 1] }, 1, 'solid', 0.2, i);
+      }
+    });
+    // a little lantern on one post at each end (glows at night)
+    const x = s < 0 ? -W + 0.04 : W - 0.04;
+    const zl = s * (L - 0.08);
+    const yl = deck(zl);
+    k.surface('metal', () => {
+      k.box([0.05, 0.28, 0.05], ARCH.iron, { p: [x, yl + 0.66, zl] }, 0.01);
+      k.box([0.14, 0.16, 0.14], ARCH.iron, { p: [x, yl + 0.86, zl] }, 0.02);
+      k.box([0.1, 0.12, 0.1], ARCH.lit, { p: [x, yl + 0.86, zl] }, 0.01, 'glow');
+      k.cone(0.11, 0.08, ARCH.iron, { p: [x, yl + 0.98, zl] }, 8);
+    });
+  }
+  return k.build();
+}
+
+/** The bridge's planks, stringers and rails. */
+function bridgeTimber(k: Kit, L: number, W: number, deck: (z: number) => number, slope: (z: number) => number) {
   const wood = ARCH.wood;
   const plank = (i: number) => shade(wood, (hash3(i, 2, 5) - 0.5) * 0.18);
-
   // planks across the deck
   const n = Math.round((2 * L) / 0.17);
   for (let i = 0; i <= n; i++) {
@@ -424,24 +450,6 @@ function buildBridge(b: Bridge) {
       k.box([0.05, 0.04, z1 - z0 + 0.01], shade(wood, -0.05), { p: [x, deck(zm) + 0.18, zm], r: [-Math.atan(slope(zm)), 0, 0] }, 0.01);
     }
   }
-  // stone abutments on both banks
-  for (const s of [-1, 1]) {
-    const z = s * (L - 0.12);
-    const y = deck(z);
-    k.box([2 * W + 0.1, 0.38, 0.42], ARCH.stone, { p: [0, y - 0.24, z] }, 0.06);
-    for (let i = 0; i < 4; i++) {
-      k.blob(0.12 + 0.04 * hash3(i, s, 3), shade(ARCH.stoneDark, (hash3(i, 4, s) - 0.5) * 0.2), { p: [(i - 1.5) * 0.46, y - 0.34, z + s * 0.22], s: [1.2, 0.7, 1] }, 1, 'solid', 0.2, i);
-    }
-    // a little lantern on one post at each end (glows at night)
-    const x = s < 0 ? -W + 0.04 : W - 0.04;
-    const zl = s * (L - 0.08);
-    const yl = deck(zl);
-    k.box([0.05, 0.28, 0.05], ARCH.iron, { p: [x, yl + 0.66, zl] }, 0.01);
-    k.box([0.14, 0.16, 0.14], ARCH.iron, { p: [x, yl + 0.86, zl] }, 0.02);
-    k.box([0.1, 0.12, 0.1], ARCH.lit, { p: [x, yl + 0.86, zl] }, 0.01, 'glow');
-    k.cone(0.11, 0.08, ARCH.iron, { p: [x, yl + 0.98, zl] }, 8);
-  }
-  return k.build();
 }
 
 export function Bridges({ controller }: { controller: GameController }) {

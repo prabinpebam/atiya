@@ -64,12 +64,97 @@ export const TEXTURES = {
   "water": {
     "url": "/textures/water.webp",
     "kind": "mask",
+    "mean": [
+      0.2065,
+      0.2065,
+      0.2065
+    ],
     "bytes": 60404
   },
   "paint-grain": {
     "url": "/textures/paint-grain.webp",
     "kind": "mask",
+    "mean": [
+      0.5265,
+      0.5265,
+      0.5265
+    ],
     "bytes": 32524
+  },
+  "surf-wood": {
+    "url": "/textures/surf-wood.webp",
+    "kind": "mask",
+    "mean": [
+      0.5349,
+      0.5349,
+      0.5349
+    ],
+    "bytes": 76614
+  },
+  "surf-shingle": {
+    "url": "/textures/surf-shingle.webp",
+    "kind": "mask",
+    "mean": [
+      0.7098,
+      0.7098,
+      0.7098
+    ],
+    "bytes": 42046
+  },
+  "surf-plaster": {
+    "url": "/textures/surf-plaster.webp",
+    "kind": "mask",
+    "mean": [
+      0.4782,
+      0.4782,
+      0.4782
+    ],
+    "bytes": 32476
+  },
+  "surf-stone": {
+    "url": "/textures/surf-stone.webp",
+    "kind": "mask",
+    "mean": [
+      0.6103,
+      0.6103,
+      0.6103
+    ],
+    "bytes": 53462
+  },
+  "surf-brick": {
+    "url": "/textures/surf-brick.webp",
+    "kind": "mask",
+    "mean": [
+      0.6383,
+      0.6383,
+      0.6383
+    ],
+    "bytes": 66314
+  },
+  "surf-metal": {
+    "url": "/textures/surf-metal.webp",
+    "kind": "mask",
+    "mean": [
+      0.3642,
+      0.3642,
+      0.3642
+    ],
+    "bytes": 26542
+  },
+  "surf-canvas": {
+    "url": "/textures/surf-canvas.webp",
+    "kind": "mask",
+    "mean": [
+      0.5221,
+      0.5221,
+      0.5221
+    ],
+    "bytes": 31724
+  },
+  "plaza": {
+    "url": "/textures/plaza.webp",
+    "kind": "decal",
+    "bytes": 174794
   },
   "leaf-broad": {
     "url": "/textures/leaf-broad.webp",

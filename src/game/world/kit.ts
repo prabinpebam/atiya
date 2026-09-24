@@ -24,10 +24,30 @@ import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferG
 /**
  * Geometry kit: builds a model from many vertex-coloured primitives and merges them into
  * one geometry per material layer, so a detailed building costs only a few draw calls.
+ *
+ * Surfaces: every part also records what it's made of (`aSurf`, an index into SURFACES) and a
+ * texture coordinate in its own frame (`aSurfUV`, in tiles), so the shared kit material can
+ * paint wood grain, roof shingles, plaster, stone, brick, iron or canvas detail per part. Wrap
+ * parts in `k.surface('wood', () => …)`; untagged parts are plain painted surfaces.
  */
 export type Layer = 'solid' | 'glow' | 'glass';
 export type Paint = ColorRepresentation | ((p: Vector3, n: Vector3) => ColorRepresentation);
 export type V3 = [number, number, number];
+
+/** Surface kinds, in shader order (index = `aSurf`). */
+export const SURFACES = ['paint', 'wood', 'roof', 'plaster', 'stone', 'brick', 'metal', 'canvas'] as const;
+export type Surface = (typeof SURFACES)[number];
+/** World units per texture repeat for each surface. */
+export const SURFACE_TILE_U: Record<Surface, number> = {
+  paint: 1,
+  wood: 0.8,
+  roof: 0.9,
+  plaster: 1.3,
+  stone: 1.1,
+  brick: 0.8,
+  metal: 0.6,
+  canvas: 0.3,
+};
 
 export interface Xf {
   p?: V3;
@@ -77,9 +97,60 @@ export function colorize(g: BufferGeometry, color: Paint): BufferGeometry {
   return geo;
 }
 
+/**
+ * Surface id and texture coordinates for a colorized (non-indexed) part, computed in the part's
+ * own frame before it's transformed by `m`. Each triangle is box-projected onto the plane of its
+ * dominant local axis (so a plank or a roof course keeps one orientation). The texture's
+ * horizontal runs along the part's longer extent for wood (grain follows the board) and along the
+ * more level axis for everything else (courses, shingle rows and weave stay horizontal).
+ */
+export function surfaceUV(geo: BufferGeometry, m: Matrix4, surface: Surface, seed: number): void {
+  const pos = geo.getAttribute('position');
+  const nor = geo.getAttribute('normal');
+  const e = m.elements;
+  const axes = [new Vector3(e[0], e[1], e[2]), new Vector3(e[4], e[5], e[6]), new Vector3(e[8], e[9], e[10])];
+  const scale = axes.map((a) => Math.max(a.length(), 1e-6));
+  const level = axes.map((a, i) => Math.abs(a.y) / scale[i]);
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox!;
+  const extent = [(bb.max.x - bb.min.x) * scale[0], (bb.max.y - bb.min.y) * scale[1], (bb.max.z - bb.min.z) * scale[2]];
+  const tile = SURFACE_TILE_U[surface];
+  const id = SURFACES.indexOf(surface);
+  const ids = new Float32Array(pos.count).fill(id);
+  const uv = new Float32Array(pos.count * 2);
+  const off = [hash3(seed, 1.3, 7.1), hash3(seed, 5.9, 2.4)];
+  const n = new Vector3();
+  const pick = (i: number, j: number): [number, number] => {
+    if (surface === 'wood') return extent[i] >= extent[j] ? [i, j] : [j, i];
+    if (Math.abs(level[i] - level[j]) < 0.05) return extent[i] >= extent[j] ? [i, j] : [j, i];
+    return level[i] < level[j] ? [i, j] : [j, i];
+  };
+  for (let t = 0; t < pos.count; t += 3) {
+    // face normal in the part's scaled frame (normals transform by the inverse scale)
+    n.set(0, 0, 0);
+    for (let k = 0; k < 3; k++) {
+      n.x += nor.getX(t + k) / scale[0];
+      n.y += nor.getY(t + k) / scale[1];
+      n.z += nor.getZ(t + k) / scale[2];
+    }
+    const a = [Math.abs(n.x), Math.abs(n.y), Math.abs(n.z)];
+    const d = a[0] >= a[1] && a[0] >= a[2] ? 0 : a[1] >= a[2] ? 1 : 2;
+    const [ui, vi] = pick((d + 1) % 3, (d + 2) % 3);
+    for (let k = 0; k < 3; k++) {
+      const p = [pos.getX(t + k), pos.getY(t + k), pos.getZ(t + k)];
+      uv[(t + k) * 2] = (p[ui] * scale[ui]) / tile + off[0];
+      uv[(t + k) * 2 + 1] = (p[vi] * scale[vi]) / tile + off[1];
+    }
+  }
+  geo.setAttribute('aSurf', new Float32BufferAttribute(ids, 1));
+  geo.setAttribute('aSurfUV', new Float32BufferAttribute(uv, 2));
+}
+
 export class Kit {
   private readonly parts: Record<Layer, BufferGeometry[]> = { solid: [], glow: [], glass: [] };
   private readonly stack: Matrix4[] = [new Matrix4()];
+  private readonly surfaces: Surface[] = ['paint'];
+  private count = 0;
 
   private get top(): Matrix4 {
     return this.stack[this.stack.length - 1];
@@ -93,9 +164,19 @@ export class Kit {
     return this;
   }
 
+  /** Everything added inside `fn` is made of `surface` (nested calls override). */
+  surface(surface: Surface, fn: () => void): this {
+    this.surfaces.push(surface);
+    fn();
+    this.surfaces.pop();
+    return this;
+  }
+
   add(g: BufferGeometry, color: Paint, xf: Xf = {}, layer: Layer = 'solid'): this {
     const geo = colorize(g, color);
-    geo.applyMatrix4(this.top.clone().multiply(xfMatrix(xf)));
+    const m = this.top.clone().multiply(xfMatrix(xf));
+    surfaceUV(geo, m, this.surfaces[this.surfaces.length - 1], ++this.count);
+    geo.applyMatrix4(m);
     this.parts[layer].push(geo);
     return this;
   }

@@ -58,6 +58,17 @@ describe('generated textures', () => {
     }
   });
 
+  it('ships a detail mask for every textured kit surface and the plaza decal', () => {
+    for (const name of ['surf-wood', 'surf-shingle', 'surf-plaster', 'surf-stone', 'surf-brick', 'surf-metal', 'surf-canvas']) {
+      const e = (TEXTURES as Record<string, { kind: string; mean?: readonly number[] }>)[name];
+      expect(e?.kind, name).toBe('mask');
+      // shader divides by the mean so the detail keeps the painted colour's brightness
+      expect(e.mean, name).toHaveLength(3);
+      expect(e.mean![0], name).toBeGreaterThan(0.1);
+    }
+    expect((TEXTURES as Record<string, { kind: string }>).plaza?.kind).toBe('decal');
+  });
+
   it('keeps provenance: each source has its prompt', () => {
     for (const [name] of entries) {
       expect(existsSync(resolve(ROOT, 'assets-src/textures', `${name}.prompt.txt`)), name).toBe(true);

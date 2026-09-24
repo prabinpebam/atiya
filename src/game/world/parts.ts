@@ -1,5 +1,5 @@
 import { CylinderGeometry, type ColorRepresentation } from 'three';
-import { Kit, mix, type V3, type Xf } from './kit';
+import { Kit, mix, type Surface, type V3, type Xf } from './kit';
 
 /** Shared palette for architecture (warm, pastel, "toy" materials). */
 export const ARCH = {
@@ -34,7 +34,7 @@ export function shade(c: ColorRepresentation, t: number) {
  */
 export function gableRoof(
   k: Kit,
-  o: { w: number; d: number; rise: number; wallTop: number; overhang?: number; color: ColorRepresentation; trim?: ColorRepresentation; wall?: ColorRepresentation; rows?: number },
+  o: { w: number; d: number; rise: number; wallTop: number; overhang?: number; color: ColorRepresentation; trim?: ColorRepresentation; wall?: ColorRepresentation; wallSurface?: Surface; rows?: number },
 ) {
   const oh = o.overhang ?? 0.22;
   const run = o.w / 2 + oh;
@@ -44,20 +44,22 @@ export function gableRoof(
   const rows = o.rows ?? 4;
   const trim = o.trim ?? ARCH.cream;
 
-  for (const s of [-1, 1]) {
-    // underlay slab
-    k.box([L, 0.1, depth], shade(o.color, -0.25), { p: [(s * run) / 2, o.wallTop + o.rise / 2 - 0.02, 0], r: [0, 0, -s * a] }, 0.04);
-    // shingle rows: each row tilted a touch steeper so its lower edge laps over the next
-    for (let i = 0; i < rows; i++) {
-      const t = (i + 0.5) / rows;
-      const x = s * run * t;
-      const y = o.wallTop + o.rise * (1 - t) + 0.07;
-      const c = shade(o.color, i % 2 ? -0.06 : 0.04);
-      k.box([L / rows + 0.08, 0.09, depth + 0.04], c, { p: [x, y, 0], r: [0, 0, -s * (a + 0.07)] }, 0.035);
+  k.surface('roof', () => {
+    for (const s of [-1, 1]) {
+      // underlay slab
+      k.box([L, 0.1, depth], shade(o.color, -0.25), { p: [(s * run) / 2, o.wallTop + o.rise / 2 - 0.02, 0], r: [0, 0, -s * a] }, 0.04);
+      // shingle rows: each row tilted a touch steeper so its lower edge laps over the next
+      for (let i = 0; i < rows; i++) {
+        const t = (i + 0.5) / rows;
+        const x = s * run * t;
+        const y = o.wallTop + o.rise * (1 - t) + 0.07;
+        const c = shade(o.color, i % 2 ? -0.06 : 0.04);
+        k.box([L / rows + 0.08, 0.09, depth + 0.04], c, { p: [x, y, 0], r: [0, 0, -s * (a + 0.07)] }, 0.035);
+      }
     }
-  }
-  // ridge cap
-  k.cyl(0.09, 0.09, depth + 0.06, shade(o.color, -0.12), { p: [0, o.wallTop + o.rise + 0.08, 0], r: [Math.PI / 2, 0, 0] }, 10);
+    // ridge cap
+    k.cyl(0.09, 0.09, depth + 0.06, shade(o.color, -0.12), { p: [0, o.wallTop + o.rise + 0.08, 0], r: [Math.PI / 2, 0, 0] }, 10);
+  });
   // gable walls (front/back) and trim boards along the gable edge
   const e = (o.rise * oh) / run;
   const tri: [number, number][] = [
@@ -68,15 +70,22 @@ export function gableRoof(
     [-o.w / 2, e],
   ];
   for (const z of [o.d / 2 - 0.06, -o.d / 2 + 0.06]) {
-    k.extrude(tri, 0.1, o.wall ?? ARCH.cream, { p: [0, o.wallTop, z] }, 0.01);
-    for (const s of [-1, 1]) {
-      k.box([L + 0.05, 0.12, 0.12], trim, { p: [(s * run) / 2, o.wallTop + o.rise / 2 + 0.12, Math.sign(z) * (depth / 2 + 0.02)], r: [0, 0, -s * a] }, 0.04);
-    }
+    k.surface(o.wallSurface ?? 'plaster', () => k.extrude(tri, 0.1, o.wall ?? ARCH.cream, { p: [0, o.wallTop, z] }, 0.01));
+    // painted barge boards
+    k.surface('wood', () => {
+      for (const s of [-1, 1]) {
+        k.box([L + 0.05, 0.12, 0.12], trim, { p: [(s * run) / 2, o.wallTop + o.rise / 2 + 0.12, Math.sign(z) * (depth / 2 + 0.02)], r: [0, 0, -s * a] }, 0.04);
+      }
+    });
   }
 }
 
 /** Stepped hip / pyramid roof (square-ish), a few bands that lap over each other. */
 export function hipRoof(k: Kit, o: { w: number; d: number; h: number; y: number; overhang?: number; color: ColorRepresentation; bands?: number; top?: number }) {
+  k.surface('roof', () => hipRoofBands(k, o));
+}
+
+function hipRoofBands(k: Kit, o: { w: number; d: number; h: number; y: number; overhang?: number; color: ColorRepresentation; bands?: number; top?: number }) {
   const bands = o.bands ?? 3;
   const oh = o.overhang ?? 0.2;
   const topFrac = o.top ?? 0.12;
@@ -123,12 +132,12 @@ export function windowUnit(k: Kit, xf: Xf, o: { w: number; h: number; arch?: boo
       k.box([o.w + f * 2, f, 0.1], frame, { p: [0, o.h / 2 + f / 2, 0.02] }, 0.025);
     }
     if (o.sill !== false) k.box([o.w + f * 3, 0.06, 0.18], frame, { p: [0, -o.h / 2 - f - 0.02, 0.06] }, 0.025);
-    if (o.shutters) {
+    if (o.shutters) k.surface('wood', () => {
       for (const s of [-1, 1]) {
-        k.box([o.w * 0.42, o.h + 0.06, 0.05], o.shutters, { p: [s * (o.w / 2 + f + o.w * 0.21 + 0.02), 0, 0.02] }, 0.02);
-        for (let i = 0; i < 4; i++) k.box([o.w * 0.34, 0.025, 0.02], shade(o.shutters, -0.15), { p: [s * (o.w / 2 + f + o.w * 0.21 + 0.02), -o.h / 2 + 0.12 + i * (o.h / 4), 0.05] }, 0.005);
+        k.box([o.w * 0.42, o.h + 0.06, 0.05], o.shutters!, { p: [s * (o.w / 2 + f + o.w * 0.21 + 0.02), 0, 0.02] }, 0.02);
+        for (let i = 0; i < 4; i++) k.box([o.w * 0.34, 0.025, 0.02], shade(o.shutters!, -0.15), { p: [s * (o.w / 2 + f + o.w * 0.21 + 0.02), -o.h / 2 + 0.12 + i * (o.h / 4), 0.05] }, 0.005);
       }
-    }
+    });
   });
 }
 
@@ -141,16 +150,20 @@ export function door(k: Kit, xf: Xf, o: { w: number; h: number; color?: ColorRep
     const lw = o.w / leaves;
     for (let i = 0; i < leaves; i++) {
       const cx = -o.w / 2 + lw * (i + 0.5);
-      k.box([lw - 0.02, o.h, 0.08], color, { p: [cx, o.h / 2, 0] }, 0.02);
-      // raised panels
       const pw = lw * 0.62;
-      k.box([pw, o.h * 0.34, 0.03], shade(color, 0.08), { p: [cx, o.h * 0.27, 0.05] }, 0.015);
-      if (o.glassTop) k.box([pw, o.h * 0.3, 0.03], ARCH.glass, { p: [cx, o.h * 0.72, 0.05] }, 0.015);
-      else k.box([pw, o.h * 0.3, 0.03], shade(color, 0.08), { p: [cx, o.h * 0.72, 0.05] }, 0.015);
+      k.surface('wood', () => {
+        k.box([lw - 0.02, o.h, 0.08], color, { p: [cx, o.h / 2, 0] }, 0.02);
+        // raised panels
+        k.box([pw, o.h * 0.34, 0.03], shade(color, 0.08), { p: [cx, o.h * 0.27, 0.05] }, 0.015);
+        if (o.glassTop) k.box([pw, o.h * 0.3, 0.03], ARCH.glass, { p: [cx, o.h * 0.72, 0.05] }, 0.015);
+        else k.box([pw, o.h * 0.3, 0.03], shade(color, 0.08), { p: [cx, o.h * 0.72, 0.05] }, 0.015);
+      });
       // handle
       const hx = o.double ? cx + (i === 0 ? lw * 0.36 : -lw * 0.36) : cx + lw * 0.34;
-      if (o.double) k.box([0.035, 0.22, 0.05], ARCH.brass, { p: [hx, o.h * 0.5, 0.07] }, 0.015);
-      else k.sphere(0.045, ARCH.brass, { p: [hx, o.h * 0.48, 0.08] }, [10, 8]);
+      k.surface('metal', () => {
+        if (o.double) k.box([0.035, 0.22, 0.05], ARCH.brass, { p: [hx, o.h * 0.5, 0.07] }, 0.015);
+        else k.sphere(0.045, ARCH.brass, { p: [hx, o.h * 0.48, 0.08] }, [10, 8]);
+      });
     }
     // frame
     const f = 0.1;
@@ -169,22 +182,37 @@ export function steps(k: Kit, xf: Xf, o: { w: number; n: number; rise?: number; 
   const rise = o.rise ?? 0.08;
   const tread = o.tread ?? 0.18;
   const color = o.color ?? ARCH.stone;
-  k.group(xf, () => {
+  k.group(xf, () => k.surface('stone', () => {
     for (let i = 0; i < o.n; i++) {
       const depth = tread * (o.n - i);
       k.box([o.w - i * 0.06, rise, depth], shade(color, i % 2 ? -0.04 : 0.03), { p: [0, rise * (i + 0.5), depth / 2] }, 0.025);
     }
-  });
+  }));
 }
 
 // ---------------------------------------------------------------------------
 // Walls
 // ---------------------------------------------------------------------------
 
-/** Box body with a stone plinth, corner pilasters and a cornice band. Origin at ground centre. */
-export function walls(k: Kit, o: { w: number; d: number; h: number; color: ColorRepresentation; plinth?: number; trim?: ColorRepresentation; siding?: boolean; pilasters?: boolean }) {
+/**
+ * Box body with a stone plinth, corner pilasters and a cornice band. Origin at ground centre.
+ * The body is `surface` (default plaster, or wood when it has clapboard siding).
+ */
+export function walls(
+  k: Kit,
+  o: { w: number; d: number; h: number; color: ColorRepresentation; plinth?: number; trim?: ColorRepresentation; siding?: boolean; pilasters?: boolean; surface?: Surface },
+) {
   const plinth = o.plinth ?? 0.28;
   const trim = o.trim ?? ARCH.cream;
+  k.surface('stone', () => plinthBlocks(k, o, plinth));
+  k.surface(o.surface ?? (o.siding ? 'wood' : 'plaster'), () => wallBody(k, o, plinth));
+  if (o.pilasters !== false) {
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.box([0.16, o.h - plinth, 0.16], trim, { p: [sx * (o.w / 2 - 0.02), plinth + (o.h - plinth) / 2, sz * (o.d / 2 - 0.02)] }, 0.04);
+  }
+  k.box([o.w + 0.18, 0.14, o.d + 0.18], trim, { p: [0, o.h + 0.02, 0] }, 0.05);
+}
+
+function plinthBlocks(k: Kit, o: { w: number; d: number }, plinth: number) {
   k.box([o.w + 0.12, plinth, o.d + 0.12], ARCH.stone, { p: [0, plinth / 2, 0] }, 0.05);
   // plinth stone blocks
   for (const [ax, len, other] of [
@@ -201,6 +229,9 @@ export function walls(k: Kit, o: { w: number; d: number; h: number; color: Color
       }
     }
   }
+}
+
+function wallBody(k: Kit, o: { w: number; d: number; h: number; color: ColorRepresentation; siding?: boolean }, plinth: number) {
   k.box([o.w, o.h - plinth, o.d], o.color, { p: [0, plinth + (o.h - plinth) / 2, 0] }, 0.04);
   if (o.siding) {
     const rows = Math.round((o.h - plinth) / 0.2);
@@ -209,10 +240,6 @@ export function walls(k: Kit, o: { w: number; d: number; h: number; color: Color
       k.box([o.w + 0.02, 0.03, o.d + 0.02], shade(o.color, -0.12), { p: [0, y, 0] }, 0.012);
     }
   }
-  if (o.pilasters !== false) {
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.box([0.16, o.h - plinth, 0.16], trim, { p: [sx * (o.w / 2 - 0.02), plinth + (o.h - plinth) / 2, sz * (o.d / 2 - 0.02)] }, 0.04);
-  }
-  k.box([o.w + 0.18, 0.14, o.d + 0.18], trim, { p: [0, o.h + 0.02, 0] }, 0.05);
 }
 
 // ---------------------------------------------------------------------------
@@ -220,7 +247,7 @@ export function walls(k: Kit, o: { w: number; d: number; h: number; color: Color
 // ---------------------------------------------------------------------------
 
 export function wallLantern(k: Kit, xf: Xf) {
-  k.group(xf, () => {
+  k.group(xf, () => k.surface('metal', () => {
     k.box([0.05, 0.05, 0.16], ARCH.iron, { p: [0, 0.1, 0.08] }, 0.015);
     k.cyl(0.07, 0.09, 0.2, ARCH.lit, { p: [0, -0.02, 0.16] }, 8, 'glow');
     k.cyl(0.02, 0.1, 0.08, ARCH.iron, { p: [0, 0.12, 0.16] }, 8);
@@ -229,11 +256,11 @@ export function wallLantern(k: Kit, xf: Xf) {
       const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
       k.box([0.015, 0.2, 0.015], ARCH.iron, { p: [Math.cos(a) * 0.085, -0.02, 0.16 + Math.sin(a) * 0.085] }, 0.005);
     }
-  });
+  }));
 }
 
 export function lampPost(k: Kit, xf: Xf, h = 1.6) {
-  k.group(xf, () => {
+  k.group(xf, () => k.surface('metal', () => {
     k.cyl(0.1, 0.13, 0.12, ARCH.iron, { p: [0, 0.06, 0] }, 10);
     k.cyl(0.035, 0.045, h, ARCH.iron, { p: [0, h / 2, 0] }, 8);
     k.cyl(0.12, 0.08, 0.05, ARCH.iron, { p: [0, h + 0.02, 0] }, 8);
@@ -244,7 +271,7 @@ export function lampPost(k: Kit, xf: Xf, h = 1.6) {
     }
     k.cone(0.13, 0.1, ARCH.iron, { p: [0, h + 0.4, 0] }, 8);
     k.sphere(0.028, ARCH.brass, { p: [0, h + 0.47, 0] }, [8, 6]);
-  });
+  }));
 }
 
 /** Striped awning facing +z with a scalloped valance. Origin at top-back centre. */
@@ -253,14 +280,14 @@ export function awning(k: Kit, xf: Xf, o: { w: number; depth: number; drop: numb
   const sw = o.w / stripes;
   const slope = Math.atan2(o.drop, o.depth);
   const L = Math.hypot(o.depth, o.drop);
-  k.group(xf, () => {
+  k.group(xf, () => k.surface('canvas', () => {
     for (let i = 0; i < stripes; i++) {
       const x = -o.w / 2 + sw * (i + 0.5);
       const c = i % 2 ? o.a : o.b;
       k.box([sw + 0.005, 0.04, L], c, { p: [x, -o.drop / 2, o.depth / 2], r: [slope, 0, 0] }, 0.015);
       k.cyl(sw / 2, sw / 2, 0.035, c, { p: [x, -o.drop - 0.02, o.depth + 0.01], r: [Math.PI / 2, 0, 0] }, 10, 'solid');
     }
-  });
+  }));
 }
 
 /** Garland of triangular flags between two points (same height). */
@@ -274,7 +301,7 @@ export function bunting(k: Kit, from: V3, to: V3, colors: ColorRepresentation[],
     k.sphere(0.012, ARCH.iron, { p: [x, y, z] }, [4, 3]);
     if (i < n) {
       const yaw = Math.atan2(to[0] - from[0], to[2] - from[2]) - Math.PI / 2;
-      k.extrude(
+      k.surface('canvas', () => k.extrude(
         [
           [-0.07, 0],
           [0.07, 0],
@@ -284,14 +311,14 @@ export function bunting(k: Kit, from: V3, to: V3, colors: ColorRepresentation[],
         colors[i % colors.length],
         { p: [x + (to[0] - from[0]) / n / 2, y - 0.01 - Math.sin(Math.PI * (t + 0.5 / n)) * 0.01, z + (to[2] - from[2]) / n / 2], r: [0, yaw, 0] },
         0.004,
-      );
+      ));
     }
   }
 }
 
 export function flowerBox(k: Kit, xf: Xf, w: number, colors: ColorRepresentation[]) {
   k.group(xf, () => {
-    k.box([w, 0.14, 0.16], ARCH.wood, { p: [0, 0, 0] }, 0.03);
+    k.surface('wood', () => k.box([w, 0.14, 0.16], ARCH.wood, { p: [0, 0, 0] }, 0.03));
     const n = Math.max(3, Math.round(w / 0.12));
     for (let i = 0; i < n; i++) {
       const x = -w / 2 + (w / n) * (i + 0.5);
@@ -303,18 +330,22 @@ export function flowerBox(k: Kit, xf: Xf, w: number, colors: ColorRepresentation
 
 export function bench(k: Kit, xf: Xf) {
   k.group(xf, () => {
-    for (const s of [-1, 1]) {
-      k.box([0.06, 0.26, 0.28], ARCH.iron, { p: [s * 0.42, 0.13, 0] }, 0.02);
-      k.box([0.06, 0.3, 0.05], ARCH.iron, { p: [s * 0.42, 0.4, -0.13] }, 0.02);
-    }
-    for (let i = 0; i < 3; i++) k.box([1.0, 0.04, 0.08], ARCH.wood, { p: [0, 0.28, -0.1 + i * 0.1] }, 0.015);
-    for (let i = 0; i < 2; i++) k.box([1.0, 0.07, 0.035], ARCH.wood, { p: [0, 0.42 + i * 0.1, -0.15] }, 0.015);
+    k.surface('metal', () => {
+      for (const s of [-1, 1]) {
+        k.box([0.06, 0.26, 0.28], ARCH.iron, { p: [s * 0.42, 0.13, 0] }, 0.02);
+        k.box([0.06, 0.3, 0.05], ARCH.iron, { p: [s * 0.42, 0.4, -0.13] }, 0.02);
+      }
+    });
+    k.surface('wood', () => {
+      for (let i = 0; i < 3; i++) k.box([1.0, 0.04, 0.08], ARCH.wood, { p: [0, 0.28, -0.1 + i * 0.1] }, 0.015);
+      for (let i = 0; i < 2; i++) k.box([1.0, 0.07, 0.035], ARCH.wood, { p: [0, 0.42 + i * 0.1, -0.15] }, 0.015);
+    });
   });
 }
 
 export function barrel(k: Kit, xf: Xf, color: ColorRepresentation = ARCH.wood) {
   k.group(xf, () => {
-    k.lathe(
+    k.surface('wood', () => k.lathe(
       [
         [0.001, 0],
         [0.17, 0],
@@ -325,22 +356,24 @@ export function barrel(k: Kit, xf: Xf, color: ColorRepresentation = ARCH.wood) {
       color,
       {},
       14,
-    );
-    for (const y of [0.07, 0.29]) k.torus(0.185, 0.015, ARCH.iron, { p: [0, y, 0], r: [Math.PI / 2, 0, 0] }, Math.PI * 2, [5, 18]);
+    ));
+    k.surface('metal', () => {
+      for (const y of [0.07, 0.29]) k.torus(0.185, 0.015, ARCH.iron, { p: [0, y, 0], r: [Math.PI / 2, 0, 0] }, Math.PI * 2, [5, 18]);
+    });
   });
 }
 
 export function crate(k: Kit, xf: Xf, size = 0.34) {
-  k.group(xf, () => {
+  k.group(xf, () => k.surface('wood', () => {
     k.box([size, size, size], ARCH.wood, { p: [0, size / 2, 0] }, 0.03);
     for (const s of [-1, 1]) k.box([size + 0.02, 0.05, 0.04], ARCH.woodDark, { p: [0, size / 2 + s * size * 0.32, size / 2] }, 0.01);
     k.box([0.04, size * 0.9, 0.04], ARCH.woodDark, { p: [0, size / 2, size / 2 + 0.005], r: [0, 0, 0.78] }, 0.01);
-  });
+  }));
 }
 
 export function potPlant(k: Kit, xf: Xf, bloom?: ColorRepresentation) {
   k.group(xf, () => {
-    k.lathe(
+    k.surface('plaster', () => k.lathe(
       [
         [0.001, 0],
         [0.1, 0],
@@ -351,7 +384,7 @@ export function potPlant(k: Kit, xf: Xf, bloom?: ColorRepresentation) {
       '#c8734a',
       {},
       12,
-    );
+    ));
     k.blob(0.13, ARCH.leaf, { p: [0, 0.3, 0], s: [1, 0.9, 1] }, 1, 'solid', 0.25, 3);
     if (bloom) for (let i = 0; i < 4; i++) k.blob(0.045, bloom, { p: [Math.cos(i * 1.7) * 0.09, 0.36 + (i % 2) * 0.04, Math.sin(i * 1.7) * 0.09] }, 1);
   });
@@ -368,8 +401,10 @@ export function signBoard(k: Kit, xf: Xf, o: { w: number; h: number; color: Colo
 /** Freestanding post with a board; origin at ground. */
 export function postSign(k: Kit, xf: Xf, color: ColorRepresentation) {
   k.group(xf, () => {
-    k.cyl(0.035, 0.04, 0.7, ARCH.woodDark, { p: [0, 0.35, 0] }, 8);
-    k.box([0.5, 0.3, 0.05], ARCH.wood, { p: [0, 0.62, 0.04] }, 0.03);
+    k.surface('wood', () => {
+      k.cyl(0.035, 0.04, 0.7, ARCH.woodDark, { p: [0, 0.35, 0] }, 8);
+      k.box([0.5, 0.3, 0.05], ARCH.wood, { p: [0, 0.62, 0.04] }, 0.03);
+    });
     k.box([0.4, 0.2, 0.02], color, { p: [0, 0.62, 0.075] }, 0.02);
   });
 }

@@ -17,7 +17,8 @@ function configure(name: TextureName, t: Texture): Texture {
   t.colorSpace = e.kind === 'mask' ? NoColorSpace : SRGBColorSpace;
   if (tiled) t.wrapS = t.wrapT = RepeatWrapping;
   t.minFilter = LinearMipmapLinearFilter;
-  t.anisotropy = tiled ? 8 : 4;
+  // decals (the plaza) are seen at grazing angles too, so they get the higher anisotropy
+  t.anisotropy = tiled || e.kind === 'decal' ? 8 : 4;
   t.name = name;
   t.needsUpdate = true;
   return t;

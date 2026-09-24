@@ -112,7 +112,7 @@ function buildGround(controller: GameController): BufferGeometry {
 }
 
 export function Planet({ controller }: { controller: GameController }) {
-  const { geometry, material } = useMemo(() => ({ geometry: buildGround(controller), material: createPlanetMaterial(R) }), [controller]);
+  const { geometry, material } = useMemo(() => ({ geometry: buildGround(controller), material: createPlanetMaterial(R, PLAZA_RADIUS_U) }), [controller]);
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     // a tap walks; a drag tumbles the view (handled on the region) and must not walk

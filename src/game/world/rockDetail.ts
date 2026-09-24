@@ -1,4 +1,5 @@
 import { Vector3, type MeshStandardMaterial } from 'three';
+import { SURFACES } from './kit';
 import { TRIPLANAR_GLSL, gameTexture, textureMean } from './textures';
 
 /**
@@ -84,6 +85,74 @@ if (vLipW > 0.001) {
   };
   const prevKey = m.customProgramCacheKey?.bind(m);
   m.customProgramCacheKey = () => `${prevKey ? prevKey() : ''}|lip-grass`;
+  return m;
+}
+
+/**
+ * Per-surface painted detail for the kit models (landmarks, plaza furniture, bridge). Each part
+ * carries `aSurf` (index into SURFACES) and `aSurfUV` (tiles, in its own frame, see kit.ts):
+ * wood grain, roof shingles, plaster, stone, brick, iron and canvas come from their own generated
+ * greyscale tiles; plain painted parts keep the subtle brush grain (object-space triplanar).
+ * Luminance only and normalised by each tile's mean, so every palette colour is kept.
+ * Falls back to the brush grain alone if any surface tile is missing.
+ */
+const SURFACE_TEX = [
+  ['wood', 'surf-wood', 0.55],
+  ['roof', 'surf-shingle', 0.6],
+  ['plaster', 'surf-plaster', 0.32],
+  ['stone', 'surf-stone', 0.6],
+  ['brick', 'surf-brick', 0.7],
+  ['metal', 'surf-metal', 0.45],
+  ['canvas', 'surf-canvas', 0.45],
+] as const;
+
+export function withSurfaceDetail(m: MeshStandardMaterial, grainStrength: number, grainScale: number): MeshStandardMaterial {
+  const tex = SURFACE_TEX.map(([, name]) => gameTexture(name));
+  const grain = gameTexture('paint-grain');
+  if (!grain || tex.some((t) => !t)) return withPaintGrain(m, grainStrength, grainScale);
+  m.onBeforeCompile = (shader) => {
+    shader.uniforms.uGrainTex = { value: grain };
+    SURFACE_TEX.forEach(([kind, name], i) => {
+      shader.uniforms[`uSurf_${kind}`] = { value: tex[i] };
+      shader.uniforms[`uSurfMean_${kind}`] = { value: textureMean(name)[0] };
+    });
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aSurf;\nattribute vec2 aSurfUV;\nvarying float vSurfK;\nvarying vec2 vSurfUV;\nvarying vec3 vGrP;\nvarying vec3 vGrN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurfK = aSurf; vSurfUV = aSurfUV; vGrP = position; vGrN = normal;');
+    const decl = SURFACE_TEX.map(([kind]) => `uniform sampler2D uSurf_${kind};\nuniform float uSurfMean_${kind};`).join('\n');
+    // the lookups sit in branches, so they take explicit gradients computed outside them
+    const branches = SURFACE_TEX.map(
+      ([kind, , s], i) =>
+        `${i ? 'else ' : ''}if (abs(k - ${SURFACES.indexOf(kind).toFixed(1)}) < 0.5) d = mix(1.0, textureGrad(uSurf_${kind}, vSurfUV, gx, gy).r / uSurfMean_${kind}, ${s.toFixed(2)});`,
+    ).join('\n  ');
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>\nuniform sampler2D uGrainTex;\n${decl}\nvarying float vSurfK;\nvarying vec2 vSurfUV;\nvarying vec3 vGrP;\nvarying vec3 vGrN;\n${TRIPLANAR_GLSL}`,
+      )
+      .replace(
+        '#include <metalnessmap_fragment>',
+        `#include <metalnessmap_fragment>
+if (abs(floor(vSurfK + 0.5) - ${SURFACES.indexOf('metal').toFixed(1)}) < 0.5) { metalnessFactor = 0.35; roughnessFactor = 0.5; }`,
+      )
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+{
+  float k = floor(vSurfK + 0.5);
+  vec2 gx = dFdx(vSurfUV);
+  vec2 gy = dFdy(vSurfUV);
+  float d = 1.0;
+  ${branches}
+  if (k < 0.5) {
+    float gr = tri(uGrainTex, vGrP, triW(normalize(vGrN)), ${grainScale.toFixed(3)}).r;
+    d = 1.0 + (gr - 0.5) * ${grainStrength.toFixed(3)};
+  }
+  diffuseColor.rgb *= clamp(d, 0.5, 1.4);
+}`,
+      );
+  };
+  m.customProgramCacheKey = () => `kit-surfaces-v1-${grainStrength}-${grainScale}`;
   return m;
 }
 

@@ -22,7 +22,8 @@ MANIFEST = ROOT / "src" / "game" / "world" / "textureManifest.ts"
 
 # name: (kind, output size). kinds:
 #   tile   - seamless colour tile (wrap-safe resize), mean colour exported
-#   mask   - seamless greyscale tile (luminance, stretched to 0…1)
+#   mask   - seamless greyscale tile (luminance, stretched to 0…1), mean value exported
+#   decal  - non-tiling colour image mapped once (e.g. the plaza), plain resize
 #   tint   - alpha sprite converted to normalised greyscale (tinted by vertex/instance colour in game)
 #   sprite - alpha sprite kept in colour
 TEXTURES: dict[str, tuple[str, int]] = {
@@ -34,6 +35,15 @@ TEXTURES: dict[str, tuple[str, int]] = {
     "rock": ("tile", 512),
     "water": ("mask", 512),
     "paint-grain": ("mask", 256),
+    # per-surface detail on the kit models (wood grain, shingles, plaster, masonry, iron, canvas)
+    "surf-wood": ("mask", 512),
+    "surf-shingle": ("mask", 512),
+    "surf-plaster": ("mask", 256),
+    "surf-stone": ("mask", 512),
+    "surf-brick": ("mask", 512),
+    "surf-metal": ("mask", 256),
+    "surf-canvas": ("mask", 256),
+    "plaza": ("decal", 1024),
     "leaf-broad": ("tint", 256),
     "leaf-single": ("tint", 128),
     "grass-card": ("tint", 256),
@@ -154,7 +164,13 @@ def main() -> None:
         elif kind == "mask":
             g = np.asarray(resize_tileable(im, size).convert("L"), np.float32)
             lo, hi = np.percentile(g, [1, 99.5])
-            out = Image.fromarray(np.clip((g - lo) / max(hi - lo, 1) * 255, 0, 255).astype(np.uint8)).convert("RGB")
+            g = np.clip((g - lo) / max(hi - lo, 1) * 255, 0, 255).astype(np.uint8)
+            out = Image.fromarray(g).convert("RGB")
+            # masks are sampled raw (no colour space), so the mean is the raw 0…1 value
+            m = round(float(g.mean() / 255), 4)
+            entry["mean"] = [m, m, m]
+        elif kind == "decal":
+            out = im.convert("RGB").resize((size, size), Image.LANCZOS)
         elif kind == "tint":
             out = bleed(tint_sprite(fit_sprite(im, size, ALIGN.get(name, "center"), MIN_ASPECT.get(name, 0.0))))
         else:

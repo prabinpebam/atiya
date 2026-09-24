@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Non-tiling decal: mapped once across the spawn plaza disc (north = image top).
+
+Prompt:
+Top-down orthographic view looking straight down at a round town plaza that fills the whole square image, its circular edge touching all four image edges: concentric rings of small soft warm terracotta and peach bricks (#d69473, #e8a883, #f0bf94) with thin cream mortar, each ring laid in a running bond around the centre, the rings evenly spaced out to the edge; in the middle a smooth cream stone circle about one third of the plaza's diameter with an inlaid eight-pointed compass rose in soft cornflower blue (#5c7ad6) and cream with a small golden centre, the main points exactly at the top, bottom, left and right, the top point marking north; a thin warm brown stone border ring around the compass circle; the corners outside the plaza circle are soft green grass. Hand-painted stylised game texture for a cozy, toy-like life-sim video game, soft painterly brushwork, flat even lighting, no shadows, no objects, no people, no furniture, no letters, no text

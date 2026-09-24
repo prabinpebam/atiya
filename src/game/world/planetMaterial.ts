@@ -12,13 +12,18 @@ const GROUND_TEX = ['grass', 'dirt', 'cobble', 'sand', 'riverbed'] as const;
  * (triplanar, planet-local), normalised by the tile's mean colour so the palette is unchanged;
  * without them the procedural patterns are used.
  */
-export function createPlanetMaterial(radius: number): MeshStandardMaterial {
+export function createPlanetMaterial(radius: number, plazaRadius: number): MeshStandardMaterial {
   const m = new MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
   const tex = GROUND_TEX.map((n) => gameTexture(n));
   const textured = tex.every(Boolean);
-  if (textured) m.defines = { USE_GROUND_TEX: '' };
+  const plazaTex = gameTexture('plaza');
+  m.defines = { ...(textured ? { USE_GROUND_TEX: '' } : {}), ...(plazaTex ? { USE_PLAZA_TEX: '' } : {}) };
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uRadius = { value: radius };
+    if (plazaTex) {
+      shader.uniforms.uTexPlaza = { value: plazaTex };
+      shader.uniforms.uPlazaRadius = { value: plazaRadius };
+    }
     if (textured) {
       GROUND_TEX.forEach((n, i) => {
         const key = n[0].toUpperCase() + n.slice(1);
@@ -51,6 +56,10 @@ uniform float uRadius;
 varying vec4 vSurf;
 varying vec4 vSurf2;
 varying vec3 vLocal;
+#ifdef USE_PLAZA_TEX
+uniform sampler2D uTexPlaza;
+uniform float uPlazaRadius;
+#endif
 #ifdef USE_GROUND_TEX
 uniform sampler2D uTexGrass; uniform sampler2D uTexDirt; uniform sampler2D uTexCobble;
 uniform sampler2D uTexSand; uniform sampler2D uTexRiverbed;
@@ -218,6 +227,11 @@ float stroke(vec3 p, vec3 nrm, float scale, float seed, float len, float wid) {
     vec3 u = normalize(vLocal);
     float r = acos(clamp(u.y, -1.0, 1.0)) * uRadius;
     float th = atan(u.x, -u.z);
+#ifdef USE_PLAZA_TEX
+    // the painted plaza, mapped once across the disc: image top = north (−z), right = east (+x)
+    vec2 puv = vec2(0.5) + vec2(sin(th), cos(th)) * r / (2.0 * uPlazaRadius);
+    vec3 plaza = texture2D(uTexPlaza, puv).rgb;
+#else
     float ringW = 0.34;
     float ring = floor(r / ringW);
     float fr = fract(r / ringW);
@@ -243,12 +257,13 @@ float stroke(vec3 p, vec3 nrm, float scale, float seed, float len, float wid) {
       plaza = mix(plaza, rose, inside);
       plaza = mix(plaza, lin(vec3(0.55, 0.46, 0.36)), 1.0 - smoothstep(0.012, 0.028, abs(r - 1.02)));
     }
+#endif
     col = mix(col, plaza, vSurf.y);
   }
   diffuseColor.rgb = col;
 }`,
       );
   };
-  m.customProgramCacheKey = () => (textured ? 'planet-ground-v3-tex' : 'planet-ground-v3');
+  m.customProgramCacheKey = () => `planet-ground-v4${textured ? '-tex' : ''}${plazaTex ? '-plaza' : ''}`;
   return m;
 }

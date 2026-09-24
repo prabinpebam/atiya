@@ -1,0 +1,6 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Seamless tile: imagegen.py tile (base generation, then two masked seam-repair passes with tone-corrected compositing).
+Used as a greyscale detail mask on the kit models (luminance only, normalised by its mean).
+
+Prompt:
+Hand-painted stylised texture for a cozy, toy-like life-sim video game: soft painterly brushwork, gentle contrast, clean simple shapes, no photorealism, no harsh highlights, no baked cast shadows. Woven canvas fabric seen straight on: soft fine visible basket weave, even threads running horizontally and vertically, very slight fibre variation, no folds, no seams; monochrome neutral light greys only (#bdb8b2 to #f4f2ef), no colour, flat even lighting, fills the frame edge to edge, no objects, no text

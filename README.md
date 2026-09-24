@@ -45,15 +45,19 @@ Design docs: [spec](documentation/poc-3d-navigation/spec.md) · [plan](documenta
 |---|---|---|---|
 | ![Meandering stream with pebbly banks](documentation/poc-3d-navigation/screenshots/landscape-river.png) | ![Leaves and a wind swirl blowing across the plaza](documentation/poc-3d-navigation/screenshots/wind-gust.png) | ![Bridge with glowing lanterns at dusk](documentation/poc-3d-navigation/screenshots/daynight-dusk-bridge.png) | ![Waterfall and stream at night](documentation/poc-3d-navigation/screenshots/daynight-night-waterfall.png) |
 
-**Hand-painted textures.** The lawn, paths, cobbles, beach, riverbed, cliff strata, boulders, river caustics, leaf cards, conifer clumps and boughs, grass clumps, the moon and a subtle brush grain on the buildings all use original, seamless or alpha textures generated with GPT Image 2.5, in the game's own palette. The landing page and social card use a painted key art of the planet.
+**Hand-painted textures.** The lawn, paths, cobbles, beach, riverbed, cliff strata, boulders, river caustics, leaf cards, conifer clumps and boughs, grass clumps, the moon, the compass-rose plaza and the buildings' materials (plank grain, roof shingles, brick, stone, plaster, metal and canvas) all use original, seamless or alpha textures generated with GPT Image 2.5, in the game's own palette. The landing page and social card use a painted key art of the planet.
 
-| Painted ground, cobbles and grass | Leaf-card trees | Cliff strata, boulders and caustics |
+| Painted compass-rose plaza, ground, cobbles and grass | Leaf-card trees | Cliff strata, boulders and caustics |
 |---|---|---|
-| ![Spawn plaza with painted ground textures](documentation/poc-3d-navigation/screenshots/textures-spawn.png) | ![Hardwood trees with painted leaf clusters on low-poly faceted trunks with buttress roots](documentation/poc-3d-navigation/screenshots/textures-forest.png) | ![Waterfall mesa with painted strata, boulders and river](documentation/poc-3d-navigation/screenshots/textures-waterfall.png) |
+| ![Spawn plaza with the painted compass-rose decal and painted ground textures](documentation/poc-3d-navigation/screenshots/textures-spawn.png) | ![Hardwood trees with painted leaf clusters on low-poly faceted trunks with buttress roots](documentation/poc-3d-navigation/screenshots/textures-forest.png) | ![Waterfall mesa with painted strata, boulders and river](documentation/poc-3d-navigation/screenshots/textures-waterfall.png) |
 
 | Organic cedars: grouped painted clumps and boughs | Painted moon at night | Landing page key art |
 |---|---|---|
 | ![Cedar trees built from grouped painted conifer clumps and drooping boughs](documentation/poc-3d-navigation/screenshots/textures-cedars.png) | ![Night sky with the painted moon](documentation/poc-3d-navigation/screenshots/textures-night-moon.png) | ![Landing page with the painted planet poster](documentation/poc-3d-navigation/screenshots/landing.png) |
+
+| Per-surface materials: shingled roof, planked walls and doors, brick chimney, stone steps, timber bridge |
+|---|
+| ![Workshop with shingled roof, wooden siding and doors, brick chimney and stone steps, next to the timber bridge](documentation/poc-3d-navigation/screenshots/textures-surfaces.png) |
 
 ## Quick start
 
@@ -129,12 +133,13 @@ Game keys only work while the planet has focus, and Tab is never captured. A sho
   - The ground shader ([planetMaterial.ts](src/game/world/planetMaterial.ts)) paints grass blades, clover, path edges, mossy cobbles, river banks and rock strata.
 - **Wind** (spec §4.14): the pure model [windField.ts](src/game/world/windField.ts) (direction plus breathing gusts) feeds one set of shared shader uniforms. All the foliage sways and flutters on the GPU, and its shadows move with it ([Props.tsx](src/game/world/Props.tsx) `addSway`). [WindFx.tsx](src/game/world/WindFx.tsx) adds instanced flying leaves and a small pool of swirl ribbons. Everything stops under Reduce motion or Pause ambient motion.
 - **Hand-painted textures** (spec §4.15):
-  - The sources are original GPT Image 2.5 generations; each prompt is kept next to its source in [assets-src/textures/](assets-src/textures/). [build-textures.py](scripts/build-textures.py) turns them into about 600 KB of WebP plus a typed manifest.
+  - The sources are original GPT Image 2.5 generations; each prompt is kept next to its source in [assets-src/textures/](assets-src/textures/). [build-textures.py](scripts/build-textures.py) turns them into about 1.1 MB of WebP plus a typed manifest.
   - [textures.ts](src/game/world/textures.ts) preloads them before the first render. Anything that fails falls back to the procedural look.
   - Ground tiles are sampled triplanar in planet-local space and normalised by their mean colour, so the palette and lighting don't change.
   - Cliff walls are UV-mapped so the strata stay horizontal, and boulders get object-space rock detail ([rockDetail.ts](src/game/world/rockDetail.ts)).
   - The leaf, conifer and grass sprites are tintable greyscale with real alpha. Cedars use a 2×2 atlas of four painted conifer sprites in grouped, irregular tiers, with three variants. The pond plants come from a full-colour 2×2 `pond-atlas` (lilies, reeds, irises, fern).
-  - Buildings, the bridge and the plaza furniture get a subtle painted brush grain (luminance only).
+  - Buildings, the bridge and the plaza furniture have per-surface materials: each kit part is tagged `wood`, `roof`, `plaster`, `stone`, `brick`, `metal` or `canvas` and gets its own painted detail (luminance only, so the palette is kept) on box-projected UVs, with wood grain along each board. Plain painted trims keep a subtle brush grain.
+  - The spawn plaza is a painted decal (brick rings and a compass rose that points to map north), feathered into the lawn.
 - **Quality tiers:**
   - `high`: tilt-shift, bloom, vignette and neutral tone mapping, plus 2048² shadows.
   - `low`: a cheaper tilt-shift, no bloom or vignette, and 1024² shadows. Chosen automatically for software rendering, Data Saver or coarse pointers.
@@ -166,9 +171,9 @@ Differences from the spec's proposed structure (§5.7):
 | Gate: no WebGL2 → fallback with **zero game-bundle requests**; bundle load error → Retry/Classic; `?mode=classic` redirect + saved preference; context lost → Reload/Classic | E2E: "capability gate" group, "?mode=classic redirects…", "WebGL context loss…" |
 | Game keys ignored when HUD focused; Start button doesn't steal focus | E2E: "start button, then WASD moves the player…" |
 | axe: no serious/critical issues on landing, classic, fallback, dialog, menu | E2E: landing, classic, no-WebGL2, dialog and menu tests (axe scans) |
-| Budgets: landing 0 KB 3D JS; gate 2.8 KB gz; game 393 KB gz (≤ 450); character model 163 KB; generated textures ≈ 600 KB (14 WebP); landing poster 104 KB (mobile) / 194 KB (desktop); no `__game` in production | `npm run verify:prod`, `tests/unit/textures.test.ts` |
+| Budgets: landing 0 KB 3D JS; gate 2.8 KB gz; game 395 KB gz (≤ 450); character model 163 KB; generated textures ≈ 1.1 MB (22 WebP, ≤ 1.5 MB); landing poster 104 KB (mobile) / 194 KB (desktop); no `__game` in production | `npm run verify:prod`, `tests/unit/textures.test.ts` |
 | Render stats (all passes, everything always drawn): ≈ 96–106 draw calls / ≈ 650–670 k triangles on `high`. **This exceeds the original 60 / 100 k target; a waiver is proposed in the plan's §6 and needs owner sign-off.** | `window.__game.renderInfo()` |
-| Textures: all 14 generated textures load (HTTP 200) before the planet appears, with no fallback. Every manifest entry is a square, power-of-two WebP that matches its recorded size; sprites have real alpha; tiles export a mean colour; each source has its prompt. The total stays within budget (≈ 600 KB). The landing key art loads with fixed dimensions, and the social card is served | `tests/unit/textures.test.ts`, E2E "hand-painted textures all load…", "landing ships no game JS…" |
+| Textures: all 22 generated textures load (HTTP 200) before the planet appears, with no fallback. Every manifest entry is a square, power-of-two WebP that matches its recorded size; sprites have real alpha; tiles export a mean colour; each kit surface has a detail mask with its mean; each source has its prompt. The total stays within budget (≈ 1.1 MB of 1.5 MB). The landing key art loads with fixed dimensions, and the social card is served | `tests/unit/textures.test.ts`, `tests/unit/surfaces.test.ts`, E2E "hand-painted textures all load…", "landing ships no game JS…" |
 | Player character: rigged CC0 model loads (`character.glb` 200); procedural fallback when the model fails, still playable | E2E: "player character" group |
 | Day–night: continuous palette (incl. midnight wrap), sun↔moon handover at zero intensity, cycle timing; clock runs, night lights the lamps, badge shows the moon; "Always daytime" holds the day and is remembered; Pause ambient motion freezes the clock | `tests/unit/timeOfDay.test.ts`, E2E "day–night" group |
 | View controls: map north is a smooth unit tangent (Workshop north, Town Hall east, Library south, Post Office west of the plaza); rotating keeps the player in place and WASD screen-relative; rotate/compass buttons, tap-vs-drag, `,` `.` / PgUp PgDn / N / H keys, tilt limits, Reset back to the plaza facing north | `tests/unit/compass.test.ts`, E2E "view controls" group |
