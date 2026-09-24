@@ -59,6 +59,8 @@ export class GameController {
   lastRenderInfo = { calls: 0, triangles: 0 };
   /** Hand angles last drawn on the town-hall clock (radians clockwise from 12), or null before the first frame. */
   clockHands: { hour: number; minute: number; second: number } | null = null;
+  /** Bridge lanterns: how many there are, how lit they are (0 by day … 1 at night) and their point lights' peak intensity. */
+  readonly bridgeLamps = { count: 0, lit: 0, intensity: 0 };
   /** Called when a fast travel lands (the avatar plays a little hop). */
   onArrive: (() => void) | null = null;
   /** Which avatar is on screen: the rigged model, or the procedural fallback (loading / failed). */

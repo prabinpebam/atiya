@@ -38,6 +38,8 @@ export interface GameTestHook {
   setWind(gust: number | null): void;
   /** Town-hall clock hand angles last drawn (radians clockwise from 12), or null. */
   clockHands(): { hour: number; minute: number; second: number } | null;
+  /** Bridge lanterns: count, how lit they are (0…1) and their point lights' current intensity. */
+  bridgeLamps(): { count: number; lit: number; intensity: number };
   /** Ground under the player: smoothed lift, terrain height, walk height and distance to the river (u). */
   groundInfo(): {
     lift: number;
@@ -145,6 +147,7 @@ export function installTestHook(c: GameController): void {
       c.windOverride = gust === null ? null : Math.min(1, Math.max(0, gust));
     },
     clockHands: () => (c.clockHands ? { ...c.clockHands } : null),
+    bridgeLamps: () => ({ ...c.bridgeLamps }),
     groundInfo: () => {
       const p = c.sim.pLocal;
       const river = c.props.river;

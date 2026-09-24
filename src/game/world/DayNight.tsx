@@ -416,6 +416,25 @@ export function Fireflies({ controller }: { controller: GameController }) {
 // Warm light pools under lamps (planet space), visible after dusk.
 // ---------------------------------------------------------------------------
 
+/** How lit the lamps are (0 by day → 1 after dusk), from the sky's night factor. */
+export function lampsOn(night: number): number {
+  return Math.max(0, Math.min(1, (night - 0.2) / 0.6));
+}
+
+/** Additive warm pool of lamplight (radial falloff over the geometry's 0…1 UVs); set its opacity from `lampsOn`. */
+export function lampPoolMaterial(): MeshBasicMaterial {
+  return new MeshBasicMaterial({
+    map: radialTexture('rgba(255,222,170,0.8)', 'rgba(255,200,140,0)', 'rgba(255,210,150,0.35)'),
+    transparent: true,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    fog: false,
+    opacity: 0,
+  });
+}
+
 export function LampPools({ controller, at }: { controller: GameController; at: Vector3[] }) {
   const { geo, mat } = useMemo(() => {
     const up = new Vector3(0, 1, 0);
@@ -428,19 +447,11 @@ export function LampPools({ controller, at }: { controller: GameController; at: 
     });
     return {
       geo: parts.length ? mergeGeometries(parts) : new BufferGeometry(),
-      mat: new MeshBasicMaterial({
-        map: radialTexture('rgba(255,222,170,0.8)', 'rgba(255,200,140,0)', 'rgba(255,210,150,0.35)'),
-        transparent: true,
-        blending: AdditiveBlending,
-        depthWrite: false,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-        fog: false,
-      }),
+      mat: lampPoolMaterial(),
     };
   }, [at]);
   useFrame(() => {
-    mat.opacity = Math.max(0, Math.min(1, (controller.sky.night - 0.2) / 0.6)) * 0.55;
+    mat.opacity = lampsOn(controller.sky.night) * 0.55;
   });
   return <mesh geometry={geo} material={mat} renderOrder={1} />;
 }

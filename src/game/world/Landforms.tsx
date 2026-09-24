@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useStore } from 'zustand';
-import { BufferGeometry, DoubleSide, Float32BufferAttribute, FrontSide, Matrix4, MeshStandardMaterial, Quaternion, Vector3 } from 'three';
+import { BufferGeometry, DoubleSide, Float32BufferAttribute, FrontSide, Matrix4, MeshStandardMaterial, PointLight, Quaternion, Vector3 } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { arcDistance, moveAlong } from '../math/sphere';
 import { selectAmbientPaused } from '../state/store';
 import { buildCliffs } from './cliffs';
+import { lampPoolMaterial, lampsOn } from './DayNight';
 import { mesaRadius, type Bridge, type Mesa, type River } from './features';
 import { Kit, hash3 } from './kit';
 import { KitModel } from './KitModel';
@@ -378,8 +379,68 @@ function bridgeFrame(b: Bridge): { p: Vector3; q: Quaternion } {
   return { p: b.n.clone().multiplyScalar(R), q };
 }
 
+/** Lantern glow: warm light that reaches the deck, rails, banks and anyone crossing. */
+const LANTERN = { color: '#ffc98a', intensity: 2.4, distance: 3.2, decay: 1.6 } as const;
+
+/**
+ * A little iron lantern on a rail post, centred on `c` (kit frame): base and top plates, four
+ * corner bars and a pyramid roof with a ring, around a lit glass core that shows between the bars
+ * (the `glow` layer, so it blooms at night).
+ */
+function lantern(k: Kit, [x, y, z]: [number, number, number]) {
+  k.surface('metal', () => {
+    k.box([0.05, 0.28, 0.05], ARCH.iron, { p: [x, y - 0.2, z] }, 0.01);
+    k.box([0.16, 0.03, 0.16], ARCH.iron, { p: [x, y - 0.085, z] }, 0.008);
+    k.box([0.16, 0.03, 0.16], ARCH.iron, { p: [x, y + 0.085, z] }, 0.008);
+    for (const [dx, dz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      k.box([0.022, 0.16, 0.022], ARCH.iron, { p: [x + dx * 0.068, y, z + dz * 0.068] }, 0.004);
+    }
+    k.cone(0.12, 0.09, ARCH.iron, { p: [x, y + 0.145, z], r: [0, Math.PI / 4, 0] }, 4);
+    k.torus(0.022, 0.007, ARCH.iron, { p: [x, y + 0.215, z] }, Math.PI * 2, [4, 10]);
+  });
+  k.box([0.11, 0.14, 0.11], ARCH.lit, { p: [x, y, z] }, 0.01, 'glow');
+}
+
+/**
+ * Warm pools of lamplight on the deck around each lantern: a grid laid over the arched planks
+ * (so it follows the deck), UV-mapped so the radial falloff is centred on the lantern.
+ */
+function lanternPools(lamps: [number, number, number][], L: number, W: number, deck: (z: number) => number, radius = 1.0): BufferGeometry {
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  const nx = 6;
+  const nz = 10;
+  for (const [lx, , lz] of lamps) {
+    const z0 = Math.max(-L, lz - radius);
+    const z1 = Math.min(L, lz + radius);
+    const base = pos.length / 3;
+    for (let j = 0; j <= nz; j++) {
+      const z = z0 + ((z1 - z0) * j) / nz;
+      for (let i = 0; i <= nx; i++) {
+        const x = -W + 0.06 + ((2 * W - 0.12) * i) / nx;
+        pos.push(x, deck(z) + 0.012, z);
+        uv.push((x - lx) / (2 * radius) + 0.5, (z - lz) / (2 * radius) + 0.5);
+      }
+    }
+    for (let j = 0; j < nz; j++) {
+      for (let i = 0; i < nx; i++) {
+        const a = base + j * (nx + 1) + i;
+        const c = a + nx + 1;
+        idx.push(a, c, a + 1, a + 1, c, c + 1);
+      }
+    }
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return g;
+}
+
 function buildBridge(b: Bridge) {
   const k = new Kit();
+  const lamps: [number, number, number][] = [];
   const L = b.halfLengthU;
   const W = b.halfWidthU;
   // deck height in the flat kit frame: the arch, minus the sphere's fall-off away from the centre
@@ -396,18 +457,13 @@ function buildBridge(b: Bridge) {
         k.blob(0.12 + 0.04 * hash3(i, s, 3), shade(ARCH.stoneDark, (hash3(i, 4, s) - 0.5) * 0.2), { p: [(i - 1.5) * 0.46, y - 0.34, z + s * 0.22], s: [1.2, 0.7, 1] }, 1, 'solid', 0.2, i);
       }
     });
-    // a little lantern on one post at each end (glows at night)
+    // a lantern on the end post, on opposite sides at the two ends (lit at night)
     const x = s < 0 ? -W + 0.04 : W - 0.04;
     const zl = s * (L - 0.08);
-    const yl = deck(zl);
-    k.surface('metal', () => {
-      k.box([0.05, 0.28, 0.05], ARCH.iron, { p: [x, yl + 0.66, zl] }, 0.01);
-      k.box([0.14, 0.16, 0.14], ARCH.iron, { p: [x, yl + 0.86, zl] }, 0.02);
-      k.box([0.1, 0.12, 0.1], ARCH.lit, { p: [x, yl + 0.86, zl] }, 0.01, 'glow');
-      k.cone(0.11, 0.08, ARCH.iron, { p: [x, yl + 0.98, zl] }, 8);
-    });
+    lamps.push([x, deck(zl) + 0.86, zl]);
+    lantern(k, lamps[lamps.length - 1]);
   }
-  return k.build();
+  return { geo: k.build(), lamps, pools: lanternPools(lamps, L, W, deck) };
 }
 
 /** The bridge's planks, stringers and rails. */
@@ -448,13 +504,54 @@ function bridgeTimber(k: Kit, L: number, W: number, deck: (z: number) => number,
   }
 }
 
+/**
+ * The bridges, with working lanterns: after dusk each lantern's glass glows (shared `glow`
+ * material), a real point light (no shadows) warms the deck, rails, banks and the character, and
+ * a soft pool of light lies on the planks. The lights stay in the scene (visible) by day at zero
+ * intensity, so the light count and the shader programs never change; with ambient motion on, the flames flicker very gently.
+ */
 export function Bridges({ controller }: { controller: GameController }) {
-  const items = useMemo(() => controller.props.bridges.map((b) => ({ frame: bridgeFrame(b), geo: buildBridge(b) })), [controller]);
+  const paused = useStore(controller.store, selectAmbientPaused);
+  const items = useMemo(() => controller.props.bridges.map((b) => ({ frame: bridgeFrame(b), ...buildBridge(b) })), [controller]);
+  const poolMat = useMemo(() => lampPoolMaterial(), []);
+  const lights = useMemo(
+    () =>
+      items.map(({ lamps }) =>
+        lamps.map(([x, y, z]) => {
+          const l = new PointLight(LANTERN.color, 0, LANTERN.distance, LANTERN.decay);
+          l.position.set(x, y, z);
+          l.castShadow = false;
+          return l;
+        }),
+      ),
+    [items],
+  );
+  controller.bridgeLamps.count = lights.reduce((n, ls) => n + ls.length, 0);
+  const clock = useMemo(() => ({ t: 0 }), []);
+  useFrame((_, dt) => {
+    if (!paused) clock.t += dt;
+    const on = lampsOn(controller.sky.night);
+    controller.bridgeLamps.lit = on;
+    let peak = 0;
+    poolMat.opacity = on * 0.6;
+    lights.forEach((ls) =>
+      ls.forEach((l, i) => {
+        const flicker = paused ? 1 : 1 + 0.05 * Math.sin(clock.t * 7.3 + i * 2.1) + 0.03 * Math.sin(clock.t * 13.1 + i);
+        l.intensity = LANTERN.intensity * on * flicker;
+        peak = Math.max(peak, l.intensity);
+      }),
+    );
+    controller.bridgeLamps.intensity = peak;
+  });
   return (
     <group name="bridges">
-      {items.map(({ frame, geo }, i) => (
+      {items.map(({ frame, geo, pools }, i) => (
         <group key={i} position={frame.p} quaternion={frame.q}>
           <KitModel geo={geo} />
+          <mesh geometry={pools} material={poolMat} renderOrder={1} name="bridge-lamp-pools" />
+          {lights[i].map((l, j) => (
+            <primitive key={j} object={l} />
+          ))}
         </group>
       ))}
     </group>

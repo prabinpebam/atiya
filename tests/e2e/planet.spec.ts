@@ -184,6 +184,22 @@ test.describe('day–night', () => {
     await expect(page.getByTestId('time-badge')).toContainText('☾');
   });
 
+  test('the bridge lanterns are dark by day and light up (real lights) at night', async ({ page }) => {
+    await startPlanet(page);
+    const lamps = () => page.evaluate(() => (window as any).__game.bridgeLamps());
+    await page.evaluate(() => (window as any).__game.setTime(11));
+    await expect.poll(async () => (await lamps()).lit).toBe(0);
+    const day = await lamps();
+    expect(day.count).toBe(2);
+    expect(day.intensity).toBe(0);
+    await page.evaluate(() => (window as any).__game.setTime(22));
+    await expect.poll(async () => (await lamps()).lit).toBeGreaterThan(0.9);
+    expect((await lamps()).intensity).toBeGreaterThan(1.5);
+    // back to morning: they go out again
+    await page.evaluate(() => (window as any).__game.setTime(9));
+    await expect.poll(async () => (await lamps()).intensity).toBe(0);
+  });
+
   test('“Always daytime” holds the day and is remembered', async ({ page }) => {
     await startPlanet(page);
     await page.evaluate(() => {
