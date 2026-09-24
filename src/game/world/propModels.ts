@@ -92,6 +92,46 @@ export function grassCards(width = 0.36, height = 0.27): BufferGeometry {
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
 
+/** A floating card lying flat (y = 0), `size` across, with texture cell `uv` (lily pads). */
+export function flatCard(size: number, uv: readonly [number, number, number, number]): BufferGeometry {
+  const h = size / 2;
+  const [u0, v0, u1, v1] = uv;
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute([-h, 0, h, h, 0, h, h, 0, -h, -h, 0, -h], 3));
+  g.setAttribute('normal', new Float32BufferAttribute([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0], 3));
+  g.setAttribute('uv', new Float32BufferAttribute([u0, v0, u1, v0, u1, v1, u0, v1], 2));
+  g.setIndex([0, 1, 2, 0, 2, 3]);
+  return g;
+}
+
+/**
+ * `planes` crossed upright cards (base at y = 0) showing texture cell `uv`: pond reeds, irises,
+ * ferns. Normals point up so the plants shade like the ground they grow from.
+ */
+export function uprightCards(width: number, height: number, uv: readonly [number, number, number, number], planes = 2, twist = 0.35): BufferGeometry {
+  const pos: number[] = [];
+  const nrm: number[] = [];
+  const uvs: number[] = [];
+  const idx: number[] = [];
+  const [u0, v0, u1, v1] = uv;
+  for (let i = 0; i < planes; i++) {
+    const a = (i / planes) * Math.PI + twist;
+    const dx = (Math.cos(a) * width) / 2;
+    const dz = (Math.sin(a) * width) / 2;
+    const b = pos.length / 3;
+    pos.push(-dx, -0.02, -dz, dx, -0.02, dz, dx, height, dz, -dx, height, -dz);
+    for (let k = 0; k < 4; k++) nrm.push(0, 1, 0);
+    uvs.push(u0, v0, u1, v0, u1, v1, u0, v1);
+    idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new Float32BufferAttribute(nrm, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  g.setIndex(idx);
+  return g;
+}
+
 const BLOOM_SPOTS: [number, number, number][] = [
   [0, 0.26, 0],
   [0.09, 0.2, 0.05],

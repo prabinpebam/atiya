@@ -7,7 +7,7 @@ import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
 import { generateProps, type PropLayout } from './world/layout';
-import { Terrain } from './world/terrain';
+import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectReducedMotion, type GameStore } from './state/store';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
@@ -43,10 +43,14 @@ export class GameController {
   readonly geoById: Map<string, LandmarkGeometry>;
   readonly dataById: Map<string, LandmarkData>;
   readonly props: PropLayout;
-  /** Ground height model (undulation, river bed, mesas, bridge deck). */
+  /** Ground height model (undulation, river bed, pond bowl, mesas, bridge deck). */
   readonly terrain: Terrain;
   /** Smoothed height of the ground under the player (u above the base sphere). */
   lift = 0;
+  /** Smoothed depth of the water the player is wading in (u; 0 on land). */
+  wadeDepth = 0;
+  /** Wading effects, maintained by WadeFx: live wake rings and whether the leg foam shows. */
+  readonly wake = { ripples: 0, collar: false };
   readonly keyboard = new KeyboardInput();
   readonly fadeEl: { current: HTMLDivElement | null } = { current: null };
   region: HTMLDivElement | null = null;
@@ -182,9 +186,13 @@ export class GameController {
     const playing = s.phase === 'playing' && !s.openId && !s.menuOpen;
     const intent: MoveIntent = playing ? this.keyboard.intent() : { x: 0, y: 0, run: false };
     this.updateView(delta, playing, selectReducedMotion(s));
+    const dt = Math.min(Math.max(delta, 0), CONFIG.maxDt);
+    // wading: slower in deeper water (the sim eases toward the new speed)
+    this.sim.speedFactor = wadeSpeedFactor(this.terrain.waterDepth(this.sim.pLocal));
     this.sim.step(delta, intent);
-    // follow the ground (hills, the bridge deck) with a little smoothing
-    this.lift = damp(this.lift, this.terrain.walkHeight(this.sim.pLocal), 14, Math.min(Math.max(delta, 0), CONFIG.maxDt));
+    // follow the ground (hills, the bridge deck, the stream bed when wading) with a little smoothing
+    this.lift = damp(this.lift, this.terrain.walkHeight(this.sim.pLocal), 14, dt);
+    this.wadeDepth = damp(this.wadeDepth, this.terrain.waterDepth(this.sim.pLocal), 14, dt);
 
     for (const e of this.sim.drainEvents()) {
       if (e.type === 'travel-complete') {

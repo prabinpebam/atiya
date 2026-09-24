@@ -18,6 +18,7 @@ function band(d: number, inner: number, soft: number): number {
   return 1 - Math.min(1, Math.max(0, (d - inner) / soft));
 }
 
+
 function smooth(e0: number, e1: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
   return t * t * (3 - 2 * t);
@@ -69,11 +70,10 @@ function buildGround(controller: GameController): BufferGeometry {
       path = Math.max(path, band(pointArcDistance(u, spawn, lm.n, R), 0.46 + wobble, 0.2));
     }
     let sand = 0;
-    let depth = 0;
     if (pond) {
       const d = arcDistance(u, pond.n, R);
-      sand = band(d, pond.radiusU + 0.45, 0.2) * (1 - band(d, pond.radiusU - 0.25, 0.1));
-      depth = band(d, pond.radiusU - 0.15, 0.35);
+      const pr = terrain.pondShore(u);
+      sand = band(d, pr + 0.4, 0.22) * (1 - band(d, pr - 0.35, 0.1));
     }
     let bed = 0;
     let bank = 0;
@@ -90,7 +90,8 @@ function buildGround(controller: GameController): BufferGeometry {
     surf.set([path, inPlaza, cobble, sand], i * 4);
     surf2.set([bed, bank, 0, h], i * 4);
 
-    const r = R + h - 0.22 * depth;
+    // the terrain includes the carved river bed and pond bowl
+    const r = R + h;
     v.copy(u).multiplyScalar(r);
     pos.setXYZ(i, v.x, v.y, v.z);
   }

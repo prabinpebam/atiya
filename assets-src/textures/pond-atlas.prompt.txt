@@ -1,0 +1,14 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, generated 2026-09-24.
+2x2 full-colour atlas built by scripts/build-textures.py from four transparent sprites (cells: top-left lilies, top-right reeds, bottom-left iris, bottom-right fern).
+
+pond-lilies:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. Seen from directly above: a small floating cluster of three round water-lily pads of different sizes, each with a notch and soft veins, fresh green with lighter edges, plus one open pink water-lily flower with a yellow centre and one closed pink bud, filling the frame; clean crisp silhouette; isolated on a transparent background, no water, no ground, no shadow
+
+pond-reeds:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. Seen from the side: a lush clump of tall soft reeds and slender grass-like leaves fanning upward from a narrow base at the bottom centre, with three brown velvety cattail heads on thin stalks, fresh greens, filling the frame, taller than wide; clean crisp silhouette; isolated on a transparent background, no water, no ground, no shadow
+
+pond-iris:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. Seen from the side: a clump of blue-violet iris flowers with yellow throats on upright stems among sword-shaped green leaves, fanning from a narrow base at the bottom centre, filling the frame; clean crisp silhouette; isolated on a transparent background, no water, no ground, no shadow
+
+pond-fern:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. Seen from the side: a small lush fern clump with arching feathery fronds spreading from a base at the bottom centre, fresh green with lighter tips, filling the frame, wider than tall; clean crisp silhouette; isolated on a transparent background, no water, no ground, no shadow

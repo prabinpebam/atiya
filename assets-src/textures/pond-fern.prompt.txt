@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+
+Prompt:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. Seen from the side: a small lush fern clump with arching feathery fronds spreading from a base at the bottom centre, fresh green with lighter tips, filling the frame, wider than tall; clean crisp silhouette; isolated on a transparent background, no water, no ground, no shadow

@@ -16,6 +16,7 @@ import { Clouds } from './world/Sky';
 import { DayNight } from './world/DayNight';
 import { Bridges, Cliffs, Water } from './world/Landforms';
 import { FlyingLeaves, WindDriver, WindSwirls } from './world/WindFx';
+import { WadeFx } from './world/WadeFx';
 
 /** Drives the simulation first each frame, then applies the planet rotation. */
 function SimDriver({ controller, planet }: { controller: GameController; planet: React.RefObject<Group | null> }) {
@@ -142,6 +143,7 @@ export function Scene({ controller }: { controller: GameController }) {
         <Planet controller={controller} />
         <Cliffs controller={controller} />
         <Water controller={controller} />
+        <WadeFx controller={controller} />
         <Bridges controller={controller} />
         <FlyingLeaves controller={controller} />
         <WindSwirls controller={controller} />

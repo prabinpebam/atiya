@@ -57,6 +57,8 @@ export class PlanetSim {
   movingTime = 0;
   travel: Travel | null = null;
   autoWalk: AutoWalk | null = null;
+  /** Multiplier on walk/run speed, set by the controller each step (e.g. slower while wading). */
+  speedFactor = 1;
   private readonly collision: CollisionParams;
   private readonly events: SimEvent[] = [];
 
@@ -170,11 +172,11 @@ export class PlanetSim {
         new Vector3(Math.sin(this.heading), 0, Math.cos(this.heading)).applyQuaternion(this.planetQ.clone().invert());
       desired.copy(tLocal).applyQuaternion(this.planetQ).setY(0);
       if (desired.lengthSq() < 1e-12) return desired.set(0, 0, 0);
-      return desired.normalize().multiplyScalar(this.cfg.runSpeed);
+      return desired.normalize().multiplyScalar(this.cfg.runSpeed * this.speedFactor);
     }
     if (inputLen <= 0.001) return desired;
     const scale = Math.min(1, inputLen) / inputLen;
-    return desired.set(intent.x * scale, 0, -intent.y * scale).multiplyScalar(intent.run ? this.cfg.runSpeed : this.cfg.walkSpeed);
+    return desired.set(intent.x * scale, 0, -intent.y * scale).multiplyScalar((intent.run ? this.cfg.runSpeed : this.cfg.walkSpeed) * this.speedFactor);
   }
 
   private integrate(dt: number): void {

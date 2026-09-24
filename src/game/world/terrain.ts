@@ -3,17 +3,25 @@ import { CONFIG } from '../config';
 import { UP, arcDistance, pointArcDistance } from '../math/sphere';
 import type { LandmarkGeometry } from '../math/landmarks';
 import { mesaPolar, mesaRadius, riverDistance, type Bridge, type Mesa, type River } from './features';
+import { pondAngle, pondBasin, pondFrame, shoreRadius, type PondFrame } from './pond';
 
 /**
  * Ground height above the base sphere (u), as a pure function of the planet-local direction.
  * Mild rolling undulation that flattens at the plaza, landmarks, paths, pond and river banks;
- * a carved river bed; flat-topped rocky mesas. `walkHeight` adds the arched bridge deck.
+ * a carved river bed and pond bowl; flat-topped rocky mesas. `walkHeight` adds the arched bridge
+ * deck, and `waterDepth` says how deep the character is wading.
  */
 
 export const UNDULATION_U = 0.38;
 export const RIVER_BED_U = -0.34;
 /** Water surface of the river (u above the base sphere). */
 export const RIVER_WATER_U = -0.13;
+/** The character never sinks deeper than this into the water (u; ≈ knee-deep at 1.25 u tall). */
+export const WADE_MAX_U = 0.3;
+/** Wading is this much slower than walking on land at full depth (0..1). */
+export const WADE_SLOWDOWN = 0.45;
+/** Water the ribbon covers beyond the river's half-width (matches the water surface mesh). */
+const RIVER_WET_U = 0.22;
 const PLAZA_FLAT_U = 3.2;
 
 function smoothstep(e0: number, e1: number, x: number): number {
@@ -54,6 +62,7 @@ export interface TerrainFeatures {
 
 export class Terrain {
   private readonly R: number;
+  private readonly pondF: PondFrame | null;
 
   constructor(
     private readonly landmarks: readonly LandmarkGeometry[],
@@ -61,6 +70,7 @@ export class Terrain {
     cfg = CONFIG,
   ) {
     this.R = cfg.planetRadius;
+    this.pondF = features.pond ? pondFrame(features.pond, features.river) : null;
   }
 
   /** Rolling hills in [−A, A] before masking. */
@@ -97,8 +107,43 @@ export class Terrain {
       const hw = river.halfWidth[rd.i];
       h += RIVER_BED_U * (1 - smoothstep(hw * 0.55, hw + 0.42, rd.d));
     }
+    const pond = this.features.pond;
+    if (pond && this.pondF) {
+      const d = arcDistance(n, pond.n, this.R);
+      // the bowl ends 0.15 u past the (at most ≈ 1.19 × radius) lobed shore; where it meets the
+      // stream bed at the mouth the deeper of the two wins, so they don't stack into a hole
+      if (d < pond.radiusU * 1.2 + 0.2) {
+        const bowl = pondBasin(d, shoreRadius(pond, this.pondF, pondAngle(pond, this.pondF, n)));
+        if (bowl > 0) h = Math.min(h, -bowl);
+      }
+    }
     for (const m of this.features.mesas) h = Math.max(h, this.mesaHeight(m, n));
     return h;
+  }
+
+  /** Shoreline radius (u) of the pond in the direction of `n` (the nominal radius without a pond frame). */
+  pondShore(n: Vector3): number {
+    const pond = this.features.pond;
+    if (!pond) return 0;
+    return this.pondF ? shoreRadius(pond, this.pondF, pondAngle(pond, this.pondF, n)) : pond.radiusU;
+  }
+
+  /** True where `n` is under the stream or pond surface (not on a bridge deck). */
+  inWater(n: Vector3): boolean {
+    if (this.deckHeight(n) > -Infinity) return false;
+    const river = this.features.river;
+    if (river) {
+      const rd = riverDistance(river, n);
+      if (rd.d < river.halfWidth[rd.i] + RIVER_WET_U) return true;
+    }
+    const pond = this.features.pond;
+    return pond !== null && arcDistance(n, pond.n, this.R) < this.pondShore(n) + 0.3;
+  }
+
+  /** How deep the character stands in water at `n` (u; 0 on land and on bridges). */
+  waterDepth(n: Vector3): number {
+    if (!this.inWater(n)) return 0;
+    return Math.min(WADE_MAX_U, Math.max(0, RIVER_WATER_U - this.height(n)));
   }
 
   private mesaHeight(m: Mesa, n: Vector3): number {
@@ -132,10 +177,21 @@ export class Terrain {
     return best;
   }
 
-  /** Height the character stands at: the ground, or the bridge deck where it's higher. */
+  /**
+   * Height the character stands at: the ground (the river bed or pond floor when wading, never
+   * more than WADE_MAX_U under the surface), or the bridge deck where it's higher.
+   */
   walkHeight(n: Vector3): number {
-    return Math.max(this.height(n), this.deckHeight(n));
+    const deck = this.deckHeight(n);
+    const h = this.height(n);
+    if (deck > -Infinity) return Math.max(h, deck);
+    return this.inWater(n) ? Math.max(h, RIVER_WATER_U - WADE_MAX_U) : h;
   }
+}
+
+/** Speed multiplier for wading at `depth` u: 1 on land, easing down to 1 − WADE_SLOWDOWN in deep water. */
+export function wadeSpeedFactor(depth: number): number {
+  return 1 - WADE_SLOWDOWN * smoothstep(0.02, 0.22, depth);
 }
 
 /** Arched deck profile: plank-top height (u) at `t` along a bridge of half-length `half`. */

@@ -37,7 +37,18 @@ export interface GameTestHook {
   /** Force the gust level (0…1); `null` returns to the natural wind. */
   setWind(gust: number | null): void;
   /** Ground under the player: smoothed lift, terrain height, walk height and distance to the river (u). */
-  groundInfo(): { lift: number; height: number; walk: number; riverD: number; riverHalfWidth: number };
+  groundInfo(): {
+    lift: number;
+    height: number;
+    walk: number;
+    riverD: number;
+    riverHalfWidth: number;
+    water: number;
+    wade: number;
+    speedFactor: number;
+    ripples: number;
+    collar: boolean;
+  };
 }
 
 /** Non-production only (dev server and `astro build --mode test`). */
@@ -141,6 +152,11 @@ export function installTestHook(c: GameController): void {
         walk: c.terrain.walkHeight(p),
         riverD: rd.d,
         riverHalfWidth: river ? river.halfWidth[rd.i] : 0,
+        water: c.terrain.waterDepth(p),
+        wade: c.wadeDepth,
+        speedFactor: c.sim.speedFactor,
+        ripples: c.wake.ripples,
+        collar: c.wake.collar,
       };
     },
     visitProp: (kind, i = 0) => {

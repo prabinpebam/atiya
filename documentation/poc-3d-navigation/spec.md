@@ -76,7 +76,7 @@ This POC proves the **navigation UI and interaction model**, not final art or co
   - dirt paths from the plaza to every landmark, with noisy edges, scattered pebbles and a darker edge line
   - domed cobbles with mossy joints on the landmark forecourts
   - concentric brick rings with a compass-rose inlay on the spawn plaza
-  - a sand rim around a pond that sits in a shallow basin
+  - a sand rim around a pond whose organic, lobed shoreline sits in a basin
   - damp banks and a pebbly bed along the river; layered rock strata wherever the ground is steep
 - **Landscape (as built, §4.14):** mild rolling hills, four rocky cliff mesas (one with a waterfall), a stream that runs from the waterfall to the pond, and an arched wooden bridge where the stream crosses the Greenhouse path.
 - **Props (as built):** all instanced and always drawn — no culling, so nothing pops in (§5.8):
@@ -87,7 +87,7 @@ This POC proves the **navigation UI and interaction model**, not final art or co
   - rounded rocks, big mossy boulders and river pebbles
   - three kinds of flower clump (tulip, cosmos, pansy) with per-clump colour
   - about 650 grass tufts
-  - a pond with lily pads, reeds and cattails
+  - a pond planted like a real one: floating lily-pad clusters, reeds with cattails in the shallows, irises at the waterline and ferns on the bank, all painted alpha sprites (§4.14)
   - butterflies
 - **Sky & atmosphere:** opaque screen-space gradient sky, drifting puffy clouds in the sky band, light fog on the far limb — all driven by the **day–night cycle** (§4.13). A **wind system** (§4.14) sways the foliage and blows leaves and swirls across the scene.
 - **Lighting:** a hemisphere light plus one directional light that is the sun by day and the moon by night, with a single shadow map (1024² on low, 2048² on high) covering the visible cap. Its direction, colour and intensity follow the time of day (§4.13). An always-directly-below **blob shadow** grounds the character.
@@ -300,7 +300,7 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-72 | Optimized asset pipeline script (gltf-transform) + CREDITS.md | P0 | 5.1, 13 |
 | **World & ambience (added after the POC scope)** | | | |
 | FR-80 | Day–night cycle with cycle / local-time / always-day modes, persisted; readable at night | P1 | 4.13 |
-| FR-81 | Rolling terrain, cliff mesas, boulders, a flowing stream with a waterfall, and a walkable arched bridge. Landmarks, plaza and paths stay flat and reachable; the river and cliffs block walking | P1 | 4.14, 5.3 |
+| FR-81 | Rolling terrain, cliff mesas, boulders, a flowing stream with a waterfall, and a walkable arched bridge. Landmarks, plaza and paths stay flat and reachable; the cliffs block walking, while the stream and pond can be waded through (slower, knee-deep, with ripples) | P1 | 4.14, 5.3 |
 | FR-82 | Wind: gust-driven foliage sway, flying leaves and occasional swirls, all stopped under reduced motion / pause ambient | P1 | 4.14 |
 
 ### 4.12 Art direction (as built)
@@ -365,8 +365,19 @@ The planet is no longer a smooth ball: the land gently rolls, rocky cliffs rise 
   - It springs from the foot of the tallest mesa as a **waterfall** with a plunge pool and foam, then meanders (Catmull-Rom spline, varying width) down to the pond.
   - The ground is carved into a river bed below the water line. The shader paints damp banks and a pebbly bed.
   - The water is a ribbon with a flow shader: scrolling ripples and sparkles, lighter shallows at the edges, and foam streaks. The waterfall sheet uses the same shader, falling faster. Water dims at night like the rest of the daylit materials.
-  - The river blocks walking, except at bridges.
-- **Bridge:** the stream crosses the Greenhouse path under an **arched plank bridge** with stringers, posts and rails, stone abutments and two lanterns that glow at night. The character walks up and over the arch: the camera and character follow the deck height. The rails are obstacles, so you can't step off the side into the water.
+  - The stream and pond are **wadeable** (see Wading below); the bridge keeps your feet dry.
+- **Pond (where the stream ends):**
+  - The pond **shares the stream's water level**, so the two are one body of water. Its bowl is part of the terrain height (`pondBasin` in `world/pond.ts`; where it meets the stream bed the deeper of the two wins), and the shoreline is wherever the ground rises through the water. There is no separate rim.
+  - The shoreline is organic: `shoreRadius` adds a few low harmonics for a soft, lobed outline. It relaxes to the nominal radius at the stream mouth. The basin, sand rim, water mesh, plant zones and prop keep-out all follow it.
+  - The pond water uses the river's shader in a still-water variant: slow wandering ripples, drifting caustics and broken shoreline foam. Where the stream flows in, the foam opens up and the channel's deeper colour carries into the pond. The river ribbon cross-fades out (a per-vertex fade in `aFlow.z`) before it ends, over pond water that runs out under the mouth, so there is no seam, lip or colour step.
+  - Plants (`world/pondPlants.ts`, pure and unit-tested): six irregular shore groups grade from reeds wading in the shallows, to irises at the waterline, to ferns on the damp bank. Reeds flank the stream mouth, and lily-pad clusters float on the open water. Nothing is placed in the mouth itself. All of them are painted alpha sprites from the `pond-atlas` (§4.15), and the upright ones sway in the wind.
+- **Bridge:** the stream crosses the Greenhouse path under an **arched plank bridge** with stringers, posts and rails, stone abutments and two lanterns that glow at night. The character walks up and over the arch: the camera and character follow the deck height. The rails are obstacles, so you can't step off the side of the deck; you can still wade across the stream beside the bridge.
+- **Wading:**
+  - The stream and the pond don't block walking. `Terrain.inWater(n)` / `waterDepth(n)` say where the water is and how deep. The stream is about 0.2 u deep; the pond is up to about 0.27 u.
+  - The character walks down onto the stream bed or pond floor (`walkHeight`, never more than `WADE_MAX_U` = 0.3 u under the surface, about knee-deep), so the water hides their legs. The camera follows.
+  - Wading is slower: `wadeSpeedFactor(depth)` eases the walk and run speed down to 55 % in deep water (`PlanetSim.speedFactor`, set by the controller each step). The run cycle slows with it.
+  - Feedback (`world/WadeFx.tsx`, one instanced draw call while wading, none on land): a broken, bubbling **foam collar** hugs the legs at the waterline, and **wake rings** spread from each step. They come briskly while moving and as a slow ripple while standing, and they stay put on the planet, so walking leaves a trail. Under Reduce motion or Pause ambient motion the rings are hidden and the collar holds still.
+  - Cliffs, boulders, trees and the bridge rails still block.
 - **Wind:**
   - The wind circulates around a tilted axis, so it blows in one consistent direction across the visible cap (towards screen-left at spawn).
   - Its strength breathes between a 0.3 breeze and occasional multi-second gusts.
@@ -376,7 +387,7 @@ The planet is no longer a smooth ball: the land gently rolls, rocky cliffs rise 
 - **Motion:** under Reduce motion or Pause ambient motion the wind clock freezes, the flying leaves and swirls are hidden, and the water stops flowing.
 - **Implementation:**
   - `world/features.ts` defines the river spline, mesas and bridge placement.
-  - `world/terrain.ts` holds `Terrain`, a pure, unit-tested height model: `height(n)`, `deckHeight(n)` and `walkHeight(n)`.
+  - `world/terrain.ts` holds `Terrain`, a pure, unit-tested height model: `height(n)` (including the stream bed and pond bowl), `deckHeight(n)`, `walkHeight(n)`, `inWater(n)` and `waterDepth(n)`. `world/pond.ts` holds the pond shape (frame, lobed shoreline, bowl).
   - `world/Landforms.tsx` builds `Cliffs`, `Water` and `Bridges`.
   - `world/windField.ts` is the pure wind model with its shared uniforms.
   - `world/WindFx.tsx` holds the driver, flying leaves and swirls. See §5.3 for collision and ADR-13/ADR-14.
@@ -392,6 +403,7 @@ All textures and the landing art are **original**, generated for this project wi
 | `water` | Seamless greyscale caustics mask, 512² | River flow shader (two layers drifting downstream) |
 | `leaf-broad`, `leaf-single`, `grass-card` | Alpha sprites converted to tintable greyscale | Hardwood/bush leaf cards, flying leaves, grass clumps |
 | `conifer-atlas` | 2×2 tintable atlas of four alpha sprites (clump, bough, tufts, crown), 512² | Cedar foliage cards (each card picks a cell; `Cards.add` takes a UV rect) |
+| `pond-atlas` | 2×2 full-colour atlas of four alpha sprites (lily-pad cluster, reeds with cattails, irises, fern), 512² | Pond plants: flat floating lily cards and crossed upright cards for reeds, irises and ferns |
 | `moon` | Alpha sprite | Night sky moon disc |
 | `paint-grain` | Seamless greyscale brush-grain mask, 256² | Subtle painted surface on all kit models (landmarks, bridge, plaza furniture): object-space triplanar, luminance only, so every colour is kept. The kit has one shared material, so the grain is generic rather than per material (wood, stone, roof) |
 | `landing-hero` | Key art (image-to-image from the spawn screenshot) | Landing poster (`public/poster/landing-{800,1200}.webp`) and the social card (`public/og-image.jpg`, 1200×630) |
@@ -400,7 +412,7 @@ All textures and the landing art are **original**, generated for this project wi
 - **Palette preserved:** each ground layer is divided by the tile's mean colour and multiplied by the layer's original colour or vertex tint. The textures add painted detail without changing the scene's palette or the day–night lighting. Grass mixes two scales with a slow noise, so the tile never visibly repeats. Clover and tiny flowers stay procedural, so they're never tiled.
 - **Tintable sprites:** foliage sprites are stored as normalised greyscale (0.55–1.0) with real alpha. Per-card and per-instance colours tint them exactly like the old canvas leaves, and they keep alpha-tested shadows. Alpha is snapped (≥ 250 → opaque, ≤ 4 → clear), and transparent pixels are colour-bled, so mipmaps never show halos.
 - **Grass clumps** are three crossed cards with upward normals (so they shade like the lawn): 6 triangles instead of about 36 each. This saves about 20 k triangles.
-- **Loading:** the 13 game textures are about 490 KB of WebP. `mountGame` preloads them before the first render (with a 10 s cap). Any texture that fails leaves its material on the procedural look, so the planet is always complete.
+- **Loading:** the 14 game textures are about 600 KB of WebP. `mountGame` preloads them before the first render (with a 10 s cap). Any texture that fails leaves its material on the procedural look, so the planet is always complete.
 - **Pipeline:** `python scripts/build-textures.py` builds `public/textures/*.webp` from `assets-src/textures/*.png` and writes `src/game/world/textureManifest.ts` (URLs, kinds, byte sizes, mean linear colours). Its steps: wrap-safe resize for tiles; crop, fit, greyscale and bleed for sprites; the poster sizes and the social card. The outputs are committed.
 
 ## 5. Technical design
@@ -484,7 +496,7 @@ if (|vel| > EPS) heading = dampAngle(heading, atan2(vel.x, vel.z), TURN_T, dt); 
 - **Tunneling:** prevented by `MAX_STEP = 0.1 u` sub-steps (§5.2), which is well below the smallest expanded obstacle radius (≥ 0.67 u with the minimum 0.3 u footprint).
 - **`resolvePenetration`:** if `angle(pLocal, n_j) < β_j`, rotate `pLocal` away from `n_j` along their great circle to angle `β_j` → `pCorrected`; let `c = setFromUnitVectors(pLocal, pCorrected)` (minimal rotation, planet-local); update `planetQ = normalize(planetQ · c⁻¹)` and assert `planetQ⁻¹·UP ≈ pCorrected`. This preserves the planet's twist about the player normal (no world-yaw jump).
 - **Unit tests:** head-on (→ zero, no NaN), glancing (tangential speed preserved), two-obstacle corner, high-`dt` at RUN (no tunneling through the smallest obstacle), push-out twist preservation (a reference landmark's world yaw unchanged within 1e-4 rad).
-- No physics engine. The collision loop is O(n) over about 300 obstacle circles per sub-step, which is negligible. The river, bridge rails and mesa walls are made of the same circles as the trees and landmarks.
+- No physics engine. The collision loop is O(n) over about 300 obstacle circles per sub-step, which is negligible. The bridge rails and mesa walls are made of the same circles as the trees and landmarks. Water is not an obstacle: it only changes the height you stand at and your speed (§4.14 Wading).
 - **Terrain is visual only (ADR-13):** collision and movement stay on the unit sphere. The character, camera and props are lifted by `Terrain.walkHeight` / `height` (§4.14). The lift is damped (λ ≈ 14), so walking over hills and the bridge arch is smooth. Obstacles block wherever the ground is too steep or wet to walk: the river (a chain of circles along the spline, left open where a path crosses on a bridge), the bridge rails, and each mesa (a core circle plus a ring along its rim). Mesa-top trees need no obstacle because you can't get up there.
 
 ### 5.4 Proximity system
@@ -592,7 +604,8 @@ personal-site/
 │     │                  # features.ts (river spline, mesas, bridges), terrain.ts (pure height model),
 │     │                  # Landforms.tsx (cliffs, water, bridges), windField.ts (pure wind model + shared uniforms),
 │     │                  # WindFx.tsx (wind driver, flying leaves, swirls), textures.ts (preload + triplanar GLSL),
-│     │                  # textureManifest.ts (generated), rockDetail.ts (painted rock on cliffs and boulders)
+│     │                  # textureManifest.ts (generated), rockDetail.ts (painted rock on cliffs and boulders),
+│     │                  # pond.ts (pure: pond frame, lobed shoreline, bowl), pondPlants.ts (pure: plant placement),
 │     ├─ player/         # Player.tsx (rigged Kenney model, idle/run blend, arrival hop), Character.tsx (procedural fallback avatar)
 │     ├─ camera/         # DioramaCamera.tsx
 │     ├─ ui/             # Hud.tsx, PreviewCard.tsx, LandmarkDialog.tsx, Menu.tsx, ViewControls.tsx (compass, rotate/tilt, reset),
@@ -634,7 +647,7 @@ A hydrated `client:only` island would import the game bundle as part of hydratio
    The result is *load*, *offer a choice*, or *fall back*.
 3. Only on *load*, or when the user chooses **Continue anyway**, does it run `await import("../game/mount")`, which calls `createRoot(container).render(<GameApp/>)`. Game code is emitted as named chunks (`game-*`) so E2E tests can assert that no such request happens when the user is gated out.
 4. GLBs load via `useGLTF` (with `KTX2Loader`/Meshopt via `extendLoader`), with progress from `useProgress`.
-5. The generated textures (about 490 KB of WebP, §4.15) are preloaded before the first render; a texture that fails falls back to procedural. Shaders are precompiled (`renderer.compileAsync`). Then `performance.mark("game:playable")` fires when the loader is replaced by the **Start exploring** button and input is accepted.
+5. The generated textures (about 600 KB of WebP, §4.15) are preloaded before the first render; a texture that fails falls back to procedural. Shaders are precompiled (`renderer.compileAsync`). Then `performance.mark("game:playable")` fires when the loader is replaced by the **Start exploring** button and input is accepted.
 
 `@astrojs/react` remains installed for JSX/TSX tooling, HMR, and any future classic-page islands.
 
@@ -729,9 +742,9 @@ None in the POC (privacy-first). Optional P2: local-only debug overlay showing t
 | ADR-10 | **No culling** — everything on the planet is always drawn | Horizon culling (dot-product test per instance/landmark); LOD | Horizon culling halved triangles but caused visible pop-in at the limb; the scene is small enough to draw in full, and nothing ever appears suddenly (owner decision, 2026-09-24) |
 | ADR-11 | **Two quality tiers; tilt-shift on both** | Post only on `high`; always-full post | The tilt-shift *is* the diorama look, so it's always on (cheaper on `low`); bloom and vignette are the optional extras that adaptive quality may drop. An earlier version switched tiers at runtime and made the tilt-shift vanish after a few seconds |
 | ADR-12 | **Compressed day–night cycle by default; local time and always-day as options** | Real local time only; static day | Local time only means most visitors never see dusk or night; a ~6-minute day (short night) shows the whole cycle during a typical visit. The keyframed palette model is pure TS (testable), and sky objects live in the camera frame like the clouds, which suits the rotate-the-planet model (ADR-4) |
-| ADR-13 | **Terrain as a pure height function over the sphere; collision stays 2D** | Heightfield physics / raycast ground; separate terrain mesh per feature | One `Terrain.height(n)` feeds the ground mesh, prop placement, the character/camera lift and the tests, so everything agrees. Movement, sliding and proximity keep the proven unit-sphere maths (ADR-3/ADR-4). Unwalkable ground (river, cliffs, rails) is expressed as ordinary obstacle circles. Heights are mild enough that no slope limits are needed |
+| ADR-13 | **Terrain as a pure height function over the sphere; collision stays 2D** | Heightfield physics / raycast ground; separate terrain mesh per feature | One `Terrain.height(n)` feeds the ground mesh, prop placement, the character/camera lift and the tests, so everything agrees. Movement, sliding and proximity keep the proven unit-sphere maths (ADR-3/ADR-4). Unwalkable ground (cliffs, rails) is expressed as ordinary obstacle circles; water is wadeable, so `Terrain` reports its depth (`waterDepth`) and the character stands on the bed. Heights are mild enough that no slope limits are needed |
 | ADR-14 | **Wind as shared GPU uniforms, plus a small pool of CPU-driven effects** | Per-object CPU animation; particle library | One uniform update animates ~1 000 swaying instances, and their shadows, for free. Flying leaves are a single instanced mesh, and swirls are a pool of three ribbons, so the cost is a handful of draw calls. The pure `windField.ts` keeps the direction and gusts testable and consistent between the shader and the effects |
-| ADR-15 | **Generated, hand-painted textures as detail over the procedural look** (GPT Image 2.5, sources and prompts committed) | Keep fully procedural; CC0 texture packs; hand-painting in an art tool | The tiles add painterly detail (blades, stones, pebbles, strata, caustics, brush grain) that procedural noise can't match, in exactly the game's palette: the image-to-image references are the game's own screenshots, and the shader normalises by each tile's mean colour. Original output means no licensing risk. About 490 KB. The procedural shader remains the fallback, so a failed load never breaks the planet. Triplanar/UV mapping means the kit geometry needs no UVs |
+| ADR-15 | **Generated, hand-painted textures as detail over the procedural look** (GPT Image 2.5, sources and prompts committed) | Keep fully procedural; CC0 texture packs; hand-painting in an art tool | The tiles add painterly detail (blades, stones, pebbles, strata, caustics, brush grain) that procedural noise can't match, in exactly the game's palette: the image-to-image references are the game's own screenshots, and the shader normalises by each tile's mean colour. Original output means no licensing risk. About 600 KB. The procedural shader remains the fallback, so a failed load never breaks the planet. Triplanar/UV mapping means the kit geometry needs no UVs |
 
 ## 11. Risks (summary — full register in [plan](./plan.md#5-risk-register))
 

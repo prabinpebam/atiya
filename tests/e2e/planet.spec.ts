@@ -28,7 +28,21 @@ type GameState = {
 };
 
 const ground = (page: Page) =>
-  page.evaluate(() => (window as any).__game.groundInfo() as { lift: number; height: number; walk: number; riverD: number; riverHalfWidth: number });
+  page.evaluate(
+    () =>
+      (window as any).__game.groundInfo() as {
+        lift: number;
+        height: number;
+        walk: number;
+        riverD: number;
+        riverHalfWidth: number;
+        water: number;
+        wade: number;
+        speedFactor: number;
+        ripples: number;
+        collar: boolean;
+      },
+  );
 
 const state = (page: Page) => page.evaluate(() => (window as any).__game.getState() as GameState);
 
@@ -307,17 +321,61 @@ test.describe('landscape & wind', () => {
     expect(walk.nearby).toBe('greenhouse');
   });
 
-  test('the river blocks walking into the water', async ({ page }) => {
+  test('you can wade across the stream: the character sinks in, slows down and leaves ripples', async ({ page }) => {
     await startPlanet(page);
-    await page.evaluate(() => (window as any).__game.visitFeature('river', 2));
-    const before = await ground(page);
-    await page.locator('.game-region').focus();
-    await page.keyboard.down('w');
-    await page.waitForTimeout(3000);
-    await page.keyboard.up('w');
-    const after = await ground(page);
-    expect(after.riverD).toBeLessThan(before.riverD);
-    expect(after.riverD).toBeGreaterThan(after.riverHalfWidth);
+    // step at a fixed dt from the bank out into the middle of the stream
+    const into = await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.visitFeature('river', 2);
+      g.pause();
+      g.setIntent(0, 1);
+      let minLift = Infinity;
+      let minFactor = 1;
+      let deepest = 0;
+      for (let f = 0; f < 60 * 8; f++) {
+        g.advance(1, 1 / 60);
+        const gi = g.groundInfo();
+        minLift = Math.min(minLift, gi.lift);
+        minFactor = Math.min(minFactor, gi.speedFactor);
+        deepest = Math.max(deepest, gi.water);
+        if (gi.water > 0.15) break;
+      }
+      g.clearIntent();
+      g.advance(40, 1 / 60);
+      g.resume();
+      return { minLift, minFactor, deepest, now: g.groundInfo() };
+    });
+    expect(into.deepest).toBeGreaterThan(0.15);
+    expect(into.now.riverD).toBeLessThan(into.now.riverHalfWidth);
+    expect(into.now.lift).toBeLessThan(-0.2); // settled on the stream bed, below the water surface (−0.13)
+    expect(Math.min(into.minFactor, into.now.speedFactor)).toBeLessThan(0.75); // wading is slower
+    // standing in the water: foam around the legs and slow ripples spreading out
+    await expect.poll(async () => (await ground(page)).collar, { timeout: 10_000 }).toBe(true);
+    await expect.poll(async () => (await ground(page)).ripples, { timeout: 10_000 }).toBeGreaterThan(0);
+    // Pause ambient motion hides the spreading rings but keeps the (still) foam collar
+    await page.getByTestId('menu-button').click();
+    await page.getByRole('checkbox', { name: 'Pause ambient motion' }).check();
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect.poll(async () => (await ground(page)).ripples).toBe(0);
+    expect((await ground(page)).collar).toBe(true);
+    // keep going and climb out on the far bank
+    const out = await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.pause();
+      g.setIntent(0, 1);
+      let f = 0;
+      for (; f < 60 * 8; f++) {
+        g.advance(1, 1 / 60);
+        const gi = g.groundInfo();
+        if (gi.water === 0 && gi.riverD > gi.riverHalfWidth + 0.5) break;
+      }
+      g.clearIntent();
+      g.resume();
+      return { seconds: f / 60, gi: g.groundInfo() };
+    });
+    expect(out.seconds).toBeLessThan(8);
+    expect(out.gi.water).toBe(0);
+    expect(out.gi.speedFactor).toBe(1);
   });
 
   test('gusts send leaves and wind swirls flying; Pause ambient motion stills them', async ({ page }) => {

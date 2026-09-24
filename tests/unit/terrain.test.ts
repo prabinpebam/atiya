@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { Vector3 } from 'three';
+import { Quaternion, Vector3 } from 'three';
 import { CONFIG } from '../../src/game/config';
 import { landmarkGeometry } from '../../src/game/math/landmarks';
-import { UP, arcDistance, moveAlong, pointArcDistance } from '../../src/game/math/sphere';
+import { UP, arcDistance, moveAlong, pointArcDistance, tangentToward } from '../../src/game/math/sphere';
+import { PlanetSim } from '../../src/game/systems/movement';
 import { mesaRadius, riverDistance } from '../../src/game/world/features';
 import { PLAZA_RADIUS_U, generateProps } from '../../src/game/world/layout';
-import { RIVER_WATER_U, Terrain, UNDULATION_U, valueNoise } from '../../src/game/world/terrain';
+import { angleGap, pondAngle, pondFrame, pondPoint, shoreRadius } from '../../src/game/world/pond';
+import { MOUTH_CLEAR, pondPlants } from '../../src/game/world/pondPlants';
+import { RIVER_WATER_U, Terrain, UNDULATION_U, WADE_MAX_U, WADE_SLOWDOWN, valueNoise, wadeSpeedFactor } from '../../src/game/world/terrain';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
 const R = CONFIG.planetRadius;
@@ -124,5 +127,124 @@ describe('cliffs, rocks and pebbles', () => {
     }
     expect(layout.boulders.length).toBeGreaterThanOrEqual(15);
     expect(layout.pebbles.length).toBeGreaterThanOrEqual(60);
+  });
+});
+
+describe('pond', () => {
+  const pond = layout.pond!;
+  const f = pondFrame(pond, river);
+  const plants = pondPlants(pond, river, terrain);
+  const polar = (n: Vector3) => ({ d: arcDistance(n, pond.n, R), a: pondAngle(pond, f, n) });
+
+  it('has an organic shoreline that relaxes to the nominal radius at the stream mouth', () => {
+    const radii = Array.from({ length: 72 }, (_, i) => shoreRadius(pond, f, (i / 72) * Math.PI * 2));
+    expect(Math.max(...radii) - Math.min(...radii)).toBeGreaterThan(pond.radiusU * 0.15);
+    expect(Math.max(...radii)).toBeLessThan(pond.radiusU * 1.2);
+    expect(shoreRadius(pond, f, f.mouth!)).toBeCloseTo(pond.radiusU, 6);
+  });
+
+  it('shares the stream water level: the bowl meets it just inside the shore', () => {
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      if (angleGap(a, f.mouth!) < MOUTH_CLEAR) continue; // the stream channel runs out through the mouth
+      const s = shoreRadius(pond, f, a);
+      const ground = (rho: number) => terrain.height(pondPoint(pond, f, a, rho));
+      expect(ground(s * 0.6)).toBeLessThan(RIVER_WATER_U - 0.05);
+      expect(ground(s + 0.3)).toBeGreaterThan(RIVER_WATER_U);
+    }
+  });
+
+  it('places every kind of plant in its zone and keeps the stream mouth open', () => {
+    for (const list of [plants.lilies, plants.reeds, plants.irises, plants.ferns]) expect(list.length).toBeGreaterThan(0);
+    for (const p of plants.lilies) {
+      const { d, a } = polar(p.n);
+      expect(d).toBeLessThan(shoreRadius(pond, f, a) * 0.75);
+      expect(p.h).toBeCloseTo(RIVER_WATER_U + 0.006, 6);
+    }
+    for (const p of plants.ferns) {
+      const { d, a } = polar(p.n);
+      expect(d).toBeGreaterThan(shoreRadius(pond, f, a));
+    }
+    for (const p of [...plants.lilies, ...plants.reeds, ...plants.irises, ...plants.ferns]) {
+      expect(angleGap(polar(p.n).a, f.mouth!)).toBeGreaterThan(MOUTH_CLEAR - 1e-6);
+    }
+  });
+
+  it('keeps other props off the water', () => {
+    const all = [...layout.trees, ...layout.bushes, ...layout.flowerBushes, ...layout.rocks, ...layout.boulders, ...Object.values(layout.flowers).flat()];
+    for (const p of all) {
+      const { d, a } = polar(p.n);
+      expect(d).toBeGreaterThan(shoreRadius(pond, f, a));
+    }
+  });
+});
+
+describe('wading', () => {
+  const obstacles = [...geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...layout.obstacles];
+  const pond = layout.pond!;
+
+  it('knows how deep the water is: the stream and pond are wadeable, land and bridges are dry', () => {
+    for (let i = 5; i < river.samples.length - 5; i += 9) {
+      const c = river.samples[i];
+      if (terrain.deckHeight(c) > -Infinity) continue;
+      expect(terrain.waterDepth(c)).toBeGreaterThan(0.1);
+      expect(terrain.waterDepth(c)).toBeLessThanOrEqual(WADE_MAX_U);
+    }
+    expect(terrain.waterDepth(pond.n)).toBeGreaterThan(0.2);
+    expect(terrain.waterDepth(layout.bridges[0].n)).toBe(0);
+    expect(terrain.waterDepth(UP as Vector3)).toBe(0);
+    // dry hollows in the rolling country are not water
+    for (const n of randomDirs(3000, 5)) {
+      if (!terrain.inWater(n)) expect(terrain.waterDepth(n)).toBe(0);
+      else expect(terrain.walkHeight(n)).toBeGreaterThanOrEqual(RIVER_WATER_U - WADE_MAX_U - 1e-9);
+    }
+  });
+
+  it('slows the character in deeper water', () => {
+    expect(wadeSpeedFactor(0)).toBe(1);
+    expect(wadeSpeedFactor(WADE_MAX_U)).toBeCloseTo(1 - WADE_SLOWDOWN, 6);
+    for (let d = 0; d < WADE_MAX_U; d += 0.02) expect(wadeSpeedFactor(d + 0.02)).toBeLessThanOrEqual(wadeSpeedFactor(d));
+  });
+
+  it('no longer blocks the water: the character wades straight across the stream and into the pond', () => {
+    const cross = (start: Vector3, target: Vector3) => {
+      const sim = new PlanetSim(obstacles);
+      sim.setOrientation(new Quaternion().setFromUnitVectors(start, UP as Vector3));
+      sim.startAutoWalk(target);
+      let maxDepth = 0;
+      let minFactor = 1;
+      for (let f = 0; f < 60 * 20 && sim.autoWalk; f++) {
+        const depth = terrain.waterDepth(sim.pLocal);
+        sim.speedFactor = wadeSpeedFactor(depth);
+        maxDepth = Math.max(maxDepth, depth);
+        minFactor = Math.min(minFactor, sim.speedFactor);
+        sim.step(1 / 60, { x: 0, y: 0, run: false });
+      }
+      return { maxDepth, minFactor, left: arcDistance(sim.pLocal, target, R) };
+    };
+    // a stretch of stream with nothing (boulders, trees, landmarks) on the straight line across it
+    let tried = 0;
+    for (let i = 8; i < river.samples.length - 8 && tried < 3; i += 3) {
+      const c = river.samples[i];
+      if (layout.bridges.some((b) => arcDistance(c, b.n, R) < 3)) continue;
+      const side = new Vector3().crossVectors(c, river.tangent[i]).normalize();
+      const hw = river.halfWidth[i];
+      const a = moveAlong(c, side, (hw + 1.1) / R);
+      const b = moveAlong(c, side, -(hw + 1.1) / R);
+      const clear = obstacles.every((o) => pointArcDistance(o.n, a, b, R) > o.radiusU + CONFIG.playerRadius + 0.1);
+      if (!clear || terrain.inWater(a) || terrain.inWater(b)) continue;
+      tried++;
+      const r = cross(a, b);
+      expect(r.left).toBeLessThan(CONFIG.autoWalkArrive + 0.05);
+      expect(r.maxDepth).toBeGreaterThan(0.12);
+      expect(r.minFactor).toBeLessThan(0.7);
+    }
+    expect(tried).toBeGreaterThan(0);
+    // and out into the middle of the pond from its bank
+    const toward = tangentToward(pond.n, UP as Vector3)!;
+    const bank = moveAlong(pond.n, toward, (terrain.pondShore(moveAlong(pond.n, toward, 0.5 / R)) + 1.2) / R);
+    const r = cross(bank, pond.n);
+    expect(r.left).toBeLessThan(CONFIG.autoWalkArrive + 0.05);
+    expect(r.maxDepth).toBeGreaterThan(0.2);
   });
 });

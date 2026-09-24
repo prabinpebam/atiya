@@ -39,14 +39,17 @@ TEXTURES: dict[str, tuple[str, int]] = {
     "grass-card": ("tint", 256),
     "moon": ("sprite", 256),
 }
-# tintable 2×2 atlases: name -> (cell sources in order [top-left, top-right, bottom-left, bottom-right], size)
-ATLASES: dict[str, tuple[list[str], int]] = {
-    "conifer-atlas": (["conifer-clump", "conifer-bough", "conifer-tufts", "conifer-crown"], 512),
+# 2×2 atlases: name -> (cell sources in order [top-left, top-right, bottom-left, bottom-right], size, mode)
+# mode "tint" = normalised greyscale (tinted in game), "sprite" = full colour
+ATLASES: dict[str, tuple[list[str], int, str]] = {
+    "conifer-atlas": (["conifer-clump", "conifer-bough", "conifer-tufts", "conifer-crown"], 512, "tint"),
+    "pond-atlas": (["pond-lilies", "pond-reeds", "pond-iris", "pond-fern"], 512, "sprite"),
 }
 # how a sprite sits in its square card: bottom = base touches the bottom edge (stems, grass, crown),
 # top = hangs from the top edge (boughs)
 ALIGN = {"leaf-broad": "bottom", "grass-card": "bottom", "leaf-single": "center", "moon": "center",
-         "conifer-clump": "center", "conifer-bough": "top", "conifer-tufts": "center", "conifer-crown": "bottom"}
+         "conifer-clump": "center", "conifer-bough": "top", "conifer-tufts": "center", "conifer-crown": "bottom",
+         "pond-lilies": "center", "pond-reeds": "bottom", "pond-iris": "bottom", "pond-fern": "bottom"}
 # minimum width/height ratio: narrow sprites are widened so the cards keep their coverage
 MIN_ASPECT: dict[str, float] = {}
 
@@ -162,18 +165,20 @@ def main() -> None:
         manifest[name] = entry
         print(f"{name:12s} {kind:6s} {size:4d}px  {n / 1024:6.1f} KB")
 
-    for name, (cells, size) in ATLASES.items():
+    for name, (cells, size, mode) in ATLASES.items():
         if not all((SRC / f"{c}.png").exists() for c in cells):
             print(f"skip {name}: missing a cell source")
             continue
         half = size // 2
         atlas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         for i, c in enumerate(cells):
-            sprite = tint_sprite(fit_sprite(Image.open(SRC / f"{c}.png"), half, ALIGN.get(c, "center"), MIN_ASPECT.get(c, 0.0)))
+            sprite = fit_sprite(Image.open(SRC / f"{c}.png"), half, ALIGN.get(c, "center"), MIN_ASPECT.get(c, 0.0))
+            if mode == "tint":
+                sprite = tint_sprite(sprite)
             atlas.alpha_composite(sprite, ((i % 2) * half, (i // 2) * half))
         n = save_webp(bleed(atlas), OUT / f"{name}.webp")
         total += n
-        manifest[name] = {"url": f"/textures/{name}.webp", "kind": "tint", "bytes": n, "cells": cells}
+        manifest[name] = {"url": f"/textures/{name}.webp", "kind": mode, "bytes": n, "cells": cells}
         print(f"{name:12s} atlas  {size:4d}px  {n / 1024:6.1f} KB")
 
     # landing key art + social card

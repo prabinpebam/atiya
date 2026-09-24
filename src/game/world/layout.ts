@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 import { UP, arcDistance, moveAlong, pointArcDistance, tangentToward, type Obstacle } from '../math/sphere';
 import type { LandmarkGeometry } from '../math/landmarks';
 import { buildMesas, buildRiver, findBridges, mesaPolar, mesaRadius, riverDistance, type Bridge, type Mesa, type River } from './features';
+import { pondAngle, pondFrame, shoreRadius } from './pond';
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
 export const FLOWER_KINDS: FlowerKind[] = ['tulip', 'cosmos', 'pansy'];
@@ -171,7 +172,8 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   const bridges = findBridges(river, landmarks, cfg);
 
   const nearLandmark = (n: Vector3, pad: number) => landmarks.some((g) => arcDistance(n, g.n, R) < g.footprintU + pad || arcDistance(n, g.approach, R) < 1.2 + pad * 0.3);
-  const inPond = (n: Vector3, pad: number) => (pond ? arcDistance(n, pond.n, R) < pond.radiusU + pad : false);
+  const pondF = pond ? pondFrame(pond, river) : null;
+  const inPond = (n: Vector3, pad: number) => (pond && pondF ? arcDistance(n, pond.n, R) < shoreRadius(pond, pondF, pondAngle(pond, pondF, n)) + pad : false);
   const inPlaza = (n: Vector3, pad: number) => arcDistance(n, spawn, R) < PLAZA_RADIUS_U + pad;
   /** Signed distance (u) from `n` to the water's edge (negative = in the river). */
   const riverEdge = (n: Vector3) => {
@@ -340,28 +342,12 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     ...boulders.map((r) => ({ n: r.n, radiusU: 0.4 * r.scale })),
     ...posts.map((p) => ({ n: p.n, radiusU: POST_RADIUS })),
     ...furniture.map((f) => ({ n: f.n, radiusU: FURNITURE_RADIUS[f.kind] })),
-    ...riverObstacles(river, bridges, landmarks, cfg),
+    // the stream and pond are shallow enough to wade through (spec §4.14), so water doesn't block
     ...bridgeRailObstacles(bridges, cfg),
     ...mesas.flatMap((m) => mesaObstacles(m, cfg)),
   ];
-  if (pond) obstacles.push({ n: pond.n, radiusU: pond.radiusU + 0.15 });
 
   return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, grass, posts, furniture, pond, river, bridges, mesas, obstacles };
-}
-
-/** The water blocks walking, except where a bridge carries a path over it. */
-export function riverObstacles(river: River, bridges: readonly Bridge[], landmarks: readonly LandmarkGeometry[], cfg = CONFIG): Obstacle[] {
-  const R = cfg.planetRadius;
-  const out: Obstacle[] = [];
-  for (let i = 0; i < river.samples.length; i += 2) {
-    const p = river.samples[i];
-    const onBridge = bridges.some((b) => {
-      const g = landmarks.find((l) => l.id === b.pathId);
-      return g !== undefined && arcDistance(p, b.n, R) < 3 && pointArcDistance(p, UP as Vector3, g.approach, R) < 1.45;
-    });
-    if (!onBridge) out.push({ n: p, radiusU: river.halfWidth[i] + 0.02 });
-  }
-  return out;
 }
 
 /** Rails along both sides of each bridge deck. */

@@ -4,11 +4,13 @@ import { useStore } from 'zustand';
 import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, FrontSide, Matrix4, MeshStandardMaterial, Quaternion, Vector3 } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
-import { moveAlong } from '../math/sphere';
+import { arcDistance, moveAlong } from '../math/sphere';
 import { selectAmbientPaused } from '../state/store';
 import { mesaRadius, type Bridge, type Mesa, type River } from './features';
 import { Kit, hash3, mix } from './kit';
 import { KitModel } from './KitModel';
+import type { Pond } from './layout';
+import { angleGap, pondFrame, shoreRadius } from './pond';
 import { registerDaylit } from './materials';
 import { ARCH, shade } from './parts';
 import { withRockDetail } from './rockDetail';
@@ -149,10 +151,17 @@ export function Cliffs({ controller }: { controller: GameController }) {
 const flowTime = { value: 0 };
 
 /**
- * Stylised flowing water (MeshStandardMaterial + flow shader). `uv.x` runs across the stream
- * (0…1) and `uv.y` along it in world units; `fall` makes faster, whiter vertical streaks.
+ * Stylised water (MeshStandardMaterial + flow shader), one look for the stream and the pond so
+ * they read as a single body of water.
+ * - `river`: `aFlow.x` runs across the stream (0…1), `.y` along it in world units, `.z` fades the
+ *   ribbon out as it enters the pond.
+ * - `fall`: faster, whiter vertical streaks.
+ * - `pond`: still water. `aFlow.x` is 0.5 + 0.5 × distance-from-centre / radius (so the shallow
+ *   edge and shoreline foam match the stream's banks), `.y` opens the foam where the stream flows
+ *   in; `aPlanar` holds planar coordinates (u) for the slowly drifting ripples and caustics.
  */
-function waterMaterial(fall: boolean): MeshStandardMaterial {
+function waterMaterial(kind: 'river' | 'fall' | 'pond'): MeshStandardMaterial {
+  const fall = kind === 'fall';
   const caustics = fall ? null : gameTexture('water');
   const m = registerDaylit(
     new MeshStandardMaterial({
@@ -165,19 +174,22 @@ function waterMaterial(fall: boolean): MeshStandardMaterial {
       side: fall ? DoubleSide : FrontSide,
     }),
   );
-  if (caustics) m.defines = { USE_WATER_TEX: '' };
+  m.defines = { ...(caustics ? { USE_WATER_TEX: '' } : {}), ...(kind === 'pond' ? { WATER_POND: '' } : {}) };
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uFlow = flowTime;
     if (caustics) shader.uniforms.uCaustics = { value: caustics };
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec2 aFlow;\nvarying vec2 vFlow;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFlow = aFlow;');
+      .replace('#include <common>', '#include <common>\nattribute vec3 aFlow;\nvarying vec3 vFlow;\n#ifdef WATER_POND\nattribute vec2 aPlanar;\nvarying vec2 vPlanar;\n#endif')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFlow = aFlow;\n#ifdef WATER_POND\nvPlanar = aPlanar;\n#endif');
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>
 uniform float uFlow;
-varying vec2 vFlow;
+varying vec3 vFlow;
+#ifdef WATER_POND
+varying vec2 vPlanar;
+#endif
 #ifdef USE_WATER_TEX
 uniform sampler2D uCaustics;
 #endif
@@ -190,6 +202,8 @@ float wn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 
         `#include <color_fragment>
 {
   float across = abs(vFlow.x * 2.0 - 1.0);
+  vec3 deep = vec3(0.13, 0.47, 0.72);
+  vec3 shallow = vec3(0.36, 0.76, 0.86);
   ${
     fall
       ? `float t = uFlow * 2.6;
@@ -197,9 +211,30 @@ float wn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 
   streak = smoothstep(0.45, 0.9, streak);
   vec3 c = mix(vec3(0.42, 0.74, 0.88), vec3(0.95, 0.98, 1.0), streak * 0.85 + 0.15);
   float a = (0.78 + 0.2 * streak) * (1.0 - smoothstep(0.75, 1.0, across));`
-      : `float t = uFlow;
-  vec3 deep = vec3(0.13, 0.47, 0.72);
-  vec3 shallow = vec3(0.36, 0.76, 0.86);
+      : kind === 'pond'
+        ? `float t = uFlow * 0.25;
+  vec2 pp = vPlanar;
+  // the stream's deeper channel carries on into the pond where it flows in
+  vec3 c = mix(deep, shallow, smoothstep(0.25, 0.95, across * (1.0 - 0.55 * vFlow.y)));
+  // slow, wandering ripples (still water)
+  float n1 = wn(pp * 1.6 + vec2(t * 0.6, -t * 0.4));
+  float n2 = wn(pp * 3.1 + 3.0 - vec2(t * 0.3, t * 0.5));
+  float lines = smoothstep(0.62, 0.72, n1) * (1.0 - smoothstep(0.72, 0.84, n1));
+#ifdef USE_WATER_TEX
+  float cA = texture2D(uCaustics, pp * 0.3 + vec2(t * 0.08, t * 0.05)).r;
+  float cB = texture2D(uCaustics, pp * 0.43 + vec2(0.37 - t * 0.06, 0.5 + t * 0.07)).r;
+  float cau = smoothstep(0.45, 0.95, min(cA, cB) * 0.5 + max(cA, cB) * 0.5);
+  lines = max(lines * 0.4, cau);
+#endif
+  c = mix(c, vec3(0.8, 0.95, 1.0), lines * 0.5);
+  c += (n2 - 0.5) * 0.06;
+  // shoreline foam, opened where the stream flows in
+  float foam = smoothstep(0.8, 0.97, across) * smoothstep(0.35, 0.75, wn(pp * 5.0 + t)) * (1.0 - vFlow.y);
+  c = mix(c, vec3(0.97, 0.99, 1.0), foam * 0.8);
+  float sp = step(0.988, wh(floor(pp * 14.0 + vec2(t * 2.0, 0.0))));
+  c = mix(c, vec3(1.0), sp * 0.6);
+  float a = 0.9;`
+        : `float t = uFlow;
   vec3 c = mix(deep, shallow, smoothstep(0.1, 0.95, across));
   // drifting ripples and bright flow lines, advected downstream
   float n1 = wn(vec2(vFlow.x * 5.0, vFlow.y * 1.1 - t * 1.1));
@@ -214,25 +249,26 @@ float wn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 
 #endif
   c = mix(c, vec3(0.8, 0.95, 1.0), lines * 0.55);
   c += (n2 - 0.5) * 0.06;
-  // foam along the banks, broken up by noise
-  float foam = smoothstep(0.62, 0.92, across) * smoothstep(0.35, 0.75, wn(vec2(vFlow.x * 7.0, vFlow.y * 2.8 - t * 1.4)));
+  // foam along the banks, broken up by noise (fading out as the stream opens into the pond)
+  float foam = smoothstep(0.62, 0.92, across) * smoothstep(0.35, 0.75, wn(vec2(vFlow.x * 7.0, vFlow.y * 2.8 - t * 1.4))) * (1.0 - vFlow.z);
   c = mix(c, vec3(0.97, 0.99, 1.0), foam * 0.8);
   // sparkles
   float sp = step(0.985, wh(floor(vec2(vFlow.x * 30.0, vFlow.y * 10.0 - t * 2.0))));
   c = mix(c, vec3(1.0), sp * 0.7);
-  float a = 0.88 * (1.0 - smoothstep(0.86, 1.0, across));`
+  // the ribbon dissolves into the pond so the two waters meet without a seam
+  float a = 0.88 * (1.0 - smoothstep(0.86, 1.0, across)) * (1.0 - vFlow.z);`
   }
   diffuseColor.rgb = c * c;
   diffuseColor.a *= a;
 }`,
       );
   };
-  m.customProgramCacheKey = () => (fall ? 'water-fall-v1' : caustics ? 'water-river-v2-tex' : 'water-river-v2');
+  m.customProgramCacheKey = () => `water-${kind}-v3${caustics ? '-tex' : ''}`;
   return m;
 }
 
 /** River surface: a ribbon along the centre line, a little wider than the wetted bed. */
-function buildRiverGeometry(river: River): BufferGeometry {
+function buildRiverGeometry(river: River, pond: Pond | null): BufferGeometry {
   const across = 5;
   const pos: number[] = [];
   const flow: number[] = [];
@@ -242,11 +278,17 @@ function buildRiverGeometry(river: River): BufferGeometry {
   river.samples.forEach((c, i) => {
     side.crossVectors(c, river.tangent[i]).normalize();
     const hw = river.halfWidth[i] + 0.22;
+    // cross-fade into the pond water (which runs 0.3 u out under the mouth): fully gone before the ribbon ends
+    let fade = 0;
+    if (pond) {
+      const t = Math.min(1, Math.max(0, (pond.radiusU + 0.25 - arcDistance(c, pond.n, R)) / 0.55));
+      fade = t * t * (3 - 2 * t);
+    }
     for (let k = 0; k < across; k++) {
       const u = k / (across - 1);
       p.copy(moveAlong(c, side, ((u - 0.5) * 2 * hw) / R)).multiplyScalar(R + RIVER_WATER_U);
       pos.push(p.x, p.y, p.z);
-      flow.push(u, river.along[i]);
+      flow.push(u, river.along[i], fade);
     }
   });
   for (let i = 0; i < river.samples.length - 1; i++) {
@@ -258,13 +300,66 @@ function buildRiverGeometry(river: River): BufferGeometry {
   }
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(pos, 3));
-  g.setAttribute('aFlow', new Float32BufferAttribute(flow, 2));
+  g.setAttribute('aFlow', new Float32BufferAttribute(flow, 3));
   g.setIndex(idx);
   g.computeVertexNormals();
   return g;
 }
 
-/** A curved sheet pouring off the cliff rim into the plunge pool. */
+/**
+ * Pond surface at the stream's water level (a hair lower, so the fading ribbon draws cleanly on
+ * top). It extends past the rim and the deepened basin clips it, giving an organic shoreline.
+ */
+function buildPondGeometry(pond: Pond, river: River | null): BufferGeometry {
+  const rings = 12;
+  const segs = 56;
+  // shared frame; `mouth` is where the stream flows in (seen from the pond centre)
+  const frame = pondFrame(pond, river);
+  const { tan, bit, mouth } = frame;
+  const pos: number[] = [];
+  const flow: number[] = [];
+  const planar: number[] = [];
+  const idx: number[] = [];
+  const vert = (x: number, y: number, shore: number) => {
+    const n = pond.n.clone().addScaledVector(tan, x / R).addScaledVector(bit, y / R).normalize().multiplyScalar(R + RIVER_WATER_U - 0.004);
+    pos.push(n.x, n.y, n.z);
+    const rho = Math.hypot(x, y);
+    let open = 0;
+    if (mouth !== null && rho > 0.01) {
+      const da = angleGap(Math.atan2(y, x), mouth);
+      const t = Math.min(1, Math.max(0, (0.75 - da) / 0.4));
+      open = t * t * (3 - 2 * t);
+    }
+    flow.push(0.5 + 0.5 * Math.min(1, rho / shore), open, 0);
+    planar.push(x, y);
+  };
+  vert(0, 0, pond.radiusU);
+  for (let j = 1; j <= rings; j++) {
+    for (let s = 0; s < segs; s++) {
+      const a = (s / segs) * Math.PI * 2;
+      // follow the lobed shoreline and run a little under the bank, where the ground clips it
+      const shore = shoreRadius(pond, frame, a);
+      const rho = (shore + 0.3) * (j / rings);
+      vert(Math.cos(a) * rho, Math.sin(a) * rho, shore);
+    }
+  }
+  for (let s = 0; s < segs; s++) idx.push(0, 1 + s, 1 + ((s + 1) % segs));
+  for (let j = 1; j < rings; j++) {
+    const a0 = 1 + (j - 1) * segs;
+    const b0 = 1 + j * segs;
+    for (let s = 0; s < segs; s++) {
+      const s2 = (s + 1) % segs;
+      idx.push(a0 + s, b0 + s, b0 + s2, a0 + s, b0 + s2, a0 + s2);
+    }
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('aFlow', new Float32BufferAttribute(flow, 3));
+  g.setAttribute('aPlanar', new Float32BufferAttribute(planar, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
 function buildFallGeometry(mesa: Mesa, river: River): BufferGeometry {
   const src = river.samples[0];
   const dir = new Vector3().subVectors(src, mesa.n);
@@ -357,26 +452,27 @@ function buildFoam(mesa: Mesa, river: River): { foam: BufferGeometry; spring: Bu
 
 export function Water({ controller }: { controller: GameController }) {
   const paused = useStore(controller.store, selectAmbientPaused);
-  const { river, mesas } = controller.props;
+  const { river, mesas, pond } = controller.props;
   const parts = useMemo(() => {
-    if (!river) return null;
     const source = mesas[0];
     return {
-      river: buildRiverGeometry(river),
-      fall: source ? buildFallGeometry(source, river) : null,
-      extras: source ? buildFoam(source, river) : null,
-      riverMat: waterMaterial(false),
-      fallMat: waterMaterial(true),
+      river: river ? buildRiverGeometry(river, pond) : null,
+      pond: pond ? buildPondGeometry(pond, river) : null,
+      fall: source && river ? buildFallGeometry(source, river) : null,
+      extras: source && river ? buildFoam(source, river) : null,
+      riverMat: waterMaterial('river'),
+      pondMat: waterMaterial('pond'),
+      fallMat: waterMaterial('fall'),
       foamMat: registerDaylit(new MeshStandardMaterial({ vertexColors: true, roughness: 0.6, emissive: '#ffffff', emissiveIntensity: 0.25 })),
     };
-  }, [river, mesas]);
+  }, [river, mesas, pond]);
   useFrame((_, dt) => {
     if (!paused) flowTime.value += dt;
   });
-  if (!parts) return null;
   return (
     <group name="water">
-      <mesh geometry={parts.river} material={parts.riverMat} receiveShadow renderOrder={1} />
+      {parts.pond && <mesh geometry={parts.pond} material={parts.pondMat} receiveShadow renderOrder={0} name="pond-water" />}
+      {parts.river && <mesh geometry={parts.river} material={parts.riverMat} receiveShadow renderOrder={1} />}
       {parts.fall && <mesh geometry={parts.fall} material={parts.fallMat} renderOrder={2} />}
       {parts.extras && <mesh geometry={parts.extras.spring} material={parts.riverMat} renderOrder={1} />}
       {parts.extras && <mesh geometry={parts.extras.foam} material={parts.foamMat} />}

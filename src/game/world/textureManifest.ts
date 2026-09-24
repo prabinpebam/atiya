@@ -101,6 +101,17 @@ export const TEXTURES = {
       "conifer-tufts",
       "conifer-crown"
     ]
+  },
+  "pond-atlas": {
+    "url": "/textures/pond-atlas.webp",
+    "kind": "sprite",
+    "bytes": 111592,
+    "cells": [
+      "pond-lilies",
+      "pond-reeds",
+      "pond-iris",
+      "pond-fern"
+    ]
   }
 } as const;
 

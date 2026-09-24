@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+
+Prompt:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. Seen from directly above: a small floating cluster of three round water-lily pads of different sizes, each with a notch and soft veins, fresh green with lighter edges, plus one open pink water-lily flower with a yellow centre and one closed pink bud, filling the frame; clean crisp silhouette; isolated on a transparent background, no water, no ground, no shadow
