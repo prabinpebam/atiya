@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1536x1024, generated 2026-09-24.
+Image-to-image (edits) from this project's own screenshot documentation/poc-3d-navigation/screenshots/spawn.png.
+
+Prompt:
+Repaint this game screenshot as polished painterly key art for the game's landing page: keep the same tiny round planet, brick plaza with compass rose, the character standing in the middle, the buildings, trees and lamps in the same composition and palette, but with richer hand-painted detail, soft warm sunlight, gentle depth of field and puffy clouds in a bright sky. Remove every user-interface element: no buttons, no text, no labels, no compass widget, no header.

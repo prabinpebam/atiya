@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Seamless tile: imagegen.py tile (base generation via edits with reference image: cobble crop of documentation/poc-3d-navigation/screenshots/landscape-bridge.png, then two masked seam-repair passes with tone-corrected compositing).
+
+Prompt:
+Hand-painted stylised texture for a cozy, toy-like life-sim video game: soft painterly brushwork, gentle low contrast, clean simple shapes, no photorealism, no harsh highlights, no baked cast shadows. Cobblestone paving seen from directly above: irregular rounded domed cobblestones of varied size, about 7 stones across the image, soft cream, warm grey and pale beige stones (#f2ebdb, #d9d0c0, #c4bcae), narrow joints filled with dark earth and little tufts of green moss

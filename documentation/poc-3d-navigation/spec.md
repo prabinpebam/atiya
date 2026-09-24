@@ -56,7 +56,7 @@ This POC proves the **navigation UI and interaction model**, not final art or co
 
 | Route | Purpose | Notes |
 |---|---|---|
-| `/` | Landing | Static HTML: name, role, one-liner, poster image of the planet (LCP), two CTAs: **Explore the planet** (`/play`) and **Classic site** (`/classic/`). Last-used mode is visually primary. **No 3D JS.** |
+| `/` | Landing | Static HTML: name, role, one-liner, painted key-art poster of the planet (LCP; responsive WebP with fixed dimensions and `fetchpriority="high"`), two CTAs: **Explore the planet** (`/play`) and **Classic site** (`/classic/`). Last-used mode is visually primary. All pages advertise a 1200×630 social card (`og:image`). **No 3D JS.** |
 | `/play` | Game mode | HTML shell (skip link, header w/ Classic button, loader, `<noscript>` link) + a **tiny capability gate script** (no React/three imports). The game bundle is **dynamically imported only after the gate passes** (§5.9). |
 | `/play?at=<id>` | Deep link | Spawn at landmark `<id>`'s approach point. |
 | `/play?at=<id>&open=1` | Deep link | Spawn + open landmark dialog. |
@@ -71,7 +71,7 @@ This POC proves the **navigation UI and interaction model**, not final art or co
 ### 4.2 The planet
 
 - **Shape:** true sphere, radius **R = 10 u** (character height ≈ 1.3 u). A real sphere provides the "rolling log" curvature naturally; no bend shader needed.
-- **Ground (as built):** smooth-shaded icosphere (detail 56) displaced by the terrain height model (§4.14), with a procedural ground shader (`planetMaterial.ts`) blended by per-vertex surface weights:
+- **Ground (as built):** smooth-shaded icosphere (detail 56) displaced by the terrain height model (§4.14), with a ground shader (`planetMaterial.ts`) that layers hand-painted seamless tiles (§4.15) over procedural detail, blended by per-vertex surface weights:
   - mottled, two-tone grass with anti-aliased blade strokes, clover patches and tiny flowers; worn, yellower grass along path edges
   - dirt paths from the plaza to every landmark, with noisy edges, scattered pebbles and a darker edge line
   - domed cobbles with mossy joints on the landmark forecourts
@@ -312,8 +312,9 @@ The cozy life-sim look is achieved with **original** procedural models. The styl
 | Soft, bevelled "toy" forms | Every box is a rounded box; blobs are welded, smooth-shaded icospheres; no outlines, no hard toon ramp (`world/kit.ts`) |
 | Architecture vocabulary | Reusable parts (`world/parts.ts`): stone plinths with blocks, corner pilasters, cornice bands, siding, gable roofs from overlapping shingle rows with trim boards, stepped hip roofs, panelled doors with brass handles, arched windows with mullions and sills, wall lanterns, awnings, bunting, flower boxes, steps, benches, barrels, crates, pot plants, sign boards |
 | Landmark silhouettes | Workshop cabin with chimney smoke, workbench and log pile; Town Hall with portico, pediment, clock-tower cupola and waving flag; striped Lighthouse with gallery, lantern room and rotating beam; classical Library with columns, banners and a giant stacked-book sculpture; band-shell Amphitheater with bulbs, spotlights and bunting; glass-dome Greenhouse with plants inside; Post Office with awning, envelope sign and a mailbox whose flag pops up when you're near |
-| Nature | **Trees** (`world/foliage.ts`): a dark inner canopy volume covered with overlapping, drooping leaf cards — greyscale leaf/needle textures drawn at runtime on a canvas, tinted per card from dark undersides to sunlit tops. Cards are lit with the canopy's volume normal so the tree shades as one soft mass, and alpha-tested depth materials cast leaf-shaped shadows. Hardwoods have five rounded lobes on a short, chunky, S-bent trunk with bark streaks, root flares and hidden branches (plus apple/orange variants). Cedars have six tiers of drooping needle scales. Bushes use the same leaf system. Also rounded rocks, clumps of tulips/cosmos/pansies, grass tufts, a pond with lily pads and cattails, and butterflies; trees, bushes, grass and flowers sway in the wind (§4.14) |
-| Ground | Mottled grass with blade strokes, clover and tiny flowers; dirt paths with pebbly, noisy edges; domed, mossy cobbled forecourts; brick-ring plaza with a compass rose; damp river banks and rock strata on steep ground (`world/planetMaterial.ts`) |
+| Nature | **Trees** (`world/foliage.ts`): a dark inner canopy volume covered with overlapping, drooping leaf cards. The cards use **hand-painted, generated greyscale sprites** (§4.15): a three-leaf cluster for hardwoods and bushes, and a drooping needle spray for cedars. They are tinted per card from dark undersides to sunlit tops; canvas-drawn leaves are the fallback. Cards are lit with the canopy's volume normal so the tree shades as one soft mass, and alpha-tested depth materials cast leaf-shaped shadows. Hardwoods have five rounded lobes on a short, chunky, S-bent trunk with bark streaks, root flares and hidden branches (plus apple/orange variants). Cedars have six tiers of drooping needle scales. Bushes use the same leaf system. Also rounded rocks, clumps of tulips/cosmos/pansies, grass clumps (three crossed, painted alpha cards), a pond with lily pads and cattails, and butterflies; trees, bushes, grass and flowers sway in the wind (§4.14) |
+| Ground | Hand-painted, seamless tiles (§4.15) for lawn, dirt paths, cobbled forecourts, beach sand and riverbed, layered over procedural clover, tiny flowers, worn path edges, damp banks and painted grit on steep ground. The brick-ring plaza with its compass rose stays procedural (`world/planetMaterial.ts`) |
+| Rock and water | Cliff walls carry a painted sandstone-strata tile mapped around each mesa. Boulders, rocks and pebbles get painted stone detail. The river shows drifting painted caustics (§4.15) |
 | Landscape | Gently rolling hills; faceted sandstone cliff mesas with grass lips; mossy boulders and river pebbles; a meandering stream with a waterfall, foam and flowing water; an arched plank bridge with lanterns (§4.14) |
 | Wind | Gust-driven sway and leaf flutter on all foliage, tumbling leaves, and occasional hand-drawn-style swirl ribbons (§4.14) |
 | Sky | Gradient sky, puffy drifting clouds, sun, moon and stars that follow the day–night cycle (§4.13) |
@@ -379,6 +380,27 @@ The planet is no longer a smooth ball: the land gently rolls, rocky cliffs rise 
   - `world/Landforms.tsx` builds `Cliffs`, `Water` and `Bridges`.
   - `world/windField.ts` is the pure wind model with its shared uniforms.
   - `world/WindFx.tsx` holds the driver, flying leaves and swirls. See §5.3 for collision and ADR-13/ADR-14.
+
+### 4.15 Hand-painted textures (as built)
+
+All textures and the landing art are **original**, generated for this project with GPT Image 2.5 (`gpt-image-2.5-sunburst`) at `high` quality. Every source and its exact prompt is in `assets-src/textures/` (ADR-15, credits in `assets-src/CREDITS.md`).
+
+| Asset | Kind | Used by |
+|---|---|---|
+| `grass`, `dirt`, `cobble`, `sand`, `riverbed` | Seamless colour tiles, 512² | Ground shader layers (triplanar in planet-local space) |
+| `rock` | Seamless strata tile, 512² | Cliff walls (UV-mapped around each mesa, so the strata stay horizontal); boulders, rocks and pebbles (object-space triplanar, luminance only, so moss caps keep their colour) |
+| `water` | Seamless greyscale caustics mask, 512² | River flow shader (two layers drifting downstream) |
+| `leaf-broad`, `needle`, `leaf-single`, `grass-card` | Alpha sprites converted to tintable greyscale | Hardwood/bush leaf cards, cedar needle cards, flying leaves, grass clumps |
+| `moon` | Alpha sprite | Night sky moon disc |
+| `paint-grain` | Seamless greyscale brush-grain mask, 256² | Subtle painted surface on all kit models (landmarks, bridge, plaza furniture): object-space triplanar, luminance only, so every colour is kept. The kit has one shared material, so the grain is generic rather than per material (wood, stone, roof) |
+| `landing-hero` | Key art (image-to-image from the spawn screenshot) | Landing poster (`public/poster/landing-{800,1200}.webp`) and the social card (`public/og-image.jpg`, 1200×630) |
+
+- **Seamless tiles:** the skill's `tile` command rolls the image so the wrap seams meet in the middle, then repaints just the seams in two masked passes. The composite is tone-corrected and feathered outside the repainted area, so the result wraps exactly: seam scores are ≈ 1.0, i.e. indistinguishable from any interior column or row.
+- **Palette preserved:** each ground layer is divided by the tile's mean colour and multiplied by the layer's original colour or vertex tint. The textures add painted detail without changing the scene's palette or the day–night lighting. Grass mixes two scales with a slow noise, so the tile never visibly repeats. Clover and tiny flowers stay procedural, so they're never tiled.
+- **Tintable sprites:** foliage sprites are stored as normalised greyscale (0.55–1.0) with real alpha. Per-card and per-instance colours tint them exactly like the old canvas leaves, and they keep alpha-tested shadows. Alpha is snapped (≥ 250 → opaque, ≤ 4 → clear), and transparent pixels are colour-bled, so mipmaps never show halos.
+- **Grass clumps** are three crossed cards with upward normals (so they shade like the lawn): 6 triangles instead of about 36 each. This saves about 20 k triangles.
+- **Loading:** the 13 game textures are about 435 KB of WebP. `mountGame` preloads them before the first render (with a 10 s cap). Any texture that fails leaves its material on the procedural look, so the planet is always complete.
+- **Pipeline:** `python scripts/build-textures.py` builds `public/textures/*.webp` from `assets-src/textures/*.png` and writes `src/game/world/textureManifest.ts` (URLs, kinds, byte sizes, mean linear colours). Its steps: wrap-safe resize for tiles; crop, fit, greyscale and bleed for sprites; the poster sizes and the social card. The outputs are committed.
 
 ## 5. Technical design
 
@@ -541,8 +563,10 @@ personal-site/
 ├─ astro.config.mjs · package.json · tsconfig.json · playwright.config.ts · vitest.config.ts
 ├─ public/
 │  ├─ models/            # optimized .glb (meshopt/KTX2)
-│  └─ poster/planet.avif # landing LCP image
-├─ assets-src/           # raw source models (not shipped) + CREDITS.md
+│  ├─ textures/          # generated, optimized WebP tiles and sprites (scripts/build-textures.py)
+│  ├─ poster/            # landing key art (LCP image), 800w + 1200w WebP
+│  └─ og-image.jpg       # 1200×630 social card
+├─ assets-src/           # raw source models and generated textures + prompts (not shipped) + CREDITS.md
 ├─ src/
 │  ├─ content.config.ts  # landmarks collection schema
 │  ├─ content/landmarks/*.md
@@ -566,7 +590,8 @@ personal-site/
 │     │                  # timeOfDay.ts (pure day–night model), DayNight.tsx (lights, sky, sun/moon/stars, fireflies, lamp pools),
 │     │                  # features.ts (river spline, mesas, bridges), terrain.ts (pure height model),
 │     │                  # Landforms.tsx (cliffs, water, bridges), windField.ts (pure wind model + shared uniforms),
-│     │                  # WindFx.tsx (wind driver, flying leaves, swirls)
+│     │                  # WindFx.tsx (wind driver, flying leaves, swirls), textures.ts (preload + triplanar GLSL),
+│     │                  # textureManifest.ts (generated), rockDetail.ts (painted rock on cliffs and boulders)
 │     ├─ player/         # Player.tsx (rigged Kenney model, idle/run blend, arrival hop), Character.tsx (procedural fallback avatar)
 │     ├─ camera/         # DioramaCamera.tsx
 │     ├─ ui/             # Hud.tsx, PreviewCard.tsx, LandmarkDialog.tsx, Menu.tsx, ViewControls.tsx (compass, rotate/tilt, reset),
@@ -608,7 +633,7 @@ A hydrated `client:only` island would import the game bundle as part of hydratio
    The result is *load*, *offer a choice*, or *fall back*.
 3. Only on *load*, or when the user chooses **Continue anyway**, does it run `await import("../game/mount")`, which calls `createRoot(container).render(<GameApp/>)`. Game code is emitted as named chunks (`game-*`) so E2E tests can assert that no such request happens when the user is gated out.
 4. GLBs load via `useGLTF` (with `KTX2Loader`/Meshopt via `extendLoader`), with progress from `useProgress`.
-5. Shaders are precompiled (`renderer.compileAsync`). Then `performance.mark("game:playable")` fires when the loader is replaced by the **Start exploring** button and input is accepted.
+5. The generated textures (about 435 KB of WebP, §4.15) are preloaded before the first render; a texture that fails falls back to procedural. Shaders are precompiled (`renderer.compileAsync`). Then `performance.mark("game:playable")` fires when the loader is replaced by the **Start exploring** button and input is accepted.
 
 `@astrojs/react` remains installed for JSX/TSX tooling, HMR, and any future classic-page islands.
 
@@ -631,7 +656,7 @@ A hydrated `client:only` island would import the game bundle as part of hydratio
 }
 ```
 
-`getState()` also reports `hours`, `night` (0–1), `glow` and `timeMode`, plus the view: `heading`, `pitch` (deg) and `north` (screen angle of map north in degrees, 0 = north-up). For the landscape it adds `lift` (the character's current height above the base sphere) and `wind` (`{ strength, gust, time, leaves, swirls }`, where `leaves` and `swirls` are the counts currently visible).
+`getState()` also reports `hours`, `night` (0–1), `glow` and `timeMode`, plus the view: `heading`, `pitch` (deg) and `north` (screen angle of map north in degrees, 0 = north-up). For the landscape it adds `lift` (the character's current height above the base sphere) and `wind` (`{ strength, gust, time, leaves, swirls }`, where `leaves` and `swirls` are the counts currently visible). `textures` is `{ loaded, failed, pending }` for the generated textures (§4.15).
 
 ## 6. Accessibility requirements
 
@@ -665,7 +690,7 @@ Budgets are **P0**. A miss is acceptable only with a **written owner waiver** re
 | Estimated GPU texture memory | ≤ **32 MB** | Asset script: Σ width × height × bytes-per-pixel of the GPU format × 1.33 (mips) |
 | Time to playable | ≤ **3.0 s** median of 5 cold-cache runs | `game:playable` mark minus navigation start. Chrome DevTools custom profile: 50 Mbps down / 10 Mbps up / 20 ms RTT, cache disabled, no CPU throttling |
 | Frame pacing | rAF interval **median ≤ 16.7 ms** and **≥ 95 % of intervals ≤ 20 ms** | 60 s scripted walk loop (test build, minified). DPR forced to 1.5, adaptive quality off, 1920×1080 viewport, 60 Hz display, on AC power. CPU frame time and GPU time (stats-gl) reported separately |
-| Draw calls / triangles | ≤ 60 / ≤ 100 k (original target) — **as built with no culling, after the art pass and the landscape & wind pass: ≈ 98–99 calls / ≈ 690–700 k triangles per frame on high (all passes incl. shadows + post). The biggest items are the displaced ground (≈ 65 k) and shadow-casting landmarks, trees and boulders, which are counted twice. Proposed waiver pending owner sign-off (plan §6)** | `renderInfo()` test hook (`renderer.info`, accumulated across passes) at the spawn view |
+| Draw calls / triangles | ≤ 60 / ≤ 100 k (original target) — **as built with no culling, after the art, landscape & wind, and texture passes: ≈ 96–98 calls / ≈ 650–675 k triangles per frame on high (all passes incl. shadows + post). The grass cards saved about 20 k. The biggest items are the displaced ground (≈ 65 k) and shadow-casting landmarks, trees and boulders, which are counted twice. Proposed waiver pending owner sign-off (plan §6)** | `renderInfo()` test hook (`renderer.info`, accumulated across passes) at the spawn view |
 | Memory stability | ≤ 10 MB growth | Post-GC heap snapshots at t = 0 and t = 5 min of scripted play |
 | Input → visible response | ≤ 50 ms | `keydown` timestamp to the first rendered frame with player displacement > 0 (performance marks, test build) |
 | Adaptive quality | Steps down within 3 s under forced load; recovers; ≤ 1 change per 10 s | Test hook forcing a low-fps condition |
@@ -705,6 +730,7 @@ None in the POC (privacy-first). Optional P2: local-only debug overlay showing t
 | ADR-12 | **Compressed day–night cycle by default; local time and always-day as options** | Real local time only; static day | Local time only means most visitors never see dusk or night; a ~6-minute day (short night) shows the whole cycle during a typical visit. The keyframed palette model is pure TS (testable), and sky objects live in the camera frame like the clouds, which suits the rotate-the-planet model (ADR-4) |
 | ADR-13 | **Terrain as a pure height function over the sphere; collision stays 2D** | Heightfield physics / raycast ground; separate terrain mesh per feature | One `Terrain.height(n)` feeds the ground mesh, prop placement, the character/camera lift and the tests, so everything agrees. Movement, sliding and proximity keep the proven unit-sphere maths (ADR-3/ADR-4). Unwalkable ground (river, cliffs, rails) is expressed as ordinary obstacle circles. Heights are mild enough that no slope limits are needed |
 | ADR-14 | **Wind as shared GPU uniforms, plus a small pool of CPU-driven effects** | Per-object CPU animation; particle library | One uniform update animates ~1 000 swaying instances, and their shadows, for free. Flying leaves are a single instanced mesh, and swirls are a pool of three ribbons, so the cost is a handful of draw calls. The pure `windField.ts` keeps the direction and gusts testable and consistent between the shader and the effects |
+| ADR-15 | **Generated, hand-painted textures as detail over the procedural look** (GPT Image 2.5, sources and prompts committed) | Keep fully procedural; CC0 texture packs; hand-painting in an art tool | The tiles add painterly detail (blades, stones, pebbles, strata, caustics, brush grain) that procedural noise can't match, in exactly the game's palette: the image-to-image references are the game's own screenshots, and the shader normalises by each tile's mean colour. Original output means no licensing risk. About 435 KB. The procedural shader remains the fallback, so a failed load never breaks the planet. Triplanar/UV mapping means the kit geometry needs no UVs |
 
 ## 11. Risks (summary — full register in [plan](./plan.md#5-risk-register))
 

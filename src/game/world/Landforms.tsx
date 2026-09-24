@@ -11,7 +11,9 @@ import { Kit, hash3, mix } from './kit';
 import { KitModel } from './KitModel';
 import { registerDaylit } from './materials';
 import { ARCH, shade } from './parts';
+import { withRockDetail } from './rockDetail';
 import { RIVER_WATER_U, bridgeArch } from './terrain';
+import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
 
@@ -33,22 +35,31 @@ function mesaPoint(center: Vector3, m: Mesa, a: number, r: number, y: number): V
 class Tris {
   readonly pos: number[] = [];
   readonly col: number[] = [];
-  tri(a: Vector3, b: Vector3, c: Vector3, color: Color) {
+  /** (u, v, rock weight) per vertex for the painted strata texture. */
+  readonly ruv: number[] = [];
+  tri(a: Vector3, b: Vector3, c: Vector3, color: Color, uv?: [number, number, number, number, number, number], w = 0) {
     this.pos.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
     for (let i = 0; i < 3; i++) this.col.push(color.r, color.g, color.b);
+    if (uv) this.ruv.push(uv[0], uv[1], w, uv[2], uv[3], w, uv[4], uv[5], w);
+    else this.ruv.push(0, 0, 0, 0, 0, 0, 0, 0, 0);
   }
-  quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, color: Color) {
-    this.tri(a, b, c, color);
-    this.tri(a, c, d, color);
+  /** Quad a-b-c-d; `uv` gives (u, v) for a, b, c, d. */
+  quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, color: Color, uv?: [number, number][], w = 0) {
+    this.tri(a, b, c, color, uv && [...uv[0], ...uv[1], ...uv[2]], w);
+    this.tri(a, c, d, color, uv && [...uv[0], ...uv[2], ...uv[3]], w);
   }
   build(): BufferGeometry {
     const g = new BufferGeometry();
     g.setAttribute('position', new Float32BufferAttribute(this.pos, 3));
     g.setAttribute('color', new Float32BufferAttribute(this.col, 3));
+    g.setAttribute('aRockUV', new Float32BufferAttribute(this.ruv, 3));
     g.computeVertexNormals(); // non-indexed → flat facets (the chiselled rock look)
     return g;
   }
 }
+
+/** Wall texture repeats horizontally about every 1.4 u, rounded so each ring wraps seamlessly. */
+const ROCK_TILE_U = 1.4;
 
 /** One wall ring from `y0` to `y1` following an irregular outline, in rocky strata. */
 function wallRing(t: Tris, m: Mesa, center: Vector3, radius: number, seed: number, y0: number, y1: number) {
@@ -71,12 +82,21 @@ function wallRing(t: Tris, m: Mesa, center: Vector3, radius: number, seed: numbe
     pts.push(row);
   }
   const c = new Color();
+  // u in tiles around the ring (integer total, so it wraps without a seam), v in tiles up the wall
+  const reps = Math.max(1, Math.round((Math.PI * 2 * radius) / ROCK_TILE_U));
+  const uAt = (k: number) => (k / count) * reps;
+  const vAt = (j: number) => (y0 + ((y1 - y0) * j) / layers) / ROCK_TILE_U;
   for (let j = 0; j < layers; j++) {
     const base = STRATA[(j + Math.floor(seed * 3)) % STRATA.length];
     for (let k = 0; k < count; k++) {
       const k2 = (k + 1) % count;
       c.set(mix(base, '#ffffff', (hash3(k, j, seed + 1) - 0.5) * 0.12 + 0.02));
-      t.quad(pts[j][k], pts[j][k2], pts[j + 1][k2], pts[j + 1][k], c);
+      t.quad(pts[j][k], pts[j][k2], pts[j + 1][k2], pts[j + 1][k], c, [
+        [uAt(k), vAt(j)],
+        [uAt(k + 1), vAt(j)],
+        [uAt(k + 1), vAt(j + 1)],
+        [uAt(k), vAt(j + 1)],
+      ], 1);
     }
   }
   // grassy lip: a lumpy green band over the rim, drooping slightly over the edge
@@ -114,7 +134,10 @@ function buildCliffs(mesas: readonly Mesa[]): BufferGeometry | null {
 
 export function Cliffs({ controller }: { controller: GameController }) {
   const geo = useMemo(() => buildCliffs(controller.props.mesas), [controller]);
-  const mat = useMemo(() => new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true }), []);
+  const mat = useMemo(
+    () => withRockDetail(new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true }), 'uv', 0.85, 1),
+    [],
+  );
   if (!geo) return null;
   return <mesh geometry={geo} material={mat} castShadow receiveShadow name="cliffs" />;
 }
@@ -130,6 +153,7 @@ const flowTime = { value: 0 };
  * (0…1) and `uv.y` along it in world units; `fall` makes faster, whiter vertical streaks.
  */
 function waterMaterial(fall: boolean): MeshStandardMaterial {
+  const caustics = fall ? null : gameTexture('water');
   const m = registerDaylit(
     new MeshStandardMaterial({
       color: '#ffffff',
@@ -141,8 +165,10 @@ function waterMaterial(fall: boolean): MeshStandardMaterial {
       side: fall ? DoubleSide : FrontSide,
     }),
   );
+  if (caustics) m.defines = { USE_WATER_TEX: '' };
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uFlow = flowTime;
+    if (caustics) shader.uniforms.uCaustics = { value: caustics };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec2 aFlow;\nvarying vec2 vFlow;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFlow = aFlow;');
@@ -152,6 +178,9 @@ function waterMaterial(fall: boolean): MeshStandardMaterial {
         `#include <common>
 uniform float uFlow;
 varying vec2 vFlow;
+#ifdef USE_WATER_TEX
+uniform sampler2D uCaustics;
+#endif
 float wh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float wn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(wh(i), wh(i + vec2(1, 0)), f.x), mix(wh(i + vec2(0, 1)), wh(i + vec2(1, 1)), f.x), f.y); }`,
@@ -176,6 +205,13 @@ float wn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 
   float n1 = wn(vec2(vFlow.x * 5.0, vFlow.y * 1.1 - t * 1.1));
   float n2 = wn(vec2(vFlow.x * 9.0 + 3.0, vFlow.y * 2.3 - t * 1.7));
   float lines = smoothstep(0.62, 0.72, n1) * (1.0 - smoothstep(0.72, 0.84, n1));
+#ifdef USE_WATER_TEX
+  // hand-painted caustics, two layers drifting downstream at different speeds
+  float cA = texture2D(uCaustics, vec2(vFlow.x * 0.55, vFlow.y * 0.42 - t * 0.32)).r;
+  float cB = texture2D(uCaustics, vec2(vFlow.x * 0.8 + 0.37, vFlow.y * 0.61 - t * 0.21 + 0.5)).r;
+  float cau = smoothstep(0.45, 0.95, min(cA, cB) * 0.5 + max(cA, cB) * 0.5);
+  lines = max(lines * 0.4, cau);
+#endif
   c = mix(c, vec3(0.8, 0.95, 1.0), lines * 0.55);
   c += (n2 - 0.5) * 0.06;
   // foam along the banks, broken up by noise
@@ -191,7 +227,7 @@ float wn(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 
 }`,
       );
   };
-  m.customProgramCacheKey = () => (fall ? 'water-fall-v1' : 'water-river-v1');
+  m.customProgramCacheKey = () => (fall ? 'water-fall-v1' : caustics ? 'water-river-v2-tex' : 'water-river-v2');
   return m;
 }
 

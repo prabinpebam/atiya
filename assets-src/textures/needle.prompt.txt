@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+
+Prompt:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A single drooping evergreen cedar spray shaped like a rounded teardrop shingle: soft short painterly needles fanning from a central rib, the tip at the top centre and the base at the bottom centre, filling the frame; clean crisp silhouette; isolated on a transparent background, no shadow

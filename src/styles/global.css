@@ -212,11 +212,19 @@ kbd {
   margin: 0;
 }
 
-.landing-poster svg {
+.landing-poster svg,
+.landing-poster img {
   width: 100%;
   height: auto;
   display: block;
   filter: drop-shadow(0 12px 24px rgb(31 29 36 / 0.15));
+}
+
+.landing-poster img {
+  border-radius: 28px;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: linear-gradient(180deg, #9fd8ff, #e6f6ff);
 }
 
 @media (max-width: 760px) {

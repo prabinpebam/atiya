@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Seamless tile: imagegen.py tile (base generation via edits with reference image: waterfall-cliff crop of documentation/poc-3d-navigation/screenshots/landscape-bridge.png, then two masked seam-repair passes with tone-corrected compositing).
+
+Prompt:
+Hand-painted stylised texture for a cozy, toy-like life-sim video game: soft painterly brushwork, gentle low contrast, clean simple shapes, no photorealism, no harsh highlights, no baked cast shadows. Layered sandstone cliff face seen straight on: horizontal rock strata bands of warm ochre, cream, peach and rust (#c9a883, #e6cfae, #b98d6a, #a77a5a), chunky faceted stylised rock with soft chiselled planes and a few small cracks; the bands run perfectly horizontal across the whole image

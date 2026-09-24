@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+
+Prompt:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A single small rounded leaf with a short stem, drawn flat, tip pointing straight up and filling the frame, soft painterly shading and a central vein, fresh green; clean crisp silhouette; isolated on a transparent background, no shadow

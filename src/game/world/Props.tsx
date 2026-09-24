@@ -22,8 +22,10 @@ import { FLOWER_KINDS, type Pond, type PropInstance } from './layout';
 import { kitMaterials, registerDaylit } from './materials';
 import { WIND_GLSL, windUniforms } from './windField';
 import { cedar, foliageMaterials, hardwood, leafyBush } from './foliage';
-import { boulder, butterflyWing, flowerBlooms, flowerStems, grassTuft, lilyPad, pebble, reeds, rock } from './propModels';
+import { boulder, butterflyWing, flowerBlooms, flowerStems, grassCards, grassTuft, lilyPad, pebble, reeds, rock } from './propModels';
 import { Fireflies } from './DayNight';
+import { withRockDetail } from './rockDetail';
+import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
 const Y = new Vector3(0, 1, 0);
@@ -272,7 +274,7 @@ export function Props({ controller }: { controller: GameController }) {
       rock: rock(),
       boulder: boulder(),
       pebble: pebble(),
-      grass: grassTuft(),
+      grass: gameTexture('grass-card') ? grassCards() : grassTuft(),
       stems: Object.fromEntries(FLOWER_KINDS.map((k) => [k, flowerStems(k)])),
       blooms: Object.fromEntries(FLOWER_KINDS.map((k) => [k, flowerBlooms(k)])),
     }),
@@ -291,11 +293,21 @@ export function Props({ controller }: { controller: GameController }) {
     addSway(broad.depth, 0.016, 1.2, 'broad-depth');
     addSway(needle.depth, 0.016, 1.2, 'needle-depth');
     addSway(broadBush.depth, 0.06, 0.1, 'broad-bush-depth');
+    const grassCard = gameTexture('grass-card');
+    let grass: Material;
+    if (grassCard) {
+      grass = new MeshStandardMaterial({ vertexColors: true, map: grassCard, alphaTest: 0.5, side: DoubleSide, roughness: 0.9, metalness: 0 });
+      addSway(grass, 0.9, 0.0, 'grass-card');
+    } else {
+      grass = swayMaterial(base, 0.9, 0.0, 'grass');
+    }
     return {
       tree: swayMaterial(base, 0.016, 1.2, 'tree'),
       bush: swayMaterial(base, 0.06, 0.1, 'bush'),
-      grass: swayMaterial(base, 0.9, 0.0, 'grass'),
+      grass,
       flower: swayMaterial(base, 0.55, 0.0, 'flower'),
+      // painted rock detail (object-space, luminance only, so moss and tints keep their colour)
+      rock: withRockDetail((base as MeshStandardMaterial).clone(), 'object', 0.7, 1.7),
       broad,
       needle,
       broadBush,
@@ -306,7 +318,6 @@ export function Props({ controller }: { controller: GameController }) {
   const oranges = useMemo(() => layout.fruit.filter((_, i) => i % 2 === 1), [layout]);
   const bloomColor = useMemo(() => (p: PropInstance) => BLOOM_COLORS[Math.floor(p.tint * BLOOM_COLORS.length) % BLOOM_COLORS.length], []);
   const tint = useMemo(() => (p: PropInstance) => vary(p), []);
-  const solidMat = kitMaterials().solid;
 
   return (
     <group name="props">
@@ -328,9 +339,9 @@ export function Props({ controller }: { controller: GameController }) {
       <Instanced geometry={geo.bush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.bushes} colorFor={tint} />
       <Instanced geometry={geo.flowerBush.solid} material={mats.bush} items={layout.flowerBushes} colorFor={tint} />
       <Instanced geometry={geo.flowerBush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.flowerBushes} colorFor={tint} />
-      <Instanced geometry={geo.rock} material={solidMat} items={layout.rocks} colorFor={tint} />
-      <Instanced geometry={geo.boulder} material={solidMat} items={layout.boulders} colorFor={tint} />
-      <Instanced geometry={geo.pebble} material={solidMat} items={layout.pebbles} colorFor={tint} shadow={false} lift={-0.03} />
+      <Instanced geometry={geo.rock} material={mats.rock} items={layout.rocks} colorFor={tint} />
+      <Instanced geometry={geo.boulder} material={mats.rock} items={layout.boulders} colorFor={tint} />
+      <Instanced geometry={geo.pebble} material={mats.rock} items={layout.pebbles} colorFor={tint} shadow={false} lift={-0.03} />
       <Instanced geometry={geo.grass} material={mats.grass} items={layout.grass} colorFor={tint} shadow={false} />
       {FLOWER_KINDS.map((k) => (
         <group key={k}>

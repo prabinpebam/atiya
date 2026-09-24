@@ -1,4 +1,5 @@
 import { Color, MeshBasicMaterial, MeshStandardMaterial, type Material } from 'three';
+import { withPaintGrain } from './rockDetail';
 
 /** Shared materials for kit-built models (vertex-coloured, soft "toy" lighting). */
 let solid: MeshStandardMaterial | null = null;
@@ -9,7 +10,8 @@ const GLOW_BASE = new Color(2.2, 2.0, 1.7);
 
 export function kitMaterials(): { solid: Material; glow: Material; glass: Material } {
   if (!solid) {
-    solid = new MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0 });
+    // painted brush grain over the vertex colours (no-op if the texture didn't load)
+    solid = withPaintGrain(new MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0 }), 0.36, 1.1);
     // HDR multiplier so only lamps/windows exceed the bloom threshold.
     glow = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, color: GLOW_BASE.clone() });
     glass = new MeshStandardMaterial({ vertexColors: true, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.38, depthWrite: false });

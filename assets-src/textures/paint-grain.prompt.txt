@@ -1,0 +1,6 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Seamless tile: imagegen.py tile (base generation, then two masked seam-repair passes with tone-corrected compositing).
+
+Prompt:
+Hand-painted stylised texture for a cozy, toy-like life-sim video game: soft painterly brushwork, gentle low contrast, clean simple shapes, no photorealism, no harsh highlights, no baked cast shadows. A subtle hand-painted surface grain: soft overlapping short gouache brush strokes and faint paper tooth in light neutral warm greys (#d8d4ce to #f2efea), very low contrast, evenly distributed, no pattern, no objects, no lines, no text
+

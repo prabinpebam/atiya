@@ -24,6 +24,7 @@ type GameState = {
   north: number;
   lift: number;
   wind: { strength: number; gust: number; leaves: number; swirls: number };
+  textures: { loaded: number; failed: number; pending: number };
 };
 
 const ground = (page: Page) =>
@@ -60,6 +61,13 @@ test.describe('landing & classic', () => {
     await expect(page.getByRole('link', { name: 'Explore the planet' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Classic site' })).toBeVisible();
     expect(scripts.filter((s) => /_astro\//.test(s))).toEqual([]);
+    // painted key art: sized (no layout shift), loaded, and the social card is advertised
+    const poster = page.locator('.landing-poster img');
+    await expect(poster).toHaveAttribute('width', '1200');
+    await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    const og = await page.locator('meta[property="og:image"]').getAttribute('content');
+    expect(og).toMatch(/\/og-image\.jpg$/);
+    expect((await page.request.get('/og-image.jpg')).status()).toBe(200);
     await noSeriousViolations(page);
   });
 
@@ -112,6 +120,18 @@ test.describe('capability gate', () => {
 });
 
 test.describe('rendering', () => {
+  test('hand-painted textures all load before the planet appears (no procedural fallback)', async ({ page }) => {
+    const statuses: number[] = [];
+    page.on('response', (r) => r.url().includes('/textures/') && statuses.push(r.status()));
+    await openPlanet(page);
+    const s = await state(page);
+    expect(s.textures.failed).toBe(0);
+    expect(s.textures.pending).toBe(0);
+    expect(s.textures.loaded).toBeGreaterThanOrEqual(12);
+    expect(statuses.length).toBe(s.textures.loaded);
+    expect(statuses.every((c) => c === 200)).toBe(true);
+  });
+
   test('tilt-shift survives adaptive quality falling all the way back', async ({ page }) => {
     await openPlanet(page, '/play/?quality=high');
     await page.getByRole('button', { name: 'Start exploring' }).click();
@@ -216,6 +236,8 @@ test.describe('view controls', () => {
   });
 
   test('keyboard: , . rotate, PgUp/PgDn tilt within limits, N faces north, H resets position and direction', async ({ page }) => {
+    // a long sequence of real-time key holds; headless SwiftShader renders slowly
+    test.setTimeout(120_000);
     await startPlanet(page);
     await page.locator('.game-region').focus();
     await page.keyboard.down('.');

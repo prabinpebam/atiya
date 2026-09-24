@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { UP, moveAlong, orientationFor, tangentToward } from '../math/sphere';
 import { riverDistance } from '../world/features';
+import { textureStatus } from '../world/textures';
 
 export interface GameTestHook {
   getState(): Record<string, unknown>;
@@ -69,6 +70,7 @@ export function installTestHook(c: GameController): void {
         north: (c.northAngle() * 180) / Math.PI,
         lift: c.lift,
         wind: { ...c.wind },
+        textures: textureStatus(),
       };
     },
     landmarks: () => c.landmarks.map((l) => l.id),

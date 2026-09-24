@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { GameController } from './controller';
 import { GameApp } from './GameApp';
 import type { LandmarkData } from './types';
+import { preloadTextures } from './world/textures';
 
 /**
  * Dynamically imported by the /play capability gate only after the device passes.
@@ -21,6 +22,9 @@ export async function mountGame(container: HTMLElement, landmarks: LandmarkData[
     const { installTestHook } = await import('./debug/testHook');
     installTestHook(controller);
   }
+  // hand-painted textures are small; materials read them synchronously, so load them first
+  // (never throws: anything missing falls back to the procedural look)
+  await preloadTextures();
   container.replaceChildren();
   createRoot(container).render(
     <StrictMode>

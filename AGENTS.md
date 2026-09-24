@@ -24,7 +24,7 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
 - Game keys are active only while the game region has focus. Never intercept Tab.
 - **View:** never rotate the camera's yaw. User rotation is `PlanetSim.rotateView` (a planet spin about world +Y), so the sky, sun and moon rig stays in the camera frame. Tilt is `controller.view.pitch`. The compass uses map north (`math/compass.ts`), not geographic north, because the plaza sits on the pole. Planet clicks are taps: check `controller.viewDragged` and `e.delta` so a drag never walks.
 - **No third-party game IP** (Nintendo names, characters, music, fonts, UI). Use CC0 or original assets only, and log every asset in `assets-src/CREDITS.md`.
-- **Art pipeline:** build 3D assets procedurally with the geometry kit (`src/game/world/kit.ts` + `parts.ts`): vertex-coloured primitives merged into one mesh per material layer (`solid` / `glow` / `glass`).
+- **Art pipeline:** build 3D assets procedurally with the geometry kit (`src/game/world/kit.ts` + `parts.ts`): vertex-coloured primitives merged into one mesh per material layer (`solid` / `glow` / `glass`). Surface detail comes from generated hand-painted textures (see **Textures** below).
   - Don't add per-part meshes; add parts to the kit instead.
   - **No culling:** everything on the planet is always drawn, so nothing pops in (owner decision). Don't add distance, horizon or LOD culling that makes things appear or disappear.
   - Trees and bushes live in `world/foliage.ts` (leaf cards + dark core). Foliage needs its alpha-tested `depthMaterial` for correct shadows.
@@ -43,6 +43,15 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
     - Prefix shader locals `w*` to avoid clashes with three.js chunk variables (e.g. the instancing chunk's `mat3 im`).
     - Effects must freeze or hide under `selectAmbientPaused`.
     - Use `window.__game.setWind(gust)` for deterministic screenshots and tests.
+  - **Textures:** hand-painted textures are generated with the global `gpt-image-2-5` skill (Azure OpenAI; the key lives in Windows Credential Manager, so never put it in the repo).
+    - Keep each source PNG and its exact prompt in `assets-src/textures/` (`<name>.png` + `<name>.prompt.txt`). Log generations in `assets-src/CREDITS.md`.
+    - Run `python scripts/build-textures.py` to rebuild `public/textures/*.webp` and the generated `src/game/world/textureManifest.ts`. Never hand-edit either.
+    - Tiles must be seamless (use the skill's `tile` command and check the 2×2 preview). Use the game's own screenshots as image-to-image references so the palette matches. Never prompt for third-party IP.
+    - Materials read textures with `gameTexture(name)` (preloaded before mount), and **must** fall back to the procedural look when it returns null.
+    - Ground layers are divided by the tile's `textureMean` so the palette is unchanged.
+    - The kit geometry has no UVs: use triplanar sampling (`TRIPLANAR_GLSL`) in planet- or object-local space, or add a purpose-built UV attribute (like the cliffs' `aRockUV`). Directional patterns such as strata criss-cross under triplanar projection.
+    - Foliage sprites are tintable greyscale, and alpha cards need a matching depth material.
+    - Keep game textures ≤ 512² and the total ≤ 1.5 MB (the unit test enforces this).
   - Check triangle counts with `tests/unit/triangles.report.test.ts` (unskip locally) and `window.__game.renderInfo()`.
   - Windows is case-insensitive: never create module names that differ only by case.
 - **Player character:** `public/models/character.glb` is generated. Don't hand-edit it; change `scripts/build-character.mjs` and run `npm run build:character`.

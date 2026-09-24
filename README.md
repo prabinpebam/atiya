@@ -45,6 +45,16 @@ Design docs: [spec](documentation/poc-3d-navigation/spec.md) · [plan](documenta
 |---|---|---|---|
 | ![Meandering stream with pebbly banks](documentation/poc-3d-navigation/screenshots/landscape-river.png) | ![Leaves and a wind swirl blowing across the plaza](documentation/poc-3d-navigation/screenshots/wind-gust.png) | ![Bridge with glowing lanterns at dusk](documentation/poc-3d-navigation/screenshots/daynight-dusk-bridge.png) | ![Waterfall and stream at night](documentation/poc-3d-navigation/screenshots/daynight-night-waterfall.png) |
 
+**Hand-painted textures.** The lawn, paths, cobbles, beach, riverbed, cliff strata, boulders, river caustics, leaf and needle cards, grass clumps, the moon and a subtle brush grain on the buildings all use original, seamless or alpha textures generated with GPT Image 2.5, in the game's own palette. The landing page and social card use a painted key art of the planet.
+
+| Painted ground, cobbles and grass | Leaf-card trees | Cliff strata, boulders and caustics |
+|---|---|---|
+| ![Spawn plaza with painted ground textures](documentation/poc-3d-navigation/screenshots/textures-spawn.png) | ![Hardwood trees with painted leaf clusters](documentation/poc-3d-navigation/screenshots/textures-forest.png) | ![Waterfall mesa with painted strata, boulders and river](documentation/poc-3d-navigation/screenshots/textures-waterfall.png) |
+
+| Cedars with painted needle sprays | Painted moon at night | Landing page key art |
+|---|---|---|
+| ![Cedar trees with needle-spray cards](documentation/poc-3d-navigation/screenshots/textures-cedars.png) | ![Night sky with the painted moon](documentation/poc-3d-navigation/screenshots/textures-night-moon.png) | ![Landing page with the painted planet poster](documentation/poc-3d-navigation/screenshots/landing.png) |
+
 ## Quick start
 
 Prerequisites:
@@ -62,11 +72,12 @@ npm run dev            # http://localhost:4321  (landing) → /play/ (planet) ·
 | `npm run build` / `npm run preview` | Production build / serve `dist/` |
 | `npm run build:test` | Non-deployable test build (`--mode test`, includes the test hook) |
 | `npm run check` | `astro check` (TypeScript + Astro diagnostics) |
-| `npm test` | Vitest unit tests (sphere math, collision, proximity, URL, gate, content validation, route test, day–night, compass, terrain, wind) |
+| `npm test` | Vitest unit tests (sphere math, collision, proximity, URL, gate, content validation, route test, day–night, compass, terrain, wind, texture manifest) |
 | `npm run e2e` | Playwright E2E + axe (builds the test bundle, headless Chromium with SwiftShader) |
 | `npm run size` | Bundle budget report for the current `dist/` |
 | `npm run verify:prod` | Production build + budgets + checks the test hook is absent |
 | `npm run build:character` | Rebuild `public/models/character.glb` from the Kenney FBX files. Needs FBX2glTF once: `npm install --prefix "%TEMP%\fbxconv" fbx2gltf@0.9.7`. Pass a skin name to swap outfits, e.g. `node scripts/build-character.mjs skaterFemaleA` |
+| `python scripts/build-textures.py` | Rebuild `public/textures/*.webp`, the landing poster, the social card and `src/game/world/textureManifest.ts` from the generated sources in `assets-src/textures/`. Needs Python 3.10+ with Pillow and numpy. The outputs are committed |
 
 First-time E2E setup: `npx playwright install chromium`. To use the installed Edge instead, set `PW_CHANNEL=msedge`.
 
@@ -105,7 +116,7 @@ Game keys only work while the planet has focus, and Tab is never captured. A sho
   - Only if the check passes does it `import()` the game bundle ([src/game/game-mount.tsx](src/game/game-mount.tsx)).
   - Unsupported devices get the classic site and never download 3D code.
 - **UI:** everything you can act on is semantic DOM (`<dialog>`, buttons, links), in [src/game/ui/](src/game/ui/). There's a parallel landmark list and an `aria-live` region for announcements. All rules live in [src/game/controller.ts](src/game/controller.ts).
-- **Art:** original procedural models in a soft, bevelled "cozy life-sim" style (spec §4.12). A geometry kit merges vertex-coloured primitives into about 3 draw calls per model ([src/game/world/kit.ts](src/game/world/kit.ts), [parts.ts](src/game/world/parts.ts), [models.ts](src/game/world/models.ts), [propModels.ts](src/game/world/propModels.ts)). Trees and bushes use overlapping alpha-tested leaf cards over a dark canopy volume ([foliage.ts](src/game/world/foliage.ts)). The ground is a procedural shader ([planetMaterial.ts](src/game/world/planetMaterial.ts)).
+- **Art:** original procedural models in a soft, bevelled "cozy life-sim" style (spec §4.12). A geometry kit merges vertex-coloured primitives into about 3 draw calls per model ([src/game/world/kit.ts](src/game/world/kit.ts), [parts.ts](src/game/world/parts.ts), [models.ts](src/game/world/models.ts), [propModels.ts](src/game/world/propModels.ts)). Trees and bushes use overlapping alpha-tested leaf cards over a dark canopy volume ([foliage.ts](src/game/world/foliage.ts)). The ground is a procedural shader layered with painted tiles ([planetMaterial.ts](src/game/world/planetMaterial.ts)).
 - **Player character:** the CC0 Kenney "Animated Characters: Protagonists" model ([Player.tsx](src/game/player/Player.tsx)). It is scaled to 1.25 u, and its idle and run clips are blended by speed with the stride matched to movement. It hops when a fast travel lands. The procedural avatar ([Character.tsx](src/game/player/Character.tsx)) stands in while the model loads or if it fails. Credits are in [assets-src/CREDITS.md](assets-src/CREDITS.md).
 - **Day–night cycle** (spec §4.13):
   - The pure model in [timeOfDay.ts](src/game/world/timeOfDay.ts) keyframes the sky, fog, light and cloud palettes and computes the sun/moon arcs and cycle speed.
@@ -117,6 +128,13 @@ Game keys only work while the planet has focus, and Tab is never captured. A sho
   - [Landforms.tsx](src/game/world/Landforms.tsx) builds the cliffs, the flowing water (a flow shader shared by the stream and the waterfall) and the bridge.
   - The ground shader ([planetMaterial.ts](src/game/world/planetMaterial.ts)) paints grass blades, clover, path edges, mossy cobbles, river banks and rock strata.
 - **Wind** (spec §4.14): the pure model [windField.ts](src/game/world/windField.ts) (direction plus breathing gusts) feeds one set of shared shader uniforms. All the foliage sways and flutters on the GPU, and its shadows move with it ([Props.tsx](src/game/world/Props.tsx) `addSway`). [WindFx.tsx](src/game/world/WindFx.tsx) adds instanced flying leaves and a small pool of swirl ribbons. Everything stops under Reduce motion or Pause ambient motion.
+- **Hand-painted textures** (spec §4.15):
+  - The sources are original GPT Image 2.5 generations; each prompt is kept next to its source in [assets-src/textures/](assets-src/textures/). [build-textures.py](scripts/build-textures.py) turns them into about 435 KB of WebP plus a typed manifest.
+  - [textures.ts](src/game/world/textures.ts) preloads them before the first render. Anything that fails falls back to the procedural look.
+  - Ground tiles are sampled triplanar in planet-local space and normalised by their mean colour, so the palette and lighting don't change.
+  - Cliff walls are UV-mapped so the strata stay horizontal, and boulders get object-space rock detail ([rockDetail.ts](src/game/world/rockDetail.ts)).
+  - The leaf, needle and grass sprites are tintable greyscale with real alpha.
+  - Buildings, the bridge and the plaza furniture get a subtle painted brush grain (luminance only).
 - **Quality tiers:**
   - `high`: tilt-shift, bloom, vignette and neutral tone mapping, plus 2048² shadows.
   - `low`: a cheaper tilt-shift, no bloom or vignette, and 1024² shadows. Chosen automatically for software rendering, Data Saver or coarse pointers.
@@ -148,8 +166,9 @@ Differences from the spec's proposed structure (§5.7):
 | Gate: no WebGL2 → fallback with **zero game-bundle requests**; bundle load error → Retry/Classic; `?mode=classic` redirect + saved preference; context lost → Reload/Classic | E2E: "capability gate" group, "?mode=classic redirects…", "WebGL context loss…" |
 | Game keys ignored when HUD focused; Start button doesn't steal focus | E2E: "start button, then WASD moves the player…" |
 | axe: no serious/critical issues on landing, classic, fallback, dialog, menu | E2E: landing, classic, no-WebGL2, dialog and menu tests (axe scans) |
-| Budgets: landing 0 KB 3D JS; gate 2.8 KB gz; game 385 KB gz (≤ 450); character model 163 KB; no `__game` in production | `npm run verify:prod` |
-| Render stats (all passes, everything always drawn): ≈ 98–99 draw calls / ≈ 690–700 k triangles on `high` (99 / 691 k at noon, 98 / 700 k at night). **This exceeds the original 60 / 100 k target; a waiver is proposed in the plan's §6 and needs owner sign-off.** | `window.__game.renderInfo()` |
+| Budgets: landing 0 KB 3D JS; gate 2.8 KB gz; game 388 KB gz (≤ 450); character model 163 KB; generated textures ≈ 435 KB (13 WebP); landing poster 104 KB (mobile) / 194 KB (desktop); no `__game` in production | `npm run verify:prod`, `tests/unit/textures.test.ts` |
+| Render stats (all passes, everything always drawn): ≈ 96–98 draw calls / ≈ 650–675 k triangles on `high`. **This exceeds the original 60 / 100 k target; a waiver is proposed in the plan's §6 and needs owner sign-off.** | `window.__game.renderInfo()` |
+| Textures: all 13 generated textures load (HTTP 200) before the planet appears, with no fallback. Every manifest entry is a square, power-of-two WebP that matches its recorded size; sprites have real alpha; tiles export a mean colour; each source has its prompt. The total stays within budget (≈ 435 KB). The landing key art loads with fixed dimensions, and the social card is served | `tests/unit/textures.test.ts`, E2E "hand-painted textures all load…", "landing ships no game JS…" |
 | Player character: rigged CC0 model loads (`character.glb` 200); procedural fallback when the model fails, still playable | E2E: "player character" group |
 | Day–night: continuous palette (incl. midnight wrap), sun↔moon handover at zero intensity, cycle timing; clock runs, night lights the lamps, badge shows the moon; "Always daytime" holds the day and is remembered; Pause ambient motion freezes the clock | `tests/unit/timeOfDay.test.ts`, E2E "day–night" group |
 | View controls: map north is a smooth unit tangent (Workshop north, Town Hall east, Library south, Post Office west of the plaza); rotating keeps the player in place and WASD screen-relative; rotate/compass buttons, tap-vs-drag, `,` `.` / PgUp PgDn / N / H keys, tilt limits, Reset back to the plaza facing north | `tests/unit/compass.test.ts`, E2E "view controls" group |
@@ -177,4 +196,5 @@ Differences from the spec's proposed structure (§5.7):
 - The console warning `THREE.Clock: This module has been deprecated` comes from @react-three/fiber 9.7 internals and is harmless.
 - A browser tab that is hidden (for example a background tab, or the VS Code integrated browser while its pane isn't visible) pauses `requestAnimationFrame`, so the planet stays on "Loading…" until the tab is visible. This is expected browser behaviour.
 - If the dev server shows `X is not defined` right after an edit, it probably caught a half-saved file. Re-save the file or restart `npm run dev`.
+- `og:image` must be an absolute URL. Set `site` in `astro.config.mjs` when the site is deployed; until then the social-card URL is built from the request URL (e.g. localhost in dev).
 - Windows file names are case-insensitive, so don't give two modules names that differ only in case (for example `daynight.ts` and `DayNight.tsx`). TypeScript reports an error, and Vite's dev cache may keep serving the old file until the dev server restarts.

@@ -89,9 +89,9 @@ export function FlyingLeaves({ controller }: { controller: GameController }) {
   const paused = useStore(controller.store, selectAmbientPaused);
   const ref = useRef<InstancedMesh>(null);
   const { geo, mat, leaves, rand } = useMemo(() => {
-    const g = new PlaneGeometry(0.26, 0.19);
+    const g = new PlaneGeometry(0.25, 0.25);
     const m = registerDaylit(
-      new MeshStandardMaterial({ map: leafTexture('broad'), alphaTest: 0.5, side: DoubleSide, roughness: 0.8, emissive: '#6a5a30', emissiveIntensity: 0.3 }),
+      new MeshStandardMaterial({ map: leafTexture('single'), alphaTest: 0.5, side: DoubleSide, roughness: 0.8, emissive: '#6a5a30', emissiveIntensity: 0.3 }),
     );
     const r = mulberry32(99);
     const list: Leaf[] = Array.from({ length: LEAF_COUNT }, () => ({

@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+
+Prompt:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A small clump of soft grass blades seen from the side, growing from a flat base along the bottom edge and fanning upward to fill the frame, blades of varied height with rounded tips, painterly yellow-green gradient that is darker at the base; clean crisp silhouette; isolated on a transparent background, no ground, no shadow

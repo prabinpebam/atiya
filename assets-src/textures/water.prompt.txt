@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Seamless tile: imagegen.py tile (base generation, then two masked seam-repair passes with tone-corrected compositing).
+
+Prompt:
+Hand-painted stylised texture for a cozy, toy-like life-sim video game: soft painterly brushwork, gentle low contrast, clean simple shapes, no photorealism, no harsh highlights, no baked cast shadows. Stylised water caustics seen from directly above: soft bright white wavy interconnected cell lines on a flat medium turquoise (#3fb5c9) background, even density everywhere, cartoon water ripple texture

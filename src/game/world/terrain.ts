@@ -107,13 +107,14 @@ export class Terrain {
     if (d > m.radiusU * 1.3) return -Infinity;
     const { angle } = mesaPolar(m, n);
     const edge = mesaRadius(m.radiusU, m.seed, angle);
-    // flat top with a slight dome, falling steeply at the (cliff-covered) rim
-    let h = m.heightU * (1 - smoothstep(edge - 0.1, edge + 0.12, d)) + 0.04 * (1 - d / edge);
+    // flat top with a slight dome, falling steeply just *inside* the (cliff-covered) rim, so the
+    // painted cliff wall, not the displaced ground, is what you see
+    let h = m.heightU * (1 - smoothstep(edge - 0.22, edge - 0.02, d)) + 0.04 * (1 - d / edge);
     if (m.tier) {
       const dt = arcDistance(n, m.tier.n, R);
       const ta = mesaPolar({ n: m.tier.n, north: m.north, east: m.east }, n).angle;
       const te = mesaRadius(m.tier.radiusU, m.seed + 2.2, ta);
-      h += m.tier.heightU * (1 - smoothstep(te - 0.08, te + 0.1, dt));
+      h += m.tier.heightU * (1 - smoothstep(te - 0.2, te - 0.02, dt));
     }
     return d > edge + 0.12 ? -Infinity : h;
   }

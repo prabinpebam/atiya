@@ -12,9 +12,11 @@ import {
   Vector3,
   type ColorRepresentation,
   type Material,
+  type Texture,
 } from 'three';
 import { Kit, hash3, mix } from './kit';
 import { registerDaylit } from './materials';
+import { gameTexture } from './textures';
 
 /**
  * Foliage: trees and bushes built from a dark inner volume plus many overlapping,
@@ -136,12 +138,14 @@ function drawNeedleScale(): HTMLCanvasElement {
   return c;
 }
 
-type LeafKind = 'broad' | 'needle';
-const textures = new Map<LeafKind, CanvasTexture>();
-export function leafTexture(kind: LeafKind): CanvasTexture {
+type LeafKind = 'broad' | 'needle' | 'single';
+const textures = new Map<LeafKind, Texture>();
+const GENERATED: Record<LeafKind, 'leaf-broad' | 'needle' | 'leaf-single'> = { broad: 'leaf-broad', needle: 'needle', single: 'leaf-single' };
+/** Leaf card texture: the generated hand-painted sprite when loaded, else a canvas-drawn fallback. */
+export function leafTexture(kind: LeafKind): Texture {
   let t = textures.get(kind);
   if (!t) {
-    t = toTexture(kind === 'broad' ? drawBroadLeaf() : drawNeedleScale());
+    t = gameTexture(GENERATED[kind]) ?? toTexture(kind === 'needle' ? drawNeedleScale() : drawBroadLeaf());
     textures.set(kind, t);
   }
   return t;

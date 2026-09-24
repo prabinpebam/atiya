@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+
+Prompt:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A single cluster of three soft rounded overlapping leaves joined at a short stem, pointing straight up: the stem touches the bottom centre edge, the middle leaf tip nearly touches the top edge, and the two side leaves spread left and right; light fresh greens with soft veins and gentle shading from a darker base to lighter tips; clean crisp silhouette; isolated on a transparent background, no shadow

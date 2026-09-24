@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Seamless tile: imagegen.py tile (base generation, then two masked seam-repair passes with tone-corrected compositing).
+
+Prompt:
+Hand-painted stylised texture for a cozy, toy-like life-sim video game: soft painterly brushwork, gentle low contrast, clean simple shapes, no photorealism, no harsh highlights, no baked cast shadows. Packed earth footpath seen from directly above: warm sandy tan dirt (#d8bb88 to #edd6a6) with soft mottled patches, a few scattered small rounded pebbles in cream and warm grey, faint tiny cracks, no grass, no footprints

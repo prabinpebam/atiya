@@ -1,0 +1,5 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+
+Prompt:
+Hand-painted stylised game sprite for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. A round full moon disc with softly painted craters and maria in pale cream and cool lilac-grey, soft rim, filling the frame and centred; isolated on a transparent background, no glow, no stars

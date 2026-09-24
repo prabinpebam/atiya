@@ -1,4 +1,4 @@
-import { BufferGeometry, Quaternion, SphereGeometry, Vector3 } from 'three';
+import { BufferGeometry, Color, Float32BufferAttribute, Quaternion, SphereGeometry, Vector3 } from 'three';
 import { Kit, hash3, mix } from './kit';
 
 /** Natural props (rocks, flowers, grass, clouds, pond plants): one merged geometry per kind. Trees and bushes live in foliage.ts. */
@@ -46,6 +46,48 @@ export function grassTuft(): BufferGeometry {
     k.cone(0.022, h, (p) => mix('#3f8a34', '#a4dc6e', (p.y + h / 2) / h), { p: [Math.cos(a) * 0.04, h / 2, Math.sin(a) * 0.04], q }, 3);
   }
   return solid(k);
+}
+
+/**
+ * Grass clump as three crossed, alpha-tested cards (6 triangles instead of ~36) for the painted
+ * `grass-card` sprite. Normals point straight up so the cards shade like the lawn around them;
+ * vertex colours run dark at the root to light at the tips (the sprite is greyscale).
+ */
+export function grassCards(width = 0.36, height = 0.27): BufferGeometry {
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const col: number[] = [];
+  const nrm: number[] = [];
+  const idx: number[] = [];
+  const lo = new Color('#5c9f42');
+  const hi = new Color('#c8ef8a');
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI + 0.3;
+    const dx = (Math.cos(a) * width) / 2;
+    const dz = (Math.sin(a) * width) / 2;
+    const b = pos.length / 3;
+    const corners: [number, number, number, number, number][] = [
+      [-dx, 0, -dz, 0, 0],
+      [dx, 0, dz, 1, 0],
+      [dx, height, dz, 1, 1],
+      [-dx, height, -dz, 0, 1],
+    ];
+    for (const [x, y, z, u, v] of corners) {
+      pos.push(x, y - 0.01, z);
+      uv.push(u, v);
+      const c = lo.clone().lerp(hi, v);
+      col.push(c.r, c.g, c.b);
+      nrm.push(0, 1, 0);
+    }
+    idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new Float32BufferAttribute(nrm, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
+  g.setAttribute('color', new Float32BufferAttribute(col, 3));
+  g.setIndex(idx);
+  return g;
 }
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';

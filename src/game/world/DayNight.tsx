@@ -28,6 +28,7 @@ import { DAY_HOURS, advanceHours, localHours, sampleSky, wrapHours, type SkyStat
 import { mulberry32 } from './layout';
 import { applyTimeOfDay } from './materials';
 import { cloudMaterial } from './Sky';
+import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
 /** Sky objects live on a plane behind the planet (camera frame), like the clouds. */
@@ -146,7 +147,7 @@ function useSkyBody(kind: 'sun' | 'moon') {
       new CircleGeometry(size, 40),
       new MeshBasicMaterial({
         color: kind === 'sun' ? new Color(3.2, 2.6, 1.7) : new Color(1.35, 1.35, 1.3),
-        map: kind === 'moon' ? moonTexture() : null,
+        map: kind === 'moon' ? (gameTexture('moon') ?? moonTexture()) : null,
         transparent: true,
         toneMapped: false,
         fog: false,
