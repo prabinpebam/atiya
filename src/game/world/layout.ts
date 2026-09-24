@@ -2,6 +2,7 @@ import { Vector3 } from 'three';
 import { CONFIG } from '../config';
 import { UP, arcDistance, moveAlong, pointArcDistance, tangentToward, type Obstacle } from '../math/sphere';
 import type { LandmarkGeometry } from '../math/landmarks';
+import { buildMesas, buildRiver, findBridges, mesaPolar, mesaRadius, riverDistance, type Bridge, type Mesa, type River } from './features';
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
 export const FLOWER_KINDS: FlowerKind[] = ['tulip', 'cosmos', 'pansy'];
@@ -13,6 +14,8 @@ export interface PropInstance {
   yaw: number;
   /** 0..1 random value used for colour variation. */
   tint: number;
+  /** Ground height (u above the base sphere), filled in once the terrain is known. */
+  h?: number;
 }
 
 export interface SignPost {
@@ -45,11 +48,18 @@ export interface PropLayout {
   bushes: PropInstance[];
   flowerBushes: PropInstance[];
   rocks: PropInstance[];
+  /** Big boulders at cliff feet and in open country (blocking). */
+  boulders: PropInstance[];
+  /** Small decorative stones along banks, paths and cliffs (walk-through). */
+  pebbles: PropInstance[];
   flowers: Record<FlowerKind, PropInstance[]>;
   grass: PropInstance[];
   posts: SignPost[];
   furniture: Furniture[];
   pond: Pond | null;
+  river: River | null;
+  bridges: Bridge[];
+  mesas: Mesa[];
   /** Everything that blocks movement (landmarks are added by the controller). */
   obstacles: Obstacle[];
 }
@@ -156,10 +166,30 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   const pond = choosePond(landmarks, cfg);
   const posts = plazaPosts(landmarks, cfg);
   const furniture = plazaFurniture(landmarks, cfg);
+  const mesas = buildMesas(cfg);
+  const river = buildRiver(pond, mesas[0] ?? null, cfg);
+  const bridges = findBridges(river, landmarks, cfg);
 
   const nearLandmark = (n: Vector3, pad: number) => landmarks.some((g) => arcDistance(n, g.n, R) < g.footprintU + pad || arcDistance(n, g.approach, R) < 1.2 + pad * 0.3);
   const inPond = (n: Vector3, pad: number) => (pond ? arcDistance(n, pond.n, R) < pond.radiusU + pad : false);
   const inPlaza = (n: Vector3, pad: number) => arcDistance(n, spawn, R) < PLAZA_RADIUS_U + pad;
+  /** Signed distance (u) from `n` to the water's edge (negative = in the river). */
+  const riverEdge = (n: Vector3) => {
+    const { d, i } = riverDistance(river, n, cfg);
+    return d - river.halfWidth[i];
+  };
+  const nearRiver = (n: Vector3, pad: number) => riverEdge(n) < pad;
+  /** Signed distance (u) from `n` to the nearest mesa rim (negative = on top). */
+  const mesaEdge = (n: Vector3) => {
+    let best = Infinity;
+    for (const m of mesas) {
+      const { r, angle } = mesaPolar(m, n, cfg);
+      best = Math.min(best, r - mesaRadius(m.radiusU, m.seed, angle));
+    }
+    return best;
+  };
+  const nearMesa = (n: Vector3, pad: number) => mesaEdge(n) < pad;
+  const blocked = (n: Vector3, pads: { river: number; mesa: number }) => nearRiver(n, pads.river) || nearMesa(n, pads.mesa);
 
   const hardwood: PropInstance[] = [];
   const fruit: PropInstance[] = [];
@@ -168,13 +198,26 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   for (let tries = 0; trees.length < 40 && tries < 5000; tries++) {
     const n = randomUnit(rand);
     if (inPlaza(n, 0.6) || nearLandmark(n, 1.9) || inPond(n, 1.0)) continue;
-    if (corridor(n) < 1.35) continue;
+    if (corridor(n) < 1.35 || blocked(n, { river: 0.9, mesa: 0.6 })) continue;
     if (trees.some((t) => arcDistance(t.n, n, R) < 1.7)) continue;
     const kind = rand();
     const inst = { n, scale: 0.85 + rand() * 0.35, yaw: rand() * Math.PI * 2, tint: rand() };
     (kind < 0.55 ? hardwood : kind < 0.72 ? fruit : cedar).push(inst);
     trees.push(inst);
   }
+  // a tree or two on each mesa top (unreachable, so no obstacles)
+  const mesaTop: PropInstance[] = [];
+  mesas.forEach((m, i) => {
+    const count = m.radiusU > 1.5 ? 2 : 1;
+    for (let k = 0; k < count; k++) {
+      const a = rand() * Math.PI * 2;
+      const dir = m.north.clone().multiplyScalar(Math.cos(a)).addScaledVector(m.east, Math.sin(a));
+      const n = moveAlong(m.n, dir, (m.radiusU * (0.2 + 0.25 * k)) / R);
+      const inst = { n, scale: 0.7 + rand() * 0.2, yaw: rand() * Math.PI * 2, tint: rand() };
+      (i % 2 === 0 ? cedar : hardwood).push(inst);
+      mesaTop.push(inst);
+    }
+  });
 
   const bushes: PropInstance[] = [];
   const flowerBushes: PropInstance[] = [];
@@ -182,7 +225,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   for (let tries = 0; allBushes.length < 18 && tries < 4000; tries++) {
     const n = randomUnit(rand);
     if (inPlaza(n, 0.3) || nearLandmark(n, 0.9) || inPond(n, 0.6)) continue;
-    if (corridor(n) < 1.0) continue;
+    if (corridor(n) < 1.0 || blocked(n, { river: 0.5, mesa: 0.35 })) continue;
     if ([...trees, ...allBushes].some((t) => arcDistance(t.n, n, R) < 1.1)) continue;
     const inst = { n, scale: 0.8 + rand() * 0.4, yaw: rand() * Math.PI * 2, tint: rand() };
     (rand() < 0.35 ? flowerBushes : bushes).push(inst);
@@ -190,12 +233,69 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   }
 
   const rocks: PropInstance[] = [];
-  for (let tries = 0; rocks.length < 14 && tries < 3000; tries++) {
+  for (let tries = 0; rocks.length < 18 && tries < 3000; tries++) {
     const n = randomUnit(rand);
     if (inPlaza(n, 0.2) || nearLandmark(n, 0.8) || inPond(n, 0.2)) continue;
-    if (corridor(n) < 0.95) continue;
+    if (corridor(n) < 0.95 || blocked(n, { river: 0.35, mesa: 0.3 })) continue;
     if ([...trees, ...allBushes, ...rocks].some((t) => arcDistance(t.n, n, R) < 1.0)) continue;
     rocks.push({ n, scale: 0.55 + rand() * 0.55, yaw: rand() * Math.PI * 2, tint: rand() });
+  }
+
+  // boulders: huddled at the foot of each cliff, a few on the river banks and out in the open
+  const boulders: PropInstance[] = [];
+  const clear = (n: Vector3, gap: number) =>
+    !inPlaza(n, 0.4) &&
+    !nearLandmark(n, 0.8) &&
+    !inPond(n, 0.4) &&
+    corridor(n) >= 1.1 &&
+    ![...trees, ...allBushes, ...rocks, ...boulders].some((t) => arcDistance(t.n, n, R) < gap);
+  for (const m of mesas) {
+    for (let k = 0, tries = 0; k < 4 && tries < 60; tries++) {
+      const a = rand() * Math.PI * 2;
+      const dir = m.north.clone().multiplyScalar(Math.cos(a)).addScaledVector(m.east, Math.sin(a));
+      const edge = mesaRadius(m.radiusU, m.seed, a);
+      const n = moveAlong(m.n, dir, (edge + 0.35 + rand() * 0.3) / R);
+      if (!clear(n, 0.7) || nearRiver(n, 0.3)) continue;
+      boulders.push({ n, scale: 0.75 + rand() * 0.55, yaw: rand() * Math.PI * 2, tint: rand() });
+      k++;
+    }
+  }
+  for (let k = 0, tries = 0; k < 7 && tries < 400; tries++) {
+    const i = Math.floor(rand() * river.samples.length);
+    const side = new Vector3().crossVectors(river.samples[i], river.tangent[i]).normalize().multiplyScalar(rand() < 0.5 ? -1 : 1);
+    const n = moveAlong(river.samples[i], side, (river.halfWidth[i] + 0.45 + rand() * 0.3) / R);
+    if (!clear(n, 1.0) || nearRiver(n, 0.2) || nearMesa(n, 0.3)) continue;
+    boulders.push({ n, scale: 0.7 + rand() * 0.4, yaw: rand() * Math.PI * 2, tint: rand() });
+    k++;
+  }
+  for (let k = 0, tries = 0; k < 6 && tries < 2000; tries++) {
+    const n = randomUnit(rand);
+    if (!clear(n, 1.4) || nearRiver(n, 0.6) || nearMesa(n, 0.4)) continue;
+    boulders.push({ n, scale: 0.8 + rand() * 0.6, yaw: rand() * Math.PI * 2, tint: rand() });
+    k++;
+  }
+
+  // pebbles: river banks, cliff feet and path edges (decorative, walk-through)
+  const pebbles: PropInstance[] = [];
+  for (let tries = 0; pebbles.length < 90 && tries < 6000; tries++) {
+    const pick = rand();
+    let n: Vector3;
+    if (pick < 0.5) {
+      const i = Math.floor(rand() * river.samples.length);
+      const side = new Vector3().crossVectors(river.samples[i], river.tangent[i]).normalize().multiplyScalar(rand() < 0.5 ? -1 : 1);
+      n = moveAlong(river.samples[i], side, (river.halfWidth[i] + 0.02 + rand() * 0.3) / R);
+    } else if (pick < 0.75) {
+      const m = mesas[Math.floor(rand() * mesas.length)];
+      const a = rand() * Math.PI * 2;
+      const dir = m.north.clone().multiplyScalar(Math.cos(a)).addScaledVector(m.east, Math.sin(a));
+      n = moveAlong(m.n, dir, (mesaRadius(m.radiusU, m.seed, a) + 0.12 + rand() * 0.4) / R);
+    } else {
+      n = randomUnit(rand);
+      const c = corridor(n);
+      if (c < 0.42 || c > 0.62) continue;
+    }
+    if (inPlaza(n, 0) || nearLandmark(n, 0.3) || inPond(n, 0.1) || nearRiver(n, 0) || nearMesa(n, 0.08)) continue;
+    pebbles.push({ n, scale: 0.12 + rand() * 0.16, yaw: rand() * Math.PI * 2, tint: rand() });
   }
 
   // flowers grow in single-kind, single-colour clumps (walk-through, decorative)
@@ -203,7 +303,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   for (let c = 0, tries = 0; c < 24 && tries < 3000; tries++) {
     const center = randomUnit(rand);
     if (inPlaza(center, -0.2) || nearLandmark(center, 0.5) || inPond(center, 0.4)) continue;
-    if (corridor(center) < 0.8) continue;
+    if (corridor(center) < 0.8 || blocked(center, { river: 0.5, mesa: 0.4 })) continue;
     c++;
     const kind = FLOWER_KINDS[Math.floor(rand() * FLOWER_KINDS.length)];
     const tint = rand();
@@ -212,7 +312,8 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
       const dir = tangentToward(center, randomUnit(rand));
       if (!dir) continue;
       const n = moveAlong(center, dir, (0.15 + rand() * 0.6) / R);
-      if (corridor(n) < 0.55 || [...trees, ...allBushes, ...rocks].some((t) => arcDistance(t.n, n, R) < 0.55)) continue;
+      if (corridor(n) < 0.55 || blocked(n, { river: 0.2, mesa: 0.15 })) continue;
+      if ([...trees, ...allBushes, ...rocks, ...boulders].some((t) => arcDistance(t.n, n, R) < 0.55)) continue;
       flowers[kind].push({ n, scale: 0.85 + rand() * 0.35, yaw: rand() * Math.PI * 2, tint });
     }
   }
@@ -222,20 +323,72 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     const n = randomUnit(rand);
     if (inPlaza(n, 0.1) || inPond(n, 0.4)) continue;
     if (landmarks.some((g) => arcDistance(n, g.n, R) < g.footprintU + 0.6)) continue;
-    if (corridor(n) < 0.6) continue;
+    if (corridor(n) < 0.6 || nearRiver(n, 0.12)) continue;
+    // grass grows on mesa tops too, but not on the cliff rims
+    const me = mesaEdge(n);
+    if (me > -0.3 && me < 0.2) continue;
     grass.push({ n, scale: 0.7 + rand() * 0.7, yaw: rand() * Math.PI * 2, tint: rand() });
   }
 
+  const onMesaTop = new Set(mesaTop);
   const obstacles: Obstacle[] = [
-    ...hardwood.map((t) => ({ n: t.n, radiusU: 0.42 * t.scale })),
+    ...hardwood.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.42 * t.scale })),
     ...fruit.map((t) => ({ n: t.n, radiusU: 0.42 * t.scale })),
-    ...cedar.map((t) => ({ n: t.n, radiusU: 0.36 * t.scale })),
+    ...cedar.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.36 * t.scale })),
     ...allBushes.map((b) => ({ n: b.n, radiusU: 0.42 * b.scale })),
     ...rocks.map((r) => ({ n: r.n, radiusU: 0.36 * r.scale })),
+    ...boulders.map((r) => ({ n: r.n, radiusU: 0.4 * r.scale })),
     ...posts.map((p) => ({ n: p.n, radiusU: POST_RADIUS })),
     ...furniture.map((f) => ({ n: f.n, radiusU: FURNITURE_RADIUS[f.kind] })),
+    ...riverObstacles(river, bridges, landmarks, cfg),
+    ...bridgeRailObstacles(bridges, cfg),
+    ...mesas.flatMap((m) => mesaObstacles(m, cfg)),
   ];
   if (pond) obstacles.push({ n: pond.n, radiusU: pond.radiusU + 0.15 });
 
-  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, flowers, grass, posts, furniture, pond, obstacles };
+  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, grass, posts, furniture, pond, river, bridges, mesas, obstacles };
+}
+
+/** The water blocks walking, except where a bridge carries a path over it. */
+export function riverObstacles(river: River, bridges: readonly Bridge[], landmarks: readonly LandmarkGeometry[], cfg = CONFIG): Obstacle[] {
+  const R = cfg.planetRadius;
+  const out: Obstacle[] = [];
+  for (let i = 0; i < river.samples.length; i += 2) {
+    const p = river.samples[i];
+    const onBridge = bridges.some((b) => {
+      const g = landmarks.find((l) => l.id === b.pathId);
+      return g !== undefined && arcDistance(p, b.n, R) < 3 && pointArcDistance(p, UP as Vector3, g.approach, R) < 1.45;
+    });
+    if (!onBridge) out.push({ n: p, radiusU: river.halfWidth[i] + 0.02 });
+  }
+  return out;
+}
+
+/** Rails along both sides of each bridge deck. */
+export function bridgeRailObstacles(bridges: readonly Bridge[], cfg = CONFIG): Obstacle[] {
+  const R = cfg.planetRadius;
+  const out: Obstacle[] = [];
+  for (const b of bridges) {
+    for (let t = -b.halfLengthU; t <= b.halfLengthU + 1e-6; t += 0.3) {
+      for (const s of [-1, 1]) {
+        const n = moveAlong(moveAlong(b.n, b.along, t / R), b.across, (s * (b.halfWidthU - 0.02)) / R);
+        out.push({ n, radiusU: 0.08 });
+      }
+    }
+  }
+  return out;
+}
+
+/** A cliff blocks with a core circle plus a ring that follows its irregular outline. */
+export function mesaObstacles(m: Mesa, cfg = CONFIG): Obstacle[] {
+  const R = cfg.planetRadius;
+  const out: Obstacle[] = [{ n: m.n, radiusU: m.radiusU * 0.8 }];
+  const count = Math.ceil((Math.PI * 2 * m.radiusU) / 0.45);
+  for (let k = 0; k < count; k++) {
+    const a = (k / count) * Math.PI * 2;
+    const dir = m.north.clone().multiplyScalar(Math.cos(a)).addScaledVector(m.east, Math.sin(a));
+    const edge = mesaRadius(m.radiusU, m.seed, a);
+    out.push({ n: moveAlong(m.n, dir, (edge - 0.28) / R), radiusU: 0.36 });
+  }
+  return out;
 }

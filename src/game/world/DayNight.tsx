@@ -385,7 +385,8 @@ export function Fireflies({ controller }: { controller: GameController }) {
       const spread = layout.pond && n === layout.pond.n ? layout.pond.radiusU * 1.3 : 0.9;
       const a = (rand() - 0.5) * 2 * spread;
       const b = (rand() - 0.5) * 2 * spread;
-      const p = n.clone().addScaledVector(tangent, a / R).addScaledVector(bitangent, b / R).normalize().multiplyScalar(R + 0.45 + rand() * 0.8);
+      const p = n.clone().addScaledVector(tangent, a / R).addScaledVector(bitangent, b / R).normalize();
+      p.multiplyScalar(R + Math.max(0, controller.terrain.height(p)) + 0.45 + rand() * 0.8);
       pos.push(p.x, p.y, p.z);
       size.push(7 + rand() * 4);
       phase.push(rand() * 10);

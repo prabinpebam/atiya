@@ -138,7 +138,7 @@ function drawNeedleScale(): HTMLCanvasElement {
 
 type LeafKind = 'broad' | 'needle';
 const textures = new Map<LeafKind, CanvasTexture>();
-function leafTexture(kind: LeafKind): CanvasTexture {
+export function leafTexture(kind: LeafKind): CanvasTexture {
   let t = textures.get(kind);
   if (!t) {
     t = toTexture(kind === 'broad' ? drawBroadLeaf() : drawNeedleScale());

@@ -71,23 +71,25 @@ This POC proves the **navigation UI and interaction model**, not final art or co
 ### 4.2 The planet
 
 - **Shape:** true sphere, radius **R = 10 u** (character height ≈ 1.3 u). A real sphere provides the "rolling log" curvature naturally; no bend shader needed.
-- **Ground (as built):** smooth-shaded icosphere (detail 44) with a procedural ground shader (`planetMaterial.ts`) blended by per-vertex surface weights:
-  - speckled grass with soft colour patches
-  - pebbly dirt paths from the plaza to every landmark
-  - cobbled forecourts around each landmark
+- **Ground (as built):** smooth-shaded icosphere (detail 56) displaced by the terrain height model (§4.14), with a procedural ground shader (`planetMaterial.ts`) blended by per-vertex surface weights:
+  - mottled, two-tone grass with anti-aliased blade strokes, clover patches and tiny flowers; worn, yellower grass along path edges
+  - dirt paths from the plaza to every landmark, with noisy edges, scattered pebbles and a darker edge line
+  - domed cobbles with mossy joints on the landmark forecourts
   - concentric brick rings with a compass-rose inlay on the spawn plaza
   - a sand rim around a pond that sits in a shallow basin
+  - damp banks and a pebbly bed along the river; layered rock strata wherever the ground is steep
+- **Landscape (as built, §4.14):** mild rolling hills, four rocky cliff mesas (one with a waterfall), a stream that runs from the waterfall to the pond, and an arched wooden bridge where the stream crosses the Greenhouse path.
 - **Props (as built):** all instanced and always drawn — no culling, so nothing pops in (§5.8):
   - lobed hardwood trees, including apple and orange fruit trees
   - tiered cedars
   - leafy bushes, some flowering
   - all tree and bush foliage built from overlapping alpha-tested leaf cards (§4.12)
-  - rounded rocks
+  - rounded rocks, big mossy boulders and river pebbles
   - three kinds of flower clump (tulip, cosmos, pansy) with per-clump colour
   - about 650 grass tufts
   - a pond with lily pads, reeds and cattails
   - butterflies
-- **Sky & atmosphere:** opaque screen-space gradient sky, drifting puffy clouds in the sky band, light fog on the far limb — all driven by the **day–night cycle** (§4.13).
+- **Sky & atmosphere:** opaque screen-space gradient sky, drifting puffy clouds in the sky band, light fog on the far limb — all driven by the **day–night cycle** (§4.13). A **wind system** (§4.14) sways the foliage and blows leaves and swirls across the scene.
 - **Lighting:** a hemisphere light plus one directional light that is the sun by day and the moon by night, with a single shadow map (1024² on low, 2048² on high) covering the visible cap. Its direction, colour and intensity follow the time of day (§4.13). An always-directly-below **blob shadow** grounds the character.
 - **Style:** soft-lit, bevelled "toy" materials (`MeshStandardMaterial` with vertex colours), with no outlines or toon ramp. See §4.12.
 
@@ -296,6 +298,10 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-70 | `window.__game` test hook in non-production builds only | P0 | 5.10 |
 | FR-71 | leva tuning panel in dev only | P1 | 5.5 |
 | FR-72 | Optimized asset pipeline script (gltf-transform) + CREDITS.md | P0 | 5.1, 13 |
+| **World & ambience (added after the POC scope)** | | | |
+| FR-80 | Day–night cycle with cycle / local-time / always-day modes, persisted; readable at night | P1 | 4.13 |
+| FR-81 | Rolling terrain, cliff mesas, boulders, a flowing stream with a waterfall, and a walkable arched bridge. Landmarks, plaza and paths stay flat and reachable; the river and cliffs block walking | P1 | 4.14, 5.3 |
+| FR-82 | Wind: gust-driven foliage sway, flying leaves and occasional swirls, all stopped under reduced motion / pause ambient | P1 | 4.14 |
 
 ### 4.12 Art direction (as built)
 
@@ -306,13 +312,15 @@ The cozy life-sim look is achieved with **original** procedural models. The styl
 | Soft, bevelled "toy" forms | Every box is a rounded box; blobs are welded, smooth-shaded icospheres; no outlines, no hard toon ramp (`world/kit.ts`) |
 | Architecture vocabulary | Reusable parts (`world/parts.ts`): stone plinths with blocks, corner pilasters, cornice bands, siding, gable roofs from overlapping shingle rows with trim boards, stepped hip roofs, panelled doors with brass handles, arched windows with mullions and sills, wall lanterns, awnings, bunting, flower boxes, steps, benches, barrels, crates, pot plants, sign boards |
 | Landmark silhouettes | Workshop cabin with chimney smoke, workbench and log pile; Town Hall with portico, pediment, clock-tower cupola and waving flag; striped Lighthouse with gallery, lantern room and rotating beam; classical Library with columns, banners and a giant stacked-book sculpture; band-shell Amphitheater with bulbs, spotlights and bunting; glass-dome Greenhouse with plants inside; Post Office with awning, envelope sign and a mailbox whose flag pops up when you're near |
-| Nature | **Trees** (`world/foliage.ts`): a dark inner canopy volume covered with overlapping, drooping leaf cards — greyscale leaf/needle textures drawn at runtime on a canvas, tinted per card from dark undersides to sunlit tops. Cards are lit with the canopy's volume normal so the tree shades as one soft mass, and alpha-tested depth materials cast leaf-shaped shadows. Hardwoods have five rounded lobes on a short, chunky, S-bent trunk with bark streaks, root flares and hidden branches (plus apple/orange variants). Cedars have six tiers of drooping needle scales. Bushes use the same leaf system. Also rounded rocks, clumps of tulips/cosmos/pansies, grass tufts, a pond with lily pads and cattails, and butterflies; trees, bushes and grass sway gently |
-| Ground | Speckled grass, pebbly dirt paths, cobbled forecourts, brick-ring plaza with a compass rose (`world/planetMaterial.ts`) |
+| Nature | **Trees** (`world/foliage.ts`): a dark inner canopy volume covered with overlapping, drooping leaf cards — greyscale leaf/needle textures drawn at runtime on a canvas, tinted per card from dark undersides to sunlit tops. Cards are lit with the canopy's volume normal so the tree shades as one soft mass, and alpha-tested depth materials cast leaf-shaped shadows. Hardwoods have five rounded lobes on a short, chunky, S-bent trunk with bark streaks, root flares and hidden branches (plus apple/orange variants). Cedars have six tiers of drooping needle scales. Bushes use the same leaf system. Also rounded rocks, clumps of tulips/cosmos/pansies, grass tufts, a pond with lily pads and cattails, and butterflies; trees, bushes, grass and flowers sway in the wind (§4.14) |
+| Ground | Mottled grass with blade strokes, clover and tiny flowers; dirt paths with pebbly, noisy edges; domed, mossy cobbled forecourts; brick-ring plaza with a compass rose; damp river banks and rock strata on steep ground (`world/planetMaterial.ts`) |
+| Landscape | Gently rolling hills; faceted sandstone cliff mesas with grass lips; mossy boulders and river pebbles; a meandering stream with a waterfall, foam and flowing water; an arched plank bridge with lanterns (§4.14) |
+| Wind | Gust-driven sway and leaf flutter on all foliage, tumbling leaves, and occasional hand-drawn-style swirl ribbons (§4.14) |
 | Sky | Gradient sky, puffy drifting clouds, sun, moon and stars that follow the day–night cycle (§4.13) |
 | Camera "diorama" feel | Fixed-angle camera (§4.6) + **tilt-shift** blur top and bottom, gentle bloom on lamps/windows, vignette, neutral tone mapping (`high` tier only) |
 | Character | Chibi proportions — the rigged CC0 Kenney character (§4.4), with the original procedural "designer" (round glasses, knit sweater, crossbody bag) as its fallback |
 
-All ambient animation (clouds, sway, smoke, beam, flag, butterflies, fireflies, star twinkle, idle breathing, and the day–night clock in cycle mode) stops under **Reduce motion** or **Pause ambient motion**.
+All ambient animation (clouds, wind sway, flying leaves and swirls, flowing water, smoke, beam, flag, butterflies, fireflies, star twinkle, idle breathing, and the day–night clock in cycle mode) stops under **Reduce motion** or **Pause ambient motion**.
 
 ### 4.13 Day–night cycle (as built)
 
@@ -342,6 +350,35 @@ The planet has a cozy life-sim day: soft dawn pinks, a bright day, a warm golden
   - `world/timeOfDay.ts` is a pure, unit-tested model: keyframed palettes, sun/moon arcs and cycle speed.
   - `world/DayNight.tsx` holds the rig: lights, sky texture, sun, moon and stars, plus `Fireflies` and `LampPools`.
   - The directional light fades to zero at the sun↔moon handover, so the shadow direction never visibly jumps.
+
+### 4.14 Landscape & wind (as built)
+
+The planet is no longer a smooth ball: the land gently rolls, rocky cliffs rise out of it, and a little stream runs through it under a cozy bridge. A light breeze keeps everything alive.
+
+- **Rolling ground:** smooth value-noise hills up to about ±0.6 u. The ground stays flat on the plaza, landmark forecourts and approach points, the pond and the river banks, so nothing looks buried or floating. Paths keep 30 % of the roll so they follow the land.
+- **Cliffs and rocks:**
+  - Four flat-topped **mesas** with irregular outlines; two have a second tier. Their walls are faceted, flat-shaded rings of warm sandstone strata with a grass lip on top. The mesa tops have grass and a few trees.
+  - Big mossy **boulders** cluster at the cliff feet, sit on the river banks and dot the open country. About 90 small **pebbles** line the banks, cliff feet and path edges.
+  - Mesas and boulders are obstacles; pebbles are walk-through.
+- **Stream:**
+  - It springs from the foot of the tallest mesa as a **waterfall** with a plunge pool and foam, then meanders (Catmull-Rom spline, varying width) down to the pond.
+  - The ground is carved into a river bed below the water line. The shader paints damp banks and a pebbly bed.
+  - The water is a ribbon with a flow shader: scrolling ripples and sparkles, lighter shallows at the edges, and foam streaks. The waterfall sheet uses the same shader, falling faster. Water dims at night like the rest of the daylit materials.
+  - The river blocks walking, except at bridges.
+- **Bridge:** the stream crosses the Greenhouse path under an **arched plank bridge** with stringers, posts and rails, stone abutments and two lanterns that glow at night. The character walks up and over the arch: the camera and character follow the deck height. The rails are obstacles, so you can't step off the side into the water.
+- **Wind:**
+  - The wind circulates around a tilted axis, so it blows in one consistent direction across the visible cap (towards screen-left at spawn).
+  - Its strength breathes between a 0.3 breeze and occasional multi-second gusts.
+  - One set of shared shader uniforms drives all the sway. Trees, cedars and bushes lean downwind and ripple as gust waves roll across the planet, while leaf cards flutter. Grass and flowers bend, and leaf shadows move with the leaves.
+  - Up to 30 **flying leaves** (warm, mixed colours) tumble across the scene near the character, spawning upwind; more fly during gusts.
+  - Occasionally a soft **wind swirl** — a thin white ribbon that streaks along the wind and curls into a loop — draws itself and fades out over about 3 s. They appear more often during gusts, and at most three are shown at once.
+- **Motion:** under Reduce motion or Pause ambient motion the wind clock freezes, the flying leaves and swirls are hidden, and the water stops flowing.
+- **Implementation:**
+  - `world/features.ts` defines the river spline, mesas and bridge placement.
+  - `world/terrain.ts` holds `Terrain`, a pure, unit-tested height model: `height(n)`, `deckHeight(n)` and `walkHeight(n)`.
+  - `world/Landforms.tsx` builds `Cliffs`, `Water` and `Bridges`.
+  - `world/windField.ts` is the pure wind model with its shared uniforms.
+  - `world/WindFx.tsx` holds the driver, flying leaves and swirls. See §5.3 for collision and ADR-13/ADR-14.
 
 ## 5. Technical design
 
@@ -424,7 +461,8 @@ if (|vel| > EPS) heading = dampAngle(heading, atan2(vel.x, vel.z), TURN_T, dt); 
 - **Tunneling:** prevented by `MAX_STEP = 0.1 u` sub-steps (§5.2), which is well below the smallest expanded obstacle radius (≥ 0.67 u with the minimum 0.3 u footprint).
 - **`resolvePenetration`:** if `angle(pLocal, n_j) < β_j`, rotate `pLocal` away from `n_j` along their great circle to angle `β_j` → `pCorrected`; let `c = setFromUnitVectors(pLocal, pCorrected)` (minimal rotation, planet-local); update `planetQ = normalize(planetQ · c⁻¹)` and assert `planetQ⁻¹·UP ≈ pCorrected`. This preserves the planet's twist about the player normal (no world-yaw jump).
 - **Unit tests:** head-on (→ zero, no NaN), glancing (tangential speed preserved), two-obstacle corner, high-`dt` at RUN (no tunneling through the smallest obstacle), push-out twist preservation (a reference landmark's world yaw unchanged within 1e-4 rad).
-- No physics engine; O(n) over ≤ 50 obstacles per sub-step is negligible.
+- No physics engine. The collision loop is O(n) over about 300 obstacle circles per sub-step, which is negligible. The river, bridge rails and mesa walls are made of the same circles as the trees and landmarks.
+- **Terrain is visual only (ADR-13):** collision and movement stay on the unit sphere. The character, camera and props are lifted by `Terrain.walkHeight` / `height` (§4.14). The lift is damped (λ ≈ 14), so walking over hills and the bridge arch is smooth. Obstacles block wherever the ground is too steep or wet to walk: the river (a chain of circles along the spline, left open where a path crosses on a bridge), the bridge rails, and each mesa (a core circle plus a ring along its rim). Mesa-top trees need no obstacle because you can't get up there.
 
 ### 5.4 Proximity system
 
@@ -523,9 +561,12 @@ personal-site/
 │     ├─ input/          # keyboard.ts, pointer.ts, gamepad.ts (P1), joystick.ts (P1)
 │     ├─ world/          # kit.ts (merged vertex-coloured geometry), parts.ts (roofs, windows, doors, props),
 │     │                  # models.ts (landmark models), propModels.ts (trees, flowers, rocks, clouds…),
-│     │                  # layout.ts (scatter, pond, plaza furniture), planetMaterial.ts (ground shader),
+│     │                  # layout.ts (scatter, pond, plaza furniture, obstacles), planetMaterial.ts (ground shader),
 │     │                  # Planet.tsx, Props.tsx, Plaza.tsx, Landmark.tsx, KitModel.tsx, Sky.tsx (clouds), materials.ts,
-│     │                  # timeOfDay.ts (pure day–night model), DayNight.tsx (lights, sky, sun/moon/stars, fireflies, lamp pools)
+│     │                  # timeOfDay.ts (pure day–night model), DayNight.tsx (lights, sky, sun/moon/stars, fireflies, lamp pools),
+│     │                  # features.ts (river spline, mesas, bridges), terrain.ts (pure height model),
+│     │                  # Landforms.tsx (cliffs, water, bridges), windField.ts (pure wind model + shared uniforms),
+│     │                  # WindFx.tsx (wind driver, flying leaves, swirls)
 │     ├─ player/         # Player.tsx (rigged Kenney model, idle/run blend, arrival hop), Character.tsx (procedural fallback avatar)
 │     ├─ camera/         # DioramaCamera.tsx
 │     ├─ ui/             # Hud.tsx, PreviewCard.tsx, LandmarkDialog.tsx, Menu.tsx, ViewControls.tsx (compass, rotate/tilt, reset),
@@ -543,13 +584,14 @@ personal-site/
 - `frameloop="always"` while playing; switch to `"demand"` when a dialog/menu is open or the tab is hidden (`visibilitychange`).
 - `<PerformanceMonitor>` steps DPR down (2 → 1.5 → 1) on sustained drops and back up on recovery, changing at most once per 10 s (no oscillation); `<AdaptiveDpr>` optional. Adaptation can be disabled via the test hook for benchmarking.
 - **Draw-call discipline:** props are instanced. Each landmark and the plaza are merged into one mesh per material layer (solid / glow / glass) with the geometry kit. There is one shadow-casting light.
-- **No distance or horizon culling:** the whole planet (≈ 1 000 instanced props, 7 landmarks, plaza) is always drawn, and the depth buffer hides the far side. Horizon culling was tried and removed: it saved about half the triangles but made objects pop in at the limb, which was distracting. With this little content the cost is acceptable, and `low` tier is the fallback.
+- **No distance or horizon culling:** the whole planet (≈ 1 100 instanced props, 7 landmarks, plaza, cliffs, river and bridge) is always drawn, and the depth buffer hides the far side. Horizon culling was tried and removed: it saved about half the triangles but made objects pop in at the limb, which was distracting. With this little content the cost is acceptable, and `low` tier is the fallback.
 - **Quality tiers:**
   - `high` (default on capable desktop GPUs) adds the post-processing chain and a 2048² shadow map.
   - `low` is used for software rendering (the "Continue anyway" path), Data Saver and coarse pointers. It keeps a cheaper tilt-shift (small kernel, 35 % resolution) but no bloom or vignette, and a 1024² shadow map.
   - **The tilt-shift is never switched off.** Adaptive quality waits 10 s after start (so shader-compile hitches don't count), then on sustained low FPS steps DPR down (2 → 1.5 → 1.25 → 1), and as a last step drops bloom and vignette. It never changes tier and steps back up when FPS recovers.
   - Non-production builds accept `?quality=high|low` for visual testing.
 - **Sky objects** (clouds z ≈ −30…−38, sun/moon z = −50, stars z ≈ −62…−68) sit on planes behind the planet in the camera frame, inside the camera's far plane (130). The sky gradient is a small canvas texture set as `scene.background`, redrawn only when the clock has moved.
+- **Wind and water in the vertex/fragment shaders:** all sway is done on the GPU. A single `windUniforms` object (time, strength, axis) is shared by every swaying material (and its depth material, so shadows match), so one driver update per frame animates all the foliage. Sway is computed in instance space (`transpose(mat3(instanceMatrix)) · wind`), so every instance leans downwind whatever its yaw. Shader locals use a `w*` prefix to avoid clashing with three.js chunk variables. Water uses one shared flow clock.
 
 ### 5.9 Loading strategy (capability-gated dynamic import)
 
@@ -583,10 +625,13 @@ A hydrated `client:only` island would import the game bundle as part of hydratio
   pause(): void; resume(): void; advance(frames: number, fixedDt?: number): void;
   setAdaptiveQuality(enabled: boolean): void; setDpr(dpr: number): void;   // benchmarking
   setTime(hours: number | null): void;  // hold the day–night clock (visual tests); null releases it
+  setWind(gust: number | null): void;   // hold the wind gust envelope 0–1 (visual/E2E tests); null releases it
+  visitFeature(kind: 'bridge' | 'waterfall' | 'mesa' | 'river', i?: number): boolean; // teleport to a landscape feature
+  groundInfo(): { lift: number; height: number; walk: number; riverD: number; riverHalfWidth: number };
 }
 ```
 
-`getState()` also reports `hours`, `night` (0–1), `glow` and `timeMode`, plus the view: `heading`, `pitch` (deg) and `north` (screen angle of map north in degrees, 0 = north-up).
+`getState()` also reports `hours`, `night` (0–1), `glow` and `timeMode`, plus the view: `heading`, `pitch` (deg) and `north` (screen angle of map north in degrees, 0 = north-up). For the landscape it adds `lift` (the character's current height above the base sphere) and `wind` (`{ strength, gust, time, leaves, swirls }`, where `leaves` and `swirls` are the counts currently visible).
 
 ## 6. Accessibility requirements
 
@@ -620,7 +665,7 @@ Budgets are **P0**. A miss is acceptable only with a **written owner waiver** re
 | Estimated GPU texture memory | ≤ **32 MB** | Asset script: Σ width × height × bytes-per-pixel of the GPU format × 1.33 (mips) |
 | Time to playable | ≤ **3.0 s** median of 5 cold-cache runs | `game:playable` mark minus navigation start. Chrome DevTools custom profile: 50 Mbps down / 10 Mbps up / 20 ms RTT, cache disabled, no CPU throttling |
 | Frame pacing | rAF interval **median ≤ 16.7 ms** and **≥ 95 % of intervals ≤ 20 ms** | 60 s scripted walk loop (test build, minified). DPR forced to 1.5, adaptive quality off, 1920×1080 viewport, 60 Hz display, on AC power. CPU frame time and GPU time (stats-gl) reported separately |
-| Draw calls / triangles | ≤ 60 / ≤ 100 k (original target) — **as built after the art pass, with no culling: ≈ 100–106 calls / ≈ 570–590 k triangles per frame on high (all passes incl. shadows + post; the day–night sky adds ≤ 7 calls); proposed waiver pending owner sign-off (plan §6)** | `renderInfo()` test hook (`renderer.info`, accumulated across passes) at the spawn view |
+| Draw calls / triangles | ≤ 60 / ≤ 100 k (original target) — **as built with no culling, after the art pass and the landscape & wind pass: ≈ 98–99 calls / ≈ 690–700 k triangles per frame on high (all passes incl. shadows + post). The biggest items are the displaced ground (≈ 65 k) and shadow-casting landmarks, trees and boulders, which are counted twice. Proposed waiver pending owner sign-off (plan §6)** | `renderInfo()` test hook (`renderer.info`, accumulated across passes) at the spawn view |
 | Memory stability | ≤ 10 MB growth | Post-GC heap snapshots at t = 0 and t = 5 min of scripted play |
 | Input → visible response | ≤ 50 ms | `keydown` timestamp to the first rendered frame with player displacement > 0 (performance marks, test build) |
 | Adaptive quality | Steps down within 3 s under forced load; recovers; ≤ 1 change per 10 s | Test hook forcing a low-fps condition |
@@ -658,6 +703,8 @@ None in the POC (privacy-first). Optional P2: local-only debug overlay showing t
 | ADR-10 | **No culling** — everything on the planet is always drawn | Horizon culling (dot-product test per instance/landmark); LOD | Horizon culling halved triangles but caused visible pop-in at the limb; the scene is small enough to draw in full, and nothing ever appears suddenly (owner decision, 2026-09-24) |
 | ADR-11 | **Two quality tiers; tilt-shift on both** | Post only on `high`; always-full post | The tilt-shift *is* the diorama look, so it's always on (cheaper on `low`); bloom and vignette are the optional extras that adaptive quality may drop. An earlier version switched tiers at runtime and made the tilt-shift vanish after a few seconds |
 | ADR-12 | **Compressed day–night cycle by default; local time and always-day as options** | Real local time only; static day | Local time only means most visitors never see dusk or night; a ~6-minute day (short night) shows the whole cycle during a typical visit. The keyframed palette model is pure TS (testable), and sky objects live in the camera frame like the clouds, which suits the rotate-the-planet model (ADR-4) |
+| ADR-13 | **Terrain as a pure height function over the sphere; collision stays 2D** | Heightfield physics / raycast ground; separate terrain mesh per feature | One `Terrain.height(n)` feeds the ground mesh, prop placement, the character/camera lift and the tests, so everything agrees. Movement, sliding and proximity keep the proven unit-sphere maths (ADR-3/ADR-4). Unwalkable ground (river, cliffs, rails) is expressed as ordinary obstacle circles. Heights are mild enough that no slope limits are needed |
+| ADR-14 | **Wind as shared GPU uniforms, plus a small pool of CPU-driven effects** | Per-object CPU animation; particle library | One uniform update animates ~1 000 swaying instances, and their shadows, for free. Flying leaves are a single instanced mesh, and swirls are a pool of three ribbons, so the cost is a handful of draw calls. The pure `windField.ts` keeps the direction and gusts testable and consistent between the shader and the effects |
 
 ## 11. Risks (summary — full register in [plan](./plan.md#5-risk-register))
 

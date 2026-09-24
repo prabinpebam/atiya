@@ -35,6 +35,16 @@ Design docs: [spec](documentation/poc-3d-navigation/spec.md) · [plan](documenta
 |---|---|---|
 | ![Night: lamps, light pools, stars, moon](documentation/poc-3d-navigation/screenshots/daynight-night.png) | ![Lighthouse at night](documentation/poc-3d-navigation/screenshots/daynight-lighthouse-night.png) | ![Pond with fireflies](documentation/poc-3d-navigation/screenshots/daynight-pond-fireflies.png) |
 
+**Landscape & wind.** The land gently rolls. Rocky cliff mesas rise from it, and a stream runs from a waterfall down to the pond, passing under an arched plank bridge you can walk over. A breeze sways every tree, bush, flower and grass tuft; gusts blow leaves across the scene and now and then a soft wind swirl curls past.
+
+| Bridge on the Greenhouse path | Waterfall mesa | Cliff mesa and boulders |
+|---|---|---|
+| ![Arched plank bridge over the stream](documentation/poc-3d-navigation/screenshots/landscape-bridge.png) | ![Waterfall pouring off a sandstone mesa](documentation/poc-3d-navigation/screenshots/landscape-waterfall.png) | ![Two-tier cliff mesa with boulders](documentation/poc-3d-navigation/screenshots/landscape-mesa.png) |
+
+| The stream | A gust: flying leaves and a swirl | Bridge lanterns at dusk | Waterfall at night |
+|---|---|---|---|
+| ![Meandering stream with pebbly banks](documentation/poc-3d-navigation/screenshots/landscape-river.png) | ![Leaves and a wind swirl blowing across the plaza](documentation/poc-3d-navigation/screenshots/wind-gust.png) | ![Bridge with glowing lanterns at dusk](documentation/poc-3d-navigation/screenshots/daynight-dusk-bridge.png) | ![Waterfall and stream at night](documentation/poc-3d-navigation/screenshots/daynight-night-waterfall.png) |
+
 ## Quick start
 
 Prerequisites:
@@ -52,7 +62,7 @@ npm run dev            # http://localhost:4321  (landing) → /play/ (planet) ·
 | `npm run build` / `npm run preview` | Production build / serve `dist/` |
 | `npm run build:test` | Non-deployable test build (`--mode test`, includes the test hook) |
 | `npm run check` | `astro check` (TypeScript + Astro diagnostics) |
-| `npm test` | Vitest unit tests (sphere math, collision, proximity, URL, gate, content validation, route test) |
+| `npm test` | Vitest unit tests (sphere math, collision, proximity, URL, gate, content validation, route test, day–night, compass, terrain, wind) |
 | `npm run e2e` | Playwright E2E + axe (builds the test bundle, headless Chromium with SwiftShader) |
 | `npm run size` | Bundle budget report for the current `dist/` |
 | `npm run verify:prod` | Production build + budgets + checks the test hook is absent |
@@ -101,6 +111,12 @@ Game keys only work while the planet has focus, and Tab is never captured. A sho
   - The pure model in [timeOfDay.ts](src/game/world/timeOfDay.ts) keyframes the sky, fog, light and cloud palettes and computes the sun/moon arcs and cycle speed.
   - The rig in [DayNight.tsx](src/game/world/DayNight.tsx) drives the lights (so shadows move through the day), the sky texture, the sun, moon and stars, and the night extras: glowing lamps and windows, lamp light pools, fireflies and a brighter lighthouse beam.
   - In cycle mode the clock stops under Reduce motion or Pause ambient motion.
+- **Landscape** (spec §4.14):
+  - The pure height model [terrain.ts](src/game/world/terrain.ts) (`Terrain.height` / `walkHeight`) displaces the ground mesh, places every prop and lifts the character and camera. Collision stays 2D on the sphere, so the river, the cliff walls and the bridge rails are ordinary obstacle circles.
+  - [features.ts](src/game/world/features.ts) defines the river spline, the mesas and where bridges go.
+  - [Landforms.tsx](src/game/world/Landforms.tsx) builds the cliffs, the flowing water (a flow shader shared by the stream and the waterfall) and the bridge.
+  - The ground shader ([planetMaterial.ts](src/game/world/planetMaterial.ts)) paints grass blades, clover, path edges, mossy cobbles, river banks and rock strata.
+- **Wind** (spec §4.14): the pure model [windField.ts](src/game/world/windField.ts) (direction plus breathing gusts) feeds one set of shared shader uniforms. All the foliage sways and flutters on the GPU, and its shadows move with it ([Props.tsx](src/game/world/Props.tsx) `addSway`). [WindFx.tsx](src/game/world/WindFx.tsx) adds instanced flying leaves and a small pool of swirl ribbons. Everything stops under Reduce motion or Pause ambient motion.
 - **Quality tiers:**
   - `high`: tilt-shift, bloom, vignette and neutral tone mapping, plus 2048² shadows.
   - `low`: a cheaper tilt-shift, no bloom or vignette, and 1024² shadows. Chosen automatically for software rendering, Data Saver or coarse pointers.
@@ -132,11 +148,12 @@ Differences from the spec's proposed structure (§5.7):
 | Gate: no WebGL2 → fallback with **zero game-bundle requests**; bundle load error → Retry/Classic; `?mode=classic` redirect + saved preference; context lost → Reload/Classic | E2E: "capability gate" group, "?mode=classic redirects…", "WebGL context loss…" |
 | Game keys ignored when HUD focused; Start button doesn't steal focus | E2E: "start button, then WASD moves the player…" |
 | axe: no serious/critical issues on landing, classic, fallback, dialog, menu | E2E: landing, classic, no-WebGL2, dialog and menu tests (axe scans) |
-| Budgets: landing 0 KB 3D JS; gate 2.7 KB gz; game 372 KB gz (≤ 450); character model 163 KB; no `__game` in production | `npm run verify:prod` |
-| Render stats (all passes, everything always drawn): ≈ 100–106 draw calls / ≈ 570–590 k triangles on `high` (106 at noon, 99 at night). **This exceeds the original 60 / 100 k target; a waiver is proposed in the plan's §6 and needs owner sign-off.** | `window.__game.renderInfo()` |
+| Budgets: landing 0 KB 3D JS; gate 2.8 KB gz; game 385 KB gz (≤ 450); character model 163 KB; no `__game` in production | `npm run verify:prod` |
+| Render stats (all passes, everything always drawn): ≈ 98–99 draw calls / ≈ 690–700 k triangles on `high` (99 / 691 k at noon, 98 / 700 k at night). **This exceeds the original 60 / 100 k target; a waiver is proposed in the plan's §6 and needs owner sign-off.** | `window.__game.renderInfo()` |
 | Player character: rigged CC0 model loads (`character.glb` 200); procedural fallback when the model fails, still playable | E2E: "player character" group |
 | Day–night: continuous palette (incl. midnight wrap), sun↔moon handover at zero intensity, cycle timing; clock runs, night lights the lamps, badge shows the moon; "Always daytime" holds the day and is remembered; Pause ambient motion freezes the clock | `tests/unit/timeOfDay.test.ts`, E2E "day–night" group |
 | View controls: map north is a smooth unit tangent (Workshop north, Town Hall east, Library south, Post Office west of the plaza); rotating keeps the player in place and WASD screen-relative; rotate/compass buttons, tap-vs-drag, `,` `.` / PgUp PgDn / N / H keys, tilt limits, Reset back to the plaza facing north | `tests/unit/compass.test.ts`, E2E "view controls" group |
+| Landscape & wind: the river runs from the waterfall cliff to the pond, stays clear of the plaza and every landmark, and crosses exactly one path (the Greenhouse path) under a bridge; the ground is flat at the plaza, landmark footprints and approaches, rolls mildly elsewhere, and the river bed sits below the water, which sits below the banks; the mesas are flat-topped; the bridge deck arches; mesas and boulders stay off the paths; the wind is tangent, breezy at the plaza and every landmark, and its gusts never exceed 1. In the browser: walking over the bridge lifts the character and still reaches the Greenhouse; the river blocks walking; gusts bring flying leaves and swirls, and Pause ambient motion hides them | `tests/unit/terrain.test.ts`, `tests/unit/wind.test.ts`, E2E "landscape & wind" group |
 | Types | `npm run check` → 0 errors |
 
 **Still to do before sign-off** (manual checks, or not yet built):

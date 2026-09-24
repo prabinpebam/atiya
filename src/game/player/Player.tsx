@@ -114,13 +114,17 @@ class AvatarBoundary extends Component<{ fallback: ReactNode; children: ReactNod
 
 /** Player: the rigged model when available, the procedural avatar while loading or if it fails. */
 export function Player({ controller }: { controller: GameController }) {
+  const group = useRef<Group>(null);
   const shadow = useMemo(
     () => ({ geo: new CircleGeometry(0.34, 24), mat: new MeshBasicMaterial({ color: '#1d2a1a', transparent: true, opacity: 0.25, depthWrite: false }) }),
     [],
   );
+  useFrame(() => {
+    if (group.current) group.current.position.y = R + controller.lift;
+  });
   const fallback = <ProceduralAvatar controller={controller} />;
   return (
-    <group position={[0, R, 0]} name="player">
+    <group ref={group} position={[0, R, 0]} name="player">
       <mesh geometry={shadow.geo} material={shadow.mat} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} renderOrder={1} />
       <AvatarBoundary fallback={fallback}>
         <Suspense fallback={fallback}>

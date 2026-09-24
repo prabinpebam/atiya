@@ -22,7 +22,12 @@ type GameState = {
   heading: number;
   pitch: number;
   north: number;
+  lift: number;
+  wind: { strength: number; gust: number; leaves: number; swirls: number };
 };
+
+const ground = (page: Page) =>
+  page.evaluate(() => (window as any).__game.groundInfo() as { lift: number; height: number; walk: number; riverD: number; riverHalfWidth: number });
 
 const state = (page: Page) => page.evaluate(() => (window as any).__game.getState() as GameState);
 
@@ -254,6 +259,56 @@ test.describe('view controls', () => {
     await expect.poll(async () => (await state(page)).atSpawn, { timeout: 15_000 }).toBe(true);
     await expect.poll(async () => (await state(page)).traveling).toBeNull();
     expect((await state(page)).north).toBeCloseTo(0, 3);
+  });
+});
+
+test.describe('landscape & wind', () => {
+  test('the Greenhouse path crosses the river on an arched bridge', async ({ page }) => {
+    await startPlanet(page);
+    // step the sim at a fixed dt so the short arch can't be missed between slow headless frames
+    const walk = await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.pause();
+      g.autoWalkTo('greenhouse');
+      let maxLift = 0;
+      let frames = 0;
+      for (; frames < 60 * 30 && g.getState().autoWalk; frames++) {
+        g.advance(1, 1 / 60);
+        maxLift = Math.max(maxLift, g.groundInfo().lift);
+      }
+      g.resume();
+      return { maxLift, seconds: frames / 60, nearby: g.getState().nearby as string | null };
+    });
+    // the character rode up over the arched deck and arrived at the Greenhouse
+    expect(walk.maxLift).toBeGreaterThan(0.2);
+    expect(walk.seconds).toBeLessThan(30);
+    expect(walk.nearby).toBe('greenhouse');
+  });
+
+  test('the river blocks walking into the water', async ({ page }) => {
+    await startPlanet(page);
+    await page.evaluate(() => (window as any).__game.visitFeature('river', 2));
+    const before = await ground(page);
+    await page.locator('.game-region').focus();
+    await page.keyboard.down('w');
+    await page.waitForTimeout(3000);
+    await page.keyboard.up('w');
+    const after = await ground(page);
+    expect(after.riverD).toBeLessThan(before.riverD);
+    expect(after.riverD).toBeGreaterThan(after.riverHalfWidth);
+  });
+
+  test('gusts send leaves and wind swirls flying; Pause ambient motion stills them', async ({ page }) => {
+    await startPlanet(page);
+    await page.evaluate(() => (window as any).__game.setWind(1));
+    await expect.poll(async () => (await state(page)).wind.leaves, { timeout: 20_000 }).toBeGreaterThan(8);
+    await expect.poll(async () => (await state(page)).wind.swirls, { timeout: 20_000 }).toBeGreaterThan(0);
+    expect((await state(page)).wind.strength).toBeCloseTo(1, 5);
+    await page.getByTestId('menu-button').click();
+    await page.getByRole('checkbox', { name: 'Pause ambient motion' }).check();
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect.poll(async () => (await state(page)).wind.leaves).toBe(0);
+    expect((await state(page)).wind.swirls).toBe(0);
   });
 });
 

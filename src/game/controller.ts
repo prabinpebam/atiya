@@ -7,6 +7,7 @@ import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
 import { generateProps, type PropLayout } from './world/layout';
+import { Terrain } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectReducedMotion, type GameStore } from './state/store';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
@@ -42,6 +43,10 @@ export class GameController {
   readonly geoById: Map<string, LandmarkGeometry>;
   readonly dataById: Map<string, LandmarkData>;
   readonly props: PropLayout;
+  /** Ground height model (undulation, river bed, mesas, bridge deck). */
+  readonly terrain: Terrain;
+  /** Smoothed height of the ground under the player (u above the base sphere). */
+  lift = 0;
   readonly keyboard = new KeyboardInput();
   readonly fadeEl: { current: HTMLDivElement | null } = { current: null };
   region: HTMLDivElement | null = null;
@@ -62,6 +67,10 @@ export class GameController {
   timeFrozen = false;
   /** Latest day–night values shared with scene components (0 = day, 1 = night). */
   readonly sky = { night: 0, glow: 0.5 };
+  /** Latest wind values (driven by WindFx): strength 0.3…1, gust 0…1, live leaf and swirl counts. */
+  readonly wind = { strength: 0.3, gust: 0, time: 0, leaves: 0, swirls: 0 };
+  /** Test hook: force the gust level (0…1); null follows the natural wind. */
+  windOverride: number | null = null;
   /** User view: camera pitch (deg, eased toward `targetPitch`) and an animated yaw still to apply (rad). */
   readonly view = { pitch: CONFIG.camera.pitchDeg as number, targetPitch: CONFIG.camera.pitchDeg as number, yawPending: 0 };
   /** True once the current pointer gesture became a view drag (so its click doesn't walk). */
@@ -86,6 +95,8 @@ export class GameController {
     this.geoById = new Map(this.geos.map((g) => [g.id, g]));
     this.dataById = new Map(sorted.map((l) => [l.id, l]));
     this.props = generateProps(this.geos);
+    this.terrain = new Terrain(this.geos, this.props);
+    this.stampPropHeights();
     const obstacles: Obstacle[] = [...this.geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...this.props.obstacles];
     this.sim = new PlanetSim(obstacles);
 
@@ -120,6 +131,12 @@ export class GameController {
   dispose(): void {
     this.cleanups.forEach((c) => c());
     this.endDrag();
+  }
+
+  private stampPropHeights(): void {
+    const p = this.props;
+    const lists = [p.hardwood, p.fruit, p.cedar, p.bushes, p.flowerBushes, p.rocks, p.boulders, p.pebbles, p.grass, ...Object.values(p.flowers)];
+    for (const list of lists) for (const it of list) it.h = this.terrain.height(it.n);
   }
 
   get hudActions(): HTMLElement | null {
@@ -166,6 +183,8 @@ export class GameController {
     const intent: MoveIntent = playing ? this.keyboard.intent() : { x: 0, y: 0, run: false };
     this.updateView(delta, playing, selectReducedMotion(s));
     this.sim.step(delta, intent);
+    // follow the ground (hills, the bridge deck) with a little smoothing
+    this.lift = damp(this.lift, this.terrain.walkHeight(this.sim.pLocal), 14, Math.min(Math.max(delta, 0), CONFIG.maxDt));
 
     for (const e of this.sim.drainEvents()) {
       if (e.type === 'travel-complete') {

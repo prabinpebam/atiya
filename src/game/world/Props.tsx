@@ -20,8 +20,9 @@ import { tangentToward } from '../math/sphere';
 import { selectAmbientPaused } from '../state/store';
 import { FLOWER_KINDS, type Pond, type PropInstance } from './layout';
 import { kitMaterials, registerDaylit } from './materials';
+import { WIND_GLSL, windUniforms } from './windField';
 import { cedar, foliageMaterials, hardwood, leafyBush } from './foliage';
-import { butterflyWing, flowerBlooms, flowerStems, grassTuft, lilyPad, reeds, rock } from './propModels';
+import { boulder, butterflyWing, flowerBlooms, flowerStems, grassTuft, lilyPad, pebble, reeds, rock } from './propModels';
 import { Fireflies } from './DayNight';
 
 const R = CONFIG.planetRadius;
@@ -37,7 +38,7 @@ function writeInstances(mesh: InstancedMesh, items: readonly PropInstance[], col
     q.setFromUnitVectors(Y, it.n);
     yaw.setFromAxisAngle(Y, it.yaw);
     q.multiply(yaw);
-    p.copy(it.n).multiplyScalar(R + lift);
+    p.copy(it.n).multiplyScalar(R + (it.h ?? 0) + lift);
     s.setScalar(it.scale);
     m.compose(p, q, s);
     mesh.setMatrixAt(i, m);
@@ -48,34 +49,52 @@ function writeInstances(mesh: InstancedMesh, items: readonly PropInstance[], col
   mesh.computeBoundingSphere();
 }
 
-/** Wind sway (ambient motion; paused under reduced motion). Mutates `material`, sharing `uniform`. */
-function addSway(material: Material, strength: number, from: number, uniform: { value: number }, key: string): void {
+/**
+ * Wind sway (ambient motion; frozen under reduced motion). Mutates `material`. Everything that
+ * sways shares the wind uniforms, so the whole planet leans the same way and gusts travel across
+ * it as waves. `flutter` adds a fast per-vertex rustle (leaf cards).
+ */
+function addSway(material: Material, strength: number, from: number, key: string, flutter = 0): void {
   material.onBeforeCompile = (shader) => {
-    shader.uniforms.uTime = uniform;
+    Object.assign(shader.uniforms, windUniforms);
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime;')
+      .replace('#include <common>', `#include <common>\n${WIND_GLSL}`)
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
 #ifdef USE_INSTANCING
-  float ph = instanceMatrix[3].x * 0.7 + instanceMatrix[3].z * 0.9 + instanceMatrix[3].y * 0.5;
+  vec3 wIP = instanceMatrix[3].xyz;
+  mat3 wIM = mat3(instanceMatrix);
 #else
-  float ph = 0.0;
+  vec3 wIP = vec3(0.0, 1.0, 0.0);
+  mat3 wIM = mat3(1.0);
 #endif
-  float k = max(0.0, transformed.y - ${from.toFixed(2)});
-  float sw = sin(uTime * 1.4 + ph) * ${strength.toFixed(3)} * k * k;
-  transformed.x += sw;
-  transformed.z += sw * 0.6;`,
+  vec3 wWP = windAt(wIP);
+  float wExp = 0.35 + 0.65 * length(wWP);
+  vec3 wWL = transpose(wIM) * wWP;
+  vec2 wDir = normalize(wWL.xz + vec2(1e-5));
+  float wPh = dot(wIP, vec3(0.7, 0.5, 0.9));
+  // gust waves roll downwind across the planet
+  float wWave = sin(uWindTime * 1.3 - dot(wIP, normalize(wWP + 1e-5)) * 0.45 + wPh * 0.25);
+  float wK = max(0.0, transformed.y - ${from.toFixed(2)});
+  float wAmp = ${strength.toFixed(3)} * wK * wK * wExp;
+  float wLean = wAmp * uWindStrength * 0.9;
+  float wSw = wAmp * (0.35 + uWindStrength) * (0.65 * wWave + 0.35 * sin(uWindTime * 2.7 + wPh));
+  transformed.xz += wDir * (wLean + wSw) + vec2(-wDir.y, wDir.x) * wAmp * 0.2 * sin(uWindTime * 1.9 + wPh * 1.3);
+  ${
+    flutter > 0
+      ? `transformed += objectNormal * sin(uWindTime * 9.0 + dot(position, vec3(9.1, 6.3, 7.7)) + wPh) * ${flutter.toFixed(3)} * (0.3 + uWindStrength) * min(1.0, wK);`
+      : ''
+  }`,
       );
   };
-  material.customProgramCacheKey = () => `sway-${key}-${strength}-${from}`;
+  material.customProgramCacheKey = () => `wind-${key}-${strength}-${from}-${flutter}`;
 }
 
-function swayMaterial(base: Material, strength: number, from: number): { material: Material; uniform: { value: number } } {
+function swayMaterial(base: Material, strength: number, from: number, key = 'solid'): Material {
   const material = (base as MeshStandardMaterial).clone();
-  const uniform = { value: 0 };
-  addSway(material, strength, from, uniform, 'solid');
-  return { material, uniform };
+  addSway(material, strength, from, key);
+  return material;
 }
 
 /** All instances are always drawn (the scene is small; no culling means nothing ever pops in). */
@@ -171,7 +190,7 @@ function Butterflies({ controller }: { controller: GameController }) {
       wing: butterflyWing(),
       spots: picks.map((p, i) => {
         const tangent = (tangentToward(p.n, Y) ?? new Vector3(1, 0, 0)).clone();
-        return { n: p.n, tangent, bitangent: new Vector3().crossVectors(p.n, tangent), phase: i * 1.7 };
+        return { n: p.n, h: p.h ?? 0, tangent, bitangent: new Vector3().crossVectors(p.n, tangent), phase: i * 1.7 };
       }),
       mats: colors.map((c) => {
         const m = (kitMaterials().solid as MeshStandardMaterial).clone();
@@ -197,7 +216,7 @@ function Butterflies({ controller }: { controller: GameController }) {
       const b = Math.sin(tt * 2) * 0.3;
       const h = 0.45 + Math.sin(tt * 3.1) * 0.12;
       const n = s.n.clone().addScaledVector(s.tangent, a / R).addScaledVector(s.bitangent, b / R).normalize();
-      r.root.position.copy(n).multiplyScalar(R + h);
+      r.root.position.copy(n).multiplyScalar(R + s.h + h);
       r.root.quaternion.setFromUnitVectors(Y, n);
       r.root.rotateY(tt * 0.8);
       const flap = Math.sin(t.current * 16 + s.phase) * 0.9;
@@ -242,7 +261,6 @@ function Butterflies({ controller }: { controller: GameController }) {
 
 export function Props({ controller }: { controller: GameController }) {
   const layout = controller.props;
-  const paused = useStore(controller.store, selectAmbientPaused);
   const geo = useMemo(
     () => ({
       hardwood: hardwood(),
@@ -252,6 +270,8 @@ export function Props({ controller }: { controller: GameController }) {
       bush: leafyBush(),
       flowerBush: leafyBush('#ff7fa8'),
       rock: rock(),
+      boulder: boulder(),
+      pebble: pebble(),
       grass: grassTuft(),
       stems: Object.fromEntries(FLOWER_KINDS.map((k) => [k, flowerStems(k)])),
       blooms: Object.fromEntries(FLOWER_KINDS.map((k) => [k, flowerBlooms(k)])),
@@ -260,23 +280,27 @@ export function Props({ controller }: { controller: GameController }) {
   );
   const mats = useMemo(() => {
     const base = kitMaterials().solid;
-    const tree = swayMaterial(base, 0.016, 1.2);
-    const bush = swayMaterial(base, 0.06, 0.1);
     const broad = foliageMaterials('broad');
     const needle = foliageMaterials('needle');
     const broadBush = foliageMaterials('broad');
-    // foliage shares the solid parts' wind so leaves and core move together
-    addSway(broad.material, 0.016, 1.2, tree.uniform, 'broad');
-    addSway(needle.material, 0.016, 1.2, tree.uniform, 'needle');
-    addSway(broadBush.material, 0.06, 0.1, bush.uniform, 'broad-bush');
-    return { tree, bush, broad, needle, broadBush, grass: swayMaterial(base, 0.9, 0.0) };
+    // leaves share the trunk's sway (so canopy and core move together) plus a leafy rustle;
+    // the shadow-pass materials sway too, so leaf shadows dance with the wind
+    addSway(broad.material, 0.016, 1.2, 'broad', 0.02);
+    addSway(needle.material, 0.016, 1.2, 'needle', 0.012);
+    addSway(broadBush.material, 0.06, 0.1, 'broad-bush', 0.018);
+    addSway(broad.depth, 0.016, 1.2, 'broad-depth');
+    addSway(needle.depth, 0.016, 1.2, 'needle-depth');
+    addSway(broadBush.depth, 0.06, 0.1, 'broad-bush-depth');
+    return {
+      tree: swayMaterial(base, 0.016, 1.2, 'tree'),
+      bush: swayMaterial(base, 0.06, 0.1, 'bush'),
+      grass: swayMaterial(base, 0.9, 0.0, 'grass'),
+      flower: swayMaterial(base, 0.55, 0.0, 'flower'),
+      broad,
+      needle,
+      broadBush,
+    };
   }, []);
-  useFrame((_, dt) => {
-    if (paused) return;
-    mats.tree.uniform.value += dt;
-    mats.bush.uniform.value += dt;
-    mats.grass.uniform.value += dt;
-  });
 
   const apples = useMemo(() => layout.fruit.filter((_, i) => i % 2 === 0), [layout]);
   const oranges = useMemo(() => layout.fruit.filter((_, i) => i % 2 === 1), [layout]);
@@ -294,22 +318,24 @@ export function Props({ controller }: { controller: GameController }) {
         ] as const
       ).map(([key, g, items]) => (
         <group key={key}>
-          <Instanced geometry={g.solid} material={mats.tree.material} items={items} colorFor={tint} />
+          <Instanced geometry={g.solid} material={mats.tree} items={items} colorFor={tint} />
           <Instanced geometry={g.leaves} material={mats.broad.material} depthMaterial={mats.broad.depth} items={items} colorFor={tint} />
         </group>
       ))}
-      <Instanced geometry={geo.cedar.solid} material={mats.tree.material} items={layout.cedar} colorFor={tint} />
+      <Instanced geometry={geo.cedar.solid} material={mats.tree} items={layout.cedar} colorFor={tint} />
       <Instanced geometry={geo.cedar.leaves} material={mats.needle.material} depthMaterial={mats.needle.depth} items={layout.cedar} colorFor={tint} />
-      <Instanced geometry={geo.bush.solid} material={mats.bush.material} items={layout.bushes} colorFor={tint} />
+      <Instanced geometry={geo.bush.solid} material={mats.bush} items={layout.bushes} colorFor={tint} />
       <Instanced geometry={geo.bush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.bushes} colorFor={tint} />
-      <Instanced geometry={geo.flowerBush.solid} material={mats.bush.material} items={layout.flowerBushes} colorFor={tint} />
+      <Instanced geometry={geo.flowerBush.solid} material={mats.bush} items={layout.flowerBushes} colorFor={tint} />
       <Instanced geometry={geo.flowerBush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.flowerBushes} colorFor={tint} />
       <Instanced geometry={geo.rock} material={solidMat} items={layout.rocks} colorFor={tint} />
-      <Instanced geometry={geo.grass} material={mats.grass.material} items={layout.grass} colorFor={tint} shadow={false} />
+      <Instanced geometry={geo.boulder} material={solidMat} items={layout.boulders} colorFor={tint} />
+      <Instanced geometry={geo.pebble} material={solidMat} items={layout.pebbles} colorFor={tint} shadow={false} lift={-0.03} />
+      <Instanced geometry={geo.grass} material={mats.grass} items={layout.grass} colorFor={tint} shadow={false} />
       {FLOWER_KINDS.map((k) => (
         <group key={k}>
-          <Instanced geometry={geo.stems[k]} material={solidMat} items={layout.flowers[k]} shadow={false} />
-          <Instanced geometry={geo.blooms[k]} material={solidMat} items={layout.flowers[k]} colorFor={bloomColor} shadow={false} />
+          <Instanced geometry={geo.stems[k]} material={mats.flower} items={layout.flowers[k]} shadow={false} />
+          <Instanced geometry={geo.blooms[k]} material={mats.flower} items={layout.flowers[k]} colorFor={bloomColor} shadow={false} />
         </group>
       ))}
       {layout.pond && <PondView pond={layout.pond} />}

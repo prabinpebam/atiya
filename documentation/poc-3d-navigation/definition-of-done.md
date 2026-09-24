@@ -101,7 +101,7 @@ Evidence types: **[U]** unit test · **[E]** Playwright E2E test (test build) ·
   - the `region` vs `application` role decision is recorded
 
   (FR-51) **[M]**
-- [ ] **Reduced motion** (the OS setting or the in-game toggle) stops **every** decorative animation: lighthouse beam, clouds, foliage, idle bobs, particles, squash, follow lead. Transitions become opacity-only (≤ 200 ms). **Pause ambient motion** works even with reduced motion off. There is never camera shake, head-bob, motion blur or flashing. (FR-52, WCAG 2.2.2/2.3.1 (A), 2.3.3 (AAA, adopted)) **[E][M]**
+- [ ] **Reduced motion** (the OS setting or the in-game toggle) stops **every** decorative animation: lighthouse beam, clouds, foliage and wind sway, flying leaves and wind swirls, flowing water, idle bobs, particles, squash, follow lead. Transitions become opacity-only (≤ 200 ms). **Pause ambient motion** works even with reduced motion off. There is never camera shake, head-bob, motion blur or flashing. (FR-52, WCAG 2.2.2/2.3.1 (A), 2.3.3 (AAA, adopted)) **[E][M]**
 - [ ] **axe** finds zero serious or critical issues on `/`, on `/play` (Start button, HUD, preview card, dialog, Menu, fallback screens) and on `/classic/*`. (FR-53) **[A]**
 - [ ] Text contrast is at least 4.5:1 and UI glyph contrast at least 3:1 over the 3D scene; targets are at least 24×24 CSS px; the focus ring is always visible and never covered by the HUD. (FR-53, WCAG 1.4.3/1.4.11/2.5.8/2.4.11) **[A][M]**
 

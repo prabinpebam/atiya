@@ -16,6 +16,27 @@ export function rock(): BufferGeometry {
   return solid(k);
 }
 
+/** A big, chunky boulder with a mossy cap and a couple of chips at its foot. */
+export function boulder(): BufferGeometry {
+  const k = new Kit();
+  const stone = (p: Vector3, n: Vector3) => {
+    const moss = n.y > 0.72 && p.y > 0.42 ? 1 : 0;
+    return moss ? mix('#6f9a4c', '#86b35a', hash3(p.x * 9, p.y * 9, p.z * 9)) : mix('#80797a', '#b9b1aa', 0.3 + n.y * 0.45 + (hash3(p.x * 5, p.y * 5, p.z * 5) - 0.5) * 0.12);
+  };
+  k.blob(0.5, stone, { p: [0, 0.32, 0], s: [1.15, 0.95, 0.95] }, 2, 'solid', 0.22, 11);
+  k.blob(0.3, stone, { p: [0.42, 0.18, 0.2], s: [1, 0.85, 1] }, 1, 'solid', 0.25, 12);
+  k.blob(0.13, stone, { p: [-0.48, 0.07, 0.26] }, 1, 'solid', 0.25, 13);
+  k.blob(0.1, stone, { p: [0.12, 0.05, -0.52] }, 1, 'solid', 0.25, 14);
+  return solid(k);
+}
+
+/** A small smooth river stone. */
+export function pebble(): BufferGeometry {
+  const k = new Kit();
+  k.blob(0.5, (_p, n) => mix('#7d756e', '#b3a99c', 0.35 + n.y * 0.4), { p: [0, 0.18, 0], s: [1.25, 0.5, 0.9] }, 1, 'solid', 0.12, 21);
+  return solid(k);
+}
+
 export function grassTuft(): BufferGeometry {
   const k = new Kit();
   for (let i = 0; i < 6; i++) {

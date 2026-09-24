@@ -35,6 +35,14 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
     - Night-only effects read `controller.sky.night` (0–1) in `useFrame`.
     - Sky objects go on planes behind the planet in the camera frame, inside the camera's far plane (130).
     - Use `window.__game.setTime(h)` for screenshots and tests.
+  - **Terrain:** the ground isn't a plain sphere anymore. Place anything that sits on the ground at `R + terrain.height(n)`: set `PropInstance.h` in `world/layout.ts`, or call `controller.terrain`. Place anything the character stands on at `walkHeight`.
+    - Collision stays 2D (circles on the unit sphere). Make unwalkable features (river, cliffs, rails) obstacles in `layout.ts`, never height checks.
+    - Keep the plaza, landmark footprints and approach points at height 0, and keep every spawn→approach corridor clear: the layout tests enforce both.
+    - River, mesa and bridge placement lives in `world/features.ts` (authored lat/lon).
+  - **Wind:** all sway goes through `addSway` / `swayMaterial` in `world/Props.tsx`, which read the shared `windUniforms` (`world/windField.ts`). Apply the same sway to a foliage `depthMaterial`, or its shadows won't move with it.
+    - Prefix shader locals `w*` to avoid clashes with three.js chunk variables (e.g. the instancing chunk's `mat3 im`).
+    - Effects must freeze or hide under `selectAmbientPaused`.
+    - Use `window.__game.setWind(gust)` for deterministic screenshots and tests.
   - Check triangle counts with `tests/unit/triangles.report.test.ts` (unskip locally) and `window.__game.renderInfo()`.
   - Windows is case-insensitive: never create module names that differ only by case.
 - **Player character:** `public/models/character.glb` is generated. Don't hand-edit it; change `scripts/build-character.mjs` and run `npm run build:character`.
