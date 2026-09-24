@@ -34,6 +34,16 @@ export const CONFIG = {
     lookUp: 0.6,
     flyoverPitchDeg: 62,
     flyoverDistance: 22,
+    /** User view controls: tilt limits, rates, button steps and drag sensitivity. */
+    minPitchDeg: 30,
+    maxPitchDeg: 78,
+    rotateSpeed: 1.6,
+    tiltSpeedDeg: 45,
+    rotateStepDeg: 45,
+    tiltStepDeg: 10,
+    dragYawPerPx: 0.008,
+    dragPitchPerPx: 0.25,
+    dragThresholdPx: 6,
   },
 } as const;
 

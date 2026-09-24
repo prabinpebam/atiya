@@ -19,6 +19,9 @@ type GameState = {
   night: number;
   glow: number;
   timeMode: 'cycle' | 'local' | 'day';
+  heading: number;
+  pitch: number;
+  north: number;
 };
 
 const state = (page: Page) => page.evaluate(() => (window as any).__game.getState() as GameState);
@@ -170,6 +173,87 @@ test.describe('day–night', () => {
     const h = (await state(page)).hours;
     await page.waitForTimeout(1500);
     expect((await state(page)).hours).toBe(h);
+  });
+});
+
+test.describe('view controls', () => {
+  test('compass shows north; rotate buttons turn the view; the compass faces north again', async ({ page }) => {
+    await startPlanet(page);
+    expect((await state(page)).north).toBeCloseTo(0, 3);
+    const compass = page.getByTestId('compass');
+    await expect(compass).toHaveAttribute('aria-label', /facing north\./);
+    await page.getByRole('button', { name: /Rotate view clockwise/ }).click();
+    await expect.poll(async () => (await state(page)).north).toBeCloseTo(45, 0);
+    await expect(compass).toHaveAttribute('aria-label', /facing north-west/);
+    // a mouse click hands focus back to the planet, so WASD keeps working
+    await expect(page.locator('.game-region')).toBeFocused();
+    await compass.click();
+    await expect.poll(async () => (await state(page)).north).toBeCloseTo(0, 1);
+    await expect(compass).toHaveAttribute('aria-label', /facing north\./);
+    expect((await state(page)).atSpawn).toBe(true);
+  });
+
+  test('a tap walks, but dragging tumbles the view without walking', async ({ page }) => {
+    await startPlanet(page);
+    await page.mouse.click(640, 610);
+    await expect.poll(async () => (await state(page)).atSpawn).toBe(false);
+    await page.evaluate(() => (window as any).__game.teleport('plaza'));
+    const before = await state(page);
+    await page.mouse.move(640, 600);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(640 + i * 20, 600 - i * 6);
+    await page.mouse.up();
+    await expect.poll(async () => (await state(page)).pitch).toBeLessThan(before.pitch - 10);
+    const s = await state(page);
+    expect(s.north).toBeLessThan(-30); // dragged right → scene turned counter-clockwise
+    expect(s.atSpawn).toBe(true);
+    expect(s.autoWalk).toBe(false);
+  });
+
+  test('keyboard: , . rotate, PgUp/PgDn tilt within limits, N faces north, H resets position and direction', async ({ page }) => {
+    await startPlanet(page);
+    await page.locator('.game-region').focus();
+    await page.keyboard.down('.');
+    await page.waitForTimeout(500);
+    await page.keyboard.up('.');
+    expect((await state(page)).north).toBeGreaterThan(5);
+    await page.keyboard.down('PageDown');
+    await page.waitForTimeout(1500);
+    await page.keyboard.up('PageDown');
+    await expect.poll(async () => (await state(page)).pitch).toBeCloseTo(30, 1);
+    await page.keyboard.press('n');
+    await expect.poll(async () => (await state(page)).north).toBeCloseTo(0, 1);
+    await expect.poll(async () => (await state(page)).pitch).toBeCloseTo(48, 1);
+    // walk away and turn, then reset
+    await page.keyboard.down('w');
+    await page.waitForTimeout(800);
+    await page.keyboard.up('w');
+    await page.keyboard.down(',');
+    await page.waitForTimeout(400);
+    await page.keyboard.up(',');
+    await page.keyboard.down('PageUp');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('PageUp');
+    const away = await state(page);
+    expect(away.atSpawn).toBe(false);
+    expect(Math.abs(away.north)).toBeGreaterThan(5);
+    await page.keyboard.press('h');
+    await expect.poll(async () => (await state(page)).atSpawn, { timeout: 15_000 }).toBe(true);
+    await expect.poll(async () => (await state(page)).traveling).toBeNull();
+    const s = await state(page);
+    expect(s.north).toBeCloseTo(0, 3);
+    expect(s.pitch).toBeCloseTo(48, 1);
+    await expect(page.getByTestId('live-region')).toContainText('Back at the plaza');
+  });
+
+  test('the Reset button returns to the plaza facing north', async ({ page }) => {
+    await startPlanet(page);
+    await page.evaluate(() => (window as any).__game.teleport('library'));
+    await page.getByRole('button', { name: /Rotate view counter-clockwise/ }).click();
+    await page.getByRole('button', { name: /Reset position and direction/ }).click();
+    await expect.poll(async () => (await state(page)).atSpawn, { timeout: 15_000 }).toBe(true);
+    await expect.poll(async () => (await state(page)).traveling).toBeNull();
+    expect((await state(page)).north).toBeCloseTo(0, 3);
   });
 });
 

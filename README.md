@@ -19,6 +19,12 @@ Design docs: [spec](documentation/poc-3d-navigation/spec.md) · [plan](documenta
 
 ![Trees: leaf-card hardwoods (incl. fruit tree), tiered cedars and leafy bushes](documentation/poc-3d-navigation/screenshots/trees.png)
 
+**View controls.** The compass (bottom-right) always points to map north. Drag the planet, or use the buttons around the compass, to rotate and tilt the view. Click the compass to face north again, or **Reset** to fly back to the plaza.
+
+| Rotated 45° (north is up-right) | Tumbled to a top view |
+|---|---|
+| ![Rotated view](documentation/poc-3d-navigation/screenshots/view-rotated.png) | ![Top view after dragging](documentation/poc-3d-navigation/screenshots/view-tumbled-top.png) |
+
 **Day–night cycle.** One planet day takes about 6 minutes. You can also choose *Match my local time* or *Always daytime* under Menu → Time of day.
 
 | Dawn | Golden hour | Dusk |
@@ -62,10 +68,14 @@ First-time E2E setup: `npx playwright install chromium`. To use the installed Ed
 | Run | Hold Shift | — |
 | Open a nearby place | E, Enter or Space | "Open" on the preview card |
 | Travel directly | M (menu), then pick a place, or Tab to the hidden "Travel to a place" list | Click a building, or use Menu |
+| Rotate the view | Hold `,` / `.` | Drag left/right, or ⟲ / ⟳ by the compass |
+| Tilt the view | Hold Page Up / Page Down | Drag up/down, or ˄ / ˅ by the compass |
+| Face north | N | Click the compass |
+| Reset position & direction (back to the plaza, facing north) | H or Home | **Reset** under the compass |
 | Close / back | Esc, or the browser Back button | Close button / backdrop |
 | Classic site | Skip link (first Tab stop), or the header **Classic site** button | Header button |
 
-Game keys only work while the planet has focus, and Tab is never captured.
+Game keys only work while the planet has focus, and Tab is never captured. A short tap on the ground walks there; a drag turns and tilts the view instead.
 
 ## How it works
 
@@ -73,6 +83,10 @@ Game keys only work while the planet has focus, and Tab is never captured.
   - Collision is kinematic (no physics engine): circles on the sphere, sliding, sub-stepping, and a push-out that doesn't twist the planet.
   - Code: [src/game/math/sphere.ts](src/game/math/sphere.ts), [src/game/systems/movement.ts](src/game/systems/movement.ts).
 - **Proximity:** one global "nearby" landmark, with hysteresis, a switch margin and a 150 ms interact buffer ([src/game/systems/proximity.ts](src/game/systems/proximity.ts)).
+- **View controls & compass** ([ViewControls.tsx](src/game/ui/ViewControls.tsx), [compass.ts](src/game/math/compass.ts)):
+  - Rotating the view spins the planet about the player's vertical axis (`PlanetSim.rotateView`), and tilting changes the camera pitch (30°–78°).
+  - The compass shows *map north* from a stereographic grid centred on the plaza, which sits on the pole where true north is undefined. At the plaza it points toward the Workshop.
+  - Reset flies back to the plaza facing north.
 - **Content:** a single source of truth in [src/content/landmarks/](src/content/landmarks/).
   - Frontmatter drives the game (placement and dialog copy); the Markdown body drives the classic page.
   - Cross-entry validation runs at build time ([src/game/math/landmarks.ts](src/game/math/landmarks.ts)).
@@ -122,6 +136,7 @@ Differences from the spec's proposed structure (§5.7):
 | Render stats (all passes, everything always drawn): ≈ 100–106 draw calls / ≈ 570–590 k triangles on `high` (106 at noon, 99 at night). **This exceeds the original 60 / 100 k target; a waiver is proposed in the plan's §6 and needs owner sign-off.** | `window.__game.renderInfo()` |
 | Player character: rigged CC0 model loads (`character.glb` 200); procedural fallback when the model fails, still playable | E2E: "player character" group |
 | Day–night: continuous palette (incl. midnight wrap), sun↔moon handover at zero intensity, cycle timing; clock runs, night lights the lamps, badge shows the moon; "Always daytime" holds the day and is remembered; Pause ambient motion freezes the clock | `tests/unit/timeOfDay.test.ts`, E2E "day–night" group |
+| View controls: map north is a smooth unit tangent (Workshop north, Town Hall east, Library south, Post Office west of the plaza); rotating keeps the player in place and WASD screen-relative; rotate/compass buttons, tap-vs-drag, `,` `.` / PgUp PgDn / N / H keys, tilt limits, Reset back to the plaza facing north | `tests/unit/compass.test.ts`, E2E "view controls" group |
 | Types | `npm run check` → 0 errors |
 
 **Still to do before sign-off** (manual checks, or not yet built):

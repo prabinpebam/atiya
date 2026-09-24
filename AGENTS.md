@@ -22,6 +22,7 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
 - `npm run check` (types), `npm test` (Vitest unit), `npm run e2e` (Playwright + axe; builds the test bundle), `npm run verify:prod` (production build + bundle budgets + no test hook).
 - Run `npm test` after changing anything in `src/game/math`, `src/game/systems` or `src/content/landmarks`. `tests/unit/fixtures.ts` must mirror the landmark frontmatter; a test enforces this.
 - Game keys are active only while the game region has focus. Never intercept Tab.
+- **View:** never rotate the camera's yaw. User rotation is `PlanetSim.rotateView` (a planet spin about world +Y), so the sky, sun and moon rig stays in the camera frame. Tilt is `controller.view.pitch`. The compass uses map north (`math/compass.ts`), not geographic north, because the plaza sits on the pole. Planet clicks are taps: check `controller.viewDragged` and `e.delta` so a drag never walks.
 - **No third-party game IP** (Nintendo names, characters, music, fonts, UI). Use CC0 or original assets only, and log every asset in `assets-src/CREDITS.md`.
 - **Art pipeline:** build 3D assets procedurally with the geometry kit (`src/game/world/kit.ts` + `parts.ts`): vertex-coloured primitives merged into one mesh per material layer (`solid` / `glow` / `glass`).
   - Don't add per-part meshes; add parts to the kit instead.

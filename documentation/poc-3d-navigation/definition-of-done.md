@@ -31,7 +31,7 @@ Evidence types: **[U]** unit test · **[E]** Playwright E2E test (test build) ·
 - [ ] The character faces its movement direction, and idle, walk and run blend without visible foot sliding. (FR-06) **[M]**
 - [ ] The character can't pass through landmark footprints or large props, and slides along them when approaching at an angle. (FR-07) **[U][M]**
 - [ ] **Clicking or tapping the ground** walks the character there. It stops on arrival (≤ 0.3 u) or shows a "blocked" cue after 0.5 s without progress. Any movement key cancels it. (FR-08) **[U][E]**
-- [ ] The camera has a fixed yaw and pitch (the §4.6 conventions), shows a sky band above the horizon, and the user can't orbit it. (FR-11) **[M]**
+- [ ] The camera starts at the default diorama angle (the §4.6 conventions) with a sky band above the horizon. The user can rotate it and tilt it within 30°–78° by dragging, keys or the compass buttons; a tap still walks. The compass always shows map north, activating it faces north, and **Reset** returns to the plaza facing north. (FR-11) **[U][E][M]**
 
 ### Landmarks & activation
 - [ ] All **7 landmarks** are built from the `landmarks` content collection; the Plaza is built in.

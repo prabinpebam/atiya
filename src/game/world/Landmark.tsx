@@ -148,6 +148,7 @@ export function Landmark({ controller, geo, data }: { controller: GameController
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    if (controller.viewDragged || e.delta > CONFIG.camera.dragThresholdPx) return;
     controller.travelTo(geo.id);
   };
 

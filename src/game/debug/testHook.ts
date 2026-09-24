@@ -57,6 +57,9 @@ export function installTestHook(c: GameController): void {
         night: c.sky.night,
         glow: c.sky.glow,
         timeMode: s.timeMode,
+        pitch: c.view.pitch,
+        /** Screen angle of map north, degrees clockwise from screen-up (0 = north-up). */
+        north: (c.northAngle() * 180) / Math.PI,
       };
     },
     landmarks: () => c.landmarks.map((l) => l.id),

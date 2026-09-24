@@ -23,15 +23,13 @@ export function GameApp({ controller }: { controller: GameController }) {
         className="game-region"
         tabIndex={0}
         role="region"
-        aria-label="Planet explorer — use arrow keys or W A S D to move, Shift to run, E to open a place, M for the menu"
+        aria-label="Planet explorer — use arrow keys or W A S D to move, Shift to run, E to open a place, M for the menu. Comma and period rotate the view, Page Up and Page Down tilt it, N faces north, H returns to the plaza."
         aria-describedby="planet-help"
         onKeyDown={controller.onKeyDown}
         onKeyUp={controller.onKeyUp}
         onBlur={controller.onBlur}
-        onPointerDown={() => {
-          controller.focusRegion();
-          if (controller.store.getState().phase === 'ready') controller.start();
-        }}
+        onPointerDown={(e) => controller.onRegionPointerDown(e)}
+        onContextMenu={(e) => e.preventDefault()}
       >
         <Canvas
           shadows="percentage"
@@ -55,7 +53,8 @@ export function GameApp({ controller }: { controller: GameController }) {
       </div>
       <p id="planet-help" className="sr-only">
         A small planet with seven places to visit. Walk close to a building to preview it and press E to open it. Use the landmark list or the
-        menu to travel directly. The classic website is always available from the header.
+        menu to travel directly. Drag the planet, or use the compass controls, to rotate and tilt the view; the compass button faces north
+        again and Reset returns to the plaza. The classic website is always available from the header.
       </p>
       <Hud controller={controller} />
     </>

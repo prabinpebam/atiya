@@ -354,6 +354,140 @@ body.play {
   font-weight: 600;
 }
 
+/* ---------- View controls (compass pad + reset) ---------- */
+.view-controls {
+  position: absolute;
+  right: 16px;
+  bottom: 24px;
+  z-index: 16;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.view-pad {
+  display: grid;
+  grid-template: 'a up b' 34px 'left compass right' 72px 'c down d' 34px / 34px 72px 34px;
+  gap: 4px;
+  place-items: center;
+}
+
+.view-btn,
+.compass {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid var(--ink);
+  background: rgb(255 255 255 / 0.92);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgb(31 29 36 / 0.25);
+}
+
+.view-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.view-btn:hover,
+.compass:hover {
+  background: #fff;
+}
+
+.view-btn:active,
+.compass:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(31 29 36 / 0.25);
+}
+
+.view-btn:focus-visible,
+.compass:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pad-up {
+  grid-area: up;
+}
+.pad-down {
+  grid-area: down;
+}
+.pad-left {
+  grid-area: left;
+}
+.pad-right {
+  grid-area: right;
+}
+
+.compass {
+  grid-area: compass;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fffaf0;
+}
+
+.compass-rose {
+  width: 64px;
+  height: 64px;
+  overflow: visible;
+}
+
+.rose-ring {
+  fill: none;
+  stroke: #d9cdb4;
+  stroke-width: 2;
+}
+
+.rose-tick {
+  stroke: #b9ab8f;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.needle-north {
+  fill: #e5484d;
+}
+
+.needle-south {
+  fill: #9aa4b2;
+}
+
+.rose-n,
+.rose-l {
+  font: 800 10px/1 var(--font);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.rose-n {
+  fill: #c9252c;
+  font-size: 12px;
+}
+
+.rose-l {
+  fill: #5d5566;
+}
+
+.view-home {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 0.95rem;
+}
+
+.game-region.dragging {
+  cursor: grabbing;
+}
+
+@media (max-width: 720px) {
+  .view-controls {
+    top: 72px;
+    bottom: auto;
+    right: 12px;
+  }
+}
+
 .fade-overlay {
   position: absolute;
   inset: 0;

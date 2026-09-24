@@ -6,6 +6,7 @@ import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
 import { SUNRISE, SUNSET, formatHours } from '../world/timeOfDay';
 import { LandmarkDialog, MenuDialog } from './Dialogs';
+import { ViewControls } from './ViewControls';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -88,6 +89,11 @@ function ControlsHint({ controller }: { controller: GameController }) {
         <kbd>A</kbd>
         <kbd>S</kbd>
         <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open · <kbd>M</kbd> map
+      </p>
+      <p>
+        Drag to turn &amp; tilt the view · <kbd>,</kbd>
+        <kbd>.</kbd> rotate · <kbd>PgUp</kbd>
+        <kbd>PgDn</kbd> tilt · <kbd>N</kbd> north · <kbd>H</kbd> reset
       </p>
       <p className="muted">
         Prefer a normal website?{' '}
@@ -197,6 +203,7 @@ export function Hud({ controller }: { controller: GameController }) {
     <>
       <LandmarkNav controller={controller} />
       <PreviewCard controller={controller} />
+      <ViewControls controller={controller} />
       <ControlsHint controller={controller} />
       <Toast controller={controller} />
       <LiveRegion controller={controller} />

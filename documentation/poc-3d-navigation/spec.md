@@ -142,21 +142,33 @@ Constraints:
 | Interact / open | **E**, **Enter**, **Space** | Click/tap the preview card; click/tap a landmark (or its label) → **fast travel** to its approach point | A |
 | Close / back | **Esc** (closes the open dialog/menu) | Close button / tap backdrop | B |
 | Menu (fast travel, settings) | **M**, or **Esc** when no dialog/menu is open | Menu button (HUD) | Start |
-| Zoom (P1) | **+ / −** | Mouse wheel / pinch | Right stick Y |
+| Rotate view (as built) | Hold **,** / **.** (the < > keys): counter-clockwise / clockwise | **Drag** the planet left/right (any button; touch drag); ⟲ / ⟳ buttons around the compass step 45° | Right stick X (P1) |
+| Tilt view (as built) | Hold **Page Up** / **Page Down**: toward a top / side view (30°–78°) | **Drag** up/down; ˄ / ˅ buttons step 10° | Right stick Y (P1) |
+| Face north (as built) | **N** | Click the **compass** | — |
+| Reset position & direction (as built) | **H** or **Home** | **Reset** button under the compass | — |
+| Zoom (P1) | **+ / −** | Mouse wheel / pinch | — |
 | Classic site | HUD button (Tab to it), menu item | HUD button | Menu item |
 
 Rules:
 - Keys are matched by `KeyboardEvent.code` (layout-independent).
-- Game keys are **only active while the game region has focus** (WCAG 2.1.4). **Tab is never intercepted**; Tab/Shift+Tab move between HUD controls, the game region, and out of the page. `preventDefault()` is called only for keys the game handles (arrows, Space, WASD, E, M, +/−) while the game region is focused.
+- Game keys are **only active while the game region has focus** (WCAG 2.1.4). **Tab is never intercepted**; Tab/Shift+Tab move between HUD controls, the game region, and out of the page. `preventDefault()` is called only for keys the game handles (arrows, Space, WASD, E, M, `,` `.`, Page Up/Down, N, H, Home, +/−) while the game region is focused.
+- **Tap vs drag:** a pointer press that moves less than 6 px is a tap (walk to that spot / travel to a clicked building); anything longer is a view drag and never walks. Right-drag works too (the context menu is suppressed on the planet).
+- Clicking a view button with a mouse hands focus back to the planet so WASD keeps working; keyboard activation keeps focus on the button.
 - Diagonals are normalized; any movement key cancels an in-progress auto-walk or fast travel.
 - **Held input is cleared** on `blur`, `visibilitychange`, dialog/menu open, and any capability/error transition (no "stuck key" walking).
 - **Start & focus (no focus stealing):** when loading completes, the loader is replaced by a **Start exploring** button (also the user gesture that can unlock audio later). It receives focus **only if nothing else is focused** (`document.activeElement` is `body`). Activating it — or any pointer-down on the canvas — focuses the game region. The game region is a focusable wrapper (`tabindex="0"`, `role="region"`, `aria-label="Planet explorer — use arrow keys or WASD to move, E to open"`) with a visible `:focus-visible` indicator. `role="application"` is used only if Narrator/NVDA testing shows it's necessary.
 
 ### 4.6 Camera
 
-- **Fixed yaw, fixed pitch** — no user orbit (the Animal Crossing–style "diorama" camera). As built: **pitch 48°**, **distance 16 u**, **vertical FOV 35°**, look-at target **1.4 u ahead and 0.6 u above** the player's feet (so the player sits just below centre and more of the world ahead is visible). The first draft (50° / 13 u, target at the feet) cropped tall landmarks at the top of the frame.
+- **Default: the Animal Crossing–style "diorama" camera**, which the player can now rotate and tilt (owner request, 2026-09-24). As built: **pitch 48°**, **distance 16 u**, **vertical FOV 35°**, look-at target **1.4 u ahead and 0.6 u above** the player's feet (so the player sits just below centre and more of the world ahead is visible). The first draft (50° / 13 u, target at the feet) cropped tall landmarks at the top of the frame.
   - **Conventions:** *pitch* = elevation of the camera above the player's local tangent plane; *distance* = straight-line distance from the camera to the player's feet at `(0, R, 0)`; the camera sits on the +Z side (screen-up = −Z).
   - Sanity check at R = 10 (as built): camera-to-centre ≈ 24.4 u, planet angular radius ≈ 24.2°, upper limb ≈ 18 % above screen centre → **≈ 40 % sky band** (matches screenshots). The forward horizon is ≈ **39.7° of arc** from spawn; anything further only shows above the limb if it's tall enough.
+- **Rotate & tumble (as built):**
+  - **Rotating the view spins the planet** about the player's vertical axis (ADR-4). The camera keeps its yaw, so the sky, sun and moon stay framed the same way (lighting is camera-relative, as in cozy life-sims). WASD stays screen-relative, and the character keeps facing the same way on the planet.
+  - **Tilt** changes the camera pitch between **30°** (low, more sky) and **78°** (almost top-down), eased with λ = 10.
+  - Button steps (45° / 10°) and **face north** ease in over about 0.3 s, and apply instantly under Reduce motion. Fast travel re-frames the view facing the destination.
+  - **Reset** travels back to the plaza (fly-over, or a fade under Reduce motion) facing north at the default tilt.
+- **Compass (map north):** the plaza sits on the planet's pole, where geographic north is undefined. The compass instead uses a **stereographic map grid centred on the plaza** (`math/compass.ts`). At the plaza, north points toward the Workshop, so the spawn view is north-up. From the plaza, Town Hall is east, the Library south and the Post Office west. The field is smooth everywhere except the unvisited far pole.
 - **Zoom (P1):** three stops — *near* (35°, 11 u), *default* (48°, 16 u), *far* (60°, 22 u), eased with ~0.2 s half-life.
 - **Follow feel (P1):** tiny visual lead of the character in the movement direction (≤ 0.3 u, ~0.12 s half-life) to emulate camera lag. **Off under reduced motion.**
 - No camera shake, head-bob, or motion blur. FOV never exceeds 60°.
@@ -206,6 +218,10 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 - All HUD elements are real HTML (`<button>`, `<a>`, `<dialog>`, `<nav>`), ≥ 24×24 CSS px targets, 4.5:1 text contrast on a solid/blurred backing, never obscuring the focused element (WCAG 2.4.11).
 - **Menu** (`<dialog>`): Landmarks (fast travel + visited state), Controls, Settings (Reduce motion, Pause ambient motion, **Time of day** (cycle / local time / always day, §4.13), Run toggle (P1), Quality Auto/Low/High (P1), Sound (P2)), **Classic site**, Return to Plaza (P1). The action row (Show controls / Classic site / Close) stays pinned at the bottom when the menu scrolls.
 - **Time badge** in the header next to Menu: planet time with a sun/moon glyph (hidden below 520 px wide).
+- **View controls** (bottom-right; top-right below 720 px wide), a `role="group"` labelled "View":
+  - a **compass** button that always points to map north. Its label says which way you face (e.g. "Compass: facing north-west. Face north (N)"), and activating it faces north.
+  - ⟲ / ⟳ rotate and ˄ / ˅ tilt buttons around the compass, as single-pointer alternatives to dragging (WCAG 2.5.7).
+  - a **Reset** button (back to the plaza, facing north).
 
 ### 4.10 Escape hatch & fallbacks
 
@@ -239,7 +255,7 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-08 | Click/tap ground → auto-walk along the great circle **until arrived (≤ 0.3 u) or blocked**; if no progress for 0.5 s, stop and show a subtle "blocked" cue; retargeting allowed; any movement key cancels | P0 | 4.5, 5.2 |
 | FR-09 | Virtual joystick on coarse pointers | P1 | 4.5 |
 | FR-10 | Gamepad (standard mapping, analog speed, deadzone) | P1 | 4.5 |
-| FR-11 | Fixed-yaw/pitch diorama camera, sky band visible, no orbit | P0 | 4.6 |
+| FR-11 | Diorama camera by default (sky band visible); the user can rotate and tilt it within limits, face north via the compass, and reset position and direction | P0 | 4.6 |
 | FR-12 | Zoom stops (wheel / +− / right stick) | P1 | 4.6 |
 | FR-13 | Follow lead/lag feel (off under reduced motion) | P1 | 4.6 |
 | FR-14 | Juice: squash/stretch, lean, dust puffs | P1 | 4.4 |
@@ -502,7 +518,7 @@ personal-site/
 │     ├─ GameApp.tsx     # <Canvas>, providers, HUD
 │     ├─ config.ts       # tuning constants
 │     ├─ state/store.ts  # zustand: input, player, proximity, ui, settings(persist)
-│     ├─ math/sphere.ts  # pure: latLon→vec, step, slide, arcDistance (unit-tested)
+│     ├─ math/sphere.ts  # pure: latLon→vec, step, slide, arcDistance (unit-tested); compass.ts (map north)
 │     ├─ systems/        # movement.ts, proximity.ts, autoWalk.ts (pure + thin hooks)
 │     ├─ input/          # keyboard.ts, pointer.ts, gamepad.ts (P1), joystick.ts (P1)
 │     ├─ world/          # kit.ts (merged vertex-coloured geometry), parts.ts (roofs, windows, doors, props),
@@ -512,7 +528,7 @@ personal-site/
 │     │                  # timeOfDay.ts (pure day–night model), DayNight.tsx (lights, sky, sun/moon/stars, fireflies, lamp pools)
 │     ├─ player/         # Player.tsx (rigged Kenney model, idle/run blend, arrival hop), Character.tsx (procedural fallback avatar)
 │     ├─ camera/         # DioramaCamera.tsx
-│     ├─ ui/             # Hud.tsx, PreviewCard.tsx, LandmarkDialog.tsx, Menu.tsx,
+│     ├─ ui/             # Hud.tsx, PreviewCard.tsx, LandmarkDialog.tsx, Menu.tsx, ViewControls.tsx (compass, rotate/tilt, reset),
 │     │                  # Onboarding.tsx, LiveRegion.tsx, LandmarkNav.tsx, Loader.tsx, Fallback.tsx
 │     ├─ platform/       # gate.ts (runs first; no react/three imports), capabilities.ts, url.ts, prefs.ts
 │     └─ debug/testHook.ts # window.__game (non-production only)
@@ -570,7 +586,7 @@ A hydrated `client:only` island would import the game bundle as part of hydratio
 }
 ```
 
-`getState()` also reports `hours`, `night` (0–1), `glow` and `timeMode`.
+`getState()` also reports `hours`, `night` (0–1), `glow` and `timeMode`, plus the view: `heading`, `pitch` (deg) and `north` (screen angle of map north in degrees, 0 = north-up).
 
 ## 6. Accessibility requirements
 
@@ -633,7 +649,7 @@ None in the POC (privacy-first). Optional P2: local-only debug overlay showing t
 | ADR-1 | React Three Fiber 9 + drei, mounted by the `/play` gate | Vanilla three.js; Babylon.js 9; PlayCanvas 2; Threlte/TresJS | Largest ecosystem & Copilot familiarity; drei covers ~70 % of needs; `@astrojs/react` provides JSX tooling |
 | ADR-2 | `WebGLRenderer` | `WebGPURenderer` (+TSL) | Official docs still "experimental"; drei WebGPU port in alpha; WebGL2 is universal |
 | ADR-3 | No physics engine (kinematic) | Rapier + ecctrl (spherical gravity) | Saves ~800 KB gz WASM; no jumping/complex collisions needed |
-| ADR-4 | Rotate the planet under a fixed player/camera | Move player in tangent frame + follow cam | Exact fixed-yaw diorama feel; no poles; cheap shadows; simplest camera |
+| ADR-4 | Rotate the planet under a fixed player/camera | Move player in tangent frame + follow cam | Exact diorama feel; no poles; cheap shadows; simplest camera. User view rotation is also a planet spin about the player's vertical axis, so the camera rig, sky and lighting stay unchanged and WASD remains screen-relative |
 | ADR-5 | Distance-based proximity with hysteresis | Physics sensors | Trivial math on a sphere; testable; no physics dependency |
 | ADR-6 | DOM overlay for all actionable UI | In-canvas UI (uikit/Html) | Accessibility, focus, contrast, testability; drei `<Html>` only for world labels |
 | ADR-7 | Astro content collection as single source | Hard-coded game data | Game & classic stay in sync; future CMS-ready |

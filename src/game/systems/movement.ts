@@ -10,6 +10,7 @@ import {
   resolvePenetration,
   slideVelocity,
   tangentToward,
+  wrapAngle,
   type CollisionParams,
   type Obstacle,
 } from '../math/sphere';
@@ -103,6 +104,20 @@ export class PlanetSim {
 
   cancelAutoWalk(): void {
     this.autoWalk = null;
+  }
+
+  /**
+   * Rotate the view about the player's vertical axis (world +Y) by `angle` rad — positive turns the
+   * scene counter-clockwise on screen. The player's spot is unchanged; heading and velocity turn
+   * with the world so the character keeps facing the same way on the planet. Ignored mid-travel.
+   */
+  rotateView(angle: number): void {
+    if (this.travel || angle === 0) return;
+    const q = new Quaternion().setFromAxisAngle(UP, angle);
+    this.planetQ.premultiply(q).normalize();
+    this.vel.applyQuaternion(q);
+    this.heading = wrapAngle(this.heading + angle);
+    playerLocal(this.planetQ, this.pLocal);
   }
 
   step(rawDt: number, intent: MoveIntent): void {

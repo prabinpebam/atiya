@@ -73,11 +73,12 @@ function buildGround(controller: GameController): BufferGeometry {
 export function Planet({ controller }: { controller: GameController }) {
   const { geometry, material } = useMemo(() => ({ geometry: buildGround(controller), material: createPlanetMaterial(R) }), [controller]);
 
-  const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
-    if (e.button !== 0) return;
+  const onClick = (e: ThreeEvent<MouseEvent>) => {
+    // a tap walks; a drag tumbles the view (handled on the region) and must not walk
+    if (controller.viewDragged || e.delta > CONFIG.camera.dragThresholdPx) return;
     e.stopPropagation();
     controller.walkToWorldPoint(e.point.clone());
   };
 
-  return <mesh geometry={geometry} material={material} receiveShadow onPointerDown={onPointerDown} name="planet" />;
+  return <mesh geometry={geometry} material={material} receiveShadow onClick={onClick} name="planet" />;
 }

@@ -1,18 +1,23 @@
-import { Vector3, type Camera } from 'three';
+import { Quaternion, Vector3, type Camera } from 'three';
 import { CONFIG } from './config';
 import type { LandmarkData, MoveIntent } from './types';
 import { arrivalOrientation, landmarkGeometry, type LandmarkGeometry } from './math/landmarks';
-import { UP, arcDistance, type Obstacle } from './math/sphere';
+import { DEG, UP, arcDistance, clamp, damp, wrapAngle, type Obstacle } from './math/sphere';
+import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
 import { generateProps, type PropLayout } from './world/layout';
-import { KeyboardInput } from './input/keyboard';
+import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectReducedMotion, type GameStore } from './state/store';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
 import { DAY_HOURS, START_HOURS, localHours, type TimeMode } from './world/timeOfDay';
 
 const PLAY_PATH = '/play/';
+/** Travel id for "reset position" (the spawn plaza is not a landmark). */
+const PLAZA = 'plaza';
+
+const clampPitch = (deg: number) => clamp(deg, CONFIG.camera.minPitchDeg, CONFIG.camera.maxPitchDeg);
 
 interface KeyEventLike {
   code: string;
@@ -57,6 +62,11 @@ export class GameController {
   timeFrozen = false;
   /** Latest day–night values shared with scene components (0 = day, 1 = night). */
   readonly sky = { night: 0, glow: 0.5 };
+  /** User view: camera pitch (deg, eased toward `targetPitch`) and an animated yaw still to apply (rad). */
+  readonly view = { pitch: CONFIG.camera.pitchDeg as number, targetPitch: CONFIG.camera.pitchDeg as number, yawPending: 0 };
+  /** True once the current pointer gesture became a view drag (so its click doesn't walk). */
+  viewDragged = false;
+  private drag: { id: number; x: number; y: number; lastX: number; lastY: number; active: boolean } | null = null;
   paused = false;
   private readonly buffer = new InteractBuffer();
   private invoker: HTMLElement | null = null;
@@ -109,6 +119,7 @@ export class GameController {
 
   dispose(): void {
     this.cleanups.forEach((c) => c());
+    this.endDrag();
   }
 
   get hudActions(): HTMLElement | null {
@@ -153,6 +164,7 @@ export class GameController {
     const s = this.store.getState();
     const playing = s.phase === 'playing' && !s.openId && !s.menuOpen;
     const intent: MoveIntent = playing ? this.keyboard.intent() : { x: 0, y: 0, run: false };
+    this.updateView(delta, playing, selectReducedMotion(s));
     this.sim.step(delta, intent);
 
     for (const e of this.sim.drainEvents()) {
@@ -160,6 +172,7 @@ export class GameController {
         this.store.setState({ traveling: null });
         this.focusRegion();
         this.onArrive?.();
+        if (e.id === PLAZA) this.announce('Back at the plaza, facing north.');
       } else if (e.type === 'autowalk-blocked') {
         this.showToast("Can't get through that way — try another path.");
       }
@@ -183,6 +196,116 @@ export class GameController {
     if (!el) return;
     const t = this.sim.travelState;
     el.style.opacity = t && t.mode === 'fade' ? String(1 - Math.abs(2 * t.progress - 1)) : '0';
+  }
+
+  // ---------- view: rotate, tilt, compass ----------
+
+  private updateView(delta: number, playing: boolean, reduced: boolean): void {
+    const dt = Math.min(Math.max(delta, 0), CONFIG.maxDt);
+    const C = CONFIG.camera;
+    const v = this.view;
+    if (playing) {
+      const held = this.keyboard.viewIntent();
+      if (held.rotate) this.sim.rotateView(held.rotate * C.rotateSpeed * dt);
+      if (held.tilt) v.targetPitch = clampPitch(v.targetPitch + held.tilt * C.tiltSpeedDeg * dt);
+    }
+    if (this.sim.travel) v.yawPending = 0;
+    else if (v.yawPending !== 0) {
+      const step = reduced || Math.abs(v.yawPending) < 1e-3 ? v.yawPending : v.yawPending * (1 - Math.exp(-10 * dt));
+      this.sim.rotateView(step);
+      v.yawPending -= step;
+    }
+    v.pitch = reduced ? v.targetPitch : damp(v.pitch, v.targetPitch, 10, dt);
+  }
+
+  /** Screen angle of map north (rad, clockwise from screen-up), including any rotation still easing in. */
+  northAngle(): number {
+    return northScreenAngle(this.sim.planetQ, this.sim.pLocal);
+  }
+
+  private canUseView(): boolean {
+    const s = this.store.getState();
+    return s.phase === 'playing' && !s.openId && !s.menuOpen && !this.sim.travel;
+  }
+
+  /** Button step: +1 turns the scene counter-clockwise, −1 clockwise. */
+  rotateViewStep(dir: 1 | -1): void {
+    if (!this.canUseView()) return;
+    this.view.yawPending += dir * CONFIG.camera.rotateStepDeg * DEG;
+  }
+
+  /** Button step: +1 tilts toward a top-down view, −1 toward a side view. */
+  tiltViewStep(dir: 1 | -1): void {
+    if (!this.canUseView()) return;
+    this.view.targetPitch = clampPitch(this.view.targetPitch + dir * CONFIG.camera.tiltStepDeg);
+  }
+
+  /** Turn so north is screen-up, and restore the default tilt. The player stays put. */
+  faceNorth(): void {
+    if (!this.canUseView()) return;
+    this.view.yawPending = wrapAngle(this.northAngle());
+    this.view.targetPitch = CONFIG.camera.pitchDeg;
+    this.announce('Facing north.');
+  }
+
+  /** Reset position and direction: travel back to the plaza, facing north, default tilt. */
+  returnHome(): void {
+    const s = this.store.getState();
+    if (s.phase !== 'playing' || s.openId) return;
+    const mode = selectReducedMotion(s) ? 'fade' : 'flyover';
+    this.view.yawPending = 0;
+    this.view.targetPitch = CONFIG.camera.pitchDeg;
+    this.keyboard.clear();
+    this.store.setState({ menuOpen: false, nearbyId: null, traveling: mode });
+    this.sim.startTravel(new Quaternion(), PLAZA, mode);
+    this.focusRegion();
+  }
+
+  private dragView(dx: number, dy: number): void {
+    const C = CONFIG.camera;
+    this.view.yawPending = 0;
+    this.sim.rotateView(dx * C.dragYawPerPx);
+    this.view.targetPitch = clampPitch(this.view.targetPitch + dy * C.dragPitchPerPx);
+  }
+
+  /** Pointer down on the planet region: focus/start, and begin a possible drag-to-tumble gesture. */
+  onRegionPointerDown = (e: { clientX: number; clientY: number; pointerId: number; button: number }): void => {
+    this.focusRegion();
+    if (this.store.getState().phase === 'ready') this.start();
+    this.viewDragged = false;
+    if (e.button !== 0 && e.button !== 2) return;
+    this.endDrag();
+    this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, lastX: e.clientX, lastY: e.clientY, active: false };
+    window.addEventListener('pointermove', this.onDragMove);
+    window.addEventListener('pointerup', this.onDragEnd);
+    window.addEventListener('pointercancel', this.onDragEnd);
+  };
+
+  private onDragMove = (e: PointerEvent): void => {
+    const d = this.drag;
+    if (!d || e.pointerId !== d.id) return;
+    if (!d.active) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < CONFIG.camera.dragThresholdPx) return;
+      d.active = true;
+      this.viewDragged = true;
+      this.sim.cancelAutoWalk();
+      this.region?.classList.add('dragging');
+    }
+    if (this.canUseView()) this.dragView(e.clientX - d.lastX, e.clientY - d.lastY);
+    d.lastX = e.clientX;
+    d.lastY = e.clientY;
+  };
+
+  private onDragEnd = (e: PointerEvent): void => {
+    if (this.drag && e.pointerId === this.drag.id) this.endDrag();
+  };
+
+  private endDrag(): void {
+    this.drag = null;
+    this.region?.classList.remove('dragging');
+    window.removeEventListener('pointermove', this.onDragMove);
+    window.removeEventListener('pointerup', this.onDragEnd);
+    window.removeEventListener('pointercancel', this.onDragEnd);
   }
 
   private setNearby(id: string | null): void {
@@ -227,8 +350,14 @@ export class GameController {
       if (!e.repeat) this.openMenu();
       return;
     }
+    if (action === 'faceNorth' || action === 'home') {
+      if (e.repeat || s.phase !== 'playing') return;
+      if (action === 'faceNorth') this.faceNorth();
+      else this.returnHome();
+      return;
+    }
     this.keyboard.down(action);
-    if (this.sim.autoWalk && action !== 'run') this.sim.cancelAutoWalk();
+    if (this.sim.autoWalk && action !== 'run' && !VIEW_HOLD_ACTIONS.has(action)) this.sim.cancelAutoWalk();
   };
 
   onKeyUp = (e: KeyEventLike): void => {

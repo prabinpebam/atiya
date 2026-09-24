@@ -1,6 +1,22 @@
 import type { MoveIntent } from '../types';
 
-export type GameAction = 'up' | 'down' | 'left' | 'right' | 'run' | 'interact' | 'menu';
+export type GameAction =
+  | 'up'
+  | 'down'
+  | 'left'
+  | 'right'
+  | 'run'
+  | 'interact'
+  | 'menu'
+  | 'rotateCcw'
+  | 'rotateCw'
+  | 'tiltUp'
+  | 'tiltDown'
+  | 'faceNorth'
+  | 'home';
+
+/** Actions that are held (continuous) rather than triggered once. */
+export const VIEW_HOLD_ACTIONS: ReadonlySet<GameAction> = new Set(['rotateCcw', 'rotateCw', 'tiltUp', 'tiltDown']);
 
 /** Layout-independent key bindings (KeyboardEvent.code). */
 export const KEY_BINDINGS: Record<string, GameAction> = {
@@ -20,6 +36,14 @@ export const KEY_BINDINGS: Record<string, GameAction> = {
   Space: 'interact',
   KeyM: 'menu',
   Escape: 'menu',
+  // view: rotate with , and . (the < > keys), tilt with Page Up / Page Down
+  Comma: 'rotateCcw',
+  Period: 'rotateCw',
+  PageUp: 'tiltUp',
+  PageDown: 'tiltDown',
+  KeyN: 'faceNorth',
+  KeyH: 'home',
+  Home: 'home',
 };
 
 export class KeyboardInput {
@@ -48,5 +72,13 @@ export class KeyboardInput {
     const x = (this.held.has('right') ? 1 : 0) - (this.held.has('left') ? 1 : 0);
     const y = (this.held.has('up') ? 1 : 0) - (this.held.has('down') ? 1 : 0);
     return { x, y, run: this.held.has('run') };
+  }
+
+  /** Held view input: rotation (+1 counter-clockwise) and tilt (+1 toward top view). */
+  viewIntent(): { rotate: number; tilt: number } {
+    return {
+      rotate: (this.held.has('rotateCcw') ? 1 : 0) - (this.held.has('rotateCw') ? 1 : 0),
+      tilt: (this.held.has('tiltUp') ? 1 : 0) - (this.held.has('tiltDown') ? 1 : 0),
+    };
   }
 }
