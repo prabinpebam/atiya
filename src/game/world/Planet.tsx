@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
-import { BufferAttribute, Color, IcosahedronGeometry, Vector3, type BufferGeometry } from 'three';
+import { BufferAttribute, BufferGeometry, Color, IcosahedronGeometry, Vector3 } from 'three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { UP, arcDistance, pointArcDistance } from '../math/sphere';
+import { buildMesaCaps } from './cliffs';
 import { riverDistance } from './features';
 import { PLAZA_RADIUS_U } from './layout';
 import { createPlanetMaterial } from './planetMaterial';
@@ -24,6 +25,62 @@ function smooth(e0: number, e1: number, x: number): number {
   return t * t * (3 - 2 * t);
 }
 
+const LUSH = new Color('#86c653');
+const SUNNY = new Color('#a9d862');
+const COOL = new Color('#7fc06a');
+
+/** Base grass colour at `u` (unit) and height `h`: large soft drifts, sunnier on rises, lusher in hollows. */
+function grassColor(u: Vector3, h: number, out: Color): Color {
+  const drift = valueNoise(u.x * 3.1 + 5, u.y * 3.1, u.z * 3.1 - 2);
+  const drift2 = valueNoise(u.x * 7.3, u.y * 7.3 + 3, u.z * 7.3);
+  out.copy(LUSH).lerp(SUNNY, Math.min(1, Math.max(0, drift * 0.9 + h * 1.2)));
+  return out.lerp(COOL, Math.max(0, drift2 - 0.55) * 0.9);
+}
+
+/**
+ * Append the mesa caps (cliffs.ts) to the ground: plain lawn with the same colour drifts and
+ * ground attributes, so the plateau tops and the rims rolling over the cliffs are drawn by the
+ * ground material in the same draw call and blend into the grass around them.
+ */
+function withMesaCaps(ground: BufferGeometry, caps: BufferGeometry | null): BufferGeometry {
+  if (!caps) return ground;
+  const n0 = ground.getAttribute('position').count;
+  const n1 = caps.getAttribute('position').count;
+  const cPos = caps.getAttribute('position');
+  const cH = caps.getAttribute('aH');
+  const u = new Vector3();
+  const c = new Color();
+  const col = new Float32Array(n1 * 3);
+  const surf2 = new Float32Array(n1 * 4);
+  for (let i = 0; i < n1; i++) {
+    u.fromBufferAttribute(cPos, i).normalize();
+    grassColor(u, cH.getX(i), c);
+    col.set([c.r, c.g, c.b], i * 3);
+    surf2[i * 4 + 3] = cH.getX(i);
+  }
+  const join = (name: string, capArr: Float32Array | null, size: number) => {
+    const a = ground.getAttribute(name).array as Float32Array;
+    const out = new Float32Array((n0 + n1) * size);
+    out.set(a);
+    if (capArr) out.set(capArr, n0 * size);
+    return new BufferAttribute(out, size);
+  };
+  const g = new BufferGeometry();
+  g.setAttribute('position', join('position', cPos.array as Float32Array, 3));
+  g.setAttribute('normal', join('normal', caps.getAttribute('normal').array as Float32Array, 3));
+  g.setAttribute('color', join('color', col, 3));
+  g.setAttribute('aSurf', join('aSurf', null, 4));
+  g.setAttribute('aSurf2', join('aSurf2', surf2, 4));
+  const gi = ground.getIndex()!.array;
+  const ci = caps.getIndex()!.array;
+  const idx = new Uint32Array(gi.length + ci.length);
+  idx.set(gi);
+  for (let i = 0; i < ci.length; i++) idx[gi.length + i] = ci[i] + n0;
+  g.setIndex(new BufferAttribute(idx, 1));
+  g.computeBoundingSphere();
+  return g;
+}
+
 /**
  * Build the ground sphere: displaced by the terrain (hills, river bed, mesas, pond basin),
  * smooth-shaded, with per-vertex surface weights for the ground shader:
@@ -41,9 +98,6 @@ function buildGround(controller: GameController): BufferGeometry {
   const surf2 = new Float32Array(count * 4);
   const v = new Vector3();
   const u = new Vector3();
-  const lush = new Color('#86c653');
-  const sunny = new Color('#a9d862');
-  const cool = new Color('#7fc06a');
   const c = new Color();
   const spawn = UP as Vector3;
   const { pond, river } = controller.props;
@@ -54,11 +108,7 @@ function buildGround(controller: GameController): BufferGeometry {
     u.copy(v).normalize();
     const h = terrain.height(u);
 
-    // base grass: large soft colour drifts, sunnier on rises, lusher in hollows
-    const drift = valueNoise(u.x * 3.1 + 5, u.y * 3.1, u.z * 3.1 - 2);
-    const drift2 = valueNoise(u.x * 7.3, u.y * 7.3 + 3, u.z * 7.3);
-    c.copy(lush).lerp(sunny, Math.min(1, Math.max(0, drift * 0.9 + h * 1.2)));
-    c.lerp(cool, Math.max(0, drift2 - 0.55) * 0.9);
+    grassColor(u, h, c);
     colors.set([c.r, c.g, c.b], i * 3);
 
     const plaza = band(arcDistance(u, spawn, R), PLAZA_RADIUS_U - 0.1, 0.18);
@@ -108,7 +158,7 @@ function buildGround(controller: GameController): BufferGeometry {
     surf2[i * 4 + 2] = smooth(0.12, 0.45, 1 - n.dot(v));
   }
   g.setAttribute('aSurf2', new BufferAttribute(surf2, 4));
-  return g;
+  return withMesaCaps(g, buildMesaCaps(controller.props.mesas));
 }
 
 export function Planet({ controller }: { controller: GameController }) {

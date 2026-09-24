@@ -2,7 +2,7 @@ import { Vector3 } from 'three';
 import { CONFIG } from '../config';
 import { UP, arcDistance, pointArcDistance } from '../math/sphere';
 import type { LandmarkGeometry } from '../math/landmarks';
-import { mesaPolar, mesaRadius, riverDistance, type Bridge, type Mesa, type River } from './features';
+import { mesaPolar, mesaRadius, riverDistance, tierEdge, tierPolar, type Bridge, type Mesa, type River } from './features';
 import { pondAngle, pondBasin, pondFrame, shoreRadius, type PondFrame } from './pond';
 
 /**
@@ -156,9 +156,8 @@ export class Terrain {
     // painted cliff wall, not the displaced ground, is what you see
     let h = m.heightU * (1 - smoothstep(edge - 0.22, edge - 0.02, d)) + 0.04 * (1 - d / edge);
     if (m.tier) {
-      const dt = arcDistance(n, m.tier.n, R);
-      const ta = mesaPolar({ n: m.tier.n, north: m.north, east: m.east }, n).angle;
-      const te = mesaRadius(m.tier.radiusU, m.seed + 2.2, ta);
+      const { r: dt, angle: ta } = tierPolar(m, n);
+      const te = tierEdge(m.tier, ta);
       h += m.tier.heightU * (1 - smoothstep(te - 0.2, te - 0.02, dt));
     }
     return d > edge + 0.12 ? -Infinity : h;

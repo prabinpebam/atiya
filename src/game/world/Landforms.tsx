@@ -14,25 +14,19 @@ import type { Pond } from './layout';
 import { angleGap, pondFrame, shoreRadius } from './pond';
 import { registerDaylit } from './materials';
 import { ARCH, shade } from './parts';
-import { withLipGrass, withRockDetail } from './rockDetail';
+import { withRockDetail } from './rockDetail';
 import { RIVER_WATER_U, bridgeArch } from './terrain';
 import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
 
 // ---------------------------------------------------------------------------
-// Cliffs: faceted, layered rock walls around each mesa, with a grassy lip (geometry in cliffs.ts)
+// Cliffs: faceted, layered rock walls around each mesa (geometry in cliffs.ts; the grassy caps are part of the ground)
 // ---------------------------------------------------------------------------
 
 export function Cliffs({ controller }: { controller: GameController }) {
   const geo = useMemo(() => buildCliffs(controller.props.mesas), [controller]);
-  const mat = useMemo(
-    () =>
-      withLipGrass(
-        withRockDetail(new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true }), 'uv', 0.85, 1),
-      ),
-    [],
-  );
+  const mat = useMemo(() => withRockDetail(new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true }), 'uv', 0.85, 1), []);
   if (!geo) return null;
   return <mesh geometry={geo} material={mat} castShadow receiveShadow name="cliffs" />;
 }
@@ -269,9 +263,11 @@ function buildFallGeometry(mesa: Mesa, river: River): BufferGeometry {
   const top = mesa.heightU + 0.05;
   for (let j = 0; j <= rows; j++) {
     const f = j / rows;
-    // arcs out from the lip, then drops almost straight into the pool
+    // runs out level over the grassy rim (so the rim never hides its top), arcs out from the
+    // lip, then drops almost straight into the pool
     const r = edge - 0.02 + 0.32 * Math.sin(f * Math.PI * 0.5) + 0.05 * f;
-    const y = top + (RIVER_WATER_U + 0.02 - top) * (f * f * 0.65 + f * 0.35);
+    const g = Math.max(0, (f - 0.15) / 0.85);
+    const y = top + (RIVER_WATER_U + 0.02 - top) * (g * g * 0.65 + g * 0.35);
     for (let k = 0; k <= cols; k++) {
       const u = k / cols;
       const w = width * (0.85 + 0.25 * f);

@@ -79,8 +79,21 @@ export interface Mesa {
   radiusU: number;
   heightU: number;
   seed: number;
-  tier?: { n: Vector3; radiusU: number; heightU: number };
+  tier?: MesaTier;
 }
+
+/** Upper tier of a two-tier mesa. Its outline is sampled (`edge`) so it can be kept inside the base. */
+export interface MesaTier {
+  n: Vector3;
+  radiusU: number;
+  heightU: number;
+  /** Outline radius (u) at TIER_SAMPLES evenly spaced angles in the mesa's north/east frame. */
+  edge: Float32Array;
+}
+
+export const TIER_SAMPLES = 128;
+/** Narrowest lower terrace left between the upper tier's rim and the base rim (u). */
+export const TIER_TERRACE_U = 0.55;
 
 export const RIVER_SAMPLE_U = 0.2;
 export const RIVER_BASE_HALF_WIDTH = 0.46;
@@ -209,15 +222,68 @@ export function buildMesas(cfg = CONFIG): Mesa[] {
     const n = latLonToVec(m.lat, m.lon);
     const north = localNorth(n);
     const east = new Vector3().crossVectors(north, n).normalize();
-    const tier = m.tier
-      ? {
-          n: moveAlong(moveAlong(n, north, m.tier.north / R), east, m.tier.east / R),
-          radiusU: m.tier.radiusU,
-          heightU: m.tier.heightU,
-        }
-      : undefined;
-    return { n, north, east, radiusU: m.radiusU, heightU: m.heightU, seed: m.seed, tier };
+    const mesa: Mesa = { n, north, east, radiusU: m.radiusU, heightU: m.heightU, seed: m.seed };
+    if (m.tier) {
+      const tn = moveAlong(moveAlong(n, north, m.tier.north / R), east, m.tier.east / R);
+      mesa.tier = { n: tn, radiusU: m.tier.radiusU, heightU: m.tier.heightU, edge: tierOutline(mesa, tn, m.tier.radiusU, cfg) };
+    }
+    return mesa;
   });
+}
+
+/** Tangent at `c` pointing along angle `a` of the mesa's north/east frame. */
+export function mesaDir(m: { north: Vector3; east: Vector3 }, c: Vector3, a: number): Vector3 {
+  const d = m.north.clone().multiplyScalar(Math.cos(a)).addScaledVector(m.east, Math.sin(a));
+  return d.addScaledVector(c, -d.dot(c)).normalize();
+}
+
+/**
+ * The tier's irregular outline, pulled in wherever it would come closer than TIER_TERRACE_U to
+ * the base rim (so its wall never cuts into the lower cliff), then smoothed so the pull-in
+ * reads as a natural bend rather than a flat cut.
+ */
+function tierOutline(m: Mesa, c: Vector3, radius: number, cfg = CONFIG): Float32Array {
+  const R = cfg.planetRadius;
+  const fits = (a: number, r: number) => {
+    const p = moveAlong(c, mesaDir(m, c, a), r / R);
+    const { r: rb, angle } = mesaPolar(m, p, cfg);
+    return rb <= mesaRadius(m.radiusU, m.seed, angle) - TIER_TERRACE_U;
+  };
+  const limit = new Float32Array(TIER_SAMPLES);
+  const edge = new Float32Array(TIER_SAMPLES);
+  for (let i = 0; i < TIER_SAMPLES; i++) {
+    const a = (i / TIER_SAMPLES) * Math.PI * 2;
+    const want = mesaRadius(radius, m.seed + 2.2, a);
+    let lo = 0;
+    let hi = want;
+    if (fits(a, want)) lo = want;
+    else for (let it = 0; it < 18; it++) fits(a, (lo + hi) / 2) ? (lo = (lo + hi) / 2) : (hi = (lo + hi) / 2);
+    limit[i] = lo;
+    edge[i] = lo;
+  }
+  const tmp = new Float32Array(TIER_SAMPLES);
+  for (let pass = 0; pass < 6; pass++) {
+    for (let i = 0; i < TIER_SAMPLES; i++) {
+      const l = edge[(i + TIER_SAMPLES - 1) % TIER_SAMPLES];
+      const r = edge[(i + 1) % TIER_SAMPLES];
+      tmp[i] = Math.min(limit[i], 0.25 * l + 0.5 * edge[i] + 0.25 * r);
+    }
+    edge.set(tmp);
+  }
+  return edge;
+}
+
+/** Upper-tier outline radius (u) at `angle` (radians, in the mesa's north/east frame). */
+export function tierEdge(t: MesaTier, angle: number): number {
+  const f = ((angle / (Math.PI * 2)) % 1 + 1) % 1 * TIER_SAMPLES;
+  const i = Math.floor(f) % TIER_SAMPLES;
+  const w = f - Math.floor(f);
+  return t.edge[i] * (1 - w) + t.edge[(i + 1) % TIER_SAMPLES] * w;
+}
+
+/** Local polar coordinates (u, radians) of `p` around a mesa's upper tier. */
+export function tierPolar(m: Mesa, p: Vector3, cfg = CONFIG): { r: number; angle: number } {
+  return mesaPolar({ n: m.tier!.n, north: m.north, east: m.east }, p, cfg);
 }
 
 /** Irregular mesa outline: radius (u) in direction `angle` (radians, in the mesa's north/east frame). */

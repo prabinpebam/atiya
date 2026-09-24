@@ -2,7 +2,8 @@ import { Vector3 } from 'three';
 import { CONFIG } from '../config';
 import { UP, arcDistance, moveAlong, pointArcDistance, tangentToward, type Obstacle } from '../math/sphere';
 import type { LandmarkGeometry } from '../math/landmarks';
-import { buildMesas, buildRiver, findBridges, mesaPolar, mesaRadius, riverDistance, type Bridge, type Mesa, type River } from './features';
+import { nearPlateauRim } from './cliffs';
+import { buildMesas, buildRiver, findBridges, mesaDir, mesaPolar, mesaRadius, riverDistance, tierEdge, tierPolar, type Bridge, type Mesa, type River } from './features';
 import { pondAngle, pondFrame, shoreRadius } from './pond';
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
@@ -199,24 +200,37 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   const trees: PropInstance[] = [];
   for (let tries = 0; trees.length < 40 && tries < 5000; tries++) {
     const n = randomUnit(rand);
-    if (inPlaza(n, 0.6) || nearLandmark(n, 1.9) || inPond(n, 1.0)) continue;
-    if (corridor(n) < 1.35 || blocked(n, { river: 0.9, mesa: 0.6 })) continue;
-    if (trees.some((t) => arcDistance(t.n, n, R) < 1.7)) continue;
     const kind = rand();
-    const inst = { n, scale: 0.85 + rand() * 0.35, yaw: rand() * Math.PI * 2, tint: rand() };
-    (kind < 0.55 ? hardwood : kind < 0.72 ? fruit : cedar).push(inst);
+    const scale = 0.85 + rand() * 0.35;
+    const isCedar = kind >= 0.72;
+    if (inPlaza(n, 0.6) || nearLandmark(n, 1.9) || inPond(n, 1.0)) continue;
+    // the whole crown stays clear of the cliff walls (it would otherwise cut into the rock)
+    if (corridor(n) < 1.35 || blocked(n, { river: 0.9, mesa: canopyRadius(isCedar) * scale + 0.15 })) continue;
+    if (trees.some((t) => arcDistance(t.n, n, R) < 1.7)) continue;
+    const inst = { n, scale, yaw: rand() * Math.PI * 2, tint: rand() };
+    (kind < 0.55 ? hardwood : isCedar ? cedar : fruit).push(inst);
     trees.push(inst);
   }
-  // a tree or two on each mesa top (unreachable, so no obstacles)
+  // a tree or two on each mesa top (unreachable, so no obstacles): trunks well inside the rims,
+  // one on the upper tier of a two-tier mesa and one on its lower terrace, clear of the tier wall
   const mesaTop: PropInstance[] = [];
   mesas.forEach((m, i) => {
+    const isCedar = i % 2 === 0;
     const count = m.radiusU > 1.5 ? 2 : 1;
     for (let k = 0; k < count; k++) {
-      const a = rand() * Math.PI * 2;
-      const dir = m.north.clone().multiplyScalar(Math.cos(a)).addScaledVector(m.east, Math.sin(a));
-      const n = moveAlong(m.n, dir, (m.radiusU * (0.2 + 0.25 * k)) / R);
-      const inst = { n, scale: 0.7 + rand() * 0.2, yaw: rand() * Math.PI * 2, tint: rand() };
-      (i % 2 === 0 ? cedar : hardwood).push(inst);
+      const scale = 0.7 + rand() * 0.2;
+      const onTier = Boolean(m.tier) && k === 0;
+      let n: Vector3 | null = null;
+      for (let t = 0; t < 80 && !n; t++) {
+        const a = rand() * Math.PI * 2;
+        const f = rand();
+        const c = onTier ? m.tier!.n : m.n;
+        const cand = moveAlong(c, mesaDir(m, c, a), ((onTier ? tierEdge(m.tier!, a) : mesaRadius(m.radiusU, m.seed, a)) * (onTier ? 0.6 : 0.85) * Math.sqrt(f)) / R);
+        if (mesaTopClearance(m, cand, isCedar, scale, onTier, cfg)) n = cand;
+      }
+      if (!n) continue;
+      const inst = { n, scale, yaw: rand() * Math.PI * 2, tint: rand() };
+      (isCedar ? cedar : hardwood).push(inst);
       mesaTop.push(inst);
     }
   });
@@ -227,7 +241,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   for (let tries = 0; allBushes.length < 18 && tries < 4000; tries++) {
     const n = randomUnit(rand);
     if (inPlaza(n, 0.3) || nearLandmark(n, 0.9) || inPond(n, 0.6)) continue;
-    if (corridor(n) < 1.0 || blocked(n, { river: 0.5, mesa: 0.35 })) continue;
+    if (corridor(n) < 1.0 || blocked(n, { river: 0.5, mesa: 0.6 })) continue;
     if ([...trees, ...allBushes].some((t) => arcDistance(t.n, n, R) < 1.1)) continue;
     const inst = { n, scale: 0.8 + rand() * 0.4, yaw: rand() * Math.PI * 2, tint: rand() };
     (rand() < 0.35 ? flowerBushes : bushes).push(inst);
@@ -326,9 +340,8 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     if (inPlaza(n, 0.1) || inPond(n, 0.4)) continue;
     if (landmarks.some((g) => arcDistance(n, g.n, R) < g.footprintU + 0.6)) continue;
     if (corridor(n) < 0.6 || nearRiver(n, 0.12)) continue;
-    // grass grows on mesa tops too, but not on the cliff rims
-    const me = mesaEdge(n);
-    if (me > -0.3 && me < 0.2) continue;
+    // grass grows on mesa tops too, but not on the cliff rims (base or upper tier)
+    if (nearPlateauRim(mesas, n, 0.3, 0.2)) continue;
     grass.push({ n, scale: 0.7 + rand() * 0.7, yaw: rand() * Math.PI * 2, tint: rand() });
   }
 
@@ -363,6 +376,32 @@ export function bridgeRailObstacles(bridges: readonly Bridge[], cfg = CONFIG): O
     }
   }
   return out;
+}
+
+/** Horizontal crown radius (u, at scale 1) of a hardwood or a cedar (foliage.ts). */
+export function canopyRadius(isCedar: boolean): number {
+  return isCedar ? 1.3 : 1.6;
+}
+
+/** Height (u, at scale 1) of the lowest foliage above the ground. */
+export function canopyBottom(isCedar: boolean): number {
+  return isCedar ? 0.65 : 1.25;
+}
+
+/**
+ * Whether a tree on a mesa top at `n` stands clear: its trunk and roots at least 0.6 u inside
+ * the rim it stands on, and, on the lower terrace of a two-tier mesa, clear of the tier's wall
+ * (the whole crown, unless the crown starts above the tier's top).
+ */
+export function mesaTopClearance(m: Mesa, n: Vector3, isCedar: boolean, scale: number, onTier: boolean, cfg = CONFIG): boolean {
+  const { r, angle } = mesaPolar(m, n, cfg);
+  if (r > mesaRadius(m.radiusU, m.seed, angle) - 0.6) return false;
+  if (!m.tier) return true;
+  const t = tierPolar(m, n, cfg);
+  const e = t.r - tierEdge(m.tier, t.angle);
+  if (onTier) return e < -0.6;
+  const crownClears = canopyBottom(isCedar) * scale > m.tier.heightU + 0.15;
+  return e > (crownClears ? 0.5 : canopyRadius(isCedar) * scale + 0.1);
 }
 
 /** A cliff blocks with a core circle plus a ring that follows its irregular outline. */
