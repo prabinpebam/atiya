@@ -5,11 +5,11 @@ export const TEXTURES = {
     "url": "/textures/grass.webp",
     "kind": "tile",
     "mean": [
-      0.2543,
-      0.5111,
-      0.0764
+      0.2824,
+      0.6015,
+      0.0893
     ],
-    "bytes": 75404
+    "bytes": 53432
   },
   "dirt": {
     "url": "/textures/dirt.webp",
@@ -60,6 +60,16 @@ export const TEXTURES = {
       0.1658
     ],
     "bytes": 17700
+  },
+  "boulder": {
+    "url": "/textures/boulder.webp",
+    "kind": "mask",
+    "mean": [
+      0.4867,
+      0.4867,
+      0.4867
+    ],
+    "bytes": 32642
   },
   "water": {
     "url": "/textures/water.webp",

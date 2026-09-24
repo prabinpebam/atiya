@@ -33,6 +33,7 @@ TEXTURES: dict[str, tuple[str, int]] = {
     "sand": ("tile", 512),
     "riverbed": ("tile", 512),
     "rock": ("tile", 512),
+    "boulder": ("mask", 256),
     "water": ("mask", 512),
     "paint-grain": ("mask", 256),
     # per-surface detail on the kit models (wood grain, shingles, plaster, masonry, iron, canvas)

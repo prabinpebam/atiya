@@ -1,0 +1,6 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-25.
+Seamless tile: imagegen.py tile (base generation, then two masked seam-repair passes with tone-corrected compositing).
+Used as a greyscale mask (luminance) on boulders, rocks and pebbles; replaces the cliff strata tile, whose horizontal bands read as wood grain on round stones.
+
+Prompt:
+Hand-painted stylised stone texture for a cozy, toy-like life-sim video game: the surface of a big rounded granite boulder, painted in soft gouache. Broad, gently angled flat planes and soft chipped facets in slightly lighter and darker warm greys (#b9b3ac, #a09a94, #8a847f, a little #c9c4bd), soft blotchy tonal patches, a fine sprinkling of tiny darker and lighter speckles like granite grain, a few very thin short hairline cracks, and a few tiny pale lichen dots. Non-directional and isotropic: no layers, no strata, no stripes, no bands, no wood grain, no bricks, no pebbles, no moss, no grass. Low contrast, flat even lighting, uniform density everywhere.

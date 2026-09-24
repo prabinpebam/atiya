@@ -1,5 +1,6 @@
-Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-24.
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1024x1024, generated 2026-09-25.
 Seamless tile: imagegen.py tile (base generation, then two masked seam-repair passes with tone-corrected compositing).
+Replaces the 2026-09-24 blade-stroke tile: side-view grass blades looked wrong on a top-down surface, so the lawn is now pure painterly colour noise.
 
 Prompt:
-Hand-painted stylised texture for a cozy, toy-like life-sim video game: soft painterly brushwork, gentle low contrast, clean simple shapes, no photorealism, no harsh highlights, no baked cast shadows. Short soft lawn grass seen from directly above: dense small painterly blade strokes in several close yellow-greens (#8fcf6b, #a6de72, #79bd5a), very subtle lighter and darker patches, no flowers, no clovers, no stones, uniform everywhere
+Hand-painted stylised ground texture for a cozy, toy-like life-sim video game, viewed straight down from above: a soft lawn surface painted purely as organic painterly colour noise. Cloudy, blotchy gouache mottling with a fine sponge-dabbed grain: soft irregular blobs of slightly lighter and darker greens of many sizes, from tiny speckles to broad soft patches, all blending softly into each other with no recognisable shapes. Close yellow-greens only (#8fcf6b, #a6de72, #79bd5a, a little #6fb455). No grass blades, no leaves, no clover shapes, no flower shapes, no stars, no strokes, no lines, no hatching, no directional marks, no stones. Very low contrast, non-directional, isotropic, uniform density everywhere.

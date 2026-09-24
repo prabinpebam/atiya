@@ -27,7 +27,7 @@ import { boulder, butterflyWing, flatCard, flowerBlooms, flowerStems, grassCards
 import { pondPlants } from './pondPlants';
 import { RIVER_WATER_U } from './terrain';
 import { Fireflies } from './DayNight';
-import { withRockDetail } from './rockDetail';
+import { withStoneDetail } from './rockDetail';
 import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
@@ -329,8 +329,8 @@ export function Props({ controller }: { controller: GameController }) {
       bush: swayMaterial(base, 0.06, 0.1, 'bush'),
       grass,
       flower: swayMaterial(base, 0.55, 0.0, 'flower'),
-      // painted rock detail (object-space, luminance only, so moss and tints keep their colour)
-      rock: withRockDetail((base as MeshStandardMaterial).clone(), 'object', 0.7, 1.7),
+      // painted stone grain (object-space, luminance only, so tints keep their colour) + shader moss
+      rock: withStoneDetail((base as MeshStandardMaterial).clone(), 0.7, 1.4),
       broad,
       needle,
       broadBush,

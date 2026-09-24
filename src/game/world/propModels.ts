@@ -1,5 +1,5 @@
 import { BufferGeometry, Color, Float32BufferAttribute, Quaternion, SphereGeometry, Vector3 } from 'three';
-import { Kit, hash3, mix } from './kit';
+import { Kit, hash3, mix, smoothBlob } from './kit';
 
 /** Natural props (rocks, flowers, grass, clouds, pond plants): one merged geometry per kind. Trees and bushes live in foliage.ts. */
 
@@ -7,34 +7,70 @@ function solid(k: Kit): BufferGeometry {
   return k.build().solid!;
 }
 
+/**
+ * A lumpy blob with a few flat, chiselled faces: every vertex beyond a seeded cutting plane is
+ * pushed back onto it, so the stone gets broad planes with soft (smooth-normal) edges instead of
+ * reading as a potato. Cuts favour the sides and top (the bottom is buried in the ground).
+ */
+export function chiselledBlob(r: number, detail: number, lump: number, seed: number, cuts: number, depth = 0.74): BufferGeometry {
+  const g = smoothBlob(r, detail, lump, seed);
+  const pos = g.getAttribute('position');
+  const v = new Vector3();
+  const planes: [Vector3, number][] = [];
+  for (let i = 0; i < cuts; i++) {
+    const a = (i / cuts) * Math.PI * 2 + hash3(seed, i, 1) * 1.6;
+    const y = i === 0 ? 0.8 + hash3(seed, i, 2) * 0.2 : -0.1 + hash3(seed, i, 2) * 0.75;
+    const d = new Vector3(Math.cos(a) * Math.sqrt(1 - y * y), y, Math.sin(a) * Math.sqrt(1 - y * y)).normalize();
+    planes.push([d, r * (depth + (hash3(seed, i, 3) - 0.5) * 0.14)]);
+  }
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    for (const [d, o] of planes) {
+      const t = v.dot(d);
+      if (t > o) v.addScaledVector(d, o - t);
+    }
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Stones carry `aMoss` (0…1): how much moss the shader may grow on their upward faces (see rockDetail.ts). */
+function stoneGeometry(k: Kit, moss: number): BufferGeometry {
+  const g = solid(k);
+  g.setAttribute('aMoss', new Float32BufferAttribute(new Float32Array(g.getAttribute('position').count).fill(moss), 1));
+  return g;
+}
+
+// cool-to-warm greys, lighter on top; the painted `boulder` tile adds the grain, the shader the moss
+const stonePaint = (dark: string, light: string, jitter: number) => (p: Vector3, n: Vector3) =>
+  mix(dark, light, 0.3 + n.y * 0.45 + (hash3(p.x * 5, p.y * 5, p.z * 5) - 0.5) * jitter);
+
 export function rock(): BufferGeometry {
   const k = new Kit();
-  const stone = (_p: Vector3, n: Vector3) => mix('#7a7984', '#b1b0ba', 0.35 + n.y * 0.5);
-  k.blob(0.34, stone, { p: [0, 0.18, 0], s: [1.2, 0.85, 1] }, 2, 'solid', 0.18, 1);
-  k.blob(0.22, stone, { p: [0.32, 0.1, 0.12], s: [1.1, 0.8, 1] }, 2, 'solid', 0.2, 2);
-  k.blob(0.16, stone, { p: [-0.28, 0.06, 0.18] }, 1, 'solid', 0.2, 3);
-  return solid(k);
+  const stone = stonePaint('#7c7a82', '#b6b3b8', 0.1);
+  k.add(chiselledBlob(0.34, 2, 0.14, 1, 5), stone, { p: [0, 0.18, 0], s: [1.2, 0.85, 1] });
+  k.add(chiselledBlob(0.22, 2, 0.16, 2, 4), stone, { p: [0.32, 0.1, 0.12], s: [1.1, 0.8, 1] });
+  k.add(chiselledBlob(0.16, 1, 0.18, 3, 3, 0.8), stone, { p: [-0.28, 0.06, 0.18] });
+  return stoneGeometry(k, 0.55);
 }
 
-/** A big, chunky boulder with a mossy cap and a couple of chips at its foot. */
+/** A big, chunky boulder with a mossy cap (grown in the shader) and a couple of chips at its foot. */
 export function boulder(): BufferGeometry {
   const k = new Kit();
-  const stone = (p: Vector3, n: Vector3) => {
-    const moss = n.y > 0.72 && p.y > 0.42 ? 1 : 0;
-    return moss ? mix('#6f9a4c', '#86b35a', hash3(p.x * 9, p.y * 9, p.z * 9)) : mix('#80797a', '#b9b1aa', 0.3 + n.y * 0.45 + (hash3(p.x * 5, p.y * 5, p.z * 5) - 0.5) * 0.12);
-  };
-  k.blob(0.5, stone, { p: [0, 0.32, 0], s: [1.15, 0.95, 0.95] }, 2, 'solid', 0.22, 11);
-  k.blob(0.3, stone, { p: [0.42, 0.18, 0.2], s: [1, 0.85, 1] }, 1, 'solid', 0.25, 12);
-  k.blob(0.13, stone, { p: [-0.48, 0.07, 0.26] }, 1, 'solid', 0.25, 13);
-  k.blob(0.1, stone, { p: [0.12, 0.05, -0.52] }, 1, 'solid', 0.25, 14);
-  return solid(k);
+  const stone = stonePaint('#7e7876', '#bcb4ac', 0.12);
+  k.add(chiselledBlob(0.5, 2, 0.18, 11, 6), stone, { p: [0, 0.32, 0], s: [1.15, 0.95, 0.95] });
+  k.add(chiselledBlob(0.3, 1, 0.2, 12, 4, 0.78), stone, { p: [0.42, 0.18, 0.2], s: [1, 0.85, 1] });
+  k.add(chiselledBlob(0.13, 1, 0.22, 13, 3, 0.8), stone, { p: [-0.48, 0.07, 0.26] });
+  k.add(chiselledBlob(0.1, 1, 0.22, 14, 3, 0.8), stone, { p: [0.12, 0.05, -0.52] });
+  return stoneGeometry(k, 1);
 }
 
-/** A small smooth river stone. */
+/** A small smooth river stone (no moss). */
 export function pebble(): BufferGeometry {
   const k = new Kit();
   k.blob(0.5, (_p, n) => mix('#7d756e', '#b3a99c', 0.35 + n.y * 0.4), { p: [0, 0.18, 0], s: [1.25, 0.5, 0.9] }, 1, 'solid', 0.12, 21);
-  return solid(k);
+  return stoneGeometry(k, 0);
 }
 
 export function grassTuft(): BufferGeometry {

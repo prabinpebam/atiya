@@ -83,18 +83,7 @@ vec3 worley(vec3 p) {
   }
   return vec3(sqrt(d1), sqrt(d2), id);
 }
-vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }
-// a short stroke (grass blade / clover) in the tangent plane, one per cell: returns 0..1 coverage
-float stroke(vec3 p, vec3 nrm, float scale, float seed, float len, float wid) {
-  vec3 sp = p * scale; vec3 ci = floor(sp);
-  vec3 c = (ci + 0.2 + 0.6 * h33(ci + seed)) / scale;
-  vec3 dir = h33(ci + seed + 4.0) - 0.5; dir -= nrm * dot(dir, nrm); dir = normalize(dir + 1e-4);
-  vec3 r = p - c; r -= nrm * dot(r, nrm);
-  float t = clamp(dot(r, dir), -len, len);
-  float d = length(r - dir * t);
-  float aa = fwidth(d) + 1e-4;
-  return (1.0 - smoothstep(wid - aa, wid + aa, d)) * step(0.35, h13(ci + seed + 9.0));
-}`,
+vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }`,
       )
       .replace(
         '#include <color_fragment>',
@@ -110,7 +99,7 @@ float stroke(vec3 p, vec3 nrm, float scale, float seed, float len, float wid) {
   float pathW = smoothstep(0.32, 0.62, vSurf.x + pathN * 0.42);
   float wGrass = clamp(1.0 - pathW - vSurf.y - vSurf.z - vSurf.w - vSurf2.x - vSurf2.y * 0.6, 0.0, 1.0);
 
-  // ---- grass: soft mottling, blade strokes, clover and a few tiny flowers ----
+  // ---- grass: top-down painterly colour noise (no blades), clover and a few tiny flowers ----
   float mottle = fbm(vLocal * 0.55);
   col *= 0.86 + 0.28 * mottle;
   col *= 1.0 + clamp(hgt, -0.3, 0.4) * 0.35;
@@ -123,11 +112,9 @@ float stroke(vec3 p, vec3 nrm, float scale, float seed, float len, float wid) {
   vec3 gd = mix(gA, gB, tSwap) / uMeanGrass;
   vec3 g = col * max(vec3(0.3), 1.0 + (gd - 1.0) * 1.5);
 #else
-  float bladeL = stroke(vLocal, nrm, 7.5, 1.0, 0.05, 0.011);
-  float bladeD = stroke(vLocal, nrm, 6.1, 7.0, 0.045, 0.012);
-  vec3 g = col;
-  g = mix(g, g * vec3(1.18, 1.14, 0.78) + lin(vec3(0.05, 0.05, 0.0)), bladeL * 0.75);
-  g = mix(g, g * vec3(0.74, 0.82, 0.72), bladeD * 0.6);
+  // soft isotropic dabs at two scales, warmer where lighter
+  float dab = (vnoise(vLocal * 2.6) - 0.5) + (vnoise(vLocal * 7.0 + 2.3) - 0.5) * 0.8 + (vnoise(vLocal * 18.0 + 5.1) - 0.5) * 0.5;
+  vec3 g = col * (1.0 + dab * vec3(0.5, 0.42, 0.24));
 #endif
   // clover specks (three-leaf, darker) in lush patches
   vec3 cs = vLocal * 2.4; vec3 cc = floor(cs); vec3 cf = fract(cs) - (0.25 + 0.5 * h33(cc + 2.0));

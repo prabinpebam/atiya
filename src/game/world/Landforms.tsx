@@ -26,7 +26,7 @@ const R = CONFIG.planetRadius;
 
 export function Cliffs({ controller }: { controller: GameController }) {
   const geo = useMemo(() => buildCliffs(controller.props.mesas), [controller]);
-  const mat = useMemo(() => withRockDetail(new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true }), 'uv', 0.85, 1), []);
+  const mat = useMemo(() => withRockDetail(new MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true }), 0.85, 1), []);
   if (!geo) return null;
   return <mesh geometry={geo} material={mat} castShadow receiveShadow name="cliffs" />;
 }
