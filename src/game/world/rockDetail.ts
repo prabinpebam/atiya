@@ -50,6 +50,44 @@ export function withRockDetail(m: MeshStandardMaterial, mode: 'uv' | 'object', s
 }
 
 /**
+ * The cliffs' grassy lip gets the same painted `grass` tile as the lawn (planet-local triplanar
+ * at the ground's scale, normalised by the tile's mean), so the rim reads as the mesa's turf
+ * rather than a flat green band. Weighted per vertex by `aLip` (1 on the lip, 0 on rock).
+ */
+export function withLipGrass(m: MeshStandardMaterial): MeshStandardMaterial {
+  const tex = gameTexture('grass');
+  if (!tex) return m;
+  const mean = new Vector3(...textureMean('grass'));
+  const prev = m.onBeforeCompile;
+  m.onBeforeCompile = (shader, renderer) => {
+    prev?.call(m, shader, renderer);
+    shader.uniforms.uLipTex = { value: tex };
+    shader.uniforms.uLipMean = { value: mean };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aLip;\nvarying float vLipW;\nvarying vec3 vLipP;\nvarying vec3 vLipN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLipW = aLip; vLipP = position; vLipN = normal;');
+    // include the triplanar helpers unless an earlier layer already did
+    const triGlsl = shader.fragmentShader.includes('vec3 triW(') ? '' : TRIPLANAR_GLSL;
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>\nuniform sampler2D uLipTex;\nuniform vec3 uLipMean;\nvarying float vLipW;\nvarying vec3 vLipP;\nvarying vec3 vLipN;\n${triGlsl}`,
+      )
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+if (vLipW > 0.001) {
+  vec3 gd = tri(uLipTex, vLipP, triW(normalize(vLipN)), 0.3) / max(uLipMean, vec3(0.02));
+  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * max(vec3(0.3), 1.0 + (gd - 1.0) * 1.5), vLipW);
+}`,
+      );
+  };
+  const prevKey = m.customProgramCacheKey?.bind(m);
+  m.customProgramCacheKey = () => `${prevKey ? prevKey() : ''}|lip-grass`;
+  return m;
+}
+
+/**
  * Subtle hand-painted brush grain (generated `paint-grain` mask) over the vertex colours of kit
  * models: object-space triplanar, luminance only, so every palette colour is kept. The kit has
  * no per-part material identity (wood, stone, roof share one material), so the detail is generic.

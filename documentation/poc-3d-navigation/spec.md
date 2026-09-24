@@ -358,7 +358,7 @@ The planet is no longer a smooth ball: the land gently rolls, rocky cliffs rise 
 
 - **Rolling ground:** smooth value-noise hills up to about ±0.6 u. The ground stays flat on the plaza, landmark forecourts and approach points, the pond and the river banks, so nothing looks buried or floating. Paths keep 30 % of the roll so they follow the land.
 - **Cliffs and rocks:**
-  - Four flat-topped **mesas** with irregular outlines; two have a second tier. Their walls are faceted, flat-shaded rings of warm sandstone strata with a grass lip on top. The mesa tops have grass and a few trees.
+  - Four flat-topped **mesas** with irregular outlines; two have a second tier. Their walls are faceted, flat-shaded rings of warm sandstone strata with a grass lip on top (`world/cliffs.ts`, pure). Every face is wound to point out of the mesa (unit-tested): the material is front-sided, so an inside-out wall would be culled on the near side and show the far wall's inside and the ground's steep mesa slope instead. The lip uses the lawn's painted grass tile, so the rim reads as the mesa's own turf. The mesa tops have grass and a few trees.
   - Big mossy **boulders** cluster at the cliff feet, sit on the river banks and dot the open country. About 90 small **pebbles** line the banks, cliff feet and path edges.
   - Mesas and boulders are obstacles; pebbles are walk-through.
 - **Stream:**
@@ -388,7 +388,7 @@ The planet is no longer a smooth ball: the land gently rolls, rocky cliffs rise 
 - **Implementation:**
   - `world/features.ts` defines the river spline, mesas and bridge placement.
   - `world/terrain.ts` holds `Terrain`, a pure, unit-tested height model: `height(n)` (including the stream bed and pond bowl), `deckHeight(n)`, `walkHeight(n)`, `inWater(n)` and `waterDepth(n)`. `world/pond.ts` holds the pond shape (frame, lobed shoreline, bowl).
-  - `world/Landforms.tsx` builds `Cliffs`, `Water` and `Bridges`.
+  - `world/Landforms.tsx` builds `Cliffs` (geometry from the pure `world/cliffs.ts`), `Water` and `Bridges`.
   - `world/windField.ts` is the pure wind model with its shared uniforms.
   - `world/WindFx.tsx` holds the driver, flying leaves and swirls. See §5.3 for collision and ADR-13/ADR-14.
 
@@ -398,7 +398,7 @@ All textures and the landing art are **original**, generated for this project wi
 
 | Asset | Kind | Used by |
 |---|---|---|
-| `grass`, `dirt`, `cobble`, `sand`, `riverbed` | Seamless colour tiles, 512² | Ground shader layers (triplanar in planet-local space) |
+| `grass`, `dirt`, `cobble`, `sand`, `riverbed` | Seamless colour tiles, 512² | Ground shader layers (triplanar in planet-local space); `grass` also paints the cliffs' grassy lip at the same scale |
 | `rock` | Seamless strata tile, 512² | Cliff walls (UV-mapped around each mesa, so the strata stay horizontal); boulders, rocks and pebbles (object-space triplanar, luminance only, so moss caps keep their colour) |
 | `water` | Seamless greyscale caustics mask, 512² | River flow shader (two layers drifting downstream) |
 | `leaf-broad`, `leaf-single`, `grass-card` | Alpha sprites converted to tintable greyscale | Hardwood/bush leaf cards, flying leaves, grass clumps |
@@ -602,7 +602,7 @@ personal-site/
 │     │                  # Planet.tsx, Props.tsx, Plaza.tsx, Landmark.tsx, KitModel.tsx, Sky.tsx (clouds), materials.ts,
 │     │                  # timeOfDay.ts (pure day–night model), DayNight.tsx (lights, sky, sun/moon/stars, fireflies, lamp pools),
 │     │                  # features.ts (river spline, mesas, bridges), terrain.ts (pure height model),
-│     │                  # Landforms.tsx (cliffs, water, bridges), windField.ts (pure wind model + shared uniforms),
+│     │                  # Landforms.tsx (cliffs, water, bridges), cliffs.ts (pure cliff-wall geometry), windField.ts (pure wind model + shared uniforms),
 │     │                  # WindFx.tsx (wind driver, flying leaves, swirls), textures.ts (preload + triplanar GLSL),
 │     │                  # textureManifest.ts (generated), rockDetail.ts (painted rock on cliffs and boulders),
 │     │                  # pond.ts (pure: pond frame, lobed shoreline, bowl), pondPlants.ts (pure: plant placement),
