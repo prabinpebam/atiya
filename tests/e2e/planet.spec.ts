@@ -204,6 +204,23 @@ test.describe('day–night', () => {
     expect(s.hours).toBeCloseTo(10.5, 2);
   });
 
+  test('the town-hall clock shows the device’s local time', async ({ page }) => {
+    // 10:10:30 local time on the visitor's device
+    await page.clock.setFixedTime(new Date(2026, 8, 25, 10, 10, 30));
+    await startPlanet(page);
+    await page.evaluate(() => (window as any).__game.teleport('town-hall'));
+    const TAU = Math.PI * 2;
+    await expect.poll(async () => page.evaluate(() => (window as any).__game.clockHands()), { timeout: 10_000 }).not.toBeNull();
+    const a = await page.evaluate(() => (window as any).__game.clockHands());
+    expect(a.hour).toBeCloseTo(((10 + 10.5 / 60) / 12) * TAU, 5);
+    expect(a.minute).toBeCloseTo((10.5 / 60) * TAU, 5);
+    expect(a.second).toBeCloseTo(TAU / 2, 5);
+    // an hour later on the device clock, the hands follow
+    await page.clock.setFixedTime(new Date(2026, 8, 25, 11, 45, 0));
+    await expect.poll(async () => (await page.evaluate(() => (window as any).__game.clockHands())).minute, { timeout: 10_000 }).toBeCloseTo((45 / 60) * TAU, 5);
+    expect((await page.evaluate(() => (window as any).__game.clockHands())).hour).toBeCloseTo(((11 + 45 / 60) / 12) * TAU, 5);
+  });
+
   test('pausing ambient motion freezes the clock', async ({ page }) => {
     await startPlanet(page);
     await page.getByTestId('menu-button').click();

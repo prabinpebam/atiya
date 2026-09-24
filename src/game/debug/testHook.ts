@@ -36,6 +36,8 @@ export interface GameTestHook {
   setTime(hours: number | null): void;
   /** Force the gust level (0…1); `null` returns to the natural wind. */
   setWind(gust: number | null): void;
+  /** Town-hall clock hand angles last drawn (radians clockwise from 12), or null. */
+  clockHands(): { hour: number; minute: number; second: number } | null;
   /** Ground under the player: smoothed lift, terrain height, walk height and distance to the river (u). */
   groundInfo(): {
     lift: number;
@@ -142,6 +144,7 @@ export function installTestHook(c: GameController): void {
     setWind: (gust) => {
       c.windOverride = gust === null ? null : Math.min(1, Math.max(0, gust));
     },
+    clockHands: () => (c.clockHands ? { ...c.clockHands } : null),
     groundInfo: () => {
       const p = c.sim.pLocal;
       const river = c.props.river;

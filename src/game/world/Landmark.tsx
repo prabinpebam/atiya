@@ -2,15 +2,17 @@ import { useMemo, useRef } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useStore } from 'zustand';
-import { AdditiveBlending, ConeGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SphereGeometry } from 'three';
+import { AdditiveBlending, BoxGeometry, ConeGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SphereGeometry } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import type { LandmarkData } from '../types';
 import { landmarkObjectQuaternion, type LandmarkGeometry } from '../math/landmarks';
 import { damp } from '../math/sphere';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
+import { clockHandAngles } from './clockFace';
 import { KitModel } from './KitModel';
 import { landmarkModel } from './models';
+import { ARCH } from './parts';
 
 const R = CONFIG.planetRadius;
 
@@ -105,6 +107,57 @@ function Flag({ at, color, paused, pole = 2.2 }: { at: [number, number, number];
   );
 }
 
+/** A clock hand pivoting at the origin and pointing up (12 o'clock), with a short tail. */
+function handGeometry(width: number, length: number, depth: number, tail = 0.025): BoxGeometry {
+  const g = new BoxGeometry(width, length + tail, depth);
+  g.translate(0, (length - tail) / 2, 0);
+  return g;
+}
+
+/**
+ * Town-hall clock hands showing the visitor's device time (local time zone), always, whatever the
+ * day–night mode. Updated once a second; the second hand ticks, and is hidden while ambient
+ * motion is paused (hour and minute hands still tell the time).
+ */
+function ClockHands({ at, controller, paused }: { at: [number, number, number]; controller: GameController; paused: boolean }) {
+  const hour = useRef<Mesh>(null);
+  const minute = useRef<Mesh>(null);
+  const second = useRef<Mesh>(null);
+  const last = useRef(-1);
+  const res = useMemo(() => {
+    const cap = new CylinderGeometry(0.022, 0.022, 0.012, 12);
+    cap.rotateX(Math.PI / 2);
+    return {
+      hourGeo: handGeometry(0.032, 0.11, 0.01),
+      minuteGeo: handGeometry(0.024, 0.165, 0.01),
+      secondGeo: handGeometry(0.007, 0.175, 0.006, 0.04),
+      cap,
+      iron: new MeshStandardMaterial({ color: ARCH.iron, roughness: 0.7, metalness: 0 }),
+      red: new MeshStandardMaterial({ color: '#d4483b', roughness: 0.6 }),
+      brass: new MeshStandardMaterial({ color: ARCH.brass, roughness: 0.4, metalness: 0.4 }),
+    };
+  }, []);
+  useFrame(() => {
+    const now = new Date();
+    const stamp = Math.floor(now.getTime() / 1000);
+    if (stamp === last.current || !hour.current || !minute.current || !second.current) return;
+    last.current = stamp;
+    const a = clockHandAngles(now);
+    hour.current.rotation.z = -a.hour;
+    minute.current.rotation.z = -a.minute;
+    second.current.rotation.z = -a.second;
+    controller.clockHands = a;
+  });
+  return (
+    <group position={at} name="town-hall-clock">
+      <mesh ref={hour} geometry={res.hourGeo} material={res.iron} position={[0, 0, 0.012]} />
+      <mesh ref={minute} geometry={res.minuteGeo} material={res.iron} position={[0, 0, 0.022]} />
+      <mesh ref={second} geometry={res.secondGeo} material={res.red} position={[0, 0, 0.03]} visible={!paused} />
+      <mesh geometry={res.cap} material={res.brass} position={[0, 0, 0.034]} />
+    </group>
+  );
+}
+
 function MailFlag({ at, active }: { at: [number, number, number]; active: boolean }) {
   const ref = useRef<Group>(null);
   const mat = useMemo(() => new MeshStandardMaterial({ color: '#f2b544', roughness: 0.6 }), []);
@@ -170,6 +223,7 @@ export function Landmark({ controller, geo, data }: { controller: GameController
         {model.anchors.beam && <Beam at={model.anchors.beam} paused={paused} controller={controller} />}
         {model.anchors.smoke && <Smoke at={model.anchors.smoke} paused={paused} />}
         {data.variant === 'town-hall' && model.anchors.flag && <Flag at={model.anchors.flag} color={data.accent} paused={paused} />}
+        {model.anchors.clock && <ClockHands at={model.anchors.clock} controller={controller} paused={paused} />}
         {data.variant === 'post-office' && model.anchors.flag && <MailFlag at={model.anchors.flag} active={active} />}
       </group>
       {active && (

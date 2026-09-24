@@ -133,8 +133,7 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
     const a = (i / 12) * Math.PI * 2;
     k.box([0.02, 0.04, 0.01], ARCH.iron, { p: [Math.sin(a) * 0.19, ty + 0.34 + Math.cos(a) * 0.19, 0.41], r: [0, 0, -a] }, 0.004);
   }
-  k.box([0.022, 0.15, 0.012], ARCH.iron, { p: [-0.05, ty + 0.4, 0.42], r: [0, 0, 0.9] }, 0.005);
-  k.box([0.022, 0.11, 0.012], ARCH.iron, { p: [0.04, ty + 0.38, 0.425], r: [0, 0, -0.9] }, 0.005);
+  // the hands are live meshes showing the visitor's local time (ClockHands in Landmark.tsx)
   hipRoof(k, { w: 0.74, d: 0.74, h: 0.55, y: ty + 0.62, color: shade(accent, -0.05), bands: 2, overhang: 0.1, top: 0.05 });
   k.cyl(0.02, 0.02, 0.35, ARCH.iron, { p: [0, ty + 1.35, 0] }, 6);
   k.sphere(0.05, ARCH.brass, { p: [0, ty + 1.25, 0] }, [10, 8]);
@@ -186,7 +185,7 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
   });
   // bushes flanking the steps
   for (const s of [-1, 1]) k.blob(0.22, '#4f9e4a', { p: [s * 0.82, 0.18, D / 2 + 0.5], s: [1.1, 0.8, 1] }, 2, 'solid', 0.25, s);
-  return { geo: k.build(), height: ty + 1.55, anchors: { flag: [1.3, 0, 0.6] } };
+  return { geo: k.build(), height: ty + 1.55, anchors: { flag: [1.3, 0, 0.6], clock: [0, ty + 0.34, 0.405] } };
 }
 
 function lighthouse(accent: ColorRepresentation): LandmarkModel {
