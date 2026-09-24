@@ -1,0 +1,42 @@
+{
+  "name": "personal-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "build:test": "astro build --mode test",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "size": "node scripts/size-report.mjs",
+    "verify:prod": "astro build && node scripts/size-report.mjs --prod"
+  },
+  "dependencies": {
+    "@astrojs/react": "6.0.6",
+    "@react-three/drei": "10.7.8",
+    "@react-three/fiber": "9.7.0",
+    "astro": "7.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "three": "0.186.0",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.5",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@types/three": "0.186.0",
+    "typescript": "5.9.3",
+    "vitest": "5.0.1"
+  }
+}

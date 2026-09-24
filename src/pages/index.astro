@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Prabin Pebam — Principal Design Manager" bodyClass="landing">
+  <main class="landing-main">
+    <section class="landing-hero" aria-labelledby="landing-title">
+      <p class="kicker">Portfolio</p>
+      <h1 id="landing-title">Prabin Pebam</h1>
+      <p class="lede">Principal Design Manager. Placeholder tagline about leading design teams and shipping products people love.</p>
+      <div class="landing-ctas">
+        <a class="btn big" href="/play/" data-mode="play">Explore the planet</a>
+        <a class="btn big" href="/classic/" data-mode="classic">Classic site</a>
+      </div>
+      <p class="muted">The planet is a small 3D world you can walk around. The classic site has the same content as regular pages.</p>
+    </section>
+    <figure class="landing-poster" aria-hidden="true">
+      <svg viewBox="0 0 400 320" role="presentation" focusable="false">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#9fd8ff" />
+            <stop offset="1" stop-color="#e6f6ff" />
+          </linearGradient>
+        </defs>
+        <rect width="400" height="320" rx="28" fill="url(#sky)" />
+        <circle cx="200" cy="330" r="190" fill="#8fcf6b" />
+        <path d="M200 150 L200 320" stroke="#e9d9a6" stroke-width="16" />
+        <g transform="translate(160 118)">
+          <rect x="0" y="22" width="80" height="48" fill="#fbf4e6" stroke="#2d2a32" stroke-width="3" />
+          <path d="M-8 24 L40 -8 L88 24 Z" fill="#e07a3f" stroke="#2d2a32" stroke-width="3" />
+          <rect x="30" y="44" width="20" height="26" fill="#b07a4f" />
+        </g>
+        <g transform="translate(300 70)">
+          <rect x="0" y="10" width="22" height="90" fill="#ffffff" stroke="#2d2a32" stroke-width="3" />
+          <rect x="0" y="40" width="22" height="20" fill="#d94c4c" />
+          <path d="M-4 12 L11 -8 L26 12 Z" fill="#d94c4c" stroke="#2d2a32" stroke-width="3" />
+        </g>
+        <g transform="translate(70 120)">
+          <path d="M20 0 L40 50 L0 50 Z" fill="#4f9e4a" stroke="#2d2a32" stroke-width="3" />
+          <rect x="16" y="50" width="8" height="14" fill="#8a5a3b" />
+        </g>
+        <g transform="translate(196 214)">
+          <ellipse cx="4" cy="30" rx="14" ry="4" fill="#1d2a1a" opacity="0.22" />
+          <rect x="-6" y="6" width="20" height="22" rx="10" fill="#4f7cff" stroke="#2d2a32" stroke-width="3" />
+          <circle cx="4" cy="0" r="10" fill="#f1c7a5" stroke="#2d2a32" stroke-width="3" />
+        </g>
+      </svg>
+    </figure>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('mode');
+    const store = (m: string) => {
+      try {
+        localStorage.setItem('site.mode', m);
+      } catch {}
+    };
+    if (mode === 'classic' || mode === 'play') {
+      store(mode);
+      location.replace(mode === 'classic' ? '/classic/' : '/play/');
+    }
+    let last: string | null = null;
+    try {
+      last = localStorage.getItem('site.mode');
+    } catch {}
+    const primary = last === 'classic' ? 'classic' : 'play';
+    document.querySelectorAll<HTMLAnchorElement>('[data-mode]').forEach((a) => {
+      a.classList.toggle('primary', a.dataset.mode === primary);
+      a.addEventListener('click', () => store(a.dataset.mode!));
+    });
+  </script>
+</BaseLayout>

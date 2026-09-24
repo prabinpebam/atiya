@@ -1,0 +1,27 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { GameController } from './controller';
+import { GameApp } from './GameApp';
+import type { LandmarkData } from './types';
+
+/**
+ * Dynamically imported by the /play capability gate only after the device passes.
+ * Everything React/three-related lives behind this module boundary.
+ */
+export async function mountGame(container: HTMLElement, landmarks: LandmarkData[]): Promise<GameController> {
+  const controller = new GameController(landmarks, {
+    classicLinks: Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-classic-link]')),
+    hudActions: document.getElementById('hud-actions'),
+  });
+  if (import.meta.env.MODE !== 'production') {
+    const { installTestHook } = await import('./debug/testHook');
+    installTestHook(controller);
+  }
+  container.replaceChildren();
+  createRoot(container).render(
+    <StrictMode>
+      <GameApp controller={controller} />
+    </StrictMode>,
+  );
+  return controller;
+}
