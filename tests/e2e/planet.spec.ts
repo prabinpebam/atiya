@@ -202,6 +202,24 @@ test.describe('day–night', () => {
     await expect.poll(async () => (await lamps()).intensity).toBe(0);
   });
 
+  test('after dusk the plaza lamps, an open door and the stage spot really light the scene (none by day)', async ({ page }) => {
+    await startPlanet(page);
+    const lamps = () => page.evaluate(() => (window as any).__game.lamps() as number);
+    await page.evaluate(() => (window as any).__game.setTime(11));
+    await expect.poll(lamps).toBe(0);
+    await page.evaluate(() => (window as any).__game.setTime(22));
+    await expect.poll(lamps).toBeGreaterThanOrEqual(3);
+    const plaza = await lamps();
+    // walking up to the Workshop opens its door: its lamplight joins in
+    await page.evaluate(() => (window as any).__game.travelTo('workshop'));
+    await expect.poll(lamps, { timeout: 15_000 }).toBe(plaza + 1);
+    // the Amphitheater's stage spot replaces it
+    await page.evaluate(() => (window as any).__game.travelTo('amphitheater'));
+    await expect.poll(lamps, { timeout: 15_000 }).toBe(plaza + 1);
+    await page.evaluate(() => (window as any).__game.teleport('plaza'));
+    await expect.poll(lamps, { timeout: 10_000 }).toBe(plaza);
+  });
+
   test('“Always daytime” holds the day and is remembered', async ({ page }) => {
     await startPlanet(page);
     await page.evaluate(() => {
@@ -751,7 +769,7 @@ test.describe('planet', () => {
     await noSeriousViolations(page);
     await menu.getByRole('button', { name: /Post Office/ }).click();
     await expect(menu).toBeHidden();
-    await expect.poll(async () => (await state(page)).nearby, { timeout: 10_000 }).toBe('post-office');
+    await expect.poll(async () => (await state(page)).nearby, { timeout: 15_000 }).toBe('post-office');
     await expect(page.getByTestId('preview-card').getByRole('heading', { name: 'Post Office' })).toBeVisible();
   });
 

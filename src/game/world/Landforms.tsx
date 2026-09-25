@@ -7,7 +7,7 @@ import type { GameController } from '../controller';
 import { arcDistance, moveAlong } from '../math/sphere';
 import { selectAmbientPaused } from '../state/store';
 import { buildCliffs } from './cliffs';
-import { lampPoolMaterial, lampsOn } from './DayNight';
+import { lampsOn } from './DayNight';
 import { mesaRadius, type Bridge, type Mesa, type River } from './features';
 import { Kit, hash3 } from './kit';
 import { KitModel } from './KitModel';
@@ -401,43 +401,6 @@ function lantern(k: Kit, [x, y, z]: [number, number, number]) {
   k.box([0.11, 0.14, 0.11], ARCH.lit, { p: [x, y, z] }, 0.01, 'glow');
 }
 
-/**
- * Warm pools of lamplight on the deck around each lantern: a grid laid over the arched planks
- * (so it follows the deck), UV-mapped so the radial falloff is centred on the lantern.
- */
-function lanternPools(lamps: [number, number, number][], L: number, W: number, deck: (z: number) => number, radius = 1.0): BufferGeometry {
-  const pos: number[] = [];
-  const uv: number[] = [];
-  const idx: number[] = [];
-  const nx = 6;
-  const nz = 10;
-  for (const [lx, , lz] of lamps) {
-    const z0 = Math.max(-L, lz - radius);
-    const z1 = Math.min(L, lz + radius);
-    const base = pos.length / 3;
-    for (let j = 0; j <= nz; j++) {
-      const z = z0 + ((z1 - z0) * j) / nz;
-      for (let i = 0; i <= nx; i++) {
-        const x = -W + 0.06 + ((2 * W - 0.12) * i) / nx;
-        pos.push(x, deck(z) + 0.012, z);
-        uv.push((x - lx) / (2 * radius) + 0.5, (z - lz) / (2 * radius) + 0.5);
-      }
-    }
-    for (let j = 0; j < nz; j++) {
-      for (let i = 0; i < nx; i++) {
-        const a = base + j * (nx + 1) + i;
-        const c = a + nx + 1;
-        idx.push(a, c, a + 1, a + 1, c, c + 1);
-      }
-    }
-  }
-  const g = new BufferGeometry();
-  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
-  g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
-  g.setIndex(idx);
-  return g;
-}
-
 function buildBridge(b: Bridge) {
   const k = new Kit();
   const lamps: [number, number, number][] = [];
@@ -463,7 +426,7 @@ function buildBridge(b: Bridge) {
     lamps.push([x, deck(zl) + 0.86, zl]);
     lantern(k, lamps[lamps.length - 1]);
   }
-  return { geo: k.build(), lamps, pools: lanternPools(lamps, L, W, deck) };
+  return { geo: k.build(), lamps };
 }
 
 /** The bridge's planks, stringers and rails. */
@@ -506,14 +469,13 @@ function bridgeTimber(k: Kit, L: number, W: number, deck: (z: number) => number,
 
 /**
  * The bridges, with working lanterns: after dusk each lantern's glass glows (shared `glow`
- * material), a real point light (no shadows) warms the deck, rails, banks and the character, and
- * a soft pool of light lies on the planks. The lights stay in the scene (visible) by day at zero
+ * material) and a real point light (no shadows) lights the deck, rails, banks, water and the
+ * character: the painted planks brighten under it, no overlay needed. The lights stay in the scene (visible) by day at zero
  * intensity, so the light count and the shader programs never change; with ambient motion on, the flames flicker very gently.
  */
 export function Bridges({ controller }: { controller: GameController }) {
   const paused = useStore(controller.store, selectAmbientPaused);
   const items = useMemo(() => controller.props.bridges.map((b) => ({ frame: bridgeFrame(b), ...buildBridge(b) })), [controller]);
-  const poolMat = useMemo(() => lampPoolMaterial(), []);
   const lights = useMemo(
     () =>
       items.map(({ lamps }) =>
@@ -533,7 +495,6 @@ export function Bridges({ controller }: { controller: GameController }) {
     const on = lampsOn(controller.sky.night);
     controller.bridgeLamps.lit = on;
     let peak = 0;
-    poolMat.opacity = on * 0.6;
     lights.forEach((ls) =>
       ls.forEach((l, i) => {
         const flicker = paused ? 1 : 1 + 0.05 * Math.sin(clock.t * 7.3 + i * 2.1) + 0.03 * Math.sin(clock.t * 13.1 + i);
@@ -545,10 +506,9 @@ export function Bridges({ controller }: { controller: GameController }) {
   });
   return (
     <group name="bridges">
-      {items.map(({ frame, geo, pools }, i) => (
+      {items.map(({ frame, geo }, i) => (
         <group key={i} position={frame.p} quaternion={frame.q}>
           <KitModel geo={geo} />
-          <mesh geometry={pools} material={poolMat} renderOrder={1} name="bridge-lamp-pools" />
           {lights[i].map((l, j) => (
             <primitive key={j} object={l} />
           ))}

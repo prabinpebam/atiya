@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useStore } from 'zustand';
@@ -6,7 +6,7 @@ import {
   AdditiveBlending,
   BoxGeometry,
   BufferGeometry,
-  CircleGeometry,
+  Color,
   ConeGeometry,
   CylinderGeometry,
   DoubleSide,
@@ -28,7 +28,8 @@ import { landmarkObjectQuaternion, type LandmarkGeometry } from '../math/landmar
 import { damp } from '../math/sphere';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import { clockHandAngles } from './clockFace';
-import { lampPoolMaterial, lampsOn } from './DayNight';
+import { lampsOn } from './DayNight';
+import { addLamp, type Lamp } from './lampLights';
 import { curtainColumn, DOOR, smooth, stepOpen } from './doors';
 import type { KitGeometry, V3 } from './kit';
 import { KitModel } from './KitModel';
@@ -262,56 +263,51 @@ function Interior({ geo, open, controller }: { geo: KitGeometry; open: Openness;
   );
 }
 
-/** Ground height in a landmark's frame (its origin sits 0.01 under the sphere) at local x, z. */
-const groundY = (x: number, z: number) => Math.sqrt(Math.max(0, R * R - x * x - z * z)) - (R - 0.01);
+/** Peak intensities (candela) of the lamplight out of an open door and of the stage spotlight. */
+const DOOR_LAMP = 5;
+const STAGE_LAMP = 9;
 
-function DoorSpill({ spill, open, controller }: { spill: NonNullable<LandmarkModel['spill']>; open: Openness; controller: GameController }) {
-  const mesh = useRef<Mesh>(null);
-  const { geo, mat } = useMemo(() => {
-    // a soft trapezoid, bright at the threshold and fading outward and at the sides (vertex alpha)
-    const nx = 8;
-    const nz = 12;
-    const pos: number[] = [];
-    const col: number[] = [];
-    const idx: number[] = [];
-    for (let j = 0; j <= nz; j++)
-      for (let i = 0; i <= nx; i++) {
-        const u = i / nx;
-        const v = j / nz;
-        const w = spill.w * (1.1 + 1.5 * v);
-        const x = spill.p[0] + (u - 0.5) * w;
-        const z = spill.p[2] + v * spill.len;
-        pos.push(x, groundY(x, z) + 0.025, z);
-        const side = smooth(Math.min(1, u / 0.3)) * smooth(Math.min(1, (1 - u) / 0.3));
-        col.push(1, 0.78, 0.5, side * Math.pow(1 - v, 1.6));
-      }
-    for (let j = 0; j < nz; j++)
-      for (let i = 0; i < nx; i++) {
-        const a = j * (nx + 1) + i;
-        const b = a + nx + 1;
-        idx.push(a, b, a + 1, a + 1, b, b + 1);
-      }
-    const g = new BufferGeometry();
-    g.setAttribute('position', new Float32BufferAttribute(pos, 3));
-    g.setAttribute('color', new Float32BufferAttribute(col, 4));
-    g.setIndex(idx);
-    const m = new MeshBasicMaterial({
-      vertexColors: true,
-      transparent: true,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -2,
-      fog: false,
-      opacity: 0,
-    });
-    return { geo: g, mat: m };
-  }, [spill]);
+/** A landmark-local point or direction in planet space. */
+function toPlanet(v: Vector3, place: { position: Vector3; quaternion: Quaternion }, isDir = false): Vector3 {
+  v.applyQuaternion(place.quaternion);
+  return isDir ? v.normalize() : v.add(place.position);
+}
+
+/**
+ * Lamplight out of an open door after dusk: a soft spot from just inside the doorway, aimed out and
+ * down over the steps and the path, so the lit ground is the painted ground brightened (lampLights.ts).
+ */
+function DoorLamp({
+  spill,
+  from,
+  open,
+  controller,
+  place,
+}: {
+  spill: NonNullable<LandmarkModel['spill']>;
+  from: V3;
+  open: Openness;
+  controller: GameController;
+  place: { position: Vector3; quaternion: Quaternion };
+}) {
+  const lamp = useMemo<Lamp>(() => {
+    const src = new Vector3(...from);
+    const target = new Vector3(spill.p[0], 0, spill.p[2] + spill.len * 0.45);
+    const dir = target.clone().sub(src).normalize();
+    return {
+      pos: toPlanet(src, place),
+      dir: toPlanet(dir, place, true),
+      color: new Color('#ffc27a'),
+      intensity: 0,
+      range: spill.len + 1.8,
+      cone: [1.0, 0.4],
+    };
+  }, [spill, from, place]);
+  useEffect(() => addLamp(lamp), [lamp]);
   useFrame(() => {
-    mat.opacity = smooth(open.current) * lampsOn(controller.sky.night) * 0.8;
-    if (mesh.current) mesh.current.visible = mat.opacity > 0.003;
+    lamp.intensity = DOOR_LAMP * smooth(open.current) * lampsOn(controller.sky.night);
   });
-  return <mesh ref={mesh} geometry={geo} material={mat} renderOrder={1} visible={false} name="door-spill" />;
+  return null;
 }
 
 /**
@@ -372,9 +368,29 @@ function Curtain({ spec, open }: { spec: NonNullable<LandmarkModel['curtain']>; 
 }
 
 /** Stage spotlights for the amphitheater: soft beams and a pool of light on the stage while the curtain is up. */
-function StageLights({ spots, open, controller }: { spots: NonNullable<LandmarkModel['spots']>; open: Openness; controller: GameController }) {
+function StageLights({
+  spots,
+  open,
+  controller,
+  place,
+}: {
+  spots: NonNullable<LandmarkModel['spots']>;
+  open: Openness;
+  controller: GameController;
+  place: { position: Vector3; quaternion: Quaternion };
+}) {
   const group = useRef<Group>(null);
-  const { beams, beamMat, pool, poolMat } = useMemo(() => {
+  // the light on the stage: one spot from between the two lamps, its cone just covering the pool
+  const lamp = useMemo<Lamp>(() => {
+    const to = new Vector3(...spots.to);
+    const src = spots.from.reduce((a, f) => a.add(new Vector3(...f)), new Vector3()).divideScalar(spots.from.length);
+    const dist = src.distanceTo(to);
+    const outer = Math.atan((spots.pool + 0.2) / dist);
+    const dir = to.clone().sub(src).normalize();
+    return { pos: toPlanet(src, place), dir: toPlanet(dir, place, true), color: new Color('#fff0c8'), intensity: 0, range: dist + 1.6, cone: [outer, outer * 0.55] };
+  }, [spots, place]);
+  useEffect(() => addLamp(lamp), [lamp]);
+  const { beams, beamMat } = useMemo(() => {
     const to = new Vector3(...spots.to);
     const beamGeos = spots.from.map((f) => {
       const from = new Vector3(...f);
@@ -385,21 +401,17 @@ function StageLights({ spots, open, controller }: { spots: NonNullable<LandmarkM
       g.translate(from.x, from.y, from.z);
       return g;
     });
-    const c = new CircleGeometry(spots.pool, 32);
-    c.rotateX(-Math.PI / 2);
-    c.translate(to.x, to.y + 0.012, to.z);
     return {
+      // the beams are light scattered in the air, so they stay additive (volumetric shafts)
       beams: beamGeos,
       beamMat: new MeshBasicMaterial({ color: '#fff0c8', transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending, side: DoubleSide, fog: false }),
-      pool: c,
-      poolMat: lampPoolMaterial(),
     };
   }, [spots]);
   useFrame(() => {
     const e = smooth(open.current);
     const on = lampsOn(controller.sky.night);
     beamMat.opacity = e * (0.012 + 0.05 * on);
-    poolMat.opacity = e * (0.2 + 0.45 * on);
+    lamp.intensity = STAGE_LAMP * e * (0.3 + 0.7 * on);
     if (group.current) group.current.visible = e > 0.002;
   });
   return (
@@ -407,7 +419,6 @@ function StageLights({ spots, open, controller }: { spots: NonNullable<LandmarkM
       {beams.map((g, i) => (
         <mesh key={i} geometry={g} material={beamMat} renderOrder={2} />
       ))}
-      <mesh geometry={pool} material={poolMat} renderOrder={1} />
     </group>
   );
 }
@@ -448,10 +459,8 @@ export function Landmark({ controller, geo, data }: { controller: GameController
   const model = useMemo(() => landmarkModel(data.variant, data.accent), [data.variant, data.accent]);
   const ring = useMemo(() => new MeshBasicMaterial({ color: data.accent, transparent: true, opacity: 0.0, depthWrite: false }), [data.accent]);
 
-  const { position, quaternion } = useMemo(
-    () => ({ position: geo.n.clone().multiplyScalar(R - 0.01), quaternion: landmarkObjectQuaternion(geo) }),
-    [geo],
-  );
+  const place = useMemo(() => ({ position: geo.n.clone().multiplyScalar(R - 0.01), quaternion: landmarkObjectQuaternion(geo) }), [geo]);
+  const { position, quaternion } = place;
 
   const open = useMemo<Openness>(() => ({ current: 0 }), []);
   const hasDoor = !!(model.doors?.length || model.curtain);
@@ -502,9 +511,9 @@ export function Landmark({ controller, geo, data }: { controller: GameController
         {model.doors && <DoorLeaves leaves={model.doors} open={open} />}
         {model.interior && <Interior geo={model.interior} open={open} controller={controller} />}
         {model.curtain && <Curtain spec={model.curtain} open={open} />}
-        {model.spots && <StageLights spots={model.spots} open={open} controller={controller} />}
+        {model.spots && <StageLights spots={model.spots} open={open} controller={controller} place={place} />}
       </group>
-      {model.spill && <DoorSpill spill={model.spill} open={open} controller={controller} />}
+      {model.spill && model.light && <DoorLamp spill={model.spill} from={model.light as V3} open={open} controller={controller} place={place} />}
       {active && (
         <Html position={[0, model.height + 0.45, 0]} center zIndexRange={[20, 0]} className="world-label-wrap">
           <div className="world-label" aria-hidden="true" style={{ ['--accent' as string]: data.accent }}>

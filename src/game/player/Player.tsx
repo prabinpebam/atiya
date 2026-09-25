@@ -10,6 +10,7 @@ import { contactPhase, crossedPhase } from '../audio/audioLogic';
 import { ProceduralAvatar } from './Character';
 import { CHARACTERS, characterById, type CharacterId } from './characters';
 import { prefs } from '../platform/prefs';
+import { withLampLights } from '../world/lampLights';
 
 const R = CONFIG.planetRadius;
 /** Target standing height in world units (≈ door height plus a head; the planet camera is tuned for ~1.25 u). */
@@ -40,6 +41,12 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
         const mat = m.material as MeshStandardMaterial;
         mat.roughness = 0.85;
         mat.metalness = 0;
+        // walking under a lamp lights the character too (once per cached material)
+        if (!mat.userData.lamps) {
+          withLampLights(mat);
+          mat.userData.lamps = true;
+          mat.needsUpdate = true;
+        }
       }
     });
     // measure unscaled: a remount (switching back to this character) finds the cached scene already scaled

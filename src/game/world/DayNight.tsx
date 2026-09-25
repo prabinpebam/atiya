@@ -15,12 +15,10 @@ import {
   MeshBasicMaterial,
   PlaneGeometry,
   Points,
-  Quaternion,
   SRGBColorSpace,
   ShaderMaterial,
   Vector3,
 } from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
@@ -418,7 +416,7 @@ export function Fireflies({ controller }: { controller: GameController }) {
 }
 
 // ---------------------------------------------------------------------------
-// Warm light pools under lamps (planet space), visible after dusk.
+// Lamps: how lit they are through the day (the lamplight itself is in lampLights.ts).
 // ---------------------------------------------------------------------------
 
 /** How lit the lamps are (0 by day → 1 after dusk), from the sky's night factor. */
@@ -426,37 +424,3 @@ export function lampsOn(night: number): number {
   return Math.max(0, Math.min(1, (night - 0.2) / 0.6));
 }
 
-/** Additive warm pool of lamplight (radial falloff over the geometry's 0…1 UVs); set its opacity from `lampsOn`. */
-export function lampPoolMaterial(): MeshBasicMaterial {
-  return new MeshBasicMaterial({
-    map: radialTexture('rgba(255,222,170,0.8)', 'rgba(255,200,140,0)', 'rgba(255,210,150,0.35)'),
-    transparent: true,
-    blending: AdditiveBlending,
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -2,
-    fog: false,
-    opacity: 0,
-  });
-}
-
-export function LampPools({ controller, at }: { controller: GameController; at: Vector3[] }) {
-  const { geo, mat } = useMemo(() => {
-    const up = new Vector3(0, 1, 0);
-    const parts = at.map((n) => {
-      const g = new CircleGeometry(0.95, 28);
-      g.rotateX(-Math.PI / 2);
-      g.applyQuaternion(new Quaternion().setFromUnitVectors(up, n));
-      g.translate(n.x * (R + 0.03), n.y * (R + 0.03), n.z * (R + 0.03));
-      return g;
-    });
-    return {
-      geo: parts.length ? mergeGeometries(parts) : new BufferGeometry(),
-      mat: lampPoolMaterial(),
-    };
-  }, [at]);
-  useFrame(() => {
-    mat.opacity = lampsOn(controller.sky.night) * 0.55;
-  });
-  return <mesh geometry={geo} material={mat} renderOrder={1} />;
-}

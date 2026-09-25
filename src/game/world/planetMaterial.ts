@@ -1,5 +1,6 @@
 import { MeshStandardMaterial, Vector3 } from 'three';
 import { TRIPLANAR_GLSL, gameTexture, textureMean } from './textures';
+import { withLampLights } from './lampLights';
 
 const GROUND_TEX = ['grass', 'dirt', 'cobble', 'sand', 'riverbed'] as const;
 
@@ -252,5 +253,5 @@ vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }`,
       );
   };
   m.customProgramCacheKey = () => `planet-ground-v4${textured ? '-tex' : ''}${plazaTex ? '-plaza' : ''}`;
-  return m;
+  return withLampLights(m);
 }

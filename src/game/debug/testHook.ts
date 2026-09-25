@@ -4,6 +4,7 @@ import type { GameController } from '../controller';
 import { UP, moveAlong, orientationFor, tangentToward } from '../math/sphere';
 import { riverDistance } from '../world/features';
 import { textureStatus } from '../world/textures';
+import { litLamps } from '../world/lampLights';
 
 export interface GameTestHook {
   getState(): Record<string, unknown>;
@@ -42,6 +43,8 @@ export interface GameTestHook {
   bridgeLamps(): { count: number; lit: number; intensity: number };
   /** How open each landmark's door (or curtain) is, 0 shut … 1 open. */
   doors(): Record<string, number>;
+  /** How many lamps (plaza lamps, door and stage spots) are lighting the scene this frame. */
+  lamps(): number;
   /** The shared warm door light: which landmark it's shining from (null when dark) and its intensity. */
   doorLight(): { id: string | null; intensity: number };
   /** Sound: on/off, audio-context state, sprites loaded, ambience targets and the latest cues (newest last). */
@@ -166,6 +169,7 @@ export function installTestHook(c: GameController): void {
     bridgeLamps: () => ({ ...c.bridgeLamps }),
     doors: () => Object.fromEntries([...c.doors].map(([id, d]) => [id, d.open])),
     doorLight: () => ({ ...c.doorLight }),
+    lamps: () => litLamps(),
     sound: () => ({
       enabled: c.sound.enabled,
       state: c.sound.state,

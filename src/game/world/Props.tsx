@@ -28,6 +28,7 @@ import { pondPlants } from './pondPlants';
 import { RIVER_WATER_U } from './terrain';
 import { Fireflies } from './DayNight';
 import { withStoneDetail, withSurfaceDetail } from './rockDetail';
+import { withLampLights } from './lampLights';
 import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
@@ -331,13 +332,14 @@ export function Props({ controller }: { controller: GameController }) {
     // trunks keep the kit's surface detail (the painted bark tile) under the sway
     const tree = withSurfaceDetail((base as MeshStandardMaterial).clone(), 0.36, 1.1);
     addSway(tree, 0.016, 1.2, 'tree');
+    // the ground-level props near lamps also receive the lamplight (the leaf cards don't need it)
     return {
-      tree,
-      bush: swayMaterial(base, 0.06, 0.1, 'bush'),
-      grass,
-      flower: swayMaterial(base, 0.55, 0.0, 'flower'),
+      tree: withLampLights(tree),
+      bush: withLampLights(swayMaterial(base, 0.06, 0.1, 'bush')),
+      grass: withLampLights(grass),
+      flower: withLampLights(swayMaterial(base, 0.55, 0.0, 'flower')),
       // painted stone grain (object-space, luminance only, so tints keep their colour) + shader moss
-      rock: withStoneDetail((base as MeshStandardMaterial).clone(), 0.7, 1.4),
+      rock: withLampLights(withStoneDetail((base as MeshStandardMaterial).clone(), 0.7, 1.4)),
       broad,
       needle,
       broadBush,

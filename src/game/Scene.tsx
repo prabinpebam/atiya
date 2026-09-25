@@ -17,6 +17,7 @@ import { DayNight } from './world/DayNight';
 import { Bridges, Cliffs, Water } from './world/Landforms';
 import { FlyingLeaves, WindDriver, WindSwirls } from './world/WindFx';
 import { WadeFx } from './world/WadeFx';
+import { updateLampUniforms } from './world/lampLights';
 
 /** Drives the simulation first each frame, then applies the planet rotation. */
 function SimDriver({ controller, planet }: { controller: GameController; planet: React.RefObject<Group | null> }) {
@@ -38,6 +39,25 @@ function SimDriver({ controller, planet }: { controller: GameController; planet:
     planet.current?.quaternion.copy(controller.sim.planetQ);
     if (frames.current < 3 && ++frames.current === 3) controller.markReady();
   });
+  return null;
+}
+
+/**
+ * Packs the lit lamps into the shared lamp uniforms once per frame, right before drawing (after
+ * three.js has updated the planet's world matrix for this frame), so the lamplight never lags.
+ */
+function LampDriver({ planet }: { planet: React.RefObject<Group | null> }) {
+  const scene = useThree((s) => s.scene);
+  useEffect(() => {
+    const prev = scene.onBeforeRender;
+    scene.onBeforeRender = (...args) => {
+      prev.apply(scene, args);
+      if (planet.current) updateLampUniforms(planet.current.matrixWorld);
+    };
+    return () => {
+      scene.onBeforeRender = prev;
+    };
+  }, [scene, planet]);
   return null;
 }
 
@@ -134,6 +154,7 @@ export function Scene({ controller }: { controller: GameController }) {
   return (
     <>
       <SimDriver controller={controller} planet={planet} />
+      <LampDriver planet={planet} />
       <Adaptive controller={controller} />
       <DioramaCamera controller={controller} />
       <DayNight controller={controller} shadowSize={shadowSize} />
