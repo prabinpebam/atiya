@@ -22,15 +22,13 @@ import {
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
-import { DAY_HOURS, advanceHours, localHours, sampleSky, sceneExposure, wrapHours, type SkyState } from './timeOfDay';
+import { DAY_HOURS, SKY_Z, advanceHours, localHours, sampleSky, sceneExposure, skyPosition, wrapHours, type SkyState } from './timeOfDay';
 import { mulberry32 } from './layout';
 import { applyTimeOfDay } from './materials';
 import { cloudMaterial } from './Sky';
 import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
-/** Sky objects live on a plane behind the planet (camera frame), like the clouds. */
-const SKY_Z = -50;
 const STAR_Z = -62;
 /** Hours per second when fast-forwarding to a newly chosen time mode. */
 const FAST_FORWARD = 9;
@@ -124,11 +122,6 @@ function moonTexture(): CanvasTexture {
   return t;
 }
 
-/** Position on the sky plane for a body at `arc` (0 rise … 1 set): rises bottom-left, sets bottom-right. */
-function skyPosition(arc: number, out: Vector3): Vector3 {
-  const a = arc * Math.PI;
-  return out.set(-Math.cos(a) * 30, -29.5 + Math.sin(a) * 19.5, SKY_Z);
-}
 
 function arcVisibility(arc: number): number {
   const s = (e0: number, e1: number, x: number) => {

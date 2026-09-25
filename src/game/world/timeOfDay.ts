@@ -64,6 +64,15 @@ const MOON_COLOR = new Color('#a9bcff');
 export const SUNRISE = 6;
 export const SUNSET = 19;
 
+/** The sun and moon travel on a plane behind the planet (camera frame), behind the clouds. */
+export const SKY_Z = -50;
+
+/** Position on the sky plane for a body at `arc` (0 rise … 1 set): rises bottom-left, sets bottom-right. */
+export function skyPosition(arc: number, out = new Vector3()): Vector3 {
+  const a = arc * Math.PI;
+  return out.set(-Math.cos(a) * 30, -29.5 + Math.sin(a) * 19.5, SKY_Z);
+}
+
 /**
  * Scene exposure (a linear multiplier on HDR radiance, applied once in the final tone map).
  * Night opens up a little, like an eye (or a camera's auto-exposure) adapting to the dark.
