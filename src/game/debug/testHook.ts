@@ -105,6 +105,7 @@ export function installTestHook(c: GameController): void {
         /** Screen angle of map north, degrees clockwise from screen-up (0 = north-up). */
         north: (c.northAngle() * 180) / Math.PI,
         lift: c.lift,
+        hover: c.sim.hover,
         wind: { ...c.wind },
         textures: textureStatus(),
       };

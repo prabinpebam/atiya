@@ -44,6 +44,23 @@ export function easeInOutCubic(t: number): number {
 }
 
 /**
+ * The fly-over in three phases, from its progress (0..1): rise straight up (ease-out), glide over
+ * the planet at full height, then drop onto the ground (accelerating, like a fall). `glide` is the
+ * eased share of the planet's turn; `hover` is the height as a share of `travelHoverU`. The planet
+ * stays still while the character rises and drops, so it never sweeps through anything low.
+ */
+export function flyoverProfile(progress: number, rise: number, drop: number): { glide: number; hover: number } {
+  const p = Math.min(1, Math.max(0, progress));
+  if (p >= 1) return { glide: 1, hover: 0 };
+  if (p < rise) return { glide: 0, hover: 1 - Math.pow(1 - p / rise, 3) };
+  if (p > 1 - drop) {
+    const f = (p - (1 - drop)) / drop;
+    return { glide: 1, hover: 1 - f * f };
+  }
+  return { glide: easeInOutCubic((p - rise) / Math.max(1e-6, 1 - rise - drop)), hover: 1 };
+}
+
+/**
  * Kinematic "rotate the planet under a fixed player" simulation (spec §5.2–5.3).
  * Pure: no rendering, no DOM. World space = camera frame; the player stands at (0, R, 0).
  */
@@ -77,6 +94,13 @@ export class PlanetSim {
   get travelState(): { progress: number; mode: TravelMode } | null {
     if (!this.travel) return null;
     return { progress: Math.min(1, this.travel.elapsed / this.travel.duration), mode: this.travel.mode };
+  }
+
+  /** How high the character is flying (u above the ground): only during a fly-over. */
+  get hover(): number {
+    const t = this.travelState;
+    if (!t || t.mode !== 'flyover') return 0;
+    return flyoverProfile(t.progress, this.cfg.travelRise, this.cfg.travelDrop).hover * this.cfg.travelHoverU;
   }
 
   drainEvents(): SimEvent[] {
@@ -222,7 +246,7 @@ export class PlanetSim {
     t.elapsed += dt;
     const progress = Math.min(1, t.elapsed / t.duration);
     if (t.mode === 'flyover') {
-      this.planetQ.slerpQuaternions(t.from, t.to, easeInOutCubic(progress));
+      this.planetQ.slerpQuaternions(t.from, t.to, flyoverProfile(progress, this.cfg.travelRise, this.cfg.travelDrop).glide);
       this.heading = dampAngle(this.heading, SPAWN_HEADING, 0.15, dt);
     } else if (progress >= 0.5) {
       this.planetQ.copy(t.to);

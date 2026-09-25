@@ -174,7 +174,7 @@ Rules:
   - **Rotating the view spins the planet** about the player's vertical axis (ADR-4). The camera keeps its yaw, so the sky, sun and moon stay framed the same way (lighting is camera-relative, as in cozy life-sims). WASD stays screen-relative, and the character keeps facing the same way on the planet.
   - **Tilt** changes the camera pitch between **30°** (low, more sky) and **78°** (almost top-down), eased with λ = 10.
   - Button steps (45° / 10°) and **face north** ease in over about 0.3 s, and apply instantly under Reduce motion. Fast travel re-frames the view facing the destination.
-  - **Reset** travels back to the plaza (fly-over, or a fade under Reduce motion) facing north at the default tilt.
+  - **Reset** travels back to the plaza facing north at the default tilt: the same fly-over as fast travel (rise above the rooftops, glide, drop onto the plaza), or a fade under Reduce motion.
 - **Compass (map north):** the plaza sits on the planet's pole, where geographic north is undefined. The compass instead uses a **stereographic map grid centred on the plaza** (`math/compass.ts`). At the plaza, north points toward the Workshop, so the spawn view is north-up. From the plaza, Town Hall is east, the Library south and the Post Office west. The field is smooth everywhere except the unvisited far pole.
 - **Zoom (P1):** three stops — *near* (35°, 11 u), *default* (48°, 16 u), *far* (60°, 22 u), eased with ~0.2 s half-life.
 - **Follow feel (P1):** tiny visual lead of the character in the movement direction (≤ 0.3 u, ~0.12 s half-life) to emulate camera lag. **Off under reduced motion.**
@@ -200,7 +200,11 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 
 - **Spawn:** Plaza, facing Workshop, Workshop base visible.
 - **First-visit hint** (P0): small overlay bottom-left — "WASD / arrows to move · Shift to run · E to open · M for map" + "Prefer a normal website? Classic site". Auto-dismisses after **2 cumulative seconds** of movement; re-openable via Menu → Controls; dismissal remembered.
-- **Fast travel** (P0): Menu → *Landmarks* list (also the parallel DOM nav, §6) or click/tap a landmark. A short **fly-over**: the camera eases out to the far zoom, the planet rotates along the great circle to the landmark's approach point (collisions disabled during travel), and the camera eases back — total ≤ 1.2 s — ending with the character facing the landmark and its preview card shown. Under reduced motion: **≤ 200 ms opacity fade with no spatial motion** (fade out → teleport → fade in).
+- **Fast travel** (P0): Menu → *Landmarks* list (also the parallel DOM nav, §6) or click/tap a landmark. A short **fly-over** (1.5 s, `flyoverProfile` in `systems/movement.ts`) in three phases, so the character never sweeps through buildings, trees or rocks:
+  1. **Rise** (first 20 %): the character hops and lifts straight up to `travelHoverU` = 5.5 u above the ground (ease-out), clear of the tallest tree and the Lighthouse (≈ 5.1 u). The planet doesn't turn yet.
+  2. **Glide** (middle 60 %): at full height the planet rotates along the great circle to the destination (eased; collisions disabled), while the camera eases out to the far zoom and follows half the height, so the character stays in frame.
+  3. **Drop** (last 20 %): over the destination the planet has stopped; the character falls to the ground, faster and faster like a real fall, and lands with a hop.
+  The blob shadow stays on the ground, smaller and fainter while the character is high. It ends with the character facing the landmark and its preview card shown. Test hook: `getState().hover` (u above the ground). Under reduced motion: **≤ 200 ms opacity fade with no spatial motion** (fade out → teleport → fade in).
 - **Signposts** at the Plaza pointing to each landmark (P1); **edge-of-screen indicator** toward the nearest unvisited landmark (P1); **"I'm stuck" → return to Plaza** (P1).
 
 ### 4.9 HUD (DOM overlay, not in-canvas)
@@ -278,7 +282,7 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | **Wayfinding** | | | |
 | FR-30 | Spawn at Plaza facing Workshop (base visible); every approach point ≤ 10 u arc from Plaza and reachable in ≤ 8 s running | P0 | 4.3, 4.8 |
 | FR-31 | First-visit controls hint; dismiss after 2 cumulative s of movement; re-openable; remembered | P0 | 4.8 |
-| FR-32 | Fast travel from Menu / landmark click (fly-over ≤ 1.2 s; ≤ 200 ms opacity fade under reduced motion) | P0 | 4.8 |
+| FR-32 | Fast travel from Menu / landmark click (fly-over: rise, glide, drop, 1.5 s; ≤ 200 ms opacity fade under reduced motion) | P0 | 4.8 |
 | FR-33 | Plaza signposts, off-screen indicator, "I'm stuck" | P1 | 4.8 |
 | **Escape hatch & modes** | | | |
 | FR-40 | Classic site reachable at all times (skip link, HUD button, menu, `?mode=classic`) | P0 | 4.10 |
@@ -602,7 +606,7 @@ if (|vel| > EPS) heading = dampAngle(heading, atan2(vel.x, vel.z), TURN_T, dt); 
 | Movement sub-step (`MAX_STEP`) | 0.1 u | ≤ 0.2 u | No tunneling |
 | Auto-walk arrival / blocked | 0.3 u / < 0.05 u progress in 0.5 s | — | FR-08 |
 | Interact buffer | 150 ms | 100–200 ms | Celeste-style forgiveness |
-| Fast travel | ≤ 1.2 s fly-over | 0.8–1.5 s | Reduced motion: ≤ 200 ms opacity fade, no spatial motion |
+| Fast travel | 1.5 s fly-over (0.3 s rise, 0.9 s glide, 0.3 s drop) | 0.8–1.5 s | Reduced motion: ≤ 200 ms opacity fade, no spatial motion |
 | `dt` clamp | 0.1 s | — | Avoid tab-switch jumps |
 | Gamepad deadzone (P1) | 0.18 radial | 0.15–0.2 | |
 | DPR clamp | desktop [1, 2], coarse pointer [1, 1.5] | — | Stepped down by `PerformanceMonitor` |

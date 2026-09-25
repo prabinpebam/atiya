@@ -115,9 +115,14 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
   const cycle = useRef(0);
 
   const blend = useRef(0);
+  const flying = useRef(false);
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
     const sim = controller.sim;
+    // take off with a hop (it lands with one too, via onArrive)
+    const fly = sim.travel?.mode === 'flyover';
+    if (fly && !flying.current && jump) jump.reset().setEffectiveWeight(1).fadeIn(0.08).play();
+    flying.current = fly;
     const speed = sim.speed;
     if (root.current) root.current.rotation.y = sim.heading + MODEL_YAW;
     blend.current = damp(blend.current, Math.min(1, speed / 1.2), 10, dt);
@@ -163,8 +168,18 @@ export function Player({ controller }: { controller: GameController }) {
     () => ({ geo: new CircleGeometry(0.34, 24), mat: new MeshBasicMaterial({ color: '#1d2a1a', transparent: true, opacity: 0.25, depthWrite: false }) }),
     [],
   );
+  const body = useRef<Group>(null);
+  const blob = useRef<Mesh>(null);
   useFrame(() => {
     if (group.current) group.current.position.y = R + controller.lift;
+    // flying: the character rises while its shadow stays on the ground, smaller and fainter
+    const h = controller.sim.hover;
+    if (body.current) body.current.position.y = h;
+    if (blob.current) {
+      const k = 1 - Math.min(1, h / CONFIG.travelHoverU) * 0.55;
+      blob.current.scale.setScalar(k);
+      shadow.mat.opacity = 0.25 * k;
+    }
   });
   const id = useStore(controller.store, (s) => s.character);
   // fetch the other character in the background once the game is up, so switching is instant
@@ -177,13 +192,15 @@ export function Player({ controller }: { controller: GameController }) {
   const fallback = <ProceduralAvatar controller={controller} />;
   return (
     <group ref={group} position={[0, R, 0]} name="player">
-      <mesh geometry={shadow.geo} material={shadow.mat} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} renderOrder={1} />
-      {/* keyed by character, so a failed model only falls back for that one */}
-      <AvatarBoundary key={id} fallback={fallback}>
-        <Suspense fallback={fallback}>
-          <KenneyAvatar controller={controller} id={id} />
-        </Suspense>
-      </AvatarBoundary>
+      <mesh ref={blob} geometry={shadow.geo} material={shadow.mat} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} renderOrder={1} />
+      <group ref={body}>
+        {/* keyed by character, so a failed model only falls back for that one */}
+        <AvatarBoundary key={id} fallback={fallback}>
+          <Suspense fallback={fallback}>
+            <KenneyAvatar controller={controller} id={id} />
+          </Suspense>
+        </AvatarBoundary>
+      </group>
     </group>
   );
 }

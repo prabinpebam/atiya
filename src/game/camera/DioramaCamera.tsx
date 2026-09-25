@@ -27,8 +27,9 @@ export function DioramaCamera({ controller }: { controller: GameController }) {
     const base = controller.view.pitch;
     const pitch = (base + (C.flyoverPitchDeg - base) * w) * DEG;
     const dist = C.distance + (C.flyoverDistance - C.distance) * w;
-    // the rig rides with the ground under the player (hills, the bridge)
-    const y = R + controller.lift;
+    // the rig rides with the ground under the player (hills, the bridge), and follows half of a
+    // fly-over's height, so the character is seen rising and dropping but stays in frame
+    const y = R + controller.lift + 0.5 * controller.sim.hover;
     camera.position.set(0, y + Math.sin(pitch) * dist, Math.cos(pitch) * dist);
     camera.lookAt(0, y + C.lookUp, -C.lookAhead * (1 - w));
   });

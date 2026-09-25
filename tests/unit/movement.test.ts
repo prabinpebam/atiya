@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Quaternion, Vector3 } from 'three';
 import { CONFIG } from '../../src/game/config';
 import { UP, angleBetween, arcDistance, latLonToVec, tangentToward, type Obstacle } from '../../src/game/math/sphere';
-import { PlanetSim } from '../../src/game/systems/movement';
+import { PlanetSim, flyoverProfile } from '../../src/game/systems/movement';
 import type { MoveIntent } from '../../src/game/types';
 
 const NONE: MoveIntent = { x: 0, y: 0, run: false };
@@ -154,6 +154,53 @@ describe('PlanetSim movement', () => {
     expect(events).toContain('travel-complete');
     expect(sim.planetQ.angleTo(dest)).toBeLessThan(1e-6);
     expect(tangentToward(UP.clone(), sim.pLocal)).not.toBeNull();
+  });
+
+  it('the fly-over rises before the planet turns, glides at full height, and drops only once it has arrived', () => {
+    const sim = new PlanetSim([]);
+    const dest = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), 2.5);
+    sim.startTravel(dest, 'x', 'flyover');
+    const dt = 1 / 120;
+    let frames = 0;
+    let peak = 0;
+    while (sim.travel && frames < 1000) {
+      const p = sim.travelState!.progress;
+      const moved = sim.planetQ.angleTo(new Quaternion());
+      const h = sim.hover;
+      peak = Math.max(peak, h);
+      // wherever the planet has turned (and so the character is away from the start), it is up high
+      if (moved > 0.01 && sim.planetQ.angleTo(dest) > 0.01) expect(h).toBeCloseTo(CONFIG.travelHoverU, 6);
+      if (p < CONFIG.travelRise) expect(moved).toBeLessThan(1e-9);
+      sim.step(dt, NONE);
+      frames++;
+    }
+    expect(peak).toBeCloseTo(CONFIG.travelHoverU, 6);
+    expect(frames * dt).toBeCloseTo(CONFIG.fastTravelDuration, 1);
+    expect(sim.hover).toBe(0);
+    expect(sim.planetQ.angleTo(dest)).toBeLessThan(1e-6);
+  });
+
+  it('fly-over profile: continuous, rises with an ease-out, and falls faster and faster', () => {
+    const { travelRise: a, travelDrop: b } = CONFIG;
+    expect(flyoverProfile(0, a, b)).toEqual({ glide: 0, hover: 0 });
+    expect(flyoverProfile(1, a, b)).toEqual({ glide: 1, hover: 0 });
+    let prev = flyoverProfile(0, a, b);
+    for (let p = 0.001; p <= 1; p += 0.001) {
+      const cur = flyoverProfile(p, a, b);
+      expect(Math.abs(cur.hover - prev.hover)).toBeLessThan(0.02);
+      expect(cur.glide).toBeGreaterThanOrEqual(prev.glide - 1e-12);
+      prev = cur;
+    }
+    // ease-out rise: half height well before half the rise; accelerating drop: still high half-way down
+    expect(flyoverProfile(a * 0.25, a, b).hover).toBeGreaterThan(0.5);
+    expect(flyoverProfile(1 - b / 2, a, b).hover).toBeCloseTo(0.75, 6);
+  });
+
+  it('reduced-motion fade never flies', () => {
+    const sim = new PlanetSim([]);
+    sim.startTravel(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), 1), 'x', 'fade');
+    sim.step(0.05, NONE);
+    expect(sim.hover).toBe(0);
   });
 
   it('reduced-motion fade travel completes within the fade duration', () => {

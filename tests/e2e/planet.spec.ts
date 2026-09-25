@@ -25,6 +25,8 @@ type GameState = {
   pitch: number;
   north: number;
   lift: number;
+  /** Height (u) above the ground during a fly-over. */
+  hover: number;
   wind: { strength: number; gust: number; leaves: number; swirls: number };
   textures: { loaded: number; failed: number; pending: number };
 };
@@ -376,6 +378,8 @@ test.describe('view controls', () => {
   });
 
   test('a tap walks, but dragging tumbles the view without walking', async ({ page }) => {
+    // a long real-time sequence (a drag of many moves / two fly-overs); headless SwiftShader renders slowly
+    test.setTimeout(120_000);
     await startPlanet(page);
     await page.mouse.click(640, 610);
     await expect.poll(async () => (await state(page)).atSpawn).toBe(false);
@@ -430,13 +434,23 @@ test.describe('view controls', () => {
     await expect(page.getByTestId('live-region')).toContainText('Back at the plaza');
   });
 
-  test('the Reset button returns to the plaza facing north', async ({ page }) => {
+  test('the Reset button flies the character back over the rooftops to the plaza, drops it onto the ground, facing north', async ({ page }) => {
     await startPlanet(page);
     await page.evaluate(() => (window as any).__game.teleport('library'));
     await page.getByRole('button', { name: /Rotate view counter-clockwise/ }).click();
     await page.getByRole('button', { name: /Reset position and direction/ }).click();
+    // mid-flight (sim stepped by hand): high above the tallest trees and the lighthouse
+    await page.evaluate(() => {
+      (window as any).__game.pause();
+      (window as any).__game.advance(40);
+    });
+    const mid = await state(page);
+    expect(mid.traveling).toBe('flyover');
+    expect(mid.hover).toBeGreaterThan(5.2);
+    await page.evaluate(() => (window as any).__game.resume());
     await expect.poll(async () => (await state(page)).atSpawn, { timeout: 15_000 }).toBe(true);
     await expect.poll(async () => (await state(page)).traveling).toBeNull();
+    expect((await state(page)).hover).toBe(0);
     expect((await state(page)).north).toBeCloseTo(0, 3);
   });
 });
@@ -537,6 +551,8 @@ test.describe('landscape & wind', () => {
 
 test.describe('doors', () => {
   test('a door opens as you walk up and shuts when you leave; after dusk lamplight spills out; the amphitheater raises its curtain', async ({ page }) => {
+    // a long real-time sequence (a drag of many moves / two fly-overs); headless SwiftShader renders slowly
+    test.setTimeout(120_000);
     await startPlanet(page);
     const doors = () => page.evaluate(() => (window as any).__game.doors() as Record<string, number>);
     const light = () => page.evaluate(() => (window as any).__game.doorLight() as { id: string | null; intensity: number });
@@ -544,14 +560,14 @@ test.describe('doors', () => {
     await expect.poll(async () => Object.keys(await doors()).length).toBe(7);
     expect(Object.values(await doors()).every((o) => o === 0)).toBe(true);
     await page.evaluate(() => (window as any).__game.travelTo('workshop'));
-    await expect.poll(async () => (await doors()).workshop, { timeout: 10_000 }).toBe(1);
+    await expect.poll(async () => (await doors()).workshop, { timeout: 15_000 }).toBe(1);
     expect((await light()).id).toBeNull(); // daylight: no lamp needed
     await page.evaluate(() => (window as any).__game.setTime(22));
     await expect.poll(async () => (await light()).id).toBe('workshop');
     expect((await light()).intensity).toBeGreaterThan(2);
     // walk off to the amphitheater: the workshop shuts, the curtain goes up and the light follows
     await page.evaluate(() => (window as any).__game.travelTo('amphitheater'));
-    await expect.poll(async () => (await doors()).amphitheater, { timeout: 10_000 }).toBe(1);
+    await expect.poll(async () => (await doors()).amphitheater, { timeout: 15_000 }).toBe(1);
     expect((await doors()).workshop).toBe(0);
     await expect.poll(async () => (await light()).id).toBe('amphitheater');
     // leaving it: the curtain comes down and the lamp goes out
@@ -596,10 +612,10 @@ test.describe('sound', () => {
     await expect.poll(async () => (await sound(page)).levels.stream).toBeGreaterThan(0.3);
     // walking up to a house: a chime and its door; moving on: it shuts and the curtain rises
     await page.evaluate(() => (window as any).__game.travelTo('workshop'));
-    await expect.poll(() => played(page, 'doorOpen'), { timeout: 10_000 }).toBe(1);
+    await expect.poll(() => played(page, 'doorOpen'), { timeout: 15_000 }).toBe(1);
     expect(await played(page, 'chime')).toBe(1);
     await page.evaluate(() => (window as any).__game.travelTo('amphitheater'));
-    await expect.poll(() => played(page, 'curtain'), { timeout: 10_000 }).toBe(1);
+    await expect.poll(() => played(page, 'curtain'), { timeout: 15_000 }).toBe(1);
     expect(await played(page, 'doorClose')).toBe(1);
     await page.keyboard.press('e');
     await expect.poll(() => played(page, 'sparkle')).toBe(1);

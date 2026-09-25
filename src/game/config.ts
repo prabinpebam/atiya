@@ -19,7 +19,13 @@ export const CONFIG = {
   autoWalkArrive: 0.3,
   autoWalkBlockedWindow: 0.5,
   autoWalkBlockedMin: 0.05,
-  fastTravelDuration: 1.2,
+  /** Fly-over: rise straight up, glide over the planet, then drop onto the ground (spec §4.8). */
+  fastTravelDuration: 1.5,
+  /** Fractions of the fly-over spent rising and dropping; the planet only turns in between. */
+  travelRise: 0.2,
+  travelDrop: 0.2,
+  /** How high the character flies (u above the ground): clear of the tallest tree and the lighthouse (≈ 5.1 u). */
+  travelHoverU: 5.5,
   reducedMotionFade: 0.2,
   onboardingDismissSeconds: 2,
   loadTimeoutMs: 15_000,
