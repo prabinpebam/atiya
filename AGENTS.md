@@ -64,7 +64,9 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
   - Analyse a candidate before using it: check level steadiness, clipping, hum and tonal peaks, and look at its spectrogram. Then read the script's `check()` report (loop-seam percentiles should stay under ~90, and slot levels should be close within a set).
   - Freesound previews are public (`cdn.freesound.org/previews/…-hq.mp3`), but Pixabay audio is **not** CC0. Never pass `-ss` before `-i pipe:0` to ffmpeg: an input seek on a pipe silently drops most of an Ogg.
   - Play sounds only through `SoundEngine` (`audio/engine.ts`); keep the rules pure in `audio/audioLogic.ts`. Audio is created only from a user gesture (`unlock()`), nothing is fetched while muted, and every cue must duplicate something visible.
-- **Player character:** `public/models/character.glb` is generated. Don't hand-edit it; change `scripts/build-character.mjs` and run `npm run build:character`.
+- **Player characters:** `public/models/character.glb` (Skater) and `character-female.glb` (Sunny) are generated. Don't hand-edit them; change `scripts/build-character.mjs` and run `npm run build:character`, then `npm run build:portraits` for the picker images (`public/avatars/`). Characters are listed in `src/game/player/characters.ts`.
+  - A skin atlas must keep the Kenney UV layout exactly: generate by *editing* an existing skin, then clean it with a script like `assets-src/characters/compose-female.py` and check it with a UV-wireframe overlay. Keep the prompt and raw output next to it.
+  - Extra parts (like the ponytail) are rigid meshes parented to a bone, authored in bind-pose space and moved into the bone's frame. They sample flat colours from the atlas (`HAIR_UV`, `TIE_UV`), so no second texture is needed.
   - FBX2glTF is a native tool installed into `%TEMP%\fbxconv`. Never add it to `package.json`.
   - Keep `useGLTF(url, false, false)` (no Draco/Meshopt), so no decoder is fetched from a CDN.
 

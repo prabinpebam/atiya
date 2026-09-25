@@ -1,15 +1,17 @@
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
+import { useStore } from 'zustand';
 import { AnimationMixer, Box3, CircleGeometry, Group, LoopOnce, Matrix4, MeshBasicMaterial, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { damp } from '../math/sphere';
 import { contactPhase, crossedPhase } from '../audio/audioLogic';
 import { ProceduralAvatar } from './Character';
+import { CHARACTERS, characterById, type CharacterId } from './characters';
+import { prefs } from '../platform/prefs';
 
 const R = CONFIG.planetRadius;
-export const CHARACTER_URL = '/models/character.glb';
 /** Target standing height in world units (≈ door height plus a head; the planet camera is tuned for ~1.25 u). */
 export const CHARACTER_HEIGHT = 1.25;
 /** Kenney models face +Z like the sim's heading convention. */
@@ -21,12 +23,12 @@ const MODEL_YAW = 0;
 const RUN_CLIP_SPEED = 2.5;
 const _foot = new Vector3();
 
-// Start fetching as soon as the game chunk loads (no Draco/Meshopt → no decoder CDN requests).
-useGLTF.preload(CHARACTER_URL, false, false);
+// Start fetching the chosen character as soon as the game chunk loads (no Draco/Meshopt → no decoder CDN requests).
+useGLTF.preload(characterById(prefs.getCharacter()).url, false, false);
 
 /** Rigged CC0 character (Kenney "Animated Characters: Protagonists") with idle/run blending. */
-function KenneyAvatar({ controller }: { controller: GameController }) {
-  const { scene, animations } = useGLTF(CHARACTER_URL, false, false);
+function KenneyAvatar({ controller, id }: { controller: GameController; id: CharacterId }) {
+  const { scene, animations } = useGLTF(characterById(id).url, false, false);
   const root = useRef<Group>(null);
 
   const fit = useMemo(() => {
@@ -40,6 +42,9 @@ function KenneyAvatar({ controller }: { controller: GameController }) {
         mat.metalness = 0;
       }
     });
+    // measure unscaled: a remount (switching back to this character) finds the cached scene already scaled
+    scene.position.set(0, 0, 0);
+    scene.scale.setScalar(1);
     scene.updateMatrixWorld(true);
     const box = new Box3().setFromObject(scene, true);
     const h = Math.max(1e-6, box.max.y - box.min.y);
@@ -59,6 +64,7 @@ function KenneyAvatar({ controller }: { controller: GameController }) {
 
   useEffect(() => {
     controller.avatar = 'model';
+    controller.avatarModel = id;
     idle?.play();
     run?.play();
     run?.setEffectiveWeight(0);
@@ -73,9 +79,10 @@ function KenneyAvatar({ controller }: { controller: GameController }) {
     return () => {
       controller.onArrive = null;
       controller.avatar = 'procedural';
+      controller.avatarModel = null;
       mixer.stopAllAction();
     };
-  }, [idle, run, jump, mixer, controller]);
+  }, [idle, run, jump, mixer, controller, id]);
 
   // when each foot lands in the run cycle (for footsteps), measured once from the clip itself
   const stepPhases = useMemo(() => {
@@ -152,13 +159,22 @@ export function Player({ controller }: { controller: GameController }) {
   useFrame(() => {
     if (group.current) group.current.position.y = R + controller.lift;
   });
+  const id = useStore(controller.store, (s) => s.character);
+  // fetch the other character in the background once the game is up, so switching is instant
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      for (const c of CHARACTERS) if (c.id !== id) useGLTF.preload(c.url, false, false);
+    }, 3000);
+    return () => window.clearTimeout(t);
+  }, [id]);
   const fallback = <ProceduralAvatar controller={controller} />;
   return (
     <group ref={group} position={[0, R, 0]} name="player">
       <mesh geometry={shadow.geo} material={shadow.mat} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} renderOrder={1} />
-      <AvatarBoundary fallback={fallback}>
+      {/* keyed by character, so a failed model only falls back for that one */}
+      <AvatarBoundary key={id} fallback={fallback}>
         <Suspense fallback={fallback}>
-          <KenneyAvatar controller={controller} />
+          <KenneyAvatar controller={controller} id={id} />
         </Suspense>
       </AvatarBoundary>
     </group>

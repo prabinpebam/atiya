@@ -120,12 +120,17 @@ Constraints:
 
 ### 4.4 Character
 
-- **As built — rigged model:** Kenney "Animated Characters: Protagonists" (CC0), `characterMedium` with the `skaterMaleA` skin (`player/Player.tsx`).
-  - **Pipeline** (`npm run build:character`, `scripts/build-character.mjs`):
+- **As built — two rigged characters**, both Kenney "Animated Characters: Protagonists" (CC0) `characterMedium` with its Idle/Run/Jump clips (`player/Player.tsx`, list in `player/characters.ts`):
+  - **Skater** (`skater`, default): Kenney's `skaterMaleA` skin: red skull tee, white long sleeves with wristbands, jeans with knee pads, green sneakers. `public/models/character.glb` (≈ 163 KB).
+  - **Sunny** (`sunny`): a female version in the same casual style: a sunny mustard-yellow tee with a white daisy, cream long sleeves with mustard cuffs, bright mid-blue jeans, coral-pink sneakers, and a friendly face (eyelashes, softer brows, rosy cheeks, a small smile) under a chestnut side-swept fringe. The model gains a **ponytail with a yellow scrunchie**: two low-poly meshes (a tapered 9-sided sweep along a curve, ≈ 200 triangles, and a torus) parented to the `Head` bone, so they move with the head. They take their colours from the atlas's hair and T-shirt areas. `public/models/character-female.glb` (≈ 300 KB).
+    - **Skin atlas:** generated with GPT Image 2.5 by editing `skaterMaleA.png`, keeping its exact UV layout (prompt in `assets-src/characters/casualFemaleA.prompt.txt`, raw output `casualFemaleA.raw.png`). `assets-src/characters/compose-female.py` then cleans it into `casualFemaleA.png`. It applies a 5 px median to flatten the painterly grain back to vector fills, and rebuilds the sleeves from the original layout, so the cuff sits exactly on the wrist-band ring. It also makes the hands plain skin (no gloves), restores the unused orange strip, and darkens the collar opening. The UV wireframe was overlaid on the result to check every island.
+  - **Pipeline** (`npm run build:character`, `scripts/build-character.mjs`, both by default or `male` / `female`):
     1. FBX2glTF converts the FBX files.
     2. The Idle, Run and Jump clips are merged into the model, matched by bone name.
-    3. The skin texture and a soft non-metallic material are applied.
-    4. Resample, dedup and prune produce `public/models/character.glb` (≈ 163 KB).
+    3. The skin texture and a soft non-metallic material are applied (and, for Sunny, the ponytail).
+    4. Resample, dedup and prune write the GLB.
+  - **Portraits** for the picker: `npm run build:portraits` (`scripts/render-portraits.mjs`) loads each GLB in headless Chromium with three.js and renders a 256² head-and-shoulders shot in the idle pose, three-quarter view, on a transparent background. Output: `public/avatars/<id>.webp`, ≈ 6 KB each.
+  - **Choosing:** the character picker (§4.9) switches models at once. The choice is remembered (`localStorage site.character`), the chosen model is preloaded with the game chunk, and the other is fetched in the background 3 s later, so switching doesn't flash the stand-in.
   - **Scale:** normalised at runtime from the skinned bounding box to **1.25 u**, about door height plus a head.
   - **Animation:** Idle/Run blended by speed. The Run clip's timeScale is `speed ÷ 2.5`, clamped to 0.6–1.7; 2.5 u/s is the planted-foot ground speed measured from the skeleton at 1×. A short Jump hop plays when a fast travel lands (off under reduced motion).
   - **Fetching:** the model is preloaded without Draco or Meshopt, so there are no decoder CDN requests.
@@ -220,7 +225,8 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 - All HUD elements are real HTML (`<button>`, `<a>`, `<dialog>`, `<nav>`), ≥ 24×24 CSS px targets, 4.5:1 text contrast on a solid/blurred backing, never obscuring the focused element (WCAG 2.4.11).
 - **Menu** (`<dialog>`): Landmarks (fast travel + visited state), Controls, Settings (Reduce motion, Pause ambient motion, **Time of day** (cycle / local time / always day, §4.13), **Sound effects** (on by default, §4.16), Run toggle (P1), Quality Auto/Low/High (P1)), **Classic site**, Return to Plaza (P1). The action row (Show controls / Classic site / Close) stays pinned at the bottom when the menu scrolls.
 - **Time badge** in the header next to Menu: planet time with a sun/moon glyph (hidden below 520 px wide). It is also a slider for setting the time by hand (§4.13): hovering shows the ↔ resize cursor, and dragging it winds the clock (the pointer hides while dragging).
-- **View controls** (bottom-right; top-right below 720 px wide), a `role="group"` labelled "View":
+- **Character picker** (top right, under the header): two round portrait buttons in a `role="radiogroup"` ("Choose your character"; each a `role="radio"` with a descriptive label). One is always selected, shown by a thick 5 px ink ring with a white halo; the other has a thin border and slightly faded portrait. Clicking picks (and returns focus to the planet); the group is one Tab stop and the arrow keys move and select. §4.4.
+- **View controls** (bottom-right; top-right, under the character picker, below 720 px wide), a `role="group"` labelled "View":
   - a **compass** button that always points to map north. Its label says which way you face (e.g. "Compass: facing north-west. Face north (N)"), and activating it faces north.
   - ⟲ / ⟳ rotate and ˄ / ˅ tilt buttons around the compass, as single-pointer alternatives to dragging (WCAG 2.5.7).
   - a **Reset** button (back to the plaza, facing north).
@@ -303,6 +309,7 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-81 | Rolling terrain, cliff mesas, boulders, a flowing stream with a waterfall, and a walkable arched bridge. Landmarks, plaza and paths stay flat and reachable; the cliffs block walking, while the stream and pond can be waded through (slower, knee-deep, with ripples) | P1 | 4.14, 5.3 |
 | FR-82 | Wind: gust-driven foliage sway, flying leaves and occasional swirls, all stopped under reduced motion / pause ambient | P1 | 4.14 |
 | FR-83 | Doors open as you walk up to a landmark and shut when you leave, onto a simply furnished room; after dusk warm light spills out of the open door. The Amphitheater, which has no door, raises a stage curtain and turns its spotlights on | P1 | 4.7, 4.12 |
+| FR-84 | Two player characters (the Skater and Sunny, a female version with her own skin and a ponytail), chosen with a two-portrait picker at the top right; the selected one has a thick ring; remembered | P1 | 4.4, 4.9 |
 
 ### 4.12 Art direction (as built)
 

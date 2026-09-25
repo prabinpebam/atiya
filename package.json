@@ -17,6 +17,7 @@
     "e2e": "playwright test",
     "size": "node scripts/size-report.mjs",
     "build:character": "node scripts/build-character.mjs",
+    "build:portraits": "node scripts/render-portraits.mjs",
     "verify:prod": "astro build && node scripts/size-report.mjs --prod"
   },
   "dependencies": {

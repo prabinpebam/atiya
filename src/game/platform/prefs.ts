@@ -1,3 +1,5 @@
+import { DEFAULT_CHARACTER, isCharacterId, type CharacterId } from '../player/characters';
+
 const KEYS = {
   mode: 'site.mode',
   reduceMotion: 'site.reduceMotion',
@@ -5,6 +7,7 @@ const KEYS = {
   onboardingSeen: 'site.onboardingSeen',
   timeMode: 'site.timeMode',
   sound: 'site.sound',
+  character: 'site.character',
 } as const;
 
 type Mode = 'play' | 'classic';
@@ -46,4 +49,9 @@ export const prefs = {
   /** Sound is on unless the visitor turned it off. */
   getSound: () => read(KEYS.sound) !== '0',
   setSound: (v: boolean) => write(KEYS.sound, v ? '1' : '0'),
+  getCharacter: (): CharacterId => {
+    const v = read(KEYS.character);
+    return isCharacterId(v) ? v : DEFAULT_CHARACTER;
+  },
+  setCharacter: (id: CharacterId) => write(KEYS.character, id),
 };

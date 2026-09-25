@@ -11,6 +11,8 @@ type GameState = {
   atSpawn: boolean;
   autoWalk: boolean;
   avatar: 'model' | 'procedural';
+  character: 'skater' | 'sunny';
+  avatarModel: 'skater' | 'sunny' | null;
   quality: 'high' | 'low';
   postLevel: 1 | 2;
   postFx: string;
@@ -575,6 +577,55 @@ test.describe('player character', () => {
     await startPlanet(page);
     await expect.poll(async () => (await state(page)).avatar, { timeout: 20_000 }).toBe('model');
     expect(glb).toEqual(['200']);
+  });
+
+  test('the character picker switches to the female character (thick ring on the chosen one), by click or arrow keys, and remembers it', async ({ page }) => {
+    test.setTimeout(150_000); // two planet loads
+    const glbs: string[] = [];
+    page.on('response', (r) => r.url().includes('/models/') && glbs.push(`${new URL(r.url()).pathname} ${r.status()}`));
+    await startPlanet(page);
+    const picker = page.getByRole('radiogroup', { name: 'Choose your character' });
+    await expect(picker).toBeVisible();
+    const radios = picker.getByRole('radio');
+    await expect(radios).toHaveCount(2);
+    const skater = page.locator('[data-character="skater"]');
+    const sunny = page.locator('[data-character="sunny"]');
+    await expect(skater).toHaveAttribute('aria-checked', 'true');
+    await expect(sunny).toHaveAttribute('aria-checked', 'false');
+    await expect.poll(async () => (await state(page)).avatarModel, { timeout: 20_000 }).toBe('skater');
+    // the chosen one wears the thick ring
+    const ring = (el: typeof skater) => el.evaluate((b) => parseFloat(getComputedStyle(b).borderTopWidth));
+    expect(await ring(skater)).toBeGreaterThanOrEqual(4);
+    expect(await ring(sunny)).toBeLessThanOrEqual(2);
+    // portraits load
+    await expect.poll(() => sunny.locator('img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await sunny.click();
+    await expect(sunny).toHaveAttribute('aria-checked', 'true');
+    await expect(skater).toHaveAttribute('aria-checked', 'false');
+    expect(await ring(sunny)).toBeGreaterThanOrEqual(4);
+    await expect.poll(async () => (await state(page)).avatarModel, { timeout: 20_000 }).toBe('sunny');
+    expect(glbs).toContain('/models/character-female.glb 200');
+    expect((await state(page)).avatar).toBe('model');
+    // still walks
+    const before = (await state(page)).pLocal;
+    await page.keyboard.down('w');
+    await page.waitForTimeout(700);
+    await page.keyboard.up('w');
+    expect((await state(page)).pLocal).not.toEqual(before);
+    // remembered on the next visit
+    expect(await page.evaluate(() => localStorage.getItem('site.character'))).toBe('sunny');
+    await page.reload();
+    await startPlanet(page);
+    await expect(page.locator('[data-character="sunny"]')).toHaveAttribute('aria-checked', 'true');
+    await expect.poll(async () => (await state(page)).avatarModel, { timeout: 20_000 }).toBe('sunny');
+    // keyboard: the group is one Tab stop; an arrow key moves and selects
+    await page.locator('[data-character="sunny"]').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.locator('[data-character="skater"]')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('[data-character="skater"]')).toBeFocused();
+    await expect.poll(async () => (await state(page)).character).toBe('skater');
+    await expect.poll(async () => (await state(page)).avatarModel, { timeout: 20_000 }).toBe('skater');
+    await noSeriousViolations(page);
   });
 
   test('falls back to the procedural avatar if the model cannot load', async ({ page }) => {

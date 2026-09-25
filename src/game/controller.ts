@@ -16,6 +16,7 @@ import { DAY_HOURS, START_HOURS, localHours, wrapHours, type TimeMode } from './
 import { riverDistance } from './world/features';
 import { SoundEngine } from './audio/engine';
 import { streamLevel, surfaceAt, type Surface } from './audio/audioLogic';
+import { characterById, type CharacterId } from './player/characters';
 
 const PLAY_PATH = '/play/';
 /** Travel id for "reset position" (the spawn plaza is not a landmark). */
@@ -78,6 +79,8 @@ export class GameController {
   onArrive: (() => void) | null = null;
   /** Which avatar is on screen: the rigged model, or the procedural fallback (loading / failed). */
   avatar: 'model' | 'procedural' = 'procedural';
+  /** Which character's model is on screen (null while the procedural stand-in shows). */
+  avatarModel: CharacterId | null = null;
   /** Adaptive-quality step (set by the Adaptive component; exposed to tests). */
   adaptiveStep: ((dir: -1 | 1, force?: boolean) => void) | null = null;
   /** Active post-processing chain (for tests/diagnostics). */
@@ -133,6 +136,7 @@ export class GameController {
       quality: opts.quality ?? 'high',
       timeMode,
       soundOn: prefs.getSound(),
+      character: prefs.getCharacter(),
     });
     this.sound = new SoundEngine(this.store.getState().soundOn);
     if (mq) {
@@ -605,6 +609,14 @@ export class GameController {
   setPauseAmbient(v: boolean): void {
     prefs.setPauseAmbient(v);
     this.store.setState({ pauseAmbient: v });
+  }
+
+  /** Switch the player character (remembered). */
+  setCharacter(id: CharacterId): void {
+    if (this.store.getState().character === id) return;
+    prefs.setCharacter(id);
+    this.store.setState({ character: id });
+    this.announce(`Now playing as the ${characterById(id).label.toLowerCase()}.`);
   }
 
   setSound(on: boolean): void {

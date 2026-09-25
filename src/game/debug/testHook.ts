@@ -90,6 +90,8 @@ export function installTestHook(c: GameController): void {
         postLevel: s.postLevel,
         postFx: c.postFx,
         avatar: c.avatar,
+        character: s.character,
+        avatarModel: c.avatarModel,
         hours: c.timeOfDay,
         night: c.sky.night,
         glow: c.sky.glow,

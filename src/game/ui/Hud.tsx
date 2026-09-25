@@ -7,6 +7,7 @@ import { prefs } from '../platform/prefs';
 import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
 import { LandmarkDialog, MenuDialog } from './Dialogs';
 import { ViewControls } from './ViewControls';
+import { CHARACTERS, type CharacterId } from '../player/characters';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -276,6 +277,56 @@ function SoundButton({ controller }: { controller: GameController }) {
   );
 }
 
+/**
+ * Character picker (top right, under the header): two portrait buttons, one always selected
+ * (thick ink border). A radio group: arrow keys move and select; clicking returns focus to the planet.
+ */
+function CharacterPicker({ controller }: { controller: GameController }) {
+  const phase = useStore(controller.store, (s) => s.phase);
+  const current = useStore(controller.store, (s) => s.character);
+  const buttons = useRef<Array<HTMLButtonElement | null>>([]);
+  if (phase === 'loading') return null;
+  const choose = (id: CharacterId, byPointer: boolean) => {
+    controller.setCharacter(id);
+    if (byPointer && controller.store.getState().phase === 'playing') controller.focusRegion();
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const j = (i + step + CHARACTERS.length) % CHARACTERS.length;
+    choose(CHARACTERS[j].id, false);
+    buttons.current[j]?.focus();
+  };
+  return (
+    <div className="character-picker" role="radiogroup" aria-label="Choose your character" data-testid="character-picker">
+      {CHARACTERS.map((c, i) => {
+        const on = c.id === current;
+        return (
+          <button
+            key={c.id}
+            ref={(el) => {
+              buttons.current[i] = el;
+            }}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            aria-label={c.label}
+            title={c.label}
+            tabIndex={on ? 0 : -1}
+            className={`avatar-btn${on ? ' selected' : ''}`}
+            data-character={c.id}
+            onClick={(e) => choose(c.id, e.detail > 0)}
+            onKeyDown={(e) => onKeyDown(e, i)}
+          >
+            <img src={c.portrait} alt="" width={64} height={64} draggable={false} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function MenuButton({ controller, target }: { controller: GameController; target: HTMLElement | null }) {
   const phase = useStore(controller.store, (s) => s.phase);
   if (!target || phase === 'loading') return null;
@@ -319,6 +370,7 @@ export function Hud({ controller }: { controller: GameController }) {
       <LandmarkNav controller={controller} />
       <PreviewCard controller={controller} />
       <ViewControls controller={controller} />
+      <CharacterPicker controller={controller} />
       <ControlsHint controller={controller} />
       <Toast controller={controller} />
       <LiveRegion controller={controller} />

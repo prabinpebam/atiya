@@ -1,5 +1,6 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { TimeMode } from '../world/timeOfDay';
+import type { CharacterId } from '../player/characters';
 
 export type Phase = 'loading' | 'ready' | 'playing';
 
@@ -29,6 +30,8 @@ export interface GameState {
   timeMode: TimeMode;
   /** Sound effects on (persisted; on by default, with a HUD toggle). */
   soundOn: boolean;
+  /** Which player character is chosen (persisted). */
+  character: CharacterId;
 }
 
 export type GameStore = StoreApi<GameState>;
@@ -53,6 +56,7 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     postLevel: 2,
     timeMode: 'cycle',
     soundOn: true,
+    character: 'skater',
     ...init,
   }));
 }
