@@ -104,7 +104,9 @@ export function colorize(g: BufferGeometry, color: Paint): BufferGeometry {
  * own frame before it's transformed by `m`. Each triangle is box-projected onto the plane of its
  * dominant local axis (so a plank or a roof course keeps one orientation). The texture's
  * horizontal runs along the part's longer extent for wood (grain follows the board) and along the
- * more level axis for everything else (courses, shingle rows and weave stay horizontal). Bark
+ * more level axis for everything else (courses, shingle rows and weave stay horizontal). Sloped
+ * roof faces are instead mapped in the face's own plane, with the texture's up running up the
+ * slope (so shingle tabs always point down toward the eaves, whichever way the face looks). Bark
  * parts that bring their own `uv` (in world units) keep it, so the grain follows the trunk and roots.
  * The part's `uv` is always dropped afterwards (merged parts must share one attribute set).
  */
@@ -140,7 +142,17 @@ export function surfaceUV(geo: BufferGeometry, m: Matrix4, surface: Surface, see
     if (Math.abs(level[i] - level[j]) < 0.05) return extent[i] >= extent[j] ? [i, j] : [j, i];
     return level[i] < level[j] ? [i, j] : [j, i];
   };
+  const P = [new Vector3(), new Vector3(), new Vector3()];
+  const slope = new Vector3();
+  const across = new Vector3();
   for (let t = 0; t < pos.count; t += 3) {
+    if (surface === 'roof' && roofFaceUV(pos, t, m, P, n, slope, across)) {
+      for (let k = 0; k < 3; k++) {
+        uv[(t + k) * 2] = P[k].dot(across) / tile + off[0];
+        uv[(t + k) * 2 + 1] = P[k].dot(slope) / tile + off[1];
+      }
+      continue;
+    }
     // face normal in the part's scaled frame (normals transform by the inverse scale)
     n.set(0, 0, 0);
     for (let k = 0; k < 3; k++) {
@@ -159,6 +171,35 @@ export function surfaceUV(geo: BufferGeometry, m: Matrix4, surface: Surface, see
   }
   geo.setAttribute('aSurf', new Float32BufferAttribute(ids, 1));
   geo.setAttribute('aSurfUV', new Float32BufferAttribute(uv, 2));
+}
+
+const _e1 = new Vector3();
+const _e2 = new Vector3();
+
+/**
+ * For a sloped roof triangle: its corners in the model frame (`P`), the up-slope direction in its
+ * plane (`slope`) and the horizontal direction along the eave as seen from outside (`across`).
+ * Returns false for (near-)level or vertical faces, which keep the box projection.
+ */
+function roofFaceUV(
+  pos: BufferGeometry['attributes'][string],
+  t: number,
+  m: Matrix4,
+  P: Vector3[],
+  n: Vector3,
+  slope: Vector3,
+  across: Vector3,
+): boolean {
+  for (let k = 0; k < 3; k++) P[k].fromBufferAttribute(pos, t + k).applyMatrix4(m);
+  n.crossVectors(_e1.subVectors(P[1], P[0]), _e2.subVectors(P[2], P[0]));
+  if (n.lengthSq() < 1e-14) return false;
+  n.normalize();
+  if (m.determinant() < 0) n.negate();
+  if (Math.abs(n.y) > 0.97 || Math.abs(n.y) < 0.03) return false;
+  // up the slope, in the face's plane; then "right" as seen looking at the face from outside
+  slope.set(0, 1, 0).addScaledVector(n, -n.y).normalize();
+  across.crossVectors(slope, n).normalize();
+  return true;
 }
 
 export class Kit {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BoxGeometry, BufferGeometry, Float32BufferAttribute, Matrix4 } from 'three';
 import { Kit, SURFACES, SURFACE_TILE_U, colorize, surfaceUV } from '../../src/game/world/kit';
+import { gableRoof, hipRoof } from '../../src/game/world/parts';
 
 /** UV span (max − min) of the given triangles' vertices, per axis. */
 function uvSpan(uv: ArrayLike<number>, verts: number[]): [number, number] {
@@ -81,5 +82,46 @@ describe('kit surfaces', () => {
     surfaceUV(geo, new Matrix4().makeScale(3, 1, 1), 'plaster', 3);
     const [du] = uvSpan(geo.getAttribute('aSurfUV').array, faceVerts(geo, 2));
     expect(du).toBeCloseTo(3 / SURFACE_TILE_U.plaster, 5);
+  });
+});
+
+describe('roof shingles', () => {
+  /** For every sloped roof triangle: does the texture's v rise up the slope (tabs point down to the eaves)? */
+  function checkRoof(build: (k: Kit) => void) {
+    const k = new Kit();
+    build(k);
+    const g = k.build().solid!;
+    const pos = g.getAttribute('position');
+    const surf = g.getAttribute('aSurf');
+    const uv = g.getAttribute('aSurfUV');
+    const roof = SURFACES.indexOf('roof');
+    let sloped = 0;
+    for (let t = 0; t < pos.count; t += 3) {
+      if (surf.getX(t) !== roof) continue;
+      const P = [0, 1, 2].map((i) => [pos.getX(t + i), pos.getY(t + i), pos.getZ(t + i)]);
+      const e1 = P[1].map((c, i) => c - P[0][i]);
+      const e2 = P[2].map((c, i) => c - P[0][i]);
+      const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+      const len = Math.hypot(...n);
+      if (len < 1e-9) continue;
+      const ny = n[1] / len;
+      if (Math.abs(ny) < 0.05 || Math.abs(ny) > 0.95) continue;
+      sloped++;
+      // the pair of corners with the biggest height difference: v must grow with height
+      let best = [0, 1];
+      for (const [a, b] of [[0, 1], [1, 2], [0, 2]]) if (Math.abs(P[a][1] - P[b][1]) > Math.abs(P[best[0]][1] - P[best[1]][1])) best = [a, b];
+      const [a, b] = P[best[0]][1] > P[best[1]][1] ? best : [best[1], best[0]];
+      if (P[a][1] - P[b][1] < 1e-4) continue;
+      expect(uv.getY(t + a), `triangle ${t / 3}`).toBeGreaterThan(uv.getY(t + b));
+    }
+    return sloped;
+  }
+
+  it('the Town Hall style hip roof has its shingle rows running up every face, front, back and sides', () => {
+    expect(checkRoof((k) => hipRoof(k, { w: 2.2, d: 1.6, h: 0.8, y: 1.3, color: '#5a6ee0', bands: 3, top: 0.3 }))).toBeGreaterThan(20);
+  });
+
+  it('gable roofs too', () => {
+    expect(checkRoof((k) => gableRoof(k, { w: 1.8, d: 1.4, rise: 0.8, wallTop: 1.2, color: '#e07a4a', wall: '#e6ae76', wallSurface: 'wood', rows: 4 }))).toBeGreaterThan(4);
   });
 });
