@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import { Bloom, EffectComposer, TiltShift, ToneMapping, Vignette } from '@react-three/postprocessing';
@@ -182,44 +182,76 @@ function Adaptive({ controller }: { controller: GameController }) {
  * Post-processing. The tilt-shift (the diorama look) is always on; `high` adds bloom and a
  * vignette unless adaptive quality has fallen back to postLevel 1. `low` uses a cheaper blur.
  */
+/**
+ * Keeps a post-processing failure from taking the whole game UI down. Building the composer's passes
+ * reads the context attributes, which are null once the WebGL context is lost; if the chain happens
+ * to be (re)built just as the context goes, that throws. The boundary then draws no post-processing;
+ * PostFX unmounts it while the context is lost and mounts a fresh one when it's restored.
+ */
+class PostFxBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {}
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 function PostFX({ controller }: { controller: GameController }) {
   const quality = useStore(controller.store, (s) => s.quality);
   const full = useStore(controller.store, (s) => s.quality === 'high' && s.postLevel === 2);
+  const lost = useStore(controller.store, (s) => s.contextLost);
+  const gl = useThree((s) => s.gl);
   useEffect(() => {
     controller.postFx = full ? 'tilt-shift+bloom+vignette' : 'tilt-shift';
   }, [controller, full]);
-  // The wrapper defaults TiltShift to ADD, which sums the (already complete) tilt-shift image
-  // onto the input: twice the radiance into the tone map and clipped highlights. NORMAL replaces it.
-  const tilt = (
-    <TiltShift
-      ref={(e: TiltShiftEffect | null) => {
-        if (e) controller.grading.tiltBlend = Object.keys(BlendFunction).find((k) => BlendFunction[k as keyof typeof BlendFunction] === e.blendMode.blendFunction) ?? '';
-      }}
-      blendFunction={BlendFunction.NORMAL}
-      offset={-0.06}
-      focusArea={0.46}
-      feather={0.32}
-      kernelSize={quality === 'high' ? KernelSize.SMALL : KernelSize.VERY_SMALL}
-      resolutionScale={quality === 'high' ? 0.5 : 0.35}
-    />
+  const tiltRef = useCallback(
+    (e: TiltShiftEffect | null) => {
+      if (e) controller.grading.tiltBlend = Object.keys(BlendFunction).find((k) => BlendFunction[k as keyof typeof BlendFunction] === e.blendMode.blendFunction) ?? '';
+    },
+    [controller],
   );
-  // Separate keyed composers: switching rebuilds the pass chain cleanly (no conditional children).
-  if (full) {
+  // The composer rebuilds its whole pass chain whenever its children change identity, so they're
+  // memoised: only a tier / post-level change rebuilds it (not every re-render of the scene).
+  const composer = useMemo(() => {
+    // The wrapper defaults TiltShift to ADD, which sums the (already complete) tilt-shift image
+    // onto the input: twice the radiance into the tone map and clipped highlights. NORMAL replaces it.
+    const tilt = (
+      <TiltShift
+        ref={tiltRef}
+        blendFunction={BlendFunction.NORMAL}
+        offset={-0.06}
+        // art direction: a subtle miniature softening at the very edges, the planet itself crisp
+        focusArea={0.86}
+        feather={0.3}
+        kernelSize={KernelSize.VERY_SMALL}
+        resolutionScale={quality === 'high' ? 0.5 : 0.35}
+      />
+    );
+    // Separate keyed composers: switching rebuilds the pass chain cleanly (no conditional children).
+    if (full) {
+      return (
+        <EffectComposer key="full" multisampling={4}>
+          {tilt}
+          <Bloom luminanceThreshold={1.15} luminanceSmoothing={0.15} intensity={0.45} mipmapBlur />
+          <Vignette offset={0.3} darkness={0.32} />
+          <ToneMapping mode={ToneMappingMode.NEUTRAL} />
+        </EffectComposer>
+      );
+    }
     return (
-      <EffectComposer key="full" multisampling={4}>
+      <EffectComposer key="lite" multisampling={quality === 'high' ? 4 : 2}>
         {tilt}
-        <Bloom luminanceThreshold={1.15} luminanceSmoothing={0.15} intensity={0.45} mipmapBlur />
-        <Vignette offset={0.3} darkness={0.32} />
         <ToneMapping mode={ToneMappingMode.NEUTRAL} />
       </EffectComposer>
     );
-  }
-  return (
-    <EffectComposer key="lite" multisampling={quality === 'high' ? 4 : 2}>
-      {tilt}
-      <ToneMapping mode={ToneMappingMode.NEUTRAL} />
-    </EffectComposer>
-  );
+  }, [full, quality, tiltRef]);
+  // No composer while the WebGL context is lost: building passes then reads the (null) context
+  // attributes and throws, which took the whole game UI (and its Reload prompt) down with it.
+  if (lost || gl.getContext().isContextLost()) return null;
+  return <PostFxBoundary>{composer}</PostFxBoundary>;
 }
 
 export function Scene({ controller }: { controller: GameController }) {

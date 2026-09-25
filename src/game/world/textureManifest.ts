@@ -217,6 +217,53 @@ export const TEXTURES = {
       "pond-iris",
       "pond-fern"
     ]
+  },
+  "cloud-atlas": {
+    "url": "/textures/cloud-atlas.webp",
+    "kind": "sprite",
+    "bytes": 115836,
+    "cells": [
+      "cloud-a",
+      "cloud-b",
+      "cloud-c",
+      "cloud-d"
+    ],
+    "rects": [
+      [
+        0.01953,
+        0.52734,
+        0.47949,
+        0.97266
+      ],
+      [
+        0.56934,
+        0.51953,
+        0.92969,
+        0.98047
+      ],
+      [
+        0.05664,
+        0.01953,
+        0.44238,
+        0.48047
+      ],
+      [
+        0.51953,
+        0.15039,
+        0.97949,
+        0.34961
+      ]
+    ]
+  },
+  "cloud-normal": {
+    "url": "/textures/cloud-normal.webp",
+    "kind": "normal",
+    "bytes": 13946
+  },
+  "grass-normal": {
+    "url": "/textures/grass-normal.webp",
+    "kind": "normal",
+    "bytes": 17456
   }
 } as const;
 

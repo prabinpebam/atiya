@@ -48,15 +48,15 @@ interface Key {
 }
 
 const KEYS: Key[] = [
-  { h: 0, top: '#0b1636', mid: '#16264f', bottom: '#27386e', fog: '#1f2e5e', hemiSky: '#5a6ea8', hemiGround: '#1f2c3c', hemi: 0.7, sun: '#ffffff', sunI: 0, moonI: 0.55, night: 1, cloud: '#4a5680' },
-  { h: 4.8, top: '#16214a', mid: '#2d3a70', bottom: '#5b5a8c', fog: '#434d7e', hemiSky: '#6a74a8', hemiGround: '#28333f', hemi: 0.75, sun: '#ffb070', sunI: 0, moonI: 0.35, night: 0.85, cloud: '#6a6e98' },
+  { h: 0, top: '#0c1a40', mid: '#1b2d5c', bottom: '#2e4178', fog: '#243564', hemiSky: '#6c82c8', hemiGround: '#27383f', hemi: 0.95, sun: '#ffffff', sunI: 0, moonI: 0.65, night: 1, cloud: '#6b76ad' },
+  { h: 4.8, top: '#17234e', mid: '#2f3d74', bottom: '#5d5c8e', fog: '#454f80', hemiSky: '#727cb4', hemiGround: '#2c3842', hemi: 0.9, sun: '#ffb070', sunI: 0, moonI: 0.45, night: 0.85, cloud: '#7478a6' },
   { h: 6.2, top: '#5b8fd8', mid: '#f1b3a2', bottom: '#ffd6a6', fog: '#f0c7ae', hemiSky: '#f6d3c0', hemiGround: '#7d8f5a', hemi: 1.05, sun: '#ffab6e', sunI: 1.2, moonI: 0, night: 0.12, cloud: '#ffd6c8' },
-  { h: 8.5, top: '#7cc6ff', mid: '#b9e3ff', bottom: '#e8f7ff', fog: '#d6eeff', hemiSky: '#e3f3ff', hemiGround: '#86ad63', hemi: 1.45, sun: '#fff1dc', sunI: 2.3, moonI: 0, night: 0, cloud: '#ffffff' },
-  { h: 15.5, top: '#78c2ff', mid: '#b7e1ff', bottom: '#eaf6ff', fog: '#d8eeff', hemiSky: '#e6f3ff', hemiGround: '#88ad63', hemi: 1.45, sun: '#fff0d6', sunI: 2.3, moonI: 0, night: 0, cloud: '#ffffff' },
-  { h: 17.6, top: '#6aa3e6', mid: '#ffd2a0', bottom: '#ffe3b6', fog: '#f5d5b2', hemiSky: '#ffe2c7', hemiGround: '#8d9d5e', hemi: 1.25, sun: '#ffc07a', sunI: 1.9, moonI: 0, night: 0.05, cloud: '#ffe2c4' },
-  { h: 19.0, top: '#3a4e98', mid: '#e3888a', bottom: '#f6ae88', fog: '#c78e98', hemiSky: '#d8a5b8', hemiGround: '#5a6b52', hemi: 0.95, sun: '#ff8a5c', sunI: 0.55, moonI: 0, night: 0.38, cloud: '#f2a6a0' },
-  { h: 20.4, top: '#15224f', mid: '#353b76', bottom: '#63578b', fog: '#3a4374', hemiSky: '#6c76b0', hemiGround: '#28333f', hemi: 0.75, sun: '#ff8a5c', sunI: 0, moonI: 0.4, night: 0.88, cloud: '#565c8a' },
-  { h: 24, top: '#0b1636', mid: '#16264f', bottom: '#27386e', fog: '#1f2e5e', hemiSky: '#5a6ea8', hemiGround: '#1f2c3c', hemi: 0.7, sun: '#ffffff', sunI: 0, moonI: 0.55, night: 1, cloud: '#4a5680' },
+  { h: 8.5, top: '#4f9ef2', mid: '#9fd0ff', bottom: '#e0f2ff', fog: '#d2eaff', hemiSky: '#d6eaff', hemiGround: '#9aac5a', hemi: 1.25, sun: '#ffe6bd', sunI: 2.6, moonI: 0, night: 0, cloud: '#ffffff' },
+  { h: 15.5, top: '#4d9bf0', mid: '#9dceff', bottom: '#e2f2ff', fog: '#d4eaff', hemiSky: '#d8ebff', hemiGround: '#9cac5a', hemi: 1.25, sun: '#ffe4b8', sunI: 2.6, moonI: 0, night: 0, cloud: '#fffaf2' },
+  { h: 17.6, top: '#5e9ae4', mid: '#ffd09a', bottom: '#ffe1b0', fog: '#f5d3ae', hemiSky: '#ffdcbc', hemiGround: '#94a656', hemi: 1.1, sun: '#ffc672', sunI: 2.3, moonI: 0, night: 0.05, cloud: '#ffdcb8' },
+  { h: 19.0, top: '#3a4e98', mid: '#e98c86', bottom: '#f8b284', fog: '#cf9496', hemiSky: '#e0aab4', hemiGround: '#6a7a52', hemi: 0.95, sun: '#ffa062', sunI: 1.1, moonI: 0, night: 0.38, cloud: '#ffb49c' },
+  { h: 20.4, top: '#172654', mid: '#383f7a', bottom: '#66598c', fog: '#3d4678', hemiSky: '#7482c0', hemiGround: '#2b3a42', hemi: 0.95, sun: '#ff8a5c', sunI: 0, moonI: 0.6, night: 0.88, cloud: '#6a70a6' },
+  { h: 24, top: '#0c1a40', mid: '#1b2d5c', bottom: '#2e4178', fog: '#243564', hemiSky: '#6c82c8', hemiGround: '#27383f', hemi: 0.95, sun: '#ffffff', sunI: 0, moonI: 0.65, night: 1, cloud: '#6b76ad' },
 ];
 
 const MOON_COLOR = new Color('#a9bcff');

@@ -22,7 +22,7 @@ import { selectAmbientPaused } from '../state/store';
 import { FLOWER_KINDS, type Pond, type PropInstance } from './layout';
 import { kitMaterials } from './materials';
 import { WIND_GLSL, windUniforms } from './windField';
-import { cedar, foliageMaterials, hardwood, leafyBush } from './foliage';
+import { cedar, flowerSprig, foliageMaterials, hardwood, leafyBush } from './foliage';
 import { boulder, butterflyWing, flatCard, flowerBlooms, flowerStems, grassCards, grassTuft, lilyPad, pebble, reeds, rock, uprightCards } from './propModels';
 import { pondPlants } from './pondPlants';
 import { RIVER_WATER_U } from './terrain';
@@ -299,6 +299,7 @@ export function Props({ controller }: { controller: GameController }) {
       cedars: [cedar(0), cedar(1), cedar(2)],
       bush: leafyBush(),
       flowerBush: leafyBush('#ff7fa8'),
+      sprigs: [flowerSprig('#fff6e8'), flowerSprig('#ffd84d', '#f59b2a')],
       rock: rock(),
       boulder: boulder(),
       pebble: pebble(),
@@ -347,6 +348,8 @@ export function Props({ controller }: { controller: GameController }) {
   }, []);
 
   const apples = useMemo(() => layout.fruit.filter((_, i) => i % 2 === 0), [layout]);
+  // daisy-white sprigs outnumber the yellow ones, as in the art direction
+  const sprigSets = useMemo(() => [layout.sprigs.filter((p) => p.tint < 0.62), layout.sprigs.filter((p) => p.tint >= 0.62)], [layout]);
   const oranges = useMemo(() => layout.fruit.filter((_, i) => i % 2 === 1), [layout]);
   const bloomColor = useMemo(() => (p: PropInstance) => BLOOM_COLORS[Math.floor(p.tint * BLOOM_COLORS.length) % BLOOM_COLORS.length], []);
   const tint = useMemo(() => (p: PropInstance) => vary(p), []);
@@ -378,6 +381,13 @@ export function Props({ controller }: { controller: GameController }) {
       <Instanced geometry={geo.bush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.bushes} colorFor={tint} />
       <Instanced geometry={geo.flowerBush.solid} material={mats.bush} items={layout.flowerBushes} colorFor={tint} />
       <Instanced geometry={geo.flowerBush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.flowerBushes} colorFor={tint} />
+      {geo.sprigs.map((g, v) => (
+        <group key={`sprig-${v}`}>
+          {/* too low to cast a shadow worth its shadow-pass cost */}
+          <Instanced geometry={g.solid} material={mats.flower} items={sprigSets[v]} colorFor={tint} shadow={false} />
+          <Instanced geometry={g.leaves} material={mats.broadBush.material} items={sprigSets[v]} colorFor={tint} shadow={false} />
+        </group>
+      ))}
       <Instanced geometry={geo.rock} material={mats.rock} items={layout.rocks} colorFor={tint} />
       <Instanced geometry={geo.boulder} material={mats.rock} items={layout.boulders} colorFor={tint} />
       <Instanced geometry={geo.pebble} material={mats.rock} items={layout.pebbles} colorFor={tint} shadow={false} lift={-0.03} />

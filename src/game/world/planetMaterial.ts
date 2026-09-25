@@ -3,6 +3,8 @@ import { TRIPLANAR_GLSL, gameTexture, textureMean } from './textures';
 import { withLampLights } from './lampLights';
 
 const GROUND_TEX = ['grass', 'dirt', 'cobble', 'sand', 'riverbed'] as const;
+/** Strength of the grass relief (the normal map's tilt, scaled by how much of the ground is grass). */
+export const GROUND_BUMP = 0.7;
 
 /**
  * Stylised ground material. Vertex colour = base grass tint; `aSurf` (vec4) blends in
@@ -18,9 +20,15 @@ export function createPlanetMaterial(radius: number, plazaRadius: number): MeshS
   const tex = GROUND_TEX.map((n) => gameTexture(n));
   const textured = tex.every(Boolean);
   const plazaTex = gameTexture('plaza');
-  m.defines = { ...(textured ? { USE_GROUND_TEX: '' } : {}), ...(plazaTex ? { USE_PLAZA_TEX: '' } : {}) };
+  // the grass tile's relief (a normal map derived from its painted luminance) so the meadow catches the light
+  const grassN = textured ? gameTexture('grass-normal') : null;
+  m.defines = { ...(textured ? { USE_GROUND_TEX: '' } : {}), ...(plazaTex ? { USE_PLAZA_TEX: '' } : {}), ...(grassN ? { USE_GROUND_NORMAL: '' } : {}) };
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uRadius = { value: radius };
+    if (grassN) {
+      shader.uniforms.uGrassN = { value: grassN };
+      shader.uniforms.uGroundBump = { value: GROUND_BUMP };
+    }
     if (plazaTex) {
       shader.uniforms.uTexPlaza = { value: plazaTex };
       shader.uniforms.uPlazaRadius = { value: plazaRadius };
@@ -40,14 +48,27 @@ attribute vec4 aSurf;
 attribute vec4 aSurf2;
 varying vec4 vSurf;
 varying vec4 vSurf2;
-varying vec3 vLocal;`,
+varying vec3 vLocal;
+#ifdef USE_GROUND_NORMAL
+varying vec3 vLocalN;
+varying vec3 vAxX;
+varying vec3 vAxY;
+varying vec3 vAxZ;
+#endif`,
       )
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
 vSurf = aSurf;
 vSurf2 = aSurf2;
-vLocal = position;`,
+vLocal = position;
+#ifdef USE_GROUND_NORMAL
+vLocalN = objectNormal;
+// the planet's local axes in view space (for the triplanar normal perturbation)
+vAxX = normalMatrix * vec3(1.0, 0.0, 0.0);
+vAxY = normalMatrix * vec3(0.0, 1.0, 0.0);
+vAxZ = normalMatrix * vec3(0.0, 0.0, 1.0);
+#endif`,
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(
@@ -57,6 +78,15 @@ uniform float uRadius;
 varying vec4 vSurf;
 varying vec4 vSurf2;
 varying vec3 vLocal;
+float gGrassW = 0.0;
+#ifdef USE_GROUND_NORMAL
+uniform sampler2D uGrassN;
+uniform float uGroundBump;
+varying vec3 vLocalN;
+varying vec3 vAxX;
+varying vec3 vAxY;
+varying vec3 vAxZ;
+#endif
 #ifdef USE_PLAZA_TEX
 uniform sampler2D uTexPlaza;
 uniform float uPlazaRadius;
@@ -99,6 +129,7 @@ vec3 lin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }`,
   float pathN = vnoise(vLocal * 3.4) - 0.5 + (vnoise(vLocal * 9.0) - 0.5) * 0.4;
   float pathW = smoothstep(0.32, 0.62, vSurf.x + pathN * 0.42);
   float wGrass = clamp(1.0 - pathW - vSurf.y - vSurf.z - vSurf.w - vSurf2.x - vSurf2.y * 0.6, 0.0, 1.0);
+  gGrassW = wGrass;
 
   // ---- grass: top-down painterly colour noise (no blades), clover and a few tiny flowers ----
   float mottle = fbm(vLocal * 0.55);
@@ -124,10 +155,20 @@ vec3 lin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }`,
   float petal = length(cf) - 0.07 * (0.6 + 0.4 * abs(cos(1.5 * ang)));
   float clover = (1.0 - smoothstep(-0.005, 0.01, petal)) * step(0.62, h13(cc + 8.0)) * smoothstep(0.35, 0.6, mottle);
   g = mix(g, g * vec3(0.72, 0.86, 0.7), clover * 0.8);
-  // tiny white and yellow flowers, very sparse
-  vec3 fs = vLocal * 4.5; vec3 fc = floor(fs); float fd = length(fract(fs) - (0.2 + 0.6 * h33(fc + 11.0)));
-  float flower = (1.0 - smoothstep(0.035, 0.055, fd)) * step(0.93, h13(fc + 13.0));
-  g = mix(g, mix(lin(vec3(1.0, 0.98, 0.9)), lin(vec3(1.0, 0.86, 0.35)), step(0.5, h13(fc + 21.0))), flower);
+  // small white, yellow and pink flowers dotted through the meadow in little pairs, big enough to
+  // read from the camera (a few pixels each), denser in the lusher patches
+  vec3 fs = vLocal * 3.6; vec3 fc = floor(fs); vec3 fo = 0.2 + 0.6 * h33(fc + 11.0);
+  vec3 fp = fract(fs); fp -= nrm * dot(fp - fo, nrm);
+  float fd = min(length(fp - fo), length(fp - fo - 0.09 * normalize(h33(fc + 4.0) - 0.5 + 1e-3)));
+  float fOn = step(0.8 - 0.08 * mottle, h13(fc + 13.0));
+  float flower = (1.0 - smoothstep(0.12, 0.15, fd)) * fOn;
+  // each sits on a small, darker clump of leaves, so it reads as a little plant, not a dot
+  g = mix(g, g * vec3(0.62, 0.8, 0.55), (1.0 - smoothstep(0.16, 0.27, fd)) * fOn * 0.85);
+  float fk = h13(fc + 21.0);
+  vec3 fcol = fk < 0.5 ? lin(vec3(1.0, 0.98, 0.92)) : fk < 0.82 ? lin(vec3(1.0, 0.85, 0.3)) : lin(vec3(1.0, 0.7, 0.82));
+  // daisies get a yellow eye
+  fcol = mix(fcol, lin(vec3(1.0, 0.8, 0.25)), (1.0 - smoothstep(0.035, 0.06, fd)) * step(fk, 0.5));
+  g = mix(g, fcol, flower);
   // worn, slightly yellow grass right beside the paths
   g = mix(g, g * vec3(1.08, 1.02, 0.78), smoothstep(0.02, 0.3, vSurf.x) * (1.0 - pathW) * 0.8);
   col = mix(col, g, wGrass);
@@ -250,8 +291,27 @@ vec3 lin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }`,
   }
   diffuseColor.rgb = col;
 }`,
+      )
+      .replace(
+        '#include <normal_fragment_maps>',
+        `#include <normal_fragment_maps>
+#ifdef USE_GROUND_NORMAL
+if (gGrassW > 0.01) {
+  // triplanar grass relief, in planet-local space (same projections as the colour), then to view space
+  vec3 nL = vLocalN * inversesqrt(max(dot(vLocalN, vLocalN), 1e-12));
+  vec3 tw2 = triW(nL);
+  vec3 pert = vec3(0.0);
+  if (tw2.x > 0.02) { vec2 t = texture2D(uGrassN, vLocal.zy * 0.3).xy * 2.0 - 1.0; pert += vec3(0.0, t.y, t.x) * tw2.x; }
+  if (tw2.y > 0.02) { vec2 t = texture2D(uGrassN, vLocal.xz * 0.3).xy * 2.0 - 1.0; pert += vec3(t.x, 0.0, t.y) * tw2.y; }
+  if (tw2.z > 0.02) { vec2 t = texture2D(uGrassN, vLocal.xy * 0.3).xy * 2.0 - 1.0; pert += vec3(t.x, t.y, 0.0) * tw2.z; }
+  pert -= nL * dot(pert, nL);
+  vec3 nb = nL + pert * (uGroundBump * gGrassW);
+  vec3 nv = vAxX * nb.x + vAxY * nb.y + vAxZ * nb.z;
+  normal = nv * inversesqrt(max(dot(nv, nv), 1e-12));
+}
+#endif`,
       );
   };
-  m.customProgramCacheKey = () => `planet-ground-v4${textured ? '-tex' : ''}${plazaTex ? '-plaza' : ''}`;
+  m.customProgramCacheKey = () => `planet-ground-v5${textured ? '-tex' : ''}${plazaTex ? '-plaza' : ''}${grassN ? '-bump' : ''}`;
   return withLampLights(m);
 }

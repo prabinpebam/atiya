@@ -245,7 +245,11 @@ export function cloud(): BufferGeometry {
     [1.8, -0.35, 0, 0.55],
     [-1.75, -0.4, 0, 0.5],
   ];
-  const c = (_p: Vector3, n: Vector3) => mix('#dbe6f5', '#ffffff', 0.55 + n.y * 0.45);
+  // sunlit cream tops over cool blue-grey bases (cumulus shading), so the puffs read as volumes
+  const c = (_p: Vector3, n: Vector3) => {
+    const t = Math.min(1, Math.max(0, (n.y + 0.55) / 1.25));
+    return mix('#aebfdd', '#fff8ec', t * t * (3 - 2 * t));
+  };
   puffs.forEach(([x, y, z, r], i) => k.blob(r, c, { p: [x, y, z], s: [1, 0.85, 0.8] }, 2, 'solid', 0.08, i));
   return solid(k);
 }

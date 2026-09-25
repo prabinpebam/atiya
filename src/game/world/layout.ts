@@ -55,6 +55,8 @@ export interface PropLayout {
   /** Small decorative stones along banks, paths and cliffs (walk-through). */
   pebbles: PropInstance[];
   flowers: Record<FlowerKind, PropInstance[]>;
+  /** Low flowering sprigs (walk-through): along the paths and through the meadows. */
+  sprigs: PropInstance[];
   grass: PropInstance[];
   posts: SignPost[];
   furniture: Furniture[];
@@ -314,23 +316,73 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     pebbles.push({ n, scale: 0.12 + rand() * 0.16, yaw: rand() * Math.PI * 2, tint: rand() });
   }
 
-  // flowers grow in single-kind, single-colour clumps (walk-through, decorative)
+  // flowers grow in single-kind, single-colour clumps (walk-through, decorative): scattered
+  // through the meadows, lining both sides of every path and ringing the plaza (art direction)
   const flowers: Record<FlowerKind, PropInstance[]> = { tulip: [], cosmos: [], pansy: [] };
-  for (let c = 0, tries = 0; c < 24 && tries < 3000; tries++) {
+  const solids = [...trees, ...allBushes, ...rocks, ...boulders];
+  const sprigs: PropInstance[] = [];
+  const sprig = (n: Vector3) => {
+    if (inPlaza(n, 0.15) || corridor(n) < 0.6 || blocked(n, { river: 0.2, mesa: 0.15 }) || inPond(n, 0.15) || nearLandmark(n, 0.1)) return;
+    if (solids.some((t) => arcDistance(t.n, n, R) < 0.45)) return;
+    sprigs.push({ n, scale: 0.85 + rand() * 0.45, yaw: rand() * Math.PI * 2, tint: rand() });
+  };
+  const clump = (center: Vector3, count: number, spread: number) => {
+    const kind = FLOWER_KINDS[Math.floor(rand() * FLOWER_KINDS.length)];
+    const tint = rand();
+    for (let i = 0; i < count; i++) {
+      const dir = tangentToward(center, randomUnit(rand));
+      if (!dir) continue;
+      const n = moveAlong(center, dir, (0.1 + rand() * spread) / R);
+      if (inPlaza(n, 0.15) || corridor(n) < 0.55 || blocked(n, { river: 0.2, mesa: 0.15 }) || inPond(n, 0.15)) continue;
+      if (solids.some((t) => arcDistance(t.n, n, R) < 0.55)) continue;
+      flowers[kind].push({ n, scale: 0.85 + rand() * 0.35, yaw: rand() * Math.PI * 2, tint });
+    }
+  };
+  // (a flower is ≈ 700 triangles, a sprig ≈ 150: the abundance comes mostly from sprigs)
+  for (let c = 0, tries = 0; c < 36 && tries < 6000; tries++) {
     const center = randomUnit(rand);
     if (inPlaza(center, -0.2) || nearLandmark(center, 0.5) || inPond(center, 0.4)) continue;
     if (corridor(center) < 0.8 || blocked(center, { river: 0.5, mesa: 0.4 })) continue;
     c++;
-    const kind = FLOWER_KINDS[Math.floor(rand() * FLOWER_KINDS.length)];
-    const tint = rand();
-    const count = 4 + Math.floor(rand() * 6);
-    for (let i = 0; i < count; i++) {
+    clump(center, 5 + Math.floor(rand() * 6), 0.6);
+  }
+  // path edges: small clumps alternating sides along each plaza → landmark path
+  for (const g of landmarks) {
+    const along = tangentToward(spawn, g.approach);
+    if (!along) continue;
+    const length = arcDistance(spawn, g.approach, R);
+    for (let d = PLAZA_RADIUS_U + 0.6, k = 0; d < length - 1.3; d += 0.9 + rand() * 0.5, k++) {
+      const onPath = moveAlong(spawn, along, d / R);
+      const side = tangentToward(onPath, g.approach);
+      if (!side) continue;
+      const across = new Vector3().crossVectors(onPath, side).normalize().multiplyScalar(k % 2 ? 1 : -1);
+      const center = moveAlong(onPath, across, (0.85 + rand() * 0.3) / R);
+      if (nearLandmark(center, 0.3) || blocked(center, { river: 0.35, mesa: 0.3 })) continue;
+      if (k % 2 === 0) clump(center, 2 + Math.floor(rand() * 3), 0.3);
+      // flowering sprigs line the path
+      for (let q = 0; q < 3; q++) {
+        const dir = tangentToward(center, randomUnit(rand));
+        if (dir) sprig(moveAlong(center, dir, (0.25 + rand() * 0.35) / R));
+      }
+    }
+  }
+  // and scattered through the open meadows
+  for (let tries = 0, placed = 0; placed < 90 && tries < 4000; tries++) {
+    const n = randomUnit(rand);
+    const before = sprigs.length;
+    sprig(n);
+    if (sprigs.length > before) placed++;
+  }
+  // plaza rim: a ring of clumps round the brick circle, clear of the path mouths
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2 + rand() * 0.2;
+    const out = new Vector3(Math.cos(a), 0, Math.sin(a));
+    const center = moveAlong(spawn, out, (PLAZA_RADIUS_U + 0.7 + rand() * 0.3) / R);
+    if (corridor(center) < 0.8 || nearLandmark(center, 0.3) || blocked(center, { river: 0.35, mesa: 0.3 })) continue;
+    clump(center, 2 + Math.floor(rand() * 3), 0.35);
+    for (let q = 0; q < 2; q++) {
       const dir = tangentToward(center, randomUnit(rand));
-      if (!dir) continue;
-      const n = moveAlong(center, dir, (0.15 + rand() * 0.6) / R);
-      if (corridor(n) < 0.55 || blocked(n, { river: 0.2, mesa: 0.15 })) continue;
-      if ([...trees, ...allBushes, ...rocks, ...boulders].some((t) => arcDistance(t.n, n, R) < 0.55)) continue;
-      flowers[kind].push({ n, scale: 0.85 + rand() * 0.35, yaw: rand() * Math.PI * 2, tint });
+      if (dir) sprig(moveAlong(center, dir, (0.2 + rand() * 0.3) / R));
     }
   }
 
@@ -360,7 +412,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     ...mesas.flatMap((m) => mesaObstacles(m, cfg)),
   ];
 
-  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, grass, posts, furniture, pond, river, bridges, mesas, obstacles };
+  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, posts, furniture, pond, river, bridges, mesas, obstacles };
 }
 
 /** Rails along both sides of each bridge deck. */

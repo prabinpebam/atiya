@@ -1,0 +1,4 @@
+gpt-image-2.5 edit (image-to-image), --size 1536x1024 --quality high --background transparent.
+Reference: a strip of skies cropped from the art-direction concepts (documentation/poc-3d-navigation/art-direction/concepts).
+
+Paint ONE small isolated cluster of three or four round puffy cloudlets, compact and cute, in exactly the art style of the clouds in the reference image: cozy hand-painted stylised game art, soft rounded billowing puffs, warm cream-white sunlit tops, soft lavender blue-grey shaded undersides and pockets, gentle painterly brush texture, soft slightly fuzzy edges. Centred, fully inside the frame with generous empty margin all round. Isolated on a fully transparent background: no sky, no backdrop, no other clouds, no ground, no text.

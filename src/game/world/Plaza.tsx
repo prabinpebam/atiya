@@ -13,7 +13,7 @@ const R = CONFIG.planetRadius;
 /** Height of the lamp glass above the ground (`lampPost(k, {}, 1.5)`: h + 0.2). */
 const LAMP_HEAD = 1.7;
 /** Warm lamplight: colour, peak intensity (candela, three.js units) and reach (u). */
-export const PLAZA_LAMP = { color: '#ffcf99', intensity: 4.2, range: 2.7 } as const;
+export const PLAZA_LAMP = { color: '#ffcf99', intensity: 5.2, range: 3.4 } as const;
 
 /** After dusk each plaza lamp lights the bricks, grass, benches and the character around it. */
 function PlazaLamps({ controller, at }: { controller: GameController; at: Vector3[] }) {

@@ -1,0 +1,1 @@
+Atlas of the four painted cloud sprites cloud-a … cloud-d (see their prompts), packed by scripts/build-textures.py into the 2:1 cells of a 1024x512 atlas.

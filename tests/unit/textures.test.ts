@@ -29,7 +29,7 @@ describe('generated textures', () => {
     }
   });
 
-  it('every manifest entry exists in public/ as a square, power-of-two WebP within budget', () => {
+  it('every manifest entry exists in public/ as a power-of-two WebP within budget', () => {
     let total = 0;
     for (const [name, e] of entries) {
       const file = resolve(ROOT, 'public', e.url.replace(/^\//, ''));
@@ -38,8 +38,10 @@ describe('generated textures', () => {
       expect(buf.toString('ascii', 0, 4)).toBe('RIFF');
       expect(buf.toString('ascii', 8, 12)).toBe('WEBP');
       const { w, h, alpha } = webpSize(buf);
-      expect(w, name).toBe(h);
-      expect(Math.log2(w) % 1, `${name} is ${w}px`).toBe(0);
+      // power-of-two edges (mipmaps); square, except the wide 2:1 cloud atlases
+      if (!name.startsWith('cloud-')) expect(w, name).toBe(h);
+      expect(Math.log2(w) % 1, `${name} is ${w}px wide`).toBe(0);
+      expect(Math.log2(h) % 1, `${name} is ${h}px high`).toBe(0);
       if (e.kind === 'tint' || e.kind === 'sprite') expect(alpha, `${name} has alpha`).toBe(true);
       expect(statSync(file).size).toBe(e.bytes);
       total += e.bytes;

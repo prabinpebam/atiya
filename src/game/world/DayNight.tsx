@@ -260,7 +260,8 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     const clouds = cloudMaterial();
     clouds.color.copy(s.cloudTint);
     clouds.emissive.copy(s.cloudTint);
-    clouds.emissiveIntensity = 0.35 - 0.2 * s.night;
+    // moonlit at night: the clouds keep a soft glow of their own (lilac-blue, not dark blobs)
+    clouds.emissiveIntensity = 0.3 + 0.25 * s.night;
 
     applyTimeOfDay(s.glow, s.night);
 
@@ -269,7 +270,7 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     skyPosition(Math.min(1.06, Math.max(-0.06, s.sunArc)), sun.disc.position);
     sun.halo.position.set(sun.disc.position.x, sun.disc.position.y, SKY_Z - 0.2);
     const warm = Math.min(1, Math.abs(s.sunArc - 0.5) * 2); // redder near the horizon
-    (sun.disc.material as MeshBasicMaterial).color.setRGB(3.2, 2.6 - warm * 0.9, 1.7 - warm * 1.0);
+    (sun.disc.material as MeshBasicMaterial).color.setRGB(3.3, 2.9 - warm * 1.1, 1.35 - warm * 0.75);
     (sun.disc.material as MeshBasicMaterial).opacity = sv;
     (sun.halo.material as MeshBasicMaterial).opacity = sv * (0.55 + warm * 0.35);
 

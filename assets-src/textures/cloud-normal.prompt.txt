@@ -1,0 +1,1 @@
+Not generated: derived by scripts/build-textures.py from cloud-atlas (a puffy dome from the blurred alpha plus the painted shading as relief), as a tangent-space normal map.

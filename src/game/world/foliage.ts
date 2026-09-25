@@ -172,6 +172,8 @@ function cell(i: number): [number, number, number, number] {
 /** Foliage material + matching depth material (so shadows have leaf-shaped holes). */
 export function foliageMaterials(kind: LeafKind): { material: MeshStandardMaterial; depth: Material } {
   const map = leafTexture(kind);
+  // (no normal map: the painted sprites carry their own relief, and a per-leaf normal fights the
+  // canopy's volume shading, which makes the crowns read flatter — tried in the art pass)
   const material = registerDaylit(
     new MeshStandardMaterial({ map, alphaTest: 0.5, side: DoubleSide, vertexColors: true, roughness: 0.85, metalness: 0, emissive: kind === 'broad' ? '#2f5e1d' : '#1f4a33', emissiveIntensity: 0.3 }),
   );
@@ -268,7 +270,8 @@ function leafLobe(
     side = new Vector3().crossVectors(n, tip).normalize();
     const t = Math.min(1, Math.max(0, 0.5 + n.y * 0.55 + (j2 - 0.5) * 0.25));
     const color = t > 0.5 ? mix(o.mid, o.light, (t - 0.5) * 2) : mix(o.dark, o.mid, t * 2);
-    color.multiplyScalar(0.92 + j * 0.16);
+    // ×1.2: the painted leaf sprite is greyscale at ~0.6 linear, so the palette reads as sunlit
+    color.multiplyScalar((0.92 + j * 0.16) * 1.2);
     const shadeN = n.clone().lerp(Y, 0.35).normalize();
     cards.add(p, tip, side, o.size * (0.85 + j2 * 0.3), o.width ?? 0.95, color, shadeN);
   }
@@ -562,9 +565,9 @@ export function hardwood(fruit?: string): TreeGeometry {
     leafLobe(cards, new Vector3(x, y, z), r, {
       count: Math.round(105 * r * r) + 22,
       size: 0.4 + r * 0.14,
-      light: '#c2f08a',
-      mid: '#7fcf5f',
-      dark: '#3f9046',
+      light: '#e4f687',
+      mid: '#8fd257',
+      dark: '#357f44',
       seed: i * 11 + 3,
       minY: -0.75,
     });
@@ -705,6 +708,26 @@ export function cedar(variant = 0): TreeGeometry {
   }
   return { solid: k.build().solid!, leaves: cards.build() };
 }
+/**
+ * A low flowering sprig: one small leafy tuft with three blossoms on top (≈ 150 triangles). Scattered
+ * by the hundred along paths and through the meadows, walk-through (art direction: abundant flowers).
+ */
+export function flowerSprig(petal: string, eye = '#ffd24a'): TreeGeometry {
+  const k = new Kit();
+  const cards = new Cards();
+  leafLobe(cards, new Vector3(0, 0.1, 0), 0.16, { count: 14, size: 0.14, light: '#d8f07c', mid: '#82c852', dark: '#2f7a42', seed: 91, minY: -0.15 });
+  const blossoms: [number, number, number][] = [
+    [0.02, 0.24, 0.03],
+    [-0.1, 0.19, -0.05],
+    [0.09, 0.2, -0.07],
+  ];
+  blossoms.forEach(([x, y, z], i) => {
+    k.cyl(0.055 - i * 0.006, 0.055 - i * 0.006, 0.012, petal, { p: [x, y, z], r: [0.15 * (i - 1), 0, 0.12] }, 6);
+    k.cyl(0.02, 0.02, 0.018, eye, { p: [x, y + 0.008, z] }, 5);
+  });
+  return { solid: k.build().solid!, leaves: cards.build() };
+}
+
 export function leafyBush(flowers?: string): TreeGeometry {
   const k = new Kit();
   const cards = new Cards();
@@ -721,9 +744,9 @@ export function leafyBush(flowers?: string): TreeGeometry {
     leafLobe(cards, new Vector3(x, y, z), r, {
       count: Math.round(150 * r * r) + 12,
       size: 0.22 + r * 0.12,
-      light: '#b8ec80',
-      mid: '#72c656',
-      dark: '#3a8a42',
+      light: '#d8f07c',
+      mid: '#82c852',
+      dark: '#2f7a42',
       seed: i * 5 + 17,
       minY: -0.2,
     });

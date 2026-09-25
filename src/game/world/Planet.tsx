@@ -25,9 +25,10 @@ function smooth(e0: number, e1: number, x: number): number {
   return t * t * (3 - 2 * t);
 }
 
-const LUSH = new Color('#86c653');
-const SUNNY = new Color('#a9d862');
-const COOL = new Color('#7fc06a');
+// warm meadow greens: sunlit yellow-green drifts over a lush base, with cooler hollows
+const LUSH = new Color('#8cc84c');
+const SUNNY = new Color('#c0df5e');
+const COOL = new Color('#6aad56');
 
 /** Base grass colour at `u` (unit) and height `h`: large soft drifts, sunnier on rises, lusher in hollows. */
 function grassColor(u: Vector3, h: number, out: Color): Color {

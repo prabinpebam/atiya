@@ -21,8 +21,9 @@ export interface CloudRing {
 }
 
 export const CLOUD_RINGS: readonly CloudRing[] = [
-  { count: 24, alphaDeg: [29, 37] },
-  { count: 14, alphaDeg: [41, 60] },
+  // painted sprites cost two triangles each, so the sky can be as full as the art direction's
+  { count: 32, alphaDeg: [29, 37] },
+  { count: 22, alphaDeg: [41, 60] },
 ];
 export const CLOUD_COUNT = CLOUD_RINGS.reduce((n, r) => n + r.count, 0);
 /** Distance of a cloud from the camera (u). */
@@ -79,6 +80,29 @@ export function cloudOrientation(frame: RingFrame, theta: number, out = new Quat
   return out.setFromRotationMatrix(_m.makeBasis(_tan, _rad, frame.axis));
 }
 
+const _toCam = new Vector3();
+const _upv = new Vector3();
+const _side = new Vector3();
+
+/** How much a painted cloud leans with its orbit (0 = upright on screen, 1 = base toward the planet). */
+export const CLOUD_LEAN = 0.2;
+
+/**
+ * Billboard orientation for a painted cloud sprite at `pos` (orbit angle `theta`): its face turned
+ * straight at the camera (so it never looks squashed, even far off the axis), and upright on screen
+ * like painted clouds, leaning a little (`CLOUD_LEAN`) with the ring round the planet.
+ */
+export function cloudBillboard(frame: RingFrame, theta: number, pos: Vector3, out = new Quaternion()): Quaternion {
+  _toCam.copy(frame.cam).sub(pos).normalize();
+  _upv.copy(frame.right).multiplyScalar(Math.cos(theta) * CLOUD_LEAN).addScaledVector(frame.up, Math.sin(theta) * CLOUD_LEAN + (1 - CLOUD_LEAN));
+  _upv.addScaledVector(_toCam, -_upv.dot(_toCam)).normalize();
+  _side.crossVectors(_upv, _toCam);
+  return out.setFromRotationMatrix(_m.makeBasis(_side, _upv, _toCam));
+}
+
+/** Which painted sprite each cloud uses (atlas cell: 0 big cumulus, 1 towering, 2 small puffs, 3 flat wisp), mostly cumulus. */
+export const CLOUD_VARIANTS = [0, 2, 1, 0, 3, 2, 0, 1, 2, 3, 0, 1] as const;
+
 export interface Cloud {
   theta: number;
   alpha: number;
@@ -89,17 +113,18 @@ export interface Cloud {
 
 /** The seeded clouds: spread evenly round each ring, with jittered angles, distances, sizes and speeds. */
 export function cloudLayout(seed = 11): Cloud[] {
-  const rand = mulberry32(seed);
   const lerp = ([a, b]: [number, number], t: number) => a + (b - a) * t;
-  return CLOUD_RINGS.flatMap((ring) =>
-    Array.from({ length: ring.count }, (_, i) => ({
+  // each ring has its own seed, so resizing one ring doesn't reshuffle the others
+  return CLOUD_RINGS.flatMap((ring, r) => {
+    const rand = mulberry32(seed + r * 101);
+    return Array.from({ length: ring.count }, (_, i) => ({
       theta: (Math.PI * 2 * (i + rand() * 0.6)) / ring.count,
       alpha: lerp(ring.alphaDeg, rand()),
       dist: lerp(CLOUD_DIST, rand()),
       scale: 1.0 + rand() * 1.1,
       speed: lerp(CLOUD_SPEED, rand()),
-    })),
-  );
+    }));
+  });
 }
 
 /** Drift every cloud clockwise round its orbit for `dt` seconds. */

@@ -14,7 +14,8 @@ let preload: Promise<void> | null = null;
 function configure(name: TextureName, t: Texture): Texture {
   const e = TEXTURES[name];
   const tiled = e.kind === 'tile' || e.kind === 'mask';
-  t.colorSpace = e.kind === 'mask' ? NoColorSpace : SRGBColorSpace;
+  // masks and normal maps are data, not colour
+  t.colorSpace = e.kind === 'mask' || e.kind === 'normal' ? NoColorSpace : SRGBColorSpace;
   if (tiled) t.wrapS = t.wrapT = RepeatWrapping;
   t.minFilter = LinearMipmapLinearFilter;
   // decals (the plaza) are seen at grazing angles too, so they get the higher anisotropy
@@ -34,7 +35,7 @@ async function loadTexture(name: TextureName): Promise<Texture> {
   const url = TEXTURES[name].url;
   if (typeof createImageBitmap !== 'function') return new TextureLoader().loadAsync(url);
   const loader = new ImageBitmapLoader();
-  loader.setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none', colorSpaceConversion: TEXTURES[name].kind === 'mask' ? 'none' : 'default' });
+  loader.setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none', colorSpaceConversion: TEXTURES[name].kind === 'mask' || TEXTURES[name].kind === 'normal' ? 'none' : 'default' });
   const t = new Texture(await loader.loadAsync(url));
   t.flipY = false; // already flipped (WebGL ignores flipY for bitmaps)
   return t;

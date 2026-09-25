@@ -57,6 +57,20 @@ ATLASES: dict[str, tuple[list[str], int, str]] = {
     "conifer-atlas": (["conifer-clump", "conifer-bough", "conifer-tufts", "conifer-crown"], 512, "tint"),
     "pond-atlas": (["pond-lilies", "pond-reeds", "pond-iris", "pond-fern"], 512, "sprite"),
 }
+# Painted sky clouds (art direction): four wide sprites in the 2:1 cells of a 1024×512 atlas, with
+# each cloud's opaque rectangle recorded (UV, v up) so the game sizes its quad to the cloud, and a
+# matching tangent-space normal atlas (a puffy dome from the alpha + the painted detail) so the
+# clouds catch the day's light: name -> (cells [TL, TR, BL, BR], (width, height), normal-map name)
+CLOUD_ATLAS = ("cloud-atlas", ["cloud-a", "cloud-b", "cloud-c", "cloud-d"], (1024, 512), "cloud-normal")
+# Normal maps (tangent space, OpenGL convention), so textures react to the light:
+#   sprite-height: a generated height map of a sprite (same framing), fitted with the sprite's alpha
+#   atlas-dome:    derived from an atlas: a dome over each clump plus its painted shading as relief
+#   tile-lum:      derived from a seamless tile's painted luminance (wrap-aware, stays seamless)
+# (Leaf and conifer cards were tried and dropped: their painted sprites carry the relief already, and
+# a per-leaf normal fights the canopy's volume shading.)
+NORMALS: dict[str, tuple[str, str, int, float]] = {
+    "grass-normal": ("tile-lum", "grass", 256, 5.0),
+}
 # how a sprite sits in its square card: bottom = base touches the bottom edge (stems, grass, crown),
 # top = hangs from the top edge (boughs)
 ALIGN = {"leaf-broad": "bottom", "grass-card": "bottom", "leaf-single": "center", "moon": "center",
@@ -125,6 +139,146 @@ def fit_sprite(im: Image.Image, size: int, align: str, min_aspect: float = 0.0) 
     y = size - im.height if align == "bottom" else 0 if align == "top" else (size - im.height) // 2
     card.alpha_composite(im, (x, y))
     return card
+
+
+def fit_rect(im: Image.Image, w: int, h: int, margin: float = 0.04) -> Image.Image:
+    """Crop to the opaque bounds and fit, centred, into a w×h cell (keeping the aspect)."""
+    im = im.convert("RGBA")
+    a = np.asarray(im)[..., 3]
+    a = np.where(a >= 250, 255, np.where(a <= 4, 0, a)).astype(np.uint8)
+    im.putalpha(Image.fromarray(a))
+    ys, xs = np.nonzero(a > 8)
+    im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+    s = min(w * (1 - 2 * margin) / im.width, h * (1 - 2 * margin) / im.height)
+    im = im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
+    cell = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    cell.alpha_composite(im, ((w - im.width) // 2, (h - im.height) // 2))
+    return cell
+
+
+def height_to_normal(hgt: np.ndarray, strength: float) -> Image.Image:
+    """Tangent-space normal map (OpenGL convention: +x right, +y up the image) from a height field."""
+    dy, dx = np.gradient(hgt.astype(np.float32))
+    n = np.dstack([-dx * strength, dy * strength, np.ones_like(hgt, np.float32)])
+    n /= np.linalg.norm(n, axis=2, keepdims=True)
+    return Image.fromarray(np.clip((n * 0.5 + 0.5) * 255 + 0.5, 0, 255).astype(np.uint8), "RGB")
+
+
+def box_blur(a: np.ndarray, passes: int) -> np.ndarray:
+    """Repeated 3×3 box blur of a float field (≈ Gaussian)."""
+    for _ in range(passes):
+        p = np.pad(a, 1, mode="edge")
+        a = sum(p[dy:dy + a.shape[0], dx:dx + a.shape[1]] for dy in range(3) for dx in range(3)) / 9
+    return a
+
+
+def edge_distance(mask: np.ndarray, limit: int) -> np.ndarray:
+    """Approximate distance (px) from each inside pixel to the edge, by repeated 1-px erosion."""
+    im = Image.fromarray(mask.astype(np.uint8) * 255)
+    depth = np.zeros(mask.shape, np.float32)
+    for _ in range(limit):
+        depth += np.asarray(im, np.float32) / 255
+        im = im.filter(ImageFilter.MinFilter(3))
+        if not np.asarray(im).any():
+            break
+    return depth
+
+
+def wrap_normal(hgt: np.ndarray, strength: float) -> Image.Image:
+    """Normal map of a tiling height field (central differences with wrap-around, so it tiles)."""
+    dx = (np.roll(hgt, -1, axis=1) - np.roll(hgt, 1, axis=1)) * 0.5
+    dy = (np.roll(hgt, -1, axis=0) - np.roll(hgt, 1, axis=0)) * 0.5
+    n = np.dstack([-dx * strength, dy * strength, np.ones_like(hgt, np.float32)])
+    n /= np.linalg.norm(n, axis=2, keepdims=True)
+    return Image.fromarray(np.clip((n * 0.5 + 0.5) * 255 + 0.5, 0, 255).astype(np.uint8), "RGB")
+
+
+def atlas_rgba(cells: list[str], size: int) -> Image.Image:
+    half = size // 2
+    atlas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    for i, c in enumerate(cells):
+        sprite = fit_sprite(Image.open(SRC / f"{c}.png"), half, ALIGN.get(c, "center"), MIN_ASPECT.get(c, 0.0))
+        atlas.alpha_composite(sprite, ((i % 2) * half, (i // 2) * half))
+    return atlas
+
+
+def build_normals(manifest: dict) -> int:
+    total = 0
+    for name, (mode, source, size, strength) in NORMALS.items():
+        if mode == "sprite-height":
+            albedo, height = SRC / f"{source}.png", SRC / f"{source}-height.png"
+            if not (albedo.exists() and height.exists()):
+                print(f"skip {name}: no source")
+                continue
+            h = Image.open(height).convert("L").resize(Image.open(albedo).size, Image.LANCZOS)
+            rgba = Image.merge("RGBA", (h, h, h, Image.open(albedo).convert("RGBA").getchannel("A")))
+            card = np.asarray(fit_sprite(rgba, size * 2, ALIGN.get(source, "center"), MIN_ASPECT.get(source, 0.0)), np.float32) / 255
+            hgt = box_blur(card[..., 0] * (card[..., 3] > 0.5), 1)
+            out = height_to_normal(hgt, strength * size * 2 / 256).resize((size, size), Image.LANCZOS)
+        elif mode == "atlas-dome":
+            cells = ATLASES[source][0]
+            if not all((SRC / f"{c}.png").exists() for c in cells):
+                print(f"skip {name}: missing a cell source")
+                continue
+            rgba = np.asarray(atlas_rgba(cells, size * 2), np.float32) / 255
+            inside = rgba[..., 3] > 0.5
+            depth = box_blur(edge_distance(inside, size // 4), 4) * inside
+            t = np.clip(depth / max(1.0, float(depth.max())), 0, 1)
+            lum = rgba[..., :3] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+            detail = lum - box_blur(lum, 3)
+            hgt = box_blur(np.sqrt(1 - (1 - t) ** 2) * depth.max() * 0.25 + detail * 12.0 * np.clip(depth / 3.0, 0, 1), 1)
+            out = height_to_normal(hgt, strength).resize((size, size), Image.LANCZOS)
+        else:  # tile-lum
+            src = SRC / f"{source}.png"
+            if not src.exists():
+                print(f"skip {name}: no source")
+                continue
+            tile = np.asarray(resize_tileable(Image.open(src), size).convert("L"), np.float32) / 255
+            out = wrap_normal(tile - tile.mean(), strength)
+        n = save_webp(out, OUT / f"{name}.webp")
+        manifest[name] = {"url": f"/textures/{name}.webp", "kind": "normal", "bytes": n}
+        total += n
+        print(f"{name:18s} normal {size:4d}px  {n / 1024:6.1f} KB")
+    return total
+
+
+def build_cloud_atlas(manifest: dict) -> int:
+    name, cells, (w, h), normal_name = CLOUD_ATLAS
+    if not all((SRC / f"{c}.png").exists() for c in cells):
+        print(f"skip {name}: missing a cell source")
+        return 0
+    cw, ch = w // 2, h // 2
+    atlas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    rects = []
+    for i, c in enumerate(cells):
+        cell = fit_rect(Image.open(SRC / f"{c}.png"), cw, ch)
+        x0, y0 = (i % 2) * cw, (i // 2) * ch
+        atlas.alpha_composite(cell, (x0, y0))
+        a = np.asarray(cell)[..., 3]
+        ys, xs = np.nonzero(a > 8)
+        bx0, bx1, by0, by1 = x0 + xs.min(), x0 + xs.max() + 1, y0 + ys.min(), y0 + ys.max() + 1
+        rects.append([round(bx0 / w, 5), round(1 - by1 / h, 5), round(bx1 / w, 5), round(1 - by0 / h, 5)])
+    total = save_webp(bleed(atlas), OUT / f"{name}.webp")
+    manifest[name] = {"url": f"/textures/{name}.webp", "kind": "sprite", "bytes": total, "cells": cells, "rects": rects}
+    print(f"{name:12s} atlas  {w}x{h}  {total / 1024:6.1f} KB")
+    # normal atlas at half resolution: each cloud bulges like a dome from its rim to its middle
+    # (a spherical cap over the distance to the edge), with the painted puffs as gentle relief
+    rgba = np.asarray(atlas, np.float32) / 255
+    alpha = rgba[..., 3]
+    depth = box_blur(edge_distance(alpha > 0.5, int(ch * 0.3)), 8) * (alpha > 0.5)  # soften the medial ridges
+    reach = max(1.0, float(depth.max()))
+    t = np.clip(depth / reach, 0, 1)
+    dome = np.sqrt(1 - (1 - t) ** 2)
+    lum = rgba[..., :3] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    detail = lum - np.asarray(Image.fromarray((lum * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(5)), np.float32) / 255
+    inner = np.clip(depth / 6.0, 0, 1)  # no relief ridge along the silhouette
+    hgt = dome * reach * 0.35 + detail * 18.0 * inner
+    hgt = box_blur(hgt, 2)
+    nmap = height_to_normal(hgt, strength=1.0).resize((w // 2, h // 2), Image.LANCZOS)
+    n = save_webp(nmap, OUT / f"{normal_name}.webp")
+    manifest[normal_name] = {"url": f"/textures/{normal_name}.webp", "kind": "normal", "bytes": n}
+    print(f"{normal_name:12s} normal {w // 2}x{h // 2}  {n / 1024:6.1f} KB")
+    return total + n
 
 
 def tint_sprite(im: Image.Image) -> Image.Image:
@@ -198,6 +352,9 @@ def main() -> None:
         total += n
         manifest[name] = {"url": f"/textures/{name}.webp", "kind": mode, "bytes": n, "cells": cells}
         print(f"{name:12s} atlas  {size:4d}px  {n / 1024:6.1f} KB")
+
+    total += build_cloud_atlas(manifest)
+    total += build_normals(manifest)
 
     # landing key art + social card
     hero = SRC / "landing-hero.png"

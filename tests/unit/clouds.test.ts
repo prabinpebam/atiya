@@ -4,7 +4,10 @@ import { CONFIG } from '../../src/game/config';
 import {
   CLOUD_COUNT,
   CLOUD_DIST,
+  CLOUD_LEAN,
   CLOUD_RINGS,
+  CLOUD_VARIANTS,
+  cloudBillboard,
   cloudLayout,
   cloudOrientation,
   cloudPosition,
@@ -12,6 +15,7 @@ import {
   ringFrame,
 } from '../../src/game/world/clouds';
 import { skyPosition } from '../../src/game/world/timeOfDay';
+import { TEXTURES } from '../../src/game/world/textureManifest';
 
 const DEG = Math.PI / 180;
 const C = CONFIG.camera;
@@ -85,6 +89,34 @@ describe('clouds', () => {
       expect(up.distanceTo(radial)).toBeLessThan(1e-9);
       expect(front.distanceTo(f.axis)).toBeLessThan(1e-9);
     }
+  });
+
+  it('painted sprites face the camera squarely and stay upright, leaning a little with the ring', () => {
+    const f = ringFrame(cameraAt(C.pitchDeg));
+    for (const [theta, alpha] of [[0.3, 30], [Math.PI / 2, 45], [2.5, 58], [4, 33]] as const) {
+      const pos = cloudPosition(f, theta, alpha, 50);
+      const q = cloudBillboard(f, theta, pos);
+      const front = new Vector3(0, 0, 1).applyQuaternion(q);
+      const up = new Vector3(0, 1, 0).applyQuaternion(q);
+      expect(front.distanceTo(f.cam.clone().sub(pos).normalize())).toBeLessThan(1e-9);
+      const radial = f.right.clone().multiplyScalar(Math.cos(theta)).addScaledVector(f.up, Math.sin(theta));
+      // upright on screen, leaning a little toward the ring's radial direction, projected onto the sprite
+      const lean = f.up.clone().multiplyScalar(1 - CLOUD_LEAN).addScaledVector(radial, CLOUD_LEAN);
+      const projected = lean.addScaledVector(front, -lean.dot(front)).normalize();
+      expect(up.distanceTo(projected)).toBeLessThan(1e-9);
+      expect(up.dot(f.up)).toBeGreaterThan(0.6); // never on its side
+    }
+  });
+
+  it('use the four painted sprites, each with its own opaque rectangle in the atlas', () => {
+    const rects = (TEXTURES['cloud-atlas'] as unknown as { rects: number[][] }).rects;
+    expect(rects).toHaveLength(4);
+    for (const [u0, v0, u1, v1] of rects) {
+      expect(u1).toBeGreaterThan(u0);
+      expect(v1).toBeGreaterThan(v0);
+      for (const v of [u0, v0, u1, v1]) expect(v >= 0 && v <= 1).toBe(true);
+    }
+    expect(new Set(CLOUD_VARIANTS)).toEqual(new Set([0, 1, 2, 3]));
   });
 
   it('fill the sky of a 16:9 view, and out to the far sides of a 32:9 ultrawide, all along their orbits', () => {
