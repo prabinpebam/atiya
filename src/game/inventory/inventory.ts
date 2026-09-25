@@ -108,6 +108,23 @@ export class Inventory {
     return left;
   }
 
+  /** Take `n` of an item out of the backpack (crafting, building): the main slots first, then the hotbar. False (and nothing taken) if there aren't enough. */
+  remove(id: ItemId, n: number): boolean {
+    if (n <= 0) return true;
+    if (this.count(id) < n) return false;
+    let left = n;
+    for (let i = BACKPACK_SLOTS - 1; i >= 0 && left > 0; i--) {
+      const s = this.backpack[i];
+      if (!s || s.id !== id) continue;
+      const k = Math.min(s.n, left);
+      s.n -= k;
+      left -= k;
+      if (s.n <= 0) this.backpack[i] = null;
+    }
+    this.changed();
+    return true;
+  }
+
   // ---------- hotbar ----------
 
   select(i: number): void {

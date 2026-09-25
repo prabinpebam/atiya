@@ -47,7 +47,9 @@ export interface GameTestHook {
   /** Stand `u` in front of the plaza bench, facing it (bench E2E and visual testing). */
   nearBench(u?: number): boolean;
   /** Stand `u` from a usable target, facing it: a tree (`which` = hardwood / apple / orange / cedar), a boulder, a flower or the chest. Returns its key. */
-  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest', which?: string, u?: number): string | null;
+  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'craft' | 'site', which?: string, u?: number): string | null;
+  /** The crafting chunk (crafting.md): Chopper's house (built, colour, building), the ghost's visibility 0…1, and whether the site card is up. */
+  craft(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean } | null;
   /** Backpack (36), chest (27), the cursor stack and the hotbar selection, as `id:n` / null. */
   inventory(): { backpack: (string | null)[]; chest: (string | null)[]; held: string | null; selected: number };
   /** Put items straight into the backpack (tests). Returns the leftover. */
@@ -396,6 +398,7 @@ export function installTestHook(c: GameController): void {
       }
       return null;
     },
+    craft: () => c.craft?.state() ?? null,
     inventory: () => {
       const enc = (s: { id: string; n: number } | null) => (s ? `${s.id}:${s.n}` : null);
       const inv = c.inventory;

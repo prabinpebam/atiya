@@ -5,11 +5,24 @@ import type { GameController } from '../controller';
 import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
 import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
-import { LandmarkDialog, MenuDialog } from './Dialogs';
+import { LandmarkDialog } from './Dialogs';
 import { ViewControls } from './ViewControls';
 import { CHARACTERS, type CharacterId } from '../player/characters';
-import { faArrowUpRightFromSquare, faBoxOpen, faCaretDown, faChair, faComment, faHammer, faMoon, faPaw, faPersonWalking, faSeedling, faSun, faTree, faVolumeHigh, faVolumeXmark, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { selectReducedMotion } from '../state/store';
+import {
+  faArrowUpRightFromSquare,
+  faBoxOpen,
+  faChair,
+  faComment,
+  faHammer,
+  faMoon,
+  faPaw,
+  faPersonWalking,
+  faSeedling,
+  faSun,
+  faTree,
+  faVolumeHigh,
+  faVolumeXmark,
+} from '@fortawesome/free-solid-svg-icons';
 import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
 
@@ -65,7 +78,7 @@ function StartOverlay({ controller }: { controller: GameController }) {
 function PreviewCard({ controller }: { controller: GameController }) {
   const nearbyId = useStore(controller.store, (s) => s.nearbyId);
   // hidden while something you're right at (a tree, the chest, …) has the E key
-  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.target && !s.acting && !s.invScreen);
+  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.target && !s.acting && !s.invScreen && !s.craftScreen);
   if (!nearbyId || !visible) return null;
   const d = controller.dataById.get(nearbyId)!;
   return (
@@ -85,66 +98,26 @@ function PreviewCard({ controller }: { controller: GameController }) {
   );
 }
 
-const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment } as const;
+const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment, craft: faHammer, site: faPaw } as const;
 
-/** Characters per second of the dialog's typewriter reveal. */
-const TALK_CPS = 45;
+// the menu loads on demand: the first time it's opened, or soon after the game starts
+const MenuDialog = lazy(() => import('./MenuDialog'));
 
-/**
- * Talking with one of the family (family.md §6): the name plate, the line typing out, and a "more"
- * marker. E / Enter / Space (or the button) completes the line, then goes on; Escape closes.
- * Non-modal: the keys stay with the planet, and each line is announced in the live region.
- */
-function TalkBox({ controller }: { controller: GameController }) {
-  const talk = useStore(controller.store, (s) => s.talk);
-  const reduced = useStore(controller.store, selectReducedMotion);
-  const line = talk ? talk.lines[talk.index] : '';
-  const [shown, setShown] = useState(0);
-  const reveal = useRef(0);
+function MenuDialogSlot({ controller }: { controller: GameController }) {
+  const open = useStore(controller.store, (s) => s.menuOpen);
+  const [wanted, setWanted] = useState(false);
   useEffect(() => {
-    setShown(reduced ? line.length : 0);
-  }, [talk?.id, talk?.index, line, reduced]);
+    if (open) setWanted(true);
+  }, [open]);
   useEffect(() => {
-    if (talk && talk.reveal !== reveal.current) {
-      reveal.current = talk.reveal;
-      setShown(line.length);
-    }
-  }, [talk, line]);
-  useEffect(() => {
-    const typing = Boolean(talk) && shown < line.length;
-    controller.talkTyping = typing;
-    if (!typing) return;
-    const id = window.setTimeout(() => setShown((n) => Math.min(line.length, n + 1)), 1000 / TALK_CPS);
-    return () => window.clearTimeout(id);
-  }, [shown, line, talk, controller]);
-  if (!talk) return null;
-  const done = shown >= line.length;
-  const last = talk.index === talk.lines.length - 1;
+    const t = window.setTimeout(() => setWanted(true), 2000);
+    return () => window.clearTimeout(t);
+  }, []);
+  if (!wanted) return null;
   return (
-    <section className="card talk-box" role="dialog" aria-label={`Talking with ${talk.name}`} data-testid="talk-box">
-      <p className="talk-name">{talk.name}</p>
-      <p className="sr-only">{line}</p>
-      <p className="talk-line" aria-hidden="true" data-testid="talk-line">
-        {line.slice(0, shown)}
-        <span className="talk-rest">{line.slice(shown)}</span>
-      </p>
-      <div className="talk-actions">
-        <button
-          type="button"
-          className="btn primary talk-next"
-          data-testid="talk-next"
-          onClick={() => {
-            controller.advanceTalk();
-            controller.focusRegion();
-          }}
-        >
-          {done && last ? 'Bye' : 'Next'} <Icon icon={faCaretDown} className={done ? 'talk-more' : undefined} /> <kbd>E</kbd>
-        </button>
-        <button type="button" className="btn talk-close" aria-label="Stop talking" onClick={() => controller.endTalk()}>
-          <Icon icon={faXmark} />
-        </button>
-      </div>
-    </section>
+    <Suspense fallback={null}>
+      <MenuDialog controller={controller} />
+    </Suspense>
   );
 }
 
@@ -172,7 +145,7 @@ function ChopperCardSlot({ controller }: { controller: GameController }) {
 function ActionPrompt({ controller }: { controller: GameController }) {
   const seated = useStore(controller.store, (s) => s.seated);
   const target = useStore(controller.store, (s) => s.target);
-  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.openId && !s.menuOpen && !s.invScreen && !s.acting && !s.chopperOpen && !s.talk);
+  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.openId && !s.menuOpen && !s.invScreen && !s.craftScreen && !s.acting && !s.chopperOpen && !s.talk);
   if (!visible || (!seated && !target)) return null;
   const act = () => {
     if (seated) controller.standUp();
@@ -189,7 +162,7 @@ function ActionPrompt({ controller }: { controller: GameController }) {
           </>
         ) : (
           <>
-            <Icon icon={TARGET_ICONS[target!.kind]} /> {target!.label} <kbd>E</kbd>
+            <Icon icon={(target!.kind === 'craft' || target!.kind === 'site' ? controller.craft?.promptIcon(target!.kind, target!.label) : null) ?? TARGET_ICONS[target!.kind]} /> {target!.label} <kbd>E</kbd>
           </>
         )}
       </button>
@@ -482,12 +455,16 @@ function ContextLost({ controller }: { controller: GameController }) {
 }
 
 export function Hud({ controller }: { controller: GameController }) {
+  // the crafting screen, the palette and the site card come with the crafting chunk (crafting.md)
+  const CraftScreens = controller.craft?.Screens ?? null;
+  // talking with the family: the dialog box comes with the home chunk (family.md §6)
+  const HomeHud = controller.home?.Hud ?? null;
   return (
     <>
       <LandmarkNav controller={controller} />
       <PreviewCard controller={controller} />
       <ActionPrompt controller={controller} />
-      <TalkBox controller={controller} />
+      {HomeHud && <HomeHud />}
       <Hotbar controller={controller} />
       <ViewControls controller={controller} />
       <CharacterPicker controller={controller} />
@@ -502,9 +479,10 @@ export function Hud({ controller }: { controller: GameController }) {
         }}
       />
       <LandmarkDialog controller={controller} />
-      <MenuDialog controller={controller} />
+      <MenuDialogSlot controller={controller} />
       <InventoryScreen controller={controller} />
       <ChopperCardSlot controller={controller} />
+      {CraftScreens && <CraftScreens />}
       <MenuButton controller={controller} target={controller.hudActions} />
       <LoadingOverlay controller={controller} />
       <StartOverlay controller={controller} />

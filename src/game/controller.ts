@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { Quaternion, Vector3, type Camera, type Scene, type WebGLRenderer } from 'three';
 import { CONFIG } from './config';
 import type { LandmarkData, MoveIntent } from './types';
@@ -16,7 +17,7 @@ import { Drops } from './world/dropSim';
 import { Harvest } from './world/harvest';
 import { FRUIT_SPOTS } from './world/foliage';
 import { propPoint } from './world/propFrame';
-import { generateProps, type PropLayout } from './world/layout';
+import { CRAFT_RADIUS, generateProps, type PropLayout } from './world/layout';
 import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectAmbientPaused, selectReducedMotion, type GameStore } from './state/store';
@@ -53,6 +54,22 @@ interface KeyEventLike {
   preventDefault(): void;
 }
 
+/** The crafting table and Chopper's house (world/craft/, its own chunk; docs: crafting.md), once attached. */
+export interface CraftAttachment {
+  /** The crafting table, and Chopper's house (or its ghost), in the scene. */
+  View: ComponentType;
+  /** Its screens in the HUD: the crafting screen, the palette and the site card. */
+  Screens: ComponentType;
+  step(dt: number): void;
+  /** The site's prompt: see what's needed, build it, or paint it. */
+  siteLabel(): string;
+  /** E at the site. */
+  useSite(): void;
+  /** The prompt's icon at the crafting table or the site (the icons live in the chunk). */
+  promptIcon(kind: 'craft' | 'site', label: string): IconDefinition;
+  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean };
+}
+
 /** The home and family (world/home/, its own chunk; docs: family.md), once attached. */
 export interface HomeAttachment {
   family: unknown;
@@ -68,6 +85,8 @@ export interface HomeAttachment {
   meal(): { food: boolean; phase: string | null; schedule: string | null };
   hold(id: string, activity: string): boolean;
   View: ComponentType;
+  /** Its part of the HUD: the talk dialog box. */
+  Hud: ComponentType;
 }
 
 export interface ShellElements {
@@ -107,6 +126,8 @@ export class GameController {
   chopperView: ComponentType<{ controller: GameController }> | null = null;
   /** The home and family, once its chunk has loaded (null without a pond, or if it failed). */
   home: HomeAttachment | null = null;
+  /** The crafting table and Chopper's house, once that chunk has loaded (null if it failed). */
+  craft: CraftAttachment | null = null;
   /** Things rabbits and ground birds shy away from besides the character: Chopper, the children. */
   readonly threats: Vector3[] = [];
   /** The family's collision circles in the character's list (switched off while they're indoors). */
@@ -133,6 +154,8 @@ export class GameController {
   readonly fadeEl: { current: HTMLDivElement | null } = { current: null };
   region: HTMLDivElement | null = null;
   camera: Camera | null = null;
+  /** The wildlife's bodies and simulation (`world/Wildlife.tsx`), loaded as its own chunk before the scene mounts; null if it failed. */
+  wildlifeView: ComponentType<{ controller: GameController }> | null = null;
   /** The ambient wildlife simulation (set by the Wildlife component; read by the test hook). */
   wildlife: import('./world/animals').Wildlife | null = null;
   /** Renderer and scene, for diagnostics (the test hook's `perfStats`). */
@@ -365,7 +388,7 @@ export class GameController {
   /** Advance simulation + proximity by one step (also used by the test hook). */
   step(delta: number): void {
     const s = this.store.getState();
-    const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.chopperOpen && !s.talk;
+    const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.craftScreen && !s.chopperOpen && !s.talk;
     const seat = this.seatMotion;
     const intent: MoveIntent = playing && !seat.stage && !this.action.busy ? this.keyboard.intent() : NO_INTENT;
     this.updateView(delta, playing, selectReducedMotion(s));
@@ -379,6 +402,7 @@ export class GameController {
     this.stepDrops(dt, s);
     this.stepChopper(dt, s);
     if (this.home && !this.sim.travel && !selectAmbientPaused(s) && s.phase !== 'loading') this.home.step(dt);
+    this.craft?.step(dt);
     if (this.familyObstacles.length) {
       const inside = new Set(this.home!.state().filter((p) => p.indoors).map((p) => p.id));
       for (const f of this.familyObstacles) f.o.radiusU = inside.has(f.id) ? -1 : 0.2;
@@ -449,7 +473,7 @@ export class GameController {
 
   private canUseView(): boolean {
     const s = this.store.getState();
-    return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.chopperOpen && !s.talk && !this.sim.travel;
+    return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.craftScreen && !s.chopperOpen && !s.talk && !this.sim.travel;
   }
 
   /** Button step: +1 turns the scene counter-clockwise, −1 clockwise. */
@@ -641,7 +665,7 @@ export class GameController {
     const s = this.store.getState();
     const t = this.targets.find((x) => x.key === s.target?.key);
     const seat = t?.seat;
-    if (!seat || s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || this.sim.travel || this.seatMotion.stage || this.action.busy) return;
+    if (!seat || s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || s.craftScreen || this.sim.travel || this.seatMotion.stage || this.action.busy) return;
     this.sim.cancelAutoWalk();
     this.keyboard.clear();
     this.buffer.clear();
@@ -700,6 +724,7 @@ export class GameController {
           : true;
 
   private labelFor(t: Target): string {
+    if (t.kind === 'site') return this.craft?.siteLabel() ?? targetLabel(t);
     return targetLabel(t, t.kind === 'flower' ? itemDef(flowerItem(t.flower!, t.colour ?? 0)).name.toLowerCase() : undefined);
   }
 
@@ -717,7 +742,7 @@ export class GameController {
   useTarget(): void {
     const s = this.store.getState();
     const t = this.targets.find((x) => x.key === s.target?.key);
-    if (!t || s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || this.sim.travel || this.action.busy || this.seatMotion.stage) return;
+    if (!t || s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || s.craftScreen || this.sim.travel || this.action.busy || this.seatMotion.stage) return;
     if (t.kind === 'bench') {
       this.sitDown();
       return;
@@ -728,6 +753,14 @@ export class GameController {
     }
     if (t.kind === 'npc') {
       this.startTalk(t.who!);
+      return;
+    }
+    if (t.kind === 'craft') {
+      this.openCraft('table');
+      return;
+    }
+    if (t.kind === 'site') {
+      this.craft?.useSite();
       return;
     }
     const kind = actionFor(t);
@@ -823,7 +856,7 @@ export class GameController {
   /** The drops simulation, collecting into the backpack. */
   private stepDrops(dt: number, s: ReturnType<GameStore['getState']>): void {
     const R = CONFIG.planetRadius;
-    const canCollect = s.phase === 'playing' && !this.sim.travel && !s.invScreen && !s.openId;
+    const canCollect = s.phase === 'playing' && !this.sim.travel && !s.invScreen && !s.craftScreen && !s.openId;
     const player = canCollect ? _feet.copy(this.sim.pLocal).multiplyScalar(R + this.lift) : null;
     this.drops.step(
       {
@@ -855,13 +888,14 @@ export class GameController {
   /** Something in the backpack / chest changed: re-render and save (debounced). */
   invChanged(): void {
     this.store.setState({ invVersion: this.inventory.version });
+    this.refreshTarget();
     window.clearTimeout(this.saveTimer);
     this.saveTimer = window.setTimeout(() => prefs.setInventory(this.inventory.toJSON()), 250);
   }
 
   openInventory(screen: 'backpack' | 'chest'): void {
     const s = this.store.getState();
-    if (s.phase !== 'playing' || s.openId || s.chopperOpen) return;
+    if (s.phase !== 'playing' || s.openId || s.chopperOpen || s.craftScreen) return;
     this.keyboard.clear();
     this.sim.cancelAutoWalk();
     this.store.setState({ invScreen: screen, menuOpen: false });
@@ -895,7 +929,7 @@ export class GameController {
   /** Mouse wheel over the planet or the hotbar: next / previous hotbar slot. */
   onWheel = (e: { deltaY: number }): void => {
     const s = this.store.getState();
-    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || s.chopperOpen || !e.deltaY) return;
+    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || s.craftScreen || s.chopperOpen || !e.deltaY) return;
     this.selectSlot(this.inventory.selected + Math.sign(e.deltaY));
   };
 
@@ -921,7 +955,7 @@ export class GameController {
   walkToWorldPoint(point: Vector3): void {
     const s = this.store.getState();
     if (s.phase === 'ready') this.start();
-    if (this.store.getState().phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || this.sim.travel) return;
+    if (this.store.getState().phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel) return;
     if (this.seatMotion.stage) {
       this.standUp();
       return;
@@ -1032,6 +1066,52 @@ export class GameController {
     });
   }
 
+  // ---------- crafting and Chopper's house (crafting.md) ----------
+
+  /** The crafting chunk has loaded: the crafting table and the house's site become targets. */
+  attachCraft(c: CraftAttachment | null): void {
+    this.craft = c;
+    if (!c) return;
+    const table = this.props.craft;
+    if (table) this.targets.push({ kind: 'craft', key: 'craft', n: table.n, edgeU: CRAFT_RADIUS, reachU: REACH.craft, standU: CRAFT_RADIUS + 0.45, index: 0, facing: table.facing, scale: 1 });
+    const site = this.props.home?.dogHouse;
+    if (site) this.targets.push({ kind: 'site', key: 'site', n: site.n, edgeU: 0.45, reachU: REACH.site, standU: 0.95, index: 0, facing: site.facing, scale: 1 });
+  }
+
+  /** Something new and solid (Chopper's house, once built): the character, Chopper and the family keep out of it. */
+  addObstacle(o: Obstacle): void {
+    this.staticObstacles.push(o);
+    this.sim.obstacles.push(o);
+  }
+
+  /** The prompt's text may have changed (the site: built, or now buildable). */
+  refreshTarget(): void {
+    const cur = this.store.getState().target;
+    const t = cur && this.targets.find((x) => x.key === cur.key);
+    if (!t) return;
+    const label = this.labelFor(t);
+    if (label !== cur!.label) this.store.setState({ target: { ...cur!, label } });
+  }
+
+  /** The crafting screen, or the palette for Chopper's house. */
+  openCraft(screen: 'table' | 'paint'): void {
+    const s = this.store.getState();
+    if (!this.craft || s.phase !== 'playing' || s.openId || s.chopperOpen || s.invScreen || s.talk || s.craftScreen || this.sim.travel) return;
+    this.keyboard.clear();
+    this.buffer.clear();
+    this.sim.cancelAutoWalk();
+    this.sim.vel.set(0, 0, 0);
+    this.sound.open();
+    this.store.setState({ craftScreen: screen, menuOpen: false, target: null });
+    this.announce(screen === 'table' ? 'Crafting table open.' : "Painting Chopper's house.");
+  }
+
+  closeCraft(): void {
+    if (!this.store.getState().craftScreen) return;
+    this.store.setState({ craftScreen: null });
+    requestAnimationFrame(() => this.focusRegion());
+  }
+
   // ---------- the family (family.md) ----------
 
   /** The home chunk has loaded: its people become talk targets, and the children scare rabbits too. */
@@ -1053,7 +1133,7 @@ export class GameController {
   startTalk(id: string): void {
     const s = this.store.getState();
     const who = this.home?.people.find((p) => p.id === id);
-    if (!this.home || !who || s.phase !== 'playing' || s.openId || s.chopperOpen || s.talk || this.sim.travel) return;
+    if (!this.home || !who || s.phase !== 'playing' || s.openId || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel) return;
     this.keyboard.clear();
     this.buffer.clear();
     this.sim.cancelAutoWalk();
@@ -1166,6 +1246,7 @@ export class GameController {
     this.leaveSeat();
     this.cancelAction();
     this.closeInventory();
+    this.closeCraft();
     this.endTalk();
     this.store.setState({ menuOpen: false, nearbyId: null, target: null, traveling: mode });
     this.keyboard.clear();
@@ -1194,6 +1275,7 @@ export class GameController {
     const s = this.store.getState();
     if (s.openId || s.chopperOpen) return;
     if (s.invScreen) this.closeInventory();
+    if (s.craftScreen) this.closeCraft();
     this.keyboard.clear();
     this.store.setState({ menuOpen: true });
   }

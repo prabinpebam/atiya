@@ -23,6 +23,8 @@ Only the subject line (`ITEMS`) changes from icon to icon.
 
 Flowers come in the planet's seven bloom colours. Each flower kind is painted once, with **white** petals. `build` re-tints the petal pixels (light and nearly neutral) to each colour while keeping their painted shading, much as Minecraft uses tint layers. So the seven tulips share one drawing and differ only in colour.
 
+The crafting chunk's paint pots work the same way: one pot of **white** paint is painted, and `build` re-tints it (`paint-<colour>`) to each bloom colour. Planks, the wooden beam and the stone slab are painted directly.
+
 ## Commands
 
 ```
@@ -34,5 +36,5 @@ python scripts/gen-icons.py build           # public/icons/*.webp + src/game/inv
 ```
 
 - **Sources:** each generated source is kept here as `<id>.png`, with the exact prompt in `<id>.prompt.txt`.
-- **Build output:** 96×96 WebP files (26 icons, ≈ 78 KB in total). Review `contact-sheet.png` after every build.
+- **Build output:** 96×96 WebP files (36 icons, ≈ 108 KB in total). Review `contact-sheet.png` after every build.
 - **Adding an item:** add it to `ITEMS` in the script and in `src/game/inventory/items.ts`, run `icon <id>`, view the result, then run `build`.

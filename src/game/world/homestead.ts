@@ -37,6 +37,8 @@ export interface Homestead {
   shore: HomeSpot;
   /** The string lights' far post. */
   lightsPost: Vector3;
+  /** Where Chopper's house goes (crafting.md): beside the family's house, facing the pond. */
+  dogHouse: HomeSpot;
   obstacles: Obstacle[];
   /** Discs (centre, radius u) the random props are cleared from. */
   clear: Array<{ n: Vector3; r: number }>;
@@ -49,7 +51,7 @@ export interface Homestead {
  */
 export const PROP_SCALE = 0.72;
 
-export const HOME_R = { house: 1.25, chair: 0.22, table: 0.46, fire: 0.42, log: 0.25, post: 0.1, tree: 0.42 } as const;
+export const HOME_R = { house: 1.25, chair: 0.22, table: 0.46, fire: 0.42, log: 0.25, post: 0.1, tree: 0.42, dogHouse: 0.5 } as const;
 
 export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const R = cfg.planetRadius;
@@ -104,6 +106,9 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const treeSeat = { n: treeSeatN, facing: facingTo(treeSeatN, pond.n) };
   const shore = spot(206, pond.radiusU + 0.75);
   const lightsPost = beside(table, 200, 1.1);
+  // beside the house, on the side away from the campsite, facing the pond
+  const dogN = beside(house, -95, 2.7);
+  const dogHouse = { n: dogN, facing: facingTo(dogN, pond.n) };
   const centre = at(228, 4.3);
 
   const obstacles: Obstacle[] = [
@@ -127,6 +132,7 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     { n: tree, r: 1.3 },
     { n: shore.n, r: 0.7 },
     { n: lightsPost, r: 0.4 },
+    { n: dogN, r: 1.2 },
   ];
-  return { centre, range: 7, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, obstacles, clear };
+  return { centre, range: 7, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, dogHouse, obstacles, clear };
 }

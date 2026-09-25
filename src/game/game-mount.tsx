@@ -25,13 +25,26 @@ export async function mountGame(container: HTMLElement, landmarks: LandmarkData[
   // hand-painted textures are small; materials read them synchronously, so load them first
   // (never throws: anything missing falls back to the procedural look). Chopper's body comes in its
   // own chunk meanwhile, so his material compiles with the rest of the scene before the first frame.
-  // The home and family by the pond come the same way (family.md).
-  const [, chopper, home] = await Promise.all([preloadTextures(), import('./world/Chopper').catch(() => null), import('./world/home').catch(() => null)]);
+  // The home and family by the pond come the same way (family.md), and so do the crafting table and Chopper's house
+  // (crafting.md) and the wildlife.
+  const [, chopper, home, craft, wildlife] = await Promise.all([
+    preloadTextures(),
+    import('./world/Chopper').catch(() => null),
+    import('./world/home').catch(() => null),
+    import('./world/craft').catch(() => null),
+    import('./world/Wildlife').catch(() => null),
+  ]);
   controller.chopperView = chopper?.Chopper ?? null;
+  controller.wildlifeView = wildlife?.Wildlife ?? null;
   try {
     controller.attachHome(home?.attachHome(controller) ?? null);
   } catch (err) {
     console.warn('The home by the pond failed to load.', err);
+  }
+  try {
+    controller.attachCraft(craft?.attachCraft(controller) ?? null);
+  } catch (err) {
+    console.warn('The crafting table failed to load.', err);
   }
   container.replaceChildren();
   createRoot(container).render(

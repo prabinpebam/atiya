@@ -17,7 +17,6 @@ import { DayNight } from './world/DayNight';
 import { Bridges, Cliffs, Water } from './world/Landforms';
 import { FlyingLeaves, WindDriver, WindSwirls } from './world/WindFx';
 import { WadeFx } from './world/WadeFx';
-import { Wildlife } from './world/Wildlife';
 import { Drops } from './world/Drops';
 import { Chest } from './world/Chest';
 import { updateLampUniforms } from './world/lampLights';
@@ -261,7 +260,9 @@ export function Scene({ controller }: { controller: GameController }) {
   const planet = useRef<Group>(null);
   // Chopper's body, fur and animation: their own chunk, loaded alongside the textures (game-mount.tsx)
   const Chopper = controller.chopperView;
+  const Wildlife = controller.wildlifeView;
   const Home = controller.home?.View ?? null;
+  const Craft = controller.craft?.View ?? null;
   const quality = useStore(controller.store, (s) => s.quality);
   const shadowSize = quality === 'high' ? 2048 : 1024;
   return (
@@ -283,11 +284,12 @@ export function Scene({ controller }: { controller: GameController }) {
         <WindSwirls controller={controller} />
         <Plaza controller={controller} />
         <Props controller={controller} />
-        <Wildlife controller={controller} />
+        {Wildlife && <Wildlife controller={controller} />}
         <Drops controller={controller} />
         <Chest controller={controller} />
         {Chopper && <Chopper controller={controller} />}
         {Home && <Home />}
+        {Craft && <Craft />}
         {controller.geos.map((g) => (
           <Landmark key={g.id} controller={controller} geo={g} data={controller.dataById.get(g.id)!} />
         ))}

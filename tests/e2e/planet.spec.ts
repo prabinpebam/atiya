@@ -1056,6 +1056,151 @@ test.describe('collecting & inventory', () => {
   });
 });
 
+test.describe("crafting & Chopper's house", () => {
+  type Inv = { backpack: (string | null)[] };
+  type Craft = { built: boolean; colour: string; building: boolean; ghost: number; near: boolean };
+  const inv = (page: Page) => page.evaluate(() => (window as any).__game.inventory() as Inv);
+  const count = (list: (string | null)[], id: string) => list.reduce((n, s) => n + (s && s.split(':')[0] === id ? Number(s.split(':')[1]) : 0), 0);
+  const craft = (page: Page) => page.evaluate(() => (window as any).__game.craft() as Craft);
+  const fastForward = (page: Page, seconds: number) =>
+    page.evaluate((s) => {
+      const g = (window as any).__game;
+      g.pause();
+      g.advance(Math.round(s * 60));
+      g.resume();
+    }, seconds);
+  const prompt = (page: Page) => page.getByTestId('seat-prompt');
+  const give = (page: Page, items: Array<[string, number]>) =>
+    page.evaluate((list) => {
+      for (const [id, n] of list) (window as any).__game.giveItem(id, n);
+    }, items);
+
+  test('the crafting table: its own prompt, the recipe screen with have / need, bulk crafting by keyboard, Esc hands back the planet', async ({ page }) => {
+    test.setTimeout(150_000);
+    await startPlanet(page);
+    await give(page, [
+      ['log', 3],
+      ['stone', 4],
+    ]);
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('craft'))).toBe('craft');
+    await expect(prompt(page).getByRole('button', { name: /Use crafting table/ })).toBeVisible();
+    // it stands inside the Workshop's area, yet it has the E key (and the Workshop's card makes way)
+    expect((await state(page)).nearby).toBe('workshop');
+    await expect(page.getByTestId('preview-card')).toHaveCount(0);
+    await page.keyboard.press('KeyE');
+    const screen = page.getByTestId('craft-screen');
+    await expect(screen.getByRole('dialog', { name: 'Crafting table' })).toBeVisible();
+    await noSeriousViolations(page);
+    // planks are selected: 1 log makes 4; three logs make 12
+    await expect(screen.getByRole('option', { name: /Planks/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(screen.getByTestId('craft-need').first()).toContainText('3 / 1');
+    await expect(screen.getByTestId('recipe-planks')).toContainText('×12');
+    // → two at once, Enter crafts (a short hammering)
+    await page.keyboard.press('ArrowRight');
+    await expect(screen.getByTestId('craft-qty')).toHaveText('8');
+    await expect(screen.getByTestId('craft-need').first()).toContainText('3 / 2');
+    await page.keyboard.press('Enter');
+    await fastForward(page, 1);
+    let i = await inv(page);
+    expect(count(i.backpack, 'planks')).toBe(8);
+    expect(count(i.backpack, 'log')).toBe(1);
+    // a beam needs two logs: with one left it's short, and Enter makes nothing
+    await page.keyboard.press('ArrowDown');
+    await expect(screen.getByRole('option', { name: /Wooden beam/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(screen.getByTestId('craft-need').first()).toContainText('1 / 2');
+    await expect(screen.getByTestId('craft-need').first()).toHaveClass(/short/);
+    await page.keyboard.press('Enter');
+    await fastForward(page, 1);
+    expect(count((await inv(page)).backpack, 'beam')).toBe(0);
+    // a stone slab from two stones
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await fastForward(page, 1);
+    i = await inv(page);
+    expect(count(i.backpack, 'slab')).toBe(1);
+    expect(count(i.backpack, 'stone')).toBe(2);
+    await page.keyboard.press('Escape');
+    await expect(screen).toHaveCount(0);
+    await expect(page.locator('.game-region')).toBeFocused();
+    expect((await state(page)).phase).toBe('playing');
+  });
+
+  test("Chopper's house: the ghost grows clearer as you come, the card says what's needed, E builds it, it's saved, solid and paintable", async ({ page }) => {
+    test.setTimeout(200_000);
+    await startPlanet(page);
+    const near = (u?: number) => page.evaluate((u) => (window as any).__game.nearTarget('site', undefined, u), u);
+    expect(await near(11)).toBe('site');
+    await fastForward(page, 0.2);
+    const far = await craft(page);
+    expect(far.built).toBe(false);
+    expect(far.ghost).toBeLessThan(0.2);
+    expect(far.near).toBe(false);
+    await expect(page.getByTestId('site-card')).toHaveCount(0);
+    expect(await near(3)).toBe('site');
+    await fastForward(page, 0.2);
+    const close = await craft(page);
+    expect(close.ghost).toBeGreaterThan(0.85);
+    const card = page.getByTestId('site-card');
+    await expect(card).toBeVisible();
+    await expect(card.getByRole('heading', { name: "Chopper’s house" })).toBeVisible();
+    await expect(card.getByTestId('site-need')).toHaveText([/Stone slabs\s*0 \/ 2/, /Wooden beams\s*0 \/ 2/, /Planks\s*0 \/ 4/]);
+    // before it's built you can stand in its spot
+    expect(await near(0.2)).toBe('site');
+    // at the site: E says what's missing and builds nothing
+    expect(await near()).toBe('site');
+    await expect(prompt(page).getByRole('button', { name: /See what Chopper's house needs/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await expect(page.locator('.toast')).toContainText("still needs 2 stone slabs, 2 wooden beams and 4 planks");
+    expect((await craft(page)).built).toBe(false);
+    // with everything, the prompt changes and E builds it
+    await give(page, [
+      ['slab', 2],
+      ['beam', 2],
+      ['planks', 5],
+    ]);
+    await expect(prompt(page).getByRole('button', { name: /Build Chopper's house/ })).toBeVisible();
+    await expect(card.getByTestId('site-need')).toHaveText([/2 \/ 2/, /2 \/ 2/, /4 \/ 4/]);
+    await page.keyboard.press('KeyE');
+    let c = await craft(page);
+    expect(c.built).toBe(true);
+    expect(c.building).toBe(true);
+    const i = await inv(page);
+    expect([count(i.backpack, 'slab'), count(i.backpack, 'beam'), count(i.backpack, 'planks')]).toEqual([0, 0, 1]);
+    await fastForward(page, 3);
+    c = await craft(page);
+    expect(c.building).toBe(false);
+    expect(c.ghost).toBe(0);
+    await expect(card).toHaveCount(0);
+    expect((await page.evaluate(() => (window as any).__game.chopper())).behaviour).toBe('house');
+    // it's solid now: there's nowhere to stand inside it
+    expect(await near(0.2)).toBeNull();
+    // saved: still built after a reload
+    await page.reload();
+    await page.waitForFunction(() => (window as any).__game && (window as any).__game.getState().phase !== 'loading', null, { timeout: 60_000 });
+    await page.getByRole('button', { name: 'Start exploring' }).click();
+    await expect.poll(async () => (await state(page)).phase).toBe('playing');
+    expect((await craft(page)).built).toBe(true);
+    // painting: one pot of a paint you've made, or Original red for free; the colour is saved
+    await give(page, [['paint-blue', 1]]);
+    expect(await near()).toBe('site');
+    await expect(prompt(page).getByRole('button', { name: /Paint Chopper's house/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    const palette = page.getByTestId('paint-screen');
+    await expect(palette.getByRole('dialog', { name: 'Paint Chopper’s house' })).toBeVisible();
+    await noSeriousViolations(page);
+    await expect(palette.getByTestId('paint-original')).toHaveAttribute('aria-pressed', 'true');
+    await expect(palette.getByTestId('paint-red')).toBeDisabled();
+    await palette.getByTestId('paint-blue').click();
+    await expect(palette).toHaveCount(0);
+    expect((await craft(page)).colour).toBe('blue');
+    expect(count((await inv(page)).backpack, 'paint-blue')).toBe(0);
+    await page.waitForTimeout(300);
+    await page.reload();
+    await page.waitForFunction(() => (window as any).__game && (window as any).__game.getState().phase !== 'loading', null, { timeout: 60_000 });
+    expect((await craft(page)).colour).toBe('blue');
+  });
+});
+
 test.describe('player character', () => {
   test('loads the rigged CC0 character model', async ({ page }) => {
     const glb: string[] = [];

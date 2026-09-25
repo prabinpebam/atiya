@@ -5,7 +5,7 @@ import type { LandmarkGeometry } from '../math/landmarks';
 import { nearPlateauRim } from './cliffs';
 import { buildMesas, buildRiver, findBridges, mesaDir, mesaPolar, mesaRadius, riverDistance, tierEdge, tierPolar, type Bridge, type Mesa, type River } from './features';
 import { pondAngle, pondFrame, shoreRadius } from './pond';
-import { homesteadLayout, type Homestead } from './homestead';
+import { HOME_R, homesteadLayout, type Homestead } from './homestead';
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
 export const FLOWER_KINDS: FlowerKind[] = ['tulip', 'cosmos', 'pansy'];
@@ -45,6 +45,12 @@ export interface ChestSpot {
 
 /** The chest's collision radius (u). */
 export const CHEST_RADIUS = 0.4;
+/** The crafting table's collision radius (u). */
+export const CRAFT_RADIUS = 0.5;
+/** Round the chest, the crafting table and Chopper's house site: no flowers within this (u, from their edge)… */
+export const KEEP_CLEAR = 1.5;
+/** …and no tree, bush or rock edge within this of their edge (u). */
+export const KEEP_SOLID = 0.9;
 
 export interface Pond {
   n: Vector3;
@@ -74,6 +80,8 @@ export interface PropLayout {
   chest: ChestSpot | null;
   /** The owner's home by the pond (family.md), or null without a pond. */
   home: Homestead | null;
+  /** The crafting table by the Workshop (crafting.md), or null if there's no clear spot. */
+  craft: ChestSpot | null;
   pond: Pond | null;
   river: River | null;
   bridges: Bridge[];
@@ -445,6 +453,29 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     for (const k of FLOWER_KINDS) keep(flowers[k]);
   }
 
+  // the crafting table: beside the Workshop too, but on the other side from the chest and further
+  // out, so the Workshop's preview, the chest and the table can each be used on their own
+  const craft = ((): ChestSpot | null => {
+    const ws = landmarks.find((g) => g.id === 'workshop') ?? landmarks[0];
+    if (!ws) return null;
+    const side = new Vector3().crossVectors(ws.n, ws.door).normalize();
+    const solidsAll = [...trees, ...allBushes, ...rocks, ...boulders];
+    for (const deg of [-60, 60, -75, 75, -45, 45, -90, 90, -110, 110, -130, 130]) {
+      for (const extra of [1.3, 1.6, 1.9, 2.2]) {
+        const a = (deg * Math.PI) / 180;
+        const dir = ws.door.clone().multiplyScalar(Math.cos(a)).addScaledVector(side, Math.sin(a));
+        const n = moveAlong(ws.n, dir, (ws.footprintU + extra) / R);
+        if (corridor(n) < 1.3 || inPond(n, 0.4) || blocked(n, { river: 0.6, mesa: 0.6 })) continue;
+        if (chest && arcDistance(n, chest.n, R) < 2.0) continue;
+        if (solidsAll.some((t) => arcDistance(t.n, n, R) < 1.0)) continue;
+        if (posts.some((p) => arcDistance(p.n, n, R) < 0.9) || furniture.some((f) => arcDistance(f.n, n, R) < 1.1)) continue;
+        if (landmarks.some((g) => g !== ws && arcDistance(n, g.n, R) < g.footprintU + 1.2)) continue;
+        return { n, facing: tangentToward(n, ws.approach) ?? dir };
+      }
+    }
+    return null;
+  })();
+
   // the owner's home by the pond: laid out last and cleared of whatever stood there, so the rest of
   // the planet is unchanged; Laija's reading tree joins the hardwoods
   const home = pond ? homesteadLayout(pond, cfg) : null;
@@ -460,6 +491,23 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     trees.push(tree);
   }
 
+  // keep the special targets (the chest, the crafting table, Chopper's house site) apart from every
+  // other usable thing, so walking up to one never offers another by mistake: no flowers inside
+  // KEEP_CLEAR of them, and no tree, bush, rock or boulder whose edge is within KEEP_SOLID of theirs
+  const specials = [chest && { n: chest.n, r: CHEST_RADIUS }, craft && { n: craft.n, r: CRAFT_RADIUS }, home && { n: home.dogHouse.n, r: HOME_R.dogHouse }].filter(Boolean) as { n: Vector3; r: number }[];
+  if (specials.length) {
+    const near = (p: PropInstance, pad: number) => specials.some((s) => arcDistance(p.n, s.n, R) < s.r + pad);
+    const keepOut = <T extends PropInstance>(list: T[], pad: number, radius = 0) => {
+      for (let i = list.length - 1; i >= 0; i--) if (list[i].n !== home?.tree && near(list[i], pad + radius * list[i].scale)) list.splice(i, 1);
+    };
+    for (const k of FLOWER_KINDS) keepOut(flowers[k], KEEP_CLEAR);
+    keepOut(sprigs, KEEP_CLEAR * 0.6);
+    for (const list of [hardwood, fruit, cedar, trees]) keepOut(list, KEEP_SOLID, 0.42);
+    for (const list of [bushes, flowerBushes, allBushes]) keepOut(list, KEEP_SOLID, 0.42);
+    keepOut(rocks, KEEP_SOLID, 0.36);
+    keepOut(boulders, KEEP_SOLID, 0.4);
+  }
+
   const onMesaTop = new Set(mesaTop);
   const obstacles: Obstacle[] = [
     ...hardwood.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.42 * t.scale })),
@@ -471,13 +519,14 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     ...posts.map((p) => ({ n: p.n, radiusU: POST_RADIUS })),
     ...furniture.map((f) => ({ n: f.n, radiusU: FURNITURE_RADIUS[f.kind] })),
     ...(chest ? [{ n: chest.n, radiusU: CHEST_RADIUS }] : []),
+    ...(craft ? [{ n: craft.n, radiusU: CRAFT_RADIUS }] : []),
     // the stream and pond are shallow enough to wade through (spec §4.14), so water doesn't block
     ...bridgeRailObstacles(bridges, cfg),
     ...mesas.flatMap((m) => mesaObstacles(m, cfg)),
     ...(home?.obstacles ?? []),
   ];
 
-  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, posts, furniture, chest, home, pond, river, bridges, mesas, obstacles };
+  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, posts, furniture, chest, craft, home, pond, river, bridges, mesas, obstacles };
 }
 
 /** Rails along both sides of each bridge deck. */

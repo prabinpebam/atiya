@@ -10,10 +10,10 @@
  */
 import { Vector3 } from 'three';
 import { arcDistance, moveAlong, resolvePenetration, tangentToward, type Obstacle } from '../../math/sphere';
-import { rotateAbout, transport, turnToward } from '../animals';
+import { rotateAbout, transport, turnToward } from '../../math/steer';
 import type { Clip } from './anim';
 
-export type Behaviour = 'follow' | 'idle' | 'wander' | 'sniff' | 'chase' | 'scent' | 'runAhead' | 'playBow' | 'whistled' | 'heel';
+export type Behaviour = 'follow' | 'idle' | 'wander' | 'sniff' | 'chase' | 'scent' | 'runAhead' | 'playBow' | 'whistled' | 'heel' | 'house';
 
 /** Distances (u), speeds (u/s), times (s). */
 export const DOG = {
@@ -35,7 +35,7 @@ export const DOG = {
   accel: 7,
   /** Heel after a whistle for this long. */
   heelTime: 12,
-  cooldown: { chase: 25, scent: 40, runAhead: 30, playBow: 45, sniff: 6, wander: 8 },
+  cooldown: { chase: 25, scent: 40, runAhead: 30, playBow: 45, sniff: 6, wander: 8, house: 70 },
   /** A thing he sniffed isn't interesting again for this long. */
   sniffMemory: 60,
   chaseMax: 7,
@@ -64,6 +64,8 @@ export interface DogWorld {
   spots: readonly Spot[];
   /** Others walking about (the family): he steps round them and never through them. */
   others: Vector3[];
+  /** His house, once it's built (crafting.md §4.3): the spot in its doorway, and which way it faces. */
+  house?: { door: Vector3; facing: Vector3 } | null;
 }
 
 export type DogEvent = { type: 'bark' | 'sniff' | 'yip' };
@@ -141,6 +143,8 @@ export class ChopperBrain {
   private heelLeft = 0;
   private sniffTick = 0;
   private hopSide = 1;
+  /** At his house: sit in the doorway (just built) or curl up for a nap. */
+  private houseSit = false;
   /** Which way he goes round things in his path (kept, so he doesn't dither at an obstacle). */
   private side = 1;
   readonly events: DogEvent[] = [];
@@ -183,6 +187,13 @@ export class ChopperBrain {
     this.setBehaviour('idle');
     this.setClip(clip);
     this.dur = dur;
+  }
+
+  /** Go to his house and sit in the doorway (it's just been built), or nap there (`sit` false). */
+  visitHouse(sit = true): void {
+    this.setBehaviour('house');
+    this.houseSit = sit;
+    this.dur = sit ? 5 : 9 + this.rand() * 6;
   }
 
   /** Sit by the character for a while (they're looking at his profile card). */
@@ -261,7 +272,7 @@ export class ChopperBrain {
 
     // the leash: interrupt whatever he's doing when the character is far
     const b = this.behaviour;
-    const committed = b === 'whistled' || b === 'heel' || b === 'runAhead';
+    const committed = b === 'whistled' || b === 'heel' || b === 'runAhead' || (b === 'house' && this.houseSit);
     if (!committed && b !== 'follow' && (d > DOG.far || (d > DOG.leash && (b !== 'chase' || d > DOG.far) && this.t > 1))) this.setBehaviour('follow');
     else if (b === 'chase' && d > DOG.far) this.setBehaviour('follow');
 
@@ -290,12 +301,18 @@ export class ChopperBrain {
     if (!cd('runAhead') && this.steady > 4 && this.energy > 0.35) scores.push(['runAhead', 0.85 + noise()]);
     const bush = this.nearestSpot(w, (s) => s.kind === 'bush');
     if (bush && !cd('playBow') && this.energy > 0.3) scores.push(['playBow', 0.18 + this.playful * 0.4 + noise()]);
+    // a nap in his own doorway, when it's near and he's a bit tired
+    if (w.house && !cd('house') && this.dist(w.house.door, w.player, R) < DOG.leash - 1.5 && this.dist(w.house.door, this.n, R) < 7) scores.push(['house', 0.2 + (1 - this.energy) * 0.5 + noise()]);
     scores.sort((a, b) => b[1] - a[1]);
     const pick = scores[0][0];
     this.setBehaviour(pick);
     if (pick === 'sniff') this.target = spot;
     if (pick === 'playBow') this.target = bush;
     if (pick === 'chase') this.rabbit = rabbit;
+    if (pick === 'house') {
+      this.houseSit = false;
+      this.dur = 9 + this.rand() * 6;
+    }
     if (pick === 'idle') {
       const i = pickIdle(this.idleLast, this.energy, this.rand);
       this.idleLast = i.clip;
@@ -672,6 +689,36 @@ export class ChopperBrain {
           this.setClip('stand');
         }
         return this.heelLeft <= 0;
+      }
+      case 'house': {
+        const h = w.house;
+        if (!h) return true;
+        if (this.stage === 0) {
+          this.goal = h.door;
+          this.want = this.houseSit ? DOG.speed.run : DOG.speed.trot;
+          this.setClip('stand');
+          this.wag = 0.7;
+          if (arrived(0.12) || this.t > 12) this.nextStage();
+          return false;
+        }
+        // in the doorway, facing out
+        this.want = 0;
+        this.goal = null;
+        this.dir.lerp(h.facing, Math.min(1, dt * 4)).normalize();
+        this.setClip(this.houseSit ? 'sit' : this.stageT > 1 ? 'lie' : 'sit');
+        this.wag = this.houseSit ? 0.9 : 0.1;
+        if (this.houseSit) {
+          this.look = w.player;
+          if (this.stageT > 0.6 && !this.barks.length) {
+            this.barks = [0];
+            this.bark();
+          }
+        }
+        if (this.stageT > this.dur) {
+          this.cooldown.house = DOG.cooldown.house;
+          return true;
+        }
+        return false;
       }
     }
   }

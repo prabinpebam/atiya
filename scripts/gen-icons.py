@@ -82,6 +82,11 @@ ITEMS: dict[str, str] = {
     "tulip": "a single WHITE tulip flower, a closed cup of pure white petals, on a short green stem with two long green leaves",
     "cosmos": "a single WHITE cosmos flower seen at a 3/4 angle, eight broad pure-white petals with notched tips around a golden-yellow centre, on a thin short green stem with a sprig of feathery leaves",
     "pansy": "a single WHITE pansy flower facing the viewer, five rounded overlapping pure-white petals with a small golden-yellow eye, on a short green stem with one rounded green leaf",
+    # crafted materials (crafting.md)
+    "planks": "a small neat stack of three flat light-wood planks, freshly sawn, with visible wood grain along them and pale cut ends facing the viewer",
+    "beam": "one thick square wooden beam lying diagonally, solid honey-brown timber with strong grain lines along it and a squared pale end showing growth rings",
+    "slab": "one flat rectangular grey stone slab, a smooth cut paving stone with slightly bevelled edges and a few speckles, seen at a 3/4 angle from above",
+    "paint": "a small round tin paint pot with its lid off and a little wire handle, filled to the brim with glossy PURE WHITE paint, one thick white drip running down its grey metal side",
 }
 
 #: Colour names -> hex, the flower bloom palette the game plants (Props.tsx BLOOM_COLORS).
@@ -97,6 +102,9 @@ FLOWER_COLOURS: dict[str, str] = {
 FLOWERS = ("tulip", "cosmos", "pansy")
 #: Derived icons: id -> (source id, petal tint).
 VARIANTS: dict[str, tuple[str, str]] = {f"{f}-{c}": (f, hexc) for f in FLOWERS for c, hexc in FLOWER_COLOURS.items()}
+# paint pots: the white paint re-tinted to each bloom colour (made from those flowers)
+VARIANTS.update({f"paint-{c}": ("paint", hexc) for c, hexc in FLOWER_COLOURS.items()})
+TINTED = (*FLOWERS, "paint")
 
 
 def run(args: list[str]) -> None:
@@ -194,7 +202,7 @@ def cmd_build() -> None:
         small.save(path, "WEBP", quality=88, method=6)
         entries[icon_id] = {"url": f"/icons/{icon_id}.webp", "bytes": path.stat().st_size}
     for item, im in sources.items():
-        if item not in FLOWERS:
+        if item not in TINTED:
             emit(item, im)
     for vid, (src, hexc) in VARIANTS.items():
         if src in sources:

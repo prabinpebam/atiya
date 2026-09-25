@@ -9,6 +9,7 @@ import { FLOWER_KINDS } from '../layout';
 import { Family, LinePicker, type FamilyWorld, type NpcId } from './family';
 import { FamilyView } from './FamilyView';
 import { HomeView } from './HomeView';
+import { TalkBox } from './TalkBox';
 
 export function attachHome(controller: GameController): HomeAttachment | null {
   const home = controller.props.home;
@@ -24,7 +25,8 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     player: controller.sim.pLocal,
     // the fixed obstacles (the family, Chopper and the character keep clear of each other separately)
     obstacles: controller.staticObstacles,
-    blocked: (n) => (pond ? arcDistance(n, pond.n, R) < controller.terrain.pondShore(n) + 0.05 : false) || controller.terrain.waterDepth(n) > 0.12,
+    // (and they keep off the spot for Chopper's house, built or not: crafting.md §4.3)
+    blocked: (n) => (pond ? arcDistance(n, pond.n, R) < controller.terrain.pondShore(n) + 0.05 : false) || controller.terrain.waterDepth(n) > 0.12 || arcDistance(n, home.dogHouse.n, R) < 0.6,
     rabbits: [],
     flowers,
     hours: controller.timeOfDay,
@@ -62,5 +64,6 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     meal: () => ({ food: family.foodOnTable, phase: family.meal?.phase ?? null, schedule: family.schedule }),
     hold: (id, activity) => family.hold(id as NpcId, activity, world),
     View,
+    Hud: () => <TalkBox controller={controller} />,
   };
 }

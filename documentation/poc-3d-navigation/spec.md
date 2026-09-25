@@ -550,6 +550,19 @@ A tribute to the owner's late Lhasa Apso. He runs free near the character, busy 
 - **Sound:** CC0 small-dog barks, sniffs, a come-here whistle and a panting loop (`dog.mp3`, `pant.mp3`), panned by where he is on screen and softer with distance.
 - **Test hooks:** `chopper()`, `whistle()`, `chopperDo(clip)`, `nearChopper(u)`, and `getState().chopperOpen`.
 
+### 4.20 Crafting and Chopper's house (as built)
+
+Crafting at a workbench, and a first thing to build with it: a house for Chopper beside the family's. The research (Animal Crossing's DIY workbench, Valheim's build ghost, Stardew's bundles, Minecraft's yields), the plan, its critique and the v2 spec are in [crafting.md](./crafting.md); the done checklist is [crafting-dod.md](./crafting-dod.md). In summary:
+
+- **Targets kept apart** (`world/layout.ts`): round the chest, the crafting table and the house site, no pickable flower within 1.5 u of their edge and no tree, bush, rock or boulder within 0.9 u, so E never picks the wrong thing.
+- **The crafting table:** the Workshop's built-in workbench is gone. A detailed table (vise, saw, hammer, chisel, try-square, pencil, clamps, toolbox, a peg rail with a mallet, a hand drill and rope, shavings) stands on its own 1.3 u or more beyond the Workshop's footprint, off the paths and away from the chest. **Use crafting table** (<kbd>E</kbd>) opens the crafting screen.
+- **Recipes** (`world/craft/recipes.ts`, pure): planks (1 log → 4), a wooden beam (2 logs → 1), a stone slab (2 stones → 1), and paint in the 7 bloom colours (any 3 flowers of that colour → 1). Materials come from the backpack; the results go in (any that don't fit drop at your feet).
+- **The crafting screen:** recipes on the left with how many you can make; the selected one's materials (*have / need*, short ones in red), a quantity stepper (1–10, capped by the materials and by room) and **Craft**. <kbd>↑</kbd> <kbd>↓</kbd> recipe, <kbd>←</kbd> <kbd>→</kbd> how many, <kbd>Enter</kbd> crafts (a 0.6 s hammering, a knock, then a sparkle), <kbd>Esc</kbd> or <kbd>E</kbd> closes.
+- **Chopper's house:** a ghost outline beside the house, nearly invisible from 12 u and clear from 2 u, with a slow shimmer. Within 3.5 u a card (at the side, clear of the scene) says in his words why he'd love it, with a *have / need* checklist: 2 stone slabs, 2 wooden beams and 4 planks. **See what Chopper's house needs** (<kbd>E</kbd>) says what's missing; **Build Chopper's house** takes them: three knocks and dust as it rises, a sparkle, and Chopper runs over, sits in the doorway and barks. It's solid, saved (`localStorage site.dogHouse`), and now and then he naps in its doorway.
+- **Painting:** **Paint Chopper's house** (<kbd>E</kbd>) opens a palette: Original red (free) or any paint you've made (one pot a coat). The roof and trim change at once; the colour is saved.
+- **Chunks:** the models, the screens and the rules are one chunk (`world/craft/`, ≈ 9 KB gz) loaded with the textures. To keep the initial bundle within budget, the inventory screen and the menu now load on demand, the talk box moved into the home chunk, and the wildlife is its own chunk.
+- **Test hooks:** `craft()`, `nearTarget('craft' | 'site', …, u)`, and `getState().target`.
+
 ## 5. Technical design
 
 ### 5.1 Stack (pinned versions)

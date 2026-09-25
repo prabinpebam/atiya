@@ -7,7 +7,7 @@
  */
 import { Vector3 } from 'three';
 import { arcDistance, moveAlong, resolvePenetration, tangentToward, type Obstacle } from '../../math/sphere';
-import { rotateAbout, transport, turnToward } from '../animals';
+import { rotateAbout, transport, turnToward } from '../../math/steer';
 import type { HomeSpot, Homestead } from '../homestead';
 import { NavGrid } from './nav';
 

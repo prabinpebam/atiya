@@ -16,7 +16,8 @@ export const BLOOM_COLOURS = [
 export type BloomColour = (typeof BLOOM_COLOURS)[number]['name'];
 
 export type FlowerItemId = `${FlowerItemKind}-${BloomColour}`;
-export type ItemId = 'log' | 'leaves' | 'apple' | 'orange' | 'stone' | FlowerItemId;
+export type PaintId = `paint-${BloomColour}`;
+export type ItemId = 'log' | 'leaves' | 'apple' | 'orange' | 'stone' | 'planks' | 'beam' | 'slab' | FlowerItemId | PaintId;
 
 export interface ItemDef {
   id: ItemId;
@@ -37,6 +38,10 @@ const BASE: ItemDef[] = [
   { id: 'apple', name: 'Apple', maxStack: 64, icon: 'apple', model: 'fruit', tint: '#e8453c' },
   { id: 'orange', name: 'Orange', maxStack: 64, icon: 'orange', model: 'fruit', tint: '#ff9a2e' },
   { id: 'stone', name: 'Stone', maxStack: 64, icon: 'stone', model: 'stone', tint: '#9a978f' },
+  // crafted at the crafting table (crafting.md)
+  { id: 'planks', name: 'Planks', maxStack: 64, icon: 'planks', model: 'log', tint: '#d9b27c' },
+  { id: 'beam', name: 'Wooden beam', maxStack: 64, icon: 'beam', model: 'log', tint: '#b8844f' },
+  { id: 'slab', name: 'Stone slab', maxStack: 64, icon: 'slab', model: 'stone', tint: '#b9b5ab' },
 ];
 
 const FLOWERS: ItemDef[] = FLOWER_ITEM_KINDS.flatMap((k) =>
@@ -46,7 +51,9 @@ const FLOWERS: ItemDef[] = FLOWER_ITEM_KINDS.flatMap((k) =>
   }),
 );
 
-export const ITEMS: ReadonlyMap<ItemId, ItemDef> = new Map([...BASE, ...FLOWERS].map((d) => [d.id, d]));
+const PAINTS: ItemDef[] = BLOOM_COLOURS.map((c) => ({ id: `paint-${c.name}` as PaintId, name: `${cap(c.name)} paint`, maxStack: 64, icon: `paint-${c.name}`, model: 'fruit', tint: c.hex }));
+
+export const ITEMS: ReadonlyMap<ItemId, ItemDef> = new Map([...BASE, ...FLOWERS, ...PAINTS].map((d) => [d.id, d]));
 export const ITEM_IDS: readonly ItemId[] = [...ITEMS.keys()];
 
 export const isItemId = (s: unknown): s is ItemId => typeof s === 'string' && ITEMS.has(s as ItemId);

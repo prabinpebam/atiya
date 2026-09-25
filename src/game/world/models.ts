@@ -92,18 +92,7 @@ function workshop(accent: ColorRepresentation): LandmarkModel {
   });
   wallLantern(k, { p: [0.75, 1.24, D / 2 + 0.02] });
   steps(k, { p: [0, 0, D / 2 + 0.06] }, { w: 1.0, n: 2 });
-  // workbench (front right) with tools
-  k.group({ p: [1.2, 0, 0.95], r: [0, -0.5, 0] }, () => {
-    k.surface('wood', () => {
-      k.box([0.78, 0.07, 0.4], ARCH.wood, { p: [0, 0.5, 0] }, 0.02);
-      for (const x of [-0.33, 0.33]) for (const z of [-0.15, 0.15]) k.box([0.06, 0.48, 0.06], ARCH.woodDark, { p: [x, 0.24, z] }, 0.015);
-      k.box([0.7, 0.04, 0.34], ARCH.woodDark, { p: [0, 0.14, 0] }, 0.01);
-    });
-    k.surface('metal', () => k.box([0.05, 0.05, 0.2], ARCH.iron, { p: [0.12, 0.56, 0.02], r: [0, 0.6, 0] }, 0.01)); // hammer head
-    k.surface('wood', () => k.cyl(0.018, 0.018, 0.24, ARCH.woodDark, { p: [0.05, 0.55, -0.02], r: [0, 0, Math.PI / 2] }, 6));
-    k.surface('metal', () => k.box([0.26, 0.012, 0.1], '#c9ccd2', { p: [-0.18, 0.545, 0.05] }, 0.004)); // saw blade
-    k.box([0.08, 0.04, 0.05], '#d94c4c', { p: [-0.33, 0.56, 0.05] }, 0.01);
-  });
+  // (the workbench that stood here is now the crafting table, a prop of its own: world/craft/)
   // log pile (front left)
   k.group({ p: [-1.22, 0, 0.45], r: [0, 0.35, 0] }, () =>
     k.surface('wood', () => {

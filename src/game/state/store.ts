@@ -7,12 +7,14 @@ export type Phase = 'loading' | 'ready' | 'playing';
 export interface GameState {
   phase: Phase;
   nearbyId: string | null;
-  /** What E would use right now (a tree, boulder, flower, the chest, the bench or Chopper), with its prompt text. */
-  target: { kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc'; key: string; label: string } | null;
+  /** What E would use right now (a tree, boulder, flower, the chest, the bench, Chopper, the crafting table, his house's site…), with its prompt text. */
+  target: { kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site'; key: string; label: string } | null;
   /** The action cycle playing (shake, mine, pick, open), or null. */
   acting: 'shake' | 'mine' | 'pick' | 'open' | null;
   /** The inventory screen that's open: the backpack on its own, or the chest with it. */
   invScreen: 'backpack' | 'chest' | null;
+  /** The crafting screen (crafting.md §4.2), or the palette for Chopper's house (§4.3), when open. */
+  craftScreen: 'table' | 'paint' | null;
   /** Bumped on every inventory change (the hotbar and screens re-render). */
   invVersion: number;
   /** True while the character sits on a bench (from sitting down until it starts to stand up). */
@@ -59,6 +61,7 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     target: null,
     acting: null,
     invScreen: null,
+    craftScreen: null,
     invVersion: 0,
     seated: false,
     chopperOpen: false,

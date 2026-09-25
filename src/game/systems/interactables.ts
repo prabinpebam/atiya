@@ -8,7 +8,7 @@ import { SEAT, type Seat } from './seating';
  * Things you can walk up to and use with E (docs: collection-inventory.md §3.1): what's in range,
  * and which one gets the prompt (the one you face, nearest first, with hysteresis).
  */
-export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc';
+export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site';
 export type TreeKind = 'hardwood' | 'apple' | 'orange' | 'cedar';
 
 export interface Target {
@@ -50,6 +50,9 @@ export const REACH = {
   dogNearLandmark: 0.8,
   /** The family (family.md §6): talk from this close (u), facing them. */
   npc: 1.3,
+  /** The crafting table and Chopper's house site (crafting.md). */
+  craft: 0.95,
+  site: 1.0,
   /** Walk out this far past a target's range before its prompt goes (hysteresis). */
   keep: 0.25,
   /** More than this off your heading (rad), a target only counts within arm's reach. */
@@ -183,5 +186,9 @@ export function targetLabel(t: Target, flowerName?: string): string {
       return 'Meet Chopper';
     case 'npc':
       return `Talk to ${t.name ?? 'them'}`;
+    case 'craft':
+      return 'Use crafting table';
+    case 'site':
+      return t.name ?? "Chopper's house";
   }
 }
