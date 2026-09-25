@@ -154,6 +154,9 @@ test.describe('rendering', () => {
 
   test('tilt-shift survives adaptive quality falling all the way back', async ({ page }) => {
     await openPlanet(page, '/play/?quality=high');
+    // this test drives the steps itself (forced steps bypass the flag); the monitor would otherwise
+    // step down on its own at SwiftShader's frame rate, part-way through
+    await page.evaluate(() => (window as any).__game.setAdaptiveQuality(false));
     await page.getByRole('button', { name: 'Start exploring' }).click();
     await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift+bloom+vignette');
     await page.evaluate(() => {

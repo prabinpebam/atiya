@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import { Bloom, EffectComposer, TiltShift, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { BlendFunction, KernelSize, ToneMappingMode, type TiltShiftEffect } from 'postprocessing';
 import { useStore } from 'zustand';
-import type { Group } from 'three';
+import { WebGLRenderTarget, type Group, type Material, type Mesh, type Object3D, type ShaderMaterial, type Texture, type WebGLRenderer } from 'three';
 import type { GameController } from './controller';
 import { DioramaCamera } from './camera/DioramaCamera';
 import { Player } from './player/Player';
@@ -19,25 +19,86 @@ import { FlyingLeaves, WindDriver, WindSwirls } from './world/WindFx';
 import { WadeFx } from './world/WadeFx';
 import { updateLampUniforms } from './world/lampLights';
 
-/** Drives the simulation first each frame, then applies the planet rotation. */
+/** Upload every texture the scene's materials use (`initTexture`), so none waits for its first draw. */
+function uploadTextures(gl: WebGLRenderer, scene: Object3D): void {
+  const seen = new Set<Texture>();
+  scene.traverse((o) => {
+    const mat = (o as Mesh).material as Material | Material[] | undefined;
+    if (!mat) return;
+    for (const m of Array.isArray(mat) ? mat : [mat]) {
+      for (const v of Object.values(m)) if ((v as Texture | null)?.isTexture) seen.add(v as Texture);
+      const uniforms = (m as ShaderMaterial).uniforms;
+      if (uniforms) for (const u of Object.values(uniforms)) if ((u.value as Texture | null)?.isTexture) seen.add(u.value as Texture);
+    }
+  });
+  for (const t of seen) if (!(t as { isRenderTargetTexture?: boolean }).isRenderTargetTexture) gl.initTexture(t);
+}
+
+/** A camera layer nothing is on: the view draws nothing while the shaders compile. */
+const WARMUP_LAYER = 31;
+
+/**
+ * Drives the simulation first each frame, then applies the planet rotation.
+ *
+ * Shader warm-up: every material's program is compiled with `compileAsync` (parallel, off the
+ * main thread where KHR_parallel_shader_compile exists) *before* the scene is first drawn. Until
+ * then the camera looks at an empty layer, so no draw forces a blocking compile-and-link (which
+ * froze the main thread for ~2 s on load). The loading screen stays up throughout.
+ */
 function SimDriver({ controller, planet }: { controller: GameController; planet: React.RefObject<Group | null> }) {
   const frames = useRef(0);
+  const warm = useRef<{ start: (() => void) | null; done: boolean }>({ start: null, done: false });
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
 
-  useEffect(() => {
-    // Compile shaders up front so the first movement doesn't hitch.
-    void gl.compileAsync?.(scene, camera);
+  // layout effect: the camera is switched to the empty layer before anything can be drawn
+  useLayoutEffect(() => {
     gl.info.autoReset = false;
-  }, [gl, scene, camera]);
+    // shader error checks query link status synchronously; keep them for dev and test builds
+    gl.debug.checkShaderErrors = import.meta.env.MODE !== 'production';
+    controller.gfx = { gl, scene };
+    const mask = camera.layers.mask;
+    // compile against a twin with the real layers, so the lights (and so the programs) match
+    const probe = camera.clone();
+    camera.layers.set(WARMUP_LAYER);
+    const w = warm.current;
+    w.done = false;
+    let safety = 0;
+    const finish = () => {
+      if (w.done) return;
+      w.done = true;
+      w.start = null;
+      window.clearTimeout(safety);
+      camera.layers.mask = mask;
+      performance.mark('game:shaders-ready');
+    };
+    // started from the first frame, once every component's effects have added their objects and lights
+    w.start = () => {
+      w.start = null;
+      performance.mark('game:shaders-compile');
+      safety = window.setTimeout(finish, 10_000);
+      // the scene is drawn into the composer's (linear) buffer, not the canvas: compile for a render
+      // target too, or every program would be built again, blocking, for the other output encoding
+      const prev = gl.getRenderTarget();
+      const target = new WebGLRenderTarget(1, 1);
+      gl.setRenderTarget(target);
+      const compiling = gl.compileAsync ? gl.compileAsync(scene, probe) : Promise.resolve();
+      gl.setRenderTarget(prev);
+      // upload the textures while the driver compiles (they'd otherwise all upload in the first frame)
+      uploadTextures(gl, scene);
+      compiling.then(finish, finish).finally(() => target.dispose());
+    };
+    return finish;
+  }, [gl, scene, camera, controller]);
 
   useFrame((_, delta) => {
     controller.lastRenderInfo = { calls: gl.info.render.calls, triangles: gl.info.render.triangles };
     gl.info.reset();
+    warm.current.start?.();
     controller.tick(delta);
     planet.current?.quaternion.copy(controller.sim.planetQ);
-    if (frames.current < 3 && ++frames.current === 3) controller.markReady();
+    if (warm.current.done && frames.current < 3 && ++frames.current === 3) controller.markReady();
   });
   return null;
 }
@@ -65,8 +126,8 @@ const DPR_STEPS = [1, 1.25, 1.5, 2] as const;
 
 /**
  * Adaptive quality: on sustained low FPS step the resolution down (… → 1.25 → 1), then drop
- * bloom/vignette. It never removes the tilt-shift or switches tiers. A warm-up after mount
- * ignores the shader-compile hitches of the first seconds.
+ * bloom/vignette. It never removes the tilt-shift or switches tiers. It only watches once the
+ * planet is playable, and then waits 10 s more, so loading never counts against the device.
  */
 function Adaptive({ controller }: { controller: GameController }) {
   const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
@@ -99,6 +160,14 @@ function Adaptive({ controller }: { controller: GameController }) {
       controller.adaptiveStep = null;
     };
   }, [controller, initial]);
+  // The monitor starts, and the warm-up counts, from when the planet is first really drawn: the
+  // loading frames (empty warm-up frames, then a few slow first uploads) would otherwise read as
+  // flip-flops and trip the fallback, switching adaptive quality off for the whole visit.
+  const playable = useStore(controller.store, (s) => s.phase !== 'loading');
+  useEffect(() => {
+    if (playable) lastChange.current = performance.now();
+  }, [playable]);
+  if (!playable) return null;
   return (
     <PerformanceMonitor
       flipflops={4}

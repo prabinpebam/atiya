@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl, playHrefFor } from '../../src/game/platform/url';
-import { decide } from '../../src/game/platform/capabilities';
+import { decide, probeCapabilities } from '../../src/game/platform/capabilities';
 
 describe('url state', () => {
   it('parses at/open/mode', () => {
@@ -34,5 +34,36 @@ describe('capability gate decision', () => {
   });
   it('loads on capable devices', () => {
     expect(decide({ webgl2: true, majorPerformanceCaveat: false, saveData: false })).toEqual({ kind: 'load' });
+  });
+});
+
+describe('capability probe', () => {
+  /** A fake browser: which WebGL2 contexts it can make, and how many the probe asked for. */
+  function device(kind: 'gpu' | 'software' | 'none') {
+    let contexts = 0;
+    const canvas = {
+      getContext: (type: string, attrs?: WebGLContextAttributes) => {
+        if (type !== 'webgl2' || kind === 'none') return null;
+        if (kind === 'software' && attrs?.failIfMajorPerformanceCaveat) return null;
+        contexts++;
+        return { getExtension: () => ({ loseContext: () => {} }) };
+      },
+    };
+    vi.stubGlobal('document', { createElement: () => canvas });
+    vi.stubGlobal('navigator', {});
+    return { contexts: () => contexts };
+  }
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('needs a single context on a capable device', () => {
+    const d = device('gpu');
+    expect(probeCapabilities()).toEqual({ webgl2: true, majorPerformanceCaveat: false, saveData: false });
+    expect(d.contexts()).toBe(1);
+  });
+  it('still detects software rendering and missing WebGL2', () => {
+    device('software');
+    expect(probeCapabilities()).toEqual({ webgl2: true, majorPerformanceCaveat: true, saveData: false });
+    device('none');
+    expect(probeCapabilities()).toEqual({ webgl2: false, majorPerformanceCaveat: false, saveData: false });
   });
 });

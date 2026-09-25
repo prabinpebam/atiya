@@ -5,6 +5,9 @@ import { SURFACES } from '../../src/game/world/kit';
 
 const BARK = SURFACES.indexOf('bark');
 
+/** The kit indexes its output; these checks walk plain triangles. */
+const flat = <T extends { solid: BufferGeometry }>(t: T): T => ({ ...t, solid: t.solid.index ? t.solid.toNonIndexed() : t.solid });
+
 /** Triangles (vertex indices) of the merged solid geometry that are tagged as bark. */
 function barkTris(g: BufferGeometry): number[] {
   const s = g.getAttribute('aSurf');
@@ -14,9 +17,9 @@ function barkTris(g: BufferGeometry): number[] {
 }
 
 const trees = [
-  ['hardwood', hardwood(), 250],
-  ['cedar 0', cedar(0), 120],
-  ['cedar 1', cedar(1), 120],
+  ['hardwood', flat(hardwood()), 250],
+  ['cedar 0', flat(cedar(0)), 120],
+  ['cedar 1', flat(cedar(1)), 120],
 ] as const;
 
 describe('tree trunks', () => {
@@ -62,7 +65,7 @@ describe('tree trunks', () => {
   });
 
   it('are smooth-shaded along the stem (shared normals, not per-facet)', () => {
-    const g = hardwood().solid;
+    const g = flat(hardwood()).solid;
     const pos = g.getAttribute('position');
     const nor = g.getAttribute('normal');
     const byPos = new Map<string, Set<string>>();

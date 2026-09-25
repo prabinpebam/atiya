@@ -90,7 +90,7 @@ describe('roof shingles', () => {
   function checkRoof(build: (k: Kit) => void) {
     const k = new Kit();
     build(k);
-    const g = k.build().solid!;
+    const g = k.build().solid!.toNonIndexed(); // walk plain triangles
     const pos = g.getAttribute('position');
     const surf = g.getAttribute('aSurf');
     const uv = g.getAttribute('aSurfUV');

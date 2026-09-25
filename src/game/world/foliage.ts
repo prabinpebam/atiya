@@ -188,6 +188,7 @@ class Cards {
   private nor: number[] = [];
   private uv: number[] = [];
   private col: number[] = [];
+  private idx: number[] = [];
 
   /**
    * Add a card whose base sits at `p`, extending `size` along `tip` (texture +Y),
@@ -220,13 +221,16 @@ class Cards {
       [u1, v1],
       [u0, v1],
     ];
-    for (const i of [0, 1, 2, 0, 2, 3]) {
+    // four shared corners, two triangles (indexed: each corner is shaded once)
+    const base = this.pos.length / 3;
+    for (let i = 0; i < 4; i++) {
       const c = corners[i];
       this.pos.push(c.x, c.y, c.z);
       this.nor.push(shadeN.x, shadeN.y, shadeN.z);
       this.uv.push(uvs[i][0], uvs[i][1]);
       this.col.push(color.r, color.g, color.b);
     }
+    this.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
 
   build(): BufferGeometry {
@@ -235,6 +239,7 @@ class Cards {
     g.setAttribute('normal', new Float32BufferAttribute(this.nor, 3));
     g.setAttribute('uv', new Float32BufferAttribute(this.uv, 2));
     g.setAttribute('color', new Float32BufferAttribute(this.col, 3));
+    g.setIndex(this.idx);
     g.computeBoundingSphere();
     return g;
   }

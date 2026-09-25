@@ -36,7 +36,8 @@ export function GameApp({ controller }: { controller: GameController }) {
           shadows="percentage"
           dpr={dpr}
           frameloop={paused ? 'demand' : 'always'}
-          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          // no canvas MSAA or stencil: the composer renders the scene into its own multisampled buffer
+          gl={{ antialias: false, stencil: false, alpha: false, powerPreference: 'high-performance' }}
           camera={{ fov: C.fov, near: 0.1, far: 130, position: [0, R + Math.sin(pitch) * C.distance, Math.cos(pitch) * C.distance] }}
           onCreated={({ gl }) => {
             gl.toneMapping = NeutralToneMapping;

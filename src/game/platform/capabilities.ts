@@ -31,8 +31,10 @@ function tryContext(attrs?: WebGLContextAttributes): boolean {
 
 /** Browser-only probe. Kept free of three/React imports so the gate stays tiny. */
 export function probeCapabilities(): CapabilityProbe {
-  const webgl2 = tryContext();
-  const fast = webgl2 && tryContext({ failIfMajorPerformanceCaveat: true });
+  // strict probe first: on a capable device (almost all) one context settles both questions;
+  // each probe context costs tens of ms before the game can even start downloading
+  const fast = tryContext({ failIfMajorPerformanceCaveat: true });
+  const webgl2 = fast || tryContext();
   const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
   return { webgl2, majorPerformanceCaveat: webgl2 && !fast, saveData: Boolean(conn?.saveData) };
 }

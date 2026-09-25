@@ -1,4 +1,4 @@
-import { Quaternion, Vector3, type Camera } from 'three';
+import { Quaternion, Vector3, type Camera, type Scene, type WebGLRenderer } from 'three';
 import { CONFIG } from './config';
 import type { LandmarkData, MoveIntent } from './types';
 import { arrivalOrientation, landmarkGeometry, type LandmarkGeometry } from './math/landmarks';
@@ -61,6 +61,8 @@ export class GameController {
   readonly fadeEl: { current: HTMLDivElement | null } = { current: null };
   region: HTMLDivElement | null = null;
   camera: Camera | null = null;
+  /** Renderer and scene, for diagnostics (the test hook's `perfStats`). */
+  gfx: { gl: WebGLRenderer; scene: Scene } | null = null;
   /** Totals for the previous frame (all passes: shadows, scene, post). */
   lastRenderInfo = { calls: 0, triangles: 0 };
   /** Hand angles last drawn on the town-hall clock (radians clockwise from 12), or null before the first frame. */

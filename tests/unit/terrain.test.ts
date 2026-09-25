@@ -248,3 +248,36 @@ describe('wading', () => {
     expect(r.maxDepth).toBeGreaterThan(0.2);
   });
 });
+
+describe('terrain flat mask (fast bounds)', () => {
+  const smooth = (e0: number, e1: number, x: number) => {
+    const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+    return t * t * (3 - 2 * t);
+  };
+  /** The mask with every landmark term evaluated in full (the bounds skip only factors of exactly 1). */
+  function reference(n: Vector3, riverD: number): number {
+    let m = smooth(3.2, 3.2 + 2.2, arcDistance(n, UP as Vector3, R)); // PLAZA_FLAT_U = 3.2
+    if (m === 0) return 0;
+    for (const g of geos) {
+      m *= smooth(g.footprintU + 0.6, g.footprintU + 2.3, arcDistance(n, g.n, R));
+      m *= smooth(0.7, 1.9, arcDistance(n, g.approach, R));
+      m *= 0.3 + 0.7 * smooth(0.45, 1.5, pointArcDistance(n, UP as Vector3, g.approach, R));
+      if (m === 0) return 0;
+    }
+    const pond = layout.pond;
+    if (pond) m *= smooth(pond.radiusU + 0.35, pond.radiusU + 2.0, arcDistance(n, pond.n, R));
+    m *= smooth(0.75, 2.4, riverD);
+    return m;
+  }
+
+  it('matches the full evaluation everywhere', () => {
+    let open = 0;
+    for (const n of randomDirs(6000, 0.7)) {
+      const d = riverDistance(river, n).d;
+      const want = reference(n, d);
+      expect(terrain.flatMask(n, d)).toBeCloseTo(want, 12);
+      if (want > 0 && want < 1) open++;
+    }
+    expect(open).toBeGreaterThan(100); // the transitions were sampled, not just the flat and open ground
+  });
+});

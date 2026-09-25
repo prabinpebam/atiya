@@ -60,17 +60,45 @@ export interface TerrainFeatures {
   mesas: Mesa[];
 }
 
+/**
+ * Per-landmark bounds for `flatMask`: beyond each outer radius the factor is exactly 1, so a dot
+ * product (no `acos`, no allocation) settles most of the ~35 k ground vertices without the arc maths.
+ */
+interface LandmarkBounds {
+  g: LandmarkGeometry;
+  /** cos of the footprint mask's outer angle: n·g.n below it → factor 1. */
+  cosFoot: number;
+  /** cos of the approach mask's outer angle. */
+  cosApproach: number;
+  /** Midpoint of the plaza → approach path and cos(half its length + the path mask's outer radius). */
+  mid: Vector3;
+  cosPath: number;
+}
+
+const cosOf = (angle: number) => Math.cos(Math.min(Math.PI, angle));
+
 export class Terrain {
   private readonly R: number;
   private readonly pondF: PondFrame | null;
+  private readonly bounds: LandmarkBounds[];
 
   constructor(
-    private readonly landmarks: readonly LandmarkGeometry[],
+    landmarks: readonly LandmarkGeometry[],
     readonly features: TerrainFeatures,
     cfg = CONFIG,
   ) {
     this.R = cfg.planetRadius;
     this.pondF = features.pond ? pondFrame(features.pond, features.river) : null;
+    const R = this.R;
+    this.bounds = landmarks.map((g) => {
+      // any point of the path is within half its length of its midpoint, so a point farther than
+      // that plus 1.5 u from the midpoint is more than 1.5 u from the path
+      const half = arcDistance(UP as Vector3, g.approach, 1) / 2;
+      const mid = new Vector3().addVectors(UP as Vector3, g.approach);
+      if (mid.lengthSq() < 1e-12) mid.copy(g.approach);
+      mid.normalize();
+      return { g, cosFoot: cosOf((g.footprintU + 2.3) / R), cosApproach: cosOf(1.9 / R), mid, cosPath: cosOf(half + 1.5 / R) };
+    });
   }
 
   /** Rolling hills in [−A, A] before masking. */
@@ -85,11 +113,12 @@ export class Terrain {
     const R = this.R;
     let m = smoothstep(PLAZA_FLAT_U, PLAZA_FLAT_U + 2.2, arcDistance(n, UP as Vector3, R));
     if (m === 0) return 0;
-    for (const g of this.landmarks) {
-      m *= smoothstep(g.footprintU + 0.6, g.footprintU + 2.3, arcDistance(n, g.n, R));
-      m *= smoothstep(0.7, 1.9, arcDistance(n, g.approach, R));
+    for (const b of this.bounds) {
+      const g = b.g;
+      if (n.dot(g.n) >= b.cosFoot) m *= smoothstep(g.footprintU + 0.6, g.footprintU + 2.3, arcDistance(n, g.n, R));
+      if (n.dot(g.approach) >= b.cosApproach) m *= smoothstep(0.7, 1.9, arcDistance(n, g.approach, R));
       // paths keep a little of the roll so they follow the land
-      m *= 0.3 + 0.7 * smoothstep(0.45, 1.5, pointArcDistance(n, UP as Vector3, g.approach, R));
+      if (n.dot(b.mid) >= b.cosPath) m *= 0.3 + 0.7 * smoothstep(0.45, 1.5, pointArcDistance(n, UP as Vector3, g.approach, R));
       if (m === 0) return 0;
     }
     const pond = this.features.pond;
@@ -98,10 +127,10 @@ export class Terrain {
     return m;
   }
 
-  /** Ground-mesh height (u above the base sphere) at planet-local direction `n`. */
-  height(n: Vector3): number {
+  /** Ground-mesh height (u above the base sphere) at planet-local direction `n` (`rd`: its `riverDistance`, if already known). */
+  height(n: Vector3, rd?: { d: number; i: number }): number {
     const river = this.features.river;
-    const rd = river ? riverDistance(river, n) : { d: Infinity, i: 0 };
+    rd ??= river ? riverDistance(river, n) : { d: Infinity, i: 0 };
     let h = this.undulation(n) * this.flatMask(n, rd.d);
     if (river && rd.d < 2) {
       const hw = river.halfWidth[rd.i];

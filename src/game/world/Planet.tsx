@@ -102,11 +102,23 @@ function buildGround(controller: GameController): BufferGeometry {
   const spawn = UP as Vector3;
   const { pond, river } = controller.props;
   const terrain = controller.terrain;
+  // Per-landmark bounds: past its outer edge a band is exactly 0, so a dot product (no acos, no
+  // allocation) rules most vertices out. A point farther than half the path's length (+ the band)
+  // from the path's midpoint can't be within the band of any point on it.
+  const PATH_OUTER = 0.46 + 0.06 + 0.2; // inner + max wobble + soft
+  const marks = controller.geos.map((lm) => {
+    const mid = new Vector3().addVectors(spawn, lm.n);
+    if (mid.lengthSq() < 1e-12) mid.copy(lm.n);
+    mid.normalize();
+    const half = arcDistance(spawn, lm.n, 1) / 2;
+    return { lm, cosCobble: Math.cos(Math.min(Math.PI, (lm.footprintU + 0.5 + 0.16) / R)), mid, cosPath: Math.cos(Math.min(Math.PI, half + PATH_OUTER / R)) };
+  });
 
   for (let i = 0; i < count; i++) {
     v.fromBufferAttribute(pos, i);
     u.copy(v).normalize();
-    const h = terrain.height(u);
+    const rd = river ? riverDistance(river, u) : null;
+    const h = terrain.height(u, rd ?? undefined);
 
     grassColor(u, h, c);
     colors.set([c.r, c.g, c.b], i * 3);
@@ -114,10 +126,10 @@ function buildGround(controller: GameController): BufferGeometry {
     const plaza = band(arcDistance(u, spawn, R), PLAZA_RADIUS_U - 0.1, 0.18);
     let cobble = 0;
     let path = 0;
-    for (const lm of controller.geos) {
-      cobble = Math.max(cobble, band(arcDistance(u, lm.n, R), lm.footprintU + 0.5, 0.16));
-      const wobble = 0.06 * Math.sin(u.x * 41 + u.y * 37 + u.z * 29);
-      path = Math.max(path, band(pointArcDistance(u, spawn, lm.n, R), 0.46 + wobble, 0.2));
+    const wobble = 0.06 * Math.sin(u.x * 41 + u.y * 37 + u.z * 29);
+    for (const { lm, cosCobble, mid, cosPath } of marks) {
+      if (u.dot(lm.n) >= cosCobble) cobble = Math.max(cobble, band(arcDistance(u, lm.n, R), lm.footprintU + 0.5, 0.16));
+      if (u.dot(mid) >= cosPath) path = Math.max(path, band(pointArcDistance(u, spawn, lm.n, R), 0.46 + wobble, 0.2));
     }
     let sand = 0;
     if (pond) {
@@ -127,8 +139,7 @@ function buildGround(controller: GameController): BufferGeometry {
     }
     let bed = 0;
     let bank = 0;
-    if (river) {
-      const rd = riverDistance(river, u);
+    if (river && rd) {
       const hw = river.halfWidth[rd.i];
       bed = 1 - smooth(hw * 0.75, hw + 0.12, rd.d);
       bank = (1 - smooth(hw + 0.1, hw + 0.75, rd.d)) * (1 - bed);

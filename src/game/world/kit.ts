@@ -14,6 +14,8 @@ import {
   Shape,
   SphereGeometry,
   TorusGeometry,
+  Uint16BufferAttribute,
+  Uint32BufferAttribute,
   Vector2,
   Vector3,
   type ColorRepresentation,
@@ -281,13 +283,85 @@ export class Kit {
   build(): KitGeometry {
     const merge = (list: BufferGeometry[]) => {
       if (!list.length) return null;
-      const g = mergeGeometries(list, false);
+      const g = indexExact(mergeGeometries(list, false));
       g.computeBoundingSphere();
       g.computeBoundingBox();
       return g;
     };
     return { solid: merge(this.parts.solid), glow: merge(this.parts.glow), glass: merge(this.parts.glass) };
   }
+}
+
+/**
+ * Index a non-indexed geometry by merging vertices that are bit-for-bit identical in every
+ * attribute (the copies `toNonIndexed` made, still equal after colouring, surface UVs and the
+ * part transform). Lossless: the triangles and every attribute value are unchanged, but a vertex
+ * shared by several triangles is stored and shaded once (typically 60 % fewer vertices, in both
+ * the colour and the shadow pass). Differs from `mergeVertices`: exact (no tolerance) and fast
+ * (a hash table over the raw bits), so it can run on every model at load.
+ */
+export function indexExact(g: BufferGeometry): BufferGeometry {
+  if (g.index) return g;
+  const names = Object.keys(g.attributes);
+  const attrs = names.map((n) => g.getAttribute(n));
+  if (!attrs.length || attrs.some((a) => !(a.array instanceof Float32Array) || (a as { isInterleavedBufferAttribute?: boolean }).isInterleavedBufferAttribute)) return g;
+  const count = attrs[0].count;
+  const stride = attrs.reduce((s, a) => s + a.itemSize, 0);
+  const packed = new Float32Array(count * stride);
+  let o = 0;
+  for (let i = 0; i < count; i++) {
+    for (const a of attrs) {
+      const arr = a.array as Float32Array;
+      for (let k = 0, base = i * a.itemSize; k < a.itemSize; k++) packed[o++] = arr[base + k];
+    }
+  }
+  const bits = new Uint32Array(packed.buffer);
+  let size = 1;
+  while (size < count * 2) size <<= 1;
+  const table = new Int32Array(size).fill(-1);
+  const first = new Uint32Array(count); // unique vertex → its first source vertex
+  const index = new Uint32Array(count);
+  let unique = 0;
+  for (let i = 0; i < count; i++) {
+    const b = i * stride;
+    let h = 2166136261;
+    for (let k = 0; k < stride; k++) h = Math.imul(h ^ bits[b + k], 16777619);
+    let slot = (h >>> 0) & (size - 1);
+    for (;;) {
+      const u = table[slot];
+      if (u < 0) {
+        table[slot] = unique;
+        first[unique] = i;
+        index[i] = unique++;
+        break;
+      }
+      const f = first[u] * stride;
+      let same = true;
+      for (let k = 0; k < stride; k++) {
+        if (bits[f + k] !== bits[b + k]) {
+          same = false;
+          break;
+        }
+      }
+      if (same) {
+        index[i] = u;
+        break;
+      }
+      slot = (slot + 1) & (size - 1);
+    }
+  }
+  if (unique === count) return g;
+  const out = new BufferGeometry();
+  attrs.forEach((a, ai) => {
+    const src = a.array as Float32Array;
+    const n = a.itemSize;
+    const dst = new Float32Array(unique * n);
+    for (let u = 0; u < unique; u++) for (let k = 0, s = first[u] * n; k < n; k++) dst[u * n + k] = src[s + k];
+    out.setAttribute(names[ai], new Float32BufferAttribute(dst, n, a.normalized));
+  });
+  out.setIndex(unique < 65536 ? new Uint16BufferAttribute(Uint16Array.from(index), 1) : new Uint32BufferAttribute(index, 1));
+  out.name = g.name;
+  return out;
 }
 
 /** Deterministic value noise for organic displacement (no dependencies). */

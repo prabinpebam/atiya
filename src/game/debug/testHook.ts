@@ -34,6 +34,10 @@ export interface GameTestHook {
   renderInfo(): { calls: number; triangles: number };
   /** Stand just behind a landmark, facing away from it, so the building sits between the camera and the player. */
   standBehind(id: string): boolean;
+  /** Renderer and scene census for performance audits. */
+  perfStats(): Record<string, unknown>;
+  /** The live renderer and scene (audits in the console / scripts). */
+  __gfx(): GameController['gfx'];
   /** Show or hide the character's occlusion outline (visual testing). */
   setOutline(on: boolean): void;
   /** Scene exposure (into the tone map) and the tilt-shift blend function name. */
@@ -170,6 +174,86 @@ export function installTestHook(c: GameController): void {
       const face = tangentToward(stand, g.n)?.negate() ?? back;
       c.sim.setOrientation(orientationFor(stand, face));
       return true;
+    },
+    __gfx: () => c.gfx,
+    perfStats: () => {
+      const gfx = c.gfx;
+      if (!gfx) return {};
+      const { gl, scene } = gfx;
+      const materials = new Set<string>();
+      const geometries = new Set<string>();
+      const programs = new Map<string, number>();
+      let meshes = 0;
+      let instanced = 0;
+      let instances = 0;
+      let casters = 0;
+      let transparent = 0;
+      let vertices = 0;
+      let skinned = 0;
+      const lights: Record<string, number> = {};
+      const shadowLights: string[] = [];
+      const bigMeshes: Array<[string, number]> = [];
+      scene.traverseVisible((o) => {
+        const l = o as unknown as { isLight?: boolean; type: string; castShadow: boolean; shadow?: { mapSize: { x: number } } };
+        if (l.isLight) {
+          lights[l.type] = (lights[l.type] ?? 0) + 1;
+          if (l.castShadow) shadowLights.push(`${l.type}:${l.shadow?.mapSize.x}`);
+        }
+        const m = o as unknown as {
+          isMesh?: boolean;
+          isInstancedMesh?: boolean;
+          isSkinnedMesh?: boolean;
+          count?: number;
+          castShadow: boolean;
+          name: string;
+          geometry: { uuid: string; attributes: { position?: { count: number } }; index: { count: number } | null };
+          material: { uuid: string; transparent: boolean; type: string; name: string } | Array<{ uuid: string; transparent: boolean; type: string; name: string }>;
+        };
+        if (!m.isMesh && !(o as { isPoints?: boolean }).isPoints) return;
+        meshes++;
+        if (m.isInstancedMesh) {
+          instanced++;
+          instances += m.count ?? 0;
+        }
+        if (m.isSkinnedMesh) skinned++;
+        if (m.castShadow) casters++;
+        geometries.add(m.geometry.uuid);
+        const v = m.geometry.attributes.position?.count ?? 0;
+        vertices += v * (m.isInstancedMesh ? (m.count ?? 1) : 1);
+        bigMeshes.push([`${o.name || o.parent?.name || m.geometry.uuid.slice(0, 6)}${m.isInstancedMesh ? `×${m.count}` : ''}`, (m.geometry.index?.count ?? v) / 3 * (m.isInstancedMesh ? (m.count ?? 1) : 1)]);
+        for (const mat of Array.isArray(m.material) ? m.material : [m.material]) {
+          materials.add(mat.uuid);
+          if (mat.transparent) transparent++;
+          const key = `${mat.type}${mat.name ? `:${mat.name}` : ''}`;
+          programs.set(key, (programs.get(key) ?? 0) + 1);
+        }
+      });
+      bigMeshes.sort((a, b) => b[1] - a[1]);
+      const info = gl.info;
+      return {
+        calls: c.lastRenderInfo.calls,
+        triangles: c.lastRenderInfo.triangles,
+        programs: info.programs?.length ?? 0,
+        gpuGeometries: info.memory.geometries,
+        gpuTextures: info.memory.textures,
+        meshes,
+        instanced,
+        instances,
+        skinned,
+        casters,
+        transparent,
+        vertices,
+        uniqueMaterials: materials.size,
+        uniqueGeometries: geometries.size,
+        lights,
+        shadowLights,
+        pixelRatio: gl.getPixelRatio(),
+        drawingBuffer: [gl.domElement.width, gl.domElement.height],
+        shadowAutoUpdate: gl.shadowMap.autoUpdate,
+        shadowType: gl.shadowMap.type,
+        materialKinds: Object.fromEntries([...programs.entries()].sort((a, b) => b[1] - a[1])),
+        topTriangles: bigMeshes.slice(0, 15),
+      };
     },
     setOutline: (on) => {
       outlineMaterial().visible = on;

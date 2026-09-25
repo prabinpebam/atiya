@@ -1,4 +1,4 @@
-import { LinearMipmapLinearFilter, NoColorSpace, RepeatWrapping, SRGBColorSpace, TextureLoader, type Texture } from 'three';
+import { ImageBitmapLoader, LinearMipmapLinearFilter, NoColorSpace, RepeatWrapping, SRGBColorSpace, Texture, TextureLoader } from 'three';
 import { TEXTURES, type TextureName } from './textureManifest';
 
 /**
@@ -24,13 +24,27 @@ function configure(name: TextureName, t: Texture): Texture {
   return t;
 }
 
+/**
+ * Decode off the main thread where the browser can (`createImageBitmap`), so the WebPs are decoded
+ * while the game loads rather than, one by one, inside the first frame's texture uploads. The
+ * bitmap is flipped at decode (the same orientation as `flipY` gives an image) and keeps straight
+ * alpha, so it uploads exactly like the image did.
+ */
+async function loadTexture(name: TextureName): Promise<Texture> {
+  const url = TEXTURES[name].url;
+  if (typeof createImageBitmap !== 'function') return new TextureLoader().loadAsync(url);
+  const loader = new ImageBitmapLoader();
+  loader.setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none', colorSpaceConversion: TEXTURES[name].kind === 'mask' ? 'none' : 'default' });
+  const t = new Texture(await loader.loadAsync(url));
+  t.flipY = false; // already flipped (WebGL ignores flipY for bitmaps)
+  return t;
+}
+
 /** Starts (once) and awaits loading every texture; never rejects. Resolves early after `timeoutMs`. */
 export function preloadTextures(timeoutMs = 10_000): Promise<void> {
   if (!preload) {
-    const loader = new TextureLoader();
     const all = (Object.keys(TEXTURES) as TextureName[]).map((name) =>
-      loader
-        .loadAsync(TEXTURES[name].url)
+      loadTexture(name)
         .then((t) => {
           loaded.set(name, configure(name, t));
           status.loaded++;
