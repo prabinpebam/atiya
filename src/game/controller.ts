@@ -2,10 +2,11 @@ import { Quaternion, Vector3, type Camera, type Scene, type WebGLRenderer } from
 import { CONFIG } from './config';
 import type { LandmarkData, MoveIntent } from './types';
 import { arrivalOrientation, landmarkGeometry, type LandmarkGeometry } from './math/landmarks';
-import { DEG, UP, arcDistance, clamp, damp, wrapAngle, type Obstacle } from './math/sphere';
+import { DEG, UP, arcDistance, clamp, damp, dampAngle, wrapAngle, type Obstacle } from './math/sphere';
 import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
+import { SeatMotion, benchSeats, seatInRange, type Seat } from './systems/seating';
 import { generateProps, type PropLayout } from './world/layout';
 import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
@@ -25,6 +26,8 @@ const PLAZA = 'plaza';
 const clampPitch = (deg: number) => clamp(deg, CONFIG.camera.minPitchDeg, CONFIG.camera.maxPitchDeg);
 const _toStream = new Vector3();
 const _camRight = new Vector3();
+const _seatFacing = new Vector3();
+const NO_INTENT: MoveIntent = { x: 0, y: 0, run: false };
 
 interface KeyEventLike {
   code: string;
@@ -51,6 +54,9 @@ export class GameController {
   readonly props: PropLayout;
   /** Ground height model (undulation, river bed, pond bowl, mesas, bridge deck). */
   readonly terrain: Terrain;
+  /** Benches you can sit on, and the sit-down / stand-up motion (its `pose` drives the avatars). */
+  readonly seats: Seat[];
+  readonly seatMotion = new SeatMotion();
   /** Smoothed height of the ground under the player (u above the base sphere). */
   lift = 0;
   /** Smoothed depth of the water the player is wading in (u; 0 on land). */
@@ -133,6 +139,7 @@ export class GameController {
     this.stampPropHeights();
     const obstacles: Obstacle[] = [...this.geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...this.props.obstacles];
     this.sim = new PlanetSim(obstacles);
+    this.seats = benchSeats(this.props.furniture);
 
     const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
     const timeMode = prefs.getTimeMode();
@@ -278,12 +285,14 @@ export class GameController {
   step(delta: number): void {
     const s = this.store.getState();
     const playing = s.phase === 'playing' && !s.openId && !s.menuOpen;
-    const intent: MoveIntent = playing ? this.keyboard.intent() : { x: 0, y: 0, run: false };
+    const seat = this.seatMotion;
+    const intent: MoveIntent = playing && !seat.stage ? this.keyboard.intent() : NO_INTENT;
     this.updateView(delta, playing, selectReducedMotion(s));
     const dt = Math.min(Math.max(delta, 0), CONFIG.maxDt);
     // wading: slower in deeper water (the sim eases toward the new speed)
     this.sim.speedFactor = wadeSpeedFactor(this.terrain.waterDepth(this.sim.pLocal));
     this.sim.step(delta, intent);
+    this.stepSeat(dt, selectReducedMotion(s));
     // follow the ground (hills, the bridge deck, the stream bed when wading) with a little smoothing
     this.lift = damp(this.lift, this.terrain.walkHeight(this.sim.pLocal), 14, dt);
     this.wadeDepth = damp(this.wadeDepth, this.terrain.waterDepth(this.sim.pLocal), 14, dt);
@@ -304,6 +313,11 @@ export class GameController {
       const next = updateProximity(s.nearbyId, this.sim.pLocal, this.geos);
       if (next !== s.nearbyId) this.setNearby(next);
       if (next && playing && this.buffer.consume(performance.now())) this.openLandmark(next);
+      const near = seat.stage ? null : seatInRange(this.sim.pLocal, this.seats, s.seatNear);
+      if (near !== s.seatNear) {
+        this.store.setState({ seatNear: near });
+        if (near && !next) this.announce('Near a bench. Press E to sit down.');
+      }
     }
 
     if (s.hintVisible && this.sim.movingTime >= CONFIG.onboardingDismissSeconds) {
@@ -377,7 +391,8 @@ export class GameController {
     this.view.yawPending = 0;
     this.view.targetPitch = CONFIG.camera.pitchDeg;
     this.keyboard.clear();
-    this.store.setState({ menuOpen: false, nearbyId: null, traveling: mode });
+    this.leaveSeat();
+    this.store.setState({ menuOpen: false, nearbyId: null, seatNear: null, traveling: mode });
     this.sim.startTravel(new Quaternion(), PLAZA, mode);
     this.focusRegion();
   }
@@ -468,7 +483,9 @@ export class GameController {
       return;
     }
     if (action === 'menu') {
-      if (!e.repeat) this.openMenu();
+      if (e.repeat) return;
+      if (e.code === 'Escape' && this.seatMotion.seated) this.standUp();
+      else this.openMenu();
       return;
     }
     if (action === 'faceNorth' || action === 'home') {
@@ -476,6 +493,11 @@ export class GameController {
       if (action === 'faceNorth') this.faceNorth();
       else this.returnHome();
       return;
+    }
+    if (this.seatMotion.seated && (action === 'up' || action === 'down' || action === 'left' || action === 'right')) {
+      // a fresh press stands you up (a key still held from walking over doesn't)
+      if (e.repeat) return;
+      this.standUp();
     }
     this.keyboard.down(action);
     if (this.sim.autoWalk && action !== 'run' && !VIEW_HOLD_ACTIONS.has(action)) this.sim.cancelAutoWalk();
@@ -493,8 +515,55 @@ export class GameController {
   interact(): void {
     const { nearbyId, openId, phase } = this.store.getState();
     if (phase !== 'playing' || openId) return;
-    if (nearbyId) this.openLandmark(nearbyId);
+    if (this.seatMotion.seated) this.standUp();
+    else if (nearbyId) this.openLandmark(nearbyId);
+    else if (this.store.getState().seatNear) this.sitDown();
     else this.buffer.press(performance.now());
+  }
+
+  // ---------- benches ----------
+
+  /** Sit on the bench you're standing by (E, or the prompt's button). */
+  sitDown(): void {
+    const s = this.store.getState();
+    const seat = this.seats.find((x) => x.id === s.seatNear);
+    if (!seat || s.phase !== 'playing' || s.openId || s.menuOpen || this.sim.travel || this.seatMotion.stage) return;
+    this.sim.cancelAutoWalk();
+    this.keyboard.clear();
+    this.buffer.clear();
+    this.sim.vel.set(0, 0, 0);
+    this.seatMotion.sit(seat, this.sim.pLocal);
+    this.store.setState({ seated: true, seatNear: null });
+    this.announce('Sitting on the bench. Press Escape to stand up.');
+  }
+
+  /** Stand up from the bench (Escape, E, a movement key, a click, or the prompt's button). */
+  standUp(): void {
+    if (!this.seatMotion.seated) return;
+    this.seatMotion.stand(this.sim.pLocal);
+    this.store.setState({ seated: false });
+  }
+
+  /** Leave the seat at once (fast travel, reset). */
+  private leaveSeat(): void {
+    if (!this.seatMotion.stage) return;
+    this.seatMotion.clear();
+    this.store.setState({ seated: false });
+  }
+
+  /** Move the character along its sit-down / stand-up path, turning it to face out from the bench. */
+  private stepSeat(dt: number, reduced: boolean): void {
+    const m = this.seatMotion;
+    const seat = m.seat;
+    const sitting = m.seated;
+    const at = m.step(dt, reduced);
+    if (!at || !seat) return;
+    this.sim.placeAt(at);
+    if (sitting) {
+      _seatFacing.copy(seat.facing).applyQuaternion(this.sim.planetQ);
+      const target = Math.atan2(_seatFacing.x, _seatFacing.z);
+      this.sim.heading = reduced ? target : dampAngle(this.sim.heading, target, 0.08, dt);
+    }
   }
 
   /** Planet click/tap: walk to a world-space surface point. */
@@ -502,6 +571,10 @@ export class GameController {
     const s = this.store.getState();
     if (s.phase === 'ready') this.start();
     if (this.store.getState().phase !== 'playing' || s.openId || s.menuOpen || this.sim.travel) return;
+    if (this.seatMotion.stage) {
+      this.standUp();
+      return;
+    }
     const local = point.clone().normalize().applyQuaternion(this.sim.planetQ.clone().invert());
     this.sim.startAutoWalk(local);
   }
@@ -580,13 +653,15 @@ export class GameController {
     const s = this.store.getState();
     if (s.phase !== 'playing') this.store.setState({ phase: 'playing' });
     const mode = selectReducedMotion(s) ? 'fade' : 'flyover';
-    this.store.setState({ menuOpen: false, nearbyId: null, traveling: mode });
+    this.leaveSeat();
+    this.store.setState({ menuOpen: false, nearbyId: null, seatNear: null, traveling: mode });
     this.keyboard.clear();
     this.sim.startTravel(arrivalOrientation(g), id, mode);
     this.focusRegion();
   }
 
   teleport(id: string | 'plaza'): void {
+    this.leaveSeat();
     if (id === 'plaza') {
       this.sim.setOrientation(this.sim.planetQ.clone().identity());
     } else {

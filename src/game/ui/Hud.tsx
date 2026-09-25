@@ -8,7 +8,7 @@ import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
 import { LandmarkDialog, MenuDialog } from './Dialogs';
 import { ViewControls } from './ViewControls';
 import { CHARACTERS, type CharacterId } from '../player/characters';
-import { faArrowUpRightFromSquare, faMoon, faSun, faVolumeHigh, faVolumeXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowUpRightFromSquare, faChair, faMoon, faPersonWalking, faSun, faVolumeHigh, faVolumeXmark } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
 
 const toClassic = () => prefs.setMode('classic');
@@ -79,6 +79,35 @@ function PreviewCard({ controller }: { controller: GameController }) {
         </a>
       </div>
     </section>
+  );
+}
+
+/** By a bench: offer to sit down; on it: offer to stand up (the keys work too: E, Escape). */
+function SeatPrompt({ controller }: { controller: GameController }) {
+  const seated = useStore(controller.store, (s) => s.seated);
+  const near = useStore(controller.store, (s) => s.seatNear !== null);
+  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.openId && !s.menuOpen && !s.nearbyId);
+  if (!visible || (!seated && !near)) return null;
+  const act = () => {
+    if (seated) controller.standUp();
+    else controller.sitDown();
+    // back to the planet, so Escape and WASD work straight away
+    controller.focusRegion();
+  };
+  return (
+    <div className="seat-prompt" data-testid="seat-prompt">
+      <button className="btn primary" type="button" onClick={act}>
+        {seated ? (
+          <>
+            <Icon icon={faPersonWalking} /> Stand up <kbd>Esc</kbd>
+          </>
+        ) : (
+          <>
+            <Icon icon={faChair} /> Sit on the bench <kbd>E</kbd>
+          </>
+        )}
+      </button>
+    </div>
   );
 }
 
@@ -371,6 +400,7 @@ export function Hud({ controller }: { controller: GameController }) {
     <>
       <LandmarkNav controller={controller} />
       <PreviewCard controller={controller} />
+      <SeatPrompt controller={controller} />
       <ViewControls controller={controller} />
       <CharacterPicker controller={controller} />
       <ControlsHint controller={controller} />

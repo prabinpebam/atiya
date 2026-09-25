@@ -436,17 +436,58 @@ export function flowerBox(k: Kit, xf: Xf, w: number, colors: ColorRepresentation
   });
 }
 
+/** Park bench proportions (bench space: +z is the front, the side you sit facing). */
+export const BENCH = {
+  /** Height of the seat's top surface above the ground. */
+  seatTop: 0.3,
+  /** How far the back leans (rad from vertical). */
+  recline: 0.22,
+  /** Half the width across the frames' centres. */
+  frameX: 0.47,
+} as const;
+
+/**
+ * Classic park bench: two cast-iron side frames (front and rear legs, a seat rail, a reclined back
+ * upright and a scrolled armrest), wooden seat slats resting on the rails, and back slats fixed to
+ * the front face of the uprights, so the wood sits over the frame, not behind it.
+ */
 export function bench(k: Kit, xf: Xf) {
+  const { seatTop, recline, frameX } = BENCH;
+  const railTop = seatTop - 0.035;
+  const cr = Math.cos(recline);
+  const sr = Math.sin(recline);
+  // the back upright: from its foot on the seat rail (y0, z0), leaning back by `recline`
+  const y0 = railTop - 0.02;
+  const z0 = -0.15;
+  const up = (t: number, fwd = 0): V3 => [0, y0 + t * cr + fwd * sr, z0 - t * sr + fwd * cr];
   k.group(xf, () => {
     k.surface('metal', () => {
       for (const s of [-1, 1]) {
-        k.box([0.06, 0.26, 0.28], ARCH.iron, { p: [s * 0.42, 0.13, 0] }, 0.02);
-        k.box([0.06, 0.3, 0.05], ARCH.iron, { p: [s * 0.42, 0.4, -0.13] }, 0.02);
+        const x = s * frameX;
+        k.box([0.045, railTop, 0.05], ARCH.iron, { p: [x, railTop / 2, 0.12], r: [-0.08, 0, 0] }, 0.012);
+        k.box([0.045, railTop, 0.05], ARCH.iron, { p: [x, railTop / 2, -0.13], r: [0.12, 0, 0] }, 0.012);
+        k.box([0.045, 0.04, 0.34], ARCH.iron, { p: [x, railTop - 0.02, -0.005] }, 0.012);
+        // foot pads and a low stretcher between the legs
+        for (const z of [0.13, -0.145]) k.box([0.06, 0.02, 0.08], ARCH.iron, { p: [x, 0.01, z] }, 0.006);
+        k.box([0.035, 0.03, 0.24], ARCH.iron, { p: [x, 0.08, -0.005] }, 0.01);
+        // reclined back upright
+        const [, cy, cz] = up(0.19);
+        k.box([0.045, 0.4, 0.04], ARCH.iron, { p: [x, cy, cz], r: [-recline, 0, 0] }, 0.012);
+        // armrest on a short post, ending in a little scroll
+        k.box([0.035, 0.15, 0.035], ARCH.iron, { p: [x, railTop + 0.075, 0.1] }, 0.01);
+        k.box([0.05, 0.03, 0.34], ARCH.iron, { p: [x, railTop + 0.16, -0.015] }, 0.01);
+        k.torus(0.028, 0.012, ARCH.iron, { p: [x, railTop + 0.14, 0.15], r: [0, Math.PI / 2, 0] }, Math.PI * 1.6, [4, 10]);
       }
+      // long stretcher tying the frames together under the seat
+      k.box([frameX * 2, 0.03, 0.03], ARCH.iron, { p: [0, 0.1, -0.12] }, 0.01);
     });
     k.surface('wood', () => {
-      for (let i = 0; i < 3; i++) k.box([1.0, 0.04, 0.08], ARCH.wood, { p: [0, 0.28, -0.1 + i * 0.1] }, 0.015);
-      for (let i = 0; i < 2; i++) k.box([1.0, 0.07, 0.035], ARCH.wood, { p: [0, 0.42 + i * 0.1, -0.15] }, 0.015);
+      // seat slats on top of the rails
+      for (let i = 0; i < 4; i++) k.box([1.08, 0.035, 0.068], ARCH.wood, { p: [0, seatTop - 0.0175, -0.12 + i * 0.08] }, 0.012);
+      // back slats on the front of the uprights (so the frame is hidden behind the wood)
+      for (const t of [0.13, 0.22, 0.31]) {
+        k.box([1.08, 0.07, 0.03], ARCH.wood, { p: up(t, 0.02 + 0.015), r: [-recline, 0, 0] }, 0.012);
+      }
     });
   });
 }

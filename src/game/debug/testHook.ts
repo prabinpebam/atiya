@@ -44,6 +44,8 @@ export interface GameTestHook {
   wildlife(): { rabbits: { state: string; d: number }[]; duck: { state: string; d: number } | null; fish: { state: string; d: number; stream: boolean }[]; birds: { state: string; d: number; alt: number }[] };
   /** Stand `u` away from an animal (visual testing and the wildlife E2E). */
   nearAnimal(kind: 'rabbit' | 'duck' | 'bird', i?: number, u?: number): boolean;
+  /** Stand `u` in front of the plaza bench, facing it (bench E2E and visual testing). */
+  nearBench(u?: number): boolean;
   /** Show or hide the character's occlusion outline (visual testing). */
   setOutline(on: boolean): void;
   /** Scene exposure (into the tone map) and the tilt-shift blend function name. */
@@ -100,6 +102,12 @@ export function installTestHook(c: GameController): void {
         phase: s.phase,
         pLocal: c.sim.pLocal.toArray(),
         nearby: s.nearbyId,
+        seatNear: s.seatNear,
+        seated: s.seated,
+        seatStage: c.seatMotion.stage,
+        seatPose: c.seatMotion.pose,
+        /** Arc distance (u) from the player to the nearest bench's centre. */
+        benchD: c.seats.length ? Math.min(...c.seats.map((b) => Math.acos(Math.max(-1, Math.min(1, b.n.dot(c.sim.pLocal)))) * CONFIG.planetRadius)) : Infinity,
         open: s.openId,
         menuOpen: s.menuOpen,
         traveling: s.traveling,
@@ -338,6 +346,13 @@ export function installTestHook(c: GameController): void {
         return true;
       }
       return false;
+    },
+    nearBench: (u = 1.1) => {
+      const b = c.seats[0];
+      if (!b) return false;
+      const stand = moveAlong(b.n, b.facing, u / CONFIG.planetRadius);
+      c.sim.setOrientation(orientationFor(stand, tangentToward(stand, b.n) ?? b.facing.clone().negate()));
+      return true;
     },
     setOutline: (on) => {
       outlineMaterial().visible = on;

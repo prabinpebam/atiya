@@ -2,7 +2,7 @@ import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { useStore } from 'zustand';
-import { AnimationMixer, Box3, Group, LoopOnce, Matrix4, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { AnimationMixer, Box3, Group, LoopOnce, Matrix4, Quaternion, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { damp } from '../math/sphere';
@@ -12,6 +12,8 @@ import { CHARACTERS, characterById, type CharacterId } from './characters';
 import { prefs } from '../platform/prefs';
 import { withLampLights } from '../world/lampLights';
 import { addOcclusionOutline, countOutlines } from './outline';
+import { SEAT } from '../systems/seating';
+import { selectAmbientPaused } from '../state/store';
 
 const R = CONFIG.planetRadius;
 /** Target standing height in world units (≈ door height plus a head; the planet camera is tuned for ~1.25 u). */
@@ -24,6 +26,49 @@ const MODEL_YAW = 0;
  */
 const RUN_CLIP_SPEED = 2.5;
 const _foot = new Vector3();
+/** Height of the rig's hip joints (u) when standing at CHARACTER_HEIGHT (measured from the skeleton). */
+const HIP_Y = 0.4;
+/** Seated, the hip joints sit this far above the seat (about half a thigh's thickness). */
+const HIP_OVER_SEAT = 0.055;
+
+type Limb = { side: 1 | -1; up: Object3D | null; leg: Object3D | null; foot: Object3D | null; toes: Object3D | null; arm: Object3D | null; fore: Object3D | null; hand: Object3D | null };
+
+const _pq = new Quaternion();
+const _aim = new Quaternion();
+const _want = new Vector3();
+const _cur = new Vector3();
+const _fwd = new Vector3();
+const _left = new Vector3();
+const _dir = new Vector3();
+const DOWN = new Vector3(0, -1, 0);
+
+/** Turn `bone` (by weight `w`) so its child points along world direction `dir`, whatever the rig's local axes. */
+function aimBone(bone: Object3D | null, child: Object3D | null, dir: Vector3, w: number): void {
+  if (!bone || !child || !bone.parent) return;
+  bone.parent.getWorldQuaternion(_pq).invert();
+  _want.copy(dir).applyQuaternion(_pq).normalize();
+  _cur.copy(child.position).applyQuaternion(bone.quaternion);
+  if (_cur.lengthSq() < 1e-12) return;
+  _aim.setFromUnitVectors(_cur.normalize(), _want).multiply(bone.quaternion);
+  bone.quaternion.slerp(_aim, w);
+}
+
+/**
+ * Sitting pose over whatever the mixer played (weight `w`): thighs forward along the seat, shins
+ * hanging over its edge (feet swinging gently unless `still`), hands resting toward the knees.
+ */
+function sitPose(limbs: readonly Limb[], heading: number, w: number, time: number, still: boolean): void {
+  _fwd.set(Math.sin(heading), 0, Math.cos(heading));
+  _left.set(Math.cos(heading), 0, -Math.sin(heading));
+  for (const l of limbs) {
+    const kick = still ? 0 : Math.sin(time * 2.4 + (l.side > 0 ? 0 : Math.PI)) * 0.3;
+    aimBone(l.up, l.leg, _dir.copy(_fwd).addScaledVector(DOWN, 0.1).addScaledVector(_left, 0.08 * l.side), w);
+    aimBone(l.leg, l.foot, _dir.copy(DOWN).addScaledVector(_fwd, 0.18 + kick), w);
+    aimBone(l.foot, l.toes, _dir.copy(_fwd).addScaledVector(DOWN, 0.25), w);
+    aimBone(l.arm, l.fore, _dir.copy(DOWN).addScaledVector(_fwd, 0.15).addScaledVector(_left, 0.16 * l.side), w);
+    aimBone(l.fore, l.hand, _dir.copy(_fwd).addScaledVector(DOWN, 0.9).addScaledVector(_left, -0.08 * l.side), w);
+  }
+}
 
 // Start fetching the chosen character as soon as the game chunk loads (no Draco/Meshopt → no decoder CDN requests).
 useGLTF.preload(characterById(prefs.getCharacter()).url, false, false);
@@ -126,6 +171,22 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
   }, [scene, animations]);
   const cycle = useRef(0);
 
+  const limbs = useMemo<Limb[]>(() => {
+    const b = (n: string) => scene.getObjectByName(n) ?? null;
+    return (['Left', 'Right'] as const).map((s) => ({
+      side: s === 'Left' ? 1 : -1,
+      up: b(`${s}UpLeg`),
+      leg: b(`${s}Leg`),
+      foot: b(`${s}Foot`),
+      toes: b(`${s}Toes`),
+      arm: b(`${s}Arm`),
+      fore: b(`${s}ForeArm`),
+      hand: b(`${s}Hand`),
+    }));
+  }, [scene]);
+  const seatGroup = useRef<Group>(null);
+  const clock = useRef(0);
+
   const blend = useRef(0);
   const flying = useRef(false);
   useFrame((_, rawDt) => {
@@ -146,6 +207,11 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
       run.timeScale = Math.min(1.7, Math.max(0.6, speed / RUN_CLIP_SPEED));
     }
     mixer.update(dt);
+    // on a bench: lower the body onto the seat and pose the limbs over the animation
+    clock.current += dt;
+    const pose = controller.seatMotion.pose;
+    if (seatGroup.current) seatGroup.current.position.y = pose * (SEAT.seatY - controller.lift + HIP_OVER_SEAT - HIP_Y);
+    if (pose > 1e-3) sitPose(limbs, sim.heading, pose, clock.current, selectAmbientPaused(controller.store.getState()));
     if (run) {
       const t = (run.time / run.getClip().duration) % 1;
       if (blend.current > 0.35 && !jump?.isRunning() && crossedPhase(cycle.current, t, stepPhases)) controller.footstep();
@@ -155,7 +221,9 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
 
   return (
     <group ref={root}>
-      <primitive object={scene} scale={fit.scale} position={[0, fit.lift, 0]} />
+      <group ref={seatGroup}>
+        <primitive object={scene} scale={fit.scale} position={[0, fit.lift, 0]} />
+      </group>
     </group>
   );
 }

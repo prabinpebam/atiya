@@ -29,6 +29,12 @@ type GameState = {
   hover: number;
   /** Occlusion-outline twins on the current avatar. */
   outlines: number;
+  /** Benches: the seat on offer, whether you're sitting, the motion stage and pose, and the distance (u) to the bench. */
+  seatNear: string | null;
+  seated: boolean;
+  seatStage: 'sitting' | 'seated' | 'standing' | null;
+  seatPose: number;
+  benchD: number;
   wind: { strength: number; gust: number; leaves: number; swirls: number };
   textures: { loaded: number; failed: number; pending: number };
 };
@@ -685,6 +691,44 @@ test.describe('wildlife', () => {
     // the duck paddles off from a character wading up to her
     expect(await page.evaluate(() => (window as any).__game.nearAnimal('duck', 0, 1.2))).toBe(true);
     await expect.poll(async () => (await wild()).duck!.state, { timeout: 20_000 }).toBe('flee');
+  });
+});
+
+test.describe('benches', () => {
+  test('walking up to the plaza bench offers a seat; E sits, Escape stands up (not the menu), and a movement key stands up and walks off', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    const prompt = page.getByTestId('seat-prompt');
+    await expect(prompt).toHaveCount(0);
+    await page.evaluate(() => (window as any).__game.nearBench(1.1));
+    await expect(prompt.getByRole('button', { name: /Sit on the bench/ })).toBeVisible();
+    // E sits: the character settles onto the seat and the prompt offers to stand up
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await state(page)).seatStage, { timeout: 30_000 }).toBe('seated');
+    let s = await state(page);
+    expect(s.seated).toBe(true);
+    expect(s.seatPose).toBe(1);
+    expect(s.benchD).toBeLessThan(0.1);
+    await expect(prompt.getByRole('button', { name: /Stand up/ })).toBeVisible();
+    // Escape stands up in front of the bench, and doesn't open the menu
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await state(page)).seatStage, { timeout: 30_000 }).toBeNull();
+    s = await state(page);
+    expect(s.menuOpen).toBe(false);
+    expect(s.seated).toBe(false);
+    expect(s.seatPose).toBe(0);
+    expect(s.benchD).toBeGreaterThan(0.87);
+    // the prompt's button sits too (and hands focus back to the planet)
+    await prompt.getByRole('button', { name: /Sit on the bench/ }).click();
+    await expect.poll(async () => (await state(page)).seatStage, { timeout: 30_000 }).toBe('seated');
+    await expect(page.locator('.game-region')).toBeFocused();
+    // walking stands you up and away (the bench faces screen-down here, so S walks off it)
+    await page.keyboard.down('KeyS');
+    await expect.poll(async () => (await state(page)).benchD, { timeout: 30_000 }).toBeGreaterThan(1.3);
+    await page.keyboard.up('KeyS');
+    s = await state(page);
+    expect(s.seated).toBe(false);
+    expect(s.seatStage).toBeNull();
   });
 });
 

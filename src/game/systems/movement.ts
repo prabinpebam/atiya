@@ -133,6 +133,17 @@ export class PlanetSim {
   }
 
   /**
+   * Put the player at planet-local `p` by the smallest turn of the planet (so the view keeps its
+   * yaw, as when walking), ignoring collision: used to sit on and stand up from benches.
+   */
+  placeAt(p: Vector3): void {
+    const c = new Quaternion().setFromUnitVectors(this.pLocal, p.clone().normalize());
+    this.planetQ.multiply(c.invert()).normalize();
+    playerLocal(this.planetQ, this.pLocal);
+    this.vel.set(0, 0, 0);
+  }
+
+  /**
    * Rotate the view about the player's vertical axis (world +Y) by `angle` rad — positive turns the
    * scene counter-clockwise on screen. The player's spot is unchanged; heading and velocity turn
    * with the world so the character keeps facing the same way on the planet. Ignored mid-travel.

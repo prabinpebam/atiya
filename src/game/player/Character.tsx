@@ -8,6 +8,12 @@ import { selectReducedMotion } from '../state/store';
 import { Kit, type KitGeometry, type V3 } from '../world/kit';
 import { KitModel } from '../world/KitModel';
 import { addOcclusionOutline, countOutlines } from './outline';
+import { SEAT } from '../systems/seating';
+
+/** The avatar's scale and its hip pivot height (local units), for sitting on benches. */
+const AVATAR_SCALE = 0.96;
+const HIP_PIVOT = 0.3;
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 
 const C = {
   skin: '#f6c29a',
@@ -179,6 +185,10 @@ export function ProceduralAvatar({ controller }: { controller: GameController })
     const speed = sim.speed;
     time.current += dt;
     if (root.current) root.current.rotation.y = sim.heading;
+    // on a bench: raise the hips to the seat, legs out along it and hands forward
+    const sit = controller.seatMotion.pose;
+    if (root.current) root.current.position.y = (sit * (SEAT.seatY - controller.lift + 0.06 - HIP_PIVOT * AVATAR_SCALE)) / AVATAR_SCALE;
+    const kick = reduced ? 0 : Math.sin(time.current * 2.4) * 0.18;
     const walk = Math.min(1, speed / CONFIG.walkSpeed);
     const run = Math.min(1, Math.max(0, (speed - CONFIG.walkSpeed) / (CONFIG.runSpeed - CONFIG.walkSpeed)));
     const stride = Math.floor(phase.current / Math.PI + 0.5);
@@ -188,14 +198,14 @@ export function ProceduralAvatar({ controller }: { controller: GameController })
     const s = Math.sin(phase.current);
     const legSwing = s * (0.55 + 0.35 * run) * walk;
     const armSwing = s * (0.6 + 0.5 * run) * walk;
-    if (legL.current) legL.current.rotation.x = legSwing;
-    if (legR.current) legR.current.rotation.x = -legSwing;
+    if (legL.current) legL.current.rotation.x = mix(legSwing, -1.15 + kick, sit);
+    if (legR.current) legR.current.rotation.x = mix(-legSwing, -1.15 - kick, sit);
     if (armL.current) {
-      armL.current.rotation.x = -armSwing;
+      armL.current.rotation.x = mix(-armSwing, -0.55, sit);
       armL.current.rotation.z = 0.14 + run * 0.1;
     }
     if (armR.current) {
-      armR.current.rotation.x = armSwing;
+      armR.current.rotation.x = mix(armSwing, -0.55, sit);
       armR.current.rotation.z = -0.14 - run * 0.1;
     }
     if (body.current) {
@@ -220,7 +230,7 @@ export function ProceduralAvatar({ controller }: { controller: GameController })
   const eyeY = HEAD_C[1] + Math.sin(0.03) * HEAD_R;
 
   return (
-    <group name="procedural-avatar" scale={0.96}>
+    <group name="procedural-avatar" scale={AVATAR_SCALE}>
       <group ref={root}>
         <group ref={legL} position={[0.09, 0.3, 0]}>
           <KitModel geo={parts.leg} />

@@ -7,6 +7,10 @@ export type Phase = 'loading' | 'ready' | 'playing';
 export interface GameState {
   phase: Phase;
   nearbyId: string | null;
+  /** The bench seat on offer (you're standing by it), or null. */
+  seatNear: string | null;
+  /** True while the character sits on a bench (from sitting down until it starts to stand up). */
+  seated: boolean;
   openId: string | null;
   menuOpen: boolean;
   traveling: 'flyover' | 'fade' | null;
@@ -42,6 +46,8 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
   return createStore<GameState>()(() => ({
     phase: 'loading',
     nearbyId: null,
+    seatNear: null,
+    seated: false,
     openId: null,
     menuOpen: false,
     traveling: null,
