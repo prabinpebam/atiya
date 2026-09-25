@@ -18,6 +18,7 @@ import {
   PlaneGeometry,
   PointLight,
   Quaternion,
+  ShaderMaterial,
   SphereGeometry,
   Vector3,
 } from 'three';
@@ -30,6 +31,7 @@ import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import { clockHandAngles } from './clockFace';
 import { lampsOn } from './DayNight';
 import { addLamp, type Lamp } from './lampLights';
+import { BEAM, BEAM_FRAG, BEAM_VERT } from './beam';
 import { curtainColumn, DOOR, smooth, stepOpen } from './doors';
 import type { KitGeometry, V3 } from './kit';
 import { KitModel } from './KitModel';
@@ -43,18 +45,28 @@ const R = CONFIG.planetRadius;
 function Beam({ at, paused, controller }: { at: [number, number, number]; paused: boolean; controller: GameController }) {
   const ref = useRef<Group>(null);
   const { geo, mat } = useMemo(() => {
-    const g = new ConeGeometry(0.55, 3.4, 20, 1, true);
+    // apex at the lamp, opening outward along +x
+    const g = new ConeGeometry(BEAM.radius, BEAM.length, 28, 1, true);
     g.rotateZ(Math.PI / 2);
-    g.translate(1.75, 0, 0);
-    return { geo: g, mat: new MeshBasicMaterial({ color: '#fff3a6', transparent: true, opacity: 0.28, depthWrite: false, blending: AdditiveBlending, side: DoubleSide }) };
+    g.translate(BEAM.length / 2, 0, 0);
+    const m = new ShaderMaterial({
+      uniforms: { uColor: { value: new Color('#fff3a6') }, uOpacity: { value: 0.3 }, uLength: { value: BEAM.length } },
+      vertexShader: BEAM_VERT,
+      fragmentShader: BEAM_FRAG,
+      transparent: true,
+      depthWrite: false,
+      blending: AdditiveBlending,
+      side: DoubleSide,
+    });
+    return { geo: g, mat: m };
   }, []);
   useFrame((_, dt) => {
     if (ref.current && !paused) ref.current.rotation.y += dt * 0.7;
-    mat.opacity = 0.2 + 0.35 * controller.sky.night;
+    mat.uniforms.uOpacity.value = 0.4 + 0.18 * controller.sky.night;
   });
   return (
     <group ref={ref} position={at}>
-      <mesh geometry={geo} material={mat} />
+      <mesh geometry={geo} material={mat} renderOrder={2} />
     </group>
   );
 }
