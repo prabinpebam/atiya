@@ -36,7 +36,7 @@ This POC proves the **navigation UI and interaction model**, not final art or co
 - Physics engine, jumping, swimming, terrain deformation.
 - WebGPU renderer. (A small post-processing chain *is* used on the high quality tier — see §4.12.)
 - Localization, analytics, CMS integration, production deployment hardening.
-- Audio beyond a P2 stretch (muted-by-default ambient + footsteps).
+- Music, voice and spatial (3D-positioned) audio. The POC has subtle sound effects only: ambience, footsteps and cues (§4.16).
 
 ## 3. Users & key scenarios
 
@@ -158,7 +158,7 @@ Rules:
 - Clicking a view button with a mouse hands focus back to the planet so WASD keeps working; keyboard activation keeps focus on the button.
 - Diagonals are normalized; any movement key cancels an in-progress auto-walk or fast travel.
 - **Held input is cleared** on `blur`, `visibilitychange`, dialog/menu open, and any capability/error transition (no "stuck key" walking).
-- **Start & focus (no focus stealing):** when loading completes, the loader is replaced by a **Start exploring** button (also the user gesture that can unlock audio later). It receives focus **only if nothing else is focused** (`document.activeElement` is `body`). Activating it — or any pointer-down on the canvas — focuses the game region. The game region is a focusable wrapper (`tabindex="0"`, `role="region"`, `aria-label="Planet explorer — use arrow keys or WASD to move, E to open"`) with a visible `:focus-visible` indicator. `role="application"` is used only if Narrator/NVDA testing shows it's necessary.
+- **Start & focus (no focus stealing):** when loading completes, the loader is replaced by a **Start exploring** button (also the user gesture that unlocks audio, §4.16). It receives focus **only if nothing else is focused** (`document.activeElement` is `body`). Activating it — or any pointer-down on the canvas — focuses the game region. The game region is a focusable wrapper (`tabindex="0"`, `role="region"`, `aria-label="Planet explorer — use arrow keys or WASD to move, E to open"`) with a visible `:focus-visible` indicator. `role="application"` is used only if Narrator/NVDA testing shows it's necessary.
 
 ### 4.6 Camera
 
@@ -218,7 +218,7 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 ```
 
 - All HUD elements are real HTML (`<button>`, `<a>`, `<dialog>`, `<nav>`), ≥ 24×24 CSS px targets, 4.5:1 text contrast on a solid/blurred backing, never obscuring the focused element (WCAG 2.4.11).
-- **Menu** (`<dialog>`): Landmarks (fast travel + visited state), Controls, Settings (Reduce motion, Pause ambient motion, **Time of day** (cycle / local time / always day, §4.13), Run toggle (P1), Quality Auto/Low/High (P1), Sound (P2)), **Classic site**, Return to Plaza (P1). The action row (Show controls / Classic site / Close) stays pinned at the bottom when the menu scrolls.
+- **Menu** (`<dialog>`): Landmarks (fast travel + visited state), Controls, Settings (Reduce motion, Pause ambient motion, **Time of day** (cycle / local time / always day, §4.13), **Sound effects** (on by default, §4.16), Run toggle (P1), Quality Auto/Low/High (P1)), **Classic site**, Return to Plaza (P1). The action row (Show controls / Classic site / Close) stays pinned at the bottom when the menu scrolls.
 - **Time badge** in the header next to Menu: planet time with a sun/moon glyph (hidden below 520 px wide).
 - **View controls** (bottom-right; top-right below 720 px wide), a `role="group"` labelled "View":
   - a **compass** button that always points to map north. Its label says which way you face (e.g. "Compass: facing north-west. Face north (N)"), and activating it faces north.
@@ -287,7 +287,7 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-52 | Reduced motion (media query + setting) | P0 | 6 |
 | FR-53 | HUD/dialog meet WCAG 2.2 AA (contrast, target size, focus visible/not obscured, names/roles) | P0 | 4.9, 6 |
 | FR-54 | Remappable keys | P2 | 6 |
-| FR-55 | Audio (muted default, toggle, footsteps + ambient) | P2 | 2.2 |
+| FR-55 | Sound effects: wind, the stream (by distance), birds by day, footsteps by surface, and a chime with the door (or curtain) sound at each landmark. On by default, with a visible HUD toggle and a Menu setting (remembered); nothing loads until Start, or at all while muted | P1 (was P2 "muted by default") | 4.16 |
 | **Performance & platform** | | | |
 | FR-60 | Landing ships zero 3D JS; game chunk lazy on `/play` | P0 | 5.9 |
 | FR-61 | Loader with % progress + classic link | P0 | 5.9 |
@@ -427,6 +427,28 @@ All textures and the landing art are **original**, generated for this project wi
 - **Per-surface materials:** kit parts record what they're made of: `k.surface('wood', () => …)` tags everything added inside it (`paint`, `wood`, `roof`, `plaster`, `stone`, `brick`, `metal`, `canvas`). `surfaceUV` box-projects each triangle in the part's own frame and stores a per-part UV in world-sized tiles (`SURFACE_TILE_U`) with a random offset, so neighbouring boards and bricks never line up. Wood runs its grain along the part's longer extent; every other surface keeps its courses horizontal. The landmark still merges into one mesh and one material, so this adds no draw calls. Buildings use it throughout: shingled roofs, plaster or wooden gables, stone plinths and steps, brick (Town Hall, Workshop chimney, Greenhouse base), stone (Library, Lighthouse base), wooden doors, shutters, benches, crates and the bridge, metal lanterns, hoops and railings, and canvas awnings and banners.
 - **Loading:** the 24 game textures are about 1.1 MB of WebP (budget 1.5 MB). `mountGame` preloads them before the first render (with a 10 s cap). Any texture that fails leaves its material on the procedural look, so the planet is always complete.
 - **Pipeline:** `python scripts/build-textures.py` builds `public/textures/*.webp` from `assets-src/textures/*.png` and writes `src/game/world/textureManifest.ts` (URLs, kinds, byte sizes, mean linear colours). Its steps: wrap-safe resize for tiles; crop, fit, greyscale and bleed for sprites; the poster sizes and the social card. The outputs are committed.
+
+### 4.16 Sound (as built)
+
+Subtle, cosy sound effects make the planet feel alive; nothing is essential, and it all mutes with one click.
+
+| Sound | When | How |
+|---|---|---|
+| Wind | Always, day and night | A seamless 22 s forest-rustle loop. Its level and a lowpass cutoff follow the WindFx strength and gust (`windMix`), so gusts swell and brighten |
+| Stream | Near the river | A seamless 20 s babbling-brook loop. Its level falls with the distance from the water's edge (`streamLevel`: full on the bank, half by ≈ 2 u, silent past 14 u) and it pans toward the water relative to the camera |
+| Birds | By day and at dusk (`night < 0.35`) | One of six short songs every 5–16 s, at a random pitch (±10 %) and pan; now and then the same bird answers |
+| Footsteps | Each time a foot lands | Surface underfoot (`surfaceAt`): **water** when wading, **wood** on the bridge deck, **stone** on the plaza, landmark cobbles and paths, else **grass**. Six variations per surface, never the same one twice in a row, with a little pitch and level jitter. The rigged character lands its feet at phases measured from its run clip at load (`contactPhase`); the procedural avatar at each end of its leg swing |
+| Arrival | A landmark's door starts to open | A steel-pan chime (a rising fifth), then the door creaking open — or, at the Amphitheater, a curtain swish |
+| Leaving | The door starts to shut | The door's soft closing thud, timed to land as it shuts (or the curtain swish, lower) |
+| Open | A place's details open | A soft rising sparkle |
+
+- **Unlock & default:** browsers only allow audio after a user gesture, so `SoundEngine.unlock()` runs from **Start exploring** (and any later press). Sound is **on by default**; the header's **Sound** toggle and Menu → *Sound effects* turn it off, and the choice is remembered (`localStorage site.sound`). This deliberately replaces the original "muted by default" (FR-55): the sounds are quiet, start only after the visitor's own click, and are one click from off.
+- **Nothing is fetched early:** the landing page and the game load no audio. The five files (≈ 625 KB) are fetched after Start, and never while muted. Muting fades out and suspends the audio context; a hidden tab suspends it too.
+- **Mix:** a master gain feeds two buses: the ambience (wind, stream, birds) ducks to 30 % while a dialog or the menu is open; the effects (steps, cues) don't.
+- **Files:** two loops and three sprites in MP3 (decodable everywhere, including Safari), mono 44.1 kHz; 64 kbps loops, 96 kbps sprites. Loops carry 1 s of their own audio round each end, and play only between `loopStart` and `loopEnd`, so neither the encoder's priming nor its padding lands in the loop. Sprite slots have 120 ms of silence between them; the engine reads 20 ms either side of a slot.
+- **Sourcing & analysis:** every clip is CC0 (Freesound, OpenGameArt, Kenney; credits in `assets-src/CREDITS.md`). Candidates were compared with objective checks before any was used. The checks: level steadiness (5th–95th percentile spread), clipping, broadband vs tonal content (hum, whistles, drones), modulation depth (babble for the brook, gust swell for the wind), onsets for splitting steps and phrases, pitch and consonance for the cues, and spectrogram sheets of every cut. Rejected: whistly synthetic wind, a droning wind loop, wind with birds or traffic in it, clipped or humming streams, and harsh square-wave UI blips and door slams. The chosen brook is the most "babbling" (discrete bubbles, steady level, no tones); the wind is a broadband forest rustle whose only movement is gusts.
+- **Pipeline:** `python scripts/build-audio.py` downloads the sources to a git-ignored cache and cuts them. It filters rumble, denoises the bird recordings against their own background, and levels each set by its loudest 60 ms. It crossfades the loops seamlessly, then encodes and writes `src/game/audio/audioManifest.ts`. Finally it re-decodes every output and reports its level, peak and slot levels. For the loops it also reports where the seam ranks among 200 random interior cuts on sample step, level and spectrum; the stream scores 82 / 18 / 35 and the wind 39 / 31 / 72 (50 = typical, > 95 = audible). The outputs are committed.
+- **Code:** `audio/engine.ts` (Web Audio: buses, loops, sprite voices, event log), `audio/audioLogic.ts` (pure rules, unit-tested), `controller.ts` (unlock, door cues from the store, per-frame ambience, `footstep()`), and the avatars (foot contacts).
 
 ## 5. Technical design
 
@@ -681,6 +703,7 @@ A hydrated `client:only` island would import the game bundle as part of hydratio
   setWind(gust: number | null): void;   // hold the wind gust envelope 0–1 (visual/E2E tests); null releases it
   visitFeature(kind: 'bridge' | 'waterfall' | 'mesa' | 'river', i?: number): boolean; // teleport to a landscape feature
   groundInfo(): { lift: number; height: number; walk: number; riverD: number; riverHalfWidth: number };
+  sound(): { enabled: boolean; state: string; loaded: number; total: number; levels: {…}; lastSurface: string | null; events: {kind; detail?; played}[] };
 }
 ```
 
@@ -701,7 +724,7 @@ Targets: **WCAG 2.2 AA** for all DOM UI, plus **WCAG 2.3.3 Animation from Intera
 | Motion | One global **Reduce motion** state (media query **or** in-game toggle) stops **every** decorative animation source: lighthouse beam, clouds, foliage wind, landmark idle bobs, particles, squash, follow lead. Transitions become opacity-only (≤ 200 ms). Menu → **Pause ambient motion** is available even without reduced motion. Never: shake, head-bob, motion blur, flashing. | 2.2.2 (A), 2.3.1 (A), 2.3.3 (AAA, adopted), XAG 117 |
 | Predictable | Approaching shows a preview only; opening requires explicit input (default mode) | 3.2.1, 3.2.2 |
 | Objectives/help | Controls re-openable; Classic & Contact in consistent places; visited checklist (P1) | 3.2.6, XAG 109 |
-| Audio (P2) | Muted by default; visible toggle; no information conveyed by sound alone | 1.4.2 |
+| Audio | Starts only after the Start click (a user gesture). The ambience plays for longer than 3 s, so a visible **Sound** toggle (`aria-pressed`) in the header stops everything at any time (also in Menu → Settings, remembered). Every cue duplicates something visible (preview card, door, dialog) — no information is conveyed by sound alone. The ambience ducks under open dialogs | 1.4.2 |
 | Settings remembered | `localStorage` (mode, reduce motion, run toggle, onboarding seen) | GAG basic |
 
 ## 7. Performance budgets
@@ -715,6 +738,7 @@ Budgets are **P0**. A miss is acceptable only with a **written owner waiver** re
 | Gated-out devices | **0 requests** for `game-*` chunks or 3D assets | E2E network assertion (forced no-WebGL, `?mode=classic`) |
 | Game JS (all chunks loaded by `/play`, gz) | ≤ **450 KB** | `size` script |
 | Initial 3D assets (GLB + textures, transferred) | ≤ **2.5 MB** (total ≤ 4 MB) | Network panel |
+| Sound effects (fetched after Start, only with sound on) | ≤ **800 KB** — as built ≈ 625 KB (5 MP3s) | `tests/unit/audio.test.ts` |
 | Estimated GPU texture memory | ≤ **32 MB** | Asset script: Σ width × height × bytes-per-pixel of the GPU format × 1.33 (mips) |
 | Time to playable | ≤ **3.0 s** median of 5 cold-cache runs | `game:playable` mark minus navigation start. Chrome DevTools custom profile: 50 Mbps down / 10 Mbps up / 20 ms RTT, cache disabled, no CPU throttling |
 | Frame pacing | rAF interval **median ≤ 16.7 ms** and **≥ 95 % of intervals ≤ 20 ms** | 60 s scripted walk loop (test build, minified). DPR forced to 1.5, adaptive quality off, 1920×1080 viewport, 60 Hz display, on AC power. CPU frame time and GPU time (stats-gl) reported separately |

@@ -4,6 +4,7 @@ const KEYS = {
   pauseAmbient: 'site.pauseAmbient',
   onboardingSeen: 'site.onboardingSeen',
   timeMode: 'site.timeMode',
+  sound: 'site.sound',
 } as const;
 
 type Mode = 'play' | 'classic';
@@ -42,4 +43,7 @@ export const prefs = {
     return v === 'local' || v === 'day' ? v : 'cycle';
   },
   setTimeMode: (m: TimeMode) => write(KEYS.timeMode, m),
+  /** Sound is on unless the visitor turned it off. */
+  getSound: () => read(KEYS.sound) !== '0',
+  setSound: (v: boolean) => write(KEYS.sound, v ? '1' : '0'),
 };

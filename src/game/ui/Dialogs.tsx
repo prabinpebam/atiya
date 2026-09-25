@@ -78,6 +78,7 @@ export function MenuDialog({ controller }: { controller: GameController }) {
   const reduced = useStore(controller.store, selectReducedMotion);
   const pauseAmbient = useStore(controller.store, (s) => s.pauseAmbient);
   const timeMode = useStore(controller.store, (s) => s.timeMode);
+  const soundOn = useStore(controller.store, (s) => s.soundOn);
   const ambientPaused = useStore(controller.store, selectAmbientPaused);
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -133,6 +134,10 @@ export function MenuDialog({ controller }: { controller: GameController }) {
           <label className="check">
             <input type="checkbox" checked={pauseAmbient || reduced} disabled={reduced} onChange={(e) => controller.setPauseAmbient(e.currentTarget.checked)} />
             Pause ambient motion
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={soundOn} onChange={(e) => controller.setSound(e.currentTarget.checked)} />
+            Sound effects
           </label>
           <fieldset className="radio-group">
             <legend>Time of day</legend>

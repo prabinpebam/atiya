@@ -44,6 +44,16 @@ export interface GameTestHook {
   doors(): Record<string, number>;
   /** The shared warm door light: which landmark it's shining from (null when dark) and its intensity. */
   doorLight(): { id: string | null; intensity: number };
+  /** Sound: on/off, audio-context state, sprites loaded, ambience targets and the latest cues (newest last). */
+  sound(): {
+    enabled: boolean;
+    state: string;
+    loaded: number;
+    total: number;
+    levels: { stream: number; streamPan: number; wind: number; windCutoff: number; birds: boolean };
+    lastSurface: string | null;
+    events: Array<{ t: number; kind: string; detail?: string; played: boolean }>;
+  };
   /** Ground under the player: smoothed lift, terrain height, walk height and distance to the river (u). */
   groundInfo(): {
     lift: number;
@@ -154,6 +164,15 @@ export function installTestHook(c: GameController): void {
     bridgeLamps: () => ({ ...c.bridgeLamps }),
     doors: () => Object.fromEntries([...c.doors].map(([id, d]) => [id, d.open])),
     doorLight: () => ({ ...c.doorLight }),
+    sound: () => ({
+      enabled: c.sound.enabled,
+      state: c.sound.state,
+      loaded: c.sound.loaded,
+      total: c.sound.total,
+      levels: { ...c.sound.levels },
+      lastSurface: c.lastStepSurface,
+      events: c.sound.events.map((e) => ({ ...e })),
+    }),
     groundInfo: () => {
       const p = c.sim.pLocal;
       const river = c.props.river;

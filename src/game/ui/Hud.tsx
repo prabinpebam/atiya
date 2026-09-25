@@ -162,12 +162,31 @@ function TimeBadge({ controller }: { controller: GameController }) {
   );
 }
 
+/** Sound on/off (a toggle button: its name stays "Sound", the pressed state carries on/off). */
+function SoundButton({ controller }: { controller: GameController }) {
+  const on = useStore(controller.store, (s) => s.soundOn);
+  return (
+    <button
+      type="button"
+      className="btn sound-btn"
+      aria-pressed={on}
+      title={on ? 'Sound on — click to mute' : 'Sound off — click to unmute'}
+      onClick={() => controller.setSound(!on)}
+      data-testid="sound-button"
+    >
+      <span aria-hidden="true">{on ? '🔊' : '🔇'}</span>
+      <span className="sound-label">Sound</span>
+    </button>
+  );
+}
+
 function MenuButton({ controller, target }: { controller: GameController; target: HTMLElement | null }) {
   const phase = useStore(controller.store, (s) => s.phase);
   if (!target || phase === 'loading') return null;
   return createPortal(
     <>
       <TimeBadge controller={controller} />
+      <SoundButton controller={controller} />
       <button type="button" className="btn" aria-haspopup="dialog" onClick={() => controller.openMenu()} data-testid="menu-button">
         Menu
       </button>

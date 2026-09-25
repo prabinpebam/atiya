@@ -1,10 +1,11 @@
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { AnimationMixer, Box3, CircleGeometry, Group, LoopOnce, MeshBasicMaterial, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { AnimationMixer, Box3, CircleGeometry, Group, LoopOnce, Matrix4, MeshBasicMaterial, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { damp } from '../math/sphere';
+import { contactPhase, crossedPhase } from '../audio/audioLogic';
 import { ProceduralAvatar } from './Character';
 
 const R = CONFIG.planetRadius;
@@ -18,6 +19,7 @@ const MODEL_YAW = 0;
  * (measured by animating the skeleton: ≈ 2.4 u/s). timeScale = speed / this, clamped.
  */
 const RUN_CLIP_SPEED = 2.5;
+const _foot = new Vector3();
 
 // Start fetching as soon as the game chunk loads (no Draco/Meshopt → no decoder CDN requests).
 useGLTF.preload(CHARACTER_URL, false, false);
@@ -75,6 +77,29 @@ function KenneyAvatar({ controller }: { controller: GameController }) {
     };
   }, [idle, run, jump, mixer, controller]);
 
+  // when each foot lands in the run cycle (for footsteps), measured once from the clip itself
+  const stepPhases = useMemo(() => {
+    const clip = animations.find((a) => a.name === 'run');
+    const feet = [scene.getObjectByName('LeftFoot'), scene.getObjectByName('RightFoot')];
+    if (!clip || !feet[0] || !feet[1]) return [];
+    const rest: Array<[Object3D, Matrix4]> = [];
+    scene.traverse((o) => rest.push([o, o.matrix.clone()]));
+    const mx = new AnimationMixer(scene);
+    mx.clipAction(clip).play();
+    const heights: number[][] = [[], []];
+    for (let i = 0; i < 48; i++) {
+      mx.setTime((clip.duration * i) / 48);
+      scene.updateMatrixWorld(true);
+      feet.forEach((f, k) => heights[k].push(f!.getWorldPosition(_foot).y));
+    }
+    mx.stopAllAction();
+    mx.uncacheRoot(scene);
+    for (const [o, m] of rest) m.decompose(o.position, o.quaternion, o.scale);
+    scene.updateMatrixWorld(true);
+    return heights.map((h) => contactPhase(h));
+  }, [scene, animations]);
+  const cycle = useRef(0);
+
   const blend = useRef(0);
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
@@ -90,6 +115,11 @@ function KenneyAvatar({ controller }: { controller: GameController }) {
       run.timeScale = Math.min(1.7, Math.max(0.6, speed / RUN_CLIP_SPEED));
     }
     mixer.update(dt);
+    if (run) {
+      const t = (run.time / run.getClip().duration) % 1;
+      if (blend.current > 0.35 && !jump?.isRunning() && crossedPhase(cycle.current, t, stepPhases)) controller.footstep();
+      cycle.current = t;
+    }
   });
 
   return (

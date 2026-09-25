@@ -167,7 +167,10 @@ export function ProceduralAvatar({ controller }: { controller: GameController })
     if (root.current) root.current.rotation.y = sim.heading;
     const walk = Math.min(1, speed / CONFIG.walkSpeed);
     const run = Math.min(1, Math.max(0, (speed - CONFIG.walkSpeed) / (CONFIG.runSpeed - CONFIG.walkSpeed)));
+    const stride = Math.floor(phase.current / Math.PI + 0.5);
     phase.current += speed * dt * 4.4;
+    // a foot plants at each end of the leg swing (sin = ±1)
+    if (Math.floor(phase.current / Math.PI + 0.5) !== stride) controller.footstep();
     const s = Math.sin(phase.current);
     const legSwing = s * (0.55 + 0.35 * run) * walk;
     const armSwing = s * (0.6 + 0.5 * run) * walk;

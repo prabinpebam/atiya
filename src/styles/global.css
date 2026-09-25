@@ -800,3 +800,15 @@ body.classic {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* narrow screens: the sound toggle shows just its icon (the name stays for screen readers) */
+@media (max-width: 520px) {
+  .sound-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

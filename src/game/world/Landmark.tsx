@@ -462,7 +462,7 @@ export function Landmark({ controller, geo, data }: { controller: GameController
       open.current = stepOpen(open.current, active ? 1 : 0, dt, reduced);
       const d = controller.doors.get(geo.id);
       if (d) d.open = open.current;
-      else controller.doors.set(geo.id, { open: open.current, light: lightAt });
+      else controller.doors.set(geo.id, { open: open.current, light: lightAt, curtain: !!model.curtain });
     }
     const target = active ? 1.035 : 1;
     const g = body.current;

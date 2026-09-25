@@ -451,6 +451,64 @@ test.describe('doors', () => {
   });
 });
 
+test.describe('sound', () => {
+  type Sound = {
+    enabled: boolean;
+    state: string;
+    loaded: number;
+    levels: { stream: number; wind: number; birds: boolean };
+    lastSurface: string | null;
+    events: Array<{ kind: string; detail?: string; played: boolean }>;
+  };
+  const sound = (page: Page) => page.evaluate(() => (window as any).__game.sound() as Sound);
+  const played = async (page: Page, kind: string) => (await sound(page)).events.filter((e) => e.kind === kind && e.played).length;
+
+  test('starts with the Start click (nothing loads before), steps follow the ground, doors and the curtain have cues, and the toggle mutes and is remembered', async ({ page }) => {
+    test.setTimeout(150_000); // two planet loads
+    const mp3: string[] = [];
+    page.on('request', (r) => r.url().endsWith('.mp3') && mp3.push(r.url()));
+    await openPlanet(page);
+    expect(mp3).toEqual([]);
+    await page.getByRole('button', { name: 'Start exploring' }).click();
+    await expect.poll(async () => (await sound(page)).loaded, { timeout: 20_000 }).toBe(5);
+    expect((await sound(page)).state).toBe('running');
+    await expect(page.getByTestId('sound-button')).toHaveAttribute('aria-pressed', 'true');
+    await page.evaluate(() => (window as any).__game.setTime(11));
+    // footsteps on the plaza's stone
+    await page.evaluate(() => (window as any).__game.setIntent(0, 1));
+    await expect.poll(() => played(page, 'step'), { timeout: 20_000 }).toBeGreaterThan(0);
+    await page.evaluate(() => (window as any).__game.clearIntent());
+    expect((await sound(page)).lastSurface).toBe('stone');
+    // the wind always blows; the stream is loud on its bank
+    expect((await sound(page)).levels.wind).toBeGreaterThan(0.3);
+    expect((await sound(page)).levels.birds).toBe(true);
+    await page.evaluate(() => (window as any).__game.visitFeature('river'));
+    await expect.poll(async () => (await sound(page)).levels.stream).toBeGreaterThan(0.3);
+    // walking up to a house: a chime and its door; moving on: it shuts and the curtain rises
+    await page.evaluate(() => (window as any).__game.travelTo('workshop'));
+    await expect.poll(() => played(page, 'doorOpen'), { timeout: 10_000 }).toBe(1);
+    expect(await played(page, 'chime')).toBe(1);
+    await page.evaluate(() => (window as any).__game.travelTo('amphitheater'));
+    await expect.poll(() => played(page, 'curtain'), { timeout: 10_000 }).toBe(1);
+    expect(await played(page, 'doorClose')).toBe(1);
+    await page.keyboard.press('e');
+    await expect.poll(() => played(page, 'sparkle')).toBe(1);
+    await page.keyboard.press('Escape');
+    // mute: the audio stops, the choice is remembered, and a muted visit loads no sound at all
+    await page.getByTestId('sound-button').click();
+    await expect(page.getByTestId('sound-button')).toHaveAttribute('aria-pressed', 'false');
+    await expect.poll(async () => (await sound(page)).state).toBe('suspended');
+    expect(await page.evaluate(() => localStorage.getItem('site.sound'))).toBe('0');
+    mp3.length = 0;
+    await startPlanet(page);
+    await expect(page.getByTestId('sound-button')).toHaveAttribute('aria-pressed', 'false');
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await expect(page.getByRole('checkbox', { name: 'Sound effects' })).not.toBeChecked();
+    expect(mp3).toEqual([]);
+    expect((await sound(page)).state).toBe('none');
+  });
+});
+
 test.describe('player character', () => {
   test('loads the rigged CC0 character model', async ({ page }) => {
     const glb: string[] = [];

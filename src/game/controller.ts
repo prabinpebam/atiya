@@ -13,12 +13,17 @@ import { createGameStore, selectReducedMotion, type GameStore } from './state/st
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
 import { DAY_HOURS, START_HOURS, localHours, type TimeMode } from './world/timeOfDay';
+import { riverDistance } from './world/features';
+import { SoundEngine } from './audio/engine';
+import { streamLevel, surfaceAt, type Surface } from './audio/audioLogic';
 
 const PLAY_PATH = '/play/';
 /** Travel id for "reset position" (the spawn plaza is not a landmark). */
 const PLAZA = 'plaza';
 
 const clampPitch = (deg: number) => clamp(deg, CONFIG.camera.minPitchDeg, CONFIG.camera.maxPitchDeg);
+const _toStream = new Vector3();
+const _camRight = new Vector3();
 
 interface KeyEventLike {
   code: string;
@@ -62,9 +67,13 @@ export class GameController {
   /** Bridge lanterns: how many there are, how lit they are (0 by day … 1 at night) and their point lights' peak intensity. */
   readonly bridgeLamps = { count: 0, lit: 0, intensity: 0 };
   /** Landmark doors (the amphitheater's curtain): how open each is (0 shut … 1 open) and where its warm light sits (planet space). */
-  readonly doors = new Map<string, { open: number; light: Vector3 | null }>();
+  readonly doors = new Map<string, { open: number; light: Vector3 | null; curtain: boolean }>();
   /** The shared door light: the landmark it's shining from (null when dark) and its intensity. */
   readonly doorLight: { id: string | null; intensity: number } = { id: null, intensity: 0 };
+  /** Sound effects (ambience, footsteps, cues); silent until the player starts with sound on. */
+  readonly sound: SoundEngine;
+  /** The surface under the last footstep (for tests). */
+  lastStepSurface: Surface | null = null;
   /** Called when a fast travel lands (the avatar plays a little hop). */
   onArrive: (() => void) | null = null;
   /** Which avatar is on screen: the rigged model, or the procedural fallback (loading / failed). */
@@ -121,7 +130,9 @@ export class GameController {
       pauseAmbient: prefs.getPauseAmbient(),
       quality: opts.quality ?? 'high',
       timeMode,
+      soundOn: prefs.getSound(),
     });
+    this.sound = new SoundEngine(this.store.getState().soundOn);
     if (mq) {
       const onChange = () => this.store.setState({ reducedMotionSystem: mq.matches });
       mq.addEventListener('change', onChange);
@@ -130,19 +141,43 @@ export class GameController {
 
     this.cleanups.push(this.store.subscribe((s, prev) => {
       if (s.nearbyId !== prev.nearbyId || s.openId !== prev.openId) this.syncClassicLinks();
+      // a landmark's door opens while you stand at it (not mid-travel): chime + door, and it shuts behind you
+      const door = s.traveling ? null : s.nearbyId;
+      const was = prev.traveling ? null : prev.nearbyId;
+      if (door !== was) {
+        if (was) this.sound.leave(this.doorKind(was));
+        if (door) this.sound.approach(this.doorKind(door));
+      }
+      const duck = Boolean(s.openId || s.menuOpen);
+      if (duck !== Boolean(prev.openId || prev.menuOpen)) this.sound.setDucked(duck);
     }));
     this.initFromUrl();
     const onPop = () => this.onPopState();
     window.addEventListener('popstate', onPop);
-    const onVis = () => document.hidden && this.keyboard.clear();
+    const onVis = () => {
+      if (document.hidden) this.keyboard.clear();
+      this.sound.setHidden(document.hidden);
+    };
     document.addEventListener('visibilitychange', onVis);
-    this.cleanups.push(() => window.removeEventListener('popstate', onPop), () => document.removeEventListener('visibilitychange', onVis));
+    // browsers only let audio start from a user gesture: any press once playing unlocks it
+    const onGesture = () => {
+      if (this.store.getState().phase === 'playing') this.sound.unlock();
+    };
+    window.addEventListener('pointerdown', onGesture, true);
+    window.addEventListener('keydown', onGesture, true);
+    this.cleanups.push(
+      () => window.removeEventListener('popstate', onPop),
+      () => document.removeEventListener('visibilitychange', onVis),
+      () => window.removeEventListener('pointerdown', onGesture, true),
+      () => window.removeEventListener('keydown', onGesture, true),
+    );
     this.syncClassicLinks();
   }
 
   dispose(): void {
     this.cleanups.forEach((c) => c());
     this.endDrag();
+    this.sound.dispose();
   }
 
   private stampPropHeights(): void {
@@ -174,6 +209,7 @@ export class GameController {
   start(): void {
     if (this.store.getState().phase === 'playing') return;
     this.store.setState({ phase: 'playing', hintVisible: !prefs.getOnboardingSeen() });
+    this.sound.unlock();
     this.focusRegion();
   }
 
@@ -186,6 +222,41 @@ export class GameController {
   tick(delta: number): void {
     if (this.paused) return;
     this.step(delta);
+    this.updateSound(delta);
+  }
+
+  /** Ambience for this frame: wind from WindFx, the stream by distance (panned toward it), birds by day. */
+  private updateSound(delta: number): void {
+    const river = this.props.river;
+    let stream = 0;
+    let pan = 0;
+    if (river) {
+      const rd = riverDistance(river, this.sim.pLocal);
+      const edge = rd.d - river.halfWidth[rd.i];
+      stream = streamLevel(edge);
+      if (stream > 0 && this.camera) {
+        _toStream.copy(river.samples[rd.i]).sub(this.sim.pLocal).applyQuaternion(this.sim.planetQ);
+        _camRight.setFromMatrixColumn(this.camera.matrixWorld, 0);
+        const len = _toStream.length();
+        // centred once you're at (or in) the water
+        if (len > 1e-6) pan = clamp(_toStream.dot(_camRight) / len, -1, 1) * 0.7 * clamp(edge / 1.5, 0, 1);
+      }
+    }
+    this.sound.update(delta, { strength: this.wind.strength, gust: this.wind.gust, stream, streamPan: pan, night: this.sky.night });
+  }
+
+  /** A foot touched the ground (called by the avatars): play the step for the surface underfoot. */
+  footstep(): void {
+    const s = this.store.getState();
+    if (s.phase !== 'playing' || this.sim.travel || this.sim.speed < 0.3) return;
+    const surface = surfaceAt(this.sim.pLocal, this.geos, this.terrain, this.wadeDepth);
+    this.lastStepSurface = surface;
+    this.sound.step(surface, this.sim.speed > CONFIG.walkSpeed + 0.5);
+  }
+
+  private doorKind(id: string): 'door' | 'curtain' | null {
+    const d = this.doors.get(id);
+    return d ? (d.curtain ? 'curtain' : 'door') : null;
   }
 
   /** Advance simulation + proximity by one step (also used by the test hook). */
@@ -432,6 +503,7 @@ export class GameController {
     this.sim.cancelAutoWalk();
     this.sim.vel.set(0, 0, 0);
     if (opts.push !== false) history.pushState({ gameOpen: id }, '', PLAY_PATH + buildPlaySearch(id, true));
+    this.sound.open();
     this.store.setState({ openId: id, menuOpen: false });
   }
 
@@ -531,6 +603,12 @@ export class GameController {
   setPauseAmbient(v: boolean): void {
     prefs.setPauseAmbient(v);
     this.store.setState({ pauseAmbient: v });
+  }
+
+  setSound(on: boolean): void {
+    prefs.setSound(on);
+    this.sound.setEnabled(on);
+    this.store.setState({ soundOn: on });
   }
 
   setTimeMode(m: TimeMode): void {

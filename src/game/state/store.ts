@@ -27,6 +27,8 @@ export interface GameState {
   postLevel: 1 | 2;
   /** Day–night: 'cycle' (a full day ≈ 6 min), 'local' (visitor's clock) or 'day' (always daytime). */
   timeMode: TimeMode;
+  /** Sound effects on (persisted; on by default, with a HUD toggle). */
+  soundOn: boolean;
 }
 
 export type GameStore = StoreApi<GameState>;
@@ -50,6 +52,7 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     quality: 'high',
     postLevel: 2,
     timeMode: 'cycle',
+    soundOn: true,
     ...init,
   }));
 }
