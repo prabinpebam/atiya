@@ -34,6 +34,7 @@ export function Chopper({ controller }: { controller: GameController }) {
   useEffect(() => () => body.dispose(), [body]);
   const group = useRef<Group>(null);
   const first = useRef(true);
+  const wasStill = useRef(false);
 
   useFrame((_, rawDt) => {
     const g = group.current;
@@ -62,7 +63,10 @@ export function Chopper({ controller }: { controller: GameController }) {
     }
     const still = paused || controller.sim.travel !== null;
     const clip: Clip = still ? 'sit' : b.clip;
-    body.anim.update(dt, {
+    // while ambient motion is paused he sits perfectly still (no wag, no blinks)
+    if (paused && !wasStill.current) body.anim.snap('sit');
+    wasStill.current = paused;
+    body.anim.update(paused ? 0 : dt, {
       speed: still ? 0 : b.speed,
       turn: still ? 0 : b.turn,
       clip,

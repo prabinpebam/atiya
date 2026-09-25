@@ -257,8 +257,9 @@ export const CLIPS: Record<Clip, (t: number) => Pose> = {
   headTilt: (t) => ({ ...CLIPS.stand(t), headZ: 0.42 * (Math.sin(t * 0.9) > -0.3 ? 1 : -1), neckY: 0.08, earX: -0.2, headX: -0.05 }),
   shake: (t) => {
     const env = Math.sin(Math.PI * Math.min(1, t / 1.1));
-    const w = Math.sin(t * Math.PI * 2 * 5.5) * env;
-    return { hipsZ: w * 0.22, spineY: w * 0.25, headY: -w * 0.5, headZ: w * 0.35, neckY: -w * 0.2, lids: env * 0.8, tailX: 0.1, rootY: -0.01 * env };
+    // a real dog's shake-off runs head to tail at ≈ 4–5 Hz; the head's part is kept small
+    const w = Math.sin(t * Math.PI * 2 * 4.5) * env;
+    return { hipsZ: w * 0.2, spineY: w * 0.22, headY: -w * 0.28, headZ: w * 0.2, neckY: -w * 0.12, lids: env * 0.8, tailX: 0.1, rootY: -0.01 * env };
   },
   lookUp: () => ({ neckX: -0.32, headX: -0.28, earX: -0.25, tailX: 0.25 }),
 };
@@ -323,6 +324,12 @@ export class ChopperAnim {
   private tail = { x: 0, v: 0 };
   private lastBob = 0;
   private lastBobV = 0;
+  /** The turn rate and the look, eased: the brain's heading can flick between frames (steering round
+   * things), and a look target passing behind him flips from one side to the other. Fed straight to the
+   * neck, either made his head shake like a vibration. */
+  private turnS = 0;
+  private lookY = 0;
+  private lookP = 0;
   private legs: LegRig[];
   private readonly rest: Record<BoneName, Vector3>;
   private rand: () => number;
@@ -394,7 +401,9 @@ export class ChopperAnim {
     const bob = mw * ((1 - g.gallop) * -Math.cos(ph * 2) * (0.004 + g.trot * 0.004) + g.gallop * Math.sin(ph) * 0.016);
     const gallopPitch = mw * g.gallop * Math.cos(ph) * 0.1;
     const flex = mw * g.gallop * Math.sin(ph) * 0.14;
-    const roll = mw * (1 - g.gallop) * Math.sin(ph) * 0.035 - Math.max(-0.2, Math.min(0.2, inp.turn * 0.05)) * mw;
+    const ease = (rate: number) => (reduced ? 1 : 1 - Math.exp(-dt * rate));
+    this.turnS += (Math.max(-3, Math.min(3, inp.turn)) - this.turnS) * ease(5);
+    const roll = mw * (1 - g.gallop) * Math.sin(ph) * 0.035 - Math.max(-0.2, Math.min(0.2, this.turnS * 0.05)) * mw;
     const bobV = dt > 0 ? (bob - this.lastBob) / dt : 0;
     const bobA = dt > 0 ? (bobV - this.lastBobV) / dt : 0;
     this.lastBob = bob;
@@ -415,8 +424,13 @@ export class ChopperAnim {
     const lids = Math.max(P('lids'), this.blink > 0 ? Math.sin((this.blink / 0.16) * Math.PI) : 0);
     const bark = inp.barkAge < 0.3 ? Math.sin((inp.barkAge / 0.3) * Math.PI) : 0;
     const look = inp.look;
-    const lookYaw = look ? Math.max(-1.1, Math.min(1.1, look.yaw)) : 0;
-    const lookPitch = look ? Math.max(-0.5, Math.min(0.5, look.pitch)) : 0;
+    // (a target right behind him isn't looked at: over the shoulder it would flip side to side)
+    const wantYaw = look && Math.abs(look.yaw) < 2.2 ? Math.max(-1.1, Math.min(1.1, look.yaw)) : 0;
+    const wantPitch = look ? Math.max(-0.5, Math.min(0.5, look.pitch)) : 0;
+    this.lookY += (wantYaw - this.lookY) * ease(5);
+    this.lookP += (wantPitch - this.lookP) * ease(5);
+    const lookYaw = this.lookY;
+    const lookPitch = this.lookP;
 
     // 4. secondary: ears and tail on springs, kicked by the bounce and the head's motion
     const earK = reduced ? 20 : 26;
@@ -441,7 +455,7 @@ export class ChopperAnim {
     B.spine.rotation.set(P('spineX') - flex * 0.5, P('spineY'), 0);
     B.chest.rotation.set(P('chestX') - flex * 0.5 + breathe, 0, 0);
     const bodyPitch = P('hipsX') + gallopPitch + P('spineX') - flex + P('chestX');
-    B.neck.rotation.set(P('neckX') - bodyPitch * 0.35 + lookPitch * 0.4 - bark * 0.1, P('neckY') + lookYaw * 0.4 + inp.turn * 0.06, 0);
+    B.neck.rotation.set(P('neckX') - bodyPitch * 0.35 + lookPitch * 0.4 - bark * 0.1, P('neckY') + lookYaw * 0.4 + this.turnS * 0.06, 0);
     B.head.rotation.set(P('headX') - bodyPitch * 0.3 + lookPitch * 0.6 - bark * 0.12, P('headY') + lookYaw * 0.6, P('headZ'));
     B.jaw.rotation.set(Math.max(P('jaw'), bark * 0.42) + (inp.pant > 0.5 ? Math.sin(this.breath) * 0.04 : 0), 0, 0);
     const tongue = Math.min(1, Math.max(0, P('tongue')));

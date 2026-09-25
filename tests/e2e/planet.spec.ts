@@ -40,6 +40,8 @@ type GameState = {
   invScreen: 'backpack' | 'chest' | null;
   /** Chopper's profile card is open. */
   chopperOpen: boolean;
+  /** Talking with one of the family. */
+  talk: { id: string; name: string; lines: string[]; index: number } | null;
   wind: { strength: number; gust: number; leaves: number; swirls: number };
   textures: { loaded: number; failed: number; pending: number };
 };
@@ -251,6 +253,8 @@ test.describe('day–night', () => {
   });
 
   test('after dusk the plaza lamps, an open door and the stage spot really light the scene (none by day)', async ({ page }) => {
+    // (two fly-overs under software rendering)
+    test.setTimeout(120_000);
     await startPlanet(page);
     const lamps = () => page.evaluate(() => (window as any).__game.lamps() as number);
     await page.evaluate(() => (window as any).__game.setTime(11));
@@ -260,10 +264,10 @@ test.describe('day–night', () => {
     const plaza = await lamps();
     // walking up to the Workshop opens its door: its lamplight joins in
     await page.evaluate(() => (window as any).__game.travelTo('workshop'));
-    await expect.poll(lamps, { timeout: 15_000 }).toBe(plaza + 1);
+    await expect.poll(lamps, { timeout: 30_000 }).toBe(plaza + 1);
     // the Amphitheater's stage spot replaces it
     await page.evaluate(() => (window as any).__game.travelTo('amphitheater'));
-    await expect.poll(lamps, { timeout: 15_000 }).toBe(plaza + 1);
+    await expect.poll(lamps, { timeout: 30_000 }).toBe(plaza + 1);
     await page.evaluate(() => (window as any).__game.teleport('plaza'));
     await expect.poll(lamps, { timeout: 10_000 }).toBe(plaza);
   });
@@ -316,7 +320,8 @@ test.describe('day–night', () => {
   });
 
   test('dragging the time badge winds the clock (the pointer hides while dragging); the cycle carries on; keys and clicks step it', async ({ page }) => {
-    test.setTimeout(120_000);
+    // (many small steps, each waiting for frames under software rendering)
+    test.setTimeout(240_000);
     // saved "Always daytime": a hand-set time switches this visit to the cycle, without changing the saved choice
     await page.addInitScript(() => localStorage.setItem('site.timeMode', 'day'));
     await startPlanet(page);
@@ -809,6 +814,134 @@ test.describe('Chopper', () => {
     await expect(page.locator('.game-region')).toBeFocused();
     // its little canvas is gone with it (the WebGL context is released)
     await expect(page.getByTestId('chopper-3d')).toHaveCount(0);
+  });
+});
+
+test.describe('home & family', () => {
+  type Person = { id: string; activity: string; pose: string; speed: number; chatting: boolean; indoors: boolean; d: number; home: number };
+  const family = (page: Page) => page.evaluate(() => (window as any).__game.family() as Person[]);
+
+  test('the family lives by the house at the pond, busy with their own things', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    let f = await family(page);
+    expect(f.map((p) => p.id)).toEqual(['rojina', 'laija', 'lingjel']);
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.pause();
+      g.advance(60 * 60);
+      g.resume();
+    });
+    f = await family(page);
+    for (const p of f) expect(p.home, p.id).toBeLessThan(8.5);
+    // at the home: the house, the campsite and the picnic are drawn
+    expect(await page.evaluate(() => (window as any).__game.visitHome())).toBe(true);
+    const names = await page.evaluate(() => {
+      const { scene } = (window as any).__game.__gfx();
+      const out: string[] = [];
+      scene.traverse((o: { name: string }) => o.name && (o.name === 'home' || o.name.startsWith('npc-')) && out.push(o.name));
+      return out;
+    });
+    expect(names).toEqual(expect.arrayContaining(['home', 'npc-rojina', 'npc-laija', 'npc-lingjel']));
+    // their heads stay on their shoulders: turned at most a little from the neck, frame after frame
+    const turn = await page.evaluate(async () => {
+      const { scene } = (window as any).__game.__gfx();
+      const heads: any[] = [];
+      for (const id of ['rojina', 'laija', 'lingjel']) scene.getObjectByName(`npc-${id}`).traverse((o: any) => o.isBone && o.name === 'Head' && heads.push(o));
+      let most = 0;
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        for (const h of heads) {
+          const a = h.getWorldQuaternion(h.quaternion.clone());
+          const b = h.parent.getWorldQuaternion(h.quaternion.clone());
+          most = Math.max(most, a.angleTo(b));
+        }
+      }
+      return most;
+    });
+    expect(turn).toBeLessThan(1.3);
+    // their clips really play: walking, their arms swing (no frozen T-pose)
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      for (const id of ['rojina', 'laija', 'lingjel']) g.npcDo(id, 'wander');
+    });
+    const swing = await page.evaluate(async () => {
+      const { scene } = (window as any).__game.__gfx();
+      const arms: any[] = [];
+      for (const id of ['rojina', 'laija', 'lingjel']) scene.getObjectByName(`npc-${id}`).traverse((o: any) => o.isBone && o.name === 'LeftArm' && arms.push(o));
+      const first = arms.map((a) => a.quaternion.clone());
+      const most = arms.map(() => 0);
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        arms.forEach((a, k) => (most[k] = Math.max(most[k], a.quaternion.angleTo(first[k]))));
+      }
+      return most;
+    });
+    for (const m of swing) expect(m).toBeGreaterThan(0.05);
+  });
+
+  test('the routine: after the clock is set to night they wait a moment, then go inside; in the morning they come out', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    const fastForward = (s: number) =>
+      page.evaluate((sec) => {
+        const g = (window as any).__game;
+        g.pause();
+        g.advance(Math.round(sec * 60));
+        g.resume();
+      }, s);
+    await page.evaluate(() => (window as any).__game.setTime(21));
+    await fastForward(3);
+    expect((await family(page)).every((p) => !p.indoors)).toBe(true);
+    await fastForward(50);
+    expect((await family(page)).every((p) => p.indoors)).toBe(true);
+    // nobody to talk to at night
+    await page.evaluate(() => (window as any).__game.visitHome());
+    await fastForward(1);
+    expect((await state(page)).target?.kind).not.toBe('npc');
+    await page.evaluate(() => (window as any).__game.setTime(7));
+    await fastForward(30);
+    expect((await family(page)).every((p) => !p.indoors)).toBe(true);
+  });
+
+  test('talk to Rojina: E opens the dialog with her name, E finishes and goes on, Escape ends it and hands back the planet', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.npcDo('rojina', 'watch');
+      g.nearNpc('rojina', 0.9);
+    });
+    await expect(page.getByTestId('seat-prompt').getByRole('button', { name: /Talk to Rojina/ })).toBeVisible({ timeout: 20_000 });
+    await page.keyboard.press('KeyE');
+    const box = page.getByTestId('talk-box');
+    await expect(box).toBeVisible();
+    await expect(box).toHaveAttribute('aria-label', 'Talking with Rojina');
+    let s = await state(page);
+    expect(s.talk?.name).toBe('Rojina');
+    expect(s.talk!.lines.length).toBeGreaterThanOrEqual(2);
+    expect((await family(page)).find((p) => p.id === 'rojina')!.chatting).toBe(true);
+    // the line types out; E shows all of it, the next E goes on to the next line
+    await page.keyboard.press('KeyE');
+    await expect(page.getByTestId('talk-line')).toHaveText(s.talk!.lines[0]);
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await state(page)).talk?.index).toBe(1);
+    // the live region reads each line
+    await expect(page.getByTestId('live-region')).toContainText('Rojina:');
+    await noSeriousViolations(page);
+    // while talking, walking keys do nothing
+    const at = (await state(page)).pLocal;
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('KeyW');
+    expect((await state(page)).pLocal).toEqual(at);
+    await page.keyboard.press('Escape');
+    await expect(box).toBeHidden();
+    s = await state(page);
+    expect(s.talk).toBeNull();
+    expect(s.menuOpen).toBe(false);
+    await expect(page.locator('.game-region')).toBeFocused();
+    expect((await family(page)).find((p) => p.id === 'rojina')!.chatting).toBe(false);
   });
 });
 

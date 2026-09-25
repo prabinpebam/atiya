@@ -47,7 +47,7 @@ const _dir = new Vector3();
 const DOWN = new Vector3(0, -1, 0);
 
 /** Turn `bone` (by weight `w`) so its child points along world direction `dir`, whatever the rig's local axes. */
-function aimBone(bone: Object3D | null, child: Object3D | null, dir: Vector3, w: number): void {
+export function aimBone(bone: Object3D | null, child: Object3D | null, dir: Vector3, w: number): void {
   if (!bone || !child || !bone.parent) return;
   bone.parent.getWorldQuaternion(_pq).invert();
   _want.copy(dir).applyQuaternion(_pq).normalize();

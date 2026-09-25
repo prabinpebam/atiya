@@ -529,6 +529,15 @@ Shake trees, mine boulders and pick flowers; what falls flies into a **Minecraft
 - **Layout:** the hotbar sits at the bottom centre; the preview card and the prompt sit above it, and on narrow screens the hint card and the compass do too.
 - **Test hooks:** `nearTarget(kind, which, u)`, `inventory()`, `giveItem(id, n)`, `drops()`, and `getState()`'s `target`, `acting` and `invScreen`.
 
+### 4.19 Home and family (as built)
+
+The owner's home by the pond, on the far side of the planet, and his family living there. The full design, research and critique are in [family.md](./family.md). In summary:
+
+- **The home** (`world/homestead.ts`, a pure site plan laid out after the random props and cleared of them): a plaster-and-shingle cottage with lit windows, a porch lantern and a mailbox; a campsite (a stone fire ring with flickering flames that really light the scene at night, smoke by day and embers by night, two camp chairs, a log bench and a guitar); a picnic table with chairs, a picnic laid out by Rojina, and a painted gingham picnic mat with Lego and toy cars; string lights; Laija's reading tree; the pebble shore.
+- **The family** (`world/home/`): Rojina (glasses, a ponytail like Sunny's, a T-shirt and trousers), Laija (9: T-shirt, trousers, sneakers, pigtails) and Lingjel (5: a car T-shirt, shorts, crocs), on the character's rig with their own skins and head-bone hair and glasses. A small utility AI with smart objects: Rojina reads in her chair, watches and talks to the kids and lays the table; Laija wanders, chases butterflies and rabbits, reads under her tree, paints face-down on the grass, throws pebbles into the pond and crouches to look at flowers; Lingjel runs about, chases, crawls pushing his toy cars and builds Lego. They talk in pairs, with a speech bubble over whoever speaks, and the children scare the rabbits. They follow a routine: everyone comes to the table when Rojina lays lunch, and she clears it after; at 8 pm they go inside and at 6 am they come out (after a hand-set clock, only after an 8 s pause). Routes come from A* on a navigation grid, and nobody walks through anybody: the family, Chopper and the character all keep clear of each other. Done checklist: [family-dod.md](./family-dod.md).
+- **Talking to them:** facing one within 1.3 u, **Talk to Rojina** (<kbd>E</kbd>). They stop and face you; the dialog box types their line (a greeting for the time of day, a line about what they're doing, one from their pool, never repeating until used up). <kbd>E</kbd> completes the line, then goes on; <kbd>Esc</kbd> ends it. Every line is announced, and movement pauses meanwhile.
+- **Test hooks:** `family()`, `nearNpc(id, u)`, `npcDo(id, activity)`, `visitHome()`, and `getState().talk`.
+
 ### 4.18 Chopper, the companion dog (as built)
 
 A tribute to the owner's late Lhasa Apso. He runs free near the character, busy with his own dog business, and always comes back. The full design, research and critique are in [chopper.md](./chopper.md). In summary:
@@ -827,7 +836,7 @@ Budgets are **P0**. A miss is acceptable only with a **written owner waiver** re
 | Landing `/` 3D JS | **0 KB** | `size` script over build output, plus network panel |
 | Landing Lighthouse (mobile preset) | Perf ≥ 95, A11y = 100, LCP ≤ 2.0 s, CLS ≤ 0.1 | Lighthouse, median of 3 runs |
 | Gated-out devices | **0 requests** for `game-*` chunks or 3D assets | E2E network assertion (forced no-WebGL, `?mode=classic`) |
-| Game JS (all chunks loaded by `/play`, gz) | ≤ **450 KB** — as built: 446.9 KB initial bundle, plus ≈ 13 KB in chunks loaded alongside the textures or on demand (Chopper's body and card); waiver proposed (plan §6): initial ≤ 450 KB and on-demand ≤ 40 KB | `size` script (reports and checks both) |
+| Game JS (all chunks loaded by `/play`, gz) | ≤ **450 KB** — as built: 449.4 KB initial bundle, plus ≈ 28 KB in chunks loaded alongside the textures or on demand (Chopper's body and card, the home and family); waiver proposed (plan §6): initial ≤ 450 KB and on-demand ≤ 40 KB | `size` script (reports and checks both) |
 | Initial 3D assets (GLB + textures, transferred) | ≤ **2.5 MB** (total ≤ 4 MB) | Network panel |
 | Sound effects (fetched after Start, only with sound on) | ≤ **800 KB** — as built ≈ 750 KB (7 MP3s, incl. Chopper's barks, sniffs, whistle and panting) | `tests/unit/audio.test.ts` |
 | Estimated GPU texture memory | ≤ **32 MB** | Asset script: Σ width × height × bytes-per-pixel of the GPU format × 1.33 (mips) |

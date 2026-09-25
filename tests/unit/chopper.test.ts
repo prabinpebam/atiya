@@ -36,6 +36,7 @@ function dogWorld(player = UP.clone() as Vector3, extra: Partial<DogWorld> = {})
     blocked: (n) => (pond ? d(n, pond.n) < terrain.pondShore(n) + 0.05 : false) || terrain.waterDepth(n) > 0.16,
     rabbits: [],
     spots,
+    others: [],
     ...extra,
   };
 }

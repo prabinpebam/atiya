@@ -53,6 +53,23 @@ interface KeyEventLike {
   preventDefault(): void;
 }
 
+/** The home and family (world/home/, its own chunk; docs: family.md), once attached. */
+export interface HomeAttachment {
+  family: unknown;
+  people: Array<{ id: string; name: string; n: Vector3 }>;
+  /** Where the children are (rabbits shy from them). */
+  kids: Vector3[];
+  step(dt: number): void;
+  canTalk(id: string): boolean;
+  /** They stop and face you; returns the conversation's lines. */
+  startChat(id: string, hours: number): string[];
+  endChat(id: string): void;
+  state(): Array<{ id: string; activity: string; pose: string; speed: number; chatting: boolean; indoors: boolean; d: number; home: number }>;
+  meal(): { food: boolean; phase: string | null; schedule: string | null };
+  hold(id: string, activity: string): boolean;
+  View: ComponentType;
+}
+
 export interface ShellElements {
   classicLinks: HTMLAnchorElement[];
   hudActions: HTMLElement | null;
@@ -84,8 +101,18 @@ export class GameController {
   /** Chopper, the companion dog (chopper.md): his mind, and the world as he sees it. */
   readonly chopper = new ChopperBrain();
   readonly dogWorld: DogWorld;
+  /** The fixed obstacles (trees, rocks, buildings, furniture). The character's own list adds Chopper and the family. */
+  readonly staticObstacles: Obstacle[];
   /** His body in the scene (`world/Chopper.tsx`), loaded as its own chunk before the scene mounts; null if it failed. */
   chopperView: ComponentType<{ controller: GameController }> | null = null;
+  /** The home and family, once its chunk has loaded (null without a pond, or if it failed). */
+  home: HomeAttachment | null = null;
+  /** Things rabbits and ground birds shy away from besides the character: Chopper, the children. */
+  readonly threats: Vector3[] = [];
+  /** The family's collision circles in the character's list (switched off while they're indoors). */
+  private readonly familyObstacles: Array<{ id: string; o: Obstacle }> = [];
+  /** The family dialog's reveal is still typing (set by the dialog box). */
+  talkTyping = false;
   /** Whistles so far (for tests), and when the last one was (ms). */
   whistles = 0;
   private whistleAt = -1e9;
@@ -177,12 +204,15 @@ export class GameController {
     this.terrain = new Terrain(this.geos, this.props);
     this.stampPropHeights();
     const obstacles: Obstacle[] = [...this.geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...this.props.obstacles];
-    this.sim = new PlanetSim(obstacles);
+    this.staticObstacles = obstacles;
+    // the character can't walk through Chopper (or, once they're here, the family)
+    this.sim = new PlanetSim([...obstacles, { n: this.chopper.n, radiusU: 0.2 }]);
     this.seats = benchSeats(this.props.furniture);
     this.targets = buildTargets(this.props, this.seats, this.props.chest, BLOOM_COLOURS.length);
     this.dogWorld = this.buildDogWorld(obstacles);
     // he moves, so his target is his own position vector (updated in place)
     this.targets.push({ kind: 'dog', key: 'dog', n: this.chopper.n, edgeU: 0, reachU: REACH.dog, standU: 0.8, index: 0, scale: 1 });
+    this.threats.push(this.chopper.n);
     this.inventory.load(prefs.getInventory());
 
     const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -335,7 +365,7 @@ export class GameController {
   /** Advance simulation + proximity by one step (also used by the test hook). */
   step(delta: number): void {
     const s = this.store.getState();
-    const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.chopperOpen;
+    const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.chopperOpen && !s.talk;
     const seat = this.seatMotion;
     const intent: MoveIntent = playing && !seat.stage && !this.action.busy ? this.keyboard.intent() : NO_INTENT;
     this.updateView(delta, playing, selectReducedMotion(s));
@@ -348,6 +378,11 @@ export class GameController {
     this.harvest.step(dt);
     this.stepDrops(dt, s);
     this.stepChopper(dt, s);
+    if (this.home && !this.sim.travel && !selectAmbientPaused(s) && s.phase !== 'loading') this.home.step(dt);
+    if (this.familyObstacles.length) {
+      const inside = new Set(this.home!.state().filter((p) => p.indoors).map((p) => p.id));
+      for (const f of this.familyObstacles) f.o.radiusU = inside.has(f.id) ? -1 : 0.2;
+    }
     // follow the ground (hills, the bridge deck, the stream bed when wading) with a little smoothing
     this.lift = damp(this.lift, this.terrain.walkHeight(this.sim.pLocal), 14, dt);
     this.wadeDepth = damp(this.wadeDepth, this.terrain.waterDepth(this.sim.pLocal), 14, dt);
@@ -414,7 +449,7 @@ export class GameController {
 
   private canUseView(): boolean {
     const s = this.store.getState();
-    return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.chopperOpen && !this.sim.travel;
+    return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.chopperOpen && !s.talk && !this.sim.travel;
   }
 
   /** Button step: +1 turns the scene counter-clockwise, −1 clockwise. */
@@ -532,6 +567,12 @@ export class GameController {
       this.start();
     }
     if (s.phase !== 'playing' && s.phase !== 'ready') return;
+    if (s.talk) {
+      // talking with one of the family: E / Enter / Space go on, Escape (or M) ends it, nothing else moves
+      if (!e.repeat && action === 'interact') this.advanceTalk();
+      else if (!e.repeat && action === 'menu') this.endTalk();
+      return;
+    }
     if (action === 'interact') {
       if (e.repeat) return;
       this.interact();
@@ -650,7 +691,13 @@ export class GameController {
 
   /** Can this target be used right now? (A picked flower can't, until it grows back.) */
   private usable = (t: Target): boolean =>
-    t.kind === 'flower' ? this.harvest.flowerHere(t.flower!, t.index) : t.kind === 'dog' ? this.chopper.speed < 1.2 && !this.sim.travel : true;
+    t.kind === 'flower'
+      ? this.harvest.flowerHere(t.flower!, t.index)
+      : t.kind === 'dog'
+        ? this.chopper.speed < 1.2 && !this.sim.travel
+        : t.kind === 'npc'
+          ? Boolean(this.home?.canTalk(t.who!)) && !this.sim.travel
+          : true;
 
   private labelFor(t: Target): string {
     return targetLabel(t, t.kind === 'flower' ? itemDef(flowerItem(t.flower!, t.colour ?? 0)).name.toLowerCase() : undefined);
@@ -663,7 +710,7 @@ export class GameController {
     const t = busy ? null : pickTarget(this.sim.pLocal, this.forwardLocal(), this.targets, s.target?.key ?? null, this.usable, CONFIG.planetRadius, nearLandmark);
     if ((t?.key ?? null) === (s.target?.key ?? null)) return;
     this.store.setState({ target: t ? { kind: t.kind, key: t.key, label: this.labelFor(t) } : null });
-    if (t) this.announce(t.kind === 'bench' ? 'Near a bench. Press E to sit down.' : t.kind === 'dog' ? 'Chopper is here. Press E to meet him.' : `${this.labelFor(t)}: press E.`);
+    if (t) this.announce(t.kind === 'bench' ? 'Near a bench. Press E to sit down.' : t.kind === 'dog' ? 'Chopper is here. Press E to meet him.' : t.kind === 'npc' ? `${t.name} is here. Press E to talk.` : `${this.labelFor(t)}: press E.`);
   }
 
   /** E on the current target: sit, or play its action cycle. */
@@ -677,6 +724,10 @@ export class GameController {
     }
     if (t.kind === 'dog') {
       this.openChopper();
+      return;
+    }
+    if (t.kind === 'npc') {
+      this.startTalk(t.who!);
       return;
     }
     const kind = actionFor(t);
@@ -870,7 +921,7 @@ export class GameController {
   walkToWorldPoint(point: Vector3): void {
     const s = this.store.getState();
     if (s.phase === 'ready') this.start();
-    if (this.store.getState().phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || this.sim.travel) return;
+    if (this.store.getState().phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || this.sim.travel) return;
     if (this.seatMotion.stage) {
       this.standUp();
       return;
@@ -910,6 +961,7 @@ export class GameController {
       blocked: (n) => (pond ? arcDistance(n, pond.n, R) < terrain.pondShore(n) + 0.05 : false) || terrain.waterDepth(n) > 0.16,
       rabbits: [],
       spots,
+      others: [],
     };
   }
 
@@ -978,6 +1030,63 @@ export class GameController {
       if (target && target.isConnected && target.getClientRects().length > 0 && target !== this.region) target.focus({ preventScroll: true });
       else this.focusRegion();
     });
+  }
+
+  // ---------- the family (family.md) ----------
+
+  /** The home chunk has loaded: its people become talk targets, and the children scare rabbits too. */
+  attachHome(h: HomeAttachment | null): void {
+    this.home = h;
+    if (!h) return;
+    for (const p of h.people) this.targets.push({ kind: 'npc', key: `npc:${p.id}`, n: p.n, edgeU: 0, reachU: REACH.npc, standU: 0.8, index: 0, who: p.id, name: p.name, scale: 1 });
+    this.threats.push(...h.kids);
+    // everyone keeps clear of everyone: the character collides with them, Chopper steps round them
+    for (const p of h.people) {
+      const o = { n: p.n, radiusU: 0.2 };
+      this.familyObstacles.push({ id: p.id, o });
+      this.sim.obstacles.push(o);
+    }
+    this.dogWorld.others.push(...h.people.map((p) => p.n));
+  }
+
+  /** E by one of the family: they stop and face you, and the dialog box opens with their first line. */
+  startTalk(id: string): void {
+    const s = this.store.getState();
+    const who = this.home?.people.find((p) => p.id === id);
+    if (!this.home || !who || s.phase !== 'playing' || s.openId || s.chopperOpen || s.talk || this.sim.travel) return;
+    this.keyboard.clear();
+    this.buffer.clear();
+    this.sim.cancelAutoWalk();
+    this.sim.vel.set(0, 0, 0);
+    const lines = this.home.startChat(id, this.timeOfDay);
+    this.store.setState({ talk: { id, name: who.name, lines, index: 0, reveal: 0 }, target: null, menuOpen: false });
+    this.sound.pickup();
+    this.announce(`${who.name}: ${lines[0]}`);
+  }
+
+  /** Go on: finish revealing the line if it's still typing, else the next line, else close. */
+  advanceTalk(): void {
+    const t = this.store.getState().talk;
+    if (!t) return;
+    if (this.talkTyping) {
+      this.store.setState({ talk: { ...t, reveal: t.reveal + 1 } });
+      return;
+    }
+    if (t.index + 1 < t.lines.length) {
+      this.store.setState({ talk: { ...t, index: t.index + 1 } });
+      this.announce(`${t.name}: ${t.lines[t.index + 1]}`);
+      return;
+    }
+    this.endTalk();
+  }
+
+  endTalk(): void {
+    const t = this.store.getState().talk;
+    if (!t) return;
+    this.home?.endChat(t.id);
+    this.talkTyping = false;
+    this.store.setState({ talk: null });
+    requestAnimationFrame(() => this.focusRegion());
   }
 
   // ---------- landmarks / dialog / history ----------
@@ -1057,6 +1166,7 @@ export class GameController {
     this.leaveSeat();
     this.cancelAction();
     this.closeInventory();
+    this.endTalk();
     this.store.setState({ menuOpen: false, nearbyId: null, target: null, traveling: mode });
     this.keyboard.clear();
     this.sim.startTravel(arrivalOrientation(g), id, mode);

@@ -261,6 +261,7 @@ export function Scene({ controller }: { controller: GameController }) {
   const planet = useRef<Group>(null);
   // Chopper's body, fur and animation: their own chunk, loaded alongside the textures (game-mount.tsx)
   const Chopper = controller.chopperView;
+  const Home = controller.home?.View ?? null;
   const quality = useStore(controller.store, (s) => s.quality);
   const shadowSize = quality === 'high' ? 2048 : 1024;
   return (
@@ -286,6 +287,7 @@ export function Scene({ controller }: { controller: GameController }) {
         <Drops controller={controller} />
         <Chest controller={controller} />
         {Chopper && <Chopper controller={controller} />}
+        {Home && <Home />}
         {controller.geos.map((g) => (
           <Landmark key={g.id} controller={controller} geo={g} data={controller.dataById.get(g.id)!} />
         ))}

@@ -52,6 +52,8 @@ TEXTURES: dict[str, tuple[str, int]] = {
     "moon": ("sprite", 256),
     # Chopper's curly coat (the fur shells' locks; chopper.md §2)
     "chopper-fur": ("mask", 256),
+    # the family picnic blanket by the pond (family.md §3)
+    "picnic-mat": ("decal", 256),
 }
 # 2×2 atlases: name -> (cell sources in order [top-left, top-right, bottom-left, bottom-right], size, mode)
 # mode "tint" = normalised greyscale (tinted in game), "sprite" = full colour

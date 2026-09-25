@@ -5,6 +5,7 @@ import type { LandmarkGeometry } from '../math/landmarks';
 import { nearPlateauRim } from './cliffs';
 import { buildMesas, buildRiver, findBridges, mesaDir, mesaPolar, mesaRadius, riverDistance, tierEdge, tierPolar, type Bridge, type Mesa, type River } from './features';
 import { pondAngle, pondFrame, shoreRadius } from './pond';
+import { homesteadLayout, type Homestead } from './homestead';
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
 export const FLOWER_KINDS: FlowerKind[] = ['tulip', 'cosmos', 'pansy'];
@@ -71,6 +72,8 @@ export interface PropLayout {
   furniture: Furniture[];
   /** The storage chest by the Workshop (null if there's no clear spot). */
   chest: ChestSpot | null;
+  /** The owner's home by the pond (family.md), or null without a pond. */
+  home: Homestead | null;
   pond: Pond | null;
   river: River | null;
   bridges: Bridge[];
@@ -442,6 +445,21 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     for (const k of FLOWER_KINDS) keep(flowers[k]);
   }
 
+  // the owner's home by the pond: laid out last and cleared of whatever stood there, so the rest of
+  // the planet is unchanged; Laija's reading tree joins the hardwoods
+  const home = pond ? homesteadLayout(pond, cfg) : null;
+  if (home) {
+    const inHome = (p: PropInstance) => home.clear.some((c) => arcDistance(p.n, c.n, R) < c.r);
+    const drop = <T extends PropInstance>(list: T[]) => {
+      for (let i = list.length - 1; i >= 0; i--) if (inHome(list[i])) list.splice(i, 1);
+    };
+    for (const list of [hardwood, fruit, cedar, trees, bushes, flowerBushes, allBushes, rocks, boulders, pebbles, sprigs, grass]) drop(list);
+    for (const k of FLOWER_KINDS) drop(flowers[k]);
+    const tree = { n: home.tree, scale: 1.05, yaw: 1.3, tint: 0.35 };
+    hardwood.push(tree);
+    trees.push(tree);
+  }
+
   const onMesaTop = new Set(mesaTop);
   const obstacles: Obstacle[] = [
     ...hardwood.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.42 * t.scale })),
@@ -456,9 +474,10 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     // the stream and pond are shallow enough to wade through (spec §4.14), so water doesn't block
     ...bridgeRailObstacles(bridges, cfg),
     ...mesas.flatMap((m) => mesaObstacles(m, cfg)),
+    ...(home?.obstacles ?? []),
   ];
 
-  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, posts, furniture, chest, pond, river, bridges, mesas, obstacles };
+  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, posts, furniture, chest, home, pond, river, bridges, mesas, obstacles };
 }
 
 /** Rails along both sides of each bridge deck. */

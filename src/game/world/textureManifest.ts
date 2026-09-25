@@ -206,6 +206,11 @@ export const TEXTURES = {
     ],
     "bytes": 32856
   },
+  "picnic-mat": {
+    "url": "/textures/picnic-mat.webp",
+    "kind": "decal",
+    "bytes": 13708
+  },
   "conifer-atlas": {
     "url": "/textures/conifer-atlas.webp",
     "kind": "tint",

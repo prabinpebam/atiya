@@ -95,6 +95,14 @@ export interface GameTestHook {
   chopperDo(what: string): void;
   /** Stand `u` from Chopper, facing him. */
   nearChopper(u?: number): boolean;
+  /** The family (family.md): each one's activity, pose, speed, whether they're talking with you, and distances (u) from you and from home. */
+  family(): Array<{ id: string; activity: string; pose: string; speed: number; chatting: boolean; indoors: boolean; d: number; home: number }>;
+  /** Stand `u` from one of the family, facing them. */
+  nearNpc(id: string, u?: number): boolean;
+  /** Make one of the family start (and keep at) an activity. */
+  npcDo(id: string, activity: string): boolean;
+  /** Stand at the home by the pond, facing the house. */
+  visitHome(): boolean;
   groundInfo(): {
     lift: number;
     height: number;
@@ -123,6 +131,7 @@ export function installTestHook(c: GameController): void {
         acting: s.acting,
         invScreen: s.invScreen,
         chopperOpen: s.chopperOpen,
+        talk: s.talk,
         seated: s.seated,
         seatStage: c.seatMotion.stage,
         seatPose: c.seatMotion.pose,
@@ -429,6 +438,32 @@ export function installTestHook(c: GameController): void {
         return true;
       }
       return false;
+    },
+    family: () => c.home?.state() ?? [],
+    npcDo: (id, activity) => c.home?.hold(id, activity) ?? false,
+    nearNpc: (id, u = 0.9) => {
+      const p = c.home?.people.find((x) => x.id === id);
+      if (!p) return false;
+      const R = CONFIG.planetRadius;
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        const dir = tangentToward(p.n, new Vector3(Math.cos(a), Math.sin(a * 1.3), Math.sin(a)).normalize());
+        if (!dir) continue;
+        const stand = moveAlong(p.n, dir, u / R);
+        if (c.terrain.inWater(stand) || c.sim.obstacles.some((o) => Math.acos(Math.max(-1, Math.min(1, o.n.dot(stand)))) * R < o.radiusU + CONFIG.playerRadius - 0.02)) continue;
+        c.sim.setOrientation(orientationFor(stand, tangentToward(stand, p.n) ?? dir.clone().negate()));
+        c.lift = c.terrain.walkHeight(c.sim.pLocal);
+        return true;
+      }
+      return false;
+    },
+    visitHome: () => {
+      const h = c.props.home;
+      if (!h) return false;
+      const stand = moveAlong(h.centre, h.house.facing, 1.2 / CONFIG.planetRadius);
+      c.sim.setOrientation(orientationFor(stand, tangentToward(stand, h.house.n) ?? h.house.facing));
+      c.lift = c.terrain.walkHeight(c.sim.pLocal);
+      return true;
     },
     nearBench: (u = 1.1) => {
       const b = c.seats[0];

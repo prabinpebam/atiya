@@ -8,7 +8,7 @@ import { SEAT, type Seat } from './seating';
  * Things you can walk up to and use with E (docs: collection-inventory.md §3.1): what's in range,
  * and which one gets the prompt (the one you face, nearest first, with hysteresis).
  */
-export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog';
+export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc';
 export type TreeKind = 'hardwood' | 'apple' | 'orange' | 'cedar';
 
 export interface Target {
@@ -32,6 +32,9 @@ export interface Target {
   /** Bench: only offered from in front (or the ends). */
   facing?: Vector3;
   seat?: Seat;
+  /** The family member's id and name (npc targets). */
+  who?: string;
+  name?: string;
   scale: number;
 }
 
@@ -45,6 +48,8 @@ export const REACH = {
   /** Chopper only takes E when you face him (within this of your heading, rad), and near a landmark only this close (u). */
   dogCone: (65 * Math.PI) / 180,
   dogNearLandmark: 0.8,
+  /** The family (family.md §6): talk from this close (u), facing them. */
+  npc: 1.3,
   /** Walk out this far past a target's range before its prompt goes (hysteresis). */
   keep: 0.25,
   /** More than this off your heading (rad), a target only counts within arm's reach. */
@@ -138,8 +143,8 @@ export function pickTarget(
     const ang = to ? Math.acos(Math.max(-1, Math.min(1, to.dot(fwd)))) : 0;
     // (a bench goes by which side of it you're on, not your heading: you stand up facing away from it)
     if (t.kind !== 'bench' && ang > REACH.behind && past > REACH.armU) continue;
-    // a dog trotting beside you isn't one you're turning to greet
-    if (t.kind === 'dog' && ang > REACH.dogCone) continue;
+    // a dog trotting beside you (or a child running past) isn't one you're turning to greet
+    if ((t.kind === 'dog' || t.kind === 'npc') && ang > REACH.dogCone) continue;
     // benches keep their wide, facing-independent reach (you sit facing away from them)
     const score = Math.max(0, past) + (t.kind === 'bench' ? 0.2 : ang * REACH.anglePenalty) - (keep ? 0.15 : 0);
     if (score < bestScore) {
@@ -176,5 +181,7 @@ export function targetLabel(t: Target, flowerName?: string): string {
       return 'Sit on the bench';
     case 'dog':
       return 'Meet Chopper';
+    case 'npc':
+      return `Talk to ${t.name ?? 'them'}`;
   }
 }

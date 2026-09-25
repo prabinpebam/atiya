@@ -824,6 +824,72 @@ body.play {
   gap: 6px;
 }
 
+/* ---------- Talking with the family (family.md §6) ---------- */
+.talk-box {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + var(--hotbar-h) + 8px);
+  z-index: 19;
+  transform: translateX(-50%);
+  width: min(620px, calc(100vw - 24px));
+  padding: 18px 20px 14px;
+  border-top: 6px solid #6f9fc8;
+  animation: talk-in 0.18s ease-out;
+}
+
+.talk-name {
+  position: absolute;
+  top: -18px;
+  left: 18px;
+  margin: 0;
+  padding: 3px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff3d6;
+  font-weight: 800;
+}
+
+.talk-line {
+  margin: 6px 0 10px;
+  min-height: 2.8em;
+  font-size: 1.08rem;
+  line-height: 1.4;
+}
+
+.talk-rest {
+  visibility: hidden;
+}
+
+.talk-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.talk-more {
+  animation: talk-bob 0.9s ease-in-out infinite;
+}
+
+@keyframes talk-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+
+@keyframes talk-bob {
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talk-box,
+  .talk-more {
+    animation: none;
+  }
+}
+
 /* ---------- Dialogs ---------- */
 /* Chopper's profile card: his photo, his details, and a little 3D Chopper beside them */
 .dialog.chopper-dialog {

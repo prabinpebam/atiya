@@ -62,6 +62,8 @@ export interface DogWorld {
   blocked(n: Vector3): boolean;
   rabbits: readonly { n: Vector3 }[];
   spots: readonly Spot[];
+  /** Others walking about (the family): he steps round them and never through them. */
+  others: Vector3[];
 }
 
 export type DogEvent = { type: 'bark' | 'sniff' | 'yip' };
@@ -456,7 +458,7 @@ export class ChopperBrain {
           if (this.stageT > this.dur) {
             this.sniffed.set(s.key, this.clock);
             this.cooldown.sniff = DOG.cooldown.sniff;
-            if (this.rand() < 0.5) {
+            if (this.rand() < 0.25) {
               this.nextStage();
               this.look = null;
               return false;
@@ -711,6 +713,11 @@ export class ChopperBrain {
       const pd = this.dist(this.n, w.player, R);
       const fromP = tangentToward(this.n, w.player, _a);
       if (fromP && pd < DOG.personal + 0.4) desired.addScaledVector(fromP, -(1 - pd / (DOG.personal + 0.4)) * 1.5);
+      for (const o of w.others ?? []) {
+        const od = this.dist(this.n, o, R);
+        const away = od < 0.7 ? tangentToward(this.n, o, _t) : null;
+        if (away) desired.addScaledVector(away, -(1 - od / 0.7) * 1.2);
+      }
       // keep off the line the character is walking (unless he's overtaking them to run ahead)
       const pv = w.playerVel.length();
       if (pv > 0.5 && fromP && this.behaviour !== 'runAhead') {
@@ -775,6 +782,12 @@ export class ChopperBrain {
     if (pd < DOG.minGap) {
       const out = tangentToward(w.player, this.n, _a) ?? w.playerFwd;
       this.n.copy(moveAlong(w.player, out, DOG.minGap / R));
+    }
+    // …nor through any of the family
+    for (const o of w.others ?? []) {
+      const od = this.dist(this.n, o, R);
+      const out = od < 0.42 ? tangentToward(o, this.n, _a) : null;
+      if (out) this.n.copy(moveAlong(o, out, 0.42 / R));
     }
     transport(this.dir, this.n);
   }
