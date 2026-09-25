@@ -137,6 +137,11 @@ Constraints:
 - **Fallback — procedural avatar:** an original chibi "designer" built from procedural parts (`player/Character.tsx`, `ProceduralAvatar`). It shows while the GLB loads and permanently if the GLB fails (error boundary).
   - **Look:** a big head (≈ 45 % of height) with large blinking eyes, blush and round glasses; a swept fringe; a knit sweater with collar; a crossbody bag; sneakers.
   - **Animation:** procedural walk and run, idle breathing, and blinking.
+- **Occlusion outline** (both avatars, `player/outline.ts`): where a building, tree or rock hides the character, its silhouette shows through it: a warm cream Fresnel rim (`#fff3d1`, brightest at the edges) over a faint dark fill, so it reads on light and dark scenery, by day and at night. The standard "x-ray" technique, at the cost of one extra draw per character mesh and no extra pass:
+  - Each character mesh gets a twin that shares its geometry (and skeleton, so it follows every pose) with one shared material that passes the depth test only where the depth buffer already holds something nearer (`depthFunc: GreaterDepth`), and writes no depth.
+  - Draw order stops it outlining the character through itself: opaque scenery (renderOrder 0) is drawn first, then the twins (renderOrder 1, blended in the opaque pass with `CustomBlending` rather than being `transparent`), then the character (renderOrder 2). Transparent things (water, glass, the lighthouse beam) are drawn later, so they never set it off.
+  - The twins are pulled 0.25 u toward the camera along the view ray, so grass at the feet or a slope the feet dip into doesn't trigger it; unoccluded, the frame is unchanged.
+  - Test hooks: `getState().outlines` (twins on the current avatar), `standBehind(id)` and `setOutline(on)`.
 - **Optional later:** swap in a rigged CC0 humanoid (e.g., KayKit Adventurers) with idle/walk/run clips (e.g., Quaternius Universal Animation Library, CC0), blended by speed via `crossFadeTo` (≈ 0.15 s) with `timeScale` matched to speed.
 - Juice (P1, disabled under reduced motion): squash/stretch on start/stop (±5 %, 120 ms), dust puffs on run start and sharp turns (pooled sprites, ≤ 8 live).
 

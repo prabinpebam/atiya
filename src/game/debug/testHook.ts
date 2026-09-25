@@ -5,6 +5,7 @@ import { UP, moveAlong, orientationFor, tangentToward } from '../math/sphere';
 import { riverDistance } from '../world/features';
 import { textureStatus } from '../world/textures';
 import { litLamps } from '../world/lampLights';
+import { outlineMaterial } from '../player/outline';
 
 export interface GameTestHook {
   getState(): Record<string, unknown>;
@@ -31,6 +32,10 @@ export interface GameTestHook {
   visitFeature(kind: 'bridge' | 'waterfall' | 'mesa' | 'river', i?: number): boolean;
   /** Draw calls / triangles of the previous frame (all passes). */
   renderInfo(): { calls: number; triangles: number };
+  /** Stand just behind a landmark, facing away from it, so the building sits between the camera and the player. */
+  standBehind(id: string): boolean;
+  /** Show or hide the character's occlusion outline (visual testing). */
+  setOutline(on: boolean): void;
   /** Scene exposure (into the tone map) and the tilt-shift blend function name. */
   grading(): { exposure: number; tiltBlend: string };
   /** Force an adaptive-quality step (bypasses the warm-up/throttle). */
@@ -97,6 +102,7 @@ export function installTestHook(c: GameController): void {
         avatar: c.avatar,
         character: s.character,
         avatarModel: c.avatarModel,
+        outlines: c.outlines,
         hours: c.timeOfDay,
         night: c.sky.night,
         glow: c.sky.glow,
@@ -156,6 +162,18 @@ export function installTestHook(c: GameController): void {
       return true;
     },
     renderInfo: () => ({ ...c.lastRenderInfo }),
+    standBehind: (id) => {
+      const g = c.geoById.get(id);
+      if (!g) return false;
+      const back = g.door.clone().negate();
+      const stand = moveAlong(g.n, back, (g.footprintU + 0.9) / CONFIG.planetRadius);
+      const face = tangentToward(stand, g.n)?.negate() ?? back;
+      c.sim.setOrientation(orientationFor(stand, face));
+      return true;
+    },
+    setOutline: (on) => {
+      outlineMaterial().visible = on;
+    },
     grading: () => ({ ...c.grading }),
     adaptiveStep: (dir) => c.adaptiveStep?.(dir, true),
     setTime: (hours) => {

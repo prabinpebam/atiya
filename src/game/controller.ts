@@ -81,6 +81,8 @@ export class GameController {
   avatar: 'model' | 'procedural' = 'procedural';
   /** Which character's model is on screen (null while the procedural stand-in shows). */
   avatarModel: CharacterId | null = null;
+  /** Occlusion-outline meshes on the current avatar (diagnostics). */
+  outlines = 0;
   /** Adaptive-quality step (set by the Adaptive component; exposed to tests). */
   adaptiveStep: ((dir: -1 | 1, force?: boolean) => void) | null = null;
   /** Active post-processing chain (for tests/diagnostics). */

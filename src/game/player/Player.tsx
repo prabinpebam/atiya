@@ -11,6 +11,7 @@ import { ProceduralAvatar } from './Character';
 import { CHARACTERS, characterById, type CharacterId } from './characters';
 import { prefs } from '../platform/prefs';
 import { withLampLights } from '../world/lampLights';
+import { addOcclusionOutline, countOutlines } from './outline';
 
 const R = CONFIG.planetRadius;
 /** Target standing height in world units (≈ door height plus a head; the planet camera is tuned for ~1.25 u). */
@@ -58,6 +59,17 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     const s = CHARACTER_HEIGHT / h;
     return { scale: s, lift: -box.min.y * s };
   }, [scene]);
+
+  // outline shows through whatever hides the character
+  useEffect(() => {
+    const remove = addOcclusionOutline(scene);
+    const n = countOutlines(scene);
+    controller.outlines += n;
+    return () => {
+      remove();
+      controller.outlines -= n;
+    };
+  }, [scene, controller]);
 
   const { mixer, idle, run, jump } = useMemo(() => {
     const mx = new AnimationMixer(scene);

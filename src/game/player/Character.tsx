@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useStore } from 'zustand';
 import { CapsuleGeometry, Group, Quaternion, SphereGeometry, Vector3 } from 'three';
@@ -7,6 +7,7 @@ import type { GameController } from '../controller';
 import { selectReducedMotion } from '../state/store';
 import { Kit, type KitGeometry, type V3 } from '../world/kit';
 import { KitModel } from '../world/KitModel';
+import { addOcclusionOutline, countOutlines } from './outline';
 
 const C = {
   skin: '#f6c29a',
@@ -158,6 +159,19 @@ export function ProceduralAvatar({ controller }: { controller: GameController })
   const reduced = useStore(controller.store, selectReducedMotion);
 
   const parts = useMemo(() => ({ head: buildHead(), eyes: buildEyes(), torso: buildTorso(), arm: buildArm(), leg: buildLeg() }), []);
+
+  // outline shows through whatever hides the character (as for the rigged model)
+  useEffect(() => {
+    const r = root.current;
+    if (!r) return;
+    const remove = addOcclusionOutline(r);
+    const n = countOutlines(r);
+    controller.outlines += n;
+    return () => {
+      remove();
+      controller.outlines -= n;
+    };
+  }, [controller]);
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.1);

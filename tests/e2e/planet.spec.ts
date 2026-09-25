@@ -27,6 +27,8 @@ type GameState = {
   lift: number;
   /** Height (u) above the ground during a fly-over. */
   hover: number;
+  /** Occlusion-outline twins on the current avatar. */
+  outlines: number;
   wind: { strength: number; gust: number; leaves: number; swirls: number };
   textures: { loaded: number; failed: number; pending: number };
 };
@@ -642,6 +644,64 @@ test.describe('player character', () => {
     await startPlanet(page);
     await expect.poll(async () => (await state(page)).avatar, { timeout: 20_000 }).toBe('model');
     expect(glb).toEqual(['200']);
+    expect((await state(page)).outlines).toBeGreaterThan(0);
+  });
+
+  test("the character's outline shows through a building in front of it, and only then", async ({ page }) => {
+    test.setTimeout(120_000);
+    // hold the world still so the frames differ only by the outline
+    await page.addInitScript(() => localStorage.setItem('site.pauseAmbient', '1'));
+    await startPlanet(page);
+    await expect.poll(async () => (await state(page)).avatar, { timeout: 20_000 }).toBe('model');
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.setAdaptiveQuality(false);
+      g.setTime(10.5);
+      g.setWind(0);
+    });
+    // pixels the outline brightens (0 when nothing hides the character)
+    const brightened = async () => {
+      const shot = async (on: boolean) => {
+        await page.evaluate((v) => (window as any).__game.setOutline(v), on);
+        await page.waitForTimeout(1200);
+        return (await page.screenshot({ clip: { x: 0, y: 70, width: 1280, height: 640 } })).toString('base64');
+      };
+      const off = await shot(false);
+      const on = await shot(true);
+      return page.evaluate(
+        async ([a, b]) => {
+          const read = async (b64: string) => {
+            const img = new Image();
+            img.src = `data:image/png;base64,${b64}`;
+            await img.decode();
+            const cv = document.createElement('canvas');
+            cv.width = img.width;
+            cv.height = img.height;
+            const ctx = cv.getContext('2d')!;
+            ctx.drawImage(img, 0, 0);
+            return ctx.getImageData(0, 0, cv.width, cv.height).data;
+          };
+          const [d0, d1] = [await read(a), await read(b)];
+          const lum = (d: Uint8ClampedArray, i: number) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+          let n = 0;
+          for (let i = 0; i < d0.length; i += 4) if (lum(d1, i) - lum(d0, i) > 40) n++;
+          return n;
+        },
+        [off, on] as const,
+      );
+    };
+    // in the open: nothing to show through
+    const open = await brightened();
+    expect(open).toBeLessThan(200); // the idle animation alone moves a few edge pixels
+    // behind the library, with the view tilted low so the roof hides the character
+    await page.evaluate(() => (window as any).__game.standBehind('library'));
+    await page.locator('.game-region').focus();
+    await page.keyboard.down('PageDown');
+    await page.waitForTimeout(1500);
+    await page.keyboard.up('PageDown');
+    await expect.poll(async () => (await state(page)).pitch).toBeCloseTo(30, 1);
+    const hidden = await brightened();
+    expect(hidden).toBeGreaterThan(Math.max(400, open * 8));
   });
 
   test('the character picker switches to the female character (thick ring on the chosen one), by click or arrow keys, and remembers it', async ({ page }) => {
@@ -698,6 +758,7 @@ test.describe('player character', () => {
     await startPlanet(page);
     await page.waitForTimeout(1500);
     expect((await state(page)).avatar).toBe('procedural');
+    expect((await state(page)).outlines).toBeGreaterThan(0);
     // still fully playable
     const before = await state(page);
     await page.locator('.game-region').focus();

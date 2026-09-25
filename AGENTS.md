@@ -70,6 +70,7 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
   - A skin atlas must keep the Kenney UV layout exactly: generate by *editing* an existing skin, then clean it with a script like `assets-src/characters/compose-female.py` and check it with a UV-wireframe overlay. Keep the prompt and raw output next to it.
   - Extra parts (like the ponytail) are rigid meshes parented to a bone, authored in bind-pose space and moved into the bone's frame. They sample flat colours from the atlas (`HAIR_UV`, `TIE_UV`), so no second texture is needed.
   - FBX2glTF is a native tool installed into `%TEMP%\fbxconv`. Never add it to `package.json`.
+  - The occlusion outline (`player/outline.ts`) depends on draw order: opaque scenery at renderOrder 0, the outline twins at 1, the character at 2. Don't give opaque scenery a renderOrder of 1 or more (it would draw after the twins and never show them), and call `addOcclusionOutline` for any new avatar.
   - Keep `useGLTF(url, false, false)` (no Draco/Meshopt), so no decoder is fetched from a CDN.
 
 ## Package installation: use Microsoft package feed proxy (required)
