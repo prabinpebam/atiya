@@ -94,6 +94,8 @@ export interface Bird {
 export interface WildEnv {
   /** Planet-local unit direction of the character. */
   player: Vector3;
+  /** Other things rabbits and ground birds shy away from, like the character (Chopper). */
+  threats?: readonly Vector3[];
   /** 0 = full day … 1 = full night. */
   night: number;
   obstacles: readonly Obstacle[];
@@ -154,6 +156,20 @@ function step(a: { n: Vector3; dir: Vector3 }, dist: number): void {
 }
 
 const dist = (a: Vector3, b: Vector3) => arcDistance(a, b, R);
+
+/** The nearest threat to `n` (the character, or another in `env.threats`) and how far it is. */
+export function nearestThreat(n: Vector3, env: Pick<WildEnv, 'player' | 'threats'>): { at: Vector3; d: number } {
+  let at = env.player;
+  let d = dist(n, at);
+  for (const t of env.threats ?? []) {
+    const e = dist(n, t);
+    if (e < d) {
+      d = e;
+      at = t;
+    }
+  }
+  return { at, d };
+}
 
 function onLand(env: WildEnv, n: Vector3, pad = 0.12): boolean {
   if (env.inWater(n)) return false;
@@ -260,7 +276,8 @@ function planHop(r: Rabbit, env: WildEnv, len: number, time: number, rand: () =>
 
 function stepRabbit(r: Rabbit, env: WildEnv, dt: number, rand: () => number): void {
   const W = WILD.rabbit;
-  const d = dist(r.n, env.player);
+  const threat = nearestThreat(r.n, env);
+  const d = threat.d;
   // mid-hop: finish it (a hop in the air can't change its mind)
   if (r.hop >= 0) {
     r.hop += dt / r.hopTime;
@@ -288,7 +305,7 @@ function stepRabbit(r: Rabbit, env: WildEnv, dt: number, rand: () => number): vo
   }
   switch (r.state) {
     case 'flee': {
-      const away = awayFrom(r.n, env.player);
+      const away = awayFrom(r.n, threat.at);
       if (away) {
         // zigzag: alternate a sideways jink on each bound, as hares and rabbits do
         r.zig = -r.zig;
@@ -308,7 +325,7 @@ function stepRabbit(r: Rabbit, env: WildEnv, dt: number, rand: () => number): vo
     }
     case 'alert': {
       // frozen, upright, watching the threat
-      const toward = tangentToward(r.n, env.player);
+      const toward = tangentToward(r.n, threat.at);
       if (toward && d < W.alert * 1.2) turnToward(r.dir, r.n, toward, 2 * dt);
       r.timer -= dt;
       if (r.timer <= 0 && d > W.alert) {
@@ -506,7 +523,8 @@ function landingSpot(b: Bird, env: WildEnv, rand: () => number): Vector3 | null 
 
 function stepBird(b: Bird, flock: Bird[], env: WildEnv, dt: number, rand: () => number): void {
   const W = WILD.bird;
-  const d = dist(b.n, env.player);
+  const threat = b.state === 'peck' ? nearestThreat(b.n, env) : { at: env.player, d: dist(b.n, env.player) };
+  const d = threat.d;
   if (b.state === 'peck') {
     b.flapAmp += (0 - b.flapAmp) * Math.min(1, dt * 8);
     b.peck = Math.max(0, Math.sin(b.timer * 7) * 1.2 - 0.2);
@@ -525,7 +543,7 @@ function stepBird(b: Bird, flock: Bird[], env: WildEnv, dt: number, rand: () => 
       b.state = 'fly';
       b.climb = 2.2;
       b.timer = 12 + rand() * 25;
-      const away = awayFrom(b.n, env.player);
+      const away = awayFrom(b.n, threat.at);
       if (away && d < W.takeOff * 1.5) b.dir.copy(away);
       b.peck = 0;
     }

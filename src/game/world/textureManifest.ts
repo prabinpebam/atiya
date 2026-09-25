@@ -196,6 +196,16 @@ export const TEXTURES = {
     "kind": "sprite",
     "bytes": 15122
   },
+  "chopper-fur": {
+    "url": "/textures/chopper-fur.webp",
+    "kind": "mask",
+    "mean": [
+      0.5233,
+      0.5233,
+      0.5233
+    ],
+    "bytes": 32856
+  },
   "conifer-atlas": {
     "url": "/textures/conifer-atlas.webp",
     "kind": "tint",

@@ -8,7 +8,7 @@ import { SEAT, type Seat } from './seating';
  * Things you can walk up to and use with E (docs: collection-inventory.md §3.1): what's in range,
  * and which one gets the prompt (the one you face, nearest first, with hysteresis).
  */
-export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench';
+export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog';
 export type TreeKind = 'hardwood' | 'apple' | 'orange' | 'cedar';
 
 export interface Target {
@@ -40,6 +40,11 @@ export const REACH = {
   boulder: 1.0,
   flower: 0.9,
   chest: 0.95,
+  /** Chopper (measured from his centre; he moves, so his target follows him). */
+  dog: 1.2,
+  /** Chopper only takes E when you face him (within this of your heading, rad), and near a landmark only this close (u). */
+  dogCone: (65 * Math.PI) / 180,
+  dogNearLandmark: 0.8,
   /** Walk out this far past a target's range before its prompt goes (hysteresis). */
   keep: 0.25,
   /** More than this off your heading (rad), a target only counts within arm's reach. */
@@ -121,7 +126,7 @@ export function pickTarget(
     const d = arcDistance(p, t.n, R);
     const past = d - t.edgeU;
     const keep = t.key === currentKey ? REACH.keep : 0;
-    const reach = t.kind === 'flower' && nearLandmark ? REACH.flowerNearLandmark : t.reachU;
+    const reach = nearLandmark && t.kind === 'flower' ? REACH.flowerNearLandmark : nearLandmark && t.kind === 'dog' ? REACH.dogNearLandmark : t.reachU;
     if (past > reach + keep) continue;
     if (t.kind === 'bench' && t.facing) {
       _off.copy(p).addScaledVector(t.n, -p.dot(t.n));
@@ -133,6 +138,8 @@ export function pickTarget(
     const ang = to ? Math.acos(Math.max(-1, Math.min(1, to.dot(fwd)))) : 0;
     // (a bench goes by which side of it you're on, not your heading: you stand up facing away from it)
     if (t.kind !== 'bench' && ang > REACH.behind && past > REACH.armU) continue;
+    // a dog trotting beside you isn't one you're turning to greet
+    if (t.kind === 'dog' && ang > REACH.dogCone) continue;
     // benches keep their wide, facing-independent reach (you sit facing away from them)
     const score = Math.max(0, past) + (t.kind === 'bench' ? 0.2 : ang * REACH.anglePenalty) - (keep ? 0.15 : 0);
     if (score < bestScore) {
@@ -167,5 +174,7 @@ export function targetLabel(t: Target, flowerName?: string): string {
       return 'Open chest';
     case 'bench':
       return 'Sit on the bench';
+    case 'dog':
+      return 'Meet Chopper';
   }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from 'zustand';
-import { faArrowsUpDownLeftRight, faBriefcase, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsUpDownLeftRight, faBriefcase, faDog, faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { GameController } from '../controller';
 import { BACKPACK_SLOTS, CHEST_SLOTS, HOTBAR, type Screen, type Slot, type SlotRef } from '../inventory/inventory';
 import { itemDef, stackLabel, type ItemId } from '../inventory/items';
@@ -83,6 +83,19 @@ export function Hotbar({ controller }: { controller: GameController }) {
           onClick={() => controller.openInventory('backpack')}
         >
           <Icon icon={faBriefcase} />
+        </button>
+        <button
+          type="button"
+          className="slot whistle-btn"
+          aria-label="Whistle for Chopper (F)"
+          title="Whistle for Chopper (F)"
+          data-testid="whistle-button"
+          onClick={() => {
+            controller.whistle();
+            controller.focusRegion();
+          }}
+        >
+          <Icon icon={faDog} />
         </button>
       </div>
     </div>

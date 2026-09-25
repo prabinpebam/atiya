@@ -50,6 +50,8 @@ TEXTURES: dict[str, tuple[str, int]] = {
     "leaf-single": ("tint", 128),
     "grass-card": ("tint", 256),
     "moon": ("sprite", 256),
+    # Chopper's curly coat (the fur shells' locks; chopper.md §2)
+    "chopper-fur": ("mask", 256),
 }
 # 2×2 atlases: name -> (cell sources in order [top-left, top-right, bottom-left, bottom-right], size, mode)
 # mode "tint" = normalised greyscale (tinted in game), "sprite" = full colour
@@ -369,6 +371,18 @@ def main() -> None:
         og = og.crop((0, top, 1200, top + 630))
         og.save(ROOT / "public" / "og-image.jpg", "JPEG", quality=86, optimize=True, progressive=True)
         print(f"og-image   {(ROOT / 'public' / 'og-image.jpg').stat().st_size / 1024:6.1f} KB")
+
+    # Chopper's photos for his profile card (fetched only when it opens; chopper.md §5)
+    for i in (1, 2):
+        photo = ROOT / "assets-src" / "chopper" / f"chopper-photo-{i}.png"
+        if photo.exists():
+            im = Image.open(photo).convert("RGB")
+            w = 900
+            im = im.resize((w, round(im.height * w / im.width)), Image.LANCZOS)
+            dst = ROOT / "public" / "chopper" / f"chopper-{i}.webp"
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            im.save(dst, "WEBP", quality=86, method=6)
+            print(f"chopper-{i}  {im.width}x{im.height}  {dst.stat().st_size / 1024:6.1f} KB")
 
     body = json.dumps(manifest, indent=2)
     MANIFEST.write_text(

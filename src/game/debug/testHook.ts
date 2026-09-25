@@ -87,6 +87,14 @@ export interface GameTestHook {
     music: { on: boolean; playing: boolean; track: number; url: string | null };
   };
   /** Ground under the player: smoothed lift, terrain height, walk height and distance to the river (u). */
+  /** Chopper (chopper.md): distance (u) from the character, speed, behaviour, pose, moods, whistles so far. */
+  chopper(): { d: number; speed: number; behaviour: string; stage: number; clip: string; wag: number; pant: number; energy: number; whistles: number; n: number[] };
+  /** Whistle for Chopper (as F does). */
+  whistle(): void;
+  /** Make Chopper hold a pose (`sit`, `scratch`, `playBow`, …) for a while, or run a behaviour. */
+  chopperDo(what: string): void;
+  /** Stand `u` from Chopper, facing him. */
+  nearChopper(u?: number): boolean;
   groundInfo(): {
     lift: number;
     height: number;
@@ -114,6 +122,7 @@ export function installTestHook(c: GameController): void {
         target: s.target,
         acting: s.acting,
         invScreen: s.invScreen,
+        chopperOpen: s.chopperOpen,
         seated: s.seated,
         seatStage: c.seatMotion.stage,
         seatPose: c.seatMotion.pose,
@@ -391,6 +400,35 @@ export function installTestHook(c: GameController): void {
     drops: () => {
       const R = CONFIG.planetRadius;
       return c.drops.list.map((d) => ({ item: d.item, count: d.count, state: d.state, d: Math.acos(Math.max(-1, Math.min(1, d.p.clone().normalize().dot(c.sim.pLocal)))) * R }));
+    },
+    chopper: () => {
+      const b = c.chopper;
+      return { d: b.distanceTo(c.sim.pLocal, CONFIG.planetRadius), speed: b.speed, behaviour: b.behaviour, stage: b.stage, clip: b.clip, wag: b.wag, pant: b.pant, energy: b.energy, whistles: c.whistles, n: b.n.toArray() };
+    },
+    whistle: () => c.whistle(),
+    chopperDo: (what) => {
+      const b = c.chopper as unknown as { hold(clip: string, dur?: number): void; makeTrail(w: unknown): void };
+      if (what === 'scent') {
+        b.makeTrail(c.dogWorld);
+        (c.chopper as unknown as { behaviour: string }).behaviour = 'scent';
+        return;
+      }
+      b.hold(what);
+    },
+    nearChopper: (u = 1.0) => {
+      const R = CONFIG.planetRadius;
+      const n = c.chopper.n;
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2;
+        const dir = tangentToward(n, new Vector3(Math.cos(a), Math.sin(a * 1.3), Math.sin(a)).normalize());
+        if (!dir) continue;
+        const stand = moveAlong(n, dir, u / R);
+        if (c.terrain.inWater(stand) || c.sim.obstacles.some((o) => Math.acos(Math.max(-1, Math.min(1, o.n.dot(stand)))) * R < o.radiusU + CONFIG.playerRadius - 0.02)) continue;
+        c.sim.setOrientation(orientationFor(stand, tangentToward(stand, n) ?? dir.clone().negate()));
+        c.lift = c.terrain.walkHeight(c.sim.pLocal);
+        return true;
+      }
+      return false;
     },
     nearBench: (u = 1.1) => {
       const b = c.seats[0];

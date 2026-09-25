@@ -8,12 +8,12 @@ import { MUSIC } from './musicManifest';
 import { birdsSing, nextBirdDelay, pickVariant, windMix, type Surface } from './audioLogic';
 
 type BufferKey = keyof typeof AUDIO;
-type SpriteKey = 'steps' | 'birds' | 'ui';
+type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog';
 
 export interface SoundEvent {
   /** performance.now() when it was asked for. */
   t: number;
-  kind: 'step' | 'bird' | 'chime' | 'doorOpen' | 'doorClose' | 'curtain' | 'sparkle' | 'pickup' | 'hit' | 'rustle';
+  kind: 'step' | 'bird' | 'chime' | 'doorOpen' | 'doorClose' | 'curtain' | 'sparkle' | 'pickup' | 'hit' | 'rustle' | 'bark' | 'sniff' | 'whistle';
   detail?: string;
   /** Whether it was actually scheduled (false while muted, locked or still loading). */
   played: boolean;
@@ -43,6 +43,11 @@ const MIX = {
   doorOpen: 0.42,
   doorClose: 0.38,
   curtain: 0.4,
+  /** Chopper (chopper.md §6): barks a little forward, sniffs and panting only up close. */
+  bark: 0.34,
+  sniff: 0.3,
+  whistle: 0.3,
+  pant: 0.22,
   /** Background music: slightly subtle, a bed under the ambience; a little lower under dialogs. */
   music: 0.2,
   musicDuck: 0.65,
@@ -65,6 +70,7 @@ export class SoundEngine {
   private fx: GainNode | null = null;
   private stream: { gain: GainNode; pan: StereoPannerNode } | null = null;
   private wind: { gain: GainNode; filter: BiquadFilterNode } | null = null;
+  private pantLoop: { gain: GainNode; pan: StereoPannerNode } | null = null;
   private readonly buffers = new Map<BufferKey, AudioBuffer>();
   private loading = false;
   private readonly last = new Map<string, number>();
@@ -292,6 +298,29 @@ export class SoundEngine {
     this.play('steps', 'stone', 'hit', { gain: MIX.steps.stone * 1.9, rate: 0.7 + 0.1 * this.rand(), bus: 'fx' });
   }
 
+  /**
+   * Chopper barks, sniffs (with `pan` −1…1 from where he is on screen and `near` 0…1 by distance),
+   * and the character's come-here whistle.
+   */
+  dog(kind: 'bark' | 'sniff', pan: number, near: number): void {
+    const r = this.rand;
+    const n = Math.max(0, Math.min(1, near));
+    if (kind === 'bark') this.play('dog', 'bark', 'bark', { gain: MIX.bark * (0.35 + 0.65 * n) * (0.85 + 0.3 * r()), rate: 1.08 + 0.14 * r(), pan: pan * 0.8, bus: 'fx' });
+    else if (n > 0.05) this.play('dog', 'sniff', 'sniff', { gain: MIX.sniff * n * (0.8 + 0.3 * r()), rate: 0.95 + 0.15 * r(), pan: pan * 0.8, bus: 'fx' });
+  }
+
+  whistle(): void {
+    this.play('dog', 'whistle', 'whistle', { gain: MIX.whistle, rate: 0.97 + 0.06 * this.rand() });
+  }
+
+  /** Chopper's panting (0 = none … 1 = close by and panting), placed where he is. */
+  setPant(level: number, pan: number): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.pantLoop || ctx.state !== 'running') return;
+    this.pantLoop.gain.gain.setTargetAtTime(MIX.pant * Math.max(0, Math.min(1, level)), ctx.currentTime, 0.25);
+    this.pantLoop.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, pan)) * 0.8, ctx.currentTime, 0.2);
+  }
+
   /** A shaken tree's leaves rustle (the cloth swish, brighter and softer). */
   rustle(): void {
     this.play('ui', 'curtain', 'rustle', { gain: MIX.curtain * 0.5, rate: 1.2 + 0.15 * this.rand() });
@@ -352,13 +381,13 @@ export class SoundEngine {
         .then((data) => ctx.decodeAudioData(data))
         .then((buf) => {
           this.buffers.set(key, buf);
-          if (key === 'stream' || key === 'wind') this.startLoop(key, buf);
+          if (key === 'stream' || key === 'wind' || key === 'pant') this.startLoop(key, buf);
         })
         .catch((err) => console.warn('Sound failed to load:', err));
     }
   }
 
-  private startLoop(key: 'stream' | 'wind', buf: AudioBuffer): void {
+  private startLoop(key: 'stream' | 'wind' | 'pant', buf: AudioBuffer): void {
     const ctx = this.ctx!;
     const m = AUDIO[key];
     const src = ctx.createBufferSource();
@@ -368,10 +397,11 @@ export class SoundEngine {
     src.loopEnd = m.loopEnd;
     const gain = ctx.createGain();
     gain.gain.value = 0;
-    if (key === 'stream') {
+    if (key === 'stream' || key === 'pant') {
       const pan = ctx.createStereoPanner();
-      src.connect(gain).connect(pan).connect(this.ambience!);
-      this.stream = { gain, pan };
+      src.connect(gain).connect(pan).connect(key === 'pant' ? this.fx! : this.ambience!);
+      if (key === 'pant') this.pantLoop = { gain, pan };
+      else this.stream = { gain, pan };
     } else {
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';

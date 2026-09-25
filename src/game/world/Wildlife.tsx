@@ -59,6 +59,8 @@ export function Wildlife({ controller }: { controller: GameController }) {
     const terrain = controller.terrain;
     const e: WildEnv = {
       player: controller.sim.pLocal.clone(),
+      // Chopper: rabbits bolt from him and ground birds take off, as from the character
+      threats: [controller.chopper.n],
       night: 0,
       obstacles: [...controller.geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...layout.obstacles],
       inWater: (n) => terrain.inWater(n),

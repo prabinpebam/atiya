@@ -23,8 +23,10 @@ export async function mountGame(container: HTMLElement, landmarks: LandmarkData[
     installTestHook(controller);
   }
   // hand-painted textures are small; materials read them synchronously, so load them first
-  // (never throws: anything missing falls back to the procedural look)
-  await preloadTextures();
+  // (never throws: anything missing falls back to the procedural look). Chopper's body comes in its
+  // own chunk meanwhile, so his material compiles with the rest of the scene before the first frame.
+  const [, chopper] = await Promise.all([preloadTextures(), import('./world/Chopper').catch(() => null)]);
+  controller.chopperView = chopper?.Chopper ?? null;
   container.replaceChildren();
   createRoot(container).render(
     <StrictMode>

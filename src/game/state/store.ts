@@ -7,8 +7,8 @@ export type Phase = 'loading' | 'ready' | 'playing';
 export interface GameState {
   phase: Phase;
   nearbyId: string | null;
-  /** What E would use right now (a tree, boulder, flower, the chest or the bench), with its prompt text. */
-  target: { kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'bench'; key: string; label: string } | null;
+  /** What E would use right now (a tree, boulder, flower, the chest, the bench or Chopper), with its prompt text. */
+  target: { kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog'; key: string; label: string } | null;
   /** The action cycle playing (shake, mine, pick, open), or null. */
   acting: 'shake' | 'mine' | 'pick' | 'open' | null;
   /** The inventory screen that's open: the backpack on its own, or the chest with it. */
@@ -17,6 +17,8 @@ export interface GameState {
   invVersion: number;
   /** True while the character sits on a bench (from sitting down until it starts to stand up). */
   seated: boolean;
+  /** True while Chopper's profile card is open. */
+  chopperOpen: boolean;
   openId: string | null;
   menuOpen: boolean;
   traveling: 'flyover' | 'fade' | null;
@@ -57,6 +59,7 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     invScreen: null,
     invVersion: 0,
     seated: false,
+    chopperOpen: false,
     openId: null,
     menuOpen: false,
     traveling: null,

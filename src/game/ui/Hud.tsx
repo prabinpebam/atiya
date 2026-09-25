@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { GameController } from '../controller';
@@ -8,7 +8,7 @@ import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
 import { LandmarkDialog, MenuDialog } from './Dialogs';
 import { ViewControls } from './ViewControls';
 import { CHARACTERS, type CharacterId } from '../player/characters';
-import { faArrowUpRightFromSquare, faBoxOpen, faChair, faHammer, faMoon, faPersonWalking, faSeedling, faSun, faTree, faVolumeHigh, faVolumeXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowUpRightFromSquare, faBoxOpen, faChair, faHammer, faMoon, faPaw, faPersonWalking, faSeedling, faSun, faTree, faVolumeHigh, faVolumeXmark } from '@fortawesome/free-solid-svg-icons';
 import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
 
@@ -84,16 +84,33 @@ function PreviewCard({ controller }: { controller: GameController }) {
   );
 }
 
-const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair } as const;
+const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw } as const;
+
+// Chopper's profile card (with its own little 3D canvas) loads the first time it's opened
+const ChopperCard = lazy(() => import('./ChopperCard'));
+
+function ChopperCardSlot({ controller }: { controller: GameController }) {
+  const open = useStore(controller.store, (s) => s.chopperOpen);
+  const [wanted, setWanted] = useState(false);
+  useEffect(() => {
+    if (open) setWanted(true);
+  }, [open]);
+  if (!wanted) return null;
+  return (
+    <Suspense fallback={null}>
+      <ChopperCard controller={controller} />
+    </Suspense>
+  );
+}
 
 /**
  * What E does right now (collection-inventory.md §3.1): shake a tree, mine a boulder, pick a flower,
- * open the chest or sit on the bench; while seated, stand up (the keys work too: E, Escape).
+ * open the chest, sit on the bench or meet Chopper; while seated, stand up (the keys work too: E, Escape).
  */
 function ActionPrompt({ controller }: { controller: GameController }) {
   const seated = useStore(controller.store, (s) => s.seated);
   const target = useStore(controller.store, (s) => s.target);
-  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.openId && !s.menuOpen && !s.invScreen && !s.acting);
+  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.openId && !s.menuOpen && !s.invScreen && !s.acting && !s.chopperOpen);
   if (!visible || (!seated && !target)) return null;
   const act = () => {
     if (seated) controller.standUp();
@@ -127,7 +144,7 @@ function ControlsHint({ controller }: { controller: GameController }) {
         <kbd>W</kbd>
         <kbd>A</kbd>
         <kbd>S</kbd>
-        <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open / use · <kbd>I</kbd> backpack · <kbd>1</kbd>–<kbd>9</kbd> hotbar · <kbd>M</kbd> map
+        <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open / use · <kbd>F</kbd> whistle · <kbd>I</kbd> backpack · <kbd>1</kbd>–<kbd>9</kbd> hotbar · <kbd>M</kbd> map
       </p>
       <p>
         Drag to turn &amp; tilt the view · <kbd>,</kbd>
@@ -424,6 +441,7 @@ export function Hud({ controller }: { controller: GameController }) {
       <LandmarkDialog controller={controller} />
       <MenuDialog controller={controller} />
       <InventoryScreen controller={controller} />
+      <ChopperCardSlot controller={controller} />
       <MenuButton controller={controller} target={controller.hudActions} />
       <LoadingOverlay controller={controller} />
       <StartOverlay controller={controller} />

@@ -81,7 +81,35 @@ export const AUDIO = {
         [3.3447, 0.5917]
       ]
     }
+  },
+  "dog": {
+    "url": "/audio/dog.mp3",
+    "slots": {
+      "bark": [
+        [0.12, 0.5368],
+        [0.7768, 0.4221],
+        [1.3189, 0.7015],
+        [2.1404, 0.4121],
+        [2.6725, 0.2229],
+        [3.0154, 0.6017]
+      ],
+      "sniff": [
+        [3.7371, 0.563],
+        [4.4201, 0.5588],
+        [5.0988, 1.0606],
+        [6.2795, 0.3393]
+      ],
+      "whistle": [
+        [6.7388, 0.9559],
+        [7.8146, 0.8112]
+      ]
+    }
+  },
+  "pant": {
+    "url": "/audio/pant.mp3",
+    "loopStart": 0.5,
+    "loopEnd": 2.3
   }
 } as const;
 
-export type SpriteKey = 'steps' | 'birds' | 'ui';
+export type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog';

@@ -38,6 +38,8 @@ type GameState = {
   target: { kind: string; key: string; label: string } | null;
   acting: 'shake' | 'mine' | 'pick' | 'open' | null;
   invScreen: 'backpack' | 'chest' | null;
+  /** Chopper's profile card is open. */
+  chopperOpen: boolean;
   wind: { strength: number; gust: number; leaves: number; swirls: number };
   textures: { loaded: number; failed: number; pending: number };
 };
@@ -611,7 +613,7 @@ test.describe('sound', () => {
     await openPlanet(page);
     expect(mp3).toEqual([]);
     await page.getByRole('button', { name: 'Start exploring' }).click();
-    await expect.poll(async () => (await sound(page)).loaded, { timeout: 20_000 }).toBe(5);
+    await expect.poll(async () => (await sound(page)).loaded, { timeout: 20_000 }).toBe(7);
     expect((await sound(page)).state).toBe('running');
     // the background music streams in and plays (one of the two tracks)
     await expect.poll(async () => (await sound(page)).music.playing, { timeout: 20_000 }).toBe(true);
@@ -732,6 +734,81 @@ test.describe('benches', () => {
     s = await state(page);
     expect(s.seated).toBe(false);
     expect(s.seatStage).toBeNull();
+  });
+});
+
+test.describe('Chopper', () => {
+  type Dog = { d: number; speed: number; behaviour: string; stage: number; clip: string; whistles: number };
+  const dog = (page: Page) => page.evaluate(() => (window as any).__game.chopper() as Dog);
+  const fastForward = (page: Page, seconds: number) =>
+    page.evaluate((s) => {
+      const g = (window as any).__game;
+      g.pause();
+      g.advance(Math.round(s * 60));
+      g.resume();
+    }, seconds);
+
+  test('Chopper keeps near the character on his own, and comes running when whistled (F, or the hotbar button)', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    // he's there from the start, beside the character
+    let c = await dog(page);
+    expect(c.d).toBeLessThan(4);
+    // left to himself for a minute he wanders, sniffs and settles, but never strays past the far band
+    for (let i = 0; i < 6; i++) {
+      await fastForward(page, 10);
+      c = await dog(page);
+      expect(c.d).toBeLessThan(10);
+    }
+    // F: the character whistles, and he drops everything and comes
+    await page.keyboard.press('KeyF');
+    c = await dog(page);
+    expect(c.behaviour).toBe('whistled');
+    expect(c.whistles).toBe(1);
+    const cues = await page.evaluate(() => ((window as any).__game.sound().events as { kind: string }[]).map((e) => e.kind));
+    expect(cues).toContain('whistle');
+    await fastForward(page, 5);
+    c = await dog(page);
+    expect(['whistled', 'heel']).toContain(c.behaviour);
+    expect(c.d).toBeLessThan(2.2);
+    // the hotbar's whistle button does the same (after the whistle's cooldown), and hands the keys back to the planet
+    await page.waitForTimeout(2100);
+    await page.getByTestId('whistle-button').click();
+    expect((await dog(page)).whistles).toBe(2);
+    await expect(page.locator('.game-region')).toBeFocused();
+  });
+
+  test('Meet Chopper: E opens his card with his photo and a 3D Chopper; it passes axe; Esc closes it and hands back the planet', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.chopperDo('sit');
+      g.nearChopper(0.7);
+    });
+    await expect(page.getByTestId('seat-prompt').getByRole('button', { name: /Meet Chopper/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    const card = page.getByTestId('chopper-dialog');
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expect(card.getByRole('heading', { name: 'Chopper' })).toBeVisible();
+    expect((await state(page)).chopperOpen).toBe(true);
+    const photo = page.getByTestId('chopper-photo');
+    await expect(photo).toHaveAttribute('alt', /Lhasa Apso/);
+    await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(page.getByTestId('chopper-3d').locator('canvas')).toHaveCount(1);
+    await noSeriousViolations(page);
+    // the other photo
+    await card.getByRole('button', { name: 'Photo 2' }).click();
+    await expect(photo).toHaveAttribute('src', /chopper-2/);
+    // Escape closes it (not the menu), and the keys go back to the planet
+    await page.keyboard.press('Escape');
+    await expect(card).toBeHidden();
+    const s = await state(page);
+    expect(s.chopperOpen).toBe(false);
+    expect(s.menuOpen).toBe(false);
+    await expect(page.locator('.game-region')).toBeFocused();
+    // its little canvas is gone with it (the WebGL context is released)
+    await expect(page.getByTestId('chopper-3d')).toHaveCount(0);
   });
 });
 

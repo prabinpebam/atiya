@@ -1,4 +1,5 @@
-// Bundle budget check (spec §7): landing ships no 3D JS; game JS ≤ 450 KB gzipped.
+// Bundle budget check (spec §7): landing ships no 3D JS; the game's initial JS ≤ 450 KB gzipped, and
+// what it loads later on demand (Chopper's body and card) ≤ 40 KB.
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -6,6 +7,7 @@ import { gzipSync } from 'node:zlib';
 const DIST = 'dist';
 const ASSETS = join(DIST, '_astro');
 const GAME_BUDGET_KB = 450;
+const DEFERRED_BUDGET_KB = 40;
 const GATE_BUDGET_KB = 8;
 
 if (!existsSync(ASSETS)) {
@@ -21,6 +23,11 @@ const sizes = Object.fromEntries(js.map((f) => [f, gz(f)]));
 function eagerScripts(htmlFile) {
   const html = readFileSync(join(DIST, htmlFile), 'utf8');
   const entry = [...html.matchAll(/<script[^>]+src="\/_astro\/([^"]+\.js)"/g)].map((m) => m[1]);
+  return staticClosure(entry);
+}
+
+/** `entry` plus everything it imports statically (not the dynamic `import()`s). */
+function staticClosure(entry) {
   const seen = new Set();
   const visit = (f) => {
     if (seen.has(f) || !sizes[f]) return;
@@ -35,17 +42,22 @@ function eagerScripts(htmlFile) {
 const landing = eagerScripts('index.html');
 const gate = eagerScripts(join('play', 'index.html'));
 const game = js.filter((f) => !gate.includes(f) && !landing.includes(f));
+// the game the gate loads to become playable, and what it fetches later on demand
+const initial = staticClosure(game.filter((f) => /^game-mount\./.test(f))).filter((f) => game.includes(f));
+const deferred = game.filter((f) => !initial.includes(f));
 const sum = (list) => list.reduce((a, f) => a + sizes[f], 0);
 
 const rows = js.map((f) => ({ file: f, gzKB: sizes[f].toFixed(1), landing: landing.includes(f), gate: gate.includes(f) }));
 console.table(rows);
 
-const gameKB = sum(game);
+const gameKB = sum(initial);
+const deferredKB = sum(deferred);
 const gateKB = sum(gate);
 const landingGameJs = landing.filter((f) => /game|three|fiber|drei/i.test(f) || sizes[f] > 20);
 console.log(`landing eager JS: ${sum(landing).toFixed(1)} KB gz (${landing.length} files)`);
 console.log(`/play gate JS:    ${gateKB.toFixed(1)} KB gz (budget ${GATE_BUDGET_KB} KB)`);
 console.log(`game JS (lazy):   ${gameKB.toFixed(1)} KB gz (budget ${GAME_BUDGET_KB} KB)`);
+console.log(`  on demand:      ${deferredKB.toFixed(1)} KB gz (budget ${DEFERRED_BUDGET_KB} KB): ${deferred.join(', ')}`);
 
 let failed = false;
 if (process.argv.includes('--prod')) {
@@ -67,6 +79,14 @@ if (gateKB > GATE_BUDGET_KB) {
 }
 if (gameKB > GAME_BUDGET_KB) {
   console.error(`✗ game JS over budget`);
+  failed = true;
+}
+if (!initial.length) {
+  console.error('✗ no game-mount chunk found');
+  failed = true;
+}
+if (deferredKB > DEFERRED_BUDGET_KB) {
+  console.error(`✗ on-demand game JS over budget`);
   failed = true;
 }
 if (failed) process.exit(1);

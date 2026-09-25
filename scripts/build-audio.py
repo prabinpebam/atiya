@@ -2,7 +2,7 @@
 
 Every source is CC0 (Freesound previews, OpenGameArt, Kenney). The script downloads them into a
 git-ignored cache, cuts and cleans the chosen parts, and writes:
-  public/audio/{stream,wind,steps,birds,ui}.mp3
+  public/audio/{stream,wind,pant,steps,birds,ui,dog}.mp3
   src/game/audio/audioManifest.ts   (URLs, loop points, sprite slots in seconds)
 and prints a check of every output (level, loop seam, slot count, size).
 
@@ -40,6 +40,14 @@ SOURCES = {
     "vireo": ("https://cdn.freesound.org/previews/475/475043_9786444-hq.mp3", "fs-475043-vireo.mp3"),
     "tsip": ("https://cdn.freesound.org/previews/182/182507_854782-hq.mp3", "fs-182507-chirp.mp3"),
     "sparrows": ("https://opengameart.org/sites/default/files/birds-isaiah658_0.ogg", "oga-birds-isaiah658.ogg"),
+    # Chopper (docs/poc-3d-navigation/chopper.md §6)
+    "barks": ("https://cdn.freesound.org/previews/361/361544_6512973-hq.mp3", "fs-361544-small-dog-barks.mp3"),
+    "yap": ("https://cdn.freesound.org/previews/813/813120_71257-hq.mp3", "fs-813120-tiny-dog-bark.mp3"),
+    "woof": ("https://cdn.freesound.org/previews/630/630648_7228277-hq.mp3", "fs-630648-single-bark.mp3"),
+    "sniffs": ("https://cdn.freesound.org/previews/353/353107_6379101-hq.mp3", "fs-353107-dog-sniffing.mp3"),
+    "sniff": ("https://cdn.freesound.org/previews/721/721000_15642582-hq.mp3", "fs-721000-sniff.mp3"),
+    "whistle": ("https://cdn.freesound.org/previews/551/551960_8655650-hq.mp3", "fs-551960-come-here-whistle.mp3"),
+    "pant": ("https://cdn.freesound.org/previews/841/841349_71257-hq.mp3", "fs-841349-dog-panting-loop.mp3"),
 }
 KENNEY = {
     "rpg": ("https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip", "kenney_rpg-audio.zip"),
@@ -303,6 +311,29 @@ def build() -> dict:
     ui.add("curtain", peak_normalize(trim(swish, tail_db=44, fade=0.1), -4))
     encode(ui.audio(), OUT / "ui.mp3", 96)
     manifest["ui"] = {"url": "/audio/ui.mp3", "slots": ui.slots}
+
+    # --- Chopper: small-dog barks, sniffs and the come-here whistle; a panting loop -----
+    dog = Sprite()
+    barks = highpass(src("barks"), 180)
+    for a0, a1 in [(0.22, 0.86), (1.48, 2.06), (3.15, 3.98), (4.84, 5.5)]:
+        dog.add("bark", loud_normalize(trim(barks[int(a0 * SR) : int(a1 * SR)], head_db=36, tail_db=40, fade=0.05), -12, -1.5))
+    dog.add("bark", loud_normalize(trim(highpass(src("yap"), 180), head_db=36, tail_db=40, fade=0.03), -12, -1.5))
+    dog.add("bark", loud_normalize(trim(highpass(src("woof"), 150)[int(0.66 * SR) :], head_db=36, tail_db=42, fade=0.06), -12, -1.5))
+    sniffs = highpass(src("sniffs"), 350)
+    for a0, a1 in [(0.55, 1.12), (1.18, 1.74), (1.52, 2.64)]:
+        dog.add("sniff", loud_normalize(trim(sniffs[int(a0 * SR) : int(a1 * SR)], head_db=34, tail_db=38, fade=0.06), -20, -3))
+    dog.add("sniff", loud_normalize(trim(highpass(src("sniff"), 350), head_db=34, tail_db=38, fade=0.05), -20, -3))
+    whistle = highpass(src("whistle"), 600)
+    for a0, a1 in [(2.35, 3.45), (8.95, 9.85)]:
+        dog.add("whistle", loud_normalize(trim(whistle[int(a0 * SR) : int(a1 * SR)], head_db=40, tail_db=44, fade=0.06), -14, -2))
+    encode(dog.audio(), OUT / "dog.mp3", 96)
+    manifest["dog"] = {"url": "/audio/dog.mp3", "slots": dog.slots}
+    pant = highpass(src("pant"), 200)
+    loop = seamless_loop(pant, 1.8, 0.2)
+    loop = soft_limit(loop * 10 ** (-20 / 20) / rms(loop), -2.0)
+    padded, a, b = pad_loop(loop, 0.5)
+    encode(padded, OUT / "pant.mp3", 64)
+    manifest["pant"] = {"url": "/audio/pant.mp3", "loopStart": round(a, 4), "loopEnd": round(b, 4)}
     return manifest
 
 
@@ -350,7 +381,7 @@ def write_manifest(manifest: dict) -> None:
         "// Loops: play [loopStart, loopEnd] (s); the file wraps extra audio round both ends.\n"
         "// Sprites: slots are [start, duration] (s) inside the file.\n"
         f"export const AUDIO = {body} as const;\n\n"
-        "export type SpriteKey = 'steps' | 'birds' | 'ui';\n",
+        "export type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog';\n",
         encoding="utf-8",
     )
 

@@ -529,6 +529,18 @@ Shake trees, mine boulders and pick flowers; what falls flies into a **Minecraft
 - **Layout:** the hotbar sits at the bottom centre; the preview card and the prompt sit above it, and on narrow screens the hint card and the compass do too.
 - **Test hooks:** `nearTarget(kind, which, u)`, `inventory()`, `giveItem(id, n)`, `drops()`, and `getState()`'s `target`, `acting` and `invScreen`.
 
+### 4.18 Chopper, the companion dog (as built)
+
+A tribute to the owner's late Lhasa Apso. He runs free near the character, busy with his own dog business, and always comes back. The full design, research and critique are in [chopper.md](./chopper.md). In summary:
+
+- **Look:** a fluffy white Lhasa with charcoal ears and pale ear tips, grey-tan shading on the crown and round the eyes, a white beard, a plumed tail over his back, and his blue collar with the red bone tag. One skinned mesh (envelope-weighted blobs on a 30-bone skeleton) with **shell fur**: 12 shells in the world (8 on `low`), 20 in his card, combed to lie the way a Lhasa's coat falls, with a generated curly-fur tile for the locks. 1.25× life size in the world, like the wildlife.
+- **Animation** (procedural): walk, trot and gallop from per-leg phase offsets and duty factors, with two-bone IK paws that don't slide; pose clips (stand, sit, lie, sniff low and high, scratch, pant, bark, play bow, head tilt, shake-off, look up) eased on springs; tail wag by mood, breathing, look-at, blinks, and ears and tail on bouncy springs.
+- **Behaviour** (`world/chopper/brain.ts`, utility AI): follow (gallops back when far), idle near you (weighted random idles, never the same twice running), wander, sniff trees and rocks, chase a rabbit and bark after it (never catching it), follow a scent trail, run ahead and sit waiting, play-bow and bark at a bush. Commitment times and cooldowns keep him from dithering. He keeps a personal-space bubble, stays off your path, goes round obstacles, wades the stream but not the pond, and after a fast travel or Reset he's sitting there when you land.
+- **Whistle:** <kbd>F</kbd>, or the dog button by the backpack: he looks up, answers with a bark, comes running, tilts his head, then heels for 12 s (sitting when you stop).
+- **Meet Chopper:** walk up to him (facing him, within 1.2 u, 0.8 u near a landmark) and press <kbd>E</kbd>: his card shows his real photos (two, switchable), his breed and coat, what he's up to on the planet, and a 3D Chopper in its own small canvas doing doggy things in random order (drag to turn him). Esc closes it; focus returns to the planet.
+- **Sound:** CC0 small-dog barks, sniffs, a come-here whistle and a panting loop (`dog.mp3`, `pant.mp3`), panned by where he is on screen and softer with distance.
+- **Test hooks:** `chopper()`, `whistle()`, `chopperDo(clip)`, `nearChopper(u)`, and `getState().chopperOpen`.
+
 ## 5. Technical design
 
 ### 5.1 Stack (pinned versions)
@@ -815,9 +827,9 @@ Budgets are **P0**. A miss is acceptable only with a **written owner waiver** re
 | Landing `/` 3D JS | **0 KB** | `size` script over build output, plus network panel |
 | Landing Lighthouse (mobile preset) | Perf ≥ 95, A11y = 100, LCP ≤ 2.0 s, CLS ≤ 0.1 | Lighthouse, median of 3 runs |
 | Gated-out devices | **0 requests** for `game-*` chunks or 3D assets | E2E network assertion (forced no-WebGL, `?mode=classic`) |
-| Game JS (all chunks loaded by `/play`, gz) | ≤ **450 KB** | `size` script |
+| Game JS (all chunks loaded by `/play`, gz) | ≤ **450 KB** — as built: 446.9 KB initial bundle, plus ≈ 13 KB in chunks loaded alongside the textures or on demand (Chopper's body and card); waiver proposed (plan §6): initial ≤ 450 KB and on-demand ≤ 40 KB | `size` script (reports and checks both) |
 | Initial 3D assets (GLB + textures, transferred) | ≤ **2.5 MB** (total ≤ 4 MB) | Network panel |
-| Sound effects (fetched after Start, only with sound on) | ≤ **800 KB** — as built ≈ 625 KB (5 MP3s) | `tests/unit/audio.test.ts` |
+| Sound effects (fetched after Start, only with sound on) | ≤ **800 KB** — as built ≈ 750 KB (7 MP3s, incl. Chopper's barks, sniffs, whistle and panting) | `tests/unit/audio.test.ts` |
 | Estimated GPU texture memory | ≤ **32 MB** | Asset script: Σ width × height × bytes-per-pixel of the GPU format × 1.33 (mips) |
 | Time to playable | ≤ **3.0 s** median of 5 cold-cache runs — as built (Sept 2026 [performance audit](./performance-audit.md)): **1.5 s** on the audit machine without network throttling (was 2.9 s), 4.0 s with 4× CPU throttling (was 8.7 s). Every shader compiles in parallel before the first draw, behind the loading screen (`game:shaders-compile` → `game:shaders-ready` marks) | `game:playable` mark minus navigation start. Chrome DevTools custom profile: 50 Mbps down / 10 Mbps up / 20 ms RTT, cache disabled, no CPU throttling. `npm run perf:audit` measures it (and the frame and scene stats) against a dev or test server |
 | Frame pacing | rAF interval **median ≤ 16.7 ms** and **≥ 95 % of intervals ≤ 20 ms** | 60 s scripted walk loop (test build, minified). DPR forced to 1.5, adaptive quality off, 1920×1080 viewport, 60 Hz display, on AC power. CPU frame time and GPU time (stats-gl) reported separately |

@@ -1,3 +1,4 @@
+import type { ComponentType } from 'react';
 import { Quaternion, Vector3, type Camera, type Scene, type WebGLRenderer } from 'three';
 import { CONFIG } from './config';
 import type { LandmarkData, MoveIntent } from './types';
@@ -7,7 +8,7 @@ import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
 import { SeatMotion, benchSeats, type Seat } from './systems/seating';
-import { buildTargets, pickTarget, targetLabel, type Target } from './systems/interactables';
+import { REACH, buildTargets, pickTarget, targetLabel, type Target } from './systems/interactables';
 import { ActionRunner, actionFor, type BeatKind } from './systems/actions';
 import { Inventory, type Stack } from './inventory/inventory';
 import { BLOOM_COLOURS, flowerItem, itemDef, stackLabel, type ItemId } from './inventory/items';
@@ -18,7 +19,8 @@ import { propPoint } from './world/propFrame';
 import { generateProps, type PropLayout } from './world/layout';
 import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
-import { createGameStore, selectReducedMotion, type GameStore } from './state/store';
+import { createGameStore, selectAmbientPaused, selectReducedMotion, type GameStore } from './state/store';
+import { ChopperBrain, type DogWorld, type Spot } from './world/chopper/brain';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
 import { DAY_HOURS, START_HOURS, localHours, wrapHours, type TimeMode } from './world/timeOfDay';
@@ -79,6 +81,15 @@ export class GameController {
   /** Items lying in the world, and the backpack + chest they go into. */
   readonly drops = new Drops();
   readonly inventory = new Inventory();
+  /** Chopper, the companion dog (chopper.md): his mind, and the world as he sees it. */
+  readonly chopper = new ChopperBrain();
+  readonly dogWorld: DogWorld;
+  /** His body in the scene (`world/Chopper.tsx`), loaded as its own chunk before the scene mounts; null if it failed. */
+  chopperView: ComponentType<{ controller: GameController }> | null = null;
+  /** Whistles so far (for tests), and when the last one was (ms). */
+  whistles = 0;
+  private whistleAt = -1e9;
+  private chopperInvoker: HTMLElement | null = null;
   /** Mining hits so far (the boulder shudders on each). */
   mineHits = 0;
   /** How open the chest's lid is (0 shut … 1 open; eased by the Chest component). */
@@ -169,6 +180,9 @@ export class GameController {
     this.sim = new PlanetSim(obstacles);
     this.seats = benchSeats(this.props.furniture);
     this.targets = buildTargets(this.props, this.seats, this.props.chest, BLOOM_COLOURS.length);
+    this.dogWorld = this.buildDogWorld(obstacles);
+    // he moves, so his target is his own position vector (updated in place)
+    this.targets.push({ kind: 'dog', key: 'dog', n: this.chopper.n, edgeU: 0, reachU: REACH.dog, standU: 0.8, index: 0, scale: 1 });
     this.inventory.load(prefs.getInventory());
 
     const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -200,8 +214,8 @@ export class GameController {
         if (was) this.sound.leave(this.doorKind(was));
         if (door) this.sound.approach(this.doorKind(door));
       }
-      const duck = Boolean(s.openId || s.menuOpen);
-      if (duck !== Boolean(prev.openId || prev.menuOpen)) this.sound.setDucked(duck);
+      const duck = Boolean(s.openId || s.menuOpen || s.chopperOpen);
+      if (duck !== Boolean(prev.openId || prev.menuOpen || prev.chopperOpen)) this.sound.setDucked(duck);
     }));
     this.initFromUrl();
     const onPop = () => this.onPopState();
@@ -224,6 +238,8 @@ export class GameController {
       () => window.removeEventListener('keydown', onGesture, true),
     );
     this.syncClassicLinks();
+    this.forwardLocal(this.dogWorld.playerFwd);
+    this.chopper.placeNear(this.dogWorld);
   }
 
   dispose(): void {
@@ -295,6 +311,11 @@ export class GameController {
       }
     }
     this.sound.update(delta, { strength: this.wind.strength, gust: this.wind.gust, stream, streamPan: pan, night: this.sky.night });
+    // Chopper's panting, only up close
+    const ear = this.dogEar();
+    const s = this.store.getState();
+    const panting = !this.sim.travel && !selectAmbientPaused(s) && !s.chopperOpen ? this.chopper.pant : 0;
+    this.sound.setPant(panting * ear.near * ear.near, ear.pan);
   }
 
   /** A foot touched the ground (called by the avatars): play the step for the surface underfoot. */
@@ -314,7 +335,7 @@ export class GameController {
   /** Advance simulation + proximity by one step (also used by the test hook). */
   step(delta: number): void {
     const s = this.store.getState();
-    const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen;
+    const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.chopperOpen;
     const seat = this.seatMotion;
     const intent: MoveIntent = playing && !seat.stage && !this.action.busy ? this.keyboard.intent() : NO_INTENT;
     this.updateView(delta, playing, selectReducedMotion(s));
@@ -326,6 +347,7 @@ export class GameController {
     this.stepAction(dt, selectReducedMotion(s));
     this.harvest.step(dt);
     this.stepDrops(dt, s);
+    this.stepChopper(dt, s);
     // follow the ground (hills, the bridge deck, the stream bed when wading) with a little smoothing
     this.lift = damp(this.lift, this.terrain.walkHeight(this.sim.pLocal), 14, dt);
     this.wadeDepth = damp(this.wadeDepth, this.terrain.waterDepth(this.sim.pLocal), 14, dt);
@@ -335,6 +357,9 @@ export class GameController {
         this.store.setState({ traveling: null });
         this.focusRegion();
         this.onArrive?.();
+        // he's there waiting when you land
+        this.forwardLocal(this.dogWorld.playerFwd);
+        this.chopper.placeNear(this.dogWorld);
         if (e.id === PLAZA) this.announce('Back at the plaza, facing north.');
       } else if (e.type === 'autowalk-blocked') {
         this.showToast("Can't get through that way — try another path.");
@@ -389,7 +414,7 @@ export class GameController {
 
   private canUseView(): boolean {
     const s = this.store.getState();
-    return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !this.sim.travel;
+    return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.chopperOpen && !this.sim.travel;
   }
 
   /** Button step: +1 turns the scene counter-clockwise, −1 clockwise. */
@@ -522,6 +547,10 @@ export class GameController {
       if (!e.repeat && s.phase === 'playing') this.toggleInventory();
       return;
     }
+    if (action === 'whistle') {
+      if (!e.repeat && s.phase === 'playing') this.whistle();
+      return;
+    }
     if (action === 'drop') {
       if (s.phase === 'playing' && !this.action.busy) this.dropSelected(Boolean(e.ctrlKey || e.metaKey));
       return;
@@ -620,7 +649,8 @@ export class GameController {
   }
 
   /** Can this target be used right now? (A picked flower can't, until it grows back.) */
-  private usable = (t: Target): boolean => (t.kind === 'flower' ? this.harvest.flowerHere(t.flower!, t.index) : true);
+  private usable = (t: Target): boolean =>
+    t.kind === 'flower' ? this.harvest.flowerHere(t.flower!, t.index) : t.kind === 'dog' ? this.chopper.speed < 1.2 && !this.sim.travel : true;
 
   private labelFor(t: Target): string {
     return targetLabel(t, t.kind === 'flower' ? itemDef(flowerItem(t.flower!, t.colour ?? 0)).name.toLowerCase() : undefined);
@@ -633,7 +663,7 @@ export class GameController {
     const t = busy ? null : pickTarget(this.sim.pLocal, this.forwardLocal(), this.targets, s.target?.key ?? null, this.usable, CONFIG.planetRadius, nearLandmark);
     if ((t?.key ?? null) === (s.target?.key ?? null)) return;
     this.store.setState({ target: t ? { kind: t.kind, key: t.key, label: this.labelFor(t) } : null });
-    if (t) this.announce(t.kind === 'bench' ? 'Near a bench. Press E to sit down.' : `${this.labelFor(t)}: press E.`);
+    if (t) this.announce(t.kind === 'bench' ? 'Near a bench. Press E to sit down.' : t.kind === 'dog' ? 'Chopper is here. Press E to meet him.' : `${this.labelFor(t)}: press E.`);
   }
 
   /** E on the current target: sit, or play its action cycle. */
@@ -643,6 +673,10 @@ export class GameController {
     if (!t || s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || this.sim.travel || this.action.busy || this.seatMotion.stage) return;
     if (t.kind === 'bench') {
       this.sitDown();
+      return;
+    }
+    if (t.kind === 'dog') {
+      this.openChopper();
       return;
     }
     const kind = actionFor(t);
@@ -776,7 +810,7 @@ export class GameController {
 
   openInventory(screen: 'backpack' | 'chest'): void {
     const s = this.store.getState();
-    if (s.phase !== 'playing' || s.openId) return;
+    if (s.phase !== 'playing' || s.openId || s.chopperOpen) return;
     this.keyboard.clear();
     this.sim.cancelAutoWalk();
     this.store.setState({ invScreen: screen, menuOpen: false });
@@ -810,7 +844,7 @@ export class GameController {
   /** Mouse wheel over the planet or the hotbar: next / previous hotbar slot. */
   onWheel = (e: { deltaY: number }): void => {
     const s = this.store.getState();
-    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || !e.deltaY) return;
+    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || s.chopperOpen || !e.deltaY) return;
     this.selectSlot(this.inventory.selected + Math.sign(e.deltaY));
   };
 
@@ -836,13 +870,114 @@ export class GameController {
   walkToWorldPoint(point: Vector3): void {
     const s = this.store.getState();
     if (s.phase === 'ready') this.start();
-    if (this.store.getState().phase !== 'playing' || s.openId || s.menuOpen || this.sim.travel) return;
+    if (this.store.getState().phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || this.sim.travel) return;
     if (this.seatMotion.stage) {
       this.standUp();
       return;
     }
     const local = point.clone().normalize().applyQuaternion(this.sim.planetQ.clone().invert());
     this.sim.startAutoWalk(local);
+  }
+
+  // ---------- Chopper (chopper.md) ----------
+
+  /** What he knows of the world: the character, obstacles, the pond, rabbits, and things to sniff. */
+  private buildDogWorld(obstacles: readonly Obstacle[]): DogWorld {
+    const p = this.props;
+    const R = CONFIG.planetRadius;
+    const reachable = new Set(obstacles.map((o) => o.n));
+    const spots: Spot[] = [];
+    const add = (list: readonly { n: Vector3; scale: number }[], kind: Spot['kind'], radius: number, name: string) =>
+      list.forEach((it, i) => {
+        if (reachable.has(it.n)) spots.push({ n: it.n, radiusU: radius * it.scale, kind, key: `${name}:${i}` });
+      });
+    add(p.hardwood, 'tree', 0.42, 'hardwood');
+    add(p.fruit, 'tree', 0.42, 'fruit');
+    add(p.cedar, 'tree', 0.36, 'cedar');
+    add(p.rocks, 'rock', 0.36, 'rock');
+    add(p.boulders, 'rock', 0.4, 'boulder');
+    add(p.bushes, 'bush', 0.42, 'bush');
+    add(p.flowerBushes, 'bush', 0.42, 'flowerBush');
+    const terrain = this.terrain;
+    const pond = p.pond;
+    return {
+      R,
+      player: this.sim.pLocal,
+      playerFwd: new Vector3(0, 0, -1),
+      playerVel: new Vector3(),
+      obstacles,
+      // he wades the stream but keeps out of the pond (and anything deep)
+      blocked: (n) => (pond ? arcDistance(n, pond.n, R) < terrain.pondShore(n) + 0.05 : false) || terrain.waterDepth(n) > 0.16,
+      rabbits: [],
+      spots,
+    };
+  }
+
+  private stepChopper(dt: number, s: ReturnType<GameStore['getState']>): void {
+    const w = this.dogWorld;
+    this.forwardLocal(w.playerFwd);
+    _invQ.copy(this.sim.planetQ).invert();
+    w.playerVel.copy(this.sim.vel).applyQuaternion(_invQ);
+    w.rabbits = this.wildlife?.rabbits ?? [];
+    // while ambient motion is paused he sits where he is (Chopper.tsx poses him)
+    if (this.sim.travel || selectAmbientPaused(s) || s.phase === 'loading') return;
+    this.chopper.step(dt, w);
+    for (const e of this.chopper.events.splice(0)) {
+      const { pan, near } = this.dogEar();
+      this.sound.dog(e.type === 'sniff' ? 'sniff' : 'bark', pan, near);
+    }
+  }
+
+  /** Where Chopper is for the ears: stereo pan (−1 left … 1 right on screen) and closeness (1 at your feet … 0 far). */
+  dogEar(): { pan: number; near: number } {
+    const R = CONFIG.planetRadius;
+    const d = arcDistance(this.chopper.n, this.sim.pLocal, R);
+    let pan = 0;
+    if (this.camera) {
+      _v.copy(this.chopper.n).sub(this.sim.pLocal).applyQuaternion(this.sim.planetQ);
+      _camRight.setFromMatrixColumn(this.camera.matrixWorld, 0);
+      const len = _v.length();
+      if (len > 1e-6) pan = clamp(_v.dot(_camRight) / len, -1, 1) * clamp(d / 2, 0, 1);
+    }
+    return { pan, near: clamp(1 - (d - 1.5) / 10, 0, 1) };
+  }
+
+  /** F, or the whistle button: he drops everything and comes (a 2 s cooldown). */
+  whistle(): void {
+    const s = this.store.getState();
+    if (s.phase !== 'playing' || s.openId || s.chopperOpen || this.sim.travel) return;
+    const now = performance.now();
+    if (now - this.whistleAt < 2000) return;
+    this.whistleAt = now;
+    this.whistles++;
+    this.sound.whistle();
+    this.chopper.whistle();
+    this.announce('You whistle. Chopper comes running.');
+  }
+
+  /** "Meet Chopper": his profile card (he sits by you while it's open). */
+  openChopper(invoker?: HTMLElement | null): void {
+    const s = this.store.getState();
+    if (s.phase !== 'playing' || s.openId || s.chopperOpen) return;
+    this.chopperInvoker = invoker ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    this.keyboard.clear();
+    this.buffer.clear();
+    this.sim.cancelAutoWalk();
+    this.sim.vel.set(0, 0, 0);
+    this.sound.open();
+    this.chopper.attend(this.dogWorld);
+    this.store.setState({ chopperOpen: true, menuOpen: false, target: null });
+  }
+
+  closeChopper(): void {
+    if (!this.store.getState().chopperOpen) return;
+    this.store.setState({ chopperOpen: false });
+    const target = this.chopperInvoker;
+    this.chopperInvoker = null;
+    requestAnimationFrame(() => {
+      if (target && target.isConnected && target.getClientRects().length > 0 && target !== this.region) target.focus({ preventScroll: true });
+      else this.focusRegion();
+    });
   }
 
   // ---------- landmarks / dialog / history ----------
@@ -939,13 +1074,15 @@ export class GameController {
     }
     const next = updateProximity(null, this.sim.pLocal, this.geos);
     if (next !== this.store.getState().nearbyId) this.setNearby(next);
+    this.forwardLocal(this.dogWorld.playerFwd);
+    this.chopper.placeNear(this.dogWorld);
   }
 
   // ---------- menu / settings ----------
 
   openMenu(): void {
     const s = this.store.getState();
-    if (s.openId) return;
+    if (s.openId || s.chopperOpen) return;
     if (s.invScreen) this.closeInventory();
     this.keyboard.clear();
     this.store.setState({ menuOpen: true });
