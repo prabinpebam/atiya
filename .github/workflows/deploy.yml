@@ -1,0 +1,75 @@
+# Build the site and publish it to GitHub Pages (https://prabinpebam.github.io/atiya/).
+#
+# GitHub Pages can publish from a branch (the repository root or its /docs folder) or from a
+# GitHub Actions workflow. This is an Astro site: `astro build` writes the static site to dist/,
+# so the workflow publishes dist/ as a Pages artifact (the approach Astro recommends). No build
+# output is committed, and Jekyll never runs (it would drop the `_astro/` folder).
+# In Settings → Pages, "Build and deployment → Source" must be "GitHub Actions".
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# one deployment at a time; don't cancel one that's under way
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # The lockfile was written through a private package-feed mirror of the public npm registry.
+      # Point it back at the public registry (same tarballs, same integrity hashes).
+      - name: Use the public npm registry
+        run: |
+          sed -i -E 's#https://[^"]+/npm/registry/#https://registry.npmjs.org/#g' package-lock.json
+          npm config set registry https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      # a project site lives under the repository's name, e.g. https://<user>.github.io/atiya/
+      - name: Build
+        run: npm run build
+        env:
+          SITE_URL: ${{ steps.pages.outputs.origin }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - name: Check the bundle budgets
+        run: node scripts/size-report.mjs --prod
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

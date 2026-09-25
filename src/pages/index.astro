@@ -1,4 +1,5 @@
 ---
+import { withBase } from '../game/platform/base';
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
@@ -9,15 +10,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <h1 id="landing-title">Prabin Pebam</h1>
       <p class="lede">Principal Design Manager. Placeholder tagline about leading design teams and shipping products people love.</p>
       <div class="landing-ctas">
-        <a class="btn big" href="/play/" data-mode="play">Explore the planet</a>
-        <a class="btn big" href="/classic/" data-mode="classic">Classic site</a>
+        <a class="btn big" href={withBase('/play/')} data-mode="play">Explore the planet</a>
+        <a class="btn big" href={withBase('/classic/')} data-mode="classic">Classic site</a>
       </div>
       <p class="muted">The planet is a small 3D world you can walk around. The classic site has the same content as regular pages.</p>
     </section>
     <figure class="landing-poster" aria-hidden="true">
       <img
-        src="/poster/landing-1200.webp"
-        srcset="/poster/landing-800.webp 800w, /poster/landing-1200.webp 1200w"
+        src={withBase('/poster/landing-1200.webp')}
+        srcset={`${withBase('/poster/landing-800.webp')} 800w, ${withBase('/poster/landing-1200.webp')} 1200w`}
         sizes="(max-width: 760px) 90vw, 46vw"
         width="1200"
         height="800"
@@ -37,7 +38,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     };
     if (mode === 'classic' || mode === 'play') {
       store(mode);
-      location.replace(mode === 'classic' ? '/classic/' : '/play/');
+      // (the base path: `/atiya` on GitHub Pages)
+      const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+      location.replace(base + (mode === 'classic' ? '/classic/' : '/play/'));
     }
     let last: string | null = null;
     try {

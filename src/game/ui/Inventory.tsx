@@ -6,10 +6,14 @@ import { HOTBAR, type Slot } from '../inventory/inventory';
 import { itemDef, stackLabel, type ItemId } from '../inventory/items';
 import { ICONS } from '../inventory/iconManifest';
 import { Icon } from './Icon';
+import { withBase } from '../platform/base';
 
 /** Minecraft-style hotbar and inventory / chest screens (docs: collection-inventory.md §4). */
 
-const iconUrl = (id: ItemId) => ICONS[itemDef(id).icon]?.url;
+const iconUrl = (id: ItemId) => {
+  const url = ICONS[itemDef(id).icon]?.url;
+  return url ? withBase(url) : undefined;
+};
 
 export function ItemIcon({ id }: { id: ItemId }) {
   const url = iconUrl(id);

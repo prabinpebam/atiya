@@ -1,5 +1,6 @@
 import { ImageBitmapLoader, LinearMipmapLinearFilter, NoColorSpace, RepeatWrapping, SRGBColorSpace, Texture, TextureLoader } from 'three';
 import { TEXTURES, type TextureName } from './textureManifest';
+import { withBase } from '../platform/base';
 
 /**
  * Generated textures (see scripts/build-textures.py). They're preloaded before the scene mounts,
@@ -32,7 +33,7 @@ function configure(name: TextureName, t: Texture): Texture {
  * alpha, so it uploads exactly like the image did.
  */
 async function loadTexture(name: TextureName): Promise<Texture> {
-  const url = TEXTURES[name].url;
+  const url = withBase(TEXTURES[name].url);
   if (typeof createImageBitmap !== 'function') return new TextureLoader().loadAsync(url);
   const loader = new ImageBitmapLoader();
   loader.setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none', colorSpaceConversion: TEXTURES[name].kind === 'mask' || TEXTURES[name].kind === 'normal' ? 'none' : 'default' });

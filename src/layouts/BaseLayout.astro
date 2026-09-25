@@ -1,4 +1,5 @@
 ---
+import { withBase } from '../game/platform/base';
 import '../styles/global.css';
 
 interface Props {
@@ -9,7 +10,7 @@ interface Props {
 
 const { title, description = 'Portfolio of Prabin Pebam, Principal Design Manager.', bodyClass } = Astro.props;
 // Social previews need an absolute URL: set `site` in astro.config.mjs when deploying.
-const ogImage = new URL('/og-image.jpg', Astro.site ?? Astro.url).href;
+const ogImage = new URL(withBase('/og-image.jpg'), Astro.site ?? Astro.url).href;
 ---
 
 <!doctype html>
@@ -20,7 +21,7 @@ const ogImage = new URL('/og-image.jpg', Astro.site ?? Astro.url).href;
     <meta name="description" content={description} />
     <meta name="color-scheme" content="light" />
     <title>{title}</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />

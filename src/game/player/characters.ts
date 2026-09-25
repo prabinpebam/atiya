@@ -1,15 +1,17 @@
+import { withBase } from '../platform/base';
+
 /** The two player characters (both built by scripts/build-character.mjs from the CC0 Kenney rig). */
 export const CHARACTERS = [
   {
     id: 'skater',
-    url: '/models/character.glb',
-    portrait: '/avatars/skater.webp',
+    url: withBase('/models/character.glb'),
+    portrait: withBase('/avatars/skater.webp'),
     label: 'Skater in a red T-shirt and jeans',
   },
   {
     id: 'sunny',
-    url: '/models/character-female.glb',
-    portrait: '/avatars/sunny.webp',
+    url: withBase('/models/character-female.glb'),
+    portrait: withBase('/avatars/sunny.webp'),
     label: 'Girl in a yellow T-shirt with a ponytail',
   },
 ] as const;

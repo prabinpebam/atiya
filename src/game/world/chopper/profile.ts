@@ -1,3 +1,5 @@
+import { withBase } from '../../platform/base';
+
 /**
  * Chopper's profile card text (docs: chopper.md §5). This is a tribute, so it holds only what his
  * owner has said about him. The optional fields are for the owner to fill in; empty ones are hidden.
@@ -33,7 +35,7 @@ export const CHOPPER: ChopperProfile = {
     'Comes running when you whistle (F)',
   ],
   photos: [
-    { src: '/chopper/chopper-1.webp', alt: 'Chopper, a fluffy white Lhasa Apso with long black ears and a blue collar with a red bone tag, lying on a wooden table', width: 900, height: 738 },
-    { src: '/chopper/chopper-2.webp', alt: 'Chopper stretched out on his side on a brown leather couch, his plumed tail behind him', width: 900, height: 622 },
+    { src: withBase('/chopper/chopper-1.webp'), alt: 'Chopper, a fluffy white Lhasa Apso with long black ears and a blue collar with a red bone tag, lying on a wooden table', width: 900, height: 738 },
+    { src: withBase('/chopper/chopper-2.webp'), alt: 'Chopper stretched out on his side on a brown leather couch, his plumed tail behind him', width: 900, height: 622 },
   ],
 };

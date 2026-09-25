@@ -1,6 +1,6 @@
 # Personal site — "Little Planet" 3D navigation POC
 
-A personal portfolio site with two ways in:
+A personal portfolio site with two ways in. **Live:** https://prabinpebam.github.io/atiya/
 
 - **Classic site** (`/classic/`): normal, fast, accessible pages.
 - **Game mode** (`/play/`): a cozy 3D tiny planet. You walk a character around with **WASD**; walking up to a landmark previews that part of the portfolio, and **E** opens it. The classic site is always one click away.
@@ -133,6 +133,16 @@ npm run dev            # http://localhost:4321  (landing) → /play/ (planet) ·
 | `python scripts/build-textures.py` | Rebuild `public/textures/*.webp`, the landing poster, the social card and `src/game/world/textureManifest.ts` from the generated sources in `assets-src/textures/`. Needs Python 3.10+ with Pillow and numpy. The outputs are committed |
 
 First-time E2E setup: `npx playwright install chromium`. To use the installed Edge instead, set `PW_CHANNEL=msedge`.
+
+## Deploying to GitHub Pages
+
+The site is published at **https://prabinpebam.github.io/atiya/** by [.github/workflows/deploy.yml](.github/workflows/deploy.yml) on every push to `main` (or from the Actions tab).
+
+- **Why a workflow, not the root or `/docs` folder.** GitHub Pages has two publishing sources ([GitHub docs](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)): *deploy from a branch*, which serves the repository root (`/`) or a `/docs` folder as they are, or *GitHub Actions*, which serves whatever the workflow uploads. The "index in root or `/docs`" rule applies only to the first. This is an Astro project: its `index.html` only exists after `astro build` writes `dist/`. So the workflow builds the site and publishes `dist/` ([the approach Astro recommends](https://docs.astro.build/en/guides/deploy/github/)). No build output is committed, and Jekyll never runs (a branch deploy runs it by default, and it drops folders starting with `_`, such as `_astro/`, unless there's a `.nojekyll` file).
+- **The base path.** A project site lives under the repository's name, so every URL must start with `/atiya/`. The workflow builds with `SITE_URL` and `BASE_PATH` from `actions/configure-pages`, which `astro.config.mjs` reads as `site` and `base`; locally both are unset and the site lives at `/`. In code, every root-relative link or asset URL goes through `withBase()` ([base.ts](src/game/platform/base.ts)); inline page scripts use `import.meta.env.BASE_URL`.
+- **Dependencies.** `package-lock.json` resolves through the internal package-feed mirror. The workflow points it back at the public npm registry (same tarballs, same integrity hashes) before `npm ci`.
+- **One-time setup** (already done for this repository): Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+- **Try the Pages build locally:** `$env:BASE_PATH='/atiya'; npm run build; npx astro preview`, then open http://localhost:4321/atiya/.
 
 ## Controls
 
@@ -290,5 +300,5 @@ Differences from the spec's proposed structure (§5.7):
 - The console warning `THREE.Clock: This module has been deprecated` comes from @react-three/fiber 9.7 internals and is harmless.
 - A browser tab that is hidden (for example a background tab, or the VS Code integrated browser while its pane isn't visible) pauses `requestAnimationFrame`, so the planet stays on "Loading…" until the tab is visible. This is expected browser behaviour.
 - If the dev server shows `X is not defined` right after an edit, it probably caught a half-saved file. Re-save the file or restart `npm run dev`.
-- `og:image` must be an absolute URL. Set `site` in `astro.config.mjs` when the site is deployed; until then the social-card URL is built from the request URL (e.g. localhost in dev).
+- `og:image` must be an absolute URL. The Pages build sets `site` (from `SITE_URL`); in dev and local builds the social-card URL is built from the request URL (e.g. localhost).
 - Windows file names are case-insensitive, so don't give two modules names that differ only in case (for example `daynight.ts` and `DayNight.tsx`). TypeScript reports an error, and Vite's dev cache may keep serving the old file until the dev server restarts.

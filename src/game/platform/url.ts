@@ -1,3 +1,5 @@
+import { withBase } from './base';
+
 export interface PlayUrlState {
   at: string | null;
   open: boolean;
@@ -21,9 +23,9 @@ export function buildPlaySearch(at: string | null, open = false): string {
 }
 
 export function classicHrefFor(id: string | null): string {
-  return id ? `/classic/${id}/` : '/classic/';
+  return withBase(id ? `/classic/${id}/` : '/classic/');
 }
 
 export function playHrefFor(id: string | null): string {
-  return `/play/${buildPlaySearch(id)}`;
+  return withBase(`/play/${buildPlaySearch(id)}`);
 }

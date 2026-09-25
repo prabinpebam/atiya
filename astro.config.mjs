@@ -2,7 +2,15 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 
+// GitHub Pages serves this repository as a project site, https://<user>.github.io/<repo>/, so the
+// deploy workflow (.github/workflows/deploy.yml) builds with SITE_URL and BASE_PATH set. Locally, in
+// dev and in the tests, the site lives at the root.
+const site = process.env.SITE_URL || undefined;
+const base = process.env.BASE_PATH || '/';
+
 export default defineConfig({
+  site,
+  base,
   integrations: [react()],
   devToolbar: { enabled: false },
   vite: {

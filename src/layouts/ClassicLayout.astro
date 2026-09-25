@@ -1,4 +1,5 @@
 ---
+import { withBase } from '../game/platform/base';
 import { getCollection } from 'astro:content';
 import BaseLayout from './BaseLayout.astro';
 
@@ -16,12 +17,12 @@ const current = Astro.url.pathname;
 <BaseLayout title={title} description={description} bodyClass="classic">
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="classic-header">
-    <a class="brand" href="/classic/">Prabin Pebam</a>
+    <a class="brand" href={withBase('/classic/')}>Prabin Pebam</a>
     <nav aria-label="Sections">
       <ul>
         {
           entries.map((e) => {
-            const href = `/classic/${e.id}/`;
+            const href = withBase(`/classic/${e.id}/`);
             return (
               <li>
                 <a href={href} aria-current={current === href || current === href.slice(0, -1) ? 'page' : undefined}>

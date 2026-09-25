@@ -23,7 +23,7 @@ const sizes = Object.fromEntries(js.map((f) => [f, gz(f)]));
 /** Scripts a page loads eagerly (module scripts + their static imports). */
 function eagerScripts(htmlFile) {
   const html = readFileSync(join(DIST, htmlFile), 'utf8');
-  const entry = [...html.matchAll(/<script[^>]+src="\/_astro\/([^"]+\.js)"/g)].map((m) => m[1]);
+  const entry = [...html.matchAll(/<script[^>]+src="[^"]*?\/_astro\/([^"]+\.js)"/g)].map((m) => m[1]);
   return staticClosure(entry);
 }
 

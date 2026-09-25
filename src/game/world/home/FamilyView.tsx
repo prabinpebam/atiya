@@ -35,6 +35,7 @@ import type { Family, NpcId } from './family';
 import { bodyPose, HIP_FRACTION } from './poses';
 import { bookModel, bubbleModel, toyCarModel, paperModel } from './models';
 import { Kit } from '../kit';
+import { withBase } from '../../platform/base';
 
 const R = CONFIG.planetRadius;
 /** Ground speed (u/s) of the run clip at 1× for a 1.25 u character (as the player's avatar). */
@@ -43,9 +44,9 @@ const RUN_CLIP_SPEED = 2.5;
 /** How each of them looks (docs: family.md §4). */
 export const LOOKS: Record<NpcId, { model: CharacterId; height: number; head: number; skin: string; hair: 'pigtails' | null; glasses: boolean; book: string }> = {
   // Rojina wears Sunny's model: its ponytail and scrunchie take her atlas's dark hair and teal tee
-  rojina: { model: 'sunny', height: 1.18, head: 1, skin: '/models/skins/rojina.png', hair: null, glasses: true, book: '#6f9fc8' },
-  laija: { model: 'skater', height: 0.92, head: 1.12, skin: '/models/skins/laija.png', hair: 'pigtails', glasses: false, book: '#e2554c' },
-  lingjel: { model: 'skater', height: 0.74, head: 1.2, skin: '/models/skins/lingjel.png', hair: null, glasses: false, book: '#3fb45a' },
+  rojina: { model: 'sunny', height: 1.18, head: 1, skin: withBase('/models/skins/rojina.png'), hair: null, glasses: true, book: '#6f9fc8' },
+  laija: { model: 'skater', height: 0.92, head: 1.12, skin: withBase('/models/skins/laija.png'), hair: 'pigtails', glasses: false, book: '#e2554c' },
+  lingjel: { model: 'skater', height: 0.74, head: 1.2, skin: withBase('/models/skins/lingjel.png'), hair: null, glasses: false, book: '#3fb45a' },
 };
 
 const _m = new Matrix4();

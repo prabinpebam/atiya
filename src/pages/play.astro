@@ -1,4 +1,5 @@
 ---
+import { withBase } from '../game/platform/base';
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { validateLandmarks } from '../game/math/landmarks';
@@ -14,11 +15,11 @@ const json = JSON.stringify(landmarks).replace(/</g, '\\u003c');
 ---
 
 <BaseLayout title="Explore the little planet — Prabin Pebam" bodyClass="play">
-  <a class="skip-link" href="/classic/" data-classic-link>Skip to classic site</a>
+  <a class="skip-link" href={withBase('/classic/')} data-classic-link>Skip to classic site</a>
   <header class="play-header">
     <a class="brand" href="/">Prabin Pebam</a>
     <div class="play-actions">
-      <a class="btn" href="/classic/" data-classic-link>Classic site</a>
+      <a class="btn" href={withBase('/classic/')} data-classic-link>Classic site</a>
       <div id="hud-actions" class="hud-actions"></div>
     </div>
   </header>
@@ -26,12 +27,12 @@ const json = JSON.stringify(landmarks).replace(/</g, '\\u003c');
     <div class="overlay">
       <div class="card center-card">
         <p class="card-title">Loading the planet…</p>
-        <p>Prefer a normal website? <a href="/classic/" data-classic-link>Classic site</a></p>
+        <p>Prefer a normal website? <a href={withBase('/classic/')} data-classic-link>Classic site</a></p>
       </div>
     </div>
   </main>
   <noscript>
-    <div class="overlay"><div class="card center-card"><p class="card-title">The 3D planet needs JavaScript.</p><p><a class="btn primary" href="/classic/">Go to the classic site</a></p></div></div>
+    <div class="overlay"><div class="card center-card"><p class="card-title">The 3D planet needs JavaScript.</p><p><a class="btn primary" href={withBase('/classic/')}>Go to the classic site</a></p></div></div>
   </noscript>
   <script type="application/json" id="landmarks-data" set:html={json} />
   <script>

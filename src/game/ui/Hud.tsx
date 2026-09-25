@@ -25,6 +25,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
+import { withBase } from '../platform/base';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -37,7 +38,7 @@ function LoadingOverlay({ controller }: { controller: GameController }) {
         <p className="card-title">Loading the planet…</p>
         <p>
           Prefer a normal website?{' '}
-          <a href="/classic/" onClick={toClassic}>
+          <a href={withBase('/classic/')} onClick={toClassic}>
             Go to the classic site
           </a>
         </p>
@@ -66,7 +67,7 @@ function StartOverlay({ controller }: { controller: GameController }) {
         </button>
         <p className="muted">
           Prefer a normal website?{' '}
-          <a href="/classic/" onClick={toClassic}>
+          <a href={withBase('/classic/')} onClick={toClassic}>
             Classic site
           </a>
         </p>
@@ -188,7 +189,7 @@ function ControlsHint({ controller }: { controller: GameController }) {
       </p>
       <p className="muted">
         Prefer a normal website?{' '}
-        <a href="/classic/" onClick={toClassic}>
+        <a href={withBase('/classic/')} onClick={toClassic}>
           Classic site
         </a>
       </p>

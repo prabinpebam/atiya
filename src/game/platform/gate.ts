@@ -7,6 +7,7 @@ import type { LandmarkData } from '../types';
 import { decide, probeCapabilities, type GateDecision } from './capabilities';
 import { prefs } from './prefs';
 import { parsePlayUrl } from './url';
+import { withBase } from './base';
 
 const container = document.getElementById('game-container') as HTMLElement;
 
@@ -20,14 +21,14 @@ function panel(html: string, focusSelector?: string): void {
   if (focusSelector) container.querySelector<HTMLElement>(focusSelector)?.focus();
 }
 
-const CLASSIC = `<a class="btn primary" href="/classic/" data-gate-classic>Go to the classic site</a>`;
+const CLASSIC = `<a class="btn primary" href="${withBase('/classic/')}" data-gate-classic>Go to the classic site</a>`;
 
 function bindClassic(): void {
   container.querySelectorAll('[data-gate-classic]').forEach((a) => a.addEventListener('click', () => prefs.setMode('classic')));
 }
 
 function showLoading(): void {
-  panel(`<p class="card-title" role="status">Loading the planet…</p><p>Prefer a normal website? <a href="/classic/" data-gate-classic>Classic site</a></p>`);
+  panel(`<p class="card-title" role="status">Loading the planet…</p><p>Prefer a normal website? <a href="${withBase('/classic/')}" data-gate-classic>Classic site</a></p>`);
   bindClassic();
 }
 
@@ -118,7 +119,7 @@ document.querySelectorAll('[data-classic-link]').forEach((a) => a.addEventListen
 const url = parsePlayUrl(location.search);
 if (url.mode === 'classic') {
   prefs.setMode('classic');
-  location.replace('/classic/');
+  location.replace(withBase('/classic/'));
 } else {
   if (url.mode === 'play') prefs.setMode('play');
   const decision = decide(probeCapabilities());

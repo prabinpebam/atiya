@@ -29,8 +29,9 @@ import { riverDistance } from './world/features';
 import { SoundEngine } from './audio/engine';
 import { streamLevel, surfaceAt, type Surface } from './audio/audioLogic';
 import { characterById, type CharacterId } from './player/characters';
+import { withBase } from './platform/base';
 
-const PLAY_PATH = '/play/';
+const PLAY_PATH = withBase('/play/');
 /** Travel id for "reset position" (the spawn plaza is not a landmark). */
 const PLAZA = 'plaza';
 

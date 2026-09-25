@@ -1,11 +1,12 @@
 ---
+import { withBase } from '../../game/platform/base';
 import { getCollection } from 'astro:content';
 import ClassicLayout from '../../layouts/ClassicLayout.astro';
 
 const entries = (await getCollection('landmarks')).sort((a, b) => a.data.order - b.data.order);
 ---
 
-<ClassicLayout title="Prabin Pebam — Principal Design Manager" exploreHref="/play/">
+<ClassicLayout title="Prabin Pebam — Principal Design Manager" exploreHref={withBase('/play/')}>
   <section class="classic-hero">
     <h1>Prabin Pebam</h1>
     <p class="lede">Principal Design Manager. Placeholder tagline about building design teams and products people love.</p>
@@ -16,7 +17,7 @@ const entries = (await getCollection('landmarks')).sort((a, b) => a.data.order -
         <li class="classic-card" style={`--accent: ${e.data.accent}`}>
           <p class="kicker">{e.data.kicker}</p>
           <h2>
-            <a href={`/classic/${e.id}/`}>{e.data.title}</a>
+            <a href={withBase(`/classic/${e.id}/`)}>{e.data.title}</a>
           </h2>
           <p>{e.data.summary}</p>
         </li>

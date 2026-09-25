@@ -6,6 +6,7 @@
 import { AUDIO } from './audioManifest';
 import { MUSIC } from './musicManifest';
 import { birdsSing, nextBirdDelay, pickVariant, windMix, type Surface } from './audioLogic';
+import { withBase } from '../platform/base';
 
 type BufferKey = keyof typeof AUDIO;
 type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog';
@@ -143,7 +144,7 @@ export class SoundEngine {
     const track = MUSIC.length > 1 ? Math.floor(this.rand() * MUSIC.length) % MUSIC.length : 0;
     const el = new Audio();
     el.preload = 'auto';
-    el.src = MUSIC[track].url;
+    el.src = withBase(MUSIC[track].url);
     const gain = ctx.createGain();
     gain.gain.value = 0;
     try {
@@ -188,7 +189,7 @@ export class SoundEngine {
     const m = this.music;
     if (!m) return;
     m.track = (m.track + 1) % MUSIC.length;
-    m.el.src = MUSIC[m.track].url;
+    m.el.src = withBase(MUSIC[m.track].url);
     if (this.ctx) m.gain.gain.setValueAtTime(0, this.ctx.currentTime);
     this.resumeMusic(0.6);
   }
@@ -376,7 +377,7 @@ export class SoundEngine {
     this.loading = true;
     const ctx = this.ctx;
     for (const key of KEYS) {
-      fetch(AUDIO[key].url)
+      fetch(withBase(AUDIO[key].url))
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status} ${AUDIO[key].url}`))))
         .then((data) => ctx.decodeAudioData(data))
         .then((buf) => {
