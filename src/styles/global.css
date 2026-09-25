@@ -672,6 +672,19 @@ body.play {
   font: 600 0.95rem/1 var(--font);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  /* fixed width, so the badge doesn't shift under the pointer as the digits change */
+  min-width: 8.2em;
+  justify-content: center;
+  /* a slider: drag sideways to wind the planet clock */
+  cursor: ew-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+/* while the clock is dragged the pointer disappears (the sky itself shows the change) */
+.time-scrubbing,
+.time-scrubbing * {
+  cursor: none !important;
 }
 
 @media (max-width: 520px) {

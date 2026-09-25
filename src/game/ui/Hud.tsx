@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { GameController } from '../controller';
 import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
-import { SUNRISE, SUNSET, formatHours } from '../world/timeOfDay';
+import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
 import { LandmarkDialog, MenuDialog } from './Dialogs';
 import { ViewControls } from './ViewControls';
 
@@ -144,21 +144,117 @@ function LandmarkNav({ controller }: { controller: GameController }) {
   );
 }
 
-/** Little planet clock (updates every few seconds; not a live region). */
+/** Drag distance per planet hour (a whole day ≈ 480 px). */
+export const TIME_PX_PER_HOUR = 20;
+/** Movement (px) before a press on the badge becomes a drag rather than a click. */
+const TIME_DRAG_THRESHOLD = 4;
+const TIME_KEY_STEPS: Record<string, number> = { ArrowRight: 0.25, ArrowUp: 0.25, ArrowLeft: -0.25, ArrowDown: -0.25, PageUp: 1, PageDown: -1 };
+
+/**
+ * The planet clock, which is also a slider: drag it left/right to wind the time (the pointer hides
+ * while dragging), click its left/right half to step an hour, or focus it and use the arrow keys
+ * (15 min) and Page Up/Down (1 h). The day–night cycle carries on from the new time.
+ */
 function TimeBadge({ controller }: { controller: GameController }) {
   const [hours, setHours] = useState(controller.timeOfDay);
+  const [scrubbing, setScrubbing] = useState(false);
+  const drag = useRef<{ id: number; x: number; start: number; moved: boolean } | null>(null);
   useEffect(() => {
-    const id = window.setInterval(() => setHours(controller.timeOfDay), 1000);
-    return () => window.clearInterval(id);
+    const id = window.setInterval(() => !drag.current && setHours(controller.timeOfDay), 1000);
+    return () => {
+      window.clearInterval(id);
+      controller.timeHeld = false;
+      document.documentElement.classList.remove('time-scrubbing');
+    };
   }, [controller]);
-  const night = hours < SUNRISE || hours >= SUNSET;
-  const text = formatHours(hours);
+
+  const setTime = (h: number) => {
+    controller.setTimeManually(h);
+    setHours(controller.timeOfDay);
+  };
+  const stopScrub = () => {
+    controller.timeHeld = false;
+    document.documentElement.classList.remove('time-scrubbing');
+    setScrubbing(false);
+  };
+  const done = () => {
+    controller.announce(`Planet time set to ${formatHours(controller.timeOfDay)}.`);
+    // pointer users go straight back to walking
+    if (controller.store.getState().phase === 'playing') controller.focusRegion();
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { id: e.pointerId, x: e.clientX, start: controller.timeOfDay, moved: false };
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || e.pointerId !== d.id) return;
+    const dx = e.clientX - d.x;
+    if (!d.moved) {
+      if (Math.abs(dx) < TIME_DRAG_THRESHOLD) return;
+      d.moved = true;
+      controller.timeHeld = true;
+      document.documentElement.classList.add('time-scrubbing');
+      setScrubbing(true);
+    }
+    setTime(d.start + dx / TIME_PX_PER_HOUR);
+  };
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || e.pointerId !== d.id) return;
+    drag.current = null;
+    if (d.moved) stopScrub();
+    else {
+      // a click steps an hour: the right half later, the left half earlier
+      const r = e.currentTarget.getBoundingClientRect();
+      setTime(controller.timeOfDay + (e.clientX >= r.left + r.width / 2 ? 1 : -1));
+    }
+    done();
+  };
+  const onPointerCancel = () => {
+    if (!drag.current) return;
+    const moved = drag.current.moved;
+    drag.current = null;
+    if (moved) {
+      stopScrub();
+      done();
+    }
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const step = TIME_KEY_STEPS[e.key];
+    if (step === undefined) return;
+    e.preventDefault();
+    setTime(controller.timeOfDay + step);
+  };
+
+  const h = wrapHours(hours);
+  const night = h < SUNRISE || h >= SUNSET;
+  const text = formatHours(h);
   return (
-    <span className="time-badge" data-testid="time-badge" title="Planet time">
+    <div
+      className={`time-badge${scrubbing ? ' scrubbing' : ''}`}
+      data-testid="time-badge"
+      role="slider"
+      tabIndex={0}
+      aria-label="Planet time"
+      aria-valuemin={0}
+      aria-valuemax={1439}
+      aria-valuenow={Math.floor(h * 60) % 1440}
+      aria-valuetext={text}
+      title={scrubbing ? undefined : 'Planet time — drag left or right to change it'}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onPointerCancel}
+      onKeyDown={onKeyDown}
+    >
       <span aria-hidden="true">{night ? '☾' : '☀'}</span>
-      <span className="sr-only">Planet time </span>
       {text}
-    </span>
+    </div>
   );
 }
 

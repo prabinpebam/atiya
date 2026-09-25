@@ -297,7 +297,12 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
 
   useFrame((_, dt) => {
     let h = controller.timeOfDay;
-    if (controller.timeFrozen) {
+    // read the mode live: a hand-set time switches it before React re-renders this component
+    const mode = controller.store.getState().timeMode;
+    if (controller.timeHeld) {
+      // the visitor is dragging the clock: it stays where they put it, and any fast-forward is dropped
+      target.current = null;
+    } else if (controller.timeFrozen) {
       // test hook: hold the requested time
     } else if (target.current !== null) {
       const remaining = wrapHours(target.current - h);

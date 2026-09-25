@@ -246,6 +246,65 @@ test.describe('day–night', () => {
     await page.waitForTimeout(1500);
     expect((await state(page)).hours).toBe(h);
   });
+
+  test('dragging the time badge winds the clock (the pointer hides while dragging); the cycle carries on; keys and clicks step it', async ({ page }) => {
+    test.setTimeout(120_000);
+    // saved "Always daytime": a hand-set time switches this visit to the cycle, without changing the saved choice
+    await page.addInitScript(() => localStorage.setItem('site.timeMode', 'day'));
+    await startPlanet(page);
+    const badge = page.getByTestId('time-badge');
+    await expect(badge).toHaveAttribute('role', 'slider');
+    expect(await badge.evaluate((el) => getComputedStyle(el).cursor)).toBe('ew-resize');
+    const start = (await state(page)).hours;
+    expect(start).toBeCloseTo(10.5, 2);
+    const box = (await badge.boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 100, y, { steps: 5 });
+    const hidden = () =>
+      page.evaluate(() => ({
+        scrubbing: document.documentElement.classList.contains('time-scrubbing'),
+        badge: getComputedStyle(document.querySelector('[data-testid="time-badge"]')!).cursor,
+        canvas: getComputedStyle(document.querySelector('canvas')!).cursor,
+      }));
+    expect(await hidden()).toEqual({ scrubbing: true, badge: 'none', canvas: 'none' });
+    // 20 px per hour: +230 px from 10:30 AM is 10:00 PM, and the world follows straight away
+    await page.mouse.move(x + 230, y, { steps: 5 });
+    await page.waitForTimeout(400);
+    expect((await state(page)).hours).toBeCloseTo(22, 1); // held while the button is down
+    await expect.poll(async () => (await state(page)).night).toBeGreaterThan(0.9);
+    await expect(badge).toContainText('10:00 PM');
+    await expect(badge).toContainText('☾');
+    await page.mouse.up();
+    expect((await hidden()).scrubbing).toBe(false);
+    expect(await badge.evaluate((el) => getComputedStyle(el).cursor)).toBe('ew-resize');
+    const s = await state(page);
+    expect(s.timeMode).toBe('cycle');
+    expect(await page.evaluate(() => localStorage.getItem('site.timeMode'))).toBe('day');
+    // the cycle runs on from the new time, and focus is back on the planet for walking
+    await expect.poll(async () => (await state(page)).hours, { timeout: 5_000 }).toBeGreaterThan(s.hours + 0.02);
+    expect(await page.evaluate(() => document.activeElement?.classList.contains('game-region'))).toBe(true);
+    // hold the cycle (Pause ambient motion) so the steps can be measured exactly
+    await page.getByTestId('menu-button').click();
+    await page.getByRole('checkbox', { name: 'Pause ambient motion' }).check();
+    await page.getByRole('button', { name: 'Close' }).click();
+    // keyboard: Page Down steps back an hour, an arrow a quarter-hour
+    await badge.focus();
+    let before = (await state(page)).hours;
+    await page.keyboard.press('PageDown');
+    expect((await state(page)).hours - before).toBeCloseTo(-1, 1);
+    before = (await state(page)).hours;
+    await page.keyboard.press('ArrowRight');
+    expect((await state(page)).hours - before).toBeCloseTo(0.25, 1);
+    await expect(badge).toHaveAttribute('aria-valuetext', /^\d{1,2}:\d{2} (AM|PM)$/);
+    // a plain click on the right half steps an hour on
+    before = (await state(page)).hours;
+    const now = (await badge.boundingBox())!;
+    await badge.click({ position: { x: now.width * 0.8, y: now.height / 2 } });
+    expect((await state(page)).hours - before).toBeCloseTo(1, 1);
+  });
 });
 
 test.describe('view controls', () => {

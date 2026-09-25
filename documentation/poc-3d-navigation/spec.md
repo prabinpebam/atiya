@@ -219,7 +219,7 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 
 - All HUD elements are real HTML (`<button>`, `<a>`, `<dialog>`, `<nav>`), ≥ 24×24 CSS px targets, 4.5:1 text contrast on a solid/blurred backing, never obscuring the focused element (WCAG 2.4.11).
 - **Menu** (`<dialog>`): Landmarks (fast travel + visited state), Controls, Settings (Reduce motion, Pause ambient motion, **Time of day** (cycle / local time / always day, §4.13), **Sound effects** (on by default, §4.16), Run toggle (P1), Quality Auto/Low/High (P1)), **Classic site**, Return to Plaza (P1). The action row (Show controls / Classic site / Close) stays pinned at the bottom when the menu scrolls.
-- **Time badge** in the header next to Menu: planet time with a sun/moon glyph (hidden below 520 px wide).
+- **Time badge** in the header next to Menu: planet time with a sun/moon glyph (hidden below 520 px wide). It is also a slider for setting the time by hand (§4.13): hovering shows the ↔ resize cursor, and dragging it winds the clock (the pointer hides while dragging).
 - **View controls** (bottom-right; top-right below 720 px wide), a `role="group"` labelled "View":
   - a **compass** button that always points to map north. Its label says which way you face (e.g. "Compass: facing north-west. Face north (N)"), and activating it faces north.
   - ⟲ / ⟳ rotate and ˄ / ˅ tilt buttons around the compass, as single-pointer alternatives to dragging (WCAG 2.5.7).
@@ -299,7 +299,7 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-71 | leva tuning panel in dev only | P1 | 5.5 |
 | FR-72 | Optimized asset pipeline script (gltf-transform) + CREDITS.md | P0 | 5.1, 13 |
 | **World & ambience (added after the POC scope)** | | | |
-| FR-80 | Day–night cycle with cycle / local-time / always-day modes, persisted; readable at night | P1 | 4.13 |
+| FR-80 | Day–night cycle with cycle / local-time / always-day modes, persisted; readable at night. The time can be set by dragging the header time badge (or with its arrow keys), and the world follows at once | P1 | 4.13 |
 | FR-81 | Rolling terrain, cliff mesas, boulders, a flowing stream with a waterfall, and a walkable arched bridge. Landmarks, plaza and paths stay flat and reachable; the cliffs block walking, while the stream and pond can be waded through (slower, knee-deep, with ripples) | P1 | 4.14, 5.3 |
 | FR-82 | Wind: gust-driven foliage sway, flying leaves and occasional swirls, all stopped under reduced motion / pause ambient | P1 | 4.14 |
 | FR-83 | Doors open as you walk up to a landmark and shut when you leave, onto a simply furnished room; after dusk warm light spills out of the open door. The Amphitheater, which has no door, raises a stage curtain and turns its spotlights on | P1 | 4.7, 4.12 |
@@ -336,6 +336,12 @@ The planet has a cozy life-sim day: soft dawn pinks, a bright day, a warm golden
   - **Always daytime:** fixed at 10:30 AM.
 
   Changing the mode sweeps the sky forward to the new time in a couple of seconds, or instantly under Reduce motion. The sweep plays after the menu closes, because rendering idles while a dialog is open.
+- **Setting the time by hand:** the header time badge is a `role="slider"` (0–1439 minutes, `aria-valuetext` like "7:30 PM").
+  - **Drag** it left or right to wind the clock, at 20 px per hour, so a whole day is about 480 px. Hovering shows the `ew-resize` cursor. Once a press has moved 4 px it becomes a drag: the pointer disappears (`cursor: none` on the whole page, via the pointer-captured badge) and the clock holds wherever it's put (`controller.timeHeld`).
+  - The sky, sun and moon, shadows, lamps, lanterns, door lights and birdsong all follow in the same frame. On release the cycle carries on from the new time, and focus returns to the planet for walking.
+  - A plain **click** on the badge's right half steps an hour on; on its left half, an hour back. This is the single-pointer alternative to dragging (WCAG 2.5.7).
+  - **Keyboard:** ←/↓ and →/↑ step 15 minutes, Page Down/Up an hour.
+  - Setting the time switches a fixed mode (local time, always day) to the cycle for this visit, so the new time keeps running. The saved preference is left alone. The Town Hall clock keeps showing the device's real time.
 - **What changes:**
   - sky gradient, fog, hemisphere colours and intensity
   - sun/moon direction, colour and intensity, so shadows move through the day

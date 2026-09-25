@@ -12,7 +12,7 @@ import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectReducedMotion, type GameStore } from './state/store';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
-import { DAY_HOURS, START_HOURS, localHours, type TimeMode } from './world/timeOfDay';
+import { DAY_HOURS, START_HOURS, localHours, wrapHours, type TimeMode } from './world/timeOfDay';
 import { riverDistance } from './world/features';
 import { SoundEngine } from './audio/engine';
 import { streamLevel, surfaceAt, type Surface } from './audio/audioLogic';
@@ -86,6 +86,8 @@ export class GameController {
   timeOfDay: number;
   /** Test hook: hold the clock at `timeOfDay`. */
   timeFrozen = false;
+  /** True while the visitor drags the time badge: the clock holds wherever they put it. */
+  timeHeld = false;
   /** Latest day–night values shared with scene components (0 = day, 1 = night). */
   readonly sky = { night: 0, glow: 0.5 };
   /** Latest wind values (driven by WindFx): strength 0.3…1, gust 0…1, live leaf and swirl counts. */
@@ -609,6 +611,17 @@ export class GameController {
     prefs.setSound(on);
     this.sound.setEnabled(on);
     this.store.setState({ soundOn: on });
+  }
+
+  /**
+   * Set the planet clock by hand (dragging or stepping the time badge). The day–night cycle carries
+   * on from there, so a fixed mode (local time / always day) switches to the cycle for this visit;
+   * the saved preference is left alone.
+   */
+  setTimeManually(hours: number): void {
+    this.timeFrozen = false;
+    this.timeOfDay = wrapHours(hours);
+    if (this.store.getState().timeMode !== 'cycle') this.store.setState({ timeMode: 'cycle' });
   }
 
   setTimeMode(m: TimeMode): void {
