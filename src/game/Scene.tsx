@@ -18,6 +18,8 @@ import { Bridges, Cliffs, Water } from './world/Landforms';
 import { FlyingLeaves, WindDriver, WindSwirls } from './world/WindFx';
 import { WadeFx } from './world/WadeFx';
 import { Wildlife } from './world/Wildlife';
+import { Drops } from './world/Drops';
+import { Chest } from './world/Chest';
 import { updateLampUniforms } from './world/lampLights';
 
 /** Upload every texture the scene's materials use (`initTexture`), so none waits for its first draw. */
@@ -279,6 +281,8 @@ export function Scene({ controller }: { controller: GameController }) {
         <Plaza controller={controller} />
         <Props controller={controller} />
         <Wildlife controller={controller} />
+        <Drops controller={controller} />
+        <Chest controller={controller} />
         {controller.geos.map((g) => (
           <Landmark key={g.id} controller={controller} geo={g} data={controller.dataById.get(g.id)!} />
         ))}

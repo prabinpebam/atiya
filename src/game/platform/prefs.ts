@@ -9,6 +9,7 @@ const KEYS = {
   sound: 'site.sound',
   music: 'site.music',
   character: 'site.character',
+  inventory: 'site.inventory',
 } as const;
 
 type Mode = 'play' | 'classic';
@@ -58,4 +59,15 @@ export const prefs = {
     return isCharacterId(v) ? v : DEFAULT_CHARACTER;
   },
   setCharacter: (id: CharacterId) => write(KEYS.character, id),
+  /** The saved backpack and chest (versioned JSON; `Inventory.load` validates it). */
+  getInventory: (): unknown => {
+    const v = read(KEYS.inventory);
+    if (!v) return null;
+    try {
+      return JSON.parse(v);
+    } catch {
+      return null;
+    }
+  },
+  setInventory: (data: unknown) => write(KEYS.inventory, JSON.stringify(data)),
 };

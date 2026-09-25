@@ -13,7 +13,7 @@ type SpriteKey = 'steps' | 'birds' | 'ui';
 export interface SoundEvent {
   /** performance.now() when it was asked for. */
   t: number;
-  kind: 'step' | 'bird' | 'chime' | 'doorOpen' | 'doorClose' | 'curtain' | 'sparkle';
+  kind: 'step' | 'bird' | 'chime' | 'doorOpen' | 'doorClose' | 'curtain' | 'sparkle' | 'pickup' | 'hit' | 'rustle';
   detail?: string;
   /** Whether it was actually scheduled (false while muted, locked or still loading). */
   played: boolean;
@@ -280,6 +280,21 @@ export class SoundEngine {
   /** Opened a landmark's details. */
   open(): void {
     this.play('ui', 'sparkle', 'sparkle', { gain: MIX.sparkle });
+  }
+
+  /** An item reached the backpack: a quick bright pop (the sparkle, pitched up and short). */
+  pickup(): void {
+    this.play('ui', 'sparkle', 'pickup', { gain: MIX.sparkle * 0.45, rate: 1.65 + 0.25 * this.rand() });
+  }
+
+  /** The pickaxe strikes a boulder: a low stone knock. */
+  hit(): void {
+    this.play('steps', 'stone', 'hit', { gain: MIX.steps.stone * 1.9, rate: 0.7 + 0.1 * this.rand(), bus: 'fx' });
+  }
+
+  /** A shaken tree's leaves rustle (the cloth swish, brighter and softer). */
+  rustle(): void {
+    this.play('ui', 'curtain', 'rustle', { gain: MIX.curtain * 0.5, rate: 1.2 + 0.15 * this.rand() });
   }
 
   private bird(): void {

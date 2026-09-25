@@ -13,7 +13,18 @@ export type GameAction =
   | 'tiltUp'
   | 'tiltDown'
   | 'faceNorth'
-  | 'home';
+  | 'home'
+  | 'inventory'
+  | 'drop'
+  | 'slot1'
+  | 'slot2'
+  | 'slot3'
+  | 'slot4'
+  | 'slot5'
+  | 'slot6'
+  | 'slot7'
+  | 'slot8'
+  | 'slot9';
 
 /** Actions that are held (continuous) rather than triggered once. */
 export const VIEW_HOLD_ACTIONS: ReadonlySet<GameAction> = new Set(['rotateCcw', 'rotateCw', 'tiltUp', 'tiltDown']);
@@ -44,6 +55,18 @@ export const KEY_BINDINGS: Record<string, GameAction> = {
   KeyN: 'faceNorth',
   KeyH: 'home',
   Home: 'home',
+  // inventory (Minecraft: 1–9 select a hotbar slot, Q drops; I opens the backpack since E interacts here)
+  KeyI: 'inventory',
+  KeyQ: 'drop',
+  Digit1: 'slot1',
+  Digit2: 'slot2',
+  Digit3: 'slot3',
+  Digit4: 'slot4',
+  Digit5: 'slot5',
+  Digit6: 'slot6',
+  Digit7: 'slot7',
+  Digit8: 'slot8',
+  Digit9: 'slot9',
 };
 
 export class KeyboardInput {

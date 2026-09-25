@@ -46,6 +46,14 @@ export interface GameTestHook {
   nearAnimal(kind: 'rabbit' | 'duck' | 'bird', i?: number, u?: number): boolean;
   /** Stand `u` in front of the plaza bench, facing it (bench E2E and visual testing). */
   nearBench(u?: number): boolean;
+  /** Stand `u` from a usable target, facing it: a tree (`which` = hardwood / apple / orange / cedar), a boulder, a flower or the chest. Returns its key. */
+  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest', which?: string, u?: number): string | null;
+  /** Backpack (36), chest (27), the cursor stack and the hotbar selection, as `id:n` / null. */
+  inventory(): { backpack: (string | null)[]; chest: (string | null)[]; held: string | null; selected: number };
+  /** Put items straight into the backpack (tests). Returns the leftover. */
+  giveItem(id: string, n: number): number;
+  /** Items lying in the world: item, count, state and distance (u) from the character. */
+  drops(): { item: string; count: number; state: string; d: number }[];
   /** Show or hide the character's occlusion outline (visual testing). */
   setOutline(on: boolean): void;
   /** Scene exposure (into the tone map) and the tilt-shift blend function name. */
@@ -102,7 +110,10 @@ export function installTestHook(c: GameController): void {
         phase: s.phase,
         pLocal: c.sim.pLocal.toArray(),
         nearby: s.nearbyId,
-        seatNear: s.seatNear,
+        seatNear: s.target?.kind === 'bench' ? s.target.key : null,
+        target: s.target,
+        acting: s.acting,
+        invScreen: s.invScreen,
         seated: s.seated,
         seatStage: c.seatMotion.stage,
         seatPose: c.seatMotion.pose,
@@ -346,6 +357,40 @@ export function installTestHook(c: GameController): void {
         return true;
       }
       return false;
+    },
+    nearTarget: (kind, which, u) => {
+      const R = CONFIG.planetRadius;
+      // reachable ones only (not on a mesa top): clear ground in front of it
+      const list = c.targets.filter((t) => t.kind === kind && (kind !== 'tree' || !which || t.tree === which));
+      for (const t of list) {
+        for (let k = 0; k < 12; k++) {
+          const a = (k / 12) * Math.PI * 2;
+          const dir = tangentToward(t.n, new Vector3(Math.cos(a), Math.sin(a * 1.3), Math.sin(a)).normalize());
+          if (!dir) continue;
+          const dist = u ?? t.edgeU + CONFIG.playerRadius + 0.12;
+          const stand = moveAlong(t.n, dir, dist / R);
+          if (c.terrain.inWater(stand) || c.sim.obstacles.some((o) => Math.acos(Math.max(-1, Math.min(1, o.n.dot(stand)))) * R < o.radiusU + CONFIG.playerRadius - 0.02)) continue;
+          if (Math.abs(c.terrain.walkHeight(stand) - c.terrain.walkHeight(t.n)) > 0.4) continue;
+          c.sim.setOrientation(orientationFor(stand, tangentToward(stand, t.n) ?? dir.clone().negate()));
+          c.lift = c.terrain.walkHeight(c.sim.pLocal);
+          return t.key;
+        }
+      }
+      return null;
+    },
+    inventory: () => {
+      const enc = (s: { id: string; n: number } | null) => (s ? `${s.id}:${s.n}` : null);
+      const inv = c.inventory;
+      return { backpack: inv.backpack.map(enc), chest: inv.chest.map(enc), held: enc(inv.held), selected: inv.selected };
+    },
+    giveItem: (id, n) => {
+      const left = c.inventory.add(id as never, n);
+      c.invChanged();
+      return left;
+    },
+    drops: () => {
+      const R = CONFIG.planetRadius;
+      return c.drops.list.map((d) => ({ item: d.item, count: d.count, state: d.state, d: Math.acos(Math.max(-1, Math.min(1, d.p.clone().normalize().dot(c.sim.pLocal)))) * R }));
     },
     nearBench: (u = 1.1) => {
       const b = c.seats[0];

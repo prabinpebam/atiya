@@ -35,6 +35,9 @@ type GameState = {
   seatStage: 'sitting' | 'seated' | 'standing' | null;
   seatPose: number;
   benchD: number;
+  target: { kind: string; key: string; label: string } | null;
+  acting: 'shake' | 'mine' | 'pick' | 'open' | null;
+  invScreen: 'backpack' | 'chest' | null;
   wind: { strength: number; gust: number; leaves: number; swirls: number };
   textures: { loaded: number; failed: number; pending: number };
 };
@@ -732,6 +735,117 @@ test.describe('benches', () => {
   });
 });
 
+test.describe('collecting & inventory', () => {
+  type Inv = { backpack: (string | null)[]; chest: (string | null)[]; held: string | null; selected: number };
+  const inv = (page: Page) => page.evaluate(() => (window as any).__game.inventory() as Inv);
+  const count = (list: (string | null)[], id: string) => list.reduce((n, s) => n + (s && s.split(':')[0] === id ? Number(s.split(':')[1]) : 0), 0);
+  /** Hold the live loop and run the simulation forward (deterministic and fast under software rendering). */
+  const fastForward = (page: Page, seconds: number) =>
+    page.evaluate((s) => {
+      const g = (window as any).__game;
+      g.pause();
+      g.advance(Math.round(s * 60));
+      g.resume();
+    }, seconds);
+  const prompt = (page: Page) => page.getByTestId('seat-prompt');
+
+  test('shaking a fruit tree: fruit, a log and leaves fall and fly into the hotbar; the fruit is gone until it regrows', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('tree', 'apple'))).toMatch(/^tree:apple:/);
+    await expect(prompt(page).getByRole('button', { name: /Shake tree/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await state(page)).acting).toBe('shake');
+    await fastForward(page, 6);
+    const i = await inv(page);
+    expect(count(i.backpack, 'apple')).toBe(6);
+    expect(count(i.backpack, 'log')).toBe(1);
+    expect(count(i.backpack, 'leaves')).toBe(2);
+    expect(await page.evaluate(() => (window as any).__game.drops().length)).toBe(0);
+    // the hotbar shows the haul: apples first (hotbar order), with their count
+    await expect(page.getByTestId('hotbar').getByRole('button', { name: 'Hotbar slot 1: Apple, 6' })).toBeVisible();
+    await expect(page.getByTestId('hotbar').locator('img').first()).toHaveAttribute('src', /\/icons\/apple\.webp$/);
+    // shaking again (same fixed cycle) gives no fruit until it regrows
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 6);
+    expect(count((await inv(page)).backpack, 'apple')).toBe(6);
+    expect(count((await inv(page)).backpack, 'log')).toBe(2);
+  });
+
+  test('mining a boulder yields three stones; picking a flower collects that flower', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('boulder'))).toMatch(/^boulder:/);
+    await expect(prompt(page).getByRole('button', { name: /Mine boulder/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await state(page)).acting).toBe('mine');
+    await fastForward(page, 6);
+    expect(count((await inv(page)).backpack, 'stone')).toBe(3);
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('flower', undefined, 0.6))).toMatch(/^flower:/);
+    const pick = prompt(page).getByRole('button', { name: /^Pick (red|pink|yellow|white|orange|purple|blue) (tulip|cosmos|pansy)/ });
+    await expect(pick).toBeVisible();
+    const name = (await pick.textContent())!.match(/Pick (\w+) (\w+)/)!;
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 4);
+    expect(count((await inv(page)).backpack, `${name[2]}-${name[1]}`)).toBe(1);
+  });
+
+  test('the chest by the Workshop: Shift+click moves stacks both ways; I opens the backpack; hotbar keys, Q and the saved inventory', async ({ page }) => {
+    test.setTimeout(150_000);
+    await startPlanet(page);
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.giveItem('apple', 10);
+      g.giveItem('stone', 7);
+    });
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('chest'))).toBe('chest');
+    await expect(prompt(page).getByRole('button', { name: /Open chest/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 1);
+    const screen = page.getByTestId('inventory-screen');
+    await expect(screen.getByRole('dialog', { name: 'Chest' })).toBeVisible();
+    await noSeriousViolations(page);
+    await page.locator('[data-slot="backpack:0"]').last().click({ modifiers: ['Shift'] });
+    let i = await inv(page);
+    expect(i.chest[0]).toBe('apple:10');
+    expect(i.backpack[0]).toBeNull();
+    await page.locator('[data-slot="chest:0"]').click({ modifiers: ['Shift'] });
+    i = await inv(page);
+    expect(i.chest[0]).toBeNull();
+    expect(i.backpack[8]).toBe('apple:10'); // chest → hotbar from the right, as in Minecraft
+    // right-click takes half onto the cursor; Escape puts it back and closes
+    await page.locator('[data-slot="backpack:1"]').last().click({ button: 'right' });
+    expect((await inv(page)).held).toBe('stone:4');
+    await page.keyboard.press('Escape');
+    await expect(screen).toHaveCount(0);
+    expect(count((await inv(page)).backpack, 'stone')).toBe(7);
+    expect((await inv(page)).held).toBeNull();
+    await expect(page.locator('.game-region')).toBeFocused();
+    // I opens the backpack screen (no chest section); I closes it again
+    await page.keyboard.press('KeyI');
+    await expect(screen.getByRole('dialog', { name: 'Backpack' })).toBeVisible();
+    await expect(screen.locator('[data-slot^="chest:"]')).toHaveCount(0);
+    await page.keyboard.press('KeyI');
+    await expect(screen).toHaveCount(0);
+    // hotbar: 9 selects slot 9 (the apples); Q throws one ahead, which comes back after its pick-up delay
+    await page.keyboard.press('Digit9');
+    expect((await inv(page)).selected).toBe(8);
+    await page.keyboard.press('KeyQ');
+    expect((await inv(page)).backpack[8]).toBe('apple:9');
+    expect(await page.evaluate(() => (window as any).__game.drops().length)).toBe(1);
+    // it lands ~1.8 u ahead, out of the magnet's reach: still there after the delay
+    await fastForward(page, 3);
+    expect(await page.evaluate(() => (window as any).__game.drops().length)).toBe(1);
+    // the inventory is saved
+    await page.waitForTimeout(400);
+    await page.reload();
+    await page.waitForFunction(() => (window as any).__game && (window as any).__game.getState().phase !== 'loading', null, { timeout: 60_000 });
+    i = await inv(page);
+    expect(i.backpack[8]).toBe('apple:9');
+    expect(i.selected).toBe(8);
+  });
+});
+
 test.describe('player character', () => {
   test('loads the rigged CC0 character model', async ({ page }) => {
     const glb: string[] = [];
@@ -1017,7 +1131,8 @@ test.describe('planet', () => {
     const nav = page.getByRole('navigation', { name: 'Planet landmarks' });
     await expect(nav.getByRole('button').first()).toBeFocused();
     await nav.getByRole('button', { name: /Town Hall/ }).click();
-    await expect.poll(async () => (await state(page)).nearby, { timeout: 10_000 }).toBe('town-hall');
+    // the fly-over is ~16 frames at the capped step: slow under software rendering
+    await expect.poll(async () => (await state(page)).nearby, { timeout: 20_000 }).toBe('town-hall');
   });
 
   test('WebGL context loss shows Reload / Classic', async ({ page }) => {

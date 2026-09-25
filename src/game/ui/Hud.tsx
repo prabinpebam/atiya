@@ -8,7 +8,8 @@ import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
 import { LandmarkDialog, MenuDialog } from './Dialogs';
 import { ViewControls } from './ViewControls';
 import { CHARACTERS, type CharacterId } from '../player/characters';
-import { faArrowUpRightFromSquare, faChair, faMoon, faPersonWalking, faSun, faVolumeHigh, faVolumeXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowUpRightFromSquare, faBoxOpen, faChair, faHammer, faMoon, faPersonWalking, faSeedling, faSun, faTree, faVolumeHigh, faVolumeXmark } from '@fortawesome/free-solid-svg-icons';
+import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
 
 const toClassic = () => prefs.setMode('classic');
@@ -62,7 +63,8 @@ function StartOverlay({ controller }: { controller: GameController }) {
 
 function PreviewCard({ controller }: { controller: GameController }) {
   const nearbyId = useStore(controller.store, (s) => s.nearbyId);
-  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling);
+  // hidden while something you're right at (a tree, the chest, …) has the E key
+  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.target && !s.acting && !s.invScreen);
   if (!nearbyId || !visible) return null;
   const d = controller.dataById.get(nearbyId)!;
   return (
@@ -82,20 +84,25 @@ function PreviewCard({ controller }: { controller: GameController }) {
   );
 }
 
-/** By a bench: offer to sit down; on it: offer to stand up (the keys work too: E, Escape). */
-function SeatPrompt({ controller }: { controller: GameController }) {
+const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair } as const;
+
+/**
+ * What E does right now (collection-inventory.md §3.1): shake a tree, mine a boulder, pick a flower,
+ * open the chest or sit on the bench; while seated, stand up (the keys work too: E, Escape).
+ */
+function ActionPrompt({ controller }: { controller: GameController }) {
   const seated = useStore(controller.store, (s) => s.seated);
-  const near = useStore(controller.store, (s) => s.seatNear !== null);
-  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.openId && !s.menuOpen && !s.nearbyId);
-  if (!visible || (!seated && !near)) return null;
+  const target = useStore(controller.store, (s) => s.target);
+  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.openId && !s.menuOpen && !s.invScreen && !s.acting);
+  if (!visible || (!seated && !target)) return null;
   const act = () => {
     if (seated) controller.standUp();
-    else controller.sitDown();
+    else controller.useTarget();
     // back to the planet, so Escape and WASD work straight away
     controller.focusRegion();
   };
   return (
-    <div className="seat-prompt" data-testid="seat-prompt">
+    <div className="seat-prompt action-prompt" data-testid="seat-prompt" data-kind={seated ? 'stand' : target!.kind}>
       <button className="btn primary" type="button" onClick={act}>
         {seated ? (
           <>
@@ -103,7 +110,7 @@ function SeatPrompt({ controller }: { controller: GameController }) {
           </>
         ) : (
           <>
-            <Icon icon={faChair} /> Sit on the bench <kbd>E</kbd>
+            <Icon icon={TARGET_ICONS[target!.kind]} /> {target!.label} <kbd>E</kbd>
           </>
         )}
       </button>
@@ -120,7 +127,7 @@ function ControlsHint({ controller }: { controller: GameController }) {
         <kbd>W</kbd>
         <kbd>A</kbd>
         <kbd>S</kbd>
-        <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open · <kbd>M</kbd> map
+        <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open / use · <kbd>I</kbd> backpack · <kbd>1</kbd>–<kbd>9</kbd> hotbar · <kbd>M</kbd> map
       </p>
       <p>
         Drag to turn &amp; tilt the view · <kbd>,</kbd>
@@ -400,7 +407,8 @@ export function Hud({ controller }: { controller: GameController }) {
     <>
       <LandmarkNav controller={controller} />
       <PreviewCard controller={controller} />
-      <SeatPrompt controller={controller} />
+      <ActionPrompt controller={controller} />
+      <Hotbar controller={controller} />
       <ViewControls controller={controller} />
       <CharacterPicker controller={controller} />
       <ControlsHint controller={controller} />
@@ -415,6 +423,7 @@ export function Hud({ controller }: { controller: GameController }) {
       />
       <LandmarkDialog controller={controller} />
       <MenuDialog controller={controller} />
+      <InventoryScreen controller={controller} />
       <MenuButton controller={controller} target={controller.hudActions} />
       <LoadingOverlay controller={controller} />
       <StartOverlay controller={controller} />

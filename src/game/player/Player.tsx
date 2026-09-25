@@ -14,6 +14,10 @@ import { withLampLights } from '../world/lampLights';
 import { addOcclusionOutline, countOutlines } from './outline';
 import { SEAT } from '../systems/seating';
 import { selectAmbientPaused } from '../state/store';
+import { actionPose, type ActionPose, type Dir } from './actionPoses';
+import { pickaxe as pickaxeModel } from '../world/propModels';
+import { kitMaterials } from '../world/materials';
+import type { ActionKind } from '../systems/actions';
 
 const R = CONFIG.planetRadius;
 /** Target standing height in world units (≈ door height plus a head; the planet camera is tuned for ~1.25 u). */
@@ -52,6 +56,37 @@ function aimBone(bone: Object3D | null, child: Object3D | null, dir: Vector3, w:
   _aim.setFromUnitVectors(_cur.normalize(), _want).multiply(bone.quaternion);
   bone.quaternion.slerp(_aim, w);
 }
+
+const _up = new Vector3(0, 1, 0);
+const _d = new Vector3();
+const toWorld = (d: Dir, side: number) => _d.copy(_fwd).multiplyScalar(d[0]).addScaledVector(_up, d[1]).addScaledVector(_left, d[2] * side);
+
+type Spine = { spine: Object3D | null; chest: Object3D | null; upper: Object3D | null };
+
+/** An action pose (shake, mine, pick, open) over the mixer's clip, at weight `w`. */
+function applyActionPose(limbs: readonly Limb[], sp: Spine, heading: number, pose: ActionPose, w: number): void {
+  _fwd.set(Math.sin(heading), 0, Math.cos(heading));
+  _left.set(Math.cos(heading), 0, -Math.sin(heading));
+  aimBone(sp.spine, sp.chest, toWorld(pose.spine, 0), w);
+  aimBone(sp.chest, sp.upper, toWorld(pose.chest, 0), w);
+  for (const l of limbs) {
+    const arm = l.side > 0 ? pose.arms.l : pose.arms.r;
+    aimBone(l.arm, l.fore, toWorld(arm.upper, l.side), w);
+    aimBone(l.fore, l.hand, toWorld(arm.lower, l.side), w);
+    if (pose.legs) {
+      const leg = l.side > 0 ? pose.legs.l : pose.legs.r;
+      aimBone(l.up, l.leg, toWorld(leg.upper, l.side), w);
+      aimBone(l.leg, l.foot, toWorld(leg.lower, l.side), w);
+    }
+  }
+}
+
+const _hand = new Vector3();
+const _elbow = new Vector3();
+const _px = new Vector3();
+const _py = new Vector3();
+const _pz = new Vector3();
+const _pm = new Matrix4();
 
 /**
  * Sitting pose over whatever the mixer played (weight `w`): thighs forward along the seat, shins
@@ -186,6 +221,11 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
   }, [scene]);
   const seatGroup = useRef<Group>(null);
   const clock = useRef(0);
+  const spine = useMemo<Spine>(() => ({ spine: scene.getObjectByName('Spine') ?? null, chest: scene.getObjectByName('Chest') ?? null, upper: scene.getObjectByName('UpperChest') ?? null }), [scene]);
+  const pickGeo = useMemo(() => pickaxeModel(), []);
+  const pick = useRef<Mesh>(null);
+  /** The last action pose, faded out after the cycle ends (so it never snaps back to idle). */
+  const lastAct = useRef<{ kind: ActionKind; t: number; fade: number } | null>(null);
 
   const blend = useRef(0);
   const flying = useRef(false);
@@ -212,6 +252,45 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     const pose = controller.seatMotion.pose;
     if (seatGroup.current) seatGroup.current.position.y = pose * (SEAT.seatY - controller.lift + HIP_OVER_SEAT - HIP_Y);
     if (pose > 1e-3) sitPose(limbs, sim.heading, pose, clock.current, selectAmbientPaused(controller.store.getState()));
+    // an action cycle (shake a tree, mine, pick a flower, open the chest) over the clip
+    const act = controller.action;
+    if (act.kind) lastAct.current = { kind: act.kind, t: act.t, fade: 1 };
+    else if (lastAct.current) {
+      lastAct.current.fade -= dt / 0.2;
+      if (lastAct.current.fade <= 0) lastAct.current = null;
+    }
+    let pickScale = 0;
+    const la = lastAct.current;
+    if (la) {
+      const ap = actionPose(la.kind, la.t);
+      const w = ap.w * la.fade;
+      if (w > 1e-3) {
+        applyActionPose(limbs, spine, sim.heading, ap, w);
+        if (seatGroup.current) seatGroup.current.position.y -= ap.hip * w;
+      }
+      pickScale = act.kind === 'mine' ? ap.pickaxe : 0;
+    }
+    // the pickaxe sits in the right hand, its handle along the forearm, its head swung forward
+    const pm = pick.current;
+    const rh = limbs[1];
+    if (pm && root.current) {
+      pm.visible = pickScale > 1e-3 && !!rh?.hand && !!rh?.fore;
+      if (pm.visible) {
+        root.current.updateMatrixWorld(true);
+        root.current.worldToLocal(rh.hand!.getWorldPosition(_hand));
+        root.current.worldToLocal(rh.fore!.getWorldPosition(_elbow));
+        _py.subVectors(_hand, _elbow).normalize();
+        _px.set(0, 0, 1).addScaledVector(_py, -_py.z);
+        if (_px.lengthSq() < 1e-6) _px.set(0, 1, 0);
+        _px.normalize();
+        _pz.crossVectors(_px, _py).normalize();
+        _pm.makeBasis(_px, _py, _pz);
+        pm.quaternion.setFromRotationMatrix(_pm);
+        // grip a little way up the handle
+        pm.position.copy(_hand).addScaledVector(_py, -0.06);
+        pm.scale.setScalar(pickScale);
+      }
+    }
     if (run) {
       const t = (run.time / run.getClip().duration) % 1;
       if (blend.current > 0.35 && !jump?.isRunning() && crossedPhase(cycle.current, t, stepPhases)) controller.footstep();
@@ -224,6 +303,7 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
       <group ref={seatGroup}>
         <primitive object={scene} scale={fit.scale} position={[0, fit.lift, 0]} />
       </group>
+      <mesh ref={pick} geometry={pickGeo} material={kitMaterials().solid} visible={false} castShadow />
     </group>
   );
 }

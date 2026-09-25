@@ -154,6 +154,8 @@ Constraints:
 | Interact / open | **E**, **Enter**, **Space** | Click/tap the preview card; click/tap a landmark (or its label) → **fast travel** to its approach point | A |
 | Close / back | **Esc** (closes the open dialog/menu) | Close button / tap backdrop | B |
 | Menu (fast travel, settings) | **M**, or **Esc** when no dialog/menu is open (and you're not sitting) | Menu button (HUD) | Start |
+| Use a thing (as built) | Standing at a tree, boulder, flower or the chest, **E** shakes / mines / picks / opens it (a fixed cycle, §4.17) | The prompt's button | A |
+| Hotbar & backpack (as built) | **1**–**9** select a hotbar slot, **Q** / **Ctrl+Q** drop one / the stack, **I** opens the backpack screen; in a screen, Minecraft's controls (§4.17) | Mouse wheel over the planet; click a hotbar slot; the backpack button | — |
 | Sit on a bench / stand up (as built) | By the plaza bench, **E** (or Enter / Space) sits; **Esc**, **E** or a fresh movement key stands up | The **Sit on the bench** / **Stand up** prompt; a tap on the ground stands up | — |
 | Rotate view (as built) | Hold **,** / **.** (the < > keys): counter-clockwise / clockwise | **Drag** the planet left/right (any button; touch drag); ⟲ / ⟳ buttons around the compass step 45° | Right stick X (P1) |
 | Tilt view (as built) | Hold **Page Up** / **Page Down**: toward a top / side view (30°–78°) | **Drag** up/down; ˄ / ˅ buttons step 10° | Right stick Y (P1) |
@@ -502,6 +504,31 @@ Subtle, cosy sound effects make the planet feel alive; nothing is essential, and
 - **Pipeline:** `python scripts/build-audio.py` downloads the sources to a git-ignored cache and cuts them. It filters rumble, denoises the bird recordings against their own background, and levels each set by its loudest 60 ms. It crossfades the loops seamlessly, then encodes and writes `src/game/audio/audioManifest.ts`. Finally it re-decodes every output and reports its level, peak and slot levels. For the loops it also reports where the seam ranks among 200 random interior cuts on sample step, level and spectrum; the stream scores 82 / 18 / 35 and the wind 39 / 31 / 72 (50 = typical, > 95 = audible). The outputs are committed.
 - **Code:** `audio/engine.ts` (Web Audio: buses, loops, sprite voices, event log), `audio/audioLogic.ts` (pure rules, unit-tested), `controller.ts` (unlock, door cues from the store, per-frame ambience, `footstep()`), and the avatars (foot contacts).
 
+### 4.17 Collecting & inventory (as built)
+
+Shake trees, mine boulders and pick flowers; what falls flies into a **Minecraft-style hotbar and backpack**, and a **chest by the Workshop** stores the overflow. The full design, including every control, is in [collection-inventory.md](./collection-inventory.md). In summary:
+
+- **Targets:** walk up to a tree, a boulder, a flower or the chest and a single prompt at the bottom centre offers it (**Shake tree / Mine boulder / Pick red tulip / Open chest** with <kbd>E</kbd>). It goes to the one you face, nearest first, with hysteresis (`systems/interactables.ts`).
+  - Right at a thing, its prompt takes <kbd>E</kbd> over a landmark's area preview, whose card hides meanwhile.
+  - Near a landmark, a flower needs you within 0.5 u, so path-side flowers don't steal the building's card.
+- **Fixed cycles** (`systems/actions.ts`), each played the same way every time: step in, face the target, play the beats, step back.
+  - **Shake**, 1.7 s: every fruit on a fruit tree falls (and regrows in 90 s), plus a log and two leaves.
+  - **Mine**, 2.4 s: a pickaxe pops into the hand from thin air; three overhead swings each chip off a stone.
+  - **Pick**, 0.8 s: squat, and the flower pops up (it regrows in 60 s).
+  - **Open**: the chest lid swings open.
+- **World feedback:** trees rock on their base, boulders shudder on each hit, and fruit and flowers vanish and pop back (per-instance matrix updates, `Props.tsx` `useHarvestFx`; the fruit is its own instanced mesh now).
+- **Drops** (`world/dropSim.ts`, drawn by `world/Drops.tsx`): small 3D items under radial gravity. They bounce by material, leaves flutter down, and at rest they bob and spin. Same-item drops within 0.5 u merge.
+- **Pick-up:** after a 0.5 s pick-up delay (2 s if thrown), a drop within 1.6 u flies to the character's chest (the magnet) and shrinks into the backpack with a soft pop. If the backpack is full it stays where it is, and a toast says so once per visit.
+- **Inventory** (`inventory/inventory.ts`, pure and unit-tested): a 36-slot backpack (hotbar 0–8) and a 27-slot chest, stacks of 64, saved in `localStorage site.inventory`.
+  - **Pick-ups:** fill Minecraft-style (top up stacks, hotbar first).
+  - **Screens:** every Minecraft Java slot control: click, right-click half/one, Shift+click quick-move (chest → hotbar from the right), double-click gather, left-drag spread and right-drag one each, 1–9 swap, Q / Ctrl+Q drop, and click outside to throw.
+  - **Keyboard and touch:** a keyboard-only mode (roving grid; Enter, Space, Shift+Enter) and touch (tap, long-press, a Move toggle).
+- **Characters:** the actions are keyed procedurally in the character's own frame (`player/actionPoses.ts`) and applied with `aimBone` over the idle and walk clips. The pickaxe is drawn along the right forearm.
+- **Art:** the item icons are GPT Image 2.5 art generated against a frozen **golden style set** (`assets-src/icons/`, `scripts/gen-icons.py`). The 21 flower colours are re-tinted from three white-petalled paintings. They ship as 26 × 96 px WebP, ≈ 78 KB, fetched only when shown.
+- **Sounds:** the existing CC0 sprites re-pitched: a pick-up pop (the sparkle), a pickaxe knock (a stone step) and a leaf rustle (the cloth swish).
+- **Layout:** the hotbar sits at the bottom centre; the preview card and the prompt sit above it, and on narrow screens the hint card and the compass do too.
+- **Test hooks:** `nearTarget(kind, which, u)`, `inventory()`, `giveItem(id, n)`, `drops()`, and `getState()`'s `target`, `acting` and `invScreen`.
+
 ## 5. Technical design
 
 ### 5.1 Stack (pinned versions)
@@ -847,6 +874,6 @@ D-1 planet/working name · D-2 landmark set & order · D-3 activation mode (`pro
 ## 13. Legal, brand & compliance
 
 - **No Nintendo (or other) IP:** no characters/lookalikes, names, trademarks in titles/SEO/metadata, music, SFX, fonts (e.g., no Seurat/Nook-style UI), or distinctive UI. Game mechanics/feel are not protected by copyright; say "inspired by cozy life-sim games" in prose if needed.
-- **Assets:** CC0 or original only, with two owner-approved exceptions: the background music (the owner's own tracks) and Font Awesome Free solid icons (CC BY 4.0, attributed in CREDITS). Every icon is a Font Awesome icon drawn inline by `ui/Icon.tsx`; emojis and text symbols are never used as icons. Every third-party asset is listed in `assets-src/CREDITS.md` with source URL and license. Avoid Mixamo for anything redistributed as raw files. As built, all 3D assets are original procedural geometry except the CC0 Kenney player character.
+- **Assets:** CC0 or original only, with two owner-approved exceptions: the background music (the owner's own tracks) and Font Awesome Free solid icons (CC BY 4.0, attributed in CREDITS). Every UI control icon is a Font Awesome icon drawn inline by `ui/Icon.tsx`; item icons are generated art from the golden style set (§4.17); emojis and text symbols are never used as icons. Every third-party asset is listed in `assets-src/CREDITS.md` with source URL and license. Avoid Mixamo for anything redistributed as raw files. As built, all 3D assets are original procedural geometry except the CC0 Kenney player character.
 - **Style references:** Animal Crossing: New Horizons screenshots (Nookipedia) were studied **only** for general style cues — proportions, bevelled forms, roof/door/window vocabulary, tree and flower shapes, tilt-shift look. They are not stored in the repository and nothing was traced or copied. No Nintendo characters, logos (e.g. the leaf emblem), buildings, names, text or UI appear in the site.
 - **Microsoft employee considerations:** POC uses placeholder content only; no Microsoft logos/brand assets or confidential work; final content subject to the Trust Code and internal Social Media / Outside Work policies (review before publishing).

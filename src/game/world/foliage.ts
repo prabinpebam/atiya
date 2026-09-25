@@ -28,6 +28,10 @@ import { gameTexture } from './textures';
 export interface TreeGeometry {
   solid: BufferGeometry;
   leaves: BufferGeometry;
+  /** Fruit trees: the fruit on its own (so a shaken tree can drop it and grow it back). */
+  fruit?: BufferGeometry;
+  /** Where each fruit hangs (tree-local, at scale 1): where it falls from. */
+  fruitSpots?: readonly [number, number, number][];
 }
 
 const Y = new Vector3(0, 1, 0);
@@ -533,6 +537,16 @@ function limbTo(y0: number, lobe: [number, number, number, number], r0: number, 
   ];
 }
 
+/** Where the fruit hangs on a fruit tree (tree-local, at scale 1). */
+export const FRUIT_SPOTS: readonly [number, number, number][] = [
+  [-0.9, 1.72, 0.38],
+  [0.88, 1.66, 0.34],
+  [0.2, 1.52, 0.98],
+  [-0.42, 2.1, 0.8],
+  [0.55, 2.35, 0.72],
+  [-0.2, 2.8, 0.66],
+];
+
 export function hardwood(fruit?: string): TreeGeometry {
   const k = new Kit();
   const cards = new Cards();
@@ -578,23 +592,21 @@ export function hardwood(fruit?: string): TreeGeometry {
       minY: -0.75,
     });
   });
+  let fruitGeo: BufferGeometry | undefined;
+  let fruitSpots: [number, number, number][] | undefined;
   if (fruit) {
-    const spots: [number, number, number][] = [
-      [-0.9, 1.72, 0.38],
-      [0.88, 1.66, 0.34],
-      [0.2, 1.52, 0.98],
-      [-0.42, 2.1, 0.8],
-      [0.55, 2.35, 0.72],
-      [-0.2, 2.8, 0.66],
-    ];
+    const kf = new Kit();
+    const spots = FRUIT_SPOTS;
     for (const [x, y, z] of spots) {
-      k.sphere(0.1, fruit, { p: [x, y, z] }, [12, 10]);
-      k.sphere(0.035, mix(fruit, '#ffffff', 0.5), { p: [x - 0.035, y + 0.04, z + 0.07] }, [6, 4]);
-      k.cyl(0.008, 0.008, 0.07, '#6b4a2a', { p: [x, y + 0.12, z] }, 4);
-      k.blob(0.04, '#3f8a3a', { p: [x + 0.04, y + 0.14, z], s: [1.4, 0.35, 0.8] }, 0);
+      kf.sphere(0.1, fruit, { p: [x, y, z] }, [12, 10]);
+      kf.sphere(0.035, mix(fruit, '#ffffff', 0.5), { p: [x - 0.035, y + 0.04, z + 0.07] }, [6, 4]);
+      kf.cyl(0.008, 0.008, 0.07, '#6b4a2a', { p: [x, y + 0.12, z] }, 4);
+      kf.blob(0.04, '#3f8a3a', { p: [x + 0.04, y + 0.14, z], s: [1.4, 0.35, 0.8] }, 0);
     }
+    fruitGeo = kf.build().solid!;
+    fruitSpots = [...spots];
   }
-  return { solid: k.build().solid!, leaves: cards.build() };
+  return { solid: k.build().solid!, leaves: cards.build(), fruit: fruitGeo, fruitSpots };
 }
 
 /** Palettes per cedar variant (dark underside → sunlit tip): blue-green, fresh green, yellow-green. */

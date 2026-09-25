@@ -36,6 +36,15 @@ export interface Furniture {
   facing: Vector3;
 }
 
+/** The storage chest by the Workshop: where it stands and the tangent its front faces. */
+export interface ChestSpot {
+  n: Vector3;
+  facing: Vector3;
+}
+
+/** The chest's collision radius (u). */
+export const CHEST_RADIUS = 0.4;
+
 export interface Pond {
   n: Vector3;
   radiusU: number;
@@ -60,6 +69,8 @@ export interface PropLayout {
   grass: PropInstance[];
   posts: SignPost[];
   furniture: Furniture[];
+  /** The storage chest by the Workshop (null if there's no clear spot). */
+  chest: ChestSpot | null;
   pond: Pond | null;
   river: River | null;
   bridges: Bridge[];
@@ -397,6 +408,40 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     grass.push({ n, scale: 0.7 + rand() * 0.7, yaw: rand() * Math.PI * 2, tint: rand() });
   }
 
+  // the storage chest: beside the Workshop's front, clear of solids, paths and water. Chosen after
+  // everything else is placed (so the rest of the planet is unchanged), then the walk-through
+  // plants under it are cleared away
+  const chest = ((): ChestSpot | null => {
+    const ws = landmarks.find((g) => g.id === 'workshop') ?? landmarks[0];
+    if (!ws) return null;
+    const side = new Vector3().crossVectors(ws.n, ws.door).normalize();
+    const solidsAll = [...trees, ...allBushes, ...rocks, ...boulders];
+    for (const deg of [55, -55, 70, -70, 40, -40, 85, -85, 100, -100]) {
+      for (const extra of [0.8, 1.0, 1.25]) {
+        const a = (deg * Math.PI) / 180;
+        const dir = ws.door.clone().multiplyScalar(Math.cos(a)).addScaledVector(side, Math.sin(a));
+        const n = moveAlong(ws.n, dir, (ws.footprintU + extra) / R);
+        if (corridor(n) < 0.95 || inPond(n, 0.3) || blocked(n, { river: 0.5, mesa: 0.5 })) continue;
+        if (solidsAll.some((t) => arcDistance(t.n, n, R) < 1.0)) continue;
+        if (posts.some((p) => arcDistance(p.n, n, R) < 0.8) || furniture.some((f) => arcDistance(f.n, n, R) < 1.0)) continue;
+        if (landmarks.some((g) => g !== ws && arcDistance(n, g.n, R) < g.footprintU + 1.0)) continue;
+        // it faces the Workshop's approach, so walking up to the door you see its front
+        return { n, facing: tangentToward(n, ws.approach) ?? dir };
+      }
+    }
+    return null;
+  })();
+  if (chest) {
+    const under = (p: PropInstance) => arcDistance(p.n, chest.n, R) < CHEST_RADIUS + 0.2;
+    const keep = <T extends PropInstance>(list: T[]) => {
+      for (let i = list.length - 1; i >= 0; i--) if (under(list[i])) list.splice(i, 1);
+    };
+    keep(grass);
+    keep(sprigs);
+    keep(pebbles);
+    for (const k of FLOWER_KINDS) keep(flowers[k]);
+  }
+
   const onMesaTop = new Set(mesaTop);
   const obstacles: Obstacle[] = [
     ...hardwood.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.42 * t.scale })),
@@ -407,12 +452,13 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     ...boulders.map((r) => ({ n: r.n, radiusU: 0.4 * r.scale })),
     ...posts.map((p) => ({ n: p.n, radiusU: POST_RADIUS })),
     ...furniture.map((f) => ({ n: f.n, radiusU: FURNITURE_RADIUS[f.kind] })),
+    ...(chest ? [{ n: chest.n, radiusU: CHEST_RADIUS }] : []),
     // the stream and pond are shallow enough to wade through (spec §4.14), so water doesn't block
     ...bridgeRailObstacles(bridges, cfg),
     ...mesas.flatMap((m) => mesaObstacles(m, cfg)),
   ];
 
-  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, posts, furniture, pond, river, bridges, mesas, obstacles };
+  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, posts, furniture, chest, pond, river, bridges, mesas, obstacles };
 }
 
 /** Rails along both sides of each bridge deck. */

@@ -6,7 +6,15 @@ import { DEG, UP, arcDistance, clamp, damp, dampAngle, wrapAngle, type Obstacle 
 import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
-import { SeatMotion, benchSeats, seatInRange, type Seat } from './systems/seating';
+import { SeatMotion, benchSeats, type Seat } from './systems/seating';
+import { buildTargets, pickTarget, targetLabel, type Target } from './systems/interactables';
+import { ActionRunner, actionFor, type BeatKind } from './systems/actions';
+import { Inventory, type Stack } from './inventory/inventory';
+import { BLOOM_COLOURS, flowerItem, itemDef, stackLabel, type ItemId } from './inventory/items';
+import { Drops } from './world/dropSim';
+import { Harvest } from './world/harvest';
+import { FRUIT_SPOTS } from './world/foliage';
+import { propPoint } from './world/propFrame';
 import { generateProps, type PropLayout } from './world/layout';
 import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
@@ -27,11 +35,18 @@ const clampPitch = (deg: number) => clamp(deg, CONFIG.camera.minPitchDeg, CONFIG
 const _toStream = new Vector3();
 const _camRight = new Vector3();
 const _seatFacing = new Vector3();
+const _fwd = new Vector3();
+const _feet = new Vector3();
+const _v = new Vector3();
+const _side = new Vector3();
+const _invQ = new Quaternion();
 const NO_INTENT: MoveIntent = { x: 0, y: 0, run: false };
 
 interface KeyEventLike {
   code: string;
   repeat: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
   target: EventTarget | null;
   preventDefault(): void;
 }
@@ -57,6 +72,19 @@ export class GameController {
   /** Benches you can sit on, and the sit-down / stand-up motion (its `pose` drives the avatars). */
   readonly seats: Seat[];
   readonly seatMotion = new SeatMotion();
+  /** Everything E can use (collection-inventory.md §3.1), the action cycle playing, and what's regrowing. */
+  readonly targets: Target[];
+  readonly action = new ActionRunner();
+  readonly harvest = new Harvest();
+  /** Items lying in the world, and the backpack + chest they go into. */
+  readonly drops = new Drops();
+  readonly inventory = new Inventory();
+  /** Mining hits so far (the boulder shudders on each). */
+  mineHits = 0;
+  /** How open the chest's lid is (0 shut … 1 open; eased by the Chest component). */
+  chestLid = 0;
+  private saveTimer: number | undefined;
+  private fullWarned = false;
   /** Smoothed height of the ground under the player (u above the base sphere). */
   lift = 0;
   /** Smoothed depth of the water the player is wading in (u; 0 on land). */
@@ -140,6 +168,8 @@ export class GameController {
     const obstacles: Obstacle[] = [...this.geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...this.props.obstacles];
     this.sim = new PlanetSim(obstacles);
     this.seats = benchSeats(this.props.furniture);
+    this.targets = buildTargets(this.props, this.seats, this.props.chest, BLOOM_COLOURS.length);
+    this.inventory.load(prefs.getInventory());
 
     const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
     const timeMode = prefs.getTimeMode();
@@ -284,15 +314,18 @@ export class GameController {
   /** Advance simulation + proximity by one step (also used by the test hook). */
   step(delta: number): void {
     const s = this.store.getState();
-    const playing = s.phase === 'playing' && !s.openId && !s.menuOpen;
+    const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen;
     const seat = this.seatMotion;
-    const intent: MoveIntent = playing && !seat.stage ? this.keyboard.intent() : NO_INTENT;
+    const intent: MoveIntent = playing && !seat.stage && !this.action.busy ? this.keyboard.intent() : NO_INTENT;
     this.updateView(delta, playing, selectReducedMotion(s));
     const dt = Math.min(Math.max(delta, 0), CONFIG.maxDt);
     // wading: slower in deeper water (the sim eases toward the new speed)
     this.sim.speedFactor = wadeSpeedFactor(this.terrain.waterDepth(this.sim.pLocal));
     this.sim.step(delta, intent);
     this.stepSeat(dt, selectReducedMotion(s));
+    this.stepAction(dt, selectReducedMotion(s));
+    this.harvest.step(dt);
+    this.stepDrops(dt, s);
     // follow the ground (hills, the bridge deck, the stream bed when wading) with a little smoothing
     this.lift = damp(this.lift, this.terrain.walkHeight(this.sim.pLocal), 14, dt);
     this.wadeDepth = damp(this.wadeDepth, this.terrain.waterDepth(this.sim.pLocal), 14, dt);
@@ -313,11 +346,7 @@ export class GameController {
       const next = updateProximity(s.nearbyId, this.sim.pLocal, this.geos);
       if (next !== s.nearbyId) this.setNearby(next);
       if (next && playing && this.buffer.consume(performance.now())) this.openLandmark(next);
-      const near = seat.stage ? null : seatInRange(this.sim.pLocal, this.seats, s.seatNear);
-      if (near !== s.seatNear) {
-        this.store.setState({ seatNear: near });
-        if (near && !next) this.announce('Near a bench. Press E to sit down.');
-      }
+      this.updateTarget(s, playing, Boolean(next));
     }
 
     if (s.hintVisible && this.sim.movingTime >= CONFIG.onboardingDismissSeconds) {
@@ -360,7 +389,7 @@ export class GameController {
 
   private canUseView(): boolean {
     const s = this.store.getState();
-    return s.phase === 'playing' && !s.openId && !s.menuOpen && !this.sim.travel;
+    return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !this.sim.travel;
   }
 
   /** Button step: +1 turns the scene counter-clockwise, −1 clockwise. */
@@ -392,7 +421,8 @@ export class GameController {
     this.view.targetPitch = CONFIG.camera.pitchDeg;
     this.keyboard.clear();
     this.leaveSeat();
-    this.store.setState({ menuOpen: false, nearbyId: null, seatNear: null, traveling: mode });
+    this.cancelAction();
+    this.store.setState({ menuOpen: false, nearbyId: null, target: null, traveling: mode });
     this.sim.startTravel(new Quaternion(), PLAZA, mode);
     this.focusRegion();
   }
@@ -488,6 +518,18 @@ export class GameController {
       else this.openMenu();
       return;
     }
+    if (action === 'inventory') {
+      if (!e.repeat && s.phase === 'playing') this.toggleInventory();
+      return;
+    }
+    if (action === 'drop') {
+      if (s.phase === 'playing' && !this.action.busy) this.dropSelected(Boolean(e.ctrlKey || e.metaKey));
+      return;
+    }
+    if (action.startsWith('slot')) {
+      if (!e.repeat && s.phase === 'playing') this.selectSlot(Number(action.slice(4)) - 1);
+      return;
+    }
     if (action === 'faceNorth' || action === 'home') {
       if (e.repeat || s.phase !== 'playing') return;
       if (action === 'faceNorth') this.faceNorth();
@@ -516,8 +558,9 @@ export class GameController {
     const { nearbyId, openId, phase } = this.store.getState();
     if (phase !== 'playing' || openId) return;
     if (this.seatMotion.seated) this.standUp();
+    else if (this.action.busy || this.seatMotion.stage) return;
+    else if (this.store.getState().target) this.useTarget();
     else if (nearbyId) this.openLandmark(nearbyId);
-    else if (this.store.getState().seatNear) this.sitDown();
     else this.buffer.press(performance.now());
   }
 
@@ -526,14 +569,15 @@ export class GameController {
   /** Sit on the bench you're standing by (E, or the prompt's button). */
   sitDown(): void {
     const s = this.store.getState();
-    const seat = this.seats.find((x) => x.id === s.seatNear);
-    if (!seat || s.phase !== 'playing' || s.openId || s.menuOpen || this.sim.travel || this.seatMotion.stage) return;
+    const t = this.targets.find((x) => x.key === s.target?.key);
+    const seat = t?.seat;
+    if (!seat || s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || this.sim.travel || this.seatMotion.stage || this.action.busy) return;
     this.sim.cancelAutoWalk();
     this.keyboard.clear();
     this.buffer.clear();
     this.sim.vel.set(0, 0, 0);
     this.seatMotion.sit(seat, this.sim.pLocal);
-    this.store.setState({ seated: true, seatNear: null });
+    this.store.setState({ seated: true, target: null });
     this.announce('Sitting on the bench. Press Escape to stand up.');
   }
 
@@ -564,6 +608,228 @@ export class GameController {
       const target = Math.atan2(_seatFacing.x, _seatFacing.z);
       this.sim.heading = reduced ? target : dampAngle(this.sim.heading, target, 0.08, dt);
     }
+  }
+
+  // ---------- collecting (collection-inventory.md §3) ----------
+
+  /** The character's forward direction as a planet-local tangent. */
+  private forwardLocal(out = _fwd): Vector3 {
+    _invQ.copy(this.sim.planetQ).invert();
+    out.set(Math.sin(this.sim.heading), 0, Math.cos(this.sim.heading)).applyQuaternion(_invQ);
+    return out.addScaledVector(this.sim.pLocal, -out.dot(this.sim.pLocal)).normalize();
+  }
+
+  /** Can this target be used right now? (A picked flower can't, until it grows back.) */
+  private usable = (t: Target): boolean => (t.kind === 'flower' ? this.harvest.flowerHere(t.flower!, t.index) : true);
+
+  private labelFor(t: Target): string {
+    return targetLabel(t, t.kind === 'flower' ? itemDef(flowerItem(t.flower!, t.colour ?? 0)).name.toLowerCase() : undefined);
+  }
+
+  /** Pick what E would use (the prompt), unless sitting, acting or a screen is open. */
+  private updateTarget(s: ReturnType<GameStore['getState']>, allowed: boolean, nearLandmark: boolean): void {
+    const busy = !allowed || this.seatMotion.stage || this.action.busy;
+    // a thing you're right at takes E over a landmark's area preview (whose card then hides)
+    const t = busy ? null : pickTarget(this.sim.pLocal, this.forwardLocal(), this.targets, s.target?.key ?? null, this.usable, CONFIG.planetRadius, nearLandmark);
+    if ((t?.key ?? null) === (s.target?.key ?? null)) return;
+    this.store.setState({ target: t ? { kind: t.kind, key: t.key, label: this.labelFor(t) } : null });
+    if (t) this.announce(t.kind === 'bench' ? 'Near a bench. Press E to sit down.' : `${this.labelFor(t)}: press E.`);
+  }
+
+  /** E on the current target: sit, or play its action cycle. */
+  useTarget(): void {
+    const s = this.store.getState();
+    const t = this.targets.find((x) => x.key === s.target?.key);
+    if (!t || s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || this.sim.travel || this.action.busy || this.seatMotion.stage) return;
+    if (t.kind === 'bench') {
+      this.sitDown();
+      return;
+    }
+    const kind = actionFor(t);
+    if (!kind || !this.usable(t)) return;
+    this.sim.cancelAutoWalk();
+    this.keyboard.clear();
+    this.buffer.clear();
+    this.sim.vel.set(0, 0, 0);
+    this.action.start(kind, t, this.sim.pLocal);
+    this.store.setState({ acting: kind, target: null });
+  }
+
+  private cancelAction(): void {
+    if (!this.action.busy) return;
+    this.action.cancel();
+    this.store.setState({ acting: null });
+  }
+
+  /** Walk the character through its action: step in, face the target, fire the beats. */
+  private stepAction(dt: number, reduced: boolean): void {
+    const a = this.action;
+    const t = a.target;
+    const kind = a.kind;
+    if (!kind || !t) return;
+    const r = a.step(dt, reduced);
+    if (r.at) this.sim.placeAt(r.at);
+    // face the target (world heading of the tangent from the character to it)
+    const to = new Vector3().copy(t.n).addScaledVector(this.sim.pLocal, -t.n.dot(this.sim.pLocal));
+    if (to.lengthSq() > 1e-12) {
+      to.normalize().applyQuaternion(this.sim.planetQ);
+      const h = Math.atan2(to.x, to.z);
+      this.sim.heading = reduced ? h : dampAngle(this.sim.heading, h, 0.06, dt);
+    }
+    for (const b of r.beats) this.beat(kind, t, b);
+    if (r.done) this.store.setState({ acting: null });
+  }
+
+  private rand = Math.random;
+
+  /** A random sideways kick (planet-local tangent at `n`) of size `k`. */
+  private scatter(n: Vector3, k: number, out = _side): Vector3 {
+    out.set(this.rand() - 0.5, this.rand() - 0.5, this.rand() - 0.5);
+    return out.addScaledVector(n, -out.dot(n)).normalize().multiplyScalar(k * (0.5 + this.rand() * 0.5));
+  }
+
+  /** Spawn a drop at planet-local point `p`, flung toward the character (`toward` 0…1) with an upward kick. */
+  private spawnDrop(item: ItemId, count: number, p: Vector3, up: number, toward: number, side: number, thrown = false): void {
+    const n = p.clone().normalize();
+    const v = new Vector3().addScaledVector(n, up).add(this.scatter(n, side));
+    const to = this.sim.pLocal.clone().addScaledVector(n, -this.sim.pLocal.dot(n));
+    if (to.lengthSq() > 1e-12 && toward) v.addScaledVector(to.normalize(), toward);
+    this.drops.spawn(item, count, p, v, { thrown });
+  }
+
+  private treeItem(t: Target) {
+    return t.tree === 'cedar' ? this.props.cedar[t.index] : t.tree === 'hardwood' ? this.props.hardwood[t.index] : this.props.fruit[t.index];
+  }
+
+  /** A beat of an action cycle: things fall, chip off, get picked, or the chest opens. */
+  private beat(kind: string, t: Target, b: BeatKind): void {
+    const R = CONFIG.planetRadius;
+    if (kind === 'shake') {
+      const tree = this.treeItem(t);
+      if (!tree) return;
+      if (b === 'fruit' && (t.tree === 'apple' || t.tree === 'orange') && this.harvest.takeFruit(t.tree, t.index)) {
+        // every fruit on the tree falls from where it hung
+        for (const spot of FRUIT_SPOTS) this.spawnDrop(t.tree, 1, propPoint(tree, spot, R), 0.4, 0.2, 0.6);
+      } else if (b === 'leaf') {
+        const cedar = t.tree === 'cedar';
+        for (let k = 0; k < 1; k++) {
+          const spot: [number, number, number] = [(this.rand() - 0.5) * 1.4, cedar ? 1.2 + this.rand() * 1.2 : 1.7 + this.rand() * 0.6, (this.rand() - 0.5) * 1.4];
+          this.spawnDrop('leaves', 1, propPoint(tree, spot, R), 0.3, 0.25, 0.8);
+        }
+      } else if (b === 'log') {
+        this.spawnDrop('log', 1, propPoint(tree, [0, 1.3, 0], R), 0.6, 0.9, 0.5);
+      }
+      if (b === 'leaf') this.sound.rustle();
+    } else if (kind === 'mine' && b === 'hit') {
+      this.mineHits++;
+      // a chip flies off the boulder's face toward the character
+      const toMe = this.sim.pLocal.clone().addScaledVector(t.n, -this.sim.pLocal.dot(t.n)).normalize();
+      const face = t.n.clone().addScaledVector(toMe, (t.edgeU * 0.9) / R).normalize().multiplyScalar(R + this.terrain.height(t.n) + 0.3 * t.scale);
+      this.spawnDrop('stone', 1, face, 2.4, 1.1, 0.9);
+      this.sound.hit();
+    } else if (kind === 'pick' && b === 'pluck' && t.flower && this.harvest.pickFlower(t.flower, t.index)) {
+      const at = t.n.clone().multiplyScalar(R + this.terrain.height(t.n) + 0.18);
+      this.spawnDrop(flowerItem(t.flower, t.colour ?? 0), 1, at, 2.2, 0, 0.2);
+    } else if (kind === 'open' && b === 'open') {
+      this.openInventory('chest');
+    }
+  }
+
+  /** The drops simulation, collecting into the backpack. */
+  private stepDrops(dt: number, s: ReturnType<GameStore['getState']>): void {
+    const R = CONFIG.planetRadius;
+    const canCollect = s.phase === 'playing' && !this.sim.travel && !s.invScreen && !s.openId;
+    const player = canCollect ? _feet.copy(this.sim.pLocal).multiplyScalar(R + this.lift) : null;
+    this.drops.step(
+      {
+        R,
+        ground: (n) => this.terrain.walkHeight(n) + this.terrain.waterDepth(n),
+        player,
+        room: (item, n) => this.inventory.room(item, n),
+        collect: (item, n) => {
+          this.inventory.add(item, n);
+          this.invChanged();
+          this.sound.pickup();
+          this.announce(`Picked up ${stackLabel(item, n)}.`);
+        },
+        still: selectReducedMotion(s),
+      },
+      dt,
+    );
+    if (this.drops.blockedFull) {
+      this.drops.blockedFull = false;
+      if (!this.fullWarned) {
+        this.fullWarned = true;
+        this.showToast('Backpack full — store some in the chest by the Workshop.');
+      }
+    }
+  }
+
+  // ---------- inventory (collection-inventory.md §4) ----------
+
+  /** Something in the backpack / chest changed: re-render and save (debounced). */
+  invChanged(): void {
+    this.store.setState({ invVersion: this.inventory.version });
+    window.clearTimeout(this.saveTimer);
+    this.saveTimer = window.setTimeout(() => prefs.setInventory(this.inventory.toJSON()), 250);
+  }
+
+  openInventory(screen: 'backpack' | 'chest'): void {
+    const s = this.store.getState();
+    if (s.phase !== 'playing' || s.openId) return;
+    this.keyboard.clear();
+    this.sim.cancelAutoWalk();
+    this.store.setState({ invScreen: screen, menuOpen: false });
+    this.announce(screen === 'chest' ? 'Chest open.' : 'Backpack open.');
+  }
+
+  /** Close the screen: the cursor stack goes back into the backpack (what doesn't fit drops at your feet). */
+  closeInventory(): void {
+    if (!this.store.getState().invScreen) return;
+    const left = this.inventory.returnHeld();
+    if (left) this.throwStack(left, false);
+    this.invChanged();
+    this.store.setState({ invScreen: null });
+    requestAnimationFrame(() => this.focusRegion());
+  }
+
+  toggleInventory(): void {
+    if (this.store.getState().invScreen) this.closeInventory();
+    else this.openInventory('backpack');
+  }
+
+  selectSlot(i: number): void {
+    const before = this.inventory.selected;
+    this.inventory.select(i);
+    if (this.inventory.selected === before) return;
+    this.invChanged();
+    const st = this.inventory.backpack[this.inventory.selected];
+    this.announce(`Slot ${this.inventory.selected + 1}: ${st ? stackLabel(st.id, st.n) : 'empty'}.`);
+  }
+
+  /** Mouse wheel over the planet or the hotbar: next / previous hotbar slot. */
+  onWheel = (e: { deltaY: number }): void => {
+    const s = this.store.getState();
+    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || !e.deltaY) return;
+    this.selectSlot(this.inventory.selected + Math.sign(e.deltaY));
+  };
+
+  /** Q / Ctrl+Q: throw one (or the stack) of the selected hotbar item ahead of the character. */
+  dropSelected(all: boolean): void {
+    const st = this.inventory.dropSelected(all);
+    if (!st) return;
+    this.throwStack(st, true);
+    this.invChanged();
+  }
+
+  /** Throw a stack into the world: ahead of the character (`thrown`, 2 s pick-up delay), or at its feet. */
+  throwStack(st: Stack, thrown: boolean): void {
+    const R = CONFIG.planetRadius;
+    const fwd = this.forwardLocal(new Vector3());
+    const n = this.sim.pLocal;
+    const p = n.clone().multiplyScalar(R + this.lift + 0.7).add(_v.copy(fwd).multiplyScalar(0.3));
+    const v = fwd.clone().multiplyScalar(thrown ? 3.2 : 0.8).addScaledVector(n, thrown ? 2.0 : 0.5);
+    this.drops.spawn(st.id, st.n, p, v, { thrown: true });
   }
 
   /** Planet click/tap: walk to a world-space surface point. */
@@ -654,7 +920,9 @@ export class GameController {
     if (s.phase !== 'playing') this.store.setState({ phase: 'playing' });
     const mode = selectReducedMotion(s) ? 'fade' : 'flyover';
     this.leaveSeat();
-    this.store.setState({ menuOpen: false, nearbyId: null, seatNear: null, traveling: mode });
+    this.cancelAction();
+    this.closeInventory();
+    this.store.setState({ menuOpen: false, nearbyId: null, target: null, traveling: mode });
     this.keyboard.clear();
     this.sim.startTravel(arrivalOrientation(g), id, mode);
     this.focusRegion();
@@ -662,6 +930,7 @@ export class GameController {
 
   teleport(id: string | 'plaza'): void {
     this.leaveSeat();
+    this.cancelAction();
     if (id === 'plaza') {
       this.sim.setOrientation(this.sim.planetQ.clone().identity());
     } else {
@@ -677,6 +946,7 @@ export class GameController {
   openMenu(): void {
     const s = this.store.getState();
     if (s.openId) return;
+    if (s.invScreen) this.closeInventory();
     this.keyboard.clear();
     this.store.setState({ menuOpen: true });
   }

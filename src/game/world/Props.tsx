@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useStore } from 'zustand';
 import {
@@ -30,6 +30,9 @@ import { Fireflies } from './DayNight';
 import { withStoneDetail, withSurfaceDetail } from './rockDetail';
 import { withLampLights } from './lampLights';
 import { gameTexture } from './textures';
+import { propMatrix } from './propFrame';
+import { BLOOM_COLOURS } from '../inventory/items';
+import { CYCLES } from '../systems/actions';
 
 const R = CONFIG.planetRadius;
 const Y = new Vector3(0, 1, 0);
@@ -116,6 +119,7 @@ function Instanced({
   shadow = true,
   lift,
   depthMaterial,
+  register,
 }: {
   geometry: BufferGeometry;
   material: Material;
@@ -125,12 +129,16 @@ function Instanced({
   lift?: number;
   /** Shadow-pass material (alpha-tested foliage casts leaf-shaped shadows). */
   depthMaterial?: Material;
+  /** Receives the mesh (per-instance effects: wobble, shudder, regrowth). */
+  register?: (mesh: InstancedMesh | null) => void;
 }) {
   const ref = useRef<InstancedMesh>(null);
 
   useLayoutEffect(() => {
     if (ref.current) writeInstances(ref.current, items, colorFor, lift);
-  }, [items, colorFor, lift]);
+    register?.(ref.current);
+    return () => register?.(null);
+  }, [items, colorFor, lift, register]);
 
   if (!items.length) return null;
   return (
@@ -144,7 +152,7 @@ function Instanced({
   );
 }
 
-const BLOOM_COLORS = ['#ff5a6a', '#ff9ec4', '#ffd84d', '#ffffff', '#ff9a4d', '#a98cff', '#7fb2ff'].map((c) => new Color(c));
+const BLOOM_COLORS = BLOOM_COLOURS.map((c) => new Color(c.hex));
 const vary = (p: PropInstance, amount = 0.14) => new Color(1, 1, 1).multiplyScalar(1 - amount / 2 + p.tint * amount);
 
 function PondView({ controller, pond }: { controller: GameController; pond: Pond }) {
@@ -289,6 +297,123 @@ function Butterflies({ controller }: { controller: GameController }) {
   );
 }
 
+const _fx = new Matrix4();
+
+/** Which instanced meshes (and which instance in them) draw tree `kind` #`i` of its layout list. */
+function treeInstances(kind: string, i: number): { keys: string[]; inst: number } {
+  if (kind === 'apple') return { keys: ['apple:solid', 'apple:leaves', 'apple:fruit'], inst: i / 2 };
+  if (kind === 'orange') return { keys: ['orange:solid', 'orange:leaves', 'orange:fruit'], inst: (i - 1) / 2 };
+  if (kind === 'cedar') return { keys: [`cedar${i % 3}:solid`, `cedar${i % 3}:leaves`], inst: Math.floor(i / 3) };
+  return { keys: ['hardwood:solid', 'hardwood:leaves'], inst: i };
+}
+
+/**
+ * Per-instance effects on the props: a shaken tree rocks on its base (a decaying wobble), a mined
+ * boulder shudders on each hit, and shaken fruit and picked flowers vanish and pop back as they regrow.
+ */
+function useHarvestFx(controller: GameController, apples: readonly PropInstance[], oranges: readonly PropInstance[]) {
+  const meshes = useRef(new Map<string, InstancedMesh>());
+  const regs = useRef(new Map<string, (m: InstancedMesh | null) => void>());
+  const reg = useCallback((key: string) => {
+    let f = regs.current.get(key);
+    if (!f) {
+      f = (m: InstancedMesh | null) => {
+        if (m) meshes.current.set(key, m);
+        else meshes.current.delete(key);
+      };
+      regs.current.set(key, f);
+    }
+    return f;
+  }, []);
+  const st = useRef({ shake: null as null | { kind: string; i: number; t: number }, hits: 0, hitT: 9, boulder: -1, harvest: -1, fruitScale: new Map<string, number>(), flowerScale: new Map<string, number>() });
+
+  useFrame((_, rawDt) => {
+    const dt = Math.min(rawDt, 0.1);
+    const s = st.current;
+    const m = meshes.current;
+    const a = controller.action;
+    const layout = controller.props;
+    const harvest = controller.harvest;
+    const R = CONFIG.planetRadius;
+    const calm = selectAmbientPaused(controller.store.getState());
+    const touched = new Set<InstancedMesh>();
+    const put = (key: string, inst: number, it: PropInstance, lift: number | undefined, tiltX = 0, tiltZ = 0, k = 1) => {
+      const mesh = m.get(key);
+      if (!mesh || inst < 0 || inst >= mesh.count) return;
+      mesh.setMatrixAt(inst, propMatrix(it, R, lift ?? -0.02, _fx, tiltX, tiltZ, k));
+      touched.add(mesh);
+    };
+    const treeItem = (kind: string, i: number) => (kind === 'cedar' ? layout.cedar[i] : kind === 'hardwood' ? layout.hardwood[i] : layout.fruit[i]);
+
+    // regrowth: shaken fruit and picked flowers (rewritten when something changes, animated while popping)
+    if (harvest.version !== s.harvest || harvest.popping) {
+      s.harvest = harvest.version;
+      const fruitSets = [
+        ['apple', apples, 0],
+        ['orange', oranges, 1],
+      ] as const;
+      for (const [kind, list, off] of fruitSets) {
+        list.forEach((it, j) => {
+          const i = 2 * j + off;
+          const k = harvest.fruitScale(kind, i);
+          const key = `${kind}:${i}`;
+          if ((s.fruitScale.get(key) ?? 1) === k) return;
+          s.fruitScale.set(key, k);
+          put(`${kind}:fruit`, j, it, undefined, 0, 0, k);
+        });
+      }
+      for (const kind of FLOWER_KINDS) {
+        layout.flowers[kind].forEach((it, i) => {
+          const k = harvest.flowerScale(kind, i);
+          const key = `${kind}:${i}`;
+          if ((s.flowerScale.get(key) ?? 1) === k) return;
+          s.flowerScale.set(key, k);
+          put(`${kind}:stems`, i, it, undefined, 0, 0, k);
+          put(`${kind}:blooms`, i, it, undefined, 0, 0, k);
+        });
+      }
+    }
+
+    // a shaken tree rocks on its base while the character shakes it, then settles
+    if (a.kind === 'shake' && a.target?.tree && (!s.shake || s.shake.kind !== a.target.tree || s.shake.i !== a.target.index)) {
+      s.shake = { kind: a.target.tree, i: a.target.index, t: a.t };
+    }
+    if (s.shake) {
+      const sh = s.shake;
+      sh.t += dt;
+      const start = CYCLES.shake.approach + 0.1;
+      const t = sh.t - start;
+      const end = CYCLES.shake.duration - CYCLES.shake.retreat - start;
+      const amp = (calm ? 0.02 : 0.055) * (t < 0 ? 0 : t < end ? Math.min(1, t / 0.12) : Math.exp(-(t - end) * 5));
+      const w = amp * Math.sin(Math.max(0, t) * Math.PI * 2 * 2.7);
+      const done = t > end + 0.9;
+      const it = treeItem(sh.kind, sh.i);
+      if (it) {
+        const { keys, inst } = treeInstances(sh.kind, sh.i);
+        const fruitK = sh.kind === 'apple' || sh.kind === 'orange' ? harvest.fruitScale(sh.kind, sh.i) : 1;
+        for (const key of keys) put(key, inst, it, undefined, done ? 0 : w, done ? 0 : w * 0.5, key.endsWith(':fruit') ? fruitK : 1);
+      }
+      if (done) s.shake = null;
+    }
+
+    // a mined boulder shudders on each hit
+    if (controller.mineHits !== s.hits) {
+      s.hits = controller.mineHits;
+      s.hitT = 0;
+      s.boulder = a.target?.kind === 'boulder' ? a.target.index : s.boulder;
+    }
+    if (s.boulder >= 0 && s.hitT < 0.3) {
+      s.hitT += dt;
+      const k = Math.max(0, 1 - s.hitT / 0.25);
+      const it = layout.boulders[s.boulder];
+      if (it) put('boulder', s.boulder, it, undefined, (calm ? 0.004 : 0.025) * Math.sin(s.hitT * 75) * k, 0, 1 - 0.025 * k);
+    }
+
+    for (const mesh of touched) mesh.instanceMatrix.needsUpdate = true;
+  });
+  return { reg };
+}
+
 export function Props({ controller }: { controller: GameController }) {
   const layout = controller.props;
   const geo = useMemo(
@@ -353,6 +478,7 @@ export function Props({ controller }: { controller: GameController }) {
   const oranges = useMemo(() => layout.fruit.filter((_, i) => i % 2 === 1), [layout]);
   const bloomColor = useMemo(() => (p: PropInstance) => BLOOM_COLORS[Math.floor(p.tint * BLOOM_COLORS.length) % BLOOM_COLORS.length], []);
   const tint = useMemo(() => (p: PropInstance) => vary(p), []);
+  const fx = useHarvestFx(controller, apples, oranges);
 
   return (
     <group name="props">
@@ -364,16 +490,17 @@ export function Props({ controller }: { controller: GameController }) {
         ] as const
       ).map(([key, g, items]) => (
         <group key={key}>
-          <Instanced geometry={g.solid} material={mats.tree} items={items} colorFor={tint} />
-          <Instanced geometry={g.leaves} material={mats.broad.material} depthMaterial={mats.broad.depth} items={items} colorFor={tint} />
+          <Instanced geometry={g.solid} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`${key}:solid`)} />
+          <Instanced geometry={g.leaves} material={mats.broad.material} depthMaterial={mats.broad.depth} items={items} colorFor={tint} register={fx.reg(`${key}:leaves`)} />
+          {g.fruit && <Instanced geometry={g.fruit} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`${key}:fruit`)} />}
         </group>
       ))}
       {geo.cedars.map((g, v) => {
         const items = layout.cedar.filter((_, i) => i % geo.cedars.length === v);
         return (
           <group key={`cedar-${v}`}>
-            <Instanced geometry={g.solid} material={mats.tree} items={items} colorFor={tint} />
-            <Instanced geometry={g.leaves} material={mats.needle.material} depthMaterial={mats.needle.depth} items={items} colorFor={tint} />
+            <Instanced geometry={g.solid} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`cedar${v}:solid`)} />
+            <Instanced geometry={g.leaves} material={mats.needle.material} depthMaterial={mats.needle.depth} items={items} colorFor={tint} register={fx.reg(`cedar${v}:leaves`)} />
           </group>
         );
       })}
@@ -389,13 +516,13 @@ export function Props({ controller }: { controller: GameController }) {
         </group>
       ))}
       <Instanced geometry={geo.rock} material={mats.rock} items={layout.rocks} colorFor={tint} />
-      <Instanced geometry={geo.boulder} material={mats.rock} items={layout.boulders} colorFor={tint} />
+      <Instanced geometry={geo.boulder} material={mats.rock} items={layout.boulders} colorFor={tint} register={fx.reg('boulder')} />
       <Instanced geometry={geo.pebble} material={mats.rock} items={layout.pebbles} colorFor={tint} shadow={false} lift={-0.03} />
       <Instanced geometry={geo.grass} material={mats.grass} items={layout.grass} colorFor={tint} shadow={false} />
       {FLOWER_KINDS.map((k) => (
         <group key={k}>
-          <Instanced geometry={geo.stems[k]} material={mats.flower} items={layout.flowers[k]} shadow={false} />
-          <Instanced geometry={geo.blooms[k]} material={mats.flower} items={layout.flowers[k]} colorFor={bloomColor} shadow={false} />
+          <Instanced geometry={geo.stems[k]} material={mats.flower} items={layout.flowers[k]} shadow={false} register={fx.reg(`${k}:stems`)} />
+          <Instanced geometry={geo.blooms[k]} material={mats.flower} items={layout.flowers[k]} colorFor={bloomColor} shadow={false} register={fx.reg(`${k}:blooms`)} />
         </group>
       ))}
       {layout.pond && <PondView controller={controller} pond={layout.pond} />}

@@ -355,3 +355,63 @@ export function birdWing(): BufferGeometry {
   k.box([0.09, 0.008, 0.045], (p: Vector3) => mix('#5a4636', '#9c8068', 0.5 + p.x * 8), { p: [0.045, 0, 0] }, 0.004);
   return solid(k);
 }
+
+// ---------------------------------------------------------------------------
+// Drops (world/Drops.tsx): small items lying on the ground, resting on y = 0, ≈ 0.2–0.25 u
+// ---------------------------------------------------------------------------
+
+/** A short log lying on its side: bark round the outside, pale cut ends with rings. */
+export function dropLog(): BufferGeometry {
+  const k = new Kit();
+  k.surface('bark', () => k.cyl(0.075, 0.075, 0.24, (p: Vector3) => mix('#6e4326', '#9b6a3e', 0.5 + p.y * 3), { p: [0, 0.075, 0], r: [0, 0, Math.PI / 2] }, 9));
+  for (const s of [-1, 1]) {
+    k.cyl(0.066, 0.066, 0.012, '#e8c28e', { p: [s * 0.121, 0.075, 0], r: [0, 0, Math.PI / 2] }, 9);
+    k.cyl(0.035, 0.035, 0.014, '#c99a63', { p: [s * 0.122, 0.075, 0], r: [0, 0, Math.PI / 2] }, 7);
+  }
+  k.cyl(0.018, 0.012, 0.06, '#7a4b2a', { p: [0.03, 0.14, 0.03], r: [0.5, 0, -0.3] }, 5);
+  return solid(k);
+}
+
+/** A little bunch of three broad leaves on a twig. */
+export function dropLeaves(): BufferGeometry {
+  const k = new Kit();
+  const leaf = (_p: Vector3, n: Vector3) => mix('#3f8f3a', '#9bdc5e', 0.45 + n.y * 0.45);
+  for (const [a, tilt] of [
+    [-0.7, 0.35],
+    [0.1, 0.25],
+    [0.85, 0.4],
+  ] as const) {
+    k.blob(0.07, leaf, { p: [Math.sin(a) * 0.07, 0.03, Math.cos(a) * 0.07], r: [tilt, a, 0], s: [0.55, 0.14, 1.1] }, 1);
+  }
+  k.cyl(0.008, 0.008, 0.08, '#6b4a2a', { p: [0, 0.03, -0.04], r: [Math.PI / 2, 0, 0] }, 4);
+  return solid(k);
+}
+
+/** A round fruit with a stem and a leaf (apple red / orange orange). */
+export function dropFruit(color: string): BufferGeometry {
+  const k = new Kit();
+  k.sphere(0.075, color, { p: [0, 0.075, 0] }, [12, 10]);
+  k.sphere(0.026, mix(color, '#ffffff', 0.5), { p: [-0.028, 0.11, 0.05] }, [6, 4]);
+  k.cyl(0.007, 0.007, 0.05, '#6b4a2a', { p: [0, 0.16, 0] }, 4);
+  k.blob(0.03, '#3f8a3a', { p: [0.03, 0.17, 0], s: [1.4, 0.35, 0.8] }, 0);
+  return solid(k);
+}
+
+/** A chipped stone piece. */
+export function dropStone(): BufferGeometry {
+  const k = new Kit();
+  k.add(chiselledBlob(0.1, 1, 0.2, 31, 4, 0.8), stonePaint('#7e7876', '#bcb4ac', 0.12), { p: [0, 0.07, 0], s: [1.2, 0.8, 1] });
+  return solid(k);
+}
+
+/** The pickaxe that pops into the character's hand: handle along +y (grip at the origin), head at the top. */
+export function pickaxe(): BufferGeometry {
+  const k = new Kit();
+  k.surface('wood', () => k.cyl(0.018, 0.022, 0.5, '#9b6a3e', { p: [0, 0.18, 0] }, 6));
+  k.surface('metal', () => {
+    k.box([0.3, 0.05, 0.045], '#8f969e', { p: [0, 0.42, 0], r: [0, 0, 0] }, 0.015);
+    for (const s of [-1, 1]) k.cone(0.026, 0.09, '#b7bec6', { p: [s * 0.18, 0.405, 0], r: [0, 0, s * -Math.PI / 2 - s * 0.35] }, 5);
+  });
+  k.box([0.05, 0.07, 0.055], '#6b4a2a', { p: [0, 0.42, 0] }, 0.01);
+  return solid(k);
+}

@@ -7,8 +7,14 @@ export type Phase = 'loading' | 'ready' | 'playing';
 export interface GameState {
   phase: Phase;
   nearbyId: string | null;
-  /** The bench seat on offer (you're standing by it), or null. */
-  seatNear: string | null;
+  /** What E would use right now (a tree, boulder, flower, the chest or the bench), with its prompt text. */
+  target: { kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'bench'; key: string; label: string } | null;
+  /** The action cycle playing (shake, mine, pick, open), or null. */
+  acting: 'shake' | 'mine' | 'pick' | 'open' | null;
+  /** The inventory screen that's open: the backpack on its own, or the chest with it. */
+  invScreen: 'backpack' | 'chest' | null;
+  /** Bumped on every inventory change (the hotbar and screens re-render). */
+  invVersion: number;
   /** True while the character sits on a bench (from sitting down until it starts to stand up). */
   seated: boolean;
   openId: string | null;
@@ -46,7 +52,10 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
   return createStore<GameState>()(() => ({
     phase: 'loading',
     nearbyId: null,
-    seatNear: null,
+    target: null,
+    acting: null,
+    invScreen: null,
+    invVersion: 0,
     seated: false,
     openId: null,
     menuOpen: false,
