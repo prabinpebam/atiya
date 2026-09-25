@@ -292,20 +292,21 @@ test.describe('day–night', () => {
     await page.getByTestId('menu-button').click();
     await page.getByRole('checkbox', { name: 'Pause ambient motion' }).check();
     await page.getByRole('button', { name: 'Close' }).click();
-    // keyboard: Page Down steps back an hour, an arrow a quarter-hour
+    // keyboard: Page Down steps back an hour, an arrow a quarter-hour (differences wrap round midnight)
+    const stepped = (a: number, b: number) => ((b - a + 36) % 24) - 12;
     await badge.focus();
     let before = (await state(page)).hours;
     await page.keyboard.press('PageDown');
-    expect((await state(page)).hours - before).toBeCloseTo(-1, 1);
+    expect(stepped(before, (await state(page)).hours)).toBeCloseTo(-1, 1);
     before = (await state(page)).hours;
     await page.keyboard.press('ArrowRight');
-    expect((await state(page)).hours - before).toBeCloseTo(0.25, 1);
+    expect(stepped(before, (await state(page)).hours)).toBeCloseTo(0.25, 1);
     await expect(badge).toHaveAttribute('aria-valuetext', /^\d{1,2}:\d{2} (AM|PM)$/);
     // a plain click on the right half steps an hour on
     before = (await state(page)).hours;
     const now = (await badge.boundingBox())!;
     await badge.click({ position: { x: now.width * 0.8, y: now.height / 2 } });
-    expect((await state(page)).hours - before).toBeCloseTo(1, 1);
+    expect(stepped(before, (await state(page)).hours)).toBeCloseTo(1, 1);
   });
 });
 
