@@ -40,6 +40,10 @@ export interface GameTestHook {
   hdrScan(width?: number, samples?: number): { bad: number; max: number; at: [number, number] | null; hit: string | null };
   /** The live renderer and scene (audits in the console / scripts). */
   __gfx(): GameController['gfx'];
+  /** Ambient wildlife: each animal's state and distance (u) from the character. */
+  wildlife(): { rabbits: { state: string; d: number }[]; duck: { state: string; d: number } | null; fish: { state: string; d: number; stream: boolean }[]; birds: { state: string; d: number; alt: number }[] };
+  /** Stand `u` away from an animal (visual testing and the wildlife E2E). */
+  nearAnimal(kind: 'rabbit' | 'duck' | 'bird', i?: number, u?: number): boolean;
   /** Show or hide the character's occlusion outline (visual testing). */
   setOutline(on: boolean): void;
   /** Scene exposure (into the tone map) and the tilt-shift blend function name. */
@@ -69,6 +73,8 @@ export interface GameTestHook {
     levels: { stream: number; streamPan: number; wind: number; windCutoff: number; birds: boolean };
     lastSurface: string | null;
     events: Array<{ t: number; kind: string; detail?: string; played: boolean }>;
+    /** Background music: on/off, playing, the current track and its URL. */
+    music: { on: boolean; playing: boolean; track: number; url: string | null };
   };
   /** Ground under the player: smoothed lift, terrain height, walk height and distance to the river (u). */
   groundInfo(): {
@@ -305,6 +311,34 @@ export function installTestHook(c: GameController): void {
         topTriangles: bigMeshes.slice(0, 15),
       };
     },
+    wildlife: () => {
+      const w = c.wildlife;
+      const R = CONFIG.planetRadius;
+      const d = (n: Vector3) => (Math.acos(Math.max(-1, Math.min(1, n.dot(c.sim.pLocal)))) * R);
+      if (!w) return { rabbits: [], duck: null, fish: [], birds: [] };
+      return {
+        rabbits: w.rabbits.map((r) => ({ state: r.state, d: d(r.n) })),
+        duck: w.duck ? { state: w.duck.state, d: d(w.duck.n) } : null,
+        fish: w.fish.map((f) => ({ state: f.state, d: d(f.n), stream: f.stream })),
+        birds: w.birds.map((b) => ({ state: b.state, d: d(b.n), alt: b.alt })),
+      };
+    },
+    nearAnimal: (kind, i = 0, u = 1.2) => {
+      const w = c.wildlife;
+      const a = kind === 'rabbit' ? w?.rabbits[i] : kind === 'duck' ? w?.duck : w?.birds.find((b) => b.state === 'peck');
+      if (!a) return false;
+      // stand on dry ground `u` from the animal, facing it
+      for (let k = 0; k < 16; k++) {
+        const dir = tangentToward(a.n, new Vector3(Math.cos(k), Math.sin(k * 1.7), Math.sin(k)).normalize());
+        if (!dir) continue;
+        const stand = moveAlong(a.n, dir, u / CONFIG.planetRadius);
+        if (c.terrain.inWater(stand) && kind !== 'duck') continue;
+        const face = tangentToward(stand, a.n) ?? dir;
+        c.sim.setOrientation(orientationFor(stand, face));
+        return true;
+      }
+      return false;
+    },
     setOutline: (on) => {
       outlineMaterial().visible = on;
     },
@@ -334,6 +368,7 @@ export function installTestHook(c: GameController): void {
       levels: { ...c.sound.levels },
       lastSurface: c.lastStepSurface,
       events: c.sound.events.map((e) => ({ ...e })),
+      music: c.sound.musicState,
     }),
     groundInfo: () => {
       const p = c.sim.pLocal;

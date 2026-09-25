@@ -4,6 +4,7 @@
  * or created until the player starts (a user gesture) with sound on.
  */
 import { AUDIO } from './audioManifest';
+import { MUSIC } from './musicManifest';
 import { birdsSing, nextBirdDelay, pickVariant, windMix, type Surface } from './audioLogic';
 
 type BufferKey = keyof typeof AUDIO;
@@ -42,6 +43,9 @@ const MIX = {
   doorOpen: 0.42,
   doorClose: 0.38,
   curtain: 0.4,
+  /** Background music: slightly subtle, a bed under the ambience; a little lower under dialogs. */
+  music: 0.2,
+  musicDuck: 0.65,
 } as const;
 /** Slots start this much early and end this much late, so an MP3 decoder's priming offset never clips a sound. */
 const SLOT_SLACK = 0.02;
@@ -68,9 +72,20 @@ export class SoundEngine {
   private ducked = false;
   private hidden = false;
   private suspendTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Background music: streamed from an <audio> element through its own gain (not decoded whole). */
+  private music: { el: HTMLAudioElement; gain: GainNode; track: number } | null = null;
+  private musicTimer: ReturnType<typeof setTimeout> | undefined;
+  musicOn: boolean;
 
-  constructor(enabled: boolean, private readonly rand: () => number = Math.random) {
+  constructor(enabled: boolean, private readonly rand: () => number = Math.random, musicOn = true) {
     this.enabled = enabled;
+    this.musicOn = musicOn;
+  }
+
+  /** Music state, for the test hook: on/off, whether it's playing, and the track. */
+  get musicState(): { on: boolean; playing: boolean; track: number; url: string | null } {
+    const m = this.music;
+    return { on: this.musicOn, playing: !!m && !m.el.paused, track: m?.track ?? -1, url: m ? MUSIC[m.track].url : null };
   }
 
   get state(): AudioContextState | 'none' {
@@ -108,6 +123,75 @@ export class SoundEngine {
     }
     if (this.ctx.state === 'suspended' && !this.hidden) void this.ctx.resume().catch(() => undefined);
     this.load();
+    this.startMusic();
+  }
+
+  /** Start the music (once unlocked, with sound and music on): a random track, fading in gently. */
+  private startMusic(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master || !this.enabled || !this.musicOn || typeof Audio === 'undefined') return;
+    if (this.music) {
+      this.resumeMusic();
+      return;
+    }
+    const track = MUSIC.length > 1 ? Math.floor(this.rand() * MUSIC.length) % MUSIC.length : 0;
+    const el = new Audio();
+    el.preload = 'auto';
+    el.src = MUSIC[track].url;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    try {
+      ctx.createMediaElementSource(el).connect(gain).connect(this.master);
+    } catch {
+      return;
+    }
+    this.music = { el, gain, track };
+    // one track after the other, round the playlist
+    el.addEventListener('ended', () => this.nextTrack());
+    this.resumeMusic(1.5);
+  }
+
+  private musicLevel(): number {
+    return MIX.music * (this.ducked ? MIX.musicDuck : 1);
+  }
+
+  /** Play (or keep playing) and fade up to the music level after `delay` s. */
+  private resumeMusic(delay = 0): void {
+    const m = this.music;
+    const ctx = this.ctx;
+    if (!m || !ctx || !this.enabled || !this.musicOn || this.hidden) return;
+    clearTimeout(this.musicTimer);
+    void m.el.play().catch(() => undefined);
+    m.gain.gain.cancelScheduledValues(ctx.currentTime);
+    m.gain.gain.setTargetAtTime(this.musicLevel(), ctx.currentTime + delay, 1.4);
+  }
+
+  /** Fade the music out, then pause it (so it doesn't stream or play on while it can't be heard). */
+  private pauseMusic(fade = 0.25): void {
+    const m = this.music;
+    if (!m) return;
+    clearTimeout(this.musicTimer);
+    if (this.ctx) {
+      m.gain.gain.cancelScheduledValues(this.ctx.currentTime);
+      m.gain.gain.setTargetAtTime(0, this.ctx.currentTime, fade / 3);
+    }
+    this.musicTimer = setTimeout(() => m.el.pause(), fade * 1000);
+  }
+
+  private nextTrack(): void {
+    const m = this.music;
+    if (!m) return;
+    m.track = (m.track + 1) % MUSIC.length;
+    m.el.src = MUSIC[m.track].url;
+    if (this.ctx) m.gain.gain.setValueAtTime(0, this.ctx.currentTime);
+    this.resumeMusic(0.6);
+  }
+
+  /** Music on/off (remembered by the controller); only audible with sound on. */
+  setMusic(on: boolean): void {
+    this.musicOn = on;
+    if (on) this.startMusic();
+    else this.pauseMusic(0.6);
   }
 
   setEnabled(on: boolean): void {
@@ -120,6 +204,7 @@ export class SoundEngine {
     }
     if (!this.ctx || !this.master) return;
     this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
+    this.pauseMusic();
     // let the fade finish, then stop the audio thread entirely
     this.suspendTimer = setTimeout(() => {
       if (!this.enabled) void this.ctx?.suspend().catch(() => undefined);
@@ -130,14 +215,20 @@ export class SoundEngine {
   setHidden(hidden: boolean): void {
     this.hidden = hidden;
     if (!this.ctx) return;
-    if (hidden) void this.ctx.suspend().catch(() => undefined);
-    else if (this.enabled) void this.ctx.resume().catch(() => undefined);
+    if (hidden) {
+      void this.ctx.suspend().catch(() => undefined);
+      this.music?.el.pause();
+    } else if (this.enabled) {
+      void this.ctx.resume().catch(() => undefined);
+      this.resumeMusic();
+    }
   }
 
   /** Dialog or menu open: the ambience steps back. */
   setDucked(ducked: boolean): void {
     this.ducked = ducked;
     if (this.ctx && this.ambience) this.ambience.gain.setTargetAtTime(ducked ? MIX.duck : 1, this.ctx.currentTime, 0.2);
+    if (this.ctx && this.music && !this.music.el.paused) this.music.gain.gain.setTargetAtTime(this.musicLevel(), this.ctx.currentTime, 0.4);
   }
 
   /** Per-frame: follow the wind and the player's distance to the stream; schedule birds. */
@@ -280,6 +371,12 @@ export class SoundEngine {
 
   dispose(): void {
     clearTimeout(this.suspendTimer);
+    clearTimeout(this.musicTimer);
+    if (this.music) {
+      this.music.el.pause();
+      this.music.el.removeAttribute('src');
+      this.music = null;
+    }
     void this.ctx?.close().catch(() => undefined);
     this.ctx = null;
   }

@@ -6,6 +6,8 @@ import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import type { TimeMode } from '../world/timeOfDay';
+import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { Icon } from './Icon';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -60,7 +62,7 @@ export function LandmarkDialog({ controller }: { controller: GameController }) {
           )}
           <div className="actions">
             <a className="btn primary" href={classicHrefFor(shown.id)} onClick={toClassic}>
-              Open full page <span aria-hidden="true">↗</span>
+              Open full page <Icon icon={faArrowUpRightFromSquare} />
             </a>
             <button className="btn" type="button" onClick={() => controller.requestCloseLandmark()}>
               Close
@@ -79,6 +81,7 @@ export function MenuDialog({ controller }: { controller: GameController }) {
   const pauseAmbient = useStore(controller.store, (s) => s.pauseAmbient);
   const timeMode = useStore(controller.store, (s) => s.timeMode);
   const soundOn = useStore(controller.store, (s) => s.soundOn);
+  const musicOn = useStore(controller.store, (s) => s.musicOn);
   const ambientPaused = useStore(controller.store, selectAmbientPaused);
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -138,6 +141,10 @@ export function MenuDialog({ controller }: { controller: GameController }) {
           <label className="check">
             <input type="checkbox" checked={soundOn} onChange={(e) => controller.setSound(e.currentTarget.checked)} />
             Sound effects
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={musicOn} onChange={(e) => controller.setMusic(e.currentTarget.checked)} />
+            Background music
           </label>
           <fieldset className="radio-group">
             <legend>Time of day</legend>

@@ -220,7 +220,7 @@ test.describe('day–night', () => {
     await expect.poll(async () => (await state(page)).night).toBeGreaterThan(0.9);
     expect((await state(page)).glow).toBeGreaterThan(1.3);
     await expect(page.getByTestId('time-badge')).toContainText('10:00 PM');
-    await expect(page.getByTestId('time-badge')).toContainText('☾');
+    await expect(page.getByTestId('time-badge').locator('[data-icon="moon"]')).toBeVisible();
   });
 
   test('the bridge lanterns are dark by day and light up (real lights) at night', async ({ page }) => {
@@ -333,7 +333,7 @@ test.describe('day–night', () => {
     expect((await state(page)).hours).toBeCloseTo(22, 1); // held while the button is down
     await expect.poll(async () => (await state(page)).night).toBeGreaterThan(0.9);
     await expect(badge).toContainText('10:00 PM');
-    await expect(badge).toContainText('☾');
+    await expect(badge.locator('[data-icon="moon"]')).toBeVisible();
     await page.mouse.up();
     expect((await hidden()).scrubbing).toBe(false);
     expect(await badge.evaluate((el) => getComputedStyle(el).cursor)).toBe('ew-resize');
@@ -590,6 +590,7 @@ test.describe('sound', () => {
     levels: { stream: number; wind: number; birds: boolean };
     lastSurface: string | null;
     events: Array<{ kind: string; detail?: string; played: boolean }>;
+    music: { on: boolean; playing: boolean; track: number; url: string | null };
   };
   const sound = (page: Page) => page.evaluate(() => (window as any).__game.sound() as Sound);
   const played = async (page: Page, kind: string) => (await sound(page)).events.filter((e) => e.kind === kind && e.played).length;
@@ -603,6 +604,9 @@ test.describe('sound', () => {
     await page.getByRole('button', { name: 'Start exploring' }).click();
     await expect.poll(async () => (await sound(page)).loaded, { timeout: 20_000 }).toBe(5);
     expect((await sound(page)).state).toBe('running');
+    // the background music streams in and plays (one of the two tracks)
+    await expect.poll(async () => (await sound(page)).music.playing, { timeout: 20_000 }).toBe(true);
+    expect((await sound(page)).music.url).toMatch(/\/audio\/music-\d\.mp3$/);
     await expect(page.getByTestId('sound-button')).toHaveAttribute('aria-pressed', 'true');
     await page.evaluate(() => (window as any).__game.setTime(11));
     // footsteps on the plaza's stone
@@ -625,6 +629,14 @@ test.describe('sound', () => {
     await page.keyboard.press('e');
     await expect.poll(() => played(page, 'sparkle')).toBe(1);
     await page.keyboard.press('Escape');
+    // the menu's music switch stops the music, and it's remembered
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page.getByRole('checkbox', { name: 'Background music' }).uncheck();
+    await expect.poll(async () => (await sound(page)).music.playing).toBe(false);
+    expect(await page.evaluate(() => localStorage.getItem('site.music'))).toBe('0');
+    await page.getByRole('checkbox', { name: 'Background music' }).check();
+    await expect.poll(async () => (await sound(page)).music.playing).toBe(true);
+    await page.keyboard.press('Escape');
     // mute: the audio stops, the choice is remembered, and a muted visit loads no sound at all
     await page.getByTestId('sound-button').click();
     await expect(page.getByTestId('sound-button')).toHaveAttribute('aria-pressed', 'false');
@@ -637,6 +649,42 @@ test.describe('sound', () => {
     await expect(page.getByRole('checkbox', { name: 'Sound effects' })).not.toBeChecked();
     expect(mp3).toEqual([]);
     expect((await sound(page)).state).toBe('none');
+  });
+});
+
+test.describe('wildlife', () => {
+  test('rabbits, a duck with ducklings, fish and birds live on the planet, and shy away from the character', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    const wild = () =>
+      page.evaluate(
+        () =>
+          (window as any).__game.wildlife() as {
+            rabbits: { state: string; d: number }[];
+            duck: { state: string; d: number } | null;
+            fish: { state: string; d: number; stream: boolean }[];
+            birds: { state: string; d: number; alt: number }[];
+          },
+      );
+    await page.evaluate(() => (window as any).__game.setTime(11));
+    const w = await wild();
+    expect(w.rabbits.length).toBeGreaterThan(0);
+    expect(w.duck).not.toBeNull();
+    expect(w.fish.some((f) => f.stream)).toBe(true);
+    expect(w.fish.some((f) => !f.stream)).toBe(true);
+    expect(w.birds.length).toBeGreaterThan(0);
+    // walk up to a rabbit: it bolts
+    expect(await page.evaluate(() => (window as any).__game.nearAnimal('rabbit', 0, 1.4))).toBe(true);
+    await expect.poll(async () => (await wild()).rabbits[0].state, { timeout: 20_000 }).toBe('flee');
+    // walk up to a bird pecking on the ground: it takes off
+    const pecking = (await wild()).birds.findIndex((b) => b.state === 'peck');
+    if (pecking >= 0) {
+      expect(await page.evaluate(() => (window as any).__game.nearAnimal('bird', 0, 1.2))).toBe(true);
+      await expect.poll(async () => (await wild()).birds.filter((b) => b.state === 'fly').length, { timeout: 20_000 }).toBeGreaterThan(w.birds.filter((b) => b.state === 'fly').length);
+    }
+    // the duck paddles off from a character wading up to her
+    expect(await page.evaluate(() => (window as any).__game.nearAnimal('duck', 0, 1.2))).toBe(true);
+    await expect.poll(async () => (await wild()).duck!.state, { timeout: 20_000 }).toBe('flee');
   });
 });
 

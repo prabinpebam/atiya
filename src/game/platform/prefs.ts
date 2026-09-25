@@ -7,6 +7,7 @@ const KEYS = {
   onboardingSeen: 'site.onboardingSeen',
   timeMode: 'site.timeMode',
   sound: 'site.sound',
+  music: 'site.music',
   character: 'site.character',
 } as const;
 
@@ -49,6 +50,9 @@ export const prefs = {
   /** Sound is on unless the visitor turned it off. */
   getSound: () => read(KEYS.sound) !== '0',
   setSound: (v: boolean) => write(KEYS.sound, v ? '1' : '0'),
+  /** Background music is on unless the visitor turned it off (it only plays with sound on). */
+  getMusic: () => read(KEYS.music) !== '0',
+  setMusic: (v: boolean) => write(KEYS.music, v ? '1' : '0'),
   getCharacter: (): CharacterId => {
     const v = read(KEYS.character);
     return isCharacterId(v) ? v : DEFAULT_CHARACTER;

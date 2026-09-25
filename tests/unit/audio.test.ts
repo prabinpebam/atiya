@@ -3,6 +3,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { Vector3 } from 'three';
 import { AUDIO } from '../../src/game/audio/audioManifest';
+import { MUSIC } from '../../src/game/audio/musicManifest';
 import {
   WADE_SPLASH_U,
   birdsSing,
@@ -232,5 +233,26 @@ describe('sound engine (no audio device)', () => {
     expect(day).toBeGreaterThanOrEqual(3);
     for (let t = 0; t < 60; t += 0.2) e.update(0.2, { strength: 0.3, gust: 0, stream: 0, streamPan: 0, night: 1 });
     expect(e.events.filter((x) => x.kind === 'bird').length).toBe(day);
+  });
+});
+
+describe('background music', () => {
+  it('is a two-track playlist of streamed MP3s, each within its budget', () => {
+    expect(MUSIC.length).toBe(2);
+    for (const t of MUSIC) {
+      const size = statSync(join(PUBLIC, t.url)).size;
+      expect(size, t.url).toBe(t.bytes);
+      expect(size, t.url).toBeLessThan(3 * 1024 * 1024); // streamed after Start, one track at a time
+      expect(t.seconds, t.url).toBeGreaterThan(60);
+    }
+  });
+
+  it('stays silent and fetches nothing until unlocked, and remembers the music choice', () => {
+    const engine = new SoundEngine(true, Math.random, false);
+    expect(engine.musicState).toEqual({ on: false, playing: false, track: -1, url: null });
+    engine.setMusic(true);
+    // no audio context yet (no user gesture): nothing starts
+    expect(engine.musicState.playing).toBe(false);
+    expect(engine.musicState.on).toBe(true);
   });
 });

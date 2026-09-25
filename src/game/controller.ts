@@ -61,6 +61,8 @@ export class GameController {
   readonly fadeEl: { current: HTMLDivElement | null } = { current: null };
   region: HTMLDivElement | null = null;
   camera: Camera | null = null;
+  /** The ambient wildlife simulation (set by the Wildlife component; read by the test hook). */
+  wildlife: import('./world/animals').Wildlife | null = null;
   /** Renderer and scene, for diagnostics (the test hook's `perfStats`). */
   gfx: { gl: WebGLRenderer; scene: Scene } | null = null;
   /** Totals for the previous frame (all passes: shadows, scene, post). */
@@ -142,9 +144,10 @@ export class GameController {
       quality: opts.quality ?? 'high',
       timeMode,
       soundOn: prefs.getSound(),
+      musicOn: prefs.getMusic(),
       character: prefs.getCharacter(),
     });
-    this.sound = new SoundEngine(this.store.getState().soundOn);
+    this.sound = new SoundEngine(this.store.getState().soundOn, Math.random, this.store.getState().musicOn);
     if (mq) {
       const onChange = () => this.store.setState({ reducedMotionSystem: mq.matches });
       mq.addEventListener('change', onChange);
@@ -623,6 +626,12 @@ export class GameController {
     prefs.setCharacter(id);
     this.store.setState({ character: id });
     this.announce(`Now playing as the ${characterById(id).label.toLowerCase()}.`);
+  }
+
+  setMusic(on: boolean): void {
+    prefs.setMusic(on);
+    this.sound.setMusic(on);
+    this.store.setState({ musicOn: on });
   }
 
   setSound(on: boolean): void {

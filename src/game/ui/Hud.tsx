@@ -8,6 +8,8 @@ import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
 import { LandmarkDialog, MenuDialog } from './Dialogs';
 import { ViewControls } from './ViewControls';
 import { CHARACTERS, type CharacterId } from '../player/characters';
+import { faArrowUpRightFromSquare, faMoon, faSun, faVolumeHigh, faVolumeXmark } from '@fortawesome/free-solid-svg-icons';
+import { Icon } from './Icon';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -73,7 +75,7 @@ function PreviewCard({ controller }: { controller: GameController }) {
           Open <kbd>E</kbd>
         </button>
         <a className="btn" href={classicHrefFor(d.id)} onClick={toClassic}>
-          Classic page <span aria-hidden="true">↗</span>
+          Classic page <Icon icon={faArrowUpRightFromSquare} />
         </a>
       </div>
     </section>
@@ -253,7 +255,7 @@ function TimeBadge({ controller }: { controller: GameController }) {
       onLostPointerCapture={onPointerCancel}
       onKeyDown={onKeyDown}
     >
-      <span aria-hidden="true">{night ? '☾' : '☀'}</span>
+      <Icon icon={night ? faMoon : faSun} className="time-icon" />
       {text}
     </div>
   );
@@ -271,7 +273,7 @@ function SoundButton({ controller }: { controller: GameController }) {
       onClick={() => controller.setSound(!on)}
       data-testid="sound-button"
     >
-      <span aria-hidden="true">{on ? '🔊' : '🔇'}</span>
+      <Icon icon={on ? faVolumeHigh : faVolumeXmark} />
       <span className="sound-label">Sound</span>
     </button>
   );

@@ -284,3 +284,74 @@ export function butterflyWing(): BufferGeometry {
   k.add(new SphereGeometry(0.045, 10, 6), '#f5f5f5', { p: [0.045, 0, -0.05], s: [1, 0.12, 0.7] });
   return solid(k);
 }
+
+// ---------------------------------------------------------------------------
+// Wildlife (world/animals.ts): small, soft kit models, facing +Z, feet (or waterline) at y = 0
+// ---------------------------------------------------------------------------
+
+/** A rabbit (≈ 0.3 u long): round body, head, long ears, white scut. `upright` = sitting up to look. */
+export function rabbit(upright = false): BufferGeometry {
+  const k = new Kit();
+  const fur = (_p: Vector3, n: Vector3) => mix('#8a6c52', '#c7a887', 0.45 + n.y * 0.45);
+  const lift = upright ? 0.07 : 0;
+  k.blob(0.12, fur, { p: [0, 0.1 + lift * 0.6, -0.02], s: upright ? [1, 1.25, 0.95] : [1, 0.85, 1.25] }, 1, 'solid', 0.05, 3);
+  k.blob(0.075, fur, { p: [0, 0.17 + lift * 1.4, upright ? 0.07 : 0.12], s: [1, 0.95, 1.1] }, 1, 'solid', 0.04, 4);
+  for (const x of [-0.028, 0.028]) {
+    k.blob(0.03, fur, { p: [x, 0.27 + lift * 1.4, upright ? 0.05 : 0.08], r: [upright ? -0.1 : -0.45, 0, x * 3], s: [0.55, 2.6, 0.35] }, 0);
+    k.blob(0.018, '#e9b7b0', { p: [x, 0.27 + lift * 1.4, upright ? 0.063 : 0.095], r: [upright ? -0.1 : -0.45, 0, x * 3], s: [0.45, 2.2, 0.2] }, 0);
+  }
+  k.sphere(0.012, '#1d1712', { p: [-0.045, 0.19 + lift * 1.4, upright ? 0.12 : 0.17] }, [5, 4]);
+  k.sphere(0.012, '#1d1712', { p: [0.045, 0.19 + lift * 1.4, upright ? 0.12 : 0.17] }, [5, 4]);
+  k.blob(0.035, '#f6f1e8', { p: [0, 0.11 + lift * 0.4, -0.14] }, 0);
+  return solid(k);
+}
+
+/** A white duck floating (≈ 0.3 u long): waterline at y = 0. */
+export function duck(): BufferGeometry {
+  const k = new Kit();
+  const plume = (_p: Vector3, n: Vector3) => mix('#d9dde2', '#ffffff', 0.5 + n.y * 0.5);
+  k.blob(0.13, plume, { p: [0, 0.03, 0], s: [0.85, 0.6, 1.3] }, 1, 'solid', 0.04, 5);
+  k.blob(0.05, plume, { p: [0, 0.07, -0.15], r: [0.6, 0, 0], s: [0.8, 0.6, 1.3] }, 0);
+  k.blob(0.07, plume, { p: [0, 0.18, 0.12] }, 1, 'solid', 0.03, 6);
+  k.box([0.05, 0.02, 0.07], '#f29a2e', { p: [0, 0.17, 0.2] }, 0.01);
+  k.sphere(0.011, '#1b1b1b', { p: [-0.04, 0.2, 0.15] }, [5, 4]);
+  k.sphere(0.011, '#1b1b1b', { p: [0.04, 0.2, 0.15] }, [5, 4]);
+  return solid(k);
+}
+
+/** A fluffy yellow duckling (≈ 0.13 u). */
+export function duckling(): BufferGeometry {
+  const k = new Kit();
+  const down = (_p: Vector3, n: Vector3) => mix('#e8c33c', '#ffe27a', 0.5 + n.y * 0.5);
+  k.blob(0.055, down, { p: [0, 0.02, 0], s: [0.9, 0.7, 1.2] }, 1, 'solid', 0.06, 7);
+  k.blob(0.035, down, { p: [0, 0.075, 0.045] }, 0);
+  k.box([0.022, 0.01, 0.03], '#f08a2a', { p: [0, 0.07, 0.08] }, 0.004);
+  return solid(k);
+}
+
+/** A small fish (≈ 0.18 u), near-white so the instance colour paints it (koi orange, trout grey). */
+export function fishModel(): BufferGeometry {
+  const k = new Kit();
+  const scales = (_p: Vector3, n: Vector3) => mix('#c9c9c9', '#ffffff', 0.5 + n.y * 0.5);
+  k.blob(0.05, scales, { p: [0, 0, 0.02], s: [0.55, 0.7, 1.7] }, 0);
+  k.cone(0.035, 0.06, scales, { p: [0, 0, -0.08], r: [-Math.PI / 2, 0, 0], s: [0.25, 1, 1] }, 4);
+  return solid(k);
+}
+
+/** A songbird's body (≈ 0.12 u long) — the wings are separate so they can beat. */
+export function birdBody(): BufferGeometry {
+  const k = new Kit();
+  const feathers = (_p: Vector3, n: Vector3) => mix('#6a5747', '#cdb49a', 0.5 + n.y * 0.5);
+  k.blob(0.04, feathers, { p: [0, 0.04, 0], s: [0.8, 0.8, 1.5] }, 0);
+  k.blob(0.028, feathers, { p: [0, 0.07, 0.05] }, 0);
+  k.cone(0.008, 0.025, '#e0a03a', { p: [0, 0.07, 0.085], r: [Math.PI / 2, 0, 0] }, 4);
+  k.box([0.03, 0.006, 0.06], '#5a4636', { p: [0, 0.045, -0.07], r: [0.3, 0, 0] }, 0.003);
+  return solid(k);
+}
+
+/** One wing, rooted at the origin and reaching along +x (mirrored for the other side). */
+export function birdWing(): BufferGeometry {
+  const k = new Kit();
+  k.box([0.09, 0.008, 0.045], (p: Vector3) => mix('#5a4636', '#9c8068', 0.5 + p.x * 8), { p: [0.045, 0, 0] }, 0.004);
+  return solid(k);
+}

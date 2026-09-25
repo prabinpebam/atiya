@@ -17,6 +17,7 @@ import { DayNight } from './world/DayNight';
 import { Bridges, Cliffs, Water } from './world/Landforms';
 import { FlyingLeaves, WindDriver, WindSwirls } from './world/WindFx';
 import { WadeFx } from './world/WadeFx';
+import { Wildlife } from './world/Wildlife';
 import { updateLampUniforms } from './world/lampLights';
 
 /** Upload every texture the scene's materials use (`initTexture`), so none waits for its first draw. */
@@ -277,6 +278,7 @@ export function Scene({ controller }: { controller: GameController }) {
         <WindSwirls controller={controller} />
         <Plaza controller={controller} />
         <Props controller={controller} />
+        <Wildlife controller={controller} />
         {controller.geos.map((g) => (
           <Landmark key={g.id} controller={controller} geo={g} data={controller.dataById.get(g.id)!} />
         ))}

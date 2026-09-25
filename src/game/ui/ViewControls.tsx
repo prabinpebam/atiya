@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useStore } from 'zustand';
 import type { GameController } from '../controller';
 import { compassPoint, viewBearingDeg, type CompassPoint } from '../math/compass';
+import { faChevronDown, faChevronUp, faHouse, faRotateLeft, faRotateRight } from '@fortawesome/free-solid-svg-icons';
+import { Icon } from './Icon';
 
 /**
  * Run a view action. After a mouse/touch click, hand focus back to the planet so WASD keeps
@@ -101,26 +103,13 @@ export function ViewControls({ controller }: { controller: GameController }) {
 }
 
 function Chevron({ dir }: { dir: 'up' | 'down' }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
-      <path d={dir === 'up' ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7'} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <Icon icon={dir === 'up' ? faChevronUp : faChevronDown} />;
 }
 
 function Turn({ dir }: { dir: 'cw' | 'ccw' }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18" style={dir === 'ccw' ? { transform: 'scaleX(-1)' } : undefined}>
-      <path d="M19 12a7 7 0 1 1-2.05-4.95" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M19.5 3.5v4.5h-4.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <Icon icon={dir === 'cw' ? faRotateRight : faRotateLeft} />;
 }
 
 function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
-      <path d="M4 11.5 12 5l8 6.5M6.5 10v9h11v-9" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <Icon icon={faHouse} />;
 }

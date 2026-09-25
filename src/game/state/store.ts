@@ -30,6 +30,8 @@ export interface GameState {
   timeMode: TimeMode;
   /** Sound effects on (persisted; on by default, with a HUD toggle). */
   soundOn: boolean;
+  /** Background music on (persisted; on by default; plays only with sound on). */
+  musicOn: boolean;
   /** Which player character is chosen (persisted). */
   character: CharacterId;
 }
@@ -56,6 +58,7 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     postLevel: 2,
     timeMode: 'cycle',
     soundOn: true,
+    musicOn: true,
     character: 'skater',
     ...init,
   }));
