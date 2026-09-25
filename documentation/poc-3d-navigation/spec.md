@@ -328,7 +328,7 @@ The cozy life-sim look is achieved with **original** procedural models. The styl
 | Landscape | Gently rolling hills; faceted sandstone cliff mesas whose lawn rolls over the rim; mossy boulders and river pebbles; a meandering stream with a waterfall, foam and flowing water; an arched plank bridge with lanterns (§4.14) |
 | Wind | Gust-driven sway and leaf flutter on all foliage, tumbling leaves, and occasional hand-drawn-style swirl ribbons (§4.14) |
 | Sky | Gradient sky, puffy drifting clouds, sun, moon and stars that follow the day–night cycle (§4.13). The clouds drift through a 170 u wide band (24 clouds, about one per 7 u). That is wide enough that even a 32:9 ultrawide, or a short, wide window, sees clouds all the way across at any tilt. They wrap only at the band's ends, and fade out over the last 18 u and back in over the first 18 u (a per-instance `aFade` in the cloud material; `world/clouds.ts`). At the drift speed that fade takes 1–2 minutes, so a cloud never pops in or out, and resizing the window just reveals more of the band |
-| Camera "diorama" feel | Fixed-angle camera (§4.6) + **tilt-shift** blur top and bottom, gentle bloom on lamps/windows, vignette, neutral tone mapping (`high` tier only) |
+| Camera "diorama" feel | Fixed-angle camera (§4.6) + **tilt-shift** blur top and bottom and neutral tone mapping (both tiers), gentle bloom on lamps/windows and a vignette (`high` tier only). The whole chain is HDR, exposed once (*Exposure and tone mapping*, §4.13) |
 | Character | Chibi proportions — the rigged CC0 Kenney character (§4.4), with the original procedural "designer" (round glasses, knit sweater, crossbody bag) as its fallback |
 
 All ambient animation (clouds, wind sway, flying leaves and swirls, flowing water, smoke, beam, flag, butterflies, fireflies, star twinkle, idle breathing, and the day–night clock in cycle mode) stops under **Reduce motion** or **Pause ambient motion**. Doors and the curtain respond to the player rather than being ambient: they still open and shut, instantly under Reduce motion.
@@ -387,6 +387,12 @@ The planet has a cozy life-sim day: soft dawn pinks, a bright day, a warm golden
     - The bridge lanterns and the shared door light stay real three.js point lights, since they also light the water and the room. Their overlays were removed.
     - The stage's volumetric beams stay additive: they model light scattered in the air, which is additive by nature.
   - **Test hook:** `lamps()` returns how many lamps are lit this frame.
+- **Exposure and tone mapping (as built):** the frame stays scene-referred (linear HDR in half-float buffers) until one tone-mapping step at the very end, so highlights keep their range.
+  - **The bug this fixes:** `@react-three/postprocessing`'s `<TiltShift>` defaults to `BlendFunction.ADD`. The tilt-shift effect already outputs the whole image (`mix(blurred, sharp, mask)`), so ADD summed it onto the input: every pixel reached the tone mapper at **2× radiance**, in focus or not. About 40 % of a daytime frame clipped to white and the image looked flat and washed out.
+  - **Now:** the tilt-shift uses `BlendFunction.NORMAL`, so it replaces the image and doesn't change its energy. With the double gone, the blur reads at its true strength, so the kernel is one step smaller (`SMALL` on `high`, `VERY_SMALL` on `low`) to keep the old softness. Bloom (added on top by design) is 0.45.
+  - **Exposure** is one linear multiplier on the HDR frame, applied in the final Neutral tone map (`renderer.toneMappingExposure`). `sceneExposure(night)` (`world/timeOfDay.ts`) gives 1.3 by day, rising smoothly to 1.7 at night, like a camera's auto-exposure adapting to the dark. `DayNight` sets it with the rest of the sky.
+  - **Measured** (1280 × 800, spawn view, midday): clipped pixels 39 % → about 1–3 %, with more contrast and saturation; night and dusk keep their brightness and lamp glow.
+  - **Test hook:** `grading()` returns `{ exposure, tiltBlend }`. The E2E suite checks the blend on both tiers, day and night exposure, and that under 6 % of a midday frame clips.
 
 ### 4.14 Landscape & wind (as built)
 
@@ -499,7 +505,7 @@ Install via the Microsoft npm proxy per [AGENTS.md](../../AGENTS.md); always ins
 | Touch joystick (P1) | nipplejs | `1.0.4` | TS rewrite (2026), ~6 KB gz, MIT |
 | GPU tier | `@pmndrs/detect-gpu` | `6.0.22` | Low-end gating |
 | Dev tuning (dev only) | leva | `0.10.1` | Live-tune movement/camera constants |
-| Post-processing (high tier) | `@react-three/postprocessing` + postprocessing | `3.1.1` + `6.39.5` | Tilt-shift, bloom, vignette, neutral tone mapping (§4.12) |
+| Post-processing | `@react-three/postprocessing` + postprocessing | `3.1.1` + `6.39.5` | Tilt-shift (NORMAL blend) and neutral tone mapping on both tiers; bloom and vignette on `high` (§4.12, §4.13) |
 | Character pipeline (dev) | `@gltf-transform/core`, `/functions`, `/extensions` + FBX2glTF (`fbx2gltf@0.9.7`, installed to a temp folder, not a project dependency) | `4.5.0` | FBX → merged, optimised GLB (`npm run build:character`) |
 | Asset pipeline (dev) | `@gltf-transform/cli`, gltfjsx | `4.5.0`, `6.5.3` | Meshopt + KTX2 compression; typed JSX |
 | Perf HUD (dev) | stats-gl | `4.2.3` | FPS / GPU timing |
@@ -693,7 +699,7 @@ personal-site/
 - **No distance or horizon culling:** the whole planet (≈ 1 100 instanced props, 7 landmarks, plaza, cliffs, river and bridge) is always drawn, and the depth buffer hides the far side. Horizon culling was tried and removed: it saved about half the triangles but made objects pop in at the limb, which was distracting. With this little content the cost is acceptable, and `low` tier is the fallback.
 - **Quality tiers:**
   - `high` (default on capable desktop GPUs) adds the post-processing chain and a 2048² shadow map.
-  - `low` is used for software rendering (the "Continue anyway" path), Data Saver and coarse pointers. It keeps a cheaper tilt-shift (small kernel, 35 % resolution) but no bloom or vignette, and a 1024² shadow map.
+  - `low` is used for software rendering (the "Continue anyway" path), Data Saver and coarse pointers. It keeps a cheaper tilt-shift (very small kernel, 35 % resolution) but no bloom or vignette, and a 1024² shadow map.
   - **The tilt-shift is never switched off.** Adaptive quality waits 10 s after start (so shader-compile hitches don't count), then on sustained low FPS steps DPR down (2 → 1.5 → 1.25 → 1), and as a last step drops bloom and vignette. It never changes tier and steps back up when FPS recovers.
   - Non-production builds accept `?quality=high|low` for visual testing.
 - **Sky objects** (clouds z ≈ −30…−38 across x ±85, sun/moon z = −50, stars z ≈ −62…−68) sit on planes behind the planet in the camera frame, inside the camera's far plane (130). The sky gradient is a small canvas texture set as `scene.background`, redrawn only when the clock has moved.

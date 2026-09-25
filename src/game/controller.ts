@@ -85,6 +85,8 @@ export class GameController {
   adaptiveStep: ((dir: -1 | 1, force?: boolean) => void) | null = null;
   /** Active post-processing chain (for tests/diagnostics). */
   postFx = 'none';
+  /** Final grade: scene exposure and how the tilt-shift image is blended (diagnostics). */
+  grading = { exposure: 1, tiltBlend: '' };
   /** Planet clock in hours [0, 24), advanced by the DayNight rig. */
   timeOfDay: number;
   /** Test hook: hold the clock at `timeOfDay`. */

@@ -64,6 +64,17 @@ const MOON_COLOR = new Color('#a9bcff');
 export const SUNRISE = 6;
 export const SUNSET = 19;
 
+/**
+ * Scene exposure (a linear multiplier on HDR radiance, applied once in the final tone map).
+ * Night opens up a little, like an eye (or a camera's auto-exposure) adapting to the dark.
+ */
+export const EXPOSURE = { day: 1.3, night: 1.7 } as const;
+
+export function sceneExposure(night: number): number {
+  const n = Math.min(1, Math.max(0, night));
+  return EXPOSURE.day + (EXPOSURE.night - EXPOSURE.day) * n;
+}
+
 function smooth(t: number) {
   return t * t * (3 - 2 * t);
 }

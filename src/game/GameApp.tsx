@@ -5,6 +5,7 @@ import { CONFIG } from './config';
 import type { GameController } from './controller';
 import { Scene } from './Scene';
 import { Hud } from './ui/Hud';
+import { EXPOSURE } from './world/timeOfDay';
 
 const C = CONFIG.camera;
 const R = CONFIG.planetRadius;
@@ -39,6 +40,7 @@ export function GameApp({ controller }: { controller: GameController }) {
           camera={{ fov: C.fov, near: 0.1, far: 130, position: [0, R + Math.sin(pitch) * C.distance, Math.cos(pitch) * C.distance] }}
           onCreated={({ gl }) => {
             gl.toneMapping = NeutralToneMapping;
+            gl.toneMappingExposure = EXPOSURE.day;
             const canvas = gl.domElement;
             canvas.setAttribute('aria-hidden', 'true');
             canvas.addEventListener('webglcontextlost', (e) => {

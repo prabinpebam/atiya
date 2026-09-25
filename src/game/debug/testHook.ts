@@ -31,6 +31,8 @@ export interface GameTestHook {
   visitFeature(kind: 'bridge' | 'waterfall' | 'mesa' | 'river', i?: number): boolean;
   /** Draw calls / triangles of the previous frame (all passes). */
   renderInfo(): { calls: number; triangles: number };
+  /** Scene exposure (into the tone map) and the tilt-shift blend function name. */
+  grading(): { exposure: number; tiltBlend: string };
   /** Force an adaptive-quality step (bypasses the warm-up/throttle). */
   adaptiveStep(dir: -1 | 1): void;
   /** Set and hold the planet clock (hours 0–24); `null` releases it. */
@@ -153,6 +155,7 @@ export function installTestHook(c: GameController): void {
       return true;
     },
     renderInfo: () => ({ ...c.lastRenderInfo }),
+    grading: () => ({ ...c.grading }),
     adaptiveStep: (dir) => c.adaptiveStep?.(dir, true),
     setTime: (hours) => {
       if (hours === null) {

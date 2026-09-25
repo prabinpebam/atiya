@@ -164,11 +164,41 @@ test.describe('rendering', () => {
     await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift+bloom+vignette');
   });
 
+  test('the tilt-shift replaces the image rather than adding to it, so the frame is exposed once and highlights keep their range', async ({ page }) => {
+    await openPlanet(page, '/play/?quality=high');
+    await page.getByRole('button', { name: 'Start exploring' }).click();
+    const grading = () => page.evaluate(() => (window as any).__game.grading());
+    await expect.poll(async () => (await grading()).tiltBlend).toBe('NORMAL');
+    await page.evaluate(() => (window as any).__game.setTime(12));
+    await expect.poll(async () => (await grading()).exposure).toBeCloseTo(1.3, 3);
+    await page.waitForTimeout(3000);
+    // share of the 3D view (below the header) with a channel clipped to white
+    const png = (await page.screenshot({ clip: { x: 0, y: 70, width: 1280, height: 640 } })).toString('base64');
+    const clipped = await page.evaluate(async (b64) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${b64}`;
+      await img.decode();
+      const cv = document.createElement('canvas');
+      cv.width = img.width;
+      cv.height = img.height;
+      const ctx = cv.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (Math.max(d[i], d[i + 1], d[i + 2]) >= 250) n++;
+      return n / (d.length / 4);
+    }, png);
+    expect(clipped).toBeLessThan(0.06);
+    await page.evaluate(() => (window as any).__game.setTime(0));
+    await expect.poll(async () => (await grading()).exposure).toBeCloseTo(1.7, 3);
+  });
+
   test('the low quality tier still has the tilt-shift', async ({ page }) => {
     await openPlanet(page, '/play/?quality=low');
     await page.getByRole('button', { name: 'Start exploring' }).click();
     expect((await state(page)).quality).toBe('low');
     await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift');
+    expect((await page.evaluate(() => (window as any).__game.grading())).tiltBlend).toBe('NORMAL');
   });
 });
 

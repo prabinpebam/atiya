@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   CYCLE_DAY_SECONDS,
   CYCLE_NIGHT_SECONDS,
+  EXPOSURE,
   SUNRISE,
   SUNSET,
   advanceHours,
   bodyDirection,
   formatHours,
   sampleSky,
+  sceneExposure,
   wrapHours,
 } from '../../src/game/world/timeOfDay';
 
@@ -79,5 +81,24 @@ describe('day–night model', () => {
     expect(formatHours(9.5)).toBe('9:30 AM');
     expect(formatHours(12)).toBe('12:00 PM');
     expect(formatHours(21.25)).toBe('9:15 PM');
+  });
+});
+
+describe('scene exposure', () => {
+  it('is the day exposure by day, opens up at night, and is clamped', () => {
+    expect(sceneExposure(sampleSky(12).night)).toBe(EXPOSURE.day);
+    expect(sceneExposure(sampleSky(0).night)).toBe(EXPOSURE.night);
+    expect(sceneExposure(-1)).toBe(EXPOSURE.day);
+    expect(sceneExposure(2)).toBe(EXPOSURE.night);
+    expect(EXPOSURE.night).toBeGreaterThan(EXPOSURE.day);
+  });
+
+  it('changes smoothly through the day (no exposure pops)', () => {
+    let prev = sceneExposure(sampleSky(0).night);
+    for (let h = 0.05; h <= 24; h += 0.05) {
+      const e = sceneExposure(sampleSky(h).night);
+      expect(Math.abs(e - prev)).toBeLessThan(0.02);
+      prev = e;
+    }
   });
 });

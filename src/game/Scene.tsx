@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import { Bloom, EffectComposer, TiltShift, ToneMapping, Vignette } from '@react-three/postprocessing';
-import { KernelSize, ToneMappingMode } from 'postprocessing';
+import { BlendFunction, KernelSize, ToneMappingMode, type TiltShiftEffect } from 'postprocessing';
 import { useStore } from 'zustand';
 import type { Group } from 'three';
 import type { GameController } from './controller';
@@ -119,12 +119,18 @@ function PostFX({ controller }: { controller: GameController }) {
   useEffect(() => {
     controller.postFx = full ? 'tilt-shift+bloom+vignette' : 'tilt-shift';
   }, [controller, full]);
+  // The wrapper defaults TiltShift to ADD, which sums the (already complete) tilt-shift image
+  // onto the input: twice the radiance into the tone map and clipped highlights. NORMAL replaces it.
   const tilt = (
     <TiltShift
+      ref={(e: TiltShiftEffect | null) => {
+        if (e) controller.grading.tiltBlend = Object.keys(BlendFunction).find((k) => BlendFunction[k as keyof typeof BlendFunction] === e.blendMode.blendFunction) ?? '';
+      }}
+      blendFunction={BlendFunction.NORMAL}
       offset={-0.06}
       focusArea={0.46}
       feather={0.32}
-      kernelSize={quality === 'high' ? KernelSize.MEDIUM : KernelSize.SMALL}
+      kernelSize={quality === 'high' ? KernelSize.SMALL : KernelSize.VERY_SMALL}
       resolutionScale={quality === 'high' ? 0.5 : 0.35}
     />
   );
@@ -133,7 +139,7 @@ function PostFX({ controller }: { controller: GameController }) {
     return (
       <EffectComposer key="full" multisampling={4}>
         {tilt}
-        <Bloom luminanceThreshold={1.15} luminanceSmoothing={0.15} intensity={0.55} mipmapBlur />
+        <Bloom luminanceThreshold={1.15} luminanceSmoothing={0.15} intensity={0.45} mipmapBlur />
         <Vignette offset={0.3} darkness={0.32} />
         <ToneMapping mode={ToneMappingMode.NEUTRAL} />
       </EffectComposer>

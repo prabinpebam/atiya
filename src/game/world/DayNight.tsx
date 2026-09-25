@@ -22,7 +22,7 @@ import {
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
-import { DAY_HOURS, advanceHours, localHours, sampleSky, wrapHours, type SkyState } from './timeOfDay';
+import { DAY_HOURS, advanceHours, localHours, sampleSky, sceneExposure, wrapHours, type SkyState } from './timeOfDay';
 import { mulberry32 } from './layout';
 import { applyTimeOfDay } from './materials';
 import { cloudMaterial } from './Sky';
@@ -291,6 +291,7 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     stars.pts.visible = s.night > 0.35;
     controller.sky.night = s.night;
     controller.sky.glow = s.glow;
+    gl.toneMappingExposure = controller.grading.exposure = sceneExposure(s.night);
   };
 
   useFrame((_, dt) => {
