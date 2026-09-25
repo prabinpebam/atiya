@@ -9,6 +9,7 @@
 //   - steady state at the spawn view: GPU time per frame (EXT_disjoint_timer_query_webgl2, when exposed),
 //     JS time per frame, and the scene census from `__game.perfStats()` (draw calls, triangles,
 //     vertices, programs, shadow casters, lights, textures)
+//   - Inf/NaN pixels in the HDR scene render (4× MSAA, spawn and behind three landmarks): must be 0
 import { chromium } from '@playwright/test';
 
 const arg = (name, fallback) => {
@@ -87,8 +88,15 @@ async function run() {
   await page.waitForTimeout(swift ? 8000 : 3000);
   const frame = await page.evaluate(() => ({ gpu: Object.values(window.__perf.gpu).filter((v) => v > 0.02), js: Object.values(window.__perf.js) }));
   const stats = await page.evaluate(() => window.__game.perfStats());
+  // Inf/NaN pixels in the HDR scene (bloom would smear them into a black screen); only a real GPU shows them
+  let nan = 0;
+  for (const id of [null, 'town-hall', 'lighthouse', 'library']) {
+    if (id) await page.evaluate((i) => window.__game.standBehind(i), id);
+    await page.waitForTimeout(300);
+    for (let k = 0; k < 3; k++) nan = Math.max(nan, (await page.evaluate(() => window.__game.hdrScan(1280, 4))).bad);
+  }
   await browser.close();
-  return { load, gpuMs: median(frame.gpu), jsMs: median(frame.js), stats };
+  return { load, gpuMs: median(frame.gpu), jsMs: median(frame.js), stats, nan };
 }
 
 const results = [];
@@ -101,3 +109,6 @@ console.log(`  JS heap at playable  ${m((r) => r.load.heapMB)} MB`);
 console.log(`  frame: GPU ${m((r) => r.gpuMs).toFixed(2)} ms, JS ${m((r) => r.jsMs).toFixed(2)} ms (spawn view, 1280×800, dpr ${s.pixelRatio})`);
 console.log(`  scene: ${s.calls} calls, ${s.triangles} triangles (all passes), ${s.vertices} vertices, ${s.programs} programs, ${s.casters} shadow casters, ${s.gpuTextures} textures`);
 console.log(`  lights ${JSON.stringify(s.lights)}, shadows ${JSON.stringify(s.shadowLights)}`);
+const nan = Math.max(...results.map((r) => r.nan));
+console.log(`  Inf/NaN pixels in the HDR scene: ${nan}${nan ? '  ← a shader produces NaN: the bloom will black out the screen' : ''}`);
+if (nan) process.exitCode = 1;

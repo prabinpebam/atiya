@@ -57,6 +57,17 @@ The frame loop itself was already lean: little JS, instanced props, merged kit m
 | Draw calls / triangles | 138 / 681 k | 137 / 681 k |
 | Canvas MSAA buffers | ≈ 150–265 MB | 0 |
 
+## Follow-up: black screen behind buildings (NaN)
+
+- **Symptom:** on real GPUs, standing behind some buildings (seen easily behind the Town Hall and the Lighthouse) turned most of the frame black for as long as the view lasted.
+- **Diagnosis:** a full-resolution, 4× MSAA scan of the HDR scene render (`__game.hdrScan(1280, 4)`) found 40–180 Inf/NaN pixels on the rotating lighthouse beam. The bloom's mip blur then spread them over the whole screen; the frame was fine with bloom off. At low resolution, or without MSAA, the scan was clean, and SwiftShader never shows it.
+- **Cause:** the beam's fade was `pow(1.0 - vT, 2.2)`. `vT` was clamped to 0…1 in the vertex shader, but at triangle edges MSAA evaluates the varying at the pixel centre, outside the triangle, so it overshoots 1, and `pow` of a negative number is NaN. The occlusion outline's rim, `pow(1.0 - |N·V|, 2.2)`, had the same risk.
+- **Fix:**
+  - clamp the base of every GLSL `pow()`, and normalize safely;
+  - `tests/unit/shaders.test.ts` now checks every `pow()` in the game's shaders;
+  - `npm run perf:audit` fails on any NaN pixel.
+- **Result:** 0 bad pixels in 252 scans (every landmark, in front and behind, day, dusk and night, low and high tilt), and 0 black frames in 112 (was 25 of 112).
+
 ## Considered and not done
 
 | Idea | Why not |

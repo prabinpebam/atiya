@@ -67,7 +67,10 @@ uniform float uFillAlpha;
 varying vec3 vN;
 varying vec3 vV;
 void main() {
-  float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
+  // NaN-safe (|N·V| can round past 1, and pow of a negative base is NaN, which bloom would spread)
+  vec3 n = vN * inversesqrt(max(dot(vN, vN), 1e-12));
+  vec3 v = vV * inversesqrt(max(dot(vV, vV), 1e-12));
+  float rim = pow(clamp(1.0 - abs(dot(n, v)), 0.0, 1.0), 2.2);
   gl_FragColor = vec4(mix(uFill, uRim, rim), mix(uFillAlpha, 0.95, rim));
 }`;
 

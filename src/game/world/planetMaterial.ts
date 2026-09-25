@@ -84,7 +84,7 @@ vec3 worley(vec3 p) {
   }
   return vec3(sqrt(d1), sqrt(d2), id);
 }
-vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }`,
+vec3 lin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }`,
       )
       .replace(
         '#include <color_fragment>',

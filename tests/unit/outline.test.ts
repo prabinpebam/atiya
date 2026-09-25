@@ -38,7 +38,7 @@ describe('occlusion outline', () => {
     const m = outlineMaterial();
     expect(m.vertexShader).toContain('#include <skinning_vertex>');
     expect(m.vertexShader).toContain('uPull');
-    expect(m.fragmentShader).toContain('pow(1.0 - abs(dot(');
+    expect(m.fragmentShader).toContain('pow(clamp(1.0 - abs(dot(');
   });
 
   it('adds a twin per mesh that shares geometry (and skeleton for skinned meshes)', () => {

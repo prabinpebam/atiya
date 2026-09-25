@@ -69,7 +69,7 @@ float kn(float x) { float i = floor(x); float f = fract(x); f = f * f * (3.0 - 2
     float age = vWake.x;
     float w = mix(0.13, 0.035, age);
     float broken = 0.65 + 0.35 * kn(ang * 5.0 + vWake.y * 13.0);
-    a = smoothstep(w, 0.0, abs(r - 0.82)) * pow(1.0 - age, 1.6) * smoothstep(0.0, 0.08, age) * broken * vWake.y;
+    a = smoothstep(w, 0.0, abs(r - 0.82)) * pow(clamp(1.0 - age, 0.0, 1.0), 1.6) * smoothstep(0.0, 0.08, age) * broken * vWake.y;
   }
   diffuseColor.a *= a;
 }`,

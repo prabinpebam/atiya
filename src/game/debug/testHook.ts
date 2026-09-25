@@ -1,4 +1,4 @@
-import { Vector3 } from 'three';
+import { HalfFloatType, Raycaster, Vector2, Vector3, WebGLRenderTarget } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { UP, moveAlong, orientationFor, tangentToward } from '../math/sphere';
@@ -36,6 +36,8 @@ export interface GameTestHook {
   standBehind(id: string): boolean;
   /** Renderer and scene census for performance audits. */
   perfStats(): Record<string, unknown>;
+  /** Render the scene into a half-float target (like the composer's) and report Inf/NaN pixels and what's under the first one. */
+  hdrScan(width?: number, samples?: number): { bad: number; max: number; at: [number, number] | null; hit: string | null };
   /** The live renderer and scene (audits in the console / scripts). */
   __gfx(): GameController['gfx'];
   /** Show or hide the character's occlusion outline (visual testing). */
@@ -176,6 +178,54 @@ export function installTestHook(c: GameController): void {
       return true;
     },
     __gfx: () => c.gfx,
+    hdrScan: (width = 320, samples = 0) => {
+      const gfx = c.gfx;
+      const cam = c.camera;
+      if (!gfx || !cam) return { bad: 0, max: 0, at: null, hit: null };
+      const { gl, scene } = gfx;
+      const w = width;
+      const h = Math.round((w * gl.domElement.height) / gl.domElement.width);
+      const rt = new WebGLRenderTarget(w, h, { type: HalfFloatType, samples });
+      const prev = gl.getRenderTarget();
+      gl.setRenderTarget(rt);
+      gl.render(scene, cam);
+      gl.setRenderTarget(prev);
+      const buf = new Uint16Array(w * h * 4);
+      gl.readRenderTargetPixels(rt, 0, 0, w, h, buf);
+      rt.dispose();
+      let bad = 0;
+      let max = 0;
+      let at: [number, number] | null = null;
+      const half = (v: number) => {
+        const e = (v >> 10) & 31;
+        const m = v & 1023;
+        return e === 0 ? m * 2 ** -24 : (1 + m / 1024) * 2 ** (e - 15);
+      };
+      for (let i = 0; i < w * h; i++) {
+        let broken = false;
+        for (let k = 0; k < 3; k++) {
+          const v = buf[i * 4 + k];
+          if ((v & 0x7c00) === 0x7c00) broken = true;
+          else max = Math.max(max, half(v));
+        }
+        if (broken) {
+          bad++;
+          at ??= [i % w, Math.floor(i / w)];
+        }
+      }
+      let hit: string | null = null;
+      if (at) {
+        const ray = new Raycaster();
+        ray.setFromCamera(new Vector2((at[0] + 0.5) / w * 2 - 1, (at[1] + 0.5) / h * 2 - 1), cam);
+        const first = ray.intersectObject(scene, true)[0];
+        if (first) {
+          const names: string[] = [];
+          for (let o: typeof first.object | null = first.object; o; o = o.parent) names.push(o.name || o.type);
+          hit = `${names.join(' < ')} @${first.distance.toFixed(2)}`;
+        }
+      }
+      return { bad, max, at, hit };
+    },
     perfStats: () => {
       const gfx = c.gfx;
       if (!gfx) return {};

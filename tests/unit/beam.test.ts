@@ -25,6 +25,6 @@ describe('lighthouse beam', () => {
 
   it('the shader fades with the same curve', () => {
     expect(BEAM_FALLOFF).toBeGreaterThan(1);
-    expect(BEAM_FRAG).toContain(`pow(1.0 - vT, ${BEAM_FALLOFF.toFixed(2)})`);
+    expect(BEAM_FRAG).toContain(`pow(clamp(1.0 - vT, 0.0, 1.0), ${BEAM_FALLOFF.toFixed(2)})`);
   });
 });
