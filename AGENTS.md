@@ -19,8 +19,8 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
 
 ### Commands
 
-- `npm run check` (types), `npm test` (Vitest unit), `npm run e2e` (Playwright + axe; builds the test bundle), `npm run verify:prod` (production build + bundle budgets + no test hook).
-- Run `npm test` after changing anything in `src/game/math`, `src/game/systems` or `src/content/landmarks`. `tests/unit/fixtures.ts` must mirror the landmark frontmatter; a test enforces this.
+- `npm run check` (types), `npm test` (Vitest unit), `npm run e2e` (Playwright + axe; builds the test bundle), `npm run verify:prod` (production build + bundle budgets + no test hook). Which of these to run for a change: see **Validation** below; don't run them all by default.
+- `tests/unit/fixtures.ts` must mirror the landmark frontmatter; a test enforces this.
 - Game keys are active only while the game region has focus. Never intercept Tab.
 - **View:** never rotate the camera's yaw. User rotation is `PlanetSim.rotateView` (a planet spin about world +Y), so the sky, sun and moon rig stays in the camera frame. Tilt is `controller.view.pitch`. The compass uses map north (`math/compass.ts`), not geographic north, because the plaza sits on the pole. Planet clicks are taps: check `controller.viewDragged` and `e.delta` so a drag never walks.
 - **No third-party game IP** (Nintendo names, characters, music, fonts, UI). Use CC0 or original assets only, and log every asset in `assets-src/CREDITS.md`.
@@ -72,6 +72,31 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
   - FBX2glTF is a native tool installed into `%TEMP%\fbxconv`. Never add it to `package.json`.
   - The occlusion outline (`player/outline.ts`) depends on draw order: opaque scenery at renderOrder 0, the outline twins at 1, the character at 2. Don't give opaque scenery a renderOrder of 1 or more (it would draw after the twins and never show them), and call `addOcclusionOutline` for any new avatar.
   - Keep `useGLTF(url, false, false)` (no Draco/Meshopt), so no decoder is fetched from a CDN.
+
+### Validation: run what the change needs, not everything
+
+Headless E2E is slow here (SwiftShader at 1–2.5 fps, one worker, a test build per run: about 1–2 min per test, about 22 min for the full suite). So validation is scoped to the change's blast radius, the way large teams do it: test impact analysis (Microsoft, Google TAP) and predictive test selection (Meta) run the tests a change can affect on every change, keep the full suite for milestones, and fall back to "run everything" when the impact is unclear. Pick the **lowest tier that covers the change**; escalate only for the reasons in tier 3.
+
+| Tier | When | What to run (typical cost) |
+|---|---|---|
+| **0 – none** | Docs, comments, copy, `README`/spec/AGENTS edits, renames the language server did | Nothing. Proof-read the diff |
+| **1 – affected units** | Any code change | `npx vitest related <changed files> --run` (seconds; follows the import graph). Add `npm run check` only if types, props, test-hook signatures or `tests/e2e` types changed. Write or update the unit test for the pure logic you touched |
+| **2 – targeted E2E / one look** | A change a unit test can't see: rendering, shaders, input, DOM UI, doors, sound, anything behind `window.__game` | Only the affected test(s): `npx playwright test --reporter=line -g "<test title or describe group>"` (1–2 min each). For visual changes, **one** screenshot of the affected view, not the whole gallery. Re-run just what failed with `--last-failed`. Use `-x` to stop at the first failure |
+| **3 – broad** | Only when a trigger below applies | Full `npm test`, `npm run check`, `npm run verify:prod`, full `npm run e2e` |
+
+Tier 3 triggers (these are the "risky change" cases; otherwise don't):
+- **Accumulated change:** several features since the last full run (roughly 5+ commits or a day's work), or before a release/deploy or a milestone review. Run it once at that point, not after every change, and in the background (`mode: async`) while other work continues.
+- **A behavioural change to shared infrastructure** whose impact the import graph can't bound (adding a field or a test hook doesn't count): `controller.ts`, `Scene.tsx`/post-processing, `GameApp.tsx`, the store, `config.ts`, the test hook's shared helpers, renderer settings, `playwright.config.ts`, `vite`/`astro` config.
+- **Dependencies or build:** `package.json`/lockfile changes, new assets, anything that can move the bundle size → `npm run verify:prod` (always for these; it takes about a minute).
+- **Gate / production path:** `platform/gate.ts`, `/play` loading, or the test-hook guard → `verify:prod` plus the "capability gate" and "landing & classic" groups.
+- A targeted run failed for a reason you don't understand, or the fix touched more than the original change.
+
+Rules of thumb:
+- Map the change to E2E groups by area: `landing & classic`, `capability gate`, `rendering` (post FX, exposure, textures), `day–night` (sky, lamps, clouds, clock), `view controls`, `landscape & wind` (terrain, water, wading, wind), `doors`, `sound`, `player character`, `planet` (movement, proximity, dialogs, travel, reset, a11y). Run the one or two groups you touched, or a single test by title.
+- Don't re-run a check whose inputs haven't changed since it last passed (e.g. unit tests after a docs-only fix, or E2E after only editing a unit test).
+- Don't re-capture README screenshots unless the change visibly alters that view.
+- A timeout under host load isn't a regression: re-run that one test before investigating, and compare with the baseline only if it fails again.
+- Say what you ran and what you deliberately skipped (and why) in the summary, so the next full run knows what's pending.
 
 ## Package installation: use Microsoft package feed proxy (required)
 
