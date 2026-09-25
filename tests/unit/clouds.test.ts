@@ -91,7 +91,7 @@ describe('clouds', () => {
     }
   });
 
-  it('painted sprites face the camera squarely and stay upright, leaning a little with the ring', () => {
+  it('painted sprites face the camera squarely and turn with the ring, their base toward the planet', () => {
     const f = ringFrame(cameraAt(C.pitchDeg));
     for (const [theta, alpha] of [[0.3, 30], [Math.PI / 2, 45], [2.5, 58], [4, 33]] as const) {
       const pos = cloudPosition(f, theta, alpha, 50);
@@ -100,11 +100,11 @@ describe('clouds', () => {
       const up = new Vector3(0, 1, 0).applyQuaternion(q);
       expect(front.distanceTo(f.cam.clone().sub(pos).normalize())).toBeLessThan(1e-9);
       const radial = f.right.clone().multiplyScalar(Math.cos(theta)).addScaledVector(f.up, Math.sin(theta));
-      // upright on screen, leaning a little toward the ring's radial direction, projected onto the sprite
-      const lean = f.up.clone().multiplyScalar(1 - CLOUD_LEAN).addScaledVector(radial, CLOUD_LEAN);
-      const projected = lean.addScaledVector(front, -lean.dot(front)).normalize();
+      // the ring's radial direction (away from the planet), projected onto the sprite
+      expect(CLOUD_LEAN).toBe(1);
+      const projected = radial.clone().addScaledVector(front, -radial.dot(front)).normalize();
       expect(up.distanceTo(projected)).toBeLessThan(1e-9);
-      expect(up.dot(f.up)).toBeGreaterThan(0.6); // never on its side
+      expect(up.dot(radial)).toBeGreaterThan(0.5); // part of the circle round the planet
     }
   });
 

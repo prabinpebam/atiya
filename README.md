@@ -139,7 +139,7 @@ Game keys only work while the planet has focus, and Tab is never captured. A sho
 - **View controls & compass** ([ViewControls.tsx](src/game/ui/ViewControls.tsx), [compass.ts](src/game/math/compass.ts)):
   - Rotating the view spins the planet about the player's vertical axis (`PlanetSim.rotateView`), and tilting changes the camera pitch (30°–78°).
   - The compass shows *map north* from a stereographic grid centred on the plaza, which sits on the pole where true north is undefined. At the plaza it points toward the Workshop.
-  - Reset flies back to the plaza facing north. Reset and fast travel share one fly-over (`flyoverProfile` in [movement.ts](src/game/systems/movement.ts)): the character hops up to 5.5 u (above the tallest tree and the Lighthouse), the planet turns only once it's up there, and over the destination it drops back to the ground, landing with a hop. Its shadow stays on the ground.
+  - Reset flies back to the plaza facing north. Reset and fast travel share one fly-over (`flyoverProfile` in [movement.ts](src/game/systems/movement.ts)): the character hops up to 5.5 u (above the tallest tree and the Lighthouse), the planet turns only once it's up there, and over the destination it drops back to the ground, landing with a hop. Its cast shadow stays on the ground.
 - **Content:** a single source of truth in [src/content/landmarks/](src/content/landmarks/).
   - Frontmatter drives the game (placement and dialog copy); the Markdown body drives the classic page.
   - Cross-entry validation runs at build time ([src/game/math/landmarks.ts](src/game/math/landmarks.ts)).

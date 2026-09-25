@@ -185,6 +185,9 @@ export function foliageMaterials(kind: LeafKind): { material: MeshStandardMateri
 // Card builder
 // ---------------------------------------------------------------------------
 
+/** Leaf cards' random hue spread (fraction of the colour wheel, ±half of it: ≈ ±6°). */
+export const LEAF_HUE_JITTER = 0.035;
+
 class Cards {
   private pos: number[] = [];
   private nor: number[] = [];
@@ -223,6 +226,9 @@ class Cards {
       [u1, v1],
       [u0, v1],
     ];
+    // a mild, stable hue and saturation shift per card (hashed from its position), so a crown has
+    // the slight yellow-to-blue variety of real foliage rather than one flat green
+    const tone = color.clone().offsetHSL((hash3(p.x * 7.1, p.y * 5.3, p.z * 6.7) - 0.5) * LEAF_HUE_JITTER, (hash3(p.z * 3.9, p.x * 4.7, p.y * 8.3) - 0.5) * 0.06, 0);
     // four shared corners, two triangles (indexed: each corner is shaded once)
     const base = this.pos.length / 3;
     for (let i = 0; i < 4; i++) {
@@ -230,7 +236,7 @@ class Cards {
       this.pos.push(c.x, c.y, c.z);
       this.nor.push(shadeN.x, shadeN.y, shadeN.z);
       this.uv.push(uvs[i][0], uvs[i][1]);
-      this.col.push(color.r, color.g, color.b);
+      this.col.push(tone.r, tone.g, tone.b);
     }
     this.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }

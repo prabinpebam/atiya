@@ -2,7 +2,7 @@ import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { useStore } from 'zustand';
-import { AnimationMixer, Box3, CircleGeometry, Group, LoopOnce, Matrix4, MeshBasicMaterial, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { AnimationMixer, Box3, Group, LoopOnce, Matrix4, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { damp } from '../math/sphere';
@@ -176,22 +176,12 @@ class AvatarBoundary extends Component<{ fallback: ReactNode; children: ReactNod
 /** Player: the rigged model when available, the procedural avatar while loading or if it fails. */
 export function Player({ controller }: { controller: GameController }) {
   const group = useRef<Group>(null);
-  const shadow = useMemo(
-    () => ({ geo: new CircleGeometry(0.34, 24), mat: new MeshBasicMaterial({ color: '#1d2a1a', transparent: true, opacity: 0.25, depthWrite: false }) }),
-    [],
-  );
   const body = useRef<Group>(null);
-  const blob = useRef<Mesh>(null);
+  // (no blob shadow: the character casts a real shadow from the sun and moon)
   useFrame(() => {
     if (group.current) group.current.position.y = R + controller.lift;
-    // flying: the character rises while its shadow stays on the ground, smaller and fainter
-    const h = controller.sim.hover;
-    if (body.current) body.current.position.y = h;
-    if (blob.current) {
-      const k = 1 - Math.min(1, h / CONFIG.travelHoverU) * 0.55;
-      blob.current.scale.setScalar(k);
-      shadow.mat.opacity = 0.25 * k;
-    }
+    // flying: the body rises above the ground under it
+    if (body.current) body.current.position.y = controller.sim.hover;
   });
   const id = useStore(controller.store, (s) => s.character);
   // fetch the other character in the background once the game is up, so switching is instant
@@ -204,7 +194,6 @@ export function Player({ controller }: { controller: GameController }) {
   const fallback = <ProceduralAvatar controller={controller} />;
   return (
     <group ref={group} position={[0, R, 0]} name="player">
-      <mesh ref={blob} geometry={shadow.geo} material={shadow.mat} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} renderOrder={1} />
       <group ref={body}>
         {/* keyed by character, so a failed model only falls back for that one */}
         <AvatarBoundary key={id} fallback={fallback}>

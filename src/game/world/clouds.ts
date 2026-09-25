@@ -84,13 +84,16 @@ const _toCam = new Vector3();
 const _upv = new Vector3();
 const _side = new Vector3();
 
-/** How much a painted cloud leans with its orbit (0 = upright on screen, 1 = base toward the planet). */
-export const CLOUD_LEAN = 0.2;
+/**
+ * How much a painted cloud turns with its orbit (0 = upright on screen, 1 = its base toward the
+ * planet). 1: each cloud lies along its ring, part of the circle round the little planet.
+ */
+export const CLOUD_LEAN = 1;
 
 /**
  * Billboard orientation for a painted cloud sprite at `pos` (orbit angle `theta`): its face turned
- * straight at the camera (so it never looks squashed, even far off the axis), and upright on screen
- * like painted clouds, leaning a little (`CLOUD_LEAN`) with the ring round the planet.
+ * straight at the camera (so it never looks squashed, even far off the axis), turned with the ring
+ * round the planet (`CLOUD_LEAN`), so its base faces the planet all the way round.
  */
 export function cloudBillboard(frame: RingFrame, theta: number, pos: Vector3, out = new Quaternion()): Quaternion {
   _toCam.copy(frame.cam).sub(pos).normalize();
