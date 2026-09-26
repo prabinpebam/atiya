@@ -51,7 +51,7 @@ export interface Homestead {
  */
 export const PROP_SCALE = 0.72;
 
-export const HOME_R = { house: 1.25, chair: 0.22, table: 0.46, fire: 0.42, log: 0.25, post: 0.1, tree: 0.42, dogHouse: 0.5 } as const;
+export const HOME_R = { house: 1.25, chair: 0.22, table: 0.46, fire: 0.42, log: 0.25, post: 0.1, tree: 0.42, dogHouse: 0.7 } as const;
 
 export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const R = cfg.planetRadius;
@@ -81,13 +81,14 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const readingChair = { n: chairN, facing: facingTo(chairN, pond.n) };
   const sideTable = { n: beside(readingChair, 90, 0.4), facing: readingChair.facing.clone() };
   const table = spot(211, 3.7);
-  // the table runs along the shore; a chair on each long side, facing it
-  // a chair on each long side and one at the end (one each for the family), facing it
+  // the table runs along the shore: a chair on each long side and one at each end (one each for
+  // Rojina, Laija, Lingjel and Prabin), facing it
   const tableChairs = (
     [
       [90, 0.46],
       [-90, 0.46],
       [0, 0.8],
+      [180, 0.8],
     ] as const
   ).map(([deg, u]) => {
     const n = beside(table, deg, u);
@@ -105,7 +106,7 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const treeSeatN = moveAlong(tree, facingTo(tree, pond.n), (HOME_R.tree + 0.25) / R);
   const treeSeat = { n: treeSeatN, facing: facingTo(treeSeatN, pond.n) };
   const shore = spot(206, pond.radiusU + 0.75);
-  const lightsPost = beside(table, 200, 1.1);
+  const lightsPost = beside(table, 208, 1.3);
   // beside the house, on the side away from the campsite, facing the pond
   const dogN = beside(house, -95, 2.7);
   const dogHouse = { n: dogN, facing: facingTo(dogN, pond.n) };
@@ -132,7 +133,7 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     { n: tree, r: 1.3 },
     { n: shore.n, r: 0.7 },
     { n: lightsPost, r: 0.4 },
-    { n: dogN, r: 1.2 },
+    { n: dogN, r: 1.5 },
   ];
   return { centre, range: 7, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, dogHouse, obstacles, clear };
 }

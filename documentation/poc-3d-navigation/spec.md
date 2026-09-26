@@ -563,6 +563,18 @@ Crafting at a workbench, and a first thing to build with it: a house for Chopper
 - **Chunks:** the models, the screens and the rules are one chunk (`world/craft/`, ≈ 9 KB gz) loaded with the textures. To keep the initial bundle within budget, the inventory screen and the menu now load on demand, the talk box moved into the home chunk, and the wildlife is its own chunk.
 - **Test hooks:** `craft()`, `nearTarget('craft' | 'site', …, u)`, and `getState().target`.
 
+### 4.21 Prabin, navigation, seats, doors, Chopper's house and the plaza (as built)
+
+Prabin (the owner) is now an NPC who roams the whole planet; visitors play the character. The research (Unreal's Smart Objects, Recast/Detour's off-mesh links, crowds and stuck repair, Karamouzas et al.'s time-to-collision avoidance, Animal Crossing and Stardew schedules), the plan, its critique and the v2 spec are in [prabin-npc.md](./prabin-npc.md); the done checklist is [prabin-dod.md](./prabin-dod.md). In summary:
+
+- **Prabin:** the Skater's model in his own mustard T-shirt with a pencil, charcoal trousers and brown shoes. He strolls between points of interest anywhere on the planet, stands admiring a building, plays fetch with Chopper (three throws, then a pat), plays the guitar in the campfire chair, and hammers at a birdhouse at the crafting table (the visitor has priority there: he never starts while they're near, and stops when they come). He comes home for lunch and for the night. **Talk to Prabin** (E) opens the dialog; the lines come from a `DialogueProvider` (preset now, an AI agent later).
+- **Navigation:** one cube-sphere grid over the whole planet (0.25 u cells, A* with string-pulling and partial paths) for the family, Prabin and Chopper; time-to-collision avoidance with a keep-right bias; stuck repair (a new route round whoever is in the way after 0.8 s, something else after 3 s); nobody walks through anybody, standing or moving.
+- **Seats:** smart objects with entry points and a reservation: they walk to an entry point (never through the chair), slide onto the seat in 0.6 s, and stand up the same way; the hips go to that seat's own height. The table has a fourth chair, for Prabin.
+- **The front door:** a hinged leaf that swings open for whoever goes in or out (one at a time), up the steps and through the doorway into a small room (floorboards, a rug, a dresser with a lamp, a picture), and shut again after them.
+- **Chopper's house:** rebuilt at his scale with an arched doorway, a plank floor, a padded bed, a bone toy, a blanket, his name over the door and a lantern that's a real lamp at night. He walks in, turns and sits or lies on his bed facing out, and walks out first when he's called.
+- **The plaza:** the bench and the notice board stand by the Greenhouse bridge; the chest and the crafting table stand side by side in a workyard between the Post Office and the Workshop, with nothing else usable near them.
+- **Test hooks:** `family()` (with `seat`, `link` and `held`), `homeDoor()`, `npcPlace(id, n)`, `chopperDo('house')`.
+
 ## 5. Technical design
 
 ### 5.1 Stack (pinned versions)

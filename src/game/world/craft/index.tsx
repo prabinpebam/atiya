@@ -10,7 +10,7 @@ import { arcDistance, clamp, moveAlong, tangentToward } from '../../math/sphere'
 import { faBone, faPaintRoller, faScrewdriverWrench } from '@fortawesome/free-solid-svg-icons';
 import { selectReducedMotion } from '../../state/store';
 import { itemDef } from '../../inventory/items';
-import { DOORWAY_U } from './models';
+import { BED_U, DOGHOUSE, DOORWAY_U } from './models';
 import { BUILD_S, CARD_U, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, colourName, craft, listNeeds, missing, parseSite, spendPaint, takeHouse, type HouseColour, type Recipe } from './recipes';
 import { CraftView } from './CraftView';
 import { CraftScreens } from './ui';
@@ -67,13 +67,14 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
   const store = makeStore({ built: Boolean(site) && saved.built, colour: saved.colour, building: null, near: false, crafting: null });
   const inv = controller.inventory;
 
-  // where Chopper sits in the doorway, facing out
+  // where Chopper stands to go in (outside the doorway), and where he sits inside on his bed, facing out
   const door = site ? moveAlong(site.n, site.facing, DOORWAY_U / R) : null;
+  const inside = site ? moveAlong(site.n, site.facing, BED_U / R) : null;
   const doorFacing = site && door ? (tangentToward(door, moveAlong(site.n, site.facing, 3 / R)) ?? site.facing.clone()) : null;
   const houseUp = () => {
-    if (!site || !door || !doorFacing) return;
+    if (!site || !door || !doorFacing || !inside) return;
     controller.addObstacle({ n: site.n, radiusU: HOUSE_R });
-    controller.dogWorld.house = { door, facing: doorFacing };
+    controller.dogWorld.house = { n: site.n, door, inside, facing: doorFacing, floor: DOGHOUSE.base };
   };
   if (store.getState().built) houseUp();
 

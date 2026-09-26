@@ -24,15 +24,27 @@ export function houseModel(): { geo: KitGeometry; lantern: V3; chimney: V3; ligh
     k.box([0.32, 1.0, 0.32], '#a4604a', { p: [-0.58, H + 0.8, -0.35] }, 0.04);
     k.box([0.4, 0.08, 0.4], '#6f4234', { p: [-0.58, H + 1.32, -0.35] }, 0.03);
   });
-  // the front door: planked green, with a little window and a brass knob
+  // the door frame (the leaf is its own model, `doorLeafModel`, hinged so it can swing open)
   k.surface('wood', () => {
-    k.box([0.58, 0.94, 0.06], '#4f8a5e', { p: [0, 0.34 + 0.47, D / 2 + 0.01] }, 0.02);
-    for (const x of [-0.14, 0.14]) k.box([0.02, 0.8, 0.012], shade('#4f8a5e', -0.25), { p: [x, 0.8, D / 2 + 0.045] }, 0.004);
     k.box([0.7, 0.07, 0.1], ARCH.cream, { p: [0, 1.36, D / 2 + 0.02] }, 0.02);
     for (const x of [-0.33, 0.33]) k.box([0.06, 1.02, 0.1], ARCH.cream, { p: [x, 0.84, D / 2 + 0.02] }, 0.02);
   });
-  k.box([0.2, 0.14, 0.02], ARCH.lit, { p: [0, 1.08, D / 2 + 0.05] }, 0.005, 'glow');
-  k.surface('metal', () => k.sphere(0.03, ARCH.brass, { p: [0.2, 0.78, D / 2 + 0.07] }, [8, 6]));
+  // the room behind it (seen through the open door): floorboards, a rug, a dresser with a lamp, a picture, a coat hook
+  k.surface('wood', () => {
+    for (let i = 0; i < 6; i++) k.box([(W - 0.2) / 6 - 0.005, 0.02, D - 0.2], i % 2 ? '#b9854f' : '#c8945c', { p: [-(W - 0.2) / 2 + ((W - 0.2) / 6) * (i + 0.5), 0.35, 0] }, 0.004);
+    k.box([0.5, 0.42, 0.26], '#8a5a3a', { p: [0.55, 0.36 + 0.21, -D / 2 + 0.25] }, 0.02);
+    for (const y of [0.47, 0.64]) k.box([0.44, 0.012, 0.01], shade('#8a5a3a', -0.3), { p: [0.55, y, -D / 2 + 0.385] }, 0.003);
+    k.box([0.3, 0.24, 0.02], '#6b4a30', { p: [-0.1, 1.0, -D / 2 + 0.11] }, 0.01);
+    k.cyl(0.012, 0.012, 0.08, ARCH.brass, { p: [-0.62, 0.98, -D / 2 + 0.15], r: [Math.PI / 2, 0, 0] }, 6);
+  });
+  k.surface('canvas', () => {
+    k.box([0.7, 0.012, 0.5], '#c65b4c', { p: [-0.05, 0.365, 0.1] }, 0.006);
+    k.box([0.24, 0.18, 0.012], '#8fc6e8', { p: [-0.1, 1.0, -D / 2 + 0.125] }, 0.004);
+    k.box([0.14, 0.34, 0.06], '#4d6f9c', { p: [-0.62, 0.8, -D / 2 + 0.18] }, 0.03);
+  });
+  // the dresser's lamp: warm at night
+  k.cyl(0.02, 0.03, 0.12, ARCH.brass, { p: [0.62, 0.84, -D / 2 + 0.25] }, 8);
+  k.cyl(0.05, 0.08, 0.09, ARCH.lit, { p: [0.62, 0.94, -D / 2 + 0.25] }, 10, 'glow');
   // a little porch roof on two posts
   k.surface('roof', () => k.box([1.1, 0.06, 0.6], shade('#bf5b43', -0.1), { p: [0, 1.52, D / 2 + 0.28], r: [0.22, 0, 0] }, 0.02));
   k.surface('wood', () => {
@@ -59,6 +71,68 @@ export function houseModel(): { geo: KitGeometry; lantern: V3; chimney: V3; ligh
     });
   });
   return { geo: k.build(), lantern: [0.46, 1.2, D / 2 + 0.2], chimney: [-0.58, H + 1.4, -0.35], lightsCorner: [W / 2 + 0.05, H + 0.02, D / 2 + 0.05] };
+}
+
+/**
+ * The front door's leaf, hinged at its left edge (the origin; it spans +x): planked green, with a
+ * little lit window and a brass knob. `DOOR_HINGE` is where the hinge sits in the house's frame.
+ */
+export const DOOR_HINGE: V3 = [-0.29, 0.34, HOUSE.d / 2 + 0.01];
+export function doorLeafModel(): KitGeometry {
+  const k = new Kit();
+  k.surface('wood', () => {
+    k.box([0.58, 0.94, 0.06], '#4f8a5e', { p: [0.29, 0.47, 0] }, 0.02);
+    for (const x of [0.15, 0.43]) k.box([0.02, 0.8, 0.012], shade('#4f8a5e', -0.25), { p: [x, 0.46, 0.035] }, 0.004);
+  });
+  k.box([0.2, 0.14, 0.02], ARCH.lit, { p: [0.29, 0.74, 0.04] }, 0.005, 'glow');
+  k.surface('metal', () => {
+    k.sphere(0.03, ARCH.brass, { p: [0.49, 0.44, 0.06] }, [8, 6]);
+    k.sphere(0.03, ARCH.brass, { p: [0.49, 0.44, -0.06] }, [8, 6]);
+  });
+  return k.build();
+}
+
+/** Prabin's claw hammer (in his fist: the handle along +y from the grip). */
+export function hammerModel(): KitGeometry {
+  const k = new Kit();
+  k.surface('wood', () => k.cyl(0.012, 0.014, 0.22, '#e2b267', { p: [0, 0.08, 0] }, 7));
+  k.surface('metal', () => {
+    k.box([0.09, 0.035, 0.035], '#4a4f5a', { p: [0, 0.19, 0] }, 0.006);
+    k.box([0.03, 0.03, 0.04], '#6b707a', { p: [-0.05, 0.19, 0] }, 0.004);
+  });
+  return k.build();
+}
+
+/** A stick for fetch (along +y). */
+export function stickModel(): KitGeometry {
+  const k = new Kit();
+  k.surface('bark', () => k.cyl(0.014, 0.017, 0.34, '#8a5a36', { p: [0, 0.05, 0] }, 7));
+  k.surface('wood', () => k.cyl(0.007, 0.009, 0.08, '#8a5a36', { p: [0.025, 0.1, 0], r: [0, 0, -0.7] }, 5));
+  return k.build();
+}
+
+/** The birdhouse Prabin is building at the crafting table (half done: a roof panel off to the side). */
+export function birdhouseModel(): KitGeometry {
+  const k = new Kit();
+  k.surface('wood', () => {
+    k.box([0.16, 0.14, 0.14], '#d9ad76', { p: [0, 0.07, 0] }, 0.008);
+    k.extrude(
+      [
+        [-0.08, 0],
+        [0.08, 0],
+        [0, 0.07],
+      ],
+      0.14,
+      '#d9ad76',
+      { p: [0, 0.14, 0] },
+      0.004,
+    );
+    k.box([0.12, 0.012, 0.16], '#c4523f', { p: [0.04, 0.2, 0], r: [0, 0, -0.72] }, 0.004);
+    k.box([0.12, 0.012, 0.16], '#c4523f', { p: [0.2, 0.006, 0.03], r: [0, 0.4, 0] }, 0.004);
+    k.cyl(0.006, 0.006, 0.05, '#8a5a36', { p: [0, 0.05, 0.085], r: [Math.PI / 2, 0, 0] }, 5);
+  });
+  k.cyl(0.028, 0.028, 0.01, '#2a1d16', { p: [0, 0.09, 0.071], r: [Math.PI / 2, 0, 0] }, 12);
+  return k.build();
 }
 
 /** The fire ring: stones round crossed logs over the embers (the flames are `flamesModel()`). */

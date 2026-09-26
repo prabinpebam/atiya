@@ -9,6 +9,10 @@ import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import { buildChopper } from './chopper/build';
 import type { Clip } from './chopper/anim';
 
+// his mind comes in this chunk too (game-mount.tsx attaches it)
+import { ChopperBrain } from './chopper/brain';
+export { ChopperBrain };
+
 const R = CONFIG.planetRadius;
 /** How high the character's face is above the ground (u), for Chopper to look up at. */
 const FACE_H = 0.95;
@@ -35,14 +39,18 @@ export function Chopper({ controller }: { controller: GameController }) {
   const group = useRef<Group>(null);
   const first = useRef(true);
   const wasStill = useRef(false);
+  const liftNow = useRef(0);
 
   useFrame((_, rawDt) => {
     const g = group.current;
     if (!g) return;
     const dt = Math.min(rawDt, 0.1);
-    const b = controller.chopper;
+    // (this chunk brought his mind: game-mount.tsx attached it before the scene mounted)
+    const b = controller.chopper as ChopperBrain;
     const n = b.n;
-    const h = controller.terrain.walkHeight(n);
+    // (on his house's floor when he's inside, eased as he steps up)
+    liftNow.current += (b.lift - liftNow.current) * Math.min(1, dt * 10);
+    const h = controller.terrain.walkHeight(n) + liftNow.current;
     g.position.copy(n).multiplyScalar(R + h);
     _x.crossVectors(n, b.dir).normalize();
     _m.makeBasis(_x, n, b.dir);

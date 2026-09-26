@@ -13,7 +13,7 @@ import { arcDistance, moveAlong, resolvePenetration, tangentToward, type Obstacl
 import { rotateAbout, transport, turnToward } from '../../math/steer';
 import type { Clip } from './anim';
 
-export type Behaviour = 'follow' | 'idle' | 'wander' | 'sniff' | 'chase' | 'scent' | 'runAhead' | 'playBow' | 'whistled' | 'heel' | 'house';
+export type Behaviour = 'follow' | 'idle' | 'wander' | 'sniff' | 'chase' | 'scent' | 'runAhead' | 'playBow' | 'whistled' | 'heel' | 'house' | 'fetch';
 
 /** Distances (u), speeds (u/s), times (s). */
 export const DOG = {
@@ -64,8 +64,15 @@ export interface DogWorld {
   spots: readonly Spot[];
   /** Others walking about (the family): he steps round them and never through them. */
   others: Vector3[];
-  /** His house, once it's built (crafting.md §4.3): the spot in its doorway, and which way it faces. */
-  house?: { door: Vector3; facing: Vector3 } | null;
+  /**
+   * His house, once it's built (crafting.md §4.3, prabin-npc.md §4.5): its centre (its obstacle's),
+   * where he stands to go in, his bed inside, the way out, and the floor's height.
+   */
+  house?: { n: Vector3; door: Vector3; inside: Vector3; facing: Vector3; floor: number } | null;
+  /** A route to `to` round the obstacles (the planet's planner, from the home chunk); `stuck` plans round the others too. */
+  plan?(from: Vector3, to: Vector3, stuck: boolean): Vector3[] | null;
+  /** A stick for fetch (Prabin throws it): where it is, and who to bring it back to. */
+  fetch?: { state: 'none' | 'thrown' | 'carried' | 'dropped'; stick: Vector3; to: Vector3 };
 }
 
 export type DogEvent = { type: 'bark' | 'sniff' | 'yip' };
@@ -99,8 +106,8 @@ const _a = new Vector3();
 const _d = new Vector3();
 
 export class ChopperBrain {
-  readonly n = new Vector3(0, 1, 0);
-  readonly dir = new Vector3(0, 0, 1);
+  readonly n: Vector3;
+  readonly dir: Vector3;
   speed = 0;
   /** Turn rate last step (rad/s, + = left). */
   turn = 0;
@@ -143,13 +150,28 @@ export class ChopperBrain {
   private heelLeft = 0;
   private sniffTick = 0;
   private hopSide = 1;
-  /** At his house: sit in the doorway (just built) or curl up for a nap. */
+  /** At his house: sit inside (just built) or curl up for a nap. */
   private houseSit = false;
+  /** In his house (its walls don't stop him), and how far off the ground its floor lifts him (u). */
+  inside = false;
+  lift = 0;
+  private route: Vector3[] | null = null;
+  private routeFor = new Vector3();
+  private routeAge = 9;
+  private stuckT = 0;
   /** Which way he goes round things in his path (kept, so he doesn't dither at an obstacle). */
   private side = 1;
   readonly events: DogEvent[] = [];
 
-  constructor(private readonly rand: () => number = Math.random) {}
+  constructor(
+    private readonly rand: () => number = Math.random,
+    /** His position and heading (vectors shared with whoever already holds them: the controller's targets and obstacles). */
+    n?: Vector3,
+    dir?: Vector3,
+  ) {
+    this.n = n ?? new Vector3(0, 1, 0);
+    this.dir = dir ?? new Vector3(0, 0, 1);
+  }
 
   // ---------------------------------------------------------------------------
 
@@ -171,6 +193,8 @@ export class ChopperBrain {
     this.dir.copy(to ?? transport(this.dir, this.n));
     this.speed = 0;
     this.near = [];
+    this.inside = false;
+    this.route = null;
     this.setBehaviour('idle');
     this.setClip('sit');
     this.dur = 3;
@@ -272,13 +296,23 @@ export class ChopperBrain {
 
     // the leash: interrupt whatever he's doing when the character is far
     const b = this.behaviour;
-    const committed = b === 'whistled' || b === 'heel' || b === 'runAhead' || (b === 'house' && this.houseSit);
+    // Prabin threw the stick: off he goes
+    if (w.fetch?.state === 'thrown' && b !== 'fetch' && b !== 'whistled' && b !== 'heel') this.setBehaviour('fetch');
+    const committed = b === 'whistled' || b === 'heel' || b === 'runAhead' || b === 'fetch' || (b === 'house' && this.houseSit);
     if (!committed && b !== 'follow' && (d > DOG.far || (d > DOG.leash && (b !== 'chase' || d > DOG.far) && this.t > 1))) this.setBehaviour('follow');
     else if (b === 'chase' && d > DOG.far) this.setBehaviour('follow');
 
     this.look = null;
     const done = this.run(dt, w, d);
     if (done) this.choose(w, d);
+    // called away while in his house: out through the doorway first
+    const h = w.house;
+    if (this.inside && h && !(this.behaviour === 'house' && this.stage >= 1)) {
+      this.goal = h.door;
+      this.want = Math.min(Math.max(this.want, 0.8), 1.2);
+      if (this.dist(this.n, h.door, w.R) < 0.15) this.inside = false;
+    }
+    this.lift = this.inside && h && this.dist(this.n, h.n, w.R) < 0.5 ? h.floor : 0;
     this.move(dt, w);
   }
 
@@ -289,7 +323,8 @@ export class ChopperBrain {
     const noise = () => this.rand() * 0.15;
     const scores: Array<[Behaviour, number]> = [];
     const moving = w.playerVel.length() > 0.5;
-    scores.push(['follow', d > DOG.leash ? 0.8 + (d - DOG.leash) * 0.2 : d > 3.5 && moving ? 0.6 : 0]);
+    // (and drifting back when he's wandered near the end of the leash, rather than idling out there)
+    scores.push(['follow', d > DOG.leash ? 0.8 + (d - DOG.leash) * 0.2 : d > 3.5 && moving ? 0.6 : d > DOG.leash - 1.2 ? 0.45 : 0]);
     scores.push(['idle', 0.32 + (1 - this.energy) * 0.35 + noise()]);
     if (!cd('wander') && d < 5) scores.push(['wander', 0.2 + this.curious * 0.2 + noise()]);
     // something to sniff: the nearest spot he hasn't sniffed lately
@@ -698,10 +733,19 @@ export class ChopperBrain {
           this.want = this.houseSit ? DOG.speed.run : DOG.speed.trot;
           this.setClip('stand');
           this.wag = 0.7;
-          if (arrived(0.12) || this.t > 12) this.nextStage();
+          if (arrived(0.15) || this.t > 14) this.nextStage();
           return false;
         }
-        // in the doorway, facing out
+        if (this.stage === 1) {
+          // in through the doorway, to his bed
+          this.inside = true;
+          this.goal = h.inside;
+          this.want = 0.7;
+          this.setClip('stand');
+          if (arrived(0.08) || this.stageT > 4) this.nextStage();
+          return false;
+        }
+        // on his bed, turned round to face out
         this.want = 0;
         this.goal = null;
         this.dir.lerp(h.facing, Math.min(1, dt * 4)).normalize();
@@ -720,6 +764,43 @@ export class ChopperBrain {
         }
         return false;
       }
+      case 'fetch': {
+        // run to the stick, bring it back to whoever threw it, sit and wait for the next throw
+        const f = w.fetch;
+        if (!f || f.state === 'none') return this.t > 0.8 || !f;
+        this.wag = 1;
+        if (this.stage === 0) {
+          if (f.state !== 'thrown') return true;
+          this.goal = f.stick;
+          this.want = DOG.speed.run;
+          this.setClip('stand');
+          if (this.dist(this.n, f.stick, R) < 0.25) {
+            f.state = 'carried';
+            this.nextStage();
+          }
+          return false;
+        }
+        if (this.stage === 1) {
+          this.goal = moveAlong(f.to, tangentToward(f.to, this.n) ?? this.dir, 0.55 / R);
+          this.want = DOG.speed.trot;
+          this.setClip('stand');
+          if (this.dist(this.n, f.to, R) < 0.8) {
+            f.state = 'dropped';
+            f.stick.copy(moveAlong(this.n, this.dir, 0.25 / R));
+            this.nextStage();
+          }
+          return false;
+        }
+        this.want = 0;
+        this.goal = null;
+        this.look = f.to;
+        this.setClip('sit');
+        if (f.state === 'thrown') {
+          this.stage = 0;
+          this.stageT = 0;
+        }
+        return this.stageT > 8;
+      }
     }
   }
 
@@ -734,8 +815,25 @@ export class ChopperBrain {
     }
     let want = this.want;
     const desired = _d.set(0, 0, 0);
-    if (this.goal) {
-      const to = tangentToward(this.n, this.goal, _t);
+    // (in his house its walls don't stop him)
+    const skip = this.inside ? (w.house?.n ?? null) : null;
+    // a planned route when the way to the goal is blocked, or he's stopped getting anywhere
+    let target = this.goal;
+    if (this.goal && w.plan && !this.inside) {
+      this.routeAge += dt;
+      const gd = this.dist(this.n, this.goal, R);
+      if (gd > 0.8 && (!this.route || this.routeAge > 1.5 || this.dist(this.routeFor, this.goal, R) > 0.6 || this.stuckT > 0.6)) {
+        this.route = w.plan(this.n, this.goal, this.stuckT > 0.6);
+        this.routeFor.copy(this.goal);
+        this.routeAge = 0;
+        this.stuckT = 0;
+      }
+      const r = this.route;
+      while (r && r.length > 1 && this.dist(this.n, r[0], R) < 0.35) r.shift();
+      if (r && r.length && gd > 0.8) target = r[0];
+    } else this.route = null;
+    if (this.goal && target) {
+      const to = tangentToward(this.n, target, _t);
       const gd = this.dist(this.n, this.goal, R);
       if (to && gd > 0.05) {
         desired.copy(to);
@@ -746,6 +844,7 @@ export class ChopperBrain {
     // avoid what's ahead (obstacles within a short look-ahead), and the character's bubble and path
     if (want > 0.05) {
       for (const o of this.near) {
+        if (o.n === skip) continue;
         const od = this.dist(this.n, o.n, R) - o.radiusU - DOG.radius;
         if (od > 0.8) continue;
         const away = tangentToward(this.n, o.n, _a);
@@ -792,6 +891,7 @@ export class ChopperBrain {
     }
     const accel = want > this.speed ? DOG.accel : DOG.accel * 1.6;
     this.speed += Math.max(-accel * dt, Math.min(accel * dt, want - this.speed));
+    this.stuckT = want > 0.5 && this.speed < 0.2 ? this.stuckT + dt : Math.max(0, this.stuckT - dt);
     if (this.speed < 1e-3) {
       this.speed = 0;
       return;
@@ -800,13 +900,13 @@ export class ChopperBrain {
     // more each way, round the side he's been going, and take the first free step
     const theta = (this.speed * dt) / R;
     let next = moveAlong(this.n, this.dir, theta);
-    if (!this.free(w, next)) {
+    if (!this.free(w, next, skip)) {
       let found = false;
       for (let k = 1; k <= 7 && !found; k++) {
         for (const s of [this.side, -this.side]) {
           const d2 = rotateAbout(_a.copy(this.dir), this.n, s * k * 0.4);
           const q = moveAlong(this.n, d2, theta);
-          if (this.free(w, q)) {
+          if (this.free(w, q, skip)) {
             next = q;
             this.dir.copy(d2);
             this.side = s;
@@ -822,7 +922,7 @@ export class ChopperBrain {
       }
     }
     this.n.copy(next);
-    const fixed = resolvePenetration(this.n, this.near, { radius: R, playerRadius: DOG.radius, skin: 0.01 });
+    const fixed = resolvePenetration(this.n, skip ? this.near.filter((o) => o.n !== skip) : this.near, { radius: R, playerRadius: DOG.radius, skin: 0.01 });
     if (fixed) this.n.copy(fixed);
     // the character's centre: never on top of them
     const pd = this.dist(this.n, w.player, R);
@@ -840,9 +940,9 @@ export class ChopperBrain {
   }
 
   /** Can he step onto `p`? (Clear of the pond and of the obstacles round him.) */
-  private free(w: DogWorld, p: Vector3): boolean {
+  private free(w: DogWorld, p: Vector3, skip: Vector3 | null = null): boolean {
     if (w.blocked(p)) return false;
-    for (const o of this.near) if (this.dist(p, o.n, w.R) < o.radiusU + DOG.radius) return false;
+    for (const o of this.near) if (o.n !== skip && this.dist(p, o.n, w.R) < o.radiusU + DOG.radius) return false;
     return true;
   }
 

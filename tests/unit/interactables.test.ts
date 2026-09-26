@@ -38,12 +38,15 @@ describe('interactables', () => {
     for (const f of of('flower')) expect(f.colour).toBeGreaterThanOrEqual(0);
   });
 
-  it('the chest stands by the Workshop, clear of every other obstacle, and nothing grows through it', () => {
+  it('the chest stands in the workyard between the Post Office and the Workshop, clear of every other obstacle, and nothing grows through it', () => {
     const ws = geos.find((g) => g.id === 'workshop')!;
+    const po = geos.find((g) => g.id === 'post-office')!;
     const chest = layout.chest!;
     expect(chest).toBeTruthy();
-    expect(d(chest.n, ws.n)).toBeLessThan(ws.footprintU + 1.4);
-    expect(d(chest.n, ws.n)).toBeGreaterThan(ws.footprintU + 0.5);
+    // between the two (nearer them than any other building), clear of both
+    const near = geos.map((g) => ({ id: g.id, e: d(chest.n, g.n) - g.footprintU })).sort((a, b) => a.e - b.e);
+    expect(near.slice(0, 2).map((x) => x.id).sort()).toEqual(['post-office', 'workshop']);
+    for (const g of [ws, po]) expect(d(chest.n, g.n) - g.footprintU).toBeGreaterThan(0.8 + 0.4 - 1e-6);
     for (const o of layout.obstacles) if (d(o.n, chest.n) > 1e-6) expect(d(o.n, chest.n)).toBeGreaterThan(o.radiusU + 0.4 - 1e-6);
     for (const p of [...layout.grass, ...layout.sprigs, ...layout.flowers.tulip, ...layout.flowers.cosmos, ...layout.flowers.pansy]) expect(d(p.n, chest.n)).toBeGreaterThan(0.55);
   });

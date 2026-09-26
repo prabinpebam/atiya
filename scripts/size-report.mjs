@@ -1,6 +1,6 @@
 // Bundle budget check (spec §7): landing ships no 3D JS; the game's initial JS ≤ 450 KB gzipped, and
 // what it loads on demand (Chopper's body and card, the home and family, the crafting chunk, the
-// inventory screen) ≤ 60 KB (raised from 40 KB: waiver in plan §6).
+// inventory screen, the planet's route planner and Prabin) ≤ 70 KB (raised from 40 KB: waiver in plan §6).
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -8,7 +8,7 @@ import { gzipSync } from 'node:zlib';
 const DIST = 'dist';
 const ASSETS = join(DIST, '_astro');
 const GAME_BUDGET_KB = 450;
-const DEFERRED_BUDGET_KB = 60;
+const DEFERRED_BUDGET_KB = 70;
 const GATE_BUDGET_KB = 8;
 
 if (!existsSync(ASSETS)) {

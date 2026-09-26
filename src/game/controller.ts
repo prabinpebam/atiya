@@ -21,7 +21,7 @@ import { CRAFT_RADIUS, generateProps, type PropLayout } from './world/layout';
 import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectAmbientPaused, selectReducedMotion, type GameStore } from './state/store';
-import { ChopperBrain, type DogWorld, type Spot } from './world/chopper/brain';
+import type { ChopperBrain, DogWorld, Spot } from './world/chopper/brain';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
 import { DAY_HOURS, START_HOURS, localHours, wrapHours, type TimeMode } from './world/timeOfDay';
@@ -82,12 +82,42 @@ export interface HomeAttachment {
   /** They stop and face you; returns the conversation's lines. */
   startChat(id: string, hours: number): string[];
   endChat(id: string): void;
-  state(): Array<{ id: string; activity: string; pose: string; speed: number; chatting: boolean; indoors: boolean; d: number; home: number }>;
+  state(): Array<{ id: string; activity: string; pose: string; speed: number; chatting: boolean; indoors: boolean; d: number; home: number; seat: string | null; link: string | null; held: string | null }>;
+  /** How open the front door is (0 shut … 1 open). */
+  door(): number;
   meal(): { food: boolean; phase: string | null; schedule: string | null };
   hold(id: string, activity: string): boolean;
   View: ComponentType;
   /** Its part of the HUD: the talk dialog box. */
   Hud: ComponentType;
+}
+
+/** What the game asks of Chopper's mind (the real one is `ChopperBrain`, in his chunk). */
+export type ChopperMind = Pick<
+  ChopperBrain,
+  'n' | 'dir' | 'speed' | 'pant' | 'events' | 'behaviour' | 'inside' | 'lift' | 'placeNear' | 'step' | 'whistle' | 'attend' | 'visitHouse' | 'distanceTo'
+> &
+  Partial<ChopperBrain>;
+
+/** Sits where he is and does nothing (before his chunk loads). */
+function chopperStandIn(): ChopperMind {
+  const n = new Vector3(0, 1, 0);
+  return {
+    n,
+    dir: new Vector3(0, 0, 1),
+    speed: 0,
+    pant: 0,
+    events: [],
+    behaviour: 'idle',
+    inside: false,
+    lift: 0,
+    placeNear() {},
+    step() {},
+    whistle() {},
+    attend() {},
+    visitHouse() {},
+    distanceTo: (p: Vector3, R: number) => arcDistance(n, p, R),
+  };
 }
 
 export interface ShellElements {
@@ -119,7 +149,11 @@ export class GameController {
   readonly drops = new Drops();
   readonly inventory = new Inventory();
   /** Chopper, the companion dog (chopper.md): his mind, and the world as he sees it. */
-  readonly chopper = new ChopperBrain();
+  /**
+   * His mind (world/chopper/brain.ts): it comes with his body's chunk (`attachChopper`); until then
+   * (or if it fails) a stand-in that stays put, so the rest of the game never has to check.
+   */
+  chopper: ChopperMind = chopperStandIn();
   readonly dogWorld: DogWorld;
   /** The fixed obstacles (trees, rocks, buildings, furniture). The character's own list adds Chopper and the family. */
   readonly staticObstacles: Obstacle[];
@@ -967,6 +1001,13 @@ export class GameController {
 
   // ---------- Chopper (chopper.md) ----------
 
+  /** His mind has loaded with his body: it takes over his position (the same vectors) and he's placed by you. */
+  attachChopper(brain: ChopperMind): void {
+    this.chopper = brain;
+    this.forwardLocal(this.dogWorld.playerFwd);
+    brain.placeNear(this.dogWorld);
+  }
+
   /** What he knows of the world: the character, obstacles, the pond, rabbits, and things to sniff. */
   private buildDogWorld(obstacles: readonly Obstacle[]): DogWorld {
     const p = this.props;
@@ -1076,7 +1117,7 @@ export class GameController {
     const table = this.props.craft;
     if (table) this.targets.push({ kind: 'craft', key: 'craft', n: table.n, edgeU: CRAFT_RADIUS, reachU: REACH.craft, standU: CRAFT_RADIUS + 0.45, index: 0, facing: table.facing, scale: 1 });
     const site = this.props.home?.dogHouse;
-    if (site) this.targets.push({ kind: 'site', key: 'site', n: site.n, edgeU: 0.45, reachU: REACH.site, standU: 0.95, index: 0, facing: site.facing, scale: 1 });
+    if (site) this.targets.push({ kind: 'site', key: 'site', n: site.n, edgeU: 0.62, reachU: REACH.site, standU: 1.1, index: 0, facing: site.facing, scale: 1 });
   }
 
   /** Something new and solid (Chopper's house, once built): the character, Chopper and the family keep out of it. */

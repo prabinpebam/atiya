@@ -35,6 +35,8 @@ export async function mountGame(container: HTMLElement, landmarks: LandmarkData[
     import('./world/Wildlife').catch(() => null),
   ]);
   controller.chopperView = chopper?.Chopper ?? null;
+  // his mind (sharing the position the targets already use)
+  if (chopper) controller.attachChopper(new chopper.ChopperBrain(Math.random, controller.chopper.n, controller.chopper.dir));
   controller.wildlifeView = wildlife?.Wildlife ?? null;
   try {
     controller.attachHome(home?.attachHome(controller) ?? null);

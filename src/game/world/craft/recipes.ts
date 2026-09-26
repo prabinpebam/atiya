@@ -152,7 +152,7 @@ export const BUILD_S = 2.2;
 /** The hammering when you craft (s). */
 export const CRAFT_S = 0.6;
 /** Collision radius of the built house (u). */
-export const HOUSE_R = 0.45;
+export const HOUSE_R = 0.62;
 
 export type HouseColour = 'original' | BloomColour;
 

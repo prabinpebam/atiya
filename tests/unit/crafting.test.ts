@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Vector3 } from 'three';
 import { CONFIG } from '../../src/game/config';
 import { landmarkGeometry } from '../../src/game/math/landmarks';
-import { arcDistance, moveAlong, tangentToward } from '../../src/game/math/sphere';
+import { UP, arcDistance, moveAlong, pointArcDistance, tangentToward } from '../../src/game/math/sphere';
 import { BACKPACK_SLOTS, HOTBAR, Inventory } from '../../src/game/inventory/inventory';
 import { BLOOM_COLOURS, ITEMS, type ItemId } from '../../src/game/inventory/items';
 import { ICONS } from '../../src/game/inventory/iconManifest';
@@ -14,6 +14,7 @@ import { benchSeats } from '../../src/game/systems/seating';
 import { ChopperBrain, type DogWorld } from '../../src/game/world/chopper/brain';
 import {
   BULK_MAX,
+  HOUSE_R,
   HOUSE_HEX,
   HOUSE_NEEDS,
   RECIPES,
@@ -30,6 +31,7 @@ import {
   spendPaint,
   takeHouse,
 } from '../../src/game/world/craft/recipes';
+import { BED_U, DOGHOUSE, DOORWAY_U } from '../../src/game/world/craft/models';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
 const R = CONFIG.planetRadius;
@@ -216,12 +218,18 @@ describe('the crafting table and the house site: placement and keeping targets a
     { key: 'site', n: home.dogHouse.n, r: HOME_R.dogHouse },
   ];
 
-  it('stands the crafting table on its own, beside the Workshop but beyond its footprint, away from the chest', () => {
+  it('stands the crafting table in the workyard beside the chest (prabin-npc.md §4.7): on the Workshop side, clear of both buildings and the paths', () => {
     expect(table).toBeTruthy();
+    const po = geos.find((g) => g.id === 'post-office')!;
     const out = d(table.n, ws.n) - ws.footprintU;
     expect(out).toBeGreaterThanOrEqual(1.3 - 1e-6);
     expect(out).toBeLessThan(3);
+    expect(d(table.n, po.n) - po.footprintU).toBeGreaterThan(1.3);
+    expect(d(table.n, ws.n)).toBeLessThan(d(chest.n, ws.n));
+    // comfortably apart from the chest, but side by side
     expect(d(table.n, chest.n)).toBeGreaterThan(2);
+    expect(d(table.n, chest.n)).toBeLessThan(3.2);
+    for (const g of geos) expect(pointArcDistance(table.n, UP, g.approach, R), `off the path to ${g.id}`).toBeGreaterThan(CRAFT_RADIUS + 0.9 - 1e-6);
     expect(terrain.inWater(table.n)).toBe(false);
     // the table is solid, and nothing else stands in it
     const own = layout.obstacles.find((o) => o.n === table.n);
@@ -251,7 +259,7 @@ describe('the crafting table and the house site: placement and keeping targets a
   it('offers only the special target when you stand at it', () => {
     const extra = [
       { kind: 'craft' as const, key: 'craft', n: table.n, edgeU: CRAFT_RADIUS, reachU: 0.95, standU: CRAFT_RADIUS + 0.45, index: 0, scale: 1 },
-      { kind: 'site' as const, key: 'site', n: home.dogHouse.n, edgeU: 0.45, reachU: 1.0, standU: 0.95, index: 0, scale: 1 },
+      { kind: 'site' as const, key: 'site', n: home.dogHouse.n, edgeU: 0.62, reachU: 1.0, standU: 1.1, index: 0, scale: 1 },
     ];
     const all = [...targets, ...extra];
     for (const sp of specials) {
@@ -269,37 +277,72 @@ describe('the crafting table and the house site: placement and keeping targets a
   });
 });
 
-describe("Chopper and his house (crafting.md §4.3)", () => {
+describe("Chopper and his house (crafting.md §4.3, prabin-npc.md §4.5)", () => {
   const home = layout.home!;
   const site = home.dogHouse;
-  const door = moveAlong(site.n, site.facing, 0.59 / R);
+  const door = moveAlong(site.n, site.facing, DOORWAY_U / R);
+  const inside = moveAlong(site.n, site.facing, BED_U / R);
   const facing = tangentToward(door, moveAlong(site.n, site.facing, 3 / R))!;
-  const player = moveAlong(site.n, site.facing, 2.2 / R);
+  const player = moveAlong(site.n, site.facing, 2.4 / R);
+  const houseObstacle = { n: site.n, radiusU: HOUSE_R };
   const world = (house = true): DogWorld => ({
     R,
     player,
     playerFwd: tangentToward(player, site.n)!,
     playerVel: new Vector3(),
-    obstacles: [...layout.obstacles, { n: site.n, radiusU: 0.45 }],
+    obstacles: [...layout.obstacles, houseObstacle],
     blocked: () => false,
     rabbits: [],
     spots: [],
     others: [],
-    house: house ? { door, facing } : null,
+    house: house ? { n: site.n, door, inside, facing, floor: DOGHOUSE.base } : null,
   });
 
-  it('comes to sit in the doorway when it is built, facing out', () => {
+  it('is big enough for him: he walks in upright through the doorway', () => {
+    // (1.25× life size: about 0.6 u to the top of his head, 0.3 u across)
+    expect(DOGHOUSE.door.h).toBeGreaterThan(0.55);
+    expect(DOGHOUSE.door.w).toBeGreaterThan(0.38);
+    expect(DOGHOUSE.h).toBeGreaterThan(DOGHOUSE.door.h);
+    expect(HOUSE_R).toBeGreaterThan(Math.hypot(DOGHOUSE.w, DOGHOUSE.d) / 2 - 0.2);
+  });
+
+  it('goes in when it is built, sits on his bed facing out, lifted onto the floor, and never walks through a wall', () => {
     const b = new ChopperBrain(() => 0.5);
     const w = world();
     b.placeNear(w);
     b.visitHouse(true);
-    for (let t = 0; t < 8 && !(b.behaviour === 'house' && b.clip === 'sit' && d(b.n, door) < 0.2); t += 1 / 30) b.step(1 / 30, w);
+    const wallOk = () => {
+      // outside the walls, or inside through the doorway (never across the side or back walls)
+      const dc = d(b.n, site.n);
+      if (dc > HOUSE_R + 0.19) return true;
+      const local = b.n.clone().sub(site.n);
+      return local.dot(site.facing) * R > -DOGHOUSE.d / 2 || !b.inside ? b.inside || dc > HOUSE_R + 0.15 : true;
+    };
+    for (let t = 0; t < 10 && !(b.behaviour === 'house' && b.clip === 'sit' && d(b.n, inside) < 0.1); t += 1 / 30) {
+      b.step(1 / 30, w);
+      expect(wallOk()).toBe(true);
+    }
     expect(b.behaviour).toBe('house');
-    expect(d(b.n, door)).toBeLessThan(0.2);
+    expect(b.inside).toBe(true);
+    expect(d(b.n, inside)).toBeLessThan(0.1);
     for (let t = 0; t < 1; t += 1 / 30) b.step(1 / 30, w);
     expect(b.clip).toBe('sit');
     expect(b.dir.dot(facing)).toBeGreaterThan(0.9);
+    expect(b.lift).toBeCloseTo(DOGHOUSE.base, 5);
     expect(b.events.some((e) => e.type === 'bark')).toBe(true);
+    // a whistle: out through the doorway first, then to the character
+    b.whistle();
+    let out = false;
+    for (let t = 0; t < 8; t += 1 / 30) {
+      b.step(1 / 30, w);
+      if (!b.inside && !out) {
+        out = true;
+        expect(d(b.n, door)).toBeLessThan(0.2);
+      }
+    }
+    expect(out).toBe(true);
+    expect(b.lift).toBe(0);
+    expect(d(b.n, site.n)).toBeGreaterThan(HOUSE_R + 0.15);
   });
 
   it('now and then naps there of his own accord, but never without a house', () => {

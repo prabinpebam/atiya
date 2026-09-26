@@ -1,6 +1,7 @@
 import { Vector3 } from 'three';
 import { CONFIG } from '../config';
 import { UP, arcDistance, moveAlong, pointArcDistance, tangentToward, type Obstacle } from '../math/sphere';
+import { rotateAbout } from '../math/steer';
 import type { LandmarkGeometry } from '../math/landmarks';
 import { nearPlateauRim } from './cliffs';
 import { buildMesas, buildRiver, findBridges, mesaDir, mesaPolar, mesaRadius, riverDistance, tierEdge, tierPolar, type Bridge, type Mesa, type River } from './features';
@@ -129,7 +130,7 @@ export function plazaPosts(landmarks: readonly LandmarkGeometry[], cfg = CONFIG)
   });
 }
 
-/** Plaza furniture placed in the angular gaps between the paths leaving the plaza. */
+/** Plaza furniture placed in the angular gaps between the paths leaving the plaza (lamps and planters). */
 export function plazaFurniture(landmarks: readonly LandmarkGeometry[], cfg = CONFIG): Furniture[] {
   const R = cfg.planetRadius;
   const spawn = UP as Vector3;
@@ -152,8 +153,8 @@ export function plazaFurniture(landmarks: readonly LandmarkGeometry[], cfg = CON
   const items: Furniture[] = [];
   gaps.forEach((g, i) => {
     if (g === widest) {
-      items.push(place(g.mid, 2.55, 'bench'));
-      items.push(place(g.mid - g.size * 0.28, 2.75, 'noticeboard'));
+      // (the bench and the notice board stand by the Greenhouse bridge now: generateProps)
+      items.push(place(g.mid, 2.6, 'planter'));
       items.push(place(g.mid + g.size * 0.28, 2.8, 'lamp'));
     } else if (g.size > 0.6) {
       items.push(place(g.mid, 2.8, i % 2 ? 'planter' : 'lamp'));
@@ -419,31 +420,80 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     grass.push({ n, scale: 0.7 + rand() * 0.7, yaw: rand() * Math.PI * 2, tint: rand() });
   }
 
-  // the storage chest: beside the Workshop's front, clear of solids, paths and water. Chosen after
-  // everything else is placed (so the rest of the planet is unchanged), then the walk-through
-  // plants under it are cleared away
-  const chest = ((): ChestSpot | null => {
+  // the workyard (prabin-npc.md §4.7): the storage chest and the crafting table side by side in the
+  // open ground between the Post Office's and the Workshop's paths, facing the plaza, clear of both
+  // paths, both buildings and the water. Chosen after everything else is placed (so the rest of the
+  // planet is unchanged); what stood there is cleared by the keep-clear sweep below
+  const solidsAll = [...trees, ...allBushes, ...rocks, ...boulders];
+  const yardOk = (n: Vector3, r: number) =>
+    corridor(n) >= r + 0.9 &&
+    !inPond(n, 0.4) &&
+    !blocked(n, { river: r + 0.6, mesa: r + 0.8 }) &&
+    !landmarks.some((g) => arcDistance(n, g.n, R) < g.footprintU + r + 0.8) &&
+    !posts.some((p) => arcDistance(p.n, n, R) < 1.0) &&
+    !furniture.some((f) => arcDistance(f.n, n, R) < 1.2);
+  /** How roomy a spot is: its clearance from the paths, the buildings and the water (u). */
+  const roomy = (n: Vector3, r: number) => Math.min(corridor(n) - r, ...landmarks.map((g) => arcDistance(n, g.n, R) - g.footprintU - r), riverEdge(n));
+  const yard = ((): { chest: ChestSpot; craft: ChestSpot } | null => {
+    const ws = landmarks.find((g) => g.id === 'workshop');
+    const po = landmarks.find((g) => g.id === 'post-office');
+    if (!ws || !po) return null;
+    const tw = tangentToward(spawn, ws.approach);
+    const tp = tangentToward(spawn, po.approach);
+    if (!tw || !tp) return null;
+    const mid = tw.clone().add(tp).normalize();
+    // the roomiest pair: the table on the Workshop's side (and a little further out), the chest on the Post Office's
+    let best: { chest: ChestSpot; craft: ChestSpot } | null = null;
+    let bestScore = -Infinity;
+    for (let dist = 3.9; dist <= 5.8; dist += 0.3) {
+      for (let shift = -0.3; shift <= 0.3 + 1e-9; shift += 0.1) {
+        const centre = moveAlong(spawn, rotateAbout(mid.clone(), spawn, shift), dist / R);
+        const outward = tangentToward(centre, spawn)!.negate();
+        const toWs = new Vector3().crossVectors(centre, outward).normalize();
+        if (toWs.dot(tangentToward(centre, ws.n) ?? toWs) < 0) toWs.negate();
+        for (const sep of [2.2, 2.6]) {
+          for (const radial of [0, 0.6, 1.2]) {
+            const craftN = moveAlong(moveAlong(centre, toWs, sep / 2 / R), outward, radial / 2 / R);
+            const chestN = moveAlong(moveAlong(centre, toWs, -sep / 2 / R), outward, -radial / 2 / R);
+            if (!yardOk(craftN, CRAFT_RADIUS) || !yardOk(chestN, CHEST_RADIUS)) continue;
+            const score = Math.min(roomy(craftN, CRAFT_RADIUS), roomy(chestN, CHEST_RADIUS)) - radial * 0.1;
+            if (score <= bestScore) continue;
+            bestScore = score;
+            best = {
+              chest: { n: chestN, facing: tangentToward(chestN, spawn) ?? outward.clone().negate() },
+              craft: { n: craftN, facing: tangentToward(craftN, spawn) ?? outward.clone().negate() },
+            };
+          }
+        }
+      }
+    }
+    return best;
+  })();
+  // (a layout without those two buildings: beside the first landmark's front, as before)
+  const beside = (extra: readonly number[], degs: readonly number[], r: number, avoid: Vector3 | null): ChestSpot | null => {
     const ws = landmarks.find((g) => g.id === 'workshop') ?? landmarks[0];
     if (!ws) return null;
     const side = new Vector3().crossVectors(ws.n, ws.door).normalize();
-    const solidsAll = [...trees, ...allBushes, ...rocks, ...boulders];
-    for (const deg of [55, -55, 70, -70, 40, -40, 85, -85, 100, -100]) {
-      for (const extra of [0.8, 1.0, 1.25]) {
+    for (const deg of degs) {
+      for (const e of extra) {
         const a = (deg * Math.PI) / 180;
         const dir = ws.door.clone().multiplyScalar(Math.cos(a)).addScaledVector(side, Math.sin(a));
-        const n = moveAlong(ws.n, dir, (ws.footprintU + extra) / R);
-        if (corridor(n) < 0.95 || inPond(n, 0.3) || blocked(n, { river: 0.5, mesa: 0.5 })) continue;
+        const n = moveAlong(ws.n, dir, (ws.footprintU + e) / R);
+        if (corridor(n) < r + 0.5 || inPond(n, 0.3) || blocked(n, { river: 0.5, mesa: 0.5 })) continue;
+        if (avoid && arcDistance(n, avoid, R) < 2.0) continue;
         if (solidsAll.some((t) => arcDistance(t.n, n, R) < 1.0)) continue;
-        if (posts.some((p) => arcDistance(p.n, n, R) < 0.8) || furniture.some((f) => arcDistance(f.n, n, R) < 1.0)) continue;
         if (landmarks.some((g) => g !== ws && arcDistance(n, g.n, R) < g.footprintU + 1.0)) continue;
-        // it faces the Workshop's approach, so walking up to the door you see its front
         return { n, facing: tangentToward(n, ws.approach) ?? dir };
       }
     }
     return null;
-  })();
-  if (chest) {
-    const under = (p: PropInstance) => arcDistance(p.n, chest.n, R) < CHEST_RADIUS + 0.2;
+  };
+  const chest = yard?.chest ?? beside([0.8, 1.0, 1.25], [55, -55, 70, -70, 40, -40, 85, -85], CHEST_RADIUS, null);
+  const craft = yard?.craft ?? beside([1.3, 1.6, 1.9, 2.2], [-60, 60, -75, 75, -45, 45, -90, 90], CRAFT_RADIUS, chest?.n ?? null);
+  // nothing walk-through underneath them
+  for (const spot of [chest, craft]) {
+    if (!spot) continue;
+    const under = (p: PropInstance) => arcDistance(p.n, spot.n, R) < CRAFT_RADIUS + 0.25;
     const keep = <T extends PropInstance>(list: T[]) => {
       for (let i = list.length - 1; i >= 0; i--) if (under(list[i])) list.splice(i, 1);
     };
@@ -453,28 +503,65 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     for (const k of FLOWER_KINDS) keep(flowers[k]);
   }
 
-  // the crafting table: beside the Workshop too, but on the other side from the chest and further
-  // out, so the Workshop's preview, the chest and the table can each be used on their own
-  const craft = ((): ChestSpot | null => {
-    const ws = landmarks.find((g) => g.id === 'workshop') ?? landmarks[0];
-    if (!ws) return null;
-    const side = new Vector3().crossVectors(ws.n, ws.door).normalize();
-    const solidsAll = [...trees, ...allBushes, ...rocks, ...boulders];
-    for (const deg of [-60, 60, -75, 75, -45, 45, -90, 90, -110, 110, -130, 130]) {
-      for (const extra of [1.3, 1.6, 1.9, 2.2]) {
-        const a = (deg * Math.PI) / 180;
-        const dir = ws.door.clone().multiplyScalar(Math.cos(a)).addScaledVector(side, Math.sin(a));
-        const n = moveAlong(ws.n, dir, (ws.footprintU + extra) / R);
-        if (corridor(n) < 1.3 || inPond(n, 0.4) || blocked(n, { river: 0.6, mesa: 0.6 })) continue;
-        if (chest && arcDistance(n, chest.n, R) < 2.0) continue;
-        if (solidsAll.some((t) => arcDistance(t.n, n, R) < 1.0)) continue;
-        if (posts.some((p) => arcDistance(p.n, n, R) < 0.9) || furniture.some((f) => arcDistance(f.n, n, R) < 1.1)) continue;
-        if (landmarks.some((g) => g !== ws && arcDistance(n, g.n, R) < g.footprintU + 1.2)) continue;
-        return { n, facing: tangentToward(n, ws.approach) ?? dir };
+  // the plaza's bench and notice board stand by the Greenhouse bridge (prabin-npc.md §4.7): the bench
+  // on the bank beside the path at the plaza's end of the bridge, facing the water; the board across
+  // the path by its entrance, facing the path. Both on dry ground, off the path
+  const bridgeSpots = ((): Furniture[] => {
+    const gh = landmarks.find((g) => g.id === 'greenhouse');
+    if (!bridges.length) return [];
+    const line = (n: Vector3) => (gh ? pointArcDistance(n, spawn, gh.approach, R) : arcDistance(n, spawn, R));
+    const b = bridges.reduce((x, y) => (line(y.n) < line(x.n) ? y : x));
+    const L = b.halfLengthU;
+    const toSpawn = arcDistance(moveAlong(b.n, b.along, L / R), spawn, R) < arcDistance(moveAlong(b.n, b.along, -L / R), spawn, R) ? 1 : -1;
+    const along = b.along.clone().multiplyScalar(toSpawn);
+    const rails = bridgeRailObstacles([b], cfg);
+    const ok = (n: Vector3, r: number, bank: number) =>
+      riverEdge(n) >= r + bank &&
+      corridor(n) >= r + 0.55 &&
+      !inPond(n, 0.4) &&
+      !nearMesa(n, 0.5) &&
+      !nearLandmark(n, r + 0.3) &&
+      !rails.some((o) => arcDistance(o.n, n, R) < o.radiusU + r + 0.3) &&
+      !posts.some((p) => arcDistance(p.n, n, R) < r + 0.6) &&
+      ![chest, craft].some((c) => c && arcDistance(c.n, n, R) < 2.5);
+    const out: Furniture[] = [];
+    let benchSide = 0;
+    search: for (const extra of [0.9, 1.3, 1.7, 2.2]) {
+      for (const side of [1, -1]) {
+        for (const acrossU of [1.35, 1.7, 2.1]) {
+          const end = moveAlong(b.n, along, (L + extra) / R);
+          const n = moveAlong(end, b.across.clone().multiplyScalar(side), acrossU / R);
+          if (!ok(n, FURNITURE_RADIUS.bench, 0.35)) continue;
+          // facing the water: back along the path, toward the river
+          const facing = tangentToward(n, moveAlong(b.n, b.across.clone().multiplyScalar(side), acrossU / R)) ?? along.clone().negate();
+          out.push({ kind: 'bench', n, facing });
+          benchSide = side;
+          break search;
+        }
       }
     }
-    return null;
+    board: for (const extra of [0.6, 1.0, 1.4, 1.9]) {
+      for (const side of benchSide ? [-benchSide, benchSide] : [1, -1]) {
+        for (const acrossU of [1.15, 1.45, 1.8]) {
+          const end = moveAlong(b.n, along, (L + extra) / R);
+          const n = moveAlong(end, b.across.clone().multiplyScalar(side), acrossU / R);
+          if (!ok(n, FURNITURE_RADIUS.noticeboard, 0.25) || out.some((f) => arcDistance(f.n, n, R) < 1.4)) continue;
+          out.push({ kind: 'noticeboard', n, facing: tangentToward(n, end) ?? along.clone() });
+          break board;
+        }
+      }
+    }
+    return out;
   })();
+  furniture.push(...bridgeSpots);
+  // what stood there makes way (solids near them; plants under them)
+  for (const f of bridgeSpots) {
+    const r = FURNITURE_RADIUS[f.kind];
+    for (const list of [hardwood, fruit, cedar, trees, bushes, flowerBushes, allBushes, rocks, boulders]) {
+      for (let i = list.length - 1; i >= 0; i--) if (arcDistance(list[i].n, f.n, R) < r + 0.9 + 0.42 * list[i].scale) list.splice(i, 1);
+    }
+    for (const list of [grass, sprigs, pebbles]) for (let i = list.length - 1; i >= 0; i--) if (arcDistance(list[i].n, f.n, R) < r + 0.1) list.splice(i, 1);
+  }
 
   // the owner's home by the pond: laid out last and cleared of whatever stood there, so the rest of
   // the planet is unchanged; Laija's reading tree joins the hardwoods
@@ -494,7 +581,12 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   // keep the special targets (the chest, the crafting table, Chopper's house site) apart from every
   // other usable thing, so walking up to one never offers another by mistake: no flowers inside
   // KEEP_CLEAR of them, and no tree, bush, rock or boulder whose edge is within KEEP_SOLID of theirs
-  const specials = [chest && { n: chest.n, r: CHEST_RADIUS }, craft && { n: craft.n, r: CRAFT_RADIUS }, home && { n: home.dogHouse.n, r: HOME_R.dogHouse }].filter(Boolean) as { n: Vector3; r: number }[];
+  const specials = [
+    chest && { n: chest.n, r: CHEST_RADIUS },
+    craft && { n: craft.n, r: CRAFT_RADIUS },
+    home && { n: home.dogHouse.n, r: HOME_R.dogHouse },
+    ...bridgeSpots.filter((f) => f.kind === 'bench').map((f) => ({ n: f.n, r: FURNITURE_RADIUS.bench })),
+  ].filter(Boolean) as { n: Vector3; r: number }[];
   if (specials.length) {
     const near = (p: PropInstance, pad: number) => specials.some((s) => arcDistance(p.n, s.n, R) < s.r + pad);
     const keepOut = <T extends PropInstance>(list: T[], pad: number, radius = 0) => {

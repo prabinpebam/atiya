@@ -39,11 +39,11 @@ function PlazaLamps({ controller, at }: { controller: GameController; at: Vector
   return null;
 }
 
-function frame(n: Vector3, forward: Vector3): { p: V3; q: Quaternion } {
+function frame(n: Vector3, forward: Vector3, h = 0): { p: V3; q: Quaternion } {
   const x = new Vector3().crossVectors(n, forward).normalize();
   const z = new Vector3().crossVectors(x, n).normalize();
   const q = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, n, z));
-  const p = n.clone().multiplyScalar(R - 0.01);
+  const p = n.clone().multiplyScalar(R + h - 0.01);
   return { p: [p.x, p.y, p.z], q };
 }
 
@@ -76,7 +76,8 @@ export function Plaza({ controller }: { controller: GameController }) {
       }));
     }
     for (const f of controller.props.furniture) {
-      k.group(frame(f.n, f.facing), () => {
+      // (the bench and the notice board stand out by the bridge, on the terrain)
+      k.group(frame(f.n, f.facing, controller.terrain.height(f.n)), () => {
         if (f.kind === 'lamp') lampPost(k, {}, 1.5);
         else if (f.kind === 'bench') bench(k, {});
         else if (f.kind === 'planter') {

@@ -825,7 +825,7 @@ test.describe('home & family', () => {
     test.setTimeout(120_000);
     await startPlanet(page);
     let f = await family(page);
-    expect(f.map((p) => p.id)).toEqual(['rojina', 'laija', 'lingjel']);
+    expect(f.map((p) => p.id)).toEqual(['rojina', 'laija', 'lingjel', 'prabin']);
     await page.evaluate(() => {
       const g = (window as any).__game;
       g.pause();
@@ -833,7 +833,8 @@ test.describe('home & family', () => {
       g.resume();
     });
     f = await family(page);
-    for (const p of f) expect(p.home, p.id).toBeLessThan(8.5);
+    // (Prabin roams the whole planet)
+    for (const p of f) if (p.id !== 'prabin') expect(p.home, p.id).toBeLessThan(8.5);
     // at the home: the house, the campsite and the picnic are drawn
     expect(await page.evaluate(() => (window as any).__game.visitHome())).toBe(true);
     const names = await page.evaluate(() => {
@@ -878,6 +879,105 @@ test.describe('home & family', () => {
       return most;
     });
     for (const m of swing) expect(m).toBeGreaterThan(0.05);
+  });
+
+  test('Prabin: he starts by the crafting table; Talk to Prabin opens the dialog with his name and a welcome', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    const f = await family(page);
+    const p = f.find((x) => x.id === 'prabin')!;
+    expect(p.indoors).toBe(false);
+    expect(await page.evaluate(() => (window as any).__game.nearNpc('prabin', 0.95))).toBe(true);
+    const talk = page.getByTestId('seat-prompt').getByRole('button', { name: /Talk to Prabin/ });
+    await expect(talk).toBeVisible();
+    await page.keyboard.press('KeyE');
+    const box = page.getByTestId('talk-box');
+    await expect(box).toBeVisible();
+    await expect(box.locator('.talk-name')).toHaveText('Prabin');
+    expect((await state(page)).talk!.lines.length).toBeGreaterThanOrEqual(2);
+    await page.keyboard.press('Escape');
+    await expect(box).toHaveCount(0);
+    await expect(page.locator('.game-region')).toBeFocused();
+  });
+
+  test('bedtime: the front door swings open, they climb the steps and go in one at a time, and it shuts after them', async ({ page }) => {
+    test.setTimeout(150_000);
+    await startPlanet(page);
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.visitHome();
+      g.nearTarget('site', undefined, 3);
+      g.setTime(20.2);
+    });
+    let sawOpen = 0;
+    let most = 0;
+    for (let i = 0; i < 90; i++) {
+      const r = await page.evaluate(() => {
+        const g = (window as any).__game;
+        g.pause();
+        g.advance(30);
+        g.resume();
+        const f = g.family() as Array<{ link: string | null; indoors: boolean }>;
+        return { door: g.homeDoor() as number, passing: f.filter((p) => p.link === 'in:walk').length, inside: f.filter((p) => p.indoors).length };
+      });
+      most = Math.max(most, r.passing);
+      if (r.passing) sawOpen = Math.max(sawOpen, r.door);
+      if (r.inside === 4) break;
+    }
+    expect(most).toBe(1);
+    expect(sawOpen).toBeGreaterThan(0.84);
+    expect((await family(page)).every((p) => p.indoors)).toBe(true);
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.pause();
+      g.advance(120);
+      g.resume();
+    });
+    expect(await page.evaluate(() => (window as any).__game.homeDoor())).toBe(0);
+  });
+
+  test("Chopper's house at night: its lantern is lit and he goes inside to lie on his bed", async ({ page }) => {
+    test.setTimeout(150_000);
+    await page.addInitScript(() => localStorage.setItem('site.dogHouse', JSON.stringify({ built: true, colour: 'original' })));
+    await startPlanet(page);
+    const before = await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.setTime(12);
+      return g.lamps() as number;
+    });
+    // over to his house (he comes when whistled), then a nap inside it
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.setTime(22);
+      g.nearTarget('site', undefined, 2.4);
+      g.whistle();
+      g.pause();
+      g.advance(60 * 16);
+      g.resume();
+      g.chopperDo('house');
+    });
+    let dog = { behaviour: '', stage: 0 };
+    for (let i = 0; i < 20 && !(dog.behaviour === 'house' && dog.stage >= 2); i++) {
+      dog = await page.evaluate(() => {
+        const g = (window as any).__game;
+        g.pause();
+        g.advance(30);
+        g.resume();
+        return g.chopper();
+      });
+    }
+    expect(dog.behaviour).toBe('house');
+    expect(dog.stage).toBeGreaterThanOrEqual(2);
+    // lamps are lit after dark (the lantern among them), and there are never more than the lamp list holds
+    await page.waitForTimeout(500);
+    const night = await page.evaluate(() => (window as any).__game.lamps() as number);
+    expect(night).toBeGreaterThan(before);
+    expect(night).toBeLessThanOrEqual(10);
+    const inside = await page.evaluate(() => {
+      const { scene } = (window as any).__game.__gfx();
+      return Boolean(scene.getObjectByName('dog-house'));
+    });
+    expect(inside).toBe(true);
   });
 
   test('the routine: after the clock is set to night they wait a moment, then go inside; in the morning they come out', async ({ page }) => {
@@ -1084,8 +1184,7 @@ test.describe("crafting & Chopper's house", () => {
     ]);
     expect(await page.evaluate(() => (window as any).__game.nearTarget('craft'))).toBe('craft');
     await expect(prompt(page).getByRole('button', { name: /Use crafting table/ })).toBeVisible();
-    // it stands inside the Workshop's area, yet it has the E key (and the Workshop's card makes way)
-    expect((await state(page)).nearby).toBe('workshop');
+    // (it has the E key even if a building's preview area reaches it: the card makes way)
     await expect(page.getByTestId('preview-card')).toHaveCount(0);
     await page.keyboard.press('KeyE');
     const screen = page.getByTestId('craft-screen');

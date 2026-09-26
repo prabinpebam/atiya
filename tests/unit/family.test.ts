@@ -8,8 +8,8 @@ import { Terrain } from '../../src/game/world/terrain';
 import { riverDistance } from '../../src/game/world/features';
 import { HOME_R } from '../../src/game/world/homestead';
 import { FAMILY, Family, LINES, LinePicker, ROUTINE, partOfDay, type FamilyWorld } from '../../src/game/world/home/family';
-import { NavGrid } from '../../src/game/world/home/nav';
-import { moveAlong } from '../../src/game/math/sphere';
+import { SphereNav } from '../../src/game/world/home/nav';
+import { UP, moveAlong } from '../../src/game/math/sphere';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
 const R = CONFIG.planetRadius;
@@ -33,8 +33,17 @@ function world(player = new Vector3(0, 1, 0), hours = 12): FamilyWorld {
     blocked: (n) => d(n, pond.n) < terrain.pondShore(n) + 0.05 || terrain.waterDepth(n) > 0.12,
     rabbits: [],
     flowers: FLOWER_KINDS.flatMap((k) => layout.flowers[k].map((f) => f.n)).filter((n) => d(n, home.centre) < home.range),
+    planet: {
+      spawn: UP.clone(),
+      landmarks: geos.map((g) => ({ id: g.id, n: g.n, approach: g.approach, footprintU: g.footprintU })),
+      craft: layout.craft ? { n: layout.craft.n, facing: layout.craft.facing } : null,
+      bridges: [],
+    },
   };
 }
+
+/** The three who live at home all day (Prabin roams the planet). */
+const HOME_IDS = ['rojina', 'laija', 'lingjel'];
 
 const run = (f: Family, w: FamilyWorld, seconds: number, each?: () => void) => {
   for (let t = 0; t < seconds; t += 1 / 30) {
@@ -83,7 +92,7 @@ describe('home by the pond: the site plan', () => {
 describe('the family: route planning', () => {
   it('plans a route round the house, through open ground only, and the route stays clear between waypoints', () => {
     const w = world();
-    const nav = new NavGrid(home.centre, R, obstacles, w.blocked, 0.28);
+    const nav = new SphereNav(R, obstacles, w.blocked, 0.28);
     // from behind the house to the picnic table's far side
     const behind = moveAlong(home.house.n, home.house.facing.clone().negate(), 1.9 / R);
     const past = moveAlong(home.table.n, home.table.facing, 1.2 / R);
@@ -117,6 +126,7 @@ describe('the family: behaviour', () => {
     let longest = 0;
     run(f, w, 420, () => {
       for (const n of f.npcs) {
+        if (!HOME_IDS.includes(n.id)) continue;
         // never stuck: wanting to walk but not moving, for more than a couple of seconds
         stuck[n.id] = n.want > 0.3 && n.speed < 0.05 ? stuck[n.id] + 1 / 30 : 0;
         longest = Math.max(longest, stuck[n.id]);
@@ -194,7 +204,8 @@ describe('the family: routine, meals and room to move', () => {
     expect(f.schedule).toBe('night');
     for (const n of f.npcs) {
       expect(n.indoors, n.id).toBe(true);
-      expect(d(n.n, home.door.n)).toBeLessThan(0.2);
+      // through the door, and a little way into the room
+      expect(d(n.n, f.insideSpot(R))).toBeLessThan(0.2);
     }
     // they stay in all night
     run(f, w, 30);
@@ -222,10 +233,11 @@ describe('the family: routine, meals and room to move', () => {
     let cleared = false;
     run(f, w, 150, () => {
       if (f.foodOnTable) served = true;
-      if (f.npcs.every((n) => n.pose === 'eat')) {
+      if (f.npcs.every((n) => n.pose === 'eat' && n.seat?.phase === 'on')) {
         allSeated = true;
-        // each at their own chair round the table
-        for (const n of f.npcs) expect(Math.min(...home.tableChairs.map((c) => d(n.n, c.n)))).toBeLessThan(0.2);
+        // each on their own chair round the table (four: Prabin's too)
+        for (const n of f.npcs) expect(Math.min(...home.tableChairs.map((c) => d(n.n, c.n)))).toBeLessThan(0.02);
+        expect(new Set(f.npcs.map((n) => n.seat!.seat.id)).size).toBe(4);
       }
       if (served && !f.foodOnTable && !f.meal) cleared = true;
     });
@@ -237,7 +249,9 @@ describe('the family: routine, meals and room to move', () => {
   });
 
   it('nobody walks through anybody: the family keep clear of each other, the character and Chopper', () => {
-    const player = moveAlong(home.centre, home.house.facing, 0.6 / R);
+    // the character standing in the middle of the home ground (where it can stand: clear of the furniture)
+    let player = moveAlong(home.centre, home.house.facing, 0.6 / R);
+    for (let k = 0; k < 40 && obstacles.some((o) => d(o.n, player) < o.radiusU + 0.4); k++) player = moveAlong(home.centre, home.house.facing.clone().applyAxisAngle(home.centre, k * 0.5), (0.6 + k * 0.05) / R);
     const dog = moveAlong(home.mat.n, home.mat.facing, 0.9 / R);
     const w = world(player);
     (w as unknown as { others: Vector3[] }).others = [dog];

@@ -98,7 +98,11 @@ export interface GameTestHook {
   /** Stand `u` from Chopper, facing him. */
   nearChopper(u?: number): boolean;
   /** The family (family.md): each one's activity, pose, speed, whether they're talking with you, and distances (u) from you and from home. */
-  family(): Array<{ id: string; activity: string; pose: string; speed: number; chatting: boolean; indoors: boolean; d: number; home: number }>;
+  family(): Array<{ id: string; activity: string; pose: string; speed: number; chatting: boolean; indoors: boolean; d: number; home: number; seat: string | null; link: string | null; held: string | null }>;
+  /** How open the family's front door is (0 shut … 1 open). */
+  homeDoor(): number;
+  /** Put one of the family (or Prabin) at a point (planet-local unit vector), standing (visual checks). */
+  npcPlace(id: string, n: [number, number, number]): boolean;
   /** Stand `u` from one of the family, facing them. */
   nearNpc(id: string, u?: number): boolean;
   /** Make one of the family start (and keep at) an activity. */
@@ -414,12 +418,16 @@ export function installTestHook(c: GameController): void {
       return c.drops.list.map((d) => ({ item: d.item, count: d.count, state: d.state, d: Math.acos(Math.max(-1, Math.min(1, d.p.clone().normalize().dot(c.sim.pLocal)))) * R }));
     },
     chopper: () => {
-      const b = c.chopper;
+      const b = c.chopper as import('../world/chopper/brain').ChopperBrain;
       return { d: b.distanceTo(c.sim.pLocal, CONFIG.planetRadius), speed: b.speed, behaviour: b.behaviour, stage: b.stage, clip: b.clip, wag: b.wag, pant: b.pant, energy: b.energy, whistles: c.whistles, n: b.n.toArray() };
     },
     whistle: () => c.whistle(),
     chopperDo: (what) => {
       const b = c.chopper as unknown as { hold(clip: string, dur?: number): void; makeTrail(w: unknown): void };
+      if (what === 'house') {
+        (c.chopper as import('../world/chopper/brain').ChopperBrain).visitHouse(false);
+        return;
+      }
       if (what === 'scent') {
         b.makeTrail(c.dogWorld);
         (c.chopper as unknown as { behaviour: string }).behaviour = 'scent';
@@ -443,6 +451,16 @@ export function installTestHook(c: GameController): void {
       return false;
     },
     family: () => c.home?.state() ?? [],
+    homeDoor: () => c.home?.door() ?? 0,
+    npcPlace: (id, n) => {
+      const f = c.home?.family as { get(id: string): { n: import('three').Vector3; route: unknown; goal: unknown } } | undefined;
+      if (!f) return false;
+      const npc = f.get(id);
+      npc.n.set(n[0], n[1], n[2]).normalize();
+      npc.route = null;
+      npc.goal = null;
+      return true;
+    },
     npcDo: (id, activity) => c.home?.hold(id, activity) ?? false,
     nearNpc: (id, u = 0.9) => {
       const p = c.home?.people.find((x) => x.id === id);

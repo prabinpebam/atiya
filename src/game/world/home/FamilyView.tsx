@@ -24,16 +24,18 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { CONFIG } from '../../config';
 import type { GameController } from '../../controller';
-import { damp, tangentToward } from '../../math/sphere';
+import { arcDistance, damp, moveAlong, tangentToward } from '../../math/sphere';
 import { selectAmbientPaused, selectReducedMotion } from '../../state/store';
 import { aimBone } from '../../player/Player';
 import { characterById, type CharacterId } from '../../player/characters';
 import { withLampLights } from '../lampLights';
 import { kitMaterials } from '../materials';
 import { KitModel } from '../KitModel';
-import type { Family, NpcId } from './family';
+import { CRAFT_STAND, type Family, type NpcId } from './family';
 import { bodyPose, HIP_FRACTION } from './poses';
-import { bookModel, bubbleModel, toyCarModel, paperModel } from './models';
+import { birdhouseModel, bookModel, bubbleModel, guitarModel, hammerModel, stickModel, toyCarModel, paperModel } from './models';
+import { seatHip } from './seats';
+import { PROP_SCALE } from '../homestead';
 import { Kit } from '../kit';
 import { withBase } from '../../platform/base';
 
@@ -47,6 +49,20 @@ export const LOOKS: Record<NpcId, { model: CharacterId; height: number; head: nu
   rojina: { model: 'sunny', height: 1.18, head: 1, skin: withBase('/models/skins/rojina.png'), hair: null, glasses: true, book: '#6f9fc8' },
   laija: { model: 'skater', height: 0.92, head: 1.12, skin: withBase('/models/skins/laija.png'), hair: 'pigtails', glasses: false, book: '#e2554c' },
   lingjel: { model: 'skater', height: 0.74, head: 1.2, skin: withBase('/models/skins/lingjel.png'), hair: null, glasses: false, book: '#3fb45a' },
+  // Prabin: the playable Skater's model in his own T-shirt, trousers and shoes (prabin-npc.md §4.6)
+  prabin: { model: 'skater', height: 1.28, head: 1, skin: withBase('/models/skins/prabin.png'), hair: null, glasses: false, book: '#6f9fc8' },
+};
+
+/** The front steps and the floor behind the door (house-local heights above its base, and their outer edges from its centre, u; home/models.ts). */
+const STEPS: ReadonlyArray<[number, number]> = [
+  [1.27, 0.08],
+  [1.09, 0.16],
+  [0.9, 0.34],
+];
+const stepHeight = (d: number) => {
+  let h = 0;
+  for (const [edge, top] of STEPS) if (d < edge) h = top;
+  return h;
 };
 
 const _m = new Matrix4();
@@ -182,6 +198,9 @@ function Person({ controller, family, id }: { controller: GameController; family
 
   const props = useMemo(
     () => ({
+      guitar: guitarModel(),
+      hammer: hammerModel(),
+      stick: stickModel(),
       book: bookModel(look.book),
       car: toyCarModel(id === 'lingjel' ? '#e33b3b' : '#f6c629'),
       paper: paperModel(),
@@ -215,6 +234,10 @@ function Person({ controller, family, id }: { controller: GameController; family
   const lastPose = useRef(npc.pose);
   const headYaw = useRef(0);
   const nodNow = useRef(0);
+  const liftNow = useRef(0);
+  const knock = useRef(0);
+  const home = family.home;
+  const houseBase = controller.terrain.height(home.house.n) + 0.12;
 
   useFrame((_, rawDt) => {
     const g = root.current;
@@ -225,8 +248,11 @@ function Person({ controller, family, id }: { controller: GameController; family
     // in the house for the night: not drawn (the lit windows say they're home)
     g.visible = !npc.indoors;
     if (npc.indoors) return;
-    // on the planet, facing their way
-    const h = controller.terrain.walkHeight(npc.n);
+    // on the planet, facing their way (up the front steps and onto the floor in the doorway)
+    const ground = controller.terrain.walkHeight(npc.n);
+    const onSteps = npc.link ? Math.max(0, houseBase + stepHeight(arcDistance(npc.n, home.house.n, R)) - ground) : 0;
+    liftNow.current = reduced ? onSteps : damp(liftNow.current, onSteps, 12, dt);
+    const h = ground + liftNow.current;
     g.position.copy(npc.n).multiplyScalar(R + h);
     _x.crossVectors(npc.n, npc.dir).normalize();
     _m.makeBasis(_x, npc.n, npc.dir);
@@ -258,11 +284,15 @@ function Person({ controller, family, id }: { controller: GameController; family
     const bp = bodyPose(moving ? 'stand' : npc.pose, npc.poseT, npc.held, npc.speed > 0.05);
     const active = bp.arms || bp.legs || bp.spine || bp.hip !== null;
     weight.current = reduced ? (active ? 1 : 0) : damp(weight.current, active ? 1 : 0, 7, dt);
-    const hipTarget = bp.hip === null ? rig.hipRest : bp.hip * look.height;
+    // on a seat, the hips go to that seat's own height and depth (seats.ts), whatever the body's size
+    const su = npc.seat;
+    const onSeat = su && su.phase !== 'out' && bp.hip !== null;
+    const hipTarget = onSeat ? seatHip(su.seat, look.height) : bp.hip === null ? rig.hipRest : bp.hip * look.height;
+    const backTarget = onSeat ? su.seat.back : (bp.back ?? 0) * look.height;
     hipNow.current = hipNow.current === null || reduced ? hipTarget : damp(hipNow.current, hipTarget, 8, dt);
     pitchNow.current = reduced ? bp.pitch : damp(pitchNow.current, bp.pitch, 7, dt);
-    backNow.current = reduced ? (bp.back ?? 0) : damp(backNow.current, bp.back ?? 0, 8, dt);
-    pv.position.set(0, hipNow.current, -backNow.current * look.height);
+    backNow.current = reduced ? backTarget : damp(backNow.current, backTarget, 8, dt);
+    pv.position.set(0, hipNow.current, -backNow.current);
     pv.rotation.set(pitchNow.current, 0, 0);
     const w = weight.current;
     if (w > 1e-3) {
@@ -317,18 +347,39 @@ function Person({ controller, family, id }: { controller: GameController; family
         g.updateMatrixWorld(true);
         const a = g.worldToLocal(lh.getWorldPosition(_v));
         const b = g.worldToLocal(rh.getWorldPosition(_w));
+        hm.rotation.set(0, 0, 0);
         if (kind === 'book' || kind === 'basket') hm.position.copy(a).add(b).multiplyScalar(0.5);
-        else hm.position.copy(b);
+        else if (kind === 'guitar') {
+          // across the lap, the neck out to the left
+          hm.position.set(0.06, (hipNow.current ?? 0.4) + 0.05, -backNow.current + 0.17);
+        } else hm.position.copy(b);
         if (kind === 'car' && npc.pose === 'crawl') hm.position.y = 0.01;
         // the pebble leaves the hand at the throw and comes back with the next one
         const c = npc.poseT % 1.6;
         if (kind === 'pebble') hm.visible = !(c > 0.55 && c < 1.25);
         else hm.visible = true;
-        hm.rotation.set(kind === 'book' ? -0.9 : 0, 0, 0);
+        if (kind === 'book') hm.rotation.set(-0.9, 0, 0);
+        else if (kind === 'guitar') hm.rotation.set(-0.15, 0, -1.2);
+        else if (kind === 'hammer' || kind === 'stick') {
+          // along the forearm, from the fist
+          rig.limbs[1].fore?.getWorldPosition(_w);
+          g.worldToLocal(_w);
+          _dir.copy(hm.position).sub(_w).normalize();
+          hm.quaternion.setFromUnitVectors(_up.set(0, 1, 0), _dir);
+        }
         if (kind === 'book') hm.position.addScaledVector(_up.set(0, 1, 0), 0.03).z += 0.04;
       } else hm.visible = false;
     }
     if (paper.current) paper.current.visible = npc.pose === 'paint';
+    // the hammer's knock at the bottom of each swing (quiet, and only close by)
+    if (npc.pose === 'hammer' && !paused) {
+      const c = Math.floor(npc.poseT / 0.8);
+      const d = arcDistance(npc.n, controller.sim.pLocal, R);
+      if (c !== knock.current && npc.poseT % 0.8 > 0.5) {
+        knock.current = c;
+        if (d < 6) controller.sound.hit(0.5 * (1 - d / 6));
+      }
+    }
     // a speech bubble over whoever is talking (to one of the family), billboarded
     const bb = bubble.current;
     if (bb) {
@@ -349,6 +400,17 @@ function Person({ controller, family, id }: { controller: GameController; family
         <primitive object={rig.scene} scale={rig.scale} position={[0, rig.lift - rig.hipRest, 0]} />
       </group>
       <group ref={held}>
+        <group name="guitar">
+          <group position={[0, -0.17 * PROP_SCALE, 0]} scale={PROP_SCALE}>
+            <KitModel geo={props.guitar} shadows={false} />
+          </group>
+        </group>
+        <group name="hammer">
+          <KitModel geo={props.hammer} shadows={false} />
+        </group>
+        <group name="stick">
+          <KitModel geo={props.stick} shadows={false} />
+        </group>
         <group name="book">
           <KitModel geo={props.book} shadows={false} />
         </group>
@@ -384,7 +446,67 @@ class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   }
 }
 
-/** Rojina, Laija and Lingjel (docs: family.md). */
+/** The crafting table's top above the ground (u; craft/models.ts `TABLE.h`). */
+const TABLE_TOP = 0.52;
+
+/**
+ * Prabin's things out in the world: the stick for fetch (flying, in Chopper's mouth, or lying where
+ * he dropped it) and the birdhouse he's building on the crafting table.
+ */
+function PrabinProps({ controller, family }: { controller: GameController; family: Family }) {
+  const geo = useMemo(() => ({ stick: stickModel(), birdhouse: birdhouseModel() }), []);
+  const stick = useRef<Group>(null);
+  const bird = useRef<Group>(null);
+  const craft = controller.props.craft;
+  const birdAt = useMemo(() => {
+    if (!craft) return null;
+    const n = moveAlong(craft.n, craft.facing, (CRAFT_STAND - 0.45) / R);
+    const x = new Vector3().crossVectors(n, craft.facing).normalize();
+    const z = new Vector3().crossVectors(x, n).normalize();
+    return { p: n.clone().multiplyScalar(R + controller.terrain.height(n) + TABLE_TOP), q: new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, n, z)).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), 0.5)) };
+  }, [craft, controller]);
+  useFrame(() => {
+    const p = family.get('prabin');
+    const b = bird.current;
+    if (b) b.visible = p.activity === 'hammer' && p.stage > 0;
+    const s = stick.current;
+    if (!s) return;
+    const f = family.fetch;
+    const dog = controller.chopper;
+    s.visible = f.state !== 'none';
+    if (!s.visible) return;
+    let at: Vector3;
+    let lift = 0.03;
+    if (f.state === 'carried') {
+      // in his mouth, crosswise
+      at = moveAlong(dog.n, dog.dir, 0.3 / R);
+      lift = 0.33;
+    } else if (f.state === 'thrown' && f.flight < 0.6) {
+      // a little arc from the hand to where it lands
+      const k = f.flight / 0.6;
+      at = f.from.clone().lerp(f.stick, k).normalize();
+      lift = 0.9 * (1 - k) + 1.1 * k * (1 - k) + 0.03;
+    } else at = f.stick;
+    s.position.copy(at).multiplyScalar(R + controller.terrain.walkHeight(at) + lift);
+    s.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), at);
+    s.rotateZ(Math.PI / 2);
+    if (f.state === 'carried') s.rotateX(Math.atan2(dog.dir.x, dog.dir.z));
+  });
+  return (
+    <>
+      <group ref={stick} visible={false}>
+        <KitModel geo={geo.stick} shadows={false} />
+      </group>
+      {birdAt && (
+        <group ref={bird} position={birdAt.p} quaternion={birdAt.q} visible={false}>
+          <KitModel geo={geo.birdhouse} />
+        </group>
+      )}
+    </>
+  );
+}
+
+/** Rojina, Laija, Lingjel and Prabin (docs: family.md, prabin-npc.md). */
 export function FamilyView({ controller, family }: { controller: GameController; family: Family }) {
   return (
     <Boundary>
@@ -393,6 +515,7 @@ export function FamilyView({ controller, family }: { controller: GameController;
           <Person key={n.id} controller={controller} family={family} id={n.id} />
         ))}
       </Suspense>
+      <PrabinProps controller={controller} family={family} />
     </Boundary>
   );
 }

@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useStore } from 'zustand';
-import { DoubleSide, Group, InstancedMesh, LineBasicMaterial, Matrix4, MeshBasicMaterial, MeshStandardMaterial, Object3D, Quaternion, SphereGeometry, Vector3 } from 'three';
+import { Color, DoubleSide, Group, InstancedMesh, LineBasicMaterial, Matrix4, MeshBasicMaterial, MeshStandardMaterial, Object3D, Quaternion, SphereGeometry, Vector3 } from 'three';
 import { CONFIG } from '../../config';
 import type { GameController } from '../../controller';
 import { selectReducedMotion } from '../../state/store';
 import { KitModel } from '../KitModel';
-import { withLampLights } from '../lampLights';
+import { addLamp, withLampLights, type Lamp } from '../lampLights';
+import { lampsOn } from '../DayNight';
 import type { Crafting } from './index';
-import { craftingTableModel, dogHouseModel, ghostGeometry } from './models';
+import { DOGHOUSE_LANTERN, craftingTableModel, dogHouseModel, ghostGeometry } from './models';
 import { HOUSE_HEX } from './recipes';
 
 const R = CONFIG.planetRadius;
@@ -36,6 +37,12 @@ export function CraftView({ controller, crafting }: { controller: GameController
   const tableAt = useMemo(() => (table ? frame(table.n, table.facing, controller.terrain.height(table.n) - 0.02) : null), [table, controller]);
   const siteAt = useMemo(() => (site ? frame(site.n, site.facing, controller.terrain.height(site.n) - 0.03) : null), [site, controller]);
   const houseGeo = useMemo(() => (built ? dogHouseModel(HOUSE_HEX[colour]) : null), [built, colour]);
+  // the lantern inside lights his room at night (a real lamp: lampLights.ts), dark by day
+  const lantern = useMemo<Lamp | null>(
+    () => (siteAt ? { pos: new Vector3(...DOGHOUSE_LANTERN).applyQuaternion(siteAt.q).add(siteAt.p), dir: null, color: new Color('#ffc88a'), intensity: 0, range: 1.1 } : null),
+    [siteAt],
+  );
+  useEffect(() => (built && lantern ? addLamp(lantern) : undefined), [built, lantern]);
   useEffect(
     () => () => {
       for (const g of [houseGeo?.solid, houseGeo?.glow, houseGeo?.glass]) g?.dispose();
@@ -57,6 +64,7 @@ export function CraftView({ controller, crafting }: { controller: GameController
 
   useFrame(({ clock }) => {
     const s = crafting.store.getState();
+    if (lantern) lantern.intensity = 1.6 * lampsOn(controller.sky.night);
     const reduced = selectReducedMotion(controller.store.getState());
     const t = s.building;
     // the ghost: faint from afar, clear up close, with a slow shimmer; it fades as the house goes up

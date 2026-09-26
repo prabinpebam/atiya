@@ -19,6 +19,8 @@ import {
   armchairModel,
   campChairModel,
   chairModel,
+  DOOR_HINGE,
+  doorLeafModel,
   fireRingModel,
   flamesModel,
   guitarModel,
@@ -72,6 +74,7 @@ export function HomeView({ controller, home, family }: { controller: GameControl
   const models = useMemo(
     () => ({
       house: houseModel(),
+      door: doorLeafModel(),
       ring: fireRingModel(),
       flames: flamesModel(),
       campA: campChairModel('#3f7fb8'),
@@ -120,6 +123,8 @@ export function HomeView({ controller, home, family }: { controller: GameControl
   useEffect(() => addLamp(fireLamp), [fireLamp]);
   useEffect(() => addLamp(porchLamp), [porchLamp]);
   const food = useRef<Group>(null);
+  const door = useRef<Group>(null);
+  const guitar = useRef<Group>(null);
   const smoke = useRef<InstancedMesh>(null);
   const embers = useRef<InstancedMesh>(null);
   const smokeGeo = useMemo(() => new SphereGeometry(0.07, 8, 6), []);
@@ -187,6 +192,13 @@ export function HomeView({ controller, home, family }: { controller: GameControl
     fireLamp.intensity = FIRE_LAMP.intensity * on * flick;
     porchLamp.intensity = PORCH_LAMP.intensity * on;
     if (food.current) food.current.visible = family.foodOnTable;
+    // the front door swings open for whoever goes through it (eased: it's an off-mesh link, family.ts)
+    if (door.current) {
+      const o = family.door.open;
+      door.current.rotation.y = 1.75 * (o * o * (3 - 2 * o));
+    }
+    // the guitar leans on the camp chair, unless Prabin is playing it
+    if (guitar.current) guitar.current.visible = family.get('prabin').held !== 'guitar';
     // smoke by day, embers by night, rising from the fire
     const sm = smoke.current;
     const em = embers.current;
@@ -239,7 +251,12 @@ export function HomeView({ controller, home, family }: { controller: GameControl
   return (
     <group name="home">
       <Placed at={houseAt} h={houseH}>
-        <KitModel geo={models.house.geo} />
+        <group name="home-house">
+          <KitModel geo={models.house.geo} />
+          <group ref={door} position={DOOR_HINGE}>
+            <KitModel geo={models.door} />
+          </group>
+        </group>
       </Placed>
       <Placed at={home.readingChair} h={ht(home.readingChair.n)} scale={PROP_SCALE}>
         <KitModel geo={models.armchair} />
@@ -275,7 +292,7 @@ export function HomeView({ controller, home, family }: { controller: GameControl
         <Placed key={i} at={c} h={ht(c.n)} scale={PROP_SCALE}>
           <KitModel geo={i ? models.campB : models.campA} />
           {i === 0 && (
-            <group position={[0.34, 0, 0.12]} rotation={[0, -0.4, -0.28]}>
+            <group ref={guitar} position={[0.34, 0, 0.12]} rotation={[0, -0.4, -0.28]}>
               <KitModel geo={models.guitar} />
             </group>
           )}

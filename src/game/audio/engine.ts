@@ -294,9 +294,9 @@ export class SoundEngine {
     this.play('ui', 'sparkle', 'pickup', { gain: MIX.sparkle * 0.45, rate: 1.65 + 0.25 * this.rand() });
   }
 
-  /** The pickaxe strikes a boulder: a low stone knock. */
-  hit(): void {
-    this.play('steps', 'stone', 'hit', { gain: MIX.steps.stone * 1.9, rate: 0.7 + 0.1 * this.rand(), bus: 'fx' });
+  /** The pickaxe strikes a boulder: a low stone knock (`k` scales it: quieter further off). */
+  hit(k = 1): void {
+    this.play('steps', 'stone', 'hit', { gain: MIX.steps.stone * 1.9 * k, rate: 0.7 + 0.1 * this.rand(), bus: 'fx' });
   }
 
   /**
