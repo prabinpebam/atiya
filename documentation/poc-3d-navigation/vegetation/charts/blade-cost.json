@@ -1,0 +1,21 @@
+{
+  "chart": "BarChart",
+  "title": "Frame time added by 100k grass blades (SwiftShader, spawn view)",
+  "alt": "Instanced tiny blade meshes add about 620 to 650 ms per frame whatever the material or triangle count; vertex-pulled blades add 83 ms with 5 triangles and 17 ms with 1 triangle.",
+  "props": {
+    "data": [
+      { "technique": "Instanced, PBR, 5 tris", "ms": 617 },
+      { "technique": "Instanced, Lambert, 5 tris", "ms": 633 },
+      { "technique": "Instanced, Lambert, 1 tri", "ms": 650 },
+      { "technique": "Pulled, Lambert, 5 tris", "ms": 83 },
+      { "technique": "Pulled, Lambert, 1 tri", "ms": 17 }
+    ],
+    "categoryAccessor": "technique",
+    "valueAccessor": "ms",
+    "orientation": "horizontal",
+    "width": 720,
+    "height": 300,
+    "margin": { "left": 210, "right": 30, "top": 20, "bottom": 40 },
+    "showGrid": true
+  }
+}

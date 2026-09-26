@@ -244,6 +244,33 @@
       "group": "Features"
     },
     {
+      "path": "poc-3d-navigation/vegetation/proposal.md",
+      "title": "Vegetation: proposal",
+      "order": 39.1,
+      "icon": "grass",
+      "status": "review",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/vegetation/spec.md",
+      "title": "Vegetation: spec, plan and DoD",
+      "order": 39.2,
+      "icon": "rule",
+      "status": "review",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/vegetation/research.md",
+      "title": "Vegetation: research",
+      "order": 39.3,
+      "icon": "travel_explore",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
       "path": "game-ui/design-system.md",
       "title": "Design system",
       "order": 41,
