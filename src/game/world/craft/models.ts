@@ -4,7 +4,8 @@
  */
 import { BufferGeometry, EdgesGeometry, ExtrudeGeometry, Float32BufferAttribute, Path, Shape, Vector2 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { Kit, type KitGeometry } from '../kit';
+import { Kit, type KitGeometry, type V3 } from '../kit';
+import type { ToolMotion } from '../../systems/readyCue';
 import { ARCH, shade } from '../parts';
 
 const WOOD = '#c08a55';
@@ -16,9 +17,31 @@ const IRON = '#4a4f5a';
 /** Crafting table proportions (u). */
 export const TABLE = { w: 1.04, d: 0.54, h: 0.52, top: 0.08 } as const;
 
-/** A sturdy workbench with its tools laid out: vise, saw, hammer, chisel, square, pencil, clamps, toolbox and shavings. */
-export function craftingTableModel(): KitGeometry {
-  const k = new Kit();
+/** A tool that comes to life when the table's ready (readyCue.ts): its geometry about its `pivot`, the axis it taps or swings about, and how it moves. */
+export interface TableTool {
+  name: string;
+  geo: KitGeometry;
+  pivot: V3;
+  axis: V3;
+  motion: ToolMotion;
+}
+
+/**
+ * A sturdy workbench with its tools laid out: vise, saw, hammer, chisel, square, pencil, clamps,
+ * toolbox and shavings. The loose tools (the hammer, saw, chisel, square, pencil and the hanging
+ * mallet) are separate pieces, so they can hop to life when you come to use it.
+ */
+export function craftingTableModel(): { base: KitGeometry; tools: TableTool[] } {
+  const base = new Kit();
+  let k = base;
+  const tools: TableTool[] = [];
+  /** Build the parts added in `fn` as their own piece, about `pivot`. */
+  const tool = (name: string, pivot: V3, motion: ToolMotion, fn: () => void, axis: V3 = [0, 0, 1]) => {
+    k = new Kit();
+    k.group({ p: [-pivot[0], -pivot[1], -pivot[2]] }, fn);
+    tools.push({ name, geo: k.build(), pivot, axis, motion });
+    k = base;
+  };
   const { w: W, d: D, h: H, top: T } = TABLE;
   const y0 = H - T / 2;
   k.surface('wood', () => {
@@ -41,10 +64,14 @@ export function craftingTableModel(): KitGeometry {
     for (const sx of [-1, 1]) k.box([0.05, 0.36, 0.05], WOOD_DARK, { p: [sx * (W / 2 - 0.1), H + 0.18, -D / 2 + 0.04] }, 0.012);
     k.box([W - 0.14, 0.05, 0.04], WOOD_DARK, { p: [0, H + 0.33, -D / 2 + 0.04] }, 0.012);
     for (const x of [-0.24, 0.02, 0.26]) k.cyl(0.012, 0.012, 0.06, WOOD_LIGHT, { p: [x, H + 0.3, -D / 2 + 0.08], r: [Math.PI / 2, 0, 0] }, 6);
-    // the mallet
-    k.cyl(0.013, 0.013, 0.2, WOOD_LIGHT, { p: [-0.24, H + 0.2, -D / 2 + 0.1] }, 6);
-    k.box([0.12, 0.07, 0.07], shade(WOOD, -0.1), { p: [-0.24, H + 0.1, -D / 2 + 0.1] }, 0.015);
   });
+  // the mallet, hanging from its peg (it swings)
+  tool('mallet', [-0.24, H + 0.3, -D / 2 + 0.1], { hop: 0, spin: 0, idle: 'swing' }, () =>
+    k.surface('wood', () => {
+      k.cyl(0.013, 0.013, 0.2, WOOD_LIGHT, { p: [-0.24, H + 0.2, -D / 2 + 0.1] }, 6);
+      k.box([0.12, 0.07, 0.07], shade(WOOD, -0.1), { p: [-0.24, H + 0.1, -D / 2 + 0.1] }, 0.015);
+    }),
+  );
   // the hand drill (brace): an iron crank on a wooden head and knob
   k.surface('metal', () => {
     k.cyl(0.008, 0.008, 0.16, IRON, { p: [0.02, H + 0.2, -D / 2 + 0.1] }, 6);
@@ -72,6 +99,7 @@ export function craftingTableModel(): KitGeometry {
 
   const ty = H + 0.002;
   // the saw: a steel blade with teeth down one edge and a wooden grip
+  tool('saw', [0.24, ty, -0.09], { hop: 0.12, spin: 0.35, idle: 'rock' }, () => {
   k.surface('metal', () => {
     k.extrude(
       [
@@ -87,21 +115,37 @@ export function craftingTableModel(): KitGeometry {
     );
   });
   k.surface('wood', () => k.box([0.1, 0.02, 0.1], '#a24f32', { p: [0.46, ty + 0.012, -0.1], r: [0, 0.12, 0] }, 0.012));
-  // the hammer: an iron head on an ash handle
-  k.surface('wood', () => k.cyl(0.013, 0.015, 0.26, '#e2b267', { p: [0.3, ty + 0.015, 0.14], r: [0, 0.5, Math.PI / 2] }, 7));
-  k.surface('metal', () => {
-    k.box([0.05, 0.035, 0.12], IRON, { p: [0.19, ty + 0.02, 0.2], r: [0, 0.5, 0] }, 0.006);
-    k.box([0.03, 0.03, 0.03], shade(IRON, 0.1), { p: [0.16, ty + 0.02, 0.25], r: [0, 0.5, 0] }, 0.004);
   });
+  // the hammer: an iron head on an ash handle (it taps: pivoting on the handle's end, about the
+  // level axis across the handle, so the head lifts)
+  tool(
+    'hammer',
+    [0.41, ty + 0.01, 0.08],
+    { hop: 0.12, spin: 0.3, idle: 'tap' },
+    () => {
+      k.surface('wood', () => k.cyl(0.013, 0.015, 0.26, '#e2b267', { p: [0.3, ty + 0.015, 0.14], r: [0, 0.5, Math.PI / 2] }, 7));
+      k.surface('metal', () => {
+        k.box([0.05, 0.035, 0.12], IRON, { p: [0.19, ty + 0.02, 0.2], r: [0, 0.5, 0] }, 0.006);
+        k.box([0.03, 0.03, 0.03], shade(IRON, 0.1), { p: [0.16, ty + 0.02, 0.25], r: [0, 0.5, 0] }, 0.004);
+      });
+    },
+    [-0.48, 0, -0.88],
+  );
   // the chisel
-  k.surface('wood', () => k.cyl(0.013, 0.011, 0.09, '#b0512f', { p: [-0.06, ty + 0.014, 0.17], r: [0, -0.3, Math.PI / 2] }, 7));
-  k.surface('metal', () => k.box([0.1, 0.006, 0.022], STEEL, { p: [-0.155, ty + 0.006, 0.2], r: [0, -0.3, 0] }, 0.002));
+  tool('chisel', [-0.1, ty, 0.185], { hop: 0.14, spin: 0.8, idle: 'bob' }, () => {
+    k.surface('wood', () => k.cyl(0.013, 0.011, 0.09, '#b0512f', { p: [-0.06, ty + 0.014, 0.17], r: [0, -0.3, Math.PI / 2] }, 7));
+    k.surface('metal', () => k.box([0.1, 0.006, 0.022], STEEL, { p: [-0.155, ty + 0.006, 0.2], r: [0, -0.3, 0] }, 0.002));
+  });
   // the try-square: a rosewood stock and a steel blade
-  k.surface('wood', () => k.box([0.03, 0.02, 0.14], '#6e3b24', { p: [-0.1, ty + 0.01, -0.12] }, 0.005));
-  k.surface('metal', () => k.box([0.2, 0.004, 0.028], STEEL, { p: [-0.2, ty + 0.004, -0.18] }, 0.001));
+  tool('square', [-0.15, ty, -0.15], { hop: 0.11, spin: -0.6, idle: 'bob' }, () => {
+    k.surface('wood', () => k.box([0.03, 0.02, 0.14], '#6e3b24', { p: [-0.1, ty + 0.01, -0.12] }, 0.005));
+    k.surface('metal', () => k.box([0.2, 0.004, 0.028], STEEL, { p: [-0.2, ty + 0.004, -0.18] }, 0.001));
+  });
   // a pencil
-  k.cyl(0.007, 0.007, 0.1, '#f2c14e', { p: [0.02, ty + 0.007, 0.06], r: [0, 1.1, Math.PI / 2] }, 6);
-  k.cone(0.007, 0.02, '#e6c9a0', { p: [0.066, ty + 0.007, 0.036], r: [0, 1.1, -Math.PI / 2] }, 6);
+  tool('pencil', [0.04, ty, 0.05], { hop: 0.16, spin: 1.6, idle: 'bob' }, () => {
+    k.cyl(0.007, 0.007, 0.1, '#f2c14e', { p: [0.02, ty + 0.007, 0.06], r: [0, 1.1, Math.PI / 2] }, 6);
+    k.cone(0.007, 0.02, '#e6c9a0', { p: [0.066, ty + 0.007, 0.036], r: [0, 1.1, -Math.PI / 2] }, 6);
+  });
   // two C-clamps on the right edge
   k.surface('metal', () => {
     for (const z of [-0.14, 0.1]) {
@@ -129,7 +173,7 @@ export function craftingTableModel(): KitGeometry {
     curl([0.1, 0.01, D / 2 + 0.16], 4.2);
     curl([-0.42, 0.01, D / 2 + 0.05], 5.3);
   });
-  return k.build();
+  return { base: base.build(), tools };
 }
 
 /**

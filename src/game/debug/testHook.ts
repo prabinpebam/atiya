@@ -74,6 +74,8 @@ export interface GameTestHook {
   doors(): Record<string, number>;
   /** How many lamps (plaza lamps, door and stage spots) are lighting the scene this frame. */
   lamps(): number;
+  /** The chest's and the crafting table's "ready" cues: how ready they look (0…1), seconds since they woke, and how often. */
+  readyCues(): Record<'chest' | 'craft', { on: number; since: number; wakes: number }>;
   /** The shared warm door light: which landmark it's shining from (null when dark) and its intensity. */
   doorLight(): { id: string | null; intensity: number };
   /** Sound: on/off, audio-context state, sprites loaded, ambience targets and the latest cues (newest last). */
@@ -514,6 +516,10 @@ export function installTestHook(c: GameController): void {
     doors: () => Object.fromEntries([...c.doors].map(([id, d]) => [id, d.open])),
     doorLight: () => ({ ...c.doorLight }),
     lamps: () => litLamps(),
+    readyCues: () => {
+      const q = (r: typeof c.chestCue) => ({ on: r.on, since: r.since, wakes: r.wakes });
+      return { chest: q(c.chestCue), craft: q(c.craftCue) };
+    },
     sound: () => ({
       enabled: c.sound.enabled,
       state: c.sound.state,

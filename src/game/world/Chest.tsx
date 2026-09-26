@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Group, Matrix4, Quaternion, Vector3 } from 'three';
+import { Color, Group, Matrix4, MeshBasicMaterial, PlaneGeometry, Quaternion, Vector3 } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { damp } from '../math/sphere';
@@ -8,6 +8,8 @@ import { selectReducedMotion } from '../state/store';
 import { Kit } from './kit';
 import { KitModel } from './KitModel';
 import { ARCH, shade } from './parts';
+import { chestPose } from '../systems/readyCue';
+import { Sparkles } from './Sparkles';
 
 const R = CONFIG.planetRadius;
 /** Chest proportions (u): front is +z, the lid hinges along the top back edge. */
@@ -66,7 +68,13 @@ function chestLid(): Kit {
   return k;
 }
 
-/** The storage chest by the Workshop (docs: collection-inventory.md §2). Its lid opens while the chest screen is open. */
+const GLOW = new Color('#ffc861');
+
+/**
+ * The storage chest by the Workshop (docs: collection-inventory.md §2). Its lid opens while the
+ * chest screen is open. When it becomes what E would use it wiggles, its lid rattling, then rests
+ * ajar with a warm glow inside and glints over it (crafting.md §7).
+ */
 export function Chest({ controller }: { controller: GameController }) {
   const spot = controller.props.chest;
   const geo = useMemo(() => ({ body: chestBody().build(), lid: chestLid().build() }), []);
@@ -81,20 +89,38 @@ export function Chest({ controller }: { controller: GameController }) {
     return { p, q };
   }, [spot, controller]);
   const lid = useRef<Group>(null);
+  const body = useRef<Group>(null);
+  // the warm glow inside, seen through the lid's gap (HDR, so it blooms)
+  const glow = useMemo(() => ({ geo: new PlaneGeometry(CHEST.w - 0.08, CHEST.d - 0.08).rotateX(-Math.PI / 2), mat: new MeshBasicMaterial({ color: '#000000' }) }), []);
   useFrame((_, dt) => {
     const open = controller.store.getState().invScreen === 'chest' ? 1 : 0;
     const reduced = selectReducedMotion(controller.store.getState());
     controller.chestLid = reduced ? open : damp(controller.chestLid, open, open ? 9 : 12, Math.min(dt, 0.1));
-    // the lid swings back past vertical a little, like a real chest resting on its stay
-    if (lid.current) lid.current.rotation.x = -controller.chestLid * 1.95;
+    const cue = controller.chestCue;
+    const pose = chestPose(cue.since, cue.on, reduced);
+    const shut = 1 - controller.chestLid;
+    // the lid swings back past vertical a little, like a real chest resting on its stay; ready, it
+    // rattles and then rests ajar
+    if (lid.current) lid.current.rotation.x = -(controller.chestLid * 1.95 + pose.lid * shut);
+    const b = body.current;
+    if (b) {
+      b.rotation.set(pose.pitchX, 0, pose.rollZ);
+      const w = 1 / Math.sqrt(pose.sy);
+      b.scale.set(w, pose.sy, w);
+    }
+    glow.mat.color.copy(GLOW).multiplyScalar(2.4 * pose.glow * shut);
   });
   if (!spot || !frame) return null;
   return (
     <group name="chest" position={frame.p} quaternion={frame.q}>
-      <KitModel geo={geo.body} />
-      <group ref={lid} position={[0, CHEST.body, -CHEST.d / 2]}>
-        <KitModel geo={geo.lid} />
+      <group ref={body} name="chest-body">
+        <KitModel geo={geo.body} />
+        <mesh geometry={glow.geo} material={glow.mat} position={[0, CHEST.body - 0.07, 0]} />
+        <group ref={lid} position={[0, CHEST.body, -CHEST.d / 2]}>
+          <KitModel geo={geo.lid} />
+        </group>
       </group>
+      <Sparkles controller={controller} cue={controller.chestCue} at={[0, CHEST.body + CHEST.lid + 0.1, 0]} half={[CHEST.w * 0.6, 0.3, CHEST.d * 0.7]} count={7} />
     </group>
   );
 }

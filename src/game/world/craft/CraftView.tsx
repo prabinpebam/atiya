@@ -9,7 +9,9 @@ import { KitModel } from '../KitModel';
 import { addLamp, withLampLights, type Lamp } from '../lampLights';
 import { lampsOn } from '../DayNight';
 import type { Crafting } from './index';
-import { DOGHOUSE_LANTERN, craftingTableModel, dogHouseModel, ghostGeometry } from './models';
+import { DOGHOUSE_LANTERN, TABLE, craftingTableModel, dogHouseModel, ghostGeometry } from './models';
+import { toolPose } from '../../systems/readyCue';
+import { Sparkles } from '../Sparkles';
 import { HOUSE_HEX } from './recipes';
 
 const R = CONFIG.planetRadius;
@@ -23,6 +25,8 @@ function frame(n: Vector3, facing: Vector3, h: number): { p: Vector3; q: Quatern
   return { p: n.clone().multiplyScalar(R + h), q: new Quaternion().setFromRotationMatrix(_m.makeBasis(x, n, z)) };
 }
 
+const UP = new Vector3(0, 1, 0);
+const X = new Vector3(1, 0, 0);
 const easeOutBack = (t: number) => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2);
 const PUFFS = 10;
 
@@ -56,6 +60,10 @@ export function CraftView({ controller, crafting }: { controller: GameController
     return { geo, fill, line };
   }, []);
   const dust = useMemo(() => ({ geo: new SphereGeometry(0.09, 8, 6), mat: withLampLights(new MeshStandardMaterial({ color: '#e9dcc4', roughness: 1, transparent: true, opacity: 0.8, depthWrite: false })) }), []);
+  // the loose tools: each hops to life when the table's ready, then keeps a small idle motion
+  const toolRefs = useRef<Array<Group | null>>([]);
+  const toolAxes = useMemo(() => tableGeo.tools.map((t) => new Vector3(...t.axis).normalize()), [tableGeo]);
+  const _q = useMemo(() => new Quaternion(), []);
   const house = useRef<Group>(null);
   const ghostGroup = useRef<Group>(null);
   const puffs = useRef<InstancedMesh>(null);
@@ -66,6 +74,16 @@ export function CraftView({ controller, crafting }: { controller: GameController
     const s = crafting.store.getState();
     if (lantern) lantern.intensity = 1.6 * lampsOn(controller.sky.night);
     const reduced = selectReducedMotion(controller.store.getState());
+    const cue = controller.craftCue;
+    tableGeo.tools.forEach((tool, i) => {
+      const g = toolRefs.current[i];
+      if (!g) return;
+      const p = toolPose(tool.motion, i, cue.since, cue.on, clock.elapsedTime, reduced);
+      g.position.set(tool.pivot[0], tool.pivot[1] + p.lift, tool.pivot[2]);
+      // spin about the vertical, then the tap or swing about its own axis, then a rock about x
+      g.quaternion.setFromAxisAngle(UP, p.ry).multiply(_q.setFromAxisAngle(toolAxes[i], p.rz));
+      if (p.rx) g.quaternion.multiply(_q.setFromAxisAngle(X, p.rx));
+    });
     const t = s.building;
     // the ghost: faint from afar, clear up close, with a slow shimmer; it fades as the house goes up
     const g = ghostGroup.current;
@@ -109,7 +127,13 @@ export function CraftView({ controller, crafting }: { controller: GameController
     <>
       {tableAt && (
         <group name="crafting-table" position={tableAt.p} quaternion={tableAt.q}>
-          <KitModel geo={tableGeo} />
+          <KitModel geo={tableGeo.base} />
+          {tableGeo.tools.map((t, i) => (
+            <group key={t.name} name={`tool-${t.name}`} ref={(el) => void (toolRefs.current[i] = el)} position={t.pivot}>
+              <KitModel geo={t.geo} />
+            </group>
+          ))}
+          <Sparkles controller={controller} cue={controller.craftCue} at={[0, TABLE.h + 0.12, 0]} half={[TABLE.w * 0.55, 0.3, TABLE.d * 0.6]} count={8} />
         </group>
       )}
       {siteAt && (

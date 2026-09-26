@@ -1175,6 +1175,50 @@ test.describe("crafting & Chopper's house", () => {
       for (const [id, n] of list) (window as any).__game.giveItem(id, n);
     }, items);
 
+  test('the chest and the crafting table show they are ready: the chest wiggles and rests ajar, glowing; the tools come to life', async ({ page }) => {
+    test.setTimeout(150_000);
+    await startPlanet(page);
+    type Cue = { on: number; since: number; wakes: number };
+    const cues = () => page.evaluate(() => (window as any).__game.readyCues() as { chest: Cue; craft: Cue });
+    const look = () =>
+      page.evaluate(() => {
+        const { scene } = (window as any).__game.__gfx();
+        const body = scene.getObjectByName('chest-body');
+        const lid = body.children[body.children.length - 1];
+        const table = scene.getObjectByName('crafting-table');
+        const tools = table.children.filter((o: any) => o.name.startsWith('tool-'));
+        const glow = body.children.find((o: any) => o.isMesh && o.material?.isMeshBasicMaterial);
+        const sparks = [scene.getObjectByName('chest'), table].map((g: any) => g.children.find((o: any) => o.isInstancedMesh)?.count ?? -1);
+        return { lid: -lid.rotation.x, glow: glow.material.color.r, tools: tools.length, moved: tools.some((t: any) => t.position.y - t.userData.y0 > 0.003 || Math.abs(t.quaternion.w) < 0.9999), sparks };
+      });
+    // at rest: shut, dark, no glints
+    let v = await look();
+    expect(v.lid).toBeCloseTo(0, 3);
+    expect(v.glow).toBe(0);
+    expect(v.sparks).toEqual([0, 0]);
+    expect(v.tools).toBe(6);
+    await page.evaluate(() => {
+      const t = (window as any).__game.__gfx().scene.getObjectByName('crafting-table');
+      for (const o of t.children) if (o.name.startsWith('tool-')) o.userData.y0 = o.position.y;
+    });
+    // walking up to the chest wakes it (once); it then rests ajar, glowing, with glints over it
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('chest'))).toBe('chest');
+    await expect.poll(async () => (await cues()).chest.on, { timeout: 20_000 }).toBeGreaterThan(0.95);
+    expect((await cues()).chest.wakes).toBe(1);
+    v = await look();
+    expect(v.lid).toBeGreaterThan(0.1);
+    expect(v.glow).toBeGreaterThan(0.5);
+    expect(v.sparks[0]).toBeGreaterThan(0);
+    // the crafting table: its tools hop to life and keep moving while you stay
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('craft'))).toBe('craft');
+    await expect.poll(async () => (await cues()).craft.on, { timeout: 20_000 }).toBeGreaterThan(0.95);
+    expect((await cues()).chest.on).toBeLessThan(0.5);
+    await expect.poll(async () => (await look()).moved, { timeout: 20_000 }).toBe(true);
+    expect((await look()).sparks[1]).toBeGreaterThan(0);
+    // and the chest has settled shut again
+    await expect.poll(async () => (await look()).lid, { timeout: 20_000 }).toBeLessThan(0.01);
+  });
+
   test('the crafting table: its own prompt, the recipe screen with have / need, bulk crafting by keyboard, Esc hands back the planet', async ({ page }) => {
     test.setTimeout(150_000);
     await startPlanet(page);

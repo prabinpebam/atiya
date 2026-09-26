@@ -124,3 +124,47 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
   - painting.
 - **As built:** `tests/unit/crafting.test.ts` (19 tests: the recipes and their icons, crafting counts, "any 3 of a colour" taking the most plentiful kind first, the bulk caps by materials and by room, overflow, `remove`, the house's needs and message, paint and the saved state, the table's and the site's placement, the keep-clear separation, "only that target from every side", and Chopper sitting in the doorway and napping there only once it exists). E2E "crafting & Chopper's house" (2 tests). Real-GPU renders of the table, the screen, the ghost at 11 / 7 / 4 / 2 u, the build moment, the painted house by day and night.
 - **Test hooks:** `craft()` (built, colour, building, the ghost's visibility, whether the card is up) and `nearTarget('craft' | 'site', which, u)`.
+
+## 7. "Ready to use" cues on the chest and the crafting table (owner review)
+
+The owner asked for a sign on the chest and the table themselves that they're ready to use, with some
+life in it: the tools coming to life as you come near, the chest giving a wiggle.
+
+**Research.** Games tell you something can be used in two layers. A **wake** on approach: a short,
+one-shot animation that catches the eye just as it becomes usable (Animal Crossing's presents and
+fossil spots wobble, Genshin's chests glint and shiver, Zelda: Breath of the Wild's chests and shrines
+light up as you come to them). And a **steady sign** while it stays usable (a glow, glints), so you know
+it's still the one E will use. The wake follows the animation principles in "Juice it or lose it"
+(Jonasson and Purho, GDC 2012) and Swink's *Game Feel*: anticipation (a crouch), squash and stretch, a
+decaying wiggle, overlapping action (a ripple across several parts, not all at once), and settling. Under
+reduced motion, the motion goes and the steady sign stays (WCAG 2.3.3; Apple's and Android's guidance).
+
+**Spec (as built).**
+
+- **When:** a cue wakes when its target becomes what E would use (the prompt appears: the controller's
+  `target`), not on distance, so it never promises something E won't do. It wakes once per approach;
+  staying doesn't retrigger it. `ReadyCue` (`systems/readyCue.ts`, pure) holds the edge-triggered wake
+  time and an eased 0…1 level (in at 7/s, out at 5/s). The controller steps `chestCue` and `craftCue`
+  every frame.
+- **The chest:** a 0.85 s wiggle about its base (roll ±0.14 rad at 5.5 Hz with a decaying envelope, a
+  little pitch), a crouch then a stretch (height ×0.9 → ×1.07, keeping its volume), and the lid rattling
+  up to 0.3 rad. Then it **rests ajar** (0.13 rad) with a **warm glow inside**, seen through the gap (HDR,
+  so it blooms), and glints drift up over it. Opening it (the chest screen) takes over from the ajar lid.
+- **The crafting table:** the loose tools (the hammer, saw, chisel, square, pencil and the hanging mallet)
+  are separate pieces about their own pivots. They **hop to life** in a ripple across the bench (each 0.5 s
+  hop starting 0.07 s after the last, 11–16 cm up with a spin), land, and then keep an idle motion while
+  you stay: the hammer lifts and taps down every 1.4 s (about the level axis across its handle), the saw
+  rocks, the mallet swings on its peg, the rest bob. Glints drift up over the bench.
+- **Glints** (`world/Sparkles.tsx`): small three-axis golden twinkles in the glow layer, one instanced
+  draw with no instances while off; they drift up and fade in turn. Under reduced motion they hold still.
+- **Reduced motion:** no wiggle, hop or idle; the chest still rests ajar and glows, and the glints show,
+  still.
+- **Budgets:** +6 draw calls at the workyard for the tool pieces, and one for the chest's glow plate; the
+  glints draw nothing while off. About 1.2 KB gz in the initial bundle (447.0 of 450 KB).
+- **Tests:** unit `tests/unit/readyCue.test.ts` (it wakes once per approach and eases in and out; the
+  wiggle's range and its return to rest; reduced motion keeps only the steady sign; the tools' ripple,
+  landing and idle, within bounds; the hammer's tap lifts its head; the glints stay in their box).
+  E2E "the chest and the crafting table show they are ready…" (shut and dark at rest; walking up wakes the
+  chest once, then it rests ajar, glowing, with glints; at the table the tools move and glint; the chest
+  settles shut again). Test hook `readyCues()`.
+

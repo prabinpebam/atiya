@@ -21,6 +21,7 @@ import { CRAFT_RADIUS, generateProps, type PropLayout } from './world/layout';
 import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectAmbientPaused, selectReducedMotion, type GameStore } from './state/store';
+import { ReadyCue } from './systems/readyCue';
 import type { ChopperBrain, DogWorld, Spot } from './world/chopper/brain';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
@@ -177,6 +178,9 @@ export class GameController {
   mineHits = 0;
   /** How open the chest's lid is (0 shut … 1 open; eased by the Chest component). */
   chestLid = 0;
+  /** The chest's and the crafting table's "ready to use" cues (they wake when they become the target: readyCue.ts). */
+  readonly chestCue = new ReadyCue();
+  readonly craftCue = new ReadyCue();
   private saveTimer: number | undefined;
   private fullWarned = false;
   /** Smoothed height of the ground under the player (u above the base sphere). */
@@ -467,6 +471,9 @@ export class GameController {
       if (next && playing && this.buffer.consume(performance.now())) this.openLandmark(next);
       this.updateTarget(s, playing, Boolean(next));
     }
+    const aim = this.store.getState().target?.kind;
+    this.chestCue.step(dt, aim === 'chest');
+    this.craftCue.step(dt, aim === 'craft');
 
     if (s.hintVisible && this.sim.movingTime >= CONFIG.onboardingDismissSeconds) {
       prefs.setOnboardingSeen();

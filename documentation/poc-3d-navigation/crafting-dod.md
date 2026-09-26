@@ -54,6 +54,15 @@ This is the acceptance checklist for [crafting.md](./crafting.md). A box is tick
 - [x] **Chopper uses it:** once built, he sometimes naps in its doorway.
   - *Evidence:* unit "comes to sit in the doorway when it is built, facing out", "now and then naps there of his own accord, but never without a house".
 
+## 4b. "Ready to use" cues (owner review; crafting.md §7)
+
+- [x] **The chest shows it's ready:** as it becomes the target it wiggles (a crouch, a stretch, its lid rattling), then rests ajar with a warm glow inside and glints over it; it settles shut when you leave.
+  - *Evidence:* unit `readyCue.test.ts`; E2E "the chest and the crafting table show they are ready…"; real-GPU frames of the wake and the steady state by day and night.
+- [x] **The crafting table's tools come to life:** they hop up in a ripple across the bench and land, then keep moving while you stay (the hammer taps, the saw rocks, the mallet swings, the rest bob), with glints over it.
+  - *Evidence:* the same unit and E2E tests; real-GPU frames.
+- [x] **Reduced motion:** no motion, but the steady sign (the ajar, glowing chest; still glints) stays.
+  - *Evidence:* unit "under reduced motion nothing moves, but the steady sign … still shows".
+
 ## 5. Engineering
 
 - [x] **Tests:** unit and E2E suites pass; `astro check` is clean.
