@@ -56,10 +56,27 @@ This is the acceptance checklist for [prabin-npc.md](./prabin-npc.md). A box is 
 - [x] **The chest and crafting table** stand between the Post Office and the Workshop, comfortably apart, clear of the paths and the buildings, with nothing else usable near them.
   - *Evidence:* unit "stands the chest and the crafting table side by side…", the chest and crafting-table placement tests and the keep-clear tests; E2E (the chest's and the table's prompts); a real-GPU render of the workyard from the plaza.
 
-## 7. Engineering
+## 7. Revision 2 (owner review)
+
+- [x] **The way to the workyard is open** (the plaza planter gone). *Evidence:* unit (layout), a real-GPU render.
+- [x] **The home is spread out,** the reading chair off the door's path, the lawn in front of the door clear. *Evidence:* the site-plan unit tests; real-GPU renders from above and from the plaza side.
+- [x] **Prabin doesn't get stuck:** zero 3-second stalls over 140 simulated minutes (14 seeds); five seeds in the regression test. *Evidence:* unit "never stalls…".
+- [x] **The guitar is held:** both hands on it by IK; a synthesised strum sounds from it on each downstroke. *Evidence:* real-GPU close-ups; the sound log shows the strums (chords G, C, D, Em); unit (the synthesis).
+- [x] **Chopper's black patch** on his right flank. *Evidence:* real-GPU renders of both sides.
+- [x] **Paws on the ground** in every pose, the play bow's bark included. *Evidence:* unit "keeps every planted paw on the ground…", "in the play bow, a bark leaves the front paws where they are".
+
+## 7b. Revision 3: the lived-in home
+
+- [x] **No tree in front of the house** (the cedar by the door and the hardwood where the garden is are cleared). *Evidence:* unit "puts the tulsi in front… and no tree in front"; real-GPU renders of the front of the house and of the game view as you come to it.
+- [x] **A fence behind the house,** low, walked round, not through. *Evidence:* unit "keeps the fence and the vegetable beds behind the house…"; real-GPU render of the yard.
+- [x] **A vegetable garden:** a cabbage bed and a tomato bed, a watering can. *Evidence:* the same unit test; "can be walked into…"; real-GPU render.
+- [x] **A tulsi vrindavan in front,** off the door's path, its diya lit after dusk. *Evidence:* unit; real-GPU renders by day and night; `lamps()` 8 at night (9 with Chopper's house).
+- [x] **Lived in:** sandals on the step, a broom by the door, a woodpile. *Evidence:* real-GPU renders.
+
+## 8. Engineering
 
 - [x] **Tests:** unit and E2E pass; `astro check` is clean.
-  - *Evidence:* 35 unit files (287 tests); the full E2E suite; `npm run check` (0 errors, 0 warnings, 0 hints).
+  - *Evidence:* 35 unit files (287 tests; 295 after revision 3); the full E2E suite; `npm run check` (0 errors, 0 warnings, 0 hints).
 - [x] **Budgets:** initial game JS ≤ 450 KB gz; on demand ≤ 70 KB (waiver proposed in plan §6); the navigation grid builds in ≤ 60 ms; no NaN pixels; 60 fps on the reference GPU.
-  - *Evidence:* `npm run verify:prod` (444.9 KB initial, 61.3 KB on demand); the grid in ≈ 31 ms (unit timing); real GPU: 197 / 218 draw calls at spawn / the home by day (+4 / +10), 16.7 ms median frames, 0 bad pixels in `hdrScan`, 8 lamps at night.
+  - *Evidence:* `npm run verify:prod` (444.9 KB initial, 61.3 KB on demand; after revision 3, 445.8 KB and 64.4 KB); the grid in ≈ 31 ms (unit timing); real GPU: 197 / 218 draw calls at spawn / the home by day (+4 / +10), 16.7 ms median frames, 0 bad pixels in `hdrScan`, 8 lamps at night.
 - [x] **Docs:** this spec as built, spec §4.21, README (feature, screenshots, controls, DoD rows), AGENTS, CREDITS, family.md, plan §6.

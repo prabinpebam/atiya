@@ -6,7 +6,7 @@ import { arcDistance } from '../../src/game/math/sphere';
 import { FLOWER_KINDS, generateProps, mulberry32 } from '../../src/game/world/layout';
 import { Terrain } from '../../src/game/world/terrain';
 import { riverDistance } from '../../src/game/world/features';
-import { HOME_R } from '../../src/game/world/homestead';
+import { HOME_R, YARD, fencePosts } from '../../src/game/world/homestead';
 import { FAMILY, Family, LINES, LinePicker, ROUTINE, partOfDay, type FamilyWorld } from '../../src/game/world/home/family';
 import { SphereNav } from '../../src/game/world/home/nav';
 import { UP, moveAlong } from '../../src/game/math/sphere';
@@ -86,6 +86,65 @@ describe('home by the pond: the site plan', () => {
     expect(layout.hardwood.some((t) => t.n === home.tree)).toBe(true);
     // the shore spot is right by the water, but dry
     expect(d(home.shore.n, layout.pond!.n) - terrain.pondShore(home.shore.n)).toBeLessThan(1.2);
+  });
+});
+
+describe('home by the pond: the yard round the house', () => {
+  const f = home.house.facing;
+  const side = new Vector3().crossVectors(home.house.n, f).normalize();
+  /** A point in the house's frame (u): `fwd` toward the pond, `side` to its left. */
+  const rel = (n: Vector3) => {
+    const h = home.house.n;
+    const t = n.clone().addScaledVector(h, -n.dot(h)).normalize().multiplyScalar(h.angleTo(n) * R);
+    return { fwd: t.dot(f), side: t.dot(side) };
+  };
+  const posts = fencePosts(home.yard.fence, YARD.postGap, R);
+  const own = new Set(home.obstacles);
+  const others = [...geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...layout.obstacles.filter((o) => !own.has(o))];
+
+  it('keeps the fence and the vegetable beds behind the house, on dry ground and clear of everything else', () => {
+    const items: Array<[string, Vector3, number]> = [
+      ...posts.map((n, i) => [`post${i}`, n, 0.06] as [string, Vector3, number]),
+      ...home.yard.beds.map((b, i) => [`bed${i}`, b.n, YARD.bedL / 2] as [string, Vector3, number]),
+      ['woodpile', home.yard.woodpile.n, 0.26],
+    ];
+    for (const [name, n, r] of items) {
+      if (name !== 'woodpile') expect(rel(n).fwd, `${name} behind the house`).toBeLessThan(-(HOME_R.house + 0.5));
+      expect(terrain.inWater(n), `${name} in water`).toBe(false);
+      const rd = riverDistance(layout.river!, n);
+      expect(rd.d - layout.river!.halfWidth[rd.i] - r, `${name} vs river`).toBeGreaterThan(0.3);
+      for (const o of others) expect(d(n, o.n) - o.radiusU - r, `${name} vs obstacle`).toBeGreaterThan(0.05);
+      // no tree stands in the yard or leans over it
+      for (const t of layout.trees) if (t.n !== home.tree) expect(d(n, t.n) - r, `${name} vs tree`).toBeGreaterThan(0.9);
+    }
+    // the beds sit inside the fence's U, with room to walk round them
+    const back = Math.min(...posts.map((n) => rel(n).fwd));
+    for (const b of home.yard.beds) {
+      const p = rel(b.n);
+      expect(p.fwd - YARD.bedW / 2 - back).toBeGreaterThan(0.5);
+      expect(2.3 - Math.abs(p.side) - YARD.bedL / 2).toBeGreaterThan(0.5);
+    }
+  });
+
+  it('puts the tulsi in front of the house, off the path from the door, and no tree in front', () => {
+    const t = rel(home.yard.tulsi.n);
+    expect(t.fwd).toBeGreaterThan(HOME_R.house);
+    expect(Math.abs(t.side) - 0.22, 'clear of the door path').toBeGreaterThan(0.6);
+    expect(d(home.yard.tulsi.n, home.door.n)).toBeGreaterThan(0.8);
+    for (const tr of layout.trees) {
+      const p = rel(tr.n);
+      expect(p.fwd > 0 && p.fwd < 5 && Math.abs(p.side) < 3, 'a tree in front of the house').toBe(false);
+      // the tall cedar that stood beside it on the table's side is gone
+      expect(Math.hypot(p.fwd + 1.8, p.side + 4.4)).toBeGreaterThan(1.1);
+    }
+  });
+
+  it('can be walked into: a route from the door to the path between the beds', () => {
+    const w = world();
+    const nav = new SphereNav(R, obstacles, w.blocked, 0.28);
+    const route = nav.path(home.door.n, home.yard.wateringCan.n);
+    expect(route).toBeTruthy();
+    expect(d(route![route!.length - 1], home.yard.wateringCan.n)).toBeLessThan(0.3);
   });
 });
 

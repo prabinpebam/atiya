@@ -13,10 +13,11 @@ import { addLamp, withLampLights, type Lamp } from '../lampLights';
 import { kitMaterials } from '../materials';
 import { gameTexture } from '../textures';
 import { lampsOn } from '../DayNight';
-import { PROP_SCALE, type HomeSpot, type Homestead } from '../homestead';
+import { fencePosts, PROP_SCALE, YARD, type HomeSpot, type Homestead } from '../homestead';
 import type { Family } from './family';
 import {
   armchairModel,
+  bed,
   campChairModel,
   chairModel,
   DOOR_HINGE,
@@ -33,6 +34,9 @@ import {
   sideTableModel,
   tableModel,
   toyCarModel,
+  tulsi,
+  wateringCan,
+  woodpile,
 } from './models';
 import { legoSpot } from './family';
 
@@ -65,6 +69,62 @@ function toPlanet(at: HomeSpot, h: number, local: V3, yaw = 0): Vector3 {
 }
 
 const FIRE_LAMP = { color: new Color('#ffab5c'), intensity: 6.5, range: 4.2 } as const;
+const DIYA_LAMP = { color: new Color('#ffb25e'), intensity: 0.6, range: 0.8 } as const;
+
+/**
+ * The yard round the house, merged into one kit in the house's frame (one draw call per layer): the
+ * fence behind it, the vegetable beds, the watering can, the tulsi in front and the woodpile. Each
+ * item stands on the ground at its own spot (the planet curves away under the yard).
+ */
+function yardModel(home: Homestead, houseH: number, ht: (n: Vector3) => number) {
+  const hf = frame(home.house.n, home.house.facing, houseH);
+  const inv = hf.q.clone().invert();
+  const local = (p: Vector3) => p.clone().sub(hf.p).applyQuaternion(inv);
+  const at = (s: HomeSpot, yaw = 0): { p: V3; q: Quaternion } => {
+    const f = frame(s.n, s.facing, ht(s.n), yaw);
+    return { p: local(f.p).toArray() as V3, q: inv.clone().multiply(f.q) };
+  };
+  const k = new Kit();
+  const { yard } = home;
+  yard.beds.forEach((b, i) => k.group(at(b), () => bed(k, i ? 'tomato' : 'cabbage', YARD.bedL, YARD.bedW, i)));
+  k.group(at(yard.wateringCan, 0.6), () => wateringCan(k));
+  k.group(at(yard.woodpile), () => woodpile(k));
+  const t = at(yard.tulsi);
+  let diya: V3 = [0, 0, 0];
+  k.group(t, () => (diya = tulsi(k)));
+  const diyaAt = new Vector3(...diya).applyQuaternion(t.q).add(new Vector3(...t.p)).applyQuaternion(hf.q).add(hf.p);
+
+  // the fence: weathered posts, each upright on its own ground, joined by two rails
+  const posts = fencePosts(yard.fence, YARD.postGap, R).map((n, i) => {
+    const up = local(n.clone().multiplyScalar(R + 1)).sub(local(n.clone().multiplyScalar(R))).normalize();
+    const base = local(n.clone().multiplyScalar(R + ht(n)));
+    return { base, up, h: 0.44 + ((i * 7) % 3) * 0.025 };
+  });
+  const Y = new Vector3(0, 1, 0);
+  k.surface('wood', () => {
+    posts.forEach((p, i) => {
+      const q = new Quaternion().setFromUnitVectors(Y, p.up).multiply(new Quaternion().setFromAxisAngle(Y, i * 0.7));
+      k.box([0.055, p.h, 0.055], i % 2 ? '#9a7a58' : '#8c6d4d', { p: p.base.clone().addScaledVector(p.up, p.h / 2).toArray() as V3, q }, 0.012);
+      k.cone(0.042, 0.05, '#8c6d4d', { p: p.base.clone().addScaledVector(p.up, p.h + 0.02).toArray() as V3, q }, 4);
+    });
+    for (let i = 0; i + 1 < posts.length; i++) {
+      const a = posts[i];
+      const b = posts[i + 1];
+      for (const y of [0.15, 0.33]) {
+        const pa = a.base.clone().addScaledVector(a.up, y);
+        const pb = b.base.clone().addScaledVector(b.up, y);
+        const x = pb.clone().sub(pa);
+        const len = x.length();
+        x.divideScalar(len);
+        const up = a.up.clone().add(b.up).normalize();
+        const z = new Vector3().crossVectors(x, up).normalize();
+        const q = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, new Vector3().crossVectors(z, x), z));
+        k.box([len + 0.04, 0.035, 0.022], y > 0.2 ? '#a7865f' : '#977552', { p: pa.add(pb).multiplyScalar(0.5).toArray() as V3, q }, 0.008);
+      }
+    }
+  });
+  return { geo: k.build(), diya: diyaAt };
+}
 const PORCH_LAMP = { color: new Color('#ffd49a'), intensity: 3.6, range: 3.0 } as const;
 
 /** The owner's home by the pond (docs: family.md §3): house, campsite, picnic, and their day–night life. */
@@ -115,6 +175,7 @@ export function HomeView({ controller, home, family }: { controller: GameControl
   }, [home, controller]);
 
   const lego = useMemo(() => legoSpot(home, R), [home]);
+  const yard = useMemo(() => yardModel(home, houseH, ht), [home, houseH, controller]);
 
   // the campfire's flames flicker; after dusk it (and the porch lantern) really light the scene
   const flames = useRef<Mesh>(null);
@@ -122,6 +183,9 @@ export function HomeView({ controller, home, family }: { controller: GameControl
   const porchLamp = useMemo<Lamp>(() => ({ pos: toPlanet(home.house, houseH, models.house.lantern), dir: null, color: PORCH_LAMP.color.clone(), intensity: 0, range: PORCH_LAMP.range }), [home, houseH, models]);
   useEffect(() => addLamp(fireLamp), [fireLamp]);
   useEffect(() => addLamp(porchLamp), [porchLamp]);
+  // the tulsi's evening diya: a small warm pool of light on the planter and the ground by it
+  const diyaLamp = useMemo<Lamp>(() => ({ pos: yard.diya.clone(), dir: null, color: DIYA_LAMP.color.clone(), intensity: 0, range: DIYA_LAMP.range }), [yard]);
+  useEffect(() => addLamp(diyaLamp), [diyaLamp]);
   const food = useRef<Group>(null);
   const door = useRef<Group>(null);
   const guitar = useRef<Group>(null);
@@ -191,6 +255,7 @@ export function HomeView({ controller, home, family }: { controller: GameControl
     }
     fireLamp.intensity = FIRE_LAMP.intensity * on * flick;
     porchLamp.intensity = PORCH_LAMP.intensity * on;
+    diyaLamp.intensity = DIYA_LAMP.intensity * on * (paused ? 1 : 0.9 + 0.1 * Math.sin(t * 11.3 + 0.7));
     if (food.current) food.current.visible = family.foodOnTable;
     // the front door swings open for whoever goes through it (eased: it's an off-mesh link, family.ts)
     if (door.current) {
@@ -256,6 +321,9 @@ export function HomeView({ controller, home, family }: { controller: GameControl
           <group ref={door} position={DOOR_HINGE}>
             <KitModel geo={models.door} />
           </group>
+        </group>
+        <group name="home-yard">
+          <KitModel geo={yard.geo} />
         </group>
       </Placed>
       <Placed at={home.readingChair} h={ht(home.readingChair.n)} scale={PROP_SCALE}>

@@ -451,6 +451,41 @@ describe('Prabin (§4.6)', () => {
     expect(p.indoors).toBe(true);
   });
 
+  it('never stalls: over long days of roaming on several seeds he never wants to walk for 3 s without getting anywhere', () => {
+    let stalls = 0;
+    const where: string[] = [];
+    for (const seed of [1, 3, 5, 8, 9]) {
+      const player = moveAlong(UP, tangentToward(UP, layout.craft!.n)!.negate(), 2.5 / R);
+      const brain = new ChopperBrain(mulberry32(seed));
+      const f = new Family(home, R, mulberry32(seed), moveAlong(layout.craft!.n, layout.craft!.facing, 2 / R));
+      f.nav = nav;
+      const w = world(player, 9, brain);
+      const dw = dogWorld(player, f);
+      brain.placeNear(dw);
+      const p = f.get('prabin');
+      const hist: Array<{ n: Vector3; goal: Vector3 | null }> = [];
+      let wantFor = 0;
+      let flagged = false;
+      for (let t = 0; t < 600; t += 1 / 30) {
+        w.hours = 9 + (t / 600) * 9;
+        f.step(1 / 30, w);
+        brain.step(1 / 30, dw);
+        hist.push({ n: p.n.clone(), goal: p.goal?.clone() ?? null });
+        if (hist.length > 90) hist.shift();
+        wantFor = p.want > 0.3 && !p.seat && !p.link ? wantFor + 1 / 30 : 0;
+        // (the same goal all along: a goal that changed, like lunch being called, isn't a stall)
+        const sameGoal = Boolean(hist[0].goal && p.goal && d(hist[0].goal, p.goal) < 0.5);
+        const stalled = wantFor > 3 && hist.length === 90 && sameGoal && d(hist[0].n, p.n) < 0.3;
+        if (stalled && !flagged) {
+          stalls++;
+          where.push(`seed ${seed} t ${t.toFixed(0)} ${p.activity}`);
+        }
+        flagged = stalled;
+      }
+    }
+    expect(stalls, where.join('; ')).toBe(0);
+  });
+
   it('talks to the visitor as a host (the lines greet a visitor; none calls the visitor Prabin)', () => {
     for (const [id, l] of Object.entries(LINES)) {
       const all = [...Object.values(l.greet).flat(), ...l.pool, ...Object.values(l.doing).flat()];

@@ -163,6 +163,8 @@ export const CHOPPER_COLOURS = {
   tan: '#b9a58c',
   greyTan: '#9d8f80',
   ear: '#2a2522',
+  /** The black patch on his right flank. */
+  patch: '#27221f',
   earTip: '#c9c0b4',
   nose: '#161212',
   eye: '#24170f',
@@ -258,11 +260,24 @@ function parts(): Part[] {
   const white = (p: Vector3) => mixc(C.white, C.cream, 0.3 - p.y * 0.7 + hash3(p.x * 40, p.y * 40, p.z * 40) * 0.25);
   // the long coat parts along the spine and falls down each side, a little toward the tail
   const coat = (p: Vector3): V3 => [Math.sign(p.x) * 0.45, -0.85, -0.25];
+  // his black patch on the right flank (dog-local: he faces +z, so his right is −x), with a soft,
+  // uneven edge the way a coat's patch grows
+  const PATCH = new Vector3(-0.085, 0.262, -0.07);
+  const patchAmount = (p: Vector3) => {
+    if (p.x > -0.02) return 0;
+    const d = Math.hypot((p.x - PATCH.x) * 1.6, (p.y - PATCH.y) / 0.9, (p.z - PATCH.z) / 1.25);
+    const edge = 0.075 + (hash3(Math.round(p.y * 70), Math.round(p.z * 70), 7) - 0.5) * 0.018;
+    return 1 - smoothstep(edge - 0.012, edge + 0.01, d);
+  };
+  const flank = (p: Vector3) => {
+    const k = patchAmount(p);
+    return k > 0 ? white(p).lerp(col(C.patch), k) : white(p);
+  };
 
   // --- body: barrel torso, deep chest, rump; a skirt of longer fur under the belly
-  add(blob([0, 0.24, -0.035], [0.1, 0.098, 0.19], 3, 0.05, 1), ['hips', 'spine', 'chest'], white, (p) => 0.04 + Math.max(0, 0.2 - p.y) * 0.3, coat);
+  add(blob([0, 0.24, -0.035], [0.1, 0.098, 0.19], 3, 0.05, 1), ['hips', 'spine', 'chest'], flank, (p) => 0.04 + Math.max(0, 0.2 - p.y) * 0.3, coat);
   add(blob([0, 0.235, 0.075], [0.094, 0.104, 0.092], 2, 0.06, 2), ['spine', 'chest', 'neck'], white, (p) => 0.042 + Math.max(0, 0.22 - p.y) * 0.3, (p) => [Math.sign(p.x) * 0.35, -0.9, 0.1]);
-  add(blob([0, 0.24, -0.15], [0.092, 0.092, 0.082], 2, 0.06, 3), ['hips', 'spine'], white, 0.042, coat);
+  add(blob([0, 0.24, -0.15], [0.092, 0.092, 0.082], 2, 0.06, 3), ['hips', 'spine'], flank, 0.042, coat);
   // --- neck (the collar sits on it)
   add(blob([0, 0.305, 0.135], [0.068, 0.073, 0.066], 2, 0.05, 4), ['chest', 'neck', 'head'], white, 0.036, (p) => [Math.sign(p.x) * 0.4, -0.8, 0]);
 

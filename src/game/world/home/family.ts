@@ -209,6 +209,8 @@ export interface Npc {
   progT: number;
   /** Replans in a row without getting anywhere. */
   repairs: number;
+  /** How many people close by the current route was planned round. */
+  routeBlocks: number;
 }
 
 export type FamilyEvent = { type: 'splash'; n: Vector3 } | { type: 'throw'; id: NpcId };
@@ -451,10 +453,18 @@ const ACTIVITIES: ActivityDef[] = [
       const p = npc.partner ? f.get(npc.partner) : null;
       if (!p || p.partner !== npc.id) return true;
       if (npc.stage === 0) {
-        // walk over to them (they wait, facing you)
+        // walk over to them (they wait, facing you), to the free spot beside them nearest you
         const to = tangentToward(p.n, npc.n) ?? p.dir;
-        const meet = { n: moveAlong(p.n, to, 0.8 / w.R), facing: to.clone().negate() };
-        if (f.goTo(npc, w, meet, 'walk', dt) || npc.t > 10) f.next(npc);
+        let meet = { n: moveAlong(p.n, to, 0.8 / w.R), facing: to.clone().negate() };
+        for (const a of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, Math.PI]) {
+          const dir = rotateAbout(to.clone(), p.n, a);
+          const n = moveAlong(p.n, dir, 0.8 / w.R);
+          if (f.free(w, n, 0.05) && arcDistance(n, w.player, w.R) > FAMILY.gapPlayer) {
+            meet = { n, facing: dir.negate() };
+            break;
+          }
+        }
+        if (f.goTo(npc, w, meet, 'walk', dt) || npc.t > 10 || (npc.stuck > 1 && arcDistance(npc.n, p.n, w.R) < 1.4)) f.next(npc);
         return false;
       }
       f.face(npc, p.n);
@@ -729,6 +739,7 @@ export class Family {
       progD: Infinity,
       progT: 0,
       repairs: 0,
+      routeBlocks: 0,
     });
     this.npcs = [
       mk('rojina', offset(home.readingChair.n, home.readingChair.facing, 0, 0.7, R)),
@@ -770,7 +781,7 @@ export class Family {
       npc.poseT += dt;
       // a seat belongs to the activity it was taken for: anything else (a chat excepted) stands them up first
       const su = npc.seat;
-      if (su && su.phase !== 'out' && su.owner !== npc.activity && npc.activity !== 'answer' && !npc.chatting) this.standUp(npc);
+      if (su && su.phase !== 'out' && su.owner !== npc.activity && npc.activity !== 'answer' && !npc.chatting) this.standUp(npc, w);
       if (npc.seat && npc.seat.phase !== 'on') {
         const prev = npc.pose;
         this.stepSeat(npc, dt);
@@ -838,7 +849,7 @@ export class Family {
     if (npc.stage === 0) {
       if (def.seat) {
         if (!seat) return true;
-        if (this.sit(npc, w, seat, def.pose ?? 'sitChair', dt) || npc.t > 30) {
+        if (this.sit(npc, w, seat, def.pose ?? 'sitChair', dt) || npc.t > (npc.id === 'prabin' ? 90 : 30)) {
           if (!npc.seat) return true;
           npc.stage = 1;
           npc.stageT = 0;
@@ -886,6 +897,7 @@ export class Family {
     }
     npc.held = null;
     npc.bubble = false;
+    this.releaseSeat(npc);
     // the routine comes first: in at night, and to the table while a meal is on
     if (this.schedule === 'night' && !npc.indoors) return this.force(npc, 'bedtime', 0);
     if (this.meal && this.meal.phase !== 'clear' && npc.activity !== 'eat') return this.force(npc, 'eat', 0);
@@ -928,8 +940,16 @@ export class Family {
     }
   }
 
+  /** A seat they were heading for but hadn't sat on yet: let it go (someone else may have it), and its entry point. */
+  private releaseSeat(npc: Npc): void {
+    npc.seatEntry = null;
+    if (npc.seat) return;
+    for (const s of this.seats) if (s.user === npc.id) s.user = null;
+  }
+
   /** Start `activity` now (the routine, meals), after `wait` s for the ones that wait. */
   force(npc: Npc, activity: string, wait: number): void {
+    this.releaseSeat(npc);
     if (npc.partner) {
       const p = this.get(npc.partner);
       if (p.partner === npc.id) p.partner = null;
@@ -1004,7 +1024,7 @@ export class Family {
   sit(npc: Npc, w: FamilyWorld, seat: Seat, pose: NpcPose, dt: number, gait: 'walk' | 'run' = 'walk'): boolean {
     if (npc.seat) {
       if (npc.seat.seat !== seat) {
-        this.standUp(npc);
+        this.standUp(npc, w);
         return false;
       }
       npc.seat.owner = npc.activity;
@@ -1014,7 +1034,8 @@ export class Family {
     seat.user = npc.id;
     npc.seatEntry ??= pickEntry(seat, npc.n, (n) => this.free(w, n, 0.02)) ?? seat.entries[0];
     const entry = npc.seatEntry;
-    if (!this.goTo(npc, w, entry, gait, dt)) {
+    // (at the entry point itself: sitting down from anywhere else would slide through someone)
+    if (!this.goTo(npc, w, entry, gait, dt) || arcDistance(npc.n, entry.n, w.R) > 0.2) {
       // (someone standing on the entry point: try the other side)
       if (npc.stuck > AVOID.replanAfter) npc.seatEntry = pickEntry(seat, npc.n, (n) => this.free(w, n, 0.02) && n !== entry.n) ?? entry;
       return false;
@@ -1028,10 +1049,16 @@ export class Family {
     return false;
   }
 
-  /** Get up (back to the entry point it came from). */
-  standUp(npc: Npc): void {
+  /** Get up, out onto an entry point clear of everyone (if both are taken, stay seated a moment longer). */
+  standUp(npc: Npc, w?: FamilyWorld): void {
     const u = npc.seat;
     if (!u || u.phase === 'out') return;
+    if (w) {
+      const clear = (n: Vector3) => this.free(w, n, 0.02) && this.roomAmong(npc, n, w, true);
+      const e = clear(u.entry.n) ? u.entry : u.seat.entries.find((x) => clear(x.n));
+      if (!e) return;
+      u.entry = e;
+    }
     u.phase = 'out';
     u.t = 0;
     u.from = npc.n.clone();
@@ -1192,9 +1219,9 @@ export class Family {
     return null;
   }
 
-  /** Open ground: in the planner's free cells, out of the water, clear of the obstacles. */
+  /** Open ground: in the planner's free cells, out of the water, clear of the obstacles, and not where the visitor stands. */
   standable(w: FamilyWorld, n: Vector3): boolean {
-    return (!this.nav || this.nav.freeAt(n)) && this.free(w, n, 0.15);
+    return (!this.nav || this.nav.freeAt(n)) && this.free(w, n, 0.15) && arcDistance(n, w.player, w.R) > 1.2;
   }
 
   /** Chopper is free, and not far off. */
@@ -1400,7 +1427,7 @@ export class Family {
       const d = tangentToward(about, w.home.house.n) ?? w.home.house.facing;
       rotateAbout(_t.copy(d), about, this.rand() * Math.PI * 2);
       const n = moveAlong(about, _t, (lo + this.rand() * (hi - lo)) / w.R);
-      if (arcDistance(n, w.home.centre, w.R) > w.home.range || !this.free(w, n, 0.15)) continue;
+      if (arcDistance(n, w.home.centre, w.R) > w.home.range || !this.free(w, n, 0.15) || arcDistance(n, w.player, w.R) < 1.0) continue;
       return { n, facing: (look ? tangentToward(n, look) : null) ?? tangentToward(n, about)?.negate() ?? _t.clone() };
     }
     return null;
@@ -1420,7 +1447,15 @@ export class Family {
   /** Head for `spot`; true once there (within 0.12 u), facing its way. */
   goTo(npc: Npc, w: FamilyWorld, spot: HomeSpot, gait: 'walk' | 'run', dt: number): boolean {
     const d = arcDistance(npc.n, spot.n, w.R);
-    if (d < 0.12) {
+    // (someone standing on or by the spot: as close as their room allows is there)
+    let reach = 0.12;
+    const by = (o: Vector3, gap: number) => {
+      const s = arcDistance(spot.n, o, w.R);
+      if (s < gap) reach = Math.max(reach, gap - s + 0.15);
+    };
+    by(w.player, FAMILY.gapPlayer);
+    for (const o of w.others) by(o, FAMILY.gapOther);
+    if (d < reach) {
       npc.want = 0;
       npc.goal = null;
       this.faceDir(npc, spot.facing, dt);
@@ -1517,6 +1552,21 @@ export class Family {
     npc.routeAge = 0;
   }
 
+  /** The character and Chopper, when they're close by (plans go round them), but not on the goal. */
+  private standing(npc: Npc, w: FamilyWorld): NavBlock[] {
+    const R = w.R;
+    const out: NavBlock[] = [];
+    const add = (n: Vector3, r: number) => {
+      // (not someone already right by the walker: blocked round them, its own cell's neighbours would be too, and
+      // the route would start behind it; steering handles them)
+      const dn = arcDistance(npc.n, n, R);
+      if (dn < 4 && dn > r + FAMILY.radius + 0.12 + 0.35 && (!npc.goal || arcDistance(n, npc.goal, R) > r + 0.6)) out.push({ n: n.clone(), r });
+    };
+    add(w.player, FAMILY.gapPlayer - FAMILY.radius);
+    for (const o of w.others) add(o, FAMILY.gapOther - FAMILY.radius);
+    return out;
+  }
+
   /** Whoever is close by and ahead (the stuck repair plans round them). */
   private blockers(npc: Npc, w: FamilyWorld): NavBlock[] {
     const out: NavBlock[] = [];
@@ -1587,9 +1637,17 @@ export class Family {
     const desired = _d.set(0, 0, 0);
     if (npc.goal) {
       const gd = arcDistance(npc.n, npc.goal, R);
-      // follow the planned route: (re)plan when the goal moves on, and now and then for moving goals
+      // follow the planned route: plan it once, and again only when the goal moves on (or the stuck
+      // repair below asks). Replanning a still goal now and then made him flip between two ways round
+      // the planet of about the same length, walking back and forth
       npc.routeAge += dt;
-      if (gd > 0.3 && (!npc.route || (arcDistance(npc.routeFor, npc.goal, R) > 0.3 && npc.routeAge > 0.4) || npc.routeAge > 4)) this.plan(npc, []);
+      // (the character and Chopper close by count as obstacles in the plan: its route goes round them;
+      // when one of them comes near who wasn't when it was planned, it's planned again)
+      const stand = gd > 0.3 ? this.standing(npc, w) : [];
+      if (gd > 0.3 && (!npc.route || (arcDistance(npc.routeFor, npc.goal, R) > 0.3 && npc.routeAge > 0.4) || (stand.length > npc.routeBlocks && npc.routeAge > 0.4))) {
+        this.plan(npc, stand);
+        npc.routeBlocks = stand.length;
+      } else if (stand.length < npc.routeBlocks) npc.routeBlocks = stand.length;
       const r = npc.route;
       while (r && r.length > 1 && arcDistance(npc.n, r[0], R) < 0.3) {
         r.shift();
@@ -1646,14 +1704,16 @@ export class Family {
       return;
     }
     const theta = (npc.speed * dt) / R;
+    // a step is good if it's on open ground and brings nobody inside the minimum gaps (stepping away is always fine)
+    const ok = (q: Vector3) => this.free(w, q, 0, npc) && this.roomAmong(npc, q, w);
     let next = moveAlong(npc.n, npc.dir, theta);
-    if (!this.free(w, next, 0, npc)) {
+    if (!ok(next)) {
       let found = false;
       for (let k = 1; k <= 7 && !found; k++) {
         for (const s of [npc.side, -npc.side]) {
           const d2 = rotateAbout(_a.copy(npc.dir), npc.n, s * k * 0.4);
           const q = moveAlong(npc.n, d2, theta);
-          if (this.free(w, q, 0, npc)) {
+          if (ok(q)) {
             next = q;
             npc.dir.copy(d2);
             npc.side = s;
@@ -1675,11 +1735,25 @@ export class Family {
     transport(npc.dir, npc.n);
   }
 
+  /** Would standing at `q` bring anyone closer than the minimum gap (and closer than they are now; `strict`: at all)? */
+  private roomAmong(npc: Npc, q: Vector3, w: FamilyWorld, strict = false): boolean {
+    const R = w.R;
+    const tooClose = (o: Vector3, gap: number) => {
+      const dq = arcDistance(q, o, R);
+      return dq < gap && (strict || dq < arcDistance(npc.n, o, R));
+    };
+    if (tooClose(w.player, FAMILY.gapPlayer)) return false;
+    for (const o of w.others) if (tooClose(o, FAMILY.gapOther)) return false;
+    for (const o of this.npcs) if (o !== npc && !o.indoors && tooClose(o.n, FAMILY.gapFamily)) return false;
+    return true;
+  }
+
   /** Nobody walks through anybody: keep clear of the character, Chopper and each other (the minimum gaps). */
   private keepClear(npc: Npc, w: FamilyWorld): void {
-    this.keepApart(npc, w.player, FAMILY.gapPlayer, w);
-    for (const o of w.others) this.keepApart(npc, o, FAMILY.gapOther, w);
+    // (the character last: its gap wins)
     for (const o of this.npcs) if (o !== npc && !o.indoors) this.keepApart(npc, o.n, FAMILY.gapFamily, w);
+    for (const o of w.others) this.keepApart(npc, o, FAMILY.gapOther, w);
+    this.keepApart(npc, w.player, FAMILY.gapPlayer, w);
   }
 
   private keepApart(npc: Npc, other: Vector3, gap: number, w: FamilyWorld): void {
@@ -1688,9 +1762,15 @@ export class Family {
     if (d >= gap) return;
     const out = tangentToward(other, npc.n) ?? tangentToward(other, npc.n.clone().addScaledVector(npc.dir, -0.01).normalize());
     if (!out) return;
-    // (onto open ground only: never into the pond or an obstacle)
-    const to = moveAlong(other, out, gap / R);
-    if (this.free(w, to, 0, npc)) npc.n.copy(to);
+    // (onto open ground only: never into the pond or an obstacle; if straight back is blocked, a little to one side)
+    for (const a of [0, 0.5, -0.5, 1, -1, 1.5, -1.5]) {
+      const dir = a ? rotateAbout(_w.copy(out), other, a) : out;
+      const to = moveAlong(other, dir, gap / R);
+      if (this.free(w, to, 0, npc)) {
+        npc.n.copy(to);
+        return;
+      }
+    }
   }
 }
 

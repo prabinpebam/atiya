@@ -5,7 +5,7 @@
  */
 import { AUDIO } from './audioManifest';
 import { MUSIC } from './musicManifest';
-import { birdsSing, nextBirdDelay, pickVariant, windMix, type Surface } from './audioLogic';
+import { CHORDS, birdsSing, nextBirdDelay, pickVariant, strumSamples, windMix, type Surface } from './audioLogic';
 import { withBase } from '../platform/base';
 
 type BufferKey = keyof typeof AUDIO;
@@ -14,7 +14,7 @@ type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog';
 export interface SoundEvent {
   /** performance.now() when it was asked for. */
   t: number;
-  kind: 'step' | 'bird' | 'chime' | 'doorOpen' | 'doorClose' | 'curtain' | 'sparkle' | 'pickup' | 'hit' | 'rustle' | 'bark' | 'sniff' | 'whistle';
+  kind: 'step' | 'bird' | 'chime' | 'doorOpen' | 'doorClose' | 'curtain' | 'sparkle' | 'pickup' | 'hit' | 'rustle' | 'bark' | 'sniff' | 'whistle' | 'strum';
   detail?: string;
   /** Whether it was actually scheduled (false while muted, locked or still loading). */
   played: boolean;
@@ -49,6 +49,8 @@ const MIX = {
   sniff: 0.3,
   whistle: 0.3,
   pant: 0.22,
+  /** Prabin's guitar, from where he sits. */
+  strum: 0.32,
   /** Background music: slightly subtle, a bed under the ambience; a little lower under dialogs. */
   music: 0.2,
   musicDuck: 0.65,
@@ -63,6 +65,7 @@ export class SoundEngine {
   enabled: boolean;
   /** Most recent cues (newest last) — for the test hook and debugging. */
   readonly events: SoundEvent[] = [];
+  private readonly strums: Array<AudioBuffer | undefined> = [];
   /** Current ambience targets (0…1 before the mix), for the test hook. */
   readonly levels = { stream: 0, streamPan: 0, wind: 0, windCutoff: 0, birds: false };
   private ctx: AudioContext | null = null;
@@ -292,6 +295,31 @@ export class SoundEngine {
   /** An item reached the backpack: a quick bright pop (the sparkle, pitched up and short). */
   pickup(): void {
     this.play('ui', 'sparkle', 'pickup', { gain: MIX.sparkle * 0.45, rate: 1.65 + 0.25 * this.rand() });
+  }
+
+  /** A strum of Prabin's guitar (chord 0–3: G, C, D, Em), from where the guitar is (`pan` −1…1, `near` 0…1 by distance). */
+  strum(chord: number, pan: number, near: number): void {
+    const ctx = this.ctx;
+    const ok = !!(ctx && this.enabled && ctx.state === 'running' && !this.hidden && near > 0.02);
+    this.events.push({ t: performance.now(), kind: 'strum', detail: String(chord), played: ok });
+    if (this.events.length > 40) this.events.shift();
+    if (!ok || !ctx) return;
+    const i = ((chord % CHORDS.length) + CHORDS.length) % CHORDS.length;
+    let buf = this.strums[i];
+    if (!buf) {
+      // synthesised once per chord, the first time it's played
+      const data = strumSamples(CHORDS[i], ctx.sampleRate, 2.2, this.rand);
+      buf = this.strums[i] = ctx.createBuffer(1, data.length, ctx.sampleRate);
+      buf.getChannelData(0).set(data);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const g = ctx.createGain();
+    g.gain.value = MIX.strum * near * (0.85 + 0.3 * this.rand());
+    const p = ctx.createStereoPanner();
+    p.pan.value = Math.max(-1, Math.min(1, pan * 0.8));
+    src.connect(g).connect(p).connect(this.fx!);
+    src.start();
   }
 
   /** The pickaxe strikes a boulder: a low stone knock (`k` scales it: quieter further off). */

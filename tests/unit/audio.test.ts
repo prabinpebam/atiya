@@ -16,6 +16,7 @@ import {
   windMix,
 } from '../../src/game/audio/audioLogic';
 import { SoundEngine } from '../../src/game/audio/engine';
+import { CHORDS, pluck, strumSamples } from '../../src/game/audio/audioLogic';
 import { CONFIG } from '../../src/game/config';
 import { landmarkGeometry } from '../../src/game/math/landmarks';
 import { UP, arcDistance, pointArcDistance } from '../../src/game/math/sphere';
@@ -256,3 +257,49 @@ describe('background music', () => {
     expect(engine.musicState.on).toBe(true);
   });
 });
+
+describe("Prabin's guitar (a synthesised strum)", () => {
+  const rms = (a: Float32Array, from: number, to: number) => Math.sqrt(a.slice(from, to).reduce((s, v) => s + v * v, 0) / Math.max(1, to - from));
+
+  it('a plucked string rings at its pitch and dies away', () => {
+    const rate = 22050;
+    const s = pluck(110, rate, 1.5, mulberry(1));
+    expect(s.every((v) => Number.isFinite(v))).toBe(true);
+    expect(rms(s, 0, rate * 0.2)).toBeGreaterThan(rms(s, rate * 1.2, rate * 1.5) * 4);
+    // it repeats every period (the delay line), most strongly at the start
+    const period = Math.round(rate / 110);
+    let corr = 0;
+    let energy = 0;
+    for (let i = 0; i < 2000; i++) {
+      corr += s[i] * s[i + period];
+      energy += s[i] * s[i];
+    }
+    expect(corr / energy).toBeGreaterThan(0.6);
+  });
+
+  it('each chord is a downstroke across its strings, normalised, with no click at the end', () => {
+    for (const chord of CHORDS) {
+      const a = strumSamples(chord, 22050, 2.2, mulberry(2));
+      const peak = Math.max(...Array.from(a, Math.abs));
+      expect(peak).toBeCloseTo(0.8, 2);
+      expect(Math.abs(a[a.length - 1])).toBeLessThan(1e-3);
+      // the strings come in one after another, low to high (12 ms apart): silence before the first one played
+      const first = chord.findIndex((f) => f !== null);
+      const onset = Math.round(first * 0.012 * 22050);
+      if (onset > 0) expect(rms(a, 0, onset)).toBe(0);
+      expect(rms(a, onset, onset + Math.round(0.011 * 22050))).toBeGreaterThan(0.01);
+    }
+    expect(CHORDS).toHaveLength(4);
+  });
+});
+
+function mulberry(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}

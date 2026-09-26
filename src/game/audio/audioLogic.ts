@@ -83,3 +83,53 @@ export function crossedPhase(prev: number, t: number, phases: readonly number[])
   if (t === prev) return false;
   return phases.some((p) => (t > prev ? p > prev && p <= t : p > prev || p <= t));
 }
+
+// ---------------------------------------------------------------------------
+// Prabin's guitar: a strummed chord, synthesised (Karplus & Strong, "Digital synthesis of
+// plucked-string and drum timbres", 1983): each string is a burst of noise circulating in a delay
+// line one period long, averaged a little each pass, so it rings down like a plucked string
+
+/** Open-position chords (string frequencies in Hz, low E to high E; null = not played): G, C, D, Em. */
+export const CHORDS: ReadonlyArray<ReadonlyArray<number | null>> = [
+  [98.0, 123.47, 146.83, 196.0, 246.94, 392.0],
+  [null, 130.81, 164.81, 196.0, 261.63, 329.63],
+  [null, null, 146.83, 220.0, 293.66, 369.99],
+  [82.41, 123.47, 164.81, 196.0, 246.94, 329.63],
+];
+
+/** One plucked string (mono samples at `rate`): the Karplus–Strong loop with a gentle damping. */
+export function pluck(freq: number, rate: number, seconds: number, rand: () => number, damping = 0.996): Float32Array {
+  const n = Math.round(seconds * rate);
+  const period = Math.max(2, Math.round(rate / freq));
+  const out = new Float32Array(n);
+  const line = new Float32Array(period);
+  for (let i = 0; i < period; i++) line[i] = rand() * 2 - 1;
+  let prev = 0;
+  for (let i = 0; i < n; i++) {
+    const k = i % period;
+    const v = line[k];
+    out[i] = v;
+    // average with the previous sample: a low-pass that dulls the tone as it rings, like a real string
+    line[k] = damping * 0.5 * (v + prev);
+    prev = v;
+  }
+  return out;
+}
+
+/** A downstroke across a chord's strings (`spread` s apart, low to high), normalised to a peak of `peak`. */
+export function strumSamples(chord: ReadonlyArray<number | null>, rate: number, seconds: number, rand: () => number, spread = 0.012, peak = 0.8): Float32Array {
+  const out = new Float32Array(Math.round(seconds * rate));
+  chord.forEach((f, i) => {
+    if (!f) return;
+    const s = pluck(f, rate, seconds, rand);
+    const at = Math.round(i * spread * rate);
+    for (let j = 0; j + at < out.length; j++) out[j + at] += s[j] * (i < 3 ? 0.8 : 1);
+  });
+  let max = 0;
+  for (const v of out) max = Math.max(max, Math.abs(v));
+  if (max > 0) for (let i = 0; i < out.length; i++) out[i] *= peak / max;
+  // a short fade-out at the end (no click)
+  const fade = Math.min(out.length, Math.round(0.05 * rate));
+  for (let i = 0; i < fade; i++) out[out.length - 1 - i] *= i / fade;
+  return out;
+}

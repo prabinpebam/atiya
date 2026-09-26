@@ -39,10 +39,28 @@ export interface Homestead {
   lightsPost: Vector3;
   /** Where Chopper's house goes (crafting.md): beside the family's house, facing the pond. */
   dogHouse: HomeSpot;
+  /** Round the house (the lived-in touches): the back yard's fence and vegetable beds, the tulsi in front, the woodpile. */
+  yard: Yard;
   obstacles: Obstacle[];
   /** Discs (centre, radius u) the random props are cleared from. */
   clear: Array<{ n: Vector3; r: number }>;
 }
+
+/** The back yard and the house's surroundings (all facing the way the house does). */
+export interface Yard {
+  /** The fence's line behind the house (a U, open toward the house's sides). */
+  fence: Vector3[];
+  /** The vegetable beds: cabbages, then tomatoes. */
+  beds: HomeSpot[];
+  wateringCan: HomeSpot;
+  /** The tulsi planter (tulsi vrindavan) in front of the house, off the door's path. */
+  tulsi: HomeSpot;
+  /** Firewood stacked against the house's side wall. */
+  woodpile: HomeSpot;
+}
+
+/** Yard sizes (u): the beds' length and width, the fence's post spacing. */
+export const YARD = { bedL: 1.25, bedW: 0.55, postGap: 0.5 } as const;
 
 /** Radii of the home's solid things (u). */
 /**
@@ -74,13 +92,14 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     return moveAlong(from.n, d, u / R);
   };
 
-  const house = spot(245, 5.6);
+  // (spread out round the pond, with room to walk between everything: prabin-npc.md §4.8)
+  const house = spot(215, 6.5);
   const door = { n: beside(house, 0, HOME_R.house + 0.3), facing: house.facing.clone() };
-  // on the lawn in front of the house, a little to one side of the door, facing the pond
-  const chairN = beside(house, -8, 2.1);
+  // on the lawn beside the house (off the path from its door), facing the pond
+  const chairN = beside(house, 62, 2.4);
   const readingChair = { n: chairN, facing: facingTo(chairN, pond.n) };
   const sideTable = { n: beside(readingChair, 90, 0.4), facing: readingChair.facing.clone() };
-  const table = spot(211, 3.7);
+  const table = spot(170, 5.0);
   // the table runs along the shore: a chair on each long side and one at each end (one each for
   // Rojina, Laija, Lingjel and Prabin), facing it
   const tableChairs = (
@@ -94,23 +113,43 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     const n = beside(table, deg, u);
     return { n, facing: facingTo(n, table.n) };
   });
-  const mat = spot(186, 3.55);
-  const fire = spot(272, 4.35);
+  const mat = spot(133, 4.7);
+  const fire = spot(266, 6.0);
   const campChairs = [150, 215].map((deg) => {
     const n = beside(fire, deg, 0.8);
     return { n, facing: facingTo(n, fire.n) };
   });
   const logN = beside(fire, 330, 0.8);
   const log = { n: logN, facing: facingTo(logN, fire.n) };
-  const tree = at(178, 5.5);
+  const tree = at(106, 6.2);
   const treeSeatN = moveAlong(tree, facingTo(tree, pond.n), (HOME_R.tree + 0.25) / R);
   const treeSeat = { n: treeSeatN, facing: facingTo(treeSeatN, pond.n) };
-  const shore = spot(206, pond.radiusU + 0.75);
-  const lightsPost = beside(table, 208, 1.3);
-  // beside the house, on the side away from the campsite, facing the pond
-  const dogN = beside(house, -95, 2.7);
+  const shore = spot(185, pond.radiusU + 0.75);
+  // the string lights' far post: between the table and the house, beside the table
+  const lightsPost = moveAlong(table.n, tangentToward(table.n, house.n)!.applyAxisAngle(table.n, 0.35), 1.3 / R);
+  // beside the house and a little behind it, on the table's side, facing the pond
+  const dogN = beside(house, -125, 2.6);
   const dogHouse = { n: dogN, facing: facingTo(dogN, pond.n) };
-  const centre = at(228, 4.3);
+  const centre = at(185, 4.6);
+
+  // round the house (in its own frame: `fwd` toward the pond, `side` to its left): the back yard, the
+  // tulsi, the woodpile
+  const around = (fwd: number, sideU: number): Vector3 => beside(house, (Math.atan2(sideU, fwd) * 180) / Math.PI, Math.hypot(fwd, sideU));
+  const facingHouse = (n: Vector3) => house.facing.clone().addScaledVector(n, -house.facing.dot(n)).normalize();
+  const yardSpot = (fwd: number, sideU: number): HomeSpot => {
+    const n = around(fwd, sideU);
+    return { n, facing: facingHouse(n) };
+  };
+  // a low fence round the back of the garden, open toward the house; its arm on the table's side is
+  // shorter, leaving the way round the dog house open
+  const fence = [around(-2.75, -2.3), around(-3.8, -2.3), around(-3.8, 2.3), around(-1.9, 2.3)];
+  const yard: Yard = {
+    fence,
+    beds: [yardSpot(-2.8, -1.05), yardSpot(-2.8, 1.05)],
+    wateringCan: yardSpot(-2.3, 0.05),
+    tulsi: yardSpot(2.6, 0.95),
+    woodpile: yardSpot(-0.25, 1.5),
+  };
 
   const obstacles: Obstacle[] = [
     { n: house.n, radiusU: HOME_R.house },
@@ -123,6 +162,11 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     ...campChairs.map((c) => ({ n: c.n, radiusU: HOME_R.chair })),
     { n: log.n, radiusU: HOME_R.log },
     { n: lightsPost, radiusU: HOME_R.post },
+    // the yard: the fence's posts (you walk round it, not through), the beds, the tulsi and the woodpile
+    ...fencePosts(fence, YARD.postGap, R).map((n) => ({ n, radiusU: 0.06 })),
+    ...yard.beds.flatMap((b) => [-1, 1].map((s) => ({ n: moveAlong(b.n, new Vector3().crossVectors(b.n, b.facing).normalize(), (s * YARD.bedL * 0.27) / R), radiusU: YARD.bedW * 0.55 }))),
+    { n: yard.tulsi.n, radiusU: 0.22 },
+    { n: yard.woodpile.n, radiusU: 0.26 },
   ];
   const clear = [
     { n: house.n, r: HOME_R.house + 0.9 },
@@ -134,6 +178,27 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     { n: shore.n, r: 0.7 },
     { n: lightsPost, r: 0.4 },
     { n: dogN, r: 1.5 },
+    // the lawn in front of the door (a clear way out of the house) and the open ground in the middle
+    { n: beside(house, 0, HOME_R.house + 1.9), r: 1.5 },
+    { n: centre, r: 2.4 },
+    // the back yard, the tulsi's spot, and the tall cedar that stood right in front of the house as you
+    // come to it from the table (it hid the door)
+    { n: around(-2.9, 0), r: 2.6 },
+    { n: yard.tulsi.n, r: 0.8 },
+    { n: around(-1.8, -4.4), r: 1.1 },
   ];
-  return { centre, range: 7, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, dogHouse, obstacles, clear };
+  return { centre, range: 8.5, yard, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, dogHouse, obstacles, clear };
+}
+
+/** Posts along a polyline, about `gap` u apart (both ends included). */
+export function fencePosts(line: readonly Vector3[], gap: number, R: number): Vector3[] {
+  const out: Vector3[] = [];
+  for (let i = 0; i + 1 < line.length; i++) {
+    const a = line[i];
+    const b = line[i + 1];
+    const len = a.angleTo(b) * R;
+    const n = Math.max(1, Math.round(len / gap));
+    for (let k = i ? 1 : 0; k <= n; k++) out.push(a.clone().lerp(b, k / n).normalize());
+  }
+  return out;
 }

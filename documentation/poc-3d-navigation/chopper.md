@@ -23,7 +23,7 @@ Chopper was the owner's Lhasa Apso, who passed away recently. This is a tribute:
 
 - **Proportions:** a Lhasa Apso, small (≈ 0.62 u long and 0.46 u to the top of the head, beside a 1.25 u character: roughly knee-high, like a real one next to a person), with a long body, short legs, a round head and a short muzzle. In the world he's drawn 1.25× life size, like the wildlife, so he reads at the diorama's distance.
 - **Markings** (exactly his):
-  - a fluffy, slightly curly cream-white coat;
+  - a fluffy, slightly curly cream-white coat, with a **black patch on his right flank** (from the owner, 2026-09-26);
   - long hanging ears, charcoal-black with grey-white feathered tips, framing the face;
   - a white face with soft grey-tan shading round the eyes and the crown;
   - big round dark-brown eyes with a bright catch-light, peeking out under a light fringe;

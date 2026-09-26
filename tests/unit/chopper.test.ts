@@ -7,9 +7,9 @@ import { generateProps } from '../../src/game/world/layout';
 import { Terrain } from '../../src/game/world/terrain';
 import { createWildlife, meadowSpots, nearestThreat, stepWildlife, type WildEnv } from '../../src/game/world/animals';
 import { BONES, BONE_INDEX, bindPositions, chopperGeometry, chopperStats, envelopeWeights, type BoneName } from '../../src/game/world/chopper/model';
-import { CLIPS, ChopperAnim, GAITS, LEGS, gaitAt, gaitWeights, pawOffset, solveLeg } from '../../src/game/world/chopper/anim';
+import { CLIPS, ChopperAnim, type Clip, GAITS, LEGS, gaitAt, gaitWeights, pawOffset, solveLeg } from '../../src/game/world/chopper/anim';
 import { ChopperBrain, DOG, pickIdle, type DogWorld, type Spot } from '../../src/game/world/chopper/brain';
-import { chopperRig } from '../../src/game/world/chopper/model';
+import { chopperRig, PAW_H } from '../../src/game/world/chopper/model';
 import { mulberry32 } from '../../src/game/world/layout';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
@@ -172,6 +172,50 @@ describe('Chopper: gaits and IK', () => {
     }
     expect(changed).toBeGreaterThan(5);
     expect(LEGS).toHaveLength(4);
+  });
+});
+
+describe('Chopper: paws on the ground', () => {
+  // the paws each pose lifts on purpose: one front paw raised to sniff high, a hind paw scratching
+  const LIFTED: Partial<Record<Clip, string>> = { sniffHigh: 'wristL', scratch: 'hockR' };
+  const PAWS = ['wristL', 'wristR', 'hockL', 'hockR'] as const;
+
+  it('keeps every planted paw on the ground in every pose, barking or not (no floating, no dipping, no splaying out)', () => {
+    const v = new Vector3();
+    for (const clip of Object.keys(CLIPS) as Clip[]) {
+      for (const barking of [false, true]) {
+        const rig = chopperRig();
+        const anim = new ChopperAnim(rig, mulberry32(3));
+        const rest = bindPositions();
+        anim.snap(clip);
+        for (let t = 0; t < 4; t += 1 / 60) {
+          anim.update(1 / 60, { speed: 0, turn: 0, clip, clipTime: t, wag: 0.5, look: null, barkAge: barking ? t % 0.8 : 99, pant: 0, reduced: false });
+          if (t < 1.5) continue;
+          rig.root.updateMatrixWorld(true);
+          for (const paw of PAWS) {
+            if (LIFTED[clip] === paw) continue;
+            rig.bones[paw].getWorldPosition(v);
+            expect(Math.abs(v.y - PAW_H), `${clip} ${paw} height${barking ? ' (barking)' : ''}`).toBeLessThan(0.004);
+            expect(Math.abs(v.x - rest[paw].x), `${clip} ${paw} splay`).toBeLessThan(0.05);
+          }
+        }
+      }
+    }
+  });
+
+  it('in the play bow, a bark leaves the front paws where they are', () => {
+    const rig = chopperRig();
+    const anim = new ChopperAnim(rig, mulberry32(3));
+    anim.snap('playBow');
+    const v = new Vector3();
+    const heights: number[] = [];
+    for (let t = 0; t < 3; t += 1 / 60) {
+      anim.update(1 / 60, { speed: 0, turn: 0, clip: 'playBow', clipTime: t, wag: 1, look: null, barkAge: t > 1.5 ? t - 1.5 : 99, pant: 0, reduced: false });
+      rig.root.updateMatrixWorld(true);
+      rig.bones.wristL.getWorldPosition(v);
+      if (t > 1) heights.push(v.y);
+    }
+    expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(0.003);
   });
 });
 

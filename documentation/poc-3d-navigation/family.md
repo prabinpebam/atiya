@@ -53,8 +53,13 @@ plaster, stone, brick, canvas, metal):
 - **Picnic:** a wooden table with two chairs; food (a basket, plates, a jug, fruit) that appears
   when Rojina lays the table; the gingham **picnic mat** (generated texture, `picnic-mat`), with a
   small Lego tower and bricks and two toy cars on or by it; Laija's paper and crayons.
+- **Round the house** (revision 3, `Yard` in `homestead.ts`; prabin-npc.md §6): a low rustic fence
+  behind the house, open toward it; two raised vegetable beds (cabbages, staked tomatoes) and a
+  watering can inside it; a tulsi vrindavan (a whitewashed pillar planter with holy basil and a diya)
+  in front, off the door's path; sandals on the step, a broom by the door, a woodpile at the side.
+  All one kit in the house's frame, each item on its own ground.
 - **Night:** windows glow (the kit's glow layer follows the day), the porch lantern and the fire
-  light the scene through the shared lamplight list, the string-light bulbs glow; by day the fire
+  light the scene through the shared lamplight list (the tulsi's diya too, a small flickering lamp), the string-light bulbs glow; by day the fire
   is small and smokes.
 
 ## 4. The family (looks)

@@ -153,8 +153,8 @@ export function plazaFurniture(landmarks: readonly LandmarkGeometry[], cfg = CON
   const items: Furniture[] = [];
   gaps.forEach((g, i) => {
     if (g === widest) {
-      // (the bench and the notice board stand by the Greenhouse bridge now: generateProps)
-      items.push(place(g.mid, 2.6, 'planter'));
+      // (the bench and the notice board stand by the Greenhouse bridge now, and the way out to the
+      // workyard between the Post Office and the Workshop is left open: just a lamp at its side)
       items.push(place(g.mid + g.size * 0.28, 2.8, 'lamp'));
     } else if (g.size > 0.6) {
       items.push(place(g.mid, 2.8, i % 2 ? 'planter' : 'lamp'));

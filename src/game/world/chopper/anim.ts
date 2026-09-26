@@ -306,6 +306,8 @@ interface LegRig {
   /** Rest wrist / hock spot (dog-local). */
   rest: Vector3;
   front: boolean;
+  /** The leg's full length (u): the farthest its paw can reach from the top joint. */
+  reach: number;
 }
 
 export class ChopperAnim {
@@ -351,6 +353,7 @@ export class ChopperAnim {
       bend,
       rest: this.rest[paw].clone().setY(PAW_H),
       front: id.startsWith('f'),
+      reach: Math.hypot(at(lower)[2], at(lower)[1]) + Math.hypot(at(paw)[2], at(paw)[1]),
     });
     this.legs = [
       leg('fL', 'shoulderL', 'elbowL', 'wristL', 'chest', -1),
@@ -480,19 +483,41 @@ export class ChopperAnim {
     B.tail3.rotation.set(0.1 + curl * 0.2, 0, 0);
 
     // legs: gait paw targets blended with the clip's, then IK in the parent bone's frame
+    const target = (L: LegRig) => {
+      const off = pawOffset(g, this.phase + g.offset[L.id]);
+      const tz = L.rest.z + P(`${L.id}Z`) * (1 - mw) + off.z * mw;
+      const lift = P(`${L.id}Y`) * (1 - mw) + off.y * mw;
+      const tx = L.rest.x + L.side * P(`${L.id}X`) * (1 - mw);
+      // dog-local target → the parent bone's frame
+      _v.set(tx, L.rest.y + lift, tz).applyMatrix4(_mi);
+      _m.copy(L.parent.matrixWorld).invert();
+      _v.applyMatrix4(_m).sub(L.upper.position);
+      return { off, lift };
+    };
+    // Foot IK's pelvis adjustment (as in Unity's and Unreal's foot IK): where a planted paw's target is
+    // out of the leg's reach (a pose holding the chest high, a bark's bounce), lower the body just
+    // enough that it reaches, so the paws stay on the ground instead of floating or dipping
+    for (let pass = 0; pass < 3; pass++) {
+      this.rig.root.updateMatrixWorld(true);
+      _mi.copy(this.rig.root.matrixWorld);
+      let drop = 0;
+      for (const L of this.legs) {
+        const { lift } = target(L);
+        if (lift > 0.006) continue;
+        // (the IK works in the leg's sagittal plane: its reach there is what counts)
+        drop = Math.max(drop, Math.hypot(_v.z, _v.y) - L.reach * 0.995);
+      }
+      if (drop <= 1e-5) break;
+      B.hips.position.y -= drop;
+    }
     this.rig.root.updateMatrixWorld(true);
     _mi.copy(this.rig.root.matrixWorld);
     for (const L of this.legs) {
-      const off = pawOffset(g, this.phase + g.offset[L.id]);
-      const tz = L.rest.z + P(`${L.id}Z`) * (1 - mw) + off.z * mw;
-      const ty = L.rest.y + P(`${L.id}Y`) * (1 - mw) + off.y * mw;
-      const tx = L.rest.x + L.side * P(`${L.id}X`) * (1 - mw);
-      // dog-local target → the parent bone's frame
-      _v.set(tx, ty, tz).applyMatrix4(_mi);
-      _m.copy(L.parent.matrixWorld).invert();
-      _v.applyMatrix4(_m).sub(L.upper.position);
+      const { off } = target(L);
       const [a1, a2] = solveLeg(_v.z, _v.y, L.r1, L.r2, L.bend);
-      const lateral = Math.atan2(_v.x, -_v.y) * 0.8;
+      // the leg's splay out of its plane: measured against its length in that plane, so it can't flip
+      // round when the paw is level with the joint (the play bow's forelegs: atan2(x, −y) jumped to ±π there)
+      const lateral = Math.atan2(_v.x, Math.hypot(_v.y, _v.z)) * 0.8;
       L.upper.rotation.set(a1, 0, lateral);
       L.lower.rotation.set(a2, 0, 0);
       // keep the paw level with the ground (plus its own flex: folding back in swing, flat when lying)

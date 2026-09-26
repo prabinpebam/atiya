@@ -53,6 +53,47 @@ export const LOOKS: Record<NpcId, { model: CharacterId; height: number; head: nu
   prabin: { model: 'skater', height: 1.28, head: 1, skin: withBase('/models/skins/prabin.png'), hair: null, glasses: false, book: '#6f9fc8' },
 };
 
+/** Where the guitar sits against the body (the held group's frame: x left, y up, z forward), and how it's tilted. */
+const GUITAR_AT = { x: 0.06, y: 0.05, z: 0.17, rot: [-0.15, 0, -1.2] as const };
+/** Points on the guitar model (its own units, before PROP_SCALE): the strings over the sound hole, and the neck where the left hand frets. */
+const GUITAR_STRUM: readonly [number, number, number] = [0, 0.3, 0.1];
+const GUITAR_FRET: readonly [number, number, number] = [0.01, 0.72, -0.03];
+/** One strum every half second: the chord changes every four (G, C, D, Em). */
+const STRUM_T = 0.5;
+
+const _s = new Vector3();
+const _e = new Vector3();
+const _h = new Vector3();
+const _pole = new Vector3();
+const _tmp = new Vector3();
+
+/**
+ * Two-bone IK for an arm: the hand bone to `target` (world), the elbow bending toward `pole`. Built on
+ * `aimBone`, so it works whatever the rig's local axes.
+ */
+function reachArm(arm: Object3D | null, fore: Object3D | null, hand: Object3D | null, target: Vector3, pole: Vector3, w: number): void {
+  if (!arm || !fore || !hand) return;
+  arm.getWorldPosition(_s);
+  fore.getWorldPosition(_e);
+  hand.getWorldPosition(_h);
+  const a = _s.distanceTo(_e);
+  const b = _e.distanceTo(_h);
+  const to = _tmp.copy(target).sub(_s);
+  const len = to.length();
+  if (len < 1e-6 || a < 1e-6 || b < 1e-6) return;
+  const d = Math.min(Math.max(len, Math.abs(a - b) + 1e-3), a + b - 1e-3);
+  to.multiplyScalar(1 / len);
+  const cosA = Math.min(1, Math.max(-1, (a * a + d * d - b * b) / (2 * a * d)));
+  const perp = _pole.copy(pole).sub(_s);
+  perp.addScaledVector(to, -perp.dot(to));
+  if (perp.lengthSq() < 1e-12) return;
+  perp.normalize();
+  const elbow = _e.copy(_s).addScaledVector(to, a * cosA).addScaledVector(perp, a * Math.sqrt(1 - cosA * cosA));
+  aimBone(arm, fore, _h.copy(elbow).sub(_s), w);
+  fore.getWorldPosition(_e);
+  aimBone(fore, hand, _h.copy(target).sub(_e), w);
+}
+
 /** The front steps and the floor behind the door (house-local heights above its base, and their outer edges from its centre, u; home/models.ts). */
 const STEPS: ReadonlyArray<[number, number]> = [
   [1.27, 0.08],
@@ -236,6 +277,7 @@ function Person({ controller, family, id }: { controller: GameController; family
   const nodNow = useRef(0);
   const liftNow = useRef(0);
   const knock = useRef(0);
+  const strum = useRef(-1);
   const home = family.home;
   const houseBase = controller.terrain.height(home.house.n) + 0.12;
 
@@ -317,6 +359,39 @@ function Person({ controller, family, id }: { controller: GameController; family
         }
       }
     }
+    // playing the guitar: the guitar across the lap, the left hand on its neck and the right strumming
+    // over the sound hole (two-bone IK to points on the guitar), a strum sounding from it on each downstroke
+    const hmG = held.current;
+    if (npc.pose === 'guitar' && npc.held === 'guitar' && hmG && w > 1e-3) {
+      hmG.position.set(GUITAR_AT.x, (hipNow.current ?? 0.4) + GUITAR_AT.y, -backNow.current + GUITAR_AT.z);
+      hmG.rotation.set(...GUITAR_AT.rot);
+      hmG.updateMatrixWorld(true);
+      const onGuitar = (p: readonly [number, number, number], out: Vector3) => hmG.localToWorld(out.set(p[0] * PROP_SCALE, (p[1] - 0.17) * PROP_SCALE, p[2] * PROP_SCALE));
+      const c = (npc.poseT % STRUM_T) / STRUM_T;
+      // a quick downstroke, then a slower lift back up: across the strings (the guitar's x)
+      const across = c < 0.2 ? 0.07 - 0.14 * (c / 0.2) : -0.07 + 0.14 * ((c - 0.2) / 0.8);
+      const strumAt = onGuitar([GUITAR_STRUM[0] + across, GUITAR_STRUM[1], GUITAR_STRUM[2]], _v.clone());
+      const fretAt = onGuitar(GUITAR_FRET, _w.clone());
+      g.getWorldQuaternion(_q);
+      const fwd = _fwd.set(0, 0, 1).applyQuaternion(_q);
+      const left = _left.set(1, 0, 0).applyQuaternion(_q);
+      const up = _dir.set(0, 1, 0).applyQuaternion(_q);
+      const r = rig.limbs[1];
+      const l = rig.limbs[0];
+      r.arm?.getWorldPosition(_s);
+      reachArm(r.arm, r.fore, r.hand, strumAt, _tmp.copy(_s).addScaledVector(fwd, -0.2).addScaledVector(left, -0.35).addScaledVector(up, -0.4).clone(), w);
+      l.arm?.getWorldPosition(_s);
+      reachArm(l.arm, l.fore, l.hand, fretAt, _tmp.copy(_s).addScaledVector(left, 0.4).addScaledVector(up, -0.45).addScaledVector(fwd, -0.05).clone(), w);
+      // the sound, from the guitar: panned to where it is on screen, softer further off
+      const beat = Math.floor(npc.poseT / STRUM_T);
+      if (beat !== strum.current && !paused) {
+        strum.current = beat;
+        const d = arcDistance(npc.n, controller.sim.pLocal, R);
+        const near = Math.max(0, Math.min(1, 1 - (d - 1.5) / 9));
+        _e.copy(strumAt).project(camera);
+        controller.sound.strum(Math.floor(beat / 4) % 4, Math.max(-1, Math.min(1, _e.x)), near * near);
+      }
+    }
     // the head: toward what they're looking at (eased), and nodding over a book
     if (rig.head) {
       let yawTarget = 0;
@@ -351,7 +426,7 @@ function Person({ controller, family, id }: { controller: GameController; family
         if (kind === 'book' || kind === 'basket') hm.position.copy(a).add(b).multiplyScalar(0.5);
         else if (kind === 'guitar') {
           // across the lap, the neck out to the left
-          hm.position.set(0.06, (hipNow.current ?? 0.4) + 0.05, -backNow.current + 0.17);
+          hm.position.set(GUITAR_AT.x, (hipNow.current ?? 0.4) + GUITAR_AT.y, -backNow.current + GUITAR_AT.z);
         } else hm.position.copy(b);
         if (kind === 'car' && npc.pose === 'crawl') hm.position.y = 0.01;
         // the pebble leaves the hand at the throw and comes back with the next one
@@ -359,7 +434,7 @@ function Person({ controller, family, id }: { controller: GameController; family
         if (kind === 'pebble') hm.visible = !(c > 0.55 && c < 1.25);
         else hm.visible = true;
         if (kind === 'book') hm.rotation.set(-0.9, 0, 0);
-        else if (kind === 'guitar') hm.rotation.set(-0.15, 0, -1.2);
+        else if (kind === 'guitar') hm.rotation.set(...GUITAR_AT.rot);
         else if (kind === 'hammer' || kind === 'stick') {
           // along the forearm, from the fist
           rig.limbs[1].fore?.getWorldPosition(_w);

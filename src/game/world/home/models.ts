@@ -62,6 +62,18 @@ export function houseModel(): { geo: KitGeometry; lantern: V3; chimney: V3; ligh
   windowUnit(k, { p: [0, H + 0.42, D / 2 + 0.24] }, { w: 0.26, h: 0.26, arch: true, lit: true });
   potPlant(k, { p: [-0.6, 0, D / 2 + 0.36] }, '#ff6f7d');
   potPlant(k, { p: [0.62, 0, D / 2 + 0.4] });
+  // lived in: sandals left on the top step (shoes off at the door), a broom leaning by it
+  for (const [x, c, a] of [
+    [-0.3, '#8a5a36', 0.25],
+    [0.3, '#3f6fb0', -0.2],
+  ] as const) {
+    for (const s of [-1, 1]) {
+      k.box([0.07, 0.015, 0.16], c, { p: [x + s * 0.045, 0.168, D / 2 + 0.16], r: [0, a + s * 0.08, 0] }, 0.006);
+      k.box([0.06, 0.012, 0.012], shade(c, -0.3), { p: [x + s * 0.045, 0.18, D / 2 + 0.2], r: [0, a + s * 0.08, 0] }, 0.003);
+    }
+  }
+  k.surface('wood', () => k.cyl(0.012, 0.012, 0.9, '#c79a5b', { p: [-0.42, 0.34 + 0.45, D / 2 + 0.06], r: [0.16, 0, 0.1] }, 6));
+  k.cyl(0.03, 0.07, 0.24, '#d8b25a', { p: [-0.34, 0.34 + 0.1, D / 2 + 0.13], r: [0.16, 0, 0.1] }, 8);
   // a mailbox by the path
   k.group({ p: [0.95, 0, D / 2 + 0.95] }, () => {
     k.surface('wood', () => k.box([0.06, 0.7, 0.06], WOOD_DARK, { p: [0, 0.35, 0] }, 0.015));
@@ -133,6 +145,132 @@ export function birdhouseModel(): KitGeometry {
   });
   k.cyl(0.028, 0.028, 0.01, '#2a1d16', { p: [0, 0.09, 0.071], r: [Math.PI / 2, 0, 0] }, 12);
   return k.build();
+}
+
+// ---------------------------------------------------------------------------
+// Round the house (the lived-in touches): the back yard's vegetable beds, a watering can, the tulsi,
+// the woodpile. Each adds its parts to `k` facing +z, its base on y = 0; sizes in u (not PROP_SCALE).
+// They're merged into one yard kit (HomeView), so they cost no extra draw calls
+
+/** A raised vegetable bed: a plank frame and dark soil, planted with cabbages or staked tomatoes. */
+export function bed(k: Kit, kind: 'cabbage' | 'tomato', L = 1.25, W = 0.55, seed = 0): void {
+  const H = 0.14;
+  k.surface('wood', () => {
+    for (const s of [-1, 1]) {
+      k.box([L, H, 0.05], WOOD_DARK, { p: [0, H / 2, (s * (W - 0.05)) / 2] }, 0.01);
+      k.box([0.05, H, W], WOOD_DARK, { p: [(s * (L - 0.05)) / 2, H / 2, 0] }, 0.01);
+    }
+  });
+  k.box([L - 0.08, 0.02, W - 0.08], '#5a3d2a', { p: [0, H - 0.02, 0] }, 0.005);
+  const r = (i: number) => (Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453) % 1;
+  if (kind === 'cabbage') {
+    // two rows of cabbages: a pale round heart wrapped in a few darker, cupped leaves
+    for (let row = 0; row < 2; row++) {
+      for (let i = 0; i < 4; i++) {
+        const x = -L / 2 + 0.2 + i * ((L - 0.4) / 3);
+        const z = (row - 0.5) * 0.24;
+        const s = 0.85 + Math.abs(r(row * 4 + i)) * 0.3;
+        k.blob(0.06 * s, '#b8dc86', { p: [x, H + 0.05 * s, z], s: [1, 0.85, 1] }, 1, 'solid', 0.2, row * 4 + i);
+        for (let l = 0; l < 5; l++) {
+          const a = (l / 5) * Math.PI * 2 + r(l + i) * 0.5;
+          k.blob(0.055 * s, l % 2 ? '#6fa65a' : '#86b86a', { p: [x + Math.cos(a) * 0.06 * s, H + 0.03 * s, z + Math.sin(a) * 0.06 * s], s: [1.1, 0.45, 0.8], r: [0, -a, 0.5] }, 1, 'solid', 0.15, l + i);
+        }
+      }
+    }
+  } else {
+    // tomatoes: three plants tied to stakes, leafy, with red and a few green fruit
+    for (let i = 0; i < 4; i++) {
+      const x = -L / 2 + 0.18 + i * ((L - 0.36) / 3);
+      k.surface('wood', () => k.cyl(0.008, 0.008, 0.62, '#c79a5b', { p: [x, H + 0.31, 0] }, 5));
+      for (let j = 0; j < 9; j++) {
+        const y = H + 0.08 + j * 0.055;
+        const a = j * 2.1 + i;
+        const o = 0.06 - j * 0.003;
+        k.blob(0.055 - j * 0.003, ['#4f8f45', '#5fa14f', '#467f3e'][j % 3], { p: [x + Math.cos(a) * o, y, Math.sin(a) * o], s: [1.3, 0.7, 1.2] }, 1, 'solid', 0.3, i * 9 + j);
+      }
+      for (let j = 0; j < 5; j++) {
+        const a = j * 1.7 + i * 0.9;
+        k.sphere(0.028, j === 3 ? '#8cbf4e' : '#e2412f', { p: [x + Math.cos(a) * 0.075, H + 0.16 + (j % 3) * 0.11, Math.sin(a) * 0.075] }, [8, 6]);
+      }
+    }
+  }
+}
+
+/** A green watering can, set down by the beds. */
+export function wateringCan(k: Kit): void {
+  k.surface('metal', () => {
+    k.cyl(0.07, 0.08, 0.16, '#4f9a6a', { p: [0, 0.08, 0] }, 12);
+    k.cyl(0.012, 0.018, 0.2, '#4f9a6a', { p: [0.1, 0.12, 0], r: [0, 0, -0.9] }, 6);
+    k.cyl(0.028, 0.02, 0.03, '#3f7a54', { p: [0.18, 0.18, 0], r: [0, 0, -0.9] }, 8);
+    k.torus(0.06, 0.01, '#3f7a54', { p: [-0.02, 0.17, 0], r: [Math.PI / 2, 0, 0] }, Math.PI, [4, 10]);
+  });
+}
+
+/**
+ * The tulsi vrindavan (as in Hindu households): a raised square planter, whitewashed with an ochre
+ * border, a small niche in front for the evening diya, and the holy basil growing from its top.
+ * Returns where the lamp's flame is.
+ */
+export function tulsi(k: Kit): V3 {
+  const S = 0.3;
+  const H = 0.4;
+  k.surface('plaster', () => {
+    k.box([S + 0.08, 0.05, S + 0.08], '#e9dcc4', { p: [0, 0.025, 0] }, 0.012);
+    k.box([S, H, S], '#f3ead8', { p: [0, 0.05 + H / 2, 0] }, 0.02);
+    k.box([S + 0.06, 0.05, S + 0.06], '#f3ead8', { p: [0, 0.05 + H + 0.025, 0] }, 0.012);
+  });
+  // ochre borders and the niche
+  for (const y of [0.09, 0.05 + H - 0.03]) k.box([S + 0.012, 0.025, S + 0.012], '#d98a2b', { p: [0, y, 0] }, 0.004);
+  k.box([0.11, 0.12, 0.02], '#5a2e1c', { p: [0, 0.2, S / 2 + 0.002] }, 0.01);
+  // a little clay diya on a ledge before the niche, its flame lit at dusk
+  const Z = S / 2 + 0.035;
+  k.box([0.12, 0.018, 0.06], '#e9dcc4', { p: [0, 0.14, S / 2 + 0.028] }, 0.006);
+  k.lathe(
+    [
+      [0, 0],
+      [0.03, 0],
+      [0.036, 0.014],
+      [0.026, 0.018],
+      [0, 0.014],
+    ],
+    '#b8643a',
+    { p: [0, 0.149, Z] },
+    10,
+  );
+  k.cone(0.011, 0.034, '#ffc45a', { p: [0, 0.184, Z] }, 6, 'glow');
+  // soil, and the basil: a rounded bush of small leaves on woody stems, with purple flower spikes
+  k.box([S - 0.03, 0.02, S - 0.03], '#5a3d2a', { p: [0, 0.05 + H + 0.05, 0] }, 0.005);
+  const top = 0.05 + H + 0.06;
+  k.cyl(0.01, 0.014, 0.08, '#6b5a3a', { p: [0, top + 0.04, 0] }, 5);
+  for (let i = 0; i < 34; i++) {
+    // leaves spread over a dome (golden-angle spiral), denser and paler toward the top
+    const t = (i + 0.5) / 34;
+    const a = i * 2.39996;
+    const el = Math.acos(1 - t * 0.95);
+    const rr = 0.1 * Math.sin(el);
+    const y = top + 0.1 + 0.1 * Math.cos(el);
+    k.blob(0.026 + (i % 3) * 0.004, ['#3f7d3a', '#4f8f45', '#5a9a4a'][i % 3], { p: [Math.cos(a) * rr, y, Math.sin(a) * rr], s: [1.25, 0.6, 1.0], r: [0, -a, 0.4] }, 1, 'solid', 0.2, i);
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = i * 1.1 + 0.4;
+    k.cyl(0.006, 0.008, 0.06, '#8a5aa8', { p: [Math.cos(a) * 0.06, top + 0.22 - (i % 2) * 0.03, Math.sin(a) * 0.06], r: [Math.sin(a) * 0.25, 0, -Math.cos(a) * 0.25] }, 4);
+  }
+  return [0, 0.19, Z + 0.03];
+}
+
+/** Firewood stacked against a wall: split logs in three rows, their pale ends out. */
+export function woodpile(k: Kit): void {
+  k.surface('wood', () => {
+    for (let row = 0; row < 3; row++) {
+      const n = 4 - row;
+      for (let i = 0; i < n; i++) {
+        const x = (i - (n - 1) / 2) * 0.11;
+        const y = 0.05 + row * 0.09;
+        k.cyl(0.05, 0.05, 0.42, ['#8a5a36', '#7a4e30', '#6e5238'][(i + row) % 3], { p: [x, y, 0], r: [Math.PI / 2, 0, 0] }, 9);
+        for (const s of [-1, 1]) k.cyl(0.043, 0.043, 0.004, '#e2c49a', { p: [x, y, s * 0.211], r: [Math.PI / 2, 0, 0] }, 9);
+      }
+    }
+  });
 }
 
 /** The fire ring: stones round crossed logs over the embers (the flames are `flamesModel()`). */

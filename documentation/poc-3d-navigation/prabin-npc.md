@@ -134,3 +134,41 @@
   - Chopper (goes inside and comes out; follows a planned route round a boulder; fetch);
   - the plaza (the bench and board by the bridge; the workyard's spacing and clearance).
 - **E2E:** talk to Prabin; the door opens at bedtime and they go in; Chopper's house lit at night with him inside; the plaza's new spots (prompts at the chest and the table).
+
+## 5. Revision 2 (owner review, 2026-09-26)
+
+| Report | Cause | Fix (and the pattern it follows) |
+|---|---|---|
+| A flower pot blocks the way to the crafting table | The plaza's planter stood in the widest gap between the paths, which is the way out to the workyard | That gap keeps only its lamp |
+| The home is congested; the chair in front of the house blocks the door | Everything was packed within ≈ 4 u of the pond, and the reading chair stood on the door's path | The home is spread across the open ground round the pond (house, table, mat, campsite and Laija's tree now 2.2 u or more apart, zone to zone); the reading chair stands beside the house; the lawn in front of the door and the middle of the home ground are cleared of random props |
+| Prabin still gets stuck in corners | Found by simulating hours of his day and logging every stall: (1) periodic replans of a still goal flipped between two routes of about the same length round the planet; (2) the visitor standing by a signpost made a pocket the plan didn't know of; (3) a walker squeezed between the visitor and an obstacle; (4) a sit-down timed out at the end of a long walk; (5) a seat's reservation and entry point carried over to the next seat | **Route hysteresis:** a route is replanned only when its goal moves, when the repair asks, or when someone new comes near (never on a timer). **Dynamic obstacles in the plan:** the visitor and Chopper close by are blocked for the query (not when they're right beside the walker). **Agent-aware steps:** a step may not bring anyone inside the minimum gaps; the gap push tries sideways when straight back is blocked, the visitor's gap resolved last. Longer sit timeouts for Prabin; reservations released when the activity changes; standing up waits for a clear entry point; "someone's on the spot" arrival is only as close as their room allows. A regression test simulates 50 minutes (five seeds) and fails on any 3 s stall |
+| The hands don't hold the guitar | The arms were posed by fixed directions | **Two-bone IK** for both arms to points on the guitar: the right hand strumming over the sound hole (a quick downstroke, a slower lift), the left hand on the neck |
+| A strumming sound from the guitar | — | **Karplus–Strong plucked-string synthesis** (1983): a downstroke across the strings of G, C, D and Em (four strums each), made once per chord in the audio engine, panned to where the guitar is on screen and softer with distance (`SoundEngine.strum`; `audioLogic.ts` `pluck` / `strumSamples`). No asset to download |
+| A black patch on Chopper's right side | — | A charcoal patch with a soft, uneven edge on his right flank (vertex colour: the shell fur reads it too) |
+| The play bow's front paws glitch when he barks | The leg's splay was `atan2(x, −y)`: with the chest that low the paw target was level with the shoulder, the angle flipped to ±π and the legs swung out, and a bark's bounce flipped it back and forth | The splay is measured against the leg's length in its own plane, so it can't flip. And, as in Unity's and Unreal's foot IK, a **pelvis adjustment**: where a planted paw is out of reach (the chest held high in a sit, a bark's bounce), the body lowers just enough that it reaches. A unit test holds every planted paw within 4 mm of the ground in every pose, barking or not |
+
+## 6. Revision 3: the lived-in home (owner review)
+
+The owner asked for the tree in front of the house to go, a fence behind it, a small vegetable garden, a
+tulsi (holy basil) planter in front (as Hindu households keep one), and a lived-in feel round the house.
+What cosy life-sims do (Stardew Valley's farmhouse, Animal Crossing's yards, A Short Hike's cabins) is
+**set dressing**: a few small, readable props that tell you somebody lives there, kept off the paths.
+The yard follows that, and the home's layout rules: laid out in `homestead.ts`, cleared of random props,
+with collision only where you'd bump into something.
+
+| Asked for | As built |
+|---|---|
+| Remove the tree in front of the house | The tall cedar that stood before the house on the table's side (it hid the door as you came up from the table) is cleared, and so is the hardwood that stood where the garden now is. A unit test keeps any tree out of the ground in front of the house |
+| A fence at the back, for looks | A low rustic fence (weathered posts about 0.5 u apart, two rails) in a U behind the house, open toward it. The arm on the table's side is shorter, so the way round the dog house stays open. Only its posts collide (small circles), so you and the family walk round the ends, never through; the nav grid sees the same posts |
+| A vegetable garden behind the house | Two raised plank beds inside the fence: eight cabbages (a pale heart in cupped leaves) and four staked tomato plants with red and green fruit, with a watering can set down on the path between them. Each bed is two collision circles, with at least 0.5 u to walk round it |
+| A tulsi pot in front of the house | A **tulsi vrindavan**: a whitewashed square pillar planter with ochre bands, a niche and a clay diya on a ledge before it, and a bushy basil with purple flower spikes. It stands beside the path from the door, off it. After dusk the diya is lit: a small, flickering lamp (`DIYA_LAMP`) in the shared lamplight list |
+| Lived-in texture | Sandals left on the top step (shoes off at the door), a broom leaning by the door, and a woodpile stacked against the side wall |
+
+- **One draw call:** the yard is one kit, built in the house's frame from each item's own spot and ground
+  height (the planet curves away under it), so it adds no draw calls beyond its own layers.
+- **Lamps:** the diya makes 8 at night, 9 with Chopper's house built; with an open door's light that's
+  the list's 10 (`LAMP_MAX`), so a new night light needs a lamp retired or `LAMP_MAX` raised.
+- **Tests:** unit "keeps the fence and the vegetable beds behind the house…", "puts the tulsi in front of
+  the house, off the path from the door, and no tree in front", "can be walked into…"; the stall and
+  gap tests re-run on the new layout.
+
