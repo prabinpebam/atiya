@@ -10,6 +10,7 @@ const KEYS = {
   music: 'site.music',
   character: 'site.character',
   inventory: 'site.inventory',
+  largeText: 'site.largeText',
 } as const;
 
 type Mode = 'play' | 'classic';
@@ -54,6 +55,8 @@ export const prefs = {
   /** Background music is on unless the visitor turned it off (it only plays with sound on). */
   getMusic: () => read(KEYS.music) !== '0',
   setMusic: (v: boolean) => write(KEYS.music, v ? '1' : '0'),
+  getLargeText: () => read(KEYS.largeText) === '1',
+  setLargeText: (v: boolean) => write(KEYS.largeText, v ? '1' : '0'),
   getCharacter: (): CharacterId => {
     const v = read(KEYS.character);
     return isCharacterId(v) ? v : DEFAULT_CHARACTER;

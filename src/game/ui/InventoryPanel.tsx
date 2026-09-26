@@ -185,7 +185,7 @@ export default function InventoryPanel({ controller, screen }: { controller: Gam
   let flat = 0;
   const title = screen === 'chest' ? 'Chest' : 'Backpack';
   return (
-    <div className="inv-backdrop" data-testid="inventory-screen" onPointerMove={onMove} onPointerDown={onBackdrop} onContextMenu={(e) => e.preventDefault()}>
+    <div className="inv-backdrop surface-wood" data-testid="inventory-screen" onPointerMove={onMove} onPointerDown={onBackdrop} onContextMenu={(e) => e.preventDefault()}>
       <div ref={panel} className="inv-panel" role="dialog" aria-modal="true" aria-label={title} onKeyDown={onKey}>
         <div className="inv-head">
           <h2>{title}</h2>

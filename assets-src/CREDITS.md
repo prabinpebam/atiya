@@ -49,3 +49,16 @@ When third-party assets are added, list each here with source URL and license. O
 | Animated Characters: Protagonists 1.1 (model `characterMedium`, Idle/Run/Jump animations, `skaterMaleA` skin) by Kenney | https://kenney.nl/assets/animated-characters-protagonists (source files in `assets-src/kenney_animated-characters-protagonists/`, incl. `License.txt`) | CC0 1.0 | `public/models/character.glb` and `character-female.glb` (built by `npm run build:character`; the female skin is our generated edit of `skaterMaleA`, the ponytail is original geometry), the two player characters, and their picker portraits `public/avatars/*.webp` (rendered from them) |
 
 **Sound effects:** `python scripts/build-audio.py` downloads the sources above (Freesound's public HQ previews, the OpenGameArt file and the Kenney packs) into the git-ignored `assets-src/audio/.cache/`. It cuts, filters, denoises, levels and loops them, then writes the seven MP3s in `public/audio/` and `src/game/audio/audioManifest.ts`. Each clip was chosen after analysing it (level steadiness, clipping, hum and tonal peaks, spectrograms, loop-seam and per-slot checks); see the spec §4.16. All were checked as CC0 1.0 on their pages on 2026-09-25.
+
+## Documentation site
+
+The docs at `/docs/` use [Slate](../slate/README.md), the owner's own documentation package, vendored in `slate/` and generated into `documentation/shell/`. It ships these third-party runtime files (in `documentation/shell/vendor/`), served from the site with no CDN:
+
+| Asset | Source | License |
+|---|---|---|
+| marked (Markdown to HTML) | https://github.com/markedjs/marked | MIT |
+| highlight.js and its GitHub light and dark themes | https://github.com/highlightjs/highlight.js | BSD-3-Clause |
+| DOMPurify (HTML sanitizing) | https://github.com/cure53/DOMPurify | Apache-2.0 or MPL-2.0 |
+| Material Symbols Outlined (the docs' navigation icons) | https://github.com/google/material-design-icons | Apache-2.0 |
+
+The docs map (`documentation/assets/docs-map.svg`) and the screen-region diagram (`documentation/game-ui/assets/regions.svg`) are original.

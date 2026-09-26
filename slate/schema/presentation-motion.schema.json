@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slate.dev/schema/presentation-motion.schema.json",
+  "title": "Slate presentation motion manifest",
+  "type": "object",
+  "required": ["version", "deckId", "authoringMode", "slides"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "deckId": { "$ref": "#/$defs/id" },
+    "authoringMode": { "enum": ["generated", "retrofit"] },
+    "stage": {
+      "type": "object",
+      "properties": {
+        "width": { "type": "integer", "minimum": 800, "maximum": 3840, "default": 1600 },
+        "height": { "type": "integer", "minimum": 450, "maximum": 2160, "default": 900 }
+      },
+      "additionalProperties": false
+    },
+    "defaultRevisit": { "enum": ["restore", "start", "end"], "default": "restore" },
+    "slides": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/slide" }
+    },
+    "transitions": {
+      "type": "object",
+      "properties": {
+        "forward": { "$ref": "#/$defs/transition" },
+        "backward": { "$ref": "#/$defs/transition" },
+        "jump": { "$ref": "#/$defs/transition" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+    "transition": { "enum": ["cut", "crossfade-short", "shared-axis-x", "shared-axis-x-reverse"] },
+    "fragment": {
+      "oneOf": [
+        { "$ref": "#/$defs/id" },
+        {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "atMs": { "type": "integer", "minimum": 0, "maximum": 60000 }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "target": {
+      "type": "object",
+      "required": ["id", "recipe"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "recipe": { "enum": ["fade-in", "fade-rise", "fade-left", "scale-in", "draw-stroke", "shape-pop", "bar-grow", "line-grow", "wipe-reveal", "spin-settle", "path-travel"] },
+        "pathId": { "$ref": "#/$defs/id" },
+        "fragmentId": { "$ref": "#/$defs/id" },
+        "revealOffsetMs": { "type": "integer", "minimum": 0, "maximum": 2000 },
+        "startMs": { "type": "integer", "minimum": 0, "maximum": 60000 },
+        "durationMs": { "type": "integer", "minimum": 1, "maximum": 5000 }
+      },
+      "additionalProperties": false
+    },
+    "slide": {
+      "type": "object",
+      "properties": {
+        "claim": { "type": "string", "minLength": 8, "maxLength": 240 },
+        "blueprint": { "enum": ["relationship-reveal", "journey-handoff", "quantity-build", "system-assembly", "decision-shift", "custom"] },
+        "visualMechanism": { "type": "string", "minLength": 8, "maxLength": 320 },
+        "reducedMotion": { "type": "string", "minLength": 8, "maxLength": 320 },
+        "durationMs": { "type": "integer", "minimum": 1, "maximum": 60000 },
+        "revisit": { "enum": ["restore", "start", "end"] },
+        "fragments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fragment" },
+          "uniqueItems": true,
+          "maxItems": 20
+        },
+        "targets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/target" },
+          "maxItems": 100
+        },
+        "fallback": { "enum": ["start", "end"], "default": "end" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "claim": { "type": "string" } },
+            "required": ["claim"]
+          },
+          "then": {
+            "required": ["claim", "blueprint", "visualMechanism", "reducedMotion", "fragments", "targets"],
+            "properties": {
+              "fragments": { "minItems": 1 },
+              "targets": { "minItems": 1 }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

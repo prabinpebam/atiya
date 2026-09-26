@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "deckId": "motion-demo",
+  "authoringMode": "retrofit",
+  "stage": { "width": 1600, "height": 900 },
+  "defaultRevisit": "restore",
+  "slides": {
+    "navigation-wins": {
+      "durationMs": 1400,
+      "targets": [
+        { "id": "navigation-title", "recipe": "fade-in", "startMs": 0, "durationMs": 420 },
+        { "id": "navigation-start", "recipe": "shape-pop", "startMs": 120, "durationMs": 400 },
+        { "id": "navigation-middle", "recipe": "fade-in", "startMs": 260, "durationMs": 360 },
+        { "id": "route-line", "recipe": "draw-stroke", "startMs": 360, "durationMs": 760 },
+        { "id": "navigation-end", "recipe": "shape-pop", "startMs": 900, "durationMs": 420 }
+      ],
+      "fallback": "end"
+    },
+    "fragment-control": {
+      "durationMs": 1600,
+      "fragments": [
+        { "id": "need", "atMs": 400 },
+        { "id": "support", "atMs": 900 },
+        { "id": "proof", "atMs": 1400 }
+      ],
+      "targets": [
+        { "id": "fragment-need", "recipe": "fade-rise", "startMs": 400, "durationMs": 360 },
+        { "id": "fragment-support", "recipe": "fade-rise", "startMs": 900, "durationMs": 360 },
+        { "id": "fragment-proof", "recipe": "scale-in", "startMs": 1400, "durationMs": 420 }
+      ],
+      "fallback": "end"
+    },
+    "stable-fallback": {
+      "durationMs": 1100,
+      "targets": [
+        { "id": "fallback-full", "recipe": "fade-rise", "startMs": 0, "durationMs": 360 },
+        { "id": "fallback-reduced", "recipe": "fade-rise", "startMs": 160, "durationMs": 360 },
+        { "id": "fallback-off", "recipe": "fade-rise", "startMs": 320, "durationMs": 360 }
+      ],
+      "fallback": "end"
+    }
+  },
+  "transitions": {
+    "forward": "shared-axis-x",
+    "backward": "shared-axis-x-reverse",
+    "jump": "crossfade-short"
+  }
+}

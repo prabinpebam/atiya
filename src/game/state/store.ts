@@ -30,6 +30,10 @@ export interface GameState {
   reducedMotionUser: boolean;
   pauseAmbient: boolean;
   hintVisible: boolean;
+  /** Close to Chopper's house site while it's unbuilt: the aside shows its card (set by the crafting chunk). */
+  siteNear: boolean;
+  /** Larger text (a menu setting, saved): every rem-based size scales up. */
+  largeText: boolean;
   /** Text for the polite live region. */
   announcement: string;
   /** Short visible status message (also announced). */
@@ -73,6 +77,8 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     reducedMotionUser: false,
     pauseAmbient: false,
     hintVisible: false,
+    siteNear: false,
+    largeText: false,
     announcement: '',
     toast: null,
     contextLost: false,

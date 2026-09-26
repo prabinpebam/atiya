@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "deckId": "generated-motion-proof",
+  "authoringMode": "generated",
+  "stage": { "width": 1600, "height": 900 },
+  "defaultRevisit": "restore",
+  "slides": {
+    "journey-not-dashboard": {
+      "claim": "Care is a journey through changing family moments, not a static dashboard.",
+      "blueprint": "journey-handoff",
+      "visualMechanism": "A curved route with persistent milestones and one marker traveling to growth.",
+      "reducedMotion": "Show the complete route, all milestones, and the marker at growth immediately.",
+      "durationMs": 1200,
+      "fragments": [
+        { "id": "route", "atMs": 450 },
+        { "id": "care-moments", "atMs": 1150 },
+        { "id": "growth", "atMs": 1950 }
+      ],
+      "targets": [
+        { "id": "care-route", "recipe": "draw-stroke", "fragmentId": "route", "startMs": 0, "durationMs": 600 },
+        { "id": "setup-node", "recipe": "shape-pop", "fragmentId": "route", "startMs": 140, "durationMs": 400 },
+        { "id": "guidance-node", "recipe": "shape-pop", "fragmentId": "care-moments", "revealOffsetMs": 0, "durationMs": 420 },
+        { "id": "recovery-node", "recipe": "spin-settle", "fragmentId": "care-moments", "revealOffsetMs": 140, "durationMs": 480 },
+        { "id": "growth-node", "recipe": "shape-pop", "fragmentId": "growth", "revealOffsetMs": 0, "durationMs": 450 },
+        { "id": "journey-marker", "recipe": "path-travel", "pathId": "care-route", "fragmentId": "growth", "revealOffsetMs": 100, "durationMs": 950 }
+      ],
+      "fallback": "end"
+    },
+    "value-in-overlap": {
+      "claim": "Family value exists only where real needs and credible support overlap.",
+      "blueprint": "relationship-reveal",
+      "visualMechanism": "Two persistent need/support regions reveal a shared intersection lens.",
+      "reducedMotion": "Show both rings, the overlap lens, and the Value for Family label immediately.",
+      "durationMs": 900,
+      "fragments": [
+        { "id": "needs", "atMs": 520 },
+        { "id": "support", "atMs": 980 },
+        { "id": "value", "atMs": 1580 }
+      ],
+      "targets": [
+        { "id": "needs-ring", "recipe": "shape-pop", "fragmentId": "needs", "startMs": 0, "durationMs": 450 },
+        { "id": "support-ring", "recipe": "shape-pop", "fragmentId": "support", "revealOffsetMs": 0, "durationMs": 450 },
+        { "id": "overlap-lens", "recipe": "wipe-reveal", "fragmentId": "value", "revealOffsetMs": 0, "durationMs": 520 },
+        { "id": "value-label", "recipe": "fade-rise", "fragmentId": "value", "revealOffsetMs": 140, "durationMs": 360 }
+      ],
+      "fallback": "end"
+    },
+    "reliability-changes-choice": {
+      "claim": "The retained family choice shrinks as essential reliability breaks.",
+      "blueprint": "quantity-build",
+      "visualMechanism": "Three bars share one baseline and decrease from promise to retained trust.",
+      "reducedMotion": "Show all bars at final values with the credibility-gap label visible.",
+      "durationMs": 900,
+      "fragments": [
+        { "id": "promise", "atMs": 720 },
+        { "id": "setup", "atMs": 1240 },
+        { "id": "trust", "atMs": 1780 }
+      ],
+      "targets": [
+        { "id": "choice-baseline", "recipe": "line-grow", "fragmentId": "promise", "startMs": 0, "durationMs": 420 },
+        { "id": "promise-bar", "recipe": "bar-grow", "fragmentId": "promise", "startMs": 100, "durationMs": 500 },
+        { "id": "setup-bar", "recipe": "bar-grow", "fragmentId": "setup", "revealOffsetMs": 0, "durationMs": 500 },
+        { "id": "trust-bar", "recipe": "bar-grow", "fragmentId": "trust", "revealOffsetMs": 0, "durationMs": 500 },
+        { "id": "trust-callout", "recipe": "wipe-reveal", "fragmentId": "trust", "revealOffsetMs": 120, "durationMs": 400 }
+      ],
+      "fallback": "end"
+    },
+    "system-around-family": {
+      "claim": "A family hub makes five existing value pillars work as one coherent system.",
+      "blueprint": "system-assembly",
+      "visualMechanism": "A central family hub assembles five nodes and their persistent connectors.",
+      "reducedMotion": "Show the complete hub, nodes, connectors, and labels immediately.",
+      "durationMs": 1000,
+      "fragments": [
+        { "id": "core", "atMs": 620 },
+        { "id": "pillars", "atMs": 1580 },
+        { "id": "connections", "atMs": 2200 }
+      ],
+      "targets": [
+        { "id": "family-hub", "recipe": "shape-pop", "fragmentId": "core", "startMs": 0, "durationMs": 450 },
+        { "id": "link-safety", "recipe": "draw-stroke", "fragmentId": "connections", "revealOffsetMs": 0, "durationMs": 450 },
+        { "id": "safety-node", "recipe": "shape-pop", "fragmentId": "pillars", "revealOffsetMs": 0, "durationMs": 400 },
+        { "id": "link-work", "recipe": "draw-stroke", "fragmentId": "connections", "revealOffsetMs": 50, "durationMs": 450 },
+        { "id": "work-node", "recipe": "shape-pop", "fragmentId": "pillars", "revealOffsetMs": 50, "durationMs": 400 },
+        { "id": "link-storage", "recipe": "draw-stroke", "fragmentId": "connections", "revealOffsetMs": 100, "durationMs": 450 },
+        { "id": "storage-node", "recipe": "shape-pop", "fragmentId": "pillars", "revealOffsetMs": 100, "durationMs": 400 },
+        { "id": "link-play", "recipe": "draw-stroke", "fragmentId": "connections", "revealOffsetMs": 150, "durationMs": 450 },
+        { "id": "play-node", "recipe": "shape-pop", "fragmentId": "pillars", "revealOffsetMs": 150, "durationMs": 400 },
+        { "id": "link-memory", "recipe": "draw-stroke", "fragmentId": "connections", "revealOffsetMs": 200, "durationMs": 450 },
+        { "id": "memory-node", "recipe": "shape-pop", "fragmentId": "pillars", "revealOffsetMs": 200, "durationMs": 400 }
+      ],
+      "fallback": "end"
+    },
+    "sequence-the-investment": {
+      "claim": "The investment sequence is trust first, value second, and reach third.",
+      "blueprint": "decision-shift",
+      "visualMechanism": "An ascending three-step decision path makes order and dependency visible.",
+      "reducedMotion": "Show the complete ascending path and all three labeled steps immediately.",
+      "durationMs": 900,
+      "fragments": [
+        { "id": "trust", "atMs": 640 },
+        { "id": "value", "atMs": 1120 },
+        { "id": "reach", "atMs": 1680 }
+      ],
+      "targets": [
+        { "id": "decision-line", "recipe": "draw-stroke", "fragmentId": "trust", "startMs": 0, "durationMs": 500 },
+        { "id": "trust-step", "recipe": "shape-pop", "fragmentId": "trust", "startMs": 120, "durationMs": 400 },
+        { "id": "value-step", "recipe": "shape-pop", "fragmentId": "value", "revealOffsetMs": 0, "durationMs": 420 },
+        { "id": "reach-step", "recipe": "shape-pop", "fragmentId": "reach", "revealOffsetMs": 0, "durationMs": 420 }
+      ],
+      "fallback": "end"
+    }
+  },
+  "transitions": {
+    "forward": "shared-axis-x",
+    "backward": "shared-axis-x-reverse",
+    "jump": "crossfade-short"
+  }
+}

@@ -1,0 +1,37 @@
+<!-- Excerpt reference (cross-reference pill + hover popover)
+     Purpose: tag any piece of content with a compact pill that links to a
+       specific section on ANOTHER page and previews an excerpt of it on
+       hover/focus. Use it to show how a claim, problem, or need connects to its
+       supporting source without cluttering the prose. Showing connected user
+       research is just one use case - it works for any cross-page citation.
+     Behaviour: the runtime replaces the authored span with an accessible pill
+       button. Hover or keyboard-focus opens a popover card showing the source
+       label, the excerpt, and a CTA that deep-links to the referenced section
+       (expanding collapsed sections and smooth-scrolling to the anchor). Click
+       toggles the popover (touch-friendly); Escape or an outside click closes.
+     Authoring rules:
+       - Place the span inline wherever the reference belongs - inside a heading
+         to sit beside a section title, or within a sentence / list item.
+       - data-xref-href   -> "relative/path.html#section-anchor" (same relative
+                             link rules as normal content links; #anchor optional).
+       - data-xref-source -> the source label shown in the popover header.
+       - data-xref-cta    -> the CTA link text (defaults to "Go to source").
+       - data-xref-claim-source -> repository-relative canonical claim locator.
+       - data-xref-evidence-source -> repository-relative evidence locator.
+       - .slate-xref__label   -> the visible pill text (defaults to the source).
+       - .slate-xref__excerpt -> the popover body (short, verbatim where possible);
+                                 authored hidden and lifted into the popover.
+       - Because this is an inline span, the label and excerpt must contain phrasing
+         content only. Do not nest paragraphs, lists, tables, or other blocks.
+       - Only quote text that actually exists on the target page. Never fabricate. -->
+
+<span class="slate-xref"
+      data-xref-href="../user-research/q3-2026-feedback-summary.html#add-text-tool"
+      data-xref-source="Q3 2026 Feedback"
+      data-xref-cta="Read the research"
+      data-xref-claim-source="strategy/editor/opportunity.md#missing-text-tool"
+      data-xref-evidence-source="user-research/q3-2026-feedback-summary.md#add-text-tool">
+  <span class="slate-xref__label">Phantom requests</span>
+  <span class="slate-xref__excerpt">"I recall there was an option to add text, now I need to open Paint to add
+    text. I do not want to use 2 apps just to add text."</span>
+</span>

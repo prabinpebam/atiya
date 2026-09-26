@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "source": "https://github.com/heygen-com/hyperframes",
+  "license": "Apache-2.0",
+  "reviewedRelease": "v0.7.61",
+  "reviewedOn": "2026-07-17",
+  "approach": "Clean-room adaptation of documented concepts into Slate's script-free presentation contract.",
+  "capabilities": [
+    { "sourceSkill": "hyperframes-core", "classification": "adapt", "slateSurface": "slide-local deterministic timeline and stable-state contract" },
+    { "sourceSkill": "hyperframes-animation", "classification": "adapt", "slateSurface": "approved WAAPI recipe and transition catalog" },
+    { "sourceSkill": "hyperframes-keyframes", "classification": "adapt", "slateSurface": "subject, pose, final-state, and proof-state authoring discipline" },
+    { "sourceSkill": "hyperframes-creative", "classification": "adapt", "slateSurface": "motion philosophy and opportunity pass; HyperFrames visual brand excluded" },
+    { "sourceSkill": "hyperframes-registry", "classification": "adapt", "slateSurface": "closed recipe IDs rather than pasted executable snippets" },
+    { "sourceSkill": "media-use", "classification": "authoring-only", "slateSurface": "future optional media opportunity pass; no runtime dependency" },
+    { "sourceSkill": "hyperframes-cli", "classification": "adapt", "slateSurface": "manifest validation and focused browser proof" },
+    { "sourceSkill": "slideshow", "classification": "adapt", "slateSurface": "fragments, presenter/audience model, navigation controls, and media cleanup" },
+    { "sourceSkill": "producer/render/cloud", "classification": "exclude", "slateSurface": "not applicable to live presentation runtime" }
+  ]
+}

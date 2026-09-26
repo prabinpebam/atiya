@@ -4,6 +4,8 @@ import { faCheck, faHammer, faMinus, faPaintRoller, faPlus, faXmark } from '@for
 import type { GameController } from '../../controller';
 import { itemDef } from '../../inventory/items';
 import { Icon } from '../../ui/Icon';
+import { asideLane } from '../../ui/lanes';
+import { useCompact } from '../../ui/useCompact';
 import { ItemIcon } from '../../ui/Inventory';
 import type { Crafting } from './index';
 import { BULK_MAX, CRAFT_S, HOUSE_HEX, HOUSE_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
@@ -12,11 +14,14 @@ import { BULK_MAX, CRAFT_S, HOUSE_HEX, HOUSE_NEEDS, RECIPES, byMaterials, colour
 export function CraftScreens({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
   const screen = useStore(controller.store, (s) => s.craftScreen);
   const near = useStore(crafting.store, (s) => s.near);
+  // the aside shows one thing at a time (lanes.ts): the card, unless a conversation has the player's attention
+  const compact = useCompact();
+  const aside = useStore(controller.store, (s) => asideLane(s, compact));
   return (
     <>
       {screen === 'table' && <CraftScreen controller={controller} crafting={crafting} />}
       {screen === 'paint' && <PaintPicker controller={controller} crafting={crafting} />}
-      {near && !screen && <SiteCard controller={controller} />}
+      {near && !screen && aside === 'site' && <SiteCard controller={controller} />}
     </>
   );
 }
@@ -90,7 +95,7 @@ function CraftScreen({ controller, crafting }: { controller: GameController; cra
   };
 
   return (
-    <div className="inv-backdrop" data-testid="craft-screen" onPointerDown={(e) => e.target === e.currentTarget && close()}>
+    <div className="inv-backdrop surface-wood" data-testid="craft-screen" onPointerDown={(e) => e.target === e.currentTarget && close()}>
       <div className="inv-panel craft-panel" role="dialog" aria-modal="true" aria-labelledby="craft-title" onKeyDown={onKey}>
         <div className="inv-head">
           <h2 id="craft-title">
@@ -217,7 +222,7 @@ function PaintPicker({ controller, crafting }: { controller: GameController; cra
     btns.current[next]?.focus();
   };
   return (
-    <div className="inv-backdrop" data-testid="paint-screen" onPointerDown={(e) => e.target === e.currentTarget && close()}>
+    <div className="inv-backdrop surface-wood" data-testid="paint-screen" onPointerDown={(e) => e.target === e.currentTarget && close()}>
       <div className="inv-panel paint-panel" role="dialog" aria-modal="true" aria-labelledby="paint-title" onKeyDown={onKey}>
         <div className="inv-head">
           <h2 id="paint-title">
@@ -264,7 +269,7 @@ function SiteCard({ controller }: { controller: GameController }) {
   const inv = controller.inventory;
   const ready = HOUSE_NEEDS.every((x) => inv.count(x.id) >= x.n);
   return (
-    <section className="card site-card" aria-labelledby="site-title" data-testid="site-card">
+    <section className="card site-card aside" aria-labelledby="site-title" data-testid="site-card">
       <p className="kicker">A spot for Chopper</p>
       <h2 id="site-title">Chopper&rsquo;s house</h2>
       <p>Chopper has picked this sunny spot beside the house. A little house of his very own, right here, would be the best thing ever: somewhere to nap, guard his bowl and keep an eye on everyone. Paws crossed!</p>

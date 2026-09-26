@@ -19,7 +19,7 @@
 - **Pure logic, thin rendering.** Sphere math, collision, proximity arbitration, input normalization, URL/history, content validation and capability decisions live in pure TypeScript with unit tests. R3F components render state.
 - **Feel is tuned, not guessed.** Every constant is in `config.ts` and live-tunable through leva in dev. Leva is enabling infrastructure, so it's in P0 scope. One scheduled feel review with the owner.
 - **Placeholder content, real structure.** Seven landmark Markdown files drive both modes.
-- **Follow [AGENTS.md](../../AGENTS.md):** Microsoft npm proxy, exact pinned versions ([spec §5.1](./spec.md#51-stack-pinned-versions)), and no unpinned scaffolders.
+- **Follow [AGENTS.md](https://github.com/prabinpebam/atiya/blob/main/AGENTS.md):** Microsoft npm proxy, exact pinned versions ([spec §5.1](./spec.md#51-stack-pinned-versions)), and no unpinned scaffolders.
 
 ## 2. Milestones
 

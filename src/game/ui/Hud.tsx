@@ -26,6 +26,8 @@ import {
 import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
 import { withBase } from '../platform/base';
+import { asideLane, focusLane, laneBeneath, overlayOpen } from './lanes';
+import { useCompact } from './useCompact';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -78,12 +80,13 @@ function StartOverlay({ controller }: { controller: GameController }) {
 
 function PreviewCard({ controller }: { controller: GameController }) {
   const nearbyId = useStore(controller.store, (s) => s.nearbyId);
-  // hidden while something you're right at (a tree, the chest, …) has the E key
-  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.target && !s.acting && !s.invScreen && !s.craftScreen);
-  if (!nearbyId || !visible) return null;
+  // it owns the focus lane only when nothing ranks above it (a conversation, a seat, a target: lanes.ts);
+  // under a modal it stays mounted but hidden, so its Open button can take the focus back on close
+  const shown = useStore(controller.store, (s) => (focusLane(s) === 'preview' ? 'shown' : overlayOpen(s) && laneBeneath(s) === 'preview' ? 'hidden' : null));
+  if (!nearbyId || !shown) return null;
   const d = controller.dataById.get(nearbyId)!;
   return (
-    <section className="card preview-card" aria-labelledby="preview-title" style={{ ['--accent' as string]: d.accent }} data-testid="preview-card">
+    <section className="card preview-card lane" hidden={shown === 'hidden'} aria-labelledby="preview-title" style={{ ['--accent' as string]: d.accent }} data-testid="preview-card">
       <p className="kicker">{d.kicker}</p>
       <h2 id="preview-title">{d.title}</h2>
       <p>{d.summary}</p>
@@ -146,8 +149,8 @@ function ChopperCardSlot({ controller }: { controller: GameController }) {
 function ActionPrompt({ controller }: { controller: GameController }) {
   const seated = useStore(controller.store, (s) => s.seated);
   const target = useStore(controller.store, (s) => s.target);
-  const visible = useStore(controller.store, (s) => s.phase === 'playing' && !s.traveling && !s.openId && !s.menuOpen && !s.invScreen && !s.craftScreen && !s.acting && !s.chopperOpen && !s.talk);
-  if (!visible || (!seated && !target)) return null;
+  const lane = useStore(controller.store, focusLane);
+  if (lane !== 'stand' && lane !== 'prompt') return null;
   const act = () => {
     if (seated) controller.standUp();
     else controller.useTarget();
@@ -155,7 +158,7 @@ function ActionPrompt({ controller }: { controller: GameController }) {
     controller.focusRegion();
   };
   return (
-    <div className="seat-prompt action-prompt" data-testid="seat-prompt" data-kind={seated ? 'stand' : target!.kind}>
+    <div className="seat-prompt action-prompt lane" data-testid="seat-prompt" data-kind={seated ? 'stand' : target!.kind}>
       <button className="btn primary" type="button" onClick={act}>
         {seated ? (
           <>
@@ -172,15 +175,17 @@ function ActionPrompt({ controller }: { controller: GameController }) {
 }
 
 function ControlsHint({ controller }: { controller: GameController }) {
-  const show = useStore(controller.store, (s) => s.hintVisible && s.phase === 'playing');
+  // the aside shows one thing: the build-site card before this help (lanes.ts)
+  const compact = useCompact();
+  const show = useStore(controller.store, (s) => asideLane(s, compact) === 'hint');
   if (!show) return null;
   return (
-    <aside className="card hint" aria-label="Controls" data-testid="controls-hint">
+    <aside className="card hint aside" aria-label="Controls" data-testid="controls-hint">
       <p>
         <kbd>W</kbd>
         <kbd>A</kbd>
         <kbd>S</kbd>
-        <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open / use · <kbd>F</kbd> whistle · <kbd>I</kbd> backpack · <kbd>1</kbd>–<kbd>9</kbd> hotbar · <kbd>M</kbd> map
+        <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open / use · <kbd>F</kbd> whistle · <kbd>I</kbd> backpack · <kbd>1</kbd>–<kbd>9</kbd> hotbar · <kbd>M</kbd> menu
       </p>
       <p>
         Drag to turn &amp; tilt the view · <kbd>,</kbd>

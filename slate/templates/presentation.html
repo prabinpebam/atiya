@@ -1,0 +1,75 @@
+<!-- templates/presentation.html
+     A presenter-led Slate DECK (body fragment). Copy this, then fill the slots.
+     See ../presentation/SKILL.md for the full authoring guidance.
+     RULES:
+       - Body fragment only: no <html>, <head>, <style>, or <script>.
+       - Exactly one H1 (in the hero). Slide titles are H2 inside .slate-slide.
+       - Each slide lands <=3 key points in ONE visual block - concise, like a PPT slide.
+       - Each slide ends with a COLLAPSED talking track (the presenter's script).
+       - Open on tension; close on an ask. Name the transition in every talk track.
+-->
+
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow"><!-- Presentation - audience, e.g. "Presentation - Leadership" --></p>
+  <h1 class="slate-hero__title"><!-- Deck title (the only H1) --></h1>
+  <p class="slate-hero__summary"><!-- One line: what this deck argues --></p>
+</header>
+
+<div class="slate-deck" data-deck-id="replace-with-stable-deck-id">
+
+  <!-- TITLE / HOOK slide - open on tension, not an agenda -->
+  <section class="slate-slide slate-slide--title" id="hook">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">01</span> Hook</p>
+    <h2 class="slate-slide__title" id="hook-title" data-motion="fade-in"><!-- The stakes, in one line --></h2>
+    <p class="slate-slide__lead"><!-- A single framing sentence --></p>
+    <div class="slate-slide__body">
+      <!-- ONE visual block: a hero stat, a metric row, or a single callout -->
+    </div>
+    <details class="slate-talktrack">
+      <summary>Talking track</summary>
+      <div class="slate-talktrack__body">
+        <p><span class="slate-talktrack__cue">Open:</span> <!-- what the presenter says --></p>
+        <p><span class="slate-talktrack__cue">Transition:</span> <!-- hand off to slide 2 --></p>
+      </div>
+    </details>
+  </section>
+
+  <!-- CONTENT slide - one idea, a few points, one visual -->
+  <section class="slate-slide" id="tension">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">02</span> <!-- beat, e.g. Tension --></p>
+    <h2 class="slate-slide__title"><!-- The one thing this slide says --></h2>
+    <div class="slate-slide__body">
+      <ul class="slate-slide__points">
+        <li data-motion-fragment="point-one" data-motion="fade-rise"><strong><!-- Point one --></strong> - <!-- support --></li>
+        <li data-motion-fragment="point-two" data-motion="fade-rise"><strong><!-- Point two --></strong> - <!-- support --></li>
+        <li data-motion-fragment="point-three" data-motion="fade-rise"><strong><!-- Point three --></strong> - <!-- support --></li>
+      </ul>
+    </div>
+    <details class="slate-talktrack">
+      <summary>Talking track</summary>
+      <div class="slate-talktrack__body">
+        <p><!-- the script --></p>
+        <p><span class="slate-talktrack__cue">Transition:</span> <!-- name the tension into slide 3 --></p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ...more slides... -->
+
+  <!-- CLOSING slide - end on an ask sized to the room. Presenting up (CVPs, senior leaders), this is an
+       invitation for feedback, input, and guidance on the direction - never a demand. -->
+  <section class="slate-slide slate-slide--closing" id="discussion">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">NN</span> Discussion</p>
+    <h2 class="slate-slide__title"><!-- The close: what you want from the room, in their register --></h2>
+    <div class="slate-slide__body">
+      <!-- ONE visual block: the direction you're seeking guidance on, or the belief to leave with -->
+    </div>
+    <details class="slate-talktrack">
+      <summary>Talking track</summary>
+      <div class="slate-talktrack__body">
+        <p><span class="slate-talktrack__cue">Close:</span> <!-- the closing words --></p>
+      </div>
+    </details>
+  </section>
+
+</div>

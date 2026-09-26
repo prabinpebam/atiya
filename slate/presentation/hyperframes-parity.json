@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "upstreamRelease": "v0.7.61",
+  "claim": "No blanket HyperFrames animation parity claim is made.",
+  "capabilities": [
+    { "id": "waapi-keyframes", "status": "partial", "slateProof": "demo/presentation-motion.html", "difference": "Slate supports a closed recipe vocabulary, interruption, themes, slide-local time, and automatic SVG/card/metric choreography; it does not expose arbitrary authored WAAPI." },
+    { "id": "svg-content-choreography", "status": "partial", "slateProof": "shell/presentation.js", "difference": "Slate animates internal path/shape geometry with deterministic WAAPI; HyperFrames supports a broader SVG morph/path/plugin surface." },
+    { "id": "deterministic-stable-states", "status": "partial", "slateProof": "scripts/test-presentation-motion.mjs", "difference": "Static validation and direct holds exist; pixel snapshots and keyframe-strip diagnostics remain planned." },
+    { "id": "slide-transitions", "status": "partial", "slateProof": "shell/presentation.js", "difference": "Cut, crossfade, and shared-axis behavior are implemented; HyperFrames transition catalog breadth is not." },
+    { "id": "fragment-reveals", "status": "equivalent", "slateProof": "demo/presentation-motion.html", "difference": "Slate uses stable fragment IDs and relative slide-local holds rather than one continuous composition clock." },
+    { "id": "presenter-audience", "status": "partial", "slateProof": "shell/presentation.js", "difference": "Same-origin BroadcastChannel sync and local notes exist; remote transport and multi-screen placement are not baseline." },
+    { "id": "gsap", "status": "unassessed" },
+    { "id": "lottie", "status": "unsupported" },
+    { "id": "threejs-webgl", "status": "unsupported" },
+    { "id": "animejs", "status": "unsupported" },
+    { "id": "webgpu-typegpu", "status": "unsupported" },
+    { "id": "video-rendering", "status": "not-applicable" },
+    { "id": "audio-mastering", "status": "not-applicable" },
+    { "id": "cloud-rendering", "status": "not-applicable" }
+  ]
+}

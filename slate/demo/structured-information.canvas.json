@@ -1,0 +1,93 @@
+{
+  "$schema": "https://slate.dev/schema/canvas-document.schema.json",
+  "schemaVersion": 1,
+  "id": "demo-structured-information",
+  "title": "Structured Information Demo",
+  "description": "A project-agnostic proof of nested groups and repeated record placements.",
+  "kind": "record-map",
+  "mode": "readonly",
+  "source": {
+    "label": "Slate demo",
+    "href": "landing.html"
+  },
+  "recordSources": [
+    {
+      "id": "demo-structured-records",
+      "path": "structured-records.canvas.records.json"
+    }
+  ],
+  "defaultPerspectiveId": "by-stage",
+  "perspectives": [
+    {
+      "id": "by-stage",
+      "title": "By stage",
+      "groups": [
+    {
+      "id": "group-authoring",
+      "title": "Authoring",
+      "description": "Source and representation decisions",
+      "tone": "aqua",
+      "order": 1
+    },
+    {
+      "id": "group-boundaries",
+      "title": "Boundaries",
+      "parentId": "group-authoring",
+      "order": 1
+    },
+    {
+      "id": "group-validation",
+      "title": "Validation",
+      "description": "Package and host evidence",
+      "tone": "green",
+      "order": 2
+    }
+      ],
+      "placements": [
+    {
+      "id": "placement-authority-authoring",
+      "groupId": "group-authoring",
+      "recordRef": { "sourceId": "demo-structured-records", "recordId": "DEMO-RECORD-01" },
+      "order": 1
+    },
+    {
+      "id": "placement-boundary-authoring",
+      "groupId": "group-boundaries",
+      "recordRef": { "sourceId": "demo-structured-records", "recordId": "DEMO-RECORD-02" },
+      "order": 1
+    },
+    {
+      "id": "placement-boundary-validation",
+      "groupId": "group-validation",
+      "recordRef": { "sourceId": "demo-structured-records", "recordId": "DEMO-RECORD-02" },
+      "order": 1
+    },
+    {
+      "id": "placement-evidence-validation",
+      "groupId": "group-validation",
+      "recordRef": { "sourceId": "demo-structured-records", "recordId": "DEMO-RECORD-03" },
+      "order": 2
+    }
+      ],
+      "presentation": {
+        "groupColumns": 2,
+        "childGroupColumns": 1,
+        "recordColumns": 1
+      }
+    },
+    {
+      "id": "by-kind",
+      "title": "By kind",
+      "groups": [
+        { "id": "kind-decision", "title": "Decisions", "tone": "blue", "order": 1 },
+        { "id": "kind-requirement", "title": "Requirements", "tone": "gold", "order": 2 },
+        { "id": "kind-evidence", "title": "Evidence", "tone": "green", "order": 3 }
+      ],
+      "placements": [
+        { "id": "kind-placement-01", "groupId": "kind-decision", "recordRef": { "sourceId": "demo-structured-records", "recordId": "DEMO-RECORD-01" }, "order": 1 },
+        { "id": "kind-placement-02", "groupId": "kind-requirement", "recordRef": { "sourceId": "demo-structured-records", "recordId": "DEMO-RECORD-02" }, "order": 1 },
+        { "id": "kind-placement-03", "groupId": "kind-evidence", "recordRef": { "sourceId": "demo-structured-records", "recordId": "DEMO-RECORD-03" }, "order": 1 }
+      ]
+    }
+  ]
+}

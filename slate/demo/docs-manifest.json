@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "entries": [
+    { "path": "landing.html", "title": "Overview", "order": 0 },
+    { "path": "presentation-motion.html", "title": "Presentation motion", "order": 0.5, "group": "Presentation", "icon": "co_present", "presentation": { "motion": "presentation-motion.json" } },
+    { "path": "generated-motion.html", "title": "Generated motion proof", "order": 0.6, "group": "Presentation", "icon": "animation", "badge": "new", "presentation": { "motion": "generated-motion.json" } },
+    { "path": "svg-illustration.html", "title": "SVG illustration", "order": 0.7, "group": "Visualization", "icon": "gesture", "badge": "new" },
+    { "path": "structured-information.canvas.json", "title": "Structured Information Canvas", "order": 0.8, "group": "Visualization", "icon": "account_tree", "badge": "canvas", "type": "canvas", "canvas": { "open": "new-tab", "searchText": "Project-agnostic nested structured records with repeated placements." } },
+    { "path": "click-to-do.html", "title": "The Click to Do Bet", "order": 1, "group": "Strategy", "badge": "new" },
+    { "path": "components.html", "title": "Component gallery", "order": 2, "group": "Reference" },
+    { "path": "markdown-parity.md", "title": "Markdown parity", "order": 3, "group": "Reference" },
+    { "path": "sanitizer.html", "title": "Sanitizer test", "order": 4, "group": "Reference" }
+  ]
+}

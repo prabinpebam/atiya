@@ -1,0 +1,81 @@
+{
+  "$schema": "https://slate.dev/schema/canvas-document.schema.json",
+  "schemaVersion": 1,
+  "id": "example-canvas",
+  "title": "Example structured-information Canvas",
+  "description": "A read-only spatial view of source-owned records.",
+  "kind": "record-map",
+  "mode": "readonly",
+  "source": {
+    "label": "Source documentation",
+    "href": "path/to/source.html"
+  },
+  "recordSources": [
+    {
+      "id": "example-records",
+      "path": "canvas-record-set.json"
+    }
+  ],
+  "defaultPerspectiveId": "by-area",
+  "perspectives": [
+    {
+      "id": "by-area",
+      "title": "By area",
+      "groups": [
+        {
+          "id": "group-area",
+          "title": "Named area",
+          "tone": "aqua",
+          "order": 1
+        },
+        {
+          "id": "group-section",
+          "title": "Named section",
+          "parentId": "group-area",
+          "order": 1
+        }
+      ],
+      "placements": [
+        {
+          "id": "placement-record-001-area",
+          "groupId": "group-section",
+          "recordRef": {
+            "sourceId": "example-records",
+            "recordId": "RECORD-001"
+          },
+          "variant": "standard",
+          "order": 1
+        }
+      ],
+      "presentation": {
+        "groupColumns": 3,
+        "childGroupColumns": 2,
+        "recordColumns": 2
+      }
+    },
+    {
+      "id": "by-owner",
+      "title": "By owner",
+      "groups": [
+        {
+          "id": "group-owner",
+          "title": "Source authority",
+          "tone": "green",
+          "order": 1
+        }
+      ],
+      "placements": [
+        {
+          "id": "placement-record-001-owner",
+          "groupId": "group-owner",
+          "recordRef": {
+            "sourceId": "example-records",
+            "recordId": "RECORD-001"
+          },
+          "variant": "standard",
+          "order": 1
+        }
+      ]
+    }
+  ]
+}

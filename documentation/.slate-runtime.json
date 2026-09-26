@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "sourcePackage": "@slate/docs",
+  "sourceVersion": "0.10.1",
+  "sourcePath": "../slate",
+  "files": [
+    {
+      "path": "shell/slate.css",
+      "sha256": "92736125b276f06e4d5a4a32d4353eb59c00ac9ae4a10682f72f92d342c0b243"
+    },
+    {
+      "path": "shell/presentation.js",
+      "sha256": "84955134e832258d212afe7519d8b5a9225e5d033f16626d91d6573ad110c6dc"
+    },
+    {
+      "path": "shell/slate.js",
+      "sha256": "e2746eec8090191a363e22615313316c88eee3fcbf60ac349e399fd29f5bb82f"
+    },
+    {
+      "path": "shell/canvas/canvas.css",
+      "sha256": "97196e90b21bc8cdcc100b56713da725f5088f435aa87e88c4e3213a3a0ef935"
+    },
+    {
+      "path": "shell/canvas/canvas.js",
+      "sha256": "1aa4f3d932e4d1f8aa6b7531b3406dcd37343795ab2a98cbd965aa4000e2300a"
+    },
+    {
+      "path": "shell/canvas/canvas.js.LEGAL.txt",
+      "sha256": "f0988821466dc35257060739174db7102f9c52445dfdf584e6869d7c0c161d0f"
+    },
+    {
+      "path": "shell/canvas/index.html",
+      "sha256": "c2c58b238654f2ada50b87a5b23e4433c2adcae51ba327f857c44c5046cde8a4"
+    },
+    {
+      "path": "shell/vendor/github-dark.min.css",
+      "sha256": "9f208d022102b1d0c7aebfecd8e42ca7997d5de636649d2b31ea63093d809019"
+    },
+    {
+      "path": "shell/vendor/github.min.css",
+      "sha256": "3a9a5def8b9c311e5ae43abde85c63133185eed4f0d9f67fea4b00a8308cf066"
+    },
+    {
+      "path": "shell/vendor/highlight.min.js",
+      "sha256": "837a6fa5b0c736b52bbde2b2b6190f305da3fc9ed41681db5321507057b5c846"
+    },
+    {
+      "path": "shell/vendor/marked.min.js",
+      "sha256": "0a0fbf5ea62f007e7ede02d6f75b4eb142ee8acb310cd957ed566af3304c0bcc"
+    },
+    {
+      "path": "shell/vendor/material-symbols-outlined.ttf",
+      "sha256": "c13f2c860092297d3d8560e591ea8d9ea41ad71811e3224fac4c4e3290445e6b"
+    },
+    {
+      "path": "shell/vendor/purify.min.js",
+      "sha256": "dbabb5b205a333ec49c8c09e7fca30ef66df0523bb8bc0fa9ea843841f111dbd"
+    },
+    {
+      "path": "shell/vendor/README.md",
+      "sha256": "0fe67bff6108371efee8b4b207cb9f1da61291b242517bf1af00455a87d55868"
+    }
+  ]
+}

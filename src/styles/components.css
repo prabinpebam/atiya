@@ -1,0 +1,271 @@
+/* ---------- Components shared by the site and the game (design-system.md §4.2) ----------
+ * Paper by default; inside .surface-wood they read the wood roles. */
+
+/* Key cap: a key the player can press, after the action it does */
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 0.35em;
+  margin: 0 0.1em;
+  border: var(--border-hair) solid var(--color-paper-line);
+  border-bottom-width: var(--border-base);
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-bg);
+  font-family: var(--font-text);
+  font-size: 0.85em;
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-base);
+  text-align: center;
+  color: var(--color-paper-text);
+}
+
+/* Button: a pill. Variants: .primary (the one main action), .big (a page's call to action),
+ * .sm (secondary controls inside panels), .icon-btn (an icon only: needs an aria-label). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: var(--c-btn-h);
+  padding: 0 var(--c-btn-pad-x);
+  border: var(--border-base) solid var(--surface-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-bg);
+  color: var(--surface-text);
+  font-family: var(--font-text);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-none);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+.btn:hover {
+  background: var(--surface-bg-warm);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.primary {
+  background: var(--surface-accent);
+  border-color: var(--surface-accent);
+  color: var(--surface-on-accent);
+}
+
+.btn.primary:hover {
+  background: var(--surface-accent-hover);
+  border-color: var(--surface-accent-hover);
+}
+
+.btn.big {
+  min-height: var(--c-btn-h-lg);
+  padding: 0 var(--space-6);
+  font-size: var(--text-lg);
+}
+
+.btn.sm {
+  min-height: var(--c-btn-h-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.btn.icon-btn {
+  width: var(--c-btn-h);
+  padding: 0;
+}
+
+.btn[aria-disabled='true'] {
+  opacity: 0.55;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2-5);
+  margin-top: var(--space-4);
+}
+
+/* Card: a paper surface floating over the planet or the page */
+.card {
+  color: var(--surface-text);
+  background: var(--surface-bg);
+  border: var(--border-base) solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4-5) var(--space-5);
+}
+
+.card p {
+  margin: 0.4em 0;
+}
+
+.card-title {
+  margin: 0 0 var(--space-1-5);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+/* Dialog: a modal paper sheet (native <dialog>, the browser's top layer) */
+.dialog {
+  width: min(560px, calc(100vw - var(--space-8)));
+  max-height: calc(100dvh - var(--space-12));
+  padding: 0;
+  border: var(--border-base) solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-bg);
+  box-shadow: var(--shadow-card);
+  color: var(--surface-text);
+}
+
+.dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.dialog-body {
+  padding: var(--space-6);
+}
+
+.dialog h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-3xl);
+}
+
+.dialog h3 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: var(--text-md);
+}
+
+.dialog ul {
+  padding-left: 1.2em;
+}
+
+.landmark-dialog {
+  border-top: var(--border-rule-lg) solid var(--accent, var(--surface-accent));
+}
+
+/* List row: a full-width button in a list (the menu's places) */
+.menu-list {
+  list-style: none;
+  padding: 0 !important;
+  margin: 0;
+  display: grid;
+  gap: var(--space-1-5);
+}
+
+.menu-item {
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: var(--radius-md);
+  text-align: left;
+  padding: var(--space-2) var(--space-3-5);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-snug);
+  white-space: normal;
+}
+
+.menu-item .dot {
+  flex: none;
+  width: var(--space-3-5);
+  height: var(--space-3-5);
+  border: var(--border-base) solid var(--surface-text);
+  border-radius: var(--radius-round);
+  background: var(--accent);
+}
+
+/* Check and radio rows (settings) */
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  min-height: var(--c-btn-h);
+}
+
+.check input {
+  width: 22px;
+  height: 22px;
+}
+
+.radio-group {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.radio-group legend {
+  padding: 0;
+  font-weight: var(--weight-bold);
+}
+
+.radio-group .check {
+  min-height: var(--c-btn-h-sm);
+}
+
+.radio-group p {
+  margin: var(--space-1) 0 0;
+}
+
+/* Keep Close reachable when the menu scrolls on short viewports. */
+.menu-dialog .actions {
+  position: sticky;
+  bottom: 0;
+  margin: var(--space-4) calc(-1 * var(--space-6)) calc(-1 * var(--space-6));
+  padding: var(--space-3) var(--space-6) var(--space-4);
+  background: var(--surface-bg);
+  border-top: var(--border-hair) solid var(--surface-line);
+}
+
+/* Badge: a pill that shows a value (the planet clock, also a slider) */
+.time-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: var(--c-btn-h);
+  min-width: 8.2em;
+  padding: 0 var(--space-3-5);
+  border: var(--border-base) solid var(--surface-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-bg);
+  color: var(--surface-text);
+  font-family: var(--font-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-none);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  /* a slider: drag sideways to wind the planet clock */
+  cursor: ew-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+/* while the clock is dragged the pointer disappears (the sky itself shows the change) */
+.time-scrubbing,
+.time-scrubbing * {
+  cursor: none !important;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, var(--space-4));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes card-fade {
+  from {
+    opacity: 0;
+  }
+}

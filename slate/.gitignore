@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build and test artifacts
+test-results/
+*.tsbuildinfo
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*

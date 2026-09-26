@@ -1,0 +1,110 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Strategy</p>
+  <h1 class="slate-hero__title">Snipping Tool - the Click to Do Bet</h1>
+  <p class="slate-hero__summary">Turning a capture from a static image into an actionable surface.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>The FY27 bet integrates Snipping Tool with Click to Do so a capture becomes actionable - text and
+     entities are recognized on-device and contextual actions appear inline, removing the manual
+     copy/paste/switch-app loop.</p>
+</aside>
+
+<h2>Why now</h2>
+<ul>
+  <li>Users already screenshot to act on content - copy text, look things up, share.</li>
+  <li>Click to Do provides on-device intelligence to recognize text and entities.</li>
+  <li>Combining them removes the manual copy/paste/switch-app loop.</li>
+</ul>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" role="img"
+       aria-labelledby="why-now-title why-now-desc" data-slate-svg-motion="viewport">
+    <title id="why-now-title">Capture behavior and on-device intelligence converge into action</title>
+    <desc id="why-now-desc">A captured screen and an on-device recognition engine feed one contextual action surface without leaving the capture.</desc>
+    <g id="why-now-capture" data-slate-svg-step="0" data-slate-svg-effect="fade-rise">
+      <rect x="78" y="92" width="260" height="226" rx="22" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="4"/>
+      <path d="M118 132 H298 V246 H118 Z M138 218 L180 176 L214 207 L244 168 L280 208" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="268" cy="158" r="12" fill="var(--color-status-warning-fg)"/>
+      <text x="208" y="286" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="28" font-weight="700" text-anchor="middle">Capture</text>
+      <text x="208" y="350" fill="var(--color-neutral-fg-3)" font-family="var(--font-family-base)" font-size="24" text-anchor="middle">content people act on</text>
+    </g>
+    <g id="why-now-recognition" data-slate-svg-step="1" data-slate-svg-effect="scale-in">
+      <path d="M468 104 C530 104 570 142 570 202 C570 262 530 300 468 300 C406 300 366 262 366 202 C366 142 406 104 468 104 Z" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="4"/>
+      <path d="M424 178 H512 M424 204 H492 M424 230 H506" stroke="var(--color-status-info-fg)" stroke-width="7" stroke-linecap="round"/>
+      <path d="M524 156 L540 172 L568 139" fill="none" stroke="var(--color-status-success-fg)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="468" y="350" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="28" font-weight="700" text-anchor="middle">Recognize on-device</text>
+    </g>
+    <g id="why-now-link" data-slate-svg-step="2" data-slate-svg-effect="draw" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="7" stroke-linecap="round">
+      <path d="M338 202 H366 M570 202 H622"/><path d="M607 188 L622 202 L607 216" stroke-linejoin="round"/>
+    </g>
+    <g id="why-now-actions" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
+      <rect x="622" y="74" width="266" height="276" rx="24" fill="var(--color-brand-bg)"/>
+      <rect x="654" y="112" width="202" height="50" rx="12" fill="#ffffff" fill-opacity=".18"/><rect x="654" y="180" width="202" height="50" rx="12" fill="#ffffff" fill-opacity=".18"/><rect x="654" y="248" width="202" height="50" rx="12" fill="#ffffff" fill-opacity=".18"/>
+      <path d="M674 137 H704 M674 205 H704 M674 273 H704" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+      <text x="728" y="144" fill="#ffffff" font-family="var(--font-family-base)" font-size="20" font-weight="700">Copy</text><text x="728" y="212" fill="#ffffff" font-family="var(--font-family-base)" font-size="20" font-weight="700">Search</text><text x="728" y="280" fill="#ffffff" font-family="var(--font-family-base)" font-size="20" font-weight="700">Translate</text>
+      <text x="755" y="330" fill="#ffffff" font-family="var(--font-family-base)" font-size="26" font-weight="700" text-anchor="middle">Actions appear inline</text>
+    </g>
+  </svg>
+  <figcaption>Capture and recognition meet in one actionable surface, without handing the user off to another app.</figcaption>
+</figure>
+
+<div class="slate-callout slate-callout--info" role="note">
+  <p class="slate-callout__title">The shift</p>
+  <p>The bet turns "screenshot" into "get something done."</p>
+</div>
+
+<h2>Goals</h2>
+<ol class="slate-steps">
+  <li class="slate-step"><p class="slate-step__title">Recognize</p><p>Detect text and entities in any capture.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Act</p><p>Offer contextual actions: copy text, search, translate, open link.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Stay fast and private</p><p>Keep processing on-device where possible.</p></li>
+</ol>
+
+<h2>Metrics we care about</h2>
+<div class="slate-metrics">
+  <div class="slate-metric"><p class="slate-metric__value">382M</p><p class="slate-metric__label">Monthly active devices</p></div>
+  <div class="slate-metric"><p class="slate-metric__value">+12%</p><p class="slate-metric__label">Quarter-over-quarter usage</p><p class="slate-metric__delta slate-metric__delta--up">Growth</p></div>
+  <div class="slate-metric"><p class="slate-metric__value">4.6</p><p class="slate-metric__label">Average store rating</p></div>
+</div>
+
+<h2>Phases</h2>
+<ol class="slate-steps slate-steps--timeline">
+  <li class="slate-step"><p class="slate-step__title">FY26 Q3 - Discovery</p><p>Discovery and research.</p></li>
+  <li class="slate-step"><p class="slate-step__title">FY26 Q4 - Prototype</p><p>Prototype recognition and actions.</p></li>
+  <li class="slate-step"><p class="slate-step__title">FY27 Q1 - Ship</p><p>Ship first actions to Insiders.</p></li>
+</ol>
+
+<h2>Old vs new flow</h2>
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" role="img"
+       aria-labelledby="flow-shift-title flow-shift-desc" data-slate-svg-motion="viewport">
+    <title id="flow-shift-title">The new flow removes handoffs between capture and action</title>
+    <desc id="flow-shift-desc">Today requires four disconnected steps. The proposed experience keeps recognition and action inside the capture, reducing the flow to three connected moments.</desc>
+    <text x="72" y="62" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="28" font-weight="700">Today · manual handoffs</text>
+    <g id="flow-today" data-slate-svg-step="0" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" text-anchor="middle">
+      <g transform="translate(140 142)"><rect x="-72" y="-42" width="144" height="84" rx="15" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="3"/><text y="9" fill="var(--color-neutral-fg-1)" font-size="25" font-weight="700">Capture</text></g>
+      <g transform="translate(365 142)"><rect x="-82" y="-42" width="164" height="84" rx="15" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="3"/><text y="9" fill="var(--color-neutral-fg-1)" font-size="24" font-weight="700">Save or paste</text></g>
+      <g transform="translate(602 142)"><rect x="-82" y="-42" width="164" height="84" rx="15" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="3"/><text y="9" fill="var(--color-neutral-fg-1)" font-size="24" font-weight="700">Switch app</text></g>
+      <g transform="translate(820 142)"><rect x="-68" y="-42" width="136" height="84" rx="15" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="3"/><text y="9" fill="var(--color-neutral-fg-1)" font-size="25" font-weight="700">Act</text></g>
+      <path d="M212 142 H283 M447 142 H520 M684 142 H752" fill="none" stroke="var(--color-status-warning-fg)" stroke-width="6" stroke-dasharray="9 9"/>
+    </g>
+    <path id="flow-shift-divider" data-slate-svg-step="1" data-slate-svg-effect="draw" d="M72 232 H888" stroke="var(--color-neutral-stroke-2)" stroke-width="4" stroke-linecap="round"/>
+    <text x="72" y="286" fill="var(--color-brand-fg-1)" font-family="var(--font-family-base)" font-size="28" font-weight="700">With the bet · one continuous surface</text>
+    <g id="flow-new" data-slate-svg-step="2" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" text-anchor="middle">
+      <g transform="translate(170 356)"><rect x="-88" y="-46" width="176" height="92" rx="18" fill="var(--color-neutral-bg-1)" stroke="var(--color-brand-stroke)" stroke-width="4"/><text y="8" fill="var(--color-neutral-fg-1)" font-size="22" font-weight="700">Capture</text></g>
+      <g transform="translate(480 356)"><rect x="-118" y="-46" width="236" height="92" rx="18" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="4"/><text y="0" fill="var(--color-neutral-fg-1)" font-size="21" font-weight="700">Recognize + actions</text><text y="27" fill="var(--color-neutral-fg-3)" font-size="16">inline</text></g>
+      <g transform="translate(790 356)"><rect x="-88" y="-46" width="176" height="92" rx="18" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="4"/><path d="M-28 0 L-10 18 L25 -20" fill="none" stroke="var(--color-status-success-fg)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><text x="47" y="8" fill="var(--color-neutral-fg-1)" font-size="22" font-weight="700">Act</text></g>
+      <path d="M258 356 H362 M598 356 H702" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="7" stroke-linecap="round"/>
+    </g>
+  </svg>
+  <figcaption>The proposal removes the save/paste and app-switch handoffs while preserving a clear capture-to-action sequence.</figcaption>
+</figure>
+
+<h2>Risks</h2>
+<ul>
+  <li><span class="slate-badge slate-badge--warning">Accuracy</span> Recognition on noisy captures.</li>
+  <li><span class="slate-badge slate-badge--warning">Privacy</span> Expectations for on-device processing.</li>
+  <li><span class="slate-badge slate-badge--warning">Discoverability</span> Finding the new actions.</li>
+</ul>

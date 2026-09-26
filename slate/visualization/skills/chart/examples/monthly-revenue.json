@@ -1,0 +1,16 @@
+{
+  "chart": "LineChart",
+  "title": "Monthly revenue",
+  "alt": "Revenue climbed steadily through March, then eased in April.",
+  "props": {
+    "data": [
+      { "month": 1, "revenue": 40000 },
+      { "month": 2, "revenue": 62000 },
+      { "month": 3, "revenue": 81000 },
+      { "month": 4, "revenue": 74000 }
+    ],
+    "xAccessor": "month",
+    "yAccessor": "revenue",
+    "showGrid": true
+  }
+}

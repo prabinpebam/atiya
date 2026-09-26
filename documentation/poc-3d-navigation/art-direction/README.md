@@ -1,6 +1,6 @@
 # Art direction — concept art from game screenshots
 
-Seven game scenes were captured on a real GPU at 1536×1024 with the HUD hidden (`screenshots/`, taken before this art pass). Each was repainted with GPT Image 2.5 image-to-image (`concepts/`), with the landing key art ([`public/og-image.jpg`](../../../public/og-image.jpg)) as a second, style reference. The prompts are in [`concepts/prompt.txt`](concepts/prompt.txt), and the night scene used [`concepts/prompt-night.txt`](concepts/prompt-night.txt). The concepts keep each shot's composition, camera, buildings and time of day, so they show the *same* scene rendered the way the game should look.
+Seven game scenes were captured on a real GPU at 1536×1024 with the HUD hidden (`screenshots/`, taken before this art pass). Each was repainted with GPT Image 2.5 image-to-image (`concepts/`), with the landing key art ([`public/og-image.jpg`](https://github.com/prabinpebam/atiya/blob/main/public/og-image.jpg)) as a second, style reference. The prompts are in [`concepts/prompt.txt`](concepts/prompt.txt), and the night scene used [`concepts/prompt-night.txt`](concepts/prompt-night.txt). The concepts keep each shot's composition, camera, buildings and time of day, so they show the *same* scene rendered the way the game should look.
 
 | Scene | Game (before) | Game (after this pass) | Concept |
 |---|---|---|---|

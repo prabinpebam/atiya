@@ -1,0 +1,64 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Presentation motion demo</p>
+  <h1 class="slate-hero__title">Motion stays beneath presenter control</h1>
+  <p class="slate-hero__summary">A script-free deck proving direct navigation, fragments, interruption, fixed-stage presentation, and static reading fallback.</p>
+</header>
+
+<div class="slate-deck" data-deck-id="motion-demo">
+  <section class="slate-slide slate-slide--title" id="navigation-wins">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">01</span> Principle</p>
+    <h2 class="slate-slide__title" id="navigation-title">Navigation always wins</h2>
+    <p class="slate-slide__lead">The selected slide and reveal state commit before any optional animation begins.</p>
+    <div class="slate-slide__body">
+      <div class="slate-slide__figure slate-slide__figure--band">
+        <svg viewBox="0 0 760 240" role="img" aria-labelledby="navigation-visual-title navigation-visual-desc">
+          <title id="navigation-visual-title">Direct navigation outranks animation order</title>
+          <desc id="navigation-visual-desc">Three slide frames sit on a timeline while a direct arc jumps from the first frame to the selected final frame.</desc>
+          <path d="M102 170 H658" fill="none" stroke="var(--color-neutral-stroke-2)" stroke-width="10" stroke-linecap="round"/>
+          <path id="route-line" data-motion-id="route-line" d="M102 154 C216 30 524 30 658 154" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="8" stroke-linecap="round"/>
+          <path d="M632 132 L658 154 L626 166" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          <g id="navigation-start" data-motion-id="navigation-start" transform="translate(102 170)"><rect x="-56" y="-40" width="112" height="80" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="4"/><path d="M-34 -18 H18 M-34 0 H34 M-34 18 H4" stroke="var(--color-neutral-fg-3)" stroke-width="6" stroke-linecap="round"/></g>
+          <g id="navigation-middle" data-motion-id="navigation-middle" transform="translate(380 170)" opacity=".45"><rect x="-56" y="-40" width="112" height="80" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="4" stroke-dasharray="8 8"/><path d="M-22 0 H22" stroke="var(--color-neutral-fg-3)" stroke-width="6" stroke-linecap="round"/></g>
+          <g id="navigation-end" data-motion-id="navigation-end" transform="translate(658 170)"><rect x="-62" y="-46" width="124" height="92" rx="14" fill="var(--color-brand-bg)" stroke="var(--color-brand-stroke)" stroke-width="4"/><path d="M-28 1 L-7 22 L31 -21" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g>
+          <text x="380" y="28" fill="var(--color-brand-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700" text-anchor="middle">jump directly to the selected state</text>
+        </svg>
+      </div>
+      <div class="slate-callout slate-callout--info"><p class="slate-callout__title">Try it</p><p>Press Present, then use arrows rapidly or jump with Home and End.</p></div>
+    </div>
+    <details class="slate-talktrack"><summary>Talking track</summary><div class="slate-talktrack__body"><p><span class="slate-talktrack__cue">Open:</span> Motion cannot trap the presenter in a timeline.</p><p><span class="slate-talktrack__cue">Transition:</span> The same rule controls reveals inside a slide.</p></div></details>
+  </section>
+
+  <section class="slate-slide" id="fragment-control">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">02</span> Fragments</p>
+    <h2 class="slate-slide__title">Reveal one relationship at a time</h2>
+    <p class="slate-slide__lead">Next advances the current slide before it advances the deck.</p>
+    <div class="slate-slide__body">
+      <div class="slate-card-grid" data-cols="3">
+        <article class="slate-card slate-card--illus" id="fragment-need" data-motion-fragment="need" data-motion="fade-rise"><div class="slate-card__figure"><svg viewBox="0 0 120 72" aria-hidden="true"><path d="M60 10 C44 10 31 22 31 38 C31 48 37 57 46 62 H74 C83 57 89 48 89 38 C89 22 76 10 60 10 Z" fill="currentColor" opacity=".14"/><path d="M49 35 C49 27 55 22 62 22 C70 22 75 27 75 34 C75 43 64 44 62 51 M62 60 V61" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></div><h3 class="slate-card__title">Need</h3><p class="slate-card__body">Start with the family outcome.</p></article>
+        <article class="slate-card slate-card--illus" id="fragment-support" data-motion-fragment="support" data-motion="fade-rise"><div class="slate-card__figure"><svg viewBox="0 0 120 72" aria-hidden="true"><path d="M18 54 C30 54 34 46 42 40 L55 30 C61 25 69 26 73 31 L78 37 L96 25" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M72 17 H102 V47" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M18 62 H102" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".28"/></svg></div><h3 class="slate-card__title">Support</h3><p class="slate-card__body">Add what can be delivered credibly.</p></article>
+        <article class="slate-card slate-card--illus" id="fragment-proof" data-motion-fragment="proof" data-motion="scale-in"><div class="slate-card__figure"><svg viewBox="0 0 120 72" aria-hidden="true"><path d="M60 8 L90 20 V39 C90 55 76 64 60 69 C44 64 30 55 30 39 V20 Z" fill="currentColor" opacity=".14"/><path d="M42 38 L54 50 L79 24" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3 class="slate-card__title">Proof</h3><p class="slate-card__body">Land on the stable evidence state.</p></article>
+      </div>
+    </div>
+    <details class="slate-talktrack"><summary>Talking track</summary><div class="slate-talktrack__body"><p><span class="slate-talktrack__cue">Open:</span> Each reveal is a named semantic hold, not an anonymous timestamp.</p><p><span class="slate-talktrack__cue">Transition:</span> Now interrupt the sequence and go backward.</p></div></details>
+  </section>
+
+  <section class="slate-slide slate-slide--closing" id="stable-fallback">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">03</span> Resilience</p>
+    <h2 class="slate-slide__title">Without motion, the complete argument remains</h2>
+    <p class="slate-slide__lead">Reduced motion, adapter failure, print, and ordinary reading preserve the same meaning.</p>
+    <div class="slate-slide__body">
+      <div class="slate-slide__figure slate-slide__figure--band">
+        <svg viewBox="0 0 760 220" role="img" aria-labelledby="fallback-visual-title fallback-visual-desc">
+          <title id="fallback-visual-title">One complete message survives every motion mode</title>
+          <desc id="fallback-visual-desc">Full, reduced, and off modes each show the same verified result, proving motion never owns the meaning.</desc>
+          <path d="M170 110 H590" stroke="var(--color-neutral-stroke-2)" stroke-width="8" stroke-linecap="round"/>
+          <g id="fallback-full" data-motion-id="fallback-full" transform="translate(150 110)"><rect x="-92" y="-62" width="184" height="124" rx="16" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="4"/><path d="M-54 10 L-28 -16 L-2 4 L35 -34 L58 -11" fill="none" stroke="var(--color-status-info-fg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><text y="92" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="21" font-weight="700" text-anchor="middle">Full motion</text></g>
+          <g id="fallback-reduced" data-motion-id="fallback-reduced" transform="translate(380 110)"><rect x="-92" y="-62" width="184" height="124" rx="16" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="4"/><path d="M-54 10 L-28 -16 L-2 4 L35 -34 L58 -11" fill="none" stroke="var(--color-status-warning-fg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><text y="92" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="21" font-weight="700" text-anchor="middle">Reduced</text></g>
+          <g id="fallback-off" data-motion-id="fallback-off" transform="translate(610 110)"><rect x="-92" y="-62" width="184" height="124" rx="16" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="4"/><path d="M-54 10 L-28 -16 L-2 4 L35 -34 L58 -11" fill="none" stroke="var(--color-status-success-fg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><text y="92" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="21" font-weight="700" text-anchor="middle">Motion off</text></g>
+        </svg>
+      </div>
+      <div class="slate-metrics"><div class="slate-metric"><span class="slate-metric__value">3</span><span class="slate-metric__label">motion modes</span></div><div class="slate-metric"><span class="slate-metric__value">1</span><span class="slate-metric__label">semantic source</span></div><div class="slate-metric"><span class="slate-metric__value">0</span><span class="slate-metric__label">page scripts</span></div></div>
+    </div>
+    <details class="slate-talktrack"><summary>Talking track</summary><div class="slate-talktrack__body"><p><span class="slate-talktrack__cue">Close:</span> Animation enriches the presentation; it never owns or hides the content.</p></div></details>
+  </section>
+</div>

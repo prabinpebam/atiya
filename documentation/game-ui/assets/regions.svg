@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="t d" font-family="Segoe UI, system-ui, sans-serif">
+  <title id="t">Screen regions of the game UI</title>
+  <desc id="d">A 16 by 9 frame. Top bar across the top (brand left; classic site, clock, sound and menu right). The character picker under it on the right, the view controls on the right edge. Toasts at the top centre. The centre stays clear for the planet and the character. At the bottom centre, the focus lane sits above the hotbar; the aside sits at the bottom left. Modal dialogs and wood panels cover the frame on the overlay layer.</desc>
+  <rect x="1" y="1" width="958" height="538" rx="18" fill="#bfe6ff" stroke="#1f1d24" stroke-width="2"/>
+  <g font-size="15" fill="#1f1d24">
+    <rect x="16" y="14" width="928" height="46" rx="12" fill="#ffffff" fill-opacity="0.85" stroke="#1f1d24" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="32" y="42" font-weight="700">R1 Top bar · chrome (layer 30)</text>
+    <text x="928" y="42" text-anchor="end">Brand · Classic site · Clock · Sound · Menu</text>
+    <rect x="360" y="72" width="240" height="40" rx="20" fill="#1f1d24"/>
+    <text x="480" y="97" text-anchor="middle" fill="#ffffff" font-weight="700">R7 Toast (layer 35)</text>
+    <rect x="770" y="72" width="174" height="56" rx="28" fill="#ffffff" fill-opacity="0.85" stroke="#1f1d24" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="857" y="105" text-anchor="middle" font-weight="700">R2 Character</text>
+    <rect x="838" y="300" width="106" height="170" rx="16" fill="#ffffff" fill-opacity="0.85" stroke="#1f1d24" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="891" y="380" text-anchor="middle" font-weight="700">R3 View</text>
+    <text x="891" y="400" text-anchor="middle">compass</text>
+    <ellipse cx="480" cy="270" rx="190" ry="110" fill="#ffffff" fill-opacity="0.35" stroke="#1f1d24" stroke-width="1.5" stroke-dasharray="3 5"/>
+    <text x="480" y="264" text-anchor="middle" font-weight="700">Clear centre</text>
+    <text x="480" y="286" text-anchor="middle">the planet and the character</text>
+    <rect x="290" y="382" width="380" height="72" rx="16" fill="#3b5bdb"/>
+    <text x="480" y="412" text-anchor="middle" fill="#ffffff" font-weight="700">R4 Focus lane (layer 20)</text>
+    <text x="480" y="434" text-anchor="middle" fill="#ffffff">one of: talk box · prompt · preview card</text>
+    <rect x="300" y="468" width="360" height="54" rx="10" fill="#261e18"/>
+    <text x="480" y="500" text-anchor="middle" fill="#fff8ec" font-weight="700">R5 Hotbar · wood (layer 10)</text>
+    <rect x="16" y="330" width="250" height="124" rx="16" fill="#ffffff" fill-opacity="0.85" stroke="#1f1d24" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="32" y="362" font-weight="700">R6 Aside (layer 20)</text>
+    <text x="32" y="386">one of: build-site card ·</text>
+    <text x="32" y="406">controls hint</text>
+  </g>
+</svg>

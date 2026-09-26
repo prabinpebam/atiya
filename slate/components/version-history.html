@@ -1,0 +1,25 @@
+<!-- Version history (pill + modal)
+     Purpose: preserve a section's iteration/change history WITHOUT cluttering the
+       document inline. Authored as a hidden block at the BOTTOM of a section
+       (right before the next <h2>/<h3>). The runtime injects a small
+       "Version history" pill at the section bottom; clicking it opens a modal
+       timeline (newest first) with formatted date + time, a summary, and context.
+     Behaviour: modal locks page scroll, grows to the available viewport height,
+       and scrolls internally with a thin custom scrollbar.
+     Authoring rules:
+       - data-history-title  -> the modal heading (usually the section name).
+       - one .slate-history__entry per revision.
+       - data-when           -> "YYYY-MM-DD HH:MM" (or ISO); shown formatted.
+       - .slate-history__summary -> the one-line change; remaining nodes are context.
+       - The raw block is display:none; only the pill is visible. -->
+
+<div class="slate-history" data-history-title="Section name - iteration history">
+  <div class="slate-history__entry" data-when="2026-07-04 10:40">
+    <p class="slate-history__summary">Short summary of the change</p>
+    <p>Longer context: why it changed, and what it was before.</p>
+  </div>
+  <div class="slate-history__entry" data-when="2026-07-04 09:46">
+    <p class="slate-history__summary">First draft</p>
+    <p>The initial version of this section.</p>
+  </div>
+</div>

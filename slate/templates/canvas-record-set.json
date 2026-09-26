@@ -1,0 +1,24 @@
+{
+  "$schema": "https://slate.dev/schema/canvas-record-set.schema.json",
+  "schemaVersion": 1,
+  "id": "example-records",
+  "revision": "example-revision",
+  "records": [
+    {
+      "id": "RECORD-001",
+      "kind": "record",
+      "title": "A source-owned structured record",
+      "eyebrow": "Optional context",
+      "source": {
+        "label": "Source definition",
+        "href": "path/to/source.html#record-001"
+      },
+      "metadata": [
+        {
+          "label": "Owner",
+          "value": "Source authority"
+        }
+      ]
+    }
+  ]
+}

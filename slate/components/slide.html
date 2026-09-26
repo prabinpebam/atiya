@@ -1,0 +1,37 @@
+<!-- Slide (presentation deck section)
+     Purpose: one "slide" in a presenter-led deck (see ../presentation/SKILL.md).
+       A deck is a single page of these sections inside a <div class="slate-deck">.
+     Behaviour: renders as a slide-like card; headings inside .slate-slide are
+       intentionally skipped by the shell's collapsible-section logic. Each slide
+       lands <=3 key points in ONE visual block, and ends with a collapsed
+       talking track (see talk-track.html).
+     Authoring rules:
+       - .slate-slide__kicker  -> one-word beat label; wrap the number in
+         .slate-slide__num (a two-digit chip).
+       - .slate-slide__title   -> the slide's single H2 (the one thing it says).
+       - .slate-slide__lead    -> optional single framing sentence.
+       - .slate-slide__body    -> ONE visual block (points/cards/metrics/compare/figure).
+       - .slate-slide__points  -> calm bullet list for a few parallel points.
+       - Modifiers: .slate-slide--title (opener), .slate-slide--closing (ask). -->
+
+<section class="slate-slide" id="tension">
+  <p class="slate-slide__kicker"><span class="slate-slide__num">02</span> Tension</p>
+  <h2 class="slate-slide__title" id="tension-title" data-motion="fade-in">The one thing this slide says</h2>
+  <p class="slate-slide__lead">A single framing sentence - the point, in its boldest form.</p>
+
+  <div class="slate-slide__body">
+    <ul class="slate-slide__points">
+      <li data-motion-fragment="point-one" data-motion="fade-rise"><strong>Point one</strong> - a few words of support.</li>
+      <li data-motion-fragment="point-two" data-motion="fade-rise"><strong>Point two</strong> - a few words of support.</li>
+      <li data-motion-fragment="point-three" data-motion="fade-rise"><strong>Point three</strong> - a few words of support.</li>
+    </ul>
+  </div>
+
+  <details class="slate-talktrack">
+    <summary>Talking track</summary>
+    <div class="slate-talktrack__body">
+      <p><span class="slate-talktrack__cue">Open:</span> what the presenter says to land the slide.</p>
+      <p><span class="slate-talktrack__cue">Transition:</span> the sentence that hands off to the next slide.</p>
+    </div>
+  </details>
+</section>

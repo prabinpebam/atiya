@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "deckId": "replace-with-stable-deck-id",
+  "authoringMode": "generated",
+  "stage": { "width": 1600, "height": 900 },
+  "defaultRevisit": "restore",
+  "slides": {
+    "replace-with-slide-id": {
+      "claim": "Write the complete sentence this slide proves.",
+      "blueprint": "relationship-reveal",
+      "visualMechanism": "Describe the bespoke SVG diagram, chart, journey, system, or decision visual.",
+      "reducedMotion": "Describe the complete immediate state that preserves the same meaning.",
+      "fragments": [
+        { "id": "proof" }
+      ],
+      "targets": [
+        { "id": "replace-with-svg-subject-id", "recipe": "shape-pop", "fragmentId": "proof", "startMs": 0, "durationMs": 420 }
+      ],
+      "fallback": "end"
+    }
+  },
+  "transitions": {
+    "forward": "shared-axis-x",
+    "backward": "shared-axis-x-reverse",
+    "jump": "crossfade-short"
+  }
+}

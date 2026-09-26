@@ -106,7 +106,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
   const finishCraft = (r: Recipe, k: number) => {
     const res = craft(inv, r, k);
     if (!res) {
-      controller.showToast("You don't have enough for that.");
+      controller.showToast(`Not enough materials for ${itemDef(r.out).name.toLowerCase()} now. Check your backpack.`);
       return;
     }
     if (res.left > 0) controller.throwStack({ id: r.out, n: res.left }, false);
@@ -145,6 +145,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
       crafting.ghost = s.built ? 0 : clamp((GHOST_FAR - d) / (GHOST_FAR - GHOST_NEAR), 0, 1);
       const near = Boolean(site) && !s.built && d < CARD_U && g.phase === 'playing' && !g.traveling && !g.openId && !g.craftScreen && !g.invScreen && !g.talk && !g.chopperOpen;
       if (near !== s.near) store.setState({ near });
+      if (near !== g.siteNear) controller.store.setState({ siteNear: near });
       if (s.building !== null) {
         const t = reduced ? BUILD_S : s.building + dt;
         for (const k of KNOCKS) if (s.building < k && t >= k && !reduced) controller.sound.hit();

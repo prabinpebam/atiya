@@ -1,0 +1,33 @@
+{
+  "name": "@slate/docs",
+  "version": "0.10.1",
+  "description": "Slate is a project-agnostic documentation system and agent skill for visual-first static documentation sites.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "analyze:presentation-motion": "node scripts/analyze-presentation-motion.mjs",
+    "build:canvas": "node scripts/build-canvas.mjs",
+    "map:presentation-motion": "node scripts/presentation-motion-map.mjs",
+    "test:attributions": "node scripts/test-document-attributions.mjs",
+    "test:canvas-contracts": "node scripts/test-canvas-contracts.mjs",
+    "test:chart": "node scripts/test-chart.mjs",
+    "test:presentation-motion": "node scripts/test-presentation-motion.mjs",
+    "test:portability": "node scripts/test-portability.mjs",
+    "test:runtime-host": "node scripts/test-runtime-host.mjs",
+    "test:svg-illustration": "node scripts/test-svg-illustration.mjs",
+    "validate:attributions": "node scripts/validate-document-attributions.mjs",
+    "validate:presentation-motion": "node scripts/validate-presentation-motion.mjs",
+    "validate:svg-illustration": "node scripts/test-svg-illustration.mjs --validate-only"
+  },
+  "dependencies": {
+    "@xyflow/react": "12.11.2",
+    "lucide-react": "0.468.0",
+    "parse5": "8.0.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "semiotic": "^3.8.3"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1"
+  }
+}

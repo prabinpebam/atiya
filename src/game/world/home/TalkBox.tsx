@@ -39,7 +39,7 @@ export function TalkBox({ controller }: { controller: GameController }) {
   const done = shown >= line.length;
   const last = talk.index === talk.lines.length - 1;
   return (
-    <section className="card talk-box" role="dialog" aria-label={`Talking with ${talk.name}`} data-testid="talk-box">
+    <section className="card talk-box lane" role="dialog" aria-label={`Talking with ${talk.name}`} data-testid="talk-box">
       <p className="talk-name">{talk.name}</p>
       <p className="sr-only">{line}</p>
       <p className="talk-line" aria-hidden="true" data-testid="talk-line">

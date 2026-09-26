@@ -1,0 +1,57 @@
+{
+  "casual": {
+    "cornerRadius": 12,
+    "pillRadius": 16,
+    "strokeWidth": 2.5,
+    "connectorWidth": 2.5,
+    "lineCap": "round",
+    "lineJoin": "round",
+    "dash": [],
+    "density": "comfortable",
+    "depth": "layered"
+  },
+  "formal": {
+    "cornerRadius": 4,
+    "pillRadius": 4,
+    "strokeWidth": 1.5,
+    "connectorWidth": 1.5,
+    "lineCap": "butt",
+    "lineJoin": "miter",
+    "dash": [],
+    "density": "compact",
+    "depth": "flat"
+  },
+  "sharp": {
+    "cornerRadius": 2,
+    "pillRadius": 2,
+    "strokeWidth": 2,
+    "connectorWidth": 2,
+    "lineCap": "square",
+    "lineJoin": "miter",
+    "dash": [],
+    "density": "compact",
+    "depth": "outlined"
+  },
+  "simple": {
+    "cornerRadius": 6,
+    "pillRadius": 8,
+    "strokeWidth": 1.5,
+    "connectorWidth": 1.5,
+    "lineCap": "round",
+    "lineJoin": "round",
+    "dash": [],
+    "density": "spacious",
+    "depth": "flat"
+  },
+  "friendly": {
+    "cornerRadius": 10,
+    "pillRadius": 14,
+    "strokeWidth": 2,
+    "connectorWidth": 2,
+    "lineCap": "round",
+    "lineJoin": "round",
+    "dash": [],
+    "density": "comfortable",
+    "depth": "flat"
+  }
+}

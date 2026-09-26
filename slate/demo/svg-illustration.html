@@ -1,0 +1,76 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Native visualization pipeline</p>
+  <h1 class="slate-hero__title">SVG Illustration</h1>
+  <p class="slate-hero__summary">Route the medium, make one visual thesis visible, validate safe semantic SVG, then inspect the real Slate render.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>Custom vectors are a first-class Slate route. Article illustrations use
+     <code>slate-viewport-motion</code>; presenter-controlled illustrations use
+     <code>slate-motion-subject</code>. Every illustration remains complete when motion is reduced or off.</p>
+</aside>
+
+<h2>Illustration workbench</h2>
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" role="img"
+       aria-labelledby="workbench-title workbench-desc" data-slate-svg-motion="viewport">
+    <title id="workbench-title">A Slate illustration moves from evidence to composition to inspected output</title>
+    <desc id="workbench-desc">Source notes feed a central drafting canvas. A semantic palette and motion plan shape the composition before it passes visual inspection in light and dark frames.</desc>
+    <rect x="28" y="28" width="904" height="464" rx="24" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="3"/>
+    <g id="workbench-sources" data-slate-svg-step="0" data-slate-svg-effect="fade-rise">
+      <text x="74" y="82" fill="var(--color-neutral-fg-3)" font-family="var(--font-family-base)" font-size="24" font-weight="700">SOURCE EVIDENCE</text>
+      <path d="M74 112 H244 V198 H74 Z" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="3"/>
+      <path d="M96 136 H204 M96 158 H220 M96 180 H174" stroke="var(--color-status-warning-fg)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M92 222 H226 V294 H92 Z" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="3"/>
+      <circle cx="124" cy="258" r="17" fill="var(--color-status-info-fg)"/><path d="M155 246 H202 M155 269 H190" stroke="var(--color-status-info-fg)" stroke-width="6" stroke-linecap="round"/>
+      <text x="74" y="346" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="24" font-weight="700">Facts before form</text>
+    </g>
+    <g id="workbench-source-link" data-slate-svg-step="1" data-slate-svg-effect="draw" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="6" stroke-linecap="round">
+      <path d="M244 205 C278 205 282 244 318 244"/><path d="M302 230 L318 244 L302 258" stroke-linejoin="round"/>
+    </g>
+    <g id="workbench-canvas" data-slate-svg-step="2" data-slate-svg-effect="scale-in">
+      <rect x="318" y="78" width="330" height="330" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-brand-stroke)" stroke-width="4"/>
+      <path d="M342 134 H624 M342 190 H624 M342 246 H624 M342 302 H624 M398 102 V384 M454 102 V384 M510 102 V384 M566 102 V384" stroke="var(--color-neutral-stroke-2)" stroke-width="2"/>
+      <path d="M370 318 C408 236 444 278 482 194 C518 114 564 166 602 126" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="370" cy="318" r="17" fill="var(--color-status-warning-fg)"/><rect x="462" y="174" width="40" height="40" rx="10" fill="var(--color-status-info-fg)"/><path d="M581 132 L603 110 L625 132 V162 H581 Z" fill="var(--color-status-success-fg)"/>
+      <text x="342" y="112" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="26" font-weight="700">Compose one visual thesis</text>
+    </g>
+    <g id="workbench-theme" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
+      <rect x="342" y="430" width="282" height="40" rx="20" fill="var(--color-neutral-bg-3)"/>
+      <circle cx="374" cy="450" r="11" fill="var(--color-brand-bg)"/><circle cx="410" cy="450" r="11" fill="var(--color-status-success-fg)"/><circle cx="446" cy="450" r="11" fill="var(--color-status-warning-fg)"/>
+    </g>
+    <g id="workbench-inspection-link" data-slate-svg-step="4" data-slate-svg-effect="draw" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="6" stroke-linecap="round">
+      <path d="M648 244 H700"/><path d="M684 230 L700 244 L684 258" stroke-linejoin="round"/>
+    </g>
+    <g id="workbench-inspection" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
+      <text x="700" y="82" fill="var(--color-neutral-fg-3)" font-family="var(--font-family-base)" font-size="24" font-weight="700">REAL RENDER</text>
+      <rect x="700" y="106" width="190" height="128" rx="16" fill="#ffffff" stroke="var(--color-neutral-stroke-1)" stroke-width="3"/>
+      <path d="M724 198 C748 146 772 176 796 134 C820 96 844 134 866 118" fill="none" stroke="#0f6cbd" stroke-width="7" stroke-linecap="round"/>
+      <rect x="700" y="256" width="190" height="128" rx="16" fill="#1f1f1f" stroke="var(--color-neutral-stroke-1)" stroke-width="3"/>
+      <path d="M724 348 C748 296 772 326 796 284 C820 246 844 284 866 268" fill="none" stroke="#479ef5" stroke-width="7" stroke-linecap="round"/>
+      <text x="795" y="418" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="24" font-weight="700" text-anchor="middle">light + dark</text>
+    </g>
+    <g id="workbench-approval" data-slate-svg-step="6" data-slate-svg-effect="scale-in">
+      <circle cx="870" cy="450" r="28" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="3"/>
+      <path d="M856 450 L866 460 L884 440" fill="none" stroke="var(--color-status-success-fg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>
+  <figcaption>A sanitizer-safe, theme-aware workbench. It animates on viewport entry and exposes replay on SVG hover or focus.</figcaption>
+</figure>
+
+<h2>Four Slate profiles</h2>
+<div class="slate-card-grid" data-cols="2">
+  <article class="slate-card"><h3 class="slate-card__title">Viewport motion</h3><p class="slate-card__body">The default for inline article illustrations: finite entry, replay, and complete reduced-motion state.</p></article>
+  <article class="slate-card"><h3 class="slate-card__title">Motion subject</h3><p class="slate-card__body">The default for deck illustrations: stable semantic subjects controlled by the presentation manifest.</p></article>
+  <article class="slate-card"><h3 class="slate-card__title">Asset</h3><p class="slate-card__body">A self-contained export for hosts that cannot run Slate motion, with explicit light and dark variants.</p></article>
+  <article class="slate-card"><h3 class="slate-card__title">Static fallback</h3><p class="slate-card__body">The complete final state used for reduced motion, print, Office, and unsupported hosts.</p></article>
+</div>
+
+<h2>Authoring sequence</h2>
+<ol class="slate-steps">
+  <li class="slate-step"><span class="slate-step__num">1</span><div><strong>Route</strong><p>Choose SVG only when exact vector composition is the hard part.</p></div></li>
+  <li class="slate-step"><span class="slate-step__num">2</span><div><strong>Brief</strong><p>Record audience, thesis, reading order, profile, theme, accessibility, and source.</p></div></li>
+  <li class="slate-step"><span class="slate-step__num">3</span><div><strong>Construct</strong><p>Build semantic groups, scoped IDs, deliberate labels, and factual geometry.</p></div></li>
+  <li class="slate-step"><span class="slate-step__num">4</span><div><strong>Prove</strong><p>Animate, validate structure, inspect every state and theme, then revise.</p></div></li>
+</ol>

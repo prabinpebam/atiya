@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" role="img" aria-labelledby="t d" font-family="Segoe UI, system-ui, sans-serif">
+  <title id="t">How the documentation fits together</title>
+  <desc id="d">The site's seed spec and information architecture lead to the planet spec, plan and Definition of Done, which lead to the feature specs. The game UI design system applies to the planet and its features. Engineering sits under everything.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#8a8f98"/>
+    </marker>
+  </defs>
+  <g stroke="#8a8f98" stroke-width="2.5" fill="none" marker-end="url(#a)">
+    <path d="M292 110H342"/>
+    <path d="M618 110H668"/>
+    <path d="M480 262V210"/>
+    <path d="M806 262V210"/>
+  </g>
+  <g>
+    <rect x="20" y="20" width="272" height="180" rx="16" fill="#e6ecfb" stroke="#3b5bdb" stroke-width="2"/>
+    <text x="44" y="58" font-size="22" font-weight="700" fill="#1f1d24">The site</text>
+    <text x="44" y="92" font-size="16" fill="#35323d">Seed spec: goals, audience</text>
+    <text x="44" y="118" font-size="16" fill="#35323d">Information architecture</text>
+    <text x="44" y="144" font-size="16" fill="#35323d">Sitemap, navigation, content</text>
+    <text x="44" y="170" font-size="16" fill="#35323d">Editorial rules, validation</text>
+  </g>
+  <g>
+    <rect x="346" y="20" width="272" height="180" rx="16" fill="#e5f4e3" stroke="#2f7d32" stroke-width="2"/>
+    <text x="370" y="58" font-size="22" font-weight="700" fill="#1f1d24">The planet</text>
+    <text x="370" y="92" font-size="16" fill="#35323d">Spec, plan, Definition of Done</text>
+    <text x="370" y="118" font-size="16" fill="#35323d">Stack and interaction research</text>
+    <text x="370" y="144" font-size="16" fill="#35323d">Art direction</text>
+    <text x="370" y="170" font-size="16" fill="#35323d">Performance audit</text>
+  </g>
+  <g>
+    <rect x="672" y="20" width="268" height="180" rx="16" fill="#fdf0d8" stroke="#b7791f" stroke-width="2"/>
+    <text x="696" y="58" font-size="22" font-weight="700" fill="#1f1d24">Features</text>
+    <text x="696" y="92" font-size="16" fill="#35323d">Collecting and backpack</text>
+    <text x="696" y="118" font-size="16" fill="#35323d">Crafting, Chopper's house</text>
+    <text x="696" y="144" font-size="16" fill="#35323d">Chopper, home and family</text>
+    <text x="696" y="170" font-size="16" fill="#35323d">Prabin, navigation, plaza</text>
+  </g>
+  <g>
+    <rect x="346" y="266" width="594" height="56" rx="14" fill="#efe6fb" stroke="#7a55c7" stroke-width="2"/>
+    <text x="370" y="301" font-size="20" font-weight="700" fill="#1f1d24">Game UI</text>
+    <text x="478" y="301" font-size="16" fill="#35323d">Design system, tokens, priority lanes, copy rules</text>
+  </g>
+  <g>
+    <rect x="20" y="340" width="920" height="48" rx="14" fill="#e9e7e3" stroke="#6b6773" stroke-width="2"/>
+    <text x="44" y="371" font-size="20" font-weight="700" fill="#1f1d24">Engineering</text>
+    <text x="178" y="371" font-size="16" fill="#35323d">Stack, repository map, commands, validation tiers, deploy, this docs site</text>
+  </g>
+</svg>

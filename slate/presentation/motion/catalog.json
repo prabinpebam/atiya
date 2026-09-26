@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "runtime": "waapi",
+  "pacing": {
+    "defaultFragments": "2-3",
+    "preferredActionTailMs": 700,
+    "maximumActionTailMs": 1200,
+    "preferredStaggerMs": "40-80",
+    "maximumStaggerSpanMs": 300,
+    "transitionMs": "180-340"
+  },
+  "automaticChoreography": [
+    { "subject": "slide and card SVG geometry", "behavior": "stroke draw or shape travel/scale sequence" },
+    { "subject": "illustrated cards", "behavior": "surface, figure, title, and body sequence" },
+    { "subject": "metric tiles", "behavior": "tile entrance and value emphasis" }
+  ],
+  "blueprints": [
+    {
+      "id": "relationship-reveal",
+      "useFor": ["intersection", "dependency", "belonging", "connected system"],
+      "generate": "persistent SVG subjects plus connectors/overlap region",
+      "defaultHolds": ["establish enough subjects to frame the relationship", "reveal the relationship", "emphasize and hold the proof region"],
+      "recipes": ["shape-pop", "draw-stroke", "line-grow", "wipe-reveal"]
+    },
+    {
+      "id": "journey-handoff",
+      "useFor": ["process", "sequence", "customer journey", "handoff"],
+      "generate": "semantic route path, marker, milestones, and state labels",
+      "defaultHolds": ["show route and first milestone", "reveal intermediate moments", "travel to and hold the destination"],
+      "recipes": ["draw-stroke", "path-travel", "shape-pop"]
+    },
+    {
+      "id": "quantity-build",
+      "useFor": ["comparison", "trend", "composition", "progress"],
+      "generate": "shared baseline, bars/points/line, value labels, and legend",
+      "defaultHolds": ["show baseline and first value", "add comparison values", "emphasize and hold the conclusion"],
+      "recipes": ["line-grow", "bar-grow", "shape-pop", "fade-in"]
+    },
+    {
+      "id": "system-assembly",
+      "useFor": ["architecture", "hierarchy", "pillars", "ecosystem"],
+      "generate": "hub/layers/parent-child nodes with stable IDs",
+      "defaultHolds": ["show the core and faint system scaffold", "activate dependencies", "draw relationships and hold the complete system"],
+      "recipes": ["shape-pop", "line-grow", "draw-stroke"]
+    },
+    {
+      "id": "decision-shift",
+      "useFor": ["tradeoff", "priority", "before-after", "choice"],
+      "generate": "split field or decision axes plus movable evidence subjects",
+      "defaultHolds": ["establish alternatives or first step", "place/shift the evidence", "reveal and hold the decision"],
+      "recipes": ["wipe-reveal", "path-travel", "shape-pop", "line-grow"]
+    }
+  ],
+  "recipes": [
+    {
+      "id": "fade-in",
+      "intent": ["hierarchy", "focus"],
+      "subjects": ["title", "label", "single semantic group"],
+      "timing": { "preferredMs": "320-450", "maximumMs": 700 },
+      "reduced": "immediate",
+      "avoid": ["large repeated sets", "content whose appearance is the only signal"]
+    },
+    {
+      "id": "fade-rise",
+      "intent": ["sequence", "ordered comparison"],
+      "subjects": ["cards", "steps", "short text groups"],
+      "timing": { "preferredMs": "360-480", "maximumMs": 700 },
+      "reduced": "immediate",
+      "avoid": ["long prose", "large vertical travel", "every element on a slide"]
+    },
+    {
+      "id": "fade-left",
+      "intent": ["direction", "continuity"],
+      "subjects": ["short directional callout", "single related panel"],
+      "timing": { "preferredMs": "360-480", "maximumMs": 700 },
+      "reduced": "fade-only",
+      "avoid": ["bidirectional ambiguity", "body text", "RTL without reviewed direction"]
+    },
+    {
+      "id": "scale-in",
+      "intent": ["emphasis", "focus", "proof"],
+      "subjects": ["figure", "metric", "final evidence tile"],
+      "timing": { "preferredMs": "360-520", "maximumMs": 700 },
+      "reduced": "immediate",
+      "avoid": ["body text", "large-field zoom", "nested scale motion"]
+    },
+    {
+      "id": "draw-stroke",
+      "intent": ["path", "relationship", "progression"],
+      "subjects": ["SVG path", "SVG line", "SVG circle"],
+      "timing": { "preferredMs": "450-650", "maximumMs": 900 },
+      "reduced": "complete stroke",
+      "avoid": ["decorative scribble", "dense multi-path illustration", "non-SVG subject"]
+    },
+    {
+      "id": "shape-pop",
+      "intent": ["emergence", "milestone", "node emphasis"],
+      "subjects": ["SVG node", "badge", "symbol", "small icon group"],
+      "timing": { "preferredMs": "320-480", "maximumMs": 700 },
+      "reduced": "immediate",
+      "avoid": ["body text", "large regions", "every node simultaneously"]
+    },
+    {
+      "id": "bar-grow",
+      "intent": ["quantity", "comparison", "change"],
+      "subjects": ["SVG bar", "column", "progress fill"],
+      "timing": { "preferredMs": "450-650", "maximumMs": 900 },
+      "reduced": "complete bar",
+      "avoid": ["bars without a visible baseline", "non-quantitative decoration"]
+    },
+    {
+      "id": "line-grow",
+      "intent": ["sequence", "connection", "continuity"],
+      "subjects": ["rule", "connector", "timeline segment"],
+      "timing": { "preferredMs": "400-600", "maximumMs": 900 },
+      "reduced": "complete line",
+      "avoid": ["vertical subjects", "text underline decoration"]
+    },
+    {
+      "id": "wipe-reveal",
+      "intent": ["disclosure", "before-after", "layer reveal"],
+      "subjects": ["diagram layer", "short headline band", "evidence panel"],
+      "timing": { "preferredMs": "360-520", "maximumMs": 700 },
+      "reduced": "immediate",
+      "avoid": ["long prose", "essential content without static fallback"]
+    },
+    {
+      "id": "spin-settle",
+      "intent": ["assembly", "change of state", "resolved mechanism"],
+      "subjects": ["gear", "dial", "compact radial symbol"],
+      "timing": { "preferredMs": "400-560", "maximumMs": 700 },
+      "reduced": "immediate",
+      "avoid": ["body text", "large-field rotation", "repeated decoration"]
+    },
+    {
+      "id": "path-travel",
+      "intent": ["journey", "flow", "handoff"],
+      "subjects": ["SVG marker", "packet", "person or object glyph"],
+      "timing": { "preferredMs": "700-1000", "maximumMs": 1200 },
+      "requires": ["pathId resolving to an SVG path in the same slide"],
+      "reduced": "marker at final location",
+      "avoid": ["decorative orbit", "path without semantic direction"]
+    }
+  ],
+  "transitions": [
+    { "id": "cut", "intent": "instant jump, history restore, reduced motion" },
+    { "id": "crossfade-short", "intent": "non-adjacent direct jump" },
+    { "id": "shared-axis-x", "intent": "adjacent forward navigation" },
+    { "id": "shared-axis-x-reverse", "intent": "adjacent backward navigation" }
+  ]
+}

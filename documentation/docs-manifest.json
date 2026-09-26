@@ -1,0 +1,283 @@
+{
+  "version": 2,
+  "entries": [
+    {
+      "path": "landing.html",
+      "title": "Overview",
+      "order": 0,
+      "icon": "home",
+      "status": "published",
+      "updated": "2026-09-26"
+    },
+    {
+      "path": "seed-spec.md",
+      "title": "Seed spec",
+      "order": 11,
+      "icon": "lightbulb",
+      "status": "stable",
+      "updated": "2026-09-25",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/README.md",
+      "title": "Information architecture",
+      "order": 12,
+      "icon": "account_tree",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/01-goals-audiences-and-journeys.md",
+      "title": "Goals, audiences, journeys",
+      "order": 13,
+      "icon": "groups",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/02-sitemap.md",
+      "title": "Sitemap",
+      "order": 14,
+      "icon": "lan",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/03-taxonomy-and-content-model.md",
+      "title": "Taxonomy and content model",
+      "order": 15,
+      "icon": "category",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/04-navigation-specification.md",
+      "title": "Navigation",
+      "order": 16,
+      "icon": "explore",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/05-page-and-content-templates.md",
+      "title": "Page templates",
+      "order": 17,
+      "icon": "dashboard",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/06-content-inventory-and-mapping.md",
+      "title": "Content inventory",
+      "order": 18,
+      "icon": "inventory_2",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/07-editorial-and-governance.md",
+      "title": "Editorial and governance",
+      "order": 19,
+      "icon": "gavel",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "ia-navigation/08-validation-plan.md",
+      "title": "Validation plan",
+      "order": 20,
+      "icon": "fact_check",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Site"
+    },
+    {
+      "path": "poc-3d-navigation/spec.md",
+      "title": "Planet spec",
+      "order": 21,
+      "icon": "public",
+      "status": "stable",
+      "updated": "2026-09-26",
+      "group": "Planet"
+    },
+    {
+      "path": "poc-3d-navigation/plan.md",
+      "title": "Plan",
+      "order": 22,
+      "icon": "event_note",
+      "status": "stable",
+      "updated": "2026-09-26",
+      "group": "Planet"
+    },
+    {
+      "path": "poc-3d-navigation/definition-of-done.md",
+      "title": "Definition of Done",
+      "order": 23,
+      "icon": "task_alt",
+      "status": "done",
+      "updated": "2026-09-24",
+      "group": "Planet"
+    },
+    {
+      "path": "poc-3d-navigation/research/tech-stack.md",
+      "title": "Research: tech stack",
+      "order": 24,
+      "icon": "science",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Planet"
+    },
+    {
+      "path": "poc-3d-navigation/research/interaction-design.md",
+      "title": "Research: interaction design",
+      "order": 25,
+      "icon": "touch_app",
+      "status": "stable",
+      "updated": "2026-09-24",
+      "group": "Planet"
+    },
+    {
+      "path": "poc-3d-navigation/art-direction/README.md",
+      "title": "Art direction",
+      "order": 26,
+      "icon": "palette",
+      "status": "stable",
+      "updated": "2026-09-25",
+      "group": "Planet"
+    },
+    {
+      "path": "poc-3d-navigation/performance-audit.md",
+      "title": "Performance audit",
+      "order": 27,
+      "icon": "speed",
+      "status": "stable",
+      "updated": "2026-09-25",
+      "group": "Planet"
+    },
+    {
+      "path": "poc-3d-navigation/collection-inventory.md",
+      "title": "Collecting and inventory",
+      "order": 31,
+      "icon": "backpack",
+      "status": "done",
+      "updated": "2026-09-25",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/crafting.md",
+      "title": "Crafting and Chopper's house",
+      "order": 32,
+      "icon": "handyman",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/crafting-dod.md",
+      "title": "Crafting: Definition of Done",
+      "order": 33,
+      "icon": "task_alt",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/chopper.md",
+      "title": "Chopper",
+      "order": 34,
+      "icon": "pets",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/family.md",
+      "title": "Home and family",
+      "order": 35,
+      "icon": "cottage",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/family-dod.md",
+      "title": "Home and family: Definition of Done",
+      "order": 36,
+      "icon": "task_alt",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/prabin-npc.md",
+      "title": "Prabin, navigation and the plaza",
+      "order": 37,
+      "icon": "person_pin_circle",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "poc-3d-navigation/prabin-dod.md",
+      "title": "Prabin: Definition of Done",
+      "order": 38,
+      "icon": "task_alt",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
+      "path": "game-ui/design-system.md",
+      "title": "Design system",
+      "order": 41,
+      "icon": "design_services",
+      "status": "stable",
+      "updated": "2026-09-26",
+      "group": "Game UI"
+    },
+    {
+      "path": "game-ui/spec.md",
+      "title": "Spec: research to v2",
+      "order": 42,
+      "icon": "rule",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Game UI"
+    },
+    {
+      "path": "game-ui/tokens.md",
+      "title": "Design tokens",
+      "order": 43,
+      "icon": "token",
+      "status": "stable",
+      "updated": "2026-09-26",
+      "group": "Game UI"
+    },
+    {
+      "path": "game-ui/dod.md",
+      "title": "Definition of Done",
+      "order": 44,
+      "icon": "task_alt",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Game UI"
+    },
+    {
+      "path": "engineering/overview.md",
+      "title": "Engineering overview",
+      "order": 51,
+      "icon": "engineering",
+      "status": "stable",
+      "updated": "2026-09-26",
+      "group": "Engineering"
+    }
+  ]
+}

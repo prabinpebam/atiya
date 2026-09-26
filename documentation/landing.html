@@ -1,0 +1,170 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Documentation</p>
+  <h1 class="slate-hero__title">Atiya: how this site was built</h1>
+  <p class="slate-hero__summary">Every spec, plan, research report and Definition of Done behind Prabin Pebam's portfolio site and its little-planet game. This is the source of truth for people and for AI agents.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>The site is an Astro static site with a classic set of pages and a 3D planet you walk around to reach the same content. Start with <a href="seed-spec.md">the seed spec</a> for the why, <a href="poc-3d-navigation/spec.md">the planet spec</a> for the game, <a href="game-ui/design-system.md">the design system</a> for the UI rules and <a href="engineering/overview.md">the engineering overview</a> for how it's built and shipped.</p>
+</aside>
+
+<figure class="slate-figure">
+  <img src="assets/docs-map.svg" alt="The site's seed spec and information architecture lead to the planet spec, which leads to the feature specs. The game UI design system applies across the planet and its features, and engineering sits under everything." />
+  <figcaption>How the documents relate: each layer builds on the one before it.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>What each layer holds</summary>
+  <table>
+    <thead><tr><th>Layer</th><th>Documents</th></tr></thead>
+    <tbody>
+      <tr><td>The site</td><td>Seed spec; information architecture (goals, sitemap, taxonomy, navigation, templates, content inventory, editorial rules, validation)</td></tr>
+      <tr><td>The planet</td><td>Spec, plan, Definition of Done; stack and interaction research; art direction; performance audit</td></tr>
+      <tr><td>Features</td><td>Collecting and the backpack; crafting and Chopper's house; Chopper; home and family; Prabin, navigation and the plaza</td></tr>
+      <tr><td>Game UI</td><td>Design system, spec, tokens, Definition of Done</td></tr>
+      <tr><td>Engineering</td><td>Stack, repository map, commands, validation tiers, deploy, this docs site</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2>The site</h2>
+<div class="slate-card-grid" data-cols="2">
+  <article class="slate-card slate-card--interactive">
+    <a href="seed-spec.md">
+      <h3 class="slate-card__title">Seed spec</h3>
+      <p class="slate-card__body">The goals, the audience and the ideas the portfolio started from.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="ia-navigation/README.md">
+      <h3 class="slate-card__title">Information architecture</h3>
+      <p class="slate-card__body">Journeys, sitemap, content model, navigation, templates and governance.</p>
+    </a>
+  </article>
+</div>
+
+<h2>The planet</h2>
+<div class="slate-card-grid" data-cols="3">
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/spec.md">
+      <h3 class="slate-card__title">Planet spec</h3>
+      <p class="slate-card__body">The little-planet navigation: movement, the world, rendering, accessibility.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/plan.md">
+      <h3 class="slate-card__title">Plan</h3>
+      <p class="slate-card__body">The build order and milestones.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/definition-of-done.md">
+      <h3 class="slate-card__title">Definition of Done</h3>
+      <p class="slate-card__body">What "finished" means for the planet, item by item.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/research/tech-stack.md">
+      <h3 class="slate-card__title">Research</h3>
+      <p class="slate-card__body">The stack choice and the interaction design, with sources.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/art-direction/README.md">
+      <h3 class="slate-card__title">Art direction</h3>
+      <p class="slate-card__body">The target look: game screenshots repainted as concept art.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/performance-audit.md">
+      <h3 class="slate-card__title">Performance audit</h3>
+      <p class="slate-card__body">How load time and frame rate are measured, and the baseline.</p>
+    </a>
+  </article>
+</div>
+
+<h2>Features</h2>
+<div class="slate-card-grid" data-cols="3">
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/collection-inventory.md">
+      <h3 class="slate-card__title">Collecting and backpack</h3>
+      <p class="slate-card__body">Chopping, mining and picking; drops, the magnet, slots and the chest.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/crafting.md">
+      <h3 class="slate-card__title">Crafting and Chopper's house</h3>
+      <p class="slate-card__body">Recipes, paint, the build goal and its ghost outline.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/chopper.md">
+      <h3 class="slate-card__title">Chopper</h3>
+      <p class="slate-card__body">The companion dog: his mind, his body, his fur and his card.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/family.md">
+      <h3 class="slate-card__title">Home and family</h3>
+      <p class="slate-card__body">The house by the pond, the yard, and the family's routines.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/prabin-npc.md">
+      <h3 class="slate-card__title">Prabin, navigation and the plaza</h3>
+      <p class="slate-card__body">Prabin as an NPC, route planning, seats, doors and the plaza layout.</p>
+    </a>
+  </article>
+</div>
+
+<h2>Game UI</h2>
+<div class="slate-card-grid" data-cols="2">
+  <article class="slate-card slate-card--interactive">
+    <a href="game-ui/design-system.md">
+      <h3 class="slate-card__title">Design system</h3>
+      <p class="slate-card__body">Principles, tokens, components, screen regions, priority, copy and accessibility.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="game-ui/spec.md">
+      <h3 class="slate-card__title">Spec: research to v2</h3>
+      <p class="slate-card__body">The research, the audit, the first draft, its critique, and what was built.</p>
+    </a>
+  </article>
+</div>
+
+<h2>Engineering</h2>
+<div class="slate-card-grid" data-cols="2">
+  <article class="slate-card slate-card--interactive">
+    <a href="engineering/overview.md">
+      <h3 class="slate-card__title">Engineering overview</h3>
+      <p class="slate-card__body">The stack, the repository map, commands, validation and deploy.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="https://github.com/prabinpebam/atiya">
+      <h3 class="slate-card__title">Source on GitHub</h3>
+      <p class="slate-card__body">The repository, with AGENTS.md, the README and the asset credits.</p>
+    </a>
+  </article>
+</div>
+
+<h2>For AI agents</h2>
+<div class="slate-callout slate-callout--info" role="note">
+  <p class="slate-callout__title">This site is the source of truth</p>
+  <p>Read the spec for the area you're changing before you change it, and update it in the same change. The working rules (pinned versions, conventions, validation tiers) are in AGENTS.md at the repository root.</p>
+</div>
+<ol class="slate-steps">
+  <li class="slate-step">
+    <p class="slate-step__title">Find the spec</p>
+    <p>Use the navigation or search: every feature has a spec and, for larger work, a Definition of Done.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Follow the design system</p>
+    <p>Any UI change uses the tokens, the components and the priority lanes in <a href="game-ui/design-system.md">the design system</a>.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Keep it true</p>
+    <p>When the build differs from the spec, update the spec's "as built" section and its Definition of Done evidence.</p>
+  </li>
+</ol>

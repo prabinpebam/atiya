@@ -1,0 +1,41 @@
+{
+  "$schema": "https://slate.dev/schema/canvas-record-set.schema.json",
+  "schemaVersion": 1,
+  "id": "demo-structured-records",
+  "revision": "demo-1",
+  "records": [
+    {
+      "id": "DEMO-RECORD-01",
+      "kind": "decision",
+      "title": "Define the source authority before choosing a representation",
+      "eyebrow": "Foundation",
+      "source": {
+        "label": "Slate overview",
+        "href": "landing.html"
+      },
+      "metadata": [
+        { "label": "Owner", "value": "Documentation host" }
+      ]
+    },
+    {
+      "id": "DEMO-RECORD-02",
+      "kind": "requirement",
+      "title": "Keep host meaning separate from reusable package behavior",
+      "eyebrow": "Boundary",
+      "source": {
+        "label": "Slate overview",
+        "href": "landing.html"
+      }
+    },
+    {
+      "id": "DEMO-RECORD-03",
+      "kind": "evidence",
+      "title": "Validate the real rendered host after package checks pass",
+      "eyebrow": "Assurance",
+      "source": {
+        "label": "Slate overview",
+        "href": "landing.html"
+      }
+    }
+  ]
+}

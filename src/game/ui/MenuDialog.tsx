@@ -22,6 +22,7 @@ export default function MenuDialog({ controller }: { controller: GameController 
   const timeMode = useStore(controller.store, (s) => s.timeMode);
   const soundOn = useStore(controller.store, (s) => s.soundOn);
   const musicOn = useStore(controller.store, (s) => s.musicOn);
+  const largeText = useStore(controller.store, (s) => s.largeText);
   const ambientPaused = useStore(controller.store, selectAmbientPaused);
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -77,6 +78,10 @@ export default function MenuDialog({ controller }: { controller: GameController 
           <label className="check">
             <input type="checkbox" checked={pauseAmbient || reduced} disabled={reduced} onChange={(e) => controller.setPauseAmbient(e.currentTarget.checked)} />
             Pause ambient motion
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={largeText} onChange={(e) => controller.setLargeText(e.currentTarget.checked)} data-testid="large-text" />
+            Larger text
           </label>
           <label className="check">
             <input type="checkbox" checked={soundOn} onChange={(e) => controller.setSound(e.currentTarget.checked)} />

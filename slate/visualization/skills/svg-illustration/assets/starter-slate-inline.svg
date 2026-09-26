@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450"
+     role="img" aria-labelledby="slate-starter-title slate-starter-desc"
+     preserveAspectRatio="xMidYMid meet" fill="none">
+  <title id="slate-starter-title">Boundary-connected illustration starter</title>
+  <desc id="slate-starter-desc">Two aligned subjects use padded text-fit targets and a connector trimmed exactly to both body boundaries.</desc>
+  <rect x="24" y="24" width="752" height="402" rx="12"
+        fill="currentColor" fill-opacity="0.05"
+        stroke="currentColor" stroke-opacity="0.24" stroke-width="2" />
+  <line id="slate-starter-relationship" x1="340" y1="225" x2="460" y2="225"
+        data-slate-connector-from="slate-starter-source-body"
+        data-slate-connector-to="slate-starter-outcome-body"
+        data-slate-connector-anchor="boundary"
+        stroke="currentColor" stroke-width="4" stroke-linecap="butt" />
+  <g id="slate-starter-source">
+    <rect id="slate-starter-source-body" x="120" y="145" width="220" height="160" rx="18"
+          fill="currentColor" fill-opacity="0.10" stroke="currentColor" stroke-width="3" />
+    <text x="230" y="218" text-anchor="middle"
+          data-slate-fit-target="slate-starter-source-body" data-slate-fit-padding="18"
+          fill="currentColor" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Source</text>
+    <text x="230" y="252" text-anchor="middle"
+          data-slate-fit-target="slate-starter-source-body" data-slate-fit-padding="18"
+          fill="currentColor" font-family="Segoe UI, Arial, sans-serif" font-size="17" opacity="0.74">Evidence and structure</text>
+  </g>
+  <g id="slate-starter-outcome">
+    <rect id="slate-starter-outcome-body" x="460" y="145" width="220" height="160" rx="18"
+          fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="3" />
+    <text x="570" y="218" text-anchor="middle"
+          data-slate-fit-target="slate-starter-outcome-body" data-slate-fit-padding="18"
+          fill="currentColor" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Outcome</text>
+    <text x="570" y="252" text-anchor="middle"
+          data-slate-fit-target="slate-starter-outcome-body" data-slate-fit-padding="18"
+          fill="currentColor" font-family="Segoe UI, Arial, sans-serif" font-size="17" opacity="0.74">Validated final state</text>
+  </g>
+</svg>

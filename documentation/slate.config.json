@@ -1,0 +1,8 @@
+{
+  "projectName": "Atiya docs",
+  "brandColor": "#3b5bdb",
+  "defaultTheme": "auto",
+  "density": "comfortable",
+  "landing": "landing.html",
+  "themeStylesheet": "project.theme.css"
+}

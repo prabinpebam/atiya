@@ -40,7 +40,7 @@ const current = Astro.url.pathname;
     <slot />
   </main>
   <footer class="classic-footer">
-    <p>Placeholder content for the POC. Views are my own.</p>
+    <p>Placeholder content for the POC. Views are my own. <a href={withBase('/docs/')}>How this site was built</a></p>
   </footer>
   <script>
     document.querySelectorAll('[data-explore-link]').forEach((a) =>

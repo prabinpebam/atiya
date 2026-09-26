@@ -900,6 +900,35 @@ test.describe('home & family', () => {
     await expect(page.locator('.game-region')).toBeFocused();
   });
 
+  test('one thing asks at a time: talking by a landmark shows only the talk box, and E advances the talk', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    const placed = await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.teleport(g.landmarks()[1]);
+      const [x, y, z] = g.getState().pLocal;
+      return g.npcPlace('prabin', [x + 0.02, y, z + 0.02]) && g.nearNpc('prabin', 0.8);
+    });
+    expect(placed).toBe(true);
+    await expect(page.getByTestId('seat-prompt').getByRole('button', { name: /Talk to Prabin/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    const box = page.getByTestId('talk-box');
+    await expect(box).toBeVisible();
+    // the landmark is still near, but its card yields to the talk
+    expect((await state(page)).nearby).not.toBeNull();
+    await expect(page.getByTestId('preview-card')).toHaveCount(0);
+    await expect(page.getByTestId('seat-prompt')).toHaveCount(0);
+    const before = (await state(page)).talk!.index;
+    await page.waitForTimeout(400);
+    // an E while the line is still typing only finishes it; the next turns the page
+    for (let i = 0; i < 3 && (await state(page)).talk!.index === before; i++) {
+      await page.keyboard.press('KeyE');
+      await page.waitForTimeout(150);
+    }
+    expect((await state(page)).talk!.index).toBe(before + 1);
+    await expect(page.getByTestId('preview-card')).toHaveCount(0);
+  });
+
   test('bedtime: the front door swings open, they climb the steps and go in one at a time, and it shuts after them', async ({ page }) => {
     test.setTimeout(150_000);
     await startPlanet(page);
@@ -1524,7 +1553,7 @@ test.describe('planet', () => {
     const dialog = page.getByTestId('landmark-dialog');
     await expect(dialog).toBeVisible();
     await expect(page).toHaveURL(/\?at=workshop&open=1$/);
-    await expect(dialog.getByRole('link', { name: /Open full page/ })).toHaveAttribute('href', '/classic/workshop/');
+    await expect(dialog.getByRole('link', { name: /Classic page/ })).toHaveAttribute('href', '/classic/workshop/');
     await noSeriousViolations(page);
 
     await page.keyboard.press('Escape');

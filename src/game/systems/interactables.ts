@@ -64,6 +64,14 @@ export const REACH = {
   flowerNearLandmark: 0.5,
 } as const;
 
+/**
+ * Target tiers (design-system.md §6.3): a score handicap (u) by kind, so when several things are in
+ * reach the one you came for wins. People and purposeful things first (someone to talk to, the
+ * chest, the crafting table, a bench, the house site), then things to gather, then Chopper, who is
+ * always at your heels.
+ */
+export const TIER_U: Record<TargetKind, number> = { npc: 0, chest: 0, craft: 0, site: 0, bench: 0, tree: 0.1, boulder: 0.1, flower: 0.1, dog: 0.45 };
+
 /** Visual trunk radius at scale 1 (the collision circle is wider: 0.42 hardwood, 0.36 cedar). */
 const TRUNK_U = { hardwood: 0.3, cedar: 0.24 } as const;
 
@@ -149,7 +157,7 @@ export function pickTarget(
     // a dog trotting beside you (or a child running past) isn't one you're turning to greet
     if ((t.kind === 'dog' || t.kind === 'npc') && ang > REACH.dogCone) continue;
     // benches keep their wide, facing-independent reach (you sit facing away from them)
-    const score = Math.max(0, past) + (t.kind === 'bench' ? 0.2 : ang * REACH.anglePenalty) - (keep ? 0.15 : 0);
+    const score = Math.max(0, past) + (t.kind === 'bench' ? 0.2 : ang * REACH.anglePenalty) + TIER_U[t.kind] - (keep ? 0.15 : 0);
     if (score < bestScore) {
       bestScore = score;
       best = t;

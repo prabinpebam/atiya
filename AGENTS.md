@@ -17,6 +17,53 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
 - `/play` uses a **capability-gated dynamic import**, not a `client:only` island. `src/game/platform/gate.ts` must never import React or three. Game code is emitted as `game-*` chunks, and gated-out devices must never request them.
 - `window.__game` exists only in dev and `--mode test` builds, never in production.
 
+### Game UI design system
+
+The rules are in [documentation/game-ui/design-system.md](./documentation/game-ui/design-system.md). Read it before any UI change.
+
+- **Tokens only.** Every colour, space, size, radius, shadow, duration, easing and layer comes from `src/design/tokens.json`, a DTCG file with three tiers:
+  - `p.*` primitives, which are private: never use `--p-*` in component CSS;
+  - semantic roles and scales;
+  - `c.*` component tokens.
+- After any change to `tokens.json`, run `node scripts/build-tokens.mjs`. Never hand-edit `src/styles/tokens.css` or `documentation/game-ui/tokens.md`. `tests/unit/designSystem.test.ts` fails on:
+  - raw values;
+  - stale output;
+  - contrast below WCAG on either surface;
+  - copy-rule breaks.
+- **Surfaces:** components read colour only through `--surface-*` roles.
+  - The game is **wood**: `body.play` and its panels carry `.surface-wood`; primary actions are gold.
+  - The website pages (landing, classic) are **paper**, the default.
+  - A new surface must define every role and re-declare `color`.
+- **One thing asks at a time.** The bottom-centre focus lane and the bottom-left aside are decided by the pure `src/game/ui/lanes.ts` (`focusLane`, `asideLane`). `controller.interact()` routes E through `focusLane` as well.
+  - Never show two lane surfaces by juggling z-indexes. Give a new surface a rank in `lanes.ts` and a unit test.
+  - A new target kind gets a tier in `TIER_U` (`systems/interactables.ts`).
+- **Copy:**
+  - sentence case;
+  - labels start with a verb and are 3 words or fewer;
+  - a prompt is a verb plus an object;
+  - an error says what happened and how to fix it;
+  - use the glossary (planet, classic site, backpack, chest, crafting table, the plaza);
+  - no "click here", "OK" or "Submit".
+- **Accessibility:**
+  - touch targets are at least 44 px;
+  - functional text is at least `--text-sm`;
+  - sizes are in `rem`, so the "Larger text" setting (`html.text-lg`) scales them;
+  - every cue has a text twin (a prompt, a label or a live-region announcement).
+
+### Documentation site (the source of truth)
+
+- `documentation/` is a [Slate](./slate/README.md) host. The package is vendored in `slate/`; the adapter skill is `.github/skills/slate/SKILL.md`.
+- It's published at `<base>/docs/`: `integrations/docs-site.mjs` serves it in dev and copies it to `dist/docs/` at build.
+- **Update the spec in the same change as the code.** When the build differs from a spec, update its "as built" section and its Definition of Done evidence.
+- **A new page** gets:
+  - one H1 and a TL;DR;
+  - an entry in `documentation/docs-manifest.json` with a `group` (Site, Planet, Features, Game UI, Engineering), a global `order` (groups sort by their lowest order: 10s, 20s, 30s, 40s, 50s) and a Material Symbols `icon`;
+  - a card on `landing.html` if it starts a new topic.
+- Slate's rules apply: no emoji, no inline styles or scripts in pages, no invented facts, and no meta-documentation (reviews update the pages they review).
+- **Links must stay inside `documentation/`**, because files outside it aren't published. Link to code and repository files with a GitHub URL (`https://github.com/prabinpebam/atiya/blob/main/<path>`).
+- Never edit `documentation/shell/`: it's generated. After a Slate update, run `node slate/scripts/runtime-host.mjs sync --repo . --host documentation`, then `check`.
+- There's no `package-lock.json` in `slate/`, because of the package-feed policy.
+
 ### Commands
 
 - `npm run check` (types), `npm test` (Vitest unit), `npm run e2e` (Playwright + axe; builds the test bundle), `npm run verify:prod` (production build + bundle budgets + no test hook; the game's initial JS ≤ 450 KB gz, chunks it loads alongside the textures or on demand ≤ 70 KB). Which of these to run for a change: see **Validation** below; don't run them all by default.

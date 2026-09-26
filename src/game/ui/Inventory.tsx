@@ -53,7 +53,7 @@ export function Hotbar({ controller }: { controller: GameController }) {
   }, [selKey, controller]);
   if (!visible) return null;
   return (
-    <div className="hotbar-wrap" data-testid="hotbar-wrap">
+    <div className="hotbar-wrap surface-wood" data-testid="hotbar-wrap">
       {label && (
         <div className="hotbar-label" aria-hidden="true">
           {label}

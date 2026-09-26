@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | v0.3 — POC implemented (see [README](../../README.md) for build status against the DoD) |
+| **Status** | v0.3 — POC implemented (see [README](https://github.com/prabinpebam/atiya/blob/main/README.md) for build status against the DoD) |
 | **Date** | 2026-09-24 |
 | **Owner** | Prabin Pebam (Principal Design Manager) |
 | **Related** | [Plan](./plan.md) · [Definition of Done](./definition-of-done.md) · [Research: tech stack](./research/tech-stack.md) · [Research: interaction design](./research/interaction-design.md) · [Seed spec](../seed-spec.md) |
@@ -579,7 +579,7 @@ Prabin (the owner) is now an NPC who roams the whole planet; visitors play the c
 
 ### 5.1 Stack (pinned versions)
 
-Install via the Microsoft npm proxy per [AGENTS.md](../../AGENTS.md); always install exact versions (`npm i pkg@x.y.z`).
+Install via the Microsoft npm proxy per [AGENTS.md](https://github.com/prabinpebam/atiya/blob/main/AGENTS.md); always install exact versions (`npm i pkg@x.y.z`).
 
 | Concern | Choice | Version | Why |
 |---|---|---|---|

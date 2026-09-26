@@ -1,0 +1,477 @@
+/* ---------- Wood: the player's own things. The hotbar, slots, the backpack and chest, crafting, paint (design-system.md §4.4) ----------
+ * Every container here carries .surface-wood, so --surface-* reads the wood roles. */
+
+/* the hotbar (R5): nine slots, the backpack and the whistle */
+.hotbar-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: var(--c-lane-edge);
+  z-index: var(--layer-hud);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1-5);
+  transform: translateX(-50%);
+}
+
+.hotbar {
+  display: flex;
+  gap: var(--space-0-5);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-bg-glass);
+  box-shadow: var(--shadow-tray);
+  backdrop-filter: blur(4px);
+}
+
+.hotbar-label {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface-bg);
+  color: var(--surface-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  text-shadow: var(--shadow-text-label);
+  pointer-events: none;
+  animation: card-fade var(--dur-fast) var(--ease-out);
+}
+
+/* Slot: an inset square holding an item (Minecraft's: darker inside, a light lower-right edge) */
+.slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--slot);
+  height: var(--slot);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: var(--surface-bg-soft);
+  box-shadow: var(--shadow-slot);
+  color: var(--surface-text);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.slot:hover {
+  background: var(--surface-bg-warm);
+}
+
+.slot:focus-visible {
+  outline: var(--border-focus) solid var(--surface-focus);
+  outline-offset: 1px;
+}
+
+.slot.selected {
+  box-shadow:
+    inset 0 0 0 3px var(--surface-text),
+    0 0 0 2px var(--surface-bg);
+  transform: translateY(-2px);
+}
+
+.item-icon {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: var(--shadow-icon);
+}
+
+.slot-count {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-family: var(--font-text);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-heavy);
+  line-height: var(--leading-none);
+  color: var(--color-count-text);
+  text-shadow: var(--shadow-text-count);
+  pointer-events: none;
+}
+
+.slot-key {
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  font-family: var(--font-text);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-none);
+  color: var(--surface-text-muted);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.backpack-btn {
+  margin-left: var(--space-1-5);
+  font-size: var(--text-lg);
+  background: var(--color-backpack);
+}
+
+.whistle-btn {
+  font-size: var(--text-lg);
+  background: var(--color-whistle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot.selected {
+    transform: none;
+  }
+}
+
+/* Panel: a modal wood sheet over a scrim (the backpack and chest, crafting, paint) */
+.inv-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-overlay);
+  display: grid;
+  place-items: center;
+  background: var(--color-scrim-wood);
+}
+
+.inv-panel {
+  display: grid;
+  gap: var(--space-2-5);
+  padding: var(--space-3-5) var(--space-4) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-bg);
+  color: var(--surface-text);
+  box-shadow: var(--shadow-panel);
+  max-width: calc(100vw - var(--space-4));
+}
+
+.inv-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.inv-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.inv-head .btn {
+  min-height: var(--c-btn-h-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.inv-move.on {
+  background: var(--surface-highlight);
+}
+
+.inv-section h3,
+.craft-sub {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+}
+
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(9, var(--slot));
+  gap: var(--space-0-5);
+}
+
+.inv-hotbar {
+  padding-top: var(--space-1-5);
+  border-top: var(--border-hair) solid var(--surface-line);
+}
+
+.inv-help {
+  margin: var(--space-0-5) 0 0;
+  max-width: calc(9 * var(--slot) + var(--space-6));
+  font-size: var(--text-sm);
+  color: var(--surface-text-muted);
+}
+
+.inv-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: var(--layer-drag);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  pointer-events: none;
+}
+
+.inv-cursor .slot-count {
+  right: 0;
+  bottom: 0;
+}
+
+.inv-tip {
+  position: fixed;
+  z-index: var(--layer-drag);
+  transform: translate(-50%, calc(-100% - var(--space-1-5)));
+  padding: var(--space-1) var(--space-2-5);
+  border-radius: var(--radius-xs);
+  background: var(--color-tooltip-bg);
+  color: var(--surface-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--color-tooltip-rule);
+}
+
+/* ---------- Crafting table, the palette (crafting.md) ---------- */
+.craft-panel {
+  width: min(720px, calc(100vw - var(--space-4)));
+}
+
+.craft-body {
+  display: grid;
+  grid-template-columns: minmax(180px, 250px) 1fr;
+  gap: var(--space-3-5);
+  min-height: 300px;
+}
+
+.craft-list {
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  max-height: min(56vh, 420px);
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  background: var(--surface-bg-sunk);
+  outline: none;
+}
+
+.craft-list:focus-visible {
+  box-shadow: 0 0 0 3px var(--surface-focus);
+}
+
+.craft-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.craft-row:hover {
+  background: var(--surface-line);
+}
+
+.craft-row.on {
+  background: var(--surface-highlight-soft);
+  box-shadow: inset 0 0 0 2px var(--surface-highlight);
+}
+
+.craft-row.dim .craft-name {
+  color: var(--surface-text-muted);
+}
+
+.craft-icon {
+  width: 36px;
+  height: 36px;
+  cursor: inherit;
+}
+
+.craft-name {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+}
+
+.craft-can {
+  font-weight: var(--weight-heavy);
+  font-size: var(--text-sm);
+  color: var(--surface-positive);
+}
+
+.craft-detail {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.craft-result {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.craft-result h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.craft-line {
+  margin: var(--space-0-5) 0 0;
+  font-size: var(--text-sm);
+  color: var(--surface-text-muted);
+}
+
+.craft-big {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  cursor: default;
+}
+
+.craft-sub {
+  margin-top: var(--space-1);
+}
+
+.craft-needs,
+.site-needs {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.craft-needs li,
+.site-needs li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.craft-have {
+  display: inline-flex;
+  gap: var(--space-1-5);
+  align-items: center;
+  font-weight: var(--weight-heavy);
+  font-variant-numeric: tabular-nums;
+}
+
+.short .craft-have {
+  color: var(--surface-negative);
+}
+
+.ok .craft-have {
+  color: var(--surface-positive);
+}
+
+.craft-go {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2-5);
+  align-items: center;
+  margin-top: var(--space-1-5);
+}
+
+.craft-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.craft-qty .btn {
+  min-height: var(--c-btn-h-sm);
+  padding: 0 var(--space-3);
+}
+
+.craft-qty output {
+  min-width: 2.2em;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-heavy);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.craft-progress {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-line);
+  overflow: hidden;
+}
+
+.craft-progress span {
+  display: block;
+  height: 100%;
+  background: var(--surface-highlight);
+  animation: craft-fill var(--craft-s, var(--dur-slow)) linear forwards;
+}
+
+@keyframes craft-fill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.paint-panel {
+  width: min(520px, calc(100vw - var(--space-4)));
+}
+
+.paint-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.paint-swatch {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2-5) var(--space-1-5) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-bg-soft);
+  color: var(--surface-text);
+  font-family: var(--font-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  cursor: pointer;
+}
+
+.paint-swatch:hover:not(:disabled) {
+  background: var(--surface-bg-warm);
+}
+
+.paint-swatch:focus-visible {
+  outline: var(--border-focus) solid var(--surface-focus);
+  outline-offset: 1px;
+}
+
+.paint-swatch.on {
+  box-shadow: inset 0 0 0 2px var(--surface-highlight);
+}
+
+.paint-swatch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* the swatch's colour is data (the house's paint), set inline through `background` */
+.paint-chip {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-round);
+  box-shadow: var(--shadow-chip);
+  color: var(--color-chip-ink);
+}
+
+.paint-pots {
+  font-size: var(--text-xs);
+  color: var(--surface-text-muted);
+}
+
+@media (max-width: 560px) {
+  .craft-body {
+    grid-template-columns: 1fr;
+  }
+
+  .craft-list {
+    max-height: 30vh;
+  }
+}

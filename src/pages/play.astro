@@ -14,10 +14,10 @@ if (errors.length) {
 const json = JSON.stringify(landmarks).replace(/</g, '\\u003c');
 ---
 
-<BaseLayout title="Explore the little planet — Prabin Pebam" bodyClass="play">
+<BaseLayout title="Explore the little planet — Prabin Pebam" bodyClass="play surface-wood">
   <a class="skip-link" href={withBase('/classic/')} data-classic-link>Skip to classic site</a>
   <header class="play-header">
-    <a class="brand" href="/">Prabin Pebam</a>
+    <a class="brand" href={withBase('/')}>Prabin Pebam</a>
     <div class="play-actions">
       <a class="btn" href={withBase('/classic/')} data-classic-link>Classic site</a>
       <div id="hud-actions" class="hud-actions"></div>

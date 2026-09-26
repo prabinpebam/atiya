@@ -22,6 +22,7 @@ import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectAmbientPaused, selectReducedMotion, type GameStore } from './state/store';
 import { ReadyCue } from './systems/readyCue';
+import { TALK_GUARD_MS, focusLane, toastMs } from './ui/lanes';
 import type { ChopperBrain, DogWorld, Spot } from './world/chopper/brain';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
@@ -249,6 +250,8 @@ export class GameController {
   private invoker: HTMLElement | null = null;
   private pendingOpen: string | null = null;
   private toastTimer: number | undefined;
+  /** When the conversation opened (the first E is guarded: lanes.ts TALK_GUARD_MS). */
+  private talkOpenedAt = -1e9;
   private announceToggle = false;
   private readonly cleanups: Array<() => void> = [];
 
@@ -289,7 +292,12 @@ export class GameController {
       soundOn: prefs.getSound(),
       musicOn: prefs.getMusic(),
       character: prefs.getCharacter(),
+      largeText: prefs.getLargeText(),
     });
+    // larger text scales every rem-based size (design-system.md §8)
+    const applyText = (on: boolean) => typeof document !== 'undefined' && document.documentElement.classList.toggle('text-lg', on);
+    applyText(this.store.getState().largeText);
+    this.cleanups.push(this.store.subscribe((s, prev) => void (s.largeText !== prev.largeText && applyText(s.largeText))));
     this.sound = new SoundEngine(this.store.getState().soundOn, Math.random, this.store.getState().musicOn);
     if (mq) {
       const onChange = () => this.store.setState({ reducedMotionSystem: mq.matches });
@@ -618,7 +626,7 @@ export class GameController {
     this.store.setState({ toast: text });
     this.announce(text);
     window.clearTimeout(this.toastTimer);
-    this.toastTimer = window.setTimeout(() => this.store.setState({ toast: null }), 4000);
+    this.toastTimer = window.setTimeout(() => this.store.setState({ toast: null }), toastMs(text));
   }
 
   // ---------- input ----------
@@ -635,7 +643,7 @@ export class GameController {
     if (s.phase !== 'playing' && s.phase !== 'ready') return;
     if (s.talk) {
       // talking with one of the family: E / Enter / Space go on, Escape (or M) ends it, nothing else moves
-      if (!e.repeat && action === 'interact') this.advanceTalk();
+      if (!e.repeat && action === 'interact' && performance.now() - this.talkOpenedAt >= TALK_GUARD_MS) this.advanceTalk();
       else if (!e.repeat && action === 'menu') this.endTalk();
       return;
     }
@@ -690,13 +698,16 @@ export class GameController {
     this.keyboard.clear();
   };
 
+  /** E: whatever owns the focus lane (lanes.ts), so E always does what the screen shows. */
   interact(): void {
-    const { nearbyId, openId, phase } = this.store.getState();
-    if (phase !== 'playing' || openId) return;
-    if (this.seatMotion.seated) this.standUp();
+    const s = this.store.getState();
+    if (s.phase !== 'playing' || s.openId) return;
+    const lane = focusLane(s);
+    if (lane === 'talk') this.advanceTalk();
+    else if (lane === 'stand' || this.seatMotion.seated) this.standUp();
     else if (this.action.busy || this.seatMotion.stage) return;
-    else if (this.store.getState().target) this.useTarget();
-    else if (nearbyId) this.openLandmark(nearbyId);
+    else if (lane === 'prompt') this.useTarget();
+    else if (lane === 'preview') this.openLandmark(s.nearbyId!);
     else this.buffer.press(performance.now());
   }
 
@@ -1189,6 +1200,7 @@ export class GameController {
     this.sim.vel.set(0, 0, 0);
     const lines = this.home.startChat(id, this.timeOfDay);
     this.store.setState({ talk: { id, name: who.name, lines, index: 0, reveal: 0 }, target: null, menuOpen: false });
+    this.talkOpenedAt = performance.now();
     this.sound.pickup();
     this.announce(`${who.name}: ${lines[0]}`);
   }
@@ -1273,7 +1285,7 @@ export class GameController {
     const g = this.geoById.get(url.at);
     if (!g) {
       history.replaceState(null, '', PLAY_PATH);
-      window.setTimeout(() => this.showToast("Couldn't find that place — you're at the Plaza."), 0);
+      window.setTimeout(() => this.showToast("Couldn't find that place, so you're at the plaza."), 0);
       return;
     }
     this.sim.setOrientation(arrivalOrientation(g));
@@ -1336,6 +1348,11 @@ export class GameController {
   setReduceMotion(v: boolean): void {
     prefs.setReduceMotion(v);
     this.store.setState({ reducedMotionUser: v });
+  }
+
+  setLargeText(v: boolean): void {
+    prefs.setLargeText(v);
+    this.store.setState({ largeText: v });
   }
 
   setPauseAmbient(v: boolean): void {

@@ -1,0 +1,48 @@
+<!-- Card / Card grid
+     Purpose: boxed, multi-column content - parallel items or navigational links.
+     Layout: data-cols="1..4" controls columns; collapses responsively.
+     Variants: slate-card--interactive when the whole card is a single link.
+     A11y: interactive cards wrap exactly one anchor; media needs alt text. -->
+
+<div class="slate-card-grid" data-cols="3">
+
+  <article class="slate-card">
+    <h3 class="slate-card__title">Capture</h3>
+    <p class="slate-card__body">Rectangular, window, full-screen, and free-form snips.</p>
+  </article>
+
+  <article class="slate-card">
+    <h3 class="slate-card__title">Annotate</h3>
+    <p class="slate-card__body">Pen, highlighter, shapes, and text on top of a capture.</p>
+  </article>
+
+  <article class="slate-card slate-card--interactive">
+    <a href="use-cases.md">
+      <h3 class="slate-card__title">Use cases</h3>
+      <p class="slate-card__body">Who uses the tool and why - read the full breakdown.</p>
+    </a>
+  </article>
+
+</div>
+
+<!-- Evidence / metric cards
+     Use when each parallel item has a short category, one dominant value, and explanatory context.
+     Keep the kicker concise, the metric exact, and the body focused on interpretation. -->
+
+<div class="slate-card-grid" data-cols="3">
+  <article class="slate-card">
+    <p class="slate-card__kicker">Audience</p>
+    <p class="slate-card__metric">45M</p>
+    <p class="slate-card__body">Active people in the measured family audience.</p>
+  </article>
+  <article class="slate-card">
+    <p class="slate-card__kicker">Task success</p>
+    <p class="slate-card__metric">71%</p>
+    <p class="slate-card__body">Parents who completed the reviewed approval task.</p>
+  </article>
+  <article class="slate-card">
+    <p class="slate-card__kicker">Competitive position</p>
+    <p class="slate-card__metric">19 of 21</p>
+    <p class="slate-card__body">Features where the source brief says Microsoft trails.</p>
+  </article>
+</div>

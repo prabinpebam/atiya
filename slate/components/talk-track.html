@@ -1,0 +1,25 @@
+<!-- Talking track (presenter's script for a slide)
+     Purpose: the collapsed script a presenter says aloud for a slide (see
+       ../presentation/SKILL.md). Sits at the bottom of a .slate-slide.
+     Behaviour: a native <details> collapsed by default; a "record_voice_over"
+       icon and a chevron are added via CSS. The slide stays self-explanatory
+       without it; the track carries depth, nuance, evidence, and transitions.
+     Authoring rules:
+       - Use <details class="slate-talktrack"> with <summary>Talking track</summary>.
+       - Put the script inside .slate-talktrack__body as short paragraphs.
+       - Mark beats with <span class="slate-talktrack__cue">Label:</span>
+         (Open, Evidence, Transition, Ask). Keep it to ~1-2 minutes of speech.
+       - End most tracks with a Transition that names the tension into the next slide.
+       - Never put on-screen content here that the slide needs to be understood. -->
+
+<details class="slate-talktrack">
+  <summary>Talking track</summary>
+  <div class="slate-talktrack__body">
+    <p><span class="slate-talktrack__cue">Open:</span> the story or stakes behind this slide - the
+       nuance and evidence you would not crowd onto the screen.</p>
+    <p><span class="slate-talktrack__cue">Evidence:</span> the numbers or proof points, said aloud
+       rather than shown.</p>
+    <p><span class="slate-talktrack__cue">Transition:</span> the handoff sentence that names the
+       tension pulling the audience into the next slide.</p>
+  </div>
+</details>

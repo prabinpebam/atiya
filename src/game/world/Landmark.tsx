@@ -527,7 +527,8 @@ export function Landmark({ controller, geo, data }: { controller: GameController
       </group>
       {model.spill && model.light && <DoorLamp spill={model.spill} from={model.light as V3} open={open} controller={controller} place={place} />}
       {active && (
-        <Html position={[0, model.height + 0.45, 0]} center zIndexRange={[20, 0]} className="world-label-wrap">
+        // (spatial UI: under the HUD layer, --layer-hud = 10, so a lane surface always covers it)
+        <Html position={[0, model.height + 0.45, 0]} center zIndexRange={[9, 0]} className="world-label-wrap">
           <div className="world-label" aria-hidden="true" style={{ ['--accent' as string]: data.accent }}>
             {data.title}
           </div>

@@ -1,0 +1,170 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Generated presentation · motion-first proof</p>
+  <h1 class="slate-hero__title">Five claims, five visual mechanisms</h1>
+  <p class="slate-hero__summary">A from-scratch deck generated from a narrative spine. Every slide uses a bespoke semantic SVG whose internal subjects carry the animation.</p>
+</header>
+
+<div class="slate-deck" data-deck-id="generated-motion-proof">
+  <section class="slate-slide slate-slide--title" id="journey-not-dashboard">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">01</span> Journey</p>
+    <h2 class="slate-slide__title" id="journey-title">Care is a journey, not a dashboard</h2>
+    <p class="slate-slide__lead">Families move through moments of setup, guidance, recovery, and growth.</p>
+    <div class="slate-slide__body">
+      <div class="slate-slide__figure">
+        <svg viewBox="0 0 960 400" role="img" aria-labelledby="journey-visual-title journey-visual-desc">
+          <title id="journey-visual-title">Care unfolds through changing family moments</title>
+          <desc id="journey-visual-desc">A continuous path moves through setup, guidance, recovery, and growth, with each moment represented by a distinct scene.</desc>
+          <path d="M72 286 C178 286 181 142 300 142 S420 276 535 276 S668 112 882 112" fill="none" stroke="var(--color-neutral-stroke-2)" stroke-width="22" stroke-linecap="round"/>
+          <path id="care-route" data-motion-id="care-route" data-motion-fragment="route" d="M72 286 C178 286 181 142 300 142 S420 276 535 276 S668 112 882 112" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="7" stroke-linecap="round"/>
+          <g id="setup-node" data-motion-id="setup-node" data-motion-fragment="route" transform="translate(106 274)">
+            <rect x="-48" y="-62" width="96" height="116" rx="18" fill="var(--color-neutral-bg-1)" stroke="var(--color-brand-stroke)" stroke-width="4"/>
+            <path d="M-18 54 V-24 H22 V54 M-18 -24 L2 -43 L22 -24 M8 15 H16" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="0" y="88" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700" text-anchor="middle">Setup</text>
+          </g>
+          <g id="guidance-node" data-motion-id="guidance-node" data-motion-fragment="care-moments" transform="translate(300 142)">
+            <circle r="58" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="4"/>
+            <path d="M0 -32 L14 -5 L4 4 L0 30 L-4 4 L-14 -5 Z" fill="var(--color-status-info-fg)"/><circle r="7" fill="var(--color-neutral-bg-1)"/>
+            <text x="0" y="94" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700" text-anchor="middle">Guidance</text>
+          </g>
+          <g id="recovery-node" data-motion-id="recovery-node" data-motion-fragment="care-moments" transform="translate(535 276)">
+            <circle r="58" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="4"/>
+            <path d="M0 -32 A32 32 0 1 1 -28 16 M-28 16 L-30 -4 M-28 16 L-9 12" fill="none" stroke="var(--color-status-warning-fg)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="0" y="94" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700" text-anchor="middle">Recovery</text>
+          </g>
+          <g id="growth-node" data-motion-id="growth-node" data-motion-fragment="growth" transform="translate(824 112)">
+            <circle r="64" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="4"/>
+            <path d="M0 34 V-6 M0 10 C-32 8 -38 -18 -36 -30 C-12 -29 0 -10 0 10 M0 -2 C30 -4 38 -28 36 -40 C12 -38 0 -20 0 -2" fill="none" stroke="var(--color-status-success-fg)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="0" y="104" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700" text-anchor="middle">Growth</text>
+          </g>
+          <circle id="journey-marker" data-motion-id="journey-marker" data-motion-fragment="growth" cx="72" cy="286" r="13" fill="var(--color-neutral-bg-1)" stroke="var(--color-brand-fg-1)" stroke-width="7"/>
+        </svg>
+      </div>
+    </div>
+    <details class="slate-talktrack"><summary>Talking track</summary><div class="slate-talktrack__body"><p><span class="slate-talktrack__cue">Open:</span> A dashboard treats care as a snapshot. Families experience it as movement through changing moments.</p><p><span class="slate-talktrack__cue">Transition:</span> The route matters, but value appears only where needs and support meet.</p></div></details>
+  </section>
+
+  <section class="slate-slide" id="value-in-overlap">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">02</span> Intersection</p>
+    <h2 class="slate-slide__title">Value appears in the overlap</h2>
+    <p class="slate-slide__lead">A family need counts when the system can support it credibly and repeatedly.</p>
+    <div class="slate-slide__body">
+      <div class="slate-slide__figure">
+        <svg viewBox="0 0 960 400" role="img" aria-labelledby="overlap-visual-title overlap-visual-desc">
+          <title id="overlap-visual-title">Value forms where needs and credible support converge</title>
+          <desc id="overlap-visual-desc">A family-needs stream and a credible-support stream narrow toward one shared, verified outcome.</desc>
+          <g id="needs-ring" data-motion-id="needs-ring" data-motion-fragment="needs">
+            <path d="M72 78 H330 C410 78 438 128 480 200 C402 184 352 170 280 170 H72 Z" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M108 122 H310" stroke="var(--color-status-warning-fg)" stroke-width="7" stroke-linecap="round"/>
+            <text x="108" y="108" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="24" font-weight="700">Family needs</text>
+            <text x="108" y="154" fill="var(--color-neutral-fg-3)" font-family="var(--font-family-base)" font-size="17">real moments · clear outcomes</text>
+          </g>
+          <g id="support-ring" data-motion-id="support-ring" data-motion-fragment="support">
+            <path d="M888 322 H630 C550 322 522 272 480 200 C558 216 608 230 680 230 H888 Z" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M650 278 H852" stroke="var(--color-status-info-fg)" stroke-width="7" stroke-linecap="round"/>
+            <text x="852" y="270" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="24" font-weight="700" text-anchor="end">Credible support</text>
+            <text x="852" y="304" fill="var(--color-neutral-fg-3)" font-family="var(--font-family-base)" font-size="17" text-anchor="end">repeatable · dependable</text>
+          </g>
+          <path id="overlap-lens" data-motion-id="overlap-lens" data-motion-fragment="value" d="M480 122 C536 122 582 156 610 200 C582 244 536 278 480 278 C424 278 378 244 350 200 C378 156 424 122 480 122 Z" fill="var(--color-brand-bg)"/>
+          <path data-motion-fragment="value" d="M448 200 L470 222 L516 174" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+          <text id="value-label" data-motion-id="value-label" data-motion-fragment="value" x="480" y="326" fill="var(--color-brand-fg-1)" font-family="var(--font-family-base)" font-size="27" font-weight="700" text-anchor="middle">Value for Family</text>
+        </svg>
+      </div>
+    </div>
+    <details class="slate-talktrack"><summary>Talking track</summary><div class="slate-talktrack__body"><p><span class="slate-talktrack__cue">Open:</span> Neither a long needs list nor a long asset list is a strategy. The overlap is the strategy.</p><p><span class="slate-talktrack__cue">Transition:</span> That focus changes how reliability affects family choice.</p></div></details>
+  </section>
+
+  <section class="slate-slide" id="reliability-changes-choice">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">03</span> Evidence</p>
+    <h2 class="slate-slide__title">Reliability changes the decision</h2>
+    <p class="slate-slide__lead">A broad promise loses value quickly when the essential experience fails.</p>
+    <div class="slate-slide__body">
+      <div class="slate-slide__figure">
+        <svg viewBox="0 0 960 400" role="img" aria-labelledby="reliability-visual-title reliability-visual-desc">
+          <title id="reliability-visual-title">Each reliability gate narrows retained trust</title>
+          <desc id="reliability-visual-desc">A broad promise passes through setup and dependable-use gates, leaving a narrower retained-trust outcome.</desc>
+          <line id="choice-baseline" data-motion-id="choice-baseline" data-motion-fragment="promise" x1="84" y1="326" x2="876" y2="326" stroke="var(--color-neutral-stroke-1)" stroke-width="4"/>
+          <rect id="promise-bar" data-motion-id="promise-bar" data-motion-fragment="promise" x="92" y="92" width="224" height="220" rx="22" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="4"/>
+          <path data-motion-fragment="promise" d="M150 194 H258 M244 178 L260 194 L244 210" fill="none" stroke="var(--color-status-info-fg)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          <text data-motion-fragment="promise" x="204" y="142" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="25" font-weight="700" text-anchor="middle">Broad promise</text>
+          <rect id="setup-bar" data-motion-id="setup-bar" data-motion-fragment="setup" x="370" y="138" width="188" height="174" rx="22" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="4"/>
+          <path data-motion-fragment="setup" d="M430 194 L454 218 L500 166" fill="none" stroke="var(--color-status-warning-fg)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <text data-motion-fragment="setup" x="464" y="266" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="24" font-weight="700" text-anchor="middle">Setup works</text>
+          <rect id="trust-bar" data-motion-id="trust-bar" data-motion-fragment="trust" x="612" y="190" width="160" height="122" rx="22" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="4"/>
+          <path data-motion-fragment="trust" d="M660 234 H724 M660 254 H710" stroke="var(--color-status-success-fg)" stroke-width="7" stroke-linecap="round"/>
+          <text data-motion-fragment="trust" x="692" y="286" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700" text-anchor="middle">Trust remains</text>
+          <path data-motion-fragment="trust" d="M316 202 H370 M558 226 H612" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="7" stroke-linecap="round"/>
+          <g id="trust-callout" data-motion-id="trust-callout" data-motion-fragment="trust">
+            <path d="M204 64 V42 H692 V64" fill="none" stroke="var(--color-status-danger-fg)" stroke-width="4" stroke-linecap="round"/>
+            <text x="448" y="32" fill="var(--color-status-danger-fg)" font-family="var(--font-family-base)" font-size="25" font-weight="700" text-anchor="middle">Reliability defines the credibility gap</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <details class="slate-talktrack"><summary>Talking track</summary><div class="slate-talktrack__body"><p><span class="slate-talktrack__cue">Evidence:</span> The promise can be broad, but retained trust is bounded by the least reliable essential step.</p><p><span class="slate-talktrack__cue">Transition:</span> The answer is not another feature; it is assembling the system around a dependable core.</p></div></details>
+  </section>
+
+  <section class="slate-slide" id="system-around-family">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">04</span> System</p>
+    <h2 class="slate-slide__title">One system assembles around the family</h2>
+    <p class="slate-slide__lead">Safety, productivity, storage, gaming, and memories become more useful when the family group connects them.</p>
+    <div class="slate-slide__body">
+      <div class="slate-slide__figure">
+        <svg viewBox="0 0 960 430" role="img" aria-labelledby="system-visual-title system-visual-desc">
+          <title id="system-visual-title">Family is the connective layer across five services</title>
+          <desc id="system-visual-desc">Five service stations sit on one continuous orbit around a family home, showing that their value becomes coherent through the shared family group.</desc>
+          <ellipse cx="480" cy="215" rx="348" ry="150" fill="none" stroke="var(--color-neutral-stroke-2)" stroke-width="20"/>
+          <g data-motion-fragment="connections" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="6" stroke-linecap="round">
+            <path id="link-safety" data-motion-id="link-safety" d="M480 215 C374 146 286 92 170 116"/>
+            <path id="link-work" data-motion-id="link-work" d="M480 215 C586 146 674 92 790 116"/>
+            <path id="link-storage" data-motion-id="link-storage" d="M480 215 C358 250 268 344 178 322"/>
+            <path id="link-play" data-motion-id="link-play" d="M480 215 C602 250 692 344 782 322"/>
+            <path id="link-memory" data-motion-id="link-memory" d="M480 215 V330"/>
+          </g>
+          <g id="family-hub" data-motion-id="family-hub" data-motion-fragment="core" transform="translate(480 215)">
+            <path d="M-74 -8 L0 -68 L74 -8 V70 H-74 Z" fill="var(--color-brand-bg)" stroke="var(--color-brand-stroke)" stroke-width="5" stroke-linejoin="round"/>
+            <path d="M-44 50 V4 H44 V50" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".72"/>
+            <text x="0" y="34" fill="#ffffff" font-family="var(--font-family-base)" font-size="25" font-weight="700" text-anchor="middle">Family</text>
+          </g>
+          <g data-motion-fragment="pillars" font-family="var(--font-family-base)" text-anchor="middle">
+            <g id="safety-node" data-motion-id="safety-node" transform="translate(170 116)"><circle r="52" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="4"/><path d="M0 -28 L25 -17 V4 C25 23 10 34 0 40 C-10 34 -25 23 -25 4 V-17 Z M-11 2 L-2 11 L14 -7" fill="none" stroke="var(--color-status-success-fg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><text y="82" fill="var(--color-neutral-fg-1)" font-size="21" font-weight="700">Safety</text></g>
+            <g id="work-node" data-motion-id="work-node" transform="translate(790 116)"><circle r="52" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="4"/><path d="M-28 -21 H28 V20 H-28 Z M-38 30 H38 M-10 30 L-6 20 H6 L10 30" fill="none" stroke="var(--color-status-info-fg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><text y="82" fill="var(--color-neutral-fg-1)" font-size="21" font-weight="700">Productivity</text></g>
+            <g id="storage-node" data-motion-id="storage-node" transform="translate(178 322)"><circle r="52" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="4"/><path d="M-30 -26 H30 V-5 H-30 Z M-30 4 H30 V25 H-30 Z M19 -15 H20 M19 15 H20" fill="none" stroke="var(--color-status-warning-fg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><text y="82" fill="var(--color-neutral-fg-1)" font-size="21" font-weight="700">Storage</text></g>
+            <g id="play-node" data-motion-id="play-node" transform="translate(782 322)"><circle r="52" fill="var(--color-brand-bg)" fill-opacity=".14" stroke="var(--color-brand-stroke)" stroke-width="4"/><path d="M-32 20 L-22 -20 H22 L32 20 L15 29 L5 14 H-5 L-15 29 Z M-17 -3 H-5 M-11 -9 V3 M14 -8 H15 M22 0 H23" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><text y="82" fill="var(--color-neutral-fg-1)" font-size="21" font-weight="700">Gaming</text></g>
+            <g id="memory-node" data-motion-id="memory-node" transform="translate(480 330)"><circle r="48" fill="var(--color-status-danger-bg)" stroke="var(--color-status-danger-stroke)" stroke-width="4"/><path d="M-22 2 C-22 -22 0 -28 0 -10 C0 -28 22 -22 22 2 C22 19 0 32 0 32 C0 32 -22 19 -22 2 Z" fill="none" stroke="var(--color-status-danger-fg)" stroke-width="6"/><text y="76" fill="var(--color-neutral-fg-1)" font-size="21" font-weight="700">Memories</text></g>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <details class="slate-talktrack"><summary>Talking track</summary><div class="slate-talktrack__body"><p><span class="slate-talktrack__cue">Open:</span> The family group is not another product tile. It is the connective tissue that makes existing value coherent.</p><p><span class="slate-talktrack__cue">Transition:</span> That leads to a clear sequence for investment.</p></div></details>
+  </section>
+
+  <section class="slate-slide slate-slide--closing" id="sequence-the-investment">
+    <p class="slate-slide__kicker"><span class="slate-slide__num">05</span> Decision</p>
+    <h2 class="slate-slide__title">Sequence the investment: trust before reach</h2>
+    <p class="slate-slide__lead">Fix the essential experience, prove family value, then expand the promise.</p>
+    <div class="slate-slide__body">
+      <div class="slate-slide__figure slate-slide__figure--band">
+        <svg viewBox="0 0 960 360" role="img" aria-labelledby="investment-visual-title investment-visual-desc">
+          <title id="investment-visual-title">Trust is the foundation for value and reach</title>
+          <desc id="investment-visual-desc">Three nested structural layers show that reliable basics support demonstrated family value, which then supports expanded reach.</desc>
+          <path id="decision-line" data-motion-id="decision-line" data-motion-fragment="trust" d="M164 302 H796 M238 206 H722 M326 110 H634" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="8" stroke-linecap="round"/>
+          <g id="trust-step" data-motion-id="trust-step" data-motion-fragment="trust">
+            <path d="M124 300 L174 226 H786 L836 300 Z" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M174 226 H786" stroke="var(--color-status-success-fg)" stroke-width="7" stroke-linecap="round"/>
+            <text x="480" y="274" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="29" font-weight="700" text-anchor="middle">1 · Make it work</text>
+          </g>
+          <g id="value-step" data-motion-id="value-step" data-motion-fragment="value">
+            <path d="M210 204 L258 132 H702 L750 204 Z" fill="var(--color-status-info-bg)" stroke="var(--color-status-info-stroke)" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M258 132 H702" stroke="var(--color-status-info-fg)" stroke-width="7" stroke-linecap="round"/>
+            <text x="480" y="180" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="27" font-weight="700" text-anchor="middle">2 · Prove family value</text>
+          </g>
+          <g id="reach-step" data-motion-id="reach-step" data-motion-fragment="reach">
+            <path d="M298 108 L340 46 H620 L662 108 Z" fill="var(--color-brand-bg)" stroke="var(--color-brand-stroke)" stroke-width="4" stroke-linejoin="round"/>
+            <text x="480" y="88" fill="#ffffff" font-family="var(--font-family-base)" font-size="25" font-weight="700" text-anchor="middle">3 · Expand reach</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <details class="slate-talktrack"><summary>Talking track</summary><div class="slate-talktrack__body"><p><span class="slate-talktrack__cue">Close:</span> The recommendation is a sequence, not a slogan: trust first, value second, reach third.</p></div></details>
+  </section>
+</div>

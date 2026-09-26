@@ -1,0 +1,21 @@
+# Slate runtime integrity depends on byte-identical files.
+# Hosts verify generated `shell/` assets with SHA-256 hashes recorded in
+# `.slate-runtime.json`, so line endings must be deterministic on every
+# platform and every clone. Normalize to LF in the repository and on checkout.
+* text=auto eol=lf
+
+# Binary assets must never be transformed.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.svgz binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.pdf binary
+*.zip binary

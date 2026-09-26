@@ -31,7 +31,7 @@ export function LandmarkDialog({ controller }: { controller: GameController }) {
       className="dialog landmark-dialog"
       aria-labelledby="landmark-dialog-title"
       data-testid="landmark-dialog"
-      style={{ ['--accent' as string]: shown?.accent ?? '#4f7cff' }}
+      style={shown ? { ['--accent' as string]: shown.accent } : undefined}
       onCancel={(e) => {
         e.preventDefault();
         controller.requestCloseLandmark();
@@ -54,7 +54,7 @@ export function LandmarkDialog({ controller }: { controller: GameController }) {
           )}
           <div className="actions">
             <a className="btn primary" href={classicHrefFor(shown.id)} onClick={toClassic}>
-              Open full page <Icon icon={faArrowUpRightFromSquare} />
+              Classic page <Icon icon={faArrowUpRightFromSquare} />
             </a>
             <button className="btn" type="button" onClick={() => controller.requestCloseLandmark()}>
               Close
