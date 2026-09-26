@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { TEXTURES } from '../../src/game/world/textureManifest';
+import { SURFACE_TEX } from '../../src/game/world/rockDetail';
 
 const ROOT = resolve(__dirname, '../..');
 
@@ -74,6 +75,33 @@ describe('generated textures', () => {
   it('keeps provenance: each source has its prompt', () => {
     for (const [name] of entries) {
       expect(existsSync(resolve(ROOT, 'assets-src/textures', `${name}.prompt.txt`)), name).toBe(true);
+    }
+  });
+});
+
+describe('texture style QA (art-pipeline.md)', () => {
+  type Stat = { kind: string; std: number; blotch: number };
+  const qa = JSON.parse(readFileSync(resolve(ROOT, 'assets-src/textures/qa.json'), 'utf8')) as Record<string, Stat>;
+  const style = JSON.parse(readFileSync(resolve(ROOT, 'assets-src/textures/style/limits.json'), 'utf8')) as {
+    classes: Record<string, { std: number; blotch: number }>;
+    textures: Record<string, string>;
+  };
+  const strength = Object.fromEntries(SURFACE_TEX.map(([, name, s]) => [name, s as number]));
+
+  it('classes every kit surface texture and has stats for every classed texture', () => {
+    for (const [, name] of SURFACE_TEX) expect(style.textures[name], `${name} has a QA class`).toBeDefined();
+    for (const [name, cls] of Object.entries(style.textures)) {
+      expect(style.classes[cls], `${name}: class ${cls}`).toBeDefined();
+      expect(qa[name], `${name} measured (run scripts/build-textures.py)`).toBeDefined();
+    }
+  });
+
+  it('keeps every texture within its class limits as the game shows it', () => {
+    for (const [name, cls] of Object.entries(style.textures)) {
+      const s = qa[name].kind === 'mask' ? (strength[name] ?? 1) : 1;
+      const lim = style.classes[cls];
+      expect(qa[name].std * s, `${name} contrast (${cls})`).toBeLessThanOrEqual(lim.std);
+      expect(qa[name].blotch * s, `${name} blotchiness (${cls})`).toBeLessThanOrEqual(lim.blotch);
     }
   });
 });

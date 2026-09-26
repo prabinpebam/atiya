@@ -25,11 +25,11 @@ export const TEXTURES = {
     "url": "/textures/cobble.webp",
     "kind": "tile",
     "mean": [
-      0.3804,
-      0.3141,
-      0.2318
+      0.7884,
+      0.675,
+      0.5213
     ],
-    "bytes": 56120
+    "bytes": 16410
   },
   "sand": {
     "url": "/textures/sand.webp",
@@ -115,31 +115,31 @@ export const TEXTURES = {
     "url": "/textures/surf-plaster.webp",
     "kind": "mask",
     "mean": [
-      0.4782,
-      0.4782,
-      0.4782
+      0.5066,
+      0.5066,
+      0.5066
     ],
-    "bytes": 32476
+    "bytes": 33086
   },
   "surf-stone": {
     "url": "/textures/surf-stone.webp",
     "kind": "mask",
     "mean": [
-      0.6103,
-      0.6103,
-      0.6103
+      0.7216,
+      0.7216,
+      0.7216
     ],
-    "bytes": 53462
+    "bytes": 49024
   },
   "surf-brick": {
     "url": "/textures/surf-brick.webp",
     "kind": "mask",
     "mean": [
-      0.6383,
-      0.6383,
-      0.6383
+      0.6652,
+      0.6652,
+      0.6652
     ],
-    "bytes": 66314
+    "bytes": 22576
   },
   "surf-metal": {
     "url": "/textures/surf-metal.webp",
@@ -343,7 +343,7 @@ export const TEXTURES = {
   "cobble-normal": {
     "url": "/textures/cobble-normal.webp",
     "kind": "normal",
-    "bytes": 19730
+    "bytes": 8216
   }
 } as const;
 

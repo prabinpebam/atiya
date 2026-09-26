@@ -1,0 +1,92 @@
+{
+  "grass": {
+    "kind": "tile",
+    "std": 0.1162,
+    "blotch": 0.0287
+  },
+  "dirt": {
+    "kind": "tile",
+    "std": 0.1111,
+    "blotch": 0.0289
+  },
+  "cobble": {
+    "kind": "tile",
+    "std": 0.1622,
+    "blotch": 0.0507
+  },
+  "sand": {
+    "kind": "tile",
+    "std": 0.0854,
+    "blotch": 0.009
+  },
+  "riverbed": {
+    "kind": "tile",
+    "std": 0.4957,
+    "blotch": 0.1557
+  },
+  "rock": {
+    "kind": "tile",
+    "std": 0.2918,
+    "blotch": 0.1842
+  },
+  "boulder": {
+    "kind": "mask",
+    "std": 0.419,
+    "blotch": 0.1706
+  },
+  "water": {
+    "kind": "mask",
+    "std": 1.1003,
+    "blotch": 0.0961
+  },
+  "paint-grain": {
+    "kind": "mask",
+    "std": 0.4216,
+    "blotch": 0.1235
+  },
+  "surf-wood": {
+    "kind": "mask",
+    "std": 0.4491,
+    "blotch": 0.0618
+  },
+  "surf-shingle": {
+    "kind": "mask",
+    "std": 0.2971,
+    "blotch": 0.0951
+  },
+  "surf-plaster": {
+    "kind": "mask",
+    "std": 0.4052,
+    "blotch": 0.1379
+  },
+  "surf-stone": {
+    "kind": "mask",
+    "std": 0.2563,
+    "blotch": 0.0535
+  },
+  "surf-brick": {
+    "kind": "mask",
+    "std": 0.347,
+    "blotch": 0.0391
+  },
+  "surf-metal": {
+    "kind": "mask",
+    "std": 0.541,
+    "blotch": 0.0934
+  },
+  "surf-canvas": {
+    "kind": "mask",
+    "std": 0.4091,
+    "blotch": 0.0143
+  },
+  "surf-bark": {
+    "kind": "mask",
+    "std": 0.4289,
+    "blotch": 0.0629
+  },
+  "chopper-fur": {
+    "kind": "mask",
+    "std": 0.4246,
+    "blotch": 0.051
+  }
+}

@@ -126,9 +126,9 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
   const D = 1.55;
   const H = 1.45;
   const opening = { x: 0, w: 0.74, h: 1.0 };
-  walls(k, { w: W, d: D, h: H, color: '#f2c9a0', surface: 'brick', opening });
-  // brick band texture on the walls
-  k.surface('brick', () => courses(k, { w: W, d: D, ys: [1, 2, 3, 4, 5].map((i) => 0.28 + i * 0.2), color: '#e7b68a', th: 0.025, out: 0.005, opening }));
+  walls(k, { w: W, d: D, h: H, color: '#f7efe2', surface: 'brick', opening });
+  // painted brick: band courses in the same white paint, a shade deeper
+  k.surface('brick', () => courses(k, { w: W, d: D, ys: [1, 2, 3, 4, 5].map((i) => 0.28 + i * 0.2), color: '#ece2d0', th: 0.025, out: 0.005, opening }));
   hipRoof(k, { w: W, d: D, h: 0.8, y: H + 0.08, color: accent, bands: 3, top: 0.3 });
   // clock tower cupola
   const ty = H + 0.85;
@@ -144,16 +144,14 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
   hipRoof(k, { w: 0.74, d: 0.74, h: 0.55, y: ty + 0.62, color: shade(accent, -0.05), bands: 2, overhang: 0.1, top: 0.05 });
   k.cyl(0.02, 0.02, 0.35, ARCH.iron, { p: [0, ty + 1.35, 0] }, 6);
   k.sphere(0.05, ARCH.brass, { p: [0, ty + 1.25, 0] }, [10, 8]);
-  // portico with columns and pediment
+  // portico: a stone floor slab, clean painted white columns (no masonry) and a pediment
   const pz = D / 2 + 0.34;
-  k.surface('stone', () => {
-    k.box([1.3, 0.12, 0.72], ARCH.stone, { p: [0, 0.34, D / 2 + 0.3] }, 0.03);
-    for (const s of [-1, 1]) {
-      k.box([0.2, 0.08, 0.2], ARCH.creamShade, { p: [s * 0.5, 0.44, pz] }, 0.02);
-      k.cyl(0.075, 0.085, 1.0, ARCH.cream, { p: [s * 0.5, 0.98, pz] }, 12);
-      k.box([0.22, 0.08, 0.22], ARCH.creamShade, { p: [s * 0.5, 1.52, pz] }, 0.02);
-    }
-  });
+  k.surface('stone', () => k.box([1.3, 0.12, 0.72], ARCH.stone, { p: [0, 0.34, D / 2 + 0.3] }, 0.03));
+  for (const s of [-1, 1]) {
+    k.box([0.2, 0.08, 0.2], ARCH.creamShade, { p: [s * 0.5, 0.44, pz] }, 0.02);
+    k.cyl(0.075, 0.085, 1.0, ARCH.white, { p: [s * 0.5, 0.98, pz] }, 12);
+    k.box([0.22, 0.08, 0.22], ARCH.creamShade, { p: [s * 0.5, 1.52, pz] }, 0.02);
+  }
   k.surface('plaster', () => {
     k.box([1.36, 0.14, 0.78], ARCH.cream, { p: [0, 1.62, D / 2 + 0.3] }, 0.04);
     k.extrude(
@@ -206,7 +204,7 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
 function lighthouse(accent: ColorRepresentation): LandmarkModel {
   const k = new Kit();
   // rocky base
-  k.surface('stone', () => {
+  k.surface('rock', () => {
     k.lathe(
       [
         [0.001, 0],
@@ -326,17 +324,15 @@ function library(accent: ColorRepresentation): LandmarkModel {
   k.cyl(0.22, 0.22, 0.05, '#fff4dc', { p: [0, H + 0.4, D / 2 + 0.02], r: [Math.PI / 2, 0, 0] }, 24);
   k.torus(0.22, 0.03, ARCH.brass, { p: [0, H + 0.4, D / 2 + 0.05] }, Math.PI * 2, [6, 24]);
   for (const s of [-1, 1]) k.box([0.14, 0.18, 0.02], shade(accent, -0.1), { p: [s * 0.075, H + 0.4, D / 2 + 0.06], r: [0, s * 0.35, 0] }, 0.01);
-  // columns + door
+  // columns (clean painted white, no masonry) + door
   for (const s of [-1, 1]) {
-    k.surface('stone', () => {
-      k.box([0.22, 0.1, 0.22], ARCH.creamShade, { p: [s * 0.52, 0.33, D / 2 + 0.16] }, 0.02);
-      k.cyl(0.08, 0.09, 1.02, '#fbf5e8', { p: [s * 0.52, 0.89, D / 2 + 0.16] }, 12);
-      for (let f = 0; f < 6; f++) {
-        const a = (f / 6) * Math.PI * 2;
-        k.box([0.012, 0.96, 0.012], '#e6dcc6', { p: [s * 0.52 + Math.cos(a) * 0.082, 0.89, D / 2 + 0.16 + Math.sin(a) * 0.082] }, 0.004);
-      }
-      k.box([0.24, 0.1, 0.24], ARCH.creamShade, { p: [s * 0.52, 1.44, D / 2 + 0.16] }, 0.02);
-    });
+    k.box([0.22, 0.1, 0.22], ARCH.creamShade, { p: [s * 0.52, 0.33, D / 2 + 0.16] }, 0.02);
+    k.cyl(0.08, 0.09, 1.02, ARCH.white, { p: [s * 0.52, 0.89, D / 2 + 0.16] }, 12);
+    for (let f = 0; f < 6; f++) {
+      const a = (f / 6) * Math.PI * 2;
+      k.box([0.012, 0.96, 0.012], '#ece6da', { p: [s * 0.52 + Math.cos(a) * 0.082, 0.89, D / 2 + 0.16 + Math.sin(a) * 0.082] }, 0.004);
+    }
+    k.box([0.24, 0.1, 0.24], ARCH.creamShade, { p: [s * 0.52, 1.44, D / 2 + 0.16] }, 0.02);
     // banners
     k.surface('canvas', () => k.box([0.3, 0.72, 0.03], accent, { p: [s * 0.86, 0.95, D / 2 + 0.04] }, 0.015));
     k.surface('metal', () => k.box([0.32, 0.05, 0.05], ARCH.brass, { p: [s * 0.86, 1.33, D / 2 + 0.05] }, 0.015));

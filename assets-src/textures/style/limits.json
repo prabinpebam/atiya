@@ -1,0 +1,25 @@
+{
+  "about": "Style QA (art-pipeline.md): limits per class on each texture as the game shows it (mask stats x the runtime strength in rockDetail.ts SURFACE_TEX; colour tiles: linear luminance). std = spread around the mean; blotch = the same after a blur over 1/32 of the tile (per-unit value changes and mottling, which read as dirt). Calibrated on the owner-approved wood and shingle (detail) and the lawn tiles (ground); paving sits below the concept art's pale flagstones (std 0.26 there, lighting included). Read by scripts/gen-textures.py qa and tests/unit/textures.test.ts.",
+  "classes": {
+    "detail": { "std": 0.28, "blotch": 0.065 },
+    "masonry": { "std": 0.12, "blotch": 0.035 },
+    "plaster": { "std": 0.06, "blotch": 0.02 },
+    "ground": { "std": 0.12, "blotch": 0.035 },
+    "paving": { "std": 0.18, "blotch": 0.06 }
+  },
+  "textures": {
+    "surf-wood": "detail",
+    "surf-shingle": "detail",
+    "surf-metal": "detail",
+    "surf-canvas": "detail",
+    "surf-bark": "detail",
+    "boulder": "detail",
+    "surf-brick": "masonry",
+    "surf-stone": "masonry",
+    "surf-plaster": "plaster",
+    "grass": "ground",
+    "dirt": "ground",
+    "sand": "ground",
+    "cobble": "paving"
+  }
+}

@@ -154,6 +154,15 @@
       "group": "Planet"
     },
     {
+      "path": "poc-3d-navigation/art-pipeline.md",
+      "title": "Texture style pipeline",
+      "order": 26.5,
+      "icon": "brush",
+      "status": "stable",
+      "updated": "2026-09-26",
+      "group": "Planet"
+    },
+    {
       "path": "poc-3d-navigation/performance-audit.md",
       "title": "Performance audit",
       "order": 27,

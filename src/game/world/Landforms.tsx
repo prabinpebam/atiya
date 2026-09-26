@@ -414,8 +414,8 @@ function buildBridge(b: Bridge) {
   for (const s of [-1, 1]) {
     const z = s * (L - 0.12);
     const y = deck(z);
-    k.surface('stone', () => {
-      k.box([2 * W + 0.1, 0.38, 0.42], ARCH.stone, { p: [0, y - 0.24, z] }, 0.06);
+    k.surface('stone', () => k.box([2 * W + 0.1, 0.38, 0.42], ARCH.stone, { p: [0, y - 0.24, z] }, 0.06));
+    k.surface('rock', () => {
       for (let i = 0; i < 4; i++) {
         k.blob(0.12 + 0.04 * hash3(i, s, 3), shade(ARCH.stoneDark, (hash3(i, 4, s) - 0.5) * 0.2), { p: [(i - 1.5) * 0.46, y - 0.34, z + s * 0.22], s: [1.2, 0.7, 1] }, 1, 'solid', 0.2, i);
       }

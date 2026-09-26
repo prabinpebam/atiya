@@ -12,7 +12,13 @@ All 3D geometry in the POC is **original**, built procedurally from three.js pri
 
 **Crafting icons (original, 2026-09-26):** 10 more icons for the crafting chunk: planks, a wooden beam, a stone slab, and a paint pot in the seven bloom colours. They were made the same way (GPT Image 2.5, `scripts/gen-icons.py`, image-to-image against the same frozen golden set); the seven paints are re-tints of one white-paint painting. The crafting table, Chopper's house and its ghost are original kit geometry. The hammering and sparkle are the existing CC0 sprites (the pickaxe knock and the pick-up pop); nothing new was downloaded.
 
-**Cobblestones (original, 2026-09-26):** the cobble tile (`textures/cobble.png`) was regenerated with GPT Image 2.5 (`tile`, seamless), with this project's own stone surface texture and a crop of a landmark plinth screenshot as palette references; one merged stone was repaired with a masked edit of the same image. `cobble-normal` is derived from it by `scripts/build-textures.py`. Prompts: `textures/cobble.prompt.txt`, `textures/cobble-normal.prompt.txt`.
+**Cobblestones (original, 2026-09-26):** the cobble tile (`textures/cobble.png`) is pale flagstones, regenerated with GPT Image 2.5 by the texture style pipeline (below). It replaces the same day's earlier chunky-cobble tile. `cobble-normal` is derived from it by `scripts/build-textures.py`. Prompts: `textures/cobble.prompt.txt`, `textures/cobble-normal.prompt.txt`.
+
+**Texture style pipeline (original, 2026-09-26):** `surf-brick`, `surf-stone`, `surf-plaster` and `cobble` were regenerated with GPT Image 2.5 by `scripts/gen-textures.py`, image-to-image against the frozen golden references in `textures/style/`:
+- the project's own approved wood and shingle masks;
+- two crops of the project's own concept art (`documentation/poc-3d-navigation/art-direction/concepts/01-plaza.jpg`).
+
+`surf-brick` is a plain painting (`textures/surf-brick.raw.png`) cut to whole repeats; the others went through the skill's `tile`. Each `.prompt.txt` holds the exact prompt. See `documentation/poc-3d-navigation/art-pipeline.md`.
 
 **Chopper (2026-09-25):** the two photos of Chopper, the owner's Lhasa Apso, were provided by the site owner, Prabin Pebam (`chopper/chopper-photo-1.png`, `chopper-photo-2.png`; all rights reserved), and are shown on his profile card as `public/chopper/chopper-1.webp` and `chopper-2.webp` (built by `scripts/build-textures.py`). His 3D model is original procedural geometry (`src/game/world/chopper/model.ts`). Two images were generated with GPT Image 2.5, image-to-image from those photos and the landing key art: a model sheet used as the proportions and colour reference (`chopper/chopper-model-sheet.png`, not shipped), and the seamless curly-fur tile (`textures/chopper-fur.png` → `public/textures/chopper-fur.webp`). Each has its prompt beside it. His sounds are the CC0 recordings in the table below.
 

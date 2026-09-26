@@ -30,7 +30,9 @@ import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferG
  * Surfaces: every part also records what it's made of (`aSurf`, an index into SURFACES) and a
  * texture coordinate in its own frame (`aSurfUV`, in tiles), so the shared kit material can
  * paint wood grain, roof shingles, plaster, stone, brick, iron or canvas detail per part. Wrap
- * parts in `k.surface('wood', () => …)`; untagged parts are plain painted surfaces. Tree bark
+ * parts in `k.surface('wood', () => …)`; untagged parts are plain painted surfaces. `stone` is
+ * dressed, laid masonry (blocks in courses); loose natural stones (fire rings, rocky bases) are
+ * `rock` (the boulders' granite grain). Tree bark
  * (`bark`) uses the part's own `uv` (world units, wrapped round the trunk by the tube builder).
  */
 export type Layer = 'solid' | 'glow' | 'glass';
@@ -38,7 +40,7 @@ export type Paint = ColorRepresentation | ((p: Vector3, n: Vector3) => ColorRepr
 export type V3 = [number, number, number];
 
 /** Surface kinds, in shader order (index = `aSurf`). */
-export const SURFACES = ['paint', 'wood', 'roof', 'plaster', 'stone', 'brick', 'metal', 'canvas', 'bark'] as const;
+export const SURFACES = ['paint', 'wood', 'roof', 'plaster', 'stone', 'brick', 'metal', 'canvas', 'bark', 'rock'] as const;
 export type Surface = (typeof SURFACES)[number];
 /** World units per texture repeat for each surface. */
 export const SURFACE_TILE_U: Record<Surface, number> = {
@@ -51,6 +53,7 @@ export const SURFACE_TILE_U: Record<Surface, number> = {
   metal: 0.6,
   canvas: 0.3,
   bark: 0.9,
+  rock: 0.7,
 };
 
 export interface Xf {

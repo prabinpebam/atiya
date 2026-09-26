@@ -47,3 +47,7 @@ Net, at the spawn view: **≈ 727 k triangles** (was 680 k), 142 draw calls, 0 I
 - more varied, rounder canopy silhouettes.
 
 These need more geometry or new foliage art, and the triangle budget is already above target.
+
+## Surface textures
+
+The painted surface textures (masonry, plaster, paving) are generated against crops of these concepts and the approved wood and shingle masks. See the [texture style pipeline](../art-pipeline.md).

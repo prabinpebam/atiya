@@ -280,10 +280,10 @@ export function woodpile(k: Kit): void {
 /** The fire ring: stones round crossed logs over the embers (the flames are `flamesModel()`). */
 export function fireRingModel(): KitGeometry {
   const k = new Kit();
-  k.surface('stone', () => {
+  k.surface('rock', () => {
     for (let i = 0; i < 9; i++) {
       const a = (i / 9) * Math.PI * 2;
-      k.blob(0.1 + (i % 3) * 0.015, i % 2 ? ARCH.stone : ARCH.stoneDark, { p: [Math.cos(a) * 0.36, 0.06, Math.sin(a) * 0.36], s: [1.2, 0.75, 1] }, 1, 'solid', 0.25, i);
+      k.blob(0.1 + (i % 3) * 0.015, i % 2 ? '#a7a5a0' : '#8f8d8a', { p: [Math.cos(a) * 0.36, 0.06, Math.sin(a) * 0.36], s: [1.2, 0.75, 1] }, 1, 'solid', 0.25, i);
     }
   });
   k.cyl(0.3, 0.32, 0.03, '#3a2c26', { p: [0, 0.015, 0] }, 14);

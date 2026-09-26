@@ -5,9 +5,9 @@ import { withLampLights } from './lampLights';
 const GROUND_TEX = ['grass', 'dirt', 'cobble', 'sand', 'riverbed'] as const;
 /** Strength of the grass relief (the normal map's tilt, scaled by how much of the ground is grass). */
 export const GROUND_BUMP = 0.7;
-/** The cobbles' relief (their normal map's tilt), and their tile size: ≈ 8 stones per tile (u). */
-export const COBBLE_BUMP = 1.0;
-export const COBBLE_TILE_U = 2.2;
+/** The cobbles' relief (their normal map's tilt), and their tile size: ≈ 9 small pale flagstones per tile (u). */
+export const COBBLE_BUMP = 0.45;
+export const COBBLE_TILE_U = 1.5;
 
 /**
  * Stylised ground material. Vertex colour = base grass tint; `aSurf` (vec4) blends in

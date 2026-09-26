@@ -2,7 +2,8 @@
 
 Sources are original, AI-generated images (gpt-image-2.5, see the *.prompt.txt next to each
 source). This script turns them into small, optimised WebP files in public/ and writes the
-typed manifest src/game/world/textureManifest.ts (URLs + mean linear colours used by shaders).
+typed manifest src/game/world/textureManifest.ts (URLs + mean linear colours used by shaders) and
+the style stats assets-src/textures/qa.json (checked by `scripts/gen-textures.py qa` and the unit tests).
 
 Requires Python 3.10+ with Pillow and numpy. Outputs are committed, so only asset authors need it:
     python scripts/build-textures.py
@@ -79,6 +80,14 @@ NORMALS: dict[str, tuple[str, str, int, float]] = {
     "grass-normal": ("tile-lum", "grass", 256, 5.0),
     "cobble-normal": ("tile-lum", "cobble", 256, 4.0),
 }
+# Masks whose large-scale value drift is divided out after the stretch (a wrap-aware blur of this
+# fraction of the tile), so light walls can't read as blotchy or dirty whatever the painting drifts:
+FLATTEN: dict[str, float] = {"surf-brick": 1 / 6, "surf-stone": 1 / 6, "surf-plaster": 1 / 8}
+# Style QA (scripts/gen-textures.py qa, tests/unit/textures.test.ts): for every mask and tile, the
+# spread of its value around the mean (std) and of the same blurred over 1/32 of the tile (blotch:
+# per-unit value changes and mottling, the "dirty" signal), written to assets-src/textures/qa.json.
+QA_JSON = SRC / "qa.json"
+QA_BLUR = 1 / 32
 # how a sprite sits in its square card: bottom = base touches the bottom edge (stems, grass, crown),
 # top = hangs from the top edge (boughs)
 ALIGN = {"leaf-broad": "bottom", "leaf-single": "center", "moon": "center",
@@ -100,6 +109,19 @@ def resize_tileable(im: Image.Image, size: int) -> Image.Image:
     big = big.resize((round(big.width * s), round(big.height * s)), Image.LANCZOS)
     p = round(pad * s)
     return big.crop((p, p, p + size, p + size))
+
+
+def wrap_blur(a: np.ndarray, sigma: float) -> np.ndarray:
+    """Gaussian blur of a seamless square tile, wrapping at the edges (exact, via the FFT)."""
+    f = np.fft.fftfreq(a.shape[0])
+    g = np.exp(-2 * (np.pi * sigma) ** 2 * (f[:, None] ** 2 + f[None, :] ** 2))
+    return np.real(np.fft.ifft2(np.fft.fft2(a) * g))
+
+
+def style_stats(v: np.ndarray) -> dict[str, float]:
+    """std and blotch (see QA_BLUR) of a tile's values relative to their mean."""
+    r = v / max(float(v.mean()), 1e-6) - 1
+    return {"std": round(float(r.std()), 4), "blotch": round(float(wrap_blur(r, v.shape[0] * QA_BLUR).std()), 4)}
 
 
 def _blur(arr: np.ndarray, radius: float) -> np.ndarray:
@@ -337,6 +359,7 @@ def save_webp(im: Image.Image, path: Path, lossless=False) -> int:
 
 def main() -> None:
     manifest: dict[str, dict] = {}
+    qa: dict[str, dict] = {}
     total = 0
     for name, (kind, size) in TEXTURES.items():
         src = SRC / f"{name}.png"
@@ -349,10 +372,18 @@ def main() -> None:
             out = resize_tileable(im, size)
             lin = srgb_to_linear(np.asarray(out, np.float32) / 255)
             entry["mean"] = [round(float(v), 4) for v in lin.reshape(-1, 3).mean(axis=0)]
+            qa[name] = {"kind": kind, **style_stats(lin @ np.array([0.2126, 0.7152, 0.0722], np.float32))}
         elif kind == "mask":
             g = np.asarray(resize_tileable(im, size).convert("L"), np.float32)
             lo, hi = np.percentile(g, [1, 99.5])
-            g = np.clip((g - lo) / max(hi - lo, 1) * 255, 0, 255).astype(np.uint8)
+            g = np.clip((g - lo) / max(hi - lo, 1), 0, 1)
+            if name in FLATTEN:
+                low = wrap_blur(g, size * FLATTEN[name])
+                g = np.clip(g / np.maximum(low, 0.05) * low.mean(), 0, 1)
+                lo, hi = np.percentile(g, [1, 99.5])
+                g = np.clip((g - lo) / max(hi - lo, 1e-3), 0, 1)
+            qa[name] = {"kind": kind, **style_stats(g)}
+            g = np.clip(g * 255, 0, 255).astype(np.uint8)
             out = Image.fromarray(g).convert("RGB")
             # masks are sampled raw (no colour space), so the mean is the raw 0…1 value
             m = round(float(g.mean() / 255), 4)
@@ -424,7 +455,8 @@ def main() -> None:
         encoding="utf-8",
     )
     print(f"total game textures: {total / 1024:.0f} KB -> {MANIFEST.relative_to(ROOT)}")
-
+    QA_JSON.write_text(json.dumps(qa, indent=2) + "\n", encoding="utf-8")
+    print(f"style stats -> {QA_JSON.relative_to(ROOT)}")
 
 if __name__ == "__main__":
     main()

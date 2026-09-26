@@ -34,7 +34,7 @@ The home pads arrive with the home chunk: `controller.attachHome` calls `terrain
 
 - **Planar UVs.** Each ground vertex has an `aCob` attribute: the in-plane (gnomonic) coordinates of the nearest apron pad. The stones stay square to the building and don't ghost. Past an apron's edge the coordinates still come from the nearest pad (with weight 0), so they interpolate smoothly across the edge triangles; zeros there caused zigzag smears.
 - **The edge.** The apron weight is 1 inside `box + apron` and softens over `APRON_SOFT` (0.18 u). In the shader, stones give way to grass by the stone's luminance plus noise, so the edge is ragged like laid stones, not a painted line.
-- **The tile.** `cobble.png` was regenerated with GPT Image 2.5 (`tile`), using the kit's stone texture and a crop of a landmark plinth as references, so the palette matches. One merged stone was fixed with a masked edit. The prompt is in `assets-src/textures/cobble.prompt.txt`.
+- **The tile.** `cobble.png` was first regenerated as chunky, colourful cobbles. The owner found them too big, contrasty and out of style, so it was replaced (2026-09-26) through the [texture style pipeline](art-pipeline.md): small, pale flagstones painted against the concept art's paving, 1.5 u per tile (`COBBLE_TILE_U`), with gentler relief (`COBBLE_BUMP` 0.45). The prompt is in `assets-src/textures/cobble.prompt.txt`.
 - **Relief.** `cobble-normal` is derived from the tile's luminance by `scripts/build-textures.py` (`NORMALS`). The shader perturbs the normal in a cotangent frame built from `dFdx`/`dFdy` of `vCob` (no tangent attribute), normalised with `inversesqrt(max(…))` per the NaN rules. The procedural fallback stays when a texture is missing.
 
 ## The Home's steps
