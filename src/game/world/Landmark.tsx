@@ -18,6 +18,7 @@ import {
   PlaneGeometry,
   PointLight,
   Quaternion,
+  RingGeometry,
   ShaderMaterial,
   SphereGeometry,
   Vector3,
@@ -471,9 +472,22 @@ export function Landmark({ controller, geo, data }: { controller: GameController
   const model = useMemo(() => landmarkModel(data.variant, data.accent), [data.variant, data.accent]);
   const ring = useMemo(() => new MeshBasicMaterial({ color: data.accent, transparent: true, opacity: 0.0, depthWrite: false }), [data.accent]);
 
-  const place = useMemo(() => ({ position: geo.n.clone().multiplyScalar(R - 0.01), quaternion: landmarkObjectQuaternion(geo) }), [geo]);
+  // (on its levelled pad: the ground under it is the plane its base stands on, world/pads.ts)
+  const place = useMemo(() => ({ position: geo.n.clone().multiplyScalar(R + controller.terrain.height(geo.n) - 0.01), quaternion: landmarkObjectQuaternion(geo) }), [geo, controller]);
   const { position, quaternion } = place;
 
+  // the highlight ring, draped on the ground (it reaches past the levelled pad in places)
+  const ringGeo = useMemo(() => {
+    const g = new RingGeometry(geo.footprintU + 0.2, geo.footprintU + 0.42, 48).rotateX(-Math.PI / 2);
+    const pos = g.getAttribute('position');
+    const v = new Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyQuaternion(quaternion).add(position);
+      // (local up is within a few degrees of the ground's up out here)
+      pos.setY(i, R + controller.terrain.height(v.clone().normalize()) + 0.03 - v.length());
+    }
+    return g;
+  }, [geo, position, quaternion, controller]);
   const open = useMemo<Openness>(() => ({ current: 0 }), []);
   const hasDoor = !!(model.doors?.length || model.curtain);
   const lightAt = useMemo(() => (model.light ? new Vector3(...(model.light as V3)).applyQuaternion(quaternion).add(position) : null), [model, position, quaternion]);
@@ -510,9 +524,7 @@ export function Landmark({ controller, geo, data }: { controller: GameController
       onPointerOver={() => (document.body.style.cursor = 'pointer')}
       onPointerOut={() => (document.body.style.cursor = '')}
     >
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} material={ring}>
-        <ringGeometry args={[geo.footprintU + 0.2, geo.footprintU + 0.42, 48]} />
-      </mesh>
+      <mesh geometry={ringGeo} material={ring} />
       <group ref={body}>
         <KitModel geo={model.geo} />
         {model.anchors.beam && <Beam at={model.anchors.beam} paused={paused} controller={controller} />}

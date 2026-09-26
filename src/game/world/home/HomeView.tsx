@@ -153,7 +153,8 @@ export function HomeView({ controller, home, family }: { controller: GameControl
     }),
     [],
   );
-  const houseH = ht(home.house.n) + 0.12;
+  // (on its levelled pad: the ground under the house and its steps is flat, ground.md)
+  const houseH = ht(home.house.n);
 
   // the picnic mat: the painted gingham blanket, draped on the ground
   const mat = useMemo(() => {

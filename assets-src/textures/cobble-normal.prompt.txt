@@ -1,0 +1,1 @@
+Not generated: derived by scripts/build-textures.py from the cobble tile's painted luminance (wrap-aware, so it tiles), as a tangent-space normal map.

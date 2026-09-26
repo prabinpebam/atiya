@@ -18,6 +18,8 @@ import { Harvest } from './world/harvest';
 import { FRUIT_SPOTS } from './world/foliage';
 import { propPoint } from './world/propFrame';
 import { CRAFT_RADIUS, generateProps, type PropLayout } from './world/layout';
+import { structurePads } from './world/groundPads';
+import type { PadSpec } from './world/pads';
 import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectAmbientPaused, selectReducedMotion, type GameStore } from './state/store';
@@ -76,6 +78,8 @@ export interface CraftAttachment {
 /** The home and family (world/home/, its own chunk; docs: family.md), once attached. */
 export interface HomeAttachment {
   family: unknown;
+  /** The flat pads under the home's structures (added to the terrain before the ground is built). */
+  pads: PadSpec[];
   people: Array<{ id: string; name: string; n: Vector3 }>;
   /** Where the children are (rabbits shy from them). */
   kids: Vector3[];
@@ -266,7 +270,8 @@ export class GameController {
     this.geoById = new Map(this.geos.map((g) => [g.id, g]));
     this.dataById = new Map(sorted.map((l) => [l.id, l]));
     this.props = generateProps(this.geos);
-    this.terrain = new Terrain(this.geos, this.props);
+    // the ground under every structure is levelled to the plane its base stands on (world/pads.ts)
+    this.terrain = new Terrain(this.geos, this.props, CONFIG, structurePads(sorted.map((l, i) => ({ geo: this.geos[i], variant: l.variant })), this.props));
     this.stampPropHeights();
     const obstacles: Obstacle[] = [...this.geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...this.props.obstacles];
     this.staticObstacles = obstacles;
@@ -1178,6 +1183,8 @@ export class GameController {
   attachHome(h: HomeAttachment | null): void {
     this.home = h;
     if (!h) return;
+    this.terrain.addPads(h.pads);
+    this.stampPropHeights();
     for (const p of h.people) this.targets.push({ kind: 'npc', key: `npc:${p.id}`, n: p.n, edgeU: 0, reachU: REACH.npc, standU: 0.8, index: 0, who: p.id, name: p.name, scale: 1 });
     this.threats.push(...h.kids);
     // everyone keeps clear of everyone: the character collides with them, Chopper steps round them

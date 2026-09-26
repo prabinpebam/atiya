@@ -235,6 +235,15 @@
       "group": "Features"
     },
     {
+      "path": "poc-3d-navigation/ground.md",
+      "title": "Levelled ground and cobbles",
+      "order": 39,
+      "icon": "foundation",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Features"
+    },
+    {
       "path": "game-ui/design-system.md",
       "title": "Design system",
       "order": 41,

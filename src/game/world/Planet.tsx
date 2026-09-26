@@ -72,6 +72,7 @@ function withMesaCaps(ground: BufferGeometry, caps: BufferGeometry | null): Buff
   g.setAttribute('color', join('color', col, 3));
   g.setAttribute('aSurf', join('aSurf', null, 4));
   g.setAttribute('aSurf2', join('aSurf2', surf2, 4));
+  g.setAttribute('aCob', join('aCob', null, 2));
   const gi = ground.getIndex()!.array;
   const ci = caps.getIndex()!.array;
   const idx = new Uint32Array(gi.length + ci.length);
@@ -85,7 +86,8 @@ function withMesaCaps(ground: BufferGeometry, caps: BufferGeometry | null): Buff
 /**
  * Build the ground sphere: displaced by the terrain (hills, river bed, mesas, pond basin),
  * smooth-shaded, with per-vertex surface weights for the ground shader:
- * `aSurf` = path, plaza, cobbles, sand · `aSurf2` = riverbed, wet bank, steepness, height (u).
+ * `aSurf` = path, plaza, cobbles, sand · `aSurf2` = riverbed, wet bank, steepness, height (u) ·
+ * `aCob` = the cobbles' texture coordinates, laid flat in the plane of the building they surround.
  */
 function buildGround(controller: GameController): BufferGeometry {
   let g: BufferGeometry = new IcosahedronGeometry(R, GROUND_DETAIL);
@@ -97,6 +99,7 @@ function buildGround(controller: GameController): BufferGeometry {
   const colors = new Float32Array(count * 3);
   const surf = new Float32Array(count * 4);
   const surf2 = new Float32Array(count * 4);
+  const cob = new Float32Array(count * 2);
   const v = new Vector3();
   const u = new Vector3();
   const c = new Color();
@@ -112,7 +115,7 @@ function buildGround(controller: GameController): BufferGeometry {
     if (mid.lengthSq() < 1e-12) mid.copy(lm.n);
     mid.normalize();
     const half = arcDistance(spawn, lm.n, 1) / 2;
-    return { lm, cosCobble: Math.cos(Math.min(Math.PI, (lm.footprintU + 0.5 + 0.16) / R)), mid, cosPath: Math.cos(Math.min(Math.PI, half + PATH_OUTER / R)) };
+    return { lm, mid, cosPath: Math.cos(Math.min(Math.PI, half + PATH_OUTER / R)) };
   });
 
   for (let i = 0; i < count; i++) {
@@ -125,13 +128,16 @@ function buildGround(controller: GameController): BufferGeometry {
     colors.set([c.r, c.g, c.b], i * 3);
 
     const plaza = band(arcDistance(u, spawn, R), PLAZA_RADIUS_U - 0.1, 0.18);
-    let cobble = 0;
     let path = 0;
     const wobble = 0.06 * Math.sin(u.x * 41 + u.y * 37 + u.z * 29);
-    for (const { lm, cosCobble, mid, cosPath } of marks) {
-      if (u.dot(lm.n) >= cosCobble) cobble = Math.max(cobble, band(arcDistance(u, lm.n, R), lm.footprintU + 0.5, 0.16));
+    for (const { lm, mid, cosPath } of marks) {
       if (u.dot(mid) >= cosPath) path = Math.max(path, band(pointArcDistance(u, spawn, lm.n, R), 0.46 + wobble, 0.2));
     }
+    // the cobbled apron round a building, following its levelled pad (pads.ts)
+    const ap = terrain.apron(u);
+    let cobble = ap.w;
+    cob[i * 2] = ap.x;
+    cob[i * 2 + 1] = ap.z;
     let sand = 0;
     if (pond) {
       const d = arcDistance(u, pond.n, R);
@@ -159,6 +165,7 @@ function buildGround(controller: GameController): BufferGeometry {
   }
   g.setAttribute('color', new BufferAttribute(colors, 3));
   g.setAttribute('aSurf', new BufferAttribute(surf, 4));
+  g.setAttribute('aCob', new BufferAttribute(cob, 2));
   g.computeVertexNormals();
 
   // steepness (0 flat … 1 cliff) from the displaced normals: cliffs and banks get rock/earth

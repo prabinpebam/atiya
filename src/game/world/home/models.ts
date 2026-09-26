@@ -8,6 +8,8 @@ import { Kit, type KitGeometry, type V3 } from '../kit';
 import { ARCH, flowerBox, gableRoof, potPlant, shade, steps, wallLantern, walls, windowUnit } from '../parts';
 
 export const HOUSE = { w: 2.1, d: 1.7, h: 1.35 } as const;
+/** The front steps: from the ground up to the floor (the door's sill, 0.34 u). */
+export const HOUSE_STEPS = { n: 4, rise: 0.085, tread: 0.15 } as const;
 const WOOD = '#b98356';
 const WOOD_DARK = '#86573a';
 
@@ -15,7 +17,7 @@ const WOOD_DARK = '#86573a';
 export function houseModel(): { geo: KitGeometry; lantern: V3; chimney: V3; lightsCorner: V3 } {
   const k = new Kit();
   const { w: W, d: D, h: H } = HOUSE;
-  // a fieldstone foundation reaching into the ground (the lawn slopes a little here)
+  // a fieldstone foundation, on its levelled pad (ground.md) and reaching a little into it
   k.surface('stone', () => k.box([W + 0.2, 0.5, D + 0.2], ARCH.stoneDark, { p: [0, -0.2, 0] }, 0.05));
   walls(k, { w: W, d: D, h: H, color: '#f5e6cc', plinth: 0.34, opening: { x: 0, w: 0.6, h: 0.98 } });
   gableRoof(k, { w: W, d: D, rise: 1.0, wallTop: H + 0.05, color: '#bf5b43', wall: '#f5e6cc', rows: 5 });
@@ -51,8 +53,9 @@ export function houseModel(): { geo: KitGeometry; lantern: V3; chimney: V3; ligh
     for (const x of [-0.48, 0.48]) k.cyl(0.035, 0.035, 1.24, ARCH.cream, { p: [x, 0.62 + 0.28, D / 2 + 0.52] }, 8);
   });
   wallLantern(k, { p: [0.46, 1.22, D / 2 + 0.02] });
-  steps(k, { p: [0, 0, D / 2 + 0.06] }, { w: 0.9, n: 2 });
-  k.surface('canvas', () => k.box([0.5, 0.012, 0.3], '#9b6b45', { p: [0, 0.2, D / 2 + 0.52] }, 0.005));
+  // four steps from the ground up to the floor (0.34), and the doormat on the ground at their foot
+  steps(k, { p: [0, 0, D / 2 + 0.06] }, { w: 0.84, n: HOUSE_STEPS.n, rise: HOUSE_STEPS.rise, tread: HOUSE_STEPS.tread });
+  k.surface('canvas', () => k.box([0.5, 0.012, 0.3], '#9b6b45', { p: [0, 0.007, D / 2 + 0.06 + HOUSE_STEPS.n * HOUSE_STEPS.tread + 0.2] }, 0.005));
   // windows: two at the front with flower boxes, one on each side, one in the gable; all lit at night
   for (const s of [-1, 1]) {
     windowUnit(k, { p: [s * 0.66, 0.9, D / 2 + 0.03] }, { w: 0.36, h: 0.4, lit: true, shutters: '#6f9fc8' });
@@ -68,12 +71,13 @@ export function houseModel(): { geo: KitGeometry; lantern: V3; chimney: V3; ligh
     [0.3, '#3f6fb0', -0.2],
   ] as const) {
     for (const s of [-1, 1]) {
-      k.box([0.07, 0.015, 0.16], c, { p: [x + s * 0.045, 0.168, D / 2 + 0.16], r: [0, a + s * 0.08, 0] }, 0.006);
-      k.box([0.06, 0.012, 0.012], shade(c, -0.3), { p: [x + s * 0.045, 0.18, D / 2 + 0.2], r: [0, a + s * 0.08, 0] }, 0.003);
+      k.box([0.07, 0.015, 0.16], c, { p: [x * 0.8 + s * 0.045, 0.348, D / 2 + 0.14], r: [0, a + s * 0.08, 0] }, 0.006);
+      k.box([0.06, 0.012, 0.012], shade(c, -0.3), { p: [x * 0.8 + s * 0.045, 0.36, D / 2 + 0.18], r: [0, a + s * 0.08, 0] }, 0.003);
     }
   }
-  k.surface('wood', () => k.cyl(0.012, 0.012, 0.9, '#c79a5b', { p: [-0.42, 0.34 + 0.45, D / 2 + 0.06], r: [0.16, 0, 0.1] }, 6));
-  k.cyl(0.03, 0.07, 0.24, '#d8b25a', { p: [-0.34, 0.34 + 0.1, D / 2 + 0.13], r: [0.16, 0, 0.1] }, 8);
+  // the broom leans on the wall beside the steps, standing on the ground
+  k.surface('wood', () => k.cyl(0.012, 0.012, 0.9, '#c79a5b', { p: [-0.5, 0.45, D / 2 + 0.07], r: [0.14, 0, 0.1] }, 6));
+  k.cyl(0.03, 0.07, 0.24, '#d8b25a', { p: [-0.49, 0.12, D / 2 + 0.12], r: [0.14, 0, 0.1] }, 8);
   // a mailbox by the path
   k.group({ p: [0.95, 0, D / 2 + 0.95] }, () => {
     k.surface('wood', () => k.box([0.06, 0.7, 0.06], WOOD_DARK, { p: [0, 0.35, 0] }, 0.015));

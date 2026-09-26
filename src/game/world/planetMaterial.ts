@@ -5,11 +5,16 @@ import { withLampLights } from './lampLights';
 const GROUND_TEX = ['grass', 'dirt', 'cobble', 'sand', 'riverbed'] as const;
 /** Strength of the grass relief (the normal map's tilt, scaled by how much of the ground is grass). */
 export const GROUND_BUMP = 0.7;
+/** The cobbles' relief (their normal map's tilt), and their tile size: ≈ 8 stones per tile (u). */
+export const COBBLE_BUMP = 1.0;
+export const COBBLE_TILE_U = 2.2;
 
 /**
  * Stylised ground material. Vertex colour = base grass tint; `aSurf` (vec4) blends in
  * procedural surfaces: x = dirt path, y = plaza bricks (+ compass rose), z = cobbles, w = sand;
- * `aSurf2` (vec4): x = riverbed, y = wet bank, z = steepness, w = terrain height (u).
+ * `aSurf2` (vec4): x = riverbed, y = wet bank, z = steepness, w = terrain height (u);
+ * `aCob` (vec2): the cobbles' coordinates (u) in the plane of the building they surround, so the
+ * painted stones lie flat and unbroken on its levelled pad, with their own relief (a normal map).
  * Patterns are evaluated in planet-local space so they stay glued to the rotating planet.
  * With the generated tiles loaded (USE_GROUND_TEX), each surface samples its hand-painted tile
  * (triplanar, planet-local), normalised by the tile's mean colour so the palette is unchanged;
@@ -22,9 +27,24 @@ export function createPlanetMaterial(radius: number, plazaRadius: number): MeshS
   const plazaTex = gameTexture('plaza');
   // the grass tile's relief (a normal map derived from its painted luminance) so the meadow catches the light
   const grassN = textured ? gameTexture('grass-normal') : null;
-  m.defines = { ...(textured ? { USE_GROUND_TEX: '' } : {}), ...(plazaTex ? { USE_PLAZA_TEX: '' } : {}), ...(grassN ? { USE_GROUND_NORMAL: '' } : {}) };
+  const cobbleN = textured ? gameTexture('cobble-normal') : null;
+  m.defines = {
+    ...(textured ? { USE_GROUND_TEX: '' } : {}),
+    ...(plazaTex ? { USE_PLAZA_TEX: '' } : {}),
+    ...(grassN ? { USE_GROUND_NORMAL: '' } : {}),
+    ...(cobbleN ? { USE_COBBLE_NORMAL: '' } : {}),
+  };
+  // The cobbled aprons (GLSL below, kept free of comments to save bytes): where an apron thins
+  // out, its stones give way one by one (the joints first) to grass; the stones' relief comes from
+  // their normal map in the apron's own plane, through a cotangent frame built from the screen-space
+  // derivatives of `vCob` (no tangent attribute needed).
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uRadius = { value: radius };
+    shader.uniforms.uCobbleScale = { value: 1 / COBBLE_TILE_U };
+    if (cobbleN) {
+      shader.uniforms.uCobbleN = { value: cobbleN };
+      shader.uniforms.uCobbleBump = { value: COBBLE_BUMP };
+    }
     if (grassN) {
       shader.uniforms.uGrassN = { value: grassN };
       shader.uniforms.uGroundBump = { value: GROUND_BUMP };
@@ -46,9 +66,11 @@ export function createPlanetMaterial(radius: number, plazaRadius: number): MeshS
         `#include <common>
 attribute vec4 aSurf;
 attribute vec4 aSurf2;
+attribute vec2 aCob;
 varying vec4 vSurf;
 varying vec4 vSurf2;
 varying vec3 vLocal;
+varying vec2 vCob;
 #ifdef USE_GROUND_NORMAL
 varying vec3 vLocalN;
 varying vec3 vAxX;
@@ -62,6 +84,7 @@ varying vec3 vAxZ;
 vSurf = aSurf;
 vSurf2 = aSurf2;
 vLocal = position;
+vCob = aCob;
 #ifdef USE_GROUND_NORMAL
 vLocalN = objectNormal;
 // the planet's local axes in view space (for the triplanar normal perturbation)
@@ -75,10 +98,17 @@ vAxZ = normalMatrix * vec3(0.0, 0.0, 1.0);
         '#include <common>',
         `#include <common>
 uniform float uRadius;
+uniform float uCobbleScale;
 varying vec4 vSurf;
 varying vec4 vSurf2;
 varying vec3 vLocal;
+varying vec2 vCob;
 float gGrassW = 0.0;
+float gCobW = 0.0;
+#ifdef USE_COBBLE_NORMAL
+uniform sampler2D uCobbleN;
+uniform float uCobbleBump;
+#endif
 #ifdef USE_GROUND_NORMAL
 uniform sampler2D uGrassN;
 uniform float uGroundBump;
@@ -128,7 +158,19 @@ vec3 lin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }`,
   // organic, noisy path edges (the vertex band gives the rough shape, noise the wear)
   float pathN = vnoise(vLocal * 3.4) - 0.5 + (vnoise(vLocal * 9.0) - 0.5) * 0.4;
   float pathW = smoothstep(0.32, 0.62, vSurf.x + pathN * 0.42);
-  float wGrass = clamp(1.0 - pathW - vSurf.y - vSurf.z - vSurf.w - vSurf2.x - vSurf2.y * 0.6, 0.0, 1.0);
+  float cobW = 0.0;
+  vec3 cobT = vec3(0.0);
+  if (vSurf.z > 0.001) {
+#ifdef USE_GROUND_TEX
+    cobT = texture2D(uTexCobble, vCob * uCobbleScale).rgb;
+    float stoneH = dot(cobT, vec3(0.2126, 0.7152, 0.0722)) / max(dot(uMeanCobble, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+    cobW = smoothstep(0.34, 0.6, vSurf.z + (stoneH - 1.0) * 0.55 + (vnoise(vLocal * 3.0) - 0.5) * 0.3);
+#else
+    cobW = vSurf.z;
+#endif
+  }
+  gCobW = cobW;
+  float wGrass = clamp(1.0 - pathW - vSurf.y - cobW - vSurf.w - vSurf2.x - vSurf2.y * 0.6, 0.0, 1.0);
   gGrassW = wGrass;
 
   // ---- grass: top-down painterly colour noise (no blades), clover and a few tiny flowers ----
@@ -192,11 +234,9 @@ vec3 lin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }`,
     col = mix(col, dirt, pathW);
   }
 
-  // ---- cobblestone forecourts: domed stones with mossy joints ----
-  if (vSurf.z > 0.001) {
+  if (cobW > 0.001) {
 #ifdef USE_GROUND_TEX
-    vec3 cob = tri(uTexCobble, vLocal, tw, 0.42) * (lin(vec3(0.87, 0.84, 0.77)) / uMeanCobble);
-    col = mix(col, cob, vSurf.z);
+    col = mix(col, cobT * 0.96, cobW);
 #else
     vec3 w = worley(vLocal * 3.6);
     float edge = w.y - w.x;
@@ -204,7 +244,7 @@ vec3 lin(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }`,
     vec3 stone = mix(lin(vec3(0.78, 0.75, 0.69)), lin(vec3(0.95, 0.92, 0.86)), w.z);
     stone *= 0.84 + 0.26 * smoothstep(0.0, 0.3, edge);
     vec3 joint = mix(lin(vec3(0.58, 0.56, 0.5)), lin(vec3(0.46, 0.6, 0.34)), step(0.6, vnoise(vLocal * 5.0)));
-    col = mix(col, mix(stone, joint, mortar), vSurf.z);
+    col = mix(col, mix(stone, joint, mortar), cobW);
 #endif
   }
 
@@ -309,9 +349,31 @@ if (gGrassW > 0.01) {
   vec3 nv = vAxX * nb.x + vAxY * nb.y + vAxZ * nb.z;
   normal = nv * inversesqrt(max(dot(nv, nv), 1e-12));
 }
+#endif
+#ifdef USE_COBBLE_NORMAL
+if (gCobW > 0.01) {
+  vec2 cuv = vCob * uCobbleScale;
+  vec3 q0 = dFdx(-vViewPosition);
+  vec3 q1 = dFdy(-vViewPosition);
+  vec2 st0 = dFdx(cuv);
+  vec2 st1 = dFdy(cuv);
+  vec3 q1p = cross(q1, normal);
+  vec3 q0p = cross(normal, q0);
+  vec3 T = q1p * st0.x + q0p * st1.x;
+  vec3 B = q1p * st0.y + q0p * st1.y;
+  float tb = max(dot(T, T), dot(B, B));
+  if (tb > 1e-20) {
+    float s = inversesqrt(tb);
+    vec3 mapN = texture2D(uCobbleN, cuv).xyz * 2.0 - 1.0;
+    vec3 cn = T * (mapN.x * s * uCobbleBump) + B * (mapN.y * s * uCobbleBump) + normal * mapN.z;
+    cn = cn * inversesqrt(max(dot(cn, cn), 1e-12));
+    vec3 mixed = mix(normal, cn, gCobW);
+    normal = mixed * inversesqrt(max(dot(mixed, mixed), 1e-12));
+  }
+}
 #endif`,
       );
   };
-  m.customProgramCacheKey = () => `planet-ground-v5${textured ? '-tex' : ''}${plazaTex ? '-plaza' : ''}${grassN ? '-bump' : ''}`;
+  m.customProgramCacheKey = () => `planet-ground-v6${textured ? '-tex' : ''}${plazaTex ? '-plaza' : ''}${grassN ? '-bump' : ''}${cobbleN ? '-cob' : ''}`;
   return withLampLights(m);
 }

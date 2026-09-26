@@ -11,6 +11,7 @@ import { CRAFT_STAND, Family, KIDS, LinePicker, type DialogueProvider, type Fami
 import { FamilyView } from './FamilyView';
 import { HomeView } from './HomeView';
 import { TalkBox } from './TalkBox';
+import { homePads } from './homePads';
 
 export function attachHome(controller: GameController): HomeAttachment | null {
   const home = controller.props.home;
@@ -67,6 +68,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
   );
   return {
     family,
+    pads: homePads(home, R),
     people: family.npcs.map((n) => ({ id: n.id, name: n.name, n: n.n })),
     kids: family.npcs.filter((n) => KIDS.has(n.id)).map((n) => n.n),
     step(dt) {

@@ -27,7 +27,7 @@ distance in u), **nicely spaced** (≥ 1.5 u between features) with room to walk
 | Feature | Where | Collision |
 |---|---|---|
 | **The house** (the owner's home) | 245°, 5.6 u, front door facing the pond | circle 1.25 u |
-| **Rojina's reading chair** (a cushioned wooden armchair) and a side table with tea | on the lawn 2.1 u in front of the house, just off the door, facing the pond | 0.3 u |
+| **Rojina's reading chair** (a cushioned wooden armchair) and a side table with tea | on the lawn 3.6 u from the house, 62° off its front, facing the pond (moved out from 2.1 u so its levelled pad doesn't crease against the house's) | 0.3 u |
 | **Picnic table** with two chairs | 211°, 3.7 u | table 0.46 u, chairs 0.22 u |
 | **Picnic mat** (painted gingham blanket) with Lingjel's Lego and toy cars | 186°, 3.55 u | none (you walk on it) |
 | **Campsite**: stone fire ring, two camp chairs, a log bench, the guitar leaning on a chair | 272°, 4.3 u | ring 0.5 u, chairs 0.3 u, log 0.3 u |
@@ -45,8 +45,10 @@ Built with the geometry kit, so every part gets its painted surface texture (pla
 plaster, stone, brick, canvas, metal):
 
 - **House:** a cottage with cream plaster walls over a fieldstone plinth, a steep shingled gable
-  roof with a brick chimney, a green front door with a porch light and two steps, lit windows with
-  shutters and flower boxes, a small porch roof, potted plants, a welcome mat and a mailbox.
+  roof with a brick chimney, a green front door with a porch light and four steps down to the
+  ground (the house stands on its own levelled pad, see [ground.md](./ground.md)), lit windows with
+  shutters and flower boxes, a small porch roof, potted plants, a welcome mat at the foot of the
+  steps and a mailbox.
 - **Campsite:** a ring of stones round crossed logs; **flames** (three glowing cones, flickering),
   a **real warm light** at night (lamplight system, flickering), smoke puffs by day, embers by
   night; two folding camp chairs (canvas), a log bench, an acoustic guitar leaning on a chair.

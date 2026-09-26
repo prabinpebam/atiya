@@ -531,7 +531,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
         for (const acrossU of [1.35, 1.7, 2.1]) {
           const end = moveAlong(b.n, along, (L + extra) / R);
           const n = moveAlong(end, b.across.clone().multiplyScalar(side), acrossU / R);
-          if (!ok(n, FURNITURE_RADIUS.bench, 0.35)) continue;
+          if (!ok(n, FURNITURE_RADIUS.bench, 0.6)) continue;
           // facing the water: back along the path, toward the river
           const facing = tangentToward(n, moveAlong(b.n, b.across.clone().multiplyScalar(side), acrossU / R)) ?? along.clone().negate();
           out.push({ kind: 'bench', n, facing });
@@ -545,7 +545,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
         for (const acrossU of [1.15, 1.45, 1.8]) {
           const end = moveAlong(b.n, along, (L + extra) / R);
           const n = moveAlong(end, b.across.clone().multiplyScalar(side), acrossU / R);
-          if (!ok(n, FURNITURE_RADIUS.noticeboard, 0.25) || out.some((f) => arcDistance(f.n, n, R) < 1.4)) continue;
+          if (!ok(n, FURNITURE_RADIUS.noticeboard, 0.6) || out.some((f) => arcDistance(f.n, n, R) < 1.4)) continue;
           out.push({ kind: 'noticeboard', n, facing: tangentToward(n, end) ?? along.clone() });
           break board;
         }

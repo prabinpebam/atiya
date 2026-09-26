@@ -96,7 +96,7 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const house = spot(215, 6.5);
   const door = { n: beside(house, 0, HOME_R.house + 0.3), facing: house.facing.clone() };
   // on the lawn beside the house (off the path from its door), facing the pond
-  const chairN = beside(house, 62, 2.4);
+  const chairN = beside(house, 62, 3.6);
   const readingChair = { n: chairN, facing: facingTo(chairN, pond.n) };
   const sideTable = { n: beside(readingChair, 90, 0.4), facing: readingChair.facing.clone() };
   const table = spot(170, 5.0);
@@ -128,7 +128,7 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   // the string lights' far post: between the table and the house, beside the table
   const lightsPost = moveAlong(table.n, tangentToward(table.n, house.n)!.applyAxisAngle(table.n, 0.35), 1.3 / R);
   // beside the house and a little behind it, on the table's side, facing the pond
-  const dogN = beside(house, -125, 2.6);
+  const dogN = beside(house, -108, 3.4);
   const dogHouse = { n: dogN, facing: facingTo(dogN, pond.n) };
   const centre = at(185, 4.6);
 

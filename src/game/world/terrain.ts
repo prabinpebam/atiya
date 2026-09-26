@@ -3,13 +3,15 @@ import { CONFIG } from '../config';
 import { UP, arcDistance, pointArcDistance } from '../math/sphere';
 import type { LandmarkGeometry } from '../math/landmarks';
 import { mesaPolar, mesaRadius, riverDistance, tierEdge, tierPolar, type Bridge, type Mesa, type River } from './features';
+import { applyPads, apronAt, makePad, padOutline, padSamples, planeHeight, separatePads, type Pad, type PadSpec } from './pads';
 import { pondAngle, pondBasin, pondFrame, shoreRadius, type PondFrame } from './pond';
 
 /**
  * Ground height above the base sphere (u), as a pure function of the planet-local direction.
  * Mild rolling undulation that flattens at the plaza, landmarks, paths, pond and river banks;
- * a carved river bed and pond bowl; flat-topped rocky mesas. `walkHeight` adds the arched bridge
- * deck, and `waterDepth` says how deep the character is wading.
+ * a carved river bed and pond bowl; flat-topped rocky mesas; and a flat pad under each structure,
+ * shaped to the plane its base stands on (pads.ts). `walkHeight` adds the arched bridge deck, and
+ * `waterDepth` says how deep the character is wading.
  */
 
 export const UNDULATION_U = 0.38;
@@ -81,11 +83,15 @@ export class Terrain {
   private readonly R: number;
   private readonly pondF: PondFrame | null;
   private readonly bounds: LandmarkBounds[];
+  /** The flat pads under the structures (empty unless given). */
+  pads: readonly Pad[] = [];
+  private specs: PadSpec[] = [];
 
   constructor(
     landmarks: readonly LandmarkGeometry[],
     readonly features: TerrainFeatures,
     cfg = CONFIG,
+    pads: readonly PadSpec[] = [],
   ) {
     this.R = cfg.planetRadius;
     this.pondF = features.pond ? pondFrame(features.pond, features.river) : null;
@@ -99,6 +105,48 @@ export class Terrain {
       mid.normalize();
       return { g, cosFoot: cosOf((g.footprintU + 2.3) / R), cosApproach: cosOf(1.9 / R), mid, cosPath: cosOf(half + 1.5 / R) };
     });
+    this.specs = [...pads];
+    this.pads = this.buildPads();
+  }
+
+  /**
+   * More structures (a chunk that loads later, like the home): the pads are laid out again
+   * (the ground mesh is built after the chunks attach, so it sees them all).
+   */
+  addPads(specs: readonly PadSpec[]): void {
+    this.specs.push(...specs);
+    this.pads = this.buildPads();
+  }
+
+  private buildPads(): Pad[] {
+    const R = this.R;
+    const specs = this.specs;
+    const list = specs.map((spec) => makePad(spec, spec.h ?? 0, R));
+    // two structures close together: their flat parts shrink to meet, never overlap
+    separatePads(list, R);
+    // a skirt stops short of the water, so a pad never lifts a river bank or the pond's shore
+    for (const p of list) {
+      for (let d = p.margin; d < p.margin + p.skirt + 0.2; d += 0.1) {
+        if (!padOutline(p, d, R, 6).some((q) => this.inWater(q))) continue;
+        p.skirt = Math.max(0.25, d - 0.2 - p.margin);
+        break;
+      }
+    }
+    // each plane sits at its given height, or is fitted to the ground under it (as much above it as
+    // below, so a big building on level ground sinks a little at its middle rather than standing on
+    // a mound), biggest first, each to the ground as the bigger ones have left it (a bench in a
+    // building's forecourt sits on the forecourt)
+    const order = list.map((_, i) => i).sort((i, j) => list[j].bx * list[j].bz - list[i].bx * list[i].bz);
+    const done: Pad[] = [];
+    for (const i of order) {
+      const p = list[i];
+      if (specs[i].h === undefined) {
+        const pts = [...padSamples(p, 0, R), ...padSamples(p, p.margin, R)];
+        p.h = pts.reduce((a, q) => a + applyPads(done, q, R, this.lowland(q)) - planeHeight(p, q, R), 0) / pts.length;
+      }
+      done.push(p);
+    }
+    return list;
   }
 
   /** Rolling hills in [−A, A] before masking. */
@@ -129,6 +177,20 @@ export class Terrain {
 
   /** Ground-mesh height (u above the base sphere) at planet-local direction `n` (`rd`: its `riverDistance`, if already known). */
   height(n: Vector3, rd?: { d: number; i: number }): number {
+    // the pads level the land but never cut into a mesa
+    let h = this.lowland(n, rd);
+    if (this.pads.length) h = applyPads(this.pads, n, this.R, h);
+    for (const m of this.features.mesas) h = Math.max(h, this.mesaHeight(m, n));
+    return h;
+  }
+
+  /** The cobblestone apron round a structure at `n`: weight and in-plane texture coordinates (u). */
+  apron(n: Vector3): { w: number; x: number; z: number } {
+    return apronAt(this.pads, n, this.R);
+  }
+
+  /** The ground before the pads and the mesas: hills, river bed, pond bowl. */
+  private lowland(n: Vector3, rd?: { d: number; i: number }): number {
     const river = this.features.river;
     rd ??= river ? riverDistance(river, n) : { d: Infinity, i: 0 };
     let h = this.undulation(n) * this.flatMask(n, rd.d);
@@ -146,7 +208,6 @@ export class Terrain {
         if (bowl > 0) h = Math.min(h, -bowl);
       }
     }
-    for (const m of this.features.mesas) h = Math.max(h, this.mesaHeight(m, n));
     return h;
   }
 

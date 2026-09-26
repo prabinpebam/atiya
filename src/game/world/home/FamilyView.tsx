@@ -33,7 +33,7 @@ import { kitMaterials } from '../materials';
 import { KitModel } from '../KitModel';
 import { CRAFT_STAND, type Family, type NpcId } from './family';
 import { bodyPose, HIP_FRACTION } from './poses';
-import { birdhouseModel, bookModel, bubbleModel, guitarModel, hammerModel, stickModel, toyCarModel, paperModel } from './models';
+import { HOUSE, HOUSE_STEPS, birdhouseModel, bookModel, bubbleModel, guitarModel, hammerModel, stickModel, toyCarModel, paperModel } from './models';
 import { seatHip } from './seats';
 import { PROP_SCALE } from '../homestead';
 import { Kit } from '../kit';
@@ -96,9 +96,8 @@ function reachArm(arm: Object3D | null, fore: Object3D | null, hand: Object3D | 
 
 /** The front steps and the floor behind the door (house-local heights above its base, and their outer edges from its centre, u; home/models.ts). */
 const STEPS: ReadonlyArray<[number, number]> = [
-  [1.27, 0.08],
-  [1.09, 0.16],
-  [0.9, 0.34],
+  ...Array.from({ length: HOUSE_STEPS.n }, (_, i): [number, number] => [HOUSE.d / 2 + 0.06 + HOUSE_STEPS.tread * (HOUSE_STEPS.n - i), HOUSE_STEPS.rise * (i + 1)]),
+  [HOUSE.d / 2 + 0.05, HOUSE_STEPS.rise * HOUSE_STEPS.n],
 ];
 const stepHeight = (d: number) => {
   let h = 0;
@@ -279,7 +278,7 @@ function Person({ controller, family, id }: { controller: GameController; family
   const knock = useRef(0);
   const strum = useRef(-1);
   const home = family.home;
-  const houseBase = controller.terrain.height(home.house.n) + 0.12;
+  const houseBase = controller.terrain.height(home.house.n);
 
   useFrame((_, rawDt) => {
     const g = root.current;

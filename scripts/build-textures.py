@@ -74,6 +74,7 @@ CLOUD_ATLAS = ("cloud-atlas", ["cloud-a", "cloud-b", "cloud-c", "cloud-d"], (102
 # a per-leaf normal fights the canopy's volume shading.)
 NORMALS: dict[str, tuple[str, str, int, float]] = {
     "grass-normal": ("tile-lum", "grass", 256, 5.0),
+    "cobble-normal": ("tile-lum", "cobble", 256, 4.0),
 }
 # how a sprite sits in its square card: bottom = base touches the bottom edge (stems, grass, crown),
 # top = hangs from the top edge (boughs)

@@ -78,7 +78,7 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
 
 ### 4.3 Chopper's house (the construction site)
 
-- **The site** (`world/homestead.ts`, `dogHouse`): 2.7 u from the family's house on its right-hand side (95° from its front, away from the campsite), facing the pond; a 1.2 u disc is kept clear, and the family's `blocked` keeps them off it whether it's built or not.
+- **The site** (`world/homestead.ts`, `dogHouse`): 3.4 u from the family's house, 108° off its front (moved out so its levelled pad stays clear of the house's; see [ground.md](./ground.md)), facing the pond; a 1.2 u disc is kept clear, and the family's `blocked` keeps them off it whether it's built or not.
 - **The ghost:** a translucent pale-blue outline of the house, from nearly invisible (≥ 12 u) to clear (≤ 2 u), with a slow shimmer.
 - **The site card** (within 3.5 u; at the lower left, beside the scene rather than over the ghost and the character; centred above the prompt on narrow screens):
   - the title "Chopper's house";

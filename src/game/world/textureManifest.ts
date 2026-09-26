@@ -25,11 +25,11 @@ export const TEXTURES = {
     "url": "/textures/cobble.webp",
     "kind": "tile",
     "mean": [
-      0.6098,
-      0.5329,
-      0.3788
+      0.3804,
+      0.3141,
+      0.2318
     ],
-    "bytes": 39226
+    "bytes": 56120
   },
   "sand": {
     "url": "/textures/sand.webp",
@@ -279,6 +279,11 @@ export const TEXTURES = {
     "url": "/textures/grass-normal.webp",
     "kind": "normal",
     "bytes": 17456
+  },
+  "cobble-normal": {
+    "url": "/textures/cobble-normal.webp",
+    "kind": "normal",
+    "bytes": 19730
   }
 } as const;
 
