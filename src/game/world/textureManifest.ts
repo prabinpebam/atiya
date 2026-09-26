@@ -186,11 +186,6 @@ export const TEXTURES = {
     "kind": "tint",
     "bytes": 4896
   },
-  "grass-card": {
-    "url": "/textures/grass-card.webp",
-    "kind": "tint",
-    "bytes": 17566
-  },
   "moon": {
     "url": "/textures/moon.webp",
     "kind": "sprite",
@@ -274,6 +269,71 @@ export const TEXTURES = {
     "url": "/textures/cloud-normal.webp",
     "kind": "normal",
     "bytes": 13946
+  },
+  "tuft-atlas": {
+    "url": "/textures/tuft-atlas.webp",
+    "kind": "tint",
+    "bytes": 82136,
+    "cells": [
+      "meadow-tuft-1",
+      "meadow-tuft-2",
+      "meadow-tuft-3",
+      "meadow-tuft-4",
+      "meadow-tuft-5",
+      "meadow-tuft-6",
+      "meadow-tuft-7",
+      "meadow-tuft-8"
+    ],
+    "rects": [
+      [
+        0.0625,
+        0.50195,
+        0.1875,
+        0.98633
+      ],
+      [
+        0.25781,
+        0.50195,
+        0.49219,
+        0.95703
+      ],
+      [
+        0.5332,
+        0.50195,
+        0.71484,
+        0.98633
+      ],
+      [
+        0.77344,
+        0.50195,
+        0.97656,
+        0.98633
+      ],
+      [
+        0.0293,
+        0.00195,
+        0.21875,
+        0.48633
+      ],
+      [
+        0.30859,
+        0.00195,
+        0.44141,
+        0.48633
+      ],
+      [
+        0.51953,
+        0.00195,
+        0.72852,
+        0.48633
+      ],
+      [
+        0.79883,
+        0.00195,
+        0.95117,
+        0.48633
+      ]
+    ]
   },
   "grass-normal": {
     "url": "/textures/grass-normal.webp",

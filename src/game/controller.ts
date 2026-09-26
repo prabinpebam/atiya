@@ -202,6 +202,12 @@ export class GameController {
   wildlifeView: ComponentType<{ controller: GameController }> | null = null;
   /** The ambient wildlife simulation (set by the Wildlife component; read by the test hook). */
   wildlife: import('./world/animals').Wildlife | null = null;
+  /** The blade grass, flowers and knee-high tufts (`world/grass/`, in the `nature` chunk with the wildlife; vegetation spec), or null. */
+  grassView: ComponentType<{ controller: GameController }> | null = null;
+  /** The ground mesh the grass grows on (set by Planet), and what the grass placed (read by the test hook). */
+  ground: import('three').BufferGeometry | null = null;
+  grassStats: Record<string, number> | null = null;
+  grassMeadows: Vector3[] = [];
   /** Renderer and scene, for diagnostics (the test hook's `perfStats`). */
   gfx: { gl: WebGLRenderer; scene: Scene } | null = null;
   /** Totals for the previous frame (all passes: shadows, scene, post). */

@@ -80,6 +80,7 @@ function withMesaCaps(ground: BufferGeometry, caps: BufferGeometry | null): Buff
   for (let i = 0; i < ci.length; i++) idx[gi.length + i] = ci[i] + n0;
   g.setIndex(new BufferAttribute(idx, 1));
   g.computeBoundingSphere();
+  g.userData.sphereTris = gi.length / 3;
   return g;
 }
 
@@ -181,7 +182,12 @@ function buildGround(controller: GameController): BufferGeometry {
 }
 
 export function Planet({ controller }: { controller: GameController }) {
-  const { geometry, material } = useMemo(() => ({ geometry: buildGround(controller), material: createPlanetMaterial(R, PLAZA_RADIUS_U) }), [controller]);
+  const { geometry, material } = useMemo(() => {
+    const geometry = buildGround(controller);
+    // the blade grass (the nature chunk) grows on exactly this mesh
+    controller.ground = geometry;
+    return { geometry, material: createPlanetMaterial(R, PLAZA_RADIUS_U) };
+  }, [controller]);
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     // a tap walks; a drag tumbles the view (handled on the region) and must not walk

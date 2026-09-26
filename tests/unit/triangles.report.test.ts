@@ -2,7 +2,7 @@ import { describe, it } from 'vitest';
 import type { BufferGeometry } from 'three';
 import { landmarkModel } from '../../src/game/world/models';
 import { cedar, hardwood, leafyBush } from '../../src/game/world/foliage';
-import { cloud, flowerBlooms, flowerStems, grassTuft, reeds, rock } from '../../src/game/world/propModels';
+import { cloud, flowerBlooms, flowerStems, reeds, rock } from '../../src/game/world/propModels';
 
 const tris = (g: BufferGeometry | null) => (g ? (g.index ? g.index.count : g.getAttribute('position').count) / 3 : 0);
 
@@ -18,7 +18,7 @@ describe.skip('triangle budget report (manual)', () => {
     rows.cedar = t2(cedar());
     rows.bush = t2(leafyBush());
     rows.rock = tris(rock());
-    rows.grass = tris(grassTuft());
+    // the blade grass: 3 per blade, 7 per flower, 2 per tuft (world/grass; its totals are __game.grass())
     for (const k of ['tulip', 'cosmos', 'pansy'] as const) rows[`flower:${k}`] = tris(flowerStems(k)) + tris(flowerBlooms(k));
     rows.cloud = tris(cloud());
     rows.reeds = tris(reeds());

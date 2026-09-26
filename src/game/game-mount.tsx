@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { GameController } from './controller';
 import { GameApp } from './GameApp';
 import type { LandmarkData } from './types';
+import { grassEnv } from './world/grassEnv';
 import { preloadTextures } from './world/textures';
 
 /**
@@ -27,17 +28,19 @@ export async function mountGame(container: HTMLElement, landmarks: LandmarkData[
   // own chunk meanwhile, so his material compiles with the rest of the scene before the first frame.
   // The home and family by the pond come the same way (family.md), and so do the crafting table and Chopper's house
   // (crafting.md) and the wildlife.
-  const [, chopper, home, craft, wildlife] = await Promise.all([
+  const [, chopper, home, craft, nature] = await Promise.all([
     preloadTextures(),
     import('./world/Chopper').catch(() => null),
     import('./world/home').catch(() => null),
     import('./world/craft').catch(() => null),
-    import('./world/Wildlife').catch(() => null),
+    // the wildlife and the blade grass (vegetation/): one chunk
+    import('./world/nature').catch(() => null),
   ]);
   controller.chopperView = chopper?.Chopper ?? null;
   // his mind (sharing the position the targets already use)
   if (chopper) controller.attachChopper(new chopper.ChopperBrain(Math.random, controller.chopper.n, controller.chopper.dir));
-  controller.wildlifeView = wildlife?.Wildlife ?? null;
+  controller.wildlifeView = nature?.Wildlife ?? null;
+  controller.grassView = nature ? nature.grassView(grassEnv(controller)) : null;
   try {
     controller.attachHome(home?.attachHome(controller) ?? null);
   } catch (err) {

@@ -48,7 +48,6 @@ TEXTURES: dict[str, tuple[str, int]] = {
     "plaza": ("decal", 1024),
     "leaf-broad": ("tint", 256),
     "leaf-single": ("tint", 128),
-    "grass-card": ("tint", 256),
     "moon": ("sprite", 256),
     # Chopper's curly coat (the fur shells' locks; chopper.md §2)
     "chopper-fur": ("mask", 256),
@@ -66,6 +65,10 @@ ATLASES: dict[str, tuple[list[str], int, str]] = {
 # matching tangent-space normal atlas (a puffy dome from the alpha + the painted detail) so the
 # clouds catch the day's light: name -> (cells [TL, TR, BL, BR], (width, height), normal-map name)
 CLOUD_ATLAS = ("cloud-atlas", ["cloud-a", "cloud-b", "cloud-c", "cloud-d"], (1024, 512), "cloud-normal")
+# Knee-high grass tufts (vegetation spec): eight 3–4-blade tufts (sliced from two generated sheets by
+# scripts/slice-tufts.py) in a 4×2 grid of portrait cells, tintable greyscale, each standing on its
+# cell's bottom edge; each tuft's opaque rectangle is recorded (UV, v up) so its card fits it
+TUFT_ATLAS = ("tuft-atlas", [f"meadow-tuft-{i}" for i in range(1, 9)], (512, 512), (4, 2))
 # Normal maps (tangent space, OpenGL convention), so textures react to the light:
 #   sprite-height: a generated height map of a sprite (same framing), fitted with the sprite's alpha
 #   atlas-dome:    derived from an atlas: a dome over each clump plus its painted shading as relief
@@ -78,7 +81,7 @@ NORMALS: dict[str, tuple[str, str, int, float]] = {
 }
 # how a sprite sits in its square card: bottom = base touches the bottom edge (stems, grass, crown),
 # top = hangs from the top edge (boughs)
-ALIGN = {"leaf-broad": "bottom", "grass-card": "bottom", "leaf-single": "center", "moon": "center",
+ALIGN = {"leaf-broad": "bottom", "leaf-single": "center", "moon": "center",
          "conifer-clump": "center", "conifer-bough": "top", "conifer-tufts": "center", "conifer-crown": "bottom",
          "pond-lilies": "center", "pond-reeds": "bottom", "pond-iris": "bottom", "pond-fern": "bottom"}
 # minimum width/height ratio: narrow sprites are widened so the cards keep their coverage
@@ -247,6 +250,30 @@ def build_normals(manifest: dict) -> int:
     return total
 
 
+def build_tuft_atlas(manifest: dict) -> int:
+    name, cells, (w, h), (cols, rows) = TUFT_ATLAS
+    if not all((SRC / f"{c}.png").exists() for c in cells):
+        print(f"skip {name}: missing a cell source")
+        return 0
+    cw, ch = w // cols, h // rows
+    atlas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    rects = []
+    for i, c in enumerate(cells):
+        im = Image.open(SRC / f"{c}.png").convert("RGBA")
+        a = np.asarray(im)[..., 3]
+        ys, xs = np.nonzero(a > 8)
+        im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+        s = min(cw * 0.94 / im.width, ch * 0.97 / im.height)
+        im = im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
+        x0, y0 = (i % cols) * cw + (cw - im.width) // 2, (i // cols) * ch + ch - im.height - 1
+        atlas.alpha_composite(tint_sprite(im), (x0, y0))
+        rects.append([round(x0 / w, 5), round(1 - (y0 + im.height) / h, 5), round((x0 + im.width) / w, 5), round(1 - y0 / h, 5)])
+    total = save_webp(bleed(atlas), OUT / f"{name}.webp")
+    manifest[name] = {"url": f"/textures/{name}.webp", "kind": "tint", "bytes": total, "cells": cells, "rects": rects}
+    print(f"{name:12s} atlas  {w}x{h}  {total / 1024:6.1f} KB")
+    return total
+
+
 def build_cloud_atlas(manifest: dict) -> int:
     name, cells, (w, h), normal_name = CLOUD_ATLAS
     if not all((SRC / f"{c}.png").exists() for c in cells):
@@ -359,6 +386,7 @@ def main() -> None:
         print(f"{name:12s} atlas  {size:4d}px  {n / 1024:6.1f} KB")
 
     total += build_cloud_atlas(manifest)
+    total += build_tuft_atlas(manifest)
     total += build_normals(manifest)
 
     # landing key art + social card

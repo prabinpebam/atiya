@@ -1,0 +1,6 @@
+Model: gpt-image-2.5-sunburst (Azure OpenAI), quality high, 1536x1024, generated 2026-09-26.
+Transparent background (background=transparent, png); alpha snapped and edge-bled by the skill.
+Sliced into the tuft sprites meadow-tuft-1…8 by scripts/slice-tufts.py.
+
+Prompt:
+Hand-painted stylised game sprite sheet for a cozy, toy-like life-sim video game: soft painterly shading, clean simple shapes, no photorealism. Four separate, tall, narrow tufts of wild grass in a single row, side by side and evenly spaced. Each tuft has only three or four long slender blades: the first has three blades leaning gently to the right as if in a breeze; the second has four thin blades, two long and two short; the third has three blades with gentle S-curves; the fourth has four blades, one tall blade folding over near the top. Each tuft is its own small plant, clearly separated from the others by wide empty space, all standing on the same invisible baseline, each growing from a single narrow point at the bottom. Painterly yellow-green gradient, darker at the base and lighter toward the tips; clean crisp silhouettes; isolated on a transparent background, no ground, no soil, no shadow, no flowers, no text.

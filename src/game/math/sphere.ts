@@ -122,6 +122,8 @@ export interface Obstacle {
   n: Vector3;
   /** Footprint radius in world units. */
   radiusU: number;
+  /** Part of a mesa's collision ring (its top is still a lawn: the grass ignores these). */
+  mesa?: boolean;
 }
 
 export interface CollisionParams {

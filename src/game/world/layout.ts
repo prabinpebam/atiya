@@ -665,13 +665,13 @@ export function mesaTopClearance(m: Mesa, n: Vector3, isCedar: boolean, scale: n
 /** A cliff blocks with a core circle plus a ring that follows its irregular outline. */
 export function mesaObstacles(m: Mesa, cfg = CONFIG): Obstacle[] {
   const R = cfg.planetRadius;
-  const out: Obstacle[] = [{ n: m.n, radiusU: m.radiusU * 0.8 }];
+  const out: Obstacle[] = [{ n: m.n, radiusU: m.radiusU * 0.8, mesa: true }];
   const count = Math.ceil((Math.PI * 2 * m.radiusU) / 0.45);
   for (let k = 0; k < count; k++) {
     const a = (k / count) * Math.PI * 2;
     const dir = m.north.clone().multiplyScalar(Math.cos(a)).addScaledVector(m.east, Math.sin(a));
     const edge = mesaRadius(m.radiusU, m.seed, a);
-    out.push({ n: moveAlong(m.n, dir, (edge - 0.28) / R), radiusU: 0.36 });
+    out.push({ n: moveAlong(m.n, dir, (edge - 0.28) / R), radiusU: 0.36, mesa: true });
   }
   return out;
 }

@@ -463,7 +463,7 @@ All textures and the landing art are **original**, generated for this project wi
 | `rock` | Seamless strata tile, 512² | Cliff walls (UV-mapped around each mesa, so the strata stay horizontal) |
 | `boulder` | Seamless greyscale granite mask, 256² (soft facets, speckled grain, hairline cracks; non-directional) | Boulders, rocks and pebbles (object-space triplanar, luminance only, so instance tints keep their colour). A second, larger sample breaks up the moss edge. The cliff strata were used here before, but their horizontal bands read as wood grain on round stones |
 | `water` | Seamless greyscale caustics mask, 512² | River flow shader (two layers drifting downstream) |
-| `leaf-broad`, `leaf-single`, `grass-card` | Alpha sprites converted to tintable greyscale | Hardwood/bush leaf cards, flying leaves, grass clumps |
+| `leaf-broad`, `leaf-single` | Alpha sprites converted to tintable greyscale | Hardwood/bush leaf cards, flying leaves (the `grass-card` clumps were retired for the blade grass, vegetation/) |
 | `conifer-atlas` | 2×2 tintable atlas of four alpha sprites (clump, bough, tufts, crown), 512² | Cedar foliage cards (each card picks a cell; `Cards.add` takes a UV rect) |
 | `pond-atlas` | 2×2 full-colour atlas of four alpha sprites (lily-pad cluster, reeds with cattails, irises, fern), 512² | Pond plants: flat floating lily cards and crossed upright cards for reeds, irises and ferns |
 | `moon` | Alpha sprite | Night sky moon disc |

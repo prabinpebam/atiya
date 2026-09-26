@@ -23,8 +23,8 @@ function webpSize(buf: Buffer): { w: number; h: number; alpha: boolean } {
 describe('generated textures', () => {
   const entries = Object.entries(TEXTURES) as [string, { url: string; kind: string; bytes: number; mean?: readonly number[] }][];
 
-  it('ships every ground layer, foliage sprite and the moon', () => {
-    for (const name of ['grass', 'dirt', 'cobble', 'sand', 'riverbed', 'rock', 'boulder', 'water', 'leaf-broad', 'conifer-atlas', 'leaf-single', 'grass-card', 'moon']) {
+  it('ships every ground layer, foliage sprite, the grass tufts and the moon', () => {
+    for (const name of ['grass', 'dirt', 'cobble', 'sand', 'riverbed', 'rock', 'boulder', 'water', 'leaf-broad', 'conifer-atlas', 'leaf-single', 'tuft-atlas', 'moon']) {
       expect(TEXTURES).toHaveProperty(name);
     }
   });

@@ -111,6 +111,10 @@ export interface GameTestHook {
   npcDo(id: string, activity: string): boolean;
   /** Stand at the home by the pond, facing the house. */
   visitHome(): boolean;
+  /** What the grass placed (null when the grass chunk is absent), and its knee-high meadows. */
+  grass(): { stats: Record<string, number> | null; meadows: number };
+  /** Stands the character in the i-th knee-high meadow. */
+  visitMeadow(i?: number): boolean;
   groundInfo(): {
     lift: number;
     height: number;
@@ -546,6 +550,14 @@ export function installTestHook(c: GameController): void {
         ripples: c.wake.ripples,
         collar: c.wake.collar,
       };
+    },
+    grass: () => ({ stats: c.grassStats ? { ...c.grassStats } : null, meadows: c.grassMeadows.length }),
+    visitMeadow: (i = 0) => {
+      const m = c.grassMeadows[i % Math.max(1, c.grassMeadows.length)];
+      if (!m) return false;
+      const toward = tangentToward(m, UP as Vector3) ?? new Vector3(0, 0, 1);
+      c.sim.setOrientation(orientationFor(m, toward.negate()));
+      return true;
     },
     visitProp: (kind, i = 0) => {
       const list = c.props[kind];

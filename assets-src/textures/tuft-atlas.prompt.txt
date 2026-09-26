@@ -1,0 +1,1 @@
+Atlas of the eight painted knee-high grass tufts meadow-tuft-1 … meadow-tuft-8, sliced by scripts/slice-tufts.py from the two generated sheets meadow-tufts-1 and meadow-tufts-2 (see their prompts), packed by scripts/build-textures.py into the 128x256 cells (4 x 2) of a 512x512 greyscale-tintable atlas.

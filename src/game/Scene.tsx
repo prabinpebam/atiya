@@ -261,6 +261,7 @@ export function Scene({ controller }: { controller: GameController }) {
   // Chopper's body, fur and animation: their own chunk, loaded alongside the textures (game-mount.tsx)
   const Chopper = controller.chopperView;
   const Wildlife = controller.wildlifeView;
+  const Grass = controller.grassView;
   const Home = controller.home?.View ?? null;
   const Craft = controller.craft?.View ?? null;
   const quality = useStore(controller.store, (s) => s.quality);
@@ -276,6 +277,7 @@ export function Scene({ controller }: { controller: GameController }) {
       <Clouds controller={controller} />
       <group ref={planet} name="planet-root">
         <Planet controller={controller} />
+        {Grass && <Grass controller={controller} />}
         <Cliffs controller={controller} />
         <Water controller={controller} />
         <WadeFx controller={controller} />

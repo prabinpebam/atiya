@@ -8,7 +8,8 @@ import { gzipSync } from 'node:zlib';
 const DIST = 'dist';
 const ASSETS = join(DIST, '_astro');
 const GAME_BUDGET_KB = 450;
-const DEFERRED_BUDGET_KB = 70;
+// on demand: 70 → 80 KB for the blade grass (vegetation proposal D3; ≈ 7 KB gz, loaded with the wildlife)
+const DEFERRED_BUDGET_KB = 80;
 const GATE_BUDGET_KB = 8;
 
 if (!existsSync(ASSETS)) {

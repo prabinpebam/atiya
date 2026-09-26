@@ -23,7 +23,7 @@ import { FLOWER_KINDS, type Pond, type PropInstance } from './layout';
 import { kitMaterials } from './materials';
 import { WIND_GLSL, windUniforms } from './windField';
 import { cedar, flowerSprig, foliageMaterials, hardwood, leafyBush } from './foliage';
-import { boulder, butterflyWing, flatCard, flowerBlooms, flowerStems, grassCards, grassTuft, lilyPad, pebble, reeds, rock, uprightCards } from './propModels';
+import { boulder, butterflyWing, flatCard, flowerBlooms, flowerStems, lilyPad, pebble, reeds, rock, uprightCards } from './propModels';
 import { pondPlants } from './pondPlants';
 import { RIVER_WATER_U } from './terrain';
 import { Fireflies } from './DayNight';
@@ -428,7 +428,6 @@ export function Props({ controller }: { controller: GameController }) {
       rock: rock(),
       boulder: boulder(),
       pebble: pebble(),
-      grass: gameTexture('grass-card') ? grassCards() : grassTuft(),
       stems: Object.fromEntries(FLOWER_KINDS.map((k) => [k, flowerStems(k)])),
       blooms: Object.fromEntries(FLOWER_KINDS.map((k) => [k, flowerBlooms(k)])),
     }),
@@ -447,14 +446,6 @@ export function Props({ controller }: { controller: GameController }) {
     addSway(broad.depth, 0.016, 1.2, 'broad-depth');
     addSway(needle.depth, 0.016, 1.2, 'needle-depth');
     addSway(broadBush.depth, 0.06, 0.1, 'broad-bush-depth');
-    const grassCard = gameTexture('grass-card');
-    let grass: Material;
-    if (grassCard) {
-      grass = new MeshStandardMaterial({ vertexColors: true, map: grassCard, alphaTest: 0.5, side: DoubleSide, roughness: 0.9, metalness: 0 });
-      addSway(grass, 0.9, 0.0, 'grass-card');
-    } else {
-      grass = swayMaterial(base, 0.9, 0.0, 'grass');
-    }
     // trunks keep the kit's surface detail (the painted bark tile) under the sway
     const tree = withSurfaceDetail((base as MeshStandardMaterial).clone(), 0.36, 1.1);
     addSway(tree, 0.016, 1.2, 'tree');
@@ -462,7 +453,6 @@ export function Props({ controller }: { controller: GameController }) {
     return {
       tree: withLampLights(tree),
       bush: withLampLights(swayMaterial(base, 0.06, 0.1, 'bush')),
-      grass: withLampLights(grass),
       flower: withLampLights(swayMaterial(base, 0.55, 0.0, 'flower')),
       // painted stone grain (object-space, luminance only, so tints keep their colour) + shader moss
       rock: withLampLights(withStoneDetail((base as MeshStandardMaterial).clone(), 0.7, 1.4)),
@@ -518,7 +508,6 @@ export function Props({ controller }: { controller: GameController }) {
       <Instanced geometry={geo.rock} material={mats.rock} items={layout.rocks} colorFor={tint} />
       <Instanced geometry={geo.boulder} material={mats.rock} items={layout.boulders} colorFor={tint} register={fx.reg('boulder')} />
       <Instanced geometry={geo.pebble} material={mats.rock} items={layout.pebbles} colorFor={tint} shadow={false} lift={-0.03} />
-      <Instanced geometry={geo.grass} material={mats.grass} items={layout.grass} colorFor={tint} shadow={false} />
       {FLOWER_KINDS.map((k) => (
         <group key={k}>
           <Instanced geometry={geo.stems[k]} material={mats.flower} items={layout.flowers[k]} shadow={false} register={fx.reg(`${k}:stems`)} />

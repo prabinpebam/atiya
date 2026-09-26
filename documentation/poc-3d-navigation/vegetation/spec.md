@@ -8,7 +8,34 @@
 >
 > This is **v2**. An independent review of v1 found 17 issues, and a second prototype round tested the fixes (§10).
 
-Status: **proposed**. It waits on the owner's decisions D1–D5 in the [proposal](./proposal.md#decisions-needed). D1 (skipping hidden batches) and D3 (the chunk budget) also change rules in AGENTS.md, so they must be approved before phase 2.
+Status: **first implementation built for the owner's review (2026-09-26)**, ahead of decisions D1–D5 in the [proposal](./proposal.md#decisions-needed), at his request ("implement the solution directly in the game; I want to evaluate it by hand"). See *As built* below for what differs from this spec and what's still open.
+
+### As built (2026-09-26)
+
+**What's in:**
+- **Blades, flowers and knee-high tufts**, each one instanced draw of 256-item batches built in the vertex shader from two packed data textures (§4), in `world/grass/`: 139.7 K blades, 4.0 K flowers and 5.8 K tufts on high (half the rates on low); about 459 K triangles; 3 draw calls.
+- **Tufts are painted multi-blade cards**, not blade tufts (§7). The owner asked for transparent PNGs with several blades each, the industry's standard trick (grass cards) for raising the apparent blade count at one quad each. Eight 3–4-blade tufts were generated with GPT Image 2.5 and packed into a 4 × 2 tintable atlas (`tuft-atlas`, 80 KB). Each card turns to face the camera about its own up, is alpha-tested (not blended), and appears only in the knee-high meadows. The blades stay the base: alpha overdraw is what makes card-only grass expensive on phones. The 650 `grassCards` clumps and their texture are retired.
+- **Low-frequency noise** (`zones.ts`, two octaves of value noise each): density (patches from 35 % to 100 %), height (0.08–0.2 u), knee-high meadows (0.32–0.42 u, where a very-low-frequency field exceeds 0.6–0.7; about 2–30 % of open lawn, unit-tested), hue drift (±, in clumps of about 0.36 u) and flower drifts.
+- **Common-sense zones**, unit-tested against the real layout (`tests/unit/grass.test.ts`):
+  - **Bare:** paths, the plaza, cobbles, sand, the riverbed, banks, steep ground, the pond, every structure base, every obstacle's footprint and the picnic mat. The mesas' collision discs are excluded from this: their tops are lawns.
+  - **Mown:** short round every landmark and the plaza, with trimmed verges along the paths.
+  - **Lived in:** at home the grass is short, sparser and yellower. That covers round the house, the vegetable beds, the watering can, the tulsi and the woodpile, the family's seats, the fire, the dog house and the shore, plus trodden tracks from the door to where they go every day and between the table, the fire and the shore. Nothing knee-high grows within the home's range or next to any furniture or target.
+- **Wind and movers:** the blades sway with the props' wind field (the same formula and uniforms). Feet, Chopper, the family and resting drops flatten the grass and part it round them.
+- **Lighting:** Lambert (sun, moon, fog and received shadows), plus the lamps (`withLampLights`). Checked at 10:30, 18:36 and 22:00, with 0 NaN pixels in `hdrScan` by day and night.
+- **Bundle:** the grass loads in the `nature` chunk with the wildlife (6.7 KB gz) and imports only types from the main bundle (AGENTS.md explains why). The main bundle is 449.9 KB (≤ 450), and on-demand chunks are 72.2 KB (budget raised to 80 KB, D3).
+- **Test hook:** `__game.grass()` (counts, density, build time) and `__game.visitMeadow(i)`. E2E tests thin the grass to a quarter through the pre-mount flag `localStorage['game.test.grassDensity']` (dev and test builds only), except the grass's own test. At full density the suite took 48.8 min, against 40.3 min before the grass.
+
+**Deviations and open items:**
+
+| Item | Spec | As built | Next |
+|---|---|---|---|
+| D1 hidden-batch skipping | Proposed | Not done: every batch draws (AGENTS: no culling) | Owner decision |
+| Load | ≤ 30 ms placement | Rules ≈ 28 ms + placement ≈ 31 ms warm in Node (≈ 55 + 60 ms cold); ≈ 107 ms in the desktop dev build (130 ms before the disc grid and typed-array builders) | A worker, or spreading the build over frames behind the loading screen |
+| Triangles at spawn | ≤ 200 K | About 459 K (no skipping) | D1, or lower rates |
+| `groundData.ts` extraction | §4 | Grows on the rendered ground mesh itself (`controller.ground`), so roots sit on its triangles exactly | Not needed |
+| Lawn tile repaint, drift tile | §7 | Not done: noise instead of the drift tile | After the owner's look review (D2) |
+| Temporal / adaptive density, `setGrassDensity`, `grassDebug` | §8–9 | Not done (the E2E density flag is) | Phase 2 |
+| Phone check (D5) | §8 | Not done | The owner's phone |
 
 ## 1. Scope
 
@@ -129,7 +156,7 @@ The ground's lawn colour is the vertex `grassColor` times:
 
 ## 7. Other plants and textures
 
-- **Tufts:** the 650 `grassCards` clumps become tufts of 20–30 taller blades from the same field. The `grass-card` texture is removed.
+- **Tufts:** the 650 `grassCards` clumps become tufts of 20–30 taller blades from the same field. The `grass-card` texture is removed. *(As built: painted multi-blade cards in the knee-high meadows instead, see As built.)*
 - **Lawn tile:** repainted calmer (soft warm/cool drifts, no dots) with GPT Image 2.5 `tile`, using the concept and a game screenshot as references. The prompt and source go in `assets-src/textures/`.
 - **Drift map:** a 256² seamless painted tile (warm/cool patches and flower-colour regions), sampled once per blade at load. If `gameTexture('meadow-drift')` is missing, a deterministic value-noise field is used instead, as the texture rules require.
 

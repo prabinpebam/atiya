@@ -65,8 +65,13 @@ const ground = (page: Page) =>
 
 const state = (page: Page) => page.evaluate(() => (window as any).__game.getState() as GameState);
 
-/** Load /play, accept the software-rendering interstitial (headless SwiftShader), wait for the game. */
-async function openPlanet(page: Page, path = '/play/') {
+/**
+ * Load /play, accept the software-rendering interstitial (headless SwiftShader), wait for the game.
+ * The blade grass is thinned to a quarter (a dev/test-only flag) unless `grass: 'full'`: only its own
+ * tests need all of it, and it's the costliest thing to draw in software.
+ */
+async function openPlanet(page: Page, path = '/play/', { grass = 'thin' }: { grass?: 'thin' | 'full' } = {}) {
+  await page.addInitScript((d) => localStorage.setItem('game.test.grassDensity', d), grass === 'full' ? '1' : '0.25');
   await page.goto(path);
   const cont = page.getByRole('button', { name: 'Continue anyway' });
   await page.waitForFunction(() => (window as any).__game || document.querySelector('[data-gate-continue]'));
@@ -567,6 +572,33 @@ test.describe('landscape & wind', () => {
     await page.getByRole('button', { name: 'Close' }).click();
     await expect.poll(async () => (await state(page)).wind.leaves).toBe(0);
     expect((await state(page)).wind.swirls).toBe(0);
+  });
+
+  test('blade grass grows at full density in three draws, with knee-high meadows in open country', async ({ page }) => {
+    test.setTimeout(120_000);
+    await openPlanet(page, '/play/', { grass: 'full' });
+    await page.getByRole('button', { name: 'Start exploring' }).click();
+    await expect.poll(async () => (await state(page)).phase).toBe('playing');
+    const grass = () => page.evaluate(() => (window as any).__game.grass() as { stats: Record<string, number> | null; meadows: number });
+    const g = await grass();
+    expect(g.stats).not.toBeNull();
+    expect(g.stats!.density).toBe(1);
+    expect(g.stats!.draws).toBe(3);
+    expect(g.stats!.blades).toBeGreaterThan(60_000);
+    expect(g.stats!.tufts).toBeGreaterThan(1_000);
+    expect(g.meadows).toBeGreaterThan(3);
+    const names = await page.evaluate(() => {
+      const out: string[] = [];
+      (window as any).__game.__gfx().scene.traverse((o: { name: string; visible: boolean }) => o.name.startsWith('grass-') && o.visible && out.push(o.name));
+      return out.sort();
+    });
+    expect(names).toEqual(['grass-blade', 'grass-flower', 'grass-tuft']);
+    // the grass never blocks: the character walks through a knee-high meadow
+    expect(await page.evaluate(() => (window as any).__game.visitMeadow(0))).toBe(true);
+    const from = (await state(page)).pLocal;
+    await page.evaluate(() => (window as any).__game.setIntent(0, 1));
+    await expect.poll(async () => Math.hypot(...(await state(page)).pLocal.map((v, i) => v - from[i])), { timeout: 15_000 }).toBeGreaterThan(0.03);
+    await page.evaluate(() => (window as any).__game.clearIntent());
   });
 });
 
