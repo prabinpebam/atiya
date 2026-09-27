@@ -2,6 +2,7 @@ import { HalfFloatType, Raycaster, Vector2, Vector3, WebGLRenderTarget } from 't
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { UP, moveAlong, orientationFor, tangentToward } from '../math/sphere';
+import { rotateAbout } from '../math/steer';
 import { riverDistance } from '../world/features';
 import { textureStatus } from '../world/textures';
 import { litLamps } from '../world/lampLights';
@@ -105,8 +106,8 @@ export interface GameTestHook {
   homeDoor(): number;
   /** Put one of the family (or Prabin) at a point (planet-local unit vector), standing (visual checks). */
   npcPlace(id: string, n: [number, number, number]): boolean;
-  /** Stand `u` from one of the family, facing them. */
-  nearNpc(id: string, u?: number): boolean;
+  /** Stand `u` from one of the family, facing them (`front`: in front of them, so the camera sees their face). */
+  nearNpc(id: string, u?: number, front?: boolean): boolean;
   /** Make one of the family start (and keep at) an activity. */
   npcDo(id: string, activity: string): boolean;
   /** Stand at the home by the pond, facing the house. */
@@ -472,13 +473,13 @@ export function installTestHook(c: GameController): void {
       return true;
     },
     npcDo: (id, activity) => c.home?.hold(id, activity) ?? false,
-    nearNpc: (id, u = 0.9) => {
+    nearNpc: (id, u = 0.9, front = false) => {
       const p = c.home?.people.find((x) => x.id === id);
       if (!p) return false;
       const R = CONFIG.planetRadius;
       for (let k = 0; k < 16; k++) {
         const a = (k / 16) * Math.PI * 2;
-        const dir = tangentToward(p.n, new Vector3(Math.cos(a), Math.sin(a * 1.3), Math.sin(a)).normalize());
+        const dir = front && p.dir ? rotateAbout(p.dir.clone(), p.n, (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.25) : tangentToward(p.n, new Vector3(Math.cos(a), Math.sin(a * 1.3), Math.sin(a)).normalize());
         if (!dir) continue;
         const stand = moveAlong(p.n, dir, u / R);
         if (c.terrain.inWater(stand) || c.sim.obstacles.some((o) => Math.acos(Math.max(-1, Math.min(1, o.n.dot(stand)))) * R < o.radiusU + CONFIG.playerRadius - 0.02)) continue;

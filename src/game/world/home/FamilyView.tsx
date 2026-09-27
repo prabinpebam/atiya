@@ -53,8 +53,8 @@ export const LOOKS: Record<NpcId, { model: CharacterId; height: number; head: nu
   prabin: { model: 'skater', height: 1.28, head: 1, skin: withBase('/models/skins/prabin.png'), hair: null, glasses: false, book: '#6f9fc8' },
 };
 
-/** Where the guitar sits against the body (the held group's frame: x left, y up, z forward), and how it's tilted. */
-const GUITAR_AT = { x: 0.06, y: 0.05, z: 0.17, rot: [-0.15, 0, -1.2] as const };
+/** Where the guitar sits against the body (the held group's frame: x left, y up, z forward), and how it's tilted. Fitted to Prabin's measured shoulders so both elbows bend (≈ 100°) with the hands on the strings and the neck: the body rests on his right thigh, the neck runs out to his left, its face forward and tipped up a little. */
+const GUITAR_AT = { x: -0.081, y: 0.13, z: 0.139, rot: [-0.25, -0.35, -1.35] as const };
 /** Points on the guitar model (its own units, before PROP_SCALE): the strings over the sound hole, and the neck where the left hand frets. */
 const GUITAR_STRUM: readonly [number, number, number] = [0, 0.3, 0.1];
 const GUITAR_FRET: readonly [number, number, number] = [0.01, 0.72, -0.03];

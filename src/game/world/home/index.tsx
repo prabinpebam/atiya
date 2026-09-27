@@ -71,7 +71,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
   return {
     family,
     pads: homePads(home, R),
-    people: family.npcs.map((n) => ({ id: n.id, name: n.name, n: n.n })),
+    people: family.npcs.map((n) => ({ id: n.id, name: n.name, n: n.n, dir: n.dir })),
     kids: family.npcs.filter((n) => KIDS.has(n.id)).map((n) => n.n),
     step(dt) {
       world.rabbits = controller.wildlife?.rabbits ?? [];

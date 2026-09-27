@@ -101,7 +101,8 @@
   - **Stroll** to a point of interest (a landmark's surroundings, the plaza, the bridge, home) at a walk, pausing to look around.
   - **Admire a building:** stand 1.2–2 u off its path, 3–4 u from its front, facing it: hands on hips, looking up (10–16 s).
   - **Play with Chopper:** walk over when Chopper is free; throw a stick 2.5–3.5 u; Chopper fetches it back and drops it at his feet (2–3 throws); he crouches to pat him at the end.
-  - **Play the guitar:** sit in the campfire chair with the guitar (the leaning one is picked up), strumming (20–30 s).
+  - **Play the guitar:** sit in the campfire chair with the guitar (the leaning one is picked up), strumming (20–30 s). Nobody draws him into a chat while he plays, and the guitar goes back against the chair whenever he gets up (§7).
+  - **Chat with the children:** walk over to Laija or Lingjel at home (within 10 u of him, free to talk), and once he's there, talk face to face with them, taking turns (§7).
   - **Hammer at the crafting table:** a birdhouse on the table, the hammer in his hand, a knock every 0.8 s (a quiet cue when you're close). The visitor has priority (§1).
   - **Meals** (his chair at the table) and **the night** (home by 8 pm; if he's far away he walks home briskly).
 - **Talking:** facing him within 1.3 u, **Talk to Prabin** (E). He stops and faces you. The lines come from a `DialogueProvider` (preset now): a greeting for the time of day, one about what he's doing, one about the site. The lines are generic (no invented personal facts).
@@ -174,3 +175,13 @@ with collision only where you'd bump into something.
   the house, off the path from the door, and no tree in front", "can be walked into…"; the stall and
   gap tests re-run on the new layout.
 
+## 7. Revision 4: the guitar and the children (owner review, 2026-09-27)
+
+| Report | Cause | Fix (and the pattern it follows) |
+|---|---|---|
+| He sometimes walks off with the guitar | `force()` (lunch, bedtime) started the new activity but left what he held in his hand, so he got up from the chair still holding it | `force()` puts down whatever is held; and an invariant each step: the guitar is in his hands **only** while he's seated on the camp chair for the guitar activity (so no other path can carry it off) |
+| His right arm isn't bent when he plays | The guitar sat low and forward for his short arms (0.346 u reach): both IK targets were out of reach, so the two-bone IK straightened both arms (172° at the elbow) | The guitar's place was **fitted to his measured shoulders**: its body on his right thigh, the neck out to the left, the face forward and tipped up a little. Both targets are ≈ 0.27 u from the shoulders, so the elbows bend to about 100° (measured on the drawn rig: 98° left, 80–105° right as he strums) |
+| His playing is interrupted badly when one of the family comes to talk | The talker turned him into "answer" at once: the guitar left his hands but he kept the playing pose | As in The Sims' interruptibility flags, some activities **aren't interruptible**: nobody picks a partner who's playing the guitar, hammering, throwing, playing fetch, serving or in the routine (`BUSY`, `canChat`), nor someone sitting down or getting up |
+| Make Prabin talk to the children too | His chats only picked someone within 6 u, and he roams the planet | A **`kids`** activity (weight 3): when one of the children is at home within 10 u and free to talk, he walks over (they carry on meanwhile), and once close the chat starts as a normal `talk`, face to face with speech bubbles in turn. Over 20 simulated ten-minute days he chats with them 1–3 times in 19 |
+
+- **Tests:** unit "leaves the guitar on its chair whenever he gets up…", "isn't drawn into a chat while he plays…", "goes over to the children for a chat…"; E2E "Prabin plays the guitar in his lap with both elbows bent…" (the rig's elbow angles between 55° and 140°). The roaming test moved to seed 14 (like 18 of 20 seeds, it strolls within the ten minutes).

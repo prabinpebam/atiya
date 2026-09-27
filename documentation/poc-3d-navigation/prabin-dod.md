@@ -62,6 +62,7 @@ This is the acceptance checklist for [prabin-npc.md](./prabin-npc.md). A box is 
 - [x] **The home is spread out,** the reading chair off the door's path, the lawn in front of the door clear. *Evidence:* the site-plan unit tests; real-GPU renders from above and from the plaza side.
 - [x] **Prabin doesn't get stuck:** zero 3-second stalls over 140 simulated minutes (14 seeds); five seeds in the regression test. *Evidence:* unit "never stalls…".
 - [x] **The guitar is held:** both hands on it by IK; a synthesised strum sounds from it on each downstroke. *Evidence:* real-GPU close-ups; the sound log shows the strums (chords G, C, D, Em); unit (the synthesis).
+- [x] **Revision 4 (the guitar and the children):** he never walks off with the guitar, plays it in his lap with both elbows bent (≈ 100°), isn't interrupted by the family while he plays, and walks over to chat with the children. *Evidence:* unit "leaves the guitar on its chair whenever he gets up…", "isn't drawn into a chat while he plays…", "goes over to the children for a chat…"; E2E "Prabin plays the guitar in his lap with both elbows bent…"; a real-GPU close-up from the front; 20-seed survey (chats with the children in 19).
 - [x] **Chopper's black patch** on his right flank. *Evidence:* real-GPU renders of both sides.
 - [x] **Paws on the ground** in every pose, the play bow's bark included. *Evidence:* unit "keeps every planted paw on the ground…", "in the play bow, a bark leaves the front paws where they are".
 

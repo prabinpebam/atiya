@@ -39,6 +39,8 @@ export type NpcPose =
 
 /** Poses in which they stay put (seated or on the ground) when someone talks to them. */
 const SETTLED: ReadonlySet<NpcPose> = new Set(['read', 'sitChair', 'readGround', 'lego', 'eat', 'guitar']);
+/** Activities nobody is drawn out of for a chat: they'd have to drop what they're doing (or it's the routine). */
+const BUSY: ReadonlySet<string> = new Set(['serve', 'throw', 'fetch', 'hammer', 'guitar', 'eat', 'clear', 'bedtime', 'wake', 'indoors']);
 export type Held = 'book' | 'car' | 'pebble' | 'basket' | 'guitar' | 'hammer' | 'stick' | null;
 
 export const NPC = {
@@ -482,6 +484,33 @@ const ACTIVITIES: ActivityDef[] = [
       return false;
     },
   },
+  // ---- Prabin and the children: he walks over to one of them for a chat (they carry on until he's there)
+  {
+    id: 'kids',
+    who: ['prabin'],
+    weight: 3,
+    dur: [7, 10],
+    cooldown: 45,
+    start: (f, npc, w) => Boolean(f.kidToVisit(npc, w)),
+    run: (f, npc, w, dt) => {
+      const kid = f.kidToVisit(npc, w, 16);
+      if (!kid) return true;
+      if (arcDistance(npc.n, kid.n, w.R) < 1.6) {
+        // close: it's a chat now (`talk` walks the last step to the free spot beside them)
+        f.claimPartner(npc, kid);
+        npc.cooldown.kids = 45;
+        npc.activity = 'talk';
+        npc.stage = 0;
+        npc.t = 0;
+        npc.stageT = 0;
+        return false;
+      }
+      const to = tangentToward(kid.n, npc.n) ?? kid.dir;
+      f.goTo(npc, w, { n: moveAlong(kid.n, to, 1.0 / w.R), facing: to.clone().negate() }, 'walk', dt);
+      npc.pose = 'stand';
+      return npc.t > 40;
+    },
+  },
   // ---- Prabin, anywhere on the planet (prabin-npc.md §4.6)
   {
     id: 'stroll',
@@ -790,6 +819,8 @@ export class Family {
       npc.t += dt;
       npc.stageT += dt;
       npc.poseT += dt;
+      // the guitar never leaves the camp chair: it's in hand only while sitting there to play it
+      if (npc.held === 'guitar' && (npc.activity !== 'guitar' || !npc.seat || npc.seat.phase === 'out')) npc.held = null;
       // a seat belongs to the activity it was taken for: anything else (a chat excepted) stands them up first
       const su = npc.seat;
       if (su && su.phase !== 'out' && su.owner !== npc.activity && npc.activity !== 'answer' && !npc.chatting) this.standUp(npc, w);
@@ -945,16 +976,33 @@ export class Family {
     // (a seat's activity walks to the seat's entry point, never to the chair itself)
     npc.at = def.seat ? null : spot;
     npc.dur = def.dur[0] + this.rand() * (def.dur[1] - def.dur[0]);
-    if (def.id === 'talk') {
-      const p = this.pickPartner(npc)!;
-      npc.partner = p.id;
-      p.partner = npc.id;
-      p.activity = 'answer';
-      p.t = 0;
-      p.stage = 0;
-      p.stageT = 0;
-      p.held = p.pose === 'read' || p.pose === 'readGround' ? p.held : null;
+    if (def.id === 'talk') this.claimPartner(npc, this.pickPartner(npc)!);
+  }
+
+  /** Pair `npc` with `p` for a chat: `p` stops (a sitter stays seated) and waits for them, facing them. */
+  claimPartner(npc: Npc, p: Npc): void {
+    npc.partner = p.id;
+    p.partner = npc.id;
+    p.activity = 'answer';
+    p.t = 0;
+    p.stage = 0;
+    p.stageT = 0;
+    p.held = p.pose === 'read' || p.pose === 'readGround' ? p.held : null;
+  }
+
+  /** The child Prabin goes over to for a chat: the nearest one at home who's free to talk, within `reach` u. */
+  kidToVisit(npc: Npc, w: FamilyWorld, reach = 10): Npc | null {
+    let best: Npc | null = null;
+    let bd = reach;
+    for (const k of this.npcs) {
+      if (!KIDS.has(k.id) || !this.canChat(k) || arcDistance(k.n, w.home.centre, w.R) > w.home.range) continue;
+      const d = arcDistance(k.n, npc.n, w.R);
+      if (d < bd) {
+        bd = d;
+        best = k;
+      }
     }
+    return best;
   }
 
   /** A seat they were heading for but hadn't sat on yet: let it go (someone else may have it), and its entry point. */
@@ -967,6 +1015,8 @@ export class Family {
   /** Start `activity` now (the routine, meals), after `wait` s for the ones that wait. */
   force(npc: Npc, activity: string, wait: number): void {
     this.releaseSeat(npc);
+    // whatever they had in hand stays where they were (the guitar goes back against its chair)
+    npc.held = null;
     if (npc.partner) {
       const p = this.get(npc.partner);
       if (p.partner === npc.id) p.partner = null;
@@ -1410,11 +1460,17 @@ export class Family {
 
   /** Someone free to talk (not already talking, not busy fetching the picnic or chatting with the character). */
   pickPartner(npc: Npc): Npc | null {
-    // (someone close by, out of doors, not busy with a routine, a door or a seat's getting-up)
-    const free = this.npcs.filter(
-      (o) => o !== npc && !o.partner && !o.chatting && !o.indoors && !o.link && o.activity !== 'serve' && o.activity !== 'throw' && o.activity !== 'fetch' && o.activity !== 'hammer' && arcDistance(o.n, npc.n, this.R) < 6,
-    );
+    const free = this.npcs.filter((o) => o !== npc && this.canChat(o) && arcDistance(o.n, npc.n, this.R) < 6);
     return free.length ? free[Math.floor(this.rand() * free.length)] : null;
+  }
+
+  /**
+   * Whether someone can be drawn into a chat now: close by is up to the caller; out of doors, not
+   * already talking, not busy with a routine, a door or getting up, and not in the middle of
+   * something they'd have to drop (playing the guitar, hammering, a throw, a game of fetch).
+   */
+  canChat(o: Npc): boolean {
+    return !o.partner && !o.chatting && !o.indoors && !o.link && !BUSY.has(o.activity) && !(o.seat && o.seat.phase !== 'on');
   }
 
   /** The nearest butterfly (or a rabbit near home) to chase, or null. */

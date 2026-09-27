@@ -81,7 +81,7 @@ export interface HomeAttachment {
   family: unknown;
   /** The flat pads under the home's structures (added to the terrain before the ground is built). */
   pads: PadSpec[];
-  people: Array<{ id: string; name: string; n: Vector3 }>;
+  people: Array<{ id: string; name: string; n: Vector3; dir?: Vector3 }>;
   /** Where the children are (rabbits shy from them). */
   kids: Vector3[];
   step(dt: number): void;

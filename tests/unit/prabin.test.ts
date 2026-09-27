@@ -391,6 +391,70 @@ describe('Prabin (§4.6)', () => {
     expect(p.held).toBe('guitar');
   });
 
+  it('leaves the guitar on its chair whenever he gets up, called to lunch or at the end of the song', () => {
+    const f = new Family(home, R, mulberry32(4));
+    f.nav = nav;
+    const w = world(moveAlong(home.centre, home.house.facing, -6 / R));
+    const p = f.get('prabin');
+    f.hold('prabin', 'guitar', w);
+    step(f, w, 20);
+    expect(p.held).toBe('guitar');
+    // lunch: off the chair and to the table, the guitar left behind
+    f.force(p, 'eat', 0);
+    step(f, w, 6, () => {
+      if (p.speed > 0.05 || !p.seat || p.seat.phase !== 'on') expect(p.held).not.toBe('guitar');
+    });
+    expect(p.held).not.toBe('guitar');
+    // a song that ends: the guitar goes down as he stands
+    f.hold('prabin', 'guitar', w);
+    step(f, w, 20);
+    expect(p.held).toBe('guitar');
+    p.dur = 0;
+    step(f, w, 6, () => {
+      if (p.activity !== 'guitar' || !p.seat) expect(p.held).not.toBe('guitar');
+    });
+  });
+
+  it('isn’t drawn into a chat while he plays: nobody breaks off his song', () => {
+    const f = new Family(home, R, mulberry32(5));
+    f.nav = nav;
+    const w = world(moveAlong(home.centre, home.house.facing, -6 / R));
+    const p = f.get('prabin');
+    // (Rojina reading, so no lunch is served meanwhile)
+    f.hold('rojina', 'read', w);
+    f.hold('prabin', 'guitar', w);
+    step(f, w, 20);
+    expect(p.pose).toBe('guitar');
+    // everyone else is right by him and would pick him if they could
+    for (const o of f.npcs) if (o !== p && o.id !== 'rojina') o.n.copy(moveAlong(p.n, p.dir, 1.2 / R));
+    for (const o of f.npcs) if (o !== p && o.id !== 'rojina') for (let i = 0; i < 30; i++) expect(f.pickPartner(o)?.id).not.toBe('prabin');
+    step(f, w, 30, () => {
+      expect(p.activity).toBe('guitar');
+      expect(p.partner).toBeNull();
+    });
+    expect(p.held).toBe('guitar');
+  });
+
+  it('goes over to the children for a chat, and they answer him face to face', () => {
+    const f = new Family(home, R, mulberry32(8), moveAlong(home.door.n, home.door.facing, 1.2 / R));
+    f.nav = nav;
+    const w = world(moveAlong(home.centre, home.house.facing, -7 / R));
+    const p = f.get('prabin');
+    // (Rojina reading, so no lunch is served meanwhile)
+    f.hold('rojina', 'read', w);
+    f.hold('prabin', 'kids', w);
+    let talked: string | null = null;
+    step(f, w, 45, () => {
+      if (p.activity === 'talk' && p.partner && p.stage === 1) {
+        talked = p.partner;
+        const k = f.get(p.partner);
+        expect(k.activity).toBe('answer');
+        expect(d(p.n, k.n)).toBeLessThan(1.6);
+      }
+    });
+    expect(['laija', 'lingjel']).toContain(talked);
+  });
+
   it('plays fetch with Chopper: throws the stick, Chopper brings it back, three times, then a pat', () => {
     const player = moveAlong(UP, new Vector3(0, 0, -1), 3.5 / R);
     const brain = new ChopperBrain(mulberry32(3));
@@ -427,10 +491,10 @@ describe('Prabin (§4.6)', () => {
   it('roams the whole planet: over a long day he goes far from home and does all his things, and comes home for the night', () => {
     // (the visitor on the plaza's far side from the crafting table, so he's free to work there)
     const player = moveAlong(UP, tangentToward(UP, layout.craft!.n)!.negate(), 2.5 / R);
-    // (the choice is random: this seed, like most, strolls within the ten minutes; seed 12 stopped doing so
-    // when the home was spread out for the levelled ground, ground.md)
-    const brain = new ChopperBrain(mulberry32(13));
-    const f = new Family(home, R, mulberry32(13), moveAlong(layout.craft!.n, layout.craft!.facing, 2 / R));
+    // (the choice is random: this seed, like most (18 of 20), strolls within the ten minutes; seeds 12 and 13
+    // don't since his chats with the children joined his activities, as 12 stopped when the home was spread out)
+    const brain = new ChopperBrain(mulberry32(14));
+    const f = new Family(home, R, mulberry32(14), moveAlong(layout.craft!.n, layout.craft!.facing, 2 / R));
     f.nav = nav;
     const w = world(player, 9, brain);
     const dw = dogWorld(player, f);

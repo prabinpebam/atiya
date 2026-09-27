@@ -970,6 +970,53 @@ test.describe('home & family', () => {
     await expect(page.locator('.game-region')).toBeFocused();
   });
 
+  test('Prabin plays the guitar in his lap with both elbows bent (the hands on the strings and the neck)', async ({ page }) => {
+    test.setTimeout(150_000);
+    await startPlanet(page);
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.npcDo('rojina', 'read');
+      g.npcDo('prabin', 'guitar');
+    });
+    // (fast-forward the simulation: at SwiftShader's frame rate the walk from the crafting table takes minutes)
+    await expect
+      .poll(
+        async () => {
+          await page.evaluate(() => {
+            const g = (window as any).__game;
+            g.pause();
+            g.advance(600);
+            g.resume();
+          });
+          return (await family(page)).find((x) => x.id === 'prabin');
+        },
+        { timeout: 90_000 },
+      )
+      .toMatchObject({ pose: 'guitar', held: 'guitar', seat: 'camp0:on' });
+    await page.waitForTimeout(1500);
+    // the elbow angles of the drawn rig (shoulder–elbow–wrist): straight arms were ≈ 172°
+    const elbows = await page.evaluate(() => {
+      const { scene } = (window as any).__game.__gfx();
+      const root = scene.getObjectByName('npc-prabin');
+      const V = root.position.constructor;
+      const at = (n: string) => {
+        const v = new V();
+        root.getObjectByName(n).getWorldPosition(v);
+        return v;
+      };
+      return ['Left', 'Right'].map((side) => {
+        const s = at(`${side}Arm`);
+        const e = at(`${side}ForeArm`);
+        const h = at(`${side}Hand`);
+        return (Math.acos(Math.max(-1, Math.min(1, s.clone().sub(e).normalize().dot(h.clone().sub(e).normalize())))) * 180) / Math.PI;
+      });
+    });
+    for (const a of elbows) {
+      expect(a).toBeGreaterThan(55);
+      expect(a).toBeLessThan(140);
+    }
+  });
+
   test('one thing asks at a time: talking by a landmark shows only the talk box, and E advances the talk', async ({ page }) => {
     test.setTimeout(120_000);
     await startPlanet(page);
