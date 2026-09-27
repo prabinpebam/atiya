@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { Vector3 } from 'three';
 import { CONFIG } from '../../src/game/config';
 import { landmarkGeometry } from '../../src/game/math/landmarks';
-import { arcDistance, moveAlong, rotateTangent, tangentToward } from '../../src/game/math/sphere';
-import { generateProps } from '../../src/game/world/layout';
+import { arcDistance, moveAlong, pointArcDistance, rotateTangent, tangentToward } from '../../src/game/math/sphere';
+import { PLAZA_RADIUS_U, generateProps } from '../../src/game/world/layout';
 import { benchSeats } from '../../src/game/systems/seating';
 import { REACH, buildTargets, pickTarget, standSpot, type Target } from '../../src/game/systems/interactables';
 import { ActionRunner, CYCLES, MINE_SWINGS, PICKAXE, actionFor } from '../../src/game/systems/actions';
@@ -88,6 +88,25 @@ describe('interactables', () => {
 
   it('the ring that marks a tree or a rock clears its trunk or its stone', () => {
     for (const t of [...of('tree'), ...of('boulder')]) expect(t.markU!).toBeGreaterThan(t.edgeU + 0.2);
+  });
+
+  it('the notice board stands beside the path to the Lighthouse, off it and past the plaza, and from in front of it only it is offered', () => {
+    const board = layout.furniture.find((f) => f.kind === 'notice')!;
+    expect(board).toBeTruthy();
+    const lh = geos.find((g) => g.id === 'lighthouse')!;
+    const spawn = new Vector3(0, 1, 0);
+    const off = Math.min(...geos.map((g) => pointArcDistance(board.n, spawn, g.approach, R)));
+    expect(off).toBeGreaterThan(0.85);
+    expect(pointArcDistance(board.n, spawn, lh.approach, R)).toBeLessThan(1.5);
+    expect(d(board.n, spawn)).toBeGreaterThan(PLAZA_RADIUS_U + 0.3);
+    // it faces the path
+    expect(board.facing.dot(tangentToward(board.n, moveAlong(spawn, tangentToward(spawn, lh.approach)!, d(board.n, spawn) / R))!)).toBeGreaterThan(0.8);
+    const t = of('notice')[0];
+    for (const turn of [-0.4, 0, 0.4]) {
+      const p = moveAlong(t.n, rotateTangent(t.facing!.clone(), t.n, turn), (t.edgeU + 0.5) / R);
+      expect(pickTarget(p, tangentToward(p, t.n)!, targets, null)?.key).toBe('notice');
+      expect(targets.filter((x) => x !== t && x.kind !== 'bench' && d(x.n, t.n) - x.edgeU < t.edgeU + 1.6)).toEqual([]);
+    }
   });
 
   it('near a landmark, a flower needs you right at it', () => {

@@ -1701,6 +1701,26 @@ export class Family {
   private noticeT = 0;
   private lostAt = -Infinity;
 
+  /**
+   * The welcome (prabin-npc.md §8): meet the visitor at `at` as the game starts, facing them (along
+   * `face`), out of any seat, doorway or errand, and talk. At night he walks home after.
+   */
+  greet(id: NpcId, at: Vector3, face: Vector3, w: FamilyWorld): void {
+    if (this.schedule === null) this.stepRoutine(0, w);
+    const npc = this.get(id);
+    this.leaveSeat(npc);
+    if (npc.link && this.door.holder === npc.id) this.door.holder = null;
+    npc.link = null;
+    npc.indoors = false;
+    this.force(npc, this.schedule === 'night' ? 'bedtime' : 'idle', 1);
+    npc.n.copy(at);
+    npc.dir.copy(face);
+    npc.speed = 0;
+    npc.want = 0;
+    npc.pose = 'talk';
+    npc.chatting = true;
+  }
+
   /** The character walked up and pressed E: stop, turn to them. */
   startChat(id: NpcId): void {
     const npc = this.get(id);
@@ -1710,8 +1730,10 @@ export class Family {
 
   endChat(id: NpcId): void {
     this.get(id).chatting = false;
-    // (they've talked: no standing there looking afterwards)
-    if (this.noticed === id) this.noticeT = FAMILY.noticeS;
+    // (they've talked: no standing there looking afterwards, even if you're still facing them)
+    this.lastNoticed = id;
+    this.lostAt = this.clock;
+    this.noticeT = FAMILY.noticeS + 1;
   }
 
   /**
@@ -2113,6 +2135,21 @@ export const LINES: Record<NpcId, Lines> = {
     },
   },
 };
+
+/**
+ * What Prabin says as the game starts (prabin-npc.md §8): hello, how to get about (`touch`: the touch
+ * chunk's own words, else the keys) and where the rest is written down; a returning visitor gets the
+ * short version.
+ */
+export function welcomeLines(touch: readonly string[] | null, back: boolean): string[] {
+  const board = 'The notice board by the path to the Lighthouse has all the controls and tips. Have fun!';
+  if (back) return ['Welcome back to my little planet! Have a look round.', board];
+  return [
+    'Hi, I’m Prabin. Welcome to my little planet! Every building here holds part of my work, so feel free to explore.',
+    ...(touch ?? ['Walk with W A S D or the arrow keys, and hold Shift to run. Drag the planet to turn the view.', 'Press E to open a building, or to use what a gold ring glows round.']),
+    board,
+  ];
+}
 
 export function partOfDay(hours: number): 'morning' | 'day' | 'evening' | 'night' {
   const h = ((hours % 24) + 24) % 24;

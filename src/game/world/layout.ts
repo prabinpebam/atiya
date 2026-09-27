@@ -22,7 +22,7 @@ export interface PropInstance {
   h?: number;
 }
 
-export type FurnitureKind = 'lamp' | 'bench' | 'planter';
+export type FurnitureKind = 'lamp' | 'bench' | 'planter' | 'notice';
 
 export interface Furniture {
   kind: FurnitureKind;
@@ -108,7 +108,7 @@ function randomUnit(rand: () => number): Vector3 {
 
 export const TREE_TRUNK_RADIUS = 0.3;
 export const PLAZA_RADIUS_U = 3.0;
-const FURNITURE_RADIUS: Record<FurnitureKind, number> = { lamp: 0.14, bench: 0.5, planter: 0.36 };
+export const FURNITURE_RADIUS: Record<FurnitureKind, number> = { lamp: 0.14, bench: 0.5, planter: 0.36, notice: 0.34 };
 
 /** Plaza furniture placed in the angular gaps between the paths leaving the plaza (lamps and planters). */
 export function plazaFurniture(landmarks: readonly LandmarkGeometry[], cfg = CONFIG): Furniture[] {
@@ -482,8 +482,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   }
 
   // the plaza's bench stands by the Greenhouse bridge (prabin-npc.md §4.7): on the bank beside the
-  // path at the plaza's end of the bridge, facing the water, on dry ground off the path (the notice
-  // board is the Town Hall's, on its side toward the Lighthouse)
+  // path at the plaza's end of the bridge, facing the water, on dry ground off the path
   const bridgeSpots = ((): Furniture[] => {
     const gh = landmarks.find((g) => g.id === 'greenhouse');
     if (!bridges.length) return [];
@@ -517,6 +516,29 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     }
     return out;
   })();
+  // the notice board (how to play): beside the path out to the Lighthouse, a little past the plaza,
+  // facing the path, so you pass it on the way
+  const notice = ((): Furniture | null => {
+    const lh = landmarks.find((g) => g.id === 'lighthouse');
+    const along = lh && tangentToward(spawn, lh.approach);
+    if (!lh || !along) return null;
+    const r = FURNITURE_RADIUS.notice;
+    for (const d of [1.3, 1.9, 0.8, 2.6]) {
+      const onPath = moveAlong(spawn, along, (PLAZA_RADIUS_U + d) / R);
+      const fwd = tangentToward(onPath, lh.approach) ?? along;
+      for (const side of [1, -1]) {
+        const across = new Vector3().crossVectors(onPath, fwd).normalize().multiplyScalar(side);
+        for (const off of [1.05, 1.35]) {
+          const n = moveAlong(onPath, across, off / R);
+          if (corridor(n) < r + 0.55 || inPond(n, 0.4) || riverEdge(n) < r + 0.6 || nearMesa(n, 0.5) || nearLandmark(n, r + 0.6)) continue;
+          if ([...furniture, ...bridgeSpots].some((f) => arcDistance(f.n, n, R) < 1.2) || [chest, craft].some((c) => c && arcDistance(c.n, n, R) < 2.5)) continue;
+          return { kind: 'notice', n, facing: tangentToward(n, onPath) ?? across.clone().negate() };
+        }
+      }
+    }
+    return null;
+  })();
+  if (notice) bridgeSpots.push(notice);
   furniture.push(...bridgeSpots);
   // what stood there makes way (solids near them; plants under them)
   for (const f of bridgeSpots) {
@@ -551,7 +573,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     chest && { n: chest.n, r: CHEST_RADIUS },
     craft && { n: craft.n, r: CRAFT_RADIUS },
     home && { n: home.dogHouse.n, r: HOME_R.dogHouse },
-    ...bridgeSpots.filter((f) => f.kind === 'bench').map((f) => ({ n: f.n, r: FURNITURE_RADIUS.bench })),
+    ...bridgeSpots.map((f) => ({ n: f.n, r: FURNITURE_RADIUS[f.kind] })),
     home && { n: home.pondBench.n, r: FURNITURE_RADIUS.bench },
   ].filter(Boolean) as { n: Vector3; r: number }[];
   if (specials.length) {

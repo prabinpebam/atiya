@@ -7,10 +7,11 @@ import { FLOWER_KINDS, generateProps, mulberry32 } from '../../src/game/world/la
 import { Terrain } from '../../src/game/world/terrain';
 import { riverDistance } from '../../src/game/world/features';
 import { HOME_R, TULSI_SPOT, YARD, fencePosts } from '../../src/game/world/homestead';
-import { FAMILY, Family, LINES, LinePicker, ROUTINE, partOfDay, type FamilyWorld } from '../../src/game/world/home/family';
+import { FAMILY, Family, LINES, LinePicker, ROUTINE, partOfDay, welcomeLines, type FamilyWorld } from '../../src/game/world/home/family';
 import { SphereNav } from '../../src/game/world/home/nav';
 import { UP, moveAlong, tangentToward } from '../../src/game/math/sphere';
 import { FIXTURE_LANDMARKS } from './fixtures';
+import { TOUCH_COPY } from '../../src/game/input/touchCopy';
 
 const R = CONFIG.planetRadius;
 const geos = FIXTURE_LANDMARKS.map((l) => landmarkGeometry(l));
@@ -295,6 +296,49 @@ describe('the family: behaviour', () => {
     rojina.partner = null;
     expect(f.attending('rojina')).toBe(true);
     run(f, w, 0.1);
+  });
+});
+
+describe('the welcome: Prabin meets the visitor as the game starts', () => {
+  const player = new Vector3(0, 1, 0);
+  const fwd = new Vector3(0, 0, -1);
+  const at = moveAlong(player, fwd, 1.25 / R);
+  const face = tangentToward(at, player)!;
+
+  it('he stands in front of them, facing them, talking; after, he goes on with his day (home to bed at night)', () => {
+    for (const hours of [12, 22]) {
+      const w = world(player, hours);
+      const f = new Family(home, R, mulberry32(3));
+      run(f, w, 2);
+      const prabin = f.get('prabin');
+      f.greet('prabin', at, face, w);
+      run(f, w, 3);
+      expect(d(prabin.n, at), `${hours}h`).toBeLessThan(0.05);
+      expect(prabin.chatting).toBe(true);
+      expect(prabin.indoors).toBe(false);
+      expect(prabin.dir.dot(tangentToward(prabin.n, player)!)).toBeGreaterThan(0.9);
+      f.endChat('prabin');
+      // still facing him after, he doesn't stop to look again: he goes on
+      f.notice('prabin');
+      expect(f.attending('prabin')).toBe(false);
+      run(f, w, 20, () => f.notice('prabin'));
+      expect(prabin.chatting).toBe(false);
+      if (hours === 22) expect(prabin.activity === 'bedtime' || prabin.indoors).toBe(true);
+      else expect(d(prabin.n, at) > 0.3 || prabin.activity !== 'idle').toBe(true);
+    }
+  });
+
+  it('says hello, how to get about (keys or touch) and where the controls are; a returning visitor gets the short version', () => {
+    const keys = welcomeLines(null, false);
+    const touch = welcomeLines(TOUCH_COPY.hint, false);
+    const back = welcomeLines(null, true);
+    expect(keys[0]).toMatch(/Welcome to my little planet/);
+    expect(keys.join(' ')).toMatch(/W A S D/);
+    expect(keys.join(' ')).toMatch(/Press E/);
+    expect(touch.join(' ')).not.toMatch(/\b(press|W A S D|Shift)\b/i);
+    expect(touch.join(' ')).toMatch(/Drag anywhere to walk/);
+    for (const lines of [keys, touch, back]) expect(lines.at(-1)).toMatch(/notice board by the path to the Lighthouse/);
+    expect(back.length).toBeLessThan(keys.length);
   });
 });
 

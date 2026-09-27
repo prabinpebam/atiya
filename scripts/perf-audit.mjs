@@ -75,7 +75,8 @@ async function run() {
     ...Object.fromEntries(performance.getEntriesByType('mark').map((m) => [m.name.replace('game:', ''), Math.round(m.startTime)])),
     heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : NaN,
   }));
-  await page.getByRole('button', { name: 'Start exploring' }).click();
+  // (the game starts by itself, with Prabin's welcome: end it)
+  if (await page.evaluate(() => Boolean(window.__game.getState().talk))) await page.keyboard.press('Escape');
   await page.evaluate(() => {
     const g = window.__game;
     g.setAdaptiveQuality(false);

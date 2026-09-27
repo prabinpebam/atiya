@@ -5,7 +5,7 @@ import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { Kit, type V3 } from './kit';
 import { KitModel } from './KitModel';
-import { bench, lampPost } from './parts';
+import { bench, lampPost, noticeBoard } from './parts';
 import { stoneUrn } from './planters';
 import { lampsOn } from './DayNight';
 import { addLamp, type Lamp } from './lampLights';
@@ -48,7 +48,7 @@ function frame(n: Vector3, forward: Vector3, h = 0): { p: V3; q: Quaternion } {
   return { p: [p.x, p.y, p.z], q };
 }
 
-/** Spawn plaza: lamps and planters (and the bench out by the bridge). */
+/** Spawn plaza: lamps and planters (and the bench out by the bridge, the notice board by the path to the Lighthouse). */
 export function Plaza({ controller }: { controller: GameController }) {
   const geo = useMemo(() => {
     const k = new Kit();
@@ -57,6 +57,7 @@ export function Plaza({ controller }: { controller: GameController }) {
       k.group(frame(f.n, f.facing, controller.terrain.height(f.n)), () => {
         if (f.kind === 'lamp') lampPost(k, {}, 1.5);
         else if (f.kind === 'bench') bench(k, {});
+        else if (f.kind === 'notice') noticeBoard(k, {});
         else if (f.kind === 'planter') stoneUrn(k, {}, ['#ff6f7d', '#ffd24d', '#ffffff', '#b98cff']);
       });
     }

@@ -3,7 +3,7 @@ import type { TimeMode } from '../world/timeOfDay';
 import type { CharacterId } from '../player/characters';
 import type { TargetKind } from '../systems/interactables';
 
-export type Phase = 'loading' | 'ready' | 'playing';
+export type Phase = 'loading' | 'playing';
 
 export interface GameState {
   phase: Phase;
@@ -27,12 +27,12 @@ export interface GameState {
   /** Talking with one of the family (family.md §6): who, the lines, which one is showing, and a counter that reveals the line at once. */
   talk: { id: string; name: string; lines: string[]; index: number; reveal: number } | null;
   openId: string | null;
-  menuOpen: boolean;
+  /** The menu (true), or its How to play page ('help': from the notice board or the menu's Show controls). */
+  menuOpen: boolean | 'help';
   traveling: 'flyover' | 'fade' | null;
   reducedMotionSystem: boolean;
   reducedMotionUser: boolean;
   pauseAmbient: boolean;
-  hintVisible: boolean;
   /** Close to Chopper's house site while it's unbuilt: the aside shows its card (set by the crafting chunk). */
   siteNear: boolean;
   /** Larger text (a menu setting, saved): every rem-based size scales up. */
@@ -82,7 +82,6 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     reducedMotionSystem: false,
     reducedMotionUser: false,
     pauseAmbient: false,
-    hintVisible: false,
     siteNear: false,
     largeText: false,
     announcement: '',

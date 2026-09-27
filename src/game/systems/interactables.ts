@@ -1,7 +1,7 @@
 import { Vector3 } from 'three';
 import { CONFIG } from '../config';
 import { arcDistance, moveAlong, tangentToward } from '../math/sphere';
-import { CHEST_RADIUS, type ChestSpot, type FlowerKind, type PropLayout } from '../world/layout';
+import { CHEST_RADIUS, FURNITURE_RADIUS, type ChestSpot, type FlowerKind, type PropLayout } from '../world/layout';
 import { SEAT, type Seat } from './seating';
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 
@@ -9,7 +9,7 @@ import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
  * Things you can walk up to and use with E (docs: collection-inventory.md §3.1): what's in range,
  * and which one gets the prompt (the one you face, nearest first, with hysteresis).
  */
-export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site' | 'can' | 'plant';
+export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site' | 'can' | 'plant' | 'notice';
 export type TreeKind = 'hardwood' | 'apple' | 'orange' | 'cedar';
 
 export interface Target {
@@ -55,6 +55,8 @@ export const REACH = {
   boulder: 1.0,
   flower: 0.9,
   chest: 0.95,
+  /** The notice board by the path to the Lighthouse (how to play). */
+  notice: 0.9,
   /** Chopper (measured from his centre; he moves, so his target follows him). */
   dog: 1.2,
   /** Chopper only takes E when you face him (within this of your heading, rad), and near a landmark only this close (u). */
@@ -81,7 +83,7 @@ export const REACH = {
  * chest, the crafting table, a bench, the house site), then things to gather, then Chopper, who is
  * always at your heels.
  */
-export const TIER_U: Record<TargetKind, number> = { npc: 0, chest: 0, craft: 0, site: 0, bench: 0, can: 0, tree: 0.1, boulder: 0.1, flower: 0.1, plant: 0.1, dog: 0.45 };
+export const TIER_U: Record<TargetKind, number> = { npc: 0, chest: 0, craft: 0, site: 0, bench: 0, can: 0, notice: 0, tree: 0.1, boulder: 0.1, flower: 0.1, plant: 0.1, dog: 0.45 };
 
 /** Visual trunk radius at scale 1 (the collision circle is wider: 0.42 hardwood, 0.36 cedar). */
 const TRUNK_U = { hardwood: 0.3, cedar: 0.24 } as const;
@@ -123,6 +125,10 @@ export function buildTargets(layout: PropLayout, seats: readonly Seat[], chest: 
     });
   }
   if (chest) out.push({ kind: 'chest', key: 'chest', n: chest.n, edgeU: CHEST_RADIUS, reachU: REACH.chest, standU: CHEST_RADIUS + CONFIG.playerRadius + 0.05, index: 0, facing: chest.facing, scale: 1 });
+  for (const f of layout.furniture) {
+    const r = FURNITURE_RADIUS.notice;
+    if (f.kind === 'notice') out.push({ kind: 'notice', key: 'notice', n: f.n, edgeU: r, reachU: REACH.notice, standU: r + 0.5, index: 0, facing: f.facing, scale: 1, markU: r + 0.2 });
+  }
   seats.forEach((s, i) => out.push({ kind: 'bench', key: `bench:${i}`, n: s.n, edgeU: 0, reachU: SEAT.enterU, standU: SEAT.standU, index: i, facing: s.facing, seat: s, scale: 1 }));
   return out;
 }
@@ -207,6 +213,8 @@ export function targetLabel(t: Target, flowerName?: string): string {
       return `Talk to ${t.name ?? 'them'}`;
     case 'craft':
       return 'Use crafting table';
+    case 'notice':
+      return 'Read the board';
     default:
       return t.label?.() ?? t.name ?? '';
   }

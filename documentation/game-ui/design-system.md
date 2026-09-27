@@ -69,7 +69,8 @@ Each component has one class family, reads only surface roles and tokens, and ha
 | Action prompt | `.seat-prompt.action-prompt` | `hud.css` | Icon + verb + object + `.kbd`. It's a real button (a click or tap does the same as <kbd>E</kbd>). |
 | Preview card | `.preview-card` | `hud.css` | The landmark's eyebrow, title and one line, with Enter to open. |
 | Talk box | `.talk-box` | `hud.css` | Name, the line (typed; instant under reduced motion), "more" cue, Next/Close actions. |
-| Aside | `.aside` (`.hint`, `.site-card`) | `hud.css` | Bottom left: the site card (a build goal's needs) or the controls hint. |
+| Aside | `.aside` (`.site-card`) | `hud.css` | Bottom left: the site card (a build goal's needs). |
+| How to play | `.menu-dialog`, `.help-list` | `components.css` | The menu dialog's help page (the notice board, or Menu → Show controls): the controls with inline `kbd`, or the touch gestures, and tips. |
 | Toast | `.toast` | `hud.css` | Top centre, one at a time, announced; 4 to 9 s by length. |
 | View controls | `.view-controls`, `.view-btn`, `.compass` | `hud.css` | Tilt, rotate, compass and Reset, bottom right. |
 | Character picker | `.character-picker`, `.avatar-btn` | `hud.css` | A radio group of portraits, top right. |
@@ -87,7 +88,7 @@ Adding a component: give it a class family, put it in the right stylesheet, use 
 | R3 View controls | Bottom right | Tilt, rotate, compass, Reset | |
 | R4 **Focus lane** | Bottom centre, above the hotbar | One of talk, stand, prompt, preview | Decided by `focusLane` (§6.3). |
 | R5 Hotbar | Bottom centre edge | Slots, backpack, whistle | |
-| R6 Aside | Bottom left | Site card or controls hint | Decided by `asideLane` (§6.4). |
+| R6 Aside | Bottom left | Site card | Decided by `asideLane` (§6.4). |
 | R7 Toast | Top centre, below R1 | One toast | Never in the lane. |
 | Centre | The middle of the screen | The world | Nothing but world-anchored labels (landmark names) and the fade. |
 | Overlay | Full screen | Dialogs and wood panels | Takes the keys; R4 and R6 stay empty. |
@@ -121,7 +122,7 @@ It returns nothing before play, while travelling, and under any overlay. Under a
 
 ### 6.4 The aside
 
-`asideLane(state, compact)` puts context before help: the site card (while the build site is the target, so it never shows while you use something else near it), then the controls hint. It shows nothing during a conversation, and on compact screens nothing while the lane is busy.
+`asideLane(state, compact)` shows the site card while the build site is the target (so it never shows while you use something else near it). It shows nothing during a conversation, and on compact screens nothing while the lane is busy. Onboarding isn't an aside: Prabin's welcome, in the talk box, opens the game, and the controls are on the How to play page (the notice board, the menu).
 
 ### 6.5 Target tiers
 
@@ -129,7 +130,7 @@ When several things are in reach, `pickTarget` (`systems/interactables.ts`) adds
 
 | Tier | Kinds | Penalty |
 |---|---|---|
-| 0: people and purposeful objects | NPC, chest, crafting table, build site, bench, watering can | 0 |
+| 0: people and purposeful objects | NPC, chest, crafting table, build site, bench, watering can, notice board | 0 |
 | 1: things to gather or tend | Tree, boulder, flower, garden plant | 0.1 u |
 | 2: the companion | Chopper | 0.45 u |
 
@@ -145,6 +146,7 @@ A target is offered while you're within its reach of its edge (so a big tree and
 | Boulder | 1.0 | its edge | |
 | Flower | 0.9 (0.5 by a landmark) | its centre | |
 | Chest, crafting table | 0.95 | its edge | |
+| Notice board | 0.9 | its edge | E opens How to play |
 | Chopper's house site | 1.0 | the house's edge | its card shows only while it's the target; the ghost fades in from 6 u |
 | Bench | `SEAT.enterU` | the seat | only from in front or the ends |
 | Watering can, garden plant | 0.8 | their edge | |
@@ -228,7 +230,7 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
 The rules for playing under a thumb; the research, the critique and the plan are in [touch controls](touch.md).
 
 - **The last input decides.** `<html data-input="touch|keys">` follows the last `pointerdown` or `keydown` (set by the touch chunk, mirrored in the store as `input`). Style touch-only changes with `[data-input='touch']`, never with a pointer media query: a touchscreen laptop can switch back and forth.
-- **In touch mode:** keycaps in buttons and the hotbar's slot numbers hide; the start card, the controls hint and the announcements use the touch copy (`input/touchCopy.ts`); the view pad is 44 px (`--c-view-btn-touch`).
-- **Gestures:** one finger dragged on the planet is the floating stick (`c.stick.*`); a second finger, or two together, turn and tilt the view; a tap walks. A touch that starts on a HUD control stays with it; text-only surfaces (the controls hint) let touches through.
+- **In touch mode:** keycaps in buttons and the hotbar's slot numbers hide; Prabin's welcome, the How to play page and the announcements use the touch copy (`input/touchCopy.ts`); the view pad is 44 px (`--c-view-btn-touch`).
+- **Gestures:** one finger dragged on the planet is the floating stick (`c.stick.*`); a second finger, or two together, turn and tilt the view; a tap walks. A touch that starts on a HUD control stays with it.
 - **New touch copy** never names a key; the unit test checks it.
 - **The chunk rule:** touch code (`input/touch.ts`, `stick.ts`, `gestures.ts`, `touchCopy.ts`) loads only on touch-capable devices. It imports nothing from the main bundle but types, and the main bundle keeps only the glue (`controller.touch`).

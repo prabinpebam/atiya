@@ -114,7 +114,7 @@ Touch pointers only (`pointerType === 'touch'`). The mouse and pen keep today's 
 | Seated, and the stick starts | Stand up (like a fresh key press), then walk while it's held |
 | Talking, a dialog, the menu, the backpack | No stick: the planet isn't taking input |
 
-The HUD keeps its own touches: a touch that starts on a button never becomes a stick. The controls hint is the exception: it's only text, so a thumb landing on it passes through to the planet (its classic-site link stays tappable).
+The HUD keeps its own touches: a touch that starts on a button never becomes a stick.
 
 ### 5.2 The stick
 
@@ -129,7 +129,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 | Look | Wood glass ring, wood knob; gold (`--surface-accent`) while running | The game's surface; running reads at a glance |
 | Motion | Fades in and out at `--dur-fast`; instant under reduced motion | |
 | Layer | `--layer-stick` (22), inside the planet region, `pointer-events: none` | Over the lanes (a card must never hide the stick under the thumb), under the travel fade and the chrome |
-| Accessibility | `aria-hidden`; the controls hint says what it does | A pointer affordance, not information |
+| Accessibility | `aria-hidden`; Prabin's welcome and the How to play page say what it does | A pointer affordance, not information |
 
 ### 5.3 Input modality
 
@@ -142,8 +142,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 |---|---|
 | Buttons (prompt, preview card, stand up, feed the ducks) | Keycaps (`<kbd>`) hidden |
 | Hotbar | Slot numbers hidden |
-| Start card | "Drag anywhere to walk, or tap where you want to go. Walk up to a building to see what's inside, then tap Open." |
-| Controls hint | "Drag anywhere to walk; push to the edge to run. Tap a place to go there, and tap a prompt to use it." / "Turn and tilt the view with a second finger, or with the compass buttons." |
+| Prabin's welcome and How to play (they replaced the start card and the controls hint) | "Drag anywhere to walk; push to the edge to run. Tap a place to go there, and tap a prompt to use it." / "Turn and tilt the view with a second finger, or with the compass buttons." |
 | Near a building (announced) | "Tap Open." instead of "Press E to open." |
 | View pad, Reset | 44 px (`c.view.btn-touch`, `c.btn.h`) |
 | Short screens (a phone held sideways, ≤ 500 px tall) | Count as compact (`COMPACT_QUERY`), so the aside gives way to a lane card, and the preview card drops its summary: a 390 px screen can't hold both, or the full card |

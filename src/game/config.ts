@@ -27,7 +27,6 @@ export const CONFIG = {
   /** How high the character flies (u above the ground): clear of the tallest tree and the lighthouse (≈ 5.1 u). */
   travelHoverU: 5.5,
   reducedMotionFade: 0.2,
-  onboardingDismissSeconds: 2,
   loadTimeoutMs: 15_000,
   maxSpawnArcU: 10,
   minFootprintGapU: 4,

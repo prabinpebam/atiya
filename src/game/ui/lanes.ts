@@ -38,20 +38,18 @@ export function laneBeneath(s: LaneInput): FocusLane {
   return focusLane({ ...s, openId: null, menuOpen: false, invScreen: null, craftScreen: null, chopperOpen: false });
 }
 
-/** What owns the bottom-left aside: context before help, and nothing during a conversation. */
-export type Aside = 'site' | 'hint' | null;
+/** What owns the bottom-left aside (the build-site card, or nothing), and nothing during a conversation. */
+export type Aside = 'site' | null;
 
 /** Below this width the aside and the focus lane share one bottom stack (hud.css), so the lane wins. */
 // narrow, or short (a phone held sideways: the aside and a lane card can't both fit)
 export const COMPACT_QUERY = '(max-width: 760px), (max-height: 500px)';
 
 /** `compact`: a narrow screen, where the aside gives way whenever the focus lane has something. */
-export function asideLane(s: LaneInput & Pick<GameState, 'siteNear' | 'hintVisible'>, compact = false): Aside {
+export function asideLane(s: LaneInput & Pick<GameState, 'siteNear'>, compact = false): Aside {
   if (s.phase !== 'playing' || s.traveling || overlayOpen(s) || s.talk) return null;
   if (compact && focusLane(s)) return null;
-  if (s.siteNear) return 'site';
-  if (s.hintVisible) return 'hint';
-  return null;
+  return s.siteNear ? 'site' : null;
 }
 
 /** How long a toast stays (ms): long enough to read (WCAG 2.2.1), 4 to 9 s by length. */

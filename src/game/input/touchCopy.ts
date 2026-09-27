@@ -3,7 +3,6 @@
  * they load with the touch chunk rather than the main bundle.
  */
 export const TOUCH_COPY = {
-  start: "Drag anywhere to walk, or tap where you want to go. Walk up to a building to see what's inside, then tap Open.",
   hint: [
     'Drag anywhere to walk; push to the edge to run. Tap a place to go there, and tap a prompt to use it.',
     'Turn and tilt the view with a second finger, or with the compass buttons.',

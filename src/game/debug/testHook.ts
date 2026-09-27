@@ -47,8 +47,8 @@ export interface GameTestHook {
   nearAnimal(kind: 'rabbit' | 'duck' | 'bird', i?: number, u?: number): boolean;
   /** Stand `u` in front of the plaza bench, facing it (bench E2E and visual testing). */
   nearBench(u?: number): boolean;
-  /** Stand `u` from a usable target, facing it: a tree (`which` = hardwood / apple / orange / cedar), a boulder, a flower or the chest. Returns its key. */
-  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'craft' | 'site', which?: string, u?: number): string | null;
+  /** Stand `u` from a usable target, facing it (from its front first, if it has one): a tree (`which` = hardwood / apple / orange / cedar), a boulder, a flower, the chest or the notice board. Returns its key. */
+  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'craft' | 'site' | 'notice', which?: string, u?: number): string | null;
   /** The crafting chunk (crafting.md): Chopper's house (built, colour, building), the ghost's visibility 0…1, and whether the site card is up. */
   craft(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean } | null;
   /** Backpack (36), chest (27), the cursor stack and the hotbar selection, as `id:n` / null. */
@@ -406,7 +406,7 @@ export function installTestHook(c: GameController): void {
       for (const t of list) {
         for (let k = 0; k < 12; k++) {
           const a = (k / 12) * Math.PI * 2;
-          const dir = tangentToward(t.n, new Vector3(Math.cos(a), Math.sin(a * 1.3), Math.sin(a)).normalize());
+          const dir = k === 0 && t.facing ? t.facing.clone() : tangentToward(t.n, new Vector3(Math.cos(a), Math.sin(a * 1.3), Math.sin(a)).normalize());
           if (!dir) continue;
           const dist = u ?? t.edgeU + CONFIG.playerRadius + 0.12;
           const stand = moveAlong(t.n, dir, dist / R);

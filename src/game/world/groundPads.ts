@@ -14,7 +14,7 @@ export type Box = readonly [x0: number, x1: number, z0: number, z1: number];
 /** Landmark bases by variant (the building plus whatever stands round it on the ground: steps, planters, book stacks). */
 export const LANDMARK_BASE: Readonly<Record<string, Box>> = {
   workshop: [-1.58, 1.1, -0.85, 1.19],
-  'town-hall': [-1.28, 1.68, -0.88, 1.84],
+  'town-hall': [-1.28, 1.28, -0.88, 1.84],
   lighthouse: [-1.23, 1.22, -1.15, 1.07],
   library: [-1.34, 1.68, -0.9, 1.42],
   amphitheater: [-1.72, 1.72, -1.72, 1.53],
@@ -28,6 +28,8 @@ export const LANDMARK_APRON = 0.55;
 export const CRAFT_TABLE_BASE: Box = [-0.49, 0.49, -0.25, 0.52];
 /** The bench by the bridge (parts.ts `bench`; Plaza.tsx). */
 export const BENCH_BASE: Box = [-0.56, 0.56, -0.21, 0.19];
+/** The notice board by the path to the Lighthouse (parts.ts `noticeBoard`; Plaza.tsx): its two posts. */
+export const NOTICE_BASE: Box = [-0.36, 0.36, -0.08, 0.08];
 export const padSpec = (id: string, at: HomeSpot, b: Box, extra: Partial<PadSpec> = {}): PadSpec => ({ id, n: at.n, facing: at.facing, x0: b[0], x1: b[1], z0: b[2], z1: b[3], ...extra });
 
 /**
@@ -44,6 +46,6 @@ export function structurePads(landmarks: ReadonlyArray<{ geo: LandmarkGeometry; 
   }
   if (props.chest) out.push(padSpec('chest', props.chest, [-CHEST_RADIUS * 0.85, CHEST_RADIUS * 0.85, -0.25, 0.3], { skirt: 0.6 }));
   if (props.craft) out.push(padSpec('craft', props.craft, CRAFT_TABLE_BASE, { skirt: 0.6 }));
-  for (const f of props.furniture) if (f.kind === 'bench') out.push(padSpec('bench', f, BENCH_BASE, { skirt: 0.6 }));
+  for (const f of props.furniture) if (f.kind === 'bench' || f.kind === 'notice') out.push(padSpec(f.kind, f, f.kind === 'bench' ? BENCH_BASE : NOTICE_BASE, { skirt: 0.6 }));
   return out;
 }

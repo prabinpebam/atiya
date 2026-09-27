@@ -516,6 +516,29 @@ export function signBoard(k: Kit, xf: Xf, o: { w: number; h: number; color: Colo
   });
 }
 
+/** The notice board (how to play): a cork board of pinned notes on two posts under a little roof; origin at the ground, the front is +z. */
+export function noticeBoard(k: Kit, xf: Xf) {
+  k.group(xf, () => {
+    k.surface('wood', () => {
+      for (const x of [-0.3, 0.3]) k.box([0.06, 0.95, 0.06], '#5c7b4f', { p: [x, 0.47, 0] }, 0.02);
+      k.box([0.66, 0.46, 0.06], '#5c7b4f', { p: [0, 0.72, 0] }, 0.02);
+      k.box([0.56, 0.36, 0.03], '#d6a877', { p: [0, 0.72, 0.03] }, 0.01);
+      k.box([0.72, 0.06, 0.12], '#4c6a41', { p: [0, 0.98, 0] }, 0.02);
+    });
+    const notes: [number, number, string][] = [
+      [-0.15, 0.78, '#ffffff'],
+      [0.1, 0.8, '#fff3b0'],
+      [0.02, 0.64, '#d8ecff'],
+      [-0.18, 0.62, '#ffe0ea'],
+      [0.17, 0.63, '#ffffff'],
+    ];
+    for (const [x, y, c] of notes) {
+      k.box([0.13, 0.14, 0.01], c, { p: [x, y, 0.05], r: [0, 0, (x * 3) % 0.3] }, 0.003);
+      k.sphere(0.012, '#d9463b', { p: [x, y + 0.055, 0.058] }, [6, 4]);
+    }
+  });
+}
+
 /** Freestanding post with a board; origin at ground. */
 export function postSign(k: Kit, xf: Xf, color: ColorRepresentation) {
   k.group(xf, () => {

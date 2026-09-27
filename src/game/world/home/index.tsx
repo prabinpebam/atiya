@@ -7,7 +7,7 @@ import type { GameController, HomeAttachment } from '../../controller';
 import { CONFIG } from '../../config';
 import { UP, arcDistance, moveAlong } from '../../math/sphere';
 import { FLOWER_KINDS } from '../layout';
-import { CRAFT_STAND, FAMILY, Family, KIDS, LinePicker, type DialogueProvider, type FamilyWorld, type NpcId } from './family';
+import { CRAFT_STAND, FAMILY, Family, KIDS, LinePicker, welcomeLines, type DialogueProvider, type FamilyWorld, type NpcId } from './family';
 import { FamilyView } from './FamilyView';
 import { HomeView } from './HomeView';
 import { TalkBox } from './TalkBox';
@@ -118,6 +118,10 @@ export function attachHome(controller: GameController): HomeAttachment | null {
       const n = family.get(id as NpcId);
       family.startChat(n.id);
       return lines.conversation(n.id, n.activity, hours);
+    },
+    greet(at, face, o) {
+      family.greet('prabin', at, face, world);
+      return { id: 'prabin', lines: welcomeLines(o.touch, o.back) };
     },
     endChat: (id) => family.endChat(id as NpcId),
     state: () =>

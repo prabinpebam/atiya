@@ -168,7 +168,7 @@ body.play {
   background: var(--surface-accent);
 }
 
-/* Overlays: loading, start, context lost (they own the screen until dismissed) */
+/* Overlays: loading, context lost (they own the screen until dismissed) */
 .overlay {
   position: absolute;
   inset: 0;
@@ -179,10 +179,6 @@ body.play {
   background: var(--color-scrim-soft);
 }
 
-.start-overlay {
-  background: var(--color-scrim-start);
-}
-
 .center-card {
   max-width: 440px;
   text-align: center;
@@ -190,10 +186,6 @@ body.play {
 
 .center-card .actions {
   justify-content: center;
-}
-
-.center-card .btn.big {
-  margin: var(--space-3) 0 var(--space-1);
 }
 
 /* R4: the focus lane. One of the talk box, the prompt and the preview card at a time (ui/lanes.ts) */
@@ -300,17 +292,13 @@ body.play {
   }
 }
 
-/* R6: the aside, bottom left. One of the build-site card and the controls hint (ui/lanes.ts) */
+/* R6: the aside, bottom left: the build-site card (ui/lanes.ts) */
 .aside {
   position: absolute;
   left: var(--space-4);
   bottom: var(--lane-bottom);
   z-index: var(--layer-lane);
   width: min(340px, calc(100vw - var(--space-8)));
-}
-
-.hint {
-  font-size: var(--text-sm);
 }
 
 /* beside the scene, not over it: the ghost and the character stay in view */
@@ -518,15 +506,6 @@ body.play {
 [data-input='touch'] .btn kbd,
 [data-input='touch'] .slot-key {
   display: none;
-}
-
-/* the controls hint is only text: a thumb landing on it still summons the stick (its link stays tappable) */
-[data-input='touch'] .hint {
-  pointer-events: none;
-}
-
-[data-input='touch'] .hint a {
-  pointer-events: auto;
 }
 
 [data-input='touch'] .view-pad {

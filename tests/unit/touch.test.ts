@@ -100,7 +100,7 @@ describe('touch copy', () => {
   });
 
   it('never names a key', () => {
-    for (const t of [TOUCH_COPY.start, ...TOUCH_COPY.hint]) expect(t).not.toMatch(/\b(press|W A S D|Shift|Esc|E key)\b/i);
+    for (const t of TOUCH_COPY.hint) expect(t).not.toMatch(/\b(press|W A S D|Shift|Esc|E key)\b/i);
   });
 });
 

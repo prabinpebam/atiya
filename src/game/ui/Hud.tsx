@@ -12,6 +12,7 @@ import {
   faBoxOpen,
   faBreadSlice,
   faChair,
+  faClipboardList,
   faComment,
   faHammer,
   faMoon,
@@ -26,8 +27,7 @@ import {
 import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
 import { withBase } from '../platform/base';
-import { asideLane, focusLane, laneBeneath, overlayOpen } from './lanes';
-import { useCompact } from './useCompact';
+import { focusLane, laneBeneath, overlayOpen } from './lanes';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -42,36 +42,6 @@ function LoadingOverlay({ controller }: { controller: GameController }) {
           Prefer a normal website?{' '}
           <a href={withBase('/classic/')} onClick={toClassic}>
             Go to the classic site
-          </a>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function StartOverlay({ controller }: { controller: GameController }) {
-  const phase = useStore(controller.store, (s) => s.phase);
-  const btn = useRef<HTMLButtonElement>(null);
-  const touch = useStore(controller.store, (s) => s.input === 'touch') ? controller.touch : null;
-  useEffect(() => {
-    // Only take focus when nothing else has it (never steal focus).
-    if (phase === 'ready' && (document.activeElement === document.body || document.activeElement === null)) btn.current?.focus();
-  }, [phase]);
-  if (phase !== 'ready') return null;
-  return (
-    <div className="overlay start-overlay">
-      <div className="card center-card" role="group" aria-labelledby="start-title">
-        <h1 id="start-title" className="card-title">
-          Welcome to the little planet
-        </h1>
-        <p>{touch ? touch.copy.start : "Walk with W A S D or the arrow keys. Walk up to a building to see what's inside, then press E."}</p>
-        <button ref={btn} className="btn primary big" type="button" onClick={() => controller.start()}>
-          Start exploring
-        </button>
-        <p className="muted">
-          Prefer a normal website?{' '}
-          <a href={withBase('/classic/')} onClick={toClassic}>
-            Classic site
           </a>
         </p>
       </div>
@@ -104,7 +74,7 @@ function PreviewCard({ controller }: { controller: GameController }) {
 }
 
 // (the targets a chunk adds bring their own icon: the crafting table, the site, the watering can, the plants)
-const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment } as const;
+const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment, notice: faClipboardList } as const;
 
 // the menu and a landmark's dialog load on demand: the first time they're opened, or soon after the game starts
 const MenuDialog = lazy(() => import('./MenuDialog'));
@@ -116,7 +86,7 @@ function LandmarkDialogSlot({ controller }: { controller: GameController }) {
 }
 
 function MenuDialogSlot({ controller }: { controller: GameController }) {
-  const open = useStore(controller.store, (s) => s.menuOpen);
+  const open = useStore(controller.store, (s) => Boolean(s.menuOpen));
   return <Later controller={controller} open={open} Screen={MenuDialog} />;
 }
 
@@ -191,41 +161,6 @@ function ActionPrompt({ controller }: { controller: GameController }) {
         )}
       </button>
     </div>
-  );
-}
-
-function ControlsHint({ controller }: { controller: GameController }) {
-  // the aside shows one thing: the build-site card before this help (lanes.ts)
-  const compact = useCompact();
-  const show = useStore(controller.store, (s) => asideLane(s, compact) === 'hint');
-  const touch = useStore(controller.store, (s) => s.input === 'touch') ? controller.touch : null;
-  if (!show) return null;
-  return (
-    <aside className="card hint aside" aria-label="Controls" data-testid="controls-hint">
-      {touch ? (
-        touch.copy.hint.map((t) => <p key={t}>{t}</p>)
-      ) : (
-        <>
-          <p>
-            <kbd>W</kbd>
-            <kbd>A</kbd>
-            <kbd>S</kbd>
-            <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open / use · <kbd>F</kbd> whistle · <kbd>I</kbd> backpack · <kbd>1</kbd>–<kbd>9</kbd> hotbar · <kbd>M</kbd> menu
-          </p>
-          <p>
-            Drag to turn &amp; tilt the view · <kbd>,</kbd>
-            <kbd>.</kbd> rotate · <kbd>PgUp</kbd>
-            <kbd>PgDn</kbd> tilt · <kbd>N</kbd> north · <kbd>H</kbd> reset
-          </p>
-        </>
-      )}
-      <p className="muted">
-        Prefer a normal website?{' '}
-        <a href={withBase('/classic/')} onClick={toClassic}>
-          Classic site
-        </a>
-      </p>
-    </aside>
   );
 }
 
@@ -501,7 +436,6 @@ export function Hud({ controller }: { controller: GameController }) {
       <Hotbar controller={controller} />
       <ViewControls controller={controller} />
       <CharacterPicker controller={controller} />
-      <ControlsHint controller={controller} />
       <Toast controller={controller} />
       <LiveRegion controller={controller} />
       <div
@@ -518,7 +452,6 @@ export function Hud({ controller }: { controller: GameController }) {
       {CraftScreens && <CraftScreens />}
       <MenuButton controller={controller} target={controller.hudActions} />
       <LoadingOverlay controller={controller} />
-      <StartOverlay controller={controller} />
       <ContextLost controller={controller} />
     </>
   );

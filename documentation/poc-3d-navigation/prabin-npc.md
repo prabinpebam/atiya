@@ -96,7 +96,7 @@
 ### 4.6 Prabin (`world/home/family.ts`, `FamilyView.tsx`, `world/home/prabin.ts`)
 
 - **Look:** the Skater model (1.28 u) with his own skin (`assets-src/characters/compose-family.py`): black hair, a mustard T-shirt with a small pencil, charcoal trousers and brown shoes.
-- **Where:** the whole planet. He starts at the crafting table and comes home for meals and the night like the rest of the family.
+- **Where:** the whole planet. He meets the visitor at the plaza as the game starts (§8), works at the crafting table, and comes home for meals and the night like the rest of the family.
 - **Activities** (the same utility AI, with points of interest):
   - **Stroll** to a point of interest (a landmark's surroundings, the plaza, the bridge, home) at a walk, pausing to look around.
   - **Admire a building:** stand 1.2–2 u off its path, 3–4 u from its front, facing it: hands on hips, looking up (10–16 s).
@@ -110,7 +110,7 @@
 ### 4.7 The plaza (`world/layout.ts`)
 
 - **The bench** moves to the plaza end of the Greenhouse bridge, on the bank beside the path facing the water, on dry ground, ≥ 0.9 u off the path's centre line, clear of the rails. The plaza keeps its lamps and planters, and a planter takes the bench's old place.
-- **The notice board** (owner review): it first stood across the bridge path, and the Town Hall had a second one partly inside its front-left corner. Only one is kept now, the Town Hall's own, moved to its side toward the Lighthouse (in the model, `townHall` in `world/models.ts`, behind the side window and turned a little to the front).
+- **The notice board** (owner review): it first stood across the bridge path, and the Town Hall had a second one partly inside its front-left corner. Only one is kept now, standing beside the path to the Lighthouse, where it shows how to play (§8).
 - **No signposts** (owner review): every building is plainly visible from the plaza, so the arrow signposts beside each path are gone.
 - **The workyard:** between the Post Office's and the Workshop's paths, the chest and the crafting table side by side (2.4 u apart), both facing the plaza, each ≥ 1.3 u off both paths, ≥ 1.2 u outside both buildings' footprints, and clear of water. The keep-clear rule (flowers ≥ 1.5 u, solids ≥ 0.9 u) applies round both.
 
@@ -185,3 +185,14 @@ with collision only where you'd bump into something.
 | Make Prabin talk to the children too | His chats only picked someone within 6 u, and he roams the planet | A **`kids`** activity (weight 3): when one of the children is at home within 10 u and free to talk, he walks over (they carry on meanwhile), and once close the chat starts as a normal `talk`, face to face with speech bubbles in turn. Over 20 simulated ten-minute days he chats with them 1–3 times in 19 |
 
 - **Tests:** unit "leaves the guitar on its chair whenever he gets up…", "isn't drawn into a chat while he plays…", "goes over to the children for a chat…"; E2E "Prabin plays the guitar in his lap with both elbows bent…" (the rig's elbow angles between 55° and 140°). The roaming test moved to seed 14 (like 18 of 20 seeds, it strolls within the ten minutes).
+
+## 8. Revision 5: the welcome and the notice board (owner review, 2026-09-27)
+
+| Report | Fix (and the pattern it follows) |
+|---|---|
+| The first greeting and instructions should come from Prabin, facing the character, with the talk open; play starts once it's dismissed | There's **no start card**: the game starts as soon as the planet is ready, and Prabin **meets the visitor there** (`Family.greet`): out of any seat, doorway or errand, he stands 1.25 u in front of the character, facing them, and the talk box opens with his welcome (`welcomeLines`). The character can't move until it's over (E goes through the lines; Esc or the close button ends it). Then he goes on with his day (at night he walks home to bed). A deep link to a building still opens its card straight away, without the welcome |
+| What he says | Hello and what the planet is ("every building here holds part of my work"); how to get about, for keys (W A S D, Shift, dragging the view, E) or in the touch chunk's own words; and where the rest is written down: the notice board. A returning visitor (the onboarding flag in `localStorage`) gets two short lines. The first-visit controls hint is gone (his welcome replaces it), and so is the start card's Start button; sound starts on the visitor's first press (§4.16 of the spec) |
+| Move the notice board beside the path to the Lighthouse; walking up to it uses the same cues and shows the controls | The board is plaza furniture now (`layout.ts`, kind `notice`): beside the path out to the Lighthouse, 1.1–1.4 u off its centre line and a little past the plaza, facing the path, on its own pad, with the keep-clear rule round it (no flowers within 1.5 u, no solids within 0.9 u). The Town Hall's own board is removed (its pad box shrinks back to the building). Walking up to it offers **Read the board** with the glowing gold ring every target has; E opens **How to play**: the menu dialog's help page, with the controls (keys, or the touch gestures) and a few tips. The menu's **Show controls** opens the same page |
+
+- **Tests:** unit "he stands in front of them, facing them, talking…", "says hello, how to get about… a returning visitor gets the short version", "the notice board stands beside the path to the Lighthouse…"; E2E "the game starts at once with Prabin's welcome…" and "the notice board by the path to the Lighthouse…". The rest of the E2E suite turns the welcome off (`localStorage['game.test.welcome'] = '0'`, honoured only outside production).
+

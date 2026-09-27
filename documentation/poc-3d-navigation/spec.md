@@ -171,7 +171,7 @@ Rules:
 - Clicking a view button with a mouse hands focus back to the planet so WASD keeps working; keyboard activation keeps focus on the button.
 - Diagonals are normalized; any movement key cancels an in-progress auto-walk or fast travel.
 - **Held input is cleared** on `blur`, `visibilitychange`, dialog/menu open, and any capability/error transition (no "stuck key" walking).
-- **Start & focus (no focus stealing):** when loading completes, the loader is replaced by a **Start exploring** button (also the user gesture that unlocks audio, §4.16). It receives focus **only if nothing else is focused** (`document.activeElement` is `body`). Activating it — or any pointer-down on the canvas — focuses the game region. The game region is a focusable wrapper (`tabindex="0"`, `role="region"`, `aria-label="Planet explorer — use arrow keys or WASD to move, E to open"`) with a visible `:focus-visible` indicator. `role="application"` is used only if Narrator/NVDA testing shows it's necessary.
+- **Start & focus (no focus stealing):** when loading completes, play starts at once with Prabin's welcome (§4.8): there's no start card. The game region takes focus **only if nothing else is focused** (`document.activeElement` is `body`); any pointer-down on the canvas focuses it too. Audio starts on the visitor's first press (§4.16). The game region is a focusable wrapper (`tabindex="0"`, `role="region"`, `aria-label="Planet explorer — use arrow keys or WASD to move, E to open"`) with a visible `:focus-visible` indicator. `role="application"` is used only if Narrator/NVDA testing shows it's necessary.
 
 ### 4.6 Camera
 
@@ -207,7 +207,8 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 ### 4.8 Wayfinding & onboarding
 
 - **Spawn:** Plaza, facing Workshop, Workshop base visible.
-- **First-visit hint** (P0): small overlay bottom-left — "WASD / arrows to move · Shift to run · E to open · M for map" + "Prefer a normal website? Classic site". Auto-dismisses after **2 cumulative seconds** of movement; re-openable via Menu → Controls; dismissal remembered.
+- **Welcome** (P0; as built, replacing the first-visit hint at the owner's review): as the game starts, Prabin stands in front of the character, facing them, and the talk box opens with his welcome: hello, how to get about (keys, or touch), and that the notice board by the path to the Lighthouse has all the controls. Play starts once it's dismissed; a returning visitor gets two short lines (remembered in `localStorage`). Details: [prabin-npc.md §8](./prabin-npc.md#8-revision-5-the-welcome-and-the-notice-board-owner-review-2026-09-27).
+- **How to play** (P0): the notice board beside the path to the Lighthouse (**Read the board**, E) and Menu → *Show controls* open the menu dialog's help page: the controls and a few tips.
 - **Fast travel** (P0): Menu → *Landmarks* list (also the parallel DOM nav, §6) or click/tap a landmark. A short **fly-over** (1.5 s, `flyoverProfile` in `systems/movement.ts`) in three phases, so the character never sweeps through buildings, trees or rocks:
   1. **Rise** (first 20 %): the character hops and lifts straight up to `travelHoverU` = 5.5 u above the ground (ease-out), clear of the tallest tree and the Lighthouse (≈ 5.1 u). The planet doesn't turn yet.
   2. **Glide** (middle 60 %): at full height the planet rotates along the great circle to the destination (eased; collisions disabled), while the camera eases out to the far zoom and follows half the height, so the character stays in frame.
@@ -225,8 +226,8 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 │                                                              │
 │                        ( 3D canvas )                         │
 │                                                              │
-│ ┌ Controls hint (first visit) ┐   ┌──── Preview card ─────┐  │
-│ │ WASD move · Shift run · E   │   │ CASE STUDIES          │  │
+│ ┌ Site card (a build goal) ───┐   ┌──── Preview card ─────┐  │
+│ │ Chopper's house: needs …    │   │ CASE STUDIES          │  │
 │ └─────────────────────────────┘   │ Workshop              │  │
 │                                   │ One-line summary…     │  │
 │                                   │ [Open · E] [Classic ↗]│  │
@@ -289,7 +290,7 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-26 | `activationMode: "auto"` experiment flag (non-default; `prompt` stays the P0 default) | P1 | 4.7 |
 | **Wayfinding** | | | |
 | FR-30 | Spawn at Plaza facing Workshop (base visible); every approach point ≤ 10 u arc from Plaza and reachable in ≤ 8 s running | P0 | 4.3, 4.8 |
-| FR-31 | First-visit controls hint; dismiss after 2 cumulative s of movement; re-openable; remembered | P0 | 4.8 |
+| FR-31 | Onboarding: Prabin's welcome as the game starts (the controls, and where to find them again); How to play re-openable from the notice board and the menu; remembered | P0 | 4.8 |
 | FR-32 | Fast travel from Menu / landmark click (fly-over: rise, glide, drop, 1.5 s; ≤ 200 ms opacity fade under reduced motion) | P0 | 4.8 |
 | FR-33 | Plaza signposts, off-screen indicator, "I'm stuck" | P1 | 4.8 |
 | **Escape hatch & modes** | | | |
@@ -495,7 +496,7 @@ Subtle, cosy sound effects make the planet feel alive; nothing is essential, and
 | Open | A place's details open | A soft rising sparkle |
 | Music | Throughout, once started | The owner's "Mossy Window Nook" (v1 and v2, ≈ 3–3.5 min each): a random one first, then they alternate. Slightly subtle: 0.2 of the master, fading in over ≈ 1.5 s, dipping to 65 % while a dialog or the menu is open |
 
-- **Unlock & default:** browsers only allow audio after a user gesture, so `SoundEngine.unlock()` runs from **Start exploring** (and any later press). Sound is **on by default**; the header's **Sound** toggle and Menu → *Sound effects* turn it off, and the choice is remembered (`localStorage site.sound`). This deliberately replaces the original "muted by default" (FR-55): the sounds are quiet, start only after the visitor's own click, and are one click from off.
+- **Unlock & default:** browsers only allow audio after a user gesture, so `SoundEngine.unlock()` runs from the visitor's first press once playing (a key or a pointer). Sound is **on by default**; the header's **Sound** toggle and Menu → *Sound effects* turn it off, and the choice is remembered (`localStorage site.sound`). This deliberately replaces the original "muted by default" (FR-55): the sounds are quiet, start only after the visitor's own press, and are one click from off.
 - **Nothing is fetched early:** the landing page and the game load no audio. The five files (≈ 625 KB) are fetched after Start, and never while muted. Muting fades out and suspends the audio context; a hidden tab suspends it too.
 - **Music:** streamed from an `<audio>` element through a `MediaElementSource` and its own gain into the master (not decoded whole, so memory stays small and it starts at once). It starts from `unlock()` only with sound and music both on; it pauses (after a short fade) when muted, when the tab is hidden, or when Menu → *Background music* is unchecked (remembered as `localStorage site.music`). Nothing is requested before Start or on a muted visit. `python scripts/build-music.py` normalises each source in `assets-src/audio/music/` to −16 LUFS / −1.5 dBTP (two-pass loudnorm) and encodes 96 kbps stereo MP3 (≤ 3 MB per track), writing `public/audio/music-*.mp3` and `src/game/audio/musicManifest.ts`.
 - **Mix:** a master gain feeds two buses: the ambience (wind, stream, birds) ducks to 30 % while a dialog or the menu is open; the effects (steps, cues) don't.
@@ -572,7 +573,7 @@ Prabin (the owner) is now an NPC who roams the whole planet; visitors play the c
 - **Seats:** smart objects with entry points and a reservation: they walk to an entry point (never through the chair), slide onto the seat in 0.6 s, and stand up the same way; the hips go to that seat's own height. The table has a fourth chair, for Prabin.
 - **The front door:** a hinged leaf that swings open for whoever goes in or out (one at a time), up the steps and through the doorway into a small room (floorboards, a rug, a dresser with a lamp, a picture), and shut again after them.
 - **Chopper's house:** rebuilt at his scale with an arched doorway, a plank floor, a padded bed, a bone toy, a blanket, his name over the door and a lantern that's a real lamp at night. He walks in, turns and sits or lies on his bed facing out, and walks out first when he's called.
-- **The plaza:** the bench stands by the Greenhouse bridge (the one notice board is the Town Hall's, on its side toward the Lighthouse, and there are no signposts); the chest and the crafting table stand side by side in a workyard between the Post Office and the Workshop, with nothing else usable near them.
+- **The plaza:** the bench stands by the Greenhouse bridge (there are no signposts; the one notice board stands beside the path to the Lighthouse and shows how to play); the chest and the crafting table stand side by side in a workyard between the Post Office and the Workshop, with nothing else usable near them.
 - **Test hooks:** `family()` (with `seat`, `link` and `held`), `homeDoor()`, `npcPlace(id, n)`, `chopperDo('house')`.
 
 ## 5. Technical design
@@ -808,7 +809,7 @@ A hydrated `client:only` island would import the game bundle as part of hydratio
    The result is *load*, *offer a choice*, or *fall back*.
 3. Only on *load*, or when the user chooses **Continue anyway**, does it run `await import("../game/mount")`, which calls `createRoot(container).render(<GameApp/>)`. Game code is emitted as named chunks (`game-*`) so E2E tests can assert that no such request happens when the user is gated out.
 4. GLBs load via `useGLTF` (with `KTX2Loader`/Meshopt via `extendLoader`), with progress from `useProgress`.
-5. The generated textures (about 1.1 MB of WebP, §4.15) are preloaded before the first render; a texture that fails falls back to procedural. Shaders are precompiled (`renderer.compileAsync`). Then `performance.mark("game:playable")` fires when the loader is replaced by the **Start exploring** button and input is accepted.
+5. The generated textures (about 1.1 MB of WebP, §4.15) are preloaded before the first render; a texture that fails falls back to procedural. Shaders are precompiled (`renderer.compileAsync`). Then `performance.mark("game:playable")` fires when the loader goes and play starts (with Prabin's welcome).
 
 `@astrojs/react` remains installed for JSX/TSX tooling, HMR, and any future classic-page islands.
 
@@ -843,7 +844,7 @@ Targets: **WCAG 2.2 AA** for all DOM UI, plus **WCAG 2.3.3 Animation from Intera
 | Full keyboard operation, no traps | Arrows/WASD + E/Enter/Space; Esc closes the open dialog/menu (or opens the menu when none is open, or stands up from a bench); Tab/Shift+Tab always move focus out of the game region | 2.1.1, 2.1.2 |
 | Single-key shortcuts scoped | Game keys only when game region focused | 2.1.4 |
 | Equivalent non-visual access | Parallel `<nav aria-label="Planet landmarks">` list of "Travel to …" buttons + `aria-live="polite"` region for proximity/state | 1.1.1, 4.1.2, 4.1.3 |
-| Focus management | No focus stealing on load (Start button focused only if nothing is focused); dialogs via `showModal()`; focus returns to the invoker (fallback: game region); visible focus never obscured by HUD | 2.4.3, 2.4.7, 2.4.11, XAG 113 |
+| Focus management | No focus stealing on load (the game region takes focus only if nothing is focused); dialogs via `showModal()`; focus returns to the invoker (fallback: game region); visible focus never obscured by HUD | 2.4.3, 2.4.7, 2.4.11, XAG 113 |
 | Drag alternative | Tap/click-to-move and fast travel as alternatives to the stick drag; the compass buttons for the two-finger view drag | 2.5.7, 2.5.1 |
 | Target size & contrast | ≥ 24×24 px; text 4.5:1, UI glyphs 3:1 on solid/blurred backing | 2.5.8, 1.4.3, 1.4.11 |
 | Motion | One global **Reduce motion** state (media query **or** in-game toggle) stops **every** decorative animation source: lighthouse beam, clouds, foliage wind, landmark idle bobs, particles, squash, follow lead. Transitions become opacity-only (≤ 200 ms). Menu → **Pause ambient motion** is available even without reduced motion. Never: shake, head-bob, motion blur, flashing. | 2.2.2 (A), 2.3.1 (A), 2.3.3 (AAA, adopted), XAG 117 |

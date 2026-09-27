@@ -24,7 +24,6 @@ describe('the focus lane: one surface at a time, and E does what it shows', () =
 
   it('is empty before play, while travelling, while an action plays out, and under any overlay', () => {
     const s = { ...base(), nearbyId: 'town-hall', target };
-    expect(focusLane({ ...s, phase: 'ready' })).toBeNull();
     expect(focusLane({ ...s, traveling: 'flyover' })).toBeNull();
     expect(focusLane({ ...s, acting: 'shake' })).toBeNull();
     for (const o of [{ openId: 'town-hall' }, { menuOpen: true }, { invScreen: 'chest' as const }, { craftScreen: 'table' as const }, { chopperOpen: true }]) {
@@ -44,19 +43,19 @@ describe('the focus lane: one surface at a time, and E does what it shows', () =
   });
 });
 
-describe('the aside: context before help, nothing during a conversation', () => {
-  it('shows the build-site card over the controls hint, and neither while talking or under an overlay', () => {
+describe('the aside: the build-site card, nothing during a conversation', () => {
+  it('shows the build-site card, but not while talking or under an overlay (the menu, its How to play page)', () => {
     const s = base();
     expect(asideLane(s)).toBeNull();
-    expect(asideLane({ ...s, hintVisible: true })).toBe('hint');
-    expect(asideLane({ ...s, hintVisible: true, siteNear: true })).toBe('site');
-    expect(asideLane({ ...s, hintVisible: true, siteNear: true, talk })).toBeNull();
+    expect(asideLane({ ...s, siteNear: true })).toBe('site');
+    expect(asideLane({ ...s, siteNear: true, talk })).toBeNull();
     expect(asideLane({ ...s, siteNear: true, menuOpen: true })).toBeNull();
+    expect(asideLane({ ...s, siteNear: true, menuOpen: 'help' })).toBeNull();
     expect(asideLane({ ...s, siteNear: true, traveling: 'fade' })).toBeNull();
   });
 
   it('on a narrow screen (one bottom stack) gives way whenever the focus lane has something', () => {
-    const s = { ...base(), hintVisible: true, siteNear: true };
+    const s = { ...base(), siteNear: true };
     expect(asideLane(s, true)).toBe('site');
     expect(asideLane({ ...s, target }, true)).toBeNull();
     expect(asideLane({ ...s, nearbyId: 'town-hall' }, true)).toBeNull();

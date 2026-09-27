@@ -151,6 +151,12 @@ kbd {
   border-top: var(--border-rule-lg) solid var(--accent, var(--surface-accent));
 }
 
+/* How to play (the menu's help page): a key per item, the keycaps inline */
+.help-list li {
+  margin-block: var(--space-1-5);
+  line-height: var(--leading-snug);
+}
+
 /* List row: a full-width button in a list (the menu's places) */
 .menu-list {
   list-style: none;

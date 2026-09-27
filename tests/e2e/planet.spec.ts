@@ -68,10 +68,14 @@ const state = (page: Page) => page.evaluate(() => (window as any).__game.getStat
 /**
  * Load /play, accept the software-rendering interstitial (headless SwiftShader), wait for the game.
  * The blade grass is thinned to a quarter (a dev/test-only flag) unless `grass: 'full'`: only its own
- * tests need all of it, and it's the costliest thing to draw in software.
+ * tests need all of it, and it's the costliest thing to draw in software. Prabin's welcome (the talk
+ * that opens as the game starts) is off too (another test-only flag), unless `welcome`.
  */
-async function openPlanet(page: Page, path = '/play/', { grass = 'thin' }: { grass?: 'thin' | 'full' } = {}) {
-  await page.addInitScript((d) => localStorage.setItem('game.test.grassDensity', d), grass === 'full' ? '1' : '0.25');
+async function openPlanet(page: Page, path = '/play/', { grass = 'thin', welcome = false }: { grass?: 'thin' | 'full'; welcome?: boolean } = {}) {
+  await page.addInitScript(([d, w]) => {
+    localStorage.setItem('game.test.grassDensity', d);
+    localStorage.setItem('game.test.welcome', w);
+  }, [grass === 'full' ? '1' : '0.25', welcome ? '1' : '0']);
   await page.goto(path);
   const cont = page.getByRole('button', { name: 'Continue anyway' });
   await page.waitForFunction(() => (window as any).__game || document.querySelector('[data-gate-continue]'));
@@ -81,7 +85,6 @@ async function openPlanet(page: Page, path = '/play/', { grass = 'thin' }: { gra
 
 async function startPlanet(page: Page) {
   await openPlanet(page);
-  await page.getByRole('button', { name: 'Start exploring' }).click();
   await expect.poll(async () => (await state(page)).phase).toBe('playing');
 }
 
@@ -175,7 +178,6 @@ test.describe('rendering', () => {
     // this test drives the steps itself (forced steps bypass the flag); the monitor would otherwise
     // step down on its own at SwiftShader's frame rate, part-way through
     await page.evaluate(() => (window as any).__game.setAdaptiveQuality(false));
-    await page.getByRole('button', { name: 'Start exploring' }).click();
     await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift+bloom+vignette');
     await page.evaluate(() => {
       for (let i = 0; i < 8; i++) (window as any).__game.adaptiveStep(-1);
@@ -191,7 +193,6 @@ test.describe('rendering', () => {
 
   test('the tilt-shift replaces the image rather than adding to it, so the frame is exposed once and highlights keep their range', async ({ page }) => {
     await openPlanet(page, '/play/?quality=high');
-    await page.getByRole('button', { name: 'Start exploring' }).click();
     const grading = () => page.evaluate(() => (window as any).__game.grading());
     await expect.poll(async () => (await grading()).tiltBlend).toBe('NORMAL');
     await page.evaluate(() => (window as any).__game.setTime(12));
@@ -220,7 +221,6 @@ test.describe('rendering', () => {
 
   test('the low quality tier still has the tilt-shift', async ({ page }) => {
     await openPlanet(page, '/play/?quality=low');
-    await page.getByRole('button', { name: 'Start exploring' }).click();
     expect((await state(page)).quality).toBe('low');
     await expect.poll(async () => (await state(page)).postFx).toBe('tilt-shift');
     expect((await page.evaluate(() => (window as any).__game.grading())).tiltBlend).toBe('NORMAL');
@@ -577,7 +577,6 @@ test.describe('landscape & wind', () => {
   test('blade grass grows at full density in three draws, with knee-high meadows in open country', async ({ page }) => {
     test.setTimeout(120_000);
     await openPlanet(page, '/play/', { grass: 'full' });
-    await page.getByRole('button', { name: 'Start exploring' }).click();
     await expect.poll(async () => (await state(page)).phase).toBe('playing');
     const grass = () => page.evaluate(() => (window as any).__game.grass() as { stats: Record<string, number> | null; meadows: number });
     const g = await grass();
@@ -649,7 +648,8 @@ test.describe('sound', () => {
     page.on('request', (r) => r.url().endsWith('.mp3') && mp3.push(r.url()));
     await openPlanet(page);
     expect(mp3).toEqual([]);
-    await page.getByRole('button', { name: 'Start exploring' }).click();
+    // (audio starts from the visitor's first press, not before)
+    await page.keyboard.press('Shift');
     await expect.poll(async () => (await sound(page)).loaded, { timeout: 20_000 }).toBe(7);
     expect((await sound(page)).state).toBe('running');
     // the background music streams in and plays (one of the two tracks)
@@ -744,14 +744,7 @@ test.describe('touch', () => {
     test.setTimeout(180_000);
     await openPlanet(page);
     await expect(page.locator('html')).toHaveAttribute('data-input', 'touch');
-    await expect(page.locator('.start-overlay')).toContainText('Drag anywhere to walk');
-    await page.getByRole('button', { name: 'Start exploring' }).tap();
     await expect.poll(async () => (await state(page)).phase).toBe('playing');
-    const hint = page.getByTestId('controls-hint');
-    if (await hint.isVisible()) {
-      await expect(hint).toContainText('Drag anywhere to walk');
-      await expect(hint.locator('kbd')).toHaveCount(0);
-    }
     const cdp = await page.context().newCDPSession(page);
     const touch = (type: string, pts: [number, number, number][]) =>
       cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y, id]) => ({ x, y, id })) } as any);
@@ -1644,7 +1637,6 @@ test.describe("crafting & Chopper's house", () => {
     // saved: still built after a reload
     await page.reload();
     await page.waitForFunction(() => (window as any).__game && (window as any).__game.getState().phase !== 'loading', null, { timeout: 60_000 });
-    await page.getByRole('button', { name: 'Start exploring' }).click();
     await expect.poll(async () => (await state(page)).phase).toBe('playing');
     expect((await craft(page)).built).toBe(true);
     // painting: one pot of a paint you've made, or Original red for free; the colour is saved
@@ -1803,13 +1795,34 @@ test.describe('player character', () => {
 });
 
 test.describe('planet', () => {
-  test('start button, then WASD moves the player; keys are ignored when a HUD button has focus', async ({ page }) => {
-    await openPlanet(page);
-    const startBtn = page.getByRole('button', { name: 'Start exploring' });
-    await expect(startBtn).toBeFocused();
-    await startBtn.click();
+  test("the game starts at once with Prabin's welcome: he faces you, E goes through his lines, then WASD moves; keys are ignored when a HUD button has focus", async ({ page }) => {
+    test.setTimeout(150_000);
+    await openPlanet(page, '/play/', { welcome: true });
+    await expect(page.getByRole('button', { name: 'Start exploring' })).toHaveCount(0);
     await expect(page.locator('.game-region')).toBeFocused();
-    await expect(page.getByTestId('controls-hint')).toBeVisible();
+    const talk = page.getByTestId('talk-box');
+    await expect(talk).toBeVisible();
+    await expect(talk).toContainText('Prabin');
+    await expect(talk).toContainText('Welcome to my little planet');
+    const prabin = await page.evaluate(() => (window as any).__game.family().find((p: { id: string }) => p.id === 'prabin'));
+    expect(prabin.chatting).toBe(true);
+    expect(prabin.d).toBeLessThan(1.6);
+    // the controls are in the talk, and where to find them again
+    const lines = (await state(page)).talk!.lines as string[];
+    expect(lines.join(' ')).toMatch(/W A S D/);
+    expect(lines.at(-1)).toMatch(/notice board/);
+    // nothing moves while he talks
+    const still = await state(page);
+    await page.keyboard.down('w');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('w');
+    expect((await state(page)).pLocal).toEqual(still.pLocal);
+    for (let i = 0; i < 2 * lines.length && (await state(page)).talk; i++) {
+      await page.waitForTimeout(350);
+      await page.keyboard.press('e');
+    }
+    await expect(talk).toBeHidden();
+    await expect(page.locator('.game-region')).toBeFocused();
 
     const before = await state(page);
     await page.keyboard.down('w');
@@ -1825,6 +1838,31 @@ test.describe('planet', () => {
     await page.keyboard.up('d');
     const s2 = await state(page);
     expect(Math.abs(s2.pLocal[0] - s1.pLocal[0])).toBeLessThan(1e-6);
+  });
+
+  test('the notice board by the path to the Lighthouse: walking up to it glows and prompts, E opens How to play; the menu opens it too', async ({ page }) => {
+    test.setTimeout(150_000);
+    await startPlanet(page);
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('notice', undefined, 0.8))).toBe('notice');
+    const prompt = page.getByTestId('seat-prompt');
+    await expect(prompt).toHaveAttribute('data-kind', 'notice');
+    await expect(prompt.getByRole('button', { name: /Read the board/ })).toBeVisible();
+    // the same glowing ring as every target
+    await expect.poll(() => page.evaluate(() => (window as any).__game.__gfx()?.scene.getObjectByName('target-cue')?.visible)).toBe(true);
+    await page.keyboard.press('e');
+    const dialog = page.getByTestId('menu-dialog');
+    await expect(dialog.getByRole('heading', { name: 'How to play' })).toBeVisible();
+    await expect(dialog).toContainText('W');
+    await expect(dialog.getByRole('heading', { name: 'Tips' })).toBeVisible();
+    await noSeriousViolations(page);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    // from the menu: Show controls
+    await page.getByTestId('menu-button').click();
+    await dialog.getByRole('button', { name: 'Show controls' }).click();
+    await expect(dialog.getByRole('heading', { name: 'How to play' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
   });
 
   test('spawn view shows the Workshop straight ahead', async ({ page }) => {

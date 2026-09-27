@@ -3,7 +3,7 @@ import { Quaternion, Vector3, type Camera, type Scene, type WebGLRenderer } from
 import { CONFIG } from './config';
 import type { LandmarkData, MoveIntent } from './types';
 import { arrivalOrientation, landmarkGeometry, type LandmarkGeometry } from './math/landmarks';
-import { DEG, UP, arcDistance, clamp, damp, dampAngle, wrapAngle, type Obstacle } from './math/sphere';
+import { DEG, UP, arcDistance, clamp, damp, dampAngle, moveAlong, tangentToward, wrapAngle, type Obstacle } from './math/sphere';
 import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
@@ -64,8 +64,8 @@ interface KeyEventLike {
 export interface TouchAttachment {
   /** A pointer went down on the planet: true if it's a touch the stick and gestures take (the mouse path then skips it). */
   down(e: { pointerId: number; clientX: number; clientY: number; pointerType?: string }): boolean;
-  /** Copy for touch: the start card and the controls hint. */
-  copy: { start: string; hint: readonly string[] };
+  /** Copy for touch: the How to play page's controls. */
+  copy: { hint: readonly string[] };
   /** An announcement reworded for touch. */
   say(text: string): string;
 }
@@ -92,6 +92,8 @@ export interface HomeAttachment {
   canTalk(id: string): boolean;
   /** They stop and face you; returns the conversation's lines. */
   startChat(id: string, hours: number): string[];
+  /** The welcome (prabin-npc.md §8): Prabin meets the visitor at `at`, facing `face`, and says hello and how to play. */
+  greet(at: Vector3, face: Vector3, o: { touch: readonly string[] | null; back: boolean }): { id: string; lines: string[] };
   endChat(id: string): void;
   state(): Array<{ id: string; activity: string; pose: string; speed: number; chatting: boolean; indoors: boolean; d: number; home: number; seat: string | null; link: string | null; held: string | null }>;
   /** How open the front door is (0 shut … 1 open). */
@@ -402,14 +404,26 @@ export class GameController {
       this.openLandmark(id, { push: false });
       return;
     }
-    this.store.setState({ phase: 'ready' });
+    this.start();
   }
 
+  /** Play (as soon as the planet is ready: there's no start card, Prabin's welcome is the start). Sound waits for the first press. */
   start(): void {
     if (this.store.getState().phase === 'playing') return;
-    this.store.setState({ phase: 'playing', hintVisible: !prefs.getOnboardingSeen() });
-    this.sound.unlock();
-    this.focusRegion();
+    this.store.setState({ phase: 'playing' });
+    // (never steal focus from something the visitor went to while it loaded)
+    if (document.activeElement === document.body || !document.activeElement) this.focusRegion();
+    this.welcome();
+  }
+
+  /** Prabin meets the visitor as the game starts, facing them, and says hello and how to play (the E2E suite turns it off). */
+  private welcome(): void {
+    if (!this.home || (import.meta.env.MODE !== 'production' && localStorage.getItem('game.test.welcome') === '0')) return;
+    const p = this.sim.pLocal;
+    const at = moveAlong(p, this.forwardLocal(new Vector3()), 1.25 / CONFIG.planetRadius);
+    const g = this.home.greet(at, tangentToward(at, p) ?? new Vector3(0, 0, 1), { touch: this.store.getState().input === 'touch' ? (this.touch?.copy.hint ?? null) : null, back: prefs.getOnboardingSeen() });
+    prefs.setOnboardingSeen();
+    this.openTalk(g.id, g.lines);
   }
 
   focusRegion(): void {
@@ -513,11 +527,6 @@ export class GameController {
     const aim = this.store.getState().target?.kind;
     this.chestCue.step(dt, aim === 'chest');
     this.craftCue.step(dt, aim === 'craft');
-
-    if (s.hintVisible && this.sim.movingTime >= CONFIG.onboardingDismissSeconds) {
-      prefs.setOnboardingSeen();
-      this.store.setState({ hintVisible: false });
-    }
   }
 
   private updateFade(): void {
@@ -602,7 +611,6 @@ export class GameController {
   /** Pointer down on the planet region: focus/start, and begin a possible drag-to-tumble gesture. */
   onRegionPointerDown = (e: { clientX: number; clientY: number; pointerId: number; button: number; pointerType?: string }): void => {
     this.focusRegion();
-    if (this.store.getState().phase === 'ready') this.start();
     this.viewDragged = false;
     if (this.touch?.down(e)) return;
     if (e.button !== 0 && e.button !== 2) return;
@@ -670,10 +678,7 @@ export class GameController {
     if (!action) return;
     e.preventDefault();
     const s = this.store.getState();
-    if (s.phase === 'ready' && (action === 'interact' || action === 'up' || action === 'down' || action === 'left' || action === 'right')) {
-      this.start();
-    }
-    if (s.phase !== 'playing' && s.phase !== 'ready') return;
+    if (s.phase !== 'playing') return;
     if (s.talk) {
       // talking with one of the family: E / Enter / Space go on, Escape (or M) ends it, nothing else moves
       if (!e.repeat && action === 'interact' && performance.now() - this.talkOpenedAt >= TALK_GUARD_MS) this.advanceTalk();
@@ -848,6 +853,10 @@ export class GameController {
     }
     if (t.kind === 'dog') {
       this.openChopper();
+      return;
+    }
+    if (t.kind === 'notice') {
+      this.openHelp();
       return;
     }
     if (t.use) {
@@ -1049,8 +1058,7 @@ export class GameController {
   /** Planet click/tap: walk to a world-space surface point. */
   walkToWorldPoint(point: Vector3): void {
     const s = this.store.getState();
-    if (s.phase === 'ready') this.start();
-    if (this.store.getState().phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel) return;
+    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel) return;
     if (this.seatMotion.stage) {
       this.standUp();
       return;
@@ -1236,11 +1244,15 @@ export class GameController {
     this.buffer.clear();
     this.sim.cancelAutoWalk();
     this.sim.vel.set(0, 0, 0);
-    const lines = this.home.startChat(id, this.timeOfDay);
-    this.store.setState({ talk: { id, name: who.name, lines, index: 0, reveal: 0 }, target: null, menuOpen: false });
+    this.openTalk(id, this.home.startChat(id, this.timeOfDay));
+  }
+
+  private openTalk(id: string, lines: string[]): void {
+    const name = this.home?.people.find((p) => p.id === id)?.name ?? id;
+    this.store.setState({ talk: { id, name, lines, index: 0, reveal: 0 }, target: null, menuOpen: false });
     this.talkOpenedAt = performance.now();
     this.sound.pickup();
-    this.announce(`${who.name}: ${lines[0]}`);
+    this.announce(`${name}: ${lines[0]}`);
   }
 
   /** Go on: finish revealing the line if it's still typing, else the next line, else close. */
@@ -1435,9 +1447,10 @@ export class GameController {
     this.store.setState({ timeMode: m });
   }
 
-  showControls(): void {
-    this.store.setState({ hintVisible: true, menuOpen: false });
-    this.sim.movingTime = 0;
+  /** How to play (the notice board, or the menu's Show controls): the menu dialog's help page. */
+  openHelp(): void {
+    this.keyboard.clear();
+    this.store.setState({ menuOpen: 'help', target: null });
   }
 
   // ---------- classic mode ----------

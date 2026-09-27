@@ -173,22 +173,7 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
   steps(k, { p: [0, 0, D / 2 + 0.66] }, { w: 1.2, n: 3, rise: floor / 3, tread: 0.13 });
   for (const s of [-1, 1]) windowUnit(k, { p: [s * 0.86, 0.95, D / 2 + 0.03] }, { w: 0.36, h: 0.46, arch: true, lit: s < 0 });
   for (const s of [-1, 1]) windowUnit(k, { p: [s * (W / 2 + 0.03), 0.95, 0], r: [0, (s * Math.PI) / 2, 0] }, { w: 0.36, h: 0.46, arch: true });
-  // noticeboard: on the right side (toward the Lighthouse), behind the side window, turned a little to the front
-  k.group({ p: [1.58, 0, -0.5], r: [0, 1.4, 0] }, () => {
-    k.surface('wood', () => {
-      for (const x of [-0.3, 0.3]) k.box([0.06, 0.95, 0.06], '#5c7b4f', { p: [x, 0.47, 0] }, 0.02);
-      k.box([0.66, 0.46, 0.06], '#5c7b4f', { p: [0, 0.72, 0] }, 0.02);
-      k.box([0.56, 0.36, 0.03], '#d6a877', { p: [0, 0.72, 0.03] }, 0.01);
-    });
-    const notes: [number, number, string][] = [
-      [-0.15, 0.78, '#ffffff'],
-      [0.1, 0.8, '#fff3b0'],
-      [0.02, 0.64, '#d8ecff'],
-      [-0.18, 0.62, '#ffe0ea'],
-    ];
-    for (const [x, y, c] of notes) k.box([0.13, 0.14, 0.01], c, { p: [x, y, 0.05], r: [0, 0, (x * 3) % 0.3] }, 0.003);
-    k.surface('wood', () => k.box([0.72, 0.06, 0.12], '#4c6a41', { p: [0, 0.98, 0] }, 0.02));
-  });
+  // (the notice board stands by the path to the Lighthouse now: Plaza.tsx)
   // bushes flanking the platform
   for (const s of [-1, 1]) shrub(k, { p: [s * 0.92, 0, D / 2 + 0.5], r: [0, s, 0], s: 0.45 });
   return {
