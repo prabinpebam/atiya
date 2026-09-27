@@ -121,7 +121,7 @@ It returns nothing before play, while travelling, and under any overlay. Under a
 
 ### 6.4 The aside
 
-`asideLane(state, compact)` puts context before help: the site card (a build goal is near), then the controls hint. It shows nothing during a conversation, and on compact screens nothing while the lane is busy.
+`asideLane(state, compact)` puts context before help: the site card (while the build site is the target, so it never shows while you use something else near it), then the controls hint. It shows nothing during a conversation, and on compact screens nothing while the lane is busy.
 
 ### 6.5 Target tiers
 
@@ -134,6 +134,39 @@ When several things are in reach, `pickTarget` (`systems/interactables.ts`) adds
 | 2: the companion | Chopper | 0.45 u |
 
 So Chopper, who follows you everywhere, never takes the prompt from the person you walked up to.
+
+#### How close, and which one
+
+A target is offered while you're within its reach of its edge (so a big tree and a small flower feel alike), in front of you, and usable now. The best score wins: distance past the edge, plus how far it's off your heading, plus its tier. The current target keeps its prompt 0.25 u past its reach (`REACH.keep`), so it doesn't flicker as you shuffle.
+
+| Target | Reach (u) | Measured from | Also |
+|---|---|---|---|
+| Tree | 1.05 | its trunk's collision edge | |
+| Boulder | 1.0 | its edge | |
+| Flower | 0.9 (0.5 by a landmark) | its centre | |
+| Chest, crafting table | 0.95 | its edge | |
+| Chopper's house site | 1.0 | the house's edge | its card shows only while it's the target; the ghost fades in from 6 u |
+| Bench | `SEAT.enterU` | the seat | only from in front or the ends |
+| Watering can, garden plant | 0.8 | their edge | |
+| Someone to talk to | 1.3 (`FAMILY.talkRange`) | their centre | within 65° of your heading |
+| Chopper | 1.2 (0.8 by a landmark) | his centre | within 65° of your heading |
+| Landmark card | footprint + 1.75 (`CONFIG.proximityPadding`) | its centre | goes once you're past it × `exitFactor`; hidden while a target takes E |
+
+#### Things that move
+
+- **Hysteresis for movers.** A person or Chopper stays the target 0.5 u past their reach (`REACH.keepMoving`), so one step of theirs doesn't take the prompt away.
+- **They notice you.** When a family member who's walking somewhere becomes your target, they stop, turn to you and look at you for up to 4 s (`Family.notice`, `FAMILY.noticeS`), then carry on if you don't talk. Someone busy (in the middle of a chore, talking with someone else, or going through a door) doesn't stop. That's why walkers can be talked to at all: `canTalk` accepts anyone slow, or anyone who can notice you.
+- **The marker follows them.** The target's ring is placed at the target's current position every frame.
+
+#### One thing glows: the one E uses
+
+`world/cues.tsx` (`ActivationCues`, in the wildlife chunk) marks what <kbd>E</kbd> would use, and only that:
+
+- **The target:** a small gold ring on the ground round it (`markU` sets its radius where the edge isn't a good fit: trees and rocks clear their roots, people clear a chair; `markLift` raises it onto a raised bed), with sparkles rising from it.
+- **The landmark:** a wide ring in the landmark's accent colour, draped on the ground round its footprint, with sparkles. It shows only while the landmark's card is up, so it goes whenever something nearer takes <kbd>E</kbd>.
+- **The chest and crafting table** also wake and sparkle (`ReadyCue`).
+
+The ring is a soft gradient band with highlights running round it; its hue drifts a little either side of the base colour (a small turn about the grey axis) without leaving the colour family. Sparkles are additive points that rise, drift, twinkle and fade. It costs 4 draw calls at most (two rings and two sparkle clouds, hidden when unused), with all motion in the shaders and no per-frame buffer uploads. Under reduced motion or when ambient motion is paused, the ring and sparkles hold still but stay visible, and they appear and go without fading. Every cue has its text twin: the prompt or the landmark card.
 
 ### 6.6 Toasts and the talk guard
 

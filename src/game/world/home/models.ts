@@ -3,9 +3,11 @@
  * painted surface (plaster, shingles, stone, brick, wood, canvas, metal). Every model's local frame:
  * +z is its front, +y up, the base on y = 0.
  */
-import { PlaneGeometry, type BufferGeometry, type ColorRepresentation } from 'three';
+import { PlaneGeometry, Vector3, type BufferGeometry, type ColorRepresentation } from 'three';
 import { Kit, type KitGeometry, type V3 } from '../kit';
-import { ARCH, flowerBox, gableRoof, potPlant, shade, steps, wallLantern, walls, windowUnit } from '../parts';
+import { ARCH, gableRoof, shade, steps, wallLantern, walls, windowUnit } from '../parts';
+import { flowerBox, potPlant } from '../planters';
+import { Cards, leafLobe } from '../foliage';
 
 export const HOUSE = { w: 2.1, d: 1.7, h: 1.35 } as const;
 /** The front steps: from the ground up to the floor (the door's sill, 0.34 u). */
@@ -64,7 +66,7 @@ export function houseModel(): { geo: KitGeometry; lantern: V3; chimney: V3; ligh
   }
   // (set into the gable wall, whose face is at z = D/2, and high enough to clear the porch roof)
   windowUnit(k, { p: [0, H + 0.52, D / 2 + 0.03] }, { w: 0.26, h: 0.26, arch: true, lit: true });
-  potPlant(k, { p: [-0.6, 0, D / 2 + 0.36] }, '#ff6f7d');
+  potPlant(k, { p: [-0.6, 0, D / 2 + 0.36] }, '#ff6f7d', 2);
   potPlant(k, { p: [0.62, 0, D / 2 + 0.4] });
   // lived in: sandals left on the top step (shoes off at the door), a broom leaning by it
   for (const [x, c, a] of [
@@ -254,15 +256,13 @@ export function tulsi(k: Kit): V3 {
   k.box([S - 0.03, 0.02, S - 0.03], '#5a3d2a', { p: [0, 0.05 + H + 0.05, 0] }, 0.005);
   const top = 0.05 + H + 0.06;
   k.cyl(0.01, 0.014, 0.08, '#6b5a3a', { p: [0, top + 0.04, 0] }, 5);
-  for (let i = 0; i < 34; i++) {
-    // leaves spread over a dome (golden-angle spiral), denser and paler toward the top
-    const t = (i + 0.5) / 34;
-    const a = i * 2.39996;
-    const el = Math.acos(1 - t * 0.95);
-    const rr = 0.1 * Math.sin(el);
-    const y = top + 0.1 + 0.1 * Math.cos(el);
-    k.blob(0.026 + (i % 3) * 0.004, ['#3f7d3a', '#4f8f45', '#5a9a4a'][i % 3], { p: [Math.cos(a) * rr, y, Math.sin(a) * rr], s: [1.25, 0.6, 1.0], r: [0, -a, 0.4] }, 1, 'solid', 0.2, i);
-  }
+  // (the painted leaf cards of the planet's bushes, in basil's deeper greens, over a dark core)
+  k.blob(0.085, '#23592c', { p: [0, top + 0.11, 0], s: [1, 0.9, 1] }, 1, 'solid', 0.15, 3);
+  const cards = new Cards();
+  const basil = { light: '#a6d273', mid: '#4f8f45', dark: '#2a5a2e' };
+  leafLobe(cards, new Vector3(0, top + 0.11, 0), 0.11, { ...basil, count: 30, size: 0.075, seed: 5, minY: -0.3 });
+  leafLobe(cards, new Vector3(0, top + 0.2, 0), 0.065, { ...basil, count: 12, size: 0.06, seed: 9, minY: -0.1 });
+  k.cards(cards.build());
   for (let i = 0; i < 6; i++) {
     const a = i * 1.1 + 0.4;
     k.cyl(0.006, 0.008, 0.06, '#8a5aa8', { p: [Math.cos(a) * 0.06, top + 0.22 - (i % 2) * 0.03, Math.sin(a) * 0.06], r: [Math.sin(a) * 0.25, 0, -Math.cos(a) * 0.25] }, 4);

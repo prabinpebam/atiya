@@ -261,6 +261,7 @@ export function Scene({ controller }: { controller: GameController }) {
   // Chopper's body, fur and animation: their own chunk, loaded alongside the textures (game-mount.tsx)
   const Chopper = controller.chopperView;
   const Wildlife = controller.wildlifeView;
+  const Cues = controller.cuesView;
   const Grass = controller.grassView;
   const Home = controller.home?.View ?? null;
   const Craft = controller.craft?.View ?? null;
@@ -296,6 +297,7 @@ export function Scene({ controller }: { controller: GameController }) {
           <Landmark key={g.id} controller={controller} geo={g} data={controller.dataById.get(g.id)!} />
         ))}
         <DoorLight controller={controller} />
+        {Cues && <Cues controller={controller} />}
       </group>
       <Player controller={controller} />
       <PostFX controller={controller} />

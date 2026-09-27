@@ -141,12 +141,10 @@ export function takeHouse(inv: Inventory): boolean {
   return true;
 }
 
-/** The ghost: faint from this far (u)… */
-export const GHOST_FAR = 12;
+/** The ghost: faint from this far (u)… (a hint of what could be built, not a sign it's ready to use: that's the target ring) */
+export const GHOST_FAR = 6;
 /** …clear from this close. */
 export const GHOST_NEAR = 2;
-/** The site card shows within this (u). */
-export const CARD_U = 3.5;
 /** The build moment (s): knocks, the house rising, a sparkle. */
 export const BUILD_S = 2.2;
 /** The hammering when you craft (s). */

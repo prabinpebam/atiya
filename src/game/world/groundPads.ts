@@ -17,7 +17,7 @@ export const LANDMARK_BASE: Readonly<Record<string, Box>> = {
   'town-hall': [-1.28, 1.68, -0.88, 1.84],
   lighthouse: [-1.23, 1.22, -1.15, 1.07],
   library: [-1.34, 1.68, -0.9, 1.42],
-  amphitheater: [-1.72, 1.72, -1.62, 1.53],
+  amphitheater: [-1.72, 1.72, -1.72, 1.53],
   greenhouse: [-1.36, 1.36, -1.36, 1.68],
   'post-office': [-1.2, 1.12, -1.14, 1.06],
 };

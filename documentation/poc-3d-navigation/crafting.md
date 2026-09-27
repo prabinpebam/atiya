@@ -40,7 +40,7 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
 | Paint from "corresponding colour flowers", one recipe per flower kind | 21 recipes clutter the list | One recipe per **colour**, taking **any 3 flowers of that colour** (tulip, cosmos or pansy mixed) |
 | A building that needs a lot | Grinding on a portfolio site isn't fun | A small first goal: **2 stone slabs, 2 wooden beams and 4 planks**, which is 4 stones (two boulders) and 3 logs (three trees) |
 | Rigid recipe amounts | Dull | Minecraft-style yields: 1 log → 4 planks, 2 logs → 1 beam, 2 stones → 1 slab, 3 flowers → 1 paint pot. Bulk craft up to 10, capped by what you have and by room in the backpack |
-| A ghost that's always equally visible | Clutter from afar, or unnoticed up close | Opacity eases from nearly invisible (≥ 12 u) to clear (≤ 2 u), with a gentle shimmer. Within 3.5 u a **site card** shows the note and checklist |
+| A ghost that's always equally visible | Clutter from afar, or unnoticed up close | Opacity eases from nearly invisible (≥ 6 u) to clear (≤ 2 u), with a gentle shimmer. While the site is the target (in reach, in front of you), a **site card** shows the note and checklist |
 | Plain requirement text | The brief asks for "a fun cute way" | The card is written from Chopper's side: "Chopper has been eyeing this sunny spot… he'd love a house of his own!", with a paw line and a live checklist |
 | Pressing E with materials missing | Silent failure frustrates | The prompt says **See what's needed**; E announces what's still missing and pulses the checklist. With everything ready, the prompt becomes **Build Chopper's house** |
 | An instant build | No payoff | A **build moment**: three hammer knocks, a dust puff, the house rising out of the ghost, a sparkle; then Chopper runs over, sits in the doorway and barks happily |
@@ -79,8 +79,8 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
 ### 4.3 Chopper's house (the construction site)
 
 - **The site** (`world/homestead.ts`, `dogHouse`): 3.4 u from the family's house, 108° off its front (moved out so its levelled pad stays clear of the house's; see [ground.md](./ground.md)), facing the pond; a 1.2 u disc is kept clear, and the family's `blocked` keeps them off it whether it's built or not.
-- **The ghost:** a translucent pale-blue outline of the house, from nearly invisible (≥ 12 u) to clear (≤ 2 u), with a slow shimmer.
-- **The site card** (within 3.5 u; at the lower left, beside the scene rather than over the ghost and the character; centred above the prompt on narrow screens):
+- **The ghost:** a translucent pale-blue outline of the house, from nearly invisible (≥ 6 u) to clear (≤ 2 u), with a slow shimmer.
+- **The site card** (while the site is the target, so it never shows while you use the crafting table or water the garden nearby; at the lower left, beside the scene rather than over the ghost and the character; centred above the prompt on narrow screens):
   - the title "Chopper's house";
   - a cute note from Chopper's side;
   - a checklist with icons and *have / need* ticks.

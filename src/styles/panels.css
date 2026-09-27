@@ -178,6 +178,44 @@
   gap: var(--space-0-5);
 }
 
+/* a section's title and its tools (sort; the chest's take / store) */
+.inv-sec-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.inv-sec-head h3 {
+  flex: 1;
+  margin: 0;
+}
+
+.inv-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.inv-tools .btn {
+  min-height: var(--c-btn-h-sm);
+  padding: 0 var(--space-2-5);
+  font-size: var(--text-sm);
+}
+
+[data-input='touch'] .inv-tools .btn {
+  min-height: var(--c-btn-h);
+}
+
+/* where a drag will spread the held stack, before you let go */
+.slot.spread {
+  background: var(--surface-bg-warm);
+  box-shadow:
+    var(--shadow-slot),
+    inset 0 0 0 2px var(--surface-focus);
+}
+
 .inv-hotbar {
   padding-top: var(--space-1-5);
   border-top: var(--border-hair) solid var(--surface-line);

@@ -19,7 +19,7 @@ Games that place buildings on terrain (city builders, farm sims, Zelda-like leve
 - **Fitted, not fixed.** Each plane's `h` is the mean of the ground under it (cut equals fill), so a big building on a slope sinks a little on the uphill side instead of standing on a mound. Pads are fitted biggest first, each to the ground the bigger ones have left, so a bench in a forecourt sits on the forecourt.
 - **Neighbours.** `separatePads` shrinks overlapping margins until they're 0.04 u apart. Between two pads' skirts, the lift is a blend with inverse-distance weights. Two nearby planes tilt to different radials, so neighbours are kept spaced out (the reading chair and the dog house moved, and the woodpile shares the house's pad) to avoid a crease.
 - **Water and mesas.** A skirt is clipped to stop about 0.2 u short of water, so no pad lifts a river bank or the pond shore. Pads never cut a mesa: the height is `max(pads(lowland), mesa)`.
-- **Structures are placed on their pads.** Landmarks stand at `R + terrain.height(n) − 0.01`. The highlight ring is draped on the terrain. The home, family and yard read `terrain.height` as before.
+- **Structures are placed on their pads.** Landmarks stand at `R + terrain.height(n) − 0.01`. The landmark's glowing ring (world/cues.tsx) is draped on the terrain. The home, family and yard read `terrain.height` as before.
 
 ### Where pads come from
 

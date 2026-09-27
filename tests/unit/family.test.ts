@@ -247,6 +247,55 @@ describe('the family: behaviour', () => {
     expect(kid.chatting).toBe(false);
     expect(d(kid.n, at) > 0.1 || kid.activity !== 'idle').toBe(true);
   });
+
+  it('someone on the move notices the character facing them: stops and looks for a few seconds, then carries on', () => {
+    const player = new Vector3();
+    const w = world(player);
+    const f = new Family(home, R, mulberry32(5));
+    // find a moment when Rojina is walking somewhere (and free to stop)
+    const rojina = f.get('rojina');
+    let t = 0;
+    while (t < 600 && !(rojina.speed > 0.5 && f.canNotice(rojina))) {
+      f.step(1 / 30, w);
+      t += 1 / 30;
+    }
+    expect(rojina.speed).toBeGreaterThan(0.5);
+    player.copy(rojina.n).addScaledVector(rojina.dir, 1.0 / R).normalize();
+    const each = () => f.notice('rojina');
+    run(f, w, 1, each);
+    expect(f.attending('rojina')).toBe(true);
+    expect(rojina.speed).toBeLessThan(0.1);
+    expect(rojina.look).toBe(player);
+    expect(rojina.dir.dot(tangentToward(rojina.n, player)!)).toBeGreaterThan(0.9);
+    // past the notice time she goes back to what she was doing, even while still faced
+    run(f, w, FAMILY.noticeS, each);
+    expect(f.attending('rojina')).toBe(false);
+    // facing her again straight after doesn't stop her again; after walking off a while, it does
+    f.notice(null);
+    run(f, w, 1);
+    f.notice('rojina');
+    expect(f.attending('rojina')).toBe(false);
+    f.notice(null);
+    run(f, w, 4);
+    f.notice('rojina');
+    expect(f.attending('rojina') || !f.canNotice(rojina)).toBe(true);
+  });
+
+  it('nobody busy stops for the character: carrying the picnic, the routine, a chat with one of the family', () => {
+    const w = world(new Vector3(0, 1, 0));
+    const f = new Family(home, R, mulberry32(5));
+    const rojina = f.get('rojina');
+    rojina.activity = 'serve';
+    f.notice('rojina');
+    expect(f.canNotice(rojina)).toBe(false);
+    expect(f.attending('rojina')).toBe(false);
+    rojina.activity = 'idle';
+    rojina.partner = 'laija';
+    expect(f.attending('rojina')).toBe(false);
+    rojina.partner = null;
+    expect(f.attending('rojina')).toBe(true);
+    run(f, w, 0.1);
+  });
 });
 
 describe('the family: routine, meals and room to move', () => {

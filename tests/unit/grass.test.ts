@@ -137,7 +137,8 @@ describe('grass packing', () => {
 });
 
 describe('grass placement', () => {
-  const ico = new IcosahedronGeometry(R, 12);
+  // (fine enough that a blade can't be interpolated from a full-density vertex to the shoreline: this mesh has no bank data)
+  const ico = new IcosahedronGeometry(R, 20);
   const pos = ico.getAttribute('position').array as Float32Array;
   const n = pos.length / 3;
   const mesh: GroundMesh = {

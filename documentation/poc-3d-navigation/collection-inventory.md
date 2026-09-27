@@ -102,14 +102,28 @@ Changing the selection shows the item's name above the hotbar for 2 s, as Minecr
 |---|---|---|
 | Left-click a slot | Pick up the whole stack | Put it all down; merge into the same item (the rest stays on the cursor); or swap with a different item |
 | Right-click a slot | Pick up half (rounded up) | Put one down (empty slot or the same item); swap with a different item |
-| <kbd>Shift</kbd>+click | Quick-move the stack to the other section (below) | — |
+| <kbd>Shift</kbd>+click | Quick-move the stack to the other section (below) | The same (the cursor stack stays) |
+| <kbd>Shift</kbd>+double-click | Quick-move **every stack of that item** from the clicked side: with a chest open, from the chest (or the whole backpack) to the other; in the backpack screen, gather them into the main inventory from its top-left (Minecraft Java) | — |
+| <kbd>Shift</kbd>+drag across slots | Quick-move each slot passed over (Mouse Tweaks) | — |
 | Double-click | — | Gather every stack of that item on screen onto the cursor, up to 64 (non-full stacks first) |
-| Left-drag across slots | — | Spread the stack **evenly** over the slots dragged across (empty or the same item); the remainder stays on the cursor |
+| Left-drag across slots | — | Spread the stack **evenly** over the slots dragged across (empty or the same item), at most one slot per item; the remainder stays on the cursor. While you drag, the slots show what they'll get and the cursor what's left |
 | Right-drag across slots | — | Put **one** in each slot dragged across |
+| Mouse wheel over a slot | Down: move one item to where Shift+click would send it; up: pull one of that item back into the slot (Mouse Tweaks) | — |
+| Middle-click a slot, or <kbd>R</kbd> | **Sort** its section (below) | The same |
 | <kbd>1</kbd>–<kbd>9</kbd> while hovering a slot | Swap that slot with hotbar slot N | — |
 | <kbd>Q</kbd> / <kbd>Ctrl</kbd>+<kbd>Q</kbd> while hovering a slot | Drop one / the whole stack into the world | — |
 | Click outside the panel | — | Left: throw the whole cursor stack; right: throw one |
 | <kbd>Esc</kbd>, <kbd>E</kbd> or <kbd>I</kbd> | Close the screen | Close; the cursor stack goes back into the backpack (§4.1), and anything that doesn't fit is dropped at your feet |
+
+Two Minecraft Java inputs have nothing to act on here: the planet has no off-hand (so no <kbd>F</kbd> swap) and no Creative mode (so no middle-click clone or middle-drag). The middle button sorts instead, as the Inventory Tweaks mod does.
+
+**Organising** (not in vanilla Minecraft; the standard mods' and Terraria's shortcuts):
+
+- **Sort** (a button on the chest and on the backpack, <kbd>R</kbd>, or middle-click): merges part stacks of the same item and lays them out from the first slot, in the item list's order (materials, crafted parts, flowers, paints). The hotbar keeps its order: sorting from it sorts the backpack above.
+- **Take all** (chest screen): everything from the chest into the backpack, as Shift+click would place it.
+- **Store all** (chest screen): everything in the backpack, the hotbar too, into the chest.
+- **Store matching** (chest screen): only the items the chest already holds (Terraria's "quick stack").
+- Each says what it did in the live region ("Stored 12 items in the chest."), or why nothing moved and what to do ("The chest is full: take something out first.").
 
 **Quick-move (Shift+click) targets** (Minecraft's `quickMoveStack`):
 
@@ -125,12 +139,22 @@ Changing the selection shows the item's name above the hotbar for 2 s, as Minecr
 | <kbd>Enter</kbd> | Left-click the focused slot |
 | <kbd>Space</kbd> | Right-click the focused slot |
 | <kbd>Shift</kbd>+<kbd>Enter</kbd> | Quick-move |
-| <kbd>1</kbd>–<kbd>9</kbd>, <kbd>Q</kbd>, <kbd>Ctrl</kbd>+<kbd>Q</kbd> | As with the mouse, on the focused slot |
+| <kbd>Shift</kbd>+<kbd>Enter</kbd> twice | Quick-move every stack of that item (as Shift+double-click) |
+| <kbd>1</kbd>–<kbd>9</kbd>, <kbd>Q</kbd>, <kbd>Ctrl</kbd>+<kbd>Q</kbd>, <kbd>R</kbd> | As with the mouse, on the focused slot (or the hovered one) |
+| <kbd>Tab</kbd> | Leaves the grid for the section tools (Sort, Take all, Store all, Store matching) |
 
 - Each slot button's name reads, e.g., "Backpack slot 12: Apple, 5".
 - The cursor stack is announced when it changes ("Holding Apple, 5").
 
-**Touch:** tap = left-click, long-press (450 ms) = right-click. A **Move** toggle in the panel makes taps quick-move instead.
+**Touch** (Minecraft Pocket's gestures, plus drag-and-drop):
+
+- **Tap** = left-click; **long-press** (450 ms) = right-click (half, or put one down).
+- **Drag a stack** from one slot to another: it goes there (merging, or swapping, and what was there goes back where it came from).
+- **Tap to pick up, then drag:** spread it evenly (the left-drag), with the same preview.
+- **Long-press, then drag:** one in each slot (the right-drag).
+- **Double-tap** with a stack held: gather.
+- A **Move** toggle in the panel makes taps and drags quick-move instead (tap the same slot twice quickly: every stack of that item). The section tools grow to 44 px.
+- The help line under the grid switches to these gestures on touch.
 
 **Presentation:**
 - **Slots:** square slots on a dark translucent panel, with an inset bevel, as in Minecraft. The count sits bottom-right in bold white with a dark drop shadow, and is hidden for 1.
@@ -181,7 +205,8 @@ The existing CC0 sprites, re-pitched in `audio/engine.ts`:
 | File | What |
 |---|---|
 | `inventory/items.ts` | Item registry (names, stacks, icons, drop models) |
-| `inventory/inventory.ts` | Containers, the cursor stack and every slot operation (pure; `tests/unit/inventory.test.ts`) |
+| `inventory/inventory.ts` | Containers, the cursor stack, picking up and taking out (pure; `tests/unit/inventory.test.ts`) |
+| `inventory/screenOps.ts` | Everything the screen does to the slots: clicks, drags and their preview, Shift+double-click, the wheel, sorting and the chest shortcuts (pure; loads with the screen, not the game; `tests/unit/inventory.test.ts`) |
 | `world/dropSim.ts`, `world/Drops.tsx` | Drop physics, merging, the magnet (pure; `tests/unit/drops.test.ts`), and their instanced models |
 | `world/harvest.ts` | Fruit and flower regrowth |
 | `systems/interactables.ts`, `systems/actions.ts` | Targets and prompt arbitration; the fixed cycles and their beats (`tests/unit/interactables.test.ts`) |

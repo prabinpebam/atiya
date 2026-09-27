@@ -1420,6 +1420,63 @@ test.describe('collecting & inventory', () => {
     expect(i.backpack[8]).toBe('apple:9');
     expect(i.selected).toBe(8);
   });
+
+  test('organising in the chest screen: Shift+double-click moves every stack of an item, a drag previews its spread, the wheel moves one, Sort, Take all and Store all', async ({ page }) => {
+    test.setTimeout(180_000);
+    await startPlanet(page);
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.giveItem('apple', 70);
+      g.giveItem('log', 5);
+    });
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('chest'))).toBe('chest');
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 1);
+    const screen = page.getByTestId('inventory-screen');
+    await expect(screen.getByRole('dialog', { name: 'Chest' })).toBeVisible();
+    // (the section tools are labelled buttons in a named group)
+    await noSeriousViolations(page);
+    const slot = (k: string) => page.locator(`[data-slot="${k}"]`).last();
+    // Shift+double-click: both apple stacks go to the chest
+    await slot('backpack:0').dblclick({ modifiers: ['Shift'] });
+    let i = await inv(page);
+    expect(count(i.chest, 'apple')).toBe(70);
+    expect(count(i.backpack, 'apple')).toBe(0);
+    await expect(page.getByTestId('live-region')).toContainText('Moved every stack of apple');
+    // pick up the logs and drag across three slots: they show the spread before the release
+    await slot('backpack:2').click();
+    expect((await inv(page)).held).toBe('log:5');
+    const box = async (k: string) => (await slot(k).boundingBox())!;
+    const a = await box('backpack:9');
+    const c = await box('backpack:11');
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2, { steps: 8 });
+    await expect(screen.locator('.slot.spread')).toHaveCount(3);
+    await page.mouse.up();
+    i = await inv(page);
+    expect(i.backpack.slice(9, 12)).toEqual(['log:1', 'log:1', 'log:1']);
+    expect(i.held).toBe('log:2');
+    await slot('backpack:12').click();
+    // the wheel over a stack moves one to the other side
+    const w = await box('backpack:9');
+    await page.mouse.move(w.x + w.width / 2, w.y + w.height / 2);
+    await page.mouse.wheel(0, 100);
+    await expect.poll(async () => count((await inv(page)).chest, 'log')).toBe(1);
+    // Sort merges the backpack's logs; Take all and Store all move everything
+    await screen.getByRole('button', { name: 'Sort backpack' }).click();
+    i = await inv(page);
+    expect(i.backpack[9]).toBe('log:4');
+    await expect(page.getByTestId('live-region')).toContainText('Backpack sorted.');
+    await screen.getByRole('button', { name: 'Take all' }).click();
+    i = await inv(page);
+    expect(i.chest.every((s) => !s)).toBe(true);
+    expect(count(i.backpack, 'apple')).toBe(70);
+    await screen.getByRole('button', { name: 'Store all' }).click();
+    i = await inv(page);
+    expect(i.backpack.every((s) => !s)).toBe(true);
+    await expect(page.getByTestId('live-region')).toContainText('Stored 75 items in the chest.');
+  });
 });
 
 test.describe("crafting & Chopper's house", () => {
@@ -1545,7 +1602,8 @@ test.describe("crafting & Chopper's house", () => {
     expect(far.ghost).toBeLessThan(0.2);
     expect(far.near).toBe(false);
     await expect(page.getByTestId('site-card')).toHaveCount(0);
-    expect(await near(3)).toBe('site');
+    // the card is up only while the site is what E would use (nothing else nearby gets a card)
+    expect(await near(0.8)).toBe('site');
     await fastForward(page, 0.2);
     const close = await craft(page);
     expect(close.ghost).toBeGreaterThan(0.85);

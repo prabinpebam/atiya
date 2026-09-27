@@ -62,6 +62,8 @@ export const FAMILY = {
   turnRate: 7,
   accel: 6,
   talkRange: 1.3,
+  /** Noticed (the character walked up facing them, their talk prompt showing): they stop and look for this long (s), then carry on. */
+  noticeS: 4,
   /** Hard minimum distances between centres (u): nobody walks through anybody. */
   gapPlayer: 0.55,
   gapOther: 0.42,
@@ -827,6 +829,7 @@ export class Family {
   step(dt: number, w: FamilyWorld): void {
     dt = Math.min(Math.max(dt, 0), 0.1);
     this.clock += dt;
+    if (this.noticed) this.noticeT += dt;
     this.nav ??= Family.navFor(w);
     this.stepRoutine(dt, w);
     this.stepMeal(dt);
@@ -857,13 +860,14 @@ export class Family {
         this.stepLink(npc, w, dt);
         continue;
       }
-      if (npc.chatting) {
-        // paused, facing the character (a sitter stays seated)
+      const noticed = !npc.chatting && this.attending(npc.id);
+      if (npc.chatting || noticed) {
+        // paused, facing the character (a sitter stays seated); noticed, they just stop and look
         npc.want = 0;
         npc.goal = null;
         npc.look = w.player;
         if (!SETTLED.has(npc.pose)) {
-          npc.pose = 'talk';
+          npc.pose = noticed ? 'stand' : 'talk';
           this.face(npc, w.player);
         }
         this.move(npc, dt, w);
@@ -1692,6 +1696,11 @@ export class Family {
   // ---------------------------------------------------------------------------
   // talking with the character
 
+  private noticed: NpcId | null = null;
+  private lastNoticed: NpcId | null = null;
+  private noticeT = 0;
+  private lostAt = -Infinity;
+
   /** The character walked up and pressed E: stop, turn to them. */
   startChat(id: NpcId): void {
     const npc = this.get(id);
@@ -1701,6 +1710,33 @@ export class Family {
 
   endChat(id: NpcId): void {
     this.get(id).chatting = false;
+    // (they've talked: no standing there looking afterwards)
+    if (this.noticed === id) this.noticeT = FAMILY.noticeS;
+  }
+
+  /**
+   * The one the character is facing with their talk prompt up (or null), each frame: a walker stops
+   * and looks at them for up to `FAMILY.noticeS`, so someone moving can be talked to. Anyone busy
+   * (carrying, cooking, on the way through the door, talking with one of the family) carries on.
+   */
+  notice(id: NpcId | null): void {
+    if (id === this.noticed) return;
+    if (!id) this.lostAt = this.clock;
+    // (the same person again straight after doesn't restart the clock: walk off a while first)
+    else if (id !== this.lastNoticed || this.clock - this.lostAt > 3) this.noticeT = 0;
+    this.noticed = id;
+    if (id) this.lastNoticed = id;
+  }
+
+  /** Could they stop for the character now (not busy, not on their way through the door, not talking to one of the family)? */
+  canNotice(npc: Npc): boolean {
+    return !npc.indoors && !npc.link && !npc.partner && !BUSY.has(npc.activity) && !ACTIVITIES.find((a) => a.id === npc.activity)?.forced;
+  }
+
+  /** Stopped, looking at the character (noticed). */
+  attending(id: NpcId): boolean {
+    const npc = this.get(id);
+    return this.noticed === id && this.noticeT <= FAMILY.noticeS && this.canNotice(npc);
   }
 
   // ---------------------------------------------------------------------------

@@ -61,19 +61,23 @@ export function attachHome(controller: GameController): HomeAttachment | null {
   };
   const water = attachGarden(controller, garden);
   // the family are talk targets that answer for themselves: E talks, while they're out and not hurrying
+  // (someone on the move who could stop for you counts: facing them, they notice you and stop, family.notice)
+  const canTalk = (p: (typeof family.npcs)[number]) => !p.indoors && (p.speed < 1.2 || family.canNotice(p));
   for (const p of family.npcs)
     controller.targets.push({
       kind: 'npc',
       key: `npc:${p.id}`,
       n: p.n,
       edgeU: 0,
+      // (the ring clears a chair when they're seated)
+      markU: 0.34,
       reachU: FAMILY.talkRange,
       standU: 0.8,
       index: 0,
       who: p.id,
       name: p.name,
       scale: 1,
-      usable: () => !p.indoors && p.speed < 1.2 && !controller.sim.travel,
+      usable: () => canTalk(p) && !controller.sim.travel,
       use: () => controller.startTalk(p.id),
     });
   const nav = Family.navFor(world);
@@ -103,14 +107,13 @@ export function attachHome(controller: GameController): HomeAttachment | null {
       world.hours = controller.timeOfDay;
       // the character's velocity in the planet's frame (for looking ahead when giving way)
       playerVel.copy(controller.sim.vel).applyQuaternion(controller.sim.planetQ.clone().invert());
+      const aim = controller.store.getState().target?.key;
+      family.notice(aim?.startsWith('npc:') ? (aim.slice(4) as NpcId) : null);
       family.step(dt, world);
       ducks.step(dt);
       water(dt);
     },
-    canTalk: (id) => {
-      const n = family.get(id as NpcId);
-      return !n.indoors && n.speed < 1.2;
-    },
+    canTalk: (id) => canTalk(family.get(id as NpcId)),
     startChat(id, hours) {
       const n = family.get(id as NpcId);
       family.startChat(n.id);
@@ -186,6 +189,9 @@ function attachGarden(controller: GameController, garden: Garden): (dt: number) 
       index: p.i,
       scale: 1,
       label: () => `Water the ${name}`,
+      // (its ring sits on the bed's soil, round the plant)
+      markU: p.kind === 'cabbage' ? 0.17 : 0.15,
+      markLift: GARDEN.soil,
       usable: () => holding() && garden.wet[p.i] < GARDEN.full,
       icon: () => faDroplet,
       use: () => controller.startAction('water', t),

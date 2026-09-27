@@ -12,7 +12,7 @@ import { selectReducedMotion } from '../../state/store';
 import { itemDef } from '../../inventory/items';
 import { CRAFT_RADIUS } from '../layout';
 import { BED_U, DOGHOUSE, DOORWAY_U } from './models';
-import { BUILD_S, CARD_U, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, TARGET_REACH, colourName, craft, listNeeds, missing, parseSite, spendPaint, takeHouse, type HouseColour, type Recipe } from './recipes';
+import { BUILD_S, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, TARGET_REACH, colourName, craft, listNeeds, missing, parseSite, spendPaint, takeHouse, type HouseColour, type Recipe } from './recipes';
 import { CraftView } from './CraftView';
 import { CraftScreens } from './ui';
 
@@ -190,10 +190,11 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
       const s = store.getState();
       const g = controller.store.getState();
       const reduced = selectReducedMotion(g);
-      // the ghost and the site card, by how close you are
+      // the ghost, by how close you are; the site card only while the site is what E would use (its prompt
+      // is up), so it never shows for the garden or the home beside it
       const d = site ? arcDistance(controller.sim.pLocal, site.n, R) : Infinity;
       crafting.ghost = s.built ? 0 : clamp((GHOST_FAR - d) / (GHOST_FAR - GHOST_NEAR), 0, 1);
-      const near = Boolean(site) && !s.built && d < CARD_U && g.phase === 'playing' && !g.traveling && !g.openId && !g.craftScreen && !g.invScreen && !g.talk && !g.chopperOpen;
+      const near = Boolean(site) && !s.built && g.target?.key === 'site' && g.phase === 'playing' && !g.traveling && !g.openId && !g.craftScreen && !g.invScreen && !g.talk && !g.chopperOpen;
       if (near !== s.near) store.setState({ near });
       if (near !== g.siteNear) controller.store.setState({ siteNear: near });
       if (s.building !== null) {

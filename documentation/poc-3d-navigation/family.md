@@ -58,7 +58,7 @@ plaster, stone, brick, canvas, metal):
   small Lego tower and bricks and two toy cars on or by it; Laija's paper and crayons.
 - **Round the house** (revision 3, `Yard` in `homestead.ts`; prabin-npc.md §6): a low rustic fence
   behind the house, open toward it; two raised vegetable beds (cabbages, staked tomatoes) and a
-  watering can inside it; a tulsi vrindavan (a whitewashed pillar planter with holy basil and a diya)
+  watering can inside it; a tulsi vrindavan (a whitewashed pillar planter with a bushy holy basil of painted leaf cards and a diya)
   in front, on the door's axis 3.1 u out from the house's centre, on its own small round cobbled spot
   (`TULSI_SPOT`: a point pad, flat 0.32 u round it, cobbles to 0.6 u), its diya's niche facing the
   house; sandals on the step, a broom by the door, a woodpile at the side. The house's own cobbles stay
@@ -123,7 +123,12 @@ the home (within 7 u of it, never into the pond).
 ## 6. Talking to them (the interaction)
 
 - **Prompt:** within 1.3 u, facing them: **Talk to Rojina** (E, a comment icon). Same target
-  arbitration as the collection system.
+  arbitration as the collection system. A gold ring glows round the one you'd talk to and follows
+  them ([design system §6.5](../game-ui/design-system.md#65-target-tiers)).
+- **Walking by:** someone on their way somewhere who becomes your target **notices you**: they stop,
+  turn and look at you for up to 4 s (`Family.notice`, `FAMILY.noticeS`), then carry on if you
+  don't talk. Someone busy (a chore, another conversation, a doorway) doesn't stop. They stay the
+  target 0.5 u past their reach (`REACH.keepMoving`), so a step of theirs doesn't lose the prompt.
 - **E:** the NPC pauses what they're doing (a sitter stays seated), turns to face you and gestures;
   the **dialog box** slides up at the bottom: the name plate, the line with a typewriter reveal
   (≈ 45 characters/s; instant under Reduce motion), and a blinking "more" marker.

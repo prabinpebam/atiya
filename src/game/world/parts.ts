@@ -424,18 +424,6 @@ export function bunting(k: Kit, from: V3, to: V3, colors: ColorRepresentation[],
   }
 }
 
-export function flowerBox(k: Kit, xf: Xf, w: number, colors: ColorRepresentation[]) {
-  k.group(xf, () => {
-    k.surface('wood', () => k.box([w, 0.14, 0.16], ARCH.wood, { p: [0, 0, 0] }, 0.03));
-    const n = Math.max(3, Math.round(w / 0.12));
-    for (let i = 0; i < n; i++) {
-      const x = -w / 2 + (w / n) * (i + 0.5);
-      k.blob(0.06, ARCH.leaf, { p: [x, 0.09, 0], s: [1, 0.8, 1] }, 1);
-      k.blob(0.045, colors[i % colors.length], { p: [x + 0.01, 0.15, 0.02] }, 1);
-    }
-  });
-}
-
 /** Park bench proportions (bench space: +z is the front, the side you sit facing). */
 export const BENCH = {
   /** Height of the seat's top surface above the ground. */
@@ -518,25 +506,6 @@ export function crate(k: Kit, xf: Xf, size = 0.34) {
     for (const s of [-1, 1]) k.box([size + 0.02, 0.05, 0.04], ARCH.woodDark, { p: [0, size / 2 + s * size * 0.32, size / 2] }, 0.01);
     k.box([0.04, size * 0.9, 0.04], ARCH.woodDark, { p: [0, size / 2, size / 2 + 0.005], r: [0, 0, 0.78] }, 0.01);
   }));
-}
-
-export function potPlant(k: Kit, xf: Xf, bloom?: ColorRepresentation) {
-  k.group(xf, () => {
-    k.surface('plaster', () => k.lathe(
-      [
-        [0.001, 0],
-        [0.1, 0],
-        [0.13, 0.18],
-        [0.14, 0.2],
-        [0.001, 0.2],
-      ],
-      '#c8734a',
-      {},
-      12,
-    ));
-    k.blob(0.13, ARCH.leaf, { p: [0, 0.3, 0], s: [1, 0.9, 1] }, 1, 'solid', 0.25, 3);
-    if (bloom) for (let i = 0; i < 4; i++) k.blob(0.045, bloom, { p: [Math.cos(i * 1.7) * 0.09, 0.36 + (i % 2) * 0.04, Math.sin(i * 1.7) * 0.09] }, 1);
-  });
 }
 
 export function signBoard(k: Kit, xf: Xf, o: { w: number; h: number; color: ColorRepresentation; icon?: (k: Kit) => void }) {

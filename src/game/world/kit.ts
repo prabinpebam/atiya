@@ -67,6 +67,8 @@ export interface KitGeometry {
   solid: BufferGeometry | null;
   glow: BufferGeometry | null;
   glass: BufferGeometry | null;
+  /** Leaf cards (a potted plant's foliage: the painted leaf sprite, `KitModel` draws them with the foliage material). */
+  leaves?: BufferGeometry | null;
 }
 
 const tmpColor = new Color();
@@ -209,6 +211,7 @@ function roofFaceUV(
 
 export class Kit {
   private readonly parts: Record<Layer, BufferGeometry[]> = { solid: [], glow: [], glass: [] };
+  private readonly cardList: BufferGeometry[] = [];
   private readonly stack: Matrix4[] = [new Matrix4()];
   private readonly surfaces: Surface[] = ['paint'];
   private count = 0;
@@ -239,6 +242,24 @@ export class Kit {
     surfaceUV(geo, m, this.surfaces[this.surfaces.length - 1], ++this.count);
     geo.applyMatrix4(m);
     this.parts[layer].push(geo);
+    return this;
+  }
+
+  /** Another kit's built solid (a flower, a bush's core), keeping its colours (× `tint`) and surfaces. */
+  merge(g: BufferGeometry, xf: Xf = {}, tint?: ColorRepresentation): this {
+    const geo = g.toNonIndexed();
+    if (tint) {
+      const c = new Color(tint);
+      const col = geo.getAttribute('color');
+      for (let i = 0; i < col.count; i++) col.setXYZ(i, col.getX(i) * c.r, col.getY(i) * c.g, col.getZ(i) * c.b);
+    }
+    this.parts.solid.push(geo.applyMatrix4(this.top.clone().multiply(xfMatrix(xf))));
+    return this;
+  }
+
+  /** Leaf cards (foliage.ts `Cards`), placed like any part. */
+  cards(g: BufferGeometry, xf: Xf = {}): this {
+    this.cardList.push(g.clone().applyMatrix4(this.top.clone().multiply(xfMatrix(xf))));
     return this;
   }
 
@@ -291,7 +312,9 @@ export class Kit {
       g.computeBoundingBox();
       return g;
     };
-    return { solid: merge(this.parts.solid), glow: merge(this.parts.glow), glass: merge(this.parts.glass) };
+    const leaves = this.cardList.length ? mergeGeometries(this.cardList, false) : null;
+    leaves?.computeBoundingSphere();
+    return { solid: merge(this.parts.solid), glow: merge(this.parts.glow), glass: merge(this.parts.glass), leaves };
   }
 }
 

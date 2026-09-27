@@ -6,3 +6,5 @@
  */
 export { Wildlife } from './Wildlife';
 export { grassView } from './grass';
+// and what E would use, marked in the world (the rings and sparkles: design-system.md §6.5)
+export { ActivationCues } from './cues';

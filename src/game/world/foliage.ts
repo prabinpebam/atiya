@@ -185,6 +185,12 @@ export function foliageMaterials(kind: LeafKind): { material: MeshStandardMateri
   return { material, depth };
 }
 
+let kitLeaves: ReturnType<typeof foliageMaterials> | null = null;
+/** The leaf material for cards in kit models (potted plants, window boxes): shared, and still (a pot's plant doesn't sway apart from its pot). */
+export function kitLeafMaterials() {
+  return (kitLeaves ??= foliageMaterials('broad'));
+}
+
 // ---------------------------------------------------------------------------
 // Card builder
 // ---------------------------------------------------------------------------
@@ -192,7 +198,7 @@ export function foliageMaterials(kind: LeafKind): { material: MeshStandardMateri
 /** Leaf cards' random hue spread (fraction of the colour wheel, ±half of it: ≈ ±6°). */
 export const LEAF_HUE_JITTER = 0.035;
 
-class Cards {
+export class Cards {
   private pos: number[] = [];
   private nor: number[] = [];
   private uv: number[] = [];
@@ -258,7 +264,7 @@ class Cards {
 }
 
 /** Cover a spherical lobe with drooping leaf cards. */
-function leafLobe(
+export function leafLobe(
   cards: Cards,
   center: Vector3,
   r: number,

@@ -37,6 +37,9 @@ export interface Target {
   who?: string;
   name?: string;
   scale: number;
+  /** The glowing ring that marks it while it's the target (world/cues.tsx): its radius (u; default: its edge plus a little), and how far above the ground it sits (a plant on its raised bed). */
+  markU?: number;
+  markLift?: number;
   /**
    * A target a chunk adds (the crafting table, Chopper's house site, the watering can, a plant) answers
    * for itself: its prompt, what E does, whether it's usable now, and its prompt's icon.
@@ -61,6 +64,8 @@ export const REACH = {
   // (the crafting table's and Chopper's house site's reach live with them: craft/recipes.ts TARGET_REACH)
   /** Walk out this far past a target's range before its prompt goes (hysteresis). */
   keep: 0.25,
+  /** …and this far for someone on the move (the family, Chopper), so a step of theirs doesn't lose them. */
+  keepMoving: 0.5,
   /** More than this off your heading (rad), a target only counts within arm's reach. */
   behind: (100 * Math.PI) / 180,
   armU: 0.35,
@@ -89,7 +94,7 @@ export function buildTargets(layout: PropLayout, seats: readonly Seat[], chest: 
       if ((i - offset) % step !== 0) return;
       const trunk = (kind === 'cedar' ? TRUNK_U.cedar : TRUNK_U.hardwood) * t.scale;
       const coll = (kind === 'cedar' ? 0.36 : 0.42) * t.scale;
-      out.push({ kind: 'tree', key: `tree:${kind}:${i}`, n: t.n, edgeU: coll, reachU: REACH.tree, standU: trunk + 0.34, index: i, tree: kind, scale: t.scale });
+      out.push({ kind: 'tree', key: `tree:${kind}:${i}`, n: t.n, edgeU: coll, reachU: REACH.tree, standU: trunk + 0.34, index: i, tree: kind, scale: t.scale, markU: coll + 0.32 });
     });
   tree('hardwood', layout.hardwood);
   tree('cedar', layout.cedar);
@@ -99,7 +104,7 @@ export function buildTargets(layout: PropLayout, seats: readonly Seat[], chest: 
   layout.boulders.forEach((b, i) => {
     const r = 0.4 * b.scale;
     // a pickaxe's length back from the rock, so its head lands on the face
-    out.push({ kind: 'boulder', key: `boulder:${i}`, n: b.n, edgeU: r, reachU: REACH.boulder, standU: r + 0.62, index: i, scale: b.scale });
+    out.push({ kind: 'boulder', key: `boulder:${i}`, n: b.n, edgeU: r, reachU: REACH.boulder, standU: r + 0.62, index: i, scale: b.scale, markU: r + 0.24 });
   });
   for (const kind of Object.keys(layout.flowers) as FlowerKind[]) {
     layout.flowers[kind].forEach((f, i) => {
@@ -147,7 +152,7 @@ export function pickTarget(
     if (t.n.dot(p) < near) continue;
     const d = arcDistance(p, t.n, R);
     const past = d - t.edgeU;
-    const keep = t.key === currentKey ? REACH.keep : 0;
+    const keep = t.key === currentKey ? (t.kind === 'npc' || t.kind === 'dog' ? REACH.keepMoving : REACH.keep) : 0;
     const reach = nearLandmark && t.kind === 'flower' ? REACH.flowerNearLandmark : nearLandmark && t.kind === 'dog' ? REACH.dogNearLandmark : t.reachU;
     if (past > reach + keep) continue;
     if (t.kind === 'bench' && t.facing) {

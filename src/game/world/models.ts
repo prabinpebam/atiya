@@ -11,11 +11,9 @@ import {
   crate,
   door,
   type DoorLeaf,
-  flowerBox,
   gableRoof,
   hipRoof,
   lampPost,
-  potPlant,
   shade,
   signBoard,
   steps,
@@ -23,6 +21,7 @@ import {
   walls,
   windowUnit,
 } from './parts';
+import { flowerBox, potPlant, shrub } from './planters';
 
 export interface LandmarkModel {
   geo: KitGeometry;
@@ -191,7 +190,7 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
     k.surface('wood', () => k.box([0.72, 0.06, 0.12], '#4c6a41', { p: [0, 0.98, 0] }, 0.02));
   });
   // bushes flanking the platform
-  for (const s of [-1, 1]) k.blob(0.22, '#4f9e4a', { p: [s * 0.92, 0.18, D / 2 + 0.5], s: [1.1, 0.8, 1] }, 2, 'solid', 0.25, s);
+  for (const s of [-1, 1]) shrub(k, { p: [s * 0.92, 0, D / 2 + 0.5], r: [0, s, 0], s: 0.45 });
   return {
     geo: k.build(),
     height: ty + 1.55,
@@ -406,12 +405,13 @@ function amphitheater(accent: ColorRepresentation): LandmarkModel {
     const b = (i / 12) * Math.PI;
     k.sphere(0.045, ARCH.lit, { p: [Math.cos(b) * (R - 0.05), 0.2 + Math.sin(b) * (R - 0.05), -0.45 + 0.03] }, [8, 6], 'glow');
   }
-  // stage
+  // stage: a round wooden drum the shell stands on (its back half behind the curtain), a painted lip round the top, a dark plinth
+  const SR = 1.25;
   k.surface('wood', () => {
-    k.add(annularSector(0.01, 1.05, Math.PI, 2 * Math.PI, 0.18), ARCH.wood, { p: [0, 0.02, -0.25] });
-    for (let i = 0; i < 6; i++) k.box([0.02, 0.19, 0.02], ARCH.woodDark, { p: [-0.9 + i * 0.36, 0.11, -0.25 + 0.01] }, 0.005);
-    k.box([2.1, 0.06, 0.08], shade(accent, -0.15), { p: [0, 0.2, -0.22] }, 0.02);
+    k.cyl(SR, SR, 0.17, ARCH.wood, { p: [0, 0.115, -0.45] }, 44);
+    k.cyl(SR - 0.03, SR - 0.01, 0.03, ARCH.woodDark, { p: [0, 0.015, -0.45] }, 44);
   });
+  k.cyl(SR + 0.015, SR + 0.015, 0.035, shade(accent, -0.15), { p: [0, 0.182, -0.45] }, 44);
   steps(k, { p: [0, 0, 0.8] }, { w: 0.5, n: 2, rise: 0.09, tread: 0.14 });
   // microphone
   k.surface('metal', () => {
@@ -483,7 +483,7 @@ function greenhouse(accent: ColorRepresentation): LandmarkModel {
   k.blob(0.34, '#5cae4f', { p: [-0.3, 1.1, -0.3] }, 2, 'solid', 0.3, 2);
   for (let i = 0; i < 6; i++) {
     const a = i * 1.05 + 0.4;
-    potPlant(k, { p: [Math.cos(a) * 0.72, 0.43, Math.sin(a) * 0.72] }, ['#ff6f7d', '#ffd24d', '#b98cff'][i % 3]);
+    potPlant(k, { p: [Math.cos(a) * 0.72, 0.43, Math.sin(a) * 0.72] }, ['#ff6f7d', '#ffd24d', '#b98cff'][i % 3], i);
   }
   // glass dome + frame (painted white iron)
   // the dome's lowest courses leave a gap for the doorway
@@ -542,10 +542,7 @@ function greenhouse(accent: ColorRepresentation): LandmarkModel {
       k.torus(0.08, 0.015, accent, { p: [-0.02, 0.22, 0], r: [0, 0, 0] }, Math.PI, [4, 10]);
     }),
   );
-  k.group({ p: [-1.05, 0, 1.0], r: [0, 0.8, 0] }, () => {
-    k.surface('wood', () => k.box([0.6, 0.2, 0.26], ARCH.wood, { p: [0, 0.1, 0] }, 0.03));
-    for (let i = 0; i < 4; i++) k.blob(0.06, '#6cc35a', { p: [-0.21 + i * 0.14, 0.24, 0] }, 1);
-  });
+  flowerBox(k, { p: [-1.05, 0.135, 1.0], r: [0, 0.8, 0] }, 0.6, ['#ff9a4d', '#ffffff', '#ff6f7d'], true);
   return {
     geo: k.build(),
     height: 0.4 + R + 0.5,
@@ -590,7 +587,7 @@ function postOffice(accent: ColorRepresentation): LandmarkModel {
   crate(k, { p: [-1.02, 0.3, 0.55], r: [0, -0.2, 0] }, 0.22);
   k.box([0.02, 0.23, 0.23], '#f2e2c2', { p: [-1.02, 0.41, 0.55], r: [0, -0.2, 0] }, 0.005);
   bench(k, { p: [-0.3, 0, -0.95], r: [0, Math.PI, 0] });
-  potPlant(k, { p: [0.62, 0, D / 2 + 0.2] }, '#ffd24d');
+  potPlant(k, { p: [0.62, 0, D / 2 + 0.2] }, '#ffd24d', 1);
   return {
     geo: k.build(),
     height: H + 1.1,

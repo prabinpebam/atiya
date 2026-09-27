@@ -218,6 +218,8 @@ export class GameController {
   camera: Camera | null = null;
   /** The wildlife's bodies and simulation (`world/Wildlife.tsx`), loaded as its own chunk before the scene mounts; null if it failed. */
   wildlifeView: ComponentType<{ controller: GameController }> | null = null;
+  /** The glowing ring under what E would use (world/cues.tsx, in the wildlife's chunk). */
+  cuesView: ComponentType<{ controller: GameController }> | null = null;
   /** The ambient wildlife simulation (set by the Wildlife component; read by the test hook). */
   wildlife: import('./world/animals').Wildlife | null = null;
   /** The blade grass, flowers and knee-high tufts (`world/grass/`, in the `nature` chunk with the wildlife; vegetation spec), or null. */

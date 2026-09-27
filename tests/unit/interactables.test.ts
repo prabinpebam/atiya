@@ -73,6 +73,23 @@ describe('interactables', () => {
     expect(pickTarget(at.p, at.fwd, targets, null, (t) => t.key !== f.key)?.key).not.toBe(f.key);
   });
 
+  it('someone on the move stays the target for a step or two past their reach, but not from afar', () => {
+    const npc: Target = { kind: 'npc', key: 'npc:x', n: of('tree')[0].n.clone(), edgeU: 0, reachU: 1.3, standU: 0.8, index: 0, scale: 1 };
+    const tree: Target = { ...npc, kind: 'tree', key: 'tree:x' };
+    for (const [t, keep] of [[npc, REACH.keepMoving], [tree, REACH.keep]] as const) {
+      const step = facing(t, t.reachU + keep - 0.05);
+      expect(pickTarget(step.p, step.fwd, [t], null)).toBeNull();
+      expect(pickTarget(step.p, step.fwd, [t], t.key)).toBe(t);
+      const gone = facing(t, t.reachU + keep + 0.05);
+      expect(pickTarget(gone.p, gone.fwd, [t], t.key)).toBeNull();
+    }
+    expect(REACH.keepMoving).toBeGreaterThan(REACH.keep);
+  });
+
+  it('the ring that marks a tree or a rock clears its trunk or its stone', () => {
+    for (const t of [...of('tree'), ...of('boulder')]) expect(t.markU!).toBeGreaterThan(t.edgeU + 0.2);
+  });
+
   it('near a landmark, a flower needs you right at it', () => {
     const f = of('flower')[0];
     const mid = facing(f, 0.7);
