@@ -387,16 +387,25 @@ test.describe('day–night', () => {
 });
 
 test.describe('view controls', () => {
-  test('compass shows north; rotate buttons turn the view; the compass faces north again', async ({ page }) => {
+  test("compass shows north and stands alone; the menu's View buttons turn the view; the compass faces north again", async ({ page }) => {
     await startPlanet(page);
     expect((await state(page)).north).toBeCloseTo(0, 3);
     const compass = page.getByTestId('compass');
     await expect(compass).toHaveAttribute('aria-label', /facing north\./);
-    await page.getByRole('button', { name: /Rotate view clockwise/ }).click();
+    // the header's icon buttons have names; by the compass there's only Reset (crafting-screen.md §3)
+    await expect(page.getByRole('button', { name: 'Sound', exact: true })).toHaveAttribute('aria-pressed', /true|false/);
+    await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeVisible();
+    await expect(page.getByTestId('view-controls').getByRole('button')).toHaveCount(2);
+    // turning and tilting without a drag (WCAG 2.5.7) are in the menu
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await page.getByRole('group', { name: 'Turn and tilt the view' }).getByRole('button', { name: /^Rotate right/ }).click();
     await expect.poll(async () => (await state(page)).north).toBeCloseTo(45, 0);
     await expect(compass).toHaveAttribute('aria-label', /facing north-west/);
-    // a mouse click hands focus back to the planet, so WASD keeps working
-    await expect(page.locator('.game-region')).toBeFocused();
+    const pitch = (await state(page)).pitch;
+    await page.getByRole('button', { name: /^Tilt to side/ }).click();
+    await expect.poll(async () => (await state(page)).pitch).toBeLessThan(pitch - 1);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('group', { name: 'Turn and tilt the view' })).toBeHidden();
     await compass.click();
     await expect.poll(async () => (await state(page)).north).toBeCloseTo(0, 1);
     await expect(compass).toHaveAttribute('aria-label', /facing north\./);
@@ -463,7 +472,9 @@ test.describe('view controls', () => {
   test('the Reset button flies the character back over the rooftops to the plaza, drops it onto the ground, facing north', async ({ page }) => {
     await startPlanet(page);
     await page.evaluate(() => (window as any).__game.teleport('library'));
-    await page.getByRole('button', { name: /Rotate view counter-clockwise/ }).click();
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await page.getByRole('button', { name: /^Rotate left/ }).click();
+    await page.keyboard.press('Escape');
     await page.getByRole('button', { name: /Reset position and direction/ }).click();
     // mid-flight (sim stepped by hand): high above the tallest trees and the lighthouse
     await page.evaluate(() => {
@@ -794,10 +805,12 @@ test.describe('touch', () => {
       return s.autoWalk || !s.atSpawn;
     }).toBe(true);
 
-    // the view pad is 44 px under a thumb, and prompts show no keycaps
-    const rotate = await page.getByRole('button', { name: /Rotate view clockwise/ }).boundingBox();
-    expect(rotate!.width).toBeGreaterThanOrEqual(44);
-    expect(rotate!.height).toBeGreaterThanOrEqual(44);
+    // the compass, Reset and the header's icon buttons are 44 px under a thumb, and prompts show no keycaps
+    for (const b of [page.getByTestId('compass'), page.getByRole('button', { name: /Reset position/ }), page.getByTestId('sound-button'), page.getByRole('button', { name: 'Menu', exact: true })]) {
+      const box = (await b.boundingBox())!;
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
     await page.evaluate(() => (window as any).__game.nearBench(1.1));
     const sit = page.getByTestId('seat-prompt').getByRole('button', { name: /Sit on the bench/ });
     await expect(sit).toBeVisible();
@@ -1535,7 +1548,7 @@ test.describe("crafting & Chopper's house", () => {
     await expect.poll(async () => (await look()).lid, { timeout: 20_000 }).toBeLessThan(0.01);
   });
 
-  test('the crafting table: its own prompt, the recipe screen with have / need, bulk crafting by keyboard, Esc hands back the planet', async ({ page }) => {
+  test('the crafting table: its own prompt, the recipe grid over the backpack, have / need, bulk crafting by keyboard, the landing, Esc hands back the planet', async ({ page }) => {
     test.setTimeout(150_000);
     await startPlanet(page);
     await give(page, [
@@ -1550,12 +1563,19 @@ test.describe("crafting & Chopper's house", () => {
     const screen = page.getByTestId('craft-screen');
     await expect(screen.getByRole('dialog', { name: 'Crafting table' })).toBeVisible();
     await noSeriousViolations(page);
+    // Minecraft's layout: the recipes over your backpack and hotbar; the grid is icons, the name is in the detail
+    await expect(screen.locator('[data-slot="backpack:0"]')).toBeVisible();
+    await expect(screen.locator('[data-slot="backpack:35"]')).toBeVisible();
+    await expect(screen.getByRole('listbox', { name: 'Recipes' })).not.toContainText(/Planks|beam|slab/i);
+    await expect(screen.getByTestId('craft-detail').getByRole('heading', { name: 'Planks' })).toBeVisible();
     // planks are selected: 1 log makes 4; three logs make 12
     await expect(screen.getByRole('option', { name: /Planks/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(screen.getByTestId('craft-need')).toHaveCount(1);
     await expect(screen.getByTestId('craft-need').first()).toContainText('3 / 1');
+    await expect(screen.getByTestId('craft-need').first()).toHaveClass(/ok/);
     await expect(screen.getByTestId('recipe-planks')).toContainText('×12');
-    // → two at once, Enter crafts (a short hammering)
-    await page.keyboard.press('ArrowRight');
+    // + two at once, Enter crafts (a short hammering)
+    await page.keyboard.press('Equal');
     await expect(screen.getByTestId('craft-qty')).toHaveText('8');
     await expect(screen.getByTestId('craft-need').first()).toContainText('3 / 2');
     await page.keyboard.press('Enter');
@@ -1563,8 +1583,10 @@ test.describe("crafting & Chopper's house", () => {
     let i = await inv(page);
     expect(count(i.backpack, 'planks')).toBe(8);
     expect(count(i.backpack, 'log')).toBe(1);
+    // it says where they went (the log and the stones are in slots 1 and 2)
+    await expect(page.getByTestId('live-region')).toContainText('Crafted 8 planks: in hotbar slot 3.');
     // a beam needs two logs: with one left it's short, and Enter makes nothing
-    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowRight');
     await expect(screen.getByRole('option', { name: /Wooden beam/ })).toHaveAttribute('aria-selected', 'true');
     await expect(screen.getByTestId('craft-need').first()).toContainText('1 / 2');
     await expect(screen.getByTestId('craft-need').first()).toHaveClass(/short/);
@@ -1572,7 +1594,7 @@ test.describe("crafting & Chopper's house", () => {
     await fastForward(page, 1);
     expect(count((await inv(page)).backpack, 'beam')).toBe(0);
     // a stone slab from two stones
-    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
     await fastForward(page, 1);
     i = await inv(page);

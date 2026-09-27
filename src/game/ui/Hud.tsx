@@ -9,6 +9,7 @@ import { ViewControls } from './ViewControls';
 import { CHARACTERS, type CharacterId } from '../player/characters';
 import {
   faArrowUpRightFromSquare,
+  faBars,
   faBoxOpen,
   faBreadSlice,
   faChair,
@@ -317,20 +318,20 @@ function TimeBadge({ controller }: { controller: GameController }) {
   );
 }
 
-/** Sound on/off (a toggle button: its name stays "Sound", the pressed state carries on/off). */
+/** Sound on/off: an icon toggle (its name stays "Sound", the pressed state carries on/off; crafting-screen.md §4.1). */
 function SoundButton({ controller }: { controller: GameController }) {
   const on = useStore(controller.store, (s) => s.soundOn);
   return (
     <button
       type="button"
-      className="btn sound-btn"
+      className="btn icon-btn sound-btn"
+      aria-label="Sound"
       aria-pressed={on}
       title={on ? 'Sound on — click to mute' : 'Sound off — click to unmute'}
       onClick={() => controller.setSound(!on)}
       data-testid="sound-button"
     >
       <Icon icon={on ? faVolumeHigh : faVolumeXmark} />
-      <span className="sound-label">Sound</span>
     </button>
   );
 }
@@ -392,8 +393,8 @@ function MenuButton({ controller, target }: { controller: GameController; target
     <>
       <TimeBadge controller={controller} />
       <SoundButton controller={controller} />
-      <button type="button" className="btn" aria-haspopup="dialog" onClick={() => controller.openMenu()} data-testid="menu-button">
-        Menu
+      <button type="button" className="btn icon-btn" aria-label="Menu" title="Menu (M)" aria-haspopup="dialog" onClick={() => controller.openMenu()} data-testid="menu-button">
+        <Icon icon={faBars} />
       </button>
     </>,
     target,

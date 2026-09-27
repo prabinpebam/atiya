@@ -241,7 +241,7 @@ A single **global** activation state (`nearbyId`, `openId`) — at most one land
 - **Character picker** (top right, under the header): two round portrait buttons in a `role="radiogroup"` ("Choose your character"; each a `role="radio"` with a descriptive label). One is always selected, shown by a thick 5 px ink ring with a white halo; the other has a thin border and slightly faded portrait. Clicking picks (and returns focus to the planet); the group is one Tab stop and the arrow keys move and select. §4.4.
 - **View controls** (bottom-right; top-right, under the character picker, below 720 px wide), a `role="group"` labelled "View":
   - a **compass** button that always points to map north. Its label says which way you face (e.g. "Compass: facing north-west. Face north (N)"), and activating it faces north.
-  - ⟲ / ⟳ rotate and ˄ / ˅ tilt buttons around the compass, as single-pointer alternatives to dragging (WCAG 2.5.7).
+  - the single-pointer alternatives to dragging the view (WCAG 2.5.7) are in the menu's **View** group: Rotate left, Rotate right, Tilt to top, Tilt to side (as built; the buttons round the compass were removed, see [crafting screen and HUD chrome](../game-ui/crafting-screen.md)).
   - a **Reset** button (back to the plaza, facing north).
 
 ### 4.10 Escape hatch & fallbacks

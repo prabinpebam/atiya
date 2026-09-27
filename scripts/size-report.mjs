@@ -11,7 +11,8 @@ const GAME_BUDGET_KB = 450;
 // on demand: 70 → 80 KB for the blade grass (vegetation proposal D3; ≈ 7 KB gz, loaded with the wildlife)
 // 80 → 85 KB for watering the garden (the targets it and the crafting chunk now own, and the lazy landmark dialog)
 // 85 → 87 KB for the activation cues (the glowing ring and sparkles on what E uses, in the wildlife chunk)
-const DEFERRED_BUDGET_KB = 87;
+// 87 → 89 KB for the crafting screen (the recipe grid, the material slots and the landing, with the backpack in it) and the menu's View group
+const DEFERRED_BUDGET_KB = 89;
 const GATE_BUDGET_KB = 8;
 
 if (!existsSync(ASSETS)) {

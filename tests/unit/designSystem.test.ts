@@ -41,8 +41,8 @@ describe('tokens: one source of truth', () => {
   it('every var() the stylesheets use is defined (a token, a surface role, or a layout variable)', () => {
     const defined = new Set([...TOKENS_CSS.matchAll(/(--[\w-]+):/g)].map((m) => m[1]));
     for (const d of all) if (d.prop.startsWith('--')) defined.add(d.prop);
-    // set per element from content data (a landmark's accent) or a component's timing
-    for (const x of ['--accent', '--craft-s']) defined.add(x);
+    // set per element from content data (a landmark's accent), a component's timing, or where a crafted item flies to
+    for (const x of ['--accent', '--craft-s', '--dx', '--dy']) defined.add(x);
     const missing = new Set<string>();
     for (const d of all) for (const m of d.value.matchAll(/var\((--[\w-]+)/g)) if (!defined.has(m[1])) missing.add(`${m[1]} in ${where(d)}`);
     expect([...missing]).toEqual([]);

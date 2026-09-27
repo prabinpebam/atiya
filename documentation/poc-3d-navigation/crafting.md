@@ -69,12 +69,12 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
 - **The model** (`world/craft/models.ts`, `craftingTableModel`): a sturdy workbench with a butcher-block top, a vise holding a plank, a saw, a hammer, a chisel, a try-square, a pencil, two red C-clamps, a blue toolbox, a peg rail with a mallet, a hand drill and a coil of rope, a lower shelf with spare planks and a log, and shavings on the top and on the ground. One kit mesh: 2 draw calls with its shadow.
 - **Placement** (`world/layout.ts`): beside the Workshop, 1.3–2.2 u beyond its footprint, ≥ 1.3 u off the paths (the spawn–landmark lines), ≥ 2 u from the chest, ≥ 1 u from trees, bushes and rocks, clear of the river, the mesas and the other landmarks, facing the Workshop's approach. It's solid (a 0.5 u collision circle).
 - **Prompt:** **Use crafting table** (E).
-- **The screen** is a dialog:
-  - **Left:** the recipe list, each with its icon, its name and how many you can make now.
-  - **Right:** the selected recipe's icon, name and line, and its materials with *have / need* (red when short). Below them a quantity stepper (− / +) and **Craft**.
-  - **Keys:** ↑ ↓ pick a recipe, ← → change the quantity, Enter crafts, Esc closes.
-  - **Crafting:** a short hammering (0.6 s) with a knock and a progress bar, then a sparkle and the item in your backpack, announced ("Crafted 8 planks.").
-  - **Accessibility:** a labelled modal dialog; the recipe list is a `listbox` with `aria-activedescendant`, focused on open; the stepper buttons and Craft have their own names; every selection and craft is announced; focus returns to the planet on close. Pointer: click a recipe, − / +, **Craft**, or click outside to close.
+- **The screen** is Minecraft's layout, specified in [Crafting screen and HUD chrome](../game-ui/crafting-screen.md):
+  - **Top:** the recipes as a grid of icons (names only in the detail and the tooltips; a ×n badge on what you can make now), and the selected recipe's detail: the result, its name and line, one slot per material (1 to `MAX_NEEDS` = 4) with *have / need* and a mark (green when there's enough, red when short), a quantity stepper (− / +) and **Craft**.
+  - **Below:** your backpack and hotbar, with all the inventory screen's gestures ([collecting and inventory](./collection-inventory.md)).
+  - **Keys:** ← → ↑ ↓ pick a recipe, − / + (or PgDn / PgUp) change the quantity, Enter crafts (Shift+Enter: as many as you can), Esc or E closes.
+  - **Crafting:** a short hammering (0.6 s) with a knock and a progress bar, then the result flies from the detail into the slot it landed in, which pops, announced with where it went ("Crafted 8 planks: in hotbar slot 3."). Under reduced motion the slot only pops.
+  - **Accessibility:** a labelled modal dialog; the recipe grid is a `listbox` with `aria-activedescendant`, focused on open, each option named with its recipe; the material slots, the stepper buttons and Craft have their own names; every selection and craft is announced; focus returns to the planet on close. Pointer: click a recipe, − / +, **Craft** (Shift+click: as many as you can), or click outside to close.
 
 ### 4.3 Chopper's house (the construction site)
 

@@ -7,8 +7,10 @@ import { Icon } from '../../ui/Icon';
 import { asideLane } from '../../ui/lanes';
 import { useCompact } from '../../ui/useCompact';
 import { ItemIcon } from '../../ui/Inventory';
+import InventoryPanel from '../../ui/InventoryPanel';
+import { selectReducedMotion } from '../../state/store';
 import type { Crafting } from './index';
-import { BULK_MAX, CRAFT_S, HOUSE_HEX, HOUSE_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
+import { BULK_MAX, CRAFT_S, HOUSE_HEX, HOUSE_NEEDS, MAX_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
 
 /** The crafting screen, the palette for Chopper's house, and the site card (crafting.md §4.2, §4.3). */
 export function CraftScreens({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
@@ -35,31 +37,101 @@ const plural = (id: Parameters<typeof itemDef>[0], n: number) => {
 const needText = (needs: Recipe['needs']) => needs.map((n) => `${n.n} ${n.any.length === 1 ? plural(n.any[0], n.n).toLowerCase() : n.label.toLowerCase()}`).join(' and ');
 
 /**
- * Animal Crossing's DIY workbench: the recipes on the left (with how many you can make), the
- * selected one's materials (have / need) on the right, a quantity stepper and Craft.
- * ↑ ↓ pick a recipe, ← → the quantity, Enter crafts, Esc (or E) closes.
+ * The crafting table (crafting-screen.md §4.3): Minecraft's layout, with the recipes and the selected
+ * one's detail over your backpack and hotbar (the inventory panel's own slots and gestures).
  */
 function CraftScreen({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
   useStore(controller.store, (s) => s.invVersion);
+  return (
+    <InventoryPanel
+      controller={controller}
+      screen="backpack"
+      kind="craft"
+      title="Crafting table"
+      icon={faHammer}
+      onClose={() => controller.closeCraft()}
+      top={<CraftPane controller={controller} crafting={crafting} />}
+    />
+  );
+}
+
+/** How many columns the recipe grid shows (it reflows with the screen). */
+const columns = (el: HTMLElement | null) => Math.max(1, el ? getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length : 5);
+
+/**
+ * The recipes as a grid of icons (the names are in the detail and the tooltips), and the selected one:
+ * the result, a slot per material (have / need), how many, and Craft. ← → ↑ ↓ pick, − / + how many,
+ * Enter crafts (Shift+Enter: as many as you can), Esc or E closes.
+ */
+function CraftPane({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
   const busy = useStore(crafting.store, (s) => s.crafting);
+  const landed = useStore(crafting.store, (s) => s.landed);
+  const reduced = useStore(controller.store, selectReducedMotion);
+  const touch = useStore(controller.store, (s) => s.input === 'touch');
   const inv = controller.inventory;
   const [sel, setSel] = useState(0);
   const [qty, setQty] = useState(1);
-  const list = useRef<HTMLUListElement>(null);
+  const grid = useRef<HTMLUListElement>(null);
+  const result = useRef<HTMLSpanElement>(null);
   const r = RECIPES[sel];
   const max = maxCraftable(inv, r);
   const q = Math.max(1, Math.min(qty, Math.max(1, max)));
   const short = byMaterials(inv, r) > 0 && max === 0;
 
   useEffect(() => {
-    list.current?.focus({ preventScroll: true });
+    grid.current?.focus({ preventScroll: true });
   }, []);
   useEffect(() => {
-    list.current?.querySelector(`[data-index="${sel}"]`)?.scrollIntoView?.({ block: 'nearest' });
+    grid.current?.querySelector(`[data-index="${sel}"]`)?.scrollIntoView?.({ block: 'nearest' });
   }, [sel]);
 
+  // the landing: the result flies from its slot into each slot it went to, which then pops
+  useEffect(() => {
+    if (!landed) return;
+    const panel = grid.current?.closest('.inv-panel');
+    const from = result.current?.getBoundingClientRect();
+    const img = result.current?.querySelector('img');
+    if (!panel || !from) return;
+    const view = panel.getBoundingClientRect();
+    const timers: number[] = [];
+    for (const { i } of landed.slots) {
+      const slot = panel.querySelector<HTMLElement>(`[data-slot="backpack:${i}"]`);
+      if (!slot) continue;
+      const to = slot.getBoundingClientRect();
+      const shown = to.bottom > view.top && to.top < view.bottom;
+      const pop = () => {
+        slot.classList.remove('landed');
+        void slot.offsetWidth;
+        slot.classList.add('landed');
+        timers.push(window.setTimeout(() => slot.classList.remove('landed'), 900));
+      };
+      if (reduced || !img || !shown) {
+        pop();
+        continue;
+      }
+      const fly = document.createElement('div');
+      fly.className = 'craft-fly';
+      fly.setAttribute('aria-hidden', 'true');
+      fly.appendChild(img.cloneNode());
+      fly.style.left = `${from.left + from.width / 2 - to.width / 2}px`;
+      fly.style.top = `${from.top + from.height / 2 - to.height / 2}px`;
+      fly.style.width = `${to.width}px`;
+      fly.style.height = `${to.height}px`;
+      fly.style.setProperty('--dx', `${to.left - (from.left + from.width / 2 - to.width / 2)}px`);
+      fly.style.setProperty('--dy', `${to.top - (from.top + from.height / 2 - to.height / 2)}px`);
+      document.body.appendChild(fly);
+      fly.addEventListener('animationend', () => {
+        fly.remove();
+        pop();
+      });
+      timers.push(window.setTimeout(() => fly.isConnected && (fly.remove(), pop()), 1500));
+    }
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [landed, reduced]);
+
   const pick = (i: number) => {
-    const n = (i + RECIPES.length) % RECIPES.length;
+    const n = Math.max(0, Math.min(RECIPES.length - 1, i));
+    if (n === sel) return;
     setSel(n);
     setQty(1);
     const rr = RECIPES[n];
@@ -70,128 +142,138 @@ function CraftScreen({ controller, crafting }: { controller: GameController; cra
     setQty(next);
     if (next !== q) controller.announce(`Make ${next * r.yield}.`);
   };
-  const go = () => {
+  const go = (all = false) => {
     if (busy || max < 1) {
       if (!busy) controller.announce(short ? 'Your backpack is too full for that.' : "You don't have enough for that yet.");
       return;
     }
-    crafting.startCraft(r, q);
+    crafting.startCraft(r, all ? max : q);
   };
-  const close = () => controller.closeCraft();
   const onKey = (e: KeyboardEvent) => {
-    if (e.code === 'Escape' || (e.code === 'KeyE' && !e.repeat)) {
+    const cols = columns(grid.current);
+    const move: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols };
+    if (e.target === grid.current && e.code in move) {
       e.preventDefault();
-      close();
-    } else if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+      e.stopPropagation();
+      pick(sel + move[e.code]);
+    } else if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.code === 'PageDown') {
       e.preventDefault();
-      pick(sel + (e.code === 'ArrowUp' ? -1 : 1));
-    } else if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+      e.stopPropagation();
+      step(-1);
+    } else if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.code === 'PageUp') {
       e.preventDefault();
-      step(e.code === 'ArrowLeft' ? -1 : 1);
-    } else if ((e.code === 'Enter' || e.code === 'NumpadEnter') && !e.repeat) {
+      e.stopPropagation();
+      step(1);
+    } else if ((e.code === 'Enter' || e.code === 'NumpadEnter') && e.target === grid.current && !e.repeat) {
       e.preventDefault();
-      go();
+      e.stopPropagation();
+      go(e.shiftKey);
     }
   };
 
   return (
-    <div className="inv-backdrop surface-wood" data-testid="craft-screen" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="inv-panel craft-panel" role="dialog" aria-modal="true" aria-labelledby="craft-title" onKeyDown={onKey}>
-        <div className="inv-head">
-          <h2 id="craft-title">
-            <Icon icon={faHammer} /> Crafting table
-          </h2>
-          <button type="button" className="btn" aria-label="Close the crafting table" onClick={close}>
-            <Icon icon={faXmark} />
+    <div className="craft-body" onKeyDown={onKey}>
+      <ul
+        ref={grid}
+        className="craft-grid scroll-thin"
+        role="listbox"
+        aria-label="Recipes"
+        aria-orientation="horizontal"
+        tabIndex={0}
+        aria-activedescendant={`recipe-${r.id}`}
+      >
+        {RECIPES.map((x, i) => {
+          const can = maxCraftable(inv, x) * x.yield;
+          const name = itemDef(x.out).name;
+          return (
+            <li
+              key={x.id}
+              id={`recipe-${x.id}`}
+              role="option"
+              aria-selected={i === sel}
+              aria-label={`${name}: ${x.yield > 1 ? `${x.yield} from ${needText(x.needs)}` : needText(x.needs)}. You can make ${can}.`}
+              title={name}
+              data-index={i}
+              data-testid={`recipe-${x.id}`}
+              className={`slot craft-cell${i === sel ? ' on' : ''}${can ? '' : ' dim'}`}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                grid.current?.focus({ preventScroll: true });
+                pick(i);
+              }}
+            >
+              <ItemIcon id={x.out} />
+              {can > 0 && <span className="slot-count craft-can">×{can}</span>}
+            </li>
+          );
+        })}
+      </ul>
+      <section className="craft-detail" aria-labelledby="craft-detail-name" data-testid="craft-detail">
+        <div className="craft-result">
+          <span ref={result} className="slot craft-big" data-testid="craft-result">
+            <ItemIcon id={r.out} />
+            {r.yield > 1 && <span className="slot-count">{r.yield}</span>}
+          </span>
+          <div>
+            <h3 id="craft-detail-name">{itemDef(r.out).name}</h3>
+            <p className="craft-line">{r.line}</p>
+          </div>
+        </div>
+        <ul className="craft-needs" aria-label="Materials">
+          {r.needs.slice(0, MAX_NEEDS).map((n) => {
+            const have = haveOf(inv, n);
+            const need = n.n * q;
+            const ok = have >= need;
+            return (
+              <li key={n.label} className={`craft-need ${ok ? 'ok' : 'short'}`} data-testid="craft-need" aria-label={`${n.label}: you have ${have}, it takes ${need}${ok ? '' : `, ${need - have} short`}`} title={n.label}>
+                <span className="slot craft-icon" aria-hidden="true">
+                  <ItemIcon id={n.icon} />
+                  <span className="craft-mark">
+                    <Icon icon={ok ? faCheck : faXmark} />
+                  </span>
+                </span>
+                <span className="craft-have" aria-hidden="true">
+                  {have} / {need}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="craft-go">
+          <div className="craft-qty" role="group" aria-label="How many">
+            <button type="button" className="btn" aria-label="Fewer" disabled={q <= 1} onClick={() => step(-1)}>
+              <Icon icon={faMinus} />
+            </button>
+            <output data-testid="craft-qty" aria-label={`Make ${q * r.yield}`}>
+              {q * r.yield}
+            </output>
+            <button type="button" className="btn" aria-label="More" disabled={q >= Math.min(BULK_MAX, max)} onClick={() => step(1)}>
+              <Icon icon={faPlus} />
+            </button>
+          </div>
+          <button
+            type="button"
+            className="btn primary craft-btn"
+            data-testid="craft-go"
+            aria-disabled={max < 1 || Boolean(busy)}
+            title="Shift+click: make as many as you can"
+            onClick={(e) => go(e.shiftKey)}
+          >
+            <Icon icon={faHammer} /> Craft <kbd>Enter</kbd>
           </button>
         </div>
-        <div className="craft-body">
-          <ul ref={list} className="craft-list" role="listbox" aria-label="Recipes" tabIndex={0} aria-activedescendant={`recipe-${r.id}`}>
-            {RECIPES.map((x, i) => {
-              const can = maxCraftable(inv, x);
-              return (
-                <li
-                  key={x.id}
-                  id={`recipe-${x.id}`}
-                  role="option"
-                  aria-selected={i === sel}
-                  data-index={i}
-                  data-testid={`recipe-${x.id}`}
-                  className={`craft-row${i === sel ? ' on' : ''}${can ? '' : ' dim'}`}
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    list.current?.focus({ preventScroll: true });
-                    pick(i);
-                  }}
-                >
-                  <span className="slot craft-icon">
-                    <ItemIcon id={x.out} />
-                  </span>
-                  <span className="craft-name">{itemDef(x.out).name}</span>
-                  <span className="craft-can" aria-label={`can make ${can * x.yield}`}>
-                    {can ? `×${can * x.yield}` : ''}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          <section className="craft-detail" aria-labelledby="craft-detail-name" data-testid="craft-detail">
-            <div className="craft-result">
-              <span className="slot craft-big">
-                <ItemIcon id={r.out} />
-                {r.yield > 1 && <span className="slot-count">{r.yield}</span>}
-              </span>
-              <div>
-                <h3 id="craft-detail-name">{itemDef(r.out).name}</h3>
-                <p className="craft-line">{r.line}</p>
-              </div>
-            </div>
-            <h4 className="craft-sub">Materials</h4>
-            <ul className="craft-needs">
-              {r.needs.map((n) => {
-                const have = haveOf(inv, n);
-                const need = n.n * q;
-                return (
-                  <li key={n.label} className={have >= need ? 'ok' : 'short'} data-testid="craft-need">
-                    <span className="slot craft-icon">
-                      <ItemIcon id={n.icon} />
-                    </span>
-                    <span className="craft-name">{n.label}</span>
-                    <span className="craft-have">
-                      {have} / {need}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="craft-go">
-              <div className="craft-qty" role="group" aria-label="How many">
-                <button type="button" className="btn" aria-label="Fewer" disabled={q <= 1} onClick={() => step(-1)}>
-                  <Icon icon={faMinus} />
-                </button>
-                <output data-testid="craft-qty" aria-label={`Make ${q * r.yield}`}>
-                  {q * r.yield}
-                </output>
-                <button type="button" className="btn" aria-label="More" disabled={q >= Math.min(BULK_MAX, max)} onClick={() => step(1)}>
-                  <Icon icon={faPlus} />
-                </button>
-              </div>
-              <button type="button" className="btn primary craft-btn" data-testid="craft-go" aria-disabled={max < 1 || Boolean(busy)} onClick={go}>
-                <Icon icon={faHammer} /> Craft <kbd>Enter</kbd>
-              </button>
-            </div>
-            {busy && (
-              <div className="craft-progress" aria-hidden="true" style={{ ['--craft-s' as string]: `${CRAFT_S}s` }}>
-                <span />
-              </div>
-            )}
-            <p className="inv-help">
-              {max < 1 ? (short ? 'Your backpack is too full: make some room first.' : `Not enough yet: it takes ${needText(r.needs)}.`) : `You can make up to ${max * r.yield} ${plural(r.out, max * r.yield).toLowerCase()}.`}{' '}
-              ↑ ↓ recipe · ← → how many · Enter craft · Esc close
-            </p>
-          </section>
-        </div>
-      </div>
+        {busy && (
+          <div className="craft-progress" aria-hidden="true" style={{ ['--craft-s' as string]: `${CRAFT_S}s` }}>
+            <span />
+          </div>
+        )}
+        <p className="craft-status" data-testid="craft-status">
+          {max < 1 ? (short ? 'Your backpack is too full: make some room first.' : `Not enough yet: it takes ${needText(r.needs)}.`) : `You can make up to ${max * r.yield} ${plural(r.out, max * r.yield).toLowerCase()}.`}
+        </p>
+        <p className="inv-help" aria-hidden="true">
+          {touch ? 'Tap a recipe, then Craft' : 'Arrows: pick · − +: how many · Enter: craft (Shift: as many as you can) · Esc: close'}
+        </p>
+      </section>
     </div>
   );
 }

@@ -64,7 +64,7 @@ Each component has one class family, reads only surface roles and tokens, and ha
 | Dialog | `.dialog`, `.landmark-dialog`, `.menu-dialog` | `components.css` | Native `<dialog>` (focus is trapped and restored, Esc closes). Title, body, actions with the primary action first. |
 | Menu list, check, radio group | `.menu-list`, `.menu-item`, `.check`, `.radio-group` | `components.css` | Settings rows in the menu (sound, time, larger text). |
 | Time badge | `.time-badge` | `components.css` | The clock chip in the top bar; `.time-scrubbing` while dragging. |
-| Top bar | `.play-header`, `.brand`, `.hud-actions` | `hud.css` | Brand (the site's home), Classic site, time, sound and menu. It never wraps (the brand shortens on narrow screens). |
+| Top bar | `.play-header`, `.brand`, `.hud-actions`, `.icon-btn` | `hud.css` | Brand (the site's home), Classic site, time, and the Sound and Menu icon buttons (a speaker and a hamburger, named by `aria-label`). It never wraps (the brand shortens on narrow screens). |
 | Focus lane | `.lane` | `hud.css` | The bottom-centre slot above the hotbar. It holds one of: talk box, stand-up prompt, action prompt, preview card. |
 | Action prompt | `.seat-prompt.action-prompt` | `hud.css` | Icon + verb + object + `.kbd`. It's a real button (a click or tap does the same as <kbd>E</kbd>). |
 | Preview card | `.preview-card` | `hud.css` | The landmark's eyebrow, title and one line, with Enter to open. |
@@ -72,10 +72,10 @@ Each component has one class family, reads only surface roles and tokens, and ha
 | Aside | `.aside` (`.site-card`) | `hud.css` | Bottom left: the site card (a build goal's needs). |
 | How to play | `.menu-dialog`, `.help-list` | `components.css` | The menu dialog's help page (the notice board, or Menu → Show controls): the controls with inline `kbd`, or the touch gestures, and tips. |
 | Toast | `.toast` | `hud.css` | Top centre, one at a time, announced; 4 to 9 s by length. |
-| View controls | `.view-controls`, `.view-btn`, `.compass` | `hud.css` | Tilt, rotate, compass and Reset, bottom right. |
+| View controls | `.view-controls`, `.compass`, `.view-home` | `hud.css` | The compass and Reset, bottom right. Turning and tilting without a drag are the menu's View group (`.menu-view`). |
 | Character picker | `.character-picker`, `.avatar-btn` | `hud.css` | A radio group of portraits, top right. |
 | Hotbar and slot | `.hotbar`, `.slot`, `.slot-key`, `.slot-count` | `panels.css` | Nine slots, the backpack and the whistle. The selected slot uses `--surface-highlight`. |
-| Backpack, crafting, paint | `.inv-panel`, `.craft-panel`, `.paint-panel` | `panels.css` | Wood panels on the overlay layer: head, sections, help line with keys. |
+| Backpack, crafting, paint | `.inv-panel`, `.craft-panel`, `.paint-panel` | `panels.css` | Wood panels on the overlay layer: head, sections, help line with keys. The crafting screen is the inventory panel with the recipe pane on top (`.craft-grid`, `.craft-need`; [crafting screen](./crafting-screen.md)). |
 
 Adding a component: give it a class family, put it in the right stylesheet, use only surface roles and tokens (add `c.*` tokens if needed), add its row here, and let the design-system test run.
 
@@ -85,7 +85,7 @@ Adding a component: give it a class family, put it in the right stylesheet, use 
 |---|---|---|---|
 | R1 Top bar | Top edge | Brand, Classic site, time, sound, menu | Always visible in play (P8). |
 | R2 Character picker | Top right, below R1 | Portraits | |
-| R3 View controls | Bottom right | Tilt, rotate, compass, Reset | |
+| R3 View controls | Bottom right | Compass, Reset | |
 | R4 **Focus lane** | Bottom centre, above the hotbar | One of talk, stand, prompt, preview | Decided by `focusLane` (§6.3). |
 | R5 Hotbar | Bottom centre edge | Slots, backpack, whistle | |
 | R6 Aside | Bottom left | Site card | Decided by `asideLane` (§6.4). |
@@ -203,7 +203,7 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
 - **Motion:** every animation uses `--dur-*` and `--ease-*`, and `prefers-reduced-motion` shortens it to nothing (the talk box then shows lines instantly).
 - **Text twins (P7):** prompts are buttons with names; toasts, talk lines and results are announced in the polite live region.
 - **Keys:** scoped to the focused game region; Tab and the browser's keys are never taken.
-- **Touch:** every drag has a single-pointer alternative (tap to walk, the compass buttons), and every two-finger gesture too (WCAG 2.5.1, 2.5.7). See §10.
+- **Touch:** every drag has a single-pointer alternative (tap to walk, the menu's View buttons), and every two-finger gesture too (WCAG 2.5.1, 2.5.7). See §10.
 
 ## 9. Governance
 
@@ -230,7 +230,7 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
 The rules for playing under a thumb; the research, the critique and the plan are in [touch controls](touch.md).
 
 - **The last input decides.** `<html data-input="touch|keys">` follows the last `pointerdown` or `keydown` (set by the touch chunk, mirrored in the store as `input`). Style touch-only changes with `[data-input='touch']`, never with a pointer media query: a touchscreen laptop can switch back and forth.
-- **In touch mode:** keycaps in buttons and the hotbar's slot numbers hide; Prabin's welcome, the How to play page and the announcements use the touch copy (`input/touchCopy.ts`); the view pad is 44 px (`--c-view-btn-touch`).
+- **In touch mode:** keycaps in buttons and the hotbar's slot numbers hide; Prabin's welcome, the How to play page and the announcements use the touch copy (`input/touchCopy.ts`); the compass and Reset are 44 px.
 - **Gestures:** one finger dragged on the planet is the floating stick (`c.stick.*`); a second finger, or two together, turn and tilt the view; a tap walks. A touch that starts on a HUD control stays with it.
 - **New touch copy** never names a key; the unit test checks it.
 - **The chunk rule:** touch code (`input/touch.ts`, `stick.ts`, `gestures.ts`, `touchCopy.ts`) loads only on touch-capable devices. It imports nothing from the main bundle but types, and the main bundle keeps only the glue (`controller.touch`).

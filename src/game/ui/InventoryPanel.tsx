@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { useStore } from 'zustand';
-import { faArrowsUpDownLeftRight, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsUpDownLeftRight, faXmark, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import type { GameController } from '../controller';
 import { BACKPACK_SLOTS, CHEST_SLOTS, HOTBAR, type ContainerId, type Screen, type SlotRef } from '../inventory/inventory';
 import { itemDef, stackLabel, type ItemId } from '../inventory/items';
@@ -8,7 +8,11 @@ import { doubleClick, dropHeld, leftClick, moveAllOf, numberSwap, planSpread, ri
 import { Icon } from './Icon';
 import { SlotFace } from './Inventory';
 
-/** The inventory / chest screen (docs: collection-inventory.md §4.3), loaded on demand by `InventoryScreen`. */
+/**
+ * The inventory / chest screen (docs: collection-inventory.md §4.3), loaded on demand by `InventoryScreen`.
+ * The crafting table uses it too (crafting-screen.md §4.3): its recipes and detail are the `top`, over
+ * the backpack and the hotbar, with its own title and close.
+ */
 
 type Section = { title: string; c: ContainerId; from: number; to: number; id: string };
 /**
@@ -26,7 +30,23 @@ const WHEEL_STEP = 100;
 const keyOf = (r: SlotRef) => `${r.c}:${r.i}`;
 const items = (n: number) => `${n} item${n === 1 ? '' : 's'}`;
 
-export default function InventoryPanel({ controller, screen }: { controller: GameController; screen: Screen }) {
+export default function InventoryPanel({
+  controller,
+  screen,
+  top,
+  title = screen === 'chest' ? 'Chest' : 'Backpack',
+  icon,
+  onClose = () => controller.closeInventory(),
+  kind = 'inventory',
+}: {
+  controller: GameController;
+  screen: Screen;
+  top?: ReactNode;
+  title?: string;
+  icon?: IconDefinition;
+  onClose?: () => void;
+  kind?: 'inventory' | 'craft';
+}) {
   const inv = controller.inventory;
   const touch = useStore(controller.store, (s) => s.input === 'touch');
   const sections = useMemo<Section[]>(
@@ -62,9 +82,9 @@ export default function InventoryPanel({ controller, screen }: { controller: Gam
     }
   };
 
-  // focus the first slot when the screen opens
+  // focus the first slot when the screen opens (a top part takes the focus itself)
   useEffect(() => {
-    slotEls.current[0]?.focus({ preventScroll: true });
+    if (!top) slotEls.current[0]?.focus({ preventScroll: true });
   }, []);
 
   /** Shift+click; a second one on the same slot straight after moves every stack of that item (Minecraft's Shift+double-click). */
@@ -280,7 +300,7 @@ export default function InventoryPanel({ controller, screen }: { controller: Gam
     const r = hovered.current ?? (onSlot ? order[focusIdx] : null);
     if (e.code === 'Escape' || e.code === 'KeyE' || e.code === 'KeyI') {
       e.preventDefault();
-      controller.closeInventory();
+      onClose();
       return;
     }
     if (/^Digit[1-9]$/.test(e.code)) {
@@ -326,19 +346,21 @@ export default function InventoryPanel({ controller, screen }: { controller: Gam
   const plan = preview && preview.refs.length > 1 ? planSpread(inv, preview.refs, preview.even) : null;
   const held = plan && inv.held ? (plan.left > 0 ? { id: inv.held.id, n: plan.left } : null) : inv.held;
   let flat = 0;
-  const title = screen === 'chest' ? 'Chest' : 'Backpack';
   return (
-    <div className="inv-backdrop surface-wood" data-testid="inventory-screen" onPointerMove={onMove} onPointerDown={onBackdrop} onContextMenu={(e) => e.preventDefault()}>
-      <div ref={panel} className="inv-panel" role="dialog" aria-modal="true" aria-label={title} onKeyDown={onKey}>
+    <div className="inv-backdrop surface-wood" data-testid={`${kind}-screen`} onPointerMove={onMove} onPointerDown={onBackdrop} onContextMenu={(e) => e.preventDefault()}>
+      <div ref={panel} className={`inv-panel ${kind}-panel`} role="dialog" aria-modal="true" aria-label={title} onKeyDown={onKey}>
         <div className="inv-head">
-          <h2>{title}</h2>
+          <h2>
+            {icon && <Icon icon={icon} />} {title}
+          </h2>
           <button type="button" className={`btn inv-move${moveMode ? ' on' : ''}`} aria-pressed={moveMode} onClick={() => setMoveMode((m) => !m)} title="Taps move stacks between sections (like Shift+click)">
             <Icon icon={faArrowsUpDownLeftRight} /> Move
           </button>
-          <button type="button" className="btn inv-close" aria-label="Close" onClick={() => controller.closeInventory()}>
+          <button type="button" className="btn inv-close" aria-label="Close" onClick={onClose}>
             <Icon icon={faXmark} />
           </button>
         </div>
+        {top}
         {sections.map((sec) => (
           <section key={sec.id} className={`inv-section ${sec.id}`} aria-label={sec.title}>
             {sec.id !== 'inv-hotbar' && (

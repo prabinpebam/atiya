@@ -17,12 +17,14 @@ import {
   HOUSE_R,
   HOUSE_HEX,
   HOUSE_NEEDS,
+  MAX_NEEDS,
   RECIPES,
   TARGET_REACH,
   byMaterials,
   colourName,
   craft,
   fits,
+  landedSlots,
   listNeeds,
   maxCraftable,
   missing,
@@ -135,6 +137,49 @@ describe('crafting: recipes (crafting.md ยง4.1)', () => {
     const res = craft(a, r('planks'), 2);
     expect(res).toEqual({ made: 8, left: 8 });
     expect(a.count('log')).toBe(62);
+  });
+});
+
+describe('crafting screen (crafting-screen.md ง3)', () => {
+  it('keeps every recipe to at most four materials, each of them needed', () => {
+    expect(MAX_NEEDS).toBe(4);
+    for (const x of RECIPES) {
+      expect(x.needs.length, x.id).toBeGreaterThanOrEqual(1);
+      expect(x.needs.length, x.id).toBeLessThanOrEqual(MAX_NEEDS);
+      expect(new Set(x.needs.map((n) => n.label)).size, x.id).toBe(x.needs.length);
+    }
+  });
+
+  it('finds the slots a craft filled: the stack it topped up and the new one', () => {
+    const x = inv([['log', 3], ['planks', 60]]);
+    const before = x.backpack.map((s) => (s ? { ...s } : null));
+    x.add('planks', 8);
+    expect(landedSlots(before, x.backpack, 'planks')).toEqual([
+      { i: 1, n: 4 },
+      { i: 2, n: 4 },
+    ]);
+  });
+
+  it('ignores other items, slots that lost items, and caps how many it reports', () => {
+    const x = inv([['log', 5]]);
+    const before = x.backpack.map((s) => (s ? { ...s } : null));
+    x.remove('log', 2);
+    x.add('beam', 1);
+    expect(landedSlots(before, x.backpack, 'beam')).toEqual([{ i: 1, n: 1 }]);
+    expect(landedSlots(before, x.backpack, 'log')).toEqual([]);
+    const y = inv();
+    const empty = y.backpack.map(() => null);
+    y.add('slab', 64 * 5);
+    expect(landedSlots(empty, y.backpack, 'slab')).toHaveLength(3);
+    expect(landedSlots(empty, y.backpack, 'slab', 5)).toHaveLength(5);
+  });
+
+  it('reports nothing when the backpack was full and it all dropped', () => {
+    const x = new Inventory();
+    for (let i = 0; i < BACKPACK_SLOTS; i++) x.add('stone', 64);
+    const before = x.backpack.map((s) => (s ? { ...s } : null));
+    expect(x.add('planks', 4)).toBe(4);
+    expect(landedSlots(before, x.backpack, 'planks')).toEqual([]);
   });
 });
 

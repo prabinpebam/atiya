@@ -126,6 +126,8 @@
   z-index: var(--layer-overlay);
   display: grid;
   place-items: center;
+  /* panels stay clear of the top bar (a button and its padding), which stays usable above them */
+  padding: calc(var(--c-btn-h) + 2 * var(--space-3)) var(--space-2) var(--space-2);
   background: var(--color-scrim-wood);
 }
 
@@ -260,70 +262,67 @@
   box-shadow: inset 0 0 0 1px var(--color-tooltip-rule);
 }
 
-/* ---------- Crafting table, the palette (crafting.md) ---------- */
+/* ---------- Crafting table (crafting-screen.md §4.3), the palette (crafting.md) ---------- */
+/* Minecraft's layout: the recipes and the detail over the backpack and the hotbar, one panel */
 .craft-panel {
-  width: min(720px, calc(100vw - var(--space-4)));
+  width: min(660px, calc(100vw - var(--space-4)));
+  max-height: calc(100dvh - var(--c-btn-h) - 2 * var(--space-3) - var(--space-2));
+  overflow-y: auto;
+}
+
+.craft-panel .inv-section {
+  justify-self: center;
 }
 
 .craft-body {
   display: grid;
-  grid-template-columns: minmax(180px, 250px) 1fr;
+  grid-template-columns: auto 1fr;
   gap: var(--space-3-5);
-  min-height: 300px;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-hair) solid var(--surface-line);
 }
 
-.craft-list {
+/* the recipes: big icons, no names (they're in the detail and the tooltips); three rows, then it scrolls */
+.craft-grid {
+  display: grid;
+  grid-template-columns: repeat(5, var(--c-recipe-cell));
+  grid-auto-rows: var(--c-recipe-cell);
+  align-content: start;
+  align-self: start;
+  gap: var(--space-1);
+  max-height: calc(3 * var(--c-recipe-cell) + 2 * var(--space-1) + 2 * var(--space-1-5));
   margin: 0;
-  padding: var(--space-1);
+  padding: var(--space-1-5);
   list-style: none;
-  max-height: min(56vh, 420px);
   overflow-y: auto;
   border-radius: var(--radius-sm);
   background: var(--surface-bg-sunk);
   outline: none;
 }
 
-.craft-list:focus-visible {
+.craft-grid:focus-visible {
   box-shadow: 0 0 0 3px var(--surface-focus);
 }
 
-.craft-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
+.craft-cell {
+  width: var(--c-recipe-cell);
+  height: var(--c-recipe-cell);
 }
 
-.craft-row:hover {
-  background: var(--surface-line);
-}
-
-.craft-row.on {
+.craft-cell.on {
   background: var(--surface-highlight-soft);
-  box-shadow: inset 0 0 0 2px var(--surface-highlight);
+  box-shadow:
+    var(--shadow-slot),
+    inset 0 0 0 3px var(--surface-highlight);
 }
 
-.craft-row.dim .craft-name {
-  color: var(--surface-text-muted);
-}
-
-.craft-icon {
-  width: 36px;
-  height: 36px;
-  cursor: inherit;
-}
-
-.craft-name {
-  font-weight: var(--weight-semibold);
-  font-size: var(--text-sm);
+/* what you can't make yet: faded, and no count (the count is the cue that isn't only colour) */
+.craft-cell.dim .item-icon {
+  opacity: 0.4;
+  filter: grayscale(0.8);
 }
 
 .craft-can {
-  font-weight: var(--weight-heavy);
-  font-size: var(--text-sm);
   color: var(--surface-positive);
 }
 
@@ -331,6 +330,7 @@
   display: grid;
   align-content: start;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .craft-result {
@@ -351,37 +351,60 @@
 }
 
 .craft-big {
-  width: 64px;
-  height: 64px;
+  width: var(--c-recipe-result);
+  height: var(--c-recipe-result);
   flex: none;
   cursor: default;
 }
 
-.craft-sub {
-  margin-top: var(--space-1);
-}
-
+/* a slot per material (up to four), each with have / need, a tick or a cross */
 .craft-needs,
 .site-needs {
-  display: grid;
-  gap: var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.craft-needs li,
-.site-needs li {
+.craft-need {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--space-2);
+  justify-items: center;
+  gap: var(--space-0-5);
+}
+
+.craft-icon {
+  cursor: default;
+}
+
+.craft-need.short .craft-icon {
+  box-shadow:
+    var(--shadow-slot),
+    inset 0 0 0 2px var(--surface-negative);
+}
+
+.craft-mark {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  font-size: var(--text-2xs);
+  line-height: var(--leading-none);
+}
+
+.ok .craft-mark {
+  color: var(--surface-positive);
+}
+
+.short .craft-mark {
+  color: var(--surface-negative);
 }
 
 .craft-have {
   display: inline-flex;
   gap: var(--space-1-5);
   align-items: center;
+  font-size: var(--text-sm);
   font-weight: var(--weight-heavy);
   font-variant-numeric: tabular-nums;
 }
@@ -399,7 +422,6 @@
   flex-wrap: wrap;
   gap: var(--space-2-5);
   align-items: center;
-  margin-top: var(--space-1-5);
 }
 
 .craft-qty {
@@ -413,12 +435,22 @@
   padding: 0 var(--space-3);
 }
 
+[data-input='touch'] .craft-qty .btn {
+  min-height: var(--c-btn-h);
+}
+
 .craft-qty output {
   min-width: 2.2em;
   font-size: var(--text-lg);
   font-weight: var(--weight-heavy);
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+.craft-status {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--surface-text-muted);
 }
 
 .craft-progress {
@@ -441,6 +473,52 @@
   }
   to {
     width: 100%;
+  }
+}
+
+/* the landing: a copy of the result flies to the slot it went to (placed and aimed from the script), which pops */
+.craft-fly {
+  position: fixed;
+  z-index: var(--layer-drag);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  animation: craft-fly var(--dur-slow) var(--ease-out) forwards;
+}
+
+.craft-fly .item-icon {
+  width: 82%;
+  height: 82%;
+}
+
+@keyframes craft-fly {
+  0% {
+    transform: translate(0, 0) scale(1.25);
+  }
+  45% {
+    transform: translate(calc(var(--dx) * 0.45), calc(var(--dy) * 0.45 - 3rem)) scale(1.1);
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(1);
+  }
+}
+
+.slot.landed {
+  box-shadow:
+    var(--shadow-slot),
+    0 0 0 3px var(--surface-highlight);
+  animation: slot-pop var(--dur-base) var(--ease-out);
+}
+
+@keyframes slot-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
@@ -504,12 +582,13 @@
   color: var(--surface-text-muted);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .craft-body {
     grid-template-columns: 1fr;
   }
 
-  .craft-list {
-    max-height: 30vh;
+  .craft-grid {
+    grid-template-columns: repeat(auto-fill, var(--c-recipe-cell));
+    max-height: calc(2 * var(--c-recipe-cell) + var(--space-1) + 2 * var(--space-1-5));
   }
 }

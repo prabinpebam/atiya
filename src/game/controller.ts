@@ -566,16 +566,32 @@ export class GameController {
     return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.craftScreen && !s.chopperOpen && !s.talk && !this.sim.travel;
   }
 
+  /** The step buttons also work from the menu (its View group), which leaves the planet turning in sight behind it. */
+  private canStepView(): boolean {
+    const s = this.store.getState();
+    return this.canUseView() || (Boolean(s.menuOpen) && s.phase === 'playing' && !this.sim.travel);
+  }
+
+  /** Draws a frame while the canvas only draws on demand (a dialog is open); set by the scene. */
+  requestFrame: (() => void) | null = null;
+
+  /** The view is still easing toward a step (the scene keeps drawing until it settles). */
+  viewEasing(): boolean {
+    return this.view.yawPending !== 0 || Math.abs(this.view.pitch - this.view.targetPitch) > 0.01;
+  }
+
   /** Button step: +1 turns the scene counter-clockwise, −1 clockwise. */
   rotateViewStep(dir: 1 | -1): void {
-    if (!this.canUseView()) return;
+    if (!this.canStepView()) return;
     this.view.yawPending += dir * CONFIG.camera.rotateStepDeg * DEG;
+    this.requestFrame?.();
   }
 
   /** Button step: +1 tilts toward a top-down view, −1 toward a side view. */
   tiltViewStep(dir: 1 | -1): void {
-    if (!this.canUseView()) return;
+    if (!this.canStepView()) return;
     this.view.targetPitch = clampPitch(this.view.targetPitch + dir * CONFIG.camera.tiltStepDeg);
+    this.requestFrame?.();
   }
 
   /** Turn so north is screen-up, and restore the default tilt. The player stays put. */

@@ -9,10 +9,11 @@ import { CONFIG } from '../../config';
 import { arcDistance, clamp, moveAlong, tangentToward } from '../../math/sphere';
 import { faBone, faPaintRoller, faScrewdriverWrench } from '@fortawesome/free-solid-svg-icons';
 import { selectReducedMotion } from '../../state/store';
-import { itemDef } from '../../inventory/items';
+import { itemDef, type ItemId } from '../../inventory/items';
+import { HOTBAR } from '../../inventory/inventory';
 import { CRAFT_RADIUS } from '../layout';
 import { BED_U, DOGHOUSE, DOORWAY_U } from './models';
-import { BUILD_S, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, TARGET_REACH, colourName, craft, listNeeds, missing, parseSite, spendPaint, takeHouse, type HouseColour, type Recipe } from './recipes';
+import { BUILD_S, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, TARGET_REACH, colourName, craft, landedSlots, listNeeds, missing, parseSite, spendPaint, takeHouse, type HouseColour, type Recipe } from './recipes';
 import { CraftView } from './CraftView';
 import { CraftScreens } from './ui';
 
@@ -28,6 +29,8 @@ export interface CraftState {
   near: boolean;
   /** Hammering away at a recipe (the crafting screen's progress). */
   crafting: { recipe: Recipe; k: number; t: number } | null;
+  /** The last craft's results: which backpack slots they went to (the screen's landing animation). */
+  landed: { id: ItemId; slots: Array<{ i: number; n: number }> } | null;
 }
 
 export type CraftStore = ReturnType<typeof makeStore>;
@@ -65,7 +68,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
   const R = CONFIG.planetRadius;
   const site = controller.props.home?.dogHouse ?? null;
   const saved = load();
-  const store = makeStore({ built: Boolean(site) && saved.built, colour: saved.colour, building: null, near: false, crafting: null });
+  const store = makeStore({ built: Boolean(site) && saved.built, colour: saved.colour, building: null, near: false, crafting: null, landed: null });
   const inv = controller.inventory;
 
   // where Chopper stands to go in (outside the doorway), and where he sits inside on his bed, facing out
@@ -105,16 +108,21 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
   };
 
   const finishCraft = (r: Recipe, k: number) => {
+    const before = inv.backpack.map((s) => (s ? { ...s } : null));
     const res = craft(inv, r, k);
     if (!res) {
       controller.showToast(`Not enough materials for ${itemDef(r.out).name.toLowerCase()} now. Check your backpack.`);
       return;
     }
     if (res.left > 0) controller.throwStack({ id: r.out, n: res.left }, false);
+    const slots = landedSlots(before, inv.backpack, r.out);
+    store.setState({ landed: { id: r.out, slots } });
     controller.invChanged();
     controller.sound.pickup();
     const name = itemDef(r.out).name.toLowerCase();
-    controller.announce(`Crafted ${res.made} ${res.made === 1 || name.endsWith('s') ? name : `${name}s`}.${res.left ? ' Your backpack is full, so some dropped at your feet.' : ''}`);
+    const made = `${res.made} ${res.made === 1 || name.endsWith('s') ? name : `${name}s`}`;
+    const where = slots.length === 1 && slots[0].i < HOTBAR ? `in hotbar slot ${slots[0].i + 1}` : 'in your backpack';
+    controller.announce(res.left ? `Crafted ${made}; ${res.left} dropped at your feet: your backpack is full.` : `Crafted ${made}: ${where}.`);
   };
 
   const build = () => {

@@ -307,6 +307,15 @@
       "group": "Game UI"
     },
     {
+      "path": "game-ui/crafting-screen.md",
+      "title": "Crafting screen and HUD chrome",
+      "order": 42.7,
+      "icon": "handyman",
+      "status": "done",
+      "updated": "2026-09-27",
+      "group": "Game UI"
+    },
+    {
       "path": "game-ui/tokens.md",
       "title": "Design tokens",
       "order": 43,

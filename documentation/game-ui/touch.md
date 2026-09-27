@@ -2,7 +2,7 @@
 
 This is the working spec and plan for playing the planet on a smartphone: a floating stick you summon by touching anywhere, the gestures around it, and the HUD changes that make the rest of the game work under a thumb. The living rules are in [the design system](design-system.md) §10; the planet's control table is in [the planet spec](../poc-3d-navigation/spec.md) §4.5.
 
-> **TL;DR.** On a phone the planet already renders well, but it only listens like a desktop: one-finger drag turns the view, the only way to walk is to tap a spot, the prompts show <kbd>E</kbd>, the start card says W A S D, and the view buttons are 34 px. V2 makes one finger *walk*: touch anywhere on the planet and drag, and a stick appears under your thumb; push to the edge to run. A second finger (or two fingers together) turns and tilts the view, the compass buttons still do, and a tap still walks to a spot. The HUD follows the **last input you used** (touch or keys) rather than guessing from the device, so keycaps and copy swap on a hybrid laptop too. It all ships as a small chunk loaded only on touch-capable devices, so the desktop bundle and behaviour don't change.
+> **TL;DR.** On a phone the planet already renders well, but it only listens like a desktop: one-finger drag turns the view, the only way to walk is to tap a spot, the prompts show <kbd>E</kbd>, the start card says W A S D, and the view buttons are 34 px. V2 makes one finger *walk*: touch anywhere on the planet and drag, and a stick appears under your thumb; push to the edge to run. A second finger (or two fingers together) turns and tilts the view, the menu's View buttons do too (they replaced the buttons round the compass), and a tap still walks to a spot. The HUD follows the **last input you used** (touch or keys) rather than guessing from the device, so keycaps and copy swap on a hybrid laptop too. It all ships as a small chunk loaded only on touch-capable devices, so the desktop bundle and behaviour don't change.
 
 ## 1. Research: what the practice says
 
@@ -142,11 +142,11 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 |---|---|
 | Buttons (prompt, preview card, stand up, feed the ducks) | Keycaps (`<kbd>`) hidden |
 | Hotbar | Slot numbers hidden |
-| Prabin's welcome and How to play (they replaced the start card and the controls hint) | "Drag anywhere to walk; push to the edge to run. Tap a place to go there, and tap a prompt to use it." / "Turn and tilt the view with a second finger, or with the compass buttons." |
+| Prabin's welcome and How to play (they replaced the start card and the controls hint) | "Drag anywhere to walk; push to the edge to run. Tap a place to go there, and tap a prompt to use it." / "Turn and tilt the view with a second finger, or from the menu." |
 | Near a building (announced) | "Tap Open." instead of "Press E to open." |
-| View pad, Reset | 44 px (`c.view.btn-touch`, `c.btn.h`) |
+| Compass, Reset | 44 px (`c.compass`, `c.btn.h`); the view pad was removed (turning and tilting without a drag are in the menu) |
 | Short screens (a phone held sideways, ≤ 500 px tall) | Count as compact (`COMPACT_QUERY`), so the aside gives way to a lane card, and the preview card drops its summary: a 390 px screen can't hold both, or the full card |
-| Small phones upright (touch, ≤ 700 px tall; Safari's toolbars leave an iPhone 13 390 × 664) | The preview card drops its summary too, so it clears the view pad and Reset. At ≤ 600 px (an iPhone SE, 375 × 553) Reset moves beside the pad; the card may still cover the lower third of the tilt-down button there |
+| Small phones upright (touch, ≤ 700 px tall; Safari's toolbars leave an iPhone 13 390 × 664) | The preview card drops its summary too, so it clears the compass and Reset. At ≤ 600 px (an iPhone SE, 375 × 553) Reset moves beside the compass, so the card can't cover it |
 | Hotbar slots | Unchanged: 28 px at 360 px portrait (WCAG 2.5.8), 48 px in landscape. The one sanctioned exception to 44 px: nine slots, the backpack and the whistle must fit a phone held upright |
 
 ### 5.5 Platform hygiene
@@ -210,7 +210,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 | 1 | Touch and drag anywhere on the planet summons the stick; walking follows it, screen-relative | E2E "touch"; unit `touch.test.ts` | Done |
 | 2 | Push to the rim runs; back under 65 % walks | Unit (stick hysteresis), E2E (`run` class) | Done |
 | 3 | Lifting, `pointercancel` or hiding the page stops the character | E2E (position unchanged after lifting); unit (`reset`) | Done |
-| 4 | A second finger, or two together, turns and tilts the view; the compass buttons still do | E2E (north turns more than 20° while walking); unit (averaging) | Done |
+| 4 | A second finger, or two together, turns and tilts the view; the menu's View buttons still do | E2E (north turns more than 20° while walking); unit (averaging) | Done |
 | 5 | A tap still walks to a spot or uses a building (WCAG 2.5.7) | E2E | Done |
 | 6 | Keycaps and slot numbers hide, and the copy follows the last input | E2E (start card, hint, prompt keycap hidden); unit (`forTouch`) | Done |
 | 7 | View buttons and Reset are 44 px on touch | E2E (measured 44 × 44) | Done |

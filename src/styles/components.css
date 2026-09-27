@@ -151,6 +151,42 @@ kbd {
   border-top: var(--border-rule-lg) solid var(--accent, var(--surface-accent));
 }
 
+/* the menu's View group: turn and tilt (the single-pointer alternative to dragging the view) */
+.menu-view {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1-5);
+}
+
+/* A thin scrollbar that reads on wood and on paper (crafting-screen.md §4.4): the surface's muted text on no track */
+/* (on every dialog and wood panel too) */
+.dialog,
+.inv-panel,
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-text-muted) transparent;
+}
+
+.dialog::-webkit-scrollbar,
+.inv-panel::-webkit-scrollbar,
+.scroll-thin::-webkit-scrollbar {
+  width: var(--c-scrollbar);
+  height: var(--c-scrollbar);
+}
+
+.dialog::-webkit-scrollbar-track,
+.inv-panel::-webkit-scrollbar-track,
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dialog::-webkit-scrollbar-thumb,
+.inv-panel::-webkit-scrollbar-thumb,
+.scroll-thin::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--surface-text-muted);
+}
+
 /* How to play (the menu's help page): a key per item, the keycaps inline */
 .help-list li {
   margin-block: var(--space-1-5);

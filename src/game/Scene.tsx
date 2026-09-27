@@ -53,6 +53,15 @@ function SimDriver({ controller, planet }: { controller: GameController; planet:
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
+  const invalidate = useThree((s) => s.invalidate);
+
+  // the menu's View buttons turn the planet behind it, while the canvas draws only on demand
+  useEffect(() => {
+    controller.requestFrame = () => invalidate();
+    return () => {
+      controller.requestFrame = null;
+    };
+  }, [controller, invalidate]);
 
   // layout effect: the camera is switched to the empty layer before anything can be drawn
   useLayoutEffect(() => {
@@ -100,6 +109,7 @@ function SimDriver({ controller, planet }: { controller: GameController; planet:
     warm.current.start?.();
     controller.tick(delta);
     planet.current?.quaternion.copy(controller.sim.planetQ);
+    if (controller.viewEasing()) invalidate();
     if (warm.current.done && frames.current < 3 && ++frames.current === 3) controller.markReady();
   });
   return null;

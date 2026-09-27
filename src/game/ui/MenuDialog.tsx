@@ -132,6 +132,23 @@ export default function MenuDialog({ controller }: { controller: GameController 
                 ))}
               </ul>
             </section>
+            <section aria-labelledby="menu-view">
+              <h3 id="menu-view">View</h3>
+              <div className="menu-view" role="group" aria-label="Turn and tilt the view">
+                <button type="button" className="btn" onClick={() => controller.rotateViewStep(1)}>
+                  Rotate left <kbd>,</kbd>
+                </button>
+                <button type="button" className="btn" onClick={() => controller.rotateViewStep(-1)}>
+                  Rotate right <kbd>.</kbd>
+                </button>
+                <button type="button" className="btn" onClick={() => controller.tiltViewStep(1)}>
+                  Tilt to top <kbd>PgUp</kbd>
+                </button>
+                <button type="button" className="btn" onClick={() => controller.tiltViewStep(-1)}>
+                  Tilt to side <kbd>PgDn</kbd>
+                </button>
+              </div>
+            </section>
             <section aria-labelledby="menu-settings">
               <h3 id="menu-settings">Settings</h3>
               <label className="check">

@@ -57,7 +57,7 @@ export function GameApp({ controller }: { controller: GameController }) {
       </div>
       <p id="planet-help" className="sr-only">
         A small planet with seven places to visit. Walk close to a building to preview it and press E to open it. Use the landmark list or the
-        menu to travel directly. Drag the planet, or use the compass controls, to rotate and tilt the view; the compass button faces north
+        menu to travel directly. Drag the planet, or use the View buttons in the menu, to rotate and tilt the view; the compass button faces north
         again and Reset returns to the plaza. The classic website is always available from the header.
       </p>
       <Hud controller={controller} />

@@ -25,6 +25,8 @@ export interface Recipe {
 
 /** The most you can craft in one go. */
 export const BULK_MAX = 10;
+/** The most materials a recipe takes (crafting-screen.md §4.3: the detail has a slot for each). */
+export const MAX_NEEDS = 4;
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 const one = (id: ItemId, n: number): Need => ({ any: [id], n, label: itemDef(id).name, icon: id });
@@ -109,6 +111,19 @@ export function craft(inv: Inventory, r: Recipe, k: number): { made: number; lef
   for (const [id, n] of plan) inv.remove(id, n);
   const made = k * r.yield;
   return { made, left: inv.add(r.out, made) };
+}
+
+/**
+ * Where a craft's results went (crafting-screen.md §4.3): the backpack slots that gained `id` between
+ * `before` and `after`, the most first (at most `max`), for the landing animation.
+ */
+export function landedSlots(before: readonly Slot[], after: readonly Slot[], id: ItemId, max = 3): Array<{ i: number; n: number }> {
+  const out: Array<{ i: number; n: number }> = [];
+  after.forEach((s, i) => {
+    const was = before[i]?.id === id ? before[i]!.n : 0;
+    if (s?.id === id && s.n > was) out.push({ i, n: s.n - was });
+  });
+  return out.sort((a, b) => b.n - a.n || a.i - b.i).slice(0, max);
 }
 
 // ---------- Chopper's house (§4.3) ----------

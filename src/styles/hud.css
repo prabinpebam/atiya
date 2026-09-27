@@ -50,7 +50,7 @@ body.play {
   gap: var(--space-2);
 }
 
-/* narrow screens: the header stays on one line (smaller pills; the sound toggle shows its icon only) */
+/* narrow screens: the header stays on one line (smaller pills) */
 @media (max-width: 520px) {
   .play-header {
     padding: var(--space-2) var(--space-2-5);
@@ -73,13 +73,8 @@ body.play {
   .time-badge {
     display: none;
   }
-  .sound-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+  .play-header .btn.icon-btn {
+    padding: 0;
   }
 }
 
@@ -355,7 +350,7 @@ body.play {
   animation: card-fade var(--dur-base) var(--ease-out);
 }
 
-/* R3: view controls (compass pad + reset), right edge */
+/* R3: view controls (the compass and reset), right edge */
 .view-controls {
   position: absolute;
   right: var(--space-4);
@@ -366,17 +361,6 @@ body.play {
   gap: var(--space-2-5);
 }
 
-.view-pad {
-  display: grid;
-  grid-template:
-    'a up b' var(--c-view-btn)
-    'left compass right' var(--c-view-compass)
-    'c down d' var(--c-view-btn) / var(--c-view-btn) var(--c-view-compass) var(--c-view-btn);
-  gap: var(--space-1);
-  place-items: center;
-}
-
-.view-btn,
 .compass {
   display: grid;
   place-items: center;
@@ -388,41 +372,12 @@ body.play {
   box-shadow: var(--shadow-press);
 }
 
-.view-btn {
-  width: var(--c-view-btn);
-  height: var(--c-view-btn);
-  border-radius: var(--radius-round);
-}
-
-.view-btn .icon {
-  font-size: var(--text-md);
-}
-
-.view-btn:hover {
-  background: var(--surface-bg-warm);
-}
-
-.view-btn:active,
 .compass:active {
   transform: translateY(2px);
   box-shadow: var(--shadow-press-down);
 }
 
-.pad-up {
-  grid-area: up;
-}
-.pad-down {
-  grid-area: down;
-}
-.pad-left {
-  grid-area: left;
-}
-.pad-right {
-  grid-area: right;
-}
-
 .compass {
-  grid-area: compass;
   width: var(--c-view-compass);
   height: var(--c-view-compass);
   border-radius: var(--radius-round);
@@ -502,29 +457,17 @@ body.play {
 }
 
 /* Touch (touch.md §5.3–5.4): the HUD follows the last input. Keycaps and slot numbers are for keys,
- * and the view pad grows to the 44 px target. */
+ * and Reset grows to the 44 px target. */
 [data-input='touch'] .btn kbd,
 [data-input='touch'] .slot-key {
   display: none;
-}
-
-[data-input='touch'] .view-pad {
-  grid-template:
-    'a up b' var(--c-view-btn-touch)
-    'left compass right' var(--c-view-compass)
-    'c down d' var(--c-view-btn-touch) / var(--c-view-btn-touch) var(--c-view-compass) var(--c-view-btn-touch);
-}
-
-[data-input='touch'] .view-btn {
-  width: var(--c-view-btn-touch);
-  height: var(--c-view-btn-touch);
 }
 
 [data-input='touch'] .view-home {
   min-height: var(--c-btn-h);
 }
 
-/* a small phone upright (≤ 600 px tall): Reset sits beside the pad, so a preview card can't cover it */
+/* a small phone upright (≤ 600 px tall): Reset sits beside the compass, so a preview card can't cover it */
 @media (max-width: 720px) and (max-height: 600px) {
   [data-input='touch'] .view-controls {
     grid-auto-flow: column;
