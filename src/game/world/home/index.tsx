@@ -82,6 +82,10 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     });
   const nav = Family.navFor(world);
   family.nav = nav;
+  // a build changed what blocks (the viewing deck's steps): the grid is stamped again, the steps kept open
+  const reblock = () => family.obstaclesChanged(world, controller.navOpen);
+  if (controller.navOpen.length) reblock();
+  controller.obstacleWatch.push(reblock);
   // Chopper uses the same planner, and plays fetch with Prabin's stick (dogWorld is his view of the world)
   const dw = controller.dogWorld;
   dw.fetch = family.fetch;
@@ -106,6 +110,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
       world.rabbits = controller.wildlife?.rabbits ?? [];
       world.hours = controller.timeOfDay;
       world.swing = controller.swing;
+      world.deckSeat = controller.deckSeat;
       // the character's velocity in the planet's frame (for looking ahead when giving way)
       playerVel.copy(controller.sim.vel).applyQuaternion(controller.sim.planetQ.clone().invert());
       const aim = controller.store.getState().target?.key;

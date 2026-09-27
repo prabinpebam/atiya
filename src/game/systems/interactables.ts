@@ -109,7 +109,7 @@ export function buildTargets(layout: PropLayout, seats: readonly Seat[], chest: 
   layout.boulders.forEach((b, i) => {
     const r = 0.4 * b.scale;
     // a pickaxe's length back from the rock, so its head lands on the face
-    out.push({ kind: 'boulder', key: `boulder:${i}`, n: b.n, edgeU: r, reachU: REACH.boulder, standU: r + 0.62, index: i, scale: b.scale, markU: r + 0.24 });
+    out.push({ kind: 'boulder', key: `boulder:${i}`, n: b.n, edgeU: r, reachU: REACH.boulder, standU: r + 0.62, index: i, scale: b.scale, markU: r + 0.24, ...(b.iron ? { label: () => 'Mine iron ore' } : {}) });
   });
   for (const kind of Object.keys(layout.flowers) as FlowerKind[]) {
     layout.flowers[kind].forEach((f, i) => {
@@ -203,7 +203,7 @@ export function targetLabel(t: Target, flowerName?: string): string {
     case 'tree':
       return 'Shake tree';
     case 'boulder':
-      return 'Mine boulder';
+      return t.label?.() ?? 'Mine boulder';
     case 'flower':
       return `Pick ${flowerName ?? 'flower'}`;
     case 'chest':

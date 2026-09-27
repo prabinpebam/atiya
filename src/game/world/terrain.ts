@@ -85,6 +85,8 @@ export class Terrain {
   private readonly bounds: LandmarkBounds[];
   /** The flat pads under the structures (empty unless given). */
   pads: readonly Pad[] = [];
+  /** Built things you walk on (the viewing deck's steps and platform): each a height, or −∞ off it. */
+  private surfaces: Array<(n: Vector3) => number> = [];
   private specs: PadSpec[] = [];
 
   constructor(
@@ -253,6 +255,12 @@ export class Terrain {
     return d > edge + 0.12 ? -Infinity : h;
   }
 
+  /** Something built to walk on (a chunk's): `walkHeight` is the higher of it and the ground. Returns its remover. */
+  addSurface(s: (n: Vector3) => number): () => void {
+    this.surfaces.push(s);
+    return () => void (this.surfaces = this.surfaces.filter((x) => x !== s));
+  }
+
   /** Bridge deck height at `n` (or −∞ off the bridge). */
   deckHeight(n: Vector3): number {
     let best = -Infinity;
@@ -271,7 +279,8 @@ export class Terrain {
    * more than WADE_MAX_U under the surface), or the bridge deck where it's higher.
    */
   walkHeight(n: Vector3): number {
-    const deck = this.deckHeight(n);
+    let deck = this.deckHeight(n);
+    for (const s of this.surfaces) deck = Math.max(deck, s(n));
     const h = this.height(n);
     if (deck > -Infinity) return Math.max(h, deck);
     return this.inWater(n) ? Math.max(h, RIVER_WATER_U - WADE_MAX_U) : h;

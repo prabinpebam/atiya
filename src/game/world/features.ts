@@ -38,6 +38,8 @@ export interface MesaSpec {
   seed: number;
   /** Optional upper tier: offset (u, in the mesa's north/east frame), radius and extra height. */
   tier?: { north: number; east: number; radiusU: number; heightU: number };
+  /** The viewing deck's cliff (viewing-deck.md): its steps and platform can be built (deckSpec.ts). */
+  deck?: boolean;
 }
 
 export const MESA_SPECS: readonly MesaSpec[] = [
@@ -46,7 +48,9 @@ export const MESA_SPECS: readonly MesaSpec[] = [
   // two-tier terrace in the wide gap between the Post Office and Workshop paths
   { lat: 43.0, lon: -45.0, radiusU: 1.75, heightU: 0.75, seed: 4.1, tier: { north: -0.35, east: 0.2, radiusU: 0.95, heightU: 0.65 } },
   { lat: 38.0, lon: 160.0, radiusU: 1.3, heightU: 1.0, seed: 7.7 },
-  { lat: -15.0, lon: -100.0, radiusU: 1.9, heightU: 1.35, seed: 2.9, tier: { north: 0.3, east: -0.4, radiusU: 1.0, heightU: 0.7 } },
+  // the viewing deck's cliff near the home (viewing-deck.md): a wide lower terrace on the home's side
+  // for the steps, and an upper tier big enough for the platform
+  { lat: -15.0, lon: -100.0, radiusU: 3.2, heightU: 1.1, seed: 2.9, tier: { north: 0.56, east: -0.2, radiusU: 1.9, heightU: 0.8 }, deck: true },
 ];
 
 export interface River {
@@ -80,6 +84,7 @@ export interface Mesa {
   heightU: number;
   seed: number;
   tier?: MesaTier;
+  deck?: boolean;
 }
 
 /** Upper tier of a two-tier mesa. Its outline is sampled (`edge`) so it can be kept inside the base. */
@@ -222,7 +227,7 @@ export function buildMesas(cfg = CONFIG): Mesa[] {
     const n = latLonToVec(m.lat, m.lon);
     const north = localNorth(n);
     const east = new Vector3().crossVectors(north, n).normalize();
-    const mesa: Mesa = { n, north, east, radiusU: m.radiusU, heightU: m.heightU, seed: m.seed };
+    const mesa: Mesa = { n, north, east, radiusU: m.radiusU, heightU: m.heightU, seed: m.seed, deck: m.deck };
     if (m.tier) {
       const tn = moveAlong(moveAlong(n, north, m.tier.north / R), east, m.tier.east / R);
       mesa.tier = { n: tn, radiusU: m.tier.radiusU, heightU: m.tier.heightU, edge: tierOutline(mesa, tn, m.tier.radiusU, cfg) };

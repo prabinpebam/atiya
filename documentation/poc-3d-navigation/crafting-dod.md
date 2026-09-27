@@ -45,7 +45,7 @@ This is the acceptance checklist for [crafting.md](./crafting.md). A box is tick
   - *Evidence:* E2E (the card at 3 u, not at 11 u; 0 / 2, 0 / 2, 0 / 4, then 2 / 2, 2 / 2, 4 / 4); `screenshots/dog-house-site.png`.
 - [x] **Building:**
   - Without everything, E says what's still missing and builds nothing.
-  - With 2 stone slabs, 2 wooden beams and 4 planks, E builds it: the materials are taken, there's a build moment, and Chopper comes to it.
+  - With 2 stone slabs, 2 wooden beams, 4 planks and 6 nails (nails since the viewing deck), E builds it: the materials are taken, there's a build moment, and Chopper comes to it.
   - *Evidence:* unit "needs 2 stone slabs…", "building takes exactly the materials"; E2E (the toast, then the build; Chopper's behaviour is `house`); a real-GPU render of the build moment (dust, the house rising).
 - [x] **Saved:** the house stays built after a reload. It's solid (you can't walk through it).
   - *Evidence:* E2E (reload; before the build you can stand in its spot, after it there's nowhere to stand inside it).

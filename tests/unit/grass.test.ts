@@ -68,7 +68,11 @@ describe('grass zones (the real layout)', () => {
   });
 
   it('keeps the mesa tops a lawn (their collision discs are not bare ground)', () => {
-    for (const m of layout.mesas) expect(at(m.n).density).toBeGreaterThan(0.2);
+    // (the viewing deck's cliff is trodden: its platform stands over the middle of its top, viewing-deck.md)
+    for (const m of layout.mesas.filter((x) => !x.deck)) expect(at(m.n).density).toBeGreaterThan(0.2);
+    const deck = layout.deck!;
+    expect(at(deck.lower[0]).density).toBe(0);
+    expect(at(deck.centre).height).toBeLessThanOrEqual(GRASS_H.short + 0.03);
   });
 
   it('keeps the whole home short and never knee-high: it is lived in', () => {

@@ -9,6 +9,7 @@ import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
 import { SeatMotion, benchSeats, type Seat } from './systems/seating';
 import type { SwingPlace } from './world/home/family';
+import type { HomeSpot } from './world/homestead';
 import type { DuckFeed } from './systems/duckFeed';
 import { REACH, buildTargets, pickTarget, targetLabel, type Target } from './systems/interactables';
 import { ActionRunner, CYCLES, actionFor, type ActionKind, type BeatKind } from './systems/actions';
@@ -78,7 +79,20 @@ export interface CraftAttachment {
   /** Its screens in the HUD: the crafting screen, the palette and the site card. */
   Screens: ComponentType;
   step(dt: number): void;
-  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean; swing: SwingState | null };
+  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean; swing: SwingState | null; deck: DeckState | null };
+}
+
+/** The viewing deck (viewing-deck.md), for the test hook: how many of its three stages are built, the next one's ghost, its card, a build under way, and who sits on its bench. */
+export interface DeckState {
+  stage: number;
+  ghost: number;
+  near: boolean;
+  building: boolean;
+  /** The platform's floor and the lower terrace (u above the base sphere). */
+  deckH: number;
+  bench: { visitor: boolean; family: string | null };
+  /** The way up, corner by corner (planet-local), for the tests to walk. */
+  route: Array<[number, number, number]>;
 }
 
 /** The swing under the old oak (swing.md), for the test hook: built, going up, the ghost, its card, the seat's angle, and each jute plant's seconds until it's grown back (0: ready). */
@@ -180,6 +194,12 @@ export class GameController {
   ride: { tilt: number; pivot: number; pump: number } | null = null;
   /** The swing under the old oak (the crafting chunk's), shared with the family, who swing on it too. */
   swing: SwingPlace | null = null;
+  /** The viewing deck's bench, once it's built (the crafting chunk's), where the family sit now and then. */
+  deckSeat: HomeSpot | null = null;
+  /** Narrow ways the route planner keeps open (the deck's steps: its clearance would close them). */
+  navOpen: Array<{ a: Vector3; b: Vector3; r: number }> = [];
+  /** Told when a build changes what blocks (`replaceObstacles`): the route planner. */
+  readonly obstacleWatch: Array<() => void> = [];
   /** Crumbs tossed onto the pond from its bench, and where they draw the ducks (systems/duckFeed.ts, in the home's chunk; null until it's attached). */
   get duckFeed(): DuckFeed | null {
     return this.home?.ducks ?? null;
@@ -999,6 +1019,8 @@ export class GameController {
       const toMe = this.sim.pLocal.clone().addScaledVector(t.n, -this.sim.pLocal.dot(t.n)).normalize();
       const face = t.n.clone().addScaledVector(toMe, (t.edgeU * 0.9) / R).normalize().multiplyScalar(R + this.terrain.height(t.n) + 0.3 * t.scale);
       this.spawnDrop('stone', 1, face, 2.4, 1.1, 0.9);
+      // a boulder streaked with iron gives a lump of ore every third hit (viewing-deck.md)
+      if (this.props.boulders[t.index]?.iron && this.mineHits % 3 === 0) this.spawnDrop('iron', 1, face, 2.6, 0.9, 1.1);
       this.sound.hit();
     } else if (kind === 'pick' && b === 'pluck' && t.flower && this.harvest.pickFlower(t.flower, t.index)) {
       const at = t.n.clone().multiplyScalar(R + this.terrain.height(t.n) + 0.18);
@@ -1235,6 +1257,15 @@ export class GameController {
   }
 
   /** Something new and solid (Chopper's house, once built): the character, Chopper and the family keep out of it. */
+  /** A build changed what blocks (the deck's cliff): out with what `drop` matches, in with `add`, and the planners are told. */
+  replaceObstacles(drop: (o: Obstacle) => boolean, add: readonly Obstacle[]): void {
+    for (const list of [this.staticObstacles, this.sim.obstacles]) {
+      for (let i = list.length - 1; i >= 0; i--) if (drop(list[i])) list.splice(i, 1);
+      list.push(...add);
+    }
+    for (const f of this.obstacleWatch) f();
+  }
+
   addObstacle(o: Obstacle): void {
     this.staticObstacles.push(o);
     this.sim.obstacles.push(o);

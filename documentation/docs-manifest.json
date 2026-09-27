@@ -208,6 +208,15 @@
       "group": "Features"
     },
     {
+      "path": "poc-3d-navigation/viewing-deck.md",
+      "title": "The viewing deck, iron ore and nails",
+      "order": 33.6,
+      "icon": "stairs",
+      "status": "done",
+      "updated": "2026-09-28",
+      "group": "Features"
+    },
+    {
       "path": "poc-3d-navigation/chopper.md",
       "title": "Chopper",
       "order": 34,

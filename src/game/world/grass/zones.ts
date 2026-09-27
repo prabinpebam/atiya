@@ -148,6 +148,16 @@ export function grassRules(w: GrassWorld, full = false): GrassRules {
     for (const to of [home.table.n, home.fire.n, home.dogHouse.n, home.readingChair.n, home.mat.n, home.yard.wateringCan.n]) trodden.push(seg(door, to, 0.22));
     trodden.push(seg(home.table.n, home.shore.n, 0.2), seg(home.fire.n, home.table.n, 0.2));
   }
+  // the viewing deck (viewing-deck.md): bare under its stone steps (built or not), worn where you walk
+  // up to them, across the terrace and the lawn to the platform, and short under the platform
+  const deck = layout.deck;
+  if (deck) {
+    const [a, b] = deck.lower;
+    for (const t of [0, 0.5, 1]) bareDiscs.push(disc(a.clone().lerp(b, t), 0.6, 0.8));
+    wornDiscs.push(disc(a, 0.8, 1.9), disc(deck.centre, 1.3, 2.1));
+    const up = deck.upper;
+    trodden.push(seg(up[0], up[1], 0.3), seg(up[up.length - 2], up[up.length - 1], 0.3));
+  }
   const paths = geos.map((g) => seg(UP, g.n, 0.7));
   const pond = layout.pond;
   const cosPond = pond ? Math.cos(Math.min(Math.PI, (pond.radiusU * 1.35 + 0.4) / R)) : 1;

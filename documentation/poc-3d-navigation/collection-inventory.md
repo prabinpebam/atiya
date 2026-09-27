@@ -16,10 +16,11 @@ This follows established patterns rather than inventing new ones:
 | `leaves` | Leaves | 64 | Shaking any tree (2 per shake) |
 | `apple`, `orange` | Apple, Orange | 64 | Shaking a fruit tree while its fruit is ripe (6 per shake; the fruit regrows in 90 s) |
 | `stone` | Stone | 64 | Mining a boulder (1 per hit, 3 hits) |
+| `iron` | Iron ore | 64 | Mining a boulder streaked with rusty ore nuggets, one in three (every third hit also drops a lump; its prompt is **Mine iron ore**; [viewing-deck.md](./viewing-deck.md)) |
 | `tulip-<colour>`, `cosmos-<colour>`, `pansy-<colour>` | e.g. *Red tulip* | 64 | Picking a flower (the flower regrows in 60 s) |
 | `jute` | Jute | 64 | Picking a jute plant in the row behind the vegetable garden (2 per plant; it's cut to stubble and grows back in 90 s; [swing.md](./swing.md)) |
 
-Colours: red, pink, yellow, white, orange, purple, blue: the seven bloom colours the planet plants. That makes 26 items. Each has one icon (§6), and each colour is its own item, as in Minecraft and Animal Crossing, so stacks never mix colours.
+Colours: red, pink, yellow, white, orange, purple, blue: the seven bloom colours the planet plants. That makes 28 gathered items (the crafted ones are in [crafting.md](./crafting.md)). Each has one icon (§6), and each colour is its own item, as in Minecraft and Animal Crossing, so stacks never mix colours.
 
 The registry is `src/game/inventory/items.ts`: id, display name, max stack and icon key. A stack is `{ id, n }` with `1 ≤ n ≤ maxStack`; an empty slot is `null`.
 

@@ -36,6 +36,7 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'beam', out: 'beam', yield: 1, needs: [one('log', 2)], line: 'Two logs, squared off into one sturdy beam.' },
   { id: 'slab', out: 'slab', yield: 1, needs: [one('stone', 2)], line: 'Two stones, chiselled flat into a slab.' },
   { id: 'rope', out: 'rope', yield: 1, needs: [one('jute', 3)], line: 'Twist three bundles of jute into a strong rope.' },
+  { id: 'nails', out: 'nails', yield: 6, needs: [one('iron', 1)], line: 'Hammer a lump of iron ore into six sturdy nails.' },
   ...BLOOM_COLOURS.map(
     (c): Recipe => ({
       id: `paint-${c.name}`,
@@ -133,6 +134,7 @@ export const HOUSE_NEEDS: ReadonlyArray<{ id: ItemId; n: number }> = [
   { id: 'slab', n: 2 },
   { id: 'beam', n: 2 },
   { id: 'planks', n: 4 },
+  { id: 'nails', n: 6 },
 ];
 
 /** The swing under the old oak's branch (swing.md §4.4). */
@@ -142,6 +144,27 @@ export const SWING_NEEDS: ReadonlyArray<{ id: ItemId; n: number }> = [
 ];
 
 export type Needs = ReadonlyArray<{ id: ItemId; n: number }>;
+
+/** The viewing deck's three builds (viewing-deck.md §4): the lower steps, the upper steps, the platform. */
+export const DECK_NEEDS: readonly Needs[] = [
+  [
+    { id: 'slab', n: 4 },
+    { id: 'planks', n: 6 },
+    { id: 'beam', n: 3 },
+    { id: 'nails', n: 12 },
+  ],
+  [
+    { id: 'slab', n: 2 },
+    { id: 'planks', n: 6 },
+    { id: 'beam', n: 2 },
+    { id: 'nails', n: 12 },
+  ],
+  [
+    { id: 'planks', n: 8 },
+    { id: 'beam', n: 4 },
+    { id: 'nails', n: 18 },
+  ],
+];
 
 /** What's still short for a build (the house by default; empty when you can build it). */
 export function missing(inv: Inventory, needs: Needs = HOUSE_NEEDS): Array<{ id: ItemId; n: number; have: number }> {
@@ -160,7 +183,7 @@ export function listNeeds(items: ReadonlyArray<{ id: ItemId; n: number; have?: n
   const names = items.map((x) => {
     const n = x.n - (x.have ?? 0);
     const name = itemDef(x.id).name.toLowerCase();
-    return `${n} ${n === 1 || name.endsWith('s') ? name : `${name}s`}`;
+    return `${n} ${n === 1 || /(s|ore)$/.test(name) ? name : `${name}s`}`;
   });
   return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }

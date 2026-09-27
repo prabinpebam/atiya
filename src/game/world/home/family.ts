@@ -13,8 +13,8 @@ import { Vector3 } from 'three';
 import { arcDistance, moveAlong, resolvePenetration, tangentToward, type Obstacle } from '../../math/sphere';
 import { rotateAbout, transport, turnToward } from '../../math/steer';
 import type { HomeSpot, Homestead } from '../homestead';
-import { SphereNav, type NavBlock } from './nav';
-import { SIT_T, homeSeats, pickEntry, seatFacing, sitPath, type Seat } from './seats';
+import { SphereNav, type NavBlock, type NavCorridor } from './nav';
+import { SIT_T, homeSeats, pickEntry, seat, seatFacing, sitPath, type Seat } from './seats';
 import { GARDEN, type Garden } from './garden';
 
 export type NpcId = 'rojina' | 'laija' | 'lingjel' | 'prabin';
@@ -120,6 +120,8 @@ export interface FamilyWorld {
   garden?: Garden;
   /** The swing under the old oak (shared with the visitor), once the crafting chunk has it. */
   swing?: SwingPlace | null;
+  /** The family's end of the viewing deck's bench on the cliff, once it's built (viewing-deck.md). */
+  deckSeat?: HomeSpot | null;
 }
 
 /** The swing under the old oak (swing.md §6; the crafting chunk's): anyone may swing on it, one at a time. */
@@ -637,6 +639,18 @@ const ACTIVITIES: ActivityDef[] = [
     cooldown: 150,
     start: (f, npc, w) => f.swingFree(npc, w),
     run: (f, npc, w, dt) => f.rideSwing(npc, w, dt),
+  },
+  // ---- Prabin and Rojina: now and then a walk up the viewing deck's steps to sit on its bench and look out (viewing-deck.md)
+  {
+    id: 'deck',
+    who: ['prabin', 'rojina'],
+    weight: 0.9,
+    dur: [25, 40],
+    cooldown: 240,
+    start: (f, _n, w) => f.deckReady(w),
+    spot: (_f, _n, w) => w.deckSeat!,
+    seat: (f, npc) => f.seatFree('deck', npc),
+    pose: 'sitChair',
   },
   // ---- Rojina and Prabin: watering the vegetable garden with its one can, plant by plant (garden.ts)
   {
@@ -1191,6 +1205,22 @@ export class Family {
 
   // ---------------------------------------------------------------------------
   // seats (seats.ts): walk to an entry point, sit down onto the seat, stand up back to it
+
+  /** The viewing deck's built: its bench joins the seats. */
+  deckReady(w: FamilyWorld): boolean {
+    if (!w.deckSeat) return false;
+    if (!this.seats.some((s) => s.id === 'deck')) this.seats.push(seat('deck', 'deck', w.deckSeat, w.R));
+    return true;
+  }
+
+  /** What blocks changed (a build): the route grid is stamped again (`corridors` kept open), and everyone plans afresh. */
+  obstaclesChanged(w: FamilyWorld, corridors: readonly NavCorridor[]): void {
+    this.nav?.reblock(w.obstacles, corridors);
+    for (const npc of this.npcs) {
+      npc.near = [];
+      npc.route = null;
+    }
+  }
 
   /** The seat with this id, if nobody else has it. */
   seatFree(id: string, npc?: Npc): Seat | null {

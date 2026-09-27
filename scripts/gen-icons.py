@@ -89,6 +89,9 @@ ITEMS: dict[str, str] = {
     # the swing (swing.md): jute, picked behind the vegetable garden, and the rope made from it
     "jute": "a small bundle of long, soft golden-tan jute fibres, like a sheaf of straw-coloured strands, bound round the middle with a twist of the same fibre, the loose ends fanning out at both sides",
     "rope": "a neat coil of thick golden-brown twisted jute rope, three strands visibly twisted round each other, with one loose end hanging out of the coil and a small frayed tip",
+    # the viewing deck (viewing-deck.md): iron ore, mined from the rust-streaked boulders, and the nails made from it
+    "iron": "a fist-sized chunk of raw iron ore: a rough, angular dark charcoal-grey rock with rusty red-orange patches and streaks, and a few small glinting dark metallic crystal facets catching the light",
+    "nails": "a small loose bundle of four shiny steel nails with flat round heads, laid crossing each other at slight angles, cool silver-grey metal with a warm highlight along each shank and sharp points",
     "paint": "a small round tin paint pot with its lid off and a little wire handle, filled to the brim with glossy PURE WHITE paint, one thick white drip running down its grey metal side",
 }
 

@@ -40,6 +40,13 @@ const DIAG_SIDES: ReadonlyArray<[number, number]> = [
 ];
 const Q = Math.PI / 4;
 
+/** A narrow way kept open (the viewing deck's steps): every cell within `r` of the segment a → b that isn't wet. */
+export interface NavCorridor {
+  a: Vector3;
+  b: Vector3;
+  r: number;
+}
+
 export interface NavBlock {
   n: Vector3;
   /** Radius (u), grown by the grid's clearance like an obstacle. */
@@ -122,12 +129,34 @@ export class SphereNav {
     }
     this.blocked = new Uint8Array(N);
     this.temp = new Uint8Array(N);
-    for (let k = 0; k < N; k++) if (wet(this.centre(k, _p))) this.blocked[k] = 1;
-    for (const o of obstacles) if (o.radiusU > 0) this.stampDisc(o.n, o.radiusU + clearance, this.blocked, null);
+    this.wet = wet;
+    this.stampAll(obstacles, []);
     this.gCost = new Float32Array(N);
     this.came = new Int32Array(N);
     this.stamp = new Uint32Array(N);
     this.closed = new Uint32Array(N);
+  }
+
+  private readonly wet: (n: Vector3) => boolean;
+
+  /** Block the wet cells and the obstacles' (grown by the clearance), then open the corridors. */
+  private stampAll(obstacles: readonly Obstacle[], corridors: readonly NavCorridor[]): void {
+    const b = this.blocked;
+    b.fill(0);
+    for (let k = 0; k < this.count; k++) if (this.wet(this.centre(k, _p))) b[k] = 1;
+    for (const o of obstacles) if (o.radiusU > 0) this.stampDisc(o.n, o.radiusU + this.clearance, b, null);
+    const scratch = new Uint8Array(corridors.length ? this.count : 0);
+    for (const c of corridors) {
+      const steps = Math.max(1, Math.ceil((Math.acos(Math.min(1, c.a.dot(c.b))) * this.R) / (this.cellU * 0.5)));
+      const cells: number[] = [];
+      for (let i = 0; i <= steps; i++) this.stampDisc(_q.copy(c.a).lerp(c.b, i / steps).normalize(), c.r, scratch, cells);
+      for (const k of cells) if (!this.wet(this.centre(k, _p))) b[k] = 0;
+    }
+  }
+
+  /** What blocks changed (a build): stamp the grid again, keeping `corridors` open. */
+  reblock(obstacles: readonly Obstacle[], corridors: readonly NavCorridor[] = []): void {
+    this.stampAll(obstacles, corridors);
   }
 
   /** The point on the sphere at face `f`'s cell (i, j), which may lie past the face's edge. */

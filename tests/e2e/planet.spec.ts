@@ -1504,6 +1504,7 @@ test.describe("crafting & Chopper's house", () => {
     ghost: number;
     near: boolean;
     swing: { built: boolean; building: boolean; ghost: number; near: boolean; angle: number; rider: string | null; jute: number[] } | null;
+    deck: { stage: number; ghost: number; near: boolean; building: boolean; deckH: number; bench: { visitor: boolean; family: string | null }; route: Array<[number, number, number]> } | null;
   };
   const inv = (page: Page) => page.evaluate(() => (window as any).__game.inventory() as Inv);
   const count = (list: (string | null)[], id: string) => list.reduce((n, s) => n + (s && s.split(':')[0] === id ? Number(s.split(':')[1]) : 0), 0);
@@ -1725,6 +1726,78 @@ test.describe("crafting & Chopper's house", () => {
     expect((await craft(page)).swing!.built).toBe(true);
   });
 
+  test('the viewing deck: iron ore from a rusty boulder, nails at the table, three builds up the cliff, a real climb to its bench; it is remembered', async ({ page }) => {
+    test.setTimeout(300_000);
+    await startPlanet(page);
+    const g = (f: string, ...a: unknown[]) => page.evaluate(([f, a]) => (window as any).__game[f as string](...(a as unknown[])), [f, a] as const);
+    const deck = async () => (await craft(page)).deck!;
+    // iron: a rust-streaked boulder says so, and mining it gives iron ore with the stones
+    expect(await g('nearTarget', 'boulder', 'boulder:1')).toBe('boulder:1');
+    await expect(prompt(page).getByRole('button', { name: /Mine iron ore/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 3);
+    await expect.poll(async () => count((await inv(page)).backpack, 'iron'), { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
+    // nails: one lump of iron ore makes six at the crafting table
+    expect(await g('nearTarget', 'craft')).toBe('craft');
+    await page.keyboard.press('KeyE');
+    const screen = page.getByTestId('craft-screen');
+    await screen.getByRole('option', { name: /Nails/ }).click();
+    await expect(screen.getByRole('option', { name: /Nails/ })).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('Enter');
+    await fastForward(page, 1);
+    expect(count((await inv(page)).backpack, 'nails')).toBe(6);
+    await page.keyboard.press('Escape');
+    // stage 1 at the steps' foot: the ghost, the card, the build
+    expect(await g('nearTarget', 'site', 'site:deck1')).toBe('site:deck1');
+    await fastForward(page, 0.2);
+    expect((await deck()).stage).toBe(0);
+    expect((await deck()).ghost).toBeGreaterThan(0.7);
+    const card = page.getByTestId('site-card');
+    await expect(card).toHaveAttribute('data-site', 'deck1');
+    await expect(prompt(page).getByRole('button', { name: /See what the steps need/ })).toBeVisible();
+    await give(page, [['slab', 4], ['planks', 6], ['beam', 3], ['nails', 6]]);
+    await expect(prompt(page).getByRole('button', { name: /Build the steps/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 3);
+    expect((await deck()).stage).toBe(1);
+    await expect(page.getByTestId('live-region')).toContainText('You build the steps up the cliff!');
+    // the next two builds, from where the one before leads
+    for (const [k, needs, label] of [
+      [2, [['slab', 2], ['planks', 6], ['beam', 2], ['nails', 12]], /Build the upper steps/],
+      [3, [['planks', 8], ['beam', 4], ['nails', 18]], /Build the deck/],
+    ] as const) {
+      expect(await g('nearTarget', 'site', `site:deck${k}`)).toBe(`site:deck${k}`);
+      await fastForward(page, 0.2);
+      await expect(card).toHaveAttribute('data-site', `deck${k}`);
+      await give(page, needs as unknown as Array<[string, number]>);
+      await expect(prompt(page).getByRole('button', { name: label })).toBeVisible();
+      await page.keyboard.press('KeyE');
+      await fastForward(page, 3);
+      expect((await deck()).stage).toBe(k);
+    }
+    // the climb, for real: from the meadow at the foot, corner by corner, up to the platform
+    expect(await g('nearTarget', 'site', 'site:deck1', 1.2)).toBe('site:deck1');
+    const route = (await deck()).route;
+    for (const p of route) {
+      await g('walkTo', p);
+      await fastForward(page, 4);
+    }
+    const top = await page.evaluate(() => (window as any).__game.groundInfo());
+    expect(top.walk).toBeCloseTo((await deck()).deckH, 2);
+    // the bench: sit and look out; Escape stands up
+    expect(await g('nearTarget', 'bench', 'deck:bench')).toBe('deck:bench');
+    await expect(prompt(page).getByRole('button', { name: /Sit on the bench/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 1);
+    expect((await deck()).bench.visitor).toBe(true);
+    await page.keyboard.press('Escape');
+    await fastForward(page, 1);
+    expect((await deck()).bench.visitor).toBe(false);
+    // remembered
+    await startPlanet(page);
+    expect((await deck()).stage).toBe(3);
+  });
+
   test("Chopper's house: the ghost grows clearer as you come, the card says what's needed, E builds it, it's saved, solid and paintable", async ({ page }) => {
     test.setTimeout(200_000);
     await startPlanet(page);
@@ -1745,23 +1818,24 @@ test.describe("crafting & Chopper's house", () => {
     const card = page.getByTestId('site-card');
     await expect(card).toBeVisible();
     await expect(card.getByRole('heading', { name: "Chopper’s house" })).toBeVisible();
-    await expect(card.getByTestId('site-need')).toHaveText([/Stone slabs\s*0 \/ 2/, /Wooden beams\s*0 \/ 2/, /Planks\s*0 \/ 4/]);
+    await expect(card.getByTestId('site-need')).toHaveText([/Stone slabs\s*0 \/ 2/, /Wooden beams\s*0 \/ 2/, /Planks\s*0 \/ 4/, /Nails\s*0 \/ 6/]);
     // before it's built you can stand in its spot
     expect(await near(0.2)).toBe('site');
     // at the site: E says what's missing and builds nothing
     expect(await near()).toBe('site');
     await expect(prompt(page).getByRole('button', { name: /See what Chopper's house needs/ })).toBeVisible();
     await page.keyboard.press('KeyE');
-    await expect(page.locator('.toast')).toContainText("still needs 2 stone slabs, 2 wooden beams and 4 planks");
+    await expect(page.locator('.toast')).toContainText("still needs 2 stone slabs, 2 wooden beams, 4 planks and 6 nails");
     expect((await craft(page)).built).toBe(false);
     // with everything, the prompt changes and E builds it
     await give(page, [
       ['slab', 2],
       ['beam', 2],
       ['planks', 5],
+      ['nails', 6],
     ]);
     await expect(prompt(page).getByRole('button', { name: /Build Chopper's house/ })).toBeVisible();
-    await expect(card.getByTestId('site-need')).toHaveText([/2 \/ 2/, /2 \/ 2/, /4 \/ 4/]);
+    await expect(card.getByTestId('site-need')).toHaveText([/2 \/ 2/, /2 \/ 2/, /4 \/ 4/, /6 \/ 6/]);
     await page.keyboard.press('KeyE');
     let c = await craft(page);
     expect(c.built).toBe(true);

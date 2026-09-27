@@ -11,7 +11,7 @@ import { rotateAbout } from '../../math/steer';
 import { POND_BENCH, PROP_SCALE, SWING, type HomeSpot, type Homestead } from '../homestead';
 import { BENCH } from '../parts';
 
-export type SeatKind = 'dining' | 'armchair' | 'camp' | 'bench' | 'swing';
+export type SeatKind = 'dining' | 'armchair' | 'camp' | 'bench' | 'swing' | 'deck';
 
 export interface Seat {
   id: string;
@@ -44,6 +44,8 @@ export const SEAT_KINDS: Record<SeatKind, { top: number; back: number; entries: 
   // the swing's plank (drawn full size, craft/swingModels.ts): you get on from in front of it, or from either
   // side in front of the ropes (behind it is the oak, and someone may be standing right in front)
   swing: { top: (SWING.seatY + SWING.seatT / 2) / PROP_SCALE, back: 0.02, entries: [[0, 0.75], [60, 0.7], [-60, 0.7]] },
+  // the viewing deck's bench (drawn full size; viewing-deck.md): stepped up to from in front, on the platform
+  deck: { top: BENCH.seatTop / PROP_SCALE, back: 0.04, entries: [[0, 0.55], [25, 0.5], [-25, 0.5]] },
 };
 
 /** Seconds to sit down (entry point → seat) and to stand up (seat → entry point). */
@@ -55,7 +57,7 @@ export const hipAboveSeat = (bodyHeight: number) => 0.05 * bodyHeight;
 /** Where the hip joints go on a seat (u above the ground). */
 export const seatHip = (s: Seat, bodyHeight: number) => s.height + hipAboveSeat(bodyHeight);
 
-function seat(id: string, kind: SeatKind, spot: HomeSpot, R: number): Seat {
+export function seat(id: string, kind: SeatKind, spot: HomeSpot, R: number): Seat {
   const k = SEAT_KINDS[kind];
   const entries = k.entries.map(([deg, u]) => {
     const d = rotateAbout(spot.facing.clone(), spot.n, (deg * Math.PI) / 180);

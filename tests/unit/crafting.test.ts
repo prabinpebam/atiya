@@ -54,8 +54,9 @@ const inv = (items: Array<[ItemId, number]> = []) => {
 };
 
 describe('crafting: recipes (crafting.md §4.1)', () => {
-  it('has planks, a beam, a slab, jute rope and a paint for each of the 7 bloom colours', () => {
-    expect(RECIPES.map((x) => x.id)).toEqual(['planks', 'beam', 'slab', 'rope', ...BLOOM_COLOURS.map((c) => `paint-${c.name}`)]);
+  it('has planks, a beam, a slab, jute rope, nails and a paint for each of the 7 bloom colours', () => {
+    expect(RECIPES.map((x) => x.id)).toEqual(['planks', 'beam', 'slab', 'rope', 'nails', ...BLOOM_COLOURS.map((c) => `paint-${c.name}`)]);
+    expect(r('nails')).toMatchObject({ out: 'nails', yield: 6, needs: [{ any: ['iron'], n: 1 }] });
     expect(r('rope')).toMatchObject({ out: 'rope', yield: 1, needs: [{ any: ['jute'], n: 3 }] });
     expect(r('planks')).toMatchObject({ out: 'planks', yield: 4, needs: [{ any: ['log'], n: 1 }] });
     expect(r('beam')).toMatchObject({ out: 'beam', yield: 1, needs: [{ any: ['log'], n: 2 }] });
@@ -205,22 +206,25 @@ describe('inventory: remove (crafting and building)', () => {
 });
 
 describe("Chopper's house: requirements and paint (crafting.md §4.3)", () => {
-  it('needs 2 stone slabs, 2 wooden beams and 4 planks, and says what is missing', () => {
+  it('needs 2 stone slabs, 2 wooden beams, 4 planks and 6 nails, and says what is missing', () => {
     expect(HOUSE_NEEDS).toEqual([
       { id: 'slab', n: 2 },
       { id: 'beam', n: 2 },
       { id: 'planks', n: 4 },
+      { id: 'nails', n: 6 },
     ]);
     const a = inv([
       ['slab', 2],
       ['planks', 1],
+      ['nails', 6],
     ]);
     expect(missing(a)).toEqual([
       { id: 'beam', n: 2, have: 0 },
       { id: 'planks', n: 4, have: 1 },
     ]);
     expect(listNeeds(missing(a))).toBe('2 wooden beams and 3 planks');
-    expect(listNeeds(HOUSE_NEEDS)).toBe('2 stone slabs, 2 wooden beams and 4 planks');
+    expect(listNeeds(HOUSE_NEEDS)).toBe('2 stone slabs, 2 wooden beams, 4 planks and 6 nails');
+    expect(listNeeds([{ id: 'iron', n: 2 }])).toBe('2 iron ore');
     expect(takeHouse(a)).toBe(false);
     expect(a.count('slab')).toBe(2);
   });
@@ -230,10 +234,11 @@ describe("Chopper's house: requirements and paint (crafting.md §4.3)", () => {
       ['slab', 3],
       ['beam', 2],
       ['planks', 8],
+      ['nails', 7],
     ]);
     expect(missing(a)).toEqual([]);
     expect(takeHouse(a)).toBe(true);
-    expect([a.count('slab'), a.count('beam'), a.count('planks')]).toEqual([1, 0, 4]);
+    expect([a.count('slab'), a.count('beam'), a.count('planks'), a.count('nails')]).toEqual([1, 0, 4, 1]);
   });
 
   it('paints with one pot of a paint you have; Original red is free', () => {

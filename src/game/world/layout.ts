@@ -7,6 +7,7 @@ import { nearPlateauRim } from './cliffs';
 import { buildMesas, buildRiver, findBridges, mesaDir, mesaPolar, mesaRadius, riverDistance, tierEdge, tierPolar, type Bridge, type Mesa, type River } from './features';
 import { pondAngle, pondFrame, shoreRadius } from './pond';
 import { HOME_R, POND_BENCH, homesteadLayout, type Homestead } from './homestead';
+import { DECK, deckFootprint, deckSite, type DeckSite } from './deckSpec';
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
 export const FLOWER_KINDS: FlowerKind[] = ['tulip', 'cosmos', 'pansy'];
@@ -20,6 +21,8 @@ export interface PropInstance {
   tint: number;
   /** Ground height (u above the base sphere), filled in once the terrain is known. */
   h?: number;
+  /** A boulder streaked with iron ore (mining it gives iron too: viewing-deck.md). */
+  iron?: boolean;
 }
 
 export type FurnitureKind = 'lamp' | 'bench' | 'planter' | 'notice';
@@ -83,6 +86,8 @@ export interface PropLayout {
   river: River | null;
   bridges: Bridge[];
   mesas: Mesa[];
+  /** Where the viewing deck's steps and platform go (viewing-deck.md), or null without its cliff. */
+  deck: DeckSite | null;
   /** Everything that blocks movement (landmarks are added by the controller). */
   obstacles: Obstacle[];
 }
@@ -235,7 +240,8 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
       if (!n) continue;
       const inst = { n, scale, yaw: rand() * Math.PI * 2, tint: rand() };
       (isCedar ? cedar : hardwood).push(inst);
-      mesaTop.push(inst);
+      // (the viewing deck's cliff can be climbed once its steps are built: its trees block)
+      if (!m.deck) mesaTop.push(inst);
     }
   });
 
@@ -566,6 +572,61 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     furniture.push({ kind: 'bench', n: home.pondBench.n.clone(), facing: home.pondBench.facing.clone(), sitSide: -POND_BENCH.side, byPond: true });
   }
 
+  // the viewing deck's cliff (viewing-deck.md): nothing stands on its steps or its platform (no crown
+  // over them either), and it keeps a tree on each level where it frames them
+  const deck = deckSite(mesas, cfg);
+  if (deck) {
+    const zone = deckFootprint(deck, cfg);
+    const inZone = (n: Vector3, pad: number) => zone.some((z) => arcDistance(n, z.n, R) < z.r + pad);
+    const clearOf = <T extends PropInstance>(list: T[], pad: (p: T) => number) => {
+      for (let i = list.length - 1; i >= 0; i--) if (inZone(list[i].n, pad(list[i]))) list.splice(i, 1);
+    };
+    for (const list of [hardwood, fruit, cedar, trees]) clearOf(list, (p) => canopyRadius(cedar.includes(p)) * p.scale * 0.85);
+    for (const list of [bushes, flowerBushes, allBushes, rocks, boulders]) clearOf(list, (p) => 0.5 * p.scale + 0.25);
+    for (const list of [pebbles, sprigs, grass]) clearOf(list, () => 0.1);
+    for (const k of FLOWER_KINDS) clearOf(flowers[k], () => 0.15);
+    const m = deck.mesa;
+    const t = m.tier!;
+    const onIt = (n: Vector3) => arcDistance(n, m.n, R) < m.radiusU + 0.5;
+    const plant = (onTier: boolean, isCedar: boolean, scale: number) => {
+      // (one's still there)
+      const level = (n: Vector3) => (onTier ? arcDistance(n, t.n, R) < t.radiusU : onIt(n) && arcDistance(n, t.n, R) > t.radiusU + 0.2 && arcDistance(n, m.n, R) < m.radiusU);
+      if (hardwood.concat(cedar).some((p) => level(p.n))) return;
+      const c = onTier ? t.n : m.n;
+      // from the back of the level (away from the view) round both ways: the first spot clear of the rims and the build
+      for (let k = 0; k < 40; k++) {
+        const a = DECK.face + Math.PI + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.16;
+        const edge = onTier ? tierEdge(t, a) : mesaRadius(m.radiusU, m.seed, a);
+        for (let f = 0.35; f <= 0.95; f += 0.06) {
+          const n = moveAlong(c, mesaDir(m, c, a), (edge * f) / R);
+          if (!mesaTopClearance(m, n, isCedar, scale, onTier, cfg) || inZone(n, canopyRadius(isCedar) * scale * 0.7)) continue;
+          (isCedar ? cedar : hardwood).push({ n, scale, yaw: a * 3.1, tint: 0.4 });
+          return;
+        }
+      }
+    };
+    // (on the terrace a hardwood tall enough that its crown clears the upper tier)
+    plant(false, false, 0.8);
+    // and one on the meadow beside the steps' foot, framing the way up
+    const foot = deck.lower[0];
+    const out = tangentToward(m.n, foot);
+    if (out && !trees.some((p) => arcDistance(p.n, foot, R) < 3.2)) {
+      search: for (const dr of [2.4, 2.9, 3.4]) {
+        for (const da of [0.5, -0.5, 0.8, -0.8, 1.1]) {
+          const a = DECK.face + DECK.lower[0][0] + da * (dr > 2.5 ? 0.8 : 1);
+          const n = moveAlong(m.n, mesaDir(m, m.n, a), (mesaRadius(m.radiusU, m.seed, a) + dr) / R);
+          const scale = 0.95;
+          if (inZone(n, canopyRadius(false) * scale * 0.85) || blocked(n, { river: 0.9, mesa: canopyRadius(false) * scale + 0.15 }) || corridor(n) < 1.35) continue;
+          if (nearLandmark(n, 1.9) || inPond(n, 1) || trees.some((p) => arcDistance(p.n, n, R) < 1.7)) continue;
+          const inst = { n, scale, yaw: a * 2.3, tint: 0.55 };
+          hardwood.push(inst);
+          trees.push(inst);
+          break search;
+        }
+      }
+    }
+  }
+
   // keep the special targets (the chest, the crafting table, Chopper's house site) apart from every
   // other usable thing, so walking up to one never offers another by mistake: no flowers inside
   // KEEP_CLEAR of them, and no tree, bush, rock or boulder whose edge is within KEEP_SOLID of theirs
@@ -576,6 +637,8 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     home && { n: home.swing.n, r: HOME_R.swing },
     ...bridgeSpots.map((f) => ({ n: f.n, r: FURNITURE_RADIUS[f.kind] })),
     home && { n: home.pondBench.n, r: FURNITURE_RADIUS.bench },
+    // the viewing deck's first build site, at the steps' foot
+    deck && { n: deck.lower[0], r: 0.3 },
   ].filter(Boolean) as { n: Vector3; r: number }[];
   if (specials.length) {
     const near = (p: PropInstance, pad: number) => specials.some((s) => arcDistance(p.n, s.n, R) < s.r + pad);
@@ -607,7 +670,12 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     ...(home?.obstacles ?? []),
   ];
 
-  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, furniture, chest, craft, home, pond, river, bridges, mesas, obstacles };
+  // one boulder in three is streaked with iron ore (viewing-deck.md)
+  boulders.forEach((b, i) => {
+    if (i % 3 === 1) b.iron = true;
+  });
+
+  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, furniture, chest, craft, home, pond, river, bridges, mesas, deck, obstacles };
 }
 
 /** Rails along both sides of each bridge deck. */

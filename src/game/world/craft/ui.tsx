@@ -10,7 +10,7 @@ import { ItemIcon } from '../../ui/Inventory';
 import InventoryPanel from '../../ui/InventoryPanel';
 import { selectReducedMotion } from '../../state/store';
 import type { Crafting } from './index';
-import { BULK_MAX, CRAFT_S, HOUSE_HEX, HOUSE_NEEDS, MAX_NEEDS, SWING_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
+import { BULK_MAX, CRAFT_S, DECK_NEEDS, HOUSE_HEX, HOUSE_NEEDS, MAX_NEEDS, SWING_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
 
 /** The crafting screen, the palette for Chopper's house, and the site card (crafting.md §4.2, §4.3). */
 export function CraftScreens({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
@@ -30,7 +30,7 @@ export function CraftScreens({ controller, crafting }: { controller: GameControl
 
 const plural = (id: Parameters<typeof itemDef>[0], n: number) => {
   const name = itemDef(id).name;
-  return n === 1 || name.endsWith('s') ? name : `${name}s`;
+  return n === 1 || /(s|ore)$/.test(name) ? name : `${name}s`;
 };
 
 /** "1 wood log", "3 red flowers (any kind)". */
@@ -360,6 +360,28 @@ const SITES = {
     text: 'This old oak’s long, level branch is just right for a swing. Everyone at home would love one here.',
     needs: SWING_NEEDS,
     hint: 'Pick jute behind the vegetable garden and make rope and planks at the crafting table.',
+  },
+  // the viewing deck's three builds (viewing-deck.md §4.4)
+  deck1: {
+    kicker: 'A way up the cliff',
+    title: 'The steps',
+    text: 'Stone steps from the meadow, then wooden flights winding round the cliff to its terrace. The view from up there must be something.',
+    needs: DECK_NEEDS[0],
+    hint: 'Make slabs, planks, beams and nails at the crafting table. Nails come from the iron ore in the rust-streaked boulders.',
+  },
+  deck2: {
+    kicker: 'Higher still',
+    title: 'The upper steps',
+    text: 'From this terrace, a second flight could wind up round the upper cliff to the very top.',
+    needs: DECK_NEEDS[1],
+    hint: 'Make slabs, planks, beams and nails at the crafting table. Nails come from the iron ore in the rust-streaked boulders.',
+  },
+  deck3: {
+    kicker: 'A place to look out',
+    title: 'The viewing deck',
+    text: 'A wooden platform up here, with a railing, a bench and little lanterns, would be the best seat on the whole planet.',
+    needs: DECK_NEEDS[2],
+    hint: 'Make planks, beams and nails at the crafting table.',
   },
 } as const;
 

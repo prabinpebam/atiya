@@ -17,7 +17,7 @@ export type BloomColour = (typeof BLOOM_COLOURS)[number]['name'];
 
 export type FlowerItemId = `${FlowerItemKind}-${BloomColour}`;
 export type PaintId = `paint-${BloomColour}`;
-export type ItemId = 'log' | 'leaves' | 'apple' | 'orange' | 'stone' | 'jute' | 'planks' | 'beam' | 'slab' | 'rope' | FlowerItemId | PaintId;
+export type ItemId = 'log' | 'leaves' | 'apple' | 'orange' | 'stone' | 'iron' | 'jute' | 'planks' | 'beam' | 'slab' | 'rope' | 'nails' | FlowerItemId | PaintId;
 
 export interface ItemDef {
   id: ItemId;
@@ -38,6 +38,8 @@ const BASE: ItemDef[] = [
   { id: 'apple', name: 'Apple', maxStack: 64, icon: 'apple', model: 'fruit', tint: '#e8453c' },
   { id: 'orange', name: 'Orange', maxStack: 64, icon: 'orange', model: 'fruit', tint: '#ff9a2e' },
   { id: 'stone', name: 'Stone', maxStack: 64, icon: 'stone', model: 'stone', tint: '#9a978f' },
+  // mined from the rust-streaked boulders (viewing-deck.md)
+  { id: 'iron', name: 'Iron ore', maxStack: 64, icon: 'iron', model: 'stone', tint: '#8a5440' },
   // picked from the jute row behind the vegetable garden (swing.md)
   { id: 'jute', name: 'Jute', maxStack: 64, icon: 'jute', model: 'leaves', tint: '#d9b86a' },
   // crafted at the crafting table (crafting.md)
@@ -45,6 +47,7 @@ const BASE: ItemDef[] = [
   { id: 'beam', name: 'Wooden beam', maxStack: 64, icon: 'beam', model: 'log', tint: '#b8844f' },
   { id: 'slab', name: 'Stone slab', maxStack: 64, icon: 'slab', model: 'stone', tint: '#b9b5ab' },
   { id: 'rope', name: 'Jute rope', maxStack: 64, icon: 'rope', model: 'log', tint: '#c09050' },
+  { id: 'nails', name: 'Nails', maxStack: 64, icon: 'nails', model: 'stone', tint: '#b8c0c8' },
 ];
 
 const FLOWERS: ItemDef[] = FLOWER_ITEM_KINDS.flatMap((k) =>

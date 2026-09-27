@@ -1,7 +1,7 @@
 /**
- * The crafting chunk (docs: crafting.md, swing.md): the crafting table, Chopper's house (its ghost,
+ * The crafting chunk (docs: crafting.md, swing.md, viewing-deck.md): the crafting table, Chopper's house (its ghost,
  * the build, the paint), the old oak's swing (its ghost, the build; riding it and pushing whoever's on it), the jute row behind
- * the vegetable garden, and their screens. Loaded alongside the textures (`game-mount.tsx`) and
+ * the vegetable garden, the viewing deck on the cliff (deck.tsx), and their screens. Loaded alongside the textures (`game-mount.tsx`) and
  * attached to the controller before the scene mounts.
  */
 import { createStore } from 'zustand/vanilla';
@@ -24,6 +24,7 @@ import { BUILD_S, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, SWING_NEEDS, TARGET_R
 import { CraftView } from './CraftView';
 import { SwingView } from './SwingView';
 import { CraftScreens } from './ui';
+import { attachDeck } from './deck';
 
 const KEY = 'site.dogHouse';
 const SWING_KEY = 'site.swing';
@@ -37,10 +38,13 @@ export interface CraftState {
   /** Seconds into the build moment (null when not building). */
   building: number | null;
   /** The site card is up, and for which site. */
-  near: 'house' | 'swing' | null;
+  near: 'house' | 'swing' | 'deck1' | 'deck2' | 'deck3' | null;
   swingBuilt: boolean;
   /** Seconds into the swing's build (null when not building). */
   swingBuilding: number | null;
+  /** How many of the viewing deck's three builds are up (viewing-deck.md), and seconds into the one going up (null when not building). */
+  deckStage: number;
+  deckBuilding: number | null;
   /** Hammering away at a recipe (the crafting screen's progress). */
   crafting: { recipe: Recipe; k: number; t: number } | null;
   /** The last craft's results: which backpack slots they went to (the screen's landing animation). */
@@ -106,7 +110,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
   const saved = load();
   const home = controller.props.home;
   const swingSaved = loadSwing();
-  const store = makeStore({ built: Boolean(site) && saved.built, colour: saved.colour, building: null, near: null, swingBuilt: Boolean(home) && swingSaved, swingBuilding: null, crafting: null, landed: null });
+  const store = makeStore({ built: Boolean(site) && saved.built, colour: saved.colour, building: null, near: null, swingBuilt: Boolean(home) && swingSaved, swingBuilding: null, deckStage: 0, deckBuilding: null, crafting: null, landed: null });
   const inv = controller.inventory;
 
   // where Chopper stands to go in (outside the doorway), and where he sits inside on his bed, facing out
@@ -202,7 +206,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
     controller.invChanged();
     controller.sound.pickup();
     const name = itemDef(r.out).name.toLowerCase();
-    const made = `${res.made} ${res.made === 1 || name.endsWith('s') ? name : `${name}s`}`;
+    const made = `${res.made} ${res.made === 1 || /(s|ore)$/.test(name) ? name : `${name}s`}`;
     const where = slots.length === 1 && slots[0].i < HOTBAR ? `in hotbar slot ${slots[0].i + 1}` : 'in your backpack';
     controller.announce(res.left ? `Crafted ${made}; ${res.left} dropped at your feet: your backpack is full.` : `Crafted ${made}: ${where}.`);
   };
@@ -374,11 +378,14 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
     });
   }
 
+  const deck = attachDeck(controller, store);
+
   return {
     View: () => (
       <>
         <CraftView controller={controller} crafting={crafting} />
         <SwingView controller={controller} crafting={crafting} />
+        {deck && <deck.View />}
       </>
     ),
     Screens: () => <CraftScreens controller={controller} crafting={crafting} />,
@@ -394,7 +401,9 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
       crafting.swingGhost = s.swingBuilt ? 0 : clamp((GHOST_FAR - ds) / (GHOST_FAR - GHOST_NEAR), 0, 1);
       const free = g.phase === 'playing' && !g.traveling && !g.openId && !g.craftScreen && !g.invScreen && !g.talk && !g.chopperOpen;
       const key = g.target?.key;
-      const near = !free ? null : site && !s.built && key === 'site' ? 'house' : home && !s.swingBuilt && key === 'site:swing' ? 'swing' : null;
+      const deckNear = free ? deck?.near(key) : null;
+      const near = !free ? null : site && !s.built && key === 'site' ? 'house' : home && !s.swingBuilt && key === 'site:swing' ? 'swing' : deckNear ? (`deck${deckNear}` as const) : null;
+      deck?.step(dt);
       if (near !== s.near) store.setState({ near });
       if (Boolean(near) !== g.siteNear) controller.store.setState({ siteNear: Boolean(near) });
       // the jute grows back; the swing swings (frozen while ambient motion is paused)
@@ -460,6 +469,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
         ghost: crafting.ghost,
         near: s.near === 'house',
         swing: sw ? { built: s.swingBuilt, building: s.swingBuilding !== null, ghost: crafting.swingGhost, near: s.near === 'swing', angle: sw.pendulum.a, rider: link?.rider ?? null, jute: [...crafting.jute.left] } : null,
+        deck: deck?.state() ?? null,
       };
     },
   };

@@ -14,6 +14,8 @@ All 3D geometry in the POC is **original**, built procedurally from three.js pri
 
 **Swing icons (original, 2026-09-27):** 2 more icons, jute (a bundle of fibre) and a coil of jute rope, made the same way (GPT Image 2.5, `scripts/gen-icons.py`, image-to-image against the same frozen golden set). The old oak, the jute plants, the swing and its ghost, and the ducks' nest are original kit geometry.
 
+**Viewing deck icons (original, 2026-09-28):** 2 more icons, iron ore (a rusty lump of ore) and nails, made the same way (GPT Image 2.5, `scripts/gen-icons.py`, image-to-image against the same frozen golden set; prompts in `assets-src/icons/iron.prompt.txt` and `nails.prompt.txt`). The steps, the platform, its bench and lanterns, and the ore nuggets on the boulders are procedural geometry (`src/game/world/craft/deckModels.ts`); no third-party assets.
+
 **Cobblestones (original, 2026-09-26):** the cobble tile (`textures/cobble.png`) is pale flagstones, regenerated with GPT Image 2.5 by the texture style pipeline (below). It replaces the same day's earlier chunky-cobble tile. `cobble-normal` is derived from it by `scripts/build-textures.py`. Prompts: `textures/cobble.prompt.txt`, `textures/cobble-normal.prompt.txt`.
 
 **Texture style pipeline (original, 2026-09-26):** `surf-brick`, `surf-stone`, `surf-plaster` and `cobble` were regenerated with GPT Image 2.5 by `scripts/gen-textures.py`, image-to-image against the frozen golden references in `textures/style/`:
