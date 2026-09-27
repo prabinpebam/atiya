@@ -10,8 +10,9 @@ import { arcDistance, clamp, moveAlong, tangentToward } from '../../math/sphere'
 import { faBone, faPaintRoller, faScrewdriverWrench } from '@fortawesome/free-solid-svg-icons';
 import { selectReducedMotion } from '../../state/store';
 import { itemDef } from '../../inventory/items';
+import { CRAFT_RADIUS } from '../layout';
 import { BED_U, DOGHOUSE, DOORWAY_U } from './models';
-import { BUILD_S, CARD_U, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, colourName, craft, listNeeds, missing, parseSite, spendPaint, takeHouse, type HouseColour, type Recipe } from './recipes';
+import { BUILD_S, CARD_U, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, TARGET_REACH, colourName, craft, listNeeds, missing, parseSite, spendPaint, takeHouse, type HouseColour, type Recipe } from './recipes';
 import { CraftView } from './CraftView';
 import { CraftScreens } from './ui';
 
@@ -133,6 +134,55 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
     controller.refreshTarget();
   };
 
+  // the crafting table and the house's site are targets that answer for themselves (their prompt, E, the icon)
+  const table = controller.props.craft;
+  if (table)
+    controller.targets.push({
+      kind: 'craft',
+      key: 'craft',
+      n: table.n,
+      edgeU: CRAFT_RADIUS,
+      reachU: TARGET_REACH.table,
+      standU: CRAFT_RADIUS + 0.45,
+      index: 0,
+      facing: table.facing,
+      scale: 1,
+      use: () => controller.openCraft('table'),
+      icon: () => faScrewdriverWrench,
+    });
+  if (site)
+    controller.targets.push({
+      kind: 'site',
+      key: 'site',
+      n: site.n,
+      edgeU: HOUSE_R,
+      reachU: TARGET_REACH.site,
+      standU: 1.1,
+      index: 0,
+      facing: site.facing,
+      scale: 1,
+      label() {
+        const s = store.getState();
+        if (s.built) return "Paint Chopper's house";
+        return missing(inv).length ? "See what Chopper's house needs" : "Build Chopper's house";
+      },
+      use() {
+        const s = store.getState();
+        if (s.building !== null) return;
+        if (s.built) {
+          controller.openCraft('paint');
+          return;
+        }
+        const miss = missing(inv);
+        if (miss.length) {
+          controller.showToast(`Chopper's house still needs ${listNeeds(miss)}. Craft them at the crafting table by the Workshop.`);
+          return;
+        }
+        build();
+      },
+      icon: () => (store.getState().built ? faPaintRoller : faBone),
+    });
+
   return {
     View: () => <CraftView controller={controller} crafting={crafting} />,
     Screens: () => <CraftScreens controller={controller} crafting={crafting} />,
@@ -161,26 +211,6 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
           finishCraft(s.crafting.recipe, s.crafting.k);
         } else store.setState({ crafting: { ...s.crafting, t } });
       }
-    },
-    promptIcon: (kind) => (kind === 'craft' ? faScrewdriverWrench : store.getState().built ? faPaintRoller : faBone),
-    siteLabel() {
-      const s = store.getState();
-      if (s.built) return "Paint Chopper's house";
-      return missing(inv).length ? "See what Chopper's house needs" : "Build Chopper's house";
-    },
-    useSite() {
-      const s = store.getState();
-      if (!site || s.building !== null) return;
-      if (s.built) {
-        controller.openCraft('paint');
-        return;
-      }
-      const miss = missing(inv);
-      if (miss.length) {
-        controller.showToast(`Chopper's house still needs ${listNeeds(miss)}. Craft them at the crafting table by the Workshop.`);
-        return;
-      }
-      build();
     },
     state() {
       const s = store.getState();

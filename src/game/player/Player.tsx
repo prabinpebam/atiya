@@ -299,7 +299,7 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
   });
 
   return (
-    <group ref={root}>
+    <group ref={root} name="player-model">
       <group ref={seatGroup}>
         <primitive object={scene} scale={fit.scale} position={[0, fit.lift, 0]} />
       </group>

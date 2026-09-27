@@ -15,6 +15,7 @@ import { rotateAbout, transport, turnToward } from '../../math/steer';
 import type { HomeSpot, Homestead } from '../homestead';
 import { SphereNav, type NavBlock } from './nav';
 import { SIT_T, homeSeats, pickEntry, seatFacing, sitPath, type Seat } from './seats';
+import { GARDEN, type Garden } from './garden';
 
 export type NpcId = 'rojina' | 'laija' | 'lingjel' | 'prabin';
 export type NpcPose =
@@ -35,13 +36,14 @@ export type NpcPose =
   | 'admire'
   | 'guitar'
   | 'hammer'
-  | 'pet';
+  | 'pet'
+  | 'water';
 
 /** Poses in which they stay put (seated or on the ground) when someone talks to them. */
 const SETTLED: ReadonlySet<NpcPose> = new Set(['read', 'sitChair', 'readGround', 'lego', 'eat', 'guitar']);
 /** Activities nobody is drawn out of for a chat: they'd have to drop what they're doing (or it's the routine). */
-const BUSY: ReadonlySet<string> = new Set(['serve', 'throw', 'fetch', 'hammer', 'guitar', 'eat', 'clear', 'bedtime', 'wake', 'indoors']);
-export type Held = 'book' | 'car' | 'pebble' | 'basket' | 'guitar' | 'hammer' | 'stick' | null;
+const BUSY: ReadonlySet<string> = new Set(['serve', 'throw', 'fetch', 'hammer', 'guitar', 'water', 'eat', 'clear', 'bedtime', 'wake', 'indoors']);
+export type Held = 'book' | 'car' | 'pebble' | 'basket' | 'guitar' | 'hammer' | 'stick' | 'can' | null;
 
 export const NPC = {
   rojina: { name: 'Rojina', walk: 1.0, run: 1.6, runChance: 0 },
@@ -111,6 +113,8 @@ export interface FamilyWorld {
   planet?: PlanetInfo;
   /** Chopper, for a game of fetch. */
   dog?: DogLink;
+  /** The vegetable garden and its one watering can (shared with the visitor). */
+  garden?: Garden;
 }
 
 export interface PlanetInfo {
@@ -213,6 +217,8 @@ export interface Npc {
   repairs: number;
   /** How many people close by the current route was planned round. */
   routeBlocks: number;
+  /** The plant they're watering (the garden's index). */
+  plant?: number;
 }
 
 export type FamilyEvent = { type: 'splash'; n: Vector3 } | { type: 'throw'; id: NpcId } | { type: 'feed'; id: NpcId; n: Vector3 };
@@ -589,6 +595,17 @@ const ACTIVITIES: ActivityDef[] = [
     seat: (f, npc) => f.seatFree('pond', npc),
     pose: 'sitChair',
   },
+  // ---- Rojina and Prabin: watering the vegetable garden with its one can, plant by plant (garden.ts)
+  {
+    id: 'water',
+    who: ['rojina', 'prabin'],
+    weight: 2.4,
+    dur: [0, 0],
+    cooldown: 90,
+    // the can's free, several plants are thirsty, and the visitor isn't by the can (they have priority)
+    start: (_f, _n, w) => Boolean(w.garden && !w.garden.holder && w.garden.thirsty().length >= 3 && arcDistance(w.player, w.garden.can.n, w.R) > 2.5),
+    run: (f, npc, w, dt) => f.waterGarden(npc, w, dt),
+  },
   // ---- the routine and meals (never picked by the utility AI)
   {
     id: 'eat',
@@ -733,6 +750,8 @@ export class Family {
   readonly fetch: Fetch = { state: 'none', stick: new Vector3(0, 1, 0), to: new Vector3(0, 1, 0), flight: 0, from: new Vector3(0, 1, 0) };
   /** Throws so far in this game of fetch. */
   private throws = 0;
+  /** Plants they couldn't get to this time round (watering). */
+  private readonly gardenSkip = new Set<number>();
   private clock = 0;
 
   constructor(
@@ -821,6 +840,10 @@ export class Family {
       npc.poseT += dt;
       // the guitar never leaves the camp chair: it's in hand only while sitting there to play it
       if (npc.held === 'guitar' && (npc.activity !== 'guitar' || !npc.seat || npc.seat.phase === 'out')) npc.held = null;
+      // nor does the watering can leave the garden: whoever had it and stops watering (a meal, bedtime)
+      // leaves it back by the beds
+      if (w.garden?.holder === npc.id && npc.activity !== 'water') w.garden.putBack();
+      if (npc.held === 'can' && npc.activity !== 'water') npc.held = null;
       // a seat belongs to the activity it was taken for: anything else (a chat excepted) stands them up first
       const su = npc.seat;
       if (su && su.phase !== 'out' && su.owner !== npc.activity && npc.activity !== 'answer' && !npc.chatting) this.standUp(npc, w);
@@ -1289,6 +1312,103 @@ export class Family {
   /** Open ground: in the planner's free cells, out of the water, clear of the obstacles, and not where the visitor stands. */
   standable(w: FamilyWorld, n: Vector3): boolean {
     return (!this.nav || this.nav.freeAt(n)) && this.free(w, n, 0.15) && arcDistance(n, w.player, w.R) > 1.2;
+  }
+
+  /**
+   * Watering the vegetable garden (Rojina or Prabin; garden.ts): over to the can and pick it up,
+   * then to each thirsty plant in turn (from whichever side of its bed is nearer and free), a pour,
+   * and the can back where it lives.
+   */
+  waterGarden(npc: Npc, w: FamilyWorld, dt: number): boolean {
+    const g = w.garden;
+    if (!g) return true;
+    const R = w.R;
+    const byCan = { n: moveAlong(g.can.n, g.can.facing, 0.34 / R), facing: g.can.facing.clone().negate() };
+    const plant = npc.plant !== undefined ? g.plants[npc.plant] : null;
+    switch (npc.stage) {
+      case 0:
+        // to the can (unless someone's picked it up meanwhile)
+        if (g.holder) return true;
+        if (npc.t < 0.1) this.gardenSkip.clear();
+        if (this.goTo(npc, w, byCan, 'walk', dt) || npc.t > 60) this.next(npc);
+        return false;
+      case 1:
+      case 6: {
+        // bend down to pick it up, or to set it down
+        npc.want = 0;
+        npc.goal = null;
+        this.face(npc, g.can.n);
+        npc.pose = 'place';
+        if (npc.stageT < 0.6) return false;
+        if (npc.stage === 6) {
+          g.putBack();
+          npc.held = null;
+          return true;
+        }
+        if (!g.take(npc.id as 'rojina' | 'prabin')) return true;
+        npc.held = 'can';
+        return this.next(npc);
+      }
+      case 2: {
+        // the next thirsty plant, nearest first; none left: take the can back
+        npc.held = 'can';
+        let best = -1;
+        let bd = Infinity;
+        for (const i of g.thirsty()) {
+          if (this.gardenSkip.has(i)) continue;
+          const d = arcDistance(g.plants[i].n, npc.n, R);
+          if (d < bd) {
+            bd = d;
+            best = i;
+          }
+        }
+        if (best < 0 || npc.t > 120) {
+          npc.stage = 5;
+          npc.stageT = 0;
+          return false;
+        }
+        npc.plant = best;
+        const [a, b] = g.plants[best].stands;
+        const ok = (s: HomeSpot) => this.free(w, s.n, 0.02) && arcDistance(s.n, w.player, R) > FAMILY.gapPlayer;
+        // from the house's side of the bed (roomier), or the fence's if the visitor stands there
+        npc.at = ok(a) || !ok(b) ? a : b;
+        return this.next(npc);
+      }
+      case 3:
+        if (this.goTo(npc, w, npc.at!, 'walk', dt)) this.next(npc);
+        else if (npc.stageT > 20) {
+          // couldn't get there: leave that one (never pour from afar)
+          this.gardenSkip.add(npc.plant!);
+          npc.stage = 2;
+          npc.stageT = 0;
+        }
+        return false;
+      case 4: {
+        // the pour: the can tips over the plant, and the water reaches it a moment later
+        npc.want = 0;
+        npc.goal = null;
+        if (plant) {
+          this.face(npc, plant.n);
+          const to = tangentToward(npc.n, plant.n, _t);
+          if (to) this.faceDir(npc, to, dt);
+        }
+        npc.pose = 'water';
+        if (npc.stageT - dt <= 0 && plant) g.pour(plant.i, npc.n);
+        if (plant && npc.stageT >= GARDEN.wetAt && npc.stageT - dt < GARDEN.wetAt) g.water(plant.i);
+        if (npc.stageT > GARDEN.pourS) {
+          npc.stage = 2;
+          npc.stageT = 0;
+        }
+        return false;
+      }
+      default:
+        // back to the can's spot, to set it down
+        if (this.goTo(npc, w, byCan, 'walk', dt) || npc.stageT > 30) {
+          npc.stage = 6;
+          npc.stageT = 0;
+        }
+        return false;
+    }
   }
 
   /** Chopper is free, and not far off. */

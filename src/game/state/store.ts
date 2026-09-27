@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { TimeMode } from '../world/timeOfDay';
 import type { CharacterId } from '../player/characters';
+import type { TargetKind } from '../systems/interactables';
 
 export type Phase = 'loading' | 'ready' | 'playing';
 
@@ -8,9 +9,9 @@ export interface GameState {
   phase: Phase;
   nearbyId: string | null;
   /** What E would use right now (a tree, boulder, flower, the chest, the bench, Chopper, the crafting table, his house's site…), with its prompt text. */
-  target: { kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site'; key: string; label: string } | null;
+  target: { kind: TargetKind; key: string; label: string } | null;
   /** The action cycle playing (shake, mine, pick, open), or null. */
-  acting: 'shake' | 'mine' | 'pick' | 'open' | null;
+  acting: 'shake' | 'mine' | 'pick' | 'open' | 'water' | null;
   /** The inventory screen that's open: the backpack on its own, or the chest with it. */
   invScreen: 'backpack' | 'chest' | null;
   /** The crafting screen (crafting.md §4.2), or the palette for Chopper's house (§4.3), when open. */

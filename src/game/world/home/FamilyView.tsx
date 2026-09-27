@@ -33,7 +33,8 @@ import { kitMaterials } from '../materials';
 import { KitModel } from '../KitModel';
 import { CRAFT_STAND, type Family, type NpcId } from './family';
 import { bodyPose, HIP_FRACTION } from './poses';
-import { HOUSE, HOUSE_STEPS, birdhouseModel, bookModel, bubbleModel, guitarModel, hammerModel, stickModel, toyCarModel, paperModel } from './models';
+import { HOUSE, HOUSE_STEPS, birdhouseModel, bookModel, bubbleModel, guitarModel, hammerModel, heldCanModel, stickModel, toyCarModel, paperModel } from './models';
+import { pourTilt } from './garden';
 import { seatHip } from './seats';
 import { PROP_SCALE } from '../homestead';
 import { Kit } from '../kit';
@@ -239,6 +240,7 @@ function Person({ controller, family, id }: { controller: GameController; family
   const props = useMemo(
     () => ({
       guitar: guitarModel(),
+      can: heldCanModel(),
       hammer: hammerModel(),
       stick: stickModel(),
       book: bookModel(look.book),
@@ -433,6 +435,8 @@ function Person({ controller, family, id }: { controller: GameController; family
         if (kind === 'pebble') hm.visible = !(c > 0.55 && c < 1.25);
         else hm.visible = true;
         if (kind === 'book') hm.rotation.set(-0.9, 0, 0);
+        // the watering can hangs from the hand, and tips its spout down over a plant
+        else if (kind === 'can') hm.rotation.set(npc.pose === 'water' ? pourTilt(npc.poseT) : 0, 0, 0);
         else if (kind === 'guitar') hm.rotation.set(...GUITAR_AT.rot);
         else if (kind === 'hammer' || kind === 'stick') {
           // along the forearm, from the fist
@@ -481,6 +485,11 @@ function Person({ controller, family, id }: { controller: GameController; family
         </group>
         <group name="hammer">
           <KitModel geo={props.hammer} shadows={false} />
+        </group>
+        <group name="can">
+          <group scale={PROP_SCALE}>
+            <KitModel geo={props.can} shadows={false} />
+          </group>
         </group>
         <group name="stick">
           <KitModel geo={props.stick} shadows={false} />

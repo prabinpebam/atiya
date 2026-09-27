@@ -145,6 +145,9 @@ function open(t: number): ActionPose {
   return { w, hip: 0.04, spine: [0.3 - 0.2 * lift, 1, 0], chest: [0.2 - 0.1 * lift, 1, 0], arms: both(mixLimb(LID_LOW, LID_UP, lift)), pickaxe: 0 };
 }
 
+/** Poses a chunk registers for its own action cycles (the home chunk: water). */
+export const EXTRA_POSES: Partial<Record<ActionKind, (t: number) => ActionPose>> = {};
+
 /** The pose for action `kind` at `t` seconds into its cycle. */
 export function actionPose(kind: ActionKind, t: number): ActionPose {
   switch (kind) {
@@ -156,6 +159,8 @@ export function actionPose(kind: ActionKind, t: number): ActionPose {
       return pick(t);
     case 'open':
       return open(t);
+    default:
+      return EXTRA_POSES[kind]!(t);
   }
 }
 

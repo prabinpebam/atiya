@@ -9,7 +9,8 @@ const DIST = 'dist';
 const ASSETS = join(DIST, '_astro');
 const GAME_BUDGET_KB = 450;
 // on demand: 70 → 80 KB for the blade grass (vegetation proposal D3; ≈ 7 KB gz, loaded with the wildlife)
-const DEFERRED_BUDGET_KB = 80;
+// 80 → 85 KB for watering the garden (the targets it and the crafting chunk now own, and the lazy landmark dialog)
+const DEFERRED_BUDGET_KB = 85;
 const GATE_BUDGET_KB = 8;
 
 if (!existsSync(ASSETS)) {

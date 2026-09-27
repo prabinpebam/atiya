@@ -18,6 +18,7 @@ import {
   HOUSE_HEX,
   HOUSE_NEEDS,
   RECIPES,
+  TARGET_REACH,
   byMaterials,
   colourName,
   craft,
@@ -258,8 +259,8 @@ describe('the crafting table and the house site: placement and keeping targets a
 
   it('offers only the special target when you stand at it', () => {
     const extra = [
-      { kind: 'craft' as const, key: 'craft', n: table.n, edgeU: CRAFT_RADIUS, reachU: 0.95, standU: CRAFT_RADIUS + 0.45, index: 0, scale: 1 },
-      { kind: 'site' as const, key: 'site', n: home.dogHouse.n, edgeU: 0.62, reachU: 1.0, standU: 1.1, index: 0, scale: 1 },
+      { kind: 'craft' as const, key: 'craft', n: table.n, edgeU: CRAFT_RADIUS, reachU: TARGET_REACH.table, standU: CRAFT_RADIUS + 0.45, index: 0, scale: 1 },
+      { kind: 'site' as const, key: 'site', n: home.dogHouse.n, edgeU: HOUSE_R, reachU: TARGET_REACH.site, standU: 1.1, index: 0, scale: 1 },
     ];
     const all = [...targets, ...extra];
     for (const sp of specials) {

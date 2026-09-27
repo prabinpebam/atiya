@@ -211,6 +211,13 @@ export function wateringCan(k: Kit): void {
   });
 }
 
+/** The watering can as it's carried: hanging from the hand (its handle at the origin), the spout forward (+z). */
+export function heldCanModel(): KitGeometry {
+  const k = new Kit();
+  k.group({ p: [0, -0.19, 0], r: [0, -Math.PI / 2, 0] }, () => wateringCan(k));
+  return k.build();
+}
+
 /**
  * The tulsi vrindavan (as in Hindu households): a raised square planter, whitewashed with an ochre
  * border, a small niche in front for the evening diya, and the holy basil growing from its top.

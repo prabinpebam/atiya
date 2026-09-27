@@ -36,7 +36,7 @@ type GameState = {
   seatPose: number;
   benchD: number;
   target: { kind: string; key: string; label: string } | null;
-  acting: 'shake' | 'mine' | 'pick' | 'open' | null;
+  acting: 'shake' | 'mine' | 'pick' | 'open' | 'water' | null;
   invScreen: 'backpack' | 'chest' | null;
   /** Chopper's profile card is open. */
   chopperOpen: boolean;
@@ -1264,6 +1264,50 @@ test.describe('home & family', () => {
     expect(s.menuOpen).toBe(false);
     await expect(page.locator('.game-region')).toBeFocused();
     expect((await family(page)).find((p) => p.id === 'rojina')!.chatting).toBe(false);
+  });
+
+  test('the visitor picks up the watering can, waters a plant and puts the can back', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    type G = { holder: string | null; wet: number[]; plants: number };
+    const garden = () => page.evaluate(() => (window as any).__game.garden() as G);
+    const prompt = page.getByTestId('seat-prompt');
+    expect((await garden()).plants).toBe(12);
+    // by the can nobody else takes it (the visitor has priority); if Rojina or Prabin already has it, they bring it back
+    expect(await page.evaluate(() => (window as any).__game.nearCan())).toBe(true);
+    for (let i = 0; i < 20 && (await garden()).holder; i++) {
+      await page.evaluate(() => {
+        const g = (window as any).__game;
+        g.pause();
+        g.advance(600);
+        g.resume();
+        g.nearCan();
+      });
+    }
+    await expect(prompt.getByRole('button', { name: /Pick up the watering can/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await garden()).holder).toBe('visitor');
+    // by a plant, E waters it: the soil round it is wet
+    expect(await page.evaluate(() => (window as any).__game.nearPlant(0, 0))).toBe(true);
+    await expect(prompt.getByRole('button', { name: /Water the (cabbage|tomato plant)/ })).toBeVisible();
+    const before = (await garden()).wet;
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await state(page)).acting).toBe('water');
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.pause();
+      g.advance(150);
+      g.resume();
+    });
+    const after = (await garden()).wet;
+    expect(after.some((w, i) => w > 0.9 && w > before[i])).toBe(true);
+    await expect(page.getByTestId('live-region')).toContainText(/Watered the|Every plant is watered/);
+    // back by the beds, E puts it down
+    expect(await page.evaluate(() => (window as any).__game.nearCan())).toBe(true);
+    await expect(prompt.getByRole('button', { name: /Put the can back/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await garden()).holder).toBeNull();
+    await noSeriousViolations(page);
   });
 });
 

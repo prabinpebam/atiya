@@ -5,7 +5,6 @@ import type { GameController } from '../controller';
 import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
 import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
-import { LandmarkDialog } from './Dialogs';
 import { ViewControls } from './ViewControls';
 import { CHARACTERS, type CharacterId } from '../player/characters';
 import {
@@ -104,13 +103,24 @@ function PreviewCard({ controller }: { controller: GameController }) {
   );
 }
 
-const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment, craft: faHammer, site: faPaw } as const;
+// (the targets a chunk adds bring their own icon: the crafting table, the site, the watering can, the plants)
+const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment } as const;
 
-// the menu loads on demand: the first time it's opened, or soon after the game starts
+// the menu and a landmark's dialog load on demand: the first time they're opened, or soon after the game starts
 const MenuDialog = lazy(() => import('./MenuDialog'));
+const LandmarkDialog = lazy(() => import('./Dialogs'));
+
+function LandmarkDialogSlot({ controller }: { controller: GameController }) {
+  const open = useStore(controller.store, (s) => Boolean(s.openId));
+  return <Later controller={controller} open={open} Screen={LandmarkDialog} />;
+}
 
 function MenuDialogSlot({ controller }: { controller: GameController }) {
   const open = useStore(controller.store, (s) => s.menuOpen);
+  return <Later controller={controller} open={open} Screen={MenuDialog} />;
+}
+
+function Later({ controller, open, Screen }: { controller: GameController; open: boolean; Screen: typeof MenuDialog }) {
   const [wanted, setWanted] = useState(false);
   useEffect(() => {
     if (open) setWanted(true);
@@ -122,7 +132,7 @@ function MenuDialogSlot({ controller }: { controller: GameController }) {
   if (!wanted) return null;
   return (
     <Suspense fallback={null}>
-      <MenuDialog controller={controller} />
+      <Screen controller={controller} />
     </Suspense>
   );
 }
@@ -176,7 +186,7 @@ function ActionPrompt({ controller }: { controller: GameController }) {
           </>
         ) : (
           <>
-            <Icon icon={(target!.kind === 'craft' || target!.kind === 'site' ? controller.craft?.promptIcon(target!.kind, target!.label) : null) ?? TARGET_ICONS[target!.kind]} /> {target!.label} <kbd>E</kbd>
+            <Icon icon={controller.targets.find((x) => x.key === target!.key)?.icon?.() ?? TARGET_ICONS[target!.kind as keyof typeof TARGET_ICONS]} /> {target!.label} <kbd>E</kbd>
           </>
         )}
       </button>
@@ -501,7 +511,7 @@ export function Hud({ controller }: { controller: GameController }) {
           controller.fadeEl.current = el;
         }}
       />
-      <LandmarkDialog controller={controller} />
+      <LandmarkDialogSlot controller={controller} />
       <MenuDialogSlot controller={controller} />
       <InventoryScreen controller={controller} />
       <ChopperCardSlot controller={controller} />

@@ -5,7 +5,8 @@
  * can also sink to a seat (`hip`, the hip joints' height in body heights) and tip about the hips
  * (`pitch`, rad: π/2 lies face down).
  */
-import type { Dir, Limb } from '../../player/actionPoses';
+import type { ActionPose, Dir, Limb } from '../../player/actionPoses';
+import type { Cycle } from '../../systems/actions';
 import type { Held, NpcPose } from './family';
 
 export interface BodyPose {
@@ -153,9 +154,30 @@ export function bodyPose(pose: NpcPose, t: number, held: Held, moving: boolean):
         nod: 0.55,
       };
     }
+    case 'water': {
+      // watering a plant: the can held out over it in the right hand (it tips in FamilyView), leaning in a little
+      return { ...none, spine: [0.22, 1, 0], arms: { l: lim([0.1, -1, 0.2], [0.25, -1, 0]), r: lim([0.85, -0.5, 0.12], [1, -0.05, 0]) }, nod: 0.45 };
+    }
     default:
       // carrying the picnic basket (while walking too)
       if (held === 'basket') return { ...none, arms: both(lim([0.35, -0.9, 0.22], [1, 0.1, -0.4])) };
       return none;
   }
+}
+
+/**
+ * The visitor watering a plant (the `water` action cycle, registered by the home chunk): the right
+ * hand holds the can out over the plant (it tips in GardenView), a little lean in, then back.
+ */
+export const wateringPose = (c: Cycle) => (t: number): ActionPose => {
+  const k = (x: number) => Math.min(1, Math.max(0, x));
+  const w = k((t - c.approach + 0.1) / 0.2) * (1 - k((t - c.duration + 0.2) / 0.2));
+  return {
+    w,
+    hip: 0.02,
+    spine: [0.2, 1, 0],
+    chest: [0.12, 1, 0],
+    arms: { l: lim([0.1, -1, 0.18], [0.2, -1, 0]), r: lim([0.85, -0.5, 0.1], [1, -0.05, 0]) },
+    pickaxe: 0,
+  };
 }

@@ -9,7 +9,8 @@ import { Icon } from './Icon';
 
 const toClassic = () => prefs.setMode('classic');
 
-export function LandmarkDialog({ controller }: { controller: GameController }) {
+/** A landmark's dialog: loaded on demand (the first time one opens, or soon after the game starts), like the menu. */
+export default function LandmarkDialog({ controller }: { controller: GameController }) {
   const openId = useStore(controller.store, (s) => s.openId);
   const ref = useRef<HTMLDialogElement>(null);
   const [shown, setShown] = useState<LandmarkData | null>(null);

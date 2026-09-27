@@ -1,5 +1,4 @@
 import type { ComponentType } from 'react';
-import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { Quaternion, Vector3, type Camera, type Scene, type WebGLRenderer } from 'three';
 import { CONFIG } from './config';
 import type { LandmarkData, MoveIntent } from './types';
@@ -11,14 +10,15 @@ import { InteractBuffer, updateProximity } from './systems/proximity';
 import { SeatMotion, benchSeats, type Seat } from './systems/seating';
 import type { DuckFeed } from './systems/duckFeed';
 import { REACH, buildTargets, pickTarget, targetLabel, type Target } from './systems/interactables';
-import { ActionRunner, actionFor, type BeatKind } from './systems/actions';
+import { ActionRunner, CYCLES, actionFor, type ActionKind, type BeatKind } from './systems/actions';
+import { EXTRA_POSES } from './player/actionPoses';
 import { Inventory, type Stack } from './inventory/inventory';
 import { BLOOM_COLOURS, flowerItem, itemDef, stackLabel, type ItemId } from './inventory/items';
 import { Drops } from './world/dropSim';
 import { Harvest } from './world/harvest';
 import { FRUIT_SPOTS } from './world/foliage';
 import { propPoint } from './world/propFrame';
-import { CRAFT_RADIUS, generateProps, type PropLayout } from './world/layout';
+import { generateProps, type PropLayout } from './world/layout';
 import { structurePads } from './world/groundPads';
 import type { PadSpec } from './world/pads';
 import { Terrain, wadeSpeedFactor } from './world/terrain';
@@ -77,12 +77,6 @@ export interface CraftAttachment {
   /** Its screens in the HUD: the crafting screen, the palette and the site card. */
   Screens: ComponentType;
   step(dt: number): void;
-  /** The site's prompt: see what's needed, build it, or paint it. */
-  siteLabel(): string;
-  /** E at the site. */
-  useSite(): void;
-  /** The prompt's icon at the crafting table or the site (the icons live in the chunk). */
-  promptIcon(kind: 'craft' | 'site', label: string): IconDefinition;
   state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean };
 }
 
@@ -107,6 +101,8 @@ export interface HomeAttachment {
   View: ComponentType;
   /** Feeding the ducks from the pond bench (the visitor's handfuls and the family's). */
   ducks: DuckFeed;
+  /** The vegetable garden: who has the watering can, and each plant's moisture (family.md §3.2). */
+  garden: { holder: string | null; wet: readonly number[]; can: { n: Vector3; facing: Vector3 }; plants: ReadonlyArray<{ n: Vector3; kind: string; stands: ReadonlyArray<{ n: Vector3; facing: Vector3 }> }> };
   /** Its part of the HUD: the talk dialog box. */
   Hud: ComponentType;
 }
@@ -186,6 +182,9 @@ export class GameController {
   home: HomeAttachment | null = null;
   /** The crafting table and Chopper's house, once that chunk has loaded (null if it failed). */
   craft: CraftAttachment | null = null;
+  /** The action cycles and the extra action poses, for a chunk to extend (the home chunk adds watering) without importing them itself. */
+  readonly cycles = CYCLES;
+  readonly poses = EXTRA_POSES;
   /** Touch controls, on touch-capable devices once their chunk has loaded. */
   touch: TouchAttachment | null = null;
   /** Things rabbits and ground birds shy away from besides the character: Chopper, the children. */
@@ -814,16 +813,15 @@ export class GameController {
 
   /** Can this target be used right now? (A picked flower can't, until it grows back.) */
   private usable = (t: Target): boolean =>
-    t.kind === 'flower'
-      ? this.harvest.flowerHere(t.flower!, t.index)
-      : t.kind === 'dog'
-        ? this.chopper.speed < 1.2 && !this.sim.travel
-        : t.kind === 'npc'
-          ? Boolean(this.home?.canTalk(t.who!)) && !this.sim.travel
+    t.usable
+      ? t.usable()
+      : t.kind === 'flower'
+        ? this.harvest.flowerHere(t.flower!, t.index)
+        : t.kind === 'dog'
+          ? this.chopper.speed < 1.2 && !this.sim.travel
           : true;
 
   private labelFor(t: Target): string {
-    if (t.kind === 'site') return this.craft?.siteLabel() ?? targetLabel(t);
     return targetLabel(t, t.kind === 'flower' ? itemDef(flowerItem(t.flower!, t.colour ?? 0)).name.toLowerCase() : undefined);
   }
 
@@ -850,20 +848,16 @@ export class GameController {
       this.openChopper();
       return;
     }
-    if (t.kind === 'npc') {
-      this.startTalk(t.who!);
-      return;
-    }
-    if (t.kind === 'craft') {
-      this.openCraft('table');
-      return;
-    }
-    if (t.kind === 'site') {
-      this.craft?.useSite();
+    if (t.use) {
+      t.use();
       return;
     }
     const kind = actionFor(t);
-    if (!kind || !this.usable(t)) return;
+    if (kind && this.usable(t)) this.startAction(kind, t);
+  }
+
+  /** Play an action cycle at a target (stepping to it, facing it); the chunks start theirs here too. */
+  startAction(kind: ActionKind, t: Target): void {
     this.sim.cancelAutoWalk();
     this.keyboard.clear();
     this.buffer.clear();
@@ -1174,14 +1168,9 @@ export class GameController {
 
   // ---------- crafting and Chopper's house (crafting.md) ----------
 
-  /** The crafting chunk has loaded: the crafting table and the house's site become targets. */
+  /** The crafting chunk has loaded (it adds the crafting table and the house's site as targets itself). */
   attachCraft(c: CraftAttachment | null): void {
     this.craft = c;
-    if (!c) return;
-    const table = this.props.craft;
-    if (table) this.targets.push({ kind: 'craft', key: 'craft', n: table.n, edgeU: CRAFT_RADIUS, reachU: REACH.craft, standU: CRAFT_RADIUS + 0.45, index: 0, facing: table.facing, scale: 1 });
-    const site = this.props.home?.dogHouse;
-    if (site) this.targets.push({ kind: 'site', key: 'site', n: site.n, edgeU: 0.62, reachU: REACH.site, standU: 1.1, index: 0, facing: site.facing, scale: 1 });
   }
 
   /** Something new and solid (Chopper's house, once built): the character, Chopper and the family keep out of it. */
@@ -1220,13 +1209,12 @@ export class GameController {
 
   // ---------- the family (family.md) ----------
 
-  /** The home chunk has loaded: its people become talk targets, and the children scare rabbits too. */
+  /** The home chunk has loaded (it adds its people as talk targets itself): the children scare rabbits too. */
   attachHome(h: HomeAttachment | null): void {
     this.home = h;
     if (!h) return;
     this.terrain.addPads(h.pads);
     this.stampPropHeights();
-    for (const p of h.people) this.targets.push({ kind: 'npc', key: `npc:${p.id}`, n: p.n, edgeU: 0, reachU: REACH.npc, standU: 0.8, index: 0, who: p.id, name: p.name, scale: 1 });
     this.threats.push(...h.kids);
     // everyone keeps clear of everyone: the character collides with them, Chopper steps round them
     for (const p of h.people) {

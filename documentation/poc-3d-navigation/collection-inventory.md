@@ -44,6 +44,8 @@ Standing near something you can use shows a single prompt at the bottom centre, 
 | Flower | 0.9 u | **Pick** *Red tulip* | 0.8 s: crouch, pluck, stand |
 | Chest | 1.35 u | **Open chest** | the lid swings open and the chest screen opens |
 | Bench | 1.45 u, front or ends | **Sit on the bench** | see the spec, §4.12 |
+| Watering can (home chunk) | 0.8 u | **Pick up the watering can** / **Put the can back** | instant; see [family.md §6.2](./family.md#62-watering-the-garden) |
+| Garden plant, holding the can | 0.8 u, from either long side of its bed | **Water the cabbage** / **Water the tomato plant** | 1.6 s: step up, tip the can, pour; no drops (nothing to collect) |
 
 - **Choosing a target:** the prompt goes to the target you're **facing**, nearest first. The score is the distance past the target's edge, plus a penalty that grows with the angle off your heading. Targets behind you (more than 100° off) only count within arm's reach. A target keeps the prompt until you walk out of its range plus 0.25 u (hysteresis), so the prompt doesn't flicker between two flowers.
 - **Priority:** landmarks preview from a wide area (the Workshop's covers the chest), so a thing you're **right at** wins. While a target has the prompt, E uses it and the landmark's preview card hides. Step away and the card returns. Near a landmark, a flower only takes E within 0.5 u, so walking up a flower-lined path to a door still shows the building's card.
@@ -194,4 +196,5 @@ Test hooks: `nearTarget(kind, which, u)`, `inventory()`, `giveItem(id, n)`, `dro
 
 - **New item:** add it to `ITEMS` in `items.ts` and to `ITEMS` in `gen-icons.py`, then run `gen-icons.py icon <id>` and `build`.
 - **New source:** add a target kind in `systems/interactables.ts` and a cycle in `systems/actions.ts`.
+- **A target from a chunk** (the crafting table, the build site, the family, the watering can and the plants): the chunk pushes it onto `controller.targets` with its own `label`, `use`, `usable` and `icon`, so the main bundle needs no code for it. A chunk that plays a cycle calls `controller.startAction(kind, target)` and adds its pose to `controller.poses`; it reads cycles from `controller.cycles` rather than importing `systems/actions.ts` (a runtime import from a chunk re-splits the main bundle's shared chunks).
 - **Crafting (later):** a recipe consumes stacks through the same container operations (`take`, `add`). A crafting grid is one more container on the screen, with Shift+click from its output.

@@ -112,6 +112,7 @@ the home (within 7 u of it, never into the pond).
 - **Meals:** when Rojina has laid the table, everyone out comes to eat, each at their own chair (a third chair stands at the table's end), with a slow hand-to-mouth *eat* pose. After 22–32 s Rojina gathers it all into the basket and carries it in, and the children go back to playing. The next lunch comes at least two minutes later.
 - **Pebbles:** Laija throws from a new spot on the pond's edge each time, anywhere along the home's side of the pond.
 - **Feeding the ducks** (`ducks`, anyone, Prabin too): they walk to the family's end of the pond bench (a `bench` seat in `world/home/seats.ts`, 0.28 u along it; the visitor's seat is the other end, so both can sit together), sit, and toss a handful of crumbs every 2.4 s for 16–26 s. Each handful is a `feed` event that the home's view passes to `controller.duckFeed` (`systems/duckFeed.ts`), the same as the visitor's.
+- **Watering the garden** (`water`, Rojina and Prabin): when the watering can is by the beds, at least three plants are thirsty and the visitor isn't within 2.5 u of the can (the visitor has priority), they walk to the can, pick it up, water the nearest thirsty plant from the house side of its bed (the fence side is tight), then the next, until none is thirsty, and put the can back where it was. A plant they can't reach within 20 s is skipped. If the activity is cut short (bedtime, a meal, a talk), the can goes straight back to its spot: nobody walks off with it. See §6.2.
 - **Talking in pairs:** the one who starts walks over; both stop and face each other and a small
   speech bubble ("…") pops over whoever is speaking, alternating; 6–9 s.
 - **Butterflies:** three live by the home (the kids chase them); rabbits nearby also get chased
@@ -148,6 +149,14 @@ the home (within 7 u of it, never into the pond).
   follow her in a line. A seated visitor doesn't frighten her (`WildEnv.calm`); a walking one still
   does, at the usual distance.
 
+### 6.2 Watering the garden
+
+- **The can** stands by the beds. **Prompt:** in front of it, **Pick up the watering can** (E, a hand-and-droplet icon); holding it, **Put the can back**. It's there to pick up only while nobody else has it.
+- **Holding it,** each of the 12 plants (8 cabbages, 4 tomatoes) offers **Water the cabbage** or **Water the tomato plant** (E, a droplet icon) while it's less than well watered, from either long side of its bed. E plays the fixed `water` cycle (`systems/actions.ts`, 1.6 s): a step up to the plant, the can tipped, a stream of drops from its spout onto the plant, a splash, and the soil round the plant darkens. The live region says what was watered, then the next prompt ("Watered the cabbage. Water the tomato plant: press E."), and says when every plant is watered.
+- **Drying:** a plant dries from wet to dry over 5 minutes (thirsty below 35 %); the wet patch shrinks with it. Watering fills it to 100 %; a plant above 85 % offers no prompt.
+- **Walking off:** a can carried more than 6 u from the beds, or on a trip to a landmark, is put back by the beds, with a toast that says so.
+- **Rojina and Prabin** water the same plants with the same can (§5): the can shows in their right hand and tips as they pour, with the same stream and wet soil.
+- **Code:** the rules are pure in `world/home/garden.ts` (`Garden`: the plants and their stands, wetness, who holds the can, the pours; unit-tested in `tests/unit/garden.test.ts` against the real layout); the family's activity is in `world/home/family.ts`; the can, the wet soil (one instanced draw) and the drops (one instanced draw) are drawn by `world/home/GardenView.tsx`. All of it is in the home chunk: its targets carry their own label, use, availability and icon, so the main bundle needs no garden code (it has the `can` and `plant` target kinds, the `water` cycle, and the registries `controller.cycles` and `controller.poses` the chunk fills in).
 ## 7. Budgets
 
 | | Budget |
@@ -166,8 +175,9 @@ the home (within 7 u of it, never into the pond).
   are apart and at the bench's height, crumbs land well inside the water, the lure wears off, the duck
   swims to the crumbs (calm with the visitor seated, still fleeing a walking one), and a family member
   sits on the bench and tosses a handful every few seconds.
+  `tests/unit/garden.test.ts`: the plants match the beds, every stand is clear and in reach, one holder at a time, drying, the pour, Rojina and Prabin water every thirsty plant and put the can back, never take it from or near the visitor, and bedtime puts it back.
 - **E2E:** the three are there; walking up to Rojina offers **Talk to Rojina**; E opens the box with
-  her name; E completes and advances the lines; Escape closes it and hands the keys back; axe passes.
+  her name; E completes and advances the lines; Escape closes it and hands the keys back; axe passes. The visitor picks up the can, waters a plant (wet, announced) and puts the can back.
 - **Real GPU:** close-ups of the house by day and night, the campsite, the picnic, and each NPC.
 
 ## 8b. As built

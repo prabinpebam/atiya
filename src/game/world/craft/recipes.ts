@@ -154,6 +154,9 @@ export const CRAFT_S = 0.6;
 /** Collision radius of the built house (u). */
 export const HOUSE_R = 0.62;
 
+/** From how far (u, past their edge) the crafting table and the house's site offer their prompt. */
+export const TARGET_REACH = { table: 0.95, site: 1.0 } as const;
+
 export type HouseColour = 'original' | BloomColour;
 
 /** Roof and trim colours: the default red, and a slightly deeper shade of each paint. */

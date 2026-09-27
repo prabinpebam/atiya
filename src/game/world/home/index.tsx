@@ -7,12 +7,17 @@ import type { GameController, HomeAttachment } from '../../controller';
 import { CONFIG } from '../../config';
 import { UP, arcDistance, moveAlong } from '../../math/sphere';
 import { FLOWER_KINDS } from '../layout';
-import { CRAFT_STAND, Family, KIDS, LinePicker, type DialogueProvider, type FamilyWorld, type NpcId } from './family';
+import { CRAFT_STAND, FAMILY, Family, KIDS, LinePicker, type DialogueProvider, type FamilyWorld, type NpcId } from './family';
 import { FamilyView } from './FamilyView';
 import { HomeView } from './HomeView';
 import { TalkBox } from './TalkBox';
 import { homePads } from './homePads';
 import { DuckFeed } from '../../systems/duckFeed';
+import { faDroplet, faHandHoldingDroplet } from '@fortawesome/free-solid-svg-icons';
+import type { Target } from '../../systems/interactables';
+import { GARDEN, Garden } from './garden';
+import { GardenView } from './GardenView';
+import { wateringPose } from './poses';
 
 export function attachHome(controller: GameController): HomeAttachment | null {
   const home = controller.props.home;
@@ -23,6 +28,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
   const prabinAt = craft ? moveAlong(craft.n, craft.facing, (CRAFT_STAND + 1.2) / R) : undefined;
   const family = new Family(home, R, Math.random, prabinAt);
   const ducks = new DuckFeed();
+  const garden = new Garden(home, R);
   // the lines come from a provider: preset now, an AI agent later (prabin-npc.md §4.6)
   const lines: DialogueProvider = new LinePicker();
   const brain = controller.chopper;
@@ -51,7 +57,25 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     },
     // Chopper's free to play when he isn't answering a whistle, heeling, in his house or off far away
     dog: { n: brain.n, free: () => !['whistled', 'heel', 'house', 'fetch'].includes(brain.behaviour) && !brain.inside && arcDistance(brain.n, controller.sim.pLocal, R) < 5 },
+    garden,
   };
+  const water = attachGarden(controller, garden);
+  // the family are talk targets that answer for themselves: E talks, while they're out and not hurrying
+  for (const p of family.npcs)
+    controller.targets.push({
+      kind: 'npc',
+      key: `npc:${p.id}`,
+      n: p.n,
+      edgeU: 0,
+      reachU: FAMILY.talkRange,
+      standU: 0.8,
+      index: 0,
+      who: p.id,
+      name: p.name,
+      scale: 1,
+      usable: () => !p.indoors && p.speed < 1.2 && !controller.sim.travel,
+      use: () => controller.startTalk(p.id),
+    });
   const nav = Family.navFor(world);
   family.nav = nav;
   // Chopper uses the same planner, and plays fetch with Prabin's stick (dogWorld is his view of the world)
@@ -65,6 +89,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
   const View = () => (
     <>
       <HomeView controller={controller} home={home} family={family} />
+      <GardenView controller={controller} home={home} garden={garden} />
       <FamilyView controller={controller} family={family} />
     </>
   );
@@ -80,6 +105,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
       playerVel.copy(controller.sim.vel).applyQuaternion(controller.sim.planetQ.clone().invert());
       family.step(dt, world);
       ducks.step(dt);
+      water(dt);
     },
     canTalk: (id) => {
       const n = family.get(id as NpcId);
@@ -109,7 +135,95 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     meal: () => ({ food: family.foodOnTable, phase: family.meal?.phase ?? null, schedule: family.schedule }),
     hold: (id, activity) => family.hold(id as NpcId, activity, world),
     ducks,
+    garden,
     View,
     Hud: () => <TalkBox controller={controller} />,
+  };
+}
+
+/**
+ * The visitor at the vegetable garden (family.md §3.2): the watering can and each plant are targets
+ * that answer for themselves. Pick the can up, walk to a plant and E waters it (the `water` cycle);
+ * put the can back at its spot, or it goes back by itself if you walk off with it or fly away.
+ * Returns the garden's step.
+ */
+function attachGarden(controller: GameController, garden: Garden): (dt: number) => void {
+  const R = CONFIG.planetRadius;
+  const can = garden.can;
+  const holding = () => garden.holder === 'visitor';
+  const cycle = controller.cycles.water;
+  controller.poses.water = wateringPose(cycle);
+  controller.targets.push({
+    kind: 'can',
+    key: 'can',
+    n: can.n,
+    edgeU: 0.1,
+    reachU: 0.8,
+    standU: 0.45,
+    index: 0,
+    scale: 1,
+    label: () => (holding() ? 'Put the can back' : 'Pick up the watering can'),
+    usable: () => garden.holder === null || holding(),
+    icon: () => faHandHoldingDroplet,
+    use() {
+      if (holding()) {
+        garden.putBack();
+        controller.announce('You put the watering can back by the beds.');
+      } else if (garden.take('visitor')) controller.announce('You pick up the watering can. Walk up to a plant to water it.');
+      controller.sound.pickup();
+      controller.refreshTarget();
+    },
+  });
+  for (const p of garden.plants) {
+    const name = p.kind === 'cabbage' ? 'cabbage' : 'tomato plant';
+    const t: Target = {
+      kind: 'plant',
+      key: `plant:${p.i}`,
+      n: p.n,
+      edgeU: 0.1,
+      reachU: GARDEN.reachU,
+      standU: GARDEN.standU,
+      index: p.i,
+      scale: 1,
+      label: () => `Water the ${name}`,
+      usable: () => holding() && garden.wet[p.i] < GARDEN.full,
+      icon: () => faDroplet,
+      use: () => controller.startAction('water', t),
+    };
+    controller.targets.push(t);
+  }
+  let last = 0;
+  let say: string | null = null;
+  let ended = false;
+  return (dt) => {
+    garden.step(dt);
+    const a = controller.action;
+    const i = a.kind === 'water' ? (a.target?.index ?? -1) : -1;
+    if (i >= 0) {
+      // the pour starts once you've stepped up to the plant, and the water reaches it a moment later
+      if (last < cycle.approach && a.t >= cycle.approach) garden.pour(i, controller.sim.pLocal);
+      if (last < GARDEN.wetAt && a.t >= GARDEN.wetAt) {
+        garden.water(i);
+        controller.sound.step('water', false);
+        const left = garden.plants.filter((p) => garden.wet[p.i] < GARDEN.full).length;
+        say = left ? `Watered the ${garden.plants[i].kind === 'cabbage' ? 'cabbage' : 'tomato plant'}.` : 'Every plant is watered. Put the can back by the beds.';
+      }
+      last = a.t;
+    } else {
+      last = 0;
+      // said once the pour is over, with the next prompt (which would otherwise replace it in the live region)
+      if (say && ended) {
+        const next = controller.store.getState().target;
+        controller.announce(next ? `${say} ${next.label}: press E.` : say);
+        say = null;
+      }
+      ended = Boolean(say);
+    }
+    // walked off with it, or flew away: it goes back by the beds
+    if (holding() && (controller.sim.travel || arcDistance(controller.sim.pLocal, can.n, R) > GARDEN.leaveU)) {
+      garden.putBack();
+      controller.showToast('You left the watering can back by the beds.');
+      controller.refreshTarget();
+    }
   };
 }

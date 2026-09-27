@@ -129,8 +129,8 @@ When several things are in reach, `pickTarget` (`systems/interactables.ts`) adds
 
 | Tier | Kinds | Penalty |
 |---|---|---|
-| 0: people and purposeful objects | NPC, chest, crafting table, build site, bench | 0 |
-| 1: things to gather | Tree, boulder, flower | 0.1 u |
+| 0: people and purposeful objects | NPC, chest, crafting table, build site, bench, watering can | 0 |
+| 1: things to gather or tend | Tree, boulder, flower, garden plant | 0.1 u |
 | 2: the companion | Chopper | 0.45 u |
 
 So Chopper, who follows you everywhere, never takes the prompt from the person you walked up to.

@@ -3,12 +3,13 @@ import { CONFIG } from '../config';
 import { arcDistance, moveAlong, tangentToward } from '../math/sphere';
 import { CHEST_RADIUS, type ChestSpot, type FlowerKind, type PropLayout } from '../world/layout';
 import { SEAT, type Seat } from './seating';
+import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 
 /**
  * Things you can walk up to and use with E (docs: collection-inventory.md §3.1): what's in range,
  * and which one gets the prompt (the one you face, nearest first, with hysteresis).
  */
-export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site';
+export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site' | 'can' | 'plant';
 export type TreeKind = 'hardwood' | 'apple' | 'orange' | 'cedar';
 
 export interface Target {
@@ -36,6 +37,14 @@ export interface Target {
   who?: string;
   name?: string;
   scale: number;
+  /**
+   * A target a chunk adds (the crafting table, Chopper's house site, the watering can, a plant) answers
+   * for itself: its prompt, what E does, whether it's usable now, and its prompt's icon.
+   */
+  label?(): string;
+  use?(): void;
+  usable?(): boolean;
+  icon?(): IconDefinition;
 }
 
 export const REACH = {
@@ -48,11 +57,8 @@ export const REACH = {
   /** Chopper only takes E when you face him (within this of your heading, rad), and near a landmark only this close (u). */
   dogCone: (65 * Math.PI) / 180,
   dogNearLandmark: 0.8,
-  /** The family (family.md §6): talk from this close (u), facing them. */
-  npc: 1.3,
-  /** The crafting table and Chopper's house site (crafting.md). */
-  craft: 0.95,
-  site: 1.0,
+  // (the family's talk reach lives with them: family.ts FAMILY.talkRange)
+  // (the crafting table's and Chopper's house site's reach live with them: craft/recipes.ts TARGET_REACH)
   /** Walk out this far past a target's range before its prompt goes (hysteresis). */
   keep: 0.25,
   /** More than this off your heading (rad), a target only counts within arm's reach. */
@@ -70,7 +76,7 @@ export const REACH = {
  * chest, the crafting table, a bench, the house site), then things to gather, then Chopper, who is
  * always at your heels.
  */
-export const TIER_U: Record<TargetKind, number> = { npc: 0, chest: 0, craft: 0, site: 0, bench: 0, tree: 0.1, boulder: 0.1, flower: 0.1, dog: 0.45 };
+export const TIER_U: Record<TargetKind, number> = { npc: 0, chest: 0, craft: 0, site: 0, bench: 0, can: 0, tree: 0.1, boulder: 0.1, flower: 0.1, plant: 0.1, dog: 0.45 };
 
 /** Visual trunk radius at scale 1 (the collision circle is wider: 0.42 hardwood, 0.36 cedar). */
 const TRUNK_U = { hardwood: 0.3, cedar: 0.24 } as const;
@@ -196,7 +202,7 @@ export function targetLabel(t: Target, flowerName?: string): string {
       return `Talk to ${t.name ?? 'them'}`;
     case 'craft':
       return 'Use crafting table';
-    case 'site':
-      return t.name ?? "Chopper's house";
+    default:
+      return t.label?.() ?? t.name ?? '';
   }
 }

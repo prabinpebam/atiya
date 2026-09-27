@@ -35,7 +35,6 @@ import {
   tableModel,
   toyCarModel,
   tulsi,
-  wateringCan,
   woodpile,
 } from './models';
 import { legoSpot } from './family';
@@ -112,7 +111,7 @@ const DIYA_LAMP = { color: new Color('#ffb25e'), intensity: 0.6, range: 0.8 } as
 
 /**
  * The yard round the house, merged into one kit in the house's frame (one draw call per layer): the
- * fence behind it, the vegetable beds, the watering can, the tulsi in front and the woodpile. Each
+ * fence behind it, the vegetable beds, the tulsi in front and the woodpile (the watering can is drawn on its own: GardenView). Each
  * item stands on the ground at its own spot (the planet curves away under the yard).
  */
 function yardModel(home: Homestead, houseH: number, ht: (n: Vector3) => number) {
@@ -126,7 +125,6 @@ function yardModel(home: Homestead, houseH: number, ht: (n: Vector3) => number) 
   const k = new Kit();
   const { yard } = home;
   yard.beds.forEach((b, i) => k.group(at(b), () => bed(k, i ? 'tomato' : 'cabbage', YARD.bedL, YARD.bedW, i)));
-  k.group(at(yard.wateringCan, 0.6), () => wateringCan(k));
   k.group(at(yard.woodpile), () => woodpile(k));
   const t = at(yard.tulsi);
   let diya: V3 = [0, 0, 0];

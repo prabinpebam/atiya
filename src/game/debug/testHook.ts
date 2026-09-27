@@ -114,6 +114,12 @@ export interface GameTestHook {
   visitHome(): boolean;
   /** Stand `u` in front of the pond bench, facing it (E then sits down). */
   nearPondBench(u?: number): boolean;
+  /** The vegetable garden: who has the watering can, each plant's moisture, and how many are thirsty. */
+  garden(): { holder: string | null; wet: number[]; plants: number } | null;
+  /** Stands the character by the watering can, facing it. */
+  nearCan(): boolean;
+  /** Stands the character where it waters plant `i` (from side 0 or 1 of its bed), facing it. */
+  nearPlant(i: number, side?: 0 | 1): boolean;
   /** Feeding the ducks: whether E feeds them now, handfuls tossed, crumbs in the air or afloat, and the duck (state, distance u to the crumbs). */
   ducks(): { canFeed: boolean; fed: number; tosses: number; spot: boolean; duck: string | null; toSpot: number | null };
   /** What the grass placed (null when the grass chunk is absent), and its knee-high meadows. */
@@ -509,6 +515,26 @@ export function installTestHook(c: GameController): void {
       if (!b) return false;
       const stand = moveAlong(b.n, b.facing, u / CONFIG.planetRadius);
       c.sim.setOrientation(orientationFor(stand, tangentToward(stand, b.n) ?? b.facing.clone().negate()));
+      c.lift = c.terrain.walkHeight(c.sim.pLocal);
+      return true;
+    },
+    garden: () => {
+      const g = c.home?.garden;
+      return g ? { holder: g.holder, wet: [...g.wet], plants: g.plants.length } : null;
+    },
+    nearCan: () => {
+      const can = c.home?.garden.can;
+      if (!can) return false;
+      const stand = moveAlong(can.n, can.facing, 0.45 / CONFIG.planetRadius);
+      c.sim.setOrientation(orientationFor(stand, tangentToward(stand, can.n) ?? can.facing.clone().negate()));
+      c.lift = c.terrain.walkHeight(c.sim.pLocal);
+      return true;
+    },
+    nearPlant: (i, side = 0) => {
+      const p = c.home?.garden.plants[i];
+      if (!p) return false;
+      const s = p.stands[side];
+      c.sim.setOrientation(orientationFor(s.n, tangentToward(s.n, p.n) ?? s.facing));
       c.lift = c.terrain.walkHeight(c.sim.pLocal);
       return true;
     },

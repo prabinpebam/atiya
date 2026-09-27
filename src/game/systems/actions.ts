@@ -7,7 +7,7 @@ import { clearSpot, standSpot, type Target } from './interactables';
  * The fixed action cycles (docs: collection-inventory.md §3.1, §5). Every activation plays the same
  * timed cycle: step to the working spot and turn to face the target, play the beats, step back.
  */
-export type ActionKind = 'shake' | 'mine' | 'pick' | 'open';
+export type ActionKind = 'shake' | 'mine' | 'pick' | 'open' | 'water';
 export type BeatKind = 'fruit' | 'leaf' | 'log' | 'hit' | 'pluck' | 'open';
 
 export interface Cycle {
@@ -45,6 +45,8 @@ export const CYCLES: Record<ActionKind, Cycle> = {
   },
   pick: { duration: 0.8, approach: 0.16, retreat: 0, beats: [{ t: 0.42, beat: 'pluck' }] },
   open: { duration: 0.5, approach: 0.16, retreat: 0, beats: [{ t: 0.32, beat: 'open' }] },
+  // watering a plant in the vegetable garden: the home chunk times the pour itself (garden.ts)
+  water: { duration: 1.6, approach: 0.22, retreat: 0, beats: [] },
 };
 
 export const actionFor = (t: Target): ActionKind | null =>
