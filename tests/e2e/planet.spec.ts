@@ -1630,7 +1630,9 @@ test.describe('player character', () => {
     await page.keyboard.up('PageDown');
     await expect.poll(async () => (await state(page)).pitch).toBeCloseTo(30, 1);
     const hidden = await brightened();
-    expect(hidden).toBeGreaterThan(Math.max(400, open * 8));
+    // the open count is idle-animation noise (measured 35–80 px between runs); a working outline gives ~560,
+    // a broken one about the noise again
+    expect(hidden).toBeGreaterThan(Math.max(400, open * 4));
   });
 
   test('the character picker switches to the female character (thick ring on the chosen one), by click or arrow keys, and remembers it', async ({ page }) => {
