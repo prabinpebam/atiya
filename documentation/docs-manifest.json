@@ -298,6 +298,15 @@
       "group": "Game UI"
     },
     {
+      "path": "game-ui/touch.md",
+      "title": "Touch controls",
+      "order": 42.5,
+      "icon": "swipe",
+      "status": "draft",
+      "updated": "2026-09-27",
+      "group": "Game UI"
+    },
+    {
       "path": "game-ui/tokens.md",
       "title": "Design tokens",
       "order": 43,

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="t d" font-family="Segoe UI, system-ui, sans-serif">
+  <title id="t">Touch gestures on the planet, and the floating stick's geometry</title>
+  <desc id="d">Left: a phone in portrait. A finger pressed anywhere on the planet and dragged more than 8 pixels makes the stick appear under it: a ring with a knob. The character walks the way the knob points, relative to the screen. A second finger dragging anywhere else turns and tilts the view. A tap without a drag still walks to that spot. The HUD keeps its own touches. Right: the stick's geometry. The range is 60 pixels from the centre. Inside 8 pixels nothing moves. From 8 pixels to 85 percent of the range the character walks, faster the further the knob goes. From 85 percent to the rim it runs, and it stays running until the knob comes back under 65 percent. Past the rim, the ring follows the finger.</desc>
+  <rect x="1" y="1" width="958" height="558" rx="18" fill="#f7f3ec" stroke="#1f1d24" stroke-width="2"/>
+  <g font-size="15" fill="#1f1d24">
+    <text x="40" y="44" font-weight="700" font-size="18">Gestures (touch only; mouse and pen are unchanged)</text>
+    <rect x="80" y="70" width="250" height="460" rx="34" fill="#bfe6ff" stroke="#1f1d24" stroke-width="2"/>
+    <rect x="96" y="86" width="218" height="30" rx="15" fill="#261e18"/>
+    <text x="205" y="106" text-anchor="middle" fill="#fff8ec" font-size="13">HUD keeps its own touches</text>
+    <ellipse cx="205" cy="300" rx="104" ry="120" fill="#9fd38a" stroke="#1f1d24" stroke-width="1.5"/>
+    <circle cx="205" cy="286" r="9" fill="#e5533d" stroke="#1f1d24" stroke-width="1.5"/>
+    <rect x="102" y="484" width="206" height="30" rx="8" fill="#261e18"/>
+    <text x="205" y="504" text-anchor="middle" fill="#fff8ec" font-size="13">Hotbar</text>
+    <circle cx="160" cy="410" r="44" fill="#fff8ec" fill-opacity="0.55" stroke="#261e18" stroke-width="3"/>
+    <circle cx="170" cy="384" r="20" fill="#fff8ec" stroke="#261e18" stroke-width="3"/>
+    <line x1="160" y1="410" x2="170" y2="384" stroke="#261e18" stroke-width="2" stroke-dasharray="3 3"/>
+    <circle cx="280" cy="200" r="14" fill="#3b5bdb" fill-opacity="0.8"/>
+    <path d="M280 200 L300 180" stroke="#3b5bdb" stroke-width="3" fill="none"/>
+    <path d="M294 178 L302 178 L300 186" stroke="#3b5bdb" stroke-width="3" fill="none"/>
+    <circle cx="130" cy="230" r="10" fill="none" stroke="#1f1d24" stroke-width="2" stroke-dasharray="3 3"/>
+    <line x1="208" y1="410" x2="356" y2="410" stroke="#1f1d24" stroke-width="1"/>
+    <text x="362" y="400" font-weight="700">One finger drag: the stick</text>
+    <text x="362" y="420">appears where you touch; walk, push to run</text>
+    <line x1="296" y1="200" x2="356" y2="200" stroke="#1f1d24" stroke-width="1"/>
+    <text x="362" y="192" font-weight="700">Second finger: turn and tilt</text>
+    <text x="362" y="212">or two fingers together</text>
+    <line x1="120" y1="230" x2="56" y2="230" stroke="#1f1d24" stroke-width="1"/>
+    <text x="52" y="224" text-anchor="end" font-weight="700">Tap</text>
+    <text x="52" y="244" text-anchor="end">walk there</text>
+    <text x="362" y="300" font-weight="700">Tap a prompt to use it</text>
+    <text x="362" y="320">keycaps hide while you use touch</text>
+    <line x1="560" y1="70" x2="560" y2="530" stroke="#1f1d24" stroke-width="1" stroke-dasharray="4 6"/>
+    <text x="590" y="44" font-weight="700" font-size="18">The stick</text>
+    <circle cx="760" cy="290" r="180" fill="#fff8ec" stroke="#261e18" stroke-width="3"/>
+    <circle cx="760" cy="290" r="153" fill="#f3c24d" fill-opacity="0.35" stroke="#b07d10" stroke-width="2" stroke-dasharray="6 5"/>
+    <circle cx="760" cy="290" r="117" fill="none" stroke="#b07d10" stroke-width="1.5" stroke-dasharray="2 5"/>
+    <circle cx="760" cy="290" r="24" fill="#d8d2c6" stroke="#261e18" stroke-width="2"/>
+    <circle cx="760" cy="290" r="3" fill="#261e18"/>
+    <line x1="760" y1="290" x2="940" y2="290" stroke="#261e18" stroke-width="1.5"/>
+    <text x="760" y="324" text-anchor="middle" font-size="13">8 px: nothing moves</text>
+    <text x="760" y="214" text-anchor="middle" font-weight="700">Walk</text>
+    <text x="760" y="234" text-anchor="middle" font-size="13">8 px to 85 %: faster the further</text>
+    <text x="760" y="152" text-anchor="middle" font-weight="700">Run</text>
+    <text x="760" y="172" text-anchor="middle" font-size="13">from 85 %, until back under 65 %</text>
+    <text x="760" y="96" text-anchor="middle" font-size="13">Range 60 px (7.5rem ring)</text>
+    <text x="760" y="498" text-anchor="middle" font-weight="700">Past the rim, the ring follows the finger</text>
+    <path d="M905 395 L940 430" stroke="#261e18" stroke-width="3" fill="none"/>
+    <path d="M928 432 L942 432 L940 418" stroke="#261e18" stroke-width="3" fill="none"/>
+  </g>
+</svg>
