@@ -147,6 +147,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 | Near a building (announced) | "Tap Open." instead of "Press E to open." |
 | View pad, Reset | 44 px (`c.view.btn-touch`, `c.btn.h`) |
 | Short screens (a phone held sideways, ≤ 500 px tall) | Count as compact (`COMPACT_QUERY`), so the aside gives way to a lane card, and the preview card drops its summary: a 390 px screen can't hold both, or the full card |
+| Small phones upright (touch, ≤ 700 px tall; Safari's toolbars leave an iPhone 13 390 × 664) | The preview card drops its summary too, so it clears the view pad and Reset. At ≤ 600 px (an iPhone SE, 375 × 553) Reset moves beside the pad; the card may still cover the lower third of the tilt-down button there |
 | Hotbar slots | Unchanged: 28 px at 360 px portrait (WCAG 2.5.8), 48 px in landscape. The one sanctioned exception to 44 px: nine slots, the backpack and the whistle must fit a phone held upright |
 
 ### 5.5 Platform hygiene
@@ -199,6 +200,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
   - **The stick's layer** moved from `--layer-base` to a new `--layer-stick` over the lanes: under the hint or a preview card, it vanished exactly where the thumb was.
   - **The hint lets touches through** (`pointer-events: none` in touch mode, its link excepted): in portrait it sits where the thumb rests, and a first drag there did nothing.
   - **Short screens count as compact**, and the preview card drops its summary there: held sideways, the card and the hint overlapped, and the card reached the top bar.
+  - **Small phones upright** (found on the live site with Safari's real visible height, 390 × 664): the card covered Reset. On touch at ≤ 700 px it drops its summary as well, and at ≤ 600 px Reset sits beside the pad. Checked at 390 × 664, 375 × 553, 390 × 844 and 844 × 390; a laptop's short window (1366 × 650) keeps the full card.
 - Announcements are reworded in the chunk (`forTouch`: "Press E to open." becomes "Tap Open."), so the main bundle carries no second set of strings. The site card's hint and Prabin's one line that said "press E" follow the input too, or no longer name a key.
 - **Budgets:** the game's initial JS went from 449.7 to 449.9 KB gz (limit 450); the touch chunk is 1.8 KB, and on-demand JS is 77.2 KB (limit 80). A mouse-only device never requests the chunk.
 

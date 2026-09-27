@@ -216,9 +216,17 @@ body.play {
   font-size: var(--text-2xl);
 }
 
-/* a phone held sideways: the card keeps its title and actions (the summary is on the page it opens) */
+/* a short screen: the card keeps its title and actions (the summary is on the page it opens). Held
+ * sideways (≤ 500 px) for everyone; up to 700 px on touch, where a small phone upright would otherwise
+ * cover the view pad (a laptop's short window keeps the summary) */
 @media (max-height: 500px) {
   .preview-card > p:not(.kicker) {
+    display: none;
+  }
+}
+
+@media (max-height: 700px) {
+  [data-input='touch'] .preview-card > p:not(.kicker) {
     display: none;
   }
 }
@@ -535,6 +543,17 @@ body.play {
 
 [data-input='touch'] .view-home {
   min-height: var(--c-btn-h);
+}
+
+/* a small phone upright (≤ 600 px tall): Reset sits beside the pad, so a preview card can't cover it */
+@media (max-width: 720px) and (max-height: 600px) {
+  [data-input='touch'] .view-controls {
+    grid-auto-flow: column;
+    align-items: start;
+  }
+  [data-input='touch'] .view-home {
+    order: -1;
+  }
 }
 
 /* the travel fade */
