@@ -7,6 +7,10 @@ import { MUSIC } from '../../src/game/audio/musicManifest';
 import {
   WADE_SPLASH_U,
   birdsSing,
+  cricketLevel,
+  frogLevel,
+  nextCroakDelay,
+  nightSoon,
   contactPhase,
   crossedPhase,
   nextBirdDelay,
@@ -57,28 +61,33 @@ function mp3Seconds(file: string): number {
 describe('audio manifest', () => {
   const files = Object.values(AUDIO).map((a) => join(PUBLIC, a.url));
 
-  it('every file exists, is a small MP3 and the whole set stays under 800 KB', () => {
-    let total = 0;
-    for (const f of files) {
-      const size = statSync(f).size;
-      expect(size, f).toBeGreaterThan(10_000);
-      total += size;
+  it('every file exists and is a small MP3; the set fetched on Start stays under 800 KB, the night set under 200 KB', () => {
+    let eager = 0;
+    let night = 0;
+    for (const [key, a] of Object.entries(AUDIO)) {
+      const size = statSync(join(PUBLIC, a.url)).size;
+      expect(size, key).toBeGreaterThan(10_000);
+      if ('lazy' in a) night += size;
+      else eager += size;
     }
-    expect(total).toBeLessThan(800 * 1024);
+    expect(files.length).toBe(Object.keys(AUDIO).length);
+    expect(eager).toBeLessThan(800 * 1024);
+    expect(night).toBeLessThan(200 * 1024);
+    expect(Object.entries(AUDIO).filter(([, a]) => 'lazy' in a).map(([k]) => k)).toEqual(['crickets', 'frogs', 'croaks']);
   });
 
   it('loops sit inside their files with a padded run-in and run-out', () => {
-    for (const key of ['stream', 'wind'] as const) {
+    for (const key of ['stream', 'wind', 'crickets', 'frogs'] as const) {
       const m = AUDIO[key];
       const dur = mp3Seconds(join(PUBLIC, m.url));
       expect(m.loopStart, key).toBeGreaterThanOrEqual(0.5);
-      expect(m.loopEnd - m.loopStart, key).toBeGreaterThan(15);
+      expect(m.loopEnd - m.loopStart, key).toBeGreaterThan(11);
       expect(dur - m.loopEnd, key).toBeGreaterThan(0.5);
     }
   });
 
   it('sprite slots are in order, never overlap and fit in the file', () => {
-    for (const key of ['steps', 'birds', 'ui'] as const) {
+    for (const key of ['steps', 'birds', 'ui', 'croaks'] as const) {
       const m = AUDIO[key];
       const dur = mp3Seconds(join(PUBLIC, m.url));
       const slots = Object.values(m.slots as Record<string, ReadonlyArray<readonly [number, number]>>)
@@ -98,6 +107,7 @@ describe('audio manifest', () => {
   it('has every sound the game asks for, with variations for the repeated ones', () => {
     for (const s of ['grass', 'wood', 'stone', 'water'] as const) expect(AUDIO.steps.slots[s].length).toBeGreaterThanOrEqual(4);
     expect(AUDIO.birds.slots.song.length).toBeGreaterThanOrEqual(4);
+    expect(AUDIO.croaks.slots.croak.length).toBeGreaterThanOrEqual(4);
     for (const cue of ['chime', 'sparkle', 'doorOpen', 'doorClose', 'curtain'] as const) expect(AUDIO.ui.slots[cue].length).toBe(1);
   });
 });
@@ -153,6 +163,38 @@ describe('sound rules', () => {
       const d = nextBirdDelay(r);
       expect(d).toBeGreaterThanOrEqual(5);
       expect(d).toBeLessThanOrEqual(16);
+    }
+  });
+
+  it('the crickets come up as the birds fall quiet; the frogs call only at night and by the water', () => {
+    expect(cricketLevel(0)).toBe(0);
+    expect(cricketLevel(0.3)).toBe(0);
+    expect(cricketLevel(0.5)).toBeGreaterThan(0.3);
+    expect(cricketLevel(0.7)).toBe(1);
+    expect(cricketLevel(1)).toBe(1);
+    // (they overlap the birds' last calls a little, as at a real dusk)
+    expect(birdsSing(0.32) && cricketLevel(0.32) > 0).toBe(true);
+    expect(frogLevel(0, 0)).toBe(0);
+    expect(frogLevel(1, 0)).toBeCloseTo(1, 5);
+    expect(frogLevel(1, -1)).toBeCloseTo(1, 5);
+    let prev = 1;
+    for (let d = 0.5; d < 20; d += 0.5) {
+      const v = frogLevel(1, d);
+      expect(v).toBeLessThanOrEqual(prev);
+      prev = v;
+    }
+    expect(frogLevel(1, 3)).toBeGreaterThan(0.3);
+    expect(frogLevel(1, 15)).toBe(0);
+    expect(frogLevel(1, Infinity)).toBe(0);
+    // fetched from dusk on, never on a daytime visit
+    expect(nightSoon(0.1)).toBe(false);
+    expect(nightSoon(0.25)).toBe(true);
+    expect(nightSoon(0.25) && cricketLevel(0.25) === 0).toBe(true);
+    const r = rng(5);
+    for (let i = 0; i < 100; i++) {
+      const d = nextCroakDelay(r);
+      expect(d).toBeGreaterThanOrEqual(2.5);
+      expect(d).toBeLessThanOrEqual(8.5);
     }
   });
 
@@ -225,14 +267,14 @@ describe('sound engine (no audio device)', () => {
 
   it('follows the wind and stream, and only schedules birds by day', () => {
     const e = new SoundEngine(true, rng());
-    e.update(0.1, { strength: 0.3, gust: 1, stream: 0.4, streamPan: -0.5, night: 0 });
+    e.update(0.1, { strength: 0.3, gust: 1, stream: 0.4, streamPan: -0.5, night: 0, water: 5 });
     expect(e.levels.stream).toBe(0.4);
     expect(e.levels.streamPan).toBe(-0.5);
     expect(e.levels.wind).toBeCloseTo(windMix(0.3, 1).level, 6);
-    for (let t = 0; t < 60; t += 0.2) e.update(0.2, { strength: 0.3, gust: 0, stream: 0, streamPan: 0, night: 0 });
+    for (let t = 0; t < 60; t += 0.2) e.update(0.2, { strength: 0.3, gust: 0, stream: 0, streamPan: 0, night: 0, water: 5 });
     const day = e.events.filter((x) => x.kind === 'bird').length;
     expect(day).toBeGreaterThanOrEqual(3);
-    for (let t = 0; t < 60; t += 0.2) e.update(0.2, { strength: 0.3, gust: 0, stream: 0, streamPan: 0, night: 1 });
+    for (let t = 0; t < 60; t += 0.2) e.update(0.2, { strength: 0.3, gust: 0, stream: 0, streamPan: 0, night: 1, water: 5 });
     expect(e.events.filter((x) => x.kind === 'bird').length).toBe(day);
   });
 });

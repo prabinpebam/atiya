@@ -58,6 +58,7 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
 | Planks | 1 wood log | 4 |
 | Wooden beam | 2 wood logs | 1 |
 | Stone slab | 2 stones | 1 |
+| Jute rope ([swing.md](./swing.md)) | 3 jute | 1 |
 | Paint (7 colours: red, pink, yellow, white, orange, purple, blue) | any 3 flowers of that colour | 1 |
 
 - **Bulk crafting:** 1 to 10 at once, capped by the materials in the backpack and by room for the result.

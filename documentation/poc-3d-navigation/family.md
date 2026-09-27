@@ -31,7 +31,10 @@ distance in u), **nicely spaced** (≥ 1.5 u between features) with room to walk
 | **Picnic table** with two chairs | 211°, 3.7 u | table 0.46 u, chairs 0.22 u |
 | **Picnic mat** (painted gingham blanket) with Lingjel's Lego and toy cars | 186°, 3.55 u | none (you walk on it) |
 | **Campsite**: stone fire ring, two camp chairs, a log bench, the guitar leaning on a chair | 272°, 4.3 u | ring 0.5 u, chairs 0.3 u, log 0.3 u |
-| **Laija's reading tree** (a hardwood) | 178°, 5.5 u | as trees |
+| **The old oak** (Laija's reading tree; bigger than the other hardwoods, with a long, level branch for the swing: [swing.md](./swing.md)) | 106°, 6.2 u | 0.5 u |
+| **The swing** (built at the crafting table's call; its ghost until then) | under the oak's branch, 255° round from the oak's heading to the pond | 0.35 u once built |
+| **The jute row** (five plants, picked for jute) | 4.75 u behind the house, outside the vegetable garden's back fence | none |
+| **The ducks' nest** | on the far bank at 60°, the pond's radius + 0.42 u, facing the water | 0.24 u |
 | **Pebble shore** | the pond's edge at 206° | none |
 | **Pond bench** (a slatted park bench, feeding the ducks) | on the bank at 260°, the pond's radius + 1.45 u, facing the water | 0.5 u (as benches) |
 | **String lights** from the house's corner to a post by the table | — | post 0.1 u |
@@ -113,6 +116,7 @@ the home (within 7 u of it, never into the pond).
 - **Pebbles:** Laija throws from a new spot on the pond's edge each time, anywhere along the home's side of the pond.
 - **Feeding the ducks** (`ducks`, anyone, Prabin too): they walk to the family's end of the pond bench (a `bench` seat in `world/home/seats.ts`, 0.28 u along it; the visitor's seat is the other end, so both can sit together), sit, and toss a handful of crumbs every 2.4 s for 16–26 s. Each handful is a `feed` event that the home's view passes to `controller.duckFeed` (`systems/duckFeed.ts`), the same as the visitor's.
 - **Watering the garden** (`water`, Rojina and Prabin): when the watering can is by the beds, at least three plants are thirsty and the visitor isn't within 2.5 u of the can (the visitor has priority), they walk to the can, pick it up, water the nearest thirsty plant from the house side of its bed (the fence side is tight), then the next, until none is thirsty, and put the can back where it was. A plant they can't reach within 20 s is skipped. If the activity is cut short (bedtime, a meal, a talk), the can goes straight back to its spot: nobody walks off with it. See §6.2.
+- **The swing** (`swing`, the children, often; `swingGrown`, Rojina and Prabin, now and then; once it's built: [swing.md §6](./swing.md#6-riding-the-swing)): when nobody's on it, they walk to one of its entry points (in front of it, or to either side in front of the ropes; a `swing` seat in `world/home/seats.ts`), sit on the plank, and pump it for 14–24 s (the children harder), then let it die down and get off. If the visitor gets on first, they go and do something else; if someone stands on the entry point they chose, they take another.
 - **Talking in pairs:** the one who starts walks over; both stop and face each other and a small
   speech bubble ("…") pops over whoever is speaking, alternating; 6–9 s.
 - **Butterflies:** three live by the home (the kids chase them); rabbits nearby also get chased
@@ -150,8 +154,8 @@ the home (within 7 u of it, never into the pond).
   inside the pond, `FEED.inset` of the way in from the shore) with a ripple, then floats and fades
   over 5 s. At most one handful per 0.9 s per feeder. The first handful is announced.
 - **The ducks:** the crumbs draw the duck for 14 s after the last handful (`WildEnv.feed`,
-  `world/animals.ts`): she swims over, slows as she arrives and dabbles for them, and her ducklings
-  follow her in a line. A seated visitor doesn't frighten her (`WildEnv.calm`); a walking one still
+  `world/animals.ts`): she swims over, slows as she arrives and pecks at the water for them, head
+  down and up with pauses to swallow, and her ducklings crowd round the crumbs and peck too. A seated visitor doesn't frighten her (`WildEnv.calm`); a walking one still
   does, at the usual distance.
 
 ### 6.2 Watering the garden

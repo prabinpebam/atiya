@@ -22,6 +22,7 @@ function world(player = UP.clone() as Vector3, night = 0): { env: WildEnv; w: Wi
     inWater: (n) => terrain.inWater(n),
     pond: layout.pond ? { n: layout.pond.n, shore: (n) => terrain.pondShore(n) } : null,
     river: layout.river,
+    nest: layout.home?.duckNest.n ?? null,
   };
   const spots = meadowSpots(env, layout.grass.map((g) => g.n), UP as Vector3);
   return { env, w: createWildlife(env, spots) };
@@ -90,6 +91,57 @@ describe('wildlife', () => {
     run(w, env, 3);
     expect(duck.state).toBe('flee');
     expect(d(duck.n, env.player)).toBeGreaterThan(before);
+  });
+
+  it('the ducklings weave along behind her, each at its own distance and side, and now and then stop to peck', () => {
+    // (the character across the planet from the pond, so nothing startles them)
+    const { w, env } = world(layout.pond!.n.clone().negate());
+    const duck = w.duck!;
+    const side = w.ducklings.map(() => [] as number[]);
+    let dawdles = 0;
+    run(w, env, 120, () => {
+      let lead: { n: Vector3; dir: Vector3 } = duck;
+      w.ducklings.forEach((k, i) => {
+        const off = tangentToward(lead.n, k.n);
+        if (off) side[i].push(new Vector3().crossVectors(lead.n, lead.dir).dot(off));
+        if (k.dawdle > 0 && k.peck > 0.5) dawdles++;
+        lead = k;
+      });
+    });
+    // not a straight line: each one strays to the sides (both ways) by a clear margin
+    for (const s of side) {
+      expect(Math.max(...s)).toBeGreaterThan(0.15);
+      expect(Math.min(...s)).toBeLessThan(-0.15);
+    }
+    // their own distances behind
+    expect(new Set(w.ducklings.map((k) => k.gap.toFixed(3))).size).toBe(w.ducklings.length);
+    expect(dawdles).toBeGreaterThan(0);
+  });
+
+  it('at night the duck leads the ducklings up the bank to their nest and sleeps; in the morning they swim again', () => {
+    const { w, env } = world(layout.pond!.n.clone().negate());
+    const duck = w.duck!;
+    const nest = layout.home!.duckNest.n;
+    const pond = layout.pond!;
+    run(w, env, 20);
+    env.night = 1;
+    run(w, env, 90);
+    expect(duck.state).toBe('nest');
+    expect(d(duck.n, nest)).toBeLessThan(0.06);
+    expect(duck.rest).toBeGreaterThan(0.9);
+    expect(terrain.inWater(duck.n)).toBe(false);
+    for (const k of w.ducklings) expect(d(k.n, nest)).toBeLessThan(0.3);
+    // asleep, she sits tight even when the character walks by
+    env.player = near(nest, 1.2);
+    run(w, env, 5);
+    expect(duck.state).toBe('nest');
+    // morning: back into the water, and paddling about again
+    env.night = 0;
+    env.player = layout.pond!.n.clone().negate();
+    run(w, env, 40);
+    expect(duck.state).not.toBe('nest');
+    expect(d(duck.n, pond.n)).toBeLessThan(terrain.pondShore(duck.n) - 0.3);
+    expect(duck.rest).toBeLessThan(0.05);
   });
 
   it('fish stay in the water; stream fish face upstream; all dart from a close character', () => {

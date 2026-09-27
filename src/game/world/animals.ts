@@ -10,8 +10,12 @@
  *   home patch, never into water or obstacles. A nearby threat makes them *freeze* upright facing it
  *   (vigilance); a close one makes them *bolt* in fast zigzag hops, then stay alert before grazing.
  * - **The duck** paddles about the pond (contained by its shore) with dabbling pauses; her
- *   **ducklings** follow in a line, each arriving just behind the one ahead. A close threat sends
- *   her briskly away (still inside the pond) and the brood hurries after her.
+ *   **ducklings** follow in a loose, weaving line, each at its own distance and to its own side of
+ *   the one ahead, now and then stopping to peck at the water and hurrying to catch up. A close
+ *   threat sends her briskly away (still inside the pond) and the brood hurries after her. At
+ *   crumbs she pecks at the water; the ducklings crowd round the crumbs and peck too. At night she
+ *   leads them out onto the bank to their nest and sleeps there, head tucked, the ducklings snuggled
+ *   round her; in the morning they go back to the water.
  * - **Pond fish** cruise as a loose school (wander + separation + containment); **stream fish** hold
  *   station facing upstream, like trout. Both dart away from a close threat, then settle again.
  * - **Birds** peck on the ground in little hops, or fly as a flock over the planet (boids plus an
@@ -34,7 +38,7 @@ const R = CONFIG.planetRadius;
 /** Behaviour distances (u) and speeds (u/s), after the real animals (scaled to the diorama). */
 export const WILD = {
   rabbit: { alert: 4.0, flee: 2.4, safe: 5.2, hopLen: 0.3, hopTime: 0.3, fleeHopLen: 0.62, fleeHopTime: 0.26, range: 3.5 },
-  duck: { flee: 2.6, calm: 4.2, speed: 0.22, fleeSpeed: 0.7, shoreMargin: 0.55, spacing: 0.24, feedSpeed: 0.4, feedReach: 0.18 },
+  duck: { flee: 2.6, calm: 4.2, speed: 0.22, fleeSpeed: 0.7, shoreMargin: 0.55, spacing: 0.24, feedSpeed: 0.4, feedReach: 0.18, nestAt: 0.55, wakeAt: 0.35, walk: 0.16, nestR: 0.15 },
   fish: { flee: 1.7, cruise: 0.3, dart: 1.7, dartTime: 0.7, shoreMargin: 0.35, separation: 0.3 },
   bird: { takeOff: 2.4, landAway: 5, speed: 2.1, minAlt: 2.3, maxAlt: 3.8, separation: 0.55, neighbour: 3.2, nightHide: 0.6 },
 } as const;
@@ -63,8 +67,23 @@ export interface Swimmer {
   speed: number;
 }
 export interface Duck extends Swimmer {
-  state: 'paddle' | 'dabble' | 'flee' | 'feed';
+  state: 'paddle' | 'dabble' | 'flee' | 'feed' | 'toNest' | 'nest' | 'leave';
   timer: number;
+  /** Her own clock (s): the pecking rhythm. */
+  clock: number;
+  /** How far her head is down (0 up … 1 bill in the water), pecking at crumbs. */
+  peck: number;
+  /** 0 awake … 1 settled asleep in the nest (head tucked). */
+  rest: number;
+}
+export interface Duckling extends Swimmer {
+  /** Its own place in the brood: how far behind the one ahead (u), how far to the side (u), and a phase for its weaving. */
+  gap: number;
+  side: number;
+  phase: number;
+  /** Seconds left dawdling (it stopped to peck at something), and how far its head is down (0…1). */
+  dawdle: number;
+  peck: number;
 }
 export interface Fish extends Swimmer {
   state: 'cruise' | 'hold' | 'dart';
@@ -108,12 +127,14 @@ export interface WildEnv {
   feed?: Vector3 | null;
   /** The character is sitting still (on a bench): the duck doesn't take fright at them. */
   calm?: boolean;
+  /** The ducks' nest on the pond's bank (homestead.ts `duckNest`), where they sleep at night. */
+  nest?: Vector3 | null;
 }
 
 export interface Wildlife {
   rabbits: Rabbit[];
   duck: Duck | null;
-  ducklings: Swimmer[];
+  ducklings: Duckling[];
   fish: Fish[];
   birds: Bird[];
   rand: () => number;
@@ -205,15 +226,17 @@ export function createWildlife(env: WildEnv, spots: readonly Vector3[], seed = 4
     rabbits.push({ n, dir: tangentAt(n, rand), home: n.clone(), state: 'graze', timer: 1 + rand() * 4, upright: false, hopsLeft: 0, hop: -1, hopTime: WILD.rabbit.hopTime, from: n.clone(), to: n.clone(), zig: 1 });
   }
   let duck: Duck | null = null;
-  const ducklings: Swimmer[] = [];
+  const ducklings: Duckling[] = [];
   const fish: Fish[] = [];
   const pond = env.pond;
   if (pond) {
     const n = moveAlong(pond.n, tangentAt(pond.n, rand), (pond.shore(pond.n) * 0.3) / R);
-    duck = { n, dir: tangentAt(n, rand), speed: WILD.duck.speed, state: 'paddle', timer: 3 + rand() * 4 };
+    duck = { n, dir: tangentAt(n, rand), speed: WILD.duck.speed, state: 'paddle', timer: 3 + rand() * 4, clock: 0, peck: 0, rest: 0 };
+    // (their own seed, so the rest of the population is unchanged)
+    const kid = mulberry32(seed + 7);
     for (let i = 0; i < 4; i++) {
       const d = moveAlong(n, duck.dir, (-(i + 1) * WILD.duck.spacing) / R);
-      ducklings.push({ n: d, dir: duck.dir.clone(), speed: 0 });
+      ducklings.push({ n: d, dir: duck.dir.clone(), speed: 0, gap: WILD.duck.spacing * (0.75 + kid() * 0.55), side: (kid() - 0.5) * 0.14, phase: kid() * 6.28, dawdle: 0, peck: 0 });
     }
     for (let i = 0; i < 5; i++) {
       const f = moveAlong(pond.n, tangentAt(pond.n, rand), (pond.shore(pond.n) * (0.2 + rand() * 0.4)) / R);
@@ -355,29 +378,70 @@ function stepRabbit(r: Rabbit, env: WildEnv, dt: number, rand: () => number): vo
 // Duck and ducklings
 // ---------------------------------------------------------------------------
 
-function stepDuck(duck: Duck, brood: Swimmer[], env: WildEnv, dt: number, rand: () => number): void {
+/** A point `r` u from `c` in the tangent direction `ref` turned by `a` (rad) about `c`. */
+function around(c: Vector3, ref: Vector3, a: number, r: number): Vector3 {
+  const dir = ref.clone().addScaledVector(c, -ref.dot(c)).normalize();
+  rotateAbout(dir, c, a);
+  return moveAlong(c, dir, r / R);
+}
+
+/** A quick head-down peck, then back up, a few a second, with a pause to swallow now and then. */
+const pecking = (t: number) => (Math.sin(t * 7.5) > 0.25 && t % 2.6 < 1.9 ? 1 : 0);
+
+function stepDuck(duck: Duck, brood: Duckling[], env: WildEnv, dt: number, rand: () => number): void {
   const W = WILD.duck;
   const pond = env.pond;
   if (!pond) return;
-  const d = dist(duck.n, env.player);
-  const scared = !env.calm && d < W.flee;
-  if (scared) duck.state = 'flee';
-  else if (duck.state === 'flee' && (env.calm || d > W.calm)) {
+  duck.clock += dt;
+  const margin = (n: Vector3) => pond.shore(n) - dist(n, pond.n);
+  const ashore = margin(duck.n) < 0;
+  const nest = env.nest ?? null;
+  // night: out onto the bank to the nest; morning: back to the water
+  if (nest && env.night > W.nestAt) {
+    if (duck.state !== 'nest') duck.state = 'toNest';
+  } else if (duck.state === 'toNest' || duck.state === 'nest') duck.state = 'leave';
+  else if (duck.state === 'leave' && margin(duck.n) > W.shoreMargin) {
     duck.state = 'paddle';
     duck.timer = 3 + rand() * 4;
   }
-  // crumbs on the water: over to them (arriving slowly), then dabbling for them while they last
-  if (env.feed && duck.state !== 'flee') duck.state = 'feed';
-  else if (!env.feed && duck.state === 'feed') {
-    duck.state = 'paddle';
-    duck.timer = 3 + rand() * 4;
+  const nightly = duck.state === 'toNest' || duck.state === 'nest' || duck.state === 'leave';
+  const d = dist(duck.n, env.player);
+  if (!nightly) {
+    const scared = !env.calm && d < W.flee;
+    if (scared) duck.state = 'flee';
+    else if (duck.state === 'flee' && (env.calm || d > W.calm)) {
+      duck.state = 'paddle';
+      duck.timer = 3 + rand() * 4;
+    }
+    // crumbs on the water: over to them (arriving slowly), then pecking at them while they last
+    if (env.feed && duck.state !== 'flee') duck.state = 'feed';
+    else if (!env.feed && duck.state === 'feed') {
+      duck.state = 'paddle';
+      duck.timer = 3 + rand() * 4;
+    }
   }
   let target = 0;
-  if (duck.state === 'feed') {
+  let eating = false;
+  if (duck.state === 'toNest' && nest) {
+    const gap = dist(duck.n, nest);
+    const toward = tangentToward(duck.n, nest);
+    if (toward && gap > 0.02) turnToward(duck.dir, duck.n, toward, 4 * dt);
+    target = Math.min(ashore ? W.walk : W.speed * 1.4, gap * 1.5 + 0.03);
+    if (gap < 0.04) duck.state = 'nest';
+  } else if (duck.state === 'nest') {
+    // settled in, facing the water
+    const out = tangentToward(duck.n, pond.n);
+    if (out) turnToward(duck.dir, duck.n, out, 1.2 * dt);
+  } else if (duck.state === 'leave') {
+    const toward = tangentToward(duck.n, pond.n);
+    if (toward) turnToward(duck.dir, duck.n, toward, 4 * dt);
+    target = ashore ? W.walk : W.speed;
+  } else if (duck.state === 'feed') {
     const gap = dist(duck.n, env.feed!);
     const toward = tangentToward(duck.n, env.feed!);
     if (toward && gap > 0.05) turnToward(duck.dir, duck.n, toward, 3 * dt);
     target = gap < W.feedReach ? 0 : Math.min(W.feedSpeed, (gap - W.feedReach) * 1.5 + 0.05);
+    eating = gap < W.feedReach + 0.12;
   } else if (duck.state === 'flee') {
     const away = awayFrom(duck.n, env.player);
     if (away) turnToward(duck.dir, duck.n, away, 3 * dt);
@@ -398,31 +462,58 @@ function stepDuck(duck: Duck, brood: Swimmer[], env: WildEnv, dt: number, rand: 
       duck.timer = 1.2 + rand() * 1.8;
     }
   }
-  // containment: steer back toward the middle before the shore
-  const margin = pond.shore(duck.n) - dist(duck.n, pond.n);
-  if (margin < W.shoreMargin) {
-    const inward = tangentToward(duck.n, pond.n);
-    if (inward) turnToward(duck.dir, duck.n, inward, (duck.state === 'flee' ? 5 : 2.5) * dt * (1 + (W.shoreMargin - margin) * 4));
+  duck.peck += ((eating ? pecking(duck.clock) : 0) - duck.peck) * Math.min(1, dt * 16);
+  duck.rest += ((duck.state === 'nest' ? 1 : 0) - duck.rest) * Math.min(1, dt * (duck.state === 'nest' ? 0.5 : 2));
+  if (!nightly) {
+    // containment: steer back toward the middle before the shore
+    const m = margin(duck.n);
+    if (m < W.shoreMargin) {
+      const inward = tangentToward(duck.n, pond.n);
+      if (inward) turnToward(duck.dir, duck.n, inward, (duck.state === 'flee' ? 5 : 2.5) * dt * (1 + (W.shoreMargin - m) * 4));
+    }
   }
   duck.speed += (target - duck.speed) * Math.min(1, dt * 2.5);
-  // never paddle out of the water: turn instead
   const next = moveAlong(duck.n, duck.dir, (duck.speed * dt) / R);
-  if (pond.shore(next) - dist(next, pond.n) > 0.15) {
+  // by day she never paddles out of the water (she turns instead); at night she walks up the bank
+  if (nightly || margin(next) > 0.15) {
     duck.n.copy(next);
     transport(duck.dir, duck.n);
   } else rotateAbout(duck.dir, duck.n, 2.2 * dt + 0.3);
-  // ducklings: follow the leader, each arriving a spacing behind the one ahead
+
+  // ducklings: each follows the one ahead at its own distance and to its own side, weaving a little
+  const home = duck.state === 'nest' && nest ? nest : null;
+  const crumbs = duck.state === 'feed' && env.feed && dist(duck.n, env.feed) < 0.9 ? env.feed : null;
+  const ref = tangentToward(home ?? crumbs ?? duck.n, pond.n) ?? duck.dir;
   let lead: Swimmer = duck;
-  for (const k of brood) {
-    const slot = moveAlong(lead.n, lead.dir, -W.spacing / R);
+  brood.forEach((k, i) => {
+    k.phase += dt;
+    let slot: Vector3;
+    if (home) slot = around(home, ref, 0.6 + (i / brood.length) * Math.PI * 2, W.nestR + (i % 2) * 0.03);
+    else if (crumbs) slot = around(crumbs, ref, 2.2 + i * 1.3 + Math.sin(k.phase * 0.4) * 0.3, 0.16 + (i % 2) * 0.06);
+    else {
+      const behind = moveAlong(lead.n, lead.dir, -k.gap / R);
+      const side = new Vector3().crossVectors(lead.n, lead.dir).normalize();
+      slot = moveAlong(behind, side, (k.side + 0.05 * Math.sin(k.phase * 0.8 + i * 1.9)) / R);
+    }
+    // now and then one stops to peck at something on the water, then hurries after the others
+    if (k.dawdle > 0) k.dawdle -= dt;
+    else if (!nightly && !crumbs && duck.state !== 'flee' && rand() < dt * 0.06) k.dawdle = 0.6 + rand() * 1.2;
+    if (nightly || crumbs || duck.state === 'flee') k.dawdle = 0;
     const gap = dist(k.n, slot);
     const toward = tangentToward(k.n, slot);
-    if (toward) turnToward(k.dir, k.n, toward, 6 * dt);
-    const want = Math.min(1.1, gap * 2.2); // arrive: slow down as it closes in
+    if (toward && gap > 0.01) turnToward(k.dir, k.n, toward, 6 * dt);
+    else if (home) {
+      const out = tangentToward(k.n, pond.n);
+      if (out) turnToward(k.dir, k.n, out, 2 * dt);
+    }
+    // arrive: slow down as it closes in (a dawdler stops, then catches up at a scurry)
+    const want = k.dawdle > 0 ? 0 : Math.min(nightly ? 0.5 : 1.3, gap * 2.2);
     k.speed += (want - k.speed) * Math.min(1, dt * 4);
     step(k, k.speed * dt);
+    const peck = k.dawdle > 0 || (crumbs && gap < 0.1) ? pecking(k.phase + i * 0.7) : 0;
+    k.peck += (peck - k.peck) * Math.min(1, dt * 16);
     lead = k;
-  }
+  });
 }
 
 // ---------------------------------------------------------------------------

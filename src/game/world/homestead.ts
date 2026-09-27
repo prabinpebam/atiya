@@ -30,9 +30,13 @@ export interface Homestead {
   fire: HomeSpot;
   campChairs: HomeSpot[];
   log: HomeSpot;
-  /** Laija's reading tree (a hardwood added to the layout) and where she sits against it. */
+  /** The old oak (Laija's reading tree; swing.md §4.3) and where she sits against it. */
   tree: Vector3;
   treeSeat: HomeSpot;
+  /** Where the swing hangs under the oak's long branch (swing.md §4.4): the ground under its seat, facing the way a rider faces (toward the pond). */
+  swing: HomeSpot;
+  /** The branch's heading from the trunk (a unit tangent at `tree`). */
+  swingLimb: Vector3;
   /** Where Laija stands to throw pebbles, facing the water. */
   shore: HomeSpot;
   /** The string lights' far post. */
@@ -41,6 +45,8 @@ export interface Homestead {
   dogHouse: HomeSpot;
   /** The bench on the pond's bank, facing the water: the visitor and the family sit there and feed the ducks. */
   pondBench: HomeSpot;
+  /** The ducks' nest on the bank across the pond from the house, facing the water: where they sleep at night. */
+  duckNest: HomeSpot;
   /** Round the house (the lived-in touches): the back yard's fence and vegetable beds, the tulsi in front, the woodpile. */
   yard: Yard;
   obstacles: Obstacle[];
@@ -59,6 +65,8 @@ export interface Yard {
   tulsi: HomeSpot;
   /** Firewood stacked against the house's side wall. */
   woodpile: HomeSpot;
+  /** The jute row behind the garden's back fence (swing.md §4.2), each plant facing the house. */
+  jute: HomeSpot[];
 }
 
 /** Yard sizes (u): the beds' length and width, the fence's post spacing. */
@@ -82,7 +90,21 @@ const POND_BENCH_DEG = 260;
  */
 export const PROP_SCALE = 0.72;
 
-export const HOME_R = { house: 1.25, chair: 0.22, table: 0.46, fire: 0.42, log: 0.25, post: 0.1, tree: 0.42, dogHouse: 0.7 } as const;
+export const HOME_R = { house: 1.25, chair: 0.22, table: 0.46, fire: 0.42, log: 0.25, post: 0.1, tree: 0.5, dogHouse: 0.7, nest: 0.24, swing: 0.35 } as const;
+
+/**
+ * The swing (swing.md §4.3–4.4): the oak's branch reaches out `deg` round from the tree's heading to
+ * the pond (clear of Laija's seat and the picnic mat), and the ropes hang from it `out` u from the
+ * trunk (in the oak's frame), where the branch is `branch` u up. The seat's middle is `seatY` above
+ * the ground and `seatT` thick (its top is where a rider sits).
+ */
+export const SWING = { deg: 255, out: 1.2, branch: 1.64, seatY: 0.42, seatT: 0.045 } as const;
+
+/** The jute row (swing.md §4.2): how far behind the house (u) and the plants' offsets to the side. */
+export const JUTE_ROW = { back: 4.75, side: [-1.6, -0.8, 0, 0.8, 1.6] } as const;
+
+/** The ducks' nest: where round the pond (degrees, as in the plan) and how far beyond its nominal radius (u). */
+export const DUCK_NEST = { deg: 60, out: 0.42 } as const;
 
 export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const R = cfg.planetRadius;
@@ -137,6 +159,14 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const tree = at(106, 6.2);
   const treeSeatN = moveAlong(tree, facingTo(tree, pond.n), (HOME_R.tree + 0.25) / R);
   const treeSeat = { n: treeSeatN, facing: facingTo(treeSeatN, pond.n) };
+  const swingLimb = facingTo(tree, pond.n).applyAxisAngle(tree, (SWING.deg * Math.PI) / 180);
+  swingLimb.addScaledVector(tree, -swingLimb.dot(tree)).normalize();
+  // the ground right under where the ropes hang (the planet curves away under the branch)
+  const swingN = moveAlong(tree, swingLimb, Math.atan(SWING.out / (R + SWING.branch)));
+  const swingFacing = new Vector3().crossVectors(swingN, swingLimb).normalize();
+  // a rider faces the pond (the seat swings across the branch either way)
+  if (swingFacing.dot(facingTo(swingN, pond.n)) < 0) swingFacing.negate();
+  const swing = { n: swingN, facing: swingFacing };
   const shore = spot(185, pond.radiusU + 0.75);
   // the string lights' far post: between the table and the house, beside the table
   const lightsPost = moveAlong(table.n, tangentToward(table.n, house.n)!.applyAxisAngle(table.n, 0.35), 1.3 / R);
@@ -147,6 +177,8 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   // the bench by the pond, on the bank between the house and the water, facing the water (feeding the ducks)
   const benchN = at(POND_BENCH_DEG, pond.radiusU + POND_BENCH.out);
   const pondBench = { n: benchN, facing: facingTo(benchN, pond.n) };
+  // the ducks' nest: in the long grass on the quiet far bank, a short waddle from the water
+  const duckNest = spot(DUCK_NEST.deg, pond.radiusU + DUCK_NEST.out);
 
   // round the house (in its own frame: `fwd` toward the pond, `side` to its left): the back yard, the
   // tulsi, the woodpile
@@ -166,6 +198,10 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     wateringCan: yardSpot(-2.3, 0.05),
     tulsi: { n: tulsiN, facing: facingTo(tulsiN, house.n) },
     woodpile: yardSpot(-0.25, 1.5),
+    jute: JUTE_ROW.side.map((sd) => {
+      const n = around(-JUTE_ROW.back, sd);
+      return { n, facing: facingTo(n, house.n) };
+    }),
   };
 
   const obstacles: Obstacle[] = [
@@ -184,6 +220,8 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     ...yard.beds.flatMap((b) => [-1, 1].map((s) => ({ n: moveAlong(b.n, new Vector3().crossVectors(b.n, b.facing).normalize(), (s * YARD.bedL * 0.27) / R), radiusU: YARD.bedW * 0.55 }))),
     { n: yard.tulsi.n, radiusU: 0.22 },
     { n: yard.woodpile.n, radiusU: 0.26 },
+    { n: duckNest.n, radiusU: HOME_R.nest },
+    { n: tree, radiusU: HOME_R.tree },
   ];
   const clear = [
     { n: house.n, r: HOME_R.house + 0.9 },
@@ -204,8 +242,10 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     { n: yard.tulsi.n, r: TULSI_SPOT.cobbles + 0.4 },
     { n: around(-1.8, -4.4), r: 1.1 },
     { n: pondBench.n, r: 1.3 },
+    { n: duckNest.n, r: 0.7 },
+    { n: swingN, r: 1.3 },
   ];
-  return { centre, range: 8.5, yard, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, dogHouse, pondBench, obstacles, clear };
+  return { centre, range: 8.5, yard, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, dogHouse, pondBench, duckNest, swing, swingLimb, obstacles, clear };
 }
 
 /** Posts along a polyline, about `gap` u apart (both ends included). */

@@ -109,7 +109,33 @@ export const AUDIO = {
     "url": "/audio/pant.mp3",
     "loopStart": 0.5,
     "loopEnd": 2.3
+  },
+  "crickets": {
+    "url": "/audio/crickets.mp3",
+    "loopStart": 1.0,
+    "loopEnd": 15.0,
+    "lazy": true
+  },
+  "frogs": {
+    "url": "/audio/frogs.mp3",
+    "loopStart": 1.0,
+    "loopEnd": 13.0,
+    "lazy": true
+  },
+  "croaks": {
+    "url": "/audio/croaks.mp3",
+    "slots": {
+      "croak": [
+        [0.12, 0.423],
+        [0.663, 0.413],
+        [1.1961, 0.3941],
+        [1.7102, 0.3572],
+        [2.1874, 0.2874],
+        [2.5948, 0.43]
+      ]
+    },
+    "lazy": true
   }
 } as const;
 
-export type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog';
+export type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog' | 'croaks';

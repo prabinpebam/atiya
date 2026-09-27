@@ -8,6 +8,7 @@ import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
 import { SeatMotion, benchSeats, type Seat } from './systems/seating';
+import type { SwingPlace } from './world/home/family';
 import type { DuckFeed } from './systems/duckFeed';
 import { REACH, buildTargets, pickTarget, targetLabel, type Target } from './systems/interactables';
 import { ActionRunner, CYCLES, actionFor, type ActionKind, type BeatKind } from './systems/actions';
@@ -77,7 +78,19 @@ export interface CraftAttachment {
   /** Its screens in the HUD: the crafting screen, the palette and the site card. */
   Screens: ComponentType;
   step(dt: number): void;
-  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean };
+  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean; swing: SwingState | null };
+}
+
+/** The swing under the old oak (swing.md), for the test hook: built, going up, the ghost, its card, the seat's angle, and each jute plant's seconds until it's grown back (0: ready). */
+export interface SwingState {
+  built: boolean;
+  building: boolean;
+  ghost: number;
+  near: boolean;
+  angle: number;
+  /** Who's on it: 'visitor', one of the family, or null. */
+  rider: string | null;
+  jute: number[];
 }
 
 /** The home and family (world/home/, its own chunk; docs: family.md), once attached. */
@@ -158,6 +171,15 @@ export class GameController {
   /** Benches you can sit on, and the sit-down / stand-up motion (its `pose` drives the avatars). */
   readonly seats: Seat[];
   readonly seatMotion = new SeatMotion();
+  /**
+   * Riding the swing (swing.md §6), set each frame by the crafting chunk while the visitor sits on it:
+   * the body's tilt about its left–right axis through the ropes' pivot (rad), how far that pivot is
+   * above the character's point (u), and the legs' pump (−1 tucked … 1 out). The avatars weight it by
+   * `seatMotion.pose`.
+   */
+  ride: { tilt: number; pivot: number; pump: number } | null = null;
+  /** The swing under the old oak (the crafting chunk's), shared with the family, who swing on it too. */
+  swing: SwingPlace | null = null;
   /** Crumbs tossed onto the pond from its bench, and where they draw the ducks (systems/duckFeed.ts, in the home's chunk; null until it's attached). */
   get duckFeed(): DuckFeed | null {
     return this.home?.ducks ?? null;
@@ -443,9 +465,12 @@ export class GameController {
     const river = this.props.river;
     let stream = 0;
     let pan = 0;
+    const pond = this.props.pond;
+    let water = pond ? arcDistance(this.sim.pLocal, pond.n, CONFIG.planetRadius) - this.terrain.pondShore(this.sim.pLocal) : Infinity;
     if (river) {
       const rd = riverDistance(river, this.sim.pLocal);
       const edge = rd.d - river.halfWidth[rd.i];
+      water = Math.min(water, edge);
       stream = streamLevel(edge);
       if (stream > 0 && this.camera) {
         _toStream.copy(river.samples[rd.i]).sub(this.sim.pLocal).applyQuaternion(this.sim.planetQ);
@@ -455,7 +480,7 @@ export class GameController {
         if (len > 1e-6) pan = clamp(_toStream.dot(_camRight) / len, -1, 1) * 0.7 * clamp(edge / 1.5, 0, 1);
       }
     }
-    this.sound.update(delta, { strength: this.wind.strength, gust: this.wind.gust, stream, streamPan: pan, night: this.sky.night });
+    this.sound.update(delta, { strength: this.wind.strength, gust: this.wind.gust, stream, streamPan: pan, night: this.sky.night, water });
     // Chopper's panting, only up close
     const ear = this.dogEar();
     const s = this.store.getState();
@@ -759,8 +784,11 @@ export class GameController {
     const lane = focusLane(s);
     if (lane === 'talk') this.advanceTalk();
     else if (lane === 'stand' || this.seatMotion.seated) {
-      // on the pond bench E feeds the ducks (Escape or a movement key stands you up); elsewhere it stands you up
+      // on the pond bench E feeds the ducks and on the swing it swings higher (Escape or a movement key stands
+      // you up); elsewhere it stands you up
+      const act = this.seatMotion.stage === 'seated' ? this.seatMotion.seat?.action : undefined;
       if (s.canFeed) this.feedDucks();
+      else if (act) act.run();
       else this.standUp();
     } else if (this.action.busy || this.seatMotion.stage) return;
     else if (lane === 'prompt') this.useTarget();
@@ -773,16 +801,22 @@ export class GameController {
   /** Sit on the bench you're standing by (E, or the prompt's button). */
   sitDown(): void {
     const s = this.store.getState();
-    const t = this.targets.find((x) => x.key === s.target?.key);
-    const seat = t?.seat;
-    if (!seat || s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || s.craftScreen || this.sim.travel || this.seatMotion.stage || this.action.busy) return;
+    const seat = this.targets.find((x) => x.key === s.target?.key)?.seat;
+    if (seat) this.sitOn(seat, seat.byPond ? 'Sitting on the bench by the pond. Press E to feed the ducks, or Escape to stand up.' : 'Sitting on the bench. Press Escape to stand up.');
+  }
+
+  /** Sit on `seat` (a bench, or a chunk's seat: the swing), announcing `text`. False if you can't now. */
+  sitOn(seat: Seat, text: string): boolean {
+    const s = this.store.getState();
+    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.invScreen || s.craftScreen || this.sim.travel || this.seatMotion.stage || this.action.busy) return false;
     this.sim.cancelAutoWalk();
     this.keyboard.clear();
     this.buffer.clear();
     this.sim.vel.set(0, 0, 0);
     this.seatMotion.sit(seat, this.sim.pLocal);
     this.store.setState({ seated: true, canFeed: seat.byPond && Boolean(this.props.pond && this.duckFeed), target: null });
-    this.announce(seat.byPond ? 'Sitting on the bench by the pond. Press E to feed the ducks, or Escape to stand up.' : 'Sitting on the bench. Press Escape to stand up.');
+    this.announce(text);
+    return true;
   }
 
   /** Toss a handful of crumbs onto the pond from its bench (E, or the prompt's button): the ducks swim over. */
@@ -927,7 +961,7 @@ export class GameController {
   }
 
   /** Spawn a drop at planet-local point `p`, flung toward the character (`toward` 0…1) with an upward kick. */
-  private spawnDrop(item: ItemId, count: number, p: Vector3, up: number, toward: number, side: number, thrown = false): void {
+  spawnDrop(item: ItemId, count: number, p: Vector3, up: number, toward: number, side: number, thrown = false): void {
     const n = p.clone().normalize();
     const v = new Vector3().addScaledVector(n, up).add(this.scatter(n, side));
     const to = this.sim.pLocal.clone().addScaledVector(n, -this.sim.pLocal.dot(n));
@@ -942,7 +976,8 @@ export class GameController {
   /** A beat of an action cycle: things fall, chip off, get picked, or the chest opens. */
   private beat(kind: string, t: Target, b: BeatKind): void {
     const R = CONFIG.planetRadius;
-    if (kind === 'shake') {
+    if (t.onBeat) t.onBeat(b);
+    else if (kind === 'shake') {
       const tree = this.treeItem(t);
       if (!tree) return;
       if (b === 'fruit' && (t.tree === 'apple' || t.tree === 'orange') && this.harvest.takeFruit(t.tree, t.index)) {

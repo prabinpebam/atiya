@@ -297,7 +297,7 @@ export function leafLobe(
 // Trees
 // ---------------------------------------------------------------------------
 
-interface Ring {
+export interface Ring {
   p: Vector3;
   r: number;
 }
@@ -380,7 +380,7 @@ function ringStack(rows: Vector3[][], cap?: Vector3): BufferGeometry {
  * (one per bend or taper change); long, straight panels run with the grain. `capped` closes the
  * far end (tips that stick out; limbs ending inside the canopy stay open).
  */
-function barkTube(rings: Ring[], sides: number, seed: number, jitter = 0.12, capped = false): BufferGeometry {
+export function barkTube(rings: Ring[], sides: number, seed: number, jitter = 0.12, capped = false): BufferGeometry {
   const n = rings.length;
   const T = rings.map((_, i) => rings[Math.min(n - 1, i + 1)].p.clone().sub(rings[Math.max(0, i - 1)].p).normalize());
   const N = Math.abs(T[0].y) < 0.9 ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0);
@@ -450,7 +450,7 @@ function rootFlare(roots: number, rb: number, mergeY: number, mergeR: number, se
  * coarse grid that's stretched along y) so the tone runs with the grain rather than per facet.
  * Upward-facing bark (the tops of the roots) is painted a touch darker, as the sun already lights it.
  */
-function barkPaint(dark: string, light: string, topY: number) {
+export function barkPaint(dark: string, light: string, topY: number) {
   return (p: Vector3, nrm: Vector3) => {
     const streak = hash3(Math.round(p.x * 11), Math.round(p.y * 2.5), Math.round(p.z * 11));
     const up = Math.min(1, Math.max(0, p.y / topY));
@@ -460,7 +460,7 @@ function barkPaint(dark: string, light: string, topY: number) {
 }
 
 /** Smooth spine through control points (Catmull-Rom), with radii interpolated linearly. */
-function spine(points: [number, number, number, number][], perSpan = 2): Ring[] {
+export function spine(points: [number, number, number, number][], perSpan = 2): Ring[] {
   const pts = points.map(([x, y, z]) => new Vector3(x, y, z));
   const out: Ring[] = [];
   for (let i = 0; i < pts.length - 1; i++) {
@@ -485,7 +485,7 @@ function spine(points: [number, number, number, number][], perSpan = 2): Ring[] 
   return out;
 }
 
-interface TrunkSpec {
+export interface TrunkSpec {
   /** Trunk spine control points [x, y, z, radius] from the root flare's knee to the top; one ring each. */
   trunk: [number, number, number, number][];
   /** Limbs: control points from inside the trunk out to (hidden inside) a canopy lobe. */
@@ -505,7 +505,7 @@ interface TrunkSpec {
  * Polygons follow the shape (a strip per root, long panels up the stem) and the painted bark tile
  * fakes the ridges and furrows.
  */
-function lowPolyTrunk(k: Kit, o: TrunkSpec) {
+export function lowPolyTrunk(k: Kit, o: TrunkSpec) {
   const topY = o.trunk[o.trunk.length - 1][1];
   const paint = barkPaint(o.dark, o.light, topY);
   const [x0, y0, z0, r0] = o.trunk[0];
@@ -532,7 +532,7 @@ function lowPolyTrunk(k: Kit, o: TrunkSpec) {
 }
 
 /** A limb from the trunk at height `y0` to a canopy lobe centre (ending well inside it). */
-function limbTo(y0: number, lobe: [number, number, number, number], r0: number, seed: number): [number, number, number, number][] {
+export function limbTo(y0: number, lobe: [number, number, number, number], r0: number, seed: number): [number, number, number, number][] {
   const [x, y, z] = lobe;
   const lift = 0.18 + hash3(seed, 1, 2) * 0.12;
   // starts just inside the trunk (a hidden first span would only cost triangles)

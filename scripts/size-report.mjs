@@ -12,7 +12,9 @@ const GAME_BUDGET_KB = 450;
 // 80 → 85 KB for watering the garden (the targets it and the crafting chunk now own, and the lazy landmark dialog)
 // 85 → 87 KB for the activation cues (the glowing ring and sparkles on what E uses, in the wildlife chunk)
 // 87 → 89 KB for the crafting screen (the recipe grid, the material slots and the landing, with the backpack in it) and the menu's View group
-const DEFERRED_BUDGET_KB = 89;
+// 89 → 95 KB for the swing (the old oak, the jute row, the swing and its site, in the crafting chunk) and the ducks (their new models, moved out of the initial bundle into the wildlife chunk, the nest and the night)
+// 95 → 96 KB for riding the swing (the visitor's seat and pump, and the family's swing activities, in the crafting and home chunks)
+const DEFERRED_BUDGET_KB = 96;
 const GATE_BUDGET_KB = 8;
 
 if (!existsSync(ASSETS)) {

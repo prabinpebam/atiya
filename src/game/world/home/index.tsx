@@ -41,8 +41,8 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     player: controller.sim.pLocal,
     // the fixed obstacles (the family, Chopper and the character keep clear of each other separately)
     obstacles: controller.staticObstacles,
-    // (and they keep off the spot for Chopper's house, built or not: crafting.md §4.3)
-    blocked: (n) => (pond ? arcDistance(n, pond.n, R) < controller.terrain.pondShore(n) + 0.05 : false) || controller.terrain.waterDepth(n) > 0.12 || arcDistance(n, home.dogHouse.n, R) < 0.6,
+    // (and they keep off the spots for Chopper's house and the swing, built or not: crafting.md §4.3, swing.md §4.4)
+    blocked: (n) => (pond ? arcDistance(n, pond.n, R) < controller.terrain.pondShore(n) + 0.05 : false) || controller.terrain.waterDepth(n) > 0.12 || arcDistance(n, home.dogHouse.n, R) < 0.6 || arcDistance(n, home.swing.n, R) < 0.55,
     rabbits: [],
     flowers,
     hours: controller.timeOfDay,
@@ -105,6 +105,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     step(dt) {
       world.rabbits = controller.wildlife?.rabbits ?? [];
       world.hours = controller.timeOfDay;
+      world.swing = controller.swing;
       // the character's velocity in the planet's frame (for looking ahead when giving way)
       playerVel.copy(controller.sim.vel).applyQuaternion(controller.sim.planetQ.clone().invert());
       const aim = controller.store.getState().target?.key;

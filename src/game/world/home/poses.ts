@@ -31,6 +31,16 @@ const lim = (upper: Dir, lower: Dir): Limb => ({ upper, lower });
 const S = Math.sin;
 
 const SIT_LEGS = both(lim([1, -0.08, 0.08], [0.2, -1, 0]));
+
+/**
+ * On the swing (swing.md §6): the legs pump with the swing, `pump` −1 … 1 (+ swinging forward: legs
+ * out straight; − swinging back: tucked under the seat), the way children pump a swing.
+ */
+export function swingLegs(pump: number): { l: Limb; r: Limb } {
+  const out = Math.max(0, pump);
+  const tuck = Math.max(0, -pump);
+  return both(lim([1, -0.05 + out * 0.2, 0.07], [0.2 + out * 0.85 - tuck * 0.6, -1 + out * 0.75, 0]));
+}
 const READ_ARMS = both(lim([0.35, -0.85, 0.28], [0.85, 0.55, -0.45]));
 
 export function bodyPose(pose: NpcPose, t: number, held: Held, moving: boolean): BodyPose {
@@ -154,6 +164,9 @@ export function bodyPose(pose: NpcPose, t: number, held: Held, moving: boolean):
         nod: 0.55,
       };
     }
+    case 'swing':
+      // on the swing: hands up on the ropes, leaning back a little (the legs pump in FamilyView: `swingLegs`)
+      return { ...none, hip: 0.335, back: 0.02, spine: [-0.12, 1, 0], legs: swingLegs(0), arms: both(lim([0.25, 0.55, 0.45], [0.1, 1, 0.02])), nod: -0.05 };
     case 'water': {
       // watering a plant: the can held out over it in the right hand (it tips in FamilyView), leaning in a little
       return { ...none, spine: [0.22, 1, 0], arms: { l: lim([0.1, -1, 0.2], [0.25, -1, 0]), r: lim([0.85, -0.5, 0.12], [1, -0.05, 0]) }, nod: 0.45 };

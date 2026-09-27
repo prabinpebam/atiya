@@ -32,7 +32,7 @@ import { withLampLights } from '../lampLights';
 import { kitMaterials } from '../materials';
 import { KitModel } from '../KitModel';
 import { CRAFT_STAND, type Family, type NpcId } from './family';
-import { bodyPose, HIP_FRACTION } from './poses';
+import { bodyPose, HIP_FRACTION, swingLegs } from './poses';
 import { HOUSE, HOUSE_STEPS, birdhouseModel, bookModel, bubbleModel, guitarModel, hammerModel, heldCanModel, stickModel, toyCarModel, paperModel } from './models';
 import { pourTilt } from './garden';
 import { seatHip } from './seats';
@@ -115,6 +115,7 @@ const _fwd = new Vector3();
 const _left = new Vector3();
 const _up = new Vector3(0, 1, 0);
 const _dir = new Vector3();
+const _tilted = new Vector3();
 
 /**
  * Hair and glasses, authored in the Kenney model's units (the head spans y 2.61–3.77, x ±0.44, z ±0.53,
@@ -277,6 +278,7 @@ function Person({ controller, family, id }: { controller: GameController; family
   const headYaw = useRef(0);
   const nodNow = useRef(0);
   const liftNow = useRef(0);
+  const rideNow = useRef(0);
   const knock = useRef(0);
   const strum = useRef(-1);
   const home = family.home;
@@ -325,6 +327,13 @@ function Person({ controller, family, id }: { controller: GameController; family
       weight.current = Math.min(weight.current, 0.35);
     }
     const bp = bodyPose(moving ? 'stand' : npc.pose, npc.poseT, npc.held, npc.speed > 0.05);
+    // on the swing (swing.md §6): the legs pump with it, and the whole body swings about the ropes' pivot
+    const sw = controller.swing;
+    const onSwing = Boolean(sw && npc.seat?.seat.id === 'swing' && npc.seat.phase === 'on');
+    if (npc.pose === 'swing' && sw) bp.legs = swingLegs(Math.max(-1, Math.min(1, sw.w / 1.4)));
+    rideNow.current = reduced ? (onSwing ? 1 : 0) : damp(rideNow.current, onSwing ? 1 : 0, 6, dt);
+    // (+a swings the seat toward the rider's front; a turn about their left–right axis the other way does that)
+    const tilt = sw ? -sw.a * rideNow.current : 0;
     const active = bp.arms || bp.legs || bp.spine || bp.hip !== null;
     weight.current = reduced ? (active ? 1 : 0) : damp(weight.current, active ? 1 : 0, 7, dt);
     // on a seat, the hips go to that seat's own height and depth (seats.ts), whatever the body's size
@@ -337,6 +346,15 @@ function Person({ controller, family, id }: { controller: GameController; family
     backNow.current = reduced ? backTarget : damp(backNow.current, backTarget, 8, dt);
     pv.position.set(0, hipNow.current, -backNow.current);
     pv.rotation.set(pitchNow.current, 0, 0);
+    if (tilt && sw) {
+      // the hips round the pivot (y, z about the x axis), and the body turned with them
+      const c = Math.cos(tilt);
+      const sn = Math.sin(tilt);
+      const hy = hipNow.current - sw.pivot;
+      const hz = -backNow.current;
+      pv.position.set(0, sw.pivot + hy * c - hz * sn, hy * sn + hz * c);
+      pv.rotation.x += tilt;
+    }
     const w = weight.current;
     if (w > 1e-3) {
       g.updateMatrixWorld(true);
@@ -344,6 +362,14 @@ function Person({ controller, family, id }: { controller: GameController; family
       _fwd.set(0, 0, 1).applyQuaternion(_q);
       _left.set(1, 0, 0).applyQuaternion(_q);
       _up.set(0, 1, 0).applyQuaternion(_q);
+      if (tilt) {
+        // the pose's directions turn with the swinging body
+        const c = Math.cos(tilt);
+        const sn = Math.sin(tilt);
+        _tilted.copy(_up).multiplyScalar(c).addScaledVector(_fwd, sn);
+        _fwd.multiplyScalar(c).addScaledVector(_up, -sn);
+        _up.copy(_tilted);
+      }
       const toW = (d: readonly [number, number, number], side: number) => _dir.copy(_fwd).multiplyScalar(d[0]).addScaledVector(_up, d[1]).addScaledVector(_left, d[2] * side);
       if (bp.spine) aimBone(rig.spine.spine, rig.spine.chest, toW(bp.spine, 0), w);
       if (bp.chest) aimBone(rig.spine.chest, rig.spine.upper, toW(bp.chest, 0), w);

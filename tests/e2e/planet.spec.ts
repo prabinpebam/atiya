@@ -645,7 +645,7 @@ test.describe('sound', () => {
     enabled: boolean;
     state: string;
     loaded: number;
-    levels: { stream: number; wind: number; birds: boolean };
+    levels: { stream: number; wind: number; birds: boolean; crickets: number; frogs: number };
     lastSurface: string | null;
     events: Array<{ kind: string; detail?: string; played: boolean }>;
     music: { on: boolean; playing: boolean; track: number; url: string | null };
@@ -659,6 +659,8 @@ test.describe('sound', () => {
     page.on('request', (r) => r.url().endsWith('.mp3') && mp3.push(r.url()));
     await openPlanet(page);
     expect(mp3).toEqual([]);
+    // (by day: the night's crickets and frogs aren't fetched until night falls)
+    await page.evaluate(() => (window as any).__game.setTime(11));
     // (audio starts from the visitor's first press, not before)
     await page.keyboard.press('Shift');
     await expect.poll(async () => (await sound(page)).loaded, { timeout: 20_000 }).toBe(7);
@@ -678,6 +680,14 @@ test.describe('sound', () => {
     expect((await sound(page)).levels.birds).toBe(true);
     await page.evaluate(() => (window as any).__game.visitFeature('river'));
     await expect.poll(async () => (await sound(page)).levels.stream).toBeGreaterThan(0.3);
+    // at night the crickets sing everywhere and the frogs call by the water; their sounds load only now
+    expect(mp3.filter((u) => /crickets|frogs|croaks/.test(u))).toEqual([]);
+    await page.evaluate(() => (window as any).__game.setTime(23));
+    await expect.poll(async () => (await sound(page)).loaded, { timeout: 20_000 }).toBe(10);
+    await expect.poll(async () => (await sound(page)).levels.crickets).toBeGreaterThan(0.9);
+    expect((await sound(page)).levels.frogs).toBeGreaterThan(0.3);
+    expect((await sound(page)).levels.birds).toBe(false);
+    await page.evaluate(() => (window as any).__game.setTime(11));
     // walking up to a house: a chime and its door; moving on: it shuts and the curtain rises
     await page.evaluate(() => (window as any).__game.travelTo('workshop'));
     await expect.poll(() => played(page, 'doorOpen'), { timeout: 15_000 }).toBe(1);
@@ -1487,7 +1497,14 @@ test.describe('collecting & inventory', () => {
 
 test.describe("crafting & Chopper's house", () => {
   type Inv = { backpack: (string | null)[] };
-  type Craft = { built: boolean; colour: string; building: boolean; ghost: number; near: boolean };
+  type Craft = {
+    built: boolean;
+    colour: string;
+    building: boolean;
+    ghost: number;
+    near: boolean;
+    swing: { built: boolean; building: boolean; ghost: number; near: boolean; angle: number; rider: string | null; jute: number[] } | null;
+  };
   const inv = (page: Page) => page.evaluate(() => (window as any).__game.inventory() as Inv);
   const count = (list: (string | null)[], id: string) => list.reduce((n, s) => n + (s && s.split(':')[0] === id ? Number(s.split(':')[1]) : 0), 0);
   const craft = (page: Page) => page.evaluate(() => (window as any).__game.craft() as Craft);
@@ -1606,10 +1623,113 @@ test.describe("crafting & Chopper's house", () => {
     expect((await state(page)).phase).toBe('playing');
   });
 
+  test('the swing: pick jute behind the garden, twist it into rope, build the swing under the old oak, ride it, push a child on it; it is remembered', async ({ page }) => {
+    test.setTimeout(200_000);
+    await startPlanet(page);
+    // a jute plant: its prompt, the pick, two bundles fall and come to the backpack, and it's cut until it regrows
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('jute', 'jute:0'))).toBe('jute:0');
+    await expect(prompt(page).getByRole('button', { name: /Pick jute/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 3);
+    await expect.poll(async () => count((await inv(page)).backpack, 'jute'), { timeout: 20_000 }).toBe(2);
+    expect((await craft(page)).swing!.jute[0]).toBeGreaterThan(60);
+    await expect(prompt(page).getByRole('button', { name: /Pick jute/ })).toHaveCount(0);
+    // rope at the crafting table: 3 jute each
+    await give(page, [['jute', 4]]);
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('craft'))).toBe('craft');
+    await page.keyboard.press('KeyE');
+    const screen = page.getByTestId('craft-screen');
+    for (let k = 0; k < 3; k++) await page.keyboard.press('ArrowRight');
+    await expect(screen.getByRole('option', { name: /Jute rope/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(screen.getByTestId('craft-need').first()).toContainText('6 / 3');
+    await page.keyboard.press('Equal');
+    await page.keyboard.press('Enter');
+    await fastForward(page, 1);
+    let i = await inv(page);
+    expect(count(i.backpack, 'rope')).toBe(2);
+    expect(count(i.backpack, 'jute')).toBe(0);
+    await page.keyboard.press('Escape');
+    // the swing's site: its ghost, its card (have / need), and it builds with everything there
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('site', 'site:swing'))).toBe('site:swing');
+    await fastForward(page, 0.2);
+    expect((await craft(page)).swing!.ghost).toBeGreaterThan(0.85);
+    const card = page.getByTestId('site-card');
+    await expect(card).toHaveAttribute('data-site', 'swing');
+    await expect(card.getByRole('heading', { name: 'The swing' })).toBeVisible();
+    await expect(card.getByTestId('site-need')).toHaveText([/Jute ropes\s*2 \/ 2/, /Planks\s*0 \/ 3/]);
+    await expect(prompt(page).getByRole('button', { name: /See what the swing needs/ })).toBeVisible();
+    await give(page, [['planks', 3]]);
+    await expect(prompt(page).getByRole('button', { name: /Build the swing/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 3);
+    let c = await craft(page);
+    expect(c.swing!.built).toBe(true);
+    expect(c.swing!.building).toBe(false);
+    i = await inv(page);
+    expect([count(i.backpack, 'rope'), count(i.backpack, 'planks')]).toEqual([0, 0]);
+    await expect(page.getByTestId('site-card')).toHaveCount(0);
+    await expect(page.getByTestId('live-region')).toContainText('You build the swing!');
+    // ride it (swing.md §6): sit on it, E pumps it higher, Escape gets off and it settles
+    await expect(prompt(page).getByRole('button', { name: /Sit on the swing/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 1);
+    expect((await craft(page)).swing!.rider).toBe('visitor');
+    await expect(prompt(page)).toHaveAttribute('data-kind', 'seat-action');
+    await expect(prompt(page).getByRole('button', { name: /Swing higher/ })).toBeVisible();
+    await expect(prompt(page).getByRole('button', { name: /Stand up/ })).toBeVisible();
+    for (let k = 0; k < 8; k++) {
+      await page.keyboard.press('KeyE');
+      await fastForward(page, 0.5);
+    }
+    const peak = await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.pause();
+      let peak = 0;
+      for (let f = 0; f < 150; f++) {
+        g.advance(1);
+        peak = Math.max(peak, Math.abs(g.craft().swing.angle));
+      }
+      g.resume();
+      return peak;
+    });
+    expect(peak).toBeGreaterThan(0.2);
+    await page.keyboard.press('Escape');
+    await fastForward(page, 1);
+    expect((await craft(page)).swing!.rider).not.toBe('visitor');
+    expect((await page.evaluate(() => (window as any).__game.getState())).seated).toBe(false);
+    // one of the children has a go (Laija, asked to, unless Lingjel got there first), and you can give them a push
+    // (a meal comes first: ask again once it's over)
+    await expect
+      .poll(
+        async () => {
+          const rider = await page.evaluate(() => {
+            const g = (window as any).__game;
+            const laija = g.family().find((f: { id: string }) => f.id === 'laija');
+            if (laija.activity !== 'swing' && !g.craft().swing.rider) g.npcDo('laija', 'swing');
+            g.pause();
+            g.advance(240);
+            g.resume();
+            const rider = g.craft().swing.rider;
+            return g.family().find((f: { id: string }) => f.id === rider)?.seat ?? null;
+          });
+          return rider;
+        },
+        { timeout: 120_000 },
+      )
+      .toBe('swing:on');
+    expect(['laija', 'lingjel']).toContain((await craft(page)).swing!.rider);
+    expect(await page.evaluate(() => (window as any).__game.nearTarget('site', 'site:swing'))).toBe('site:swing');
+    await expect(prompt(page).getByRole('button', { name: /Push the swing/ })).toBeVisible();
+    // remembered
+    await startPlanet(page);
+    expect((await craft(page)).swing!.built).toBe(true);
+  });
+
   test("Chopper's house: the ghost grows clearer as you come, the card says what's needed, E builds it, it's saved, solid and paintable", async ({ page }) => {
     test.setTimeout(200_000);
     await startPlanet(page);
-    const near = (u?: number) => page.evaluate((u) => (window as any).__game.nearTarget('site', undefined, u), u);
+    // (the doghouse's site: the swing's is a site too)
+    const near = (u?: number) => page.evaluate((u) => (window as any).__game.nearTarget('site', 'site', u), u);
     expect(await near(11)).toBe('site');
     await fastForward(page, 0.2);
     const far = await craft(page);

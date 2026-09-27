@@ -8,10 +8,10 @@
 import { Vector3 } from 'three';
 import { moveAlong } from '../../math/sphere';
 import { rotateAbout } from '../../math/steer';
-import { POND_BENCH, PROP_SCALE, type HomeSpot, type Homestead } from '../homestead';
+import { POND_BENCH, PROP_SCALE, SWING, type HomeSpot, type Homestead } from '../homestead';
 import { BENCH } from '../parts';
 
-export type SeatKind = 'dining' | 'armchair' | 'camp' | 'bench';
+export type SeatKind = 'dining' | 'armchair' | 'camp' | 'bench' | 'swing';
 
 export interface Seat {
   id: string;
@@ -41,6 +41,9 @@ export const SEAT_KINDS: Record<SeatKind, { top: number; back: number; entries: 
   // the pond bench is drawn full size (parts.ts `bench`), so its top is given in PROP_SCALE units; you step up
   // to it from the front, clear of its collision circle
   bench: { top: BENCH.seatTop / PROP_SCALE, back: 0.04, entries: [[0, 0.8], [-20, 0.84]] },
+  // the swing's plank (drawn full size, craft/swingModels.ts): you get on from in front of it, or from either
+  // side in front of the ropes (behind it is the oak, and someone may be standing right in front)
+  swing: { top: (SWING.seatY + SWING.seatT / 2) / PROP_SCALE, back: 0.02, entries: [[0, 0.75], [60, 0.7], [-60, 0.7]] },
 };
 
 /** Seconds to sit down (entry point → seat) and to stand up (seat → entry point). */
@@ -66,7 +69,7 @@ function seat(id: string, kind: SeatKind, spot: HomeSpot, R: number): Seat {
   return { id, kind, spot, height: k.top * PROP_SCALE, back: k.back, entries, user: null };
 }
 
-/** Every seat round the home: the reading chair, the table's four chairs, the two camp chairs, the family's end of the pond bench. */
+/** Every seat round the home: the reading chair, the table's four chairs, the two camp chairs, the family's end of the pond bench, the swing (once it's built). */
 export function homeSeats(home: Homestead, R: number): Seat[] {
   const b = home.pondBench;
   const along = new Vector3().crossVectors(b.n, b.facing).normalize();
@@ -76,6 +79,7 @@ export function homeSeats(home: Homestead, R: number): Seat[] {
     ...home.tableChairs.map((c, i) => seat(`table${i}`, 'dining', c, R)),
     ...home.campChairs.map((c, i) => seat(`camp${i}`, 'camp', c, R)),
     seat('pond', 'bench', { n: pondN, facing: b.facing.clone().addScaledVector(pondN, -b.facing.dot(pondN)).normalize() }, R),
+    seat('swing', 'swing', home.swing, R),
   ];
 }
 

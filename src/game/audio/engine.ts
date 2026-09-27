@@ -5,16 +5,16 @@
  */
 import { AUDIO } from './audioManifest';
 import { MUSIC } from './musicManifest';
-import { CHORDS, birdsSing, nextBirdDelay, pickVariant, strumSamples, windMix, type Surface } from './audioLogic';
+import { CHORDS, birdsSing, cricketLevel, frogLevel, nextBirdDelay, nextCroakDelay, nightSoon, pickVariant, strumSamples, windMix, type Surface } from './audioLogic';
 import { withBase } from '../platform/base';
 
 type BufferKey = keyof typeof AUDIO;
-type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog';
+type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog' | 'croaks';
 
 export interface SoundEvent {
   /** performance.now() when it was asked for. */
   t: number;
-  kind: 'step' | 'bird' | 'chime' | 'doorOpen' | 'doorClose' | 'curtain' | 'sparkle' | 'pickup' | 'hit' | 'rustle' | 'bark' | 'sniff' | 'whistle' | 'strum';
+  kind: 'step' | 'bird' | 'croak' | 'chime' | 'doorOpen' | 'doorClose' | 'curtain' | 'sparkle' | 'pickup' | 'hit' | 'rustle' | 'bark' | 'sniff' | 'whistle' | 'strum';
   detail?: string;
   /** Whether it was actually scheduled (false while muted, locked or still loading). */
   played: boolean;
@@ -29,6 +29,8 @@ export interface SoundFrame {
   streamPan: number;
   /** 0 = day … 1 = night. */
   night: number;
+  /** How far (u) the player is from the nearest water's edge (the stream or the pond; < 0 in it). */
+  water: number;
 }
 
 /** Overall mix: subtle under the visuals, the ambience a bed and the cues a little forward. */
@@ -37,6 +39,10 @@ const MIX = {
   stream: 0.55,
   wind: 0.3,
   birds: 0.32,
+  /** The night: the crickets a soft bed, the frogs' chorus and their croaks by the water. */
+  crickets: 0.3,
+  frogs: 0.32,
+  croak: 0.3,
   duck: 0.3,
   steps: { grass: 0.34, wood: 0.4, stone: 0.3, water: 0.36 } satisfies Record<Surface, number>,
   chime: 0.36,
@@ -58,6 +64,8 @@ const MIX = {
 /** Slots start this much early and end this much late, so an MP3 decoder's priming offset never clips a sound. */
 const SLOT_SLACK = 0.02;
 const KEYS = Object.keys(AUDIO) as BufferKey[];
+/** Fetched on unlock; the night set (`lazy`) only once night first falls. */
+const lazy = (k: BufferKey) => 'lazy' in AUDIO[k];
 
 type Ctor = typeof AudioContext;
 
@@ -67,7 +75,7 @@ export class SoundEngine {
   readonly events: SoundEvent[] = [];
   private readonly strums: Array<AudioBuffer | undefined> = [];
   /** Current ambience targets (0…1 before the mix), for the test hook. */
-  readonly levels = { stream: 0, streamPan: 0, wind: 0, windCutoff: 0, birds: false };
+  readonly levels = { stream: 0, streamPan: 0, wind: 0, windCutoff: 0, birds: false, crickets: 0, frogs: 0 };
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private ambience: GainNode | null = null;
@@ -75,6 +83,9 @@ export class SoundEngine {
   private stream: { gain: GainNode; pan: StereoPannerNode } | null = null;
   private wind: { gain: GainNode; filter: BiquadFilterNode } | null = null;
   private pantLoop: { gain: GainNode; pan: StereoPannerNode } | null = null;
+  private readonly night = new Map<'crickets' | 'frogs', GainNode>();
+  private nightLoading = false;
+  private croakTimer = 2;
   private readonly buffers = new Map<BufferKey, AudioBuffer>();
   private loading = false;
   private readonly last = new Map<string, number>();
@@ -250,6 +261,9 @@ export class SoundEngine {
     L.wind = w.level;
     L.windCutoff = w.cutoff;
     L.birds = birdsSing(f.night);
+    L.crickets = cricketLevel(f.night);
+    L.frogs = frogLevel(f.night, f.water);
+    if (nightSoon(f.night)) this.loadNight();
     const ctx = this.ctx;
     if (ctx && ctx.state === 'running') {
       const t = ctx.currentTime;
@@ -261,6 +275,13 @@ export class SoundEngine {
         this.wind.gain.gain.setTargetAtTime(MIX.wind * w.level, t, 0.4);
         this.wind.filter.frequency.setTargetAtTime(w.cutoff, t, 0.4);
       }
+      this.night.get('crickets')?.gain.setTargetAtTime(MIX.crickets * L.crickets, t, 0.8);
+      this.night.get('frogs')?.gain.setTargetAtTime(MIX.frogs * L.frogs, t, 0.6);
+    }
+    this.croakTimer -= Math.min(Math.max(dt, 0), 0.25);
+    if (this.croakTimer <= 0) {
+      this.croakTimer = nextCroakDelay(this.rand);
+      if (L.frogs > 0.15 && !this.ducked) this.play('croaks', 'croak', 'croak', { gain: MIX.croak * L.frogs * (0.7 + 0.3 * this.rand()), rate: 0.9 + 0.2 * this.rand(), pan: (this.rand() * 2 - 1) * 0.7, bus: 'ambience' });
     }
     this.birdTimer -= Math.min(Math.max(dt, 0), 0.25);
     if (this.birdTimer <= 0) {
@@ -403,20 +424,31 @@ export class SoundEngine {
   private load(): void {
     if (this.loading || !this.ctx) return;
     this.loading = true;
-    const ctx = this.ctx;
-    for (const key of KEYS) {
+    this.fetchKeys(KEYS.filter((k) => !lazy(k)));
+  }
+
+  /** The night set, the first time night falls with the sound on. */
+  private loadNight(): void {
+    if (this.nightLoading || !this.ctx || !this.enabled) return;
+    this.nightLoading = true;
+    this.fetchKeys(KEYS.filter(lazy));
+  }
+
+  private fetchKeys(keys: readonly BufferKey[]): void {
+    const ctx = this.ctx!;
+    for (const key of keys) {
       fetch(withBase(AUDIO[key].url))
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status} ${AUDIO[key].url}`))))
         .then((data) => ctx.decodeAudioData(data))
         .then((buf) => {
           this.buffers.set(key, buf);
-          if (key === 'stream' || key === 'wind' || key === 'pant') this.startLoop(key, buf);
+          if (key === 'stream' || key === 'wind' || key === 'pant' || key === 'crickets' || key === 'frogs') this.startLoop(key, buf);
         })
         .catch((err) => console.warn('Sound failed to load:', err));
     }
   }
 
-  private startLoop(key: 'stream' | 'wind' | 'pant', buf: AudioBuffer): void {
+  private startLoop(key: 'stream' | 'wind' | 'pant' | 'crickets' | 'frogs', buf: AudioBuffer): void {
     const ctx = this.ctx!;
     const m = AUDIO[key];
     const src = ctx.createBufferSource();
@@ -426,7 +458,10 @@ export class SoundEngine {
     src.loopEnd = m.loopEnd;
     const gain = ctx.createGain();
     gain.gain.value = 0;
-    if (key === 'stream' || key === 'pant') {
+    if (key === 'crickets' || key === 'frogs') {
+      src.connect(gain).connect(this.ambience!);
+      this.night.set(key, gain);
+    } else if (key === 'stream' || key === 'pant') {
       const pan = ctx.createStereoPanner();
       src.connect(gain).connect(pan).connect(key === 'pant' ? this.fx! : this.ambience!);
       if (key === 'pant') this.pantLoop = { gain, pan };

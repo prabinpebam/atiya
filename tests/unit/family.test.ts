@@ -7,7 +7,8 @@ import { FLOWER_KINDS, generateProps, mulberry32 } from '../../src/game/world/la
 import { Terrain } from '../../src/game/world/terrain';
 import { riverDistance } from '../../src/game/world/features';
 import { HOME_R, TULSI_SPOT, YARD, fencePosts } from '../../src/game/world/homestead';
-import { FAMILY, Family, LINES, LinePicker, ROUTINE, partOfDay, welcomeLines, type FamilyWorld } from '../../src/game/world/home/family';
+import { FAMILY, Family, LINES, LinePicker, ROUTINE, partOfDay, welcomeLines, type FamilyWorld, type SwingPlace } from '../../src/game/world/home/family';
+import { Pendulum, PENDULUM } from '../../src/game/world/craft/swing';
 import { SphereNav } from '../../src/game/world/home/nav';
 import { UP, moveAlong, tangentToward } from '../../src/game/math/sphere';
 import { FIXTURE_LANDMARKS } from './fixtures';
@@ -80,13 +81,31 @@ describe('home by the pond: the site plan', () => {
     // nicely spaced out: the big features are well apart
     const big = feats.filter(([n]) => ['house', 'table', 'mat', 'fire', 'tree'].includes(n));
     for (let i = 0; i < big.length; i++) for (let j = i + 1; j < big.length; j++) expect(d(big[i][1], big[j][1]), `${big[i][0]}–${big[j][0]}`).toBeGreaterThan(1.4);
-    // nothing random left inside the cleared ground; Laija's tree joined the hardwoods
+    // nothing random left inside the cleared ground; the old oak joined the trees (not the hardwoods: it isn't shaken) and is the home's obstacle
     for (const list of [layout.hardwood, layout.bushes, layout.rocks, layout.boulders, layout.pebbles, layout.grass]) {
       for (const p of list) if (p.n !== home.tree) for (const c of home.clear) expect(d(p.n, c.n)).toBeGreaterThanOrEqual(c.r - 1e-9);
     }
-    expect(layout.hardwood.some((t) => t.n === home.tree)).toBe(true);
+    expect(layout.hardwood.some((t) => t.n === home.tree)).toBe(false);
+    expect(layout.trees.some((t) => t.n === home.tree)).toBe(true);
+    expect(home.obstacles.some((o) => o.n === home.tree && o.radiusU === HOME_R.tree)).toBe(true);
     // the shore spot is right by the water, but dry
     expect(d(home.shore.n, layout.pond!.n) - terrain.pondShore(home.shore.n)).toBeLessThan(1.2);
+  });
+
+  it("puts the ducks' nest on the quiet far bank: dry, a short waddle from the water, clear of everything", () => {
+    const n = home.duckNest.n;
+    const bank = d(n, layout.pond!.n) - terrain.pondShore(n);
+    expect(terrain.inWater(n)).toBe(false);
+    expect(bank).toBeGreaterThan(0.3);
+    expect(bank).toBeLessThan(1.1);
+    const rd = riverDistance(layout.river!, n);
+    expect(rd.d - layout.river!.halfWidth[rd.i]).toBeGreaterThan(1);
+    for (const o of layout.obstacles) if (o.n !== n) expect(d(n, o.n) - o.radiusU - HOME_R.nest, 'nest vs obstacle').toBeGreaterThan(0.3);
+    // well away from where the family live and walk
+    for (const s of [home.house.n, home.door.n, home.table.n, home.fire.n, home.mat.n, home.pondBench.n, home.shore.n, home.dogHouse.n, home.tree]) expect(d(n, s)).toBeGreaterThan(3);
+    // it faces the water, and nothing grows in it
+    expect(home.duckNest.facing.dot(tangentToward(n, layout.pond!.n)!)).toBeGreaterThan(0.99);
+    for (const list of [layout.hardwood, layout.bushes, layout.rocks, layout.boulders, layout.pebbles, layout.grass, layout.sprigs]) for (const p of list) expect(d(p.n, n)).toBeGreaterThan(0.5);
   });
 });
 
@@ -465,5 +484,91 @@ describe('the family: dialog', () => {
       expect(LINES.rojina.greet[part]).toContain(c[0]);
       expect(LINES.rojina.pool).toContain(c[c.length - 1]);
     }
+  });
+});
+
+describe('the swing (swing.md §6)', () => {
+  /** The swing as the crafting chunk shares it, on a real pendulum the test steps (as the chunk does). */
+  const place = (built = true) => {
+    const p = new Pendulum(1.2);
+    const sw: SwingPlace & { p: Pendulum } = {
+      p,
+      seat: home.swing,
+      built: () => built,
+      rider: null,
+      boarding: false,
+      get a() {
+        return p.a;
+      },
+      get w() {
+        return p.w;
+      },
+      pivot: 1.62,
+      pump: (k = 1) => p.pump(k),
+    };
+    return sw;
+  };
+  const tick = (sw: ReturnType<typeof place>) => () => {
+    if (sw.boarding) sw.p.brake(1 / 30);
+    sw.p.step(1 / 30);
+  };
+
+  it('a child walks over, gets on from an entry point, pumps it high, then lets it die down and gets off', () => {
+    const f = new Family(home, R, mulberry32(5));
+    const sw = place();
+    const w = { ...world(), swing: sw };
+    const kid = f.get('laija');
+    const seat = f.seats.find((s) => s.id === 'swing')!;
+    expect(f.swingFree(kid, w)).toBe(true);
+    f.hold('laija', 'swing', w);
+    let peak = 0;
+    let boarded = false;
+    run(f, w, 45, () => {
+      tick(sw)();
+      if (kid.seat?.phase === 'in' && !boarded) {
+        boarded = true;
+        // from an entry point, outside the swing's seat
+        expect(d(kid.n, seat.spot.n)).toBeGreaterThan(0.6);
+      }
+      if (kid.seat?.phase === 'on') peak = Math.max(peak, Math.abs(sw.a));
+    });
+    expect(kid.seat?.seat.id).toBe('swing');
+    expect(kid.seat?.phase).toBe('on');
+    expect(kid.pose).toBe('swing');
+    expect(sw.rider).toBe('laija');
+    expect(d(kid.n, home.swing.n)).toBeLessThan(1e-6);
+    // pumping swings it high, but never past its limit
+    expect(peak).toBeGreaterThan(0.45);
+    expect(peak).toBeLessThanOrEqual(PENDULUM.max + 1e-9);
+    // nobody else can have it now
+    expect(f.swingFree(f.get('lingjel'), w)).toBe(false);
+    // time's up: no more pumping; once it's low she gets off, out onto an entry point, and it's free again
+    kid.dur = kid.t;
+    let off: Vector3 | null = null;
+    run(f, w, 25, () => {
+      tick(sw)();
+      if (!off && kid.seat?.seat.id !== 'swing') off = kid.n.clone();
+    });
+    expect(off).not.toBeNull();
+    expect(d(off!, home.swing.n)).toBeGreaterThan(0.6);
+    expect(sw.rider).toBeNull();
+    expect(seat.user).toBeNull();
+    expect(f.swingFree(f.get('lingjel'), w)).toBe(true);
+  });
+
+  it('while the visitor is on it (or it is not built yet), nobody else gets on', () => {
+    const f = new Family(home, R, mulberry32(6));
+    const sw = place();
+    sw.rider = 'visitor';
+    const w = { ...world(), swing: sw };
+    const kid = f.get('lingjel');
+    expect(f.swingFree(kid, w)).toBe(false);
+    f.hold('lingjel', 'swing', w);
+    run(f, w, 3, tick(sw));
+    expect(kid.seat).toBeNull();
+    expect(kid.activity).not.toBe('swing');
+    expect(sw.rider).toBe('visitor');
+    const none = place(false);
+    expect(f.swingFree(kid, { ...world(), swing: none })).toBe(false);
   });
 });

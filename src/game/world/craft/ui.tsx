@@ -10,7 +10,7 @@ import { ItemIcon } from '../../ui/Inventory';
 import InventoryPanel from '../../ui/InventoryPanel';
 import { selectReducedMotion } from '../../state/store';
 import type { Crafting } from './index';
-import { BULK_MAX, CRAFT_S, HOUSE_HEX, HOUSE_NEEDS, MAX_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
+import { BULK_MAX, CRAFT_S, HOUSE_HEX, HOUSE_NEEDS, MAX_NEEDS, SWING_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
 
 /** The crafting screen, the palette for Chopper's house, and the site card (crafting.md §4.2, §4.3). */
 export function CraftScreens({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
@@ -23,7 +23,7 @@ export function CraftScreens({ controller, crafting }: { controller: GameControl
     <>
       {screen === 'table' && <CraftScreen controller={controller} crafting={crafting} />}
       {screen === 'paint' && <PaintPicker controller={controller} crafting={crafting} />}
-      {near && !screen && aside === 'site' && <SiteCard controller={controller} />}
+      {near && !screen && aside === 'site' && <SiteCard controller={controller} which={near} />}
     </>
   );
 }
@@ -345,19 +345,38 @@ function PaintPicker({ controller, crafting }: { controller: GameController; cra
   );
 }
 
-/** Close to the site: what it's for, in Chopper's words, and what it needs (have / need). */
-function SiteCard({ controller }: { controller: GameController }) {
+/** The build sites' cards (crafting.md §4.3, swing.md §4.4): what it's for, and what it still needs. */
+const SITES = {
+  house: {
+    kicker: 'A spot for Chopper',
+    title: 'Chopper’s house',
+    text: 'Chopper has picked this sunny spot beside the house. A little house of his very own, right here, would be the best thing ever: somewhere to nap, guard his bowl and keep an eye on everyone. Paws crossed!',
+    needs: HOUSE_NEEDS,
+    hint: 'Craft them at the crafting table by the Workshop.',
+  },
+  swing: {
+    kicker: 'A spot for a swing',
+    title: 'The swing',
+    text: 'This old oak’s long, level branch is just right for a swing. Everyone at home would love one here.',
+    needs: SWING_NEEDS,
+    hint: 'Pick jute behind the vegetable garden and make rope and planks at the crafting table.',
+  },
+} as const;
+
+/** Close to a site: what it's for and what it needs (have / need). */
+function SiteCard({ controller, which }: { controller: GameController; which: keyof typeof SITES }) {
   useStore(controller.store, (s) => s.invVersion);
   const inv = controller.inventory;
-  const ready = HOUSE_NEEDS.every((x) => inv.count(x.id) >= x.n);
+  const site = SITES[which];
+  const ready = site.needs.every((x) => inv.count(x.id) >= x.n);
   const touch = useStore(controller.store, (s) => s.input === 'touch');
   return (
-    <section className="card site-card aside" aria-labelledby="site-title" data-testid="site-card">
-      <p className="kicker">A spot for Chopper</p>
-      <h2 id="site-title">Chopper&rsquo;s house</h2>
-      <p>Chopper has picked this sunny spot beside the house. A little house of his very own, right here, would be the best thing ever: somewhere to nap, guard his bowl and keep an eye on everyone. Paws crossed!</p>
+    <section className="card site-card aside" aria-labelledby="site-title" data-testid="site-card" data-site={which}>
+      <p className="kicker">{site.kicker}</p>
+      <h2 id="site-title">{site.title}</h2>
+      <p>{site.text}</p>
       <ul className="site-needs">
-        {HOUSE_NEEDS.map((x) => {
+        {site.needs.map((x) => {
           const have = inv.count(x.id);
           const ok = have >= x.n;
           return (
@@ -373,7 +392,7 @@ function SiteCard({ controller }: { controller: GameController }) {
           );
         })}
       </ul>
-      <p className="site-hint">{ready ? `Everything’s here. ${touch ? 'Tap the prompt' : 'Press E'} to build it!` : 'Craft them at the crafting table by the Workshop.'}</p>
+      <p className="site-hint">{ready ? `Everything’s here. ${touch ? 'Tap the prompt' : 'Press E'} to build it!` : site.hint}</p>
     </section>
   );
 }

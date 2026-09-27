@@ -1,7 +1,7 @@
 import { HalfFloatType, Raycaster, Vector2, Vector3, WebGLRenderTarget } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
-import { UP, moveAlong, orientationFor, tangentToward } from '../math/sphere';
+import { UP, arcDistance, moveAlong, orientationFor, tangentToward } from '../math/sphere';
 import { rotateAbout } from '../math/steer';
 import { riverDistance } from '../world/features';
 import { textureStatus } from '../world/textures';
@@ -42,15 +42,17 @@ export interface GameTestHook {
   /** The live renderer and scene (audits in the console / scripts). */
   __gfx(): GameController['gfx'];
   /** Ambient wildlife: each animal's state and distance (u) from the character. */
-  wildlife(): { rabbits: { state: string; d: number }[]; duck: { state: string; d: number } | null; fish: { state: string; d: number; stream: boolean }[]; birds: { state: string; d: number; alt: number }[] };
+  wildlife(): { rabbits: { state: string; d: number }[]; duck: { state: string; d: number; toNest: number | null; rest: number; ducklingsToNest: number[] } | null; fish: { state: string; d: number; stream: boolean }[]; birds: { state: string; d: number; alt: number }[] };
+  /** Where an animal (or the ducks' nest) is on screen (NDC), for close-up screenshots. */
+  projectAnimal(kind: 'duck' | 'duckling' | 'nest', i?: number): { x: number; y: number } | null;
   /** Stand `u` away from an animal (visual testing and the wildlife E2E). */
   nearAnimal(kind: 'rabbit' | 'duck' | 'bird', i?: number, u?: number): boolean;
   /** Stand `u` in front of the plaza bench, facing it (bench E2E and visual testing). */
   nearBench(u?: number): boolean;
   /** Stand `u` from a usable target, facing it (from its front first, if it has one): a tree (`which` = hardwood / apple / orange / cedar), a boulder, a flower, the chest or the notice board. Returns its key. */
-  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'craft' | 'site' | 'notice', which?: string, u?: number): string | null;
+  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'craft' | 'site' | 'notice' | 'jute', which?: string, u?: number): string | null;
   /** The crafting chunk (crafting.md): Chopper's house (built, colour, building), the ghost's visibility 0…1, and whether the site card is up. */
-  craft(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean } | null;
+  craft(): ReturnType<import('../controller').CraftAttachment['state']> | null;
   /** Backpack (36), chest (27), the cursor stack and the hotbar selection, as `id:n` / null. */
   inventory(): { backpack: (string | null)[]; chest: (string | null)[]; held: string | null; selected: number };
   /** Put items straight into the backpack (tests). Returns the leftover. */
@@ -222,6 +224,15 @@ export function installTestHook(c: GameController): void {
       const ndc = world.project(c.camera);
       return { x: ndc.x, y: ndc.y, z: ndc.z };
     },
+    projectAnimal: (kind, i = 0) => {
+      const w = c.wildlife;
+      const n = kind === 'nest' ? c.props.home?.duckNest.n : kind === 'duck' ? w?.duck?.n : w?.ducklings[i]?.n;
+      if (!n || !c.camera) return null;
+      const world = n.clone().multiplyScalar(CONFIG.planetRadius + 0.1).applyQuaternion(c.sim.planetQ);
+      c.camera.updateMatrixWorld();
+      const ndc = world.project(c.camera);
+      return { x: ndc.x, y: ndc.y };
+    },
     setAdaptiveQuality: (enabled) => c.store.setState({ adaptiveQuality: enabled }),
     setDpr: (dpr) => c.store.setState({ dpr }),
     visitPond: () => {
@@ -378,7 +389,15 @@ export function installTestHook(c: GameController): void {
       if (!w) return { rabbits: [], duck: null, fish: [], birds: [] };
       return {
         rabbits: w.rabbits.map((r) => ({ state: r.state, d: d(r.n) })),
-        duck: w.duck ? { state: w.duck.state, d: d(w.duck.n) } : null,
+        duck: w.duck
+          ? {
+              state: w.duck.state,
+              d: d(w.duck.n),
+              toNest: c.props.home ? arcDistance(w.duck.n, c.props.home.duckNest.n, R) : null,
+              rest: w.duck.rest,
+              ducklingsToNest: c.props.home ? w.ducklings.map((k) => arcDistance(k.n, c.props.home!.duckNest.n, R)) : [],
+            }
+          : null,
         fish: w.fish.map((f) => ({ state: f.state, d: d(f.n), stream: f.stream })),
         birds: w.birds.map((b) => ({ state: b.state, d: d(b.n), alt: b.alt })),
       };
@@ -402,7 +421,7 @@ export function installTestHook(c: GameController): void {
     nearTarget: (kind, which, u) => {
       const R = CONFIG.planetRadius;
       // reachable ones only (not on a mesa top): clear ground in front of it
-      const list = c.targets.filter((t) => t.kind === kind && (kind !== 'tree' || !which || t.tree === which));
+      const list = c.targets.filter((t) => t.kind === kind && (!which || (kind === 'tree' ? t.tree === which : t.key === which)));
       for (const t of list) {
         for (let k = 0; k < 12; k++) {
           const a = (k / 12) * Math.PI * 2;

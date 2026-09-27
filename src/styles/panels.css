@@ -358,14 +358,29 @@
 }
 
 /* a slot per material (up to four), each with have / need, a tick or a cross */
-.craft-needs,
-.site-needs {
+.craft-needs {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* a build site's card: a row per material (icon, name, have / need) */
+.site-needs {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-needs li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .craft-need {

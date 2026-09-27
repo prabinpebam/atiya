@@ -88,21 +88,46 @@ const _py = new Vector3();
 const _pz = new Vector3();
 const _pm = new Matrix4();
 
+const _down = new Vector3();
+const _rideQ = new Quaternion();
+const _rideP = new Vector3();
+
 /**
  * Sitting pose over whatever the mixer played (weight `w`): thighs forward along the seat, shins
- * hanging over its edge (feet swinging gently unless `still`), hands resting toward the knees.
+ * hanging over its edge (feet swinging gently unless `still`), hands resting toward the knees. On
+ * the swing (`ride`: the body's tilt as a rotation, and the legs' pump −1 … 1), the directions turn
+ * with the swinging body, the hands hold the ropes and the legs pump: out on the way forward,
+ * tucked under the seat on the way back.
  */
-function sitPose(limbs: readonly Limb[], heading: number, w: number, time: number, still: boolean): void {
+function sitPose(limbs: readonly Limb[], heading: number, w: number, time: number, still: boolean, ride?: { q: Quaternion; pump: number }): void {
   _fwd.set(Math.sin(heading), 0, Math.cos(heading));
   _left.set(Math.cos(heading), 0, -Math.sin(heading));
-  for (const l of limbs) {
-    const kick = still ? 0 : Math.sin(time * 2.4 + (l.side > 0 ? 0 : Math.PI)) * 0.3;
-    aimBone(l.up, l.leg, _dir.copy(_fwd).addScaledVector(DOWN, 0.1).addScaledVector(_left, 0.08 * l.side), w);
-    aimBone(l.leg, l.foot, _dir.copy(DOWN).addScaledVector(_fwd, 0.18 + kick), w);
-    aimBone(l.foot, l.toes, _dir.copy(_fwd).addScaledVector(DOWN, 0.25), w);
-    aimBone(l.arm, l.fore, _dir.copy(DOWN).addScaledVector(_fwd, 0.15).addScaledVector(_left, 0.16 * l.side), w);
-    aimBone(l.fore, l.hand, _dir.copy(_fwd).addScaledVector(DOWN, 0.9).addScaledVector(_left, -0.08 * l.side), w);
+  _down.copy(DOWN);
+  if (ride) {
+    _fwd.applyQuaternion(ride.q);
+    _down.applyQuaternion(ride.q);
   }
+  const r = ride ? 1 : 0;
+  const out = ride ? Math.max(0, ride.pump) : 0;
+  const tuck = ride ? Math.max(0, -ride.pump) : 0;
+  for (const l of limbs) {
+    const kick = still || ride ? 0 : Math.sin(time * 2.4 + (l.side > 0 ? 0 : Math.PI)) * 0.3;
+    aimBone(l.up, l.leg, _dir.copy(_fwd).addScaledVector(_down, 0.1 - out * 0.2).addScaledVector(_left, 0.08 * l.side), w);
+    aimBone(l.leg, l.foot, _dir.copy(_down).multiplyScalar(1 - out * 0.75).addScaledVector(_fwd, 0.18 + kick + out * 0.85 - tuck * 0.6), w);
+    aimBone(l.foot, l.toes, _dir.copy(_fwd).addScaledVector(_down, 0.25), w);
+    // (riding: up to the ropes, a little out to the side, and gripping them overhead)
+    aimBone(l.arm, l.fore, _dir.copy(_down).multiplyScalar(1 - 1.55 * r).addScaledVector(_fwd, 0.15 + 0.1 * r).addScaledVector(_left, (0.16 + 0.29 * r) * l.side), w);
+    aimBone(l.fore, l.hand, _dir.copy(_fwd).multiplyScalar(1 - 0.9 * r).addScaledVector(_down, 0.9 - 1.9 * r).addScaledVector(_left, (0.1 * r - 0.08) * l.side), w);
+  }
+}
+
+/** The swing's tilt as a rotation about the rider's left–right axis (`out`), or null when not riding. */
+function rideTilt(controller: GameController, out: Quaternion): Quaternion | null {
+  const r = controller.ride;
+  const k = controller.seatMotion.pose;
+  if (!r || k < 1e-3) return null;
+  const h = controller.sim.heading;
+  return out.setFromAxisAngle(_rideP.set(Math.cos(h), 0, -Math.sin(h)), r.tilt * k);
 }
 
 // Start fetching the chosen character as soon as the game chunk loads (no Draco/Meshopt → no decoder CDN requests).
@@ -250,8 +275,10 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     // on a bench: lower the body onto the seat and pose the limbs over the animation
     clock.current += dt;
     const pose = controller.seatMotion.pose;
-    if (seatGroup.current) seatGroup.current.position.y = pose * (SEAT.seatY - controller.lift + HIP_OVER_SEAT - HIP_Y);
-    if (pose > 1e-3) sitPose(limbs, sim.heading, pose, clock.current, selectAmbientPaused(controller.store.getState()));
+    const seatY = controller.seatMotion.seat?.height ?? SEAT.seatY;
+    if (seatGroup.current) seatGroup.current.position.y = pose * (seatY - controller.lift + HIP_OVER_SEAT - HIP_Y);
+    const tilt = rideTilt(controller, _rideQ);
+    if (pose > 1e-3) sitPose(limbs, sim.heading, pose, clock.current, selectAmbientPaused(controller.store.getState()), tilt ? { q: tilt, pump: controller.ride!.pump } : undefined);
     // an action cycle (shake a tree, mine, pick a flower, open the chest) over the clip
     const act = controller.action;
     if (act.kind) lastAct.current = { kind: act.kind, t: act.t, fade: 1 };
@@ -326,10 +353,20 @@ export function Player({ controller }: { controller: GameController }) {
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);
   // (no blob shadow: the character casts a real shadow from the sun and moon)
+  const tiltQ = useMemo(() => new Quaternion(), []);
   useFrame(() => {
     if (group.current) group.current.position.y = R + controller.lift;
     // flying: the body rises above the ground under it
-    if (body.current) body.current.position.y = controller.sim.hover;
+    const b = body.current;
+    if (!b) return;
+    b.position.set(0, controller.sim.hover, 0);
+    // on the swing: the whole body swings about the ropes' pivot (swing.md §6)
+    const q = rideTilt(controller, tiltQ);
+    if (q) {
+      const p = _rideP.set(0, controller.ride!.pivot, 0);
+      b.position.add(p).sub(p.applyQuaternion(q));
+      b.quaternion.copy(q);
+    } else b.quaternion.identity();
   });
   const id = useStore(controller.store, (s) => s.character);
   // fetch the other character in the background once the game is up, so switching is instant

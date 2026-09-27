@@ -2,7 +2,8 @@
 
 Every source is CC0 (Freesound previews, OpenGameArt, Kenney). The script downloads them into a
 git-ignored cache, cuts and cleans the chosen parts, and writes:
-  public/audio/{stream,wind,pant,steps,birds,ui,dog}.mp3
+  public/audio/{stream,wind,pant,steps,birds,ui,dog}.mp3, and the night set (fetched when night first falls):
+  public/audio/{crickets,frogs,croaks}.mp3
   src/game/audio/audioManifest.ts   (URLs, loop points, sprite slots in seconds)
 and prints a check of every output (level, loop seam, slot count, size).
 
@@ -48,6 +49,11 @@ SOURCES = {
     "sniff": ("https://cdn.freesound.org/previews/721/721000_15642582-hq.mp3", "fs-721000-sniff.mp3"),
     "whistle": ("https://cdn.freesound.org/previews/551/551960_8655650-hq.mp3", "fs-551960-come-here-whistle.mp3"),
     "pant": ("https://cdn.freesound.org/previews/841/841349_71257-hq.mp3", "fs-841349-dog-panting-loop.mp3"),
+    # the night (docs/poc-3d-navigation/day-night.md: crickets everywhere, frogs by the water)
+    "crickets": ("https://cdn.freesound.org/previews/521/521844_129727-hq.mp3", "fs-521844-close-crickets.mp3"),
+    "chorus": ("https://cdn.freesound.org/previews/750/750836_16236894-hq.mp3", "fs-750836-crickets-at-night.mp3"),
+    "treefrogs": ("https://cdn.freesound.org/previews/852/852657_2520418-hq.mp3", "fs-852657-pacific-tree-frogs.mp3"),
+    "greenfrog": ("https://cdn.freesound.org/previews/188/188195_1480854-hq.mp3", "fs-188195-green-frog.mp3"),
 }
 KENNEY = {
     "rpg": ("https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip", "kenney_rpg-audio.zip"),
@@ -334,6 +340,30 @@ def build() -> dict:
     padded, a, b = pad_loop(loop, 0.5)
     encode(padded, OUT / "pant.mp3", 64)
     manifest["pant"] = {"url": "/audio/pant.mp3", "loopStart": round(a, 4), "loopEnd": round(b, 4)}
+
+    # --- the night: a cricket bed (a close cricket over a distant chorus), the tree frogs' chorus by the
+    # water, and a green frog's single croaks; fetched only when night first falls ("lazy")
+    close = highpass(src("crickets", 2.5, 17.0), 300)
+    far = highpass(src("chorus", 66.5, 17.0), 1500)
+    bed = close / rms(close) + 0.45 * far / rms(far)
+    loop = seamless_loop(bed, 14.0, 2.0)
+    loop = soft_limit(loop * 10 ** (-24 / 20) / rms(loop), -3.0)
+    padded, a, b = pad_loop(loop, 1.0)
+    encode(padded, OUT / "crickets.mp3", 48)
+    manifest["crickets"] = {"url": "/audio/crickets.mp3", "loopStart": round(a, 4), "loopEnd": round(b, 4), "lazy": True}
+    frogs = highpass(src("treefrogs", 166.0, 15.0), 500)
+    loop = seamless_loop(frogs, 12.0, 2.0)
+    loop = soft_limit(loop * 10 ** (-22 / 20) / rms(loop), -2.0)
+    padded, a, b = pad_loop(loop, 1.0)
+    encode(padded, OUT / "frogs.mp3", 40)
+    manifest["frogs"] = {"url": "/audio/frogs.mp3", "loopStart": round(a, 4), "loopEnd": round(b, 4), "lazy": True}
+    croaks = Sprite()
+    green = highpass(src("greenfrog"), 150)
+    for o in [1.155, 2.335, 4.165, 5.6, 7.39, 10.01]:
+        seg = green[int((o - 0.03) * SR) : int((o + 0.4) * SR)]
+        croaks.add("croak", loud_normalize(trim(seg, head_db=36, tail_db=40, fade=0.06), -16, -2))
+    encode(croaks.audio(), OUT / "croaks.mp3", 64)
+    manifest["croaks"] = {"url": "/audio/croaks.mp3", "slots": croaks.slots, "lazy": True}
     return manifest
 
 
@@ -381,7 +411,7 @@ def write_manifest(manifest: dict) -> None:
         "// Loops: play [loopStart, loopEnd] (s); the file wraps extra audio round both ends.\n"
         "// Sprites: slots are [start, duration] (s) inside the file.\n"
         f"export const AUDIO = {body} as const;\n\n"
-        "export type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog';\n",
+        "export type SpriteKey = 'steps' | 'birds' | 'ui' | 'dog' | 'croaks';\n",
         encoding="utf-8",
     )
 

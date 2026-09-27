@@ -86,6 +86,9 @@ ITEMS: dict[str, str] = {
     "planks": "a small neat stack of three flat light-wood planks, freshly sawn, with visible wood grain along them and pale cut ends facing the viewer",
     "beam": "one thick square wooden beam lying diagonally, solid honey-brown timber with strong grain lines along it and a squared pale end showing growth rings",
     "slab": "one flat rectangular grey stone slab, a smooth cut paving stone with slightly bevelled edges and a few speckles, seen at a 3/4 angle from above",
+    # the swing (swing.md): jute, picked behind the vegetable garden, and the rope made from it
+    "jute": "a small bundle of long, soft golden-tan jute fibres, like a sheaf of straw-coloured strands, bound round the middle with a twist of the same fibre, the loose ends fanning out at both sides",
+    "rope": "a neat coil of thick golden-brown twisted jute rope, three strands visibly twisted round each other, with one loose end hanging out of the coil and a small frayed tip",
     "paint": "a small round tin paint pot with its lid off and a little wire handle, filled to the brim with glossy PURE WHITE paint, one thick white drip running down its grey metal side",
 }
 

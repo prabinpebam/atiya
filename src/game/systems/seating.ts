@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 import { arcDistance, moveAlong } from '../math/sphere';
 import { BENCH } from '../world/parts';
 import type { Furniture } from '../world/layout';
+import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 
 /** Sitting on benches: where you sit, when it's offered, and the sit-down / stand-up motion. */
 export const SEAT = {
@@ -33,6 +34,10 @@ export interface Seat {
   stand: Vector3;
   /** The bench by the pond: while you sit there, E feeds the ducks. */
   byPond: boolean;
+  /** The seat's top (u above the base sphere), when it isn't a bench's (`SEAT.seatY`): the swing's. */
+  height?: number;
+  /** While seated, E does this, the prompt's first button (the swing: swing higher); Escape stands up. */
+  action?: { label: string; icon: IconDefinition; run(): void };
 }
 
 /** One seat per bench in the layout (in its middle, or `sitSide` along it on a shared bench). */

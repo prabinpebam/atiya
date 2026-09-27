@@ -108,8 +108,21 @@ describe('feeding the ducks', () => {
     }
     expect(duck.state).toBe('feed');
     expect(d(duck.n, spot)).toBeLessThan(0.45);
-    // the ducklings came too
-    for (const k of w.ducklings) expect(d(k.n, spot)).toBeLessThan(1.5);
+    // the ducklings came too, crowding round the crumbs
+    for (const k of w.ducklings) expect(d(k.n, spot)).toBeLessThan(0.5);
+    // at the crumbs they peck at the water: heads down and up, with pauses to swallow
+    let down = 0;
+    let up = 0;
+    let kids = 0;
+    for (let t = 0; t < 6; t += 1 / 30) {
+      stepWildlife(w, env, 1 / 30);
+      if (duck.peck > 0.8) down++;
+      if (duck.peck < 0.2) up++;
+      if (w.ducklings.some((k) => k.peck > 0.8)) kids++;
+    }
+    expect(down).toBeGreaterThan(20);
+    expect(up).toBeGreaterThan(20);
+    expect(kids).toBeGreaterThan(20);
     // and a visitor walking up still sends her off
     env.calm = false;
     env.player.copy(duck.n);

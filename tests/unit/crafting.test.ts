@@ -7,7 +7,7 @@ import { BACKPACK_SLOTS, HOTBAR, Inventory } from '../../src/game/inventory/inve
 import { BLOOM_COLOURS, ITEMS, type ItemId } from '../../src/game/inventory/items';
 import { ICONS } from '../../src/game/inventory/iconManifest';
 import { CRAFT_RADIUS, CHEST_RADIUS, KEEP_CLEAR, KEEP_SOLID, generateProps } from '../../src/game/world/layout';
-import { HOME_R } from '../../src/game/world/homestead';
+import { HOME_R, SWING } from '../../src/game/world/homestead';
 import { Terrain } from '../../src/game/world/terrain';
 import { buildTargets, pickTarget, targetLabel } from '../../src/game/systems/interactables';
 import { benchSeats } from '../../src/game/systems/seating';
@@ -26,6 +26,8 @@ import {
   fits,
   landedSlots,
   listNeeds,
+  SWING_NEEDS,
+  takeNeeds,
   maxCraftable,
   missing,
   paintOptions,
@@ -35,6 +37,8 @@ import {
   takeHouse,
 } from '../../src/game/world/craft/recipes';
 import { BED_U, DOGHOUSE, DOORWAY_U } from '../../src/game/world/craft/models';
+import { PENDULUM, Pendulum, swingFrame } from '../../src/game/world/craft/swing';
+import { SWING_RIG } from '../../src/game/world/craft/swingModels';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
 const R = CONFIG.planetRadius;
@@ -50,8 +54,9 @@ const inv = (items: Array<[ItemId, number]> = []) => {
 };
 
 describe('crafting: recipes (crafting.md §4.1)', () => {
-  it('has planks, a beam, a slab and a paint for each of the 7 bloom colours', () => {
-    expect(RECIPES.map((x) => x.id)).toEqual(['planks', 'beam', 'slab', ...BLOOM_COLOURS.map((c) => `paint-${c.name}`)]);
+  it('has planks, a beam, a slab, jute rope and a paint for each of the 7 bloom colours', () => {
+    expect(RECIPES.map((x) => x.id)).toEqual(['planks', 'beam', 'slab', 'rope', ...BLOOM_COLOURS.map((c) => `paint-${c.name}`)]);
+    expect(r('rope')).toMatchObject({ out: 'rope', yield: 1, needs: [{ any: ['jute'], n: 3 }] });
     expect(r('planks')).toMatchObject({ out: 'planks', yield: 4, needs: [{ any: ['log'], n: 1 }] });
     expect(r('beam')).toMatchObject({ out: 'beam', yield: 1, needs: [{ any: ['log'], n: 2 }] });
     expect(r('slab')).toMatchObject({ out: 'slab', yield: 1, needs: [{ any: ['stone'], n: 2 }] });
@@ -140,7 +145,7 @@ describe('crafting: recipes (crafting.md §4.1)', () => {
   });
 });
 
-describe('crafting screen (crafting-screen.md �3)', () => {
+describe('crafting screen (crafting-screen.md §3)', () => {
   it('keeps every recipe to at most four materials, each of them needed', () => {
     expect(MAX_NEEDS).toBe(4);
     for (const x of RECIPES) {
@@ -262,6 +267,7 @@ describe('the crafting table and the house site: placement and keeping targets a
     { key: 'chest', n: chest.n, r: CHEST_RADIUS },
     { key: 'craft', n: table.n, r: CRAFT_RADIUS },
     { key: 'site', n: home.dogHouse.n, r: HOME_R.dogHouse },
+    { key: 'site:swing', n: home.swing.n, r: HOME_R.swing },
   ];
 
   it('stands the crafting table in the workyard beside the chest (prabin-npc.md §4.7): on the Workshop side, clear of both buildings and the paths', () => {
@@ -306,6 +312,8 @@ describe('the crafting table and the house site: placement and keeping targets a
     const extra = [
       { kind: 'craft' as const, key: 'craft', n: table.n, edgeU: CRAFT_RADIUS, reachU: TARGET_REACH.table, standU: CRAFT_RADIUS + 0.45, index: 0, scale: 1 },
       { kind: 'site' as const, key: 'site', n: home.dogHouse.n, edgeU: HOUSE_R, reachU: TARGET_REACH.site, standU: 1.1, index: 0, scale: 1 },
+      { kind: 'site' as const, key: 'site:swing', n: home.swing.n, edgeU: HOME_R.swing, reachU: TARGET_REACH.site, standU: 0.9, index: 0, scale: 1 },
+      ...home.yard.jute.map((j, i) => ({ kind: 'jute' as const, key: `jute:${i}`, n: j.n, edgeU: 0.12, reachU: 0.8, standU: 0.45, index: i, scale: 1 })),
     ];
     const all = [...targets, ...extra];
     for (const sp of specials) {
@@ -411,5 +419,119 @@ describe("Chopper and his house (crafting.md §4.3, prabin-npc.md §4.5)", () =>
     };
     expect(count(true)).toBeGreaterThan(0);
     expect(count(false)).toBe(0);
+  });
+});
+
+describe('the swing, jute and rope (swing.md)', () => {
+  const home = layout.home!;
+  const inv2 = (items: Array<[ItemId, number]> = []) => inv(items);
+
+  it('needs 2 jute ropes and 3 planks; rope is 3 jute; building takes exactly the materials', () => {
+    expect(SWING_NEEDS).toEqual([
+      { id: 'rope', n: 2 },
+      { id: 'planks', n: 3 },
+    ]);
+    const x = inv2([['jute', 6]]);
+    expect(craft(x, r('rope'), 2)).toEqual({ made: 2, left: 0 });
+    expect(x.count('jute')).toBe(0);
+    expect(missing(x, SWING_NEEDS)).toEqual([{ id: 'planks', n: 3, have: 0 }]);
+    expect(listNeeds(missing(x, SWING_NEEDS))).toBe('3 planks');
+    expect(takeNeeds(x, SWING_NEEDS)).toBe(false);
+    expect(x.count('rope')).toBe(2);
+    x.add('planks', 4);
+    expect(takeNeeds(x, SWING_NEEDS)).toBe(true);
+    expect([x.count('rope'), x.count('planks')]).toEqual([0, 1]);
+  });
+
+  it('hangs the swing under the old oak\'s branch, over open, level lawn, clear of Laija\'s seat and the picnic mat', () => {
+    const s = home.swing.n;
+    expect(d(s, home.tree)).toBeCloseTo(R * Math.atan(SWING.out / (R + SWING.branch)), 3);
+    expect(terrain.inWater(s)).toBe(false);
+    expect(Math.abs(terrain.height(s) - terrain.height(home.tree))).toBeLessThan(0.08);
+    // the seat swings across the branch
+    expect(Math.abs(home.swing.facing.dot(home.swingLimb))).toBeLessThan(0.02);
+    for (const o of layout.obstacles) if (o.n !== home.tree) expect(d(o.n, s) - o.radiusU - HOME_R.swing, 'obstacle by the swing').toBeGreaterThan(0.6);
+    // its arc (±0.7 u across) stays clear of everything but the oak itself
+    for (const k of [-1, 1]) {
+      const end = moveAlong(s, home.swing.facing, (k * 0.7) / R);
+      for (const o of layout.obstacles) expect(d(o.n, end) - o.radiusU, 'the arc').toBeGreaterThan(0.25);
+    }
+    expect(d(s, home.treeSeat.n)).toBeGreaterThan(1.3);
+    expect(d(s, home.mat.n)).toBeGreaterThan(2.5);
+    for (const t of layout.trees) if (t.n !== home.tree) expect(d(t.n, s)).toBeGreaterThan(1.6);
+  });
+
+  it('rows the jute behind the vegetable garden\'s back fence, on dry ground, clear of everything', () => {
+    const f = home.house.facing;
+    for (const j of home.yard.jute) {
+      const rel = j.n.clone().addScaledVector(home.house.n, -j.n.dot(home.house.n)).normalize().multiplyScalar(home.house.n.angleTo(j.n) * R);
+      expect(rel.dot(f)).toBeLessThan(-4.4);
+      expect(terrain.inWater(j.n)).toBe(false);
+      for (const o of layout.obstacles) expect(d(o.n, j.n) - o.radiusU, 'jute vs obstacle').toBeGreaterThan(0.45);
+      expect(d(j.n, home.centre)).toBeLessThan(home.range);
+    }
+    expect(home.yard.jute.length).toBe(5);
+  });
+
+  it('works out where the ropes hang from above the seat (the planet curves between the trunk and it)', () => {
+    const f = swingFrame(home.tree, home.swingLimb, terrain.height(home.tree), home.swing, terrain.height(home.swing.n), R, SWING.out, SWING_RIG.branchY, SWING_RIG.seatY);
+    expect(Math.abs(f.pivot.x)).toBeLessThan(0.02);
+    expect(Math.abs(f.pivot.z)).toBeLessThan(0.15);
+    expect(f.length).toBeGreaterThan(0.9);
+    expect(f.length).toBeLessThan(1.3);
+    expect(f.x.dot(f.y)).toBeCloseTo(0, 6);
+    expect(f.z.dot(home.swing.facing)).toBeCloseTo(-1, 3);
+  });
+
+  it('a rider pumps it higher, a kick the way it is swinging, at most every so often; getting on or off brakes it', () => {
+    const p = new Pendulum(1.2);
+    expect(p.pump()).toBe(true);
+    expect(p.w).toBeCloseTo(PENDULUM.pump, 6);
+    // (too soon for another)
+    expect(p.pump()).toBe(false);
+    let peak = 0;
+    for (let t = 0; t < 12; t += 1 / 60) {
+      p.step(1 / 60);
+      p.pump();
+      peak = Math.max(peak, Math.abs(p.a));
+    }
+    expect(peak).toBeGreaterThan(0.5);
+    expect(peak).toBeLessThanOrEqual(PENDULUM.max + 1e-9);
+    // swinging back, a pump kicks it back further (never against the swing)
+    for (let t = 0; t < 3 && p.w > -0.3; t += 1 / 60) p.step(1 / 60);
+    const w = p.w;
+    for (let t = 0; t < 1; t += 1 / 60) p.step(1 / 60, 0);
+    // getting off: it slows to a stop within the sit-down's time
+    for (let t = 0; t < 0.6; t += 1 / 60) {
+      p.brake(1 / 60);
+      p.step(1 / 60);
+    }
+    expect(Math.abs(p.a)).toBeLessThan(0.08);
+    expect(w).toBeLessThan(0);
+  });
+
+    it('swings: a push sets it going, it never swings past its limit, the wind barely moves it, and it settles', () => {
+    const p = new Pendulum(1.2);
+    for (let t = 0; t < 5; t += 1 / 60) p.step(1 / 60, 1);
+    expect(Math.abs(p.a)).toBeLessThan(0.08);
+    p.push(1);
+    let peak = 0;
+    for (let t = 0; t < 3; t += 1 / 60) {
+      p.step(1 / 60);
+      peak = Math.max(peak, Math.abs(p.a));
+    }
+    expect(peak).toBeGreaterThan(0.3);
+    for (let k = 0; k < 6; k++) p.push(1);
+    for (let t = 0; t < 4; t += 1 / 60) {
+      p.step(1 / 60);
+      expect(Math.abs(p.a)).toBeLessThanOrEqual(PENDULUM.max + 1e-9);
+    }
+    for (let t = 0; t < 20; t += 1 / 30) p.step(1 / 30);
+    expect(p.moving).toBe(false);
+    // under reduced motion it settles sooner
+    const q = new Pendulum(1.2);
+    q.push(1, 0.6);
+    for (let t = 0; t < 5; t += 1 / 60) q.step(1 / 60, 0, true);
+    expect(q.moving).toBe(false);
   });
 });

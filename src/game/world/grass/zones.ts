@@ -140,6 +140,9 @@ export function grassRules(w: GrassWorld, full = false): GrassRules {
     for (const b of home.yard.beds) wornDiscs.push(disc(b.n, 1.0, 2.2));
     wornDiscs.push(disc(home.yard.wateringCan.n, 0.5, 1.6), disc(home.yard.tulsi.n, 0.4, 1.2), disc(home.yard.woodpile.n, 0.5, 1.3));
     for (const s of [home.readingChair, home.table, home.fire, home.mat, home.dogHouse, home.treeSeat, home.shore, home.log]) wornDiscs.push(disc(s.n, 0.7, 1.9));
+    // worn under the swing, and round each jute plant in its row (swing.md)
+    wornDiscs.push(disc(home.swing.n, 0.8, 1.7));
+    for (const j of home.yard.jute) wornDiscs.push(disc(j.n, 0.3, 0.9));
     // the ways they walk every day, trodden into the lawn
     const door = home.door.n;
     for (const to of [home.table.n, home.fire.n, home.dogHouse.n, home.readingChair.n, home.mat.n, home.yard.wateringCan.n]) trodden.push(seg(door, to, 0.22));

@@ -128,7 +128,8 @@ function ChopperCardSlot({ controller }: { controller: GameController }) {
 /**
  * What E does right now (collection-inventory.md §3.1): shake a tree, mine a boulder, pick a flower,
  * open the chest, sit on the bench or meet Chopper; while seated, stand up (the keys work too: E, Escape).
- * On the pond bench E feeds the ducks instead, and standing up is the second button (Escape).
+ * On the pond bench E feeds the ducks instead (on the swing, a seat's own action: swing higher), and
+ * standing up is the second button (Escape).
  */
 function ActionPrompt({ controller }: { controller: GameController }) {
   const seated = useStore(controller.store, (s) => s.seated);
@@ -143,14 +144,16 @@ function ActionPrompt({ controller }: { controller: GameController }) {
     controller.focusRegion();
   };
   const feed = seated && canFeed;
+  // seated, E can do something first: feed the ducks on the pond bench, or a chunk's seat's own action (the swing: swing higher)
+  const extra = feed ? { label: 'Feed the ducks', icon: faBreadSlice, run: () => controller.feedDucks() } : seated ? controller.seatMotion.seat?.action : undefined;
   return (
-    <div className="seat-prompt action-prompt lane" data-testid="seat-prompt" data-kind={feed ? 'feed' : seated ? 'stand' : target!.kind}>
-      {feed && (
-        <button className="btn primary" type="button" onClick={() => (controller.feedDucks(), controller.focusRegion())}>
-          <Icon icon={faBreadSlice} /> Feed the ducks <kbd>E</kbd>
+    <div className="seat-prompt action-prompt lane" data-testid="seat-prompt" data-kind={feed ? 'feed' : extra ? 'seat-action' : seated ? 'stand' : target!.kind}>
+      {extra && (
+        <button className="btn primary" type="button" onClick={() => (extra.run(), controller.focusRegion())}>
+          <Icon icon={extra.icon} /> {extra.label} <kbd>E</kbd>
         </button>
       )}
-      <button className={feed ? 'btn' : 'btn primary'} type="button" onClick={act}>
+      <button className={extra ? 'btn' : 'btn primary'} type="button" onClick={act}>
         {seated ? (
           <>
             <Icon icon={faPersonWalking} /> Stand up <kbd>Esc</kbd>

@@ -1,13 +1,13 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useStore } from 'zustand';
-import { Color, InstancedMesh, Matrix4, Quaternion, Vector3, type BufferGeometry, type Material } from 'three';
+import { Color, Euler, InstancedMesh, Matrix4, Quaternion, Vector3, type BufferGeometry, type Material } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { UP } from '../math/sphere';
 import { selectAmbientPaused } from '../state/store';
 import { kitMaterials } from './materials';
-import { birdBody, birdWing, duck, duckling, fishModel, rabbit } from './propModels';
+import { DUCK_NECK, birdBody, birdWing, duck, duckHead, duckNest, duckling, fishModel, rabbit } from './wildlifeModels';
 import { RIVER_WATER_U } from './terrain';
 import { birdsOut, createWildlife, meadowSpots, stepWildlife, type WildEnv, type Wildlife as World } from './animals';
 
@@ -30,15 +30,22 @@ const _tilt = new Quaternion();
 const HIDDEN = new Matrix4().makeScale(0, 0, 0);
 const _flipY = new Matrix4().makeRotationY(Math.PI);
 const _root = new Matrix4();
+const _head = new Matrix4();
+const _e = new Euler(0, 0, 0, 'YXZ');
+const _z0 = new Vector3(0, 0, 1);
+/** How high the duck stands on land (her feet at the model's y ≈ −0.062, × her size), and a duckling. */
+const DUCK_LEGS = 0.08;
+const DUCKLING_FEET = 0.026;
 
 /** Matrix for a model standing at unit `n` (height `h` above the base sphere), facing tangent `dir`. */
-function place(out: Matrix4, n: Vector3, dir: Vector3, h: number, scale = 1, pitch = 0, yaw = 0): Matrix4 {
+function place(out: Matrix4, n: Vector3, dir: Vector3, h: number, scale = 1, pitch = 0, yaw = 0, roll = 0): Matrix4 {
   _x.crossVectors(n, dir).normalize();
   _z.copy(dir);
   out.makeBasis(_x, n, _z);
   _q.setFromRotationMatrix(out);
   if (yaw) _q.multiply(_tilt.setFromAxisAngle(UP as Vector3, yaw));
   if (pitch) _q.multiply(_tilt.setFromAxisAngle(_x.set(1, 0, 0), pitch));
+  if (roll) _q.multiply(_tilt.setFromAxisAngle(_z0, roll));
   _p.copy(n).multiplyScalar(R + h);
   return out.compose(_p, _q, _s.setScalar(scale));
 }
@@ -66,13 +73,15 @@ export function Wildlife({ controller }: { controller: GameController }) {
       inWater: (n) => terrain.inWater(n),
       pond: layout.pond ? { n: layout.pond.n, shore: (n) => terrain.pondShore(n) } : null,
       river: layout.river,
+      nest: layout.home?.duckNest.n ?? null,
     };
     const spots = meadowSpots(e, layout.grass.map((g) => g.n), UP as Vector3);
     return { env: e, world: createWildlife(e, spots) };
   }, [controller]);
   controller.wildlife = world;
 
-  const geo = useMemo(() => ({ rabbit: rabbit(), rabbitUp: rabbit(true), duck: duck(), duckling: duckling(), fish: fishModel(), bird: birdBody(), wing: birdWing() }), []);
+  const geo = useMemo(() => ({ rabbit: rabbit(), rabbitUp: rabbit(true), duck: duck(), duckHead: duckHead(), duckling: duckling(), nest: duckNest(), fish: fishModel(), bird: birdBody(), wing: birdWing() }), []);
+  const nest = controller.props.home?.duckNest ?? null;
   const mat = useMemo(() => kitMaterials().solid, []);
   const meshes = useRef<Record<string, InstancedMesh | null>>({});
   const set = (k: string) => (m: InstancedMesh | null) => {
@@ -123,14 +132,30 @@ export function Wildlife({ controller }: { controller: GameController }) {
       M.rabbit?.setMatrixAt(i, r.upright && r.hop < 0 ? HIDDEN : place(_m, r.n, r.dir, h, SIZE.rabbit, pitch));
       M.rabbitUp?.setMatrixAt(i, r.upright && r.hop < 0 ? place(_b, r.n, r.dir, h, SIZE.rabbit) : HIDDEN);
     });
-    // duck: bobbing; dabbling tips her tail up; ducklings bob out of step
+    // duck: bobbing on the water, standing (and waddling) on the bank, sitting in the nest; dabbling
+    // tips her tail up; her head pecks at crumbs, looks about, and tucks back under her wing asleep
     const water = RIVER_WATER_U;
     if (world.duck && M.duck) {
       const d = world.duck;
-      const tip = d.state === 'dabble' || (d.state === 'feed' && d.speed < 0.06 && Math.sin(t * 1.7) > 0.1) ? 1.05 : 0;
-      M.duck.setMatrixAt(0, place(_m, d.n, d.dir, water + Math.sin(t * 2.1) * 0.008 - tip * 0.04, SIZE.duck, tip));
+      const ground = groundAt(d, d.n) + DUCK_LEGS - 0.025 * d.rest;
+      const swim = water + Math.sin(t * 2.1) * 0.008 * (1 - d.rest);
+      const dry = ground > swim;
+      const tip = d.state === 'dabble' ? 1.05 : 0;
+      const roll = dry && d.speed > 0.02 ? Math.sin(t * 11) * 0.12 : 0;
+      M.duck.setMatrixAt(0, place(_m, d.n, d.dir, Math.max(ground, swim) - tip * 0.04, SIZE.duck, tip, 0, roll));
+      const look = Math.sin(t * 0.37) * 0.35 * (1 - d.rest) * (1 - d.peck);
+      _e.set(d.peck * 1.05 + d.rest * 0.55, look + d.rest * 2.75, 0);
+      _head.makeRotationFromEuler(_e).setPosition(DUCK_NECK[0], DUCK_NECK[1] - 0.03 * d.rest, DUCK_NECK[2] - 0.06 * d.rest);
+      M.duckHead?.setMatrixAt(0, _head.premultiply(_m));
     }
-    world.ducklings.forEach((k, i) => M.duckling?.setMatrixAt(i, place(_m, k.n, k.dir, water + Math.sin(t * 3 + i * 1.7) * 0.006, SIZE.duck)));
+    world.ducklings.forEach((k, i) => {
+      const ground = groundAt(k, k.n) + DUCKLING_FEET + (world.duck?.state === 'nest' ? 0.02 : 0);
+      const swim = water + Math.sin(t * 3 + i * 1.7) * 0.006;
+      const dry = ground > swim;
+      const roll = dry && k.speed > 0.03 ? Math.sin(t * 14 + i) * 0.14 : 0;
+      M.duckling?.setMatrixAt(i, place(_m, k.n, k.dir, Math.max(ground, swim), SIZE.duck, k.peck * 0.55, 0, roll));
+    });
+    if (nest && M.nest) M.nest.setMatrixAt(0, place(_m, nest.n, nest.facing, groundAt(nest, nest.n) - 0.005, SIZE.duck));
     // fish: a tail-wag wiggle that quickens with speed
     world.fish.forEach((f, i) => {
       const wag = Math.sin(t * (6 + f.speed * 14) + i * 2.3) * (0.12 + f.speed * 0.25);
@@ -165,6 +190,8 @@ export function Wildlife({ controller }: { controller: GameController }) {
       <Herd geometry={geo.rabbitUp} material={mat} count={world.rabbits.length} onMesh={set('rabbitUp')} />
       {/* on the water (and the wings, paper-thin) a shadow shows little: they skip the shadow pass */}
       {world.duck && <Herd geometry={geo.duck} material={mat} count={1} onMesh={set('duck')} shadow={false} />}
+      {world.duck && <Herd geometry={geo.duckHead} material={mat} count={1} onMesh={set('duckHead')} shadow={false} />}
+      {nest && <Herd geometry={geo.nest} material={mat} count={1} onMesh={set('nest')} />}
       <Herd geometry={geo.duckling} material={mat} count={world.ducklings.length} onMesh={set('duckling')} shadow={false} />
       <Herd geometry={geo.fish} material={mat} count={world.fish.length} onMesh={set('fish')} shadow={false} />
       <Herd geometry={geo.bird} material={mat} count={world.birds.length} onMesh={set('bird')} />

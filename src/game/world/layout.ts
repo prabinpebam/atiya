@@ -550,7 +550,9 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   }
 
   // the owner's home by the pond: laid out last and cleared of whatever stood there, so the rest of
-  // the planet is unchanged; Laija's reading tree joins the hardwoods
+  // the planet is unchanged; the old oak (Laija's reading tree) joins the trees, but not the hardwoods:
+  // the crafting chunk draws it (it has the swing's branch), it's an obstacle of the home's, and it
+  // isn't shaken (swing.md §4.3)
   const home = pond ? homesteadLayout(pond, cfg) : null;
   if (home) {
     const inHome = (p: PropInstance) => home.clear.some((c) => arcDistance(p.n, c.n, R) < c.r);
@@ -559,9 +561,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     };
     for (const list of [hardwood, fruit, cedar, trees, bushes, flowerBushes, allBushes, rocks, boulders, pebbles, sprigs, grass]) drop(list);
     for (const k of FLOWER_KINDS) drop(flowers[k]);
-    const tree = { n: home.tree, scale: 1.05, yaw: 1.3, tint: 0.35 };
-    hardwood.push(tree);
-    trees.push(tree);
+    trees.push({ n: home.tree, scale: 1.3, yaw: 1.3, tint: 0.35 });
     // the bench by the pond: the visitor sits on one side of it, the family on the other
     furniture.push({ kind: 'bench', n: home.pondBench.n.clone(), facing: home.pondBench.facing.clone(), sitSide: -POND_BENCH.side, byPond: true });
   }
@@ -573,6 +573,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     chest && { n: chest.n, r: CHEST_RADIUS },
     craft && { n: craft.n, r: CRAFT_RADIUS },
     home && { n: home.dogHouse.n, r: HOME_R.dogHouse },
+    home && { n: home.swing.n, r: HOME_R.swing },
     ...bridgeSpots.map((f) => ({ n: f.n, r: FURNITURE_RADIUS[f.kind] })),
     home && { n: home.pondBench.n, r: FURNITURE_RADIUS.bench },
   ].filter(Boolean) as { n: Vector3; r: number }[];

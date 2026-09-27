@@ -110,7 +110,7 @@ The first match owns the keys: **modal** (landmark dialog, menu, Chopper's card)
 `focusLane(state)` in `src/game/ui/lanes.ts` returns one of the following:
 
 1. `talk`: a conversation is open;
-2. `stand`: seated, so the prompt is "Stand up" (on the pond bench it's two buttons, "Feed the ducks" on <kbd>E</kbd> and "Stand up" on <kbd>Escape</kbd>);
+2. `stand`: seated, so the prompt is "Stand up" (where the seat has something to do, it's two buttons: the seat's action on <kbd>E</kbd>, "Feed the ducks" on the pond bench or "Swing higher" on the swing, and "Stand up" on <kbd>Escape</kbd>);
 3. nothing while an action is playing out (chopping, mining);
 4. `prompt`: there's a target;
 5. `preview`: a landmark is near;

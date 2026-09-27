@@ -12,6 +12,7 @@ export const TOUCH_COPY = {
 const RULES: [RegExp, string][] = [
   [/Press E to open\./g, 'Tap Open.'],
   [/Press E to feed the ducks, or Escape to stand up\./g, 'Tap Feed the ducks, or Stand up.'],
+  [/Press E to swing higher, or Escape to get off\./g, 'Tap Swing higher, or Stand up to get off.'],
   [/Press Escape to stand up\./g, 'Tap Stand up to get up.'],
   [/Press E to /g, 'Tap the prompt to '],
   [/: press E\./g, ': tap the prompt.'],

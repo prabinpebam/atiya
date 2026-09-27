@@ -35,6 +35,7 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'planks', out: 'planks', yield: 4, needs: [one('log', 1)], line: 'Split a log into four smooth planks.' },
   { id: 'beam', out: 'beam', yield: 1, needs: [one('log', 2)], line: 'Two logs, squared off into one sturdy beam.' },
   { id: 'slab', out: 'slab', yield: 1, needs: [one('stone', 2)], line: 'Two stones, chiselled flat into a slab.' },
+  { id: 'rope', out: 'rope', yield: 1, needs: [one('jute', 3)], line: 'Twist three bundles of jute into a strong rope.' },
   ...BLOOM_COLOURS.map(
     (c): Recipe => ({
       id: `paint-${c.name}`,
@@ -134,9 +135,24 @@ export const HOUSE_NEEDS: ReadonlyArray<{ id: ItemId; n: number }> = [
   { id: 'planks', n: 4 },
 ];
 
-/** What's still short for the house (empty when you can build it). */
-export function missing(inv: Inventory): Array<{ id: ItemId; n: number; have: number }> {
-  return HOUSE_NEEDS.map((x) => ({ ...x, have: inv.count(x.id) })).filter((x) => x.have < x.n);
+/** The swing under the old oak's branch (swing.md §4.4). */
+export const SWING_NEEDS: ReadonlyArray<{ id: ItemId; n: number }> = [
+  { id: 'rope', n: 2 },
+  { id: 'planks', n: 3 },
+];
+
+export type Needs = ReadonlyArray<{ id: ItemId; n: number }>;
+
+/** What's still short for a build (the house by default; empty when you can build it). */
+export function missing(inv: Inventory, needs: Needs = HOUSE_NEEDS): Array<{ id: ItemId; n: number; have: number }> {
+  return needs.map((x) => ({ ...x, have: inv.count(x.id) })).filter((x) => x.have < x.n);
+}
+
+/** Take a build's materials. False (and nothing taken) if anything's short. */
+export function takeNeeds(inv: Inventory, needs: Needs): boolean {
+  if (missing(inv, needs).length) return false;
+  for (const x of needs) inv.remove(x.id, x.n);
+  return true;
 }
 
 /** "2 stone slabs and 4 planks" (how many more of each). */
@@ -151,9 +167,7 @@ export function listNeeds(items: ReadonlyArray<{ id: ItemId; n: number; have?: n
 
 /** Take the house's materials. False (and nothing taken) if anything's short. */
 export function takeHouse(inv: Inventory): boolean {
-  if (missing(inv).length) return false;
-  for (const x of HOUSE_NEEDS) inv.remove(x.id, x.n);
-  return true;
+  return takeNeeds(inv, HOUSE_NEEDS);
 }
 
 /** The ghost: faint from this far (u)… (a hint of what could be built, not a sign it's ready to use: that's the target ring) */

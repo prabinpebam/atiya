@@ -9,6 +9,25 @@ import docsSite from './integrations/docs-site.mjs';
 const site = process.env.SITE_URL || undefined;
 const base = process.env.BASE_PATH || '/';
 
+/**
+ * The shaders' GLSL lives in template literals, so the minifier keeps their `//` comments as string
+ * content (about 1.5 KB gz in the game's initial JS). Once a chunk is minified, a line that's only a
+ * `//` comment can only be inside a template literal, so drop it: never `//#` / `//!` pragmas or a
+ * licence.
+ */
+function stripShaderComments() {
+  return {
+    name: 'strip-shader-comments',
+    apply: /** @type {const} */ ('build'),
+    /** @param {unknown} _ @param {Record<string, { type: string; code?: string }>} bundle */
+    generateBundle(_, bundle) {
+      for (const c of Object.values(bundle)) {
+        if (c.type === 'chunk' && c.code) c.code = c.code.replace(/^[ \t]*\/\/(?![#!])(?![^\n]*@(?:license|preserve))[^\n]*\n/gm, '');
+      }
+    },
+  };
+}
+
 export default defineConfig({
   site,
   base,
@@ -16,6 +35,7 @@ export default defineConfig({
   integrations: [react(), docsSite()],
   devToolbar: { enabled: false },
   vite: {
+    plugins: [stripShaderComments()],
     resolve: {
       // A second copy of three (e.g. pre-bundled separately with an addon) breaks R3F.
       dedupe: ['three', 'react', 'react-dom'],

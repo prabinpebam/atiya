@@ -45,6 +45,19 @@ export function applyTimeOfDay(glowMul: number, night: number): void {
   for (const [m, base] of daylit) m.emissiveIntensity = base * lift;
 }
 
+/**
+ * The props' shared materials (`Props.tsx` registers them here): a chunk (the crafting chunk's old
+ * oak) uses them without importing the props module, which would pull it into the chunk's shared
+ * graph and re-split the initial bundle.
+ */
+let propFactory: (() => unknown) | null = null;
+export function providePropMaterials(f: () => unknown): void {
+  propFactory = f;
+}
+export function sharedPropMaterials<T>(): T {
+  return propFactory!() as T;
+}
+
 export const PALETTE = {
   outline: '#2d2a32',
 } as const;

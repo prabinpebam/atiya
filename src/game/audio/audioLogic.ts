@@ -58,6 +58,20 @@ export const birdsSing = (night: number) => night < 0.35;
 /** Seconds until the next bird: a few every half minute, never on a beat. */
 export const nextBirdDelay = (rand: () => number) => 5 + rand() * 11;
 
+const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+
+/** The crickets (0…1): they start up as the birds fall quiet and sing all night, everywhere. */
+export const cricketLevel = (night: number) => smooth((night - 0.3) / 0.4);
+
+/** The frogs (0…1) call by the pond and the stream at night: full on the bank, gone some 15 u from the water. */
+export const frogLevel = (night: number, waterEdge: number) => cricketLevel(night) * streamLevel(Math.max(0, waterEdge) * 0.6, 9);
+
+/** The night sounds are fetched a little before they're heard (dusk), and not at all on a daytime visit. */
+export const nightSoon = (night: number) => night > 0.2;
+
+/** Seconds until a frog croaks nearby (a few a minute, when the chorus is up). */
+export const nextCroakDelay = (rand: () => number) => 2.5 + rand() * 6;
+
 /** A variation index in [0, count) that never repeats `last` (so two steps in a row never sound identical). */
 export function pickVariant(count: number, last: number, rand: () => number): number {
   if (count <= 1) return 0;

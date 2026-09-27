@@ -17,6 +17,7 @@ This follows established patterns rather than inventing new ones:
 | `apple`, `orange` | Apple, Orange | 64 | Shaking a fruit tree while its fruit is ripe (6 per shake; the fruit regrows in 90 s) |
 | `stone` | Stone | 64 | Mining a boulder (1 per hit, 3 hits) |
 | `tulip-<colour>`, `cosmos-<colour>`, `pansy-<colour>` | e.g. *Red tulip* | 64 | Picking a flower (the flower regrows in 60 s) |
+| `jute` | Jute | 64 | Picking a jute plant in the row behind the vegetable garden (2 per plant; it's cut to stubble and grows back in 90 s; [swing.md](./swing.md)) |
 
 Colours: red, pink, yellow, white, orange, purple, blue: the seven bloom colours the planet plants. That makes 26 items. Each has one icon (§6), and each colour is its own item, as in Minecraft and Animal Crossing, so stacks never mix colours.
 
@@ -44,6 +45,7 @@ Standing near something you can use shows a single prompt at the bottom centre, 
 | Flower | 0.9 u | **Pick** *Red tulip* | 0.8 s: crouch, pluck, stand |
 | Chest | 1.35 u | **Open chest** | the lid swings open and the chest screen opens |
 | Bench | 1.45 u, front or ends | **Sit on the bench** | see the spec, §4.12 |
+| Jute plant (crafting chunk) | its edge + 0.8 u | **Pick jute** | the flower's 0.8 s pick cycle; its beat (the chunk target's `onBeat`) cuts the plant and drops 2 jute |
 | Watering can (home chunk) | 0.8 u | **Pick up the watering can** / **Put the can back** | instant; see [family.md §6.2](./family.md#62-watering-the-garden) |
 | Garden plant, holding the can | 0.8 u, from either long side of its bed | **Water the cabbage** / **Water the tomato plant** | 1.6 s: step up, tip the can, pour; no drops (nothing to collect) |
 

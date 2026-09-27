@@ -188,7 +188,10 @@ export function ProceduralAvatar({ controller }: { controller: GameController })
     if (root.current) root.current.rotation.y = sim.heading;
     // on a bench: raise the hips to the seat, legs out along it and hands forward
     const sit = controller.seatMotion.pose;
-    if (root.current) root.current.position.y = (sit * (SEAT.seatY - controller.lift + 0.06 - HIP_PIVOT * AVATAR_SCALE)) / AVATAR_SCALE;
+    const seatY = controller.seatMotion.seat?.height ?? SEAT.seatY;
+    if (root.current) root.current.position.y = (sit * (seatY - controller.lift + 0.06 - HIP_PIVOT * AVATAR_SCALE)) / AVATAR_SCALE;
+    // on the swing: the legs pump and the hands hold the ropes (the Player swings the whole body)
+    const ride = controller.ride;
     const kick = reduced ? 0 : Math.sin(time.current * 2.4) * 0.18;
     const walk = Math.min(1, speed / CONFIG.walkSpeed);
     const run = Math.min(1, Math.max(0, (speed - CONFIG.walkSpeed) / (CONFIG.runSpeed - CONFIG.walkSpeed)));
@@ -199,14 +202,16 @@ export function ProceduralAvatar({ controller }: { controller: GameController })
     const s = Math.sin(phase.current);
     const legSwing = s * (0.55 + 0.35 * run) * walk;
     const armSwing = s * (0.6 + 0.5 * run) * walk;
-    if (legL.current) legL.current.rotation.x = mix(legSwing, -1.15 + kick, sit);
-    if (legR.current) legR.current.rotation.x = mix(-legSwing, -1.15 - kick, sit);
+    const pump = ride ? ride.pump * 0.45 : 0;
+    if (legL.current) legL.current.rotation.x = mix(legSwing, -1.15 + (ride ? -pump : kick), sit);
+    if (legR.current) legR.current.rotation.x = mix(-legSwing, -1.15 - (ride ? pump : kick), sit);
+    const arms = ride ? -2.7 : -0.55;
     if (armL.current) {
-      armL.current.rotation.x = mix(-armSwing, -0.55, sit);
+      armL.current.rotation.x = mix(-armSwing, arms, sit);
       armL.current.rotation.z = 0.14 + run * 0.1;
     }
     if (armR.current) {
-      armR.current.rotation.x = mix(armSwing, -0.55, sit);
+      armR.current.rotation.x = mix(armSwing, arms, sit);
       armR.current.rotation.z = -0.14 - run * 0.1;
     }
     if (body.current) {

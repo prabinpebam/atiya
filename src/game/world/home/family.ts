@@ -37,12 +37,13 @@ export type NpcPose =
   | 'guitar'
   | 'hammer'
   | 'pet'
-  | 'water';
+  | 'water'
+  | 'swing';
 
 /** Poses in which they stay put (seated or on the ground) when someone talks to them. */
-const SETTLED: ReadonlySet<NpcPose> = new Set(['read', 'sitChair', 'readGround', 'lego', 'eat', 'guitar']);
+const SETTLED: ReadonlySet<NpcPose> = new Set(['read', 'sitChair', 'readGround', 'lego', 'eat', 'guitar', 'swing']);
 /** Activities nobody is drawn out of for a chat: they'd have to drop what they're doing (or it's the routine). */
-const BUSY: ReadonlySet<string> = new Set(['serve', 'throw', 'fetch', 'hammer', 'guitar', 'water', 'eat', 'clear', 'bedtime', 'wake', 'indoors']);
+const BUSY: ReadonlySet<string> = new Set(['serve', 'throw', 'fetch', 'hammer', 'guitar', 'water', 'swing', 'swingGrown', 'eat', 'clear', 'bedtime', 'wake', 'indoors']);
 export type Held = 'book' | 'car' | 'pebble' | 'basket' | 'guitar' | 'hammer' | 'stick' | 'can' | null;
 
 export const NPC = {
@@ -117,6 +118,27 @@ export interface FamilyWorld {
   dog?: DogLink;
   /** The vegetable garden and its one watering can (shared with the visitor). */
   garden?: Garden;
+  /** The swing under the old oak (shared with the visitor), once the crafting chunk has it. */
+  swing?: SwingPlace | null;
+}
+
+/** The swing under the old oak (swing.md §6; the crafting chunk's): anyone may swing on it, one at a time. */
+export interface SwingPlace {
+  /** The ground under the seat, facing the way a rider faces. */
+  seat: HomeSpot;
+  /** Built (until then there's only its ghost). */
+  built(): boolean;
+  /** Who's on it, or getting on or off: 'visitor', one of the family, or null. */
+  rider: string | null;
+  /** Someone's getting on or off (their feet drag: it slows to a stop). */
+  boarding: boolean;
+  /** The seat's angle (rad, + toward a rider's front) and its rate (rad/s). */
+  readonly a: number;
+  readonly w: number;
+  /** The ropes' pivot above the ground under the seat (u). */
+  readonly pivot: number;
+  /** A rider pumps (a kick the way it's swinging); false while too soon after the last. */
+  pump(k?: number): boolean;
 }
 
 export interface PlanetInfo {
@@ -597,6 +619,25 @@ const ACTIVITIES: ActivityDef[] = [
     seat: (f, npc) => f.seatFree('pond', npc),
     pose: 'sitChair',
   },
+  // ---- on the swing under the old oak (once it's built): the children love it, the grown-ups have a go now and then
+  {
+    id: 'swing',
+    who: ['laija', 'lingjel'],
+    weight: 3,
+    dur: [14, 24],
+    cooldown: 60,
+    start: (f, npc, w) => f.swingFree(npc, w),
+    run: (f, npc, w, dt) => f.rideSwing(npc, w, dt),
+  },
+  {
+    id: 'swingGrown',
+    who: ['rojina', 'prabin'],
+    weight: 0.9,
+    dur: [8, 14],
+    cooldown: 150,
+    start: (f, npc, w) => f.swingFree(npc, w),
+    run: (f, npc, w, dt) => f.rideSwing(npc, w, dt),
+  },
   // ---- Rojina and Prabin: watering the vegetable garden with its one can, plant by plant (garden.ts)
   {
     id: 'water',
@@ -835,6 +876,7 @@ export class Family {
     this.stepMeal(dt);
     this.stepButterflies(dt, w);
     this.stepDoor(dt);
+    this.syncSwing(w);
     for (const npc of this.npcs) {
       if (npc.indoors && npc.activity === 'indoors') continue;
       for (const k of Object.keys(npc.cooldown)) npc.cooldown[k] = Math.max(0, npc.cooldown[k] - dt);
@@ -1100,6 +1142,54 @@ export class Family {
   }
 
   // ---------------------------------------------------------------------------
+  // the swing (swing.md §6)
+
+  /** The swing's built and nobody's on it (or heading for it) but maybe `npc`. */
+  swingFree(npc: Npc, w: FamilyWorld): boolean {
+    const sw = w.swing;
+    const seat = this.seats.find((s) => s.id === 'swing');
+    return Boolean(sw?.built() && seat && (!sw.rider || sw.rider === npc.id) && (!seat.user || seat.user === npc.id));
+  }
+
+  /** Walk over, get on, and swing: pumping for a while, then letting it die down, and getting off. */
+  rideSwing(npc: Npc, w: FamilyWorld, dt: number): boolean {
+    const sw = w.swing;
+    const seat = this.seats.find((s) => s.id === 'swing');
+    if (!sw || !seat || !sw.built()) return true;
+    // the visitor (or someone else) got on first
+    if (sw.rider && sw.rider !== npc.id) return true;
+    if (npc.stage === 0) {
+      if (this.sit(npc, w, seat, 'swing', dt)) {
+        npc.stage = 1;
+        npc.stageT = 0;
+        npc.t = 0;
+      } else if (npc.t > 30) return true;
+      return false;
+    }
+    npc.want = 0;
+    npc.goal = null;
+    npc.look = null;
+    npc.pose = 'swing';
+    if (npc.t < npc.dur) sw.pump(KIDS.has(npc.id) ? 1 : 0.7);
+    // done: once it's swung down low (or it's taken too long), off they get
+    return (npc.t > npc.dur && Math.abs(sw.a) < 0.12) || npc.t > npc.dur + 12;
+  }
+
+  /** Who's on the swing (or getting on or off) among the family, for the swing's own `rider`. */
+  private syncSwing(w: FamilyWorld): void {
+    const sw = w.swing;
+    if (!sw) return;
+    const on = this.npcs.find((p) => p.seat?.seat.id === 'swing');
+    if (on) {
+      sw.rider = on.id;
+      sw.boarding = on.seat!.phase !== 'on';
+    } else if (sw.rider && sw.rider !== 'visitor') {
+      sw.rider = null;
+      sw.boarding = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // seats (seats.ts): walk to an entry point, sit down onto the seat, stand up back to it
 
   /** The seat with this id, if nobody else has it. */
@@ -1129,9 +1219,13 @@ export class Family {
     npc.seatEntry ??= pickEntry(seat, npc.n, (n) => this.free(w, n, 0.02)) ?? seat.entries[0];
     const entry = npc.seatEntry;
     // (at the entry point itself: sitting down from anywhere else would slide through someone)
-    if (!this.goTo(npc, w, entry, gait, dt) || arcDistance(npc.n, entry.n, w.R) > 0.2) {
-      // (someone standing on the entry point: try the other side)
-      if (npc.stuck > AVOID.replanAfter) npc.seatEntry = pickEntry(seat, npc.n, (n) => this.free(w, n, 0.02) && n !== entry.n) ?? entry;
+    const there = this.goTo(npc, w, entry, gait, dt);
+    if (!there || arcDistance(npc.n, entry.n, w.R) > 0.2) {
+      // (someone standing on the entry point, or blocking the way: try another side; `there` means as close
+      // as their room allows, so they'd wait there for good)
+      if (there || npc.stuck > AVOID.replanAfter) {
+        npc.seatEntry = pickEntry(seat, npc.n, (n) => n !== entry.n && this.free(w, n, 0.02) && this.roomAmong(npc, n, w, true)) ?? entry;
+      }
       return false;
     }
     npc.seat = { seat, entry, phase: 'in', t: 0, from: npc.n.clone(), owner: npc.activity };

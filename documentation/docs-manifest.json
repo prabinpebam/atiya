@@ -199,6 +199,15 @@
       "group": "Features"
     },
     {
+      "path": "poc-3d-navigation/swing.md",
+      "title": "The swing, jute and rope",
+      "order": 33.5,
+      "icon": "park",
+      "status": "done",
+      "updated": "2026-09-27",
+      "group": "Features"
+    },
+    {
       "path": "poc-3d-navigation/chopper.md",
       "title": "Chopper",
       "order": 34,

@@ -20,7 +20,7 @@ import type { GameController } from '../controller';
 import { tangentToward } from '../math/sphere';
 import { selectAmbientPaused } from '../state/store';
 import { FLOWER_KINDS, type Pond, type PropInstance } from './layout';
-import { kitMaterials } from './materials';
+import { kitMaterials, providePropMaterials } from './materials';
 import { WIND_GLSL, windUniforms } from './windField';
 import { cedar, flowerSprig, foliageMaterials, hardwood, leafyBush } from './foliage';
 import { boulder, butterflyWing, flowerBlooms, flowerStems, pebble, reeds, rock, uprightCards } from './propModels';
@@ -103,7 +103,7 @@ function addSway(material: Material, strength: number, from: number, key: string
   material.customProgramCacheKey = () => `wind-${key}-${strength}-${from}-${flutter}|${prevKey()}`;
 }
 
-function swayMaterial(base: Material, strength: number, from: number, key = 'solid'): Material {
+export function swayMaterial(base: Material, strength: number, from: number, key = 'solid'): Material {
   const material = (base as MeshStandardMaterial).clone();
   addSway(material, strength, from, key);
   return material;
@@ -405,6 +405,41 @@ function useHarvestFx(controller: GameController, apples: readonly PropInstance[
   return { reg };
 }
 
+/** The props' shared materials (the trees', bushes', flowers' and rocks'), made once: the crafting chunk's old oak uses the same (swing.md §4.3). */
+let propMats: ReturnType<typeof makePropMaterials> | null = null;
+export const propMaterials = () => (propMats ??= makePropMaterials());
+export type PropMaterials = ReturnType<typeof propMaterials>;
+providePropMaterials(propMaterials);
+
+function makePropMaterials() {
+  const base = kitMaterials().solid;
+  const broad = foliageMaterials('broad');
+  const needle = foliageMaterials('needle');
+  const broadBush = foliageMaterials('broad');
+  // leaves share the trunk's sway (so canopy and core move together) plus a leafy rustle;
+  // the shadow-pass materials sway too, so leaf shadows dance with the wind
+  addSway(broad.material, 0.016, 1.2, 'broad', 0.02);
+  addSway(needle.material, 0.016, 1.2, 'needle', 0.012);
+  addSway(broadBush.material, 0.06, 0.1, 'broad-bush', 0.018);
+  addSway(broad.depth, 0.016, 1.2, 'broad-depth');
+  addSway(needle.depth, 0.016, 1.2, 'needle-depth');
+  addSway(broadBush.depth, 0.06, 0.1, 'broad-bush-depth');
+  // trunks keep the kit's surface detail (the painted bark tile) under the sway
+  const tree = withSurfaceDetail((base as MeshStandardMaterial).clone(), 0.36, 1.1);
+  addSway(tree, 0.016, 1.2, 'tree');
+  // the ground-level props near lamps also receive the lamplight (the leaf cards don't need it)
+  return {
+    tree: withLampLights(tree),
+    bush: withLampLights(swayMaterial(base, 0.06, 0.1, 'bush')),
+    flower: withLampLights(swayMaterial(base, 0.55, 0.0, 'flower')),
+    // painted stone grain (object-space, luminance only, so tints keep their colour) + shader moss
+    rock: withLampLights(withStoneDetail((base as MeshStandardMaterial).clone(), 0.7, 1.4)),
+    broad,
+    needle,
+    broadBush,
+  };
+}
+
 export function Props({ controller }: { controller: GameController }) {
   const layout = controller.props;
   const geo = useMemo(
@@ -424,34 +459,7 @@ export function Props({ controller }: { controller: GameController }) {
     }),
     [],
   );
-  const mats = useMemo(() => {
-    const base = kitMaterials().solid;
-    const broad = foliageMaterials('broad');
-    const needle = foliageMaterials('needle');
-    const broadBush = foliageMaterials('broad');
-    // leaves share the trunk's sway (so canopy and core move together) plus a leafy rustle;
-    // the shadow-pass materials sway too, so leaf shadows dance with the wind
-    addSway(broad.material, 0.016, 1.2, 'broad', 0.02);
-    addSway(needle.material, 0.016, 1.2, 'needle', 0.012);
-    addSway(broadBush.material, 0.06, 0.1, 'broad-bush', 0.018);
-    addSway(broad.depth, 0.016, 1.2, 'broad-depth');
-    addSway(needle.depth, 0.016, 1.2, 'needle-depth');
-    addSway(broadBush.depth, 0.06, 0.1, 'broad-bush-depth');
-    // trunks keep the kit's surface detail (the painted bark tile) under the sway
-    const tree = withSurfaceDetail((base as MeshStandardMaterial).clone(), 0.36, 1.1);
-    addSway(tree, 0.016, 1.2, 'tree');
-    // the ground-level props near lamps also receive the lamplight (the leaf cards don't need it)
-    return {
-      tree: withLampLights(tree),
-      bush: withLampLights(swayMaterial(base, 0.06, 0.1, 'bush')),
-      flower: withLampLights(swayMaterial(base, 0.55, 0.0, 'flower')),
-      // painted stone grain (object-space, luminance only, so tints keep their colour) + shader moss
-      rock: withLampLights(withStoneDetail((base as MeshStandardMaterial).clone(), 0.7, 1.4)),
-      broad,
-      needle,
-      broadBush,
-    };
-  }, []);
+  const mats = useMemo(propMaterials, []);
 
   const apples = useMemo(() => layout.fruit.filter((_, i) => i % 2 === 0), [layout]);
   // daisy-white sprigs outnumber the yellow ones, as in the art direction
