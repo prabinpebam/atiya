@@ -114,7 +114,7 @@ Touch pointers only (`pointerType === 'touch'`). The mouse and pen keep today's 
 | Seated, and the stick starts | Stand up (like a fresh key press), then walk while it's held |
 | Talking, a dialog, the menu, the backpack | No stick: the planet isn't taking input |
 
-The HUD keeps its own touches: a touch that starts on a button never becomes a stick.
+The HUD keeps its own touches: a touch that starts on a button never becomes a stick. The controls hint is the exception: it's only text, so a thumb landing on it passes through to the planet (its classic-site link stays tappable).
 
 ### 5.2 The stick
 
@@ -128,7 +128,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 | Follow | Past the rim the centre moves with the finger | nipplejs `follow`: no stretching, instant reversal |
 | Look | Wood glass ring, wood knob; gold (`--surface-accent`) while running | The game's surface; running reads at a glance |
 | Motion | Fades in and out at `--dur-fast`; instant under reduced motion | |
-| Layer | `--layer-base`, inside the planet region, `pointer-events: none` | Under every HUD surface |
+| Layer | `--layer-stick` (22), inside the planet region, `pointer-events: none` | Over the lanes (a card must never hide the stick under the thumb), under the travel fade and the chrome |
 | Accessibility | `aria-hidden`; the controls hint says what it does | A pointer affordance, not information |
 
 ### 5.3 Input modality
@@ -146,6 +146,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 | Controls hint | "Drag anywhere to walk; push to the edge to run. Tap a place to go there, and tap a prompt to use it." / "Turn and tilt the view with a second finger, or with the compass buttons." |
 | Near a building (announced) | "Tap Open." instead of "Press E to open." |
 | View pad, Reset | 44 px (`c.view.btn-touch`, `c.btn.h`) |
+| Short screens (a phone held sideways, ≤ 500 px tall) | Count as compact (`COMPACT_QUERY`), so the aside gives way to a lane card, and the preview card drops its summary: a 390 px screen can't hold both, or the full card |
 | Hotbar slots | Unchanged: 28 px at 360 px portrait (WCAG 2.5.8), 48 px in landscape. The one sanctioned exception to 44 px: nine slots, the backpack and the whistle must fit a phone held upright |
 
 ### 5.5 Platform hygiene
@@ -181,20 +182,40 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 | 6 | Desktop regression: the mouse drag, tap and keyboard tests | "view controls" group |
 | 7 | Screenshots on a real GPU, portrait and landscape, stick showing | Viewed |
 
+### 5.8 As built
+
+<div class="slate-card-grid" data-cols="2">
+  <figure class="slate-figure">
+    <img src="assets/touch-after-portrait.jpg" alt="Portrait: the stick ring and knob under the thumb, drawn over the controls hint, which now reads Drag anywhere to walk; the view pad's buttons are larger." />
+    <figcaption>Portrait, walking: the stick over the hint (touch copy), 44 px view pad.</figcaption>
+  </figure>
+  <figure class="slate-figure">
+    <img src="assets/touch-after-landscape.jpg" alt="Landscape: the stick turned gold while running, over a shortened preview card for the Workshop with only its title and buttons; the controls hint has given way." />
+    <figcaption>Landscape, running: the gold stick; the short preview card, and no hint beside it.</figcaption>
+  </figure>
+</div>
+
+- Built as §5.1–5.6, with three changes found on the phone:
+  - **The stick's layer** moved from `--layer-base` to a new `--layer-stick` over the lanes: under the hint or a preview card, it vanished exactly where the thumb was.
+  - **The hint lets touches through** (`pointer-events: none` in touch mode, its link excepted): in portrait it sits where the thumb rests, and a first drag there did nothing.
+  - **Short screens count as compact**, and the preview card drops its summary there: held sideways, the card and the hint overlapped, and the card reached the top bar.
+- Announcements are reworded in the chunk (`forTouch`: "Press E to open." becomes "Tap Open."), so the main bundle carries no second set of strings. The site card's hint and Prabin's one line that said "press E" follow the input too, or no longer name a key.
+- **Budgets:** the game's initial JS went from 449.7 to 449.9 KB gz (limit 450); the touch chunk is 1.8 KB, and on-demand JS is 77.2 KB (limit 80). A mouse-only device never requests the chunk.
+
 ## 6. Definition of Done
 
 | # | Item | Evidence | Status |
 |---|---|---|---|
-| 1 | Touch and drag anywhere on the planet summons the stick; walking follows it, screen-relative | E2E "touch" | Planned |
-| 2 | Push to the rim runs; back under 65 % walks | Unit (`stick`), E2E | Planned |
-| 3 | Lifting, `pointercancel` or hiding the page stops the character | Unit (`gestures`), E2E | Planned |
-| 4 | A second finger, or two together, turns and tilts the view; the compass buttons still do | E2E, unit | Planned |
-| 5 | A tap still walks to a spot or uses a building (WCAG 2.5.7) | E2E | Planned |
-| 6 | Keycaps and slot numbers hide, and the copy follows the last input | E2E | Planned |
-| 7 | View buttons and Reset are 44 px on touch | E2E (measured) | Planned |
-| 8 | No double-tap zoom on HUD buttons, no callout, no pull-to-refresh | CSS review | Planned |
-| 9 | Desktop unchanged: mouse drag turns the view, keyboard walks | "view controls" E2E | Planned |
-| 10 | Budgets met: initial ≤ 450 KB, on demand ≤ 80 KB; nothing loads on a mouse-only device | `verify:prod` | Planned |
+| 1 | Touch and drag anywhere on the planet summons the stick; walking follows it, screen-relative | E2E "touch"; unit `touch.test.ts` | Done |
+| 2 | Push to the rim runs; back under 65 % walks | Unit (stick hysteresis), E2E (`run` class) | Done |
+| 3 | Lifting, `pointercancel` or hiding the page stops the character | E2E (position unchanged after lifting); unit (`reset`) | Done |
+| 4 | A second finger, or two together, turns and tilts the view; the compass buttons still do | E2E (north turns more than 20° while walking); unit (averaging) | Done |
+| 5 | A tap still walks to a spot or uses a building (WCAG 2.5.7) | E2E | Done |
+| 6 | Keycaps and slot numbers hide, and the copy follows the last input | E2E (start card, hint, prompt keycap hidden); unit (`forTouch`) | Done |
+| 7 | View buttons and Reset are 44 px on touch | E2E (measured 44 × 44) | Done |
+| 8 | No double-tap zoom on HUD buttons, no callout, no pull-to-refresh | CSS review ([`hud.css`](https://github.com/prabinpebam/atiya/blob/main/src/styles/hud.css)); needs a pass on a real iPhone and Android phone | Done (emulated) |
+| 9 | Desktop unchanged: mouse drag turns the view, keyboard walks | "view controls" E2E (4 tests) | Done |
+| 10 | Budgets met: initial ≤ 450 KB, on demand ≤ 80 KB; nothing loads on a mouse-only device | `verify:prod`; the import is behind `(any-pointer: coarse)` | Done |
 
 ## 7. Deferred, with reasons
 

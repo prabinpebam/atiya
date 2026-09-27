@@ -53,6 +53,7 @@ function LoadingOverlay({ controller }: { controller: GameController }) {
 function StartOverlay({ controller }: { controller: GameController }) {
   const phase = useStore(controller.store, (s) => s.phase);
   const btn = useRef<HTMLButtonElement>(null);
+  const touch = useStore(controller.store, (s) => s.input === 'touch') ? controller.touch : null;
   useEffect(() => {
     // Only take focus when nothing else has it (never steal focus).
     if (phase === 'ready' && (document.activeElement === document.body || document.activeElement === null)) btn.current?.focus();
@@ -64,7 +65,7 @@ function StartOverlay({ controller }: { controller: GameController }) {
         <h1 id="start-title" className="card-title">
           Welcome to the little planet
         </h1>
-        <p>Walk with W A S D or the arrow keys. Walk up to a building to see what's inside, then press E.</p>
+        <p>{touch ? touch.copy.start : "Walk with W A S D or the arrow keys. Walk up to a building to see what's inside, then press E."}</p>
         <button ref={btn} className="btn primary big" type="button" onClick={() => controller.start()}>
           Start exploring
         </button>
@@ -187,20 +188,27 @@ function ControlsHint({ controller }: { controller: GameController }) {
   // the aside shows one thing: the build-site card before this help (lanes.ts)
   const compact = useCompact();
   const show = useStore(controller.store, (s) => asideLane(s, compact) === 'hint');
+  const touch = useStore(controller.store, (s) => s.input === 'touch') ? controller.touch : null;
   if (!show) return null;
   return (
     <aside className="card hint aside" aria-label="Controls" data-testid="controls-hint">
-      <p>
-        <kbd>W</kbd>
-        <kbd>A</kbd>
-        <kbd>S</kbd>
-        <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open / use · <kbd>F</kbd> whistle · <kbd>I</kbd> backpack · <kbd>1</kbd>–<kbd>9</kbd> hotbar · <kbd>M</kbd> menu
-      </p>
-      <p>
-        Drag to turn &amp; tilt the view · <kbd>,</kbd>
-        <kbd>.</kbd> rotate · <kbd>PgUp</kbd>
-        <kbd>PgDn</kbd> tilt · <kbd>N</kbd> north · <kbd>H</kbd> reset
-      </p>
+      {touch ? (
+        touch.copy.hint.map((t) => <p key={t}>{t}</p>)
+      ) : (
+        <>
+          <p>
+            <kbd>W</kbd>
+            <kbd>A</kbd>
+            <kbd>S</kbd>
+            <kbd>D</kbd> / arrows to move · <kbd>Shift</kbd> run · <kbd>E</kbd> open / use · <kbd>F</kbd> whistle · <kbd>I</kbd> backpack · <kbd>1</kbd>–<kbd>9</kbd> hotbar · <kbd>M</kbd> menu
+          </p>
+          <p>
+            Drag to turn &amp; tilt the view · <kbd>,</kbd>
+            <kbd>.</kbd> rotate · <kbd>PgUp</kbd>
+            <kbd>PgDn</kbd> tilt · <kbd>N</kbd> north · <kbd>H</kbd> reset
+          </p>
+        </>
+      )}
       <p className="muted">
         Prefer a normal website?{' '}
         <a href={withBase('/classic/')} onClick={toClassic}>

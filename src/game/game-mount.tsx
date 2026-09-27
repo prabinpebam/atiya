@@ -28,14 +28,17 @@ export async function mountGame(container: HTMLElement, landmarks: LandmarkData[
   // own chunk meanwhile, so his material compiles with the rest of the scene before the first frame.
   // The home and family by the pond come the same way (family.md), and so do the crafting table and Chopper's house
   // (crafting.md) and the wildlife.
-  const [, chopper, home, craft, nature] = await Promise.all([
+  const [, chopper, home, craft, nature, touch] = await Promise.all([
     preloadTextures(),
     import('./world/Chopper').catch(() => null),
     import('./world/home').catch(() => null),
     import('./world/craft').catch(() => null),
     // the wildlife and the blade grass (vegetation/): one chunk
     import('./world/nature').catch(() => null),
+    // touch controls (game-ui/touch.md): only where there's a touchscreen
+    matchMedia('(any-pointer: coarse)').matches ? import('./input/touch').catch(() => null) : null,
   ]);
+  controller.touch = touch?.attachTouch(controller) ?? null;
   controller.chopperView = chopper?.Chopper ?? null;
   // his mind (sharing the position the targets already use)
   if (chopper) controller.attachChopper(new chopper.ChopperBrain(Math.random, controller.chopper.n, controller.chopper.dir));

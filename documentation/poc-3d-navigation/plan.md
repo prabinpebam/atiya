@@ -138,7 +138,7 @@ Estimates are focused working days for one developer using GitHub Copilot agent 
 
 ### M8: P1 stretch (optional, 2–3 d; only after every P0 item is green)
 
-Juice (squash/stretch, lean, dust), follow lead, visited state, the `auto` activation experiment, run toggle, nipplejs joystick, gamepad, zoom stops, signposts and off-screen indicator, "I'm stuck", quality setting, preview deployment (D-6).
+Juice (squash/stretch, lean, dust), follow lead, visited state, the `auto` activation experiment, run toggle, gamepad, zoom stops, signposts and off-screen indicator, "I'm stuck", quality setting, preview deployment (D-6).
 
 ### Sequencing
 
@@ -167,7 +167,7 @@ Defaults are assumed so work can start. The owner confirms or changes each one.
 | D-2 | Landmark set & order | 7 landmarks, as in the spec's §4.3 | Add, remove or rename pillars | M3 start |
 | D-3 | Activation mode | **`prompt`** (the P0 default and DoD baseline) | The `auto` experiment (P1, non-default) | M7 feel review |
 | D-4 | Landing default | Neutral landing, last-used mode emphasized, no redirects except `?mode=` | Play-first or classic-first | M4 |
-| D-5 | Touch & gamepad in POC | Tap-to-move is P0; joystick and gamepad are M8 | Promote to P0 (+1–1.5 d) | M5 start |
+| D-5 | Touch & gamepad in POC | Tap-to-move is P0; joystick and gamepad are M8. As built: the touch stick (our own, not nipplejs) shipped ahead of M8 ([touch controls](../game-ui/touch.md)); gamepad is still M8 | Promote to P0 (+1–1.5 d) | M5 start |
 | D-6 | Preview hosting | Local only for the DoD; optionally Cloudflare Workers static assets or the Azure Static Web Apps free plan | Either | M7 |
 | D-7 | Character | Original procedural "designer" avatar (as built); a rigged CC0 humanoid is optional later | Custom modelled avatar later | M2 |
 | D-8 | Bundle strategy | R3F + drei (ADR-1) | Vanilla three runner-up if the M0.5 spike fails the budget | M0 |

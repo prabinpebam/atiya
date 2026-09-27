@@ -302,7 +302,7 @@
       "title": "Touch controls",
       "order": 42.5,
       "icon": "swipe",
-      "status": "draft",
+      "status": "done",
       "updated": "2026-09-27",
       "group": "Game UI"
     },

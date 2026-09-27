@@ -92,13 +92,13 @@ Adding a component: give it a class family, put it in the right stylesheet, use 
 | Centre | The middle of the screen | The world | Nothing but world-anchored labels (landmark names) and the fade. |
 | Overlay | Full screen | Dialogs and wood panels | Takes the keys; R4 and R6 stay empty. |
 
-On narrow screens (`COMPACT_QUERY`, ≤ 760 px) the aside stacks above the lane, so the aside gives way whenever the lane has something.
+On narrow or short screens (`COMPACT_QUERY`: ≤ 760 px wide, or ≤ 500 px tall, a phone held sideways) the aside gives way whenever the lane has something. On short screens the preview card also drops its summary, keeping its title and actions.
 
 ## 6. Priority
 
 ### 6.1 The layer stack
 
-Use `--layer-*` only; a raw z-index fails the lint. From bottom to top: `base` (the canvas), `hud` (the chrome's regions), `lane`, `fade` (travel), `chrome` (the top bar stays above the fade), `toast`, `overlay` (dialogs, panels), `drag` (an item on the cursor), `skip` (the skip link). World-anchored labels (drei `Html`) are capped below the HUD with `zIndexRange [9, 0]`.
+Use `--layer-*` only; a raw z-index fails the lint. From bottom to top: `base` (the canvas), `hud` (the chrome's regions), `lane`, `stick` (the floating touch stick, over the lanes because it sits under the thumb and never takes a touch), `fade` (travel), `chrome` (the top bar stays above the fade), `toast`, `overlay` (dialogs, panels), `drag` (an item on the cursor), `skip` (the skip link). World-anchored labels (drei `Html`) are capped below the HUD with `zIndexRange [9, 0]`.
 
 ### 6.2 Who owns input
 
@@ -162,12 +162,13 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
 ## 8. Accessibility
 
 - **Contrast:** the unit test checks every text role on every background of both surfaces, over the sky or the world behind translucent ones, plus the accent buttons, the toast and the talk plate at 4.5:1 (WCAG 1.4.3), and focus rings and borders at 3:1 (WCAG 1.4.11).
-- **Targets:** at least 44 × 44 px (`--c-btn-h`, the view buttons, slots).
+- **Targets:** at least 44 × 44 px (`--c-btn-h`, the view buttons on touch, slots). One exception, with its reason: hotbar slots are 28 px on a phone held upright (WCAG 2.5.8's 24 px minimum), because nine slots, the backpack and the whistle must fit 360 px ([touch controls](touch.md) §5.4).
 - **Text:** functional text is at least 14 px (`--text-sm`); the smaller sizes are only for eyebrows and counts. "Larger text" in the menu scales everything by 112.5 % and is saved (`site.largeText`).
 - **Focus:** a visible ring in the surface's `--surface-focus`; dialogs trap focus and give it back.
 - **Motion:** every animation uses `--dur-*` and `--ease-*`, and `prefers-reduced-motion` shortens it to nothing (the talk box then shows lines instantly).
 - **Text twins (P7):** prompts are buttons with names; toasts, talk lines and results are announced in the polite live region.
 - **Keys:** scoped to the focused game region; Tab and the browser's keys are never taken.
+- **Touch:** every drag has a single-pointer alternative (tap to walk, the compass buttons), and every two-finger gesture too (WCAG 2.5.1, 2.5.7). See §10.
 
 ## 9. Governance
 
@@ -188,3 +189,13 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
   3. Use the CSS variable.
 - **To change a colour:** change the primitive or the role; the contrast test tells you if it still passes on both surfaces.
 - **Exceptions:** the lint's exceptions are listed in the test with a reason. Add one only with a reason.
+
+## 10. Touch
+
+The rules for playing under a thumb; the research, the critique and the plan are in [touch controls](touch.md).
+
+- **The last input decides.** `<html data-input="touch|keys">` follows the last `pointerdown` or `keydown` (set by the touch chunk, mirrored in the store as `input`). Style touch-only changes with `[data-input='touch']`, never with a pointer media query: a touchscreen laptop can switch back and forth.
+- **In touch mode:** keycaps in buttons and the hotbar's slot numbers hide; the start card, the controls hint and the announcements use the touch copy (`input/touchCopy.ts`); the view pad is 44 px (`--c-view-btn-touch`).
+- **Gestures:** one finger dragged on the planet is the floating stick (`c.stick.*`); a second finger, or two together, turn and tilt the view; a tap walks. A touch that starts on a HUD control stays with it; text-only surfaces (the controls hint) let touches through.
+- **New touch copy** never names a key; the unit test checks it.
+- **The chunk rule:** touch code (`input/touch.ts`, `stick.ts`, `gestures.ts`, `touchCopy.ts`) loads only on touch-capable devices. It imports nothing from the main bundle but types, and the main bundle keeps only the glue (`controller.touch`).

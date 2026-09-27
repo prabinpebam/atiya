@@ -11,6 +11,8 @@
 body.play {
   height: 100dvh;
   overflow: hidden;
+  /* no bounce or pull-to-refresh on phones */
+  overscroll-behavior: none;
   background: linear-gradient(180deg, var(--color-sky-top) 0%, var(--color-sky-mid) 45%, var(--color-sky-low) 100%);
 }
 
@@ -105,6 +107,67 @@ body.play {
   cursor: grabbing;
 }
 
+/* touch (touch.md §5.5): no long-press callout, text selection or tap flash on the planet and the HUD's controls */
+.game-region,
+.play-header,
+.hotbar-wrap,
+.view-controls,
+.character-picker,
+.action-prompt {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* buttons and links: no double-tap zoom or tap delay (the slots keep touch-action: none for dragging) */
+:where(body.play) :where(button, a) {
+  touch-action: manipulation;
+}
+
+/* The floating stick (touch.md §5.2): drawn where a finger lands on the planet, over the lanes (it's under
+ * the thumb and never takes a touch). The touch chunk moves it (transform) and its knob; its range is half this ring. */
+.stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: var(--layer-stick);
+  display: grid;
+  place-items: center;
+  width: var(--c-stick-size);
+  height: var(--c-stick-size);
+  border: var(--border-base) solid var(--surface-border);
+  border-radius: var(--radius-round);
+  background: var(--surface-bg-glass);
+  box-shadow: var(--shadow-press);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.stick.on {
+  opacity: 1;
+}
+
+.stick-knob {
+  width: var(--c-stick-knob);
+  height: var(--c-stick-knob);
+  border: var(--border-base) solid var(--surface-text);
+  border-radius: var(--radius-round);
+  background: var(--surface-bg);
+  box-shadow: var(--shadow-lift);
+}
+
+/* running: the ring and knob turn gold */
+.stick.run {
+  border-color: var(--surface-accent);
+}
+
+.stick.run .stick-knob {
+  border-color: var(--surface-on-accent);
+  background: var(--surface-accent);
+}
+
 /* Overlays: loading, start, context lost (they own the screen until dismissed) */
 .overlay {
   position: absolute;
@@ -151,6 +214,13 @@ body.play {
 .preview-card h2 {
   margin: 0;
   font-size: var(--text-2xl);
+}
+
+/* a phone held sideways: the card keeps its title and actions (the summary is on the page it opens) */
+@media (max-height: 500px) {
+  .preview-card > p:not(.kicker) {
+    display: none;
+  }
 }
 
 .seat-prompt .btn {
@@ -433,6 +503,38 @@ body.play {
     bottom: auto;
     right: var(--space-3);
   }
+}
+
+/* Touch (touch.md §5.3–5.4): the HUD follows the last input. Keycaps and slot numbers are for keys,
+ * and the view pad grows to the 44 px target. */
+[data-input='touch'] .btn kbd,
+[data-input='touch'] .slot-key {
+  display: none;
+}
+
+/* the controls hint is only text: a thumb landing on it still summons the stick (its link stays tappable) */
+[data-input='touch'] .hint {
+  pointer-events: none;
+}
+
+[data-input='touch'] .hint a {
+  pointer-events: auto;
+}
+
+[data-input='touch'] .view-pad {
+  grid-template:
+    'a up b' var(--c-view-btn-touch)
+    'left compass right' var(--c-view-compass)
+    'c down d' var(--c-view-btn-touch) / var(--c-view-btn-touch) var(--c-view-compass) var(--c-view-btn-touch);
+}
+
+[data-input='touch'] .view-btn {
+  width: var(--c-view-btn-touch);
+  height: var(--c-view-btn-touch);
+}
+
+[data-input='touch'] .view-home {
+  min-height: var(--c-btn-h);
 }
 
 /* the travel fade */

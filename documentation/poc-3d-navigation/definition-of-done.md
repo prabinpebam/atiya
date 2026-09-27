@@ -124,6 +124,7 @@ Each metric uses the method and reference hardware in [spec §7](./spec.md#7-per
 
 - [ ] The full P0 experience has been checked by hand on **Edge**, **Chrome** and **Firefox** (latest, Windows 11) and on **Safari 26** (macOS). **[M]**
 - [ ] Tap-to-move works on at least one touch device (iOS Safari or Android Chrome), or that device is correctly offered the classic site. **[M]**
+  - Emulated (Chromium, touch, 390 × 844) the tap walks and the floating stick walks and runs: E2E "touch" ([touch controls](../game-ui/touch.md) §6). A pass on a real phone is still to do.
 
 ## 6. Engineering quality
 

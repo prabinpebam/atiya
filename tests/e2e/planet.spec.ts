@@ -736,6 +736,82 @@ test.describe('wildlife', () => {
   });
 });
 
+test.describe('touch', () => {
+  // a phone held upright, with a real touchscreen (touch.md §5)
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+  test('drag anywhere summons the stick: walk, push to run, a second finger turns the view, lifting stops; a tap still walks', async ({ page }) => {
+    test.setTimeout(180_000);
+    await openPlanet(page);
+    await expect(page.locator('html')).toHaveAttribute('data-input', 'touch');
+    await expect(page.locator('.start-overlay')).toContainText('Drag anywhere to walk');
+    await page.getByRole('button', { name: 'Start exploring' }).tap();
+    await expect.poll(async () => (await state(page)).phase).toBe('playing');
+    const hint = page.getByTestId('controls-hint');
+    if (await hint.isVisible()) {
+      await expect(hint).toContainText('Drag anywhere to walk');
+      await expect(hint.locator('kbd')).toHaveCount(0);
+    }
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: string, pts: [number, number, number][]) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y, id]) => ({ x, y, id })) } as any);
+    const step = (n: number) =>
+      page.evaluate((f) => {
+        const g = (window as any).__game;
+        g.pause();
+        g.advance(f);
+        g.resume();
+      }, n);
+    const stick = page.getByTestId('stick');
+
+    // one finger, dragged up the screen: the stick appears where it landed and the character walks
+    await touch('touchStart', [[120, 560, 1]]);
+    for (let i = 1; i <= 6; i++) await touch('touchMove', [[120, 560 - i * 5, 1]]);
+    await expect(stick).toHaveClass(/\bon\b/);
+    await expect(stick).not.toHaveClass(/\brun\b/);
+    await step(40);
+    const walked = await state(page);
+    expect(walked.atSpawn).toBe(false);
+    expect(walked.autoWalk).toBe(false);
+    // pushed to the rim: it runs
+    await touch('touchMove', [[120, 480, 1]]);
+    await expect(stick).toHaveClass(/\brun\b/);
+    // a second finger turns the view while the first keeps walking
+    const north0 = (await state(page)).north;
+    await touch('touchStart', [[120, 480, 1], [330, 460, 2]]);
+    for (let i = 1; i <= 8; i++) await touch('touchMove', [[120, 480, 1], [330 - i * 15, 460, 2]]);
+    // (CDP: a point missing from the next event has lifted; touchEnd lifts them all)
+    await touch('touchMove', [[120, 480, 1]]);
+    expect(Math.abs((await state(page)).north - north0)).toBeGreaterThan(20);
+    await expect(stick).toHaveClass(/\bon\b/);
+    // lifting: the stick goes and the character stops
+    await touch('touchEnd', []);
+    await expect(stick).not.toHaveClass(/\bon\b/);
+    await step(20);
+    const a = (await state(page)).pLocal;
+    await step(20);
+    const b = (await state(page)).pLocal;
+    expect(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])).toBeLessThan(1e-4);
+
+    // a tap still walks (WCAG 2.5.7: a single-pointer alternative to the drag)
+    await page.evaluate(() => (window as any).__game.teleport('plaza'));
+    await page.touchscreen.tap(195, 470);
+    await expect.poll(async () => {
+      const s = await state(page);
+      return s.autoWalk || !s.atSpawn;
+    }).toBe(true);
+
+    // the view pad is 44 px under a thumb, and prompts show no keycaps
+    const rotate = await page.getByRole('button', { name: /Rotate view clockwise/ }).boundingBox();
+    expect(rotate!.width).toBeGreaterThanOrEqual(44);
+    expect(rotate!.height).toBeGreaterThanOrEqual(44);
+    await page.evaluate(() => (window as any).__game.nearBench(1.1));
+    const sit = page.getByTestId('seat-prompt').getByRole('button', { name: /Sit on the bench/ });
+    await expect(sit).toBeVisible();
+    await expect(sit.locator('kbd')).toBeHidden();
+  });
+});
+
 test.describe('benches', () => {
   test('walking up to the plaza bench offers a seat; E sits, Escape stands up (not the menu), and a movement key stands up and walks off', async ({ page }) => {
     test.setTimeout(120_000);

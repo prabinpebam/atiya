@@ -268,6 +268,7 @@ function SiteCard({ controller }: { controller: GameController }) {
   useStore(controller.store, (s) => s.invVersion);
   const inv = controller.inventory;
   const ready = HOUSE_NEEDS.every((x) => inv.count(x.id) >= x.n);
+  const touch = useStore(controller.store, (s) => s.input === 'touch');
   return (
     <section className="card site-card aside" aria-labelledby="site-title" data-testid="site-card">
       <p className="kicker">A spot for Chopper</p>
@@ -290,7 +291,7 @@ function SiteCard({ controller }: { controller: GameController }) {
           );
         })}
       </ul>
-      <p className="site-hint">{ready ? 'Everything’s here. Press E to build it!' : 'Craft them at the crafting table by the Workshop.'}</p>
+      <p className="site-hint">{ready ? `Everything’s here. ${touch ? 'Tap the prompt' : 'Press E'} to build it!` : 'Craft them at the crafting table by the Workshop.'}</p>
     </section>
   );
 }

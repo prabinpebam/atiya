@@ -60,6 +60,16 @@ interface KeyEventLike {
   preventDefault(): void;
 }
 
+/** Touch controls (input/touch.ts, a chunk loaded only on touch-capable devices; docs: game-ui/touch.md), once attached. */
+export interface TouchAttachment {
+  /** A pointer went down on the planet: true if it's a touch the stick and gestures take (the mouse path then skips it). */
+  down(e: { pointerId: number; clientX: number; clientY: number; pointerType?: string }): boolean;
+  /** Copy for touch: the start card and the controls hint. */
+  copy: { start: string; hint: readonly string[] };
+  /** An announcement reworded for touch. */
+  say(text: string): string;
+}
+
 /** The crafting table and Chopper's house (world/craft/, its own chunk; docs: crafting.md), once attached. */
 export interface CraftAttachment {
   /** The crafting table, and Chopper's house (or its ghost), in the scene. */
@@ -176,6 +186,8 @@ export class GameController {
   home: HomeAttachment | null = null;
   /** The crafting table and Chopper's house, once that chunk has loaded (null if it failed). */
   craft: CraftAttachment | null = null;
+  /** Touch controls, on touch-capable devices once their chunk has loaded. */
+  touch: TouchAttachment | null = null;
   /** Things rabbits and ground birds shy away from besides the character: Chopper, the children. */
   readonly threats: Vector3[] = [];
   /** The family's collision circles in the character's list (switched off while they're indoors). */
@@ -539,7 +551,7 @@ export class GameController {
     return northScreenAngle(this.sim.planetQ, this.sim.pLocal);
   }
 
-  private canUseView(): boolean {
+  canUseView(): boolean {
     const s = this.store.getState();
     return s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.craftScreen && !s.chopperOpen && !s.talk && !this.sim.travel;
   }
@@ -579,7 +591,7 @@ export class GameController {
     this.focusRegion();
   }
 
-  private dragView(dx: number, dy: number): void {
+  dragView(dx: number, dy: number): void {
     const C = CONFIG.camera;
     this.view.yawPending = 0;
     this.sim.rotateView(dx * C.dragYawPerPx);
@@ -587,10 +599,11 @@ export class GameController {
   }
 
   /** Pointer down on the planet region: focus/start, and begin a possible drag-to-tumble gesture. */
-  onRegionPointerDown = (e: { clientX: number; clientY: number; pointerId: number; button: number }): void => {
+  onRegionPointerDown = (e: { clientX: number; clientY: number; pointerId: number; button: number; pointerType?: string }): void => {
     this.focusRegion();
     if (this.store.getState().phase === 'ready') this.start();
     this.viewDragged = false;
+    if (this.touch?.down(e)) return;
     if (e.button !== 0 && e.button !== 2) return;
     this.endDrag();
     this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, lastX: e.clientX, lastY: e.clientY, active: false };
@@ -635,6 +648,7 @@ export class GameController {
   }
 
   announce(text: string): void {
+    if (this.touch && this.store.getState().input === 'touch') text = this.touch.say(text);
     // Toggle a trailing no-break space so repeated messages are re-announced.
     this.announceToggle = !this.announceToggle;
     this.store.setState({ announcement: text + (this.announceToggle ? '\u00a0' : '') });

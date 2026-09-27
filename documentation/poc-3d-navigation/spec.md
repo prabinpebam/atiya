@@ -48,7 +48,7 @@ This POC proves the **navigation UI and interaction model**, not final art or co
 | **Screen-reader user** | Equivalent content | Uses skip link or the parallel landmark list; hears "Near Workshop — Case studies. Press E to open." |
 | **Motion-sensitive user** | No nausea | `prefers-reduced-motion` → no camera lag, no squash/particles, cut transitions. |
 | **Low-end / no-WebGL device** | Not blocked | Detected up front → offered/redirected to classic site with a clear message. |
-| **Mobile visitor** (stretch) | Works with thumbs | Tap-to-move (P0) and virtual joystick (P1). |
+| **Mobile visitor** | Works with thumbs | Tap-to-move, and (as built) a floating stick: drag anywhere to walk ([touch controls](../game-ui/touch.md)). |
 
 ## 4. Experience specification
 
@@ -149,16 +149,16 @@ Constraints:
 
 | Action | Keyboard | Mouse / touch | Gamepad (P1) |
 |---|---|---|---|
-| Move | **W A S D** / **Arrow keys** (screen-relative: W/↑ = away from camera) | **Click/tap on ground** → auto-walk along great circle (P0); virtual joystick on coarse pointers (P1) | Left stick (analog speed) |
-| Run | Hold **Shift** (setting: *Run toggle*, P1) | — (auto-walk uses run) | Hold B / right trigger |
+| Move | **W A S D** / **Arrow keys** (screen-relative: W/↑ = away from camera) | **Click/tap on ground** → auto-walk along great circle (P0); as built, on touch, **drag anywhere**: a floating stick walks you, pushed to the rim it runs ([touch controls](../game-ui/touch.md)) | Left stick (analog speed) |
+| Run | Hold **Shift** (setting: *Run toggle*, P1) | Auto-walk uses run; on touch, push the stick to its rim | Hold B / right trigger |
 | Interact / open | **E**, **Enter**, **Space** | Click/tap the preview card; click/tap a landmark (or its label) → **fast travel** to its approach point | A |
 | Close / back | **Esc** (closes the open dialog/menu) | Close button / tap backdrop | B |
 | Menu (fast travel, settings) | **M**, or **Esc** when no dialog/menu is open (and you're not sitting) | Menu button (HUD) | Start |
 | Use a thing (as built) | Standing at a tree, boulder, flower or the chest, **E** shakes / mines / picks / opens it (a fixed cycle, §4.17) | The prompt's button | A |
 | Hotbar & backpack (as built) | **1**–**9** select a hotbar slot, **Q** / **Ctrl+Q** drop one / the stack, **I** opens the backpack screen; in a screen, Minecraft's controls (§4.17) | Mouse wheel over the planet; click a hotbar slot; the backpack button | — |
-| Sit on a bench / stand up (as built) | By the plaza bench, **E** (or Enter / Space) sits; **Esc**, **E** or a fresh movement key stands up | The **Sit on the bench** / **Stand up** prompt; a tap on the ground stands up | — |
-| Rotate view (as built) | Hold **,** / **.** (the < > keys): counter-clockwise / clockwise | **Drag** the planet left/right (any button; touch drag); ⟲ / ⟳ buttons around the compass step 45° | Right stick X (P1) |
-| Tilt view (as built) | Hold **Page Up** / **Page Down**: toward a top / side view (30°–78°) | **Drag** up/down; ˄ / ˅ buttons step 10° | Right stick Y (P1) |
+| Sit on a bench / stand up (as built) | By the plaza bench, **E** (or Enter / Space) sits; **Esc**, **E** or a fresh movement key stands up | The **Sit on the bench** / **Stand up** prompt; a tap on the ground, or a fresh stick drag, stands up | — |
+| Rotate view (as built) | Hold **,** / **.** (the < > keys): counter-clockwise / clockwise | **Drag** the planet left/right (any mouse button; on touch a second finger, or two fingers together); ⟲ / ⟳ buttons around the compass step 45° | Right stick X (P1) |
+| Tilt view (as built) | Hold **Page Up** / **Page Down**: toward a top / side view (30°–78°) | **Drag** up/down (on touch, with a second finger or two together); ˄ / ˅ buttons step 10° | Right stick Y (P1) |
 | Face north (as built) | **N** | Click the **compass** | — |
 | Reset position & direction (as built) | **H** or **Home** | **Reset** button under the compass | — |
 | Zoom (P1) | **+ / −** | Mouse wheel / pinch | — |
@@ -273,7 +273,7 @@ Priority: **P0** = required for the POC Definition of Done · **P1** = should, s
 | FR-06 | Character faces movement direction; idle/walk/run cross-fade by speed | P0 | 4.4 |
 | FR-07 | Collision with landmarks/large props; slide along obstacles | P0 | 5.3 |
 | FR-08 | Click/tap ground → auto-walk along the great circle **until arrived (≤ 0.3 u) or blocked**; if no progress for 0.5 s, stop and show a subtle "blocked" cue; retargeting allowed; any movement key cancels | P0 | 4.5, 5.2 |
-| FR-09 | Virtual joystick on coarse pointers | P1 | 4.5 |
+| FR-09 | Virtual joystick on coarse pointers (as built: a floating stick on touch, [touch controls](../game-ui/touch.md)) | P1 | 4.5 |
 | FR-10 | Gamepad (standard mapping, analog speed, deadzone) | P1 | 4.5 |
 | FR-11 | Diorama camera by default (sky band visible); the user can rotate and tilt it within limits, face north via the compass, and reset position and direction | P0 | 4.6 |
 | FR-12 | Zoom stops (wheel / +− / right stick) | P1 | 4.6 |
@@ -590,7 +590,7 @@ Install via the Microsoft npm proxy per [AGENTS.md](https://github.com/prabinpeb
 | Helpers | `@react-three/drei` | `10.7.8` | KeyboardControls, Html (world labels), PerformanceMonitor, AdaptiveDpr, useProgress; (useGLTF/useAnimations if GLB assets are added later) |
 | State | zustand | `5.0.15` | Tiny, works inside and outside React (`useFrame`) |
 | Smoothing | maath | `0.10.8` | Frame-rate-independent `easing.damp*` |
-| Touch joystick (P1) | nipplejs | `1.0.4` | TS rewrite (2026), ~6 KB gz, MIT |
+| Touch joystick (P1) | nipplejs | `1.0.4` | TS rewrite (2026), ~6 KB gz, MIT. Not adopted: our own stick is 1.8 KB in a lazy chunk ([touch controls](../game-ui/touch.md) §4) |
 | GPU tier | `@pmndrs/detect-gpu` | `6.0.22` | Low-end gating |
 | Dev tuning (dev only) | leva | `0.10.1` | Live-tune movement/camera constants |
 | Post-processing | `@react-three/postprocessing` + postprocessing | `3.1.1` + `6.39.5` | Tilt-shift (NORMAL blend) and neutral tone mapping on both tiers; bloom and vignette on `high` (§4.12, §4.13) |
@@ -755,7 +755,7 @@ personal-site/
 │     ├─ state/store.ts  # zustand: input, player, proximity, ui, settings(persist)
 │     ├─ math/sphere.ts  # pure: latLon→vec, step, slide, arcDistance (unit-tested); compass.ts (map north)
 │     ├─ systems/        # movement.ts, proximity.ts, autoWalk.ts (pure + thin hooks)
-│     ├─ input/          # keyboard.ts, pointer.ts, gamepad.ts (P1), joystick.ts (P1)
+│     ├─ input/          # keyboard.ts, gamepad.ts (P1); touch chunk: touch.ts, stick.ts, gestures.ts, touchCopy.ts
 │     ├─ world/          # kit.ts (merged vertex-coloured geometry + surface tags/UVs), parts.ts (roofs, windows, doors, props),
 │     │                  # models.ts (landmark models), interiors.ts (rooms behind the doors), doors.ts (pure door/curtain motion),
 │     │                  # propModels.ts (trees, flowers, rocks, clouds…),
@@ -844,7 +844,7 @@ Targets: **WCAG 2.2 AA** for all DOM UI, plus **WCAG 2.3.3 Animation from Intera
 | Single-key shortcuts scoped | Game keys only when game region focused | 2.1.4 |
 | Equivalent non-visual access | Parallel `<nav aria-label="Planet landmarks">` list of "Travel to …" buttons + `aria-live="polite"` region for proximity/state | 1.1.1, 4.1.2, 4.1.3 |
 | Focus management | No focus stealing on load (Start button focused only if nothing is focused); dialogs via `showModal()`; focus returns to the invoker (fallback: game region); visible focus never obscured by HUD | 2.4.3, 2.4.7, 2.4.11, XAG 113 |
-| Drag alternative | Tap/click-to-move and fast travel as alternatives to joystick drag | 2.5.7 |
+| Drag alternative | Tap/click-to-move and fast travel as alternatives to the stick drag; the compass buttons for the two-finger view drag | 2.5.7, 2.5.1 |
 | Target size & contrast | ≥ 24×24 px; text 4.5:1, UI glyphs 3:1 on solid/blurred backing | 2.5.8, 1.4.3, 1.4.11 |
 | Motion | One global **Reduce motion** state (media query **or** in-game toggle) stops **every** decorative animation source: lighthouse beam, clouds, foliage wind, landmark idle bobs, particles, squash, follow lead. Transitions become opacity-only (≤ 200 ms). Menu → **Pause ambient motion** is available even without reduced motion. Never: shake, head-bob, motion blur, flashing. | 2.2.2 (A), 2.3.1 (A), 2.3.3 (AAA, adopted), XAG 117 |
 | Predictable | Approaching shows a preview only; opening requires explicit input (default mode) | 3.2.1, 3.2.2 |

@@ -98,6 +98,7 @@
   - The wrapper libraries are stale (joypad.js 2023, gamecontroller.js 2020), so skip them.
 - **Touch:**
   - **nipplejs 1.0.4**: a TypeScript-first rewrite (v1.0.0, 2026-03-21), no dependencies, about 6 KB gz, MIT (https://github.com/yoannmoinet/nipplejs/releases/tag/v1.0.0).
+  - *Outcome:* not adopted. The game's own floating stick is about 1.8 KB gz in a lazy chunk and uses the design tokens ([touch controls](../../game-ui/touch.md) §4).
   - If you adopt ecctrl, its built-in `Joystick` works too.
   - react-joystick-component 6.2.1 hasn't been updated since 2023.
 - **Tap/click to move:** R3F's `onPointerDown` on the planet gives you a surface point. Steer along the great circle toward it (`axis = p × target`). This also provides the non-drag alternative that WCAG 2.5.7 requires. Messenger can be played with one finger on mobile and the mouse alone on desktop (https://www.awwwards.com/messenger.html).

@@ -56,6 +56,8 @@ export interface GameState {
   musicOn: boolean;
   /** Which player character is chosen (persisted). */
   character: CharacterId;
+  /** The last input used (game-ui/touch.md §5.3): touch swaps the copy and hides keycaps. Set by the touch chunk. */
+  input: 'touch' | 'keys';
 }
 
 export type GameStore = StoreApi<GameState>;
@@ -93,6 +95,7 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     soundOn: true,
     musicOn: true,
     character: 'skater',
+    input: 'keys',
     ...init,
   }));
 }

@@ -196,6 +196,7 @@
   --layer-base: 1;
   --layer-hud: 10;
   --layer-lane: 20;
+  --layer-stick: 22;
   --layer-fade: 25;
   --layer-chrome: 30;
   --layer-toast: 35;
@@ -209,7 +210,10 @@
   --c-lane-edge: var(--space-3-5);
   --c-lane-gap: var(--space-2);
   --c-view-btn: 34px;
+  --c-view-btn-touch: 44px;
   --c-view-compass: 72px;
+  --c-stick-size: 7.5rem;
+  --c-stick-knob: 3.5rem;
 }
 
 :root,

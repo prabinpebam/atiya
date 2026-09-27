@@ -49,6 +49,9 @@ The rules are in [documentation/game-ui/design-system.md](./documentation/game-u
   - functional text is at least `--text-sm`;
   - sizes are in `rem`, so the "Larger text" setting (`html.text-lg`) scales them;
   - every cue has a text twin (a prompt, a label or a live-region announcement).
+- **Touch** (docs: `documentation/game-ui/touch.md`, design system §10): the floating stick, the second-finger view drag and the input modality live in the touch chunk (`input/touch.ts`, with the pure `stick.ts`, `gestures.ts`, `touchCopy.ts`, unit-tested), imported in `game-mount.tsx` only when `(any-pointer: coarse)` matches. It imports nothing from the main bundle but types. Mouse and pen behaviour must stay exactly as it is.
+  - Style touch-only changes with `[data-input='touch']` (the last input used), never a pointer media query. Touch copy never names a key; reword announcements in `forTouch`.
+  - Every drag and two-finger gesture keeps a single-pointer alternative (tap to walk, the compass buttons). Test touch with real CDP touch events (`Input.dispatchTouchEvent`; a point missing from the next event has lifted, `touchEnd` lifts them all), as the E2E "touch" group does.
 
 ### Documentation site (the source of truth)
 

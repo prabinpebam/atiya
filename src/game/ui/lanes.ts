@@ -42,7 +42,8 @@ export function laneBeneath(s: LaneInput): FocusLane {
 export type Aside = 'site' | 'hint' | null;
 
 /** Below this width the aside and the focus lane share one bottom stack (hud.css), so the lane wins. */
-export const COMPACT_QUERY = '(max-width: 760px)';
+// narrow, or short (a phone held sideways: the aside and a lane card can't both fit)
+export const COMPACT_QUERY = '(max-width: 760px), (max-height: 500px)';
 
 /** `compact`: a narrow screen, where the aside gives way whenever the focus lane has something. */
 export function asideLane(s: LaneInput & Pick<GameState, 'siteNear' | 'hintVisible'>, compact = false): Aside {
