@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useStore } from 'zustand';
-import { Color, DoubleSide, Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshStandardMaterial, Quaternion, RingGeometry, SphereGeometry, Vector3, type Mesh } from 'three';
+import { Color, DoubleSide, Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshStandardMaterial, Quaternion, RingGeometry, SphereGeometry, Vector3, type BufferGeometry, type Mesh } from 'three';
 import { CONFIG } from '../../config';
 import type { GameController } from '../../controller';
 import { moveAlong, tangentToward } from '../../math/sphere';
@@ -39,10 +39,24 @@ import {
   woodpile,
 } from './models';
 import { legoSpot } from './family';
+import { FEED } from '../../systems/duckFeed';
+import { RIVER_WATER_U } from '../terrain';
+import { pondPlants } from '../pondPlants';
+import type { PropInstance } from '../layout';
+import { LILY_VARIANTS, lilyCluster } from './lilies';
 
 const R = CONFIG.planetRadius;
 const _x = new Vector3();
 const _m = new Matrix4();
+/** Crumbs drawn: the last few tosses, a few crumbs each (one instanced draw). */
+const CRUMB_TOSSES = 4;
+const CRUMBS_EACH = 6;
+const _crumbTo = new Vector3();
+const _crumbSide = new Vector3();
+const _crumbFwd = new Vector3();
+const _crumbUp = new Vector3();
+const _crumbDir = new Vector3();
+const _crumbScale = new Vector3();
 
 /** Position and orientation for a model standing at `n` with its front along `facing`. */
 function frame(n: Vector3, facing: Vector3, h: number, yaw = 0): { p: Vector3; q: Quaternion } {
@@ -66,6 +80,31 @@ function Placed({ at, h, yaw = 0, scale = 1, children }: { at: HomeSpot; h: numb
 function toPlanet(at: HomeSpot, h: number, local: V3, yaw = 0): Vector3 {
   const f = frame(at.n, at.facing, h, yaw);
   return new Vector3(...local).applyQuaternion(f.q).add(f.p);
+}
+
+const _up = new Vector3(0, 1, 0);
+
+/** One water-lily cluster variant floating on the pond: one instanced draw, each cluster turned and tinted its own way. */
+function LilyClusters({ geo, items }: { geo: BufferGeometry; items: readonly PropInstance[] }) {
+  const ref = useRef<InstancedMesh>(null);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const q = new Quaternion();
+    const yaw = new Quaternion();
+    const m = new Matrix4();
+    const c = new Color();
+    items.forEach((it, i) => {
+      q.setFromUnitVectors(_up, it.n).multiply(yaw.setFromAxisAngle(_up, it.yaw));
+      mesh.setMatrixAt(i, m.compose(it.n.clone().multiplyScalar(R + (it.h ?? 0)), q, new Vector3().setScalar(it.scale)));
+      mesh.setColorAt(i, c.setScalar(0.95 + it.tint * 0.1));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }, [items]);
+  if (!items.length) return null;
+  return <instancedMesh ref={ref} args={[geo, kitMaterials().solid, items.length]} receiveShadow frustumCulled={false} />;
 }
 
 const FIRE_LAMP = { color: new Color('#ffab5c'), intensity: 6.5, range: 4.2 } as const;
@@ -177,6 +216,13 @@ export function HomeView({ controller, home, family }: { controller: GameControl
 
   const lego = useMemo(() => legoSpot(home, R), [home]);
   const yard = useMemo(() => yardModel(home, houseH, ht), [home, houseH, controller]);
+  // the water lilies on the pond (the same spots as the rest of the pond's plants), a few cluster variants
+  const lilies = useMemo(() => {
+    const pond = controller.props.pond;
+    if (!pond) return [];
+    const items = pondPlants(pond, controller.props.river, controller.terrain, home).lilies;
+    return Array.from({ length: LILY_VARIANTS }, (_, v) => ({ geo: lilyCluster(v), items: items.filter((_, i) => i % LILY_VARIANTS === v) }));
+  }, [controller, home]);
 
   // the campfire's flames flicker; after dusk it (and the porch lantern) really light the scene
   const flames = useRef<Mesh>(null);
@@ -195,6 +241,9 @@ export function HomeView({ controller, home, family }: { controller: GameControl
   const smokeGeo = useMemo(() => new SphereGeometry(0.07, 8, 6), []);
   const smokeMat = useMemo(() => new MeshStandardMaterial({ color: '#f1ede6', roughness: 1, transparent: true, opacity: 0.28, depthWrite: false }), []);
   const emberGeo = useMemo(() => new SphereGeometry(0.018, 5, 4), []);
+  const crumbs = useRef<InstancedMesh>(null);
+  const crumbGeo = useMemo(() => new SphereGeometry(0.02, 5, 4), []);
+  const crumbMat = useMemo(() => new MeshStandardMaterial({ color: '#e9c98f', roughness: 1, metalness: 0 }), []);
   const clock = useRef(0);
 
   // pebbles splashing into the pond: an expanding ripple ring each
@@ -279,12 +328,52 @@ export function HomeView({ controller, home, family }: { controller: GameControl
     }
     if (sm) sm.instanceMatrix.needsUpdate = true;
     if (em) em.instanceMatrix.needsUpdate = true;
-    // splashes where Laija's pebbles land
+    // splashes where Laija's pebbles land; crumbs the family toss from the pond bench
     for (const e of family.events.splice(0)) {
+      if (e.type === 'feed') {
+        const pond = controller.props.pond;
+        if (pond) controller.duckFeed?.toss(e.id, e.n, { n: pond.n, shore: (n) => controller.terrain.pondShore(n) }, R);
+        continue;
+      }
       if (e.type !== 'splash') continue;
       const n = e.n.clone().normalize();
       const f = frame(n, tangentToward(n, home.centre) ?? home.house.facing, 0);
       splashes.current.push({ p: n.multiplyScalar(R + controller.terrain.height(n) + 0.02).clone(), q: f.q, t: 0 });
+    }
+    // the crumbs: a little arc from the hand to the water, then afloat (fading) where the ducks come to them
+    const cr = crumbs.current;
+    if (cr) {
+      const tosses = controller.duckFeed?.tosses ?? [];
+      for (let i = 0; i < CRUMB_TOSSES; i++) {
+        const toss = tosses[tosses.length - 1 - i];
+        for (let j = 0; j < CRUMBS_EACH; j++) {
+          const slot = i * CRUMBS_EACH + j;
+          if (!toss) {
+            cr.setMatrixAt(slot, tmp.makeScale(0, 0, 0));
+            continue;
+          }
+          const k = Math.min(1, toss.t / FEED.flight);
+          // each crumb spreads a little round the landing spot
+          const a = j * 2.4 + i;
+          const spread = 0.05 + (j % 3) * 0.04;
+          const to = _crumbTo.copy(toss.to);
+          const side = _crumbSide.crossVectors(to, _crumbUp.set(0, 1, 0)).normalize();
+          const fwd = _crumbFwd.crossVectors(side, to).normalize();
+          to.addScaledVector(side, (Math.cos(a) * spread * k) / R).addScaledVector(fwd, (Math.sin(a) * spread * k) / R).normalize();
+          const dir = _crumbDir.copy(toss.from).lerp(to, k).normalize();
+          const fromH = controller.terrain.height(toss.from) + 0.55;
+          const h = fromH + (RIVER_WATER_U + 0.01 - fromH) * k + Math.sin(Math.PI * k) * 0.45;
+          const floating = toss.t > FEED.flight;
+          if (floating && toss.t - dt <= FEED.flight && j === 0) {
+            const f = frame(to, tangentToward(to, home.centre) ?? home.house.facing, 0);
+            splashes.current.push({ p: to.clone().multiplyScalar(R + RIVER_WATER_U + 0.012), q: f.q, t: 0 });
+          }
+          const fade = floating ? Math.max(0, 1 - (toss.t - FEED.flight) / FEED.float) : 1;
+          const bob = floating && !paused ? Math.sin(t * 2.3 + j) * 0.004 : 0;
+          cr.setMatrixAt(slot, tmp.compose(dir.multiplyScalar(R + h + bob), new Quaternion(), _crumbScale.setScalar(fade)));
+        }
+      }
+      cr.instanceMatrix.needsUpdate = true;
     }
     const rg = rings.current;
     if (rg) {
@@ -375,6 +464,12 @@ export function HomeView({ controller, home, family }: { controller: GameControl
       </Placed>
       <KitModel geo={lights} shadows={false} />
       <instancedMesh ref={rings} args={[ringGeo, ringMat, 6]} frustumCulled={false} />
+      <instancedMesh ref={crumbs} args={[crumbGeo, crumbMat, CRUMB_TOSSES * CRUMBS_EACH]} frustumCulled={false} />
+      <group name="home-lilies">
+        {lilies.map((l, v) => (
+          <LilyClusters key={v} geo={l.geo} items={l.items} />
+        ))}
+      </group>
       <group name="home-butterflies">
         {family.butterflies.map((_, i) => (
           <group

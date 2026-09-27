@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 import { padSpec, type Box } from '../groundPads';
-import { PROP_SCALE, YARD, type HomeSpot, type Homestead } from '../homestead';
+import { PROP_SCALE, TULSI_SPOT, YARD, type HomeSpot, type Homestead } from '../homestead';
 import type { PadSpec } from '../pads';
 
 /**
@@ -45,6 +45,7 @@ export function homePads(home: Homestead, R: number): PadSpec[] {
     padSpec('campfire', home.fire, around(home.fire, [{ n: home.fire.n, r: 0.5 * 0.85 }, ...home.campChairs.map((c) => ({ n: c.n, r: chair })), { n: home.log.n, r: 0.5 * PROP_SCALE }], R), { skirt: 0.7 }),
     padSpec('reading', home.readingChair, around(home.readingChair, [{ n: home.readingChair.n, r: 0.29 * PROP_SCALE + 0.02 }, { n: home.sideTable.n, r: 0.14 * PROP_SCALE + 0.02 }], R), { skirt: 0.6 }),
     ...home.yard.beds.map((b, i) => padSpec(`bed-${i}`, b, BED_BASE, { margin: 0.2, skirt: 0.6 })),
-    padSpec('tulsi', home.yard.tulsi, [-0.21, 0.21, -0.21, 0.24], { margin: 0.2, skirt: 0.5 }),
+    // the tulsi on its own round cobbled spot (a point box: the flat ground and the cobbles are discs round it)
+    padSpec('tulsi', home.yard.tulsi, [0, 0, 0, 0], { margin: TULSI_SPOT.flat, skirt: 0.5, apron: TULSI_SPOT.cobbles }),
   ];
 }

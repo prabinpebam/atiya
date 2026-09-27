@@ -7,7 +7,7 @@ import { PlanetSim } from '../../src/game/systems/movement';
 import { mesaRadius, riverDistance } from '../../src/game/world/features';
 import { PLAZA_RADIUS_U, generateProps } from '../../src/game/world/layout';
 import { angleGap, pondAngle, pondFrame, pondPoint, shoreRadius } from '../../src/game/world/pond';
-import { MOUTH_CLEAR, pondPlants } from '../../src/game/world/pondPlants';
+import { BENCH_VIEW, HOUSE_BANK, MOUTH_CLEAR, pondPlants } from '../../src/game/world/pondPlants';
 import { RIVER_WATER_U, Terrain, UNDULATION_U, WADE_MAX_U, WADE_SLOWDOWN, valueNoise, wadeSpeedFactor } from '../../src/game/world/terrain';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
@@ -138,9 +138,10 @@ describe('pond', () => {
 
   it('has an organic shoreline that relaxes to the nominal radius at the stream mouth', () => {
     const radii = Array.from({ length: 72 }, (_, i) => shoreRadius(pond, f, (i / 72) * Math.PI * 2));
-    expect(Math.max(...radii) - Math.min(...radii)).toBeGreaterThan(pond.radiusU * 0.15);
-    expect(Math.max(...radii)).toBeLessThan(pond.radiusU * 1.2);
+    expect(Math.max(...radii) - Math.min(...radii)).toBeGreaterThan(pond.radiusU * 0.25);
+    expect(Math.max(...radii)).toBeLessThan(pond.radiusU * 1.3);
     expect(shoreRadius(pond, f, f.mouth!)).toBeCloseTo(pond.radiusU, 6);
+    expect(pond.radiusU).toBeCloseTo(1.8, 6);
   });
 
   it('shares the stream water level: the bowl meets it just inside the shore', () => {
@@ -176,6 +177,20 @@ describe('pond', () => {
       const { d, a } = polar(p.n);
       expect(d).toBeGreaterThan(shoreRadius(pond, f, a));
     }
+  });
+
+  it('keeps the bank facing the house open, and the water in front of the pond bench', () => {
+    const home = layout.home!;
+    const withHome = pondPlants(pond, river, terrain, home);
+    const houseA = pondAngle(pond, f, home.house.n);
+    const tall = [...withHome.reeds, ...withHome.ferns];
+    for (const p of tall) expect(angleGap(polar(p.n).a, houseA)).toBeGreaterThan(HOUSE_BANK - 1e-6);
+    const view = home.pondBench.n.clone().lerp(pond.n, 0.45).normalize();
+    for (const p of [...tall, ...withHome.irises]) expect(arcDistance(p.n, view, R)).toBeGreaterThan(BENCH_VIEW - 0.02);
+    // fewer shore plants than without the home, but still some of every kind
+    const count = (x: typeof plants) => x.reeds.length + x.irises.length + x.ferns.length;
+    expect(count(withHome)).toBeLessThan(count(plants));
+    for (const list of [withHome.lilies, withHome.reeds, withHome.irises, withHome.ferns]) expect(list.length).toBeGreaterThan(0);
   });
 });
 

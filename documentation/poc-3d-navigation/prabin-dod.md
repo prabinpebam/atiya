@@ -51,8 +51,8 @@ This is the acceptance checklist for [prabin-npc.md](./prabin-npc.md). A box is 
 
 ## 6. The plaza
 
-- [x] **The bench and notice board** stand by the Greenhouse bridge, on dry ground off the path.
-  - *Evidence:* unit "puts the bench and the notice board by the Greenhouse bridge…", "keeps pickable flowers off the bench too"; a real-GPU render (the bench beside the bridge's plaza end); E2E "benches".
+- [x] **The bench** stands by the Greenhouse bridge, on dry ground off the path; the one **notice board** is the Town Hall's, on its side toward the Lighthouse; no signposts.
+  - *Evidence:* unit "puts the bench by the Greenhouse bridge…", "keeps pickable flowers off the bench too", pads "the base boxes still cover their models" (the Town Hall's box includes the board); real-GPU renders (the bench beside the bridge's plaza end, the Town Hall from the front and behind); E2E "benches".
 - [x] **The chest and crafting table** stand between the Post Office and the Workshop, comfortably apart, clear of the paths and the buildings, with nothing else usable near them.
   - *Evidence:* unit "stands the chest and the crafting table side by side…", the chest and crafting-table placement tests and the keep-clear tests; E2E (the chest's and the table's prompts); a real-GPU render of the workyard from the plaza.
 
@@ -67,10 +67,13 @@ This is the acceptance checklist for [prabin-npc.md](./prabin-npc.md). A box is 
 
 ## 7b. Revision 3: the lived-in home
 
-- [x] **No tree in front of the house** (the cedar by the door and the hardwood where the garden is are cleared). *Evidence:* unit "puts the tulsi in front… and no tree in front"; real-GPU renders of the front of the house and of the game view as you come to it.
+- [x] **No tree in front of the house** (the cedar by the door and the hardwood where the garden is are cleared). *Evidence:* unit "puts the tulsi on its own spot in front of the door… and no tree in front"; real-GPU renders of the front of the house and of the game view as you come to it.
 - [x] **A fence behind the house,** low, walked round, not through. *Evidence:* unit "keeps the fence and the vegetable beds behind the house…"; real-GPU render of the yard.
 - [x] **A vegetable garden:** a cabbage bed and a tomato bed, a watering can. *Evidence:* the same unit test; "can be walked into…"; real-GPU render.
-- [x] **A tulsi vrindavan in front,** off the door's path, its diya lit after dusk. *Evidence:* unit; real-GPU renders by day and night; `lamps()` 8 at night (9 with Chopper's house).
+- [x] **A tulsi vrindavan in front,** on the door's axis on its own small round cobbled spot, its diya's niche facing the house, the diya lit after dusk. *Evidence:* unit (family "puts the tulsi on its own spot…", pads "gives the tulsi its own small round cobbled spot…"); real-GPU renders by day and night; `lamps()` 8 at night (9 with Chopper's house).
+- [x] **The gable window** sits in the front gable wall, clear of the porch roof. *Evidence:* real-GPU render of the house.
+- [x] **The pond** is bigger (1.8 u) and more irregular, its bank facing the house open. *Evidence:* unit "has an organic shoreline…", "keeps the bank facing the house open…"; real-GPU render.
+- [x] **The pond bench:** the visitor and the family sit on it and feed the ducks; E feeds, Escape stands up; the duck swims to the crumbs. *Evidence:* `tests/unit/ducks.test.ts`; a real-GPU run through the test hook (sat, 4 handfuls, the duck 0.1 u from the crumbs, both buttons shown, no page errors).
 - [x] **Lived in:** sandals on the step, a broom by the door, a woodpile. *Evidence:* real-GPU renders.
 
 ## 8. Engineering

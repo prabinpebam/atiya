@@ -107,6 +107,8 @@ export function Wildlife({ controller }: { controller: GameController }) {
     const M = meshes.current;
     env.player.copy(controller.sim.pLocal);
     env.night = controller.sky.night;
+    env.feed = controller.duckFeed?.spot ?? null;
+    env.calm = controller.seatMotion.seated;
     if (!paused) {
       stepWildlife(world, env, dt);
       clock.current += Math.min(dt, 0.1);
@@ -125,7 +127,7 @@ export function Wildlife({ controller }: { controller: GameController }) {
     const water = RIVER_WATER_U;
     if (world.duck && M.duck) {
       const d = world.duck;
-      const tip = d.state === 'dabble' ? 1.05 : 0;
+      const tip = d.state === 'dabble' || (d.state === 'feed' && d.speed < 0.06 && Math.sin(t * 1.7) > 0.1) ? 1.05 : 0;
       M.duck.setMatrixAt(0, place(_m, d.n, d.dir, water + Math.sin(t * 2.1) * 0.008 - tip * 0.04, SIZE.duck, tip));
     }
     world.ducklings.forEach((k, i) => M.duckling?.setMatrixAt(i, place(_m, k.n, k.dir, water + Math.sin(t * 3 + i * 1.7) * 0.006, SIZE.duck)));

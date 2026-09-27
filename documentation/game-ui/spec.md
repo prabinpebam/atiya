@@ -11,7 +11,7 @@ The sources are cited inline. Anything marked *opinion* is a synthesis with no s
 **Contextual, minimal HUD.**
 - Nintendo's CEDEC 2017 talk on *Breath of the Wild* set the direction "to only display information when necessary, which gives the screen more breathing room". The Pro HUD cut even more, and animation (hearts flashing) kept what remained noticeable ([summary](https://gist.github.com/idbrii/e39fe96279aa1670319bfa521d907399)).
 - Fagerholt and Lorentzon's taxonomy ([Beyond the HUD, 2009](https://publications.lib.chalmers.se/records/fulltext/111921.pdf)) sorts UI into four kinds. Mapped onto this game:
-  - *Diegetic*: signposts, the town-hall clock.
+  - *Diegetic*: the town-hall clock, the notice board.
   - *Spatial*: the chest and table's ready cues, world labels.
   - *Non-diegetic*: the hotbar, clock badge and compass.
   - *Meta*: the travel fade.

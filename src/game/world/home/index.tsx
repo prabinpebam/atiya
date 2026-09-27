@@ -12,6 +12,7 @@ import { FamilyView } from './FamilyView';
 import { HomeView } from './HomeView';
 import { TalkBox } from './TalkBox';
 import { homePads } from './homePads';
+import { DuckFeed } from '../../systems/duckFeed';
 
 export function attachHome(controller: GameController): HomeAttachment | null {
   const home = controller.props.home;
@@ -21,6 +22,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
   // Prabin starts at the crafting table (the first person a visitor meets)
   const prabinAt = craft ? moveAlong(craft.n, craft.facing, (CRAFT_STAND + 1.2) / R) : undefined;
   const family = new Family(home, R, Math.random, prabinAt);
+  const ducks = new DuckFeed();
   // the lines come from a provider: preset now, an AI agent later (prabin-npc.md §4.6)
   const lines: DialogueProvider = new LinePicker();
   const brain = controller.chopper;
@@ -77,6 +79,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
       // the character's velocity in the planet's frame (for looking ahead when giving way)
       playerVel.copy(controller.sim.vel).applyQuaternion(controller.sim.planetQ.clone().invert());
       family.step(dt, world);
+      ducks.step(dt);
     },
     canTalk: (id) => {
       const n = family.get(id as NpcId);
@@ -105,6 +108,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     door: () => family.door.open,
     meal: () => ({ food: family.foodOnTable, phase: family.meal?.phase ?? null, schedule: family.schedule }),
     hold: (id, activity) => family.hold(id as NpcId, activity, world),
+    ducks,
     View,
     Hud: () => <TalkBox controller={controller} />,
   };

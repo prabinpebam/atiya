@@ -213,7 +213,7 @@ export interface Npc {
   routeBlocks: number;
 }
 
-export type FamilyEvent = { type: 'splash'; n: Vector3 } | { type: 'throw'; id: NpcId };
+export type FamilyEvent = { type: 'splash'; n: Vector3 } | { type: 'throw'; id: NpcId } | { type: 'feed'; id: NpcId; n: Vector3 };
 
 interface ActivityDef {
   id: string;
@@ -549,6 +549,17 @@ const ACTIVITIES: ActivityDef[] = [
     start: (f, npc, w) => f.canFetch(npc, w),
     run: (f, npc, w, dt) => f.playFetch(npc, w, dt),
   },
+  // ---- anyone: feeding the ducks from their end of the pond bench (a handful every couple of seconds)
+  {
+    id: 'ducks',
+    who: ['rojina', 'laija', 'lingjel', 'prabin'],
+    weight: 2.2,
+    dur: [16, 26],
+    cooldown: 70,
+    spot: (_f, _n, w) => w.home.pondBench,
+    seat: (f, npc) => f.seatFree('pond', npc),
+    pose: 'sitChair',
+  },
   // ---- the routine and meals (never picked by the utility AI)
   {
     id: 'eat',
@@ -880,6 +891,12 @@ export class Family {
         this.events.push({ type: 'throw', id: npc.id });
         this.events.push({ type: 'splash', n: moveAlong(npc.n, npc.at!.facing, (1.1 + this.rand() * 0.6) / w.R) });
       }
+    }
+    if (def.id === 'ducks') {
+      // a handful of crumbs every 2.4 s (the first a moment after sitting down)
+      const k = Math.floor((npc.stageT - 0.8) / 2.4);
+      const into = npc.stageT - 0.8 - k * 2.4;
+      if (npc.stageT >= 0.8 && into - dt < 0) this.events.push({ type: 'feed', id: npc.id, n: npc.n.clone() });
     }
     if (def.id === 'read' && Math.floor(npc.stageT / 7) % 3 === 2) npc.look = this.nearestKid(npc, w)?.n ?? null;
     else npc.look = null;

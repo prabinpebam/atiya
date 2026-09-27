@@ -1,18 +1,26 @@
+import { Vector3 } from 'three';
+import { CONFIG } from '../config';
 import type { River } from './features';
+import type { Homestead } from './homestead';
 import { hash3 } from './kit';
 import type { Pond, PropInstance } from './layout';
-import { angleGap, pondFrame, pondPoint, shoreRadius } from './pond';
+import { angleGap, pondAngle, pondFrame, pondPoint, shoreRadius } from './pond';
 import { RIVER_WATER_U, type Terrain } from './terrain';
 
 /**
  * Pond plants (pure; unit-tested). Organic groups rather than an even ring: floating lily-pad
  * clusters on the open water, reeds with cattails wading in the shallows, irises right at the
  * waterline and ferns on the damp bank, plus reeds flanking the stream mouth. Nothing is placed
- * in the mouth itself, so the stream visibly flows into the pond.
+ * in the mouth itself, so the stream visibly flows into the pond. With the home by it, the bank facing
+ * the house is kept open (no tall reeds or ferns there, only a few irises) and so is the water in
+ * front of the pond bench, so the house looks out on the water and the bench's sitters see the ducks.
  */
 
 /** Keep-clear half-angle (rad) around the stream mouth. */
 export const MOUTH_CLEAR = 0.5;
+/** Half-angle (rad) of the open bank facing the house, and the clear radius (u) of the bench's view of the water. */
+export const HOUSE_BANK = 0.8;
+export const BENCH_VIEW = 1.4;
 
 export interface PondPlants {
   lilies: PropInstance[];
@@ -21,13 +29,19 @@ export interface PondPlants {
   ferns: PropInstance[];
 }
 
-export function pondPlants(pond: Pond, river: River | null, terrain: Terrain): PondPlants {
+export function pondPlants(pond: Pond, river: River | null, terrain: Terrain, home: Homestead | null = null): PondPlants {
   const f = pondFrame(pond, river);
   const rnd = (a: number, b: number) => hash3(a, b, 41.7);
   const clearOfMouth = (a: number, pad = 0) => f.mouth === null || angleGap(a, f.mouth) > MOUTH_CLEAR + pad;
   const out: PondPlants = { lilies: [], reeds: [], irises: [], ferns: [] };
+  const houseA = home ? pondAngle(pond, f, home.house.n) : null;
+  const openBank = (a: number) => houseA !== null && angleGap(a, houseA) < HOUSE_BANK;
+  // (the water just in front of the bench: halfway from it to the pond's centre)
+  const view = home ? home.pondBench.n.clone().lerp(pond.n, 0.45).normalize() : null;
+  const inView = (n: Vector3) => view !== null && n.distanceTo(view) * CONFIG.planetRadius < BENCH_VIEW;
   const put = (list: PropInstance[], a: number, rho: number, scale: number, seed: number, floating = false) => {
     const n = pondPoint(pond, f, a, rho);
+    if (!floating && inView(n)) return;
     // the terrain already includes the pond bowl
     list.push({ n, scale, yaw: rnd(seed, 9) * Math.PI * 2, tint: rnd(seed, 10), h: floating ? RIVER_WATER_U + 0.006 : Math.max(terrain.height(n), RIVER_WATER_U - 0.12) });
   };
@@ -45,7 +59,9 @@ export function pondPlants(pond: Pond, river: River | null, terrain: Terrain): P
       if (!clearOfMouth(a)) continue;
       const r = shoreRadius(pond, f, a);
       const pick = rnd(5, s);
-      if (pick < 0.45) put(out.reeds, a, r - 0.28 + rnd(6, s) * 0.3, 0.85 + rnd(7, s) * 0.45, s);
+      if (openBank(a)) {
+        if (pick < 0.3) put(out.irises, a, r - 0.08 + rnd(6, s) * 0.28, 0.8 + rnd(7, s) * 0.35, s);
+      } else if (pick < 0.45) put(out.reeds, a, r - 0.28 + rnd(6, s) * 0.3, 0.85 + rnd(7, s) * 0.45, s);
       else if (pick < 0.72) put(out.irises, a, r - 0.08 + rnd(6, s) * 0.28, 0.8 + rnd(7, s) * 0.35, s);
       else put(out.ferns, a, r + 0.22 + rnd(6, s) * 0.35, 0.8 + rnd(7, s) * 0.4, s);
     }
@@ -60,13 +76,14 @@ export function pondPlants(pond: Pond, river: River | null, terrain: Terrain): P
       }
     }
   }
-  // floating lily-pad clusters on the open water, away from where the stream comes in
-  const pads = 5;
+  // floating water-lily clusters (modelled pads and flowers, propModels.ts) on the open water, away
+  // from where the stream comes in
+  const pads = 6;
   for (let i = 0; i < pads; i++) {
     const s = 300 + i;
     const a = phase + 0.4 + (i / pads) * Math.PI * 2 + (rnd(8, s) - 0.5) * 0.7;
     if (!clearOfMouth(a, 0.1)) continue;
-    put(out.lilies, a, shoreRadius(pond, f, a) * (0.25 + rnd(6, s) * 0.45), 0.5 + rnd(7, s) * 0.3, s, true);
+    put(out.lilies, a, shoreRadius(pond, f, a) * (0.25 + rnd(6, s) * 0.42), 0.62 + rnd(7, s) * 0.3, s, true);
   }
   return out;
 }

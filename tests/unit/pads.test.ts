@@ -3,7 +3,7 @@ import { BufferGeometry, Vector3 } from 'three';
 import { CONFIG } from '../../src/game/config';
 import { landmarkGeometry } from '../../src/game/math/landmarks';
 import { arcDistance, moveAlong } from '../../src/game/math/sphere';
-import { BENCH_BASE, CRAFT_TABLE_BASE, LANDMARK_BASE, NOTICEBOARD_BASE, structurePads } from '../../src/game/world/groundPads';
+import { BENCH_BASE, CRAFT_TABLE_BASE, LANDMARK_BASE, structurePads } from '../../src/game/world/groundPads';
 import { BED_BASE, DOG_HOUSE_BASE, HOUSE_BASE, homePads } from '../../src/game/world/home/homePads';
 import { generateProps } from '../../src/game/world/layout';
 import { mesaPolar, mesaRadius } from '../../src/game/world/features';
@@ -98,10 +98,12 @@ describe('pads: the maths', () => {
 describe('pads: every structure stands on flat ground', () => {
   const pads = terrain.pads;
 
-  it('covers the landmarks, the home, the chest, the crafting table and the bridge furniture', () => {
+  it('covers the landmarks, the home, the chest, the crafting table and the bridge bench', () => {
     const ids = pads.map((p) => p.id);
     for (const g of geos) expect(ids).toContain(`landmark:${g.id}`);
-    for (const id of ['house', 'dog-house', 'picnic', 'campfire', 'reading', 'bed-0', 'bed-1', 'chest', 'craft', 'bench', 'noticeboard']) expect(ids).toContain(id);
+    for (const id of ['house', 'dog-house', 'picnic', 'campfire', 'reading', 'bed-0', 'bed-1', 'tulsi', 'chest', 'craft', 'bench']) expect(ids).toContain(id);
+    // both benches: the bridge's and the pond's
+    expect(ids.filter((x) => x === 'bench').length).toBe(2);
   });
 
   it('under each base the ground is that structure’s plane (no neighbour bends it)', () => {
@@ -183,6 +185,24 @@ describe('pads: every structure stands on flat ground', () => {
     for (const g of geos) expect(Math.abs(terrain.height(g.approach))).toBeLessThan(0.3);
     expect(terrain.height(new Vector3(0, 1, 0))).toBe(0);
   });
+
+  it('gives the tulsi its own small round cobbled spot, apart from the house’s', () => {
+    const p = pads.find((x) => x.id === 'tulsi')!;
+    const house = pads.find((x) => x.id === 'house')!;
+    const n = layout.home!.yard.tulsi.n;
+    expect(terrain.apron(n).w).toBe(1);
+    for (let a = 0; a < 8; a++) {
+      const dir = p.x.clone().multiplyScalar(Math.cos(a)).addScaledVector(p.z, Math.sin(a)).normalize();
+      // cobbled all round it, and round (the same radius every way), not spilling into a yard
+      expect(terrain.apron(moveAlong(n, dir, 0.35 / R)).w).toBe(1);
+      const off = moveAlong(n, dir, 1.0 / R);
+      const hl = padLocal(house, off, R)!;
+      if (boxDistance(house, hl.x, hl.z) > house.apron + 0.4) expect(terrain.apron(off).w).toBe(0);
+    }
+    // the house's own cobbles stay a narrow band round it
+    expect(house.apron).toBeLessThanOrEqual(0.45);
+    expect(house.cz + house.bz).toBeLessThan(HOUSE_BASE[3] + 0.01);
+  });
 });
 
 describe('pads: the base boxes still cover their models', () => {
@@ -205,6 +225,5 @@ describe('pads: the base boxes still cover their models', () => {
     covers(CRAFT_TABLE_BASE, footprint(craftingTableModel()), 'crafting table');
     covers(BENCH_BASE, footprint(kitOf((k) => bench(k, {}))), 'bench');
     covers(BED_BASE, footprint(kitOf((k) => bed(k, 'cabbage', 1.25, 0.55, 0))), 'bed');
-    expect(NOTICEBOARD_BASE[1]).toBeGreaterThanOrEqual(0.4);
   });
 });

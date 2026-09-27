@@ -144,12 +144,14 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
   hipRoof(k, { w: 0.74, d: 0.74, h: 0.55, y: ty + 0.62, color: shade(accent, -0.05), bands: 2, overhang: 0.1, top: 0.05 });
   k.cyl(0.02, 0.02, 0.35, ARCH.iron, { p: [0, ty + 1.35, 0] }, 6);
   k.sphere(0.05, ARCH.brass, { p: [0, ty + 1.25, 0] }, [10, 8]);
-  // portico: a stone floor slab, clean painted white columns (no masonry) and a pediment
+  // portico: a solid stone platform level with the floor (the door's sill, 0.28), clean painted white
+  // columns (no masonry) and a pediment; three steps climb to it from the ground
   const pz = D / 2 + 0.34;
-  k.surface('stone', () => k.box([1.3, 0.12, 0.72], ARCH.stone, { p: [0, 0.34, D / 2 + 0.3] }, 0.03));
+  const floor = 0.28;
+  k.surface('stone', () => k.box([1.3, floor, 0.72], ARCH.stone, { p: [0, floor / 2, D / 2 + 0.3] }, 0.03));
   for (const s of [-1, 1]) {
-    k.box([0.2, 0.08, 0.2], ARCH.creamShade, { p: [s * 0.5, 0.44, pz] }, 0.02);
-    k.cyl(0.075, 0.085, 1.0, ARCH.white, { p: [s * 0.5, 0.98, pz] }, 12);
+    k.box([0.2, 0.08, 0.2], ARCH.creamShade, { p: [s * 0.5, floor + 0.04, pz] }, 0.02);
+    k.cyl(0.075, 0.085, 1.48 - floor - 0.08, ARCH.white, { p: [s * 0.5, (floor + 0.08 + 1.48) / 2, pz] }, 12);
     k.box([0.22, 0.08, 0.22], ARCH.creamShade, { p: [s * 0.5, 1.52, pz] }, 0.02);
   }
   k.surface('plaster', () => {
@@ -169,11 +171,11 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
   k.cyl(0.12, 0.12, 0.04, accent, { p: [0, 1.86, D / 2 + 0.72], r: [Math.PI / 2, 0, 0] }, 20);
   k.sphere(0.045, ARCH.brass, { p: [0, 1.86, D / 2 + 0.75] }, [8, 6]);
   const doors = door(k, { p: [0, 0.28, D / 2 + 0.02] }, { w: 0.74, h: 1.0, double: true, color: '#8c5236' });
-  steps(k, { p: [0, 0, D / 2 + 0.66] }, { w: 1.2, n: 2, tread: 0.14 });
+  steps(k, { p: [0, 0, D / 2 + 0.66] }, { w: 1.2, n: 3, rise: floor / 3, tread: 0.13 });
   for (const s of [-1, 1]) windowUnit(k, { p: [s * 0.86, 0.95, D / 2 + 0.03] }, { w: 0.36, h: 0.46, arch: true, lit: s < 0 });
   for (const s of [-1, 1]) windowUnit(k, { p: [s * (W / 2 + 0.03), 0.95, 0], r: [0, (s * Math.PI) / 2, 0] }, { w: 0.36, h: 0.46, arch: true });
-  // noticeboard (front left)
-  k.group({ p: [-1.3, 0, 0.75], r: [0, 0.35, 0] }, () => {
+  // noticeboard: on the right side (toward the Lighthouse), behind the side window, turned a little to the front
+  k.group({ p: [1.58, 0, -0.5], r: [0, 1.4, 0] }, () => {
     k.surface('wood', () => {
       for (const x of [-0.3, 0.3]) k.box([0.06, 0.95, 0.06], '#5c7b4f', { p: [x, 0.47, 0] }, 0.02);
       k.box([0.66, 0.46, 0.06], '#5c7b4f', { p: [0, 0.72, 0] }, 0.02);
@@ -188,8 +190,8 @@ function townHall(accent: ColorRepresentation): LandmarkModel {
     for (const [x, y, c] of notes) k.box([0.13, 0.14, 0.01], c, { p: [x, y, 0.05], r: [0, 0, (x * 3) % 0.3] }, 0.003);
     k.surface('wood', () => k.box([0.72, 0.06, 0.12], '#4c6a41', { p: [0, 0.98, 0] }, 0.02));
   });
-  // bushes flanking the steps
-  for (const s of [-1, 1]) k.blob(0.22, '#4f9e4a', { p: [s * 0.82, 0.18, D / 2 + 0.5], s: [1.1, 0.8, 1] }, 2, 'solid', 0.25, s);
+  // bushes flanking the platform
+  for (const s of [-1, 1]) k.blob(0.22, '#4f9e4a', { p: [s * 0.92, 0.18, D / 2 + 0.5], s: [1.1, 0.8, 1] }, 2, 'solid', 0.25, s);
   return {
     geo: k.build(),
     height: ty + 1.55,

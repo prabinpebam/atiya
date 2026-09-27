@@ -11,6 +11,7 @@ import { CHARACTERS, type CharacterId } from '../player/characters';
 import {
   faArrowUpRightFromSquare,
   faBoxOpen,
+  faBreadSlice,
   faChair,
   faComment,
   faHammer,
@@ -145,9 +146,11 @@ function ChopperCardSlot({ controller }: { controller: GameController }) {
 /**
  * What E does right now (collection-inventory.md §3.1): shake a tree, mine a boulder, pick a flower,
  * open the chest, sit on the bench or meet Chopper; while seated, stand up (the keys work too: E, Escape).
+ * On the pond bench E feeds the ducks instead, and standing up is the second button (Escape).
  */
 function ActionPrompt({ controller }: { controller: GameController }) {
   const seated = useStore(controller.store, (s) => s.seated);
+  const canFeed = useStore(controller.store, (s) => s.canFeed);
   const target = useStore(controller.store, (s) => s.target);
   const lane = useStore(controller.store, focusLane);
   if (lane !== 'stand' && lane !== 'prompt') return null;
@@ -157,9 +160,15 @@ function ActionPrompt({ controller }: { controller: GameController }) {
     // back to the planet, so Escape and WASD work straight away
     controller.focusRegion();
   };
+  const feed = seated && canFeed;
   return (
-    <div className="seat-prompt action-prompt lane" data-testid="seat-prompt" data-kind={seated ? 'stand' : target!.kind}>
-      <button className="btn primary" type="button" onClick={act}>
+    <div className="seat-prompt action-prompt lane" data-testid="seat-prompt" data-kind={feed ? 'feed' : seated ? 'stand' : target!.kind}>
+      {feed && (
+        <button className="btn primary" type="button" onClick={() => (controller.feedDucks(), controller.focusRegion())}>
+          <Icon icon={faBreadSlice} /> Feed the ducks <kbd>E</kbd>
+        </button>
+      )}
+      <button className={feed ? 'btn' : 'btn primary'} type="button" onClick={act}>
         {seated ? (
           <>
             <Icon icon={faPersonWalking} /> Stand up <kbd>Esc</kbd>

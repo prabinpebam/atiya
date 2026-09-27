@@ -19,6 +19,8 @@ export interface GameState {
   invVersion: number;
   /** True while the character sits on a bench (from sitting down until it starts to stand up). */
   seated: boolean;
+  /** Seated on the pond bench: E feeds the ducks (and a second button offers it). */
+  canFeed: boolean;
   /** True while Chopper's profile card is open. */
   chopperOpen: boolean;
   /** Talking with one of the family (family.md §6): who, the lines, which one is showing, and a counter that reveals the line at once. */
@@ -68,6 +70,7 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     craftScreen: null,
     invVersion: 0,
     seated: false,
+    canFeed: false,
     chopperOpen: false,
     talk: null,
     openId: null,

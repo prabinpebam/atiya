@@ -79,7 +79,7 @@ Every subject line gives the scale in real terms (for example "about 16 courses 
 
 And in the models:
 
-- **Town Hall**: the walls are painted brick in warm white (`#f7efe2`, was peach), the band courses are the same paint a shade deeper, and the portico columns are clean painted white with no masonry mask (only the floor slab is stone).
+- **Town Hall**: the walls are painted brick in warm white (`#f7efe2`, was peach), the band courses are the same paint a shade deeper, and the portico columns are clean painted white with no masonry mask. The portico is a solid stone platform from the ground up to the door's sill (0.28 u; it was a slab floating above two short steps that didn't reach it), with three steps climbing to it.
 - **Library**: the columns are clean painted white with no masonry mask.
 - **Natural stones use the new `rock` surface** (the boulders' granite mask at strength 0.35), not the laid-masonry `stone`. That covers the campfire ring, the lighthouse's rocky base and the bridge abutments' loose stones.
 

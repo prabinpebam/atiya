@@ -9,6 +9,7 @@ import { northScreenAngle } from './math/compass';
 import { PlanetSim } from './systems/movement';
 import { InteractBuffer, updateProximity } from './systems/proximity';
 import { SeatMotion, benchSeats, type Seat } from './systems/seating';
+import type { DuckFeed } from './systems/duckFeed';
 import { REACH, buildTargets, pickTarget, targetLabel, type Target } from './systems/interactables';
 import { ActionRunner, actionFor, type BeatKind } from './systems/actions';
 import { Inventory, type Stack } from './inventory/inventory';
@@ -94,6 +95,8 @@ export interface HomeAttachment {
   meal(): { food: boolean; phase: string | null; schedule: string | null };
   hold(id: string, activity: string): boolean;
   View: ComponentType;
+  /** Feeding the ducks from the pond bench (the visitor's handfuls and the family's). */
+  ducks: DuckFeed;
   /** Its part of the HUD: the talk dialog box. */
   Hud: ComponentType;
 }
@@ -147,6 +150,10 @@ export class GameController {
   /** Benches you can sit on, and the sit-down / stand-up motion (its `pose` drives the avatars). */
   readonly seats: Seat[];
   readonly seatMotion = new SeatMotion();
+  /** Crumbs tossed onto the pond from its bench, and where they draw the ducks (systems/duckFeed.ts, in the home's chunk; null until it's attached). */
+  get duckFeed(): DuckFeed | null {
+    return this.home?.ducks ?? null;
+  }
   /** Everything E can use (collection-inventory.md §3.1), the action cycle playing, and what's regrowing. */
   readonly targets: Target[];
   readonly action = new ActionRunner();
@@ -715,8 +722,11 @@ export class GameController {
     if (s.phase !== 'playing' || s.openId) return;
     const lane = focusLane(s);
     if (lane === 'talk') this.advanceTalk();
-    else if (lane === 'stand' || this.seatMotion.seated) this.standUp();
-    else if (this.action.busy || this.seatMotion.stage) return;
+    else if (lane === 'stand' || this.seatMotion.seated) {
+      // on the pond bench E feeds the ducks (Escape or a movement key stands you up); elsewhere it stands you up
+      if (s.canFeed) this.feedDucks();
+      else this.standUp();
+    } else if (this.action.busy || this.seatMotion.stage) return;
     else if (lane === 'prompt') this.useTarget();
     else if (lane === 'preview') this.openLandmark(s.nearbyId!);
     else this.buffer.press(performance.now());
@@ -735,22 +745,33 @@ export class GameController {
     this.buffer.clear();
     this.sim.vel.set(0, 0, 0);
     this.seatMotion.sit(seat, this.sim.pLocal);
-    this.store.setState({ seated: true, target: null });
-    this.announce('Sitting on the bench. Press Escape to stand up.');
+    this.store.setState({ seated: true, canFeed: seat.byPond && Boolean(this.props.pond && this.duckFeed), target: null });
+    this.announce(seat.byPond ? 'Sitting on the bench by the pond. Press E to feed the ducks, or Escape to stand up.' : 'Sitting on the bench. Press Escape to stand up.');
+  }
+
+  /** Toss a handful of crumbs onto the pond from its bench (E, or the prompt's button): the ducks swim over. */
+  feedDucks(): void {
+    const s = this.store.getState();
+    const seat = this.seatMotion.seat;
+    const pond = this.props.pond;
+    const feed = this.duckFeed;
+    if (!s.canFeed || !seat?.byPond || !pond || !feed || this.seatMotion.stage !== 'seated') return;
+    const first = !feed.spot;
+    if (feed.toss('visitor', seat.sit, { n: pond.n, shore: (n) => this.terrain.pondShore(n) }, CONFIG.planetRadius) && first) this.announce('Crumbs on the water: the ducks are coming.');
   }
 
   /** Stand up from the bench (Escape, E, a movement key, a click, or the prompt's button). */
   standUp(): void {
     if (!this.seatMotion.seated) return;
     this.seatMotion.stand(this.sim.pLocal);
-    this.store.setState({ seated: false });
+    this.store.setState({ seated: false, canFeed: false });
   }
 
   /** Leave the seat at once (fast travel, reset). */
   private leaveSeat(): void {
     if (!this.seatMotion.stage) return;
     this.seatMotion.clear();
-    this.store.setState({ seated: false });
+    this.store.setState({ seated: false, canFeed: false });
   }
 
   /** Move the character along its sit-down / stand-up path, turning it to face out from the bench. */

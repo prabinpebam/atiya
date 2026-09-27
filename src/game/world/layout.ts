@@ -6,7 +6,7 @@ import type { LandmarkGeometry } from '../math/landmarks';
 import { nearPlateauRim } from './cliffs';
 import { buildMesas, buildRiver, findBridges, mesaDir, mesaPolar, mesaRadius, riverDistance, tierEdge, tierPolar, type Bridge, type Mesa, type River } from './features';
 import { pondAngle, pondFrame, shoreRadius } from './pond';
-import { HOME_R, homesteadLayout, type Homestead } from './homestead';
+import { HOME_R, POND_BENCH, homesteadLayout, type Homestead } from './homestead';
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
 export const FLOWER_KINDS: FlowerKind[] = ['tulip', 'cosmos', 'pansy'];
@@ -22,20 +22,17 @@ export interface PropInstance {
   h?: number;
 }
 
-export interface SignPost {
-  id: string;
-  n: Vector3;
-  /** Planet-local unit tangent the arrow points along (toward its landmark). */
-  dir: Vector3;
-}
-
-export type FurnitureKind = 'lamp' | 'bench' | 'planter' | 'noticeboard';
+export type FurnitureKind = 'lamp' | 'bench' | 'planter';
 
 export interface Furniture {
   kind: FurnitureKind;
   n: Vector3;
   /** Planet-local unit tangent the item faces (toward the plaza centre). */
   facing: Vector3;
+  /** A bench the visitor shares: they sit this far along it (u, toward its local +x) rather than in the middle. */
+  sitSide?: number;
+  /** The bench by the pond (feeding the ducks). */
+  byPond?: boolean;
 }
 
 /** The storage chest by the Workshop: where it stands and the tangent its front faces. */
@@ -75,7 +72,6 @@ export interface PropLayout {
   /** Low flowering sprigs (walk-through): along the paths and through the meadows. */
   sprigs: PropInstance[];
   grass: PropInstance[];
-  posts: SignPost[];
   furniture: Furniture[];
   /** The storage chest by the Workshop (null if there's no clear spot). */
   chest: ChestSpot | null;
@@ -111,24 +107,8 @@ function randomUnit(rand: () => number): Vector3 {
 }
 
 export const TREE_TRUNK_RADIUS = 0.3;
-export const POST_RADIUS = 0.1;
 export const PLAZA_RADIUS_U = 3.0;
-const FURNITURE_RADIUS: Record<FurnitureKind, number> = { lamp: 0.14, bench: 0.5, planter: 0.36, noticeboard: 0.4 };
-
-/** One signpost per landmark, just beside the start of its path from the spawn plaza. */
-export function plazaPosts(landmarks: readonly LandmarkGeometry[], cfg = CONFIG): SignPost[] {
-  const R = cfg.planetRadius;
-  const spawn = UP as Vector3;
-  return landmarks.map((g) => {
-    const out = tangentToward(spawn, g.approach) ?? new Vector3(0, 0, -1);
-    const base = moveAlong(spawn, out, 2.1 / R);
-    const along = tangentToward(base, g.approach) ?? out;
-    const side = new Vector3().crossVectors(base, along).normalize();
-    const n = moveAlong(base, side, 0.75 / R);
-    const dir = tangentToward(n, g.n) ?? along;
-    return { id: g.id, n, dir };
-  });
-}
+const FURNITURE_RADIUS: Record<FurnitureKind, number> = { lamp: 0.14, bench: 0.5, planter: 0.36 };
 
 /** Plaza furniture placed in the angular gaps between the paths leaving the plaza (lamps and planters). */
 export function plazaFurniture(landmarks: readonly LandmarkGeometry[], cfg = CONFIG): Furniture[] {
@@ -153,7 +133,7 @@ export function plazaFurniture(landmarks: readonly LandmarkGeometry[], cfg = CON
   const items: Furniture[] = [];
   gaps.forEach((g, i) => {
     if (g === widest) {
-      // (the bench and the notice board stand by the Greenhouse bridge now, and the way out to the
+      // (the bench stands by the Greenhouse bridge now, and the way out to the
       // workyard between the Post Office and the Workshop is left open: just a lamp at its side)
       items.push(place(g.mid + g.size * 0.28, 2.8, 'lamp'));
     } else if (g.size > 0.6) {
@@ -182,7 +162,7 @@ export function choosePond(landmarks: readonly LandmarkGeometry[], cfg = CONFIG)
     if (!best || c > best.clearance) best = { n, clearance: c };
   }
   if (!best || best.clearance < 1.6) return null;
-  return { n: best.n, radiusU: Math.min(1.5, best.clearance - 0.2) };
+  return { n: best.n, radiusU: Math.min(1.8, best.clearance - 0.2) };
 }
 
 export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, cfg = CONFIG): PropLayout {
@@ -191,7 +171,6 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   const spawn = UP as Vector3;
   const corridor = (n: Vector3) => Math.min(...landmarks.map((g) => pointArcDistance(n, spawn, g.approach, R)));
   const pond = choosePond(landmarks, cfg);
-  const posts = plazaPosts(landmarks, cfg);
   const furniture = plazaFurniture(landmarks, cfg);
   const mesas = buildMesas(cfg);
   const river = buildRiver(pond, mesas[0] ?? null, cfg);
@@ -430,7 +409,6 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     !inPond(n, 0.4) &&
     !blocked(n, { river: r + 0.6, mesa: r + 0.8 }) &&
     !landmarks.some((g) => arcDistance(n, g.n, R) < g.footprintU + r + 0.8) &&
-    !posts.some((p) => arcDistance(p.n, n, R) < 1.0) &&
     !furniture.some((f) => arcDistance(f.n, n, R) < 1.2);
   /** How roomy a spot is: its clearance from the paths, the buildings and the water (u). */
   const roomy = (n: Vector3, r: number) => Math.min(corridor(n) - r, ...landmarks.map((g) => arcDistance(n, g.n, R) - g.footprintU - r), riverEdge(n));
@@ -503,9 +481,9 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     for (const k of FLOWER_KINDS) keep(flowers[k]);
   }
 
-  // the plaza's bench and notice board stand by the Greenhouse bridge (prabin-npc.md §4.7): the bench
-  // on the bank beside the path at the plaza's end of the bridge, facing the water; the board across
-  // the path by its entrance, facing the path. Both on dry ground, off the path
+  // the plaza's bench stands by the Greenhouse bridge (prabin-npc.md §4.7): on the bank beside the
+  // path at the plaza's end of the bridge, facing the water, on dry ground off the path (the notice
+  // board is the Town Hall's, on its side toward the Lighthouse)
   const bridgeSpots = ((): Furniture[] => {
     const gh = landmarks.find((g) => g.id === 'greenhouse');
     if (!bridges.length) return [];
@@ -522,10 +500,8 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
       !nearMesa(n, 0.5) &&
       !nearLandmark(n, r + 0.3) &&
       !rails.some((o) => arcDistance(o.n, n, R) < o.radiusU + r + 0.3) &&
-      !posts.some((p) => arcDistance(p.n, n, R) < r + 0.6) &&
       ![chest, craft].some((c) => c && arcDistance(c.n, n, R) < 2.5);
     const out: Furniture[] = [];
-    let benchSide = 0;
     search: for (const extra of [0.9, 1.3, 1.7, 2.2]) {
       for (const side of [1, -1]) {
         for (const acrossU of [1.35, 1.7, 2.1]) {
@@ -535,19 +511,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
           // facing the water: back along the path, toward the river
           const facing = tangentToward(n, moveAlong(b.n, b.across.clone().multiplyScalar(side), acrossU / R)) ?? along.clone().negate();
           out.push({ kind: 'bench', n, facing });
-          benchSide = side;
           break search;
-        }
-      }
-    }
-    board: for (const extra of [0.6, 1.0, 1.4, 1.9]) {
-      for (const side of benchSide ? [-benchSide, benchSide] : [1, -1]) {
-        for (const acrossU of [1.15, 1.45, 1.8]) {
-          const end = moveAlong(b.n, along, (L + extra) / R);
-          const n = moveAlong(end, b.across.clone().multiplyScalar(side), acrossU / R);
-          if (!ok(n, FURNITURE_RADIUS.noticeboard, 0.6) || out.some((f) => arcDistance(f.n, n, R) < 1.4)) continue;
-          out.push({ kind: 'noticeboard', n, facing: tangentToward(n, end) ?? along.clone() });
-          break board;
         }
       }
     }
@@ -576,6 +540,8 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     const tree = { n: home.tree, scale: 1.05, yaw: 1.3, tint: 0.35 };
     hardwood.push(tree);
     trees.push(tree);
+    // the bench by the pond: the visitor sits on one side of it, the family on the other
+    furniture.push({ kind: 'bench', n: home.pondBench.n.clone(), facing: home.pondBench.facing.clone(), sitSide: -POND_BENCH.side, byPond: true });
   }
 
   // keep the special targets (the chest, the crafting table, Chopper's house site) apart from every
@@ -586,6 +552,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     craft && { n: craft.n, r: CRAFT_RADIUS },
     home && { n: home.dogHouse.n, r: HOME_R.dogHouse },
     ...bridgeSpots.filter((f) => f.kind === 'bench').map((f) => ({ n: f.n, r: FURNITURE_RADIUS.bench })),
+    home && { n: home.pondBench.n, r: FURNITURE_RADIUS.bench },
   ].filter(Boolean) as { n: Vector3; r: number }[];
   if (specials.length) {
     const near = (p: PropInstance, pad: number) => specials.some((s) => arcDistance(p.n, s.n, R) < s.r + pad);
@@ -608,7 +575,6 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     ...allBushes.map((b) => ({ n: b.n, radiusU: 0.42 * b.scale })),
     ...rocks.map((r) => ({ n: r.n, radiusU: 0.36 * r.scale })),
     ...boulders.map((r) => ({ n: r.n, radiusU: 0.4 * r.scale })),
-    ...posts.map((p) => ({ n: p.n, radiusU: POST_RADIUS })),
     ...furniture.map((f) => ({ n: f.n, radiusU: FURNITURE_RADIUS[f.kind] })),
     ...(chest ? [{ n: chest.n, radiusU: CHEST_RADIUS }] : []),
     ...(craft ? [{ n: craft.n, radiusU: CRAFT_RADIUS }] : []),
@@ -618,7 +584,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     ...(home?.obstacles ?? []),
   ];
 
-  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, posts, furniture, chest, craft, home, pond, river, bridges, mesas, obstacles };
+  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, furniture, chest, craft, home, pond, river, bridges, mesas, obstacles };
 }
 
 /** Rails along both sides of each bridge deck. */

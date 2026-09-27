@@ -34,7 +34,7 @@ const R = CONFIG.planetRadius;
 /** Behaviour distances (u) and speeds (u/s), after the real animals (scaled to the diorama). */
 export const WILD = {
   rabbit: { alert: 4.0, flee: 2.4, safe: 5.2, hopLen: 0.3, hopTime: 0.3, fleeHopLen: 0.62, fleeHopTime: 0.26, range: 3.5 },
-  duck: { flee: 2.6, calm: 4.2, speed: 0.22, fleeSpeed: 0.7, shoreMargin: 0.55, spacing: 0.24 },
+  duck: { flee: 2.6, calm: 4.2, speed: 0.22, fleeSpeed: 0.7, shoreMargin: 0.55, spacing: 0.24, feedSpeed: 0.4, feedReach: 0.18 },
   fish: { flee: 1.7, cruise: 0.3, dart: 1.7, dartTime: 0.7, shoreMargin: 0.35, separation: 0.3 },
   bird: { takeOff: 2.4, landAway: 5, speed: 2.1, minAlt: 2.3, maxAlt: 3.8, separation: 0.55, neighbour: 3.2, nightHide: 0.6 },
 } as const;
@@ -63,7 +63,7 @@ export interface Swimmer {
   speed: number;
 }
 export interface Duck extends Swimmer {
-  state: 'paddle' | 'dabble' | 'flee';
+  state: 'paddle' | 'dabble' | 'flee' | 'feed';
   timer: number;
 }
 export interface Fish extends Swimmer {
@@ -104,6 +104,10 @@ export interface WildEnv {
   inWater(n: Vector3): boolean;
   pond: { n: Vector3; shore(n: Vector3): number } | null;
   river: River | null;
+  /** Crumbs on the water (someone on the pond bench is feeding the ducks): the duck swims over to them. */
+  feed?: Vector3 | null;
+  /** The character is sitting still (on a bench): the duck doesn't take fright at them. */
+  calm?: boolean;
 }
 
 export interface Wildlife {
@@ -356,13 +360,25 @@ function stepDuck(duck: Duck, brood: Swimmer[], env: WildEnv, dt: number, rand: 
   const pond = env.pond;
   if (!pond) return;
   const d = dist(duck.n, env.player);
-  if (d < W.flee) duck.state = 'flee';
-  else if (duck.state === 'flee' && d > W.calm) {
+  const scared = !env.calm && d < W.flee;
+  if (scared) duck.state = 'flee';
+  else if (duck.state === 'flee' && (env.calm || d > W.calm)) {
+    duck.state = 'paddle';
+    duck.timer = 3 + rand() * 4;
+  }
+  // crumbs on the water: over to them (arriving slowly), then dabbling for them while they last
+  if (env.feed && duck.state !== 'flee') duck.state = 'feed';
+  else if (!env.feed && duck.state === 'feed') {
     duck.state = 'paddle';
     duck.timer = 3 + rand() * 4;
   }
   let target = 0;
-  if (duck.state === 'flee') {
+  if (duck.state === 'feed') {
+    const gap = dist(duck.n, env.feed!);
+    const toward = tangentToward(duck.n, env.feed!);
+    if (toward && gap > 0.05) turnToward(duck.dir, duck.n, toward, 3 * dt);
+    target = gap < W.feedReach ? 0 : Math.min(W.feedSpeed, (gap - W.feedReach) * 1.5 + 0.05);
+  } else if (duck.state === 'flee') {
     const away = awayFrom(duck.n, env.player);
     if (away) turnToward(duck.dir, duck.n, away, 3 * dt);
     target = W.fleeSpeed;

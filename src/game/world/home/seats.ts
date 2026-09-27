@@ -8,9 +8,10 @@
 import { Vector3 } from 'three';
 import { moveAlong } from '../../math/sphere';
 import { rotateAbout } from '../../math/steer';
-import { PROP_SCALE, type HomeSpot, type Homestead } from '../homestead';
+import { POND_BENCH, PROP_SCALE, type HomeSpot, type Homestead } from '../homestead';
+import { BENCH } from '../parts';
 
-export type SeatKind = 'dining' | 'armchair' | 'camp';
+export type SeatKind = 'dining' | 'armchair' | 'camp' | 'bench';
 
 export interface Seat {
   id: string;
@@ -37,6 +38,9 @@ export const SEAT_KINDS: Record<SeatKind, { top: number; back: number; entries: 
   dining: { top: 0.52, back: 0.04, entries: [[90, 0.42], [-90, 0.42]] },
   armchair: { top: 0.51, back: 0.06, entries: [[0, 0.46], [45, 0.5], [-45, 0.5]] },
   camp: { top: 0.4, back: 0.05, entries: [[90, 0.42], [-90, 0.42], [0, 0.45]] },
+  // the pond bench is drawn full size (parts.ts `bench`), so its top is given in PROP_SCALE units; you step up
+  // to it from the front, clear of its collision circle
+  bench: { top: BENCH.seatTop / PROP_SCALE, back: 0.04, entries: [[0, 0.8], [-20, 0.84]] },
 };
 
 /** Seconds to sit down (entry point → seat) and to stand up (seat → entry point). */
@@ -62,12 +66,16 @@ function seat(id: string, kind: SeatKind, spot: HomeSpot, R: number): Seat {
   return { id, kind, spot, height: k.top * PROP_SCALE, back: k.back, entries, user: null };
 }
 
-/** Every seat round the home: the reading chair, the table's four chairs, the two camp chairs. */
+/** Every seat round the home: the reading chair, the table's four chairs, the two camp chairs, the family's end of the pond bench. */
 export function homeSeats(home: Homestead, R: number): Seat[] {
+  const b = home.pondBench;
+  const along = new Vector3().crossVectors(b.n, b.facing).normalize();
+  const pondN = moveAlong(b.n, along, POND_BENCH.side / R);
   return [
     seat('reading', 'armchair', home.readingChair, R),
     ...home.tableChairs.map((c, i) => seat(`table${i}`, 'dining', c, R)),
     ...home.campChairs.map((c, i) => seat(`camp${i}`, 'camp', c, R)),
+    seat('pond', 'bench', { n: pondN, facing: b.facing.clone().addScaledVector(pondN, -b.facing.dot(pondN)).normalize() }, R),
   ];
 }
 

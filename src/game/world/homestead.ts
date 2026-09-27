@@ -39,6 +39,8 @@ export interface Homestead {
   lightsPost: Vector3;
   /** Where Chopper's house goes (crafting.md): beside the family's house, facing the pond. */
   dogHouse: HomeSpot;
+  /** The bench on the pond's bank, facing the water: the visitor and the family sit there and feed the ducks. */
+  pondBench: HomeSpot;
   /** Round the house (the lived-in touches): the back yard's fence and vegetable beds, the tulsi in front, the woodpile. */
   yard: Yard;
   obstacles: Obstacle[];
@@ -53,7 +55,7 @@ export interface Yard {
   /** The vegetable beds: cabbages, then tomatoes. */
   beds: HomeSpot[];
   wateringCan: HomeSpot;
-  /** The tulsi planter (tulsi vrindavan) in front of the house, off the door's path. */
+  /** The tulsi planter (tulsi vrindavan) on its own round cobbled spot in front of the house, its diya's niche toward the house. */
   tulsi: HomeSpot;
   /** Firewood stacked against the house's side wall. */
   woodpile: HomeSpot;
@@ -61,6 +63,17 @@ export interface Yard {
 
 /** Yard sizes (u): the beds' length and width, the fence's post spacing. */
 export const YARD = { bedL: 1.25, bedW: 0.55, postGap: 0.5 } as const;
+
+/**
+ * The tulsi's own round cobbled spot in front of the house, on the door's axis (u): its centre this
+ * far in front of the house's centre, the flat ground's and the cobbles' radii round it.
+ */
+export const TULSI_SPOT = { fwd: 3.1, flat: 0.32, cobbles: 0.6 } as const;
+
+/** The bench by the pond (feeding the ducks): how far beyond the pond's nominal radius it stands (u), and the side of it the family sit on (u along the bench; the visitor takes the other). */
+export const POND_BENCH = { out: 1.45, side: 0.28 } as const;
+/** Where round the pond it stands (degrees from the pond's local north, as in the plan below). */
+const POND_BENCH_DEG = 260;
 
 /** Radii of the home's solid things (u). */
 /**
@@ -131,6 +144,9 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   const dogN = beside(house, -108, 3.4);
   const dogHouse = { n: dogN, facing: facingTo(dogN, pond.n) };
   const centre = at(185, 4.6);
+  // the bench by the pond, on the bank between the house and the water, facing the water (feeding the ducks)
+  const benchN = at(POND_BENCH_DEG, pond.radiusU + POND_BENCH.out);
+  const pondBench = { n: benchN, facing: facingTo(benchN, pond.n) };
 
   // round the house (in its own frame: `fwd` toward the pond, `side` to its left): the back yard, the
   // tulsi, the woodpile
@@ -143,11 +159,12 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
   // a low fence round the back of the garden, open toward the house; its arm on the table's side is
   // shorter, leaving the way round the dog house open
   const fence = [around(-2.75, -2.3), around(-3.8, -2.3), around(-3.8, 2.3), around(-1.9, 2.3)];
+  const tulsiN = around(TULSI_SPOT.fwd, 0);
   const yard: Yard = {
     fence,
     beds: [yardSpot(-2.8, -1.05), yardSpot(-2.8, 1.05)],
     wateringCan: yardSpot(-2.3, 0.05),
-    tulsi: yardSpot(2.6, 0.95),
+    tulsi: { n: tulsiN, facing: facingTo(tulsiN, house.n) },
     woodpile: yardSpot(-0.25, 1.5),
   };
 
@@ -184,10 +201,11 @@ export function homesteadLayout(pond: Pond, cfg = CONFIG): Homestead {
     // the back yard, the tulsi's spot, and the tall cedar that stood right in front of the house as you
     // come to it from the table (it hid the door)
     { n: around(-2.9, 0), r: 2.6 },
-    { n: yard.tulsi.n, r: 0.8 },
+    { n: yard.tulsi.n, r: TULSI_SPOT.cobbles + 0.4 },
     { n: around(-1.8, -4.4), r: 1.1 },
+    { n: pondBench.n, r: 1.3 },
   ];
-  return { centre, range: 8.5, yard, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, dogHouse, obstacles, clear };
+  return { centre, range: 8.5, yard, house, door, readingChair, sideTable, table, tableChairs, mat, fire, campChairs, log, tree, treeSeat, shore, lightsPost, dogHouse, pondBench, obstacles, clear };
 }
 
 /** Posts along a polyline, about `gap` u apart (both ends included). */

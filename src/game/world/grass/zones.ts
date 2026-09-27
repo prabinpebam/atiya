@@ -128,7 +128,7 @@ export function grassRules(w: GrassWorld, full = false): GrassRules {
   // worn: the home is lived in (short, sparse, trodden) and everything people stop at
   const wornDiscs: Disc[] = [];
   const trodden: Segment[] = [];
-  const furniture = [...layout.furniture.map((f) => f.n), ...(layout.chest ? [layout.chest.n] : []), ...(layout.craft ? [layout.craft.n] : []), ...layout.posts.map((p) => p.n)];
+  const furniture = [...layout.furniture.map((f) => f.n), ...(layout.chest ? [layout.chest.n] : []), ...(layout.craft ? [layout.craft.n] : [])];
   for (const n of furniture) wornDiscs.push(disc(n, 0.5, 1.5));
   let homeWild: Disc | null = null;
   if (home) {

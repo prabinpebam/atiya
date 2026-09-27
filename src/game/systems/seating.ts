@@ -31,19 +31,26 @@ export interface Seat {
   /** Where the character sits and where it stands up to (planet-local unit vectors). */
   sit: Vector3;
   stand: Vector3;
+  /** The bench by the pond: while you sit there, E feeds the ducks. */
+  byPond: boolean;
 }
 
-/** One seat per bench in the layout. */
+/** One seat per bench in the layout (in its middle, or `sitSide` along it on a shared bench). */
 export function benchSeats(furniture: readonly Furniture[], R = CONFIG.planetRadius): Seat[] {
   return furniture
     .filter((f) => f.kind === 'bench')
-    .map((f, i) => ({
-      id: `bench-${i}`,
-      n: f.n.clone(),
-      facing: f.facing.clone(),
-      sit: moveAlong(f.n, f.facing, -SEAT.sitBackU / R),
-      stand: moveAlong(f.n, f.facing, SEAT.standU / R),
-    }));
+    .map((f, i) => {
+      const along = new Vector3().crossVectors(f.n, f.facing).normalize();
+      const at = f.sitSide ? moveAlong(f.n, along, f.sitSide / R) : f.n;
+      return {
+        id: `bench-${i}`,
+        n: f.n.clone(),
+        facing: f.facing.clone(),
+        sit: moveAlong(at, f.facing, -SEAT.sitBackU / R),
+        stand: moveAlong(at, f.facing, SEAT.standU / R),
+        byPond: Boolean(f.byPond),
+      };
+    });
 }
 
 /** The seat on offer at `p` (keeping `currentId` until you walk out of its exit radius), or null. */

@@ -108,7 +108,9 @@
 
 ### 4.7 The plaza (`world/layout.ts`)
 
-- **The bench and notice board** move to the plaza end of the Greenhouse bridge: the bench on the bank beside the path facing the water, the notice board across the path by the bridge's entrance facing the path. Both on dry ground, ≥ 0.9 u off the path's centre line, clear of the rails. The plaza keeps its lamps and planters, and a planter takes the bench's old place.
+- **The bench** moves to the plaza end of the Greenhouse bridge, on the bank beside the path facing the water, on dry ground, ≥ 0.9 u off the path's centre line, clear of the rails. The plaza keeps its lamps and planters, and a planter takes the bench's old place.
+- **The notice board** (owner review): it first stood across the bridge path, and the Town Hall had a second one partly inside its front-left corner. Only one is kept now, the Town Hall's own, moved to its side toward the Lighthouse (in the model, `townHall` in `world/models.ts`, behind the side window and turned a little to the front).
+- **No signposts** (owner review): every building is plainly visible from the plaza, so the arrow signposts beside each path are gone.
 - **The workyard:** between the Post Office's and the Workshop's paths, the chest and the crafting table side by side (2.4 u apart), both facing the plaza, each ≥ 1.3 u off both paths, ≥ 1.2 u outside both buildings' footprints, and clear of water. The keep-clear rule (flowers ≥ 1.5 u, solids ≥ 0.9 u) applies round both.
 
 ### 4.8 Budgets

@@ -6,10 +6,10 @@ import { arcDistance } from '../../src/game/math/sphere';
 import { FLOWER_KINDS, generateProps, mulberry32 } from '../../src/game/world/layout';
 import { Terrain } from '../../src/game/world/terrain';
 import { riverDistance } from '../../src/game/world/features';
-import { HOME_R, YARD, fencePosts } from '../../src/game/world/homestead';
+import { HOME_R, TULSI_SPOT, YARD, fencePosts } from '../../src/game/world/homestead';
 import { FAMILY, Family, LINES, LinePicker, ROUTINE, partOfDay, type FamilyWorld } from '../../src/game/world/home/family';
 import { SphereNav } from '../../src/game/world/home/nav';
-import { UP, moveAlong } from '../../src/game/math/sphere';
+import { UP, moveAlong, tangentToward } from '../../src/game/math/sphere';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
 const R = CONFIG.planetRadius;
@@ -126,11 +126,13 @@ describe('home by the pond: the yard round the house', () => {
     }
   });
 
-  it('puts the tulsi in front of the house, off the path from the door, and no tree in front', () => {
+  it('puts the tulsi on its own spot in front of the door, its niche toward the house, and no tree in front', () => {
     const t = rel(home.yard.tulsi.n);
-    expect(t.fwd).toBeGreaterThan(HOME_R.house);
-    expect(Math.abs(t.side) - 0.22, 'clear of the door path').toBeGreaterThan(0.6);
+    expect(Math.abs(t.fwd - TULSI_SPOT.fwd)).toBeLessThan(0.05);
+    expect(Math.abs(t.side)).toBeLessThan(0.05);
     expect(d(home.yard.tulsi.n, home.door.n)).toBeGreaterThan(0.8);
+    // its front (the diya's niche) faces the house
+    expect(home.yard.tulsi.facing.dot(tangentToward(home.yard.tulsi.n, home.house.n)!)).toBeGreaterThan(0.99);
     for (const tr of layout.trees) {
       const p = rel(tr.n);
       expect(p.fwd > 0 && p.fwd < 5 && Math.abs(p.side) < 3, 'a tree in front of the house').toBe(false);

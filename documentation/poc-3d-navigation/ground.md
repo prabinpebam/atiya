@@ -25,8 +25,8 @@ Games that place buildings on terrain (city builders, farm sims, Zelda-like leve
 
 | Source | File | Pads |
 |---|---|---|
-| Main bundle | `world/groundPads.ts` (`structurePads`) | Every landmark (base box per variant, measured from the model at y < 0.3; cobble apron 0.55 u), the storage chest, the crafting table, the bridge bench, the notice board |
-| Home chunk | `world/home/homePads.ts` (`homePads`) | The house and woodpile (apron 0.45 u), the dog house, the picnic table and chairs, the campfire ring, chairs and log, the reading corner, the two beds, the tulsi |
+| Main bundle | `world/groundPads.ts` (`structurePads`) | Every landmark (base box per variant, measured from the model at y < 0.3; cobble apron 0.55 u; the Town Hall's includes its notice board), the storage chest, the crafting table, the benches (by the bridge and by the pond) |
+| Home chunk | `world/home/homePads.ts` (`homePads`) | The house and woodpile (apron 0.45 u), the dog house, the picnic table and chairs, the campfire ring, chairs and log, the reading corner, the two beds, the tulsi (a point pad: round flat ground 0.32 u and a round cobbled spot 0.6 u) |
 
 The home pads arrive with the home chunk: `controller.attachHome` calls `terrain.addPads(h.pads)` and then restamps the prop heights. This happens before the scene mounts, so the ground mesh sees them all. They're kept out of the main bundle, which is at its 450 KB budget.
 

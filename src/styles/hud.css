@@ -158,6 +158,13 @@ body.play {
   box-shadow: var(--shadow-lift);
 }
 
+/* two choices side by side (on the pond bench: feed the ducks, stand up) */
+.seat-prompt[data-kind='feed'] {
+  display: flex;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
 /* the conversation (family.md §6): name plate, the line typing out, Next and close */
 .talk-box {
   width: min(620px, calc(100vw - var(--space-6)));

@@ -62,7 +62,8 @@ export function houseModel(): { geo: KitGeometry; lantern: V3; chimney: V3; ligh
     flowerBox(k, { p: [s * 0.66, 0.62, D / 2 + 0.12] }, 0.46, s > 0 ? ['#ff6f7d', '#ffd24d', '#ffffff'] : ['#b98cff', '#ff9a4d', '#ff6f7d']);
     windowUnit(k, { p: [s * (W / 2 + 0.03), 0.9, 0], r: [0, (s * Math.PI) / 2, 0] }, { w: 0.36, h: 0.4, lit: true });
   }
-  windowUnit(k, { p: [0, H + 0.42, D / 2 + 0.24] }, { w: 0.26, h: 0.26, arch: true, lit: true });
+  // (set into the gable wall, whose face is at z = D/2, and high enough to clear the porch roof)
+  windowUnit(k, { p: [0, H + 0.52, D / 2 + 0.03] }, { w: 0.26, h: 0.26, arch: true, lit: true });
   potPlant(k, { p: [-0.6, 0, D / 2 + 0.36] }, '#ff6f7d');
   potPlant(k, { p: [0.62, 0, D / 2 + 0.4] });
   // lived in: sandals left on the top step (shoes off at the door), a broom leaning by it

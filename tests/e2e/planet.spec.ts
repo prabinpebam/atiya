@@ -772,6 +772,44 @@ test.describe('benches', () => {
     expect(s.seated).toBe(false);
     expect(s.seatStage).toBeNull();
   });
+
+  test('on the pond bench E feeds the ducks (crumbs on the water, the ducks drawn to them) and Escape stands up', async ({ page }) => {
+    test.setTimeout(150_000);
+    await startPlanet(page);
+    const prompt = page.getByTestId('seat-prompt');
+    const ducks = () => page.evaluate(() => (window as any).__game.ducks() as { canFeed: boolean; fed: number; tosses: number; spot: boolean });
+    await page.evaluate(() => (window as any).__game.nearPondBench(1.1));
+    await expect(prompt.getByRole('button', { name: /Sit on the bench/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await state(page)).seatStage, { timeout: 30_000 }).toBe('seated');
+    // two choices: feed the ducks (E) or stand up (Escape)
+    await expect(prompt.getByRole('button', { name: /Feed the ducks/ })).toBeVisible();
+    await expect(prompt.getByRole('button', { name: /Stand up/ })).toBeVisible();
+    expect((await ducks()).canFeed).toBe(true);
+    // E tosses a handful (and doesn't stand you up)
+    await page.keyboard.press('KeyE');
+    await expect.poll(async () => (await ducks()).fed, { timeout: 30_000 }).toBe(1);
+    let d = await ducks();
+    expect(d.spot).toBe(true);
+    expect(d.tosses).toBeGreaterThan(0);
+    expect((await state(page)).seated).toBe(true);
+    // the button feeds too, once the last handful has left the hand
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.pause();
+      g.advance(60);
+      g.resume();
+    });
+    await prompt.getByRole('button', { name: /Feed the ducks/ }).click();
+    await expect.poll(async () => (await ducks()).fed, { timeout: 30_000 }).toBe(2);
+    await expect(page.locator('.game-region')).toBeFocused();
+    // Escape stands up, and the feeding choice goes with the seat
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await state(page)).seatStage, { timeout: 30_000 }).toBeNull();
+    d = await ducks();
+    expect(d.canFeed).toBe(false);
+    expect((await state(page)).menuOpen).toBe(false);
+  });
 });
 
 test.describe('Chopper', () => {

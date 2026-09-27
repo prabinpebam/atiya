@@ -111,6 +111,10 @@ export interface GameTestHook {
   npcDo(id: string, activity: string): boolean;
   /** Stand at the home by the pond, facing the house. */
   visitHome(): boolean;
+  /** Stand `u` in front of the pond bench, facing it (E then sits down). */
+  nearPondBench(u?: number): boolean;
+  /** Feeding the ducks: whether E feeds them now, handfuls tossed, crumbs in the air or afloat, and the duck (state, distance u to the crumbs). */
+  ducks(): { canFeed: boolean; fed: number; tosses: number; spot: boolean; duck: string | null; toSpot: number | null };
   /** What the grass placed (null when the grass chunk is absent), and its knee-high meadows. */
   grass(): { stats: Record<string, number> | null; meadows: number };
   /** Stands the character in the i-th knee-high meadow. */
@@ -498,6 +502,26 @@ export function installTestHook(c: GameController): void {
       const stand = moveAlong(b.n, b.facing, u / CONFIG.planetRadius);
       c.sim.setOrientation(orientationFor(stand, tangentToward(stand, b.n) ?? b.facing.clone().negate()));
       return true;
+    },
+    nearPondBench: (u = 1.1) => {
+      const b = c.seats.find((s) => s.byPond);
+      if (!b) return false;
+      const stand = moveAlong(b.n, b.facing, u / CONFIG.planetRadius);
+      c.sim.setOrientation(orientationFor(stand, tangentToward(stand, b.n) ?? b.facing.clone().negate()));
+      c.lift = c.terrain.walkHeight(c.sim.pLocal);
+      return true;
+    },
+    ducks: () => {
+      const d = c.wildlife?.duck ?? null;
+      const spot = c.duckFeed?.spot ?? null;
+      return {
+        canFeed: c.store.getState().canFeed,
+        fed: c.duckFeed?.count.get('visitor') ?? 0,
+        tosses: c.duckFeed?.tosses.length ?? 0,
+        spot: Boolean(spot),
+        duck: d?.state ?? null,
+        toSpot: d && spot ? Math.acos(Math.max(-1, Math.min(1, d.n.dot(spot)))) * CONFIG.planetRadius : null,
+      };
     },
     setOutline: (on) => {
       outlineMaterial().visible = on;

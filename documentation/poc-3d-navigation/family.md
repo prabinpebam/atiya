@@ -33,6 +33,7 @@ distance in u), **nicely spaced** (≥ 1.5 u between features) with room to walk
 | **Campsite**: stone fire ring, two camp chairs, a log bench, the guitar leaning on a chair | 272°, 4.3 u | ring 0.5 u, chairs 0.3 u, log 0.3 u |
 | **Laija's reading tree** (a hardwood) | 178°, 5.5 u | as trees |
 | **Pebble shore** | the pond's edge at 206° | none |
+| **Pond bench** (a slatted park bench, feeding the ducks) | on the bank at 260°, the pond's radius + 1.45 u, facing the water | 0.5 u (as benches) |
 | **String lights** from the house's corner to a post by the table | — | post 0.1 u |
 
 Anything the random layout had put there (trees, bushes, rocks, flowers, grass, pebbles) is
@@ -58,8 +59,21 @@ plaster, stone, brick, canvas, metal):
 - **Round the house** (revision 3, `Yard` in `homestead.ts`; prabin-npc.md §6): a low rustic fence
   behind the house, open toward it; two raised vegetable beds (cabbages, staked tomatoes) and a
   watering can inside it; a tulsi vrindavan (a whitewashed pillar planter with holy basil and a diya)
-  in front, off the door's path; sandals on the step, a broom by the door, a woodpile at the side.
-  All one kit in the house's frame, each item on its own ground.
+  in front, on the door's axis 3.1 u out from the house's centre, on its own small round cobbled spot
+  (`TULSI_SPOT`: a point pad, flat 0.32 u round it, cobbles to 0.6 u), its diya's niche facing the
+  house; sandals on the step, a broom by the door, a woodpile at the side. The house's own cobbles stay
+  a narrow 0.45 u band round its base (a wider paved yard levels too much ground and breaks the little
+  planet's curve). All one kit in the house's frame, each item on its own ground.
+- **The gable window** is set into the front gable wall (its face at the wall's plane) and high
+  enough to clear the porch roof.
+- **The pond** is a little bigger (nominal radius 1.8 u, up from 1.5) with a more irregular outline
+  (four low harmonics, up to about ±25 %; `shoreRadius` in `world/pond.ts`). Its bank facing the house
+  is kept open: no reeds or ferns within 0.8 rad of the house's direction, only a few irises, and
+  nothing in the water in front of the pond bench (`HOUSE_BANK`, `BENCH_VIEW` in `world/pondPlants.ts`).
+- **Water lilies** (`world/home/lilies.ts`, drawn by `HomeView.tsx`): modelled, not painted cards. Six
+  clusters float on the pond, each four or five notched, veined pads with a turned-up rim and a
+  red-bronze edge, and a pink or white bloom and/or a closed bud; three variants, one instanced draw
+  each. They come with the home's chunk (the main bundle is at its budget).
 - **Night:** windows glow (the kit's glow layer follows the day), the porch lantern and the fire
   light the scene through the shared lamplight list (the tulsi's diya too, a small flickering lamp), the string-light bulbs glow; by day the fire
   is small and smokes.
@@ -97,6 +111,7 @@ the home (within 7 u of it, never into the pond).
 - **The daily routine:** from 8 pm they walk to the front door (the children first, Rojina last) and go in; at 6 am they come out one by one and walk onto the lawn. When the clock is set by hand (a jump of more than 15 minutes), they wait 8 s before following it; when the time passes naturally, they respond at once. Loading the page at night finds them already inside. Indoors they're not drawn and can't be talked to.
 - **Meals:** when Rojina has laid the table, everyone out comes to eat, each at their own chair (a third chair stands at the table's end), with a slow hand-to-mouth *eat* pose. After 22–32 s Rojina gathers it all into the basket and carries it in, and the children go back to playing. The next lunch comes at least two minutes later.
 - **Pebbles:** Laija throws from a new spot on the pond's edge each time, anywhere along the home's side of the pond.
+- **Feeding the ducks** (`ducks`, anyone, Prabin too): they walk to the family's end of the pond bench (a `bench` seat in `world/home/seats.ts`, 0.28 u along it; the visitor's seat is the other end, so both can sit together), sit, and toss a handful of crumbs every 2.4 s for 16–26 s. Each handful is a `feed` event that the home's view passes to `controller.duckFeed` (`systems/duckFeed.ts`), the same as the visitor's.
 - **Talking in pairs:** the one who starts walks over; both stop and face each other and a small
   speech bubble ("…") pops over whoever is speaking, alternating; 6–9 s.
 - **Butterflies:** three live by the home (the kids chase them); rabbits nearby also get chased
@@ -119,6 +134,20 @@ the home (within 7 u of it, never into the pond).
     and focus returns to the planet when it closes.
 - The lines are **generic and preset** (as asked): friendly, family-flavoured, no invented facts.
 
+### 6.1 The pond bench: sit and feed the ducks
+
+- **Prompt:** in front of the pond bench, **Sit on the bench** (E), as on the bridge bench. The
+  visitor sits on one end of it (`Furniture.sitSide`), the family on the other.
+- **Seated there,** the focus lane shows two buttons: **Feed the ducks** (E, a bread-slice icon)
+  and **Stand up** (Escape; a movement key also stands you up). The live region says so when you sit.
+- **Feed the ducks:** a handful of crumbs arcs from the bench to the water (6 crumbs, landing well
+  inside the pond, `FEED.inset` of the way in from the shore) with a ripple, then floats and fades
+  over 5 s. At most one handful per 0.9 s per feeder. The first handful is announced.
+- **The ducks:** the crumbs draw the duck for 14 s after the last handful (`WildEnv.feed`,
+  `world/animals.ts`): she swims over, slows as she arrives and dabbles for them, and her ducklings
+  follow her in a line. A seated visitor doesn't frighten her (`WildEnv.calm`); a walking one still
+  does, at the usual distance.
+
 ## 7. Budgets
 
 | | Budget |
@@ -133,6 +162,10 @@ the home (within 7 u of it, never into the pond).
 - **Unit:** the site plan is clear, dry, spaced and reachable; the brain keeps each NPC at home,
   out of the pond, varies activities without repeats, pairs talk facing each other, the kids chase
   a butterfly, and talking stops and faces the NPC; dialog picks never repeat until the pool is used.
+  `tests/unit/ducks.test.ts`: the pond bench stands on the dry bank facing the water, its two seats
+  are apart and at the bench's height, crumbs land well inside the water, the lure wears off, the duck
+  swims to the crumbs (calm with the visitor seated, still fleeing a walking one), and a family member
+  sits on the bench and tosses a handful every few seconds.
 - **E2E:** the three are there; walking up to Rojina offers **Talk to Rojina**; E opens the box with
   her name; E completes and advances the lines; Escape closes it and hands the keys back; axe passes.
 - **Real GPU:** close-ups of the house by day and night, the campsite, the picnic, and each NPC.

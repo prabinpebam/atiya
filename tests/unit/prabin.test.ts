@@ -501,23 +501,17 @@ describe('the plaza, re-laid (§4.7)', () => {
   const ws = geos.find((g) => g.id === 'workshop')!;
   const po = geos.find((g) => g.id === 'post-office')!;
   const bench = layout.furniture.find((f) => f.kind === 'bench')!;
-  const board = layout.furniture.find((f) => f.kind === 'noticeboard')!;
   const bridge = layout.bridges[0];
 
-  it('puts the bench and the notice board by the Greenhouse bridge, on dry ground, off the path, clear of the rails', () => {
+  it('puts the bench by the Greenhouse bridge, on dry ground, off the path, clear of the rails', () => {
     expect(bench).toBeTruthy();
-    expect(board).toBeTruthy();
-    for (const f of [bench, board]) {
+    for (const f of [bench]) {
       expect(d(f.n, bridge.n)).toBeLessThan(bridge.halfLengthU + 3.2);
       const rd = riverDistance(layout.river!, f.n);
       expect(rd.d - layout.river!.halfWidth[rd.i]).toBeGreaterThan(0.6);
       for (const g of geos) expect(pointArcDistance(f.n, UP, g.approach, R)).toBeGreaterThan(0.9);
       expect(terrain.inWater(f.n)).toBe(false);
     }
-    // on opposite sides of the path
-    const along = tangentToward(bridge.n, UP)!;
-    const side = (n: Vector3) => Math.sign(tangentToward(bridge.n, n)!.dot(new Vector3().crossVectors(bridge.n, along)));
-    expect(side(bench.n)).not.toBe(side(board.n));
     // the plaza keeps its lamps and planters
     expect(layout.furniture.filter((f) => f.kind === 'lamp').length).toBeGreaterThanOrEqual(3);
     expect(layout.furniture.some((f) => f.kind === 'planter')).toBe(true);

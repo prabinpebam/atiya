@@ -55,11 +55,11 @@ export function angleGap(a: number, b: number): number {
 
 /**
  * Organic shoreline: the pond's effective radius (u) at polar angle `a`. A few low harmonics
- * give a soft kidney/lobed outline; it relaxes to the nominal radius at the stream mouth so the
- * river always meets the same water edge.
+ * give an irregular, kidney-like outline with a bay or two; it relaxes to the nominal radius at the
+ * stream mouth so the river always meets the same water edge.
  */
 export function shoreRadius(pond: PondShape, f: PondFrame, a: number): number {
-  const w = 0.09 * Math.sin(2 * a + 1.3) + 0.06 * Math.sin(3 * a + 4.1) + 0.035 * Math.sin(5 * a + 2.2);
+  const w = 0.12 * Math.sin(2 * a + 1.3) + 0.08 * Math.sin(3 * a + 4.1) + 0.045 * Math.sin(4 * a + 0.6) + 0.03 * Math.sin(5 * a + 2.2);
   let keep = 1;
   if (f.mouth !== null) {
     const t = Math.min(1, Math.max(0, (angleGap(a, f.mouth) - 0.35) / 0.5));

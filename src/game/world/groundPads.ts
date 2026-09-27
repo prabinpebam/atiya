@@ -14,7 +14,7 @@ export type Box = readonly [x0: number, x1: number, z0: number, z1: number];
 /** Landmark bases by variant (the building plus whatever stands round it on the ground: steps, planters, book stacks). */
 export const LANDMARK_BASE: Readonly<Record<string, Box>> = {
   workshop: [-1.58, 1.1, -0.85, 1.19],
-  'town-hall': [-1.63, 1.3, -0.88, 1.74],
+  'town-hall': [-1.28, 1.68, -0.88, 1.84],
   lighthouse: [-1.23, 1.22, -1.15, 1.07],
   library: [-1.34, 1.68, -0.9, 1.42],
   amphitheater: [-1.72, 1.72, -1.62, 1.53],
@@ -26,13 +26,12 @@ export const LANDMARK_APRON = 0.55;
 
 /** The crafting table (craft/models.ts `craftingTableModel`). */
 export const CRAFT_TABLE_BASE: Box = [-0.49, 0.49, -0.25, 0.52];
-/** The bench and the notice board by the bridge (parts.ts `bench`; Plaza.tsx). */
+/** The bench by the bridge (parts.ts `bench`; Plaza.tsx). */
 export const BENCH_BASE: Box = [-0.56, 0.56, -0.21, 0.19];
-export const NOTICEBOARD_BASE: Box = [-0.42, 0.42, -0.1, 0.1];
 export const padSpec = (id: string, at: HomeSpot, b: Box, extra: Partial<PadSpec> = {}): PadSpec => ({ id, n: at.n, facing: at.facing, x0: b[0], x1: b[1], z0: b[2], z1: b[3], ...extra });
 
 /**
- * The pads under the landmarks, the chest, the crafting table and the bench and notice board by the
+ * The pads under the landmarks, the chest, the crafting table and the bench by the
  * bridge, each plane fitted to the natural ground under it (terrain.ts). The home's come with its
  * chunk (home/homePads.ts).
  */
@@ -45,9 +44,6 @@ export function structurePads(landmarks: ReadonlyArray<{ geo: LandmarkGeometry; 
   }
   if (props.chest) out.push(padSpec('chest', props.chest, [-CHEST_RADIUS * 0.85, CHEST_RADIUS * 0.85, -0.25, 0.3], { skirt: 0.6 }));
   if (props.craft) out.push(padSpec('craft', props.craft, CRAFT_TABLE_BASE, { skirt: 0.6 }));
-  for (const f of props.furniture) {
-    if (f.kind === 'bench') out.push(padSpec('bench', f, BENCH_BASE, { skirt: 0.6 }));
-    else if (f.kind === 'noticeboard') out.push(padSpec('noticeboard', f, NOTICEBOARD_BASE, { skirt: 0.5 }));
-  }
+  for (const f of props.furniture) if (f.kind === 'bench') out.push(padSpec('bench', f, BENCH_BASE, { skirt: 0.6 }));
   return out;
 }

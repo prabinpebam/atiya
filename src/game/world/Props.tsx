@@ -23,9 +23,8 @@ import { FLOWER_KINDS, type Pond, type PropInstance } from './layout';
 import { kitMaterials } from './materials';
 import { WIND_GLSL, windUniforms } from './windField';
 import { cedar, flowerSprig, foliageMaterials, hardwood, leafyBush } from './foliage';
-import { boulder, butterflyWing, flatCard, flowerBlooms, flowerStems, lilyPad, pebble, reeds, rock, uprightCards } from './propModels';
+import { boulder, butterflyWing, flowerBlooms, flowerStems, pebble, reeds, rock, uprightCards } from './propModels';
 import { pondPlants } from './pondPlants';
-import { RIVER_WATER_U } from './terrain';
 import { Fireflies } from './DayNight';
 import { withStoneDetail, withSurfaceDetail } from './rockDetail';
 import { withLampLights } from './lampLights';
@@ -159,27 +158,22 @@ function PondView({ controller, pond }: { controller: GameController; pond: Pond
   const atlas = gameTexture('pond-atlas');
   const parts = useMemo(() => {
     if (!atlas) {
-      // fallback (atlas missing): the simple modelled lily pads and reeds
+      // fallback (atlas missing): the simple modelled reeds (the water lilies are modelled anyway, drawn by the home)
       const q = new Quaternion().setFromUnitVectors(Y, pond.n);
       const tangent = new Vector3(1, 0, 0).applyQuaternion(q);
       const bitangent = new Vector3().crossVectors(pond.n, tangent);
       const at = (a: number, b: number) => pond.n.clone().addScaledVector(tangent, a / R).addScaledVector(bitangent, b / R).normalize();
-      const padItems: PropInstance[] = [
-        [0.35, 0.2],
-        [-0.4, 0.3],
-        [0.1, -0.45],
-      ].map(([a, b], i) => ({ n: at(a * pond.radiusU, b * pond.radiusU), scale: 0.9 + i * 0.15, yaw: i * 2.1, tint: 0.5, h: RIVER_WATER_U + 0.05 }));
       const reedItems: PropInstance[] = [0.4, 1.3, 2.2, 3.9, 4.6, 5.5].map((ang, i) => {
         const r = pond.radiusU + 0.08;
         return { n: at(Math.cos(ang) * r, Math.sin(ang) * r), scale: 0.9 + (i % 3) * 0.2, yaw: ang, tint: 0.5 };
       });
-      return { fallback: { pads: lilyPad(), padItems, reedGeo: reeds(), reedItems } };
+      return { fallback: { reedGeo: reeds(), reedItems } };
     }
-    const plants = pondPlants(pond, controller.props.river, controller.terrain);
+    const plants = pondPlants(pond, controller.props.river, controller.terrain, controller.props.home);
     const cellUV = (i: number): [number, number, number, number] => [(i % 2) * 0.5, 1 - (Math.floor(i / 2) + 1) * 0.5, (i % 2) * 0.5 + 0.5, 1 - Math.floor(i / 2) * 0.5];
     const mat = new MeshStandardMaterial({ map: atlas, alphaTest: 0.5, side: DoubleSide, roughness: 0.8, metalness: 0 });
     const depth = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, map: atlas, alphaTest: 0.5, side: DoubleSide });
-    // reeds and irises rustle in the wind (lily pads sit at y = 0, so they don't sway)
+    // reeds and irises rustle in the wind (the water lilies are modelled: home/lilies.ts, drawn by the home)
     addSway(mat, 0.32, 0.0, 'pond-plants', 0.01);
     addSway(depth, 0.32, 0.0, 'pond-plants-depth');
     return {
@@ -187,7 +181,6 @@ function PondView({ controller, pond }: { controller: GameController; pond: Pond
       mat,
       depth,
       geo: {
-        lilies: flatCard(0.9, cellUV(0)),
         reeds: uprightCards(0.62, 0.95, cellUV(1), 3),
         irises: uprightCards(0.6, 0.68, cellUV(2), 2),
         ferns: uprightCards(0.7, 0.5, cellUV(3), 2, 0.9),
@@ -198,7 +191,6 @@ function PondView({ controller, pond }: { controller: GameController; pond: Pond
     const fb = parts.fallback;
     return (
       <group name="pond">
-        <Instanced geometry={fb.pads} material={kitMaterials().solid} items={fb.padItems} shadow={false} lift={0} />
         <Instanced geometry={fb.reedGeo} material={kitMaterials().solid} items={fb.reedItems} shadow={false} lift={-0.03} />
       </group>
     );
@@ -207,7 +199,6 @@ function PondView({ controller, pond }: { controller: GameController; pond: Pond
   const tint = (p: PropInstance) => vary(p, 0.2);
   return (
     <group name="pond">
-      <Instanced geometry={geo.lilies} material={mat} items={plants.lilies} shadow={false} colorFor={tint} lift={0} />
       <Instanced geometry={geo.reeds} material={mat} depthMaterial={depth} items={plants.reeds} colorFor={tint} lift={0} />
       <Instanced geometry={geo.irises} material={mat} depthMaterial={depth} items={plants.irises} colorFor={tint} lift={0} />
       <Instanced geometry={geo.ferns} material={mat} depthMaterial={depth} items={plants.ferns} colorFor={tint} shadow={false} lift={0} />

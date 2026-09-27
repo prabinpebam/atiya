@@ -75,18 +75,6 @@ export function pebble(): BufferGeometry {
 
 export type FlowerKind = 'tulip' | 'cosmos' | 'pansy';
 
-/** A floating card lying flat (y = 0), `size` across, with texture cell `uv` (lily pads). */
-export function flatCard(size: number, uv: readonly [number, number, number, number]): BufferGeometry {
-  const h = size / 2;
-  const [u0, v0, u1, v1] = uv;
-  const g = new BufferGeometry();
-  g.setAttribute('position', new Float32BufferAttribute([-h, 0, h, h, 0, h, h, 0, -h, -h, 0, -h], 3));
-  g.setAttribute('normal', new Float32BufferAttribute([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0], 3));
-  g.setAttribute('uv', new Float32BufferAttribute([u0, v0, u1, v0, u1, v1, u0, v1], 2));
-  g.setIndex([0, 1, 2, 0, 2, 3]);
-  return g;
-}
-
 /**
  * `planes` crossed upright cards (base at y = 0) showing texture cell `uv`: pond reeds, irises,
  * ferns. Normals point up so the plants shade like the ground they grow from.
@@ -198,13 +186,6 @@ export function cloud(): BufferGeometry {
     return mix('#aebfdd', '#fff8ec', t * t * (3 - 2 * t));
   };
   puffs.forEach(([x, y, z, r], i) => k.blob(r, c, { p: [x, y, z], s: [1, 0.85, 0.8] }, 2, 'solid', 0.08, i));
-  return solid(k);
-}
-
-export function lilyPad(): BufferGeometry {
-  const k = new Kit();
-  k.cyl(0.22, 0.22, 0.02, '#5cae4f', { p: [0, 0, 0] }, 16);
-  k.box([0.2, 0.03, 0.04], '#4a9a3c', { p: [0.1, 0.01, 0] }, 0.01);
   return solid(k);
 }
 
