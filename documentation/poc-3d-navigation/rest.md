@@ -41,7 +41,11 @@
 ### 4.1 Jumping
 
 - **Space** with nothing to go back from calls `controller.jump()` → `PlanetSim.jump()`: take-off at `JUMP.v` (3.2 u/s) under `JUMP.g` (16 u/s²), about 0.32 u up and 0.4 s in the air. The run carries on; there's no second jump in the air, none while travelling, and a fast travel ends one.
-- The body rises by `sim.jumpH`, not the camera, so the view stays steady. The Kenney rig's **jump** clip plays, sped up to the time in the air, and a footstep sounds on landing (the `landed` event).
+- The body rises by `sim.jumpH`, not the camera, so the view stays steady. A footstep sounds on landing (the `landed` event).
+- **The pose is procedural** (`jumpPose` in `world/craft/restPoses.ts`, pure; applied by `world/craft/gear.tsx`): a crouch at take-off, arms swinging up and knees tucked on the rise, arms out and legs reaching down on the fall, and a knees-bent landing that holds for 0.06 s and eases out over `LAND_S` (0.24 s). It's blended over the idle and run clips at full weight. The Kenney rig's jump clip isn't used: it keys only 12 bones, and at under full weight the mixer fills the rest from the bind pose, which read as a T-pose.
+- **On the run, the legs keep running:** above walking pace the pose leaves the legs to the run cycle and only moves the arms, chest and hips, so a running hop looks like a stride rather than stiff legs.
+- Arriving at a landmark by fast travel ends in a small hop (not under reduced motion); the fly-over itself holds the fall's arms-out pose.
+- Footsteps pause while in the air.
 - Not while seated, resting or in an action.
 
 ### 4.2 Resting anywhere
@@ -63,7 +67,7 @@
 ### 4.4 Shooting stars
 
 - `world/meteors.ts` (pure): once the night is at least 0.6, the first comes 2–6 s later, then one every 7–20 s. Each lasts 0.55–1 s, starts among the stars and streaks across and down toward the middle of the sky, its tail growing and then burning out.
-- `world/ShootingStars.tsx` draws it as one additive quad on the stars' plane (camera frame, 61 u back), bright at its head and fading down its tail. It's in the wildlife chunk, mounted with the scene so it compiles with it. It's hidden by day, while ambient motion is paused and under reduced motion.
+- `world/ShootingStars.tsx` draws it as one additive quad in the camera frame (61 u ahead, turned with the camera, so it's always somewhere in view), bright at its head and fading down its tail. It's depth-tested, so the planet hides one that passes behind it. It's in the wildlife chunk, mounted with the scene so it compiles with it. It's hidden by day, while ambient motion is paused and under reduced motion.
 
 ### 4.5 Rabbits and what gets built
 
@@ -71,6 +75,8 @@
 - A rabbit already standing where something goes up takes any hop that gets it further out (`planHop`), so it's never stuck inside.
 
 ### 4.6 Budgets
+
+- After the procedural jump, the furnace's fire and Chopper's face: 449.2 KB initial and **119.7 KB** on demand; the waiver is proposed at ≤ 120 KB ([plan.md](./plan.md), pending the owner's OK).
 
 - Initial bundle: the jump, the rest state, the hooks, the item and two keys. To make room, the action poses moved into the crafting chunk (`controller.actionPose`), which took 0.9 KB off: **449.4 KB** (≤ 450).
 - The crafting chunk: the rest poses and logic, the lantern, and the action poses. The wildlife chunk: the shooting stars. **118.3 KB** on demand, over the 115 KB waiver; the waiver is proposed at ≤ 119 KB ([plan.md](./plan.md), pending the owner's OK).
@@ -81,7 +87,7 @@
 |---|---|---|
 | 1 | Rabbits on the live obstacle list; hop out if caught | `world/Wildlife.tsx`, `world/animals.ts` |
 | 2 | Shooting stars | `world/meteors.ts`, `world/ShootingStars.tsx` |
-| 3 | The jump: physics, Space, the clip, the landing | `systems/movement.ts`, `controller.ts`, `player/Player.tsx` |
+| 3 | The jump: physics, Space, the pose, the landing | `systems/movement.ts`, `controller.ts`, `player/Player.tsx` |
 | 4 | Resting: keys, state, poses, the menu group | `input/keyboard.ts`, `controller.ts`, `world/craft/restPoses.ts`, `world/craft/gear.tsx`, `ui/MenuDialog.tsx` |
 | 5 | The lantern: item, icon, holding, the lamp | `inventory/items.ts`, `scripts/gen-icons.py`, `world/craft/gear.tsx`, `world/lampLights.ts` |
 | 6 | The action poses into the crafting chunk | `player/actionPoses.ts` (via `controller.actionPose`) |
@@ -93,7 +99,7 @@
 |---|---|---|---|
 | 1 | Rabbits keep out of what's built later, and get out if caught | Unit (`animals.test.ts`): a house built on a rabbit's patch, and one built on a kit | Done |
 | 2 | Shooting stars now and then at night, never by day | Unit (`meteors.test.ts`): timing, life, direction. E2E: one within the night, none by day. A real-GPU look | Done |
-| 3 | Space jumps, only with nothing to go back from | Unit (`rest.test.ts`): the hop's height and time, no double jump, momentum. E2E: a hop that opens nothing; Space stands up rather than jumps | Done |
+| 3 | Space jumps, only with nothing to go back from, with a real jump pose | Unit (`rest.test.ts`): the hop's height and time, no double jump, momentum; the pose's crouch, rise, fall and landing, and the legs left to the run cycle when moving. A look at the sequence standing and running. E2E: a hop that opens nothing; Space stands up rather than jumps | Done |
 | 4 | Sit and lie anywhere, with keys and the menu, and get up | Unit: the poses (sit first, then lie). E2E: X, Z, the key again, Space, a step, the menu's Rest group. A real-GPU look | Done |
 | 5 | A lantern to hold that lights the night | Unit: the item. E2E: given once, held in slot 1, lit at night, dark by day, put away by another slot. A real-GPU look | Done |
 | 6 | Budgets met or a waiver proposed | `npm run verify:prod`: 449.4 KB initial; 118.3 KB on demand (waiver ≤ 119 KB proposed) | Done (waiver pending) |

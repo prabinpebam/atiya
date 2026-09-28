@@ -64,6 +64,10 @@ export function furnaceModel(): KitGeometry {
   const mw = F.mouthW / 2;
   const springY = MOUTH.y + F.mouthH - mw;
   k.extrude(archOutline(), 0.03, SOOT, { p: [0, MOUTH.y, MOUTH.z - 0.015] }, 0.004);
+  // two charred logs on the sill, crossed, in front of the fire (FIRE_Z), so it burns behind them
+  k.surface('wood', () => {
+    for (const s of [-1, 1]) k.cyl(0.024, 0.026, 0.21, s < 0 ? '#3a2418' : '#2e1d14', { p: [s * 0.025, MOUTH.y + 0.03 + (s > 0 ? 0.02 : 0), MOUTH.z + 0.045], r: [0, s * 0.25, Math.PI / 2] }, 7);
+  });
   k.surface('stone', () => {
     k.torus(mw + 0.045, 0.05, shade(BLOCK, -0.1), { p: [0, springY, MOUTH.z] }, Math.PI, [5, 12]);
     for (const s of [-1, 1]) k.box([0.1, springY - MOUTH.y + 0.02, 0.1], shade(BLOCK, -0.1), { p: [s * (mw + 0.045), MOUTH.y + (springY - MOUTH.y) / 2 - 0.01, MOUTH.z] }, 0.015);
@@ -106,7 +110,13 @@ export function furnaceModel(): KitGeometry {
   return k.build();
 }
 
-/** The fire in its mouth: an arch a little inside the soot (drawn with its own glowing material). */
+/**
+ * How far in front of the mouth's face the fire is drawn: clear of the soot's bevel (0.004), which it
+ * used to share a plane with (the two flickered through each other), and behind the logs.
+ */
+export const FIRE_Z = MOUTH.z + 0.012;
+
+/** The fire in its mouth: an arch in front of the soot (drawn with its own glowing material). */
 export function fireGeometry(): BufferGeometry {
   // a fan from a hot core low in the mouth out to its arched rim: yellow-orange in the middle, deep red at the edge
   const w = FURNACE.mouthW / 2 - 0.03;
@@ -122,7 +132,7 @@ export function fireGeometry(): BufferGeometry {
   g.setAttribute('position', new Float32BufferAttribute(pos, 3));
   g.setAttribute('color', new Float32BufferAttribute(col, 3));
   g.setIndex(idx);
-  return g.translate(0, MOUTH.y + 0.01, MOUTH.z + 0.004);
+  return g.translate(0, MOUTH.y + 0.01, FIRE_Z);
 }
 
 /** The ghost: the furnace's silhouette as a solid (the faint fill) and its edges (the outline). */

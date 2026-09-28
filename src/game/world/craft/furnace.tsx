@@ -7,7 +7,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, type ReactElement } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useStore } from 'zustand';
-import { Color, DoubleSide, Group, InstancedMesh, LineBasicMaterial, Matrix4, MeshBasicMaterial, MeshStandardMaterial, Object3D, Quaternion, SphereGeometry, Vector3 } from 'three';
+import { AdditiveBlending, Color, DoubleSide, Group, InstancedMesh, LineBasicMaterial, Matrix4, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, Quaternion, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
 // (icons the game already ships where one fits: each new one costs the main bundle, which holds the icon module)
 import { faFire, faHammer, faHand } from '@fortawesome/free-solid-svg-icons';
 import { CONFIG } from '../../config';
@@ -18,10 +18,11 @@ import type { Target } from '../../systems/interactables';
 import { ReadyCue } from '../../systems/readyCue';
 import type { PadSpec } from '../pads';
 import { KitModel } from '../KitModel';
-import { withLampLights } from '../lampLights';
+import { addLamp, withLampLights, type Lamp } from '../lampLights';
+import { lampsOn } from '../DayNight';
 import { Sparkles } from '../Sparkles';
 import { CLAY, clayBeds, type ClayBed } from './clay';
-import { CLAY_COLOURS, FURNACE, FURNACE_BASE, LUMPS, bedFrame, clayBedsModel, clayLumpGeometry, fireGeometry, furnaceGhost, furnaceModel } from './furnaceModels';
+import { CLAY_COLOURS, FIRE_Z, FURNACE, FURNACE_BASE, LUMPS, bedFrame, clayBedsModel, clayLumpGeometry, fireGeometry, furnaceGhost, furnaceModel } from './furnaceModels';
 import { BUILD_S, FURNACE_COOL_S, FURNACE_NEEDS, FURNACE_R, GHOST_FAR, GHOST_NEAR, TARGET_REACH, listNeeds, missing, takeNeeds } from './recipes';
 import type { CraftStore } from './index';
 
@@ -250,21 +251,35 @@ function FurnaceView({ controller, store, link, beds }: { controller: GameContro
     () => ({
       fill: new MeshBasicMaterial({ color: '#a8d8ff', transparent: true, opacity: 0, depthWrite: false, side: DoubleSide, toneMapped: false }),
       line: new LineBasicMaterial({ color: '#dff1ff', transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
-      // the fire: a painted gradient (fireGeometry), held below the tone mapper's white point so it stays orange; dark embers when it's cold
+      // the fire: a painted gradient (fireGeometry), held below the tone mapper's white point so it stays orange; black when cold
       fire: new MeshBasicMaterial({ vertexColors: true, toneMapped: false }),
+      // its glow in the air in front of the mouth (additive: light in the air, never on a surface)
+      glow: new ShaderMaterial({
+        uniforms: { uI: { value: 0 } },
+        vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: 'uniform float uI; varying vec2 vUv; void main() { vec2 d = vUv * 2.0 - 1.0; float a = 1.0 - clamp(dot(d, d), 0.0, 1.0); a = a * a * uI; gl_FragColor = vec4(vec3(1.0, 0.42, 0.1) * a, a); }',
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        toneMapped: false,
+      }),
       smoke: withLampLights(new MeshStandardMaterial({ color: '#d9d4cc', roughness: 1, transparent: true, opacity: 0.5, depthWrite: false })),
       lump: withLampLights(new MeshStandardMaterial({ color: CLAY_COLOURS.lump, roughness: 0.32, metalness: 0 })),
     }),
     [],
   );
   const fire = useMemo(() => fireGeometry(), []);
+  const glowGeo = useMemo(() => new PlaneGeometry(0.8, 0.62), []);
+  // at night, the fire lights the hearth and the ground in front (a real lamp: lampLights.ts), only while it's hot
+  const lamp = useMemo<Lamp | null>(() => (at ? { pos: new Vector3(0, MOUTH_Y + 0.1, FIRE_Z + 0.35).applyQuaternion(at.q).add(at.p), dir: null, color: new Color('#ff9a4a'), intensity: 0, range: 1.8 } : null), [at]);
+  useEffect(() => (built && lamp ? addLamp(lamp) : undefined), [built, lamp]);
   const puffGeo = useMemo(() => new SphereGeometry(0.08, 8, 6), []);
   const lumpGeo = useMemo(() => clayLumpGeometry(), []);
   useEffect(
     () => () => {
-      for (const g of [geo.solid, geo.glow, geo.glass, ghost.fill, ghost.edges, fire, puffGeo, lumpGeo, bedGeo?.solid]) g?.dispose();
+      for (const g of [geo.solid, geo.glow, geo.glass, ghost.fill, ghost.edges, fire, glowGeo, puffGeo, lumpGeo, bedGeo?.solid]) g?.dispose();
     },
-    [geo, ghost, fire, puffGeo, lumpGeo, bedGeo],
+    [geo, ghost, fire, glowGeo, puffGeo, lumpGeo, bedGeo],
   );
   const body = useRef<Group>(null);
   const ghostRef = useRef<Group>(null);
@@ -319,15 +334,17 @@ function FurnaceView({ controller, store, link, beds }: { controller: GameContro
       b.scale.set(1, Math.max(0.02, p <= 0 ? 0.02 : easeOutBack(p)), 1);
       b.visible = built && p > 0;
     }
-    // the fire: embers when cold, a flicker when it's the target (the ready cue), roaring while it smelts
-    const cue = link.cue;
-    const wake = cue.since < 0.8 ? (1 - cue.since / 0.8) ** 2 : 0;
+    // the fire: dark when it's cold, roaring while it smelts and dying down to embers as it cools (the
+    // ready cue is the sparkles, not the fire). The mesh stays drawn (black when cold), so its program
+    // compiled with the scene.
     const tt = time.current;
     const flick = reduced ? 1 : 0.82 + 0.12 * Math.sin(tt * 13.1) + 0.06 * Math.sin(tt * 29.7 + 1.3);
-    const level = Math.max(link.heat, 0.28 * cue.on + 0.7 * wake * (reduced ? 0 : 1));
-    // (the gradient's in the vertex colours; this is the heat: dim red embers up to a bright roar)
-    const k = (0.16 + 0.72 * level) * (level > 0.02 ? flick : 1);
+    const level = link.heat;
+    // (the gradient's in the vertex colours; this is the heat: dull red embers up to a bright roar)
+    const k = 0.88 * Math.sqrt(level) * flick;
     mats.fire.color.copy(warm.current.setRGB(1, 0.55 + 0.45 * level, 0.45 + 0.55 * level)).multiplyScalar(k);
+    mats.glow.uniforms.uI.value = 0.85 * level * flick;
+    if (lamp) lamp.intensity = 1.6 * level * flick * lampsOn(controller.sky.night);
     // smoke from the chimney while it's warm (sparks while it roars: the Sparkles)
     const m = smoke.current;
     if (m) {
@@ -375,6 +392,7 @@ function FurnaceView({ controller, store, link, beds }: { controller: GameContro
           <group ref={body} name="furnace">
             <KitModel geo={geo} />
             <mesh geometry={fire} material={mats.fire} />
+            <mesh geometry={glowGeo} material={mats.glow} position={[0, MOUTH_Y, FIRE_Z + 0.07]} renderOrder={5} />
             <Sparkles controller={controller} cue={link.cue} at={[0, MOUTH_Y, 0.52]} half={[0.2, 0.12, 0.08]} count={6} />
             <Sparkles controller={controller} cue={sparks} at={[0, FURNACE.chimney.top + 0.25, FURNACE.chimney.z]} half={[0.08, 0.3, 0.08]} count={8} />
           </group>

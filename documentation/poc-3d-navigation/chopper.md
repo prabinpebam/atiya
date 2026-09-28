@@ -37,7 +37,8 @@ Chopper was the owner's Lhasa Apso, who passed away recently. This is a tribute:
     - body: root → hips → spine → chest → neck → head (jaw → tongue, two eyes, two ears with two bones each);
     - tail: four bones;
     - legs: four, each with three bones (shoulder / elbow / wrist, hip / knee / hock).
-  - **Eyes** have their own bones, so a blink scales them shut; the fur thins right round them so they peek out under the fringe, as in his photos.
+  - **Eyes** have their own bones, so a blink scales them shut; the fur thins right round them so they peek out under the fringe, as in his photos. Each is a little almond, dark brown with a brown iris round the pupil, a dark rim and a small catch-light.
+  - **The face,** after his photos: a broad black nose with two matte nostrils; the mouth line runs down from the nose (the philtrum) and curves out to each side under the moustache, with the muzzle's fur thinned along it so it reads; the moustache is longer at its sides. Under it, a dark lower lip and a dark inside to the mouth, seen when the jaw drops, and the beard is short round the lower lip. The pink tongue has a crease down its middle and comes forward over the lower lip as he pants.
   - **Skin weights:** envelope skinning, restricted per part to its own chain plus its parent, so ears never follow the jaw.
   - **Non-fur parts** (eyes, nose, pads, tongue, collar, tag): the same mesh, with fur length 0 and their own gloss.
 - **Fur** (`world/chopper/fur.ts`):

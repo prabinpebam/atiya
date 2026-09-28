@@ -462,9 +462,10 @@ export class ChopperAnim {
     B.head.rotation.set(P('headX') - bodyPitch * 0.3 + lookPitch * 0.6 - bark * 0.12, P('headY') + lookYaw * 0.6, P('headZ'));
     B.jaw.rotation.set(Math.max(P('jaw'), bark * 0.42) + (inp.pant > 0.5 ? Math.sin(this.breath) * 0.04 : 0), 0, 0);
     const tongue = Math.min(1, Math.max(0, P('tongue')));
+    // (out of the mouth, forward over the lower lip, and drooping a little at its tip)
     B.tongue.scale.setScalar(0.35 + tongue * 0.65);
-    B.tongue.position.set(0, 0.004 - tongue * 0.008, 0.02 + tongue * 0.012);
-    B.tongue.rotation.set(tongue * 0.45, 0, 0);
+    B.tongue.position.set(0, 0.004 - tongue * 0.005, 0.02 + tongue * 0.026);
+    B.tongue.rotation.set(tongue * 0.24, 0, 0);
     const lid = 1 - Math.min(1, lids) * 0.88;
     B.eyeL.scale.set(1, lid, 1);
     B.eyeR.scale.set(1, lid, 1);

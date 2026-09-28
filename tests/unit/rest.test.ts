@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PlanetSim, JUMP } from '../../src/game/systems/movement';
-import { REST, restPose } from '../../src/game/world/craft/restPoses';
+import { JUMP_POSE, LAND_S, REST, jumpPose, restPose } from '../../src/game/world/craft/restPoses';
 import { KEY_BINDINGS } from '../../src/game/input/keyboard';
 
 const still = { x: 0, y: 0, run: false };
@@ -45,6 +45,39 @@ describe('jumping (Space)', () => {
     sim.startTravel(sim.planetQ.clone(), 'x', 'fade');
     expect(sim.jumpH).toBe(0);
     expect(sim.jump()).toBe(false);
+  });
+});
+
+describe('the hop’s pose', () => {
+  const V = JUMP.v;
+  const same = (a: readonly number[], b: readonly number[]) => a.forEach((x, i) => expect(x).toBeCloseTo(b[i], 9));
+  it('eases in at take-off with the arms up and knees tucked, spreads the arms and reaches down as it falls, and bends on landing', () => {
+    expect(jumpPose(V, V, 0, -1)!.w).toBe(0);
+    const up = jumpPose(V, V, 0.2, -1)!;
+    expect(up.w).toBe(1);
+    same(up.arms.l.upper, JUMP_POSE.rise.arms.l.upper);
+    same(up.legs!.l.upper, JUMP_POSE.rise.legs.l.upper);
+    const down = jumpPose(-V, V, 0.4, -1)!;
+    same(down.arms.l.upper, JUMP_POSE.fall.arms.l.upper);
+    // landing: from the fall into the bend at full weight (no snap), then it lets go, and it's over
+    const touch = jumpPose(-V, V, 0, 0)!;
+    expect(touch.w).toBe(1);
+    same(touch.arms.l.upper, JUMP_POSE.fall.arms.l.upper);
+    const bent = jumpPose(0, V, 0, 0.06)!;
+    expect(bent.hip).toBeCloseTo(JUMP_POSE.land.hip, 6);
+    expect(jumpPose(0, V, 0, LAND_S - 0.001)!.w).toBeLessThan(0.05);
+    expect(jumpPose(0, V, 0, LAND_S)).toBeNull();
+  });
+
+  it('on the move, the legs keep the run cycle’s stride (no leg pose, no knee-bend), and the arms react more lightly', () => {
+    const run = jumpPose(V, V, 0.2, -1, 1)!;
+    expect(run.legs).toBeUndefined();
+    expect(run.w).toBeCloseTo(0.6, 6);
+    const landing = jumpPose(0, V, 0, 0.06, 1)!;
+    expect(landing.legs).toBeUndefined();
+    expect(landing.hip).toBe(0);
+    // standing still, the legs tuck
+    expect(jumpPose(V, V, 0.2, -1, 0)!.legs).toBeDefined();
   });
 });
 

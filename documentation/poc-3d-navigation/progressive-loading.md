@@ -187,7 +187,7 @@ On a slow connection the greeting still shows at first paint, the planet goes li
 
 ### 5.6 The budget model
 
-Today the initial bundle is budgeted as if every byte blocks play. Every other chunk shares one on-demand waiver, which has risen with each feature (70 → 119 KB). With tiers, only the critical path needs a load-time budget; the rest is bounded by what the running game can afford.
+Today the initial bundle is budgeted as if every byte blocks play. Every other chunk shares one on-demand waiver, which has risen with each feature (70 → 120 KB). With tiers, only the critical path needs a load-time budget; the rest is bounded by what the running game can afford.
 
 **The critical path, in time** (CPU ×4):
 

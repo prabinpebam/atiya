@@ -1,6 +1,7 @@
 /**
  * Shooting stars (pure): now and then on a clear night one streaks across the sky and burns out. The
- * wildlife chunk draws it (`ShootingStars.tsx`) on the stars' plane, in the camera frame.
+ * wildlife chunk draws it (`ShootingStars.tsx`) in the camera's own frame, 61 u ahead, so it's always
+ * in the sky above the planet, whatever the tilt.
  */
 
 export const METEOR = {
@@ -13,9 +14,10 @@ export const METEOR = {
   life: [0.55, 1.0] as const,
   speed: [26, 38] as const,
   tail: 7,
-  /** Where one starts: the stars' band (camera frame, as `DayNight.tsx` scatters them). */
-  x: [-38, 38] as const,
-  y: [-24, -14] as const,
+  /** Where one starts, in the camera's frame at 61 u (the view spans about ±31 u across and ±19 u up and
+   * down there): the upper part of the view, where the sky is. */
+  x: [-26, 26] as const,
+  y: [7, 17] as const,
   /** Its heading: this far below the horizontal (rad), left or right. */
   dip: [0.35, 0.85] as const,
 };

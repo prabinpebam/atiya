@@ -376,7 +376,7 @@ The planet has a cozy life-sim day: soft dawn pinks, a bright day, a warm golden
   - daylight "lift" emissives (foliage, pond) fade at night
 - **Sky objects:**
   - The sun and moon rise from behind the planet's limb at the left and set at the right. They are camera-facing discs with soft halos, drawn behind the clouds.
-  - About 170 twinkling stars fade in after dusk. Now and then a shooting star streaks across them and burns out (every 7–20 s once the night is deep; hidden under paused ambient motion and reduced motion: [rest.md](./rest.md) §4.4).
+  - About 1,600 twinkling stars fade in after dusk, spread over the whole sky, so tilting the view up or down never shows a starless patch. Now and then a shooting star streaks across them and burns out (every 7–20 s once the night is deep; hidden under paused ambient motion and reduced motion: [rest.md](./rest.md) §4.4).
   - Fireflies drift over the pond and flower beds at night, and butterflies go to sleep.
 - **Readability:** night is deep blue rather than black: moonlight plus a blue hemisphere light keep the scene legible. All HUD text sits on solid cards, so its contrast doesn't depend on the time of day.
 - **Motion:** in cycle mode the clock stops under Reduce motion or Pause ambient motion; the Menu says so. Local time still follows the clock, because that change is imperceptibly slow.
@@ -793,7 +793,7 @@ personal-site/
   - `low` is used for software rendering (the "Continue anyway" path), Data Saver and coarse pointers. It keeps a cheaper tilt-shift (very small kernel, 35 % resolution) but no bloom or vignette, and a 1024² shadow map.
   - **The tilt-shift is never switched off.** Adaptive quality waits 10 s after start (so shader-compile hitches don't count), then on sustained low FPS steps DPR down (2 → 1.5 → 1.25 → 1), and as a last step drops bloom and vignette. It never changes tier and steps back up when FPS recovers.
   - Non-production builds accept `?quality=high|low` for visual testing.
-- **Sky objects** (clouds on camera-relative rings 46–56 u from the camera, sun/moon z = −50, stars z ≈ −62…−68) sit behind the planet in the camera frame, inside the camera's far plane (130). The sky gradient is a small canvas texture set as `scene.background`, redrawn only when the clock has moved.
+- **Sky objects** (clouds on camera-relative rings 46–56 u from the camera, sun/moon z = −50) sit behind the planet in the camera frame, inside the camera's far plane (130). The stars are a dome 66–70 u round the camera, following its position but not its turn, over every direction the view can face; the planet hides those behind it. The sky gradient is a small canvas texture set as `scene.background`, redrawn only when the clock has moved.
 - **Wind and water in the vertex/fragment shaders:** all sway is done on the GPU. A single `windUniforms` object (time, strength, axis) is shared by every swaying material (and its depth material, so shadows match), so one driver update per frame animates all the foliage. Sway is computed in instance space (`transpose(mat3(instanceMatrix)) · wind`), so every instance leans downwind whatever its yaw. Shader locals use a `w*` prefix to avoid clashing with three.js chunk variables. Water uses one shared flow clock.
 
 ### 5.9 Loading strategy (capability-gated dynamic import)

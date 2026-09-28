@@ -298,23 +298,69 @@ function parts(): Part[] {
   add(blob([0, head.y + 0.005, head.z - 0.005], [0.082, 0.077, 0.076], 3, 0.04, 5), ['neck', 'head'], face, (p) => (p.y > head.y + 0.03 ? 0.046 : 0.032) * clear(p), (p) => [Math.sign(p.x) * 0.55, -0.6, p.z > head.z ? 0.25 : -0.3]);
   // fringe over the brow: soft, parting in the middle, falling to the sides and a little forward
   add(blob([0, head.y + 0.05, head.z + 0.028], [0.064, 0.028, 0.048], 2, 0.1, 6), ['head'], face, (p) => 0.036 * clear(p), (p) => [Math.sign(p.x) * 0.6, -0.5, 0.35]);
-  // muzzle (the moustache sweeps forward and down)
-  add(blob([0, head.y - 0.022, head.z + 0.07], [0.043, 0.035, 0.04], 2, 0.05, 7), ['head'], white, (p) => 0.022 * clear(p), [0, -0.6, 0.6]);
-  // lower jaw and the beard hanging from it
-  add(blob([0, head.y - 0.048, head.z + 0.062], [0.031, 0.02, 0.035], 2, 0.05, 8), ['jaw'], white, 0.026, [0, -0.9, 0.3]);
-  add(blob([0, head.y - 0.052, head.z + 0.05], [0.05, 0.034, 0.032], 2, 0.1, 9), ['jaw', 'head'], white, (p) => 0.045 + Math.max(0, head.y - 0.04 - p.y) * 0.4, [0, -1, 0.15]);
-  // mouth: a dark lip line inside the jaw (shows when he pants)
-  add(blob([0, head.y - 0.036, head.z + 0.07], [0.028, 0.008, 0.03], 1, 0, 10), ['jaw'], () => col(C.mouth), bare, NONE, 0.4);
-  // tongue: hidden in the mouth until the tongue bone scales it out
-  add(blob([0, head.y - 0.038, head.z + 0.084], [0.018, 0.006, 0.03], 1, 0, 11), ['tongue'], () => col(C.tongue), bare, NONE, 0.8);
-  // button nose
-  add(blob([0, head.y - 0.012, head.z + 0.11], [0.018, 0.014, 0.013], 2, 0, 12), ['head'], () => col(C.nose), bare, NONE, 0.9);
-  // eyes: big, round and dark, each with a catch-light; they close (blink) by scaling their bone
+  // his mouth, after his photos: a dark line down from the nose (the philtrum) that curves out to each
+  // side under the moustache. The muzzle's fur thins along it, so it reads rather than showing through
+  // the strands in dark specks
+  const lip: Vector3[] = [];
+  for (let i = 0; i <= 8; i++) {
+    const t = i / 8;
+    lip.push(new Vector3(0, head.y - 0.026 - t * 0.02, head.z + 0.113 - t * 0.004));
+  }
+  for (const sx of [1, -1])
+    for (let i = 1; i <= 8; i++) {
+      const t = i / 8;
+      lip.push(new Vector3(sx * t * 0.03, head.y - 0.046 - Math.sin(t * Math.PI * 0.6) * 0.006, head.z + 0.109 - t * t * 0.03));
+    }
+  const nearLip = (p: Vector3) => smoothstep(0.003, 0.014, Math.min(...lip.map((q) => q.distanceTo(p))));
+  // muzzle (the moustache sweeps forward and down, longer at its sides)
+  add(
+    blob([0, head.y - 0.022, head.z + 0.07], [0.043, 0.035, 0.04], 2, 0.05, 7),
+    ['head'],
+    white,
+    (p) => (0.022 + 0.014 * smoothstep(0.012, 0.038, Math.abs(p.x))) * clear(p) * nearLip(p),
+    (p) => [Math.sign(p.x) * 0.3 * smoothstep(0.01, 0.03, Math.abs(p.x)), -0.75, 0.45],
+  );
+  for (const q of lip) add(blob([q.x, q.y, q.z], [0.0034, 0.0034, 0.0034], 0, 0, 30), ['head'], () => col('#2a1b19'), bare, NONE, 0.25);
+  // lower jaw and the beard hanging from it (short round the lower lip, so the lip and the tongue show)
+  const lowerLip = new Vector3(0, head.y - 0.055, head.z + 0.094);
+  const nearLower = (p: Vector3) => 0.25 + 0.75 * smoothstep(0.006, 0.026, p.distanceTo(lowerLip));
+  add(blob([0, head.y - 0.048, head.z + 0.062], [0.031, 0.02, 0.035], 2, 0.05, 8), ['jaw'], white, (p) => 0.026 * nearLower(p), [0, -0.9, 0.3]);
+  add(blob([0, head.y - 0.052, head.z + 0.05], [0.05, 0.034, 0.032], 2, 0.1, 9), ['jaw', 'head'], white, (p) => (0.045 + Math.max(0, head.y - 0.04 - p.y) * 0.4) * nearLower(p), [0, -1, 0.15]);
+  // inside the mouth (dark, seen when the jaw drops to pant or bark) and the lower lip's dark edge
+  add(blob([0, head.y - 0.046, head.z + 0.078], [0.026, 0.011, 0.028], 2, 0, 10), ['jaw'], (p) => mixc(C.mouth, '#2a1416', smoothstep(head.z + 0.1, head.z + 0.05, p.z)), bare, NONE, 0.4);
+  add(blob([0, head.y - 0.055, head.z + 0.094], [0.024, 0.0045, 0.008], 2, 0, 31), ['jaw'], () => col('#2a1b19'), bare, NONE, 0.25);
+  // tongue: rooted in the mouth, with a crease down its middle; the tongue bone draws it out to hang
+  // over the lower lip while he pants
+  add(
+    blob([0, head.y - 0.047, head.z + 0.088], [0.02, 0.0065, 0.034], 2, 0, 11),
+    ['tongue'],
+    (p) => mixc(C.tongue, '#c24d68', 1 - smoothstep(0.001, 0.006, Math.abs(p.x)) * 0.9 + smoothstep(head.z + 0.1, head.z + 0.06, p.z) * 0.4),
+    bare,
+    NONE,
+    0.8,
+  );
+  // his nose: a broad, glossy black button with two matte nostrils
+  add(blob([0, head.y - 0.013, head.z + 0.111], [0.021, 0.015, 0.014], 2, 0, 12), ['head'], (p) => mixc(C.nose, '#2b2424', smoothstep(head.y - 0.02, head.y - 0.003, p.y) * 0.5), bare, NONE, 0.9);
+  for (const sx of [1, -1]) add(blob([sx * 0.0075, head.y - 0.0155, head.z + 0.1235], [0.0048, 0.0028, 0.0022], 0, 0, 32, [0, 0, sx * 0.45]), ['head'], () => col('#050303'), bare, NONE, 0);
+  // eyes: dark and a little almond, a brown iris round the pupil, a dark rim and a small catch-light;
+  // they close (blink) by scaling their bone
   for (const side of ['L', 'R'] as const) {
     const e = B[`eye${side}`];
     const sx = side === 'L' ? 1 : -1;
-    add(blob([e.x, e.y, e.z], [0.0155, 0.0155, 0.012], 2, 0, 13), [`eye${side}`], () => col(C.eye), bare, NONE, 1);
-    add(blob([e.x + 0.004 * sx, e.y + 0.006, e.z + 0.0105], [0.004, 0.004, 0.002], 1, 0, 14), [`eye${side}`], () => col(C.shine), bare, NONE, 1);
+    const front = new Vector3(e.x + 0.002 * sx, e.y, e.z + 0.012);
+    add(blob([e.x, e.y, e.z - 0.002], [0.0165, 0.0142, 0.0112], 1, 0, 33), [`eye${side}`], () => col('#2a1d15'), bare, NONE, 0.2);
+    add(
+      blob([e.x, e.y, e.z], [0.0138, 0.0124, 0.0112], 2, 0, 13),
+      [`eye${side}`],
+      (p) => {
+        const d = Math.hypot(p.x - front.x, p.y - front.y);
+        return d < 0.0055 ? col('#0b0605') : d < 0.0105 ? mixc('#4a2c16', '#2b190d', (d - 0.0055) / 0.005) : col(C.eye);
+      },
+      bare,
+      NONE,
+      1,
+    );
+    add(blob([e.x + 0.0038 * sx, e.y + 0.0045, e.z + 0.0118], [0.0032, 0.0032, 0.0016], 1, 0, 14), [`eye${side}`], () => col(C.shine), bare, NONE, 1);
   }
 
   // --- ears: long, hanging, charcoal with pale feathered tips, framing the face

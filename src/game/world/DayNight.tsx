@@ -29,7 +29,11 @@ import { cloudMaterial } from './Sky';
 import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
-const STAR_Z = -62;
+/**
+ * The stars' dome: a sphere this far round the camera (u), moving with it, so they're infinitely far
+ * and fill the sky at any tilt. Beyond the clouds (46–56 u) and inside the far plane (130).
+ */
+const STAR_R = 66;
 /** Hours per second when fast-forwarding to a newly chosen time mode. */
 const FAST_FORWARD = 9;
 
@@ -193,10 +197,19 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     const pos: number[] = [];
     const size: number[] = [];
     const phase: number[] = [];
-    for (let i = 0; i < 170; i++) {
-      pos.push(-50 + rand() * 100, -42 + rand() * 30, STAR_Z - rand() * 6);
-      size.push(rand() < 0.15 ? 13 + rand() * 5 : 7 + rand() * 4);
-      phase.push(rand() * 10);
+    // evenly over the sphere, keeping the part the view can face (ahead of the camera, which looks
+    // along −z): about 240 per steradian, as dense as the old patch of sky
+    for (let i = 0; i < 2600; i++) {
+      const z = rand() * 2 - 1;
+      const a = rand() * Math.PI * 2;
+      const s = Math.sqrt(1 - z * z);
+      const r = STAR_R + rand() * 4;
+      const sz = rand() < 0.15 ? 13 + rand() * 5 : 7 + rand() * 4;
+      const ph = rand() * 10;
+      if (z > 0.25) continue;
+      pos.push(Math.cos(a) * s * r, Math.sin(a) * s * r, z * r);
+      size.push(sz);
+      phase.push(ph);
     }
     const mat = glowPointsMaterial(new Color(2.4, 2.4, 2.8));
     const pts = new Points(pointsGeometry(pos, size, phase), mat);
@@ -315,6 +328,7 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     controller.timeOfDay = h;
     if (!paused) elapsed.current += dt;
     stars.mat.uniforms.uTime.value = elapsed.current;
+    stars.pts.position.copy(camera.position);
     stars.mat.uniforms.uPixelRatio.value = gl.getPixelRatio();
     // sun and moon face the camera (no foreshortening under the tilted view)
     for (const m of [sun.disc, sun.halo, moon.disc, moon.halo]) m.quaternion.copy(camera.quaternion);

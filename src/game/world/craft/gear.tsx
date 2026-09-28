@@ -6,7 +6,8 @@
  */
 import { Color, Group, Mesh, Quaternion, Vector3 } from 'three';
 import type { GameController, GearFrame } from '../../controller';
-import { restPose } from './restPoses';
+import { JUMP_POSE, jumpPose, restPose } from './restPoses';
+import { JUMP } from '../../systems/movement';
 import { actionPose } from '../../player/actionPoses';
 import { Kit } from '../kit';
 import { kitMaterials } from '../materials';
@@ -96,6 +97,10 @@ export function attachGear(controller: GameController): GearAttachment {
   const _left = new Vector3();
   let swing = 0;
   let t = 0;
+  // the hop: time in the air, and since landing (−1: not landing)
+  let last = 0;
+  let air = 0;
+  let land = -1;
   const held = () => inv.backpack[inv.selected]?.id === 'lantern' && !controller.sim.travel;
 
   controller.gear = (f: GearFrame) => {
@@ -106,6 +111,23 @@ export function attachGear(controller: GameController): GearAttachment {
       f.pose(p, p.w);
       if (f.body) f.body.position.y -= p.hip * p.w;
     }
+    // the hop (and the arms out while flying over the planet)
+    const dt = Math.min(0.1, Math.max(0, f.time - last));
+    last = f.time;
+    const sim = controller.sim;
+    const up = sim.jumpH > 0 || sim.jumpV > 0;
+    if (up) {
+      air += dt;
+      land = -1;
+    } else if (air > 0) {
+      air = 0;
+      land = 0;
+    } else if (land >= 0) land += dt;
+    const jp = jumpPose(sim.jumpV, JUMP.v, air, up ? -1 : land, Math.min(1, sim.speed / 1.5));
+    if (jp && jp.w > 1e-3) {
+      f.pose(jp, jp.w);
+      if (f.body) f.body.position.y -= jp.hip * jp.w;
+    } else if (sim.hover > 0.01) f.pose({ w: 1, pickaxe: 0, ...JUMP_POSE.fall }, Math.min(1, sim.hover / 0.6));
     if (lantern.parent !== root) root.add(lantern);
     const on = held();
     lantern.visible = on;

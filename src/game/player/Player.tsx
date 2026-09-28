@@ -2,7 +2,7 @@ import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { useStore } from 'zustand';
-import { AnimationMixer, Box3, Group, LoopOnce, Matrix4, Quaternion, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { AnimationMixer, Box3, Group, Matrix4, Quaternion, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { damp } from '../math/sphere';
@@ -176,14 +176,16 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     };
   }, [scene, controller]);
 
-  const { mixer, idle, run, jump } = useMemo(() => {
+  // (the rig's own jump clip keys only 12 bones: blended in, the rest fell back to the bind pose, a T-pose.
+  // The hop is posed procedurally instead, over the idle and run clips: world/craft/restPoses.ts `jumpPose`)
+  const { mixer, idle, run } = useMemo(() => {
     const mx = new AnimationMixer(scene);
     const clip = (name: string) => animations.find((a) => a.name === name);
     const a = (name: string) => {
       const c = clip(name);
       return c ? mx.clipAction(c) : null;
     };
-    return { mixer: mx, idle: a('idle'), run: a('run'), jump: a('jump') };
+    return { mixer: mx, idle: a('idle'), run: a('run') };
   }, [scene, animations]);
 
   useEffect(() => {
@@ -192,14 +194,9 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     idle?.play();
     run?.play();
     run?.setEffectiveWeight(0);
-    if (jump) {
-      jump.setLoop(LoopOnce, 1);
-      jump.clampWhenFinished = false;
-    }
+    // a hop on arrival from a fast travel
     controller.onArrive = () => {
-      if (!jump || controller.store.getState().reducedMotionUser || controller.store.getState().reducedMotionSystem) return;
-      jump.timeScale = 1;
-      jump.reset().setEffectiveWeight(1).fadeIn(0.08).play();
+      if (!controller.store.getState().reducedMotionUser && !controller.store.getState().reducedMotionSystem) controller.sim.jump();
     };
     return () => {
       controller.onArrive = null;
@@ -207,7 +204,7 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
       controller.avatarModel = null;
       mixer.stopAllAction();
     };
-  }, [idle, run, jump, mixer, controller, id]);
+  }, [idle, run, mixer, controller, id]);
 
   // when each foot lands in the run cycle (for footsteps), measured once from the clip itself
   const stepPhases = useMemo(() => {
@@ -254,30 +251,15 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
   const lastAct = useRef<{ kind: ActionKind; t: number; fade: number } | null>(null);
 
   const blend = useRef(0);
-  const flying = useRef(false);
-  const inAir = useRef(false);
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
     const sim = controller.sim;
-    // take off with a hop (it lands with one too, via onArrive)
-    const fly = sim.travel?.mode === 'flyover';
-    if (fly && !flying.current && jump) jump.reset().setEffectiveWeight(1).fadeIn(0.08).play();
-    flying.current = fly;
-    // Space: the jump clip, sped up to the hop's time in the air
-    const air = sim.jumpV > 0 || sim.jumpH > 0;
-    if (air && !inAir.current && jump) {
-      jump.timeScale = jump.getClip().duration / 0.6;
-      jump.reset().setEffectiveWeight(1).fadeIn(0.05).play();
-    }
-    inAir.current = air;
     const speed = sim.speed;
     if (root.current) root.current.rotation.y = sim.heading + MODEL_YAW;
     blend.current = damp(blend.current, Math.min(1, speed / 1.2), 10, dt);
-    // While the arrival hop plays it dominates the blend.
-    const hop = jump?.isRunning() ? 0.9 : 0;
-    idle?.setEffectiveWeight((1 - blend.current) * (1 - hop));
+    idle?.setEffectiveWeight(1 - blend.current);
     if (run) {
-      run.setEffectiveWeight(blend.current * (1 - hop));
+      run.setEffectiveWeight(blend.current);
       run.timeScale = Math.min(1.7, Math.max(0.6, speed / RUN_CLIP_SPEED));
     }
     mixer.update(dt);
@@ -332,7 +314,7 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     }
     if (run) {
       const t = (run.time / run.getClip().duration) % 1;
-      if (blend.current > 0.35 && !jump?.isRunning() && crossedPhase(cycle.current, t, stepPhases)) controller.footstep();
+      if (blend.current > 0.35 && sim.jumpH === 0 && crossedPhase(cycle.current, t, stepPhases)) controller.footstep();
       cycle.current = t;
     }
   });
