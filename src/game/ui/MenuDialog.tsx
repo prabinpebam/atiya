@@ -5,6 +5,7 @@ import type { GameController } from '../controller';
 import { prefs } from '../platform/prefs';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import type { TimeMode } from '../world/timeOfDay';
+import { spaceBack } from '../input/keyboard';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -54,7 +55,7 @@ function HowToPlay({ controller }: { controller: GameController }) {
               <Keys k="E" />: open a building's card, or use what the gold ring glows round (shake a tree, pick a flower, talk, sit down).
             </li>
             <li>
-              <Keys k="Esc" />: close what's open, or stand up.
+              <Keys k="Space" />: close what's open, stand up or stop talking. <Keys k="Enter" /> presses the chosen button.
             </li>
             <li>
               <Keys k="I" />: the backpack. <Keys k="1" />–<Keys k="9" />: pick a hotbar slot. <Keys k="F" />: whistle for Chopper. <Keys k="M" />: the menu.
@@ -104,6 +105,11 @@ export default function MenuDialog({ controller }: { controller: GameController 
       aria-labelledby="menu-title"
       data-testid="menu-dialog"
       onCancel={(e) => {
+        e.preventDefault();
+        controller.closeMenu();
+      }}
+      onKeyDown={(e) => {
+        if (!spaceBack(e)) return;
         e.preventDefault();
         controller.closeMenu();
       }}
@@ -199,7 +205,7 @@ export default function MenuDialog({ controller }: { controller: GameController 
             Classic site
           </a>
           <button type="button" className="btn primary" onClick={() => controller.closeMenu()}>
-            Close
+            Close <kbd>Space</kbd>
           </button>
         </div>
       </div>

@@ -127,9 +127,9 @@ function ChopperCardSlot({ controller }: { controller: GameController }) {
 
 /**
  * What E does right now (collection-inventory.md §3.1): shake a tree, mine a boulder, pick a flower,
- * open the chest, sit on the bench or meet Chopper; while seated, stand up (the keys work too: E, Escape).
+ * open the chest, sit on the bench or meet Chopper; while seated, stand up (the keys work too: E, Space).
  * On the pond bench E feeds the ducks instead (on the swing, a seat's own action: swing higher), and
- * standing up is the second button (Escape).
+ * standing up is the second button (Space).
  */
 function ActionPrompt({ controller }: { controller: GameController }) {
   const seated = useStore(controller.store, (s) => s.seated);
@@ -140,7 +140,7 @@ function ActionPrompt({ controller }: { controller: GameController }) {
   const act = () => {
     if (seated) controller.standUp();
     else controller.useTarget();
-    // back to the planet, so Escape and WASD work straight away
+    // back to the planet, so Space and WASD work straight away
     controller.focusRegion();
   };
   const feed = seated && canFeed;
@@ -156,7 +156,7 @@ function ActionPrompt({ controller }: { controller: GameController }) {
       <button className={extra ? 'btn' : 'btn primary'} type="button" onClick={act}>
         {seated ? (
           <>
-            <Icon icon={faPersonWalking} /> Stand up <kbd>Esc</kbd>
+            <Icon icon={faPersonWalking} /> Stand up <kbd>Space</kbd>
           </>
         ) : (
           <>

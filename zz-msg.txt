@@ -1,0 +1,15 @@
+Space goes back; crafting screen at a fixed size with a help popover
+
+- Keys: Space is the back action (stand up, get off the swing, end a talk,
+  stop an action, close dialogs and panels; spaceBack leaves it to form
+  controls and slots). Esc still works; the UI shows Space
+- Crafting: two columns at a fixed size (recipe book down the left, 64 px
+  cells, filled with empty slots; the detail over the backpack); four
+  material slots always, clamped text, the progress bar in the padding
+- Help popover on every inventory panel instead of inline help text
+- Docs: design system 6.7 and the help popover, crafting-screen 4.3 and DoD,
+  specs and AGENTS; on-demand waiver 106 -> 107 KB (pending)
+- Tests: keys unit test; E2E press Space, the crafting test checks the
+  popover and the fixed size
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

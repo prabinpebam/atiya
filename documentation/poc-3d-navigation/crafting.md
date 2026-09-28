@@ -74,7 +74,7 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
 - **The screen** is Minecraft's layout, specified in [Crafting screen and HUD chrome](../game-ui/crafting-screen.md):
   - **Top:** the recipes as a grid of icons (names only in the detail and the tooltips; a ×n badge on what you can make now), and the selected recipe's detail: the result, its name and line, one slot per material (1 to `MAX_NEEDS` = 4) with *have / need* and a mark (green when there's enough, red when short), a quantity stepper (− / +) and **Craft**.
   - **Below:** your backpack and hotbar, with all the inventory screen's gestures ([collecting and inventory](./collection-inventory.md)).
-  - **Keys:** ← → ↑ ↓ pick a recipe, − / + (or PgDn / PgUp) change the quantity, Enter crafts (Shift+Enter: as many as you can), Esc or E closes.
+  - **Keys:** ← → ↑ ↓ pick a recipe, − / + (or PgDn / PgUp) change the quantity, Enter crafts (Shift+Enter: as many as you can), E or Space closes (Esc too); they're listed in the help button's popover.
   - **Crafting:** a short hammering (0.6 s) with a knock and a progress bar, then the result flies from the detail into the slot it landed in, which pops, announced with where it went ("Crafted 8 planks: in hotbar slot 3."). Under reduced motion the slot only pops.
   - **Accessibility:** a labelled modal dialog; the recipe grid is a `listbox` with `aria-activedescendant`, focused on open, each option named with its recipe; the material slots, the stepper buttons and Craft have their own names; every selection and craft is announced; focus returns to the planet on close. Pointer: click a recipe, − / +, **Craft** (Shift+click: as many as you can), or click outside to close.
 
@@ -94,7 +94,7 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
   - **Look:** a little gabled doghouse on a stone-slab base, with a plank body and beam corners, a red roof (the default), a round doorway, a bone plaque over it and a food bowl.
   - **Collision:** solid.
   - **Chopper:** a `house` behaviour in his utility AI: when the house is near you and him, and more so when he's tired, he trots over and lies down in the doorway for 9–15 s (then a 70 s cooldown).
-- **Painting:** **Paint Chopper's house** (E) opens a palette: Original red (free) and the seven paints, each with how many pots you have (the ones you have none of are disabled). Arrow keys move between them, Enter or a click paints (one pot), Esc closes. The roof, the barge boards and the door's arch change colour at once, and the colour is saved.
+- **Painting:** **Paint Chopper's house** (E) opens a palette: Original red (free) and the seven paints, each with how many pots you have (the ones you have none of are disabled). Arrow keys move between them, Enter or a click paints (one pot), Space (or Esc, or E) closes. The roof, the barge boards and the door's arch change colour at once, and the colour is saved.
 
 ### 4.4 Keeping targets apart (`world/layout.ts`)
 

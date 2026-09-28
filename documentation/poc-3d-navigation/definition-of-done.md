@@ -41,10 +41,10 @@ Evidence types: **[U]** unit test · **[E]** Playwright E2E test (test build) ·
   (FR-20) **[U][M]**
 - [ ] Walking into range triggers, within 100 ms: the landmark reaction, its label, the **preview card**, and the **live-region text update**. Walking out past the exit radius dismisses them, without flicker at the edge of the range. (FR-21) **[U][E]**
 - [ ] At most **one** landmark is ever "nearby". Arbitration passes its tests: overlapping ranges, equal distances, handoff with the switch margin, and tie-break by order. (FR-21) **[U]**
-- [ ] **E / Enter / Space / click / tap** opens the landmark dialog. A press made up to 150 ms before arriving still counts; one made 151 ms before does not. (FR-22) **[U][E]**
+- [ ] **E / Enter / click / tap** opens the landmark dialog (Space is the back key: it closes it). A press made up to 150 ms before arriving still counts; one made 151 ms before does not. (FR-22) **[U][E]**
 - [ ] The dialog is a native modal:
   - focus moves into it and stays there
-  - **Esc**, the close button or browser **Back** closes it
+  - **Space**, **Esc**, the close button or browser **Back** closes it
   - focus returns to **whatever opened it** (or the game region)
   - movement is paused while it's open
 

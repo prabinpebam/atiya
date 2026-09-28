@@ -10,7 +10,7 @@ const TALK_CPS = 45;
 
 /**
  * Talking with one of the family (family.md §6): the name plate, the line typing out, and a "more"
- * marker. E / Enter / Space (or the button) completes the line, then goes on; Escape closes.
+ * marker. E / Enter (or the button) completes the line, then goes on; Space (or Escape) ends it.
  * Non-modal: the keys stay with the planet, and each line is announced in the live region.
  */
 export function TalkBox({ controller }: { controller: GameController }) {
@@ -59,7 +59,7 @@ export function TalkBox({ controller }: { controller: GameController }) {
           {done && last ? 'Bye' : 'Next'} <Icon icon={faCaretDown} className={done ? 'talk-more' : undefined} /> <kbd>E</kbd>
         </button>
         <button type="button" className="btn talk-close" aria-label="Stop talking" onClick={() => controller.endTalk()}>
-          <Icon icon={faXmark} />
+          <Icon icon={faXmark} /> <kbd>Space</kbd>
         </button>
       </div>
     </section>

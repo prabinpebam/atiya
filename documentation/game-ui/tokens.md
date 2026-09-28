@@ -310,7 +310,7 @@ The crafting screen (crafting-screen.md §4.3).
 
 | Token | Value | Resolves to | Use |
 |---|---|---|---|
-| `--c-recipe-cell` | `56px` |  | A recipe in the grid: an icon, no name. |
+| `--c-recipe-cell` | `64px` |  | A recipe in the book: an icon, no name (bigger than a backpack slot). |
 | `--c-recipe-result` | `72px` |  | The selected recipe's result slot. |
 
 ## `c.scrollbar` · Component

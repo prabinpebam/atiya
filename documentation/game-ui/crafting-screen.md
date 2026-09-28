@@ -8,7 +8,7 @@ This is the working spec and plan for the owner's review of the crafting table's
 
 The living rules are in [the design system](design-system.md); the crafting rules (recipes, bulk crafting, Chopper's house) are in [crafting.md](../poc-3d-navigation/crafting.md).
 
-> **TL;DR.** The crafting table opens one wood panel in the Minecraft layout: recipes on top, your backpack and hotbar below, so you can see and rearrange what you have while you craft. Recipes are a grid of big icons with no names, dimmed when you can't make them and marked with how many you can. The selected one shows on the right: the result, its name and line, and one slot per material (up to four), each showing what you have against what it takes, in green or red. When you craft, the result flies from the result slot into the backpack or hotbar slot it landed in, and that slot pops. The recipe grid has a thin scrollbar that reads on wood and on paper. The header's Sound and Menu are icon buttons, and the compass stands alone: turning and tilting move to the menu, next to the keys and the drag they stand in for.
+> **TL;DR.** The crafting table opens one wood panel of a fixed size in the Minecraft layout: the recipe book down the left, and the selected recipe over your backpack and hotbar on the right, so you can see and rearrange what you have while you craft. Nothing in it changes size as you pick a recipe. Recipes are a grid of big icons with no names, dimmed when you can't make them and marked with how many you can; empty slots fill the rest of the book. The selected one shows the result, its name and line, and four material slots (a recipe uses one to four), each showing what you have against what it takes, in green or red. The keys and gestures are in a popover on the help button in the header, not written out under the panel. When you craft, the result flies from the result slot into the backpack or hotbar slot it landed in, and that slot pops. The recipe grid has a thin scrollbar that reads on wood and on paper. The header's Sound and Menu are icon buttons, and the compass stands alone: turning and tilting move to the menu, next to the keys and the drag they stand in for.
 
 ## 1. Research: what the practice says
 
@@ -36,6 +36,11 @@ Anything marked *opinion* is a synthesis with no single source.
 
 - An icon button needs an accessible name ([WCAG 4.1.2](https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html)), and a toggle keeps one name with its state in `aria-pressed` ([WAI-ARIA APG: Button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)).
 - The hamburger icon for a menu is widely recognised when it's placed where menus usually are (top right or left), and a tooltip gives its name to sighted mouse users ([NN/g: Hamburger menus](https://www.nngroup.com/articles/find-navigation-mobile-even-hamburger/)).
+
+**A game panel, not a page.**
+
+- *Opinion* (owner review): a game's panels hold one size while you browse them, like Minecraft's crafting and inventory screens, whose slots and recipe book stay put as you pick. A panel that grows and shrinks with its text makes the slots jump under the pointer.
+- Help that only some players need goes behind a help button, shown on hover or focus. WCAG 1.4.13 (Content on Hover or Focus) asks that such a popover can be dismissed without moving the pointer (Escape), can be hovered itself, and stays until it's dismissed ([WCAG 1.4.13](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html)).
 
 **Removing the view pad.**
 
@@ -81,16 +86,25 @@ Anything marked *opinion* is a synthesis with no single source.
 
 ### 4.3 The crafting screen
 
-The layout, top to bottom:
+**A fixed size.** On a wide screen the panel is a two-column grid: the recipe book on the left (three recipe cells across), and on the right, as wide as the backpack, the detail over the backpack and the hotbar. Every part has a fixed size, so the panel doesn't move or change size as you pick a recipe (at 1280 × 800 it holds 708 × 603 px for every recipe):
+
+- the book takes the height the right-hand column gives it (`contain: size`, so its own content doesn't size the rows), and fills every row it has room for with empty slots (`useBookCells` measures it);
+- the result row is the result slot's height, with the name on one line (ellipsis) and the line clamped to two;
+- the materials row always shows four slots (the ones a recipe doesn't use are empty and faded);
+- the status line always takes two lines (clamped);
+- the crafting progress bar sits in the detail's bottom padding, so it pushes nothing.
+
+Below 760 px wide it's one column at the backpack's width: the book (two rows that scroll), the detail, the backpack and the hotbar. The panel scrolls as a whole when the screen is too short.
 
 | Part | What | Rules |
 |---|---|---|
-| Head | "Crafting table", the Move toggle (touch), Close | As the backpack screen. Every inventory panel stays below the top bar (the backdrop keeps its height clear), so the head is never under the header on a phone |
-| Recipes | A grid of recipe icons (`--c-recipe-cell`, 56 px), 5 across on a wide screen, as tall as its rows | No names; a count badge (×n you can make) on the ones you can; the others dimmed; the selected one ringed. A `listbox` with `aria-activedescendant` (focus stays on the list, which is simpler than a roving `tabindex` and what the old list did); each option's name: "Planks: 4 from 1 wood log. You can make 12.", and its tooltip the recipe's name. At most three rows show, then it scrolls (thin scrollbar) |
-| Detail | The result (`--c-recipe-result`, 72 px, its yield in the corner), name, line; **Materials**: one slot per ingredient (1 to `MAX_NEEDS` = 4), each with its icon and have / need, marked ✓ and green when there's enough, red when short; the quantity (− / +) and **Craft** | A line under it says what's missing in words, or how many you can make |
+| Head | "Crafting table", the help button, the Move toggle (touch), Close | As the backpack screen. Every inventory panel stays below the top bar (the backdrop keeps its height clear), so the head is never under the header on a phone |
+| Recipe book | A grid of recipe icons (`--c-recipe-cell`, 64 px, bigger than a backpack slot), three across, down the left, then empty slots | No names; a count badge (×n you can make) on the ones you can; the others dimmed; the selected one ringed. A `listbox` with `aria-activedescendant` (focus stays on the list, which is simpler than a roving `tabindex` and what the old list did); each option's name: "Planks: 4 from 1 wood log. You can make 12.", and its tooltip the recipe's name. The empty slots are `aria-hidden`. It scrolls (thin scrollbar) once the recipes outgrow it |
+| Detail | The result (`--c-recipe-result`, 72 px, its yield in the corner), name, line; **Materials**: four slots, one per ingredient (1 to `MAX_NEEDS` = 4), each with its icon and have / need, marked ✓ and green when there's enough, red when short; the quantity (− / +) and **Craft** | A line under it says what's missing in words, or how many you can make |
 | Backpack | 27 slots | The same slots, gestures and keys as the backpack screen (click, right-click, drag to spread, Shift+click moves to the hotbar and back, 1–9, Q, R) |
 | Hotbar | 9 slots | Selected slot marked, as in the backpack screen |
-| Help | The keys | Changes with the input (touch or keys) |
+
+**The help popover.** Every inventory panel (backpack, chest, crafting) has a help button (a question-mark icon, named "Show controls") in its head. Its popover lists the controls in two groups: the screen's own (crafting: the keys below) and the slots' (click, right-click, drag, the keys), switching to the touch gestures on touch. It opens while the pointer is over the button or the popover, or while the button has the focus; a press pins it open (touch), and it closes when the pointer or focus leaves, on a second press, or on <kbd>Escape</kbd> (WCAG 1.4.13). The panels have no help text of their own.
 
 **Keys:**
 
@@ -98,7 +112,7 @@ The layout, top to bottom:
 - **−** / **+** (or <kbd>PgDn</kbd> / <kbd>PgUp</kbd>) change the quantity;
 - <kbd>Enter</kbd> crafts, and <kbd>Shift</kbd>+<kbd>Enter</kbd> (or <kbd>Shift</kbd>+click on **Craft**) crafts as many as you can;
 - <kbd>Tab</kbd> goes on to the materials, the buttons and then the slots, which keep their own keys;
-- <kbd>Esc</kbd> or <kbd>E</kbd> closes.
+- <kbd>E</kbd> or <kbd>Space</kbd> closes (on a slot, <kbd>Space</kbd> is its right-click, so there <kbd>E</kbd> closes); <kbd>Esc</kbd> closes too ([design system §6.7](design-system.md)).
 
 **Materials, up to four.** A recipe lists 1 to 4 needs, and each need is one kind of material or a set that counts together (a paint takes "any three red flowers"). The detail shows one slot per need, in the recipe's order. Have / need counts every item that qualifies, and need is multiplied by the quantity.
 
@@ -138,4 +152,6 @@ The layout, top to bottom:
 | 5 | Up to four materials, each marked have / need | Unit (`crafting.test.ts`, "crafting screen"): every recipe has 1 to `MAX_NEEDS` distinct needs; E2E: the need slot reads 3 / 1 and is `ok`, then 1 / 2 and `short` | Done |
 | 6 | Crafting shows where the result went | Unit: `landedSlots` (topped-up and new slots, other items, the cap, a full backpack); E2E: "Crafted 8 planks: in hotbar slot 3." announced; the flight and pop seen on a real GPU | Done |
 | 7 | Thin scrollbar on wood and paper | One rule on `.dialog`, `.inv-panel` and `.scroll-thin`; seen on the crafting panel (phone) and the menu | Done |
-| 8 | Budgets met or a waiver proposed | `npm run verify:prod`: 449.0 KB initial (≤ 450), 88.1 KB on demand, over 87: the waiver is raised to 89 KB and proposed in [plan §6](../poc-3d-navigation/plan.md) | Waiver pending |
+| 8 | Budgets met or a waiver proposed | `npm run verify:prod`: 449.0 KB initial (≤ 450), 88.1 KB on demand, over 87: the waiver is raised to 89 KB and proposed in [plan §6](../poc-3d-navigation/plan.md). With the fixed layout and the help popover: 449.5 KB initial and 106.8 KB on demand, the waiver at 107 KB | Waiver pending |
+| 9 | The panel holds one size whatever recipe is picked | A real-GPU look at 1280 × 800: 708 × 603 px for planks, nails and orange paint (it was 660 × 707 to 724 before); at 700 px wide, one column at the backpack's width | Done |
+| 10 | The controls are in a help popover, not written under the panel | E2E "the crafting table…": the help button's popover shows the crafting keys on hover; the backpack and chest panels have the same button | Done |

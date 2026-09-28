@@ -7,6 +7,7 @@ export type GameAction =
   | 'right'
   | 'run'
   | 'interact'
+  | 'back'
   | 'menu'
   | 'rotateCcw'
   | 'rotateCw'
@@ -45,7 +46,8 @@ export const KEY_BINDINGS: Record<string, GameAction> = {
   KeyE: 'interact',
   Enter: 'interact',
   NumpadEnter: 'interact',
-  Space: 'interact',
+  // Space goes back: stands up, gets off, ends a conversation, closes a screen (E and Enter do)
+  Space: 'back',
   KeyM: 'menu',
   Escape: 'menu',
   // view: rotate with , and . (the < > keys), tilt with Page Up / Page Down
@@ -71,6 +73,13 @@ export const KEY_BINDINGS: Record<string, GameAction> = {
   Digit8: 'slot8',
   Digit9: 'slot9',
 };
+
+/**
+ * Space in a screen or dialog: go back (close it), unless the focus is on a control whose own key it is
+ * (a text field, a checkbox or a slider). Enter still activates the focused button.
+ */
+export const spaceBack = (e: { code: string; repeat: boolean; target: EventTarget | null }): boolean =>
+  e.code === 'Space' && !e.repeat && !(e.target as Element | null)?.closest?.('input:not([type=button]),select,textarea,[role=slider],[role=checkbox],[role=switch],[role=radio]');
 
 export class KeyboardInput {
   private readonly held = new Set<GameAction>();

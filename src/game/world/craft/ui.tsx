@@ -42,6 +42,7 @@ const needText = (needs: Recipe['needs']) => needs.map((n) => `${n.n} ${n.any.le
  */
 function CraftScreen({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
   useStore(controller.store, (s) => s.invVersion);
+  const touch = useStore(controller.store, (s) => s.input === 'touch');
   return (
     <InventoryPanel
       controller={controller}
@@ -51,23 +52,62 @@ function CraftScreen({ controller, crafting }: { controller: GameController; cra
       icon={faHammer}
       onClose={() => controller.closeCraft()}
       top={<CraftPane controller={controller} crafting={crafting} />}
+      help={{ title: 'Crafting', keys: touch ? CRAFT_TOUCH : CRAFT_KEYS }}
     />
   );
 }
+
+/** The crafting screen's controls, for its help popover. */
+const CRAFT_KEYS: ReadonlyArray<readonly [string, string]> = [
+  ['Arrow keys', 'pick a recipe'],
+  ['− and +', 'how many'],
+  ['Enter', 'craft'],
+  ['Shift+Enter', 'as many as you can'],
+  ['E or Space', 'close'],
+];
+const CRAFT_TOUCH: ReadonlyArray<readonly [string, string]> = [
+  ['Tap a recipe', 'see what it takes'],
+  ['Craft', 'make it'],
+];
 
 /** How many columns the recipe grid shows (it reflows with the screen). */
 const columns = (el: HTMLElement | null) => Math.max(1, el ? getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length : 5);
 
 /**
+ * The recipe book's cells, recipes first and then empty slots to fill every row it has room for (a
+ * game's slot grid, not a list that ends mid-row): measured, since the book is as tall as the panel.
+ */
+function useBookCells(grid: { current: HTMLElement | null }, n: number): number {
+  const [cells, setCells] = useState(n);
+  useEffect(() => {
+    const el = grid.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const fit = () => {
+      const cs = getComputedStyle(el);
+      const cell = parseFloat(cs.gridAutoRows) || 56;
+      const gap = parseFloat(cs.rowGap) || 0;
+      const rows = Math.max(1, Math.floor((el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) + gap) / (cell + gap)));
+      const cols = columns(el);
+      setCells(Math.max(Math.ceil(n / cols) * cols, rows * cols));
+    };
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    fit();
+    return () => ro.disconnect();
+  }, [grid, n]);
+  return cells;
+}
+
+/**
  * The recipes as a grid of icons (the names are in the detail and the tooltips), and the selected one:
- * the result, a slot per material (have / need), how many, and Craft. ← → ↑ ↓ pick, − / + how many,
- * Enter crafts (Shift+Enter: as many as you can), Esc or E closes.
+ * the result, a slot per material (have / need), how many, and Craft. The arrow keys pick, − / + how
+ * many, Enter crafts (Shift+Enter: as many as you can), E or Space closes. Every part has a fixed size,
+ * so nothing moves as you pick (crafting-screen.md §4.3).
  */
 function CraftPane({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
   const busy = useStore(crafting.store, (s) => s.crafting);
   const landed = useStore(crafting.store, (s) => s.landed);
   const reduced = useStore(controller.store, selectReducedMotion);
-  const touch = useStore(controller.store, (s) => s.input === 'touch');
   const inv = controller.inventory;
   const [sel, setSel] = useState(0);
   const [qty, setQty] = useState(1);
@@ -77,6 +117,7 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
   const max = maxCraftable(inv, r);
   const q = Math.max(1, Math.min(qty, Math.max(1, max)));
   const short = byMaterials(inv, r) > 0 && max === 0;
+  const cells = useBookCells(grid, RECIPES.length);
 
   useEffect(() => {
     grid.current?.focus({ preventScroll: true });
@@ -173,48 +214,48 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
 
   return (
     <div className="craft-body" onKeyDown={onKey}>
-      <ul
-        ref={grid}
-        className="craft-grid scroll-thin"
-        role="listbox"
-        aria-label="Recipes"
-        aria-orientation="horizontal"
-        tabIndex={0}
-        aria-activedescendant={`recipe-${r.id}`}
-      >
-        {RECIPES.map((x, i) => {
-          const can = maxCraftable(inv, x) * x.yield;
-          const name = itemDef(x.out).name;
-          return (
-            <li
-              key={x.id}
-              id={`recipe-${x.id}`}
-              role="option"
-              aria-selected={i === sel}
-              aria-label={`${name}: ${x.yield > 1 ? `${x.yield} from ${needText(x.needs)}` : needText(x.needs)}. You can make ${can}.`}
-              title={name}
-              data-index={i}
-              data-testid={`recipe-${x.id}`}
-              className={`slot craft-cell${i === sel ? ' on' : ''}${can ? '' : ' dim'}`}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                grid.current?.focus({ preventScroll: true });
-                pick(i);
-              }}
-            >
-              <ItemIcon id={x.out} />
-              {can > 0 && <span className="slot-count craft-can">×{can}</span>}
-            </li>
-          );
-        })}
-      </ul>
+      <div className="craft-book">
+        <h3 className="craft-sub" aria-hidden="true">
+          Recipes
+        </h3>
+        <ul ref={grid} className="craft-grid scroll-thin" role="listbox" aria-label="Recipes" aria-orientation="horizontal" tabIndex={0} aria-activedescendant={`recipe-${r.id}`}>
+          {RECIPES.map((x, i) => {
+            const can = maxCraftable(inv, x) * x.yield;
+            const name = itemDef(x.out).name;
+            return (
+              <li
+                key={x.id}
+                id={`recipe-${x.id}`}
+                role="option"
+                aria-selected={i === sel}
+                aria-label={`${name}: ${x.yield > 1 ? `${x.yield} from ${needText(x.needs)}` : needText(x.needs)}. You can make ${can}.`}
+                title={name}
+                data-index={i}
+                data-testid={`recipe-${x.id}`}
+                className={`slot craft-cell${i === sel ? ' on' : ''}${can ? '' : ' dim'}`}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  grid.current?.focus({ preventScroll: true });
+                  pick(i);
+                }}
+              >
+                <ItemIcon id={x.out} />
+                {can > 0 && <span className="slot-count craft-can">×{can}</span>}
+              </li>
+            );
+          })}
+          {Array.from({ length: cells - RECIPES.length }, (_, k) => (
+            <li key={`empty-${k}`} className="slot craft-cell empty" aria-hidden="true" role="presentation" />
+          ))}
+        </ul>
+      </div>
       <section className="craft-detail" aria-labelledby="craft-detail-name" data-testid="craft-detail">
         <div className="craft-result">
           <span ref={result} className="slot craft-big" data-testid="craft-result">
             <ItemIcon id={r.out} />
             {r.yield > 1 && <span className="slot-count">{r.yield}</span>}
           </span>
-          <div>
+          <div className="craft-what">
             <h3 id="craft-detail-name">{itemDef(r.out).name}</h3>
             <p className="craft-line">{r.line}</p>
           </div>
@@ -225,7 +266,13 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
             const need = n.n * q;
             const ok = have >= need;
             return (
-              <li key={n.label} className={`craft-need ${ok ? 'ok' : 'short'}`} data-testid="craft-need" aria-label={`${n.label}: you have ${have}, it takes ${need}${ok ? '' : `, ${need - have} short`}`} title={n.label}>
+              <li
+                key={n.label}
+                className={`craft-need ${ok ? 'ok' : 'short'}`}
+                data-testid="craft-need"
+                aria-label={`${n.label}: you have ${have}, it takes ${need}${ok ? '' : `, ${need - have} short`}`}
+                title={n.label}
+              >
                 <span className="slot craft-icon" aria-hidden="true">
                   <ItemIcon id={n.icon} />
                   <span className="craft-mark">
@@ -238,6 +285,11 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
               </li>
             );
           })}
+          {Array.from({ length: MAX_NEEDS - Math.min(MAX_NEEDS, r.needs.length) }, (_, k) => (
+            <li key={`none-${k}`} className="craft-need none" aria-hidden="true">
+              <span className="slot craft-icon" />
+            </li>
+          ))}
         </ul>
         <div className="craft-go">
           <div className="craft-qty" role="group" aria-label="How many">
@@ -262,17 +314,18 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
             <Icon icon={faHammer} /> Craft <kbd>Enter</kbd>
           </button>
         </div>
+        <p className="craft-status" data-testid="craft-status">
+          {max < 1
+            ? short
+              ? 'Your backpack is too full: make some room first.'
+              : `Not enough yet: it takes ${needText(r.needs)}.`
+            : `You can make up to ${max * r.yield} ${plural(r.out, max * r.yield).toLowerCase()}.`}
+        </p>
         {busy && (
           <div className="craft-progress" aria-hidden="true" style={{ ['--craft-s' as string]: `${CRAFT_S}s` }}>
             <span />
           </div>
         )}
-        <p className="craft-status" data-testid="craft-status">
-          {max < 1 ? (short ? 'Your backpack is too full: make some room first.' : `Not enough yet: it takes ${needText(r.needs)}.`) : `You can make up to ${max * r.yield} ${plural(r.out, max * r.yield).toLowerCase()}.`}
-        </p>
-        <p className="inv-help" aria-hidden="true">
-          {touch ? 'Tap a recipe, then Craft' : 'Arrows: pick · − +: how many · Enter: craft (Shift: as many as you can) · Esc: close'}
-        </p>
       </section>
     </div>
   );
@@ -285,13 +338,16 @@ function PaintPicker({ controller, crafting }: { controller: GameController; cra
   const opts = paintOptions(controller.inventory);
   const btns = useRef<Array<HTMLButtonElement | null>>([]);
   useEffect(() => {
-    const i = Math.max(0, opts.findIndex((o) => o.colour === colour));
+    const i = Math.max(
+      0,
+      opts.findIndex((o) => o.colour === colour),
+    );
     btns.current[i]?.focus({ preventScroll: true });
     // (only on open)
   }, []);
   const close = () => controller.closeCraft();
   const onKey = (e: KeyboardEvent) => {
-    if (e.code === 'Escape' || (e.code === 'KeyE' && !e.repeat)) {
+    if (e.code === 'Escape' || (e.code === 'Space' && !e.repeat) || (e.code === 'KeyE' && !e.repeat)) {
       e.preventDefault();
       close();
       return;
@@ -311,7 +367,7 @@ function PaintPicker({ controller, crafting }: { controller: GameController; cra
             <Icon icon={faPaintRoller} /> Paint Chopper&rsquo;s house
           </h2>
           <button type="button" className="btn" aria-label="Close the palette" onClick={close}>
-            <Icon icon={faXmark} />
+            <Icon icon={faXmark} /> <kbd>Space</kbd>
           </button>
         </div>
         <div className="paint-grid">
@@ -339,7 +395,7 @@ function PaintPicker({ controller, crafting }: { controller: GameController; cra
             );
           })}
         </div>
-        <p className="inv-help">Each coat uses one pot of paint. Make paint from three flowers of a colour at the crafting table. Esc closes.</p>
+        <p className="inv-help">Each coat uses one pot of paint. Make paint from three flowers of a colour at the crafting table.</p>
       </div>
     </div>
   );

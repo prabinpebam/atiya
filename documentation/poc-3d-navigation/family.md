@@ -13,7 +13,7 @@ any of them and press E to chat.*
 | Ambient NPC life | **Smart objects** advertise what they're for (a chair: "sit, read"; the pond's edge: "throw pebbles"; a mat: "paint, play"), and a **utility AI** scores them against the NPC's personality and state, with no-repeat memory and cooldowns so patterns don't show. Time-of-day **schedules** bias the choice | The Sims (smart objects / advertising); Stardew Valley and Animal Crossing schedules; Dave Mark's utility AI ([CenterConsulting on smart objects](https://www.centerconsulting.com/ai-library/concepts/smart-objects), [Ambient NPC Behavior Framework](https://github.com/EricBL3/ambient-npc-behavior-framework)) |
 | NPC ↔ NPC life | Pairs meet and "talk" (face each other, gesture, speech-bubble barks), so the world looks social without any player involvement | Animal Crossing villagers chatting; Stardew Valley NPC pairs |
 | Talking to an NPC | Walk up, a prompt appears; press the action button; the NPC **stops and turns to face you**; a **dialog box** with a **name plate** shows the line with a **typewriter reveal**; one press completes the line, the next press advances; a blinking "more" marker; the last press closes. Lines come from **preset pools**, context-aware (time of day, what they're doing), never repeating straight away | Animal Crossing: New Horizons, Stardew Valley, Zelda ([Unity dialogue system notes](https://uhiyama-lab.com/en/notes/unity/unity-dialogue-system/), [Stardew Dialogue Display Framework](https://www.nexusmods.com/stardewvalley/mods/11661)) |
-| Accessibility of game dialog | Text stays until dismissed (no auto-advance), readable size and contrast, everything announced in a live region, Escape closes, the reveal is skippable (and instant under Reduce motion) | WCAG 2.2 (2.2.1 timing, 1.4.3 contrast); Game Accessibility Guidelines ("allow text to be skipped"; "don't auto-advance") |
+| Accessibility of game dialog | Text stays until dismissed (no auto-advance), readable size and contrast, everything announced in a live region, one key closes (Space, as built; Escape too), the reveal is skippable (and instant under Reduce motion) | WCAG 2.2 (2.2.1 timing, 1.4.3 contrast); Game Accessibility Guidelines ("allow text to be skipped"; "don't auto-advance") |
 | Characters on a shared rig | One rigged model, per-character **skins** on the same UV atlas, accessories parented to bones (hair, glasses), children by scaling the rig (with a slightly larger head) | Standard practice (Kenney's own skins; the project's Sunny) |
 | Poses beyond the clips | Procedural bone aiming (the project's `aimBone`) over the idle/run clips: sit, read, lie, crawl, throw, crouch | The project's action and seat poses |
 | Cosy dwellings at night | Warm window glow, a porch lantern, a campfire that's a real light source with a flicker, string lights; smoke by day, embers by night | Animal Crossing / cosy-game lighting; the project's lamplight system |
@@ -137,8 +137,8 @@ the home (within 7 u of it, never into the pond).
 - **E:** the NPC pauses what they're doing (a sitter stays seated), turns to face you and gestures;
   the **dialog box** slides up at the bottom: the name plate, the line with a typewriter reveal
   (≈ 45 characters/s; instant under Reduce motion), and a blinking "more" marker.
-  - **E, Enter, Space or a click:** completes the line if it's still typing, else the next line;
-    after the last, it closes. **Esc** closes at any time. Movement is paused while talking.
+  - **E, Enter or a click:** completes the line if it's still typing, else the next line;
+    after the last, it closes. **Space** (or **Esc**, or the close button) closes at any time. Movement is paused while talking.
   - A conversation is 2–3 lines: a greeting that fits the time of day, then one or two from the
     NPC's pool that fit what they were doing, no line repeating until the pool is used up.
   - Every line is announced in the live region; the box is a labelled, non-modal `role="dialog"`,
@@ -150,7 +150,7 @@ the home (within 7 u of it, never into the pond).
 - **Prompt:** in front of the pond bench, **Sit on the bench** (E), as on the bridge bench. The
   visitor sits on one end of it (`Furniture.sitSide`), the family on the other.
 - **Seated there,** the focus lane shows two buttons: **Feed the ducks** (E, a bread-slice icon)
-  and **Stand up** (Escape; a movement key also stands you up). The live region says so when you sit.
+  and **Stand up** (Space; Escape or a movement key also stands you up). The live region says so when you sit.
 - **Feed the ducks:** a handful of crumbs arcs from the bench to the water (6 crumbs, landing well
   inside the pond, `FEED.inset` of the way in from the shore) with a ripple, then floats and fades
   over 5 s. At most one handful per 0.9 s per feeder. The first handful is announced.

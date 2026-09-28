@@ -52,7 +52,7 @@ Captured on Chromium with touch emulation (iPhone 13 size, 390 × 844 and 844 ×
 |---|---|---|
 | A1 | One-finger drag turns and tilts the view | The most natural thumb gesture doesn't move you |
 | A2 | Walking is tap-to-walk only | No steering, no stopping, no running control |
-| A3 | Prompts and the preview card show <kbd>E</kbd> / <kbd>Esc</kbd>; hotbar slots show 1 to 9 | Glyphs for keys the device doesn't have |
+| A3 | Prompts and the preview card show <kbd>E</kbd> / <kbd>Space</kbd>; hotbar slots show 1 to 9 | Glyphs for keys the device doesn't have |
 | A4 | The start card says "Walk with W A S D"; the controls hint lists only keys; "Press E to open" is announced | Wrong instructions for touch |
 | A5 | View buttons are 34 px, Reset 40 px | Under the 44 px rule |
 | A6 | Hotbar slots are 28 px on a 360–390 px portrait phone | Over WCAG's 24 px minimum, under 44 px: nine slots plus two buttons must fit |

@@ -6,6 +6,7 @@ import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
+import { spaceBack } from '../input/keyboard';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -37,6 +38,11 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
         e.preventDefault();
         controller.requestCloseLandmark();
       }}
+      onKeyDown={(e) => {
+        if (!spaceBack(e)) return;
+        e.preventDefault();
+        controller.requestCloseLandmark();
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) controller.requestCloseLandmark();
       }}
@@ -58,7 +64,7 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
               Classic page <Icon icon={faArrowUpRightFromSquare} />
             </a>
             <button className="btn" type="button" onClick={() => controller.requestCloseLandmark()}>
-              Close
+              Close <kbd>Space</kbd>
             </button>
           </div>
         </article>

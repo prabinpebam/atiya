@@ -24,7 +24,7 @@ export function GameApp({ controller }: { controller: GameController }) {
         className="game-region"
         tabIndex={0}
         role="region"
-        aria-label="Planet explorer — use arrow keys or W A S D to move, Shift to run, E to open a place or use what you stand at (shake a tree, mine a boulder, pick a flower, open the chest, meet Chopper), F to whistle for Chopper, I for the backpack, 1 to 9 for the hotbar, Q to drop, M for the menu. Comma and period rotate the view, Page Up and Page Down tilt it, N faces north, H returns to the plaza."
+        aria-label="Planet explorer — use arrow keys or W A S D to move, Shift to run, E to open a place or use what you stand at (shake a tree, mine a boulder, pick a flower, open the chest, meet Chopper), Space to close it, stand up or stop talking, F to whistle for Chopper, I for the backpack, 1 to 9 for the hotbar, Q to drop, M for the menu. Comma and period rotate the view, Page Up and Page Down tilt it, N faces north, H returns to the plaza."
         aria-describedby="planet-help"
         onKeyDown={controller.onKeyDown}
         onKeyUp={controller.onKeyUp}

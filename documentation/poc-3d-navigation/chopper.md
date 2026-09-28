@@ -110,7 +110,7 @@ A utility-AI selector over the behaviours below. Each scores itself 0…1 from t
 - **The profile card** (`ui/ChopperCard.tsx`):
   - **Layout:** a dialog with his real photo (photo 1, plus photo 2 as a thumbnail you can switch to), his name, breed and coat, what he loved, and an *in loving memory* line.
   - **The 3D Chopper:** beside it, in its own small canvas (created only while the card is open), cycling through the idle clips in random order with no repeats: `sit`, `scratch`, `pant`, `sniffGround`, `headTilt`, `lie`, `shake`, `playBow`, tail wagging. You can drag to turn him.
-  - **Behaviour:** Esc or Close closes it, and focus returns as for other dialogs. It has a text alternative for everything shown.
+  - **Behaviour:** Space, Esc or Close closes it, and focus returns as for other dialogs. It has a text alternative for everything shown.
 - **The whistle:** <kbd>F</kbd> or the whistle button beside the backpack. It plays the whistle sound, and he answers with a bark and comes. There's a 2 s cooldown.
 - **Rabbits:** they treat him as a second threat, with the same flee rules as for the character.
 

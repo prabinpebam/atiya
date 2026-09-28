@@ -750,9 +750,16 @@ export class GameController {
     const s = this.store.getState();
     if (s.phase !== 'playing') return;
     if (s.talk) {
-      // talking with one of the family: E / Enter / Space go on, Escape (or M) ends it, nothing else moves
+      // talking with one of the family: E / Enter go on, Space (or Escape, M) ends it, nothing else moves
       if (!e.repeat && action === 'interact' && performance.now() - this.talkOpenedAt >= TALK_GUARD_MS) this.advanceTalk();
-      else if (!e.repeat && action === 'menu') this.endTalk();
+      else if (!e.repeat && (action === 'menu' || action === 'back')) this.endTalk();
+      return;
+    }
+    if (action === 'back') {
+      // Space goes back: off the bench or the swing, or out of an action (Escape does too)
+      if (e.repeat) return;
+      if (this.seatMotion.seated) this.standUp();
+      else this.cancelAction();
       return;
     }
     if (action === 'interact') {
@@ -813,7 +820,7 @@ export class GameController {
     const lane = focusLane(s);
     if (lane === 'talk') this.advanceTalk();
     else if (lane === 'stand' || this.seatMotion.seated) {
-      // on the pond bench E feeds the ducks and on the swing it swings higher (Escape or a movement key stands
+      // on the pond bench E feeds the ducks and on the swing it swings higher (Space or a movement key stands
       // you up); elsewhere it stands you up
       const act = this.seatMotion.stage === 'seated' ? this.seatMotion.seat?.action : undefined;
       if (s.canFeed) this.feedDucks();
@@ -831,7 +838,7 @@ export class GameController {
   sitDown(): void {
     const s = this.store.getState();
     const seat = this.targets.find((x) => x.key === s.target?.key)?.seat;
-    if (seat) this.sitOn(seat, seat.byPond ? 'Sitting on the bench by the pond. Press E to feed the ducks, or Escape to stand up.' : 'Sitting on the bench. Press Escape to stand up.');
+    if (seat) this.sitOn(seat, seat.byPond ? 'Sitting on the bench by the pond. Press E to feed the ducks, or Space to stand up.' : 'Sitting on the bench. Press Space to stand up.');
   }
 
   /** Sit on `seat` (a bench, or a chunk's seat: the swing), announcing `text`. False if you can't now. */
@@ -859,7 +866,7 @@ export class GameController {
     if (feed.toss('visitor', seat.sit, { n: pond.n, shore: (n) => this.terrain.pondShore(n) }, CONFIG.planetRadius) && first) this.announce('Crumbs on the water: the ducks are coming.');
   }
 
-  /** Stand up from the bench (Escape, E, a movement key, a click, or the prompt's button). */
+  /** Stand up from the bench (Space, Escape, E, a movement key, a click, or the prompt's button). */
   standUp(): void {
     if (!this.seatMotion.seated) return;
     this.seatMotion.stand(this.sim.pLocal);
@@ -1387,7 +1394,7 @@ export class GameController {
     this.store.setState({ openId: id, menuOpen: false });
   }
 
-  /** Close via UI (Esc / close button): goes through history when the game owns the entry. */
+  /** Close via UI (Space, Esc, the close button): goes through history when the game owns the entry. */
   requestCloseLandmark(): void {
     const { openId } = this.store.getState();
     if (!openId) return;

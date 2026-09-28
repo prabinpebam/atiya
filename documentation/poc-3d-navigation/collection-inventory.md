@@ -116,7 +116,7 @@ Changing the selection shows the item's name above the hotbar for 2 s, as Minecr
 | <kbd>1</kbd>–<kbd>9</kbd> while hovering a slot | Swap that slot with hotbar slot N | — |
 | <kbd>Q</kbd> / <kbd>Ctrl</kbd>+<kbd>Q</kbd> while hovering a slot | Drop one / the whole stack into the world | — |
 | Click outside the panel | — | Left: throw the whole cursor stack; right: throw one |
-| <kbd>Esc</kbd>, <kbd>E</kbd> or <kbd>I</kbd> | Close the screen | Close; the cursor stack goes back into the backpack (§4.1), and anything that doesn't fit is dropped at your feet |
+| <kbd>E</kbd>, <kbd>I</kbd>, <kbd>Space</kbd> (off a slot) or <kbd>Esc</kbd> | Close the screen | Close; the cursor stack goes back into the backpack (§4.1), and anything that doesn't fit is dropped at your feet |
 
 Two Minecraft Java inputs have nothing to act on here: the planet has no off-hand (so no <kbd>F</kbd> swap) and no Creative mode (so no middle-click clone or middle-drag). The middle button sorts instead, as the Inventory Tweaks mod does.
 
@@ -157,7 +157,7 @@ Two Minecraft Java inputs have nothing to act on here: the planet has no off-han
 - **Long-press, then drag:** one in each slot (the right-drag).
 - **Double-tap** with a stack held: gather.
 - A **Move** toggle in the panel makes taps and drags quick-move instead (tap the same slot twice quickly: every stack of that item). The section tools grow to 44 px.
-- The help line under the grid switches to these gestures on touch.
+- The help button's popover in the panel's head ("Show controls") switches to these gestures on touch; the panel has no help text of its own ([crafting screen §4.3](../game-ui/crafting-screen.md)).
 
 **Presentation:**
 - **Slots:** square slots on a dark translucent panel, with an inset bevel, as in Minecraft. The count sits bottom-right in bold white with a dark drop shadow, and is hidden for 1.

@@ -404,7 +404,8 @@ test.describe('view controls', () => {
     const pitch = (await state(page)).pitch;
     await page.getByRole('button', { name: /^Tilt to side/ }).click();
     await expect.poll(async () => (await state(page)).pitch).toBeLessThan(pitch - 1);
-    await page.keyboard.press('Escape');
+    // Space closes the menu, even with one of its buttons focused (Enter presses that)
+    await page.keyboard.press('Space');
     await expect(page.getByRole('group', { name: 'Turn and tilt the view' })).toBeHidden();
     await compass.click();
     await expect.poll(async () => (await state(page)).north).toBeCloseTo(0, 1);
@@ -829,7 +830,7 @@ test.describe('touch', () => {
 });
 
 test.describe('benches', () => {
-  test('walking up to the plaza bench offers a seat; E sits, Escape stands up (not the menu), and a movement key stands up and walks off', async ({ page }) => {
+  test('walking up to the plaza bench offers a seat; E sits, Space stands up (not the menu), and a movement key stands up and walks off', async ({ page }) => {
     test.setTimeout(120_000);
     await startPlanet(page);
     const prompt = page.getByTestId('seat-prompt');
@@ -844,8 +845,9 @@ test.describe('benches', () => {
     expect(s.seatPose).toBe(1);
     expect(s.benchD).toBeLessThan(0.1);
     await expect(prompt.getByRole('button', { name: /Stand up/ })).toBeVisible();
-    // Escape stands up in front of the bench, and doesn't open the menu
-    await page.keyboard.press('Escape');
+    await expect(prompt.getByRole('button', { name: /Stand up/ }).locator('kbd')).toHaveText('Space');
+    // Space stands up in front of the bench, and doesn't open the menu
+    await page.keyboard.press('Space');
     await expect.poll(async () => (await state(page)).seatStage, { timeout: 30_000 }).toBeNull();
     s = await state(page);
     expect(s.menuOpen).toBe(false);
@@ -865,7 +867,7 @@ test.describe('benches', () => {
     expect(s.seatStage).toBeNull();
   });
 
-  test('on the pond bench E feeds the ducks (crumbs on the water, the ducks drawn to them) and Escape stands up', async ({ page }) => {
+  test('on the pond bench E feeds the ducks (crumbs on the water, the ducks drawn to them) and Escape stands up too (Space is the key shown)', async ({ page }) => {
     test.setTimeout(150_000);
     await startPlanet(page);
     const prompt = page.getByTestId('seat-prompt');
@@ -874,7 +876,7 @@ test.describe('benches', () => {
     await expect(prompt.getByRole('button', { name: /Sit on the bench/ })).toBeVisible();
     await page.keyboard.press('KeyE');
     await expect.poll(async () => (await state(page)).seatStage, { timeout: 30_000 }).toBe('seated');
-    // two choices: feed the ducks (E) or stand up (Escape)
+    // two choices: feed the ducks (E) or stand up (Space)
     await expect(prompt.getByRole('button', { name: /Feed the ducks/ })).toBeVisible();
     await expect(prompt.getByRole('button', { name: /Stand up/ })).toBeVisible();
     expect((await ducks()).canFeed).toBe(true);
@@ -895,7 +897,7 @@ test.describe('benches', () => {
     await prompt.getByRole('button', { name: /Feed the ducks/ }).click();
     await expect.poll(async () => (await ducks()).fed, { timeout: 30_000 }).toBe(2);
     await expect(page.locator('.game-region')).toBeFocused();
-    // Escape stands up, and the feeding choice goes with the seat
+    // Escape stands up as well as Space, and the feeding choice goes with the seat
     await page.keyboard.press('Escape');
     await expect.poll(async () => (await state(page)).seatStage, { timeout: 30_000 }).toBeNull();
     d = await ducks();
@@ -945,7 +947,7 @@ test.describe('Chopper', () => {
     await expect(page.locator('.game-region')).toBeFocused();
   });
 
-  test('Meet Chopper: E opens his card with his photo and a 3D Chopper; it passes axe; Esc closes it and hands back the planet', async ({ page }) => {
+  test('Meet Chopper: E opens his card with his photo and a 3D Chopper; it passes axe; Space closes it (even on a button) and hands back the planet', async ({ page }) => {
     test.setTimeout(120_000);
     await startPlanet(page);
     await page.evaluate(() => {
@@ -967,8 +969,8 @@ test.describe('Chopper', () => {
     // the other photo
     await card.getByRole('button', { name: 'Photo 2' }).click();
     await expect(photo).toHaveAttribute('src', /chopper-2/);
-    // Escape closes it (not the menu), and the keys go back to the planet
-    await page.keyboard.press('Escape');
+    // Space closes it (not the menu), even with a photo button focused, and the keys go back to the planet
+    await page.keyboard.press('Space');
     await expect(card).toBeHidden();
     const s = await state(page);
     expect(s.chopperOpen).toBe(false);
@@ -1242,7 +1244,7 @@ test.describe('home & family', () => {
     expect((await family(page)).every((p) => !p.indoors)).toBe(true);
   });
 
-  test('talk to Rojina: E opens the dialog with her name, E finishes and goes on, Escape ends it and hands back the planet', async ({ page }) => {
+  test('talk to Rojina: E opens the dialog with her name, E finishes and goes on, Space ends it and hands back the planet', async ({ page }) => {
     test.setTimeout(120_000);
     await startPlanet(page);
     await page.evaluate(() => {
@@ -1273,7 +1275,9 @@ test.describe('home & family', () => {
     await page.waitForTimeout(400);
     await page.keyboard.up('KeyW');
     expect((await state(page)).pLocal).toEqual(at);
-    await page.keyboard.press('Escape');
+    // Space ends it (the close button says so)
+    await expect(box.getByRole('button', { name: 'Stop talking' }).locator('kbd')).toHaveText('Space');
+    await page.keyboard.press('Space');
     await expect(box).toBeHidden();
     s = await state(page);
     expect(s.talk).toBeNull();
@@ -1566,7 +1570,7 @@ test.describe("crafting & Chopper's house", () => {
     await expect.poll(async () => (await look()).lid, { timeout: 20_000 }).toBeLessThan(0.01);
   });
 
-  test('the crafting table: its own prompt, the recipe grid over the backpack, have / need, bulk crafting by keyboard, the landing, Esc hands back the planet', async ({ page }) => {
+  test('the crafting table: its own prompt, the recipe book beside the backpack at a fixed size, the controls in a help popover, have / need, bulk crafting by keyboard, the landing, Space hands back the planet', async ({ page }) => {
     test.setTimeout(150_000);
     await startPlanet(page);
     await give(page, [
@@ -1592,6 +1596,17 @@ test.describe("crafting & Chopper's house", () => {
     await expect(screen.getByTestId('craft-need').first()).toContainText('3 / 1');
     await expect(screen.getByTestId('craft-need').first()).toHaveClass(/ok/);
     await expect(screen.getByTestId('recipe-planks')).toContainText('×12');
+    // the controls are behind the help button (shown on hover), not written under the panel
+    const help = screen.getByTestId('help-card');
+    await expect(help).toBeHidden();
+    await screen.getByTestId('help-button').hover();
+    await expect(help).toBeVisible();
+    await expect(help).toContainText('Shift+Enter');
+    await expect(help).toContainText('Right-click');
+    await page.mouse.move(2, 400);
+    await expect(help).toBeHidden();
+    const size = () => screen.locator('.inv-panel').evaluate((el: HTMLElement) => `${el.offsetWidth}x${el.offsetHeight}`);
+    const shown = await size();
     // + two at once, Enter crafts (a short hammering)
     await page.keyboard.press('Equal');
     await expect(screen.getByTestId('craft-qty')).toHaveText('8');
@@ -1608,6 +1623,8 @@ test.describe("crafting & Chopper's house", () => {
     await expect(screen.getByRole('option', { name: /Wooden beam/ })).toHaveAttribute('aria-selected', 'true');
     await expect(screen.getByTestId('craft-need').first()).toContainText('1 / 2');
     await expect(screen.getByTestId('craft-need').first()).toHaveClass(/short/);
+    // the panel holds its size whatever is picked
+    expect(await size()).toBe(shown);
     await page.keyboard.press('Enter');
     await fastForward(page, 1);
     expect(count((await inv(page)).backpack, 'beam')).toBe(0);
@@ -1618,7 +1635,8 @@ test.describe("crafting & Chopper's house", () => {
     i = await inv(page);
     expect(count(i.backpack, 'slab')).toBe(1);
     expect(count(i.backpack, 'stone')).toBe(2);
-    await page.keyboard.press('Escape');
+    expect(await size()).toBe(shown);
+    await page.keyboard.press('Space');
     await expect(screen).toHaveCount(0);
     await expect(page.locator('.game-region')).toBeFocused();
     expect((await state(page)).phase).toBe('playing');
@@ -1670,7 +1688,7 @@ test.describe("crafting & Chopper's house", () => {
     expect([count(i.backpack, 'rope'), count(i.backpack, 'planks')]).toEqual([0, 0]);
     await expect(page.getByTestId('site-card')).toHaveCount(0);
     await expect(page.getByTestId('live-region')).toContainText('You build the swing!');
-    // ride it (swing.md §6): sit on it, E pumps it higher, Escape gets off and it settles
+    // ride it (swing.md §6): sit on it, E pumps it higher, Space gets off and it settles
     await expect(prompt(page).getByRole('button', { name: /Sit on the swing/ })).toBeVisible();
     await page.keyboard.press('KeyE');
     await fastForward(page, 1);
@@ -1694,7 +1712,7 @@ test.describe("crafting & Chopper's house", () => {
       return peak;
     });
     expect(peak).toBeGreaterThan(0.2);
-    await page.keyboard.press('Escape');
+    await page.keyboard.press('Space');
     await fastForward(page, 1);
     expect((await craft(page)).swing!.rider).not.toBe('visitor');
     expect((await page.evaluate(() => (window as any).__game.getState())).seated).toBe(false);
@@ -1785,13 +1803,13 @@ test.describe("crafting & Chopper's house", () => {
     }
     const top = await page.evaluate(() => (window as any).__game.groundInfo());
     expect(top.walk).toBeCloseTo((await deck()).deckH, 2);
-    // the bench: sit and look out; Escape stands up
+    // the bench: sit and look out; Space stands up
     expect(await g('nearTarget', 'bench', 'deck:bench')).toBe('deck:bench');
     await expect(prompt(page).getByRole('button', { name: /Sit on the bench/ })).toBeVisible();
     await page.keyboard.press('KeyE');
     await fastForward(page, 1);
     expect((await deck()).bench.visitor).toBe(true);
-    await page.keyboard.press('Escape');
+    await page.keyboard.press('Space');
     await fastForward(page, 1);
     expect((await deck()).bench.visitor).toBe(false);
     // remembered
@@ -2072,7 +2090,7 @@ test.describe('planet', () => {
     await expect(dialog).toContainText('W');
     await expect(dialog.getByRole('heading', { name: 'Tips' })).toBeVisible();
     await noSeriousViolations(page);
-    await page.keyboard.press('Escape');
+    await page.keyboard.press('Space');
     await expect(dialog).toBeHidden();
     // from the menu: Show controls
     await page.getByTestId('menu-button').click();
@@ -2092,7 +2110,7 @@ test.describe('planet', () => {
     }
   });
 
-  test('proximity preview, open with E, close with Esc (focus + URL restored)', async ({ page }) => {
+  test('proximity preview, open with E, close with Space (focus + URL restored)', async ({ page }) => {
     await startPlanet(page);
     await page.evaluate(() => (window as any).__game.teleport('workshop'));
     const card = page.getByTestId('preview-card');
@@ -2108,7 +2126,8 @@ test.describe('planet', () => {
     await expect(dialog.getByRole('link', { name: /Classic page/ })).toHaveAttribute('href', '/classic/workshop/');
     await noSeriousViolations(page);
 
-    await page.keyboard.press('Escape');
+    // Space closes it, through history like Esc and Close
+    await page.keyboard.press('Space');
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(/\/play\/(\?at=workshop)?$/);
     await expect(page.locator('.game-region')).toBeFocused();

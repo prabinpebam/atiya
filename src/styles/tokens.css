@@ -209,7 +209,7 @@
   --c-lane-edge: var(--space-3-5);
   --c-lane-gap: var(--space-2);
   --c-view-compass: 72px;
-  --c-recipe-cell: 56px;
+  --c-recipe-cell: 64px;
   --c-recipe-result: 72px;
   --c-scrollbar: 6px;
   --c-stick-size: 7.5rem;

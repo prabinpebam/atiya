@@ -2276,7 +2276,7 @@ export function welcomeLines(touch: readonly string[] | null, back: boolean): st
   if (back) return ['Welcome back to my little planet! Have a look round.', board];
   return [
     'Hi, I’m Prabin. Welcome to my little planet! Every building here holds part of my work, so feel free to explore.',
-    ...(touch ?? ['Walk with W A S D or the arrow keys, and hold Shift to run. Drag the planet to turn the view.', 'Press E to open a building, or to use what a gold ring glows round.']),
+    ...(touch ?? ['Walk with W A S D or the arrow keys, and hold Shift to run. Drag the planet to turn the view.', 'Press E to open a building, or to use what a gold ring glows round, and Space to close it again.']),
     board,
   ];
 }

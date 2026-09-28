@@ -1,12 +1,102 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
+} from 'react';
 import { useStore } from 'zustand';
-import { faArrowsUpDownLeftRight, faXmark, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsUpDownLeftRight, faCircleQuestion, faXmark, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import type { GameController } from '../controller';
 import { BACKPACK_SLOTS, CHEST_SLOTS, HOTBAR, type ContainerId, type Screen, type SlotRef } from '../inventory/inventory';
 import { itemDef, stackLabel, type ItemId } from '../inventory/items';
 import { doubleClick, dropHeld, leftClick, moveAllOf, numberSwap, planSpread, rightClick, shiftClick, sortSection, spread, storeAll, takeAll, wheelMove } from '../inventory/screenOps';
 import { Icon } from './Icon';
 import { SlotFace } from './Inventory';
+import { spaceBack } from '../input/keyboard';
+
+type Keys = ReadonlyArray<readonly [string, string]>;
+/** The panel's controls (its help popover): what each gesture or key does. */
+const SLOT_KEYS: Keys = [
+  ['Click', 'take or place'],
+  ['Right-click', 'half, or one'],
+  ['Drag', 'spread a stack'],
+  ['Double-click', 'gather'],
+  ['Shift+click', 'move across (twice: every stack of it)'],
+  ['Shift+drag', 'move each'],
+  ['Wheel', 'move one'],
+  ['Arrow keys', 'go from slot to slot'],
+  ['Enter / Space', 'click / right-click the slot'],
+  ['1 to 9', 'to the hotbar'],
+  ['Q', 'drop'],
+  ['R', 'sort'],
+  ['E', 'close'],
+];
+const SLOT_TOUCH: Keys = [
+  ['Tap', 'take or place'],
+  ['Hold', 'half, or one'],
+  ['Drag a stack', 'put it there'],
+  ['Tap, then drag', 'spread'],
+  ['Hold, then drag', 'one each'],
+  ['Double-tap', 'gather'],
+  ['Move on', 'taps and drags move stacks (tap twice: every stack of it)'],
+];
+
+/**
+ * The controls, out of the way (design-system.md §4, the help popover): a help button that shows them in a popover while
+ * the pointer is over it or it has the focus, and keeps them up when pressed (touch). Escape hides it.
+ */
+function HelpPopover({ groups }: { groups: ReadonlyArray<{ title: string; keys: Keys }> }) {
+  const [open, setOpen] = useState<false | 'hover' | 'pin'>(false);
+  const id = useId();
+  return (
+    <div
+      className="help-pop"
+      onPointerEnter={(e) => e.pointerType === 'mouse' && setOpen((o) => o || 'hover')}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && setOpen((o) => (o === 'hover' ? false : o))}
+      onFocus={() => setOpen((o) => o || 'hover')}
+      onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setOpen(false)}
+      onKeyDown={(e) => {
+        if (!open || e.code !== 'Escape') return;
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+      }}
+    >
+      <button
+        type="button"
+        className="btn help-btn"
+        aria-label="Show controls"
+        aria-expanded={Boolean(open)}
+        aria-controls={id}
+        data-testid="help-button"
+        onClick={() => setOpen((o) => (o === 'pin' ? false : 'pin'))}
+      >
+        <Icon icon={faCircleQuestion} />
+      </button>
+      <div id={id} className="help-card" role="group" aria-label="Controls" hidden={!open} data-testid="help-card">
+        {groups.map((g) => (
+          <section key={g.title}>
+            <h3>{g.title}</h3>
+            <dl className="help-keys">
+              {g.keys.map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * The inventory / chest screen (docs: collection-inventory.md §4.3), loaded on demand by `InventoryScreen`.
@@ -38,6 +128,7 @@ export default function InventoryPanel({
   icon,
   onClose = () => controller.closeInventory(),
   kind = 'inventory',
+  help,
 }: {
   controller: GameController;
   screen: Screen;
@@ -46,6 +137,8 @@ export default function InventoryPanel({
   icon?: IconDefinition;
   onClose?: () => void;
   kind?: 'inventory' | 'craft';
+  /** The screen's own controls, shown first in the help popover. */
+  help?: { title: string; keys: Keys };
 }) {
   const inv = controller.inventory;
   const touch = useStore(controller.store, (s) => s.input === 'touch');
@@ -141,13 +234,7 @@ export default function InventoryPanel({
     changed(false);
     const empty = !inv.backpack.some(Boolean);
     controller.announce(
-      n
-        ? `Stored ${items(n)} in the chest.`
-        : matching
-          ? 'Nothing in your backpack matches the chest.'
-          : empty
-            ? 'Your backpack is empty.'
-            : 'The chest is full: take something out first.',
+      n ? `Stored ${items(n)} in the chest.` : matching ? 'Nothing in your backpack matches the chest.' : empty ? 'Your backpack is empty.' : 'The chest is full: take something out first.',
     );
   };
 
@@ -298,7 +385,8 @@ export default function InventoryPanel({
     // (the tool buttons keep their own Enter and Space; slot keys act on the hovered slot, else the focused one)
     const onSlot = (e.target as HTMLElement).dataset.slot !== undefined;
     const r = hovered.current ?? (onSlot ? order[focusIdx] : null);
-    if (e.code === 'Escape' || e.code === 'KeyE' || e.code === 'KeyI') {
+    // E / I close (the key that opened it, as in Minecraft), and Space off a slot (on one it's a right-click)
+    if (e.code === 'Escape' || e.code === 'KeyE' || e.code === 'KeyI' || (!onSlot && spaceBack(e))) {
       e.preventDefault();
       onClose();
       return;
@@ -353,7 +441,14 @@ export default function InventoryPanel({
           <h2>
             {icon && <Icon icon={icon} />} {title}
           </h2>
-          <button type="button" className={`btn inv-move${moveMode ? ' on' : ''}`} aria-pressed={moveMode} onClick={() => setMoveMode((m) => !m)} title="Taps move stacks between sections (like Shift+click)">
+          <HelpPopover groups={[...(help ? [help] : []), { title: screen === 'chest' ? 'Backpack and chest' : 'Backpack', keys: touch ? SLOT_TOUCH : SLOT_KEYS }]} />
+          <button
+            type="button"
+            className={`btn inv-move${moveMode ? ' on' : ''}`}
+            aria-pressed={moveMode}
+            onClick={() => setMoveMode((m) => !m)}
+            title="Taps move stacks between sections (like Shift+click)"
+          >
             <Icon icon={faArrowsUpDownLeftRight} /> Move
           </button>
           <button type="button" className="btn inv-close" aria-label="Close" onClick={onClose}>
@@ -430,11 +525,6 @@ export default function InventoryPanel({
             </div>
           </section>
         ))}
-        <p className="inv-help" aria-hidden="true">
-          {touch
-            ? 'Tap: take / place · Hold: half / one · Drag a stack: put it there · Tap, then drag: spread · Hold, then drag: one each · Double-tap: gather · Move on: taps and drags move stacks (tap twice: every stack of it)'
-            : 'Click: take / place · Right-click: half / one · Drag: spread · Double-click: gather · Shift+click: move (twice: every stack of it) · Shift+drag: move each · Wheel: move one · 1–9: to hotbar · Q: drop · R: sort'}
-        </p>
       </div>
       {tip && !inv.held && (
         <div className="inv-tip" style={{ left: tip.x, top: tip.y } as CSSProperties} aria-hidden="true">

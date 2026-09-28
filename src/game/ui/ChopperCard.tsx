@@ -9,6 +9,7 @@ import { buildChopper } from '../world/chopper/build';
 import type { Clip } from '../world/chopper/anim';
 import { CHOPPER } from '../world/chopper/profile';
 import { Icon } from './Icon';
+import { spaceBack } from '../input/keyboard';
 
 /** The little doggy things he does beside his card, in random order (never the same twice running). */
 const CARD_IDLES: ReadonlyArray<{ clip: Clip; dur: [number, number]; wag: number; pant?: boolean }> = [
@@ -166,6 +167,11 @@ export default function ChopperCard({ controller }: { controller: GameController
       aria-labelledby="chopper-title"
       data-testid="chopper-dialog"
       onCancel={(e) => {
+        e.preventDefault();
+        close();
+      }}
+      onKeyDown={(e) => {
+        if (!spaceBack(e)) return;
         e.preventDefault();
         close();
       }}

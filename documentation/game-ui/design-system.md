@@ -61,21 +61,22 @@ Each component has one class family, reads only surface roles and tokens, and ha
 | Button | `.btn` | `components.css` | Label (verb first), optional icon (`Icon`, `aria-hidden`), optional `.kbd`. Variants: default (soft surface), `.primary` (the accent; one per view), `.sm`, `.big`, `.icon-btn` (icon only, with an `aria-label`). Height `--c-btn-h`, 44 px minimum target. |
 | Key cap | `.kbd` | `components.css` | A light cap with dark text on both surfaces. It shows a key; it's never the only label. |
 | Card | `.card`, `.card-title` | `components.css` | The surface's `bg`, `--radius-lg`, `--shadow-card`. An optional eyebrow, a title, a body and `.actions`. Landmark cards carry `--accent` as a top rule. |
-| Dialog | `.dialog`, `.landmark-dialog`, `.menu-dialog` | `components.css` | Native `<dialog>` (focus is trapped and restored, Esc closes). Title, body, actions with the primary action first. |
+| Dialog | `.dialog`, `.landmark-dialog`, `.menu-dialog` | `components.css` | Native `<dialog>` (focus is trapped and restored; <kbd>Space</kbd> closes, and <kbd>Esc</kbd> too, §6.7). Title, body, actions with the primary action first; Close shows <kbd>Space</kbd>. |
 | Menu list, check, radio group | `.menu-list`, `.menu-item`, `.check`, `.radio-group` | `components.css` | Settings rows in the menu (sound, time, larger text). |
 | Time badge | `.time-badge` | `components.css` | The clock chip in the top bar; `.time-scrubbing` while dragging. |
 | Top bar | `.play-header`, `.brand`, `.hud-actions`, `.icon-btn` | `hud.css` | Brand (the site's home), Classic site, time, and the Sound and Menu icon buttons (a speaker and a hamburger, named by `aria-label`). It never wraps (the brand shortens on narrow screens). |
 | Focus lane | `.lane` | `hud.css` | The bottom-centre slot above the hotbar. It holds one of: talk box, stand-up prompt, action prompt, preview card. |
 | Action prompt | `.seat-prompt.action-prompt` | `hud.css` | Icon + verb + object + `.kbd`. It's a real button (a click or tap does the same as <kbd>E</kbd>). |
 | Preview card | `.preview-card` | `hud.css` | The landmark's eyebrow, title and one line, with Enter to open. |
-| Talk box | `.talk-box` | `hud.css` | Name, the line (typed; instant under reduced motion), "more" cue, Next/Close actions. |
+| Talk box | `.talk-box` | `hud.css` | Name, the line (typed; instant under reduced motion), "more" cue, Next (<kbd>E</kbd>) and Close (<kbd>Space</kbd>) actions. |
 | Aside | `.aside` (`.site-card`) | `hud.css` | Bottom left: the site card (a build goal's needs). |
 | How to play | `.menu-dialog`, `.help-list` | `components.css` | The menu dialog's help page (the notice board, or Menu → Show controls): the controls with inline `kbd`, or the touch gestures, and tips. |
 | Toast | `.toast` | `hud.css` | Top centre, one at a time, announced; 4 to 9 s by length. |
 | View controls | `.view-controls`, `.compass`, `.view-home` | `hud.css` | The compass and Reset, bottom right. Turning and tilting without a drag are the menu's View group (`.menu-view`). |
 | Character picker | `.character-picker`, `.avatar-btn` | `hud.css` | A radio group of portraits, top right. |
 | Hotbar and slot | `.hotbar`, `.slot`, `.slot-key`, `.slot-count` | `panels.css` | Nine slots, the backpack and the whistle. The selected slot uses `--surface-highlight`. |
-| Backpack, crafting, paint | `.inv-panel`, `.craft-panel`, `.paint-panel` | `panels.css` | Wood panels on the overlay layer: head, sections, help line with keys. The crafting screen is the inventory panel with the recipe pane on top (`.craft-grid`, `.craft-need`; [crafting screen](./crafting-screen.md)). |
+| Backpack, crafting, paint | `.inv-panel`, `.craft-panel`, `.paint-panel` | `panels.css` | Wood panels on the overlay layer, at a fixed size: head (title, help button, tools, close) and sections; no help text of their own. The crafting screen is the inventory panel in two columns: the recipe book down the left, the detail over the backpack and hotbar (`.craft-book`, `.craft-grid`, `.craft-need`; [crafting screen](./crafting-screen.md)). |
+| Help popover | `.help-pop`, `.help-btn`, `.help-card`, `.help-keys` | `panels.css` | A panel's keys and gestures behind a question-mark button ("Show controls") in its head: shown on hover or focus, pinned by a press, closed by <kbd>Escape</kbd> or leaving (WCAG 1.4.13). A key / what-it-does list per group, the touch gestures on touch. A game panel never spells its controls out inline. |
 
 Adding a component: give it a class family, put it in the right stylesheet, use only surface roles and tokens (add `c.*` tokens if needed), add its row here, and let the design-system test run.
 
@@ -110,7 +111,7 @@ The first match owns the keys: **modal** (landmark dialog, menu, Chopper's card)
 `focusLane(state)` in `src/game/ui/lanes.ts` returns one of the following:
 
 1. `talk`: a conversation is open;
-2. `stand`: seated, so the prompt is "Stand up" (where the seat has something to do, it's two buttons: the seat's action on <kbd>E</kbd>, "Feed the ducks" on the pond bench or "Swing higher" on the swing, and "Stand up" on <kbd>Escape</kbd>);
+2. `stand`: seated, so the prompt is "Stand up" (where the seat has something to do, it's two buttons: the seat's action on <kbd>E</kbd>, "Feed the ducks" on the pond bench or "Swing higher" on the swing, and "Stand up" on <kbd>Space</kbd>);
 3. nothing while an action is playing out (chopping, mining);
 4. `prompt`: there's a target;
 5. `preview`: a landmark is near;
@@ -174,6 +175,15 @@ The ring is a soft gradient band with highlights running round it; its hue drift
 
 - **One toast at a time; the newest replaces the last.** It stays `toastMs(text)` (4 to 9 s by length, WCAG 2.2.1), is announced in the live region, and never sits in the lane.
 - **The talk guard.** The first <kbd>E</kbd> within `TALK_GUARD_MS` (0.3 s) of a conversation opening is ignored (a post-acceptance delay, per the Game Accessibility Guidelines), so a double press can't skip a line unread.
+
+### 6.7 Keys: E does, Space goes back
+
+The owner's rule for the whole game: one key does and one key goes back, and <kbd>Esc</kbd> isn't the way out that the UI shows.
+
+- <kbd>E</kbd> (or <kbd>Enter</kbd>) does: open, use, talk, go on to the next line, sit. In a screen, <kbd>Enter</kbd> presses the focused button.
+- <kbd>Space</kbd> goes back: it stands you up from a bench, gets you off the swing, ends a conversation, stops an action, and closes a dialog (a landmark's card, Chopper's card, the menu) or a panel (the backpack, the chest, the crafting table, the palette). It's the `back` action (`input/keyboard.ts`); in a screen, `spaceBack(e)` closes it unless the focus is on a control whose own key <kbd>Space</kbd> is (a text field, a checkbox, a radio button, a slider). On a backpack slot <kbd>Space</kbd> stays the slot's right-click, so there <kbd>E</kbd> or <kbd>I</kbd> closes, as in Minecraft.
+- <kbd>Esc</kbd> still works everywhere it did (it closes, and opens the menu when nothing is open), because people reach for it, but the prompts, buttons and copy show <kbd>Space</kbd>.
+- The key a surface's way out uses is on its button: "Stand up <kbd>Space</kbd>", the talk box's close, the dialogs' Close.
 
 ## 7. Copy
 

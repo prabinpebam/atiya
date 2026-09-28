@@ -152,7 +152,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
         }
       : null;
   controller.swing = link;
-  // the visitor's seat on it: sit on the plank, facing the pond; E pumps, Escape gets off in front
+  // the visitor's seat on it: sit on the plank, facing the pond; E pumps, Space gets off in front
   const riderSeat: Seat | null =
     home && link
       ? {
@@ -328,7 +328,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
         if (s.swingBuilding !== null) return;
         if (s.swingBuilt) {
           if (link?.rider) controller.startAction('open', swingTarget);
-          else if (riderSeat && controller.sitOn(riderSeat, 'On the swing. Press E to swing higher, or Escape to get off.') && link) {
+          else if (riderSeat && controller.sitOn(riderSeat, 'On the swing. Press E to swing higher, or Space to get off.') && link) {
             link.rider = 'visitor';
             link.boarding = true;
           }

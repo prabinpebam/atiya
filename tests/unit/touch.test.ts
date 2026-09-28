@@ -90,11 +90,11 @@ describe('stick', () => {
 describe('touch copy', () => {
   it('rewords the announcements that name keys', () => {
     expect(forTouch('Near the Library — Books. Press E to open.')).toBe('Near the Library — Books. Tap Open.');
-    expect(forTouch('Sitting on the bench by the pond. Press E to feed the ducks, or Escape to stand up.')).toBe(
+    expect(forTouch('Sitting on the bench by the pond. Press E to feed the ducks, or Space to stand up.')).toBe(
       'Sitting on the bench by the pond. Tap Feed the ducks, or Stand up.',
     );
-    expect(forTouch('On the swing. Press E to swing higher, or Escape to get off.')).toBe('On the swing. Tap Swing higher, or Stand up to get off.');
-    expect(forTouch('Sitting on the bench. Press Escape to stand up.')).toBe('Sitting on the bench. Tap Stand up to get up.');
+    expect(forTouch('On the swing. Press E to swing higher, or Space to get off.')).toBe('On the swing. Tap Swing higher, or Stand up to get off.');
+    expect(forTouch('Sitting on the bench. Press Space to stand up.')).toBe('Sitting on the bench. Tap Stand up to get up.');
     expect(forTouch('Near a bench. Press E to sit down.')).toBe('Near a bench. Tap the prompt to sit down.');
     expect(forTouch('Shake the tree: press E.')).toBe('Shake the tree: tap the prompt.');
     expect(forTouch('Back at the plaza.')).toBe('Back at the plaza.');
