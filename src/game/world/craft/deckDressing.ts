@@ -78,7 +78,7 @@ export function deckDressing(layout: PropLayout, geos: readonly LandmarkGeometry
     const p = { ...at(n), scale };
     (rand() < 0.4 ? flowerBushes : bushes).push(p);
     solids.push({ n, r: 0.5 * scale });
-    obstacles.push({ n, radiusU: 0.42 * scale });
+    obstacles.push({ n, radiusU: 0.42 * scale, core: 0.18 * scale, soft: true });
     return true;
   };
   const flowers: Record<FlowerKind, PropInstance[]> = { tulip: [], cosmos: [], pansy: [] };

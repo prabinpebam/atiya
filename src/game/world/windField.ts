@@ -1,4 +1,4 @@
-import { Vector3 } from 'three';
+import { Vector3, Vector4 } from 'three';
 
 /**
  * Wind model (pure). The wind circulates around a tilted axis, so it blows consistently across
@@ -38,6 +38,8 @@ export const windUniforms = {
   uWindTime: { value: 0 },
   uWindStrength: { value: 0.3 },
   uWindAxis: { value: WIND_AXIS.clone() },
+  /** The character's feet (planet-local, u) and whether it's on the ground (w): plants lean away from it (collision.md §3). */
+  uPush: { value: new Vector4() },
 };
 
 /** GLSL snippet: planet-local wind at planet-local position `p` (uses uWindAxis). */

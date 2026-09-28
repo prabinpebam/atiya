@@ -6,7 +6,7 @@
  */
 import { Vector3 } from 'three';
 import { CONFIG } from '../config';
-import { arcDistance, moveAlong } from '../math/sphere';
+import { arcDistance, moveAlong, tangentAwayFrom, tangentToward } from '../math/sphere';
 import { mesaDir, mesaRadius, tierEdge, type Mesa } from './features';
 
 type Pt = readonly [number, number];
@@ -18,8 +18,9 @@ export const DECK = {
   width: 1,
   /**
    * Stage 1, round the lower cliff, foot first: [angle from `face` (rad), distance out from the rim (u)].
-   * Stone steps up from the meadow, a flight, a landing that juts out, a second flight, and a landing
-   * that ends at the rim (flush with its edge: nothing of it stands on the terrace).
+   * Stone steps up from the meadow, a flight, a landing that juts out, a second flight, a landing that
+   * cuts the corner, and one that ends at the rim (flush with its edge: nothing of it stands on the
+   * terrace). Every bend is obtuse (about 126° or more): no wedge-shaped corners.
    */
   lower: [
     [0.34, 1.55],
@@ -27,7 +28,8 @@ export const DECK = {
     [-0.16, 0.7],
     [-0.28, 0.86],
     [-0.4, 0.7],
-    [-0.9, 0.7],
+    [-0.77, 0.7],
+    [-0.9, 0.3],
     [-0.9, -0.04],
   ] as readonly Pt[],
   /** Stage 2, round the upper tier (in its frame): from the lower steps' top across the terrace to the foot of a flight along its wall (in line with it, so you walk in square between its rails), a landing, a flight, and in over its rim. */
@@ -42,7 +44,7 @@ export const DECK = {
     [0.56, 0.58],
   ] as readonly Pt[],
   /** What each stretch of the upper steps is, from the lower steps' top (across the top to the platform's steps at the end). */
-  upperKinds: ['path', 'path', 'wood', 'wood', 'landing', 'landing', 'wood', 'wood', 'top', 'path'] as const,
+  upperKinds: ['path', 'path', 'wood', 'wood', 'landing', 'landing', 'wood', 'wood', 'landing', 'top', 'path'] as const,
   /**
    * The platform on the upper tier: its size (u, across and deep), how high it stands, how far its
    * middle stands back from the tier's (u: the tier's top is too narrow beside it for a way round, so
@@ -50,7 +52,7 @@ export const DECK = {
    * rail (its middle, u across from the platform's middle, toward the steps' side) with steps up from
    * the lawn.
    */
-  deck: { w: 2.0, d: 1.4, lift: 0.45, shift: -0.35, entryX: 0.5, steps: 0.6, over: 0.55 },
+  deck: { w: 2.0, d: 1.4, lift: 0.45, shift: -0.35, entryX: 0.5, steps: 0.6, over: 0.55, corner: 0.3 },
 } as const;
 
 export interface DeckSite {
@@ -91,8 +93,11 @@ export function deckSite(mesas: readonly Mesa[], cfg = CONFIG): DeckSite | null 
   const entry = moveAlong(moveAlong(centre, side, D.entryX / R), fwd, (D.d / 2 + D.steps) / R);
   // from the flights' top in over the rim, heading for the platform's steps (then across the lawn to them)
   const over = top.clone().lerp(entry, D.over).normalize();
+  // (a landing cuts the corner between them, `corner` u out between the two ways, so both bends are obtuse)
+  const bis = tangentAwayFrom(top, upper[upper.length - 2])!.multiplyScalar(0.8).add(tangentToward(top, over)!).normalize();
+  const cut = moveAlong(top, bis, D.corner / R);
   const lower = DECK.lower.map(base);
-  return { mesa: m, lower, upper: [lower[lower.length - 1], ...upper, over, entry], centre, fwd, side, entry };
+  return { mesa: m, lower, upper: [lower[lower.length - 1], ...upper, cut, over, entry], centre, fwd, side, entry };
 }
 
 /** Discs (centre, radius u) over the steps and the platform, which the layout keeps clear. */

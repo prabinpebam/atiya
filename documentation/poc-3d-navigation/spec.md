@@ -653,10 +653,10 @@ if (|vel| > EPS) heading = dampAngle(heading, atan2(vel.x, vel.z), TURN_T, dt); 
 
 ### 5.3 Collision
 
-- **Units:** obstacle sizes are authored in world units — `footprintU_j`, `PLAYER_RADIUS_U = 0.35`, `SKIN_U = 0.02`. The expanded angular radius is `β_j = (footprintU_j + PLAYER_RADIUS_U + SKIN_U) / R` (radians). Obstacle centers `n_j` are planet-local unit vectors.
+- **Units:** obstacle sizes are authored in world units — `footprintU_j`, `BODY_RADIUS_U = 0.24`, `SKIN_U = 0.02`. The expanded angular radius is `β_j = (core_j + BODY_RADIUS_U + SKIN_U) / R` (radians), where `core_j` is what a body stops at (`footprintU_j` unless the obstacle says less). Obstacle centers `n_j` are planet-local unit vectors. **As built:** soft obstacles (bushes, the family, Chopper) slow the character inside their footprint and let it squeeze past after pressing on them; see [collision.md](./collision.md). `PLAYER_RADIUS_U = 0.35` stays the clearance the layout, the spawn and the planners keep.
 - **Active contacts:** `angle(pLocal, n_j) ≤ β_j + ε`.
 - **`slideVelocity` (iterative):** up to 4 passes; for each active contact compute the outward tangent *at the player* `t_j = normalize(pLocal (pLocal·n_j) − n_j)` (orthogonal to `pLocal`, pointing away from the obstacle) and, if `v·t_j < 0`, remove it: `v −= (v·t_j) t_j`. Stop when a pass changes nothing. If any `v·t_j < −ε` remains after 4 passes (wedged between obstacles), return zero.
-- **Tunneling:** prevented by `MAX_STEP = 0.1 u` sub-steps (§5.2), which is well below the smallest expanded obstacle radius (≥ 0.67 u with the minimum 0.3 u footprint).
+- **Tunneling:** prevented by `MAX_STEP = 0.1 u` sub-steps (§5.2), which is well below the smallest expanded obstacle radius (≥ 0.32 u: a 0.06 u rail post plus the body and skin).
 - **`resolvePenetration`:** if `angle(pLocal, n_j) < β_j`, rotate `pLocal` away from `n_j` along their great circle to angle `β_j` → `pCorrected`; let `c = setFromUnitVectors(pLocal, pCorrected)` (minimal rotation, planet-local); update `planetQ = normalize(planetQ · c⁻¹)` and assert `planetQ⁻¹·UP ≈ pCorrected`. This preserves the planet's twist about the player normal (no world-yaw jump).
 - **Unit tests:** head-on (→ zero, no NaN), glancing (tangential speed preserved), two-obstacle corner, high-`dt` at RUN (no tunneling through the smallest obstacle), push-out twist preservation (a reference landmark's world yaw unchanged within 1e-4 rad).
 - No physics engine. The collision loop is O(n) over about 300 obstacle circles per sub-step, which is negligible. The bridge rails and mesa walls are made of the same circles as the trees and landmarks. Water is not an obstacle: it only changes the height you stand at and your speed (§4.14 Wading).
@@ -689,7 +689,7 @@ if (|vel| > EPS) heading = dampAngle(heading, atan2(vel.x, vel.z), TURN_T, dt); 
 | Follow lead (P1) | ≤ 0.3 u, 0.12 s | 0–0.5 u | 0 under reduced motion |
 | Proximity enter / exit | footprint + 1.75 u / ×1.3 | +1.25–2.5 u / ×1.2–1.4 | Bruno Simon uses 2.5 u |
 | Proximity switch margin | 0.25 u | 0.1–0.5 u | Prevents flicker between neighbors |
-| Player radius / skin | 0.35 u / 0.02 u | — | Collision (§5.3) |
+| Body radius / clearance / skin | 0.24 u / 0.35 u / 0.02 u | — | Collision (§5.3, [collision.md](./collision.md)) |
 | Movement sub-step (`MAX_STEP`) | 0.1 u | ≤ 0.2 u | No tunneling |
 | Auto-walk arrival / blocked | 0.3 u / < 0.05 u progress in 0.5 s | — | FR-08 |
 | Interact buffer | 150 ms | 100–200 ms | Celeste-style forgiveness |

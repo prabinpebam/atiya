@@ -70,7 +70,7 @@ function addSway(material: Material, strength: number, from: number, key: string
     prev(shader, renderer);
     Object.assign(shader.uniforms, windUniforms);
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>\n${WIND_GLSL}`)
+      .replace('#include <common>', `#include <common>\n${WIND_GLSL}\nuniform vec4 uPush;`)
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
@@ -93,6 +93,12 @@ function addSway(material: Material, strength: number, from: number, key: string
   float wLean = wAmp * uWindStrength * 0.9;
   float wSw = wAmp * (0.35 + uWindStrength) * (0.65 * wWave + 0.35 * sin(uWindTime * 2.7 + wPh));
   transformed.xz += wDir * (wLean + wSw) + vec2(-wDir.y, wDir.x) * wAmp * 0.2 * sin(uWindTime * 1.9 + wPh * 1.3);
+  // brushed by the character: leaves and stems lean away from its feet (collision.md §3)
+  vec3 wUp = normalize(wIP + vec3(0.0, 1e-5, 0.0));
+  vec3 wPV = wIP + wIM * transformed - uPush.xyz;
+  wPV -= wUp * dot(wPV, wUp);
+  float wPf = uPush.w * max(0.0, 1.0 - length(wPV) / 0.7);
+  transformed += transpose(wIM) * (wPV * inversesqrt(max(dot(wPV, wPV), 1e-12))) * (wPf * wPf * 0.22 * min(1.0, wK * 3.0));
   ${
     flutter > 0
       ? `transformed += objectNormal * sin(uWindTime * 9.0 + dot(position, vec3(9.1, 6.3, 7.7)) + wPh) * ${flutter.toFixed(3)} * (0.3 + uWindStrength) * min(1.0, wK);`

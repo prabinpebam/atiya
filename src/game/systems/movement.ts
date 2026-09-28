@@ -4,6 +4,7 @@ import type { MoveIntent } from '../types';
 import {
   UP,
   arcDistance,
+  clamp,
   damp,
   dampAngle,
   playerLocal,
@@ -76,6 +77,9 @@ export class PlanetSim {
   autoWalk: AutoWalk | null = null;
   /** Multiplier on walk/run speed, set by the controller each step (e.g. slower while wading). */
   speedFactor = 1;
+  /** Soft things the character is squeezing past (collision.md §3), and how long it's pressed on each. */
+  readonly passing = new Set<Obstacle>();
+  private readonly press = new Map<Obstacle, number>();
   private readonly collision: CollisionParams;
   private readonly events: SimEvent[] = [];
 
@@ -83,7 +87,7 @@ export class PlanetSim {
     public obstacles: Obstacle[],
     private readonly cfg: Config = CONFIG,
   ) {
-    this.collision = { radius: cfg.planetRadius, playerRadius: cfg.playerRadius, skin: cfg.skin };
+    this.collision = { radius: cfg.planetRadius, playerRadius: cfg.bodyRadius, skin: cfg.skin };
   }
 
   get speed(): number {
@@ -170,6 +174,7 @@ export class PlanetSim {
     if (inputLen > 0.001 && this.autoWalk) this.autoWalk = null;
 
     const desired = this.desiredVelocity(intent, inputLen, dt);
+    desired.multiplyScalar(this.stepSoft(desired, dt));
     const lambda = 3 / (desired.lengthSq() > 0 ? this.cfg.accelTime : this.cfg.decelTime);
     this.vel.set(damp(this.vel.x, desired.x, lambda, dt), 0, damp(this.vel.z, desired.z, lambda, dt));
     if (desired.lengthSq() === 0 && this.vel.length() < 1e-3) this.vel.set(0, 0, 0);
@@ -214,6 +219,36 @@ export class PlanetSim {
     return desired.set(intent.x * scale, 0, -intent.y * scale).multiplyScalar((intent.run ? this.cfg.runSpeed : this.cfg.walkSpeed) * this.speedFactor);
   }
 
+  /**
+   * Soft things (collision.md §3): their leaves (or personal space) slow the character, most at the
+   * core; pressing on against a core for `squeezeS` lets it squeeze past, until it's out of the leaves.
+   * Returns the speed factor.
+   */
+  private stepSoft(desired: Vector3, dt: number): number {
+    const R = this.cfg.planetRadius;
+    const body = this.collision.playerRadius + this.collision.skin;
+    const want = desired.clone().applyQuaternion(this.planetQ.clone().invert());
+    const wl = want.length();
+    let drag = 1;
+    for (const o of this.obstacles) {
+      if (!o.soft) continue;
+      const d = arcDistance(this.pLocal, o.n, R);
+      const out = o.radiusU + body;
+      if (d > out) {
+        this.passing.delete(o);
+        this.press.delete(o);
+        continue;
+      }
+      const core = (o.core ?? o.radiusU) + body;
+      drag = Math.min(drag, 1 - this.cfg.softDrag * clamp((out - d) / Math.max(1e-3, out - core), 0, 1));
+      const to = wl > 0 && d < core + 0.04 ? tangentToward(this.pLocal, o.n) : null;
+      const t = Math.max(0, (this.press.get(o) ?? 0) + (to && to.dot(want) > 0.3 * wl ? dt : -dt));
+      this.press.set(o, t);
+      if (t > this.cfg.squeezeS) this.passing.add(o);
+    }
+    return drag;
+  }
+
   private integrate(dt: number): void {
     const speed0 = this.vel.length();
     if (speed0 < 1e-6) return;
@@ -226,11 +261,12 @@ export class PlanetSim {
     const dWorld = new Vector3();
     const axis = new Vector3();
     const q = new Quaternion();
+    const obs = this.passing.size ? this.obstacles.filter((o) => !this.passing.has(o)) : this.obstacles;
 
     for (let k = 0; k < steps; k++) {
       invQ.copy(this.planetQ).invert();
       vLocal.copy(this.vel).applyQuaternion(invQ);
-      slideVelocity(vLocal, this.pLocal, this.obstacles, this.collision, vSlide);
+      slideVelocity(vLocal, this.pLocal, obs, this.collision, vSlide);
       const speed = vSlide.length();
       if (speed < 1e-6) {
         this.vel.set(0, 0, 0);
@@ -242,7 +278,7 @@ export class PlanetSim {
       this.planetQ.premultiply(q).normalize();
       playerLocal(this.planetQ, this.pLocal);
 
-      const corrected = resolvePenetration(this.pLocal, this.obstacles, this.collision);
+      const corrected = resolvePenetration(this.pLocal, obs, this.collision);
       if (corrected) {
         const c = new Quaternion().setFromUnitVectors(this.pLocal, corrected);
         this.planetQ.multiply(c.invert()).normalize();

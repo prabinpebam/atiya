@@ -10,8 +10,14 @@ export const CONFIG = {
   turnHalfLife: 0.05,
   maxDt: 0.1,
   maxStep: 0.1,
+  /** How much room the character needs (u): the planners' and the layout's clearances. */
   playerRadius: 0.35,
+  /** The character's body (u), what it collides with: about its shoulders' half-width (collision.md §3). */
+  bodyRadius: 0.24,
   skin: 0.02,
+  /** In something soft: the most it slows you (at its core), and how long you press on it before you squeeze past (s). */
+  softDrag: 0.45,
+  squeezeS: 0.4,
   proximityPadding: 1.75,
   exitFactor: 1.3,
   switchMargin: 0.25,

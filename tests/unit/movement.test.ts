@@ -76,7 +76,7 @@ describe('PlanetSim movement', () => {
     const sim = new PlanetSim([o]);
     run(sim, { x: 0, y: 1, run: true }, 0.2, 60);
     for (let i = 0; i < 40; i++) sim.step(CONFIG.maxDt, { x: 0, y: 1, run: true });
-    const beta = (0.3 + CONFIG.playerRadius + CONFIG.skin) / R;
+    const beta = (0.3 + CONFIG.bodyRadius + CONFIG.skin) / R;
     expect(angleBetween(sim.pLocal, o.n)).toBeGreaterThanOrEqual(beta - 1e-6);
     // Still on the near side (did not pass through).
     expect(sim.pLocal.z).toBeGreaterThan(o.n.z);
@@ -86,7 +86,7 @@ describe('PlanetSim movement', () => {
     const o: Obstacle = { n: latLonToVec(90 - (1.2 / R) * (180 / Math.PI), 0.0), radiusU: 0.6 };
     const sim = new PlanetSim([o]);
     run(sim, { x: 0.25, y: 1, run: false }, 3, 60);
-    const beta = (0.6 + CONFIG.playerRadius + CONFIG.skin) / R;
+    const beta = (0.6 + CONFIG.bodyRadius + CONFIG.skin) / R;
     expect(angleBetween(sim.pLocal, o.n)).toBeGreaterThanOrEqual(beta - 1e-6);
     expect(sim.pLocal.x).toBeGreaterThan(0.05); // slid sideways around it
     expect(Number.isFinite(sim.heading)).toBe(true);
@@ -105,7 +105,7 @@ describe('PlanetSim movement', () => {
     const yawBefore = Math.atan2(refBefore.x, refBefore.z);
     const yawAfter = Math.atan2(refAfter.x, refAfter.z);
     expect(Math.abs(yawAfter - yawBefore)).toBeLessThan(0.05);
-    const beta = (0.5 + CONFIG.playerRadius + CONFIG.skin) / R;
+    const beta = (0.5 + CONFIG.bodyRadius + CONFIG.skin) / R;
     expect(angleBetween(sim.pLocal, o.n)).toBeGreaterThanOrEqual(beta - 1e-6);
   });
 

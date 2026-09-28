@@ -894,6 +894,7 @@ export class ChopperBrain {
     this.stuckT = want > 0.5 && this.speed < 0.2 ? this.stuckT + dt : Math.max(0, this.stuckT - dt);
     if (this.speed < 1e-3) {
       this.speed = 0;
+      this.keepOff(w, skip);
       return;
     }
     // feelers: if the step ahead is blocked (a tree, a wall, the pond's edge), try turning a little
@@ -924,12 +925,7 @@ export class ChopperBrain {
     this.n.copy(next);
     const fixed = resolvePenetration(this.n, skip ? this.near.filter((o) => o.n !== skip) : this.near, { radius: R, playerRadius: DOG.radius, skin: 0.01 });
     if (fixed) this.n.copy(fixed);
-    // the character's centre: never on top of them
-    const pd = this.dist(this.n, w.player, R);
-    if (pd < DOG.minGap) {
-      const out = tangentToward(w.player, this.n, _a) ?? w.playerFwd;
-      this.n.copy(moveAlong(w.player, out, DOG.minGap / R));
-    }
+    this.keepOff(w, skip);
     // …nor through any of the family
     for (const o of w.others ?? []) {
       const od = this.dist(this.n, o, R);
@@ -937,6 +933,27 @@ export class ChopperBrain {
       if (out) this.n.copy(moveAlong(o, out, 0.42 / R));
     }
     transport(this.dir, this.n);
+  }
+
+  /**
+   * Never on top of the character, standing or moving (collision.md §4): nudged, he steps aside, to
+   * the side he's on when they're walking at him (so he's not pushed along ahead of them), onto open
+   * ground only; boxed in (a narrow way), straight on. If there's no room at all he stays, and the
+   * character squeezes past.
+   */
+  private keepOff(w: DogWorld, skip: Vector3 | null): void {
+    const R = w.R;
+    if (this.dist(this.n, w.player, R) >= DOG.minGap) return;
+    const out = tangentToward(w.player, this.n, _a) ?? w.playerFwd.clone();
+    const s = Math.sign(_t.crossVectors(w.player, w.playerVel).dot(this.n)) || 1;
+    const turns = w.playerVel.lengthSq() > 0.09 ? [s * 0.3, 0, s * 0.8, -s * 0.3, s * 1.4] : [0, 0.6, -0.6, 1.2, -1.2];
+    for (const a of turns) {
+      const q = moveAlong(w.player, rotateAbout(_d.copy(out), w.player, a), DOG.minGap / R);
+      if (this.free(w, q, skip)) {
+        this.n.copy(q);
+        return;
+      }
+    }
   }
 
   /** Can he step onto `p`? (Clear of the pond and of the obstacles round him.) */

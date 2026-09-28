@@ -124,6 +124,13 @@ export interface Obstacle {
   radiusU: number;
   /** Part of a mesa's collision ring (its top is still a lawn: the grass ignores these). */
   mesa?: boolean;
+  /**
+   * What a body stops at (u), when it's less than the footprint the planners keep clear of: a trunk's
+   * bark, not its roots' spread; a bush's stems, not its leaves (collision.md §3).
+   */
+  core?: number;
+  /** Soft (a bush, one of the family, Chopper): the character presses in past `core`, slowed, and pressing on squeezes past (collision.md §3). */
+  soft?: boolean;
 }
 
 export interface CollisionParams {
@@ -133,7 +140,7 @@ export interface CollisionParams {
 }
 
 function expandedAngle(o: Obstacle, c: CollisionParams): number {
-  return (o.radiusU + c.playerRadius + c.skin) / c.radius;
+  return ((o.core ?? o.radiusU) + c.playerRadius + c.skin) / c.radius;
 }
 
 /**

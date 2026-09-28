@@ -41,6 +41,8 @@ import { withBase } from './platform/base';
 const PLAY_PATH = withBase('/play/');
 /** Travel id for "reset position" (the spawn plaza is not a landmark). */
 const PLAZA = 'plaza';
+/** The family's bodies for the character (u): their personal space, which slows you, and the core you stop at. */
+const AGENT = { radiusU: 0.34, core: 0.16 } as const;
 
 const clampPitch = (deg: number) => clamp(deg, CONFIG.camera.minPitchDeg, CONFIG.camera.maxPitchDeg);
 const _toStream = new Vector3();
@@ -348,7 +350,8 @@ export class GameController {
     const obstacles: Obstacle[] = [...this.geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...this.props.obstacles];
     this.staticObstacles = obstacles;
     // the character can't walk through Chopper (or, once they're here, the family)
-    this.sim = new PlanetSim([...obstacles, { n: this.chopper.n, radiusU: 0.2 }]);
+    // (soft: you can come right up to him, nudge him aside, and squeeze past: collision.md §4)
+    this.sim = new PlanetSim([...obstacles, { n: this.chopper.n, radiusU: AGENT.radiusU, core: 0.14, soft: true }]);
     this.seats = benchSeats(this.props.furniture);
     this.targets = buildTargets(this.props, this.seats, this.props.chest, BLOOM_COLOURS.length);
     this.dogWorld = this.buildDogWorld(obstacles);
@@ -544,7 +547,11 @@ export class GameController {
     this.craft?.step(dt);
     if (this.familyObstacles.length) {
       const inside = new Set(this.home!.state().filter((p) => p.indoors).map((p) => p.id));
-      for (const f of this.familyObstacles) f.o.radiusU = inside.has(f.id) ? -1 : 0.2;
+      for (const f of this.familyObstacles) {
+        const x = inside.has(f.id);
+        f.o.radiusU = x ? -1 : AGENT.radiusU;
+        f.o.core = x ? -1 : AGENT.core;
+      }
     }
     // follow the ground (hills, the bridge deck, the stream bed when wading) with a little smoothing
     this.lift = damp(this.lift, this.terrain.walkHeight(this.sim.pLocal), 14, dt);
@@ -1312,7 +1319,7 @@ export class GameController {
     this.threats.push(...h.kids);
     // everyone keeps clear of everyone: the character collides with them, Chopper steps round them
     for (const p of h.people) {
-      const o = { n: p.n, radiusU: 0.2 };
+      const o = { n: p.n, radiusU: AGENT.radiusU, core: AGENT.core, soft: true };
       this.familyObstacles.push({ id: p.id, o });
       this.sim.obstacles.push(o);
     }

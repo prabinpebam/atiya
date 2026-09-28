@@ -223,7 +223,7 @@ export function grassRules(w: GrassWorld, full = false): GrassRules {
       lawn *= 1 - smooth(0.2, 0.5, s.steep);
       if (lawn > 0 && pond && u.dot(pond.n) > cosPond) {
         const d = Math.acos(Math.min(1, u.dot(pond.n))) * R;
-        lawn *= smooth(0.25, 0.45, d - w.pondShore(u));
+        lawn *= smooth(0.3, 0.48, d - w.pondShore(u));
       }
       let mown = 0;
       let worn = 0;

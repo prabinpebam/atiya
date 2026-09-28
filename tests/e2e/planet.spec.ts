@@ -1739,6 +1739,7 @@ test.describe("crafting & Chopper's house", () => {
     await expect.poll(async () => count((await inv(page)).backpack, 'iron'), { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
     // nails: one lump of iron ore makes six at the crafting table
     expect(await g('nearTarget', 'craft')).toBe('craft');
+    await expect(prompt(page).getByRole('button', { name: /Use crafting table/ })).toBeVisible();
     await page.keyboard.press('KeyE');
     const screen = page.getByTestId('craft-screen');
     await screen.getByRole('option', { name: /Nails/ }).click();

@@ -654,11 +654,12 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   }
 
   const onMesaTop = new Set(mesaTop);
+  // (a body stops at a trunk's bark, and presses into a bush's leaves: collision.md §3)
   const obstacles: Obstacle[] = [
-    ...hardwood.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.42 * t.scale })),
-    ...fruit.map((t) => ({ n: t.n, radiusU: 0.42 * t.scale })),
-    ...cedar.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.36 * t.scale })),
-    ...allBushes.map((b) => ({ n: b.n, radiusU: 0.42 * b.scale })),
+    ...hardwood.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.42 * t.scale, core: 0.3 * t.scale })),
+    ...fruit.map((t) => ({ n: t.n, radiusU: 0.42 * t.scale, core: 0.3 * t.scale })),
+    ...cedar.filter((t) => !onMesaTop.has(t)).map((t) => ({ n: t.n, radiusU: 0.36 * t.scale, core: 0.22 * t.scale })),
+    ...allBushes.map((b) => ({ n: b.n, radiusU: 0.42 * b.scale, core: 0.18 * b.scale, soft: true })),
     ...rocks.map((r) => ({ n: r.n, radiusU: 0.36 * r.scale })),
     ...boulders.map((r) => ({ n: r.n, radiusU: 0.4 * r.scale })),
     ...furniture.map((f) => ({ n: f.n, radiusU: FURNITURE_RADIUS[f.kind] })),

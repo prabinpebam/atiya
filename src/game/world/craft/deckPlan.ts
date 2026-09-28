@@ -96,7 +96,7 @@ export function deckPlan(site: DeckSite, ground: (n: Vector3) => number, R: numb
   const D = DECK.deck;
   const B = DECK_BUILD;
   const at = (x: number, z: number) => moveAlong(moveAlong(site.centre, site.side, x / R), site.fwd, z / R);
-  const lowerK: PieceKind[] = ['stone', 'wood', 'landing', 'landing', 'wood', 'top'];
+  const lowerK: PieceKind[] = ['stone', 'wood', 'landing', 'landing', 'wood', 'landing', 'top'];
   const upperK: readonly PieceKind[] = DECK.upperKinds;
   const g0 = ground(site.lower[0]);
   // (a landing over a rim lies just above the highest ground under it, which rises past the rim)
@@ -109,7 +109,7 @@ export function deckPlan(site: DeckSite, ground: (n: Vector3) => number, R: numb
   const lb = lo[lo.length - 1];
   const g1 = over(la, lb.clone().lerp(la, -0.4 / arcDistance(la, lb, R)).normalize());
   const g2 = ground(site.entry);
-  const gTop = Math.max(over(up[up.length - 3], up[up.length - 2]), g2 + 0.04);
+  const gTop = Math.max(over(up[up.length - 4], up[up.length - 3]), over(up[up.length - 3], up[up.length - 2]), g2 + 0.04);
   // the platform stands `lift` above the highest ground under it
   const under = [at(0, 0), ...[-1, 1].flatMap((i) => [-1, 1].map((j) => at((i * D.w) / 2, (j * D.d) / 2)))];
   const deckH = Math.max(...under.map(ground)) + D.lift;

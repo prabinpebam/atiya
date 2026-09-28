@@ -262,6 +262,15 @@
       "group": "Features"
     },
     {
+      "path": "poc-3d-navigation/collision.md",
+      "title": "Collision: hard and soft things, and making way",
+      "order": 38.5,
+      "icon": "back_hand",
+      "status": "done",
+      "updated": "2026-09-28",
+      "group": "Features"
+    },
+    {
       "path": "poc-3d-navigation/ground.md",
       "title": "Levelled ground and cobbles",
       "order": 39,

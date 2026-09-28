@@ -55,12 +55,14 @@
   - a wooden flight along the wall, 0.7 u out;
   - a landing that juts out;
   - a second flight;
+  - a short landing that cuts the corner;
   - a landing in over the rim onto the terrace, square to the wall, that ends flush with the rim (nothing of it sticks into the cliff).
+  - Every bend is obtuse (126° or more): the turn from the second flight into the rim, a right angle less the curve of the wall (76°), is two bends with a short landing between them.
   - They climb about 1.3 u over 4 u.
 - **The upper steps** (stage 2), in the upper tier's frame:
   - a stepping-stone path across the terrace that meets the upper flight square on;
   - from the terrace, two flights along the upper wall (0.58 u out) with a landing between them;
-  - a landing in over its rim;
+  - a short landing that cuts the corner, then a landing in over its rim (the same fix: the turn in was 84°, now two bends of about 121° and 126°);
   - a path across the top's lawn to the platform's steps.
   - They climb 0.8 u over 3 u.
 - **The platform** (stage 3):
@@ -167,3 +169,4 @@
 | 10 | Budgets | `npm run verify:prod`: 449.8 KB initial; 105.6 KB on demand under the proposed 106 KB waiver | Waiver pending |
 | 11 | The steps read as one unit: no part clips into another, the rails never block the way, the lower landing ends flush with the rim | Unit: the walk has no jump over 0.08 u, the way up is clear, the lower landing's end within 0.08 u inside the rim. A real-GPU look at each run | Done |
 | 12 | The cliff is lush: bushes, flowers, sprigs and knee-high grass on its levels, and an old pine over the upper rim | Unit (§4.6 tests). A real-GPU look from the meadow and the terrace | Done |
+| 13 | No wedge-shaped corners: every bend of every run is obtuse | Unit: each bend wider than 115° (the tightest is about 121°) | Done |

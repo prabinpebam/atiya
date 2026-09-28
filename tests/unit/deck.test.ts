@@ -7,7 +7,7 @@ import { FLOWER_KINDS, canopyRadius, generateProps } from '../../src/game/world/
 import { Terrain } from '../../src/game/world/terrain';
 import { mesaPolar, mesaRadius, tierEdge, tierPolar } from '../../src/game/world/features';
 import { DECK, deckFootprint } from '../../src/game/world/deckSpec';
-import { DECK_BUILD, deckCorridors, deckObstacles, deckPlan, deckSurface, inDeck, onDeck, onPiece } from '../../src/game/world/craft/deckPlan';
+import { DECK_BUILD, deckCorridors, deckObstacles, deckPlan, deckSurface, inDeck, onDeck, onPiece, runs } from '../../src/game/world/craft/deckPlan';
 import { deckStageModel } from '../../src/game/world/craft/deckModels';
 import { BONSAI, deckDressing } from '../../src/game/world/craft/deckDressing';
 import { bonsaiModel } from '../../src/game/world/craft/bonsaiModel';
@@ -66,14 +66,16 @@ describe('the viewing deck (viewing-deck.md)', () => {
     // stage 1: the flights stand off the lower wall; its last landing ends flush with the rim (nothing of it on the terrace)
     const [p0, ...rest] = plan.pieces.filter((p) => p.stage === 1);
     expect(baseEdge(p0.a)).toBeGreaterThan(1);
-    for (const p of rest.slice(0, -1)) expect(baseEdge(p.b)).toBeGreaterThan(0.6);
+    for (const p of rest.slice(0, -2)) expect(baseEdge(p.b)).toBeGreaterThan(0.6);
+    // (the landing that cuts the last corner ends a little short of the rim)
+    expect(baseEdge(rest[rest.length - 2].b)).toBeGreaterThan(0.2);
     const top = site.lower[site.lower.length - 1];
     expect(baseEdge(top)).toBeLessThan(0);
     expect(baseEdge(top)).toBeGreaterThan(-0.08);
     expect(tierEdgeD(top)).toBeGreaterThan(0.6);
     // stage 2: along the upper wall, its outer rail clear of the lower rim, then in over the upper rim
     const up = plan.pieces.filter((p) => p.stage === 2 && p.kind !== 'path');
-    for (const p of up.slice(0, -1)) {
+    for (const p of up.slice(0, -2)) {
       for (const t of [0, 0.5, 1]) {
         const c = p.a.clone().lerp(p.b, t).normalize();
         expect(tierEdgeD(c)).toBeGreaterThan(0.5);
@@ -86,6 +88,18 @@ describe('the viewing deck (viewing-deck.md)', () => {
     // and the path across the top to them passes beside the platform, not through it
     for (const across of plan.pieces.filter((p) => p.stage === 2 && p.kind === 'path').slice(1))
       for (let t = 0; t <= 1; t += 0.05) expect(inDeck(plan, across.a.clone().lerp(across.b, t).normalize(), R, 0.35)).toBe(false);
+  });
+
+  it('turns only at obtuse corners: every bend of every run is wider than a right angle', () => {
+    for (const run of runs(plan.pieces)) {
+      for (let i = 1; i < run.length; i++) {
+        const c = run[i].a;
+        const back = tangentToward(c, run[i - 1].a)!;
+        const on = tangentToward(c, run[i].b)!;
+        const deg = (Math.acos(Math.max(-1, Math.min(1, back.dot(on)))) * 180) / Math.PI;
+        expect(deg, `stage ${run[i].stage} bend ${i}`).toBeGreaterThan(115);
+      }
+    }
   });
 
   it('climbs steadily from the meadow to the platform, never into the ground, meeting it at both ends', () => {
@@ -283,6 +297,62 @@ describe('the viewing deck (viewing-deck.md)', () => {
     expect(obs.find((o) => d(stand, o.n) < o.radiusU + CONFIG.playerRadius)).toBeUndefined();
     const t = onPiece(plan.pieces[plan.pieces.length - 1], site.entry, R);
     expect(t.t).toBeCloseTo(0, 5);
+  });
+
+  it('the visitor gets up the steps past Prabin standing on them: he makes way, or they squeeze past (collision.md §4)', () => {
+    const obstacles = [...geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...layout.obstacles.filter((o) => !plainOf.includes(o)), ...deckObstacles(plan, 3, R, plainOf)];
+    const home = layout.home!;
+    const pond = layout.pond!;
+    const w: FamilyWorld = {
+      hours: 12,
+      others: [],
+      pond: { n: pond.n, shore: (n) => terrain.pondShore(n) },
+      R,
+      home,
+      player: new Vector3(0, 1, 0),
+      playerVel: new Vector3(),
+      obstacles,
+      blocked: (n) => d(n, pond.n) < terrain.pondShore(n) + 0.05 || terrain.waterDepth(n) > 0.12,
+      rabbits: [],
+      flowers: [],
+      planet: { spawn: UP.clone(), landmarks: geos.map((g) => ({ id: g.id, n: g.n, approach: g.approach, footprintU: g.footprintU })), craft: null, bridges: [] },
+      deckSeat: plan.seats.family,
+    };
+    const f = new Family(home, R, () => 0.5, moveAlong(site.lower[0], tangentToward(site.lower[0], m.n)!.negate(), 1.5 / R));
+    f.nav = Family.navFor(w);
+    f.obstaclesChanged(w, deckCorridors(plan, 3));
+    const flight = plan.pieces.filter((p) => p.stage === 1)[4];
+    const on = flight.a.clone().lerp(flight.b, 0.5).normalize();
+    const prabin = f.get('prabin');
+    const sim = new PlanetSim([...obstaclesAt(3), { n: prabin.n, radiusU: 0.34, core: 0.16, soft: true }]);
+    const t = new Terrain(geos, layout);
+    t.addSurface(deckSurface(plan, 3, R));
+    sim.placeAt(moveAlong(site.lower[0], tangentToward(site.lower[0], m.n)!.negate(), 0.8 / R));
+    w.player.copy(sim.pLocal);
+    // he stands in the middle of the long flight, facing down it (talking), and stays there
+    f.greet('prabin', on, tangentToward(on, flight.a)!, w);
+    const legs = [...plan.pieces.filter((p) => p.stage === 1).map((p) => p.b)];
+    let time = 0;
+    let moved = 0;
+    for (const goal of legs) {
+      sim.startAutoWalk(goal);
+      let arrived = false;
+      for (let k = 0; k < 60 * 12 && !arrived; k++) {
+        sim.step(1 / 60, { x: 0, y: 0, run: false });
+        w.player.copy(sim.pLocal);
+        w.playerVel!.copy(sim.vel).applyQuaternion(sim.planetQ.clone().invert());
+        f.step(1 / 60, w);
+        time += 1 / 60;
+        moved = Math.max(moved, d(prabin.n, on));
+        for (const e of sim.drainEvents()) if (e.type === 'autowalk-arrived') arrived = true;
+      }
+      expect(arrived, `to ${baseEdge(goal).toFixed(2)}`).toBe(true);
+    }
+    expect(time).toBeLessThan(20);
+    // (he was in the way: nudged aside or along as they came)
+    expect(moved).toBeGreaterThan(0.2);
+    // and he was never pushed off the steps into the cliff or through a rail
+    expect(obstaclesAt(3).some((o) => d(prabin.n, o.n) < (o.core ?? o.radiusU) + 0.05)).toBe(false);
   });
 
   it('once built, Prabin walks up and sits on the bench now and then', () => {

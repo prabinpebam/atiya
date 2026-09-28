@@ -13,7 +13,8 @@ const base = process.env.BASE_PATH || '/';
  * The shaders' GLSL lives in template literals, so the minifier keeps their `//` comments as string
  * content (about 1.5 KB gz in the game's initial JS). Once a chunk is minified, a line that's only a
  * `//` comment can only be inside a template literal, so drop it: never `//#` / `//!` pragmas or a
- * licence.
+ * licence. For the same reason a line's leading indentation is the shaders' own, and GLSL doesn't
+ * need it: drop that too (about 0.5 KB gz).
  */
 function stripShaderComments() {
   return {
@@ -22,7 +23,7 @@ function stripShaderComments() {
     /** @param {unknown} _ @param {Record<string, { type: string; code?: string }>} bundle */
     generateBundle(_, bundle) {
       for (const c of Object.values(bundle)) {
-        if (c.type === 'chunk' && c.code) c.code = c.code.replace(/^[ \t]*\/\/(?![#!])(?![^\n]*@(?:license|preserve))[^\n]*\n/gm, '');
+        if (c.type === 'chunk' && c.code) c.code = c.code.replace(/^[ \t]*\/\/(?![#!])(?![^\n]*@(?:license|preserve))[^\n]*\n/gm, '').replace(/^[ \t]+/gm, '');
       }
     },
   };

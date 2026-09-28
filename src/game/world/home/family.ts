@@ -2128,17 +2128,23 @@ export class Family {
     // (the character last: its gap wins)
     for (const o of this.npcs) if (o !== npc && !o.indoors) this.keepApart(npc, o.n, FAMILY.gapFamily, w);
     for (const o of w.others) this.keepApart(npc, o, FAMILY.gapOther, w);
-    this.keepApart(npc, w.player, FAMILY.gapPlayer, w);
+    this.keepApart(npc, w.player, FAMILY.gapPlayer, w, w.playerVel);
   }
 
-  private keepApart(npc: Npc, other: Vector3, gap: number, w: FamilyWorld): void {
+  /**
+   * Out to `gap` from `other`. Nudged by the character walking at them (`vel`), they step aside to the
+   * side they're on rather than being pushed along ahead of it; boxed in (a narrow way), straight on;
+   * with no room at all they stay, and the character squeezes past (collision.md §4).
+   */
+  private keepApart(npc: Npc, other: Vector3, gap: number, w: FamilyWorld, vel?: Vector3): void {
     const R = w.R;
     const d = arcDistance(npc.n, other, R);
     if (d >= gap) return;
     const out = tangentToward(other, npc.n) ?? tangentToward(other, npc.n.clone().addScaledVector(npc.dir, -0.01).normalize());
     if (!out) return;
     // (onto open ground only: never into the pond or an obstacle; if straight back is blocked, a little to one side)
-    for (const a of [0, 0.5, -0.5, 1, -1, 1.5, -1.5]) {
+    const s = vel && vel.lengthSq() > 0.09 ? Math.sign(_d2.crossVectors(other, vel).dot(npc.n)) || 1 : 0;
+    for (const a of s ? [s * 0.3, 0, s * 0.8, -s * 0.3, s * 1.4] : [0, 0.5, -0.5, 1, -1, 1.5, -1.5]) {
       const dir = a ? rotateAbout(_w.copy(out), other, a) : out;
       const to = moveAlong(other, dir, gap / R);
       if (this.free(w, to, 0, npc)) {

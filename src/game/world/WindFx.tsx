@@ -31,6 +31,8 @@ export function WindDriver({ controller }: { controller: GameController }) {
   const paused = useStore(controller.store, selectAmbientPaused);
   const t = useRef(0);
   useFrame((_, rawDt) => {
+    const p = controller.sim.pLocal;
+    windUniforms.uPush.value.set(p.x, p.y, p.z, 0).multiplyScalar(R + controller.lift).setW(controller.sim.travel ? 0 : 1);
     if (paused) return;
     const dt = Math.min(rawDt, 0.1);
     t.current += dt;
