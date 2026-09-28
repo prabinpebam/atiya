@@ -172,6 +172,15 @@
       "group": "Planet"
     },
     {
+      "path": "poc-3d-navigation/progressive-loading.md",
+      "title": "Progressive loading",
+      "order": 27.5,
+      "icon": "hourglass_top",
+      "status": "draft",
+      "updated": "2026-09-28",
+      "group": "Planet"
+    },
+    {
       "path": "poc-3d-navigation/collection-inventory.md",
       "title": "Collecting and inventory",
       "order": 31,

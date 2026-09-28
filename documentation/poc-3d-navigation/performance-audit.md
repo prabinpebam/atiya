@@ -84,6 +84,9 @@ The frame loop itself was already lean: little JS, instanced props, merged kit m
 
 ## Remaining opportunities (in order of value)
 
+The plan that follows from these, with a fresh measured timeline: [Progressive loading](./progressive-loading.md).
+
+
 1. **World generation off the critical path.** Before the shaders start compiling, ≈ 0.8 s passes at 1× (≈ 3 s at 4×), spent parsing the game chunk and generating the procedural world (layout, kit models, the ground). Options, in order of effort:
    - build the ground and the kit models in a Web Worker (they're pure functions of the layout);
    - cache the generated geometry in IndexedDB, keyed by a content hash, for repeat visits;
