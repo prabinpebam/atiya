@@ -54,9 +54,10 @@ const inv = (items: Array<[ItemId, number]> = []) => {
 };
 
 describe('crafting: recipes (crafting.md §4.1)', () => {
-  it('has planks, a beam, a slab, jute rope, nails and a paint for each of the 7 bloom colours', () => {
-    expect(RECIPES.map((x) => x.id)).toEqual(['planks', 'beam', 'slab', 'rope', 'nails', ...BLOOM_COLOURS.map((c) => `paint-${c.name}`)]);
-    expect(r('nails')).toMatchObject({ out: 'nails', yield: 6, needs: [{ any: ['iron'], n: 1 }] });
+  it('has planks, a beam, a slab, jute rope, stone blocks, firewood, nails and a paint for each of the 7 bloom colours', () => {
+    expect(RECIPES.map((x) => x.id)).toEqual(['planks', 'beam', 'slab', 'rope', 'block', 'firewood', 'nails', ...BLOOM_COLOURS.map((c) => `paint-${c.name}`)]);
+    // (nails from an iron ingot, smelted at the furnace: furnace.md)
+    expect(r('nails')).toMatchObject({ out: 'nails', yield: 6, needs: [{ any: ['ingot'], n: 1 }] });
     expect(r('rope')).toMatchObject({ out: 'rope', yield: 1, needs: [{ any: ['jute'], n: 3 }] });
     expect(r('planks')).toMatchObject({ out: 'planks', yield: 4, needs: [{ any: ['log'], n: 1 }] });
     expect(r('beam')).toMatchObject({ out: 'beam', yield: 1, needs: [{ any: ['log'], n: 2 }] });

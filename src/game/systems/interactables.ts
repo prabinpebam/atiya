@@ -10,7 +10,7 @@ import type { BeatKind } from './actions';
  * Things you can walk up to and use with E (docs: collection-inventory.md §3.1): what's in range,
  * and which one gets the prompt (the one you face, nearest first, with hysteresis).
  */
-export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site' | 'can' | 'plant' | 'notice' | 'jute';
+export type TargetKind = 'tree' | 'boulder' | 'flower' | 'chest' | 'bench' | 'dog' | 'npc' | 'craft' | 'site' | 'can' | 'plant' | 'notice' | 'jute' | 'clay';
 export type TreeKind = 'hardwood' | 'apple' | 'orange' | 'cedar';
 
 export interface Target {
@@ -86,7 +86,7 @@ export const REACH = {
  * chest, the crafting table, a bench, the house site), then things to gather, then Chopper, who is
  * always at your heels.
  */
-export const TIER_U: Record<TargetKind, number> = { npc: 0, chest: 0, craft: 0, site: 0, bench: 0, can: 0, notice: 0, tree: 0.1, boulder: 0.1, flower: 0.1, plant: 0.1, jute: 0.1, dog: 0.45 };
+export const TIER_U: Record<TargetKind, number> = { npc: 0, chest: 0, craft: 0, site: 0, bench: 0, can: 0, notice: 0, tree: 0.1, boulder: 0.1, flower: 0.1, plant: 0.1, jute: 0.1, clay: 0.1, dog: 0.45 };
 
 /** Visual trunk radius at scale 1 (the collision circle is wider: 0.42 hardwood, 0.36 cedar). */
 const TRUNK_U = { hardwood: 0.3, cedar: 0.24 } as const;

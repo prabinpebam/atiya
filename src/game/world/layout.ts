@@ -48,6 +48,9 @@ export interface ChestSpot {
 export const CHEST_RADIUS = 0.4;
 /** The crafting table's collision radius (u). */
 export const CRAFT_RADIUS = 0.5;
+/** The furnace behind the workyard (furnace.md §4.2): its radius once built (u), and how far it keeps from the chest and the table (u, centre to centre). */
+export const FURNACE_RADIUS = 0.55;
+export const FURNACE_GAP = 2.4;
 /** Round the chest, the crafting table and Chopper's house site: no flowers within this (u, from their edge)… */
 export const KEEP_CLEAR = 1.5;
 /** …and no tree, bush or rock edge within this of their edge (u). */
@@ -82,6 +85,8 @@ export interface PropLayout {
   home: Homestead | null;
   /** The crafting table by the Workshop (crafting.md), or null if there's no clear spot. */
   craft: ChestSpot | null;
+  /** The furnace's site behind the workyard (furnace.md), facing it, or null if there's no clear spot. */
+  furnace: ChestSpot | null;
   pond: Pond | null;
   river: River | null;
   bridges: Bridge[];
@@ -90,6 +95,8 @@ export interface PropLayout {
   deck: DeckSite | null;
   /** Everything that blocks movement (landmarks are added by the controller). */
   obstacles: Obstacle[];
+  /** Ground a chunk keeps bare of grass (the clay beds, the furnace's footprint: furnace.md), added before the scene mounts. */
+  bare?: Array<{ n: Vector3; r: number }>;
 }
 
 /** Deterministic PRNG so the planet looks the same on every visit. */
@@ -474,8 +481,28 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   };
   const chest = yard?.chest ?? beside([0.8, 1.0, 1.25], [55, -55, 70, -70, 40, -40, 85, -85], CHEST_RADIUS, null);
   const craft = yard?.craft ?? beside([1.3, 1.6, 1.9, 2.2], [-60, 60, -75, 75, -45, 45, -90, 90], CRAFT_RADIUS, chest?.n ?? null);
+  // the furnace (furnace.md §4.2): behind the yard, out from its centre away from the plaza, with room
+  // to walk between it, the chest and the table; its mouth faces the yard, and it may back onto a cliff
+  // (nobody needs to walk round behind it)
+  const furnace = ((): ChestSpot | null => {
+    if (!chest || !craft) return null;
+    const centre = chest.n.clone().add(craft.n).normalize();
+    const out = tangentToward(centre, spawn)?.negate();
+    if (!out) return null;
+    for (let dist = 2.2; dist <= 3.6 + 1e-9; dist += 0.2) {
+      // turns of 0, ±0.12 … ±0.6 rad, nearest first
+      for (let k = 0; k < 11; k++) {
+        const n = moveAlong(centre, rotateAbout(out.clone(), centre, 0.12 * ((k + 1) >> 1) * (k & 1 ? 1 : -1)), dist / R);
+        const r = FURNACE_RADIUS;
+        if (corridor(n) < r + 0.9 || inPond(n, 0.4) || blocked(n, { river: r + 0.6, mesa: r + 0.45 }) || landmarks.some((g) => arcDistance(n, g.n, R) < g.footprintU + r + 0.8)) continue;
+        if (furniture.some((f) => arcDistance(f.n, n, R) < 1.2) || arcDistance(n, chest.n, R) < FURNACE_GAP || arcDistance(n, craft.n, R) < FURNACE_GAP) continue;
+        return { n, facing: tangentToward(n, centre) ?? out.clone().negate() };
+      }
+    }
+    return null;
+  })();
   // nothing walk-through underneath them
-  for (const spot of [chest, craft]) {
+  for (const spot of [chest, craft, furnace]) {
     if (!spot) continue;
     const under = (p: PropInstance) => arcDistance(p.n, spot.n, R) < CRAFT_RADIUS + 0.25;
     const keep = <T extends PropInstance>(list: T[]) => {
@@ -633,6 +660,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
   const specials = [
     chest && { n: chest.n, r: CHEST_RADIUS },
     craft && { n: craft.n, r: CRAFT_RADIUS },
+    furnace && { n: furnace.n, r: FURNACE_RADIUS },
     home && { n: home.dogHouse.n, r: HOME_R.dogHouse },
     home && { n: home.swing.n, r: HOME_R.swing },
     ...bridgeSpots.map((f) => ({ n: f.n, r: FURNITURE_RADIUS[f.kind] })),
@@ -676,7 +704,7 @@ export function generateProps(landmarks: readonly LandmarkGeometry[], seed = 7, 
     if (i % 3 === 1) b.iron = true;
   });
 
-  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, furniture, chest, craft, home, pond, river, bridges, mesas, deck, obstacles };
+  return { hardwood, fruit, cedar, trees, bushes, flowerBushes, rocks, boulders, pebbles, flowers, sprigs, grass, furniture, chest, craft, furnace, home, pond, river, bridges, mesas, deck, obstacles };
 }
 
 /** Rails along both sides of each bridge deck. */

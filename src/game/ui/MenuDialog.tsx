@@ -71,6 +71,7 @@ function HowToPlay({ controller }: { controller: GameController }) {
         <ul className="help-list">
           <li>Every building holds part of Prabin's work: walk up to one to see what's inside.</li>
           <li>Shake trees and pick flowers, keep what you find in the chest, and make things at the crafting table.</li>
+          <li>Dig clay on the banks and build a furnace: it smelts iron ore into ingots for nails.</li>
           <li>Prabin's family lives by the pond, and Chopper is never far away. Say hello.</li>
         </ul>
       </section>

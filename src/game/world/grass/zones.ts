@@ -123,12 +123,13 @@ export function grassRules(w: GrassWorld, full = false): GrassRules {
   // discs cover its whole top, which is a lawn (its walls are bare already, being steep)
   const bareDiscs: Disc[] = layout.obstacles.filter((o) => !o.mesa).map((o) => disc(o.n, o.radiusU + 0.02, o.radiusU + 0.12));
   if (home) bareDiscs.push(disc(home.mat.n, 0.62, 0.8));
+  for (const b of layout.bare ?? []) bareDiscs.push(disc(b.n, b.r, b.r + 0.12));
   // mown: kept short round the plaza and the landmarks (public lawns)
   const mownDiscs: Disc[] = [disc(UP, w.plazaU + 0.3, w.plazaU + 2.4), ...geos.map((g) => disc(g.n, g.footprintU + 0.6, g.footprintU + 2.8))];
   // worn: the home is lived in (short, sparse, trodden) and everything people stop at
   const wornDiscs: Disc[] = [];
   const trodden: Segment[] = [];
-  const furniture = [...layout.furniture.map((f) => f.n), ...(layout.chest ? [layout.chest.n] : []), ...(layout.craft ? [layout.craft.n] : [])];
+  const furniture = [...layout.furniture.map((f) => f.n), ...[layout.chest, layout.craft, layout.furnace].flatMap((s) => (s ? [s.n] : []))];
   for (const n of furniture) wornDiscs.push(disc(n, 0.5, 1.5));
   let homeWild: Disc | null = null;
   if (home) {

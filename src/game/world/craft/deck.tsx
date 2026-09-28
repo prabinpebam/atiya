@@ -149,7 +149,7 @@ export function attachDeck(controller: GameController, store: CraftStore): DeckA
         if (store.getState().deckStage !== k - 1 || store.getState().deckBuilding !== null) return;
         const miss = missing(inv, DECK_NEEDS[k - 1]);
         if (miss.length) {
-          controller.showToast(`${S.what} still need${k === 3 ? 's' : ''} ${listNeeds(miss)}. Make them at the crafting table; nails come from the iron ore in the rust-streaked boulders.`);
+          controller.showToast(`${S.what} still need${k === 3 ? 's' : ''} ${listNeeds(miss)}. Make them at the crafting table; nails are hammered from iron ingots, smelted at the furnace from the iron ore in the rust-streaked boulders.`);
           return;
         }
         build(k);

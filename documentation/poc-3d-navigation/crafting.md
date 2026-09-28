@@ -58,8 +58,10 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
 | Planks | 1 wood log | 4 |
 | Wooden beam | 2 wood logs | 1 |
 | Stone slab | 2 stones | 1 |
+| Stone block ([furnace.md](./furnace.md)) | 3 stones | 1 |
+| Firewood ([furnace.md](./furnace.md)) | 1 wood log | 3 |
 | Jute rope ([swing.md](./swing.md)) | 3 jute | 1 |
-| Nails ([viewing-deck.md](./viewing-deck.md)) | 1 iron ore | 6 |
+| Nails ([viewing-deck.md](./viewing-deck.md)) | 1 iron ingot (smelted from iron ore at [the furnace](./furnace.md)) | 6 |
 | Paint (7 colours: red, pink, yellow, white, orange, purple, blue) | any 3 flowers of that colour | 1 |
 
 - **Bulk crafting:** 1 to 10 at once, capped by the materials in the backpack and by room for the result.
@@ -85,7 +87,7 @@ It borrows **Valheim's ghost** for the site: a faint outline that grows clearer 
 - **The site card** (while the site is the target, so it never shows while you use the crafting table or water the garden nearby; at the lower left, beside the scene rather than over the ghost and the character; centred above the prompt on narrow screens):
   - the title "Chopper's house";
   - a cute note from Chopper's side;
-  - a checklist with icons and *have / need* ticks: 2 stone slabs, 2 wooden beams, 4 planks and 6 nails (nails since [the viewing deck](./viewing-deck.md) brought iron ore).
+  - a checklist with icons and *have / need* ticks: 2 stone slabs, 2 wooden beams, 4 planks and 6 nails (nails since [the viewing deck](./viewing-deck.md) brought iron ore; they're made from iron ingots, smelted at [the furnace](./furnace.md)).
 - **The prompt:**
   - **See what Chopper's house needs**: E shows (and announces) what's still missing, e.g. "Chopper's house still needs 2 wooden beams and 3 planks. Craft them at the crafting table by the Workshop."
   - **Build Chopper's house**, when you have everything.

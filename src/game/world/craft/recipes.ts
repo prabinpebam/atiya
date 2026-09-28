@@ -4,6 +4,7 @@
  */
 import { roomFor, type Inventory, type Slot } from '../../inventory/inventory';
 import { BLOOM_COLOURS, FLOWER_ITEM_KINDS, itemDef, type BloomColour, type ItemId, type PaintId } from '../../inventory/items';
+import { FURNACE_RADIUS } from '../layout';
 
 /** One ingredient: `n` of any mix of `any` (a paint takes any three flowers of its colour). */
 export interface Need {
@@ -23,6 +24,9 @@ export interface Recipe {
   line: string;
 }
 
+/** The furnace's smelting (furnace.md §4.1): each ingot burns one firewood. */
+export const SMELT_S = 1.4;
+
 /** The most you can craft in one go. */
 export const BULK_MAX = 10;
 /** The most materials a recipe takes (crafting-screen.md §4.3: the detail has a slot for each). */
@@ -36,7 +40,9 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'beam', out: 'beam', yield: 1, needs: [one('log', 2)], line: 'Two logs, squared off into one sturdy beam.' },
   { id: 'slab', out: 'slab', yield: 1, needs: [one('stone', 2)], line: 'Two stones, chiselled flat into a slab.' },
   { id: 'rope', out: 'rope', yield: 1, needs: [one('jute', 3)], line: 'Twist three bundles of jute into a strong rope.' },
-  { id: 'nails', out: 'nails', yield: 6, needs: [one('iron', 1)], line: 'Hammer a lump of iron ore into six sturdy nails.' },
+  { id: 'block', out: 'block', yield: 1, needs: [one('stone', 3)], line: 'Three stones, chiselled square into one solid building block.' },
+  { id: 'firewood', out: 'firewood', yield: 3, needs: [one('log', 1)], line: 'Split a log into three sticks of firewood for the furnace.' },
+  { id: 'nails', out: 'nails', yield: 6, needs: [one('ingot', 1)], line: 'Hammer an iron ingot, smelted at the furnace, into six sturdy nails.' },
   ...BLOOM_COLOURS.map(
     (c): Recipe => ({
       id: `paint-${c.name}`,
@@ -48,7 +54,10 @@ export const RECIPES: readonly Recipe[] = [
   ),
 ];
 
-export const recipeById = (id: string): Recipe | undefined => RECIPES.find((r) => r.id === id);
+/** The furnace's recipes (furnace.md §4.5): iron ore and a stick of firewood into an ingot. */
+export const SMELTING: readonly Recipe[] = [{ id: 'ingot', out: 'ingot', yield: 1, needs: [one('iron', 1), one('firewood', 1)], line: 'Melt a lump of iron ore over burning firewood into a bar of iron.' }];
+
+export const recipeById = (id: string): Recipe | undefined => [...RECIPES, ...SMELTING].find((r) => r.id === id);
 
 /** How many of an ingredient the backpack holds. */
 export const haveOf = (inv: Inventory, need: Need): number => need.any.reduce((s, id) => s + inv.count(id), 0);
@@ -166,6 +175,16 @@ export const DECK_NEEDS: readonly Needs[] = [
   ],
 ];
 
+/** The furnace behind the workyard (furnace.md §4.4). */
+export const FURNACE_NEEDS: Needs = [
+  { id: 'block', n: 6 },
+  { id: 'clay', n: 4 },
+];
+/** The built furnace's collision radius (u). */
+export const FURNACE_R = FURNACE_RADIUS;
+/** It stays warm this long (s) after smelting, cooling as it goes. */
+export const FURNACE_COOL_S = 25;
+
 /** What's still short for a build (the house by default; empty when you can build it). */
 export function missing(inv: Inventory, needs: Needs = HOUSE_NEEDS): Array<{ id: ItemId; n: number; have: number }> {
   return needs.map((x) => ({ ...x, have: inv.count(x.id) })).filter((x) => x.have < x.n);
@@ -183,7 +202,7 @@ export function listNeeds(items: ReadonlyArray<{ id: ItemId; n: number; have?: n
   const names = items.map((x) => {
     const n = x.n - (x.have ?? 0);
     const name = itemDef(x.id).name.toLowerCase();
-    return `${n} ${n === 1 || /(s|ore)$/.test(name) ? name : `${name}s`}`;
+    return `${n} ${n === 1 || /(s|ore|clay|wood)$/.test(name) ? name : `${name}s`}`;
   });
   return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }

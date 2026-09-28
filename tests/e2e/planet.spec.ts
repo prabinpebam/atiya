@@ -1509,6 +1509,7 @@ test.describe("crafting & Chopper's house", () => {
     near: boolean;
     swing: { built: boolean; building: boolean; ghost: number; near: boolean; angle: number; rider: string | null; jute: number[] } | null;
     deck: { stage: number; ghost: number; near: boolean; building: boolean; deckH: number; bench: { visitor: boolean; family: string | null }; route: Array<[number, number, number]> } | null;
+    furnace: { built: boolean; building: boolean; ghost: number; near: boolean; heat: number; clay: Array<{ n: [number, number, number]; water: string; left: number }> } | null;
   };
   const inv = (page: Page) => page.evaluate(() => (window as any).__game.inventory() as Inv);
   const count = (list: (string | null)[], id: string) => list.reduce((n, s) => n + (s && s.split(':')[0] === id ? Number(s.split(':')[1]) : 0), 0);
@@ -1744,7 +1745,7 @@ test.describe("crafting & Chopper's house", () => {
     expect((await craft(page)).swing!.built).toBe(true);
   });
 
-  test('the viewing deck: iron ore from a rusty boulder, nails at the table, three builds up the cliff, a real climb to its bench; it is remembered', async ({ page }) => {
+  test('the viewing deck: iron ore from a rusty boulder, nails from an ingot at the table, three builds up the cliff, a real climb to its bench; it is remembered', async ({ page }) => {
     test.setTimeout(300_000);
     await startPlanet(page);
     const g = (f: string, ...a: unknown[]) => page.evaluate(([f, a]) => (window as any).__game[f as string](...(a as unknown[])), [f, a] as const);
@@ -1755,7 +1756,8 @@ test.describe("crafting & Chopper's house", () => {
     await page.keyboard.press('KeyE');
     await fastForward(page, 3);
     await expect.poll(async () => count((await inv(page)).backpack, 'iron'), { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
-    // nails: one lump of iron ore makes six at the crafting table
+    // nails: one iron ingot (smelted from the ore at the furnace: its own test) makes six at the crafting table
+    await give(page, [['ingot', 1]]);
     expect(await g('nearTarget', 'craft')).toBe('craft');
     await expect(prompt(page).getByRole('button', { name: /Use crafting table/ })).toBeVisible();
     await page.keyboard.press('KeyE');
@@ -1815,6 +1817,92 @@ test.describe("crafting & Chopper's house", () => {
     // remembered
     await startPlanet(page);
     expect((await deck()).stage).toBe(3);
+  });
+
+  test('the furnace: dig clay on a bank, stone blocks and firewood at the table, build it behind the table, smelt iron ore into ingots, nails from an ingot; it is remembered', async ({ page }) => {
+    test.setTimeout(240_000);
+    await startPlanet(page);
+    const g = (f: string, ...a: unknown[]) => page.evaluate(([f, a]) => (window as any).__game[f as string](...(a as unknown[])), [f, a] as const);
+    const furnace = async () => (await craft(page)).furnace!;
+    // clay: a grey-blue bed on the bank, the dig, two lumps come to the backpack, and it's dug out until it fills back up
+    expect(await g('nearTarget', 'clay', 'clay:0')).toBe('clay:0');
+    await expect(prompt(page).getByRole('button', { name: /Dig clay/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 3);
+    await expect.poll(async () => count((await inv(page)).backpack, 'clay'), { timeout: 20_000 }).toBe(2);
+    expect((await furnace()).clay[0].left).toBeGreaterThan(60);
+    await expect(prompt(page).getByRole('button', { name: /Dig clay/ })).toHaveCount(0);
+    // stone blocks (3 stones each) and firewood (3 from a log) at the crafting table
+    await give(page, [['stone', 3], ['log', 1]]);
+    expect(await g('nearTarget', 'craft')).toBe('craft');
+    await expect(prompt(page).getByRole('button', { name: /Use crafting table/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    let screen = page.getByTestId('craft-screen');
+    for (const [name, item, n] of [
+      [/Stone block/, 'block', 1],
+      [/Firewood/, 'firewood', 3],
+    ] as const) {
+      await screen.getByRole('option', { name }).click();
+      await expect(screen.getByRole('option', { name })).toHaveAttribute('aria-selected', 'true');
+      await page.keyboard.press('Enter');
+      await fastForward(page, 1);
+      expect(count((await inv(page)).backpack, item)).toBe(n);
+    }
+    await page.keyboard.press('Space');
+    await expect(screen).toHaveCount(0);
+    // the site behind the table: its ghost, its card, what's missing, and it builds with everything there
+    expect(await g('nearTarget', 'site', 'site:furnace')).toBe('site:furnace');
+    await fastForward(page, 0.2);
+    expect((await furnace()).built).toBe(false);
+    expect((await furnace()).ghost).toBeGreaterThan(0.7);
+    const card = page.getByTestId('site-card');
+    await expect(card).toHaveAttribute('data-site', 'furnace');
+    await expect(card.getByRole('heading', { name: 'The furnace' })).toBeVisible();
+    await expect(card.getByTestId('site-need')).toHaveText([/Stone blocks\s*1 \/ 6/, /Clay\s*2 \/ 4/]);
+    await expect(prompt(page).getByRole('button', { name: /See what the furnace needs/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await expect(page.locator('.toast')).toContainText('The furnace still needs');
+    await give(page, [['block', 5], ['clay', 2]]);
+    await expect(prompt(page).getByRole('button', { name: /Build the furnace/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await fastForward(page, 3);
+    expect((await furnace()).built).toBe(true);
+    expect((await furnace()).building).toBe(false);
+    let i = await inv(page);
+    expect([count(i.backpack, 'block'), count(i.backpack, 'clay')]).toEqual([0, 0]);
+    await expect(page.getByTestId('live-region')).toContainText('You build the furnace!');
+    await expect(card).toHaveCount(0);
+    // smelting: iron ore and firewood make an ingot, and the fire roars while it does
+    await give(page, [['iron', 2]]);
+    await expect(prompt(page).getByRole('button', { name: /Use the furnace/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    screen = page.getByTestId('craft-screen');
+    await expect(screen.getByRole('dialog', { name: 'Furnace' })).toBeVisible();
+    await expect(screen.getByRole('option', { name: /Iron ingot/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(screen.getByTestId('craft-go')).toContainText('Smelt');
+    await page.keyboard.press('Equal');
+    await page.keyboard.press('Enter');
+    await fastForward(page, 0.5);
+    expect((await furnace()).heat).toBeGreaterThan(0.9);
+    await fastForward(page, 3);
+    i = await inv(page);
+    expect([count(i.backpack, 'ingot'), count(i.backpack, 'iron'), count(i.backpack, 'firewood')]).toEqual([2, 0, 1]);
+    await expect(page.getByTestId('live-region')).toContainText('Smelted');
+    await page.keyboard.press('Space');
+    await expect(screen).toHaveCount(0);
+    // nails: from an ingot at the table (iron ore alone makes none)
+    expect(await g('nearTarget', 'craft')).toBe('craft');
+    await page.keyboard.press('KeyE');
+    screen = page.getByTestId('craft-screen');
+    await screen.getByRole('option', { name: /Nails/ }).click();
+    await page.keyboard.press('Enter');
+    await fastForward(page, 1);
+    i = await inv(page);
+    expect([count(i.backpack, 'nails'), count(i.backpack, 'ingot')]).toEqual([6, 1]);
+    await page.keyboard.press('Space');
+    // remembered
+    await startPlanet(page);
+    expect((await furnace()).built).toBe(true);
   });
 
   test("Chopper's house: the ghost grows clearer as you come, the card says what's needed, E builds it, it's saved, solid and paintable", async ({ page }) => {

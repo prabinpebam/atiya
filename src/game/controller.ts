@@ -81,7 +81,17 @@ export interface CraftAttachment {
   /** Its screens in the HUD: the crafting screen, the palette and the site card. */
   Screens: ComponentType;
   step(dt: number): void;
-  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean; swing: SwingState | null; deck: DeckState | null };
+  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean; swing: SwingState | null; deck: DeckState | null; furnace: FurnaceState | null };
+}
+
+/** The furnace (furnace.md), for the test hook: built, going up, the ghost, its card, how hot it is, and each clay bed (where, by which water, seconds until it's full again). */
+export interface FurnaceState {
+  built: boolean;
+  building: boolean;
+  ghost: number;
+  near: boolean;
+  heat: number;
+  clay: Array<{ n: [number, number, number]; water: string; left: number }>;
 }
 
 /** The viewing deck (viewing-deck.md), for the test hook: how many of its three stages are built, the next one's ghost, its card, a build under way, and who sits on its bench. */
@@ -1299,8 +1309,8 @@ export class GameController {
     if (label !== cur!.label) this.store.setState({ target: { ...cur!, label } });
   }
 
-  /** The crafting screen, or the palette for Chopper's house. */
-  openCraft(screen: 'table' | 'paint'): void {
+  /** The crafting screen, the furnace's (the same screen, smelting), or the palette for Chopper's house. */
+  openCraft(screen: 'table' | 'paint' | 'furnace'): void {
     const s = this.store.getState();
     if (!this.craft || s.phase !== 'playing' || s.openId || s.chopperOpen || s.invScreen || s.talk || s.craftScreen || this.sim.travel) return;
     this.keyboard.clear();
@@ -1309,7 +1319,7 @@ export class GameController {
     this.sim.vel.set(0, 0, 0);
     this.sound.open();
     this.store.setState({ craftScreen: screen, menuOpen: false, target: null });
-    this.announce(screen === 'table' ? 'Crafting table open.' : "Painting Chopper's house.");
+    this.announce(screen === 'table' ? 'Crafting table open.' : screen === 'furnace' ? 'Furnace open.' : "Painting Chopper's house.");
   }
 
   closeCraft(): void {

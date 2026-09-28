@@ -15,7 +15,7 @@ export interface GameState {
   /** The inventory screen that's open: the backpack on its own, or the chest with it. */
   invScreen: 'backpack' | 'chest' | null;
   /** The crafting screen (crafting.md §4.2), or the palette for Chopper's house (§4.3), when open. */
-  craftScreen: 'table' | 'paint' | null;
+  craftScreen: 'table' | 'paint' | 'furnace' | null;
   /** Bumped on every inventory change (the hotbar and screens re-render). */
   invVersion: number;
   /** True while the character sits on a bench (from sitting down until it starts to stand up). */

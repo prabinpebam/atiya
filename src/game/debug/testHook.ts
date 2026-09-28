@@ -50,7 +50,7 @@ export interface GameTestHook {
   /** Stand `u` in front of the plaza bench, facing it (bench E2E and visual testing). */
   nearBench(u?: number): boolean;
   /** Stand `u` from a usable target, facing it (from its front first, if it has one): a tree (`which` = hardwood / apple / orange / cedar), a boulder, a flower, the chest or the notice board. Returns its key. */
-  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'craft' | 'site' | 'notice' | 'jute' | 'bench', which?: string, u?: number): string | null;
+  nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'craft' | 'site' | 'notice' | 'jute' | 'clay' | 'bench', which?: string, u?: number): string | null;
   /** Click-to-walk to a planet-local point (the viewing deck's route: `craft().deck.route`). */
   walkTo(p: [number, number, number]): void;
   /** Stand at a planet-local point at once, optionally turning the view by `yaw` rad (screenshots of the deck's steps). */

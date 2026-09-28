@@ -42,7 +42,7 @@
 ### 4.1 Materials and recipes
 
 - **Iron ore** (`iron`): one boulder in three (`layout.ts`, every boulder whose index is 1 mod 3) carries it, shown as twelve rusty and dark metal nuggets on its main lump. Its prompt is **Mine iron ore**, and every third hit of the pickaxe drops a lump of iron ore with the stones.
-- **Nails** (`nails`): 1 iron ore → 6 nails at the crafting table.
+- **Nails** (`nails`): 1 iron ore → 6 nails at the crafting table. *Since [the furnace](./furnace.md):* 1 iron ingot → 6 nails; the ore is smelted into ingots first.
 - Both icons are generated against the golden style set (`assets-src/icons/iron.png`, `nails.png`).
 - **Chopper's house** now needs 6 nails too (2 stone slabs, 2 wooden beams, 4 planks, 6 nails).
 

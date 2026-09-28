@@ -17,7 +17,7 @@ export type BloomColour = (typeof BLOOM_COLOURS)[number]['name'];
 
 export type FlowerItemId = `${FlowerItemKind}-${BloomColour}`;
 export type PaintId = `paint-${BloomColour}`;
-export type ItemId = 'log' | 'leaves' | 'apple' | 'orange' | 'stone' | 'iron' | 'jute' | 'planks' | 'beam' | 'slab' | 'rope' | 'nails' | FlowerItemId | PaintId;
+export type ItemId = 'log' | 'leaves' | 'apple' | 'orange' | 'stone' | 'iron' | 'jute' | 'clay' | 'planks' | 'beam' | 'slab' | 'rope' | 'nails' | 'block' | 'firewood' | 'ingot' | FlowerItemId | PaintId;
 
 export interface ItemDef {
   id: ItemId;
@@ -42,12 +42,18 @@ const BASE: ItemDef[] = [
   { id: 'iron', name: 'Iron ore', maxStack: 64, icon: 'iron', model: 'stone', tint: '#8a5440' },
   // picked from the jute row behind the vegetable garden (swing.md)
   { id: 'jute', name: 'Jute', maxStack: 64, icon: 'jute', model: 'leaves', tint: '#d9b86a' },
+  // dug from the clay beds on the banks of the stream and the pond (furnace.md)
+  { id: 'clay', name: 'Clay', maxStack: 64, icon: 'clay', model: 'stone', tint: '#5f86c9' },
   // crafted at the crafting table (crafting.md)
   { id: 'planks', name: 'Planks', maxStack: 64, icon: 'planks', model: 'log', tint: '#d9b27c' },
   { id: 'beam', name: 'Wooden beam', maxStack: 64, icon: 'beam', model: 'log', tint: '#b8844f' },
   { id: 'slab', name: 'Stone slab', maxStack: 64, icon: 'slab', model: 'stone', tint: '#b9b5ab' },
   { id: 'rope', name: 'Jute rope', maxStack: 64, icon: 'rope', model: 'log', tint: '#c09050' },
   { id: 'nails', name: 'Nails', maxStack: 64, icon: 'nails', model: 'stone', tint: '#b8c0c8' },
+  // the furnace (furnace.md): stone blocks and firewood from the crafting table, iron ingots from the furnace
+  { id: 'block', name: 'Stone block', maxStack: 64, icon: 'block', model: 'stone', tint: '#a8a397' },
+  { id: 'firewood', name: 'Firewood', maxStack: 64, icon: 'firewood', model: 'log', tint: '#a0713f' },
+  { id: 'ingot', name: 'Iron ingot', maxStack: 64, icon: 'ingot', model: 'stone', tint: '#95a1ad' },
 ];
 
 const FLOWERS: ItemDef[] = FLOWER_ITEM_KINDS.flatMap((k) =>

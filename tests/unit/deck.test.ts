@@ -222,14 +222,15 @@ describe('the viewing deck (viewing-deck.md)', () => {
     }
   });
 
-  it('three builds, each at most four materials, with nails from iron ore (and Chopper’s house needs nails too)', () => {
+  it('three builds, each at most four materials, with nails from iron ingots, smelted from the ore (and Chopper’s house needs nails too)', () => {
     expect(DECK_NEEDS).toHaveLength(3);
     for (const n of DECK_NEEDS) {
       expect(n.length).toBeLessThanOrEqual(MAX_NEEDS);
       expect(n.some((x) => x.id === 'nails')).toBe(true);
     }
     const nails = RECIPES.find((r) => r.id === 'nails')!;
-    expect(nails.needs[0].any).toEqual(['iron']);
+    // (furnace.md: the ore is smelted into ingots first)
+    expect(nails.needs[0].any).toEqual(['ingot']);
     expect(nails.yield).toBeGreaterThan(1);
     expect(HOUSE_NEEDS.some((x) => x.id === 'nails')).toBe(true);
   });

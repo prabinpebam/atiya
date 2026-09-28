@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useStore } from 'zustand';
-import { faCheck, faHammer, faMinus, faPaintRoller, faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faFire, faHammer, faMinus, faPaintRoller, faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { GameController } from '../../controller';
 import { itemDef } from '../../inventory/items';
 import { Icon } from '../../ui/Icon';
@@ -10,7 +10,7 @@ import { ItemIcon } from '../../ui/Inventory';
 import InventoryPanel from '../../ui/InventoryPanel';
 import { selectReducedMotion } from '../../state/store';
 import type { Crafting } from './index';
-import { BULK_MAX, CRAFT_S, DECK_NEEDS, HOUSE_HEX, HOUSE_NEEDS, MAX_NEEDS, SWING_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
+import { BULK_MAX, CRAFT_S, DECK_NEEDS, FURNACE_NEEDS, HOUSE_HEX, HOUSE_NEEDS, MAX_NEEDS, SMELTING, SMELT_S, SWING_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
 
 /** The crafting screen, the palette for Chopper's house, and the site card (crafting.md §4.2, §4.3). */
 export function CraftScreens({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
@@ -21,7 +21,8 @@ export function CraftScreens({ controller, crafting }: { controller: GameControl
   const aside = useStore(controller.store, (s) => asideLane(s, compact));
   return (
     <>
-      {screen === 'table' && <CraftScreen controller={controller} crafting={crafting} />}
+      {screen === 'table' && <CraftScreen controller={controller} crafting={crafting} station="table" />}
+      {screen === 'furnace' && <CraftScreen controller={controller} crafting={crafting} station="furnace" />}
       {screen === 'paint' && <PaintPicker controller={controller} crafting={crafting} />}
       {near && !screen && aside === 'site' && <SiteCard controller={controller} which={near} />}
     </>
@@ -30,7 +31,7 @@ export function CraftScreens({ controller, crafting }: { controller: GameControl
 
 const plural = (id: Parameters<typeof itemDef>[0], n: number) => {
   const name = itemDef(id).name;
-  return n === 1 || /(s|ore)$/.test(name) ? name : `${name}s`;
+  return n === 1 || /(s|ore|clay|wood)$/i.test(name) ? name : `${name}s`;
 };
 
 /** "1 wood log", "3 red flowers (any kind)". */
@@ -40,19 +41,20 @@ const needText = (needs: Recipe['needs']) => needs.map((n) => `${n.n} ${n.any.le
  * The crafting table (crafting-screen.md §4.3): Minecraft's layout, with the recipes and the selected
  * one's detail over your backpack and hotbar (the inventory panel's own slots and gestures).
  */
-function CraftScreen({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
+function CraftScreen({ controller, crafting, station }: { controller: GameController; crafting: Crafting; station: 'table' | 'furnace' }) {
   useStore(controller.store, (s) => s.invVersion);
   const touch = useStore(controller.store, (s) => s.input === 'touch');
+  const furnace = station === 'furnace';
   return (
     <InventoryPanel
       controller={controller}
       screen="backpack"
       kind="craft"
-      title="Crafting table"
-      icon={faHammer}
+      title={furnace ? 'Furnace' : 'Crafting table'}
+      icon={furnace ? faFire : faHammer}
       onClose={() => controller.closeCraft()}
-      top={<CraftPane controller={controller} crafting={crafting} />}
-      help={{ title: 'Crafting', keys: touch ? CRAFT_TOUCH : CRAFT_KEYS }}
+      top={<CraftPane controller={controller} crafting={crafting} recipes={furnace ? SMELTING : RECIPES} smelt={furnace} />}
+      help={{ title: furnace ? 'Smelting' : 'Crafting', keys: touch ? CRAFT_TOUCH : furnace ? SMELT_KEYS : CRAFT_KEYS }}
     />
   );
 }
@@ -62,6 +64,12 @@ const CRAFT_KEYS: ReadonlyArray<readonly [string, string]> = [
   ['Arrow keys', 'pick a recipe'],
   ['− and +', 'how many'],
   ['Enter', 'craft'],
+  ['Shift+Enter', 'as many as you can'],
+  ['E or Space', 'close'],
+];
+const SMELT_KEYS: ReadonlyArray<readonly [string, string]> = [
+  ['− and +', 'how many'],
+  ['Enter', 'smelt'],
   ['Shift+Enter', 'as many as you can'],
   ['E or Space', 'close'],
 ];
@@ -102,9 +110,10 @@ function useBookCells(grid: { current: HTMLElement | null }, n: number): number 
  * The recipes as a grid of icons (the names are in the detail and the tooltips), and the selected one:
  * the result, a slot per material (have / need), how many, and Craft. The arrow keys pick, − / + how
  * many, Enter crafts (Shift+Enter: as many as you can), E or Space closes. Every part has a fixed size,
- * so nothing moves as you pick (crafting-screen.md §4.3).
+ * so nothing moves as you pick (crafting-screen.md §4.3). The furnace's screen is the same, with its
+ * recipes and Smelt (furnace.md §4.5).
  */
-function CraftPane({ controller, crafting }: { controller: GameController; crafting: Crafting }) {
+function CraftPane({ controller, crafting, recipes, smelt = false }: { controller: GameController; crafting: Crafting; recipes: readonly Recipe[]; smelt?: boolean }) {
   const busy = useStore(crafting.store, (s) => s.crafting);
   const landed = useStore(crafting.store, (s) => s.landed);
   const reduced = useStore(controller.store, selectReducedMotion);
@@ -113,11 +122,11 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
   const [qty, setQty] = useState(1);
   const grid = useRef<HTMLUListElement>(null);
   const result = useRef<HTMLSpanElement>(null);
-  const r = RECIPES[sel];
+  const r = recipes[sel];
   const max = maxCraftable(inv, r);
   const q = Math.max(1, Math.min(qty, Math.max(1, max)));
   const short = byMaterials(inv, r) > 0 && max === 0;
-  const cells = useBookCells(grid, RECIPES.length);
+  const cells = useBookCells(grid, recipes.length);
 
   useEffect(() => {
     grid.current?.focus({ preventScroll: true });
@@ -171,11 +180,11 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
   }, [landed, reduced]);
 
   const pick = (i: number) => {
-    const n = Math.max(0, Math.min(RECIPES.length - 1, i));
+    const n = Math.max(0, Math.min(recipes.length - 1, i));
     if (n === sel) return;
     setSel(n);
     setQty(1);
-    const rr = RECIPES[n];
+    const rr = recipes[n];
     controller.announce(`${itemDef(rr.out).name}: you can make ${maxCraftable(inv, rr) * rr.yield}.`);
   };
   const step = (d: number) => {
@@ -188,7 +197,7 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
       if (!busy) controller.announce(short ? 'Your backpack is too full for that.' : "You don't have enough for that yet.");
       return;
     }
-    crafting.startCraft(r, all ? max : q);
+    crafting.startCraft(r, all ? max : q, smelt);
   };
   const onKey = (e: KeyboardEvent) => {
     const cols = columns(grid.current);
@@ -219,7 +228,7 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
           Recipes
         </h3>
         <ul ref={grid} className="craft-grid scroll-thin" role="listbox" aria-label="Recipes" aria-orientation="horizontal" tabIndex={0} aria-activedescendant={`recipe-${r.id}`}>
-          {RECIPES.map((x, i) => {
+          {recipes.map((x, i) => {
             const can = maxCraftable(inv, x) * x.yield;
             const name = itemDef(x.out).name;
             return (
@@ -244,7 +253,7 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
               </li>
             );
           })}
-          {Array.from({ length: cells - RECIPES.length }, (_, k) => (
+          {Array.from({ length: cells - recipes.length }, (_, k) => (
             <li key={`empty-${k}`} className="slot craft-cell empty" aria-hidden="true" role="presentation" />
           ))}
         </ul>
@@ -311,7 +320,7 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
             title="Shift+click: make as many as you can"
             onClick={(e) => go(e.shiftKey)}
           >
-            <Icon icon={faHammer} /> Craft <kbd>Enter</kbd>
+            <Icon icon={smelt ? faFire : faHammer} /> {smelt ? 'Smelt' : 'Craft'} <kbd>Enter</kbd>
           </button>
         </div>
         <p className="craft-status" data-testid="craft-status">
@@ -322,7 +331,7 @@ function CraftPane({ controller, crafting }: { controller: GameController; craft
             : `You can make up to ${max * r.yield} ${plural(r.out, max * r.yield).toLowerCase()}.`}
         </p>
         {busy && (
-          <div className="craft-progress" aria-hidden="true" style={{ ['--craft-s' as string]: `${CRAFT_S}s` }}>
+          <div className="craft-progress" aria-hidden="true" style={{ ['--craft-s' as string]: `${smelt ? SMELT_S : CRAFT_S}s` }}>
             <span />
           </div>
         )}
@@ -408,7 +417,7 @@ const SITES = {
     title: 'Chopper’s house',
     text: 'Chopper has picked this sunny spot beside the house. A little house of his very own, right here, would be the best thing ever: somewhere to nap, guard his bowl and keep an eye on everyone. Paws crossed!',
     needs: HOUSE_NEEDS,
-    hint: 'Craft them at the crafting table by the Workshop.',
+    hint: 'Craft them at the crafting table by the Workshop. Nails are hammered from iron ingots, smelted at the furnace behind it.',
   },
   swing: {
     kicker: 'A spot for a swing',
@@ -423,14 +432,14 @@ const SITES = {
     title: 'The steps',
     text: 'Stone steps from the meadow, then wooden flights winding round the cliff to its terrace. The view from up there must be something.',
     needs: DECK_NEEDS[0],
-    hint: 'Make slabs, planks, beams and nails at the crafting table. Nails come from the iron ore in the rust-streaked boulders.',
+    hint: 'Make slabs, planks, beams and nails at the crafting table. Nails are hammered from iron ingots: smelt the iron ore from the rust-streaked boulders at the furnace.',
   },
   deck2: {
     kicker: 'Higher still',
     title: 'The upper steps',
     text: 'From this terrace, a second flight could wind up round the upper cliff to the very top.',
     needs: DECK_NEEDS[1],
-    hint: 'Make slabs, planks, beams and nails at the crafting table. Nails come from the iron ore in the rust-streaked boulders.',
+    hint: 'Make slabs, planks, beams and nails at the crafting table. Nails are hammered from iron ingots: smelt the iron ore from the rust-streaked boulders at the furnace.',
   },
   deck3: {
     kicker: 'A place to look out',
@@ -438,6 +447,14 @@ const SITES = {
     text: 'A wooden platform up here, with a railing, a bench and little lanterns, would be the best seat on the whole planet.',
     needs: DECK_NEEDS[2],
     hint: 'Make planks, beams and nails at the crafting table.',
+  },
+  // the furnace behind the workyard (furnace.md §4.4)
+  furnace: {
+    kicker: 'A spot for a furnace',
+    title: 'The furnace',
+    text: 'A stone furnace here, behind the crafting table, could smelt the iron ore from the boulders into ingots, and ingots make nails.',
+    needs: FURNACE_NEEDS,
+    hint: 'Make stone blocks at the crafting table, and dig clay on the banks of the stream and the pond.',
   },
 } as const;
 

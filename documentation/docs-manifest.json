@@ -217,6 +217,15 @@
       "group": "Features"
     },
     {
+      "path": "poc-3d-navigation/furnace.md",
+      "title": "The furnace, clay and iron ingots",
+      "order": 33.7,
+      "icon": "local_fire_department",
+      "status": "done",
+      "updated": "2026-09-28",
+      "group": "Features"
+    },
+    {
       "path": "poc-3d-navigation/chopper.md",
       "title": "Chopper",
       "order": 34,
