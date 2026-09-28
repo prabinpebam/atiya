@@ -86,7 +86,7 @@
   - Stone blocks for the stone steps.
   - Open plank treads on two stringers, and posts with cross beams and X braces down to the ground where the flight is tall.
   - Plank landings on framed posts, a round pad at each bend, and handrails (posts, a top rail, a mid rail) on both sides.
-  - The platform's boards on a beam frame with joists, on six posts with X braces on each side, and its railing.
+  - The platform's boards on a beam frame with joists, on six posts with X braces on each side, and its railing. The plan's x / z are arcs on the base sphere, so up on the cliff everything placed through them is (R + H) / R bigger (about 1.24×): the boards are scaled with it, so they cover the whole frame out to the railing. They were once sized in plain units and covered only its middle, with gaps between them. Each board is laid in lengths butted end to end, staggered from board to board, so the floor follows the planet: a single board across would lift about 6 cm off the walking height at its ends. A unit test casts rays down over the floor: at least 90% of it has a board's top within 1.2 cm of the deck's height, and the rest are the hairline gaps between boards.
   - The park bench (`parts.ts` `bench`).
   - **Lanterns:** an iron cage round a glow bulb, on the platform's four corners, at the two jutting landings and on a post beside the foot.
 

@@ -136,8 +136,11 @@ function CraftPane({ controller, crafting, recipes, smelt = false }: { controlle
   }, [sel]);
 
   // the landing: the result flies from its slot into each slot it went to, which then pops
+  // (only for what's made while the screen is open: the store still holds the last landing when it opens again)
+  const seen = useRef(landed);
   useEffect(() => {
-    if (!landed) return;
+    if (!landed || landed === seen.current) return;
+    seen.current = landed;
     const panel = grid.current?.closest('.inv-panel');
     const from = result.current?.getBoundingClientRect();
     const img = result.current?.querySelector('img');

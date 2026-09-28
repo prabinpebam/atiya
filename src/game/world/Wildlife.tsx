@@ -9,7 +9,7 @@ import { selectAmbientPaused } from '../state/store';
 import { kitMaterials } from './materials';
 import { DUCK_NECK, birdBody, birdWing, duck, duckHead, duckNest, duckling, fishModel, rabbit } from './wildlifeModels';
 import { RIVER_WATER_U } from './terrain';
-import { birdsOut, createWildlife, meadowSpots, stepWildlife, type WildEnv, type Wildlife as World } from './animals';
+import { birdsOut, createWildlife, meadowSpots, stepWildlife, type Rabbit, type WildEnv, type Wildlife as World } from './animals';
 
 const R = CONFIG.planetRadius;
 /** Fish swim this far under the water surface (u): just under it, so they show through. */
@@ -36,6 +36,11 @@ const _z0 = new Vector3(0, 0, 1);
 /** How high the duck stands on land (her feet at the model's y ≈ −0.062, × her size), and a duckling. */
 const DUCK_LEGS = 0.08;
 const DUCKLING_FEET = 0.026;
+/** A kit hops lower than an adult (u at the top of its arc). */
+const KIT_HOP = 0.07;
+
+/** Which rabbit model: an adult of a coat lying low or sitting up, or a kit of a coat. */
+const rabbitModel = (r: Rabbit, upright: boolean) => (r.mum ? `kit-${r.coat}` : `rabbit-${r.coat}${upright ? '-up' : ''}`);
 
 /** Matrix for a model standing at unit `n` (height `h` above the base sphere), facing tangent `dir`. */
 function place(out: Matrix4, n: Vector3, dir: Vector3, h: number, scale = 1, pitch = 0, yaw = 0, roll = 0): Matrix4 {
@@ -80,7 +85,18 @@ export function Wildlife({ controller }: { controller: GameController }) {
   }, [controller]);
   controller.wildlife = world;
 
-  const geo = useMemo(() => ({ rabbit: rabbit(), rabbitUp: rabbit(true), duck: duck(), duckHead: duckHead(), duckling: duckling(), nest: duckNest(), fish: fishModel(), bird: birdBody(), wing: birdWing() }), []);
+  // the rabbits' models: every coat that's out there, lying low and sitting up, and the kits'
+  const rabbitGeo = useMemo(() => {
+    const out: Record<string, { geometry: BufferGeometry; count: number; kit: boolean }> = {};
+    for (const r of world.rabbits)
+      for (const up of r.mum ? [false] : [false, true]) {
+        const key = rabbitModel(r, up);
+        out[key] ??= { geometry: rabbit(r.coat, r.mum ? 'kit' : up ? 'up' : 'down'), count: 0, kit: Boolean(r.mum) };
+        out[key].count++;
+      }
+    return out;
+  }, [world]);
+  const geo = useMemo(() => ({ duck: duck(), duckHead: duckHead(), duckling: duckling(), nest: duckNest(), fish: fishModel(), bird: birdBody(), wing: birdWing() }), []);
   const nest = controller.props.home?.duckNest ?? null;
   const mat = useMemo(() => kitMaterials().solid, []);
   const meshes = useRef<Record<string, InstancedMesh | null>>({});
@@ -123,15 +139,25 @@ export function Wildlife({ controller }: { controller: GameController }) {
       clock.current += Math.min(dt, 0.1);
     }
     const t = clock.current;
-    // rabbits: hop arcs with a little squash and stretch; sitting up swaps to the upright pose
-    world.rabbits.forEach((r, i) => {
+    // rabbits: hop arcs with a little squash and stretch; sitting up swaps to the upright pose. Each
+    // model's visible instances are packed first and the rest aren't drawn, so a pose nobody's in
+    // costs no draw call
+    const used: Record<string, number> = {};
+    for (const r of world.rabbits) {
       const air = r.hop >= 0 ? 4 * r.hop * (1 - r.hop) : 0;
-      const high = r.state === 'flee' ? 0.2 : 0.12;
+      const high = r.mum ? KIT_HOP : r.state === 'flee' ? 0.2 : 0.12;
       const h = groundAt(r, r.n) + air * high;
-      const pitch = r.hop >= 0 ? (0.5 - r.hop) * 0.6 : 0;
-      M.rabbit?.setMatrixAt(i, r.upright && r.hop < 0 ? HIDDEN : place(_m, r.n, r.dir, h, SIZE.rabbit, pitch));
-      M.rabbitUp?.setMatrixAt(i, r.upright && r.hop < 0 ? place(_b, r.n, r.dir, h, SIZE.rabbit) : HIDDEN);
-    });
+      const pitch = r.hop >= 0 ? (0.5 - r.hop) * (r.mum ? 0.8 : 0.6) : 0;
+      const key = rabbitModel(r, r.upright && r.hop < 0);
+      const i = (used[key] = (used[key] ?? 0) + 1) - 1;
+      M[key]?.setMatrixAt(i, place(_m, r.n, r.dir, h, SIZE.rabbit, pitch));
+    }
+    for (const key of Object.keys(rabbitGeo)) {
+      const m = M[key];
+      if (!m) continue;
+      m.count = used[key] ?? 0;
+      m.visible = m.count > 0;
+    }
     // duck: bobbing on the water, standing (and waddling) on the bank, sitting in the nest; dabbling
     // tips her tail up; her head pecks at crumbs, looks about, and tucks back under her wing asleep
     const water = RIVER_WATER_U;
@@ -186,8 +212,10 @@ export function Wildlife({ controller }: { controller: GameController }) {
 
   return (
     <group name="wildlife">
-      <Herd geometry={geo.rabbit} material={mat} count={world.rabbits.length} onMesh={set('rabbit')} />
-      <Herd geometry={geo.rabbitUp} material={mat} count={world.rabbits.length} onMesh={set('rabbitUp')} />
+      {/* (the kits are tiny and close by their mothers: they skip the shadow pass) */}
+      {Object.entries(rabbitGeo).map(([key, g]) => (
+        <Herd key={key} geometry={g.geometry} material={mat} count={g.count} onMesh={set(key)} shadow={!g.kit} />
+      ))}
       {/* on the water (and the wings, paper-thin) a shadow shows little: they skip the shadow pass */}
       {world.duck && <Herd geometry={geo.duck} material={mat} count={1} onMesh={set('duck')} shadow={false} />}
       {world.duck && <Herd geometry={geo.duckHead} material={mat} count={1} onMesh={set('duckHead')} shadow={false} />}

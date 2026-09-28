@@ -42,9 +42,9 @@ export interface GameTestHook {
   /** The live renderer and scene (audits in the console / scripts). */
   __gfx(): GameController['gfx'];
   /** Ambient wildlife: each animal's state and distance (u) from the character. */
-  wildlife(): { rabbits: { state: string; d: number }[]; duck: { state: string; d: number; toNest: number | null; rest: number; ducklingsToNest: number[] } | null; fish: { state: string; d: number; stream: boolean }[]; birds: { state: string; d: number; alt: number }[] };
+  wildlife(): { rabbits: { state: string; d: number; coat: string; kit: boolean }[]; duck: { state: string; d: number; toNest: number | null; rest: number; ducklingsToNest: number[] } | null; fish: { state: string; d: number; stream: boolean }[]; birds: { state: string; d: number; alt: number }[] };
   /** Where an animal (or the ducks' nest) is on screen (NDC), for close-up screenshots. */
-  projectAnimal(kind: 'duck' | 'duckling' | 'nest', i?: number): { x: number; y: number } | null;
+  projectAnimal(kind: 'duck' | 'duckling' | 'nest' | 'rabbit', i?: number): { x: number; y: number } | null;
   /** Stand `u` away from an animal (visual testing and the wildlife E2E). */
   nearAnimal(kind: 'rabbit' | 'duck' | 'bird', i?: number, u?: number): boolean;
   /** Stand `u` in front of the plaza bench, facing it (bench E2E and visual testing). */
@@ -236,7 +236,7 @@ export function installTestHook(c: GameController): void {
     },
     projectAnimal: (kind, i = 0) => {
       const w = c.wildlife;
-      const n = kind === 'nest' ? c.props.home?.duckNest.n : kind === 'duck' ? w?.duck?.n : w?.ducklings[i]?.n;
+      const n = kind === 'nest' ? c.props.home?.duckNest.n : kind === 'duck' ? w?.duck?.n : kind === 'rabbit' ? w?.rabbits[i]?.n : w?.ducklings[i]?.n;
       if (!n || !c.camera) return null;
       const world = n.clone().multiplyScalar(CONFIG.planetRadius + 0.1).applyQuaternion(c.sim.planetQ);
       c.camera.updateMatrixWorld();
@@ -398,7 +398,7 @@ export function installTestHook(c: GameController): void {
       const d = (n: Vector3) => (Math.acos(Math.max(-1, Math.min(1, n.dot(c.sim.pLocal)))) * R);
       if (!w) return { rabbits: [], duck: null, fish: [], birds: [] };
       return {
-        rabbits: w.rabbits.map((r) => ({ state: r.state, d: d(r.n) })),
+        rabbits: w.rabbits.map((r) => ({ state: r.state, d: d(r.n), coat: r.coat, kit: Boolean(r.mum) })),
         duck: w.duck
           ? {
               state: w.duck.state,

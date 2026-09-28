@@ -1629,7 +1629,18 @@ test.describe("crafting & Chopper's house", () => {
     await page.keyboard.press('Enter');
     await fastForward(page, 1);
     expect(count((await inv(page)).backpack, 'beam')).toBe(0);
-    // a stone slab from two stones
+    // a stone slab from two stones (and it lands: flies to its slot, which pops)
+    const watchLanding = () =>
+      page.evaluate(() => {
+        const w = window as any;
+        w.__landings = 0;
+        w.__landObs?.disconnect();
+        const seen = (el: Element) => el.classList.contains('craft-fly') || el.classList.contains('landed');
+        w.__landObs = new MutationObserver((ms) => ms.forEach((m) => (m.type === 'attributes' ? seen(m.target as Element) : [...m.addedNodes].some((n) => n instanceof Element && seen(n))) && w.__landings++));
+        w.__landObs.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+      });
+    const landings = () => page.evaluate(() => (window as any).__landings as number);
+    await watchLanding();
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
     await fastForward(page, 1);
@@ -1637,6 +1648,16 @@ test.describe("crafting & Chopper's house", () => {
     expect(count(i.backpack, 'slab')).toBe(1);
     expect(count(i.backpack, 'stone')).toBe(2);
     expect(await size()).toBe(shown);
+    await expect.poll(landings).toBeGreaterThan(0);
+    await page.keyboard.press('Space');
+    await expect(screen).toHaveCount(0);
+    // opened again, it doesn't replay the last landing
+    await watchLanding();
+    await expect(prompt(page).getByRole('button', { name: /Use crafting table/ })).toBeVisible();
+    await page.keyboard.press('KeyE');
+    await expect(screen.getByRole('dialog', { name: 'Crafting table' })).toBeVisible();
+    await page.waitForTimeout(1500);
+    expect(await landings()).toBe(0);
     await page.keyboard.press('Space');
     await expect(screen).toHaveCount(0);
     await expect(page.locator('.game-region')).toBeFocused();

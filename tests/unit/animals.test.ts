@@ -6,7 +6,7 @@ import { UP, arcDistance, moveAlong, tangentToward } from '../../src/game/math/s
 import { riverDistance } from '../../src/game/world/features';
 import { generateProps } from '../../src/game/world/layout';
 import { Terrain } from '../../src/game/world/terrain';
-import { WILD, createWildlife, meadowSpots, stepWildlife, type WildEnv, type Wildlife } from '../../src/game/world/animals';
+import { RABBIT_COATS, WILD, createWildlife, meadowSpots, stepWildlife, type WildEnv, type Wildlife } from '../../src/game/world/animals';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
 const R = CONFIG.planetRadius;
@@ -41,7 +41,9 @@ const d = (a: Vector3, b: Vector3) => arcDistance(a, b, R);
 describe('wildlife', () => {
   it('populates the meadows, the pond and the stream', () => {
     const { w } = world();
-    expect(w.rabbits.length).toBe(4);
+    // four adults (three of them mothers) and five kits
+    expect(w.rabbits.length).toBe(9);
+    expect(w.rabbits.filter((r) => !r.mum)).toHaveLength(4);
     expect(w.duck).not.toBeNull();
     expect(w.ducklings.length).toBe(4);
     expect(w.fish.filter((f) => !f.stream).length).toBe(5);
@@ -61,6 +63,70 @@ describe('wildlife', () => {
     });
     expect(hops).toBeGreaterThan(20);
     w.rabbits.forEach((r, i) => expect(d(r.n, was[i])).toBeLessThan(WILD.rabbit.range + 2.5));
+  });
+
+  it('rabbits come in four coats, and three mothers have kits in their own coat, beside her', () => {
+    const { w } = world();
+    const adults = w.rabbits.filter((r) => !r.mum);
+    expect(new Set(adults.map((r) => r.coat))).toEqual(new Set(RABBIT_COATS));
+    const kits = w.rabbits.filter((r) => r.mum);
+    expect(kits).toHaveLength(5);
+    expect(new Set(kits.map((k) => k.mum))).toHaveProperty('size', 3);
+    for (const k of kits) {
+      expect(k.coat).toBe(k.mum!.coat);
+      expect(adults).toContain(k.mum);
+      expect(d(k.n, k.mum!.n)).toBeLessThan(0.4);
+    }
+    // each kit has its own place and its own lag, so they don't move as one
+    expect(new Set(kits.map((k) => k.side.toFixed(3))).size).toBe(kits.length);
+    expect(new Set(kits.map((k) => k.lag.toFixed(3))).size).toBe(kits.length);
+  });
+
+  it('kits hop along with their mother, a beat behind, never far from her and never into water', () => {
+    const { w, env } = world(new Vector3(0, -1, 0));
+    const kits = w.rabbits.filter((r) => r.mum);
+    const start = kits.map((k) => k.mum!.n.clone());
+    let far = 0;
+    let kitHops = 0;
+    let mumHops = 0;
+    // (a kit hops only once its mother has gone on: count the frames each starts a hop)
+    const was = w.rabbits.map((r) => r.hop);
+    run(w, env, 120, () => {
+      w.rabbits.forEach((r, i) => {
+        if (was[i] < 0 && r.hop >= 0) r.mum ? kitHops++ : w.rabbits.some((k) => k.mum === r) && mumHops++;
+        was[i] = r.hop;
+      });
+      for (const k of kits) {
+        expect(terrain.inWater(k.n)).toBe(false);
+        far = Math.max(far, d(k.n, k.mum!.n));
+      }
+    });
+    expect(mumHops).toBeGreaterThan(10);
+    // (a kit's hops are shorter, so it makes more of them)
+    expect(kitHops).toBeGreaterThan(mumHops);
+    expect(far).toBeLessThan(WILD.kit.wait + 0.5);
+    // the mothers really went somewhere, with their kits
+    expect(kits.some((k, i) => d(k.mum!.n, start[i]) > 0.5)).toBe(true);
+    for (const k of kits) expect(d(k.n, k.mum!.n)).toBeLessThan(WILD.kit.wait + 0.2);
+  });
+
+  it('a mother bolts from the character and her kits bolt with her', () => {
+    const { w, env } = world();
+    const mum = w.rabbits[0];
+    const kits = w.rabbits.filter((k) => k.mum === mum);
+    expect(kits.length).toBe(2);
+    env.player = near(mum.n, 1.4);
+    const before = kits.map((k) => d(k.n, env.player));
+    let fled = false;
+    run(w, env, 3, () => {
+      if (mum.state === 'flee' && kits.every((k) => k.state === 'flee' || k.hop >= 0)) fled = true;
+    });
+    expect(fled).toBe(true);
+    kits.forEach((k, i) => expect(d(k.n, env.player)).toBeGreaterThan(before[i] + 1));
+    // and once she stops, they gather round her again
+    env.player = new Vector3(0, -1, 0);
+    run(w, env, 8);
+    for (const k of kits) expect(d(k.n, mum.n)).toBeLessThan(0.6);
   });
 
   it('a rabbit freezes upright when the character is near, and bolts when it is close', () => {

@@ -120,7 +120,7 @@ Below 760 px wide it's one column at the backpack's width: the book (two rows th
 
 1. The Craft button runs its short hammering progress (`CRAFT_S`), as before.
 2. The materials leave the backpack and the result goes in (`craft()`); anything that doesn't fit drops at your feet.
-3. **The landing:** a copy of the result's icon flies from the result slot to each slot that gained it (up to three, the largest first) along a short arc (`--dur-slow`, `--ease-out`). Each slot then pops (a scale and a gold ring, `slot-pop`). If a slot isn't on screen (the panel scrolled), it only pops: there's nothing to fly to, and the announcement says where it went.
+3. **The landing:** a copy of the result's icon flies from the result slot to each slot that gained it (up to three, the largest first) along a short arc (`--dur-slow`, `--ease-out`). Each slot then pops (a scale and a gold ring, `slot-pop`). If a slot isn't on screen (the panel scrolled), it only pops: there's nothing to fly to, and the announcement says where it went. It plays once, for what's made while the screen is open: the last landing is still in the crafting chunk's store, so opening the screen again must not replay it (the E2E crafting test watches for it).
 4. **Under reduced motion:** no flight; the slots that gained it only pop, which the global reduced-motion rule turns into a brief highlight.
 5. **Announced:** "Crafted 4 planks: in hotbar slot 3." (when it all went to one hotbar slot) / "…: in your backpack." / "…; 2 dropped at your feet: your backpack is full."
 

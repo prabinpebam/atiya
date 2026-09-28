@@ -251,14 +251,28 @@ function platform(c: Ctx, plan: DeckPlan): void {
   const H = plan.deckH;
   c.k.surface('wood', () => {
     // floor boards across, on a frame of beams round the edge and joists, on braced posts
-    const boards = Math.round(D.d / 0.16);
+    // (the plan's x/z are arcs on the base sphere, so up here everything placed through them is
+    // (R + H) / R bigger: the boards are too, or they'd cover only the middle of the frame, with gaps;
+    // and each board is laid in lengths butted end to end, staggered, so the floor follows the planet
+    // instead of its ends lifting off it)
+    const k = (c.R + H) / c.R;
+    const boards = Math.round((D.d * k) / 0.16);
+    const LENGTHS = 3;
+    const seg = D.w / LENGTHS;
     for (let i = 0; i < boards; i++) {
       const z = -D.d / 2 + ((i + 0.5) * D.d) / boards;
-      block(c, [D.w, 0.05, (D.d / boards) * 0.93], hash3(i, 5.1, 0.7) < 0.5 ? PLANK : '#b07f4c', P(0, z), H - 0.025, side);
+      const shift = (i % 3) * (seg / 3);
+      const cuts = [-D.w / 2, ...Array.from({ length: LENGTHS }, (_, j) => -D.w / 2 + shift + j * seg).filter((x) => x > -D.w / 2 + 0.1), D.w / 2];
+      for (let j = 0; j + 1 < cuts.length; j++) {
+        const [a, b] = [cuts[j], cuts[j + 1]];
+        const tone = hash3(i, j + 5.1, 0.7);
+        block(c, [(b - a) * k - 0.006, 0.05, ((D.d * k) / boards) * 0.93], tone < 0.45 ? PLANK : tone < 0.8 ? '#b07f4c' : '#c29360', P((a + b) / 2, z), H - 0.025, side);
+      }
     }
     const hx = D.w / 2 - 0.04;
     const hz = D.d / 2 - 0.04;
-    for (const z of [-hz, 0, hz]) beam(c, world(c, P(-hx, z), H - 0.11), world(c, P(hx, z), H - 0.11), P(0, z), 0.12, 0.08, BEAM);
+    // (the joists in two lengths each, meeting over the middle legs, so they stay under the boards)
+    for (const z of [-hz, 0, hz]) for (const [x0, x1] of [[-hx, 0], [0, hx]]) beam(c, world(c, P(x0, z), H - 0.11), world(c, P(x1, z), H - 0.11), P((x0 + x1) / 2, z), 0.12, 0.08, BEAM);
     for (const x of [-hx, hx]) beam(c, world(c, P(x, -hz), H - 0.11), world(c, P(x, hz), H - 0.11), P(x, 0), 0.12, 0.08, BEAM);
     const legs: Array<[number, number]> = [];
     for (const x of [-hx, 0, hx]) for (const z of [-hz, hz]) legs.push([x, z]);

@@ -9,6 +9,10 @@
  * - **Rabbits** graze in short bouts, sit up now and then to scan, and move in short hops near a
  *   home patch, never into water or obstacles. A nearby threat makes them *freeze* upright facing it
  *   (vigilance); a close one makes them *bolt* in fast zigzag hops, then stay alert before grazing.
+ *   They come in four coats (wild agouti, grey, a fawn lop, the Dutch pattern). Three are mothers
+ *   with kits, who keep to her side: each has its own place beside or behind her and hops after
+ *   her when she moves off, a beat later; they freeze when she does, bolt with her, and she waits
+ *   for them when they fall behind.
  * - **The duck** paddles about the pond (contained by its shore) with dabbling pauses; her
  *   **ducklings** follow in a loose, weaving line, each at its own distance and to its own side of
  *   the one ahead, now and then stopping to peck at the water and hurrying to catch up. A close
@@ -38,12 +42,17 @@ const R = CONFIG.planetRadius;
 /** Behaviour distances (u) and speeds (u/s), after the real animals (scaled to the diorama). */
 export const WILD = {
   rabbit: { alert: 4.0, flee: 2.4, safe: 5.2, hopLen: 0.3, hopTime: 0.3, fleeHopLen: 0.62, fleeHopTime: 0.26, range: 3.5 },
+  /** A kit: its hops (shorter, quicker), how far it lets its mother get before it follows, and how far behind she waits for it. */
+  kit: { hopLen: 0.17, hopTime: 0.2, fleeHopLen: 0.5, fleeHopTime: 0.22, near: 0.06, wait: 0.75 },
   duck: { flee: 2.6, calm: 4.2, speed: 0.22, fleeSpeed: 0.7, shoreMargin: 0.55, spacing: 0.24, feedSpeed: 0.4, feedReach: 0.18, nestAt: 0.55, wakeAt: 0.35, walk: 0.16, nestR: 0.15 },
   fish: { flee: 1.7, cruise: 0.3, dart: 1.7, dartTime: 0.7, shoreMargin: 0.35, separation: 0.3 },
   bird: { takeOff: 2.4, landAway: 5, speed: 2.1, minAlt: 2.3, maxAlt: 3.8, separation: 0.55, neighbour: 3.2, nightHide: 0.6 },
 } as const;
 
 export type RabbitState = 'graze' | 'hop' | 'alert' | 'flee';
+/** The rabbits' coats: wild agouti, blue-grey, a fawn lop (ears hanging), the black-and-white Dutch. */
+export const RABBIT_COATS = ['wild', 'grey', 'lop', 'dutch'] as const;
+export type RabbitCoat = (typeof RABBIT_COATS)[number];
 export interface Rabbit {
   n: Vector3;
   dir: Vector3;
@@ -59,6 +68,12 @@ export interface Rabbit {
   from: Vector3;
   to: Vector3;
   zig: number;
+  coat: RabbitCoat;
+  /** A kit's mother (null for an adult); its place beside or behind her (u back, rad off her tail), and how far she gets before it follows (u). */
+  mum: Rabbit | null;
+  gap: number;
+  side: number;
+  lag: number;
 }
 
 export interface Swimmer {
@@ -221,9 +236,11 @@ export function createWildlife(env: WildEnv, spots: readonly Vector3[], seed = 4
   const rand = mulberry32(seed);
   const pick = () => spots[Math.floor(rand() * spots.length) % spots.length] ?? new Vector3(0, 1, 0);
   const rabbits: Rabbit[] = [];
+  // (the adults: a wild mother, a Dutch mother, a lop mother and a grey buck on his own)
+  const coats: RabbitCoat[] = ['wild', 'dutch', 'lop', 'grey'];
   for (let i = 0; i < 4 && spots.length; i++) {
     const n = pick().clone();
-    rabbits.push({ n, dir: tangentAt(n, rand), home: n.clone(), state: 'graze', timer: 1 + rand() * 4, upright: false, hopsLeft: 0, hop: -1, hopTime: WILD.rabbit.hopTime, from: n.clone(), to: n.clone(), zig: 1 });
+    rabbits.push({ n, dir: tangentAt(n, rand), home: n.clone(), state: 'graze', timer: 1 + rand() * 4, upright: false, hopsLeft: 0, hop: -1, hopTime: WILD.rabbit.hopTime, from: n.clone(), to: n.clone(), zig: 1, coat: coats[i], mum: null, gap: 0, side: 0, lag: 0 });
   }
   let duck: Duck | null = null;
   const ducklings: Duckling[] = [];
@@ -257,6 +274,22 @@ export function createWildlife(env: WildEnv, spots: readonly Vector3[], seed = 4
     const flying = i >= 4;
     birds.push({ n, dir: tangentAt(n, rand), alt: flying ? WILD.bird.minAlt + rand() : 0, climb: 0, state: flying ? 'fly' : 'peck', timer: 8 + rand() * 20, flap: rand() * 6, flapAmp: flying ? 1 : 0, spot: n.clone(), peck: 0 });
   }
+  // the kits, after everyone else (their own seed, so the rest of the population is unchanged):
+  // two with the wild mother, one with the Dutch, two with the lop, each wearing its mother's coat
+  const kitRand = mulberry32(seed + 13);
+  const adults = rabbits.slice();
+  [2, 1, 2].forEach((count, m) => {
+    const mum = adults[m];
+    if (!mum) return;
+    for (let j = 0; j < count; j++) {
+      const gap = 0.16 + kitRand() * 0.14;
+      const side = (j % 2 ? 1 : -1) * (0.35 + kitRand() * 0.6);
+      const back = rotateAbout(mum.dir.clone().negate(), mum.n, side);
+      const at = moveAlong(mum.n, back, gap / R);
+      const n = onLand(env, at) ? at : mum.n.clone();
+      rabbits.push({ n, dir: mum.dir.clone(), home: n.clone(), state: 'graze', timer: 0, upright: false, hopsLeft: 0, hop: -1, hopTime: WILD.kit.hopTime, from: n.clone(), to: n.clone(), zig: 1, coat: mum.coat, mum, gap, side, lag: 0.1 + kitRand() * 0.12 });
+    }
+  });
   return { rabbits, duck, ducklings, fish, birds, rand };
 }
 
@@ -280,25 +313,27 @@ function planHop(r: Rabbit, env: WildEnv, len: number, time: number, rand: () =>
   return false;
 }
 
-function stepRabbit(r: Rabbit, env: WildEnv, dt: number, rand: () => number): void {
+/** Carry a hop on (a hop in the air can't change its mind). True while it's still in the air. */
+function inAir(r: Rabbit, dt: number): boolean {
+  if (r.hop < 0) return false;
+  r.hop += dt / r.hopTime;
+  if (r.hop >= 1) {
+    r.n.copy(r.to);
+    transport(r.dir, r.n);
+    r.hop = -1;
+    return false;
+  }
+  const along = tangentToward(r.from, r.to);
+  if (along) r.n.copy(moveAlong(r.from, along, (dist(r.from, r.to) * r.hop) / R));
+  return true;
+}
+
+/** `waiting`: a mother whose kit has fallen behind stops at the end of this hop until it catches up. */
+function stepRabbit(r: Rabbit, env: WildEnv, dt: number, rand: () => number, waiting = false): void {
   const W = WILD.rabbit;
   const threat = nearestThreat(r.n, env);
   const d = threat.d;
-  // mid-hop: finish it (a hop in the air can't change its mind)
-  if (r.hop >= 0) {
-    r.hop += dt / r.hopTime;
-    if (r.hop >= 1) {
-      r.n.copy(r.to);
-      transport(r.dir, r.n);
-      r.hop = -1;
-    } else {
-      const t = r.hop;
-      const len = dist(r.from, r.to);
-      const along = tangentToward(r.from, r.to);
-      if (along) r.n.copy(moveAlong(r.from, along, (len * t) / R));
-      return;
-    }
-  }
+  if (inAir(r, dt)) return;
   // threat response overrides everything (flee first, then vigilance)
   if (d < W.flee && r.state !== 'flee') {
     r.state = 'flee';
@@ -359,7 +394,7 @@ function stepRabbit(r: Rabbit, env: WildEnv, dt: number, rand: () => number): vo
       break;
     }
     case 'hop': {
-      if (r.hopsLeft-- <= 0) {
+      if (r.hopsLeft-- <= 0 || waiting) {
         r.state = 'graze';
         r.timer = 1.5 + rand() * 4.5;
         break;
@@ -372,6 +407,37 @@ function stepRabbit(r: Rabbit, env: WildEnv, dt: number, rand: () => number): vo
       break;
     }
   }
+}
+
+/**
+ * A kit keeps to its mother: its own place beside or behind her (`gap`, `side`), hopping after her
+ * once she's `lag` u past it, a beat after she goes. It freezes when she does, bolts when she bolts
+ * (or when a threat gets close to it), and between hops it grazes, facing about the way she does.
+ */
+function stepKit(k: Rabbit, env: WildEnv, dt: number, rand: () => number): void {
+  const mum = k.mum!;
+  const K = WILD.kit;
+  if (inAir(k, dt)) return;
+  const scared = mum.state === 'flee' || nearestThreat(k.n, env).d < WILD.rabbit.flee * 0.8;
+  // its place: behind her (to its own side of her tail), or tucked in close while she's fleeing or alert
+  const back = rotateAbout(mum.dir.clone().negate(), mum.n, k.side);
+  const place = moveAlong(mum.n, back, (scared || mum.state === 'alert' ? k.gap * 0.7 : k.gap) / R);
+  const off = dist(k.n, place);
+  const go = scared ? K.near : mum.state === 'alert' ? k.lag * 3 : k.lag;
+  if (off > go) {
+    const toward = tangentToward(k.n, place);
+    if (toward) k.dir.copy(toward);
+    // (a little wobble, so a pair of kits don't hop in step)
+    rotateAbout(k.dir, k.n, (rand() - 0.5) * 0.3);
+    const [len, time] = scared ? [K.fleeHopLen, K.fleeHopTime] : [K.hopLen, K.hopTime * (0.85 + rand() * 0.3)];
+    if (planHop(k, env, Math.min(len, off + 0.02), time, rand)) {
+      k.state = scared ? 'flee' : 'hop';
+      return;
+    }
+  }
+  k.state = scared ? 'flee' : mum.state === 'alert' ? 'alert' : 'graze';
+  k.upright = false;
+  if (k.state !== 'flee') turnToward(k.dir, k.n, mum.dir, 0.8 * dt);
 }
 
 // ---------------------------------------------------------------------------
@@ -709,7 +775,10 @@ function stepBird(b: Bird, flock: Bird[], env: WildEnv, dt: number, rand: () => 
 export function stepWildlife(w: Wildlife, env: WildEnv, rawDt: number): void {
   const dt = Math.min(rawDt, 0.1);
   const rand = w.rand;
-  for (const r of w.rabbits) stepRabbit(r, env, dt, rand);
+  for (const r of w.rabbits) {
+    if (r.mum) stepKit(r, env, dt, rand);
+    else stepRabbit(r, env, dt, rand, r.state === 'hop' && w.rabbits.some((k) => k.mum === r && dist(k.n, r.n) > WILD.kit.wait));
+  }
   if (w.duck) stepDuck(w.duck, w.ducklings, env, dt, rand);
   for (const f of w.fish) stepFish(f, w.fish, env, dt, rand);
   // birds roost at night

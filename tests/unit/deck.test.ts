@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Vector3 } from 'three';
+import { DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
 import { CONFIG } from '../../src/game/config';
 import { landmarkGeometry } from '../../src/game/math/landmarks';
 import { UP, arcDistance, moveAlong, tangentToward, type Obstacle } from '../../src/game/math/sphere';
@@ -220,6 +220,29 @@ describe('the viewing deck (viewing-deck.md)', () => {
       expect(tris).toBeLessThan(20000);
       if (k === 3) expect(g.glow).toBeTruthy();
     }
+  });
+
+  it("the platform's boards cover its whole frame, flat at the deck's height (they're scaled up with it)", () => {
+    const g = deckStageModel(plan, 3, ground, R);
+    const mesh = new Mesh(g.solid!, new MeshBasicMaterial({ side: DoubleSide }));
+    const rc = new Raycaster();
+    const D = DECK.deck;
+    const H = plan.deckH;
+    let n = 0;
+    let floor = 0;
+    // (inside the railing, clear of the bench; a ray down finds a board's top within a hair of the walking height)
+    for (let x = -D.w / 2 + 0.12; x <= D.w / 2 - 0.12; x += 0.07)
+      for (let z = -D.d / 2 + 0.12; z <= D.d / 2 - 0.12; z += 0.07) {
+        const p = plan.at(x, z).normalize();
+        rc.set(p.clone().multiplyScalar(R + H + 2), p.clone().negate());
+        const hits = rc.intersectObject(mesh).map((h) => h.point.length() - R);
+        if (hits.some((h) => h > H + 0.05)) continue;
+        n++;
+        if (hits.some((h) => Math.abs(h - H) < 0.012)) floor++;
+      }
+    expect(n).toBeGreaterThan(300);
+    // (the rest are the hairline gaps between boards)
+    expect(floor / n).toBeGreaterThan(0.9);
   });
 
   it('three builds, each at most four materials, with nails from iron ingots, smelted from the ore (and Chopper’s house needs nails too)', () => {

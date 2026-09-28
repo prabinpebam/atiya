@@ -4,7 +4,8 @@
  * initial bundle.
  */
 import { BufferGeometry, Quaternion, Vector3 } from 'three';
-import { Kit, hash3, mix } from './kit';
+import { Kit, hash3, mix, xfMatrix, type V3, type Xf } from './kit';
+import type { RabbitCoat } from './animals';
 
 const solid = (k: Kit): BufferGeometry => k.build().solid!;
 
@@ -12,20 +13,105 @@ const solid = (k: Kit): BufferGeometry => k.build().solid!;
 // Wildlife (world/animals.ts): small, soft kit models, facing +Z, feet (or waterline) at y = 0
 // ---------------------------------------------------------------------------
 
-/** A rabbit (≈ 0.3 u long): round body, head, long ears, white scut. `upright` = sitting up to look. */
-export function rabbit(upright = false): BufferGeometry {
+/** The rabbits' coats: fur from its back to its sides, the belly, the ears (and their rims), the scut. */
+const COATS: Record<RabbitCoat, { back: string; side: string; belly: string; ear: string; rim: string; scut: string }> = {
+  // the wild agouti brown: ticked grey-brown, a cream belly, dark-rimmed ears
+  wild: { back: '#6c523d', side: '#a3815d', belly: '#e6d5ba', ear: '#86684d', rim: '#3e2e22', scut: '#f6f1e8' },
+  // a soft blue-grey with a pale belly
+  grey: { back: '#5d6068', side: '#8f929a', belly: '#ecebe6', ear: '#6e7178', rim: '#3d3f45', scut: '#f7f6f2' },
+  // a fawn lop: warm cream and ginger
+  lop: { back: '#c38d52', side: '#e3bd8a', belly: '#f6ead5', ear: '#b27b44', rim: '#8e5f33', scut: '#fbf5ea' },
+  // the Dutch pattern: dark hindquarters, ears and cheeks; a white blaze, collar, forefeet and hind-foot tips
+  dutch: { back: '#35302d', side: '#46403c', belly: '#f4f1ea', ear: '#3a3431', rim: '#2a2523', scut: '#f7f4ee' },
+};
+const DUTCH_WHITE = '#f4f1ea';
+
+type Role = 'body' | 'head' | 'muzzle' | 'ear' | 'earIn' | 'foot' | 'paw' | 'scut';
+type RabbitPose = 'down' | 'up' | 'kit';
+
+/**
+ * A rabbit (docs: wildlife.md): an adult (≈ 0.33 u long) lying low to graze (`down`) or sitting up to
+ * look (`up`), or a kit (≈ 0.2 u: a round body, a big head, short ears). Coats are painted in model
+ * space, so a pattern (the Dutch saddle and blaze) runs across the parts; a lop's ears hang by its
+ * cheeks. Facing +z, feet at y = 0.
+ */
+export function rabbit(coat: RabbitCoat = 'wild', pose: RabbitPose = 'down'): BufferGeometry {
   const k = new Kit();
-  const fur = (_p: Vector3, n: Vector3) => mix('#8a6c52', '#c7a887', 0.45 + n.y * 0.45);
-  const lift = upright ? 0.07 : 0;
-  k.blob(0.12, fur, { p: [0, 0.1 + lift * 0.6, -0.02], s: upright ? [1, 1.25, 0.95] : [1, 0.85, 1.25] }, 1, 'solid', 0.05, 3);
-  k.blob(0.075, fur, { p: [0, 0.17 + lift * 1.4, upright ? 0.07 : 0.12], s: [1, 0.95, 1.1] }, 1, 'solid', 0.04, 4);
-  for (const x of [-0.028, 0.028]) {
-    k.blob(0.03, fur, { p: [x, 0.27 + lift * 1.4, upright ? 0.05 : 0.08], r: [upright ? -0.1 : -0.45, 0, x * 3], s: [0.55, 2.6, 0.35] }, 0);
-    k.blob(0.018, '#e9b7b0', { p: [x, 0.27 + lift * 1.4, upright ? 0.063 : 0.095], r: [upright ? -0.1 : -0.45, 0, x * 3], s: [0.45, 2.2, 0.2] }, 0);
+  const C = COATS[coat];
+  const kit = pose === 'kit';
+  const lop = coat === 'lop';
+  const up = pose === 'up';
+  const hd = new Vector3(...(kit ? [0, 0.12, 0.085] : up ? [0, 0.29, 0.06] : [0, 0.175, 0.13]));
+  const hr = kit ? 0.06 : 0.072;
+  const P = new Vector3();
+  const N = new Vector3();
+  const fur = (p: Vector3, n: Vector3, role: Role) => {
+    if (role === 'scut') return C.scut;
+    if (coat === 'dutch') {
+      const q = P.copy(p).sub(hd);
+      if (role === 'muzzle' || role === 'paw') return DUTCH_WHITE;
+      if (role === 'head') return Math.abs(q.x) < hr * (0.22 + Math.max(0, -q.y / hr) * 0.9) || q.y < -hr * 0.55 ? DUTCH_WHITE : C.back;
+      if (role === 'foot') return p.z > (kit ? 0.0 : 0.005) ? DUTCH_WHITE : C.back;
+      if (role === 'body') return p.z > (kit ? -0.005 : -0.01) + Math.sin(p.x * 60) * 0.008 || n.y < -0.45 ? DUTCH_WHITE : C.back;
+    }
+    if (role === 'earIn') return '#e8b3ad';
+    if (role === 'ear') return mix(C.ear, C.rim, lop ? (hd.y - hr * 1.1 - p.y) / (hr * 0.6) : (p.y - hd.y - hr * 1.9) / (hr * 0.9));
+    // the back darker, the sides lighter, the belly and chin cream; ticked with a little noise
+    const base = mix(C.side, C.back, 0.35 + n.y * 0.65);
+    const tick = mix(base, C.back, (hash3(Math.round(p.x * 90), Math.round(p.y * 90), Math.round(p.z * 90)) - 0.5) * 0.35);
+    const belly = role === 'muzzle' ? 0.55 : Math.min(1, Math.max(0, (-n.y - 0.15) * 1.6));
+    return mix(tick, C.belly, kit ? belly * 0.8 + 0.08 : belly);
+  };
+  // (the paint's p and n are the part's own: bring them into the model's frame for the pattern)
+  const part = (role: Role, r: number, xf: Xf, detail = 1, lump = 0, seed = 0) => {
+    const m = xfMatrix(xf);
+    k.blob(r, (p, n) => fur(p.clone().applyMatrix4(m), N.copy(n).transformDirection(m), role), xf, detail, 'solid', lump, seed);
+  };
+  const at = (o: V3): V3 => [hd.x + o[0], hd.y + o[1], hd.z + o[2]];
+  // body, haunches and chest
+  if (kit) {
+    part('body', 0.078, { p: [0, 0.07, -0.01], s: [1.02, 0.95, 1.02] }, 2, 0.015, 3);
+    for (const x of [-1, 1]) part('body', 0.048, { p: [x * 0.04, 0.056, -0.045], s: [0.65, 0.95, 1] });
+    part('body', 0.052, { p: [0, 0.068, 0.035] });
+  } else if (up) {
+    part('body', 0.12, { p: [0, 0.13, -0.03], s: [0.95, 1.3, 0.92] }, 2, 0.035, 3);
+    for (const x of [-1, 1]) part('body', 0.075, { p: [x * 0.06, 0.075, -0.05], s: [0.65, 0.9, 1.1] });
+    part('body', 0.07, { p: [0, 0.19, 0.03], s: [0.9, 1.1, 0.85] });
+  } else {
+    part('body', 0.12, { p: [0, 0.1, -0.03], s: [1, 0.85, 1.2] }, 2, 0.035, 3);
+    for (const x of [-1, 1]) part('body', 0.075, { p: [x * 0.058, 0.085, -0.075], s: [0.62, 0.95, 1.05] });
+    part('body', 0.08, { p: [0, 0.1, 0.06], s: [0.95, 0.95, 0.9] });
   }
-  k.sphere(0.012, '#1d1712', { p: [-0.045, 0.19 + lift * 1.4, upright ? 0.12 : 0.17] }, [5, 4]);
-  k.sphere(0.012, '#1d1712', { p: [0.045, 0.19 + lift * 1.4, upright ? 0.12 : 0.17] }, [5, 4]);
-  k.blob(0.035, '#f6f1e8', { p: [0, 0.11 + lift * 0.4, -0.14] }, 0);
+  // long hind feet flat on the ground, and the forepaws (tucked to the chest when sitting up)
+  const s = kit ? 0.65 : 1;
+  for (const x of [-1, 1]) {
+    part('foot', 0.03 * s, { p: [x * 0.062 * s, 0.016 * s, (up ? 0 : -0.02) * s], s: [0.62, 0.42, 2] });
+    part('paw', 0.022 * s, up ? { p: [x * 0.03, 0.15, 0.085], s: [0.7, 1.1, 0.8] } : { p: [x * 0.033 * s, 0.02 * s, kit ? 0.065 : 0.1], s: [0.75, 0.7, 1.35] });
+  }
+  // the head: a rounded muzzle, a pink nose, bright eyes with a catch-light (a kit's bigger)
+  part('head', hr, { p: [hd.x, hd.y, hd.z], s: [1, 0.95, 1.12] }, 2, 0.01, 5);
+  part('muzzle', hr * 0.47, { p: at([0, -hr * 0.25, hr * 0.8]), s: [1.15, 0.8, 0.8] });
+  k.sphere(hr * 0.13, '#d98c8c', { p: at([0, -hr * 0.1, hr * 1.24]) }, [6, 4]);
+  for (const x of [-1, 1]) {
+    k.sphere(kit ? 0.0135 : 0.012, '#1b1511', { p: at([x * hr * 0.63, hr * 0.17, hr * 0.5]) }, [6, 5]);
+    k.sphere(0.0038, '#ffffff', { p: at([x * hr * 0.7, hr * 0.26, hr * 0.6]) }, [4, 3]);
+  }
+  // ears: long and upright (short on a kit), or a lop's hanging by its cheeks under a crown
+  for (const x of [-1, 1]) {
+    if (lop) {
+      // (broad, flat flaps: thin across, long, and wide front to back)
+      const e = { p: at([x * hr * 1.0, -hr * (kit ? 0.3 : 0.42), -hr * 0.12]), r: [0.2, 0, x * 0.2] as V3, s: [0.36, kit ? 1.7 : 2.3, 1.05] as V3 };
+      part('ear', kit ? 0.024 : 0.032, e);
+    } else {
+      const len = kit ? 1.75 : 2.6;
+      const e = { p: at([x * hr * 0.38, hr * (kit ? 1.1 : 1.4), -hr * 0.55]), r: [up ? -0.12 : -0.45, 0, x * (kit ? 0.28 : 0.1)] as V3 };
+      part('ear', kit ? 0.022 : 0.03, { ...e, s: [0.55, len, 0.35] });
+      part('earIn', kit ? 0.014 : 0.018, { ...e, p: [e.p[0], e.p[1], e.p[2] + (kit ? 0.009 : 0.013)], s: [0.45, len * 0.85, 0.2] }, 0);
+    }
+  }
+  if (lop) part('head', hr * 0.42, { p: at([0, hr * 0.78, -hr * 0.12]), s: [1.9, 0.6, 0.9] });
+  // the white scut
+  part('scut', kit ? 0.022 : 0.036, { p: kit ? [0, 0.075, -0.105] : up ? [0, 0.07, -0.155] : [0, 0.12, -0.175] });
   return solid(k);
 }
 

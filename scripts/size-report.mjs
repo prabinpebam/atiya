@@ -18,8 +18,9 @@ const GAME_BUDGET_KB = 450;
 // 103 → 106 KB for the deck's planting and the old pine on its cliff (viewing-deck.md §4.6, in the crafting chunk);
 // 106 → 107 KB for the panels' help popover and the crafting screen's fixed layout (crafting-screen.md §4.3);
 // 107 → 108 KB for the click-to-walk marker and the walk cursor's ground test (design system §6.5, in the wildlife chunk);
-// 108 → 113 KB for the furnace (its site, model, fire and smelting screen, the clay beds, in the crafting chunk: furnace.md); pending the owner's OK
-const DEFERRED_BUDGET_KB = 113;
+// 108 → 113 KB for the furnace (its site, model, fire and smelting screen, the clay beds, in the crafting chunk: furnace.md);
+// 113 → 115 KB for the rabbits' coats, kits and mothers (the models and the kits' following, in the wildlife chunk); pending the owner's OK
+const DEFERRED_BUDGET_KB = 115;
 const GATE_BUDGET_KB = 8;
 
 if (!existsSync(ASSETS)) {
