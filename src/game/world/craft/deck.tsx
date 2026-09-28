@@ -99,6 +99,7 @@ export function attachDeck(controller: GameController, store: CraftStore): DeckA
     p.sprigs.push(...dressing.sprigs);
     for (const k of Object.keys(dressing.flowers) as (keyof typeof p.flowers)[]) p.flowers[k].push(...dressing.flowers[k]);
     controller.replaceObstacles(() => false, dressing.obstacles);
+    (p.bare ??= []).push(...dressing.bare);
   }
   const inv = controller.inventory;
   // the cliff's own obstacles as laid out (one big block and its rim), swapped out once the steps are up
@@ -301,14 +302,15 @@ function DeckView({ controller, store, plan, link }: { controller: GameControlle
   );
 }
 
-/** The old pine on the upper rim, leaning out over it (viewing-deck.md §4.6): drawn with the trees' swaying bark and needle materials. */
+/** The old pine on the upper rim, leaning out over it (viewing-deck.md §4.6): drawn with the trees' swaying bark, needle and (for its creepers) leaf materials. */
 function Bonsai({ controller, at }: { controller: GameController; at: DeckDressing['bonsai'] }) {
-  const geo = useMemo(() => bonsaiModel(), []);
+  const geo = useMemo(() => bonsaiModel(at.cliff), [at]);
   const mats = useMemo(() => sharedPropMaterials<PropMaterials>(), []);
   useEffect(
     () => () => {
       geo.solid.dispose();
       geo.leaves.dispose();
+      geo.ivy.dispose();
     },
     [geo],
   );
@@ -331,6 +333,7 @@ function Bonsai({ controller, at }: { controller: GameController; at: DeckDressi
     <group name="deck-pine">
       <instancedMesh ref={(m) => void (meshes.current[0] = m)} args={[geo.solid, mats.tree, 1]} castShadow receiveShadow frustumCulled={false} />
       <instancedMesh ref={(m) => void (meshes.current[1] = m)} args={[geo.leaves, mats.needle.material, 1]} castShadow receiveShadow customDepthMaterial={mats.needle.depth} frustumCulled={false} />
+      <instancedMesh ref={(m) => void (meshes.current[2] = m)} args={[geo.ivy, mats.broad.material, 1]} castShadow receiveShadow customDepthMaterial={mats.broad.depth} frustumCulled={false} />
     </group>
   );
 }

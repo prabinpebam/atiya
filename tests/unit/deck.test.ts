@@ -10,7 +10,7 @@ import { DECK, deckFootprint } from '../../src/game/world/deckSpec';
 import { DECK_BUILD, deckCorridors, deckObstacles, deckPlan, deckSurface, inDeck, onDeck, onPiece, runs } from '../../src/game/world/craft/deckPlan';
 import { deckStageModel } from '../../src/game/world/craft/deckModels';
 import { BONSAI, deckDressing } from '../../src/game/world/craft/deckDressing';
-import { bonsaiModel } from '../../src/game/world/craft/bonsaiModel';
+import { bonsaiModel, pineRoots } from '../../src/game/world/craft/bonsaiModel';
 import { DECK_NEEDS, HOUSE_NEEDS, MAX_NEEDS, RECIPES } from '../../src/game/world/craft/recipes';
 import { SphereNav } from '../../src/game/world/home/nav';
 import { Family, type FamilyWorld } from '../../src/game/world/home/family';
@@ -306,8 +306,50 @@ describe('the viewing deck (viewing-deck.md)', () => {
     expect(tierEdgeD(moveAlong(pine.n, pine.out, 1.2 / R))).toBeGreaterThan(0);
     const g = bonsaiModel();
     g.solid.computeBoundingBox();
-    expect(g.solid.boundingBox!.max.x).toBeGreaterThan(1.2);
-    expect(g.leaves).toBeTruthy();
+    // an old tree, twice the size of the first: it reaches well out over the rim and stands over 3 u tall, hung with creepers
+    expect(g.solid.boundingBox!.max.x).toBeGreaterThan(3);
+    expect(g.solid.boundingBox!.max.y).toBeGreaterThan(3);
+    expect(g.ivy.getAttribute('position').count).toBeGreaterThan(400 * 4);
+  });
+
+  it('the old pine is rooted in the real cliff: its roots lie on the top, bend over the rim and cling down the wall', () => {
+    const dr = deckDressing(layout, geos, R, ground, (n) => terrain.inWater(n))!;
+    const { cliff } = dr.bonsai;
+    // the frame agrees with the ground: the top is level with the trunk's foot, the terrace a tier below
+    expect(Math.abs(cliff.ground(0, 0))).toBeLessThan(1e-6);
+    const e = cliff.edge(0, 0);
+    expect(Math.hypot(e.x, e.z)).toBeCloseTo(BONSAI.inset, 1);
+    expect(cliff.inside(e.x - e.nx * 0.05, e.z - e.nz * 0.05)).toBe(true);
+    expect(cliff.inside(e.x + e.nx * 0.05, e.z + e.nz * 0.05)).toBe(false);
+    expect(cliff.ground(e.x + e.nx * 0.5, e.z + e.nz * 0.5)).toBeLessThan(-m.tier!.heightU * 0.8);
+    const roots = pineRoots(cliff);
+    let down = 0;
+    for (const root of roots) {
+      let onWall = 0;
+      for (const [i, [x, y, z, r]] of root.entries()) {
+        if (i <= 1) continue; // (from inside the trunk down to the ground)
+        const [px, py, pz] = root[i - 1];
+        expect(Math.hypot(x - px, y - py, z - pz)).toBeLessThan(0.3);
+        const g = cliff.ground(x, z);
+        const e = cliff.edge(x, z);
+        const past = (x - e.x) * e.nx + (z - e.z) * e.nz;
+        if (cliff.inside(x, z)) {
+          // on the top: sunk in, never floating
+          expect(y - g).toBeGreaterThan(-0.02);
+          expect(y - g).toBeLessThan(r * 0.6 + 0.02);
+        } else if (y > g + r * 0.6 + 0.02) {
+          // on the face: just outside the wall (its ledges bulge up to 0.1 u), never out in the air
+          expect(past).toBeGreaterThan(0);
+          expect(past).toBeLessThan(0.2 + r);
+          onWall++;
+        } else expect(y - g).toBeGreaterThan(-0.02);
+      }
+      if (onWall >= 3) down++;
+      // every root ends on the ground (the top or the terrace), not in the air
+      const [x, y, z, r] = root[root.length - 1];
+      expect(y - cliff.ground(x, z)).toBeLessThan(r + 0.15);
+    }
+    expect(down).toBeGreaterThanOrEqual(3);
   });
 
   it('the platform: its bench faces the view, with room in front to sit down and stand up', () => {

@@ -53,7 +53,7 @@
   - Pressing on against its core (walking into it) for `squeezeS` (0.4 s) lets you squeeze past: it stops blocking you until you're out of its footprint again, then it's solid as before.
   - Brushing past without walking into it never lets you through.
   - Something hard never gives way, however long you press on it.
-- **Plants lean away** from the character's feet (the `uPush` uniform in `addSway`, `world/Props.tsx`): leaves and stems within 0.7 u bend out, most at the top, so walking through a bush, the flowers or the sprigs parts them. It's one uniform and a few vertex instructions on the sway materials already there (no new draw, no new material), and it stays on while ambient motion is paused, because it follows the character.
+- **Plants lean away** from the character's feet (the `uPush` uniform in `addSway`, `world/Props.tsx`): leaves and stems within 0.7 u bend out, most at the top, so walking through a bush, the flowers or the sprigs parts them. Only up to the body's height (it fades out between 1.05 and 1.35 u above the feet, `CHARACTER_HEIGHT` 1.25 u), so the leaves of a tree's crown overhead never bend. It's one uniform and a few vertex instructions on the sway materials already there (no new draw, no new material), and it stays on while ambient motion is paused, because it follows the character.
 - **Walls stay closed:** every wall is a chain of circles (the cliffs' rings and rims, the bridges' rails, the fence, the deck's rails), and no gap between neighbours is wide enough for the smaller body.
 
 ## 4. Making way (as built)

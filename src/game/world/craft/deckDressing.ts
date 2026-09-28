@@ -12,11 +12,11 @@ import type { LandmarkGeometry } from '../../math/landmarks';
 import { UP, arcDistance, moveAlong, pointArcDistance, type Obstacle } from '../../math/sphere';
 import { hash3 } from '../kit';
 import { DECK, deckFootprint } from '../deckSpec';
-import { mesaDir, mesaPolar, mesaRadius, tierEdge, tierPolar } from '../features';
+import { mesaDir, mesaPolar, mesaRadius, tierEdge, tierPolar, type Mesa } from '../features';
 import { FLOWER_KINDS, type FlowerKind, type PropInstance, type PropLayout } from '../layout';
 
-/** The pine (u, rad): where it grows (its angle from the deck's view round the upper tier, how far in from the rim), and its trunk's radius. */
-export const BONSAI = { angle: -1.8, inset: 0.3, trunkR: 0.2 } as const;
+/** The pine (u, rad): where it grows (its angle from the deck's view round the upper tier, how far in from the rim), its trunk's radius (what blocks) and the bare ground round it (its stem's flare). */
+export const BONSAI = { angle: -1.7, inset: 0.3, trunkR: 0.3, bareR: 0.62 } as const;
 
 export interface DeckDressing {
   bushes: PropInstance[];
@@ -25,8 +25,67 @@ export interface DeckDressing {
   sprigs: PropInstance[];
   /** The bushes' and the pine's trunk. */
   obstacles: Obstacle[];
-  /** The pine: where its trunk stands and the way it leans (out over the rim). */
-  bonsai: { n: Vector3; out: Vector3 };
+  /** Where no grass grows: round the pine's trunk and the tops of its roots. */
+  bare: Array<{ n: Vector3; r: number }>;
+  /** The pine: where its trunk stands, the way it leans (out over the rim) and the cliff round it, for its roots. */
+  bonsai: { n: Vector3; out: Vector3; cliff: PineCliff };
+}
+
+/**
+ * The cliff round the pine in its own (flat) frame: +x out over the rim, y up from the trunk's foot,
+ * z = x × up. So its roots can follow the real ground, over the rim and down the wall.
+ */
+export interface PineCliff {
+  /** How far below the tree's foot the planet's centre is (R + the ground's height there), for what hangs from it. */
+  centre: number;
+  /** The ground's height at (x, z): the cap's on the top (not the ground's ramp under the rim), the terrace's or the meadow's beyond. */
+  ground(x: number, z: number): number;
+  /** True on the upper tier's top. */
+  inside(x: number, z: number): boolean;
+  /** The upper wall's top edge on the tier centre's ray through (x, z), and the wall's outward direction there (in x, z). */
+  edge(x: number, z: number): { x: number; z: number; nx: number; nz: number };
+}
+
+/** The pine's cliff, for the tier `t` of mesa `m`. */
+export function pineCliff(n: Vector3, out: Vector3, m: Mesa, R: number, ground: (n: Vector3) => number): PineCliff {
+  const t = m.tier!;
+  const X = out.clone().addScaledVector(n, -out.dot(n)).normalize();
+  const Z = new Vector3().crossVectors(X, n).normalize();
+  const O = n.clone().multiplyScalar(R);
+  const at = (x: number, z: number) => O.clone().addScaledVector(X, x).addScaledVector(Z, z).normalize();
+  const local = (p: Vector3) => {
+    const v = p.clone().multiplyScalar(R).sub(O);
+    return { x: v.dot(X), z: v.dot(Z) };
+  };
+  const inTier = (p: Vector3) => {
+    const q = tierPolar(m, p);
+    return q.r < tierEdge(t, q.angle);
+  };
+  const edge = (x: number, z: number) => {
+    const { angle } = tierPolar(m, at(x, z));
+    const e = moveAlong(t.n, mesaDir(m, t.n, angle), tierEdge(t, angle) / R);
+    const f = moveAlong(t.n, mesaDir(m, t.n, angle), (tierEdge(t, angle) + 0.1) / R);
+    const a = local(e);
+    const b = local(f);
+    const l = Math.hypot(b.x - a.x, b.z - a.z);
+    return { x: a.x, z: a.z, nx: (b.x - a.x) / l, nz: (b.z - a.z) / l };
+  };
+  // (the ground's own height ramps down just inside a rim, under the cap: on the top, take it from a
+  // little way in along the tier's ray; and the flat frame rises off the sphere by d² / 2R)
+  const height = (x: number, z: number) => {
+    const p = at(x, z);
+    if (!inTier(p)) return ground(p);
+    const q = tierPolar(m, p);
+    const inset = Math.max(0, Math.min(q.r, tierEdge(t, q.angle) - 0.4));
+    return ground(moveAlong(t.n, mesaDir(m, t.n, q.angle), inset / R));
+  };
+  const h0 = height(0, 0);
+  return {
+    centre: R + ground(n),
+    ground: (x, z) => height(x, z) - h0 - (x * x + z * z) / (2 * R),
+    inside: (x, z) => inTier(at(x, z)),
+    edge,
+  };
 }
 
 export function deckDressing(layout: PropLayout, geos: readonly LandmarkGeometry[], R: number, ground: (n: Vector3) => number, water: (n: Vector3) => boolean): DeckDressing | null {
@@ -48,7 +107,8 @@ export function deckDressing(layout: PropLayout, geos: readonly LandmarkGeometry
   // the pine, on the upper tier's rim beside the platform, leaning out over the narrow terrace
   const a = DECK.face + BONSAI.angle;
   const bn = moveAlong(t.n, mesaDir(m, t.n, a), (tierEdge(t, a) - BONSAI.inset) / R);
-  const bonsai = { n: bn, out: mesaDir(m, bn, a) };
+  const bout = mesaDir(m, bn, a);
+  const bonsai = { n: bn, out: bout, cliff: pineCliff(bn, bout, m, R, ground) };
 
   const zone = deckFootprint(site);
   const inZone = (n: Vector3, pad: number) => zone.some((z) => arcDistance(n, z.n, R) < z.r + pad);
@@ -58,7 +118,7 @@ export function deckDressing(layout: PropLayout, geos: readonly LandmarkGeometry
     ...[...layout.bushes, ...layout.flowerBushes].map((p) => ({ n: p.n, r: 0.5 * p.scale })),
     ...[...layout.rocks, ...layout.boulders].map((p) => ({ n: p.n, r: 0.45 * p.scale })),
     ...layout.furniture.map((f) => ({ n: f.n, r: 0.6 })),
-    { n: bn, r: 0.35 },
+    { n: bn, r: 0.7 },
   ];
   const clearOfSolids = (n: Vector3, r: number) => solids.every((s) => arcDistance(n, s.n, R) > s.r + r);
   const open = (n: Vector3, pad: number) =>
@@ -124,5 +184,5 @@ export function deckDressing(layout: PropLayout, geos: readonly LandmarkGeometry
     const a = rand() * Math.PI * 2;
     sprig(moveAlong(t.n, mesaDir(m, t.n, a), (tierEdge(t, a) - 0.35 - rand() * 0.5) / R));
   }
-  return { bushes, flowerBushes, flowers, sprigs, obstacles, bonsai };
+  return { bushes, flowerBushes, flowers, sprigs, obstacles, bare: [{ n: bn, r: BONSAI.bareR }], bonsai };
 }

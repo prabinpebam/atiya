@@ -93,11 +93,13 @@ function addSway(material: Material, strength: number, from: number, key: string
   float wLean = wAmp * uWindStrength * 0.9;
   float wSw = wAmp * (0.35 + uWindStrength) * (0.65 * wWave + 0.35 * sin(uWindTime * 2.7 + wPh));
   transformed.xz += wDir * (wLean + wSw) + vec2(-wDir.y, wDir.x) * wAmp * 0.2 * sin(uWindTime * 1.9 + wPh * 1.3);
-  // brushed by the character: leaves and stems lean away from its feet (collision.md §3)
+  // brushed by the character: leaves and stems lean away from its feet (collision.md §3), only up
+  // to its body's height (1.25 u, CHARACTER_HEIGHT), so a tree's crown overhead stays put
   vec3 wUp = normalize(wIP + vec3(0.0, 1e-5, 0.0));
   vec3 wPV = wIP + wIM * transformed - uPush.xyz;
-  wPV -= wUp * dot(wPV, wUp);
-  float wPf = uPush.w * max(0.0, 1.0 - length(wPV) / 0.7);
+  float wPh2 = dot(wPV, wUp);
+  wPV -= wUp * wPh2;
+  float wPf = uPush.w * max(0.0, 1.0 - length(wPV) / 0.7) * (1.0 - smoothstep(1.05, 1.35, wPh2)) * smoothstep(-0.4, -0.2, wPh2);
   transformed += transpose(wIM) * (wPV * inversesqrt(max(dot(wPV, wPV), 1e-12))) * (wPf * wPf * 0.22 * min(1.0, wK * 3.0));
   ${
     flutter > 0
