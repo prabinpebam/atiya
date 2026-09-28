@@ -55,9 +55,10 @@
   - a wooden flight along the wall, 0.7 u out;
   - a landing that juts out;
   - a second flight;
-  - a landing in over the rim onto the terrace.
+  - a landing in over the rim onto the terrace, square to the wall, that ends flush with the rim (nothing of it sticks into the cliff).
   - They climb about 1.3 u over 4 u.
 - **The upper steps** (stage 2), in the upper tier's frame:
+  - a stepping-stone path across the terrace that meets the upper flight square on;
   - from the terrace, two flights along the upper wall (0.58 u out) with a landing between them;
   - a landing in over its rim;
   - a path across the top's lawn to the platform's steps.
@@ -78,6 +79,8 @@
   - on the platform, its railing (open at its front gap) and the bench's two ends.
 - **Corridors** (`deckCorridors`): the built pieces' centrelines, 0.2 u each side, kept open in the route planner.
 - **Models:** one kit per stage, laid out in the planet's frame with every part upright on the ground under it.
+  - **One unit, not parts:** each run of flights and landings is modelled along one ribbon (`ribbon()` / `runs()` in `deckPlan.ts`): its centreline by arc length, with mitred edges at the bends. The stringers, the handrails and the landings' boards follow the ribbon without a break, each tread's top sits at the middle of its rise, so nothing clips into its neighbour, and the rails open where a run meets the lawn, the terrace or the platform.
+  - Flat stepping stones every 0.36 u along the lawn crossings between runs (`steppingStones()`).
   - Stone blocks for the stone steps.
   - Open plank treads on two stringers, and posts with cross beams and X braces down to the ground where the flight is tall.
   - Plank landings on framed posts, a round pad at each bend, and handrails (posts, a top rail, a mid rail) on both sides.
@@ -114,11 +117,24 @@
 - **The route grid:** a build stamps it again (`controller.replaceObstacles` → `obstacleWatch` → `Family.obstaclesChanged`, and everyone plans afresh).
 - **The grass:** bare under the stone steps, worn at the foot, across the terrace and on the lawn, and short under the platform (`grass/zones.ts`).
 
-### 4.6 Budgets
+### 4.6 Planting and the old pine (`craft/deckDressing.ts`, `craft/bonsaiModel.ts`)
+
+- **Planting** (pure, seeded, in the crafting chunk, added to the props before the scene mounts):
+  - leafy and flowering bushes hugging the foot of the lower wall, and a few on the terrace;
+  - flower clumps (tulips, cosmos, pansies) and flowering sprigs round the foot, along the terrace and round the platform on the top;
+  - it keeps off the footprint, the build site at the foot (bushes 2 u, flowers 0.9 u), the paths, the landmarks, the home, the water, the other trees, bushes and stones, and the rims;
+  - the bushes are obstacles (0.42 u × their size); none blocks the way up at any stage.
+- **Knee-high grass:** a meadow ring round the cliff (its rim + 1.2 → + 2.8 u) grows tall grass in its noise patches, except on the steps' corridors, worn or mown ground and the tracks (`grass/zones.ts`).
+- **The old pine:** a windswept, bonsai-like pine on the top, 0.3 u in from the rim beside the platform (`BONSAI`), leaning out over the terrace.
+  - A low-poly bark trunk along a bent spine to 1.8 u out; ten full, domed needle pads (a green core under a ring of leaf lobes and a raised top layer) that fill out the crown, the cascade at the tip and the pads hanging under it; limbs; four roots, two of them draped over the rim; a bleached deadwood spike, a moss cushion and two rocks at its foot.
+  - Drawn with the trees' shared swaying bark and needle materials (two instanced draws, with the needles' depth material for shadows); its trunk is an obstacle.
+- **Tests** (`deck.test.ts`): nothing in the footprint or the water, planting on all three levels, the build site open, the way up clear, and the pine on the top leaning out past the rim.
+
+### 4.7 Budgets
 
 - **Main bundle:** the footprint and route spec, the layout's clearing, the iron flag and its drop and label, the walk-surface hook, `replaceObstacles`, the two items and their icons.
 - **Crafting chunk:** everything else (plan, models, sites, bench, ore).
-- **As built:** 449.8 KB initial (≤ 450) and 102.0 KB on demand, over the 96 KB waiver, which is raised to 103 KB and proposed in [plan §6](./plan.md).
+- **As built:** 449.8 KB initial (≤ 450) and 102.0 KB on demand, over the 96 KB waiver, which is raised to 103 KB and proposed in [plan §6](./plan.md). With the planting and the pine (§4.6): 449.8 KB initial and 105.6 KB on demand, under a proposed 106 KB waiver.
 - **Triangles:** the three builds are a few thousand each (`tests/unit/deck.test.ts` keeps each under 20 k).
 
 ## 5. Plan
@@ -142,10 +158,12 @@
 | 1 | The deck stands on the two-tier cliff near the home and faces it | Unit (`deck.test.ts`): the cliff within 18 u of the home, `face` within 25° of it | Done |
 | 2 | The steps fit: outside the lower wall and on the terrace, clear of both rims; the platform on the top | Unit: rim distances along every piece, the platform's corners inside the upper rim, the path across the lawn clear of the platform | Done |
 | 3 | The steps climb steadily from the meadow to the platform, never into the ground and never steeper than about 30° | Unit: heights along every piece, the foot at the ground | Done |
-| 4 | It's really walkable | Unit: the walk height has no jump over 0.06 u from the meadow to the bench. The character walks it with collisions (`PlanetSim`), leg by leg, to the bench's front at the platform's height. Rails close the sides. E2E: the climb by click-to-walk to the platform's height. A real-GPU run to the top | Done |
+| 4 | It's really walkable | Unit: the walk height has no jump over 0.08 u from the meadow to the bench. The character walks it with collisions (`PlanetSim`), leg by leg, to the bench's front at the platform's height. Rails close the sides. E2E: the climb by click-to-walk to the platform's height. A real-GPU run to the top | Done |
 | 5 | The family can route up once it's built, and not before; Prabin goes and sits on the bench | Unit: routes at each stage, none before, and Prabin seated on the bench within 90 s | Done |
 | 6 | Built in three stages, each with its site, ghost, card and needs; each unlocks the next; saved | E2E: each stage's card and prompt, the builds, the announcement, the stage after a reload | Done |
 | 7 | Iron ore on some boulders, visibly different; mining gives iron ore; nails from it; Chopper's house needs nails | Unit: one boulder in three, some near the crafting table, the recipes. E2E: **Mine iron ore**, the ore in the backpack, 6 nails crafted, the house's card and toast with nails. A real-GPU look | Done |
 | 8 | Lanterns on the platform that glow at night | Unit: the platform's model has a glow layer. A real-GPU look at 9 pm | Done |
 | 9 | Nothing on the steps or the platform; a tree frames the foot | Unit: the footprint is clear of trees (crowns), rocks, bushes and flowers; a tree near the foot; any tree on the cliff blocks | Done |
-| 10 | Budgets | `npm run verify:prod`: 449.8 KB initial; 102.0 KB on demand under the proposed 103 KB waiver | Waiver pending |
+| 10 | Budgets | `npm run verify:prod`: 449.8 KB initial; 105.6 KB on demand under the proposed 106 KB waiver | Waiver pending |
+| 11 | The steps read as one unit: no part clips into another, the rails never block the way, the lower landing ends flush with the rim | Unit: the walk has no jump over 0.08 u, the way up is clear, the lower landing's end within 0.08 u inside the rim. A real-GPU look at each run | Done |
+| 12 | The cliff is lush: bushes, flowers, sprigs and knee-high grass on its levels, and an old pine over the upper rim | Unit (§4.6 tests). A real-GPU look from the meadow and the terrace | Done |

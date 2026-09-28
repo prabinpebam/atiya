@@ -18,19 +18,21 @@ export const DECK = {
   width: 1,
   /**
    * Stage 1, round the lower cliff, foot first: [angle from `face` (rad), distance out from the rim (u)].
-   * Stone steps up from the meadow, a flight, a landing that juts out, a second flight, and in over the rim.
+   * Stone steps up from the meadow, a flight, a landing that juts out, a second flight, and a landing
+   * that ends at the rim (flush with its edge: nothing of it stands on the terrace).
    */
   lower: [
     [0.34, 1.55],
     [0.22, 0.7],
-    [-0.18, 0.7],
-    [-0.28, 0.98],
-    [-0.38, 0.7],
-    [-0.78, 0.7],
-    [-0.9, -0.62],
+    [-0.16, 0.7],
+    [-0.28, 0.86],
+    [-0.4, 0.7],
+    [-0.9, 0.7],
+    [-0.9, -0.04],
   ] as readonly Pt[],
-  /** Stage 2, round the upper tier (in its frame): from the lower steps' top, a flight along its wall, a landing, a flight, and in over its rim. */
+  /** Stage 2, round the upper tier (in its frame): from the lower steps' top across the terrace to the foot of a flight along its wall (in line with it, so you walk in square between its rails), a landing, a flight, and in over its rim. */
   upper: [
+    [-0.94, 0.58],
     [-0.72, 0.58],
     [-0.46, 0.58],
     [-0.2, 0.58],
@@ -40,7 +42,7 @@ export const DECK = {
     [0.56, 0.58],
   ] as readonly Pt[],
   /** What each stretch of the upper steps is, from the lower steps' top (across the top to the platform's steps at the end). */
-  upperKinds: ['path', 'wood', 'wood', 'landing', 'landing', 'wood', 'wood', 'top', 'path'] as const,
+  upperKinds: ['path', 'path', 'wood', 'wood', 'landing', 'landing', 'wood', 'wood', 'top', 'path'] as const,
   /**
    * The platform on the upper tier: its size (u, across and deep), how high it stands, how far its
    * middle stands back from the tier's (u: the tier's top is too narrow beside it for a way round, so

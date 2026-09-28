@@ -151,7 +151,13 @@ export function grassRules(w: GrassWorld, full = false): GrassRules {
   // the viewing deck (viewing-deck.md): bare under its stone steps (built or not), worn where you walk
   // up to them, across the terrace and the lawn to the platform, and short under the platform
   const deck = layout.deck;
+  // and round its cliff, a wild meadow: knee-high in drifts from the foot of the walls out (and on its
+  // terrace and top), but never over the steps or the ways to them (viewing-deck.md §4.6)
+  let cliffMeadow: Disc | null = null;
+  const steps: Segment[] = [];
   if (deck) {
+    cliffMeadow = disc(deck.mesa.n, deck.mesa.radiusU + 1.2, deck.mesa.radiusU + 2.8);
+    for (const line of [deck.lower, deck.upper]) for (let i = 0; i + 1 < line.length; i++) steps.push(seg(line[i], line[i + 1], 0.95));
     const [a, b] = deck.lower;
     for (const t of [0, 0.5, 1]) bareDiscs.push(disc(a.clone().lerp(b, t), 0.6, 0.8));
     wornDiscs.push(disc(a, 0.8, 1.9), disc(deck.centre, 1.3, 2.1));
@@ -257,7 +263,15 @@ export function grassRules(w: GrassWorld, full = false): GrassRules {
       const hue = (fbm(w.noise, p, 0.45, 21.7) - 0.5) * 2;
       const fN = fbm(w.noise, p, 0.38, 31.3);
 
-      const tall = smooth(0.6, 0.7, tN) * wild * (1 - smooth(0.05, 0.6, Math.max(mown, worn))) * smooth(0.5, 0.9, lawn);
+      let tall = smooth(0.6, 0.7, tN) * wild * (1 - smooth(0.05, 0.6, Math.max(mown, worn))) * smooth(0.5, 0.9, lawn);
+      if (cliffMeadow) {
+        let meadow = inDisc(u, cliffMeadow) * smooth(0.3, 0.46, tN) * (1 - track) * (1 - smooth(0.05, 0.6, Math.max(mown, worn))) * smooth(0.5, 0.9, lawn);
+        for (const sg of steps) {
+          if (meadow <= 0) break;
+          if (u.dot(sg.mid) >= sg.cosReach) meadow *= smooth(sg.half, sg.half + 0.5, w.segmentDistance(u, sg.a, sg.b));
+        }
+        tall = Math.max(tall, meadow);
+      }
       let density = lawn * (0.35 + 0.65 * smooth(0.2, 0.8, dN)) * (1 - 0.5 * worn) * (1 - 0.3 * mown) * (1 - 0.8 * track);
       density = Math.min(1, density + tall * 0.35);
       let height = GRASS_H.low + (GRASS_H.high - GRASS_H.low) * smooth(0.15, 0.85, hN);

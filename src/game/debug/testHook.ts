@@ -53,6 +53,8 @@ export interface GameTestHook {
   nearTarget(kind: 'tree' | 'boulder' | 'flower' | 'chest' | 'craft' | 'site' | 'notice' | 'jute' | 'bench', which?: string, u?: number): string | null;
   /** Click-to-walk to a planet-local point (the viewing deck's route: `craft().deck.route`). */
   walkTo(p: [number, number, number]): void;
+  /** Stand at a planet-local point at once, optionally turning the view by `yaw` rad (screenshots of the deck's steps). */
+  placeAt(p: [number, number, number], yaw?: number): void;
   /** The crafting chunk (crafting.md): Chopper's house (built, colour, building), the ghost's visibility 0…1, and whether the site card is up. */
   craft(): ReturnType<import('../controller').CraftAttachment['state']> | null;
   /** Backpack (36), chest (27), the cursor stack and the hotbar selection, as `id:n` / null. */
@@ -217,6 +219,11 @@ export function installTestHook(c: GameController): void {
       if (g) c.sim.startAutoWalk(g.approach);
     },
     walkTo: (p) => c.sim.startAutoWalk(new Vector3(...p).normalize()),
+    placeAt: (p, yaw) => {
+      c.sim.placeAt(new Vector3(...p).normalize());
+      c.lift = c.terrain.walkHeight(c.sim.pLocal);
+      if (yaw) c.sim.rotateView(yaw);
+    },
     distanceTo: (id) => c.distanceTo(id),
     projectLandmark: (id, part = 'base') => {
       const g = c.geoById.get(id);

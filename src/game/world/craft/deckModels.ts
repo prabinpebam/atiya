@@ -11,7 +11,7 @@ import { Kit, hash3, type KitGeometry, type V3 } from '../kit';
 import { moveAlong } from '../../math/sphere';
 import { ARCH, bench } from '../parts';
 import { DECK } from '../deckSpec';
-import { DECK_BUILD, type DeckPlan, type Piece, type Stage } from './deckPlan';
+import { DECK_BUILD, ribbon, runs, type DeckPlan, type Piece, type Stage } from './deckPlan';
 
 const PLANK = '#b98752';
 const BEAM = '#8d5c33';
@@ -87,123 +87,158 @@ function lantern(c: Ctx, n: Vector3, h: number, along: Vector3): void {
   });
 }
 
-/** Where along a piece: its centre at `t` (0 … 1), `s` u across (toward the piece's left), and the walk height there. */
-function along(p: Piece, t: number, s: number, R: number): { n: Vector3; h: number } {
-  const c = p.a.clone().lerp(p.b, t).normalize();
-  const lat = new Vector3().crossVectors(p.a, new Vector3().subVectors(p.b, p.a)).normalize();
-  return { n: s ? moveAlong(c, lat, s / R) : c, h: p.ha + (p.hb - p.ha) * t };
-}
-
-const dirOf = (p: Piece) => new Vector3().subVectors(p.b, p.a);
-
-/** Handrails on both sides of a piece: posts every ≈ 0.55 u and a rail along their tops (sloped with the flight). */
-function handrails(c: Ctx, p: Piece, from: number, to: number): void {
-  const L = p.a.distanceTo(p.b) * c.R;
-  const n = Math.max(1, Math.round((L * (to - from)) / 0.55));
-  const off = W / 2 + DECK_BUILD.railOut;
-  const dir = dirOf(p);
-  for (const side of [-1, 1]) {
-    const tops: Vector3[] = [];
-    for (let i = 0; i <= n; i++) {
-      const t = from + ((to - from) * i) / n;
-      const { n: q, h } = along(p, t, side * off, c.R);
-      block(c, [0.06, 0.6, 0.06], RAIL, q, h + 0.26, dir);
-      tops.push(world(c, q, h + 0.56));
-    }
-    for (let i = 0; i + 1 < tops.length; i++) {
-      const upN = tops[i].clone().normalize();
-      beam(c, tops[i], tops[i + 1], upN, 0.05, 0.08, RAIL);
-      beam(c, tops[i].clone().addScaledVector(upN, -0.26), tops[i + 1].clone().addScaledVector(upN, -0.26), upN, 0.035, 0.035, RAIL);
-    }
+/** A slab between two quads in the planet's frame (top corners, then the bottom ones below them), in a local frame at its middle so the wood grain runs `along`. */
+function prism(c: Ctx, top: readonly Vector3[], bottom: readonly Vector3[], colour: string, along: Vector3): void {
+  const mid = top.reduce((a, v) => a.add(v), new Vector3()).multiplyScalar(1 / top.length);
+  const q = upright(mid.clone().normalize(), along);
+  const inv = q.clone().invert();
+  const L = (v: Vector3) => v.clone().sub(mid).applyQuaternion(inv);
+  const T = top.map(L);
+  const B = bottom.map(L);
+  const centre = [...T, ...B].reduce((a, v) => a.add(v), new Vector3()).multiplyScalar(1 / 8);
+  const tris: Vector3[][] = [];
+  const quad = (a: Vector3, b: Vector3, cc: Vector3, d: Vector3) => tris.push([a, b, cc], [a, cc, d]);
+  quad(T[0], T[1], T[2], T[3]);
+  quad(B[3], B[2], B[1], B[0]);
+  for (let i = 0; i < 4; i++) quad(T[i], B[i], B[(i + 1) % 4], T[(i + 1) % 4]);
+  const pos: number[] = [];
+  const e1 = new Vector3();
+  const e2 = new Vector3();
+  const nrm = new Vector3();
+  for (const [x, y, z] of tris) {
+    // (wound outward, whichever way the corners came)
+    nrm.crossVectors(e1.subVectors(y, x), e2.subVectors(z, x));
+    const out = x.clone().add(y).add(z).multiplyScalar(1 / 3).sub(centre);
+    const tri = nrm.dot(out) >= 0 ? [x, y, z] : [x, z, y];
+    for (const v of tri) pos.push(v.x, v.y, v.z);
   }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  c.k.add(g, colour, { p: [mid.x, mid.y, mid.z], q });
 }
 
-function stoneSteps(c: Ctx, p: Piece): void {
-  const N = Math.max(2, Math.round((p.hb - p.ha) / DECK_BUILD.rise));
-  const L = p.a.distanceTo(p.b) * c.R;
-  const dir = dirOf(p);
-  c.k.surface('stone', () => {
-    for (let i = 0; i < N; i++) {
-      const { n } = along(p, (i + 0.5) / N, 0, c.R);
-      const top = p.ha + ((p.hb - p.ha) * (i + 1)) / N;
-      const g = c.ground(n) - 0.12;
-      const shade = hash3(i, 3.1, 7.7);
-      const col = shade < 0.33 ? '#a9a194' : shade < 0.66 ? '#9d968b' : '#b3ab9d';
-      block(c, [(L / N) * 1.04, top - g, W + 0.08 + shade * 0.06], col, n, (top + g) / 2, dir);
+/**
+ * One run of steps as a single unit (viewing-deck.md §4.3): everything follows the run's ribbon (its
+ * centreline by arc length and its two mitred edges), so the treads, the landing boards, the
+ * stringers, the supports and the handrails of one flight carry straight on into the next, meeting
+ * in clean corners at the bends instead of crossing each other. Stone steps (at the foot) are solid
+ * blocks down into the ground; the wood stands on stringers and posts.
+ */
+function runModel(c: Ctx, run: readonly Piece[], openEnd: boolean): void {
+  const B = DECK_BUILD;
+  const rb = ribbon(run, c.R);
+  const half = W / 2;
+  const rises = (k: Piece['kind']) => k === 'stone' || k === 'wood' || k === 'steps';
+  const dirAt = (x: number) => {
+    const p = run[rb.at(x).i];
+    return new Vector3().subVectors(p.b, p.a);
+  };
+  // the walkway in slices: a tread per step on the flights (its top halfway up its rise, so the walk
+  // height runs through the treads' middles), a board every ≈ 0.17 u on the landings
+  const slices: Array<{ s0: number; s1: number; top: number; stone: boolean }> = [];
+  run.forEach((p, i) => {
+    const s0 = rb.s[i];
+    const L = rb.s[i + 1] - s0;
+    if (rises(p.kind)) {
+      const N = Math.max(2, Math.round((p.hb - p.ha) / B.rise));
+      for (let k = 0; k < N; k++) slices.push({ s0: s0 + (L * k) / N, s1: s0 + (L * (k + 1)) / N, top: p.ha + ((p.hb - p.ha) * (k + 0.5)) / N, stone: p.kind === 'stone' });
+    } else {
+      const N = Math.max(2, Math.round(L / 0.17));
+      for (let k = 0; k < N; k++) slices.push({ s0: s0 + (L * k) / N, s1: s0 + (L * (k + 1)) / N, top: p.ha, stone: false });
     }
   });
-}
-
-function flight(c: Ctx, p: Piece): void {
-  const N = Math.max(2, Math.round((p.hb - p.ha) / DECK_BUILD.rise));
-  const L = p.a.distanceTo(p.b) * c.R;
-  const dir = dirOf(p);
+  const corners = (x0: number, x1: number, off: number) => [rb.edge(x0, -1, off), rb.edge(x1, -1, off), rb.edge(x1, 1, off), rb.edge(x0, 1, off)];
+  c.k.surface('stone', () => {
+    slices.forEach((sl, i) => {
+      if (!sl.stone) return;
+      // a solid block from the tread down into the ground, a little wider than the walkway
+      const q = corners(sl.s0, sl.s1 + 0.01, half + 0.05);
+      const g = Math.min(...q.map(c.ground)) - 0.12;
+      const shade = hash3(i, 3.1, 7.7);
+      prism(c, q.map((n) => world(c, n, sl.top)), q.map((n) => world(c, n, g)), shade < 0.33 ? '#a9a194' : shade < 0.66 ? '#9d968b' : '#b3ab9d', dirAt((sl.s0 + sl.s1) / 2));
+    });
+  });
   c.k.surface('wood', () => {
-    // treads (open stairs), each a thick plank
-    for (let i = 0; i < N; i++) {
-      const { n } = along(p, (i + 0.5) / N, 0, c.R);
-      const top = p.ha + ((p.hb - p.ha) * (i + 1)) / N;
-      block(c, [(L / N) * 0.92, 0.05, W], PLANK, n, top - 0.025, dir);
+    slices.forEach((sl, i) => {
+      if (sl.stone) return;
+      const flat = !rises(run[rb.at((sl.s0 + sl.s1) / 2).i].kind);
+      // (a hair of gap between boards; treads a little shorter than their run)
+      const gap = flat ? 0.012 : (sl.s1 - sl.s0) * 0.05;
+      const q = corners(sl.s0 + gap, sl.s1 - gap, half);
+      prism(c, q.map((n) => world(c, n, sl.top)), q.map((n) => world(c, n, sl.top - 0.05)), flat && hash3(i, 1.3, 2.9) < 0.5 ? '#b07f4c' : PLANK, dirAt((sl.s0 + sl.s1) / 2));
+    });
+    // the wood's stations: every node, and between them no more than 0.8 u apart (none on the stone)
+    const woodFrom = run[0].kind === 'stone' ? rb.s[1] : 0;
+    const stations: number[] = [];
+    for (let i = 0; i < rb.s.length; i++) {
+      if (rb.s[i] < woodFrom) continue;
+      stations.push(rb.s[i]);
+      if (i + 1 < rb.s.length) {
+        const n = Math.ceil((rb.s[i + 1] - rb.s[i]) / 0.8);
+        for (let k = 1; k < n; k++) stations.push(rb.s[i] + ((rb.s[i + 1] - rb.s[i]) * k) / n);
+      }
     }
-    // stringers under the treads' ends, and posts with cross beams and braces down to the ground
-    const posts = Math.max(1, Math.round(L / 0.85));
-    for (const side of [-1, 1]) {
-      const a = along(p, 0, side * (W / 2 - 0.05), c.R);
-      const b = along(p, 1, side * (W / 2 - 0.05), c.R);
-      beam(c, world(c, a.n, a.h - 0.1), world(c, b.n, b.h - 0.1), a.n, 0.14, 0.07, BEAM);
+    const inset = half - 0.05;
+    // stringers under both edges, one straight beam per piece, meeting at the bends' corners
+    for (const side of [-1, 1] as const) {
+      for (let i = 0; i < run.length; i++) {
+        if (rb.s[i] < woodFrom) continue;
+        const a = rb.edge(rb.s[i], side, inset);
+        const b = rb.edge(rb.s[i + 1], side, inset);
+        beam(c, world(c, a, rb.at(rb.s[i]).h - 0.12), world(c, b, rb.at(rb.s[i + 1]).h - 0.12), a, 0.14, 0.07, BEAM);
+      }
     }
-    for (let i = 0; i <= posts; i++) {
-      const t = i / posts;
-      const ends = [-1, 1].map((side) => along(p, t, side * (W / 2 - 0.05), c.R));
-      for (const e of ends) post(c, e.n, e.h - 0.16, dir);
-      const h = ends[0].h - 0.16;
-      const g = Math.max(c.ground(ends[0].n), c.ground(ends[1].n));
-      if (h - g > 0.3) beam(c, world(c, ends[0].n, (h + g) / 2), world(c, ends[1].n, (h + g) / 2), ends[0].n, 0.07, 0.07, BEAM);
-      // an X brace to the next pair on the outer side, where it's tall enough to need one
-      if (i < posts) {
-        const next = [-1, 1].map((side) => along(p, (i + 1) / posts, side * (W / 2 - 0.05), c.R));
+    // posts under the stringers down to the ground, a cross beam between each pair, X braces between pairs where it's tall
+    let prev: Array<{ n: Vector3; h: number; g: number }> | null = null;
+    for (const x of stations) {
+      const h = rb.at(x).h - 0.19;
+      const pair = ([-1, 1] as const).map((side) => {
+        const n = rb.edge(x, side, inset);
+        return { n, h, g: c.ground(n) };
+      });
+      const d = dirAt(Math.min(x + 1e-3, rb.length));
+      for (const p of pair) if (p.h - p.g > 0.08) post(c, p.n, p.h, d);
+      const low = Math.max(pair[0].g, pair[1].g);
+      if (h - low > 0.35) beam(c, world(c, pair[0].n, (h + low) / 2), world(c, pair[1].n, (h + low) / 2), pair[0].n, 0.07, 0.07, BEAM);
+      if (prev) {
         for (const k of [0, 1]) {
-          const e0 = ends[k];
-          const e1 = next[k];
-          const g0 = c.ground(e0.n);
-          const g1 = c.ground(e1.n);
-          if (Math.min(e0.h - g0, e1.h - g1) < 0.55) continue;
-          beam(c, world(c, e0.n, e0.h - 0.2), world(c, e1.n, g1 + 0.12), e0.n, 0.05, 0.05, BEAM);
-          beam(c, world(c, e0.n, g0 + 0.12), world(c, e1.n, e1.h - 0.2), e0.n, 0.05, 0.05, BEAM);
+          const p0 = prev[k];
+          const p1 = pair[k];
+          if (Math.min(p0.h - p0.g, p1.h - p1.g) < 0.55) continue;
+          beam(c, world(c, p0.n, p0.h - 0.05), world(c, p1.n, p1.g + 0.12), p0.n, 0.05, 0.05, BEAM);
+          beam(c, world(c, p0.n, p0.g + 0.12), world(c, p1.n, p1.h - 0.05), p0.n, 0.05, 0.05, BEAM);
         }
       }
+      prev = pair;
     }
-    handrails(c, p, 0, 1);
-  });
-}
-
-function landing(c: Ctx, p: Piece, rails: boolean): void {
-  const L = p.a.distanceTo(p.b) * c.R;
-  const dir = dirOf(p);
-  const boards = Math.max(2, Math.round(L / 0.17));
-  c.k.surface('wood', () => {
-    for (let i = 0; i < boards; i++) {
-      const { n, h } = along(p, (i + 0.5) / boards, 0, c.R);
-      block(c, [(L / boards) * 0.94, 0.05, W + 0.04], hash3(i, 1.3, 2.9) < 0.5 ? PLANK : '#b07f4c', n, h - 0.025, dir);
-    }
-    for (const side of [-1, 1]) {
-      const a = along(p, 0, side * (W / 2 - 0.02), c.R);
-      const b = along(p, 1, side * (W / 2 - 0.02), c.R);
-      beam(c, world(c, a.n, a.h - 0.1), world(c, b.n, b.h - 0.1), a.n, 0.12, 0.08, BEAM);
-      for (const t of [0.08, 0.5, 0.92]) {
-        const e = along(p, t, side * (W / 2 - 0.05), c.R);
-        post(c, e.n, e.h - 0.14, dir);
+    // the handrails along both edges, the whole run as one: posts at every bend and between them no more
+    // than `postGap` apart, a top rail and a mid rail carried from post to post (sloping with the flights);
+    // (where the run ends at the platform, its railing's post stands there already)
+    const rails: number[] = [];
+    for (let i = 0; i < rb.s.length; i++) {
+      rails.push(rb.s[i]);
+      if (i + 1 < rb.s.length) {
+        const n = Math.ceil((rb.s[i + 1] - rb.s[i]) / B.postGap);
+        for (let k = 1; k < n; k++) rails.push(rb.s[i] + ((rb.s[i + 1] - rb.s[i]) * k) / n);
       }
     }
-    if (rails) handrails(c, p, 0, 1);
-  });
-}
-
-/** Where two pieces meet at a bend: a round landing pad, so the planks leave no gap (the walk surface's joint disc). */
-function joint(c: Ctx, n: Vector3, h: number, dir: Vector3): void {
-  c.k.surface('wood', () => {
-    c.k.add(new CylinderGeometry(W / 2, W / 2, 0.05, 10), '#b07f4c', { p: at(c, n, h - 0.03), q: upright(n, dir) });
-    post(c, n, h - 0.08, dir, 0.1);
+    const off = half + B.railOut;
+    for (const side of [-1, 1] as const) {
+      const tops: Vector3[] = [];
+      rails.forEach((x, i) => {
+        const n = rb.edge(x, side, off);
+        const h = rb.at(x).h;
+        const last = i === rails.length - 1;
+        if (!(last && openEnd)) block(c, [0.06, B.railTop + 0.16, 0.06], RAIL, n, h + (B.railTop - 0.16) / 2, dirAt(Math.min(x + 1e-3, rb.length)));
+        tops.push(world(c, n, h + B.railTop - 0.02));
+      });
+      for (let i = 0; i + 1 < tops.length; i++) {
+        const up = tops[i].clone().normalize();
+        beam(c, tops[i], tops[i + 1], up, 0.05, 0.08, RAIL);
+        beam(c, tops[i].clone().addScaledVector(up, -0.28), tops[i + 1].clone().addScaledVector(up, -0.28), up, 0.035, 0.035, RAIL);
+      }
+    }
   });
 }
 
@@ -267,16 +302,33 @@ function platform(c: Ctx, plan: DeckPlan): void {
   bench(c.k, { p: at(c, bn, H), q: face });
 }
 
+/** Flat stepping stones along a stretch of lawn the route crosses, so a flight's end and the next one's start read as one way. */
+function steppingStones(c: Ctx, p: Piece, seed: number): void {
+  const len = p.a.angleTo(p.b) * c.R;
+  const N = Math.floor((len - 0.2) / 0.36);
+  if (N < 1) return;
+  const d = new Vector3().subVectors(p.b, p.a);
+  c.k.surface('rock', () => {
+    for (let i = 0; i < N; i++) {
+      const t = (0.1 + 0.36 * (i + 0.5) + (len - 0.2 - 0.36 * N) / 2) / len;
+      const n = p.a.clone().lerp(p.b, t).normalize();
+      const q = upright(n, d);
+      const side = new Vector3(0, 0, 1).applyQuaternion(q);
+      const r = 0.15 + 0.03 * hash3(seed, i, 1.7);
+      const m = moveAlong(n, side, ((i % 2 ? 1 : -1) * 0.06) / c.R);
+      const shade = hash3(seed, i, 4.2);
+      c.k.add(new CylinderGeometry(r, r * 1.06, 0.07, 7), shade < 0.5 ? '#a9a194' : '#b3ab9d', { p: at(c, m, c.ground(m) - 0.015), q: q.multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), hash3(seed, i, 9.1) * Math.PI)), s: [1.15, 1, 0.9] });
+    }
+  });
+}
+
 /** One stage of the deck as a kit (stage 1: the lower steps; 2: the upper steps; 3: the platform and its steps). */
 export function deckStageModel(plan: DeckPlan, stage: Stage, ground: (n: Vector3) => number, R: number): KitGeometry {
   const c: Ctx = { k: new Kit(), R, ground };
-  const pieces = plan.pieces.filter((p) => p.stage === stage && p.kind !== 'path');
-  pieces.forEach((p, i) => {
-    if (p.kind === 'stone') stoneSteps(c, p);
-    else if (p.kind === 'wood' || p.kind === 'steps') flight(c, p);
-    else landing(c, p, true);
-    const next = pieces[i + 1];
-    if (next && next.a === p.b) joint(c, p.b, p.hb, dirOf(p));
+  // (the platform's steps end at its railing, whose gap posts stand where their rails end)
+  for (const run of runs(plan.pieces.filter((p) => p.stage === stage))) runModel(c, run, stage === 3);
+  plan.pieces.forEach((p, i) => {
+    if (p.stage === stage && p.kind === 'path') steppingStones(c, p, i);
   });
   if (stage === 3) platform(c, plan);
   for (const l of plan.lamps) {

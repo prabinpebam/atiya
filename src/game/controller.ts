@@ -93,6 +93,8 @@ export interface DeckState {
   bench: { visitor: boolean; family: string | null };
   /** The way up, corner by corner (planet-local), for the tests to walk. */
   route: Array<[number, number, number]>;
+  /** The overhanging pine on the cliff (viewing-deck.md §4.6): where it stands and the way it leans (planet-local). */
+  pine: { n: [number, number, number]; out: [number, number, number] } | null;
 }
 
 /** The swing under the old oak (swing.md), for the test hook: built, going up, the ghost, its card, the seat's angle, and each jute plant's seconds until it's grown back (0: ready). */

@@ -22,6 +22,10 @@ import { BENCH } from '../parts';
 import { BUILD_S, DECK_NEEDS, TARGET_REACH, listNeeds, missing, takeNeeds } from './recipes';
 import { deckCorridors, deckObstacles, deckPlan, deckSurface, type DeckPlan, type Stage } from './deckPlan';
 import { deckStageModel, ironNuggets } from './deckModels';
+import { bonsaiModel } from './bonsaiModel';
+import { deckDressing, type DeckDressing } from './deckDressing';
+import { sharedPropMaterials } from '../materials';
+import type { PropMaterials } from '../Props';
 import type { CraftStore } from './index';
 
 const KEY = 'site.deck';
@@ -71,6 +75,8 @@ function saveStage(stage: number): void {
 
 export interface DeckAttachment {
   plan: DeckPlan;
+  /** The planting round the cliff and the old pine (viewing-deck.md §4.6). */
+  dressing: DeckDressing | null;
   View: () => ReactElement;
   /** Which build's card is up (1–3), from the target E would use; null for none. */
   near(key: string | undefined): 1 | 2 | 3 | null;
@@ -84,6 +90,16 @@ export function attachDeck(controller: GameController, store: CraftStore): DeckA
   const ground = (n: Vector3) => controller.terrain.height(n);
   const plan = deckPlan(site, ground, R);
   const m = site.mesa;
+  // the planting round the cliff joins the props before they're drawn; its bushes and the pine block
+  const dressing = deckDressing(controller.props, controller.geos, R, ground, (n) => controller.terrain.inWater(n));
+  if (dressing) {
+    const p = controller.props;
+    p.bushes.push(...dressing.bushes);
+    p.flowerBushes.push(...dressing.flowerBushes);
+    p.sprigs.push(...dressing.sprigs);
+    for (const k of Object.keys(dressing.flowers) as (keyof typeof p.flowers)[]) p.flowers[k].push(...dressing.flowers[k]);
+    controller.replaceObstacles(() => false, dressing.obstacles);
+  }
   const inv = controller.inventory;
   // the cliff's own obstacles as laid out (one big block and its rim), swapped out once the steps are up
   const plain = controller.staticObstacles.filter((o) => o.mesa && arcDistance(o.n, m.n, R) < m.radiusU + 0.6);
@@ -169,7 +185,13 @@ export function attachDeck(controller: GameController, store: CraftStore): DeckA
 
   return {
     plan,
-    View: () => <DeckView controller={controller} store={store} plan={plan} link={link} />,
+    dressing,
+    View: () => (
+      <>
+        <DeckView controller={controller} store={store} plan={plan} link={link} />
+        {dressing && <Bonsai controller={controller} at={dressing.bonsai} />}
+      </>
+    ),
     near(key) {
       const k = key?.startsWith('site:deck') ? Number(key.slice(9)) : 0;
       return (k === 1 || k === 2 || k === 3) && store.getState().deckStage === k - 1 ? k : null;
@@ -194,7 +216,7 @@ export function attachDeck(controller: GameController, store: CraftStore): DeckA
       const on = controller.seatMotion.seat === seat;
       const fam = controller.home?.state().find((p) => p.seat?.startsWith('deck:')) ?? null;
       const route = [...plan.pieces.map((p) => p.a), plan.pieces[plan.pieces.length - 1].b, plan.at(DECK.deck.entryX, 0.2), plan.seats.stand].map((v) => [v.x, v.y, v.z] as [number, number, number]);
-      return { stage: s.deckStage, ghost: link.ghost, near: s.near?.startsWith('deck') ?? false, building: s.deckBuilding !== null, deckH: plan.deckH, bench: { visitor: on, family: fam?.id ?? null }, route };
+      return { stage: s.deckStage, ghost: link.ghost, near: s.near?.startsWith('deck') ?? false, building: s.deckBuilding !== null, deckH: plan.deckH, bench: { visitor: on, family: fam?.id ?? null }, route, pine: dressing && { n: dressing.bonsai.n.toArray(), out: dressing.bonsai.out.toArray() } };
     },
   };
 }
@@ -275,6 +297,40 @@ function DeckView({ controller, store, plan, link }: { controller: GameControlle
         </group>
       )}
       {iron.length > 0 && <instancedMesh ref={ore} args={[nugget, mats.ore, iron.length]} castShadow receiveShadow frustumCulled={false} />}
+    </group>
+  );
+}
+
+/** The old pine on the upper rim, leaning out over it (viewing-deck.md §4.6): drawn with the trees' swaying bark and needle materials. */
+function Bonsai({ controller, at }: { controller: GameController; at: DeckDressing['bonsai'] }) {
+  const geo = useMemo(() => bonsaiModel(), []);
+  const mats = useMemo(() => sharedPropMaterials<PropMaterials>(), []);
+  useEffect(
+    () => () => {
+      geo.solid.dispose();
+      geo.leaves.dispose();
+    },
+    [geo],
+  );
+  const meshes = useRef<Array<InstancedMesh | null>>([]);
+  useLayoutEffect(() => {
+    const n = at.n;
+    const x = at.out.clone().addScaledVector(n, -at.out.dot(n)).normalize();
+    const z = new Vector3().crossVectors(x, n).normalize();
+    _q.setFromRotationMatrix(_m.makeBasis(x, n, z));
+    _m.compose(_p.copy(n).multiplyScalar(R + controller.terrain.height(n) - 0.03), _q, _s.setScalar(1));
+    for (const mesh of meshes.current) {
+      if (!mesh) continue;
+      mesh.setMatrixAt(0, _m);
+      mesh.setColorAt(0, new Color('#ffffff'));
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
+  }, [at, controller]);
+  return (
+    <group name="deck-pine">
+      <instancedMesh ref={(m) => void (meshes.current[0] = m)} args={[geo.solid, mats.tree, 1]} castShadow receiveShadow frustumCulled={false} />
+      <instancedMesh ref={(m) => void (meshes.current[1] = m)} args={[geo.leaves, mats.needle.material, 1]} castShadow receiveShadow customDepthMaterial={mats.needle.depth} frustumCulled={false} />
     </group>
   );
 }

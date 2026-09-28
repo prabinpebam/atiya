@@ -9,6 +9,8 @@ import { mesaPolar, mesaRadius, tierEdge, tierPolar } from '../../src/game/world
 import { DECK, deckFootprint } from '../../src/game/world/deckSpec';
 import { DECK_BUILD, deckCorridors, deckObstacles, deckPlan, deckSurface, inDeck, onDeck, onPiece } from '../../src/game/world/craft/deckPlan';
 import { deckStageModel } from '../../src/game/world/craft/deckModels';
+import { BONSAI, deckDressing } from '../../src/game/world/craft/deckDressing';
+import { bonsaiModel } from '../../src/game/world/craft/bonsaiModel';
 import { DECK_NEEDS, HOUSE_NEEDS, MAX_NEEDS, RECIPES } from '../../src/game/world/craft/recipes';
 import { SphereNav } from '../../src/game/world/home/nav';
 import { Family, type FamilyWorld } from '../../src/game/world/home/family';
@@ -61,12 +63,13 @@ describe('the viewing deck (viewing-deck.md)', () => {
   });
 
   it('fits: the steps run outside the lower wall and on the terrace, the platform inside the upper rim', () => {
-    // stage 1: the flights stand off the lower wall; its last landing reaches onto the terrace
+    // stage 1: the flights stand off the lower wall; its last landing ends flush with the rim (nothing of it on the terrace)
     const [p0, ...rest] = plan.pieces.filter((p) => p.stage === 1);
     expect(baseEdge(p0.a)).toBeGreaterThan(1);
     for (const p of rest.slice(0, -1)) expect(baseEdge(p.b)).toBeGreaterThan(0.6);
     const top = site.lower[site.lower.length - 1];
-    expect(baseEdge(top)).toBeLessThan(-0.6);
+    expect(baseEdge(top)).toBeLessThan(0);
+    expect(baseEdge(top)).toBeGreaterThan(-0.08);
     expect(tierEdgeD(top)).toBeGreaterThan(0.6);
     // stage 2: along the upper wall, its outer rail clear of the lower rim, then in over the upper rim
     const up = plan.pieces.filter((p) => p.stage === 2 && p.kind !== 'path');
@@ -114,7 +117,8 @@ describe('the viewing deck (viewing-deck.md)', () => {
       worst = Math.max(worst, Math.abs(h - prev));
       prev = h;
     }
-    expect(worst).toBeLessThan(0.06);
+    // (off a landing onto the ground at its end is a small step: the landing lies just above the grass)
+    expect(worst).toBeLessThan(0.08);
     expect(t.walkHeight(plan.seats.stand)).toBeCloseTo(plan.deckH, 5);
     // unbuilt, there's nothing to stand on
     const bare = new Terrain(geos, layout);
@@ -231,6 +235,41 @@ describe('the viewing deck (viewing-deck.md)', () => {
     expect(layout.trees.some((t) => d(t.n, site.lower[0]) < 4 && baseEdge(t.n) > 1)).toBe(true);
     for (const t of [...layout.hardwood, ...layout.cedar].filter((t) => d(t.n, m.n) < m.radiusU)) expect(layout.obstacles.some((o) => o.n === t.n)).toBe(true);
     void UP;
+  });
+
+  it('the cliff is planted (§4.6): bushes, flowers and sprigs on every level, off the way up, and an old pine over the upper rim', () => {
+    const dr = deckDressing(layout, geos, R, ground, (n) => terrain.inWater(n))!;
+    expect(dr).toBeTruthy();
+    const all = [...dr.bushes, ...dr.flowerBushes, ...dr.sprigs, ...FLOWER_KINDS.flatMap((k) => dr.flowers[k])];
+    const zone = deckFootprint(site);
+    for (const p of all) {
+      expect(zone.some((z) => d(p.n, z.n) < z.r)).toBe(false);
+      expect(terrain.inWater(p.n)).toBe(false);
+      expect(p.h).toBeCloseTo(ground(p.n), 6);
+    }
+    // round the foot, on the terrace and on the top
+    const foot = all.filter((p) => baseEdge(p.n) > 0);
+    const terrace = all.filter((p) => baseEdge(p.n) < 0 && tierEdgeD(p.n) > 0);
+    const top = all.filter((p) => tierEdgeD(p.n) < 0);
+    expect(foot.length).toBeGreaterThan(40);
+    expect(terrace.length).toBeGreaterThan(8);
+    // (the platform takes most of the top: what's left is a strip round its rim)
+    expect(top.length).toBeGreaterThanOrEqual(4);
+    expect(dr.bushes.length + dr.flowerBushes.length).toBeGreaterThanOrEqual(6);
+    // the build site at the foot stays open, and the new solids never block the way up (built or not)
+    for (const b of [...dr.bushes, ...dr.flowerBushes]) expect(d(b.n, site.lower[0])).toBeGreaterThan(2);
+    const pr = CONFIG.playerRadius;
+    for (const p of route(3, 0.08)) expect(dr.obstacles.find((o) => d(p, o.n) < o.radiusU + pr - 0.02)).toBeUndefined();
+    // the pine stands on the top, just in from the rim, clear of the platform, and leans out past the rim
+    const pine = dr.bonsai;
+    expect(tierEdgeD(pine.n)).toBeLessThan(-0.15);
+    expect(tierEdgeD(pine.n)).toBeGreaterThan(-0.6);
+    expect(zone.some((z) => d(pine.n, z.n) < z.r + BONSAI.trunkR)).toBe(false);
+    expect(tierEdgeD(moveAlong(pine.n, pine.out, 1.2 / R))).toBeGreaterThan(0);
+    const g = bonsaiModel();
+    g.solid.computeBoundingBox();
+    expect(g.solid.boundingBox!.max.x).toBeGreaterThan(1.2);
+    expect(g.leaves).toBeTruthy();
   });
 
   it('the platform: its bench faces the view, with room in front to sit down and stand up', () => {
