@@ -1,8 +1,14 @@
 ---
 import { withBase } from '../game/platform/base';
 import { getCollection } from 'astro:content';
+import { faCaretDown, faXmark } from '@fortawesome/free-solid-svg-icons';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { validateLandmarks } from '../game/math/landmarks';
+import { welcomeLines } from '../game/world/home/welcome';
+import { TOUCH_COPY } from '../game/input/touchCopy';
+import { tierTextures } from '../game/world/textures';
+import { TEXTURES } from '../game/world/textureManifest';
+import { CHARACTERS } from '../game/player/characters';
 import type { LandmarkData } from '../game/types';
 
 const entries = await getCollection('landmarks');
@@ -12,6 +18,20 @@ if (errors.length) {
   throw new Error(`Invalid landmark content:\n- ${errors.join('\n- ')}`);
 }
 const json = JSON.stringify(landmarks).replace(/</g, '\\u003c');
+// Prabin's welcome, shown from the first paint (progressive-loading.md §5.3): the keys' version, the
+// touch version and a returning visitor's short one; the page picks one before it paints
+const greeting = { first: welcomeLines(null, false), touch: welcomeLines(TOUCH_COPY.hint, false), back: welcomeLines(null, true) };
+const greetingJson = JSON.stringify(greeting).replace(/</g, '\\u003c');
+// what the planet needs before it's live (tier 1), fetched as soon as the gate passes (§5.7)
+const critical = {
+  textures: tierTextures(1).map((n) => withBase(TEXTURES[n].url)),
+  characters: Object.fromEntries(CHARACTERS.map((c) => [c.id, c.url])),
+};
+const criticalJson = JSON.stringify(critical).replace(/</g, '\\u003c');
+const testFlags = import.meta.env.MODE !== 'production';
+const icon = (i: typeof faCaretDown) => ({ box: `0 0 ${i.icon[0]} ${i.icon[1]}`, d: String(i.icon[4]), name: i.iconName });
+const caret = icon(faCaretDown);
+const cross = icon(faXmark);
 ---
 
 <BaseLayout title="Explore the little planet — Prabin Pebam" bodyClass="play surface-wood">
@@ -24,17 +44,65 @@ const json = JSON.stringify(landmarks).replace(/</g, '\\u003c');
     </div>
   </header>
   <main id="game-container" class="game-container" aria-label="Little planet">
-    <div class="overlay">
-      <div class="card center-card">
-        <p class="card-title">Loading the planet…</p>
-        <p>Prefer a normal website? <a href={withBase('/classic/')} data-classic-link>Classic site</a></p>
-      </div>
+    <div class="load-scene" data-load-scene>
+      <svg class="load-planet" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+        <g class="load-turn">
+          <circle class="load-meadow" cx="100" cy="100" r="62"></circle>
+          <path class="load-shade" d="M100 162a62 62 0 0 1-61-51 62 62 0 0 0 122 0 62 62 0 0 1-61 51z"></path>
+          <g class="load-tree"><path d="M100 22l-11 20h22z"></path><path d="M100 30l-13 22h26z"></path></g>
+          <g class="load-tree" transform="rotate(62 100 100)"><circle cx="100" cy="30" r="10"></circle><circle cx="93" cy="36" r="8"></circle></g>
+          <g transform="rotate(128 100 100)"><rect class="load-wall" x="89" y="24" width="22" height="16"></rect><path class="load-roof" d="M86 26l14-12 14 12z"></path></g>
+          <g transform="rotate(200 100 100)"><rect class="load-wall" x="95" y="14" width="10" height="26"></rect><path class="load-roof" d="M93 16l7-9 7 9z"></path></g>
+          <g class="load-tree" transform="rotate(265 100 100)"><path d="M100 18l-10 22h20z"></path></g>
+          <g class="load-tree" transform="rotate(312 100 100)"><circle cx="100" cy="31" r="9"></circle></g>
+        </g>
+      </svg>
+      <div class="load-bar" aria-hidden="true"><span class="load-fill" data-load-fill></span></div>
+      <p class="load-status" role="status" data-load-status></p>
     </div>
+    <section class="card talk-box lane" role="dialog" aria-label="Talking with Prabin" data-greeting hidden>
+      <p class="talk-name">Prabin</p>
+      <p class="talk-line" data-greeting-line>{greeting.first[0]}</p>
+      <div class="talk-actions">
+        <button type="button" class="btn primary talk-next" data-greeting-next>
+          <span data-greeting-label>Next</span>
+          <svg class="icon" viewBox={caret.box} width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false" data-icon={caret.name}><path d={caret.d}></path></svg>
+          <kbd>E</kbd>
+        </button>
+        <button type="button" class="btn talk-close" aria-label="Stop talking" data-greeting-close>
+          <svg class="icon" viewBox={cross.box} width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false" data-icon={cross.name}><path d={cross.d}></path></svg>
+          <kbd>Space</kbd>
+        </button>
+      </div>
+    </section>
   </main>
   <noscript>
     <div class="overlay"><div class="card center-card"><p class="card-title">The 3D planet needs JavaScript.</p><p><a class="btn primary" href={withBase('/classic/')}>Go to the classic site</a></p></div></div>
   </noscript>
   <script type="application/json" id="landmarks-data" set:html={json} />
+  <script type="application/json" id="greeting-data" set:html={greetingJson} />
+  <script type="application/json" id="critical-assets" set:html={criticalJson} />
+  <!-- before the first paint: the welcome for a returning visitor or a touchscreen, or none (tests) -->
+  <script is:inline define:vars={{ testFlags }}>
+    (function () {
+      var box = document.querySelector('[data-greeting]');
+      var data = JSON.parse(document.getElementById('greeting-data').textContent);
+      var get = function (k) {
+        try {
+          return localStorage.getItem(k);
+        } catch (e) {
+          return null;
+        }
+      };
+      if (testFlags && get('game.test.welcome') === '0') return;
+      if (/[?&]mode=classic\b/.test(location.search)) return;
+      var coarse = window.matchMedia && matchMedia('(any-pointer: coarse)').matches;
+      var lines = get('site.onboardingSeen') === '1' ? data.back : coarse ? data.touch : data.first;
+      box.querySelector('[data-greeting-line]').textContent = lines[0];
+      box.dataset.variant = get('site.onboardingSeen') === '1' ? 'back' : coarse ? 'touch' : 'first';
+      box.hidden = false;
+    })();
+  </script>
   <script>
     import '../game/platform/gate';
   </script>

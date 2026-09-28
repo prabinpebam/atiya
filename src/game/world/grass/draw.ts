@@ -37,6 +37,8 @@ const BLADE_W = 0.06;
 export interface GrassUniforms {
   movers: Vector4[];
   camLocal: Vector3;
+  /** The summoning's sprouting ripple: its centre (unit vector) and how far out its front is (u; ≥ 1e5: all grown). */
+  sprout: Vector4;
 }
 
 export function templateGeometry(kind: GrassKind, items: number): InstancedBufferGeometry {
@@ -87,6 +89,7 @@ uniform highp usampler2D uGrassA;
 uniform sampler2D uGrassB;
 uniform vec4 uMovers[${MOVERS}];
 uniform vec3 uCamLocal;
+uniform vec4 uSprout;
 attribute float aBatch;
 ${windGlsl}
 vec3 gUp; vec3 gRoot; vec3 gSide; vec3 gFwd; vec3 gBend; vec4 gCol; float gH; float gW; float gL; float gYaw; float gFlat; int gV;`;
@@ -104,6 +107,10 @@ gH = float((gA.w >> 10u) & 255u) * (${META.maxH.toFixed(3)} / 255.0);
 gW = float((gA.w >> 18u) & 63u) / 63.0;
 gL = float((gA.w >> 24u) & 255u) / 255.0;
 gUp = gRoot * inversesqrt(max(dot(gRoot, gRoot), 1e-12));
+if (uSprout.w < 1e5) {
+  float gSp = clamp((uSprout.w - acos(clamp(dot(gUp, uSprout.xyz), -1.0, 1.0)) * ${R.toFixed(1)}) / 1.5, 0.0, 1.0);
+  gH *= gSp * gSp * (3.0 - 2.0 * gSp);
+}
 vec3 gRef = abs(gUp.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
 vec3 gT1 = cross(gUp, gRef);
 gT1 *= inversesqrt(max(dot(gT1, gT1), 1e-12));
@@ -183,6 +190,7 @@ export function grassMaterial(kind: GrassKind, tex: { a: DataTexture; b: DataTex
       uGrassB: { value: tex.b },
       uMovers: { value: shared.movers },
       uCamLocal: { value: shared.camLocal },
+      uSprout: { value: shared.sprout },
       ...(kind === 'tuft' ? { uRects: { value: rects } } : {}),
     });
     shader.vertexShader = shader.vertexShader

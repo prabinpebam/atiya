@@ -2,6 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { TimeMode } from '../world/timeOfDay';
 import type { CharacterId } from '../player/characters';
 import type { TargetKind } from '../systems/interactables';
+import type { LoadTier, SummonGroup } from '../world/summon';
 
 export type Phase = 'loading' | 'playing';
 
@@ -24,8 +25,15 @@ export interface GameState {
   canFeed: boolean;
   /** True while Chopper's profile card is open. */
   chopperOpen: boolean;
-  /** Talking with one of the family (family.md §6): who, the lines, which one is showing, and a counter that reveals the line at once. */
-  talk: { id: string; name: string; lines: string[]; index: number; reveal: number } | null;
+  /**
+   * Talking with one of the family (family.md §6): who, the lines, which one is showing, and a counter
+   * that reveals the line at once. `welcome`: Prabin's welcome, which a step or a click on the planet
+   * ends (progressive-loading.md §5.4); `shown`: a line that shows at once (the one handed over from the page).
+   */
+  talk: { id: string; name: string; lines: string[]; index: number; reveal: number; welcome?: boolean; shown?: number } | null;
+  /** Progressive loading (progressive-loading.md): where the load is, and the summoned groups mounted so far. */
+  loadTier: LoadTier;
+  mounted: readonly SummonGroup[];
   openId: string | null;
   /** The menu (true), or its How to play page ('help': from the notice board or the menu's Show controls). */
   menuOpen: boolean | 'help';
@@ -76,6 +84,8 @@ export function createGameStore(init: Partial<GameState> = {}): GameStore {
     canFeed: false,
     chopperOpen: false,
     talk: null,
+    loadTier: 'loading',
+    mounted: [],
     openId: null,
     menuOpen: false,
     traveling: null,

@@ -83,6 +83,11 @@ body.play {
   inset: 0;
 }
 
+.game-root {
+  position: absolute;
+  inset: 0;
+}
+
 .game-region {
   position: absolute;
   inset: 0;
@@ -163,6 +168,99 @@ body.play {
   background: var(--surface-accent);
 }
 
+/* The loading scene (progressive-loading.md §5.2): a little drawn planet turning, a bar, and Prabin's
+ * welcome over it from the first paint; it cross-fades into the live planet */
+.load-scene {
+  position: absolute;
+  inset: 0;
+  z-index: var(--layer-overlay);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  /* (lifted clear of the welcome in the bottom lane) */
+  padding-bottom: calc(var(--space-18) + var(--space-18) + var(--space-16));
+  background: linear-gradient(180deg, var(--color-sky-top) 0%, var(--color-sky-mid) 45%, var(--color-sky-low) 100%);
+  transition: opacity var(--dur-reveal) var(--ease-out);
+}
+
+.load-scene[data-live] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.load-planet {
+  width: min(40vmin, 16rem);
+  height: min(40vmin, 16rem);
+}
+
+.load-turn {
+  transform-origin: 50% 50%;
+  animation: load-turn var(--dur-turn) linear infinite;
+}
+
+.load-meadow {
+  fill: var(--color-loader-meadow);
+}
+
+.load-shade {
+  fill: var(--color-loader-meadow-shade);
+}
+
+.load-tree {
+  fill: var(--color-loader-tree);
+}
+
+.load-wall {
+  fill: var(--color-loader-wall);
+}
+
+.load-roof {
+  fill: var(--color-loader-roof);
+}
+
+.load-bar {
+  width: min(40vmin, 16rem);
+  height: var(--space-1-5);
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-scrim-soft);
+}
+
+.load-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-loader-bar);
+  transform: scaleX(var(--load, 0));
+  transform-origin: 0 50%;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.load-status {
+  min-height: 1.5em;
+  margin: 0;
+  color: var(--color-paper-text);
+  font-size: var(--text-sm);
+}
+
+/* the welcome over the loading scene, until the game takes it over */
+.talk-box[data-greeting] {
+  z-index: var(--layer-greeting);
+}
+
+[data-gate-hidden],
+.talk-box[data-greeting][hidden] {
+  display: none;
+}
+
+@keyframes load-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Overlays: loading, context lost (they own the screen until dismissed) */
 .overlay {
   position: absolute;
@@ -238,6 +336,11 @@ body.play {
   animation-name: talk-in;
   animation-duration: var(--dur-base);
   animation-timing-function: var(--ease-out);
+}
+
+/* the welcome handed over from the page's greeting: it's already there, so it doesn't slide in again */
+.talk-box[data-handed] {
+  animation: none;
 }
 
 .talk-name {
@@ -609,6 +712,7 @@ body.play {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .load-turn,
   .lane,
   .talk-box,
   .talk-more,

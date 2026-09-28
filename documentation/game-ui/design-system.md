@@ -50,7 +50,7 @@ The source of truth is `src/design/tokens.json`, in the [W3C Design Tokens (DTCG
 
 Both surfaces define every role (a test checks), and each surface re-declares `color`, because inherited text colour doesn't follow a changed custom property.
 
-**Scales.** Space is a 4 px grid (`--space-0-5` … `--space-18`). Type is `--text-2xs` (0.625 rem) to `--text-hero`; everything is in `rem`, so the "Larger text" setting (`html.text-lg`, 112.5 %) scales it all. Layers are named, not numbered: `base` 1 < `hud` 10 < `lane` 20 < `fade` 25 < `chrome` 30 < `toast` 35 < `overlay` 40 < `drag` 45 < `skip` 1000.
+**Scales.** Space is a 4 px grid (`--space-0-5` … `--space-18`). Type is `--text-2xs` (0.625 rem) to `--text-hero`; everything is in `rem`, so the "Larger text" setting (`html.text-lg`, 112.5 %) scales it all. Layers are named, not numbered: `base` 1 < `hud` 10 < `lane` 20 < `fade` 25 < `chrome` 30 < `toast` 35 < `overlay` 40 < `greeting` 42 < `drag` 45 < `skip` 1000.
 
 ## 4. Components
 
@@ -101,7 +101,7 @@ On narrow or short screens (`COMPACT_QUERY`: ≤ 760 px wide, or ≤ 500 px tall
 
 ### 6.1 The layer stack
 
-Use `--layer-*` only; a raw z-index fails the lint. From bottom to top: `base` (the canvas), `hud` (the chrome's regions), `lane`, `stick` (the floating touch stick, over the lanes because it sits under the thumb and never takes a touch), `fade` (travel), `chrome` (the top bar stays above the fade), `toast`, `overlay` (dialogs, panels), `drag` (an item on the cursor), `skip` (the skip link). World-anchored labels (drei `Html`) are capped below the HUD with `zIndexRange [9, 0]`.
+Use `--layer-*` only; a raw z-index fails the lint. From bottom to top: `base` (the canvas), `hud` (the chrome's regions), `lane`, `stick` (the floating touch stick, over the lanes because it sits under the thumb and never takes a touch), `fade` (travel), `chrome` (the top bar stays above the fade), `toast`, `overlay` (dialogs, panels, and the loading scene), `greeting` (Prabin's welcome on the page, over the loading scene until the game takes it over: [progressive loading](../poc-3d-navigation/progressive-loading.md) §5.3), `drag` (an item on the cursor), `skip` (the skip link). World-anchored labels (drei `Html`) are capped below the HUD with `zIndexRange [9, 0]`.
 
 ### 6.2 Who owns input
 

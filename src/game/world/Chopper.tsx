@@ -35,7 +35,15 @@ export function Chopper({ controller }: { controller: GameController }) {
   const paused = useStore(controller.store, selectAmbientPaused);
   const shells = quality === 'high' ? 12 : 8;
   const body = useMemo(() => buildChopper(shells), [shells]);
-  useEffect(() => () => body.dispose(), [body]);
+  const live = useRef<typeof body | null>(null);
+  useEffect(() => {
+    live.current = body;
+    return () => {
+      live.current = null;
+      // (deferred: dev StrictMode's rehearsal unmount remounts at once, and disposing then drops his programs mid-compile)
+      setTimeout(() => live.current !== body && body.dispose(), 0);
+    };
+  }, [body]);
   const group = useRef<Group>(null);
   const first = useRef(true);
   const wasStill = useRef(false);

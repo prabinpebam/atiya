@@ -3,7 +3,7 @@
  * their nest, fish and songbirds. Kept out of `propModels.ts` so they load with the wildlife, not the
  * initial bundle.
  */
-import { BufferGeometry, Quaternion, Vector3 } from 'three';
+import { BufferGeometry, Color, Quaternion, Vector3 } from 'three';
 import { Kit, hash3, mix, xfMatrix, type V3, type Xf } from './kit';
 import type { RabbitCoat } from './animals';
 
@@ -25,6 +25,19 @@ const COATS: Record<RabbitCoat, { back: string; side: string; belly: string; ear
   dutch: { back: '#35302d', side: '#46403c', belly: '#f4f1ea', ear: '#3a3431', rim: '#2a2523', scut: '#f7f4ee' },
 };
 const DUTCH_WHITE = '#f4f1ea';
+type Coat = Record<keyof (typeof COATS)[RabbitCoat], Color>;
+/** Each coat's colours, parsed once (the painter runs for every vertex). */
+const PARSED = new Map<RabbitCoat, Coat>();
+const parsed = (coat: RabbitCoat): Coat => {
+  let c = PARSED.get(coat);
+  if (!c) PARSED.set(coat, (c = Object.fromEntries(Object.entries(COATS[coat]).map(([k, v]) => [k, new Color(v)])) as Coat));
+  return c;
+};
+const WHITE_C = new Color(DUTCH_WHITE);
+const EAR_IN = new Color('#e8b3ad');
+const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
+/** `mix` without allocating: a into `out`, lerped towards b (t clamped). */
+const lerpInto = (out: Color, a: Color, b: Color, t: number): Color => out.copy(a).lerp(b, clamp01(t));
 
 type Role = 'body' | 'head' | 'muzzle' | 'ear' | 'earIn' | 'foot' | 'paw' | 'scut';
 type RabbitPose = 'down' | 'up' | 'kit';
@@ -37,35 +50,40 @@ type RabbitPose = 'down' | 'up' | 'kit';
  */
 export function rabbit(coat: RabbitCoat = 'wild', pose: RabbitPose = 'down'): BufferGeometry {
   const k = new Kit();
-  const C = COATS[coat];
+  const C = parsed(coat);
   const kit = pose === 'kit';
   const lop = coat === 'lop';
   const up = pose === 'up';
   const hd = new Vector3(...(kit ? [0, 0.12, 0.085] : up ? [0, 0.29, 0.06] : [0, 0.175, 0.13]));
   const hr = kit ? 0.06 : 0.072;
   const P = new Vector3();
+  const Q = new Vector3();
   const N = new Vector3();
-  const fur = (p: Vector3, n: Vector3, role: Role) => {
+  const base = new Color();
+  const tick = new Color();
+  const out = new Color();
+  // (the colours are parsed once and mixed in place: this runs for every vertex of every coat)
+  const fur = (p: Vector3, n: Vector3, role: Role): Color => {
     if (role === 'scut') return C.scut;
     if (coat === 'dutch') {
-      const q = P.copy(p).sub(hd);
-      if (role === 'muzzle' || role === 'paw') return DUTCH_WHITE;
-      if (role === 'head') return Math.abs(q.x) < hr * (0.22 + Math.max(0, -q.y / hr) * 0.9) || q.y < -hr * 0.55 ? DUTCH_WHITE : C.back;
-      if (role === 'foot') return p.z > (kit ? 0.0 : 0.005) ? DUTCH_WHITE : C.back;
-      if (role === 'body') return p.z > (kit ? -0.005 : -0.01) + Math.sin(p.x * 60) * 0.008 || n.y < -0.45 ? DUTCH_WHITE : C.back;
+      const q = Q.copy(p).sub(hd);
+      if (role === 'muzzle' || role === 'paw') return WHITE_C;
+      if (role === 'head') return Math.abs(q.x) < hr * (0.22 + Math.max(0, -q.y / hr) * 0.9) || q.y < -hr * 0.55 ? WHITE_C : C.back;
+      if (role === 'foot') return p.z > (kit ? 0.0 : 0.005) ? WHITE_C : C.back;
+      if (role === 'body') return p.z > (kit ? -0.005 : -0.01) + Math.sin(p.x * 60) * 0.008 || n.y < -0.45 ? WHITE_C : C.back;
     }
-    if (role === 'earIn') return '#e8b3ad';
-    if (role === 'ear') return mix(C.ear, C.rim, lop ? (hd.y - hr * 1.1 - p.y) / (hr * 0.6) : (p.y - hd.y - hr * 1.9) / (hr * 0.9));
+    if (role === 'earIn') return EAR_IN;
+    if (role === 'ear') return lerpInto(out, C.ear, C.rim, lop ? (hd.y - hr * 1.1 - p.y) / (hr * 0.6) : (p.y - hd.y - hr * 1.9) / (hr * 0.9));
     // the back darker, the sides lighter, the belly and chin cream; ticked with a little noise
-    const base = mix(C.side, C.back, 0.35 + n.y * 0.65);
-    const tick = mix(base, C.back, (hash3(Math.round(p.x * 90), Math.round(p.y * 90), Math.round(p.z * 90)) - 0.5) * 0.35);
-    const belly = role === 'muzzle' ? 0.55 : Math.min(1, Math.max(0, (-n.y - 0.15) * 1.6));
-    return mix(tick, C.belly, kit ? belly * 0.8 + 0.08 : belly);
+    lerpInto(base, C.side, C.back, 0.35 + n.y * 0.65);
+    lerpInto(tick, base, C.back, (hash3(Math.round(p.x * 90), Math.round(p.y * 90), Math.round(p.z * 90)) - 0.5) * 0.35);
+    const belly = role === 'muzzle' ? 0.55 : clamp01((-n.y - 0.15) * 1.6);
+    return lerpInto(out, tick, C.belly, kit ? belly * 0.8 + 0.08 : belly);
   };
   // (the paint's p and n are the part's own: bring them into the model's frame for the pattern)
   const part = (role: Role, r: number, xf: Xf, detail = 1, lump = 0, seed = 0) => {
     const m = xfMatrix(xf);
-    k.blob(r, (p, n) => fur(p.clone().applyMatrix4(m), N.copy(n).transformDirection(m), role), xf, detail, 'solid', lump, seed);
+    k.blob(r, (p, n) => fur(P.copy(p).applyMatrix4(m), N.copy(n).transformDirection(m), role), xf, detail, 'solid', lump, seed);
   };
   const at = (o: V3): V3 => [hd.x + o[0], hd.y + o[1], hd.z + o[2]];
   // body, haunches and chest

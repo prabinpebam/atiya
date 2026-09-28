@@ -37,6 +37,8 @@ import { SoundEngine } from './audio/engine';
 import { streamLevel, surfaceAt, type Surface } from './audio/audioLogic';
 import { characterById, type CharacterId } from './player/characters';
 import { withBase } from './platform/base';
+import { Summoner } from './world/summoner';
+import { waveTimes, type SummonGroup } from './world/summon';
 
 const PLAY_PATH = withBase('/play/');
 /** Travel id for "reset position" (the spawn plaza is not a landmark). */
@@ -54,6 +56,16 @@ const _v = new Vector3();
 const _side = new Vector3();
 const _invQ = new Quaternion();
 const NO_INTENT: MoveIntent = { x: 0, y: 0, run: false };
+const MOVES = new Set<string>(['up', 'down', 'left', 'right']);
+
+/** Prabin's welcome as the page shows it before the game has loaded (platform/greeting.ts). */
+interface PageGreeting {
+  lines: string[];
+  index: number;
+  closed: boolean;
+  /** The game takes over: the page's box goes. */
+  handOver(): void;
+}
 
 interface KeyEventLike {
   code: string;
@@ -153,7 +165,10 @@ export interface HomeAttachment {
   door(): number;
   meal(): { food: boolean; phase: string | null; schedule: string | null };
   hold(id: string, activity: string): boolean;
+  /** The house, the yard and the garden (summoned with the home), */
   View: ComponentType;
+  /** …and the family (summoned first, with Prabin; the others show once the home is out). */
+  People: ComponentType;
   /** Feeding the ducks from the pond bench (the visitor's handfuls and the family's). */
   ducks: DuckFeed;
   /** The vegetable garden: who has the watering can, and each plant's moisture (family.md §3.2). */
@@ -292,6 +307,12 @@ export class GameController {
   wildlifeView: ComponentType<{ controller: GameController }> | null = null;
   /** The glowing ring under what E would use (world/cues.tsx, in the wildlife's chunk). */
   cuesView: ComponentType<{ controller: GameController }> | null = null;
+  /** The summoning's sparkle bursts (world/summonFx.tsx, in the wildlife chunk). */
+  summonFxView: ComponentType<{ controller: GameController }> | null = null;
+  /** Resolves when the nature chunk (the wildlife, the grass, the activation cues, the summoning's sparkles) has arrived: it isn't waited for. */
+  natureLoaded: Promise<void> = Promise.resolve();
+  /** The trees, bushes, rocks and flowers (`world/Props.tsx`): their own chunk, fetched while the planet goes live and summoned with the props (null until then, or if it failed). */
+  propsView: ComponentType<{ controller: GameController }> | null = null;
   /** The ambient wildlife simulation (set by the Wildlife component; read by the test hook). */
   wildlife: import('./world/animals').Wildlife | null = null;
   /** The blade grass, flowers and knee-high tufts (`world/grass/`, in the `nature` chunk with the wildlife; vegetation spec), or null. */
@@ -302,6 +323,8 @@ export class GameController {
   grassMeadows: Vector3[] = [];
   /** Renderer and scene, for diagnostics (the test hook's `perfStats`). */
   gfx: { gl: WebGLRenderer; scene: Scene } | null = null;
+  /** Progressive loading (progressive-loading.md): brings the planet in once it's live. */
+  readonly summoner: Summoner;
   /** Totals for the previous frame (all passes: shadows, scene, post). */
   lastRenderInfo = { calls: 0, triangles: 0 };
   /** Hand angles last drawn on the town-hall clock (radians clockwise from 12), or null before the first frame. */
@@ -361,6 +384,8 @@ export class GameController {
   private readonly buffer = new InteractBuffer();
   private invoker: HTMLElement | null = null;
   private pendingOpen: string | null = null;
+  /** A notice from the URL (an unknown place), shown once the planet is live. */
+  private pendingNotice: string | null = null;
   private toastTimer: number | undefined;
   /** When the conversation opened (the first E is guarded: lanes.ts TALK_GUARD_MS). */
   private talkOpenedAt = -1e9;
@@ -413,6 +438,18 @@ export class GameController {
     applyText(this.store.getState().largeText);
     this.cleanups.push(this.store.subscribe((s, prev) => void (s.largeText !== prev.largeText && applyText(s.largeText))));
     this.sound = new SoundEngine(this.store.getState().soundOn, Math.random, this.store.getState().musicOn);
+    const host = this;
+    this.summoner = new Summoner({
+      get gfx() {
+        return host.gfx;
+      },
+      get camera() {
+        return host.camera;
+      },
+      store: this.store,
+      simObstacles: this.sim.obstacles,
+    });
+    if (import.meta.env.MODE !== 'production' && localStorage.getItem('game.test.pop') === '0') this.summoner.instant = true;
     if (mq) {
       const onChange = () => this.store.setState({ reducedMotionSystem: mq.matches });
       mq.addEventListener('change', onChange);
@@ -474,18 +511,74 @@ export class GameController {
 
   // ---------- lifecycle ----------
 
-  /** Called once the first frames have rendered (shaders compiled). */
+  /** Called once the first frames have rendered (shaders compiled): the planet is live, and the rest of it is summoned. */
   markReady(): void {
     if (this.store.getState().phase !== 'loading') return;
-    performance.mark('game:playable');
+    performance.mark('game:live');
+    // the page's loading scene cross-fades into the planet (platform/greeting.ts)
+    (window as unknown as { __loadScreen?: { live(): void } }).__loadScreen?.live();
+    this.announce('The planet is ready.');
+    if (this.pendingNotice) {
+      const notice = this.pendingNotice;
+      this.pendingNotice = null;
+      window.setTimeout(() => this.showToast(notice), 0);
+    }
+    void this.summonPlanet();
     if (this.pendingOpen) {
       const id = this.pendingOpen;
       this.pendingOpen = null;
       this.store.setState({ phase: 'playing' });
+      this.welcomeFromPage(false);
       this.openLandmark(id, { push: false });
       return;
     }
     this.start();
+  }
+
+  /** The summoned things (T2), by position: their obstacles and targets wait for them (progressive-loading.md §5.4). */
+  private summonPlanet(): Promise<void> {
+    const p = this.props;
+    const pending = new Map<Vector3, SummonGroup>();
+    const lists = [p.hardwood, p.fruit, p.cedar, p.bushes, p.flowerBushes, p.rocks, p.boulders, p.pebbles, p.sprigs, ...Object.values(p.flowers)];
+    for (const list of lists) for (const it of list) pending.set(it.n, 'props');
+    for (const o of p.home?.obstacles ?? []) pending.set(o.n, 'home');
+    if (p.craft) pending.set(p.craft.n, 'craft');
+    const s = this.summoner;
+    s.hold(pending);
+    const R = CONFIG.planetRadius;
+    // the props appear in a wave outward from wherever the character is by then: the big ones a few a
+    // frame (with a puff of sparkles), the small ones (flowers, sprigs, pebbles) many at once
+    s.onReveal.set('props', (now) => {
+      const from = this.sim.pLocal;
+      const usable = new Set(this.targets.map((t) => t.n));
+      const time = (list: readonly { n: Vector3; h?: number }[], perFrame: number, burst: boolean) => {
+        const t = waveTimes(
+          list.map((it) => arcDistance(it.n, from, R)),
+          now / 1000,
+          list.map((it) => usable.has(it.n)),
+          s.instant ? { speed: 1e6, perFrame: 1e6 } : { perFrame },
+        );
+        list.forEach((it, i) => {
+          s.bornAt.set(it.n, t[i] * 1000);
+          if (burst && !s.instant) s.bursts.push({ n: it.n, h: (it.h ?? 0) + 0.3, t: t[i] * 1000 });
+        });
+      };
+      s.origin = from.clone();
+      time([...p.hardwood, ...p.fruit, ...p.cedar, ...p.boulders], 3, true);
+      time([...p.bushes, ...p.flowerBushes, ...p.rocks], 4, false);
+      time([...p.pebbles, ...p.sprigs, ...Object.values(p.flowers).flat()], 40, false);
+    });
+    // Prabin (at the welcome, in front of the visitor) and Chopper appear in a burst of sparkles, and
+    // the home and the crafting table where they stand
+    const burstAt = (n: Vector3, h: number) => !s.instant && s.bursts.push({ n: n.clone(), h: this.terrain.height(n) + h, t: performance.now() });
+    s.onReveal.set('prabin', () => {
+      const prabin = this.home?.people.find((q) => q.id === 'prabin');
+      if (prabin) burstAt(prabin.n, 0.7);
+      burstAt(this.chopper.n, 0.3);
+    });
+    s.onReveal.set('home', () => p.home && burstAt(p.home.house.n, 1));
+    s.onReveal.set('craft', () => p.craft && burstAt(p.craft.n, 0.5));
+    return s.run(this.sim.pLocal);
   }
 
   /** Play (as soon as the planet is ready: there's no start card, Prabin's welcome is the start). Sound waits for the first press. */
@@ -493,18 +586,27 @@ export class GameController {
     if (this.store.getState().phase === 'playing') return;
     this.store.setState({ phase: 'playing' });
     // (never steal focus from something the visitor went to while it loaded)
-    if (document.activeElement === document.body || !document.activeElement) this.focusRegion();
-    this.welcome();
+    const active = document.activeElement;
+    if (active === document.body || !active || active.closest('[data-greeting]')) this.focusRegion();
+    this.welcomeFromPage(true);
   }
 
-  /** Prabin meets the visitor as the game starts, facing them, and says hello and how to play (the E2E suite turns it off). */
-  private welcome(): void {
-    if (!this.home || (import.meta.env.MODE !== 'production' && localStorage.getItem('game.test.welcome') === '0')) return;
+  /**
+   * Prabin's welcome (prabin-npc.md §8). The page shows it from its first paint (progressive-loading.md
+   * §5.3); once the planet is live the game takes the talk over at the line the visitor has reached, and
+   * he's summoned in front of them. With no greeting on the page (or turned off for tests), nothing.
+   */
+  private welcomeFromPage(open: boolean): void {
+    const page = (window as unknown as { __greeting?: PageGreeting }).__greeting;
+    if (!page) return;
+    const still = open && !page.closed && this.home;
+    page.handOver();
+    prefs.setOnboardingSeen();
+    if (!still || !this.home) return;
     const p = this.sim.pLocal;
     const at = moveAlong(p, this.forwardLocal(new Vector3()), 1.25 / CONFIG.planetRadius);
-    const g = this.home.greet(at, tangentToward(at, p) ?? new Vector3(0, 0, 1), { touch: this.store.getState().input === 'touch' ? (this.touch?.copy.hint ?? null) : null, back: prefs.getOnboardingSeen() });
-    prefs.setOnboardingSeen();
-    this.openTalk(g.id, g.lines);
+    const g = this.home.greet(at, tangentToward(at, p) ?? new Vector3(0, 0, 1), { touch: null, back: false });
+    this.openTalk(g.id, page.lines, { index: page.index, welcome: true });
   }
 
   focusRegion(): void {
@@ -576,8 +678,12 @@ export class GameController {
     this.stepAction(dt, selectReducedMotion(s));
     this.harvest.step(dt);
     this.stepDrops(dt, s);
-    this.stepChopper(dt, s);
-    if (this.home && !this.sim.travel && !selectAmbientPaused(s) && s.phase !== 'loading') this.home.step(dt);
+    const summon = this.summoner;
+    if (summon.tier !== 'complete') summon.step();
+    // Prabin, Chopper and the family start once they're here (the summoning's first group)
+    const here = summon.isRevealed('prabin');
+    if (here) this.stepChopper(dt, s);
+    if (here && this.home && !this.sim.travel && !selectAmbientPaused(s) && s.phase !== 'loading') this.home.step(dt);
     this.craft?.step(dt);
     if (this.familyObstacles.length) {
       const inside = new Set(this.home!.state().filter((p) => p.indoors).map((p) => p.id));
@@ -783,12 +889,14 @@ export class GameController {
     e.preventDefault();
     const s = this.store.getState();
     if (s.phase !== 'playing') return;
-    if (s.talk) {
+    if (s.talk && !(s.talk.welcome && MOVES.has(action))) {
       // talking with one of the family: E / Enter go on, Space (or Escape, M) ends it, nothing else moves
       if (!e.repeat && action === 'interact' && performance.now() - this.talkOpenedAt >= TALK_GUARD_MS) this.advanceTalk();
       else if (!e.repeat && (action === 'menu' || action === 'back')) this.endTalk();
       return;
     }
+    // Prabin's welcome doesn't hold you: a step ends it and walks (progressive-loading.md §5.4)
+    if (s.talk) this.endTalk();
     if (action === 'back') {
       // Space goes back: off the bench or the swing, up off the grass, or out of an action (Escape does
       // too); with nothing to go back from, it jumps
@@ -957,7 +1065,9 @@ export class GameController {
 
   /** Can this target be used right now? (A picked flower can't, until it grows back.) */
   private usable = (t: Target): boolean =>
-    t.usable
+    !this.summoner.available(t)
+      ? false
+      : t.usable
       ? t.usable()
       : t.kind === 'flower'
         ? this.harvest.flowerHere(t.flower!, t.index)
@@ -1197,6 +1307,8 @@ export class GameController {
 
   /** Planet click/tap: walk to a world-space surface point. */
   walkToWorldPoint(point: Vector3): void {
+    // (a click on the planet ends Prabin's welcome and walks, as a step does)
+    if (this.store.getState().talk?.welcome) this.endTalk();
     const s = this.store.getState();
     if (s.phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel) return;
     if (this.seatMotion.stage || this.rest.kind) {
@@ -1397,12 +1509,15 @@ export class GameController {
     this.openTalk(id, this.home.startChat(id, this.timeOfDay));
   }
 
-  private openTalk(id: string, lines: string[]): void {
+  private openTalk(id: string, lines: string[], o: { index?: number; welcome?: boolean } = {}): void {
     const name = this.home?.people.find((p) => p.id === id)?.name ?? id;
-    this.store.setState({ talk: { id, name, lines, index: 0, reveal: 0 }, target: null, menuOpen: false });
+    const index = Math.min(Math.max(0, o.index ?? 0), lines.length - 1);
+    // (a line handed over from the page is already showing: it isn't typed or announced again)
+    this.store.setState({ talk: { id, name, lines, index, reveal: 0, ...(o.welcome ? { welcome: true, shown: index } : {}) }, target: null, menuOpen: false });
     this.talkOpenedAt = performance.now();
+    if (o.welcome) return;
     this.sound.pickup();
-    this.announce(`${name}: ${lines[0]}`);
+    this.announce(`${name}: ${lines[index]}`);
   }
 
   /** Go on: finish revealing the line if it's still typing, else the next line, else close. */
@@ -1485,7 +1600,8 @@ export class GameController {
     const g = this.geoById.get(url.at);
     if (!g) {
       history.replaceState(null, '', PLAY_PATH);
-      window.setTimeout(() => this.showToast("Couldn't find that place, so you're at the plaza."), 0);
+      // (said once the planet is live, after its "ready")
+      this.pendingNotice = "Couldn't find that place, so you're at the plaza.";
       return;
     }
     this.sim.setOrientation(arrivalOrientation(g));

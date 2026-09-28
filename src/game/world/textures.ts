@@ -3,14 +3,22 @@ import { TEXTURES, type TextureName } from './textureManifest';
 import { withBase } from '../platform/base';
 
 /**
- * Generated textures (see scripts/build-textures.py). They're preloaded before the scene mounts,
- * so materials can pick them up synchronously. Any texture that fails to load (or times out)
- * returns null and its material falls back to the procedural look.
+ * Generated textures (see scripts/build-textures.py), fetched in tiers (progressive-loading.md §5.7):
+ * tier 1 before the planet is live, tier 2 before the summoned groups mount, tier 3 when idle. A
+ * material reads its textures synchronously when it's made, so it's made after its tier has loaded.
+ * Any texture that fails to load (or times out) returns null and its material falls back to the
+ * procedural look.
  */
 
+export type TextureTier = 1 | 2 | 3;
 const loaded = new Map<TextureName, Texture>();
 const status = { loaded: 0, failed: 0, pending: Object.keys(TEXTURES).length };
-let preload: Promise<void> | null = null;
+const preloads = new Map<TextureTier, Promise<void>>();
+
+/** The textures of a loading tier. */
+export function tierTextures(tier: TextureTier): TextureName[] {
+  return (Object.keys(TEXTURES) as TextureName[]).filter((n) => ((TEXTURES[n] as { tier?: number }).tier ?? 1) === tier);
+}
 
 function configure(name: TextureName, t: Texture): Texture {
   const e = TEXTURES[name];
@@ -42,10 +50,11 @@ async function loadTexture(name: TextureName): Promise<Texture> {
   return t;
 }
 
-/** Starts (once) and awaits loading every texture; never rejects. Resolves early after `timeoutMs`. */
-export function preloadTextures(timeoutMs = 10_000): Promise<void> {
+/** Starts (once) and awaits loading a tier's textures; never rejects. Resolves early after `timeoutMs`. */
+export function preloadTextures(tier: TextureTier = 1, timeoutMs = 10_000): Promise<void> {
+  let preload = preloads.get(tier);
   if (!preload) {
-    const all = (Object.keys(TEXTURES) as TextureName[]).map((name) =>
+    const all = tierTextures(tier).map((name) =>
       loadTexture(name)
         .then((t) => {
           loaded.set(name, configure(name, t));
@@ -60,6 +69,7 @@ export function preloadTextures(timeoutMs = 10_000): Promise<void> {
     );
     const timeout = new Promise<void>((resolve) => setTimeout(resolve, timeoutMs));
     preload = Promise.race([Promise.all(all).then(() => undefined), timeout]);
+    preloads.set(tier, preload);
   }
   return preload;
 }

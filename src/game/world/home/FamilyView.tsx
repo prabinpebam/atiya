@@ -1,4 +1,4 @@
-import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { Component, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { useStore } from 'zustand';
@@ -47,11 +47,11 @@ const RUN_CLIP_SPEED = 2.5;
 /** How each of them looks (docs: family.md §4). */
 export const LOOKS: Record<NpcId, { model: CharacterId; height: number; head: number; skin: string; hair: 'pigtails' | null; glasses: boolean; book: string }> = {
   // Rojina wears Sunny's model: its ponytail and scrunchie take her atlas's dark hair and teal tee
-  rojina: { model: 'sunny', height: 1.18, head: 1, skin: withBase('/models/skins/rojina.png'), hair: null, glasses: true, book: '#6f9fc8' },
-  laija: { model: 'skater', height: 0.92, head: 1.12, skin: withBase('/models/skins/laija.png'), hair: 'pigtails', glasses: false, book: '#e2554c' },
-  lingjel: { model: 'skater', height: 0.74, head: 1.2, skin: withBase('/models/skins/lingjel.png'), hair: null, glasses: false, book: '#3fb45a' },
+  rojina: { model: 'sunny', height: 1.18, head: 1, skin: withBase('/models/skins/rojina.webp'), hair: null, glasses: true, book: '#6f9fc8' },
+  laija: { model: 'skater', height: 0.92, head: 1.12, skin: withBase('/models/skins/laija.webp'), hair: 'pigtails', glasses: false, book: '#e2554c' },
+  lingjel: { model: 'skater', height: 0.74, head: 1.2, skin: withBase('/models/skins/lingjel.webp'), hair: null, glasses: false, book: '#3fb45a' },
   // Prabin: the playable Skater's model in his own T-shirt, trousers and shoes (prabin-npc.md §4.6)
-  prabin: { model: 'skater', height: 1.28, head: 1, skin: withBase('/models/skins/prabin.png'), hair: null, glasses: false, book: '#6f9fc8' },
+  prabin: { model: 'skater', height: 1.28, head: 1, skin: withBase('/models/skins/prabin.webp'), hair: null, glasses: false, book: '#6f9fc8' },
 };
 
 /** Where the guitar sits against the body (the held group's frame: x left, y up, z forward), and how it's tilted. Fitted to Prabin's measured shoulders so both elbows bend (≈ 100°) with the hands on the strings and the neck: the body rests on his right thigh, the neck runs out to his left, its face forward and tipped up a little. */
@@ -290,9 +290,10 @@ function Person({ controller, family, id }: { controller: GameController; family
     if (!g || !pv) return;
     const dt = Math.min(rawDt, 0.1);
     if (!paused) clock.current += dt;
-    // in the house for the night: not drawn (the lit windows say they're home)
-    g.visible = !npc.indoors;
-    if (npc.indoors) return;
+    // in the house for the night: not drawn (the lit windows say they're home); and until the home is
+    // summoned, only Prabin is here (progressive-loading.md §5.5)
+    g.visible = !npc.indoors && (id === 'prabin' || controller.summoner.isRevealed('home'));
+    if (!g.visible) return;
     // on the planet, facing their way (up the front steps and onto the floor in the doorway)
     const ground = controller.terrain.walkHeight(npc.n);
     const onSteps = npc.link ? Math.max(0, houseBase + stepHeight(arcDistance(npc.n, home.house.n, R)) - ground) : 0;
@@ -615,15 +616,16 @@ function PrabinProps({ controller, family }: { controller: GameController; famil
   );
 }
 
-/** Rojina, Laija, Lingjel and Prabin (docs: family.md, prabin-npc.md). */
+/**
+ * Rojina, Laija, Lingjel and Prabin (docs: family.md, prabin-npc.md). Their models suspend until they've
+ * loaded: the summoning (Scene's `Summoned`) waits for them, so they're compiled and there at the reveal.
+ */
 export function FamilyView({ controller, family }: { controller: GameController; family: Family }) {
   return (
     <Boundary>
-      <Suspense fallback={null}>
-        {family.npcs.map((n) => (
-          <Person key={n.id} controller={controller} family={family} id={n.id} />
-        ))}
-      </Suspense>
+      {family.npcs.map((n) => (
+        <Person key={n.id} controller={controller} family={family} id={n.id} />
+      ))}
       <PrabinProps controller={controller} family={family} />
     </Boundary>
   );

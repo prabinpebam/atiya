@@ -1,17 +1,16 @@
-import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
+import { Component, Suspense, startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import { Bloom, EffectComposer, TiltShift, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { BlendFunction, KernelSize, ToneMappingMode, type TiltShiftEffect } from 'postprocessing';
 import { useStore } from 'zustand';
-import { WebGLRenderTarget, type Group, type Material, type Mesh, type Object3D, type ShaderMaterial, type Texture, type WebGLRenderer } from 'three';
+import { WebGLRenderTarget, type Group } from 'three';
 import type { GameController } from './controller';
 import { DioramaCamera } from './camera/DioramaCamera';
 import { Player } from './player/Player';
 import { DoorLight, Landmark } from './world/Landmark';
 import { Planet } from './world/Planet';
 import { Plaza } from './world/Plaza';
-import { Props } from './world/Props';
 import { Clouds } from './world/Sky';
 import { DayNight } from './world/DayNight';
 import { Bridges, Cliffs, Water } from './world/Landforms';
@@ -20,21 +19,9 @@ import { WadeFx } from './world/WadeFx';
 import { Drops } from './world/Drops';
 import { Chest } from './world/Chest';
 import { updateLampUniforms } from './world/lampLights';
-
-/** Upload every texture the scene's materials use (`initTexture`), so none waits for its first draw. */
-function uploadTextures(gl: WebGLRenderer, scene: Object3D): void {
-  const seen = new Set<Texture>();
-  scene.traverse((o) => {
-    const mat = (o as Mesh).material as Material | Material[] | undefined;
-    if (!mat) return;
-    for (const m of Array.isArray(mat) ? mat : [mat]) {
-      for (const v of Object.values(m)) if ((v as Texture | null)?.isTexture) seen.add(v as Texture);
-      const uniforms = (m as ShaderMaterial).uniforms;
-      if (uniforms) for (const u of Object.values(uniforms)) if ((u.value as Texture | null)?.isTexture) seen.add(u.value as Texture);
-    }
-  });
-  for (const t of seen) if (!(t as { isRenderTargetTexture?: boolean }).isRenderTargetTexture) gl.initTexture(t);
-}
+import { uploadTextures } from './world/summoner';
+import { popPose, type SummonGroup } from './world/summon';
+import { selectReducedMotion } from './state/store';
 
 /** A camera layer nothing is on: the view draws nothing while the shaders compile. */
 const WARMUP_LAYER = 31;
@@ -175,7 +162,8 @@ function Adaptive({ controller }: { controller: GameController }) {
   // The monitor starts, and the warm-up counts, from when the planet is first really drawn: the
   // loading frames (empty warm-up frames, then a few slow first uploads) would otherwise read as
   // flip-flops and trip the fallback, switching adaptive quality off for the whole visit.
-  const playable = useStore(controller.store, (s) => s.phase !== 'loading');
+  // (and from when it's complete: the summoning's frames would read as a slow device too)
+  const playable = useStore(controller.store, (s) => s.phase !== 'loading' && s.loadTier === 'complete');
   useEffect(() => {
     if (playable) lastChange.current = performance.now();
   }, [playable]);
@@ -266,17 +254,81 @@ function PostFX({ controller }: { controller: GameController }) {
   return <PostFxBoundary>{composer}</PostFxBoundary>;
 }
 
+/** Tells the summoner a group has mounted: inside its Suspense, so only once everything in it has loaded. */
+function Mounted({ controller, id, root }: { controller: GameController; id: SummonGroup; root: React.RefObject<Group | null> }) {
+  useLayoutEffect(() => controller.summoner.mounted(id, root.current), [controller, id, root]);
+  return null;
+}
+
+/**
+ * A summoned group (progressive-loading.md §5.7): mounted when its turn comes, hidden until it's been
+ * compiled, then revealed by the summoner. `rise`: it rises out of the ground on a spring as it appears
+ * (its models are all on the planet, so a scale about the planet's centre sinks them and brings them up).
+ * It mounts in a transition, so React renders it in slices, yielding between its components (each
+ * builds its models as it renders) instead of in one long task.
+ */
+function Summoned({ controller, id, rise = false, children }: { controller: GameController; id: SummonGroup; rise?: boolean; children: ReactNode }) {
+  const due = useStore(controller.store, (s) => s.mounted.includes(id));
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (due) startTransition(() => setOn(true));
+  }, [due]);
+  const root = useRef<Group>(null);
+  useFrame(() => {
+    const g = root.current;
+    const at = controller.summoner.revealed.get(id);
+    if (!rise || !g || at === undefined || g.userData.settled) return;
+    const s = controller.summoner;
+    const p = popPose('model', (performance.now() - at) / 1000, 0, s.instant || selectReducedMotion(controller.store.getState()));
+    g.scale.setScalar(1 - 0.12 * (1 - p.scale * p.stretch));
+    if (p.done) {
+      g.scale.setScalar(1);
+      g.userData.settled = true;
+    }
+  });
+  if (!on) return null;
+  return (
+    <Suspense fallback={null}>
+      <group ref={root} name={`summon-${id}`} visible={false}>
+        {children}
+      </group>
+      <Mounted controller={controller} id={id} root={root} />
+    </Suspense>
+  );
+}
+
+type ChunkView = 'propsView' | 'grassView' | 'wildlifeView' | 'cuesView' | 'summonFxView';
+/**
+ * A view from a chunk the planet doesn't wait for (the props', the nature chunk's): drawn once it has
+ * arrived. A summoned group's has by the time the group mounts (its preparation waits for it).
+ */
+function Slot({ controller, view }: { controller: GameController; view: ChunkView }) {
+  const [, arrived] = useState(0);
+  useEffect(() => {
+    let on = true;
+    void controller.natureLoaded.then(() => on && arrived(1));
+    return () => {
+      on = false;
+    };
+  }, [controller]);
+  const View = controller[view];
+  return View ? <View controller={controller} /> : null;
+}
+
 export function Scene({ controller }: { controller: GameController }) {
   const planet = useRef<Group>(null);
   // Chopper's body, fur and animation: their own chunk, loaded alongside the textures (game-mount.tsx)
   const Chopper = controller.chopperView;
-  const Wildlife = controller.wildlifeView;
-  const Cues = controller.cuesView;
-  const Grass = controller.grassView;
   const Home = controller.home?.View ?? null;
+  const People = controller.home?.People ?? null;
   const Craft = controller.craft?.View ?? null;
   const quality = useStore(controller.store, (s) => s.quality);
   const shadowSize = quality === 'high' ? 2048 : 1024;
+  // the planet mounts in a transition, so React builds it in slices (between its components), and the
+  // page's welcome stays responsive while it does (progressive-loading.md §5.7)
+  const [core, setCore] = useState(false);
+  useEffect(() => startTransition(() => setCore(true)), []);
+  if (!core) return null;
   return (
     <>
       <SimDriver controller={controller} planet={planet} />
@@ -285,10 +337,14 @@ export function Scene({ controller }: { controller: GameController }) {
       <DioramaCamera controller={controller} />
       <DayNight controller={controller} shadowSize={shadowSize} />
       <WindDriver controller={controller} />
-      <Clouds controller={controller} />
+      <Summoned controller={controller} id="clouds">
+        <Clouds controller={controller} />
+      </Summoned>
       <group ref={planet} name="planet-root">
         <Planet controller={controller} />
-        {Grass && <Grass controller={controller} />}
+        <Summoned controller={controller} id="grass">
+          <Slot controller={controller} view="grassView" />
+        </Summoned>
         <Cliffs controller={controller} />
         <Water controller={controller} />
         <WadeFx controller={controller} />
@@ -296,18 +352,31 @@ export function Scene({ controller }: { controller: GameController }) {
         <FlyingLeaves controller={controller} />
         <WindSwirls controller={controller} />
         <Plaza controller={controller} />
-        <Props controller={controller} />
-        {Wildlife && <Wildlife controller={controller} />}
+        {/* the rest of the planet is summoned once it's live, nearest first (world/summoner.ts) */}
+        <Summoned controller={controller} id="props">
+          <Slot controller={controller} view="propsView" />
+        </Summoned>
+        <Summoned controller={controller} id="wildlife" rise>
+          <Slot controller={controller} view="wildlifeView" />
+        </Summoned>
         <Drops controller={controller} />
         <Chest controller={controller} />
-        {Chopper && <Chopper controller={controller} />}
-        {Home && <Home />}
-        {Craft && <Craft />}
+        <Summoned controller={controller} id="prabin">
+          {Chopper && <Chopper controller={controller} />}
+          {People && <People />}
+        </Summoned>
+        <Summoned controller={controller} id="home" rise>
+          {Home && <Home />}
+        </Summoned>
+        <Summoned controller={controller} id="craft" rise>
+          {Craft && <Craft />}
+        </Summoned>
+        <Slot controller={controller} view="summonFxView" />
         {controller.geos.map((g) => (
           <Landmark key={g.id} controller={controller} geo={g} data={controller.dataById.get(g.id)!} />
         ))}
         <DoorLight controller={controller} />
-        {Cues && <Cues controller={controller} />}
+        <Slot controller={controller} view="cuesView" />
       </group>
       <Player controller={controller} />
       <PostFX controller={controller} />

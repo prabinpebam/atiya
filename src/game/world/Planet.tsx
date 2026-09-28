@@ -10,6 +10,7 @@ import { riverDistance } from './features';
 import { PLAZA_RADIUS_U } from './layout';
 import { createPlanetMaterial } from './planetMaterial';
 import { valueNoise } from './terrain';
+import { runSliced } from './summoner';
 
 const R = CONFIG.planetRadius;
 /** Icosphere subdivision: ≈ 0.21 u between vertices, fine enough for the rolling hills and river banks. */
@@ -90,7 +91,7 @@ function withMesaCaps(ground: BufferGeometry, caps: BufferGeometry | null): Buff
  * `aSurf` = path, plaza, cobbles, sand · `aSurf2` = riverbed, wet bank, steepness, height (u) ·
  * `aCob` = the cobbles' texture coordinates, laid flat in the plane of the building they surround.
  */
-function buildGround(controller: GameController): BufferGeometry {
+function* buildGroundSteps(controller: GameController): Generator<void, BufferGeometry> {
   let g: BufferGeometry = new IcosahedronGeometry(R, GROUND_DETAIL);
   g.deleteAttribute('uv');
   g.deleteAttribute('normal');
@@ -120,6 +121,7 @@ function buildGround(controller: GameController): BufferGeometry {
   });
 
   for (let i = 0; i < count; i++) {
+    if ((i & 1023) === 1023) yield;
     v.fromBufferAttribute(pos, i);
     u.copy(v).normalize();
     const rd = river ? riverDistance(river, u) : null;
@@ -178,7 +180,29 @@ function buildGround(controller: GameController): BufferGeometry {
     surf2[i * 4 + 2] = smooth(0.12, 0.45, 1 - n.dot(v));
   }
   g.setAttribute('aSurf2', new BufferAttribute(surf2, 4));
+  yield;
   return withMesaCaps(g, buildMesaCaps(controller.props.mesas));
+}
+
+const grounds = new WeakMap<GameController, BufferGeometry>();
+
+/**
+ * Builds the ground ahead of the mount, in slices of a frame's spare time (progressive-loading.md
+ * §5.7), so the page (and Prabin's welcome on it) stays responsive while it's made. Called once the
+ * chunks have levelled their pads.
+ */
+export async function prepareGround(controller: GameController): Promise<void> {
+  if (!grounds.has(controller)) grounds.set(controller, await runSliced(buildGroundSteps(controller)));
+}
+
+function buildGround(controller: GameController): BufferGeometry {
+  const ready = grounds.get(controller);
+  if (ready) return ready;
+  const steps = buildGroundSteps(controller);
+  for (;;) {
+    const r = steps.next();
+    if (r.done) return r.value;
+  }
 }
 
 export function Planet({ controller }: { controller: GameController }) {

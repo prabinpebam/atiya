@@ -71,7 +71,20 @@ export interface GrassField {
   tufts: Packed;
 }
 
+/** Runs a resumable build to its end at once. */
+function drain<T>(steps: Generator<unknown, T>): T {
+  for (;;) {
+    const r = steps.next();
+    if (r.done) return r.value;
+  }
+}
+
 export function vertexGrass(g: GroundMesh, rules: GrassRules): VertexGrass {
+  return drain(vertexGrassSteps(g, rules));
+}
+
+/** `vertexGrass` as a resumable build: it yields every 2048 vertices (the summoner runs it in slices: progressive-loading.md §5.7). */
+export function* vertexGrassSteps(g: GroundMesh, rules: GrassRules): Generator<void, VertexGrass> {
   const n = g.pos.length / 3;
   const out: VertexGrass = {
     density: new Float32Array(n),
@@ -84,6 +97,7 @@ export function vertexGrass(g: GroundMesh, rules: GrassRules): VertexGrass {
   const u = new Vector3();
   const s: GroundSurface = { path: 0, plaza: 0, cobble: 0, sand: 0, bed: 0, bank: 0, steep: 0 };
   for (let i = 0; i < n; i++) {
+    if ((i & 2047) === 2047) yield;
     u.set(g.pos[i * 3], g.pos[i * 3 + 1], g.pos[i * 3 + 2]).normalize();
     s.path = g.surf[i * 4];
     s.plaza = g.surf[i * 4 + 1];
@@ -185,6 +199,11 @@ const PALETTE: ReadonlyArray<readonly [number, number, number]> = [
 ];
 
 export function placeGrass(g: GroundMesh, vg: VertexGrass, opt: GrassOptions): GrassField {
+  return drain(placeGrassSteps(g, vg, opt));
+}
+
+/** `placeGrass` as a resumable build: it yields every 256 triangles (the same random sequence, so the same field). */
+export function* placeGrassSteps(g: GroundMesh, vg: VertexGrass, opt: GrassOptions): Generator<void, GrassField> {
   const rand = rng(opt.seed);
   const idx = g.index;
   const tris = Math.min(idx.length / 3, g.triangles ?? Infinity);
@@ -196,6 +215,7 @@ export function placeGrass(g: GroundMesh, vg: VertexGrass, opt: GrassOptions): G
   let wantF = 0;
   let wantC = 0;
   for (let t = 0; t < tris; t++) {
+    if ((t & 1023) === 1023) yield;
     if (g.skip?.(t)) continue;
     const a = idx[t * 3];
     const b = idx[t * 3 + 1];
@@ -223,6 +243,7 @@ export function placeGrass(g: GroundMesh, vg: VertexGrass, opt: GrassOptions): G
   const lerp1 = (arr: Float32Array, a: number, b: number, c: number, wa: number, wb: number, wc: number) => arr[a] * wa + arr[b] * wb + arr[c] * wc;
 
   for (let t = 0; t < tris; t++) {
+    if ((t & 255) === 255) yield;
     const ar = area[t];
     if (ar <= 0) continue;
     const a = idx[t * 3];

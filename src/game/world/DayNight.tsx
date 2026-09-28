@@ -25,7 +25,7 @@ import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import { DAY_HOURS, SKY_Z, advanceHours, localHours, sampleSky, sceneExposure, skyPosition, wrapHours, type SkyState } from './timeOfDay';
 import { mulberry32 } from './layout';
 import { applyTimeOfDay } from './materials';
-import { cloudMaterial } from './Sky';
+import { cloudMaterialMade } from './Sky';
 import { gameTexture } from './textures';
 
 const R = CONFIG.planetRadius;
@@ -270,11 +270,14 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     sky.ctx.fillRect(0, 0, 2, 256);
     sky.texture.needsUpdate = true;
 
-    const clouds = cloudMaterial();
-    clouds.color.copy(s.cloudTint);
-    clouds.emissive.copy(s.cloudTint);
-    // moonlit at night: the clouds keep a soft glow of their own (lilac-blue, not dark blobs)
-    clouds.emissiveIntensity = 0.3 + 0.25 * s.night;
+    // (the clouds are summoned after the planet is live: until then there are none to tint)
+    const clouds = cloudMaterialMade();
+    if (clouds) {
+      clouds.color.copy(s.cloudTint);
+      clouds.emissive.copy(s.cloudTint);
+      // moonlit at night: the clouds keep a soft glow of their own (lilac-blue, not dark blobs)
+      clouds.emissiveIntensity = 0.3 + 0.25 * s.night;
+    }
 
     applyTimeOfDay(s.glow, s.night);
 
@@ -291,7 +294,16 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     moon.disc.visible = moon.halo.visible = mv > 0.001;
     skyPosition(Math.min(1.06, Math.max(-0.06, s.moonArc)), moon.disc.position);
     moon.halo.position.set(moon.disc.position.x, moon.disc.position.y, SKY_Z - 0.2);
-    (moon.disc.material as MeshBasicMaterial).opacity = mv;
+    const moonMat = moon.disc.material as MeshBasicMaterial;
+    moonMat.opacity = mv;
+    // the painted moon is fetched once the planet is complete (a tier-3 texture): the drawn one until then
+    if (!moonMat.userData.painted) {
+      const painted = gameTexture('moon');
+      if (painted) {
+        moonMat.map = painted;
+        moonMat.userData.painted = true;
+      }
+    }
     (moon.halo.material as MeshBasicMaterial).opacity = mv * 0.8;
 
     stars.mat.uniforms.uOpacity.value = Math.max(0, Math.min(1, (s.night - 0.35) / 0.5));

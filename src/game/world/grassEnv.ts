@@ -11,6 +11,7 @@ import { valueNoise } from './terrain';
 import { TEXTURES } from './textureManifest';
 import { gameTexture } from './textures';
 import { WIND_GLSL, windUniforms } from './windField';
+import { WAVE } from './summon';
 
 /**
  * What the grass chunk borrows from the main bundle, handed over when it's attached (game-mount.tsx).
@@ -37,5 +38,6 @@ export function grassEnv(controller: GameController): GrassEnv {
     windGlsl: WIND_GLSL,
     windUniforms,
     lamp: withLampLights,
+    waveSpeed: WAVE.speed,
   };
 }

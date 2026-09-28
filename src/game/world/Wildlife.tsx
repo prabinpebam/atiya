@@ -10,7 +10,7 @@ import { kitMaterials } from './materials';
 import { DUCK_NECK, birdBody, birdWing, duck, duckHead, duckNest, duckling, fishModel, rabbit } from './wildlifeModels';
 import { RIVER_WATER_U } from './terrain';
 import { ShootingStars } from './ShootingStars';
-import { birdsOut, createWildlife, meadowSpots, stepWildlife, type Rabbit, type WildEnv, type Wildlife as World } from './animals';
+import { RABBIT_COATS, birdsOut, createWildlife, meadowSpots, stepWildlife, type Rabbit, type WildEnv, type Wildlife as World } from './animals';
 
 const R = CONFIG.planetRadius;
 /** Fish swim this far under the water surface (u): just under it, so they show through. */
@@ -42,6 +42,41 @@ const KIT_HOP = 0.07;
 
 /** Which rabbit model: an adult of a coat lying low or sitting up, or a kit of a coat. */
 const rabbitModel = (r: Rabbit, upright: boolean) => (r.mum ? `kit-${r.coat}` : `rabbit-${r.coat}${upright ? '-up' : ''}`);
+
+/**
+ * The models, built ahead (progressive-loading.md §5.7): `prepareWildlife` builds them a few a frame
+ * while the wildlife waits for its turn, and the view takes them from here (building any it lacks).
+ * (Local to the chunk: it imports nothing from the main bundle but types.)
+ */
+const MODELS = new Map<string, BufferGeometry>();
+const model = (key: string, make: () => BufferGeometry): BufferGeometry => {
+  let g = MODELS.get(key);
+  if (!g) MODELS.set(key, (g = make()));
+  return g;
+};
+const MAKERS: ReadonlyArray<readonly [string, () => BufferGeometry]> = [
+  ...RABBIT_COATS.flatMap((c) => [[`rabbit-${c}`, () => rabbit(c, 'down')], [`rabbit-${c}-up`, () => rabbit(c, 'up')], [`kit-${c}`, () => rabbit(c, 'kit')]] as const),
+  ['duck', duck],
+  ['duckHead', duckHead],
+  ['duckling', duckling],
+  ['nest', duckNest],
+  ['fish', fishModel],
+  ['bird', birdBody],
+  ['wing', birdWing],
+];
+const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+/** Builds the wildlife's models in slices of about `budgetMs` a frame. */
+export async function prepareWildlife(budgetMs = 8): Promise<void> {
+  let t0 = performance.now();
+  for (const [key, make] of MAKERS) {
+    model(key, make);
+    if (performance.now() - t0 > budgetMs) {
+      await frame();
+      t0 = performance.now();
+    }
+  }
+}
 
 /** Matrix for a model standing at unit `n` (height `h` above the base sphere), facing tangent `dir`. */
 function place(out: Matrix4, n: Vector3, dir: Vector3, h: number, scale = 1, pitch = 0, yaw = 0, roll = 0): Matrix4 {
@@ -93,12 +128,23 @@ export function Wildlife({ controller }: { controller: GameController }) {
     for (const r of world.rabbits)
       for (const up of r.mum ? [false] : [false, true]) {
         const key = rabbitModel(r, up);
-        out[key] ??= { geometry: rabbit(r.coat, r.mum ? 'kit' : up ? 'up' : 'down'), count: 0, kit: Boolean(r.mum) };
+        out[key] ??= { geometry: model(key, () => rabbit(r.coat, r.mum ? 'kit' : up ? 'up' : 'down')), count: 0, kit: Boolean(r.mum) };
         out[key].count++;
       }
     return out;
   }, [world]);
-  const geo = useMemo(() => ({ duck: duck(), duckHead: duckHead(), duckling: duckling(), nest: duckNest(), fish: fishModel(), bird: birdBody(), wing: birdWing() }), []);
+  const geo = useMemo(
+    () => ({
+      duck: model('duck', duck),
+      duckHead: model('duckHead', duckHead),
+      duckling: model('duckling', duckling),
+      nest: model('nest', duckNest),
+      fish: model('fish', fishModel),
+      bird: model('bird', birdBody),
+      wing: model('wing', birdWing),
+    }),
+    [],
+  );
   const nest = controller.props.home?.duckNest ?? null;
   const mat = useMemo(() => kitMaterials().solid, []);
   const meshes = useRef<Record<string, InstancedMesh | null>>({});

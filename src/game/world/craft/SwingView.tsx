@@ -9,6 +9,26 @@ import { kitMaterials, sharedPropMaterials } from '../materials';
 import type { PropMaterials } from '../Props';
 import type { Crafting } from './index';
 import { jutePlant, juteStubble, oakModel, swingGhost, swingModel } from './swingModels';
+import { prebuildSteps, prebuilt } from '../prebuilt';
+
+type SwingSpec = Crafting['swing'];
+/** The oak, the jute and the swing, each built on its own (ahead, in slices: `swingSteps`). */
+const SWING_MODELS = (sw: SwingSpec) =>
+  [
+    ['swing.oak', oakModel],
+    ['swing.jute', jutePlant],
+    ['swing.stubble', juteStubble],
+    ['swing.swing', () => (sw ? swingModel(sw.frame.length) : null)],
+    ['swing.ghost', () => (sw ? swingGhost(sw.frame.length) : null)],
+  ] as const;
+const swingModels = (sw: SwingSpec) => {
+  const [oak, jute, stubble, swing, ghost] = SWING_MODELS(sw).map(([k, make]) => prebuilt<unknown>(k, make));
+  return { oak, jute, stubble, swing, ghost } as { oak: ReturnType<typeof oakModel>; jute: ReturnType<typeof jutePlant>; stubble: ReturnType<typeof juteStubble>; swing: ReturnType<typeof swingModel> | null; ghost: ReturnType<typeof swingGhost> | null };
+};
+/** The crafting chunk's models, built ahead while it waits for its turn (the summoner's preparation). */
+export function craftSteps(sw: SwingSpec, more: ReadonlyArray<readonly [string, () => unknown]>): Generator<void, void> {
+  return prebuildSteps([...SWING_MODELS(sw), ...more]);
+}
 
 const R = CONFIG.planetRadius;
 const WHITE = new Color('#ffffff');
@@ -41,7 +61,7 @@ export function SwingView({ controller, crafting }: { controller: GameController
   const built = useStore(crafting.store, (s) => s.swingBuilt);
   const building = useStore(crafting.store, (s) => s.swingBuilding !== null);
   const sw = crafting.swing;
-  const geo = useMemo(() => ({ oak: oakModel(), jute: jutePlant(), stubble: juteStubble(), swing: sw ? swingModel(sw.frame.length) : null, ghost: sw ? swingGhost(sw.frame.length) : null }), [sw]);
+  const geo = useMemo(() => swingModels(sw), [sw]);
   const mats = useMemo(() => {
     const p = sharedPropMaterials<PropMaterials>();
     return {

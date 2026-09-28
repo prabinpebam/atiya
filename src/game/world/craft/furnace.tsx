@@ -23,6 +23,7 @@ import { lampsOn } from '../DayNight';
 import { Sparkles } from '../Sparkles';
 import { CLAY, clayBeds, type ClayBed } from './clay';
 import { CLAY_COLOURS, FIRE_Z, FURNACE, FURNACE_BASE, LUMPS, bedFrame, clayBedsModel, clayLumpGeometry, fireGeometry, furnaceGhost, furnaceModel } from './furnaceModels';
+import { prebuilt } from '../prebuilt';
 import { BUILD_S, FURNACE_COOL_S, FURNACE_NEEDS, FURNACE_R, GHOST_FAR, GHOST_NEAR, TARGET_REACH, listNeeds, missing, takeNeeds } from './recipes';
 import type { CraftStore } from './index';
 
@@ -57,6 +58,8 @@ export interface FurnaceLink {
 export interface FurnaceAttachment {
   beds: readonly ClayBed[];
   View: () => ReactElement;
+  /** Its models, to build ahead (world/prebuilt.ts). */
+  models: ReadonlyArray<readonly [string, () => unknown]>;
   /** Its card is up (its site is what E would use, and it isn't built). */
   near(key: string | undefined): boolean;
   step(dt: number, smelting: boolean): void;
@@ -181,6 +184,11 @@ export function attachFurnace(controller: GameController, store: CraftStore): Fu
 
   return {
     beds,
+    models: [
+      ['furnace.model', furnaceModel],
+      ['furnace.ghost', furnaceGhost],
+      ['furnace.fire', fireGeometry],
+    ],
     View: () => <FurnaceView controller={controller} store={store} link={link} beds={beds} />,
     near(key) {
       return key === 'site:furnace' && !store.getState().furnaceBuilt;
@@ -243,8 +251,8 @@ function FurnaceView({ controller, store, link, beds }: { controller: GameContro
   const built = useStore(store, (s) => s.furnaceBuilt);
   const building = useStore(store, (s) => s.furnaceBuilding !== null);
   const at = useMemo(() => (site ? frame(site.n, site.facing, controller.terrain.height(site.n) - 0.02) : null), [site, controller]);
-  const geo = useMemo(() => furnaceModel(), []);
-  const ghost = useMemo(() => furnaceGhost(), []);
+  const geo = useMemo(() => prebuilt('furnace.model', furnaceModel), []);
+  const ghost = useMemo(() => prebuilt('furnace.ghost', furnaceGhost), []);
   const bedsAt = useMemo(() => beds.map((b) => bedFrame(b.n, groundUp(controller, b.n), b.facing, R + controller.terrain.height(b.n) + 0.004)), [beds, controller]);
   const bedGeo = useMemo(() => (beds.length ? clayBedsModel(beds, (b) => bedsAt[beds.indexOf(b)]) : null), [beds, bedsAt]);
   const mats = useMemo(
@@ -268,7 +276,7 @@ function FurnaceView({ controller, store, link, beds }: { controller: GameContro
     }),
     [],
   );
-  const fire = useMemo(() => fireGeometry(), []);
+  const fire = useMemo(() => prebuilt('furnace.fire', fireGeometry), []);
   const glowGeo = useMemo(() => new PlaneGeometry(0.8, 0.62), []);
   // at night, the fire lights the hearth and the ground in front (a real lamp: lampLights.ts), only while it's hot
   const lamp = useMemo<Lamp | null>(() => (at ? { pos: new Vector3(0, MOUTH_Y + 0.1, FIRE_Z + 0.35).applyQuaternion(at.q).add(at.p), dir: null, color: new Color('#ff9a4a'), intensity: 0, range: 1.8 } : null), [at]);

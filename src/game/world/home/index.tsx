@@ -9,7 +9,8 @@ import { UP, arcDistance, moveAlong } from '../../math/sphere';
 import { FLOWER_KINDS } from '../layout';
 import { CRAFT_STAND, FAMILY, Family, KIDS, LinePicker, welcomeLines, type DialogueProvider, type FamilyWorld, type NpcId } from './family';
 import { FamilyView } from './FamilyView';
-import { HomeView } from './HomeView';
+import { HomeView, homeSteps } from './HomeView';
+import { runSliced } from '../summoner';
 import { TalkBox } from './TalkBox';
 import { homePads } from './homePads';
 import { DuckFeed } from '../../systems/duckFeed';
@@ -94,13 +95,15 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     const avoid = stuck ? [...family.npcs.filter((n) => !n.indoors).map((n) => ({ n: n.n, r: 0.18 })), { n: controller.sim.pLocal, r: 0.35 }].filter((b) => arcDistance(b.n, to, R) > 0.5) : [];
     return nav.path(from, to, avoid);
   };
+  // (the house, the yard and the rest are built ahead, a few a frame, while the home waits for its turn)
+  controller.summoner.prepare.set('home', () => runSliced(homeSteps(controller, home)));
   const View = () => (
     <>
       <HomeView controller={controller} home={home} family={family} />
       <GardenView controller={controller} home={home} garden={garden} />
-      <FamilyView controller={controller} family={family} />
     </>
   );
+  const People = () => <FamilyView controller={controller} family={family} />;
   return {
     family,
     pads: homePads(home, R),
@@ -150,6 +153,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     ducks,
     garden,
     View,
+    People,
     Hud: () => <TalkBox controller={controller} />,
   };
 }

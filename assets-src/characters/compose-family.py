@@ -7,7 +7,7 @@ rig expects it (docs: documentation/poc-3d-navigation/family.md §4):
   - the T-shirt block, the sleeve strips, the trouser block (shorts: skin below the knee line) and
     the shoe block are refilled with flat colours, keeping the atlas's own shading steps;
   - the glove blocks become plain skin; each shirt gets a small chest motif.
-Writes public/models/skins/<id>.png.  Run:  python assets-src/characters/compose-family.py
+Writes public/models/skins/<id>.webp (lossless: the palette is exact, and it's half a PNG's size).  Run:  python assets-src/characters/compose-family.py
 """
 from pathlib import Path
 
@@ -142,8 +142,8 @@ def build(name: str, o: dict) -> None:
             d.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=dark)
     motif(img, o["motif"], o["shirt"])
     OUT.mkdir(parents=True, exist_ok=True)
-    img.quantize(96, dither=Image.Dither.NONE).convert("RGB").save(OUT / f"{name}.png", optimize=True)
-    print(name, (OUT / f"{name}.png").stat().st_size // 1024, "KB")
+    img.quantize(96, dither=Image.Dither.NONE).convert("RGB").save(OUT / f"{name}.webp", "WEBP", lossless=True, method=6)
+    print(name, (OUT / f"{name}.webp").stat().st_size // 1024, "KB")
 
 
 if __name__ == "__main__":

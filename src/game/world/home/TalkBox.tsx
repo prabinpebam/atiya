@@ -19,9 +19,11 @@ export function TalkBox({ controller }: { controller: GameController }) {
   const line = talk ? talk.lines[talk.index] : '';
   const [shown, setShown] = useState(0);
   const reveal = useRef(0);
+  // (the line handed over from the page's greeting is already showing: progressive-loading.md §5.3)
+  const handed = talk?.shown === talk?.index;
   useEffect(() => {
-    setShown(reduced ? line.length : 0);
-  }, [talk?.id, talk?.index, line, reduced]);
+    setShown(reduced || handed ? line.length : 0);
+  }, [talk?.id, talk?.index, line, reduced, handed]);
   useEffect(() => {
     if (talk && talk.reveal !== reveal.current) {
       reveal.current = talk.reveal;
@@ -39,7 +41,7 @@ export function TalkBox({ controller }: { controller: GameController }) {
   const done = shown >= line.length;
   const last = talk.index === talk.lines.length - 1;
   return (
-    <section className="card talk-box lane" role="dialog" aria-label={`Talking with ${talk.name}`} data-testid="talk-box">
+    <section className="card talk-box lane" role="dialog" aria-label={`Talking with ${talk.name}`} data-testid="talk-box" data-handed={talk.shown !== undefined ? '' : undefined}>
       <p className="talk-name">{talk.name}</p>
       <p className="sr-only">{line}</p>
       <p className="talk-line" aria-hidden="true" data-testid="talk-line">

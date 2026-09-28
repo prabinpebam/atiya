@@ -20,10 +20,11 @@ import { CRAFT_RADIUS } from '../layout';
 import { HOME_R, SWING } from '../homestead';
 import { Pendulum, swingFrame, type SwingFrame } from './swing';
 import { SWING_RIG } from './swingModels';
-import { BED_U, DOGHOUSE, DOORWAY_U } from './models';
+import { BED_U, DOGHOUSE, DOORWAY_U, craftingTableModel } from './models';
 import { BUILD_S, CRAFT_S, GHOST_FAR, GHOST_NEAR, HOUSE_R, SMELTING, SMELT_S, SWING_NEEDS, TARGET_REACH, colourName, craft, landedSlots, listNeeds, missing, parseSite, spendPaint, takeHouse, takeNeeds, type HouseColour, type Recipe } from './recipes';
 import { CraftView } from './CraftView';
-import { SwingView } from './SwingView';
+import { SwingView, craftSteps } from './SwingView';
+import { runSliced } from '../summoner';
 import { CraftScreens } from './ui';
 import { attachDeck } from './deck';
 import { attachFurnace } from './furnace';
@@ -390,6 +391,8 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
   const furnace = attachFurnace(controller, store);
   // resting anywhere and the lantern (rest.md)
   const gear = attachGear(controller);
+  // (the table, the oak, the swing, the deck's stages and the furnace are built ahead, a few a frame, while the crafting waits for its turn)
+  controller.summoner.prepare.set('craft', () => runSliced(craftSteps(crafting.swing, [['craft.table', craftingTableModel], ...(deck?.models ?? []), ...(furnace?.models ?? [])])));
 
   return {
     View: () => (

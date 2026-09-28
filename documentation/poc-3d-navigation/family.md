@@ -84,7 +84,7 @@ plaster, stone, brick, canvas, metal):
 ## 4. The family (looks)
 
 All three share the project's CC0 Kenney rig and clips; each has its own skin on the same atlas
-(`assets-src/characters/compose-family.py` → `public/models/skins/*.png`), plus accessories on the
+(`assets-src/characters/compose-family.py` → `public/models/skins/*.webp`), plus accessories on the
 Head bone:
 
 | | Look | Height |

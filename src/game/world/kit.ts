@@ -72,6 +72,8 @@ export interface KitGeometry {
 }
 
 const tmpColor = new Color();
+/** `Kit.blob`'s shapes, reused (bounded: the planet asks for a few hundred distinct ones). */
+const BLOBS = new Map<string, BufferGeometry>();
 
 export function xfMatrix(xf: Xf = {}): Matrix4 {
   const s = xf.s ?? 1;
@@ -285,7 +287,14 @@ export class Kit {
   }
 
   blob(r: number, color: Paint, xf: Xf = {}, detail = 2, layer: Layer = 'solid', lump = 0, seed = 0): this {
-    return this.add(smoothBlob(r, detail, lump, seed), color, xf, layer);
+    // (the same blob is often asked for again, by the parts of a model and its variants: `add` only reads it)
+    const key = `${r}|${detail}|${lump}|${seed}`;
+    let g = BLOBS.get(key);
+    if (!g) {
+      if (BLOBS.size >= 256) BLOBS.clear();
+      BLOBS.set(key, (g = smoothBlob(r, detail, lump, seed)));
+    }
+    return this.add(g, color, xf, layer);
   }
 
   torus(r: number, tube: number, color: Paint, xf: Xf = {}, arc = Math.PI * 2, seg: [number, number] = [8, 24], layer: Layer = 'solid'): this {

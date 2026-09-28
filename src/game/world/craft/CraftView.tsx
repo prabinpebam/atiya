@@ -13,6 +13,7 @@ import { DOGHOUSE_LANTERN, TABLE, craftingTableModel, dogHouseModel, ghostGeomet
 import { toolPose } from '../../systems/readyCue';
 import { Sparkles } from '../Sparkles';
 import { HOUSE_HEX } from './recipes';
+import { prebuilt } from '../prebuilt';
 
 const R = CONFIG.planetRadius;
 const _x = new Vector3();
@@ -37,7 +38,7 @@ export function CraftView({ controller, crafting }: { controller: GameController
   const built = useStore(crafting.store, (s) => s.built);
   const colour = useStore(crafting.store, (s) => s.colour);
   const building = useStore(crafting.store, (s) => s.building !== null);
-  const tableGeo = useMemo(() => craftingTableModel(), []);
+  const tableGeo = useMemo(() => prebuilt('craft.table', craftingTableModel), []);
   const tableAt = useMemo(() => (table ? frame(table.n, table.facing, controller.terrain.height(table.n) - 0.02) : null), [table, controller]);
   const siteAt = useMemo(() => (site ? frame(site.n, site.facing, controller.terrain.height(site.n) - 0.03) : null), [site, controller]);
   const houseGeo = useMemo(() => (built ? dogHouseModel(HOUSE_HEX[colour]) : null), [built, colour]);

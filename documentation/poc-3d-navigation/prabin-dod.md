@@ -39,7 +39,7 @@ This is the acceptance checklist for [prabin-npc.md](./prabin-npc.md). A box is 
 ## 5. Prabin
 
 - [x] **Looks:** the playable Skater model with his own T-shirt, trousers, shoes and dark hair.
-  - *Evidence:* `screenshots/prabin-hammer.png`; `public/models/skins/prabin.png` from `compose-family.py`.
+  - *Evidence:* `screenshots/prabin-hammer.png`; `public/models/skins/prabin.webp` from `compose-family.py`.
 - [x] **Roams the whole planet** doing his activities: strolling, admiring a building, playing with Chopper (fetch), playing the guitar in the campfire chair, hammering at the crafting table; home for meals and the night.
   - *Evidence:* unit "finds a place to admire every building…", "works at the crafting table…", "plays the guitar in the campfire chair…", "plays fetch with Chopper…", "roams the whole planet…" (> 15 u from home; stroll, admire, hammer, fetch; home at night); real-GPU renders of hammering, admiring, the guitar and fetch.
 - [x] **Talk to him:** facing him close by, **Talk to Prabin** (E) opens the dialog with preset lines through a `DialogueProvider`.

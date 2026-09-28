@@ -27,6 +27,7 @@ import { deckDressing, type DeckDressing } from './deckDressing';
 import { sharedPropMaterials } from '../materials';
 import type { PropMaterials } from '../Props';
 import type { CraftStore } from './index';
+import { prebuilt } from '../prebuilt';
 
 const KEY = 'site.deck';
 const R = CONFIG.planetRadius;
@@ -78,6 +79,8 @@ export interface DeckAttachment {
   /** The planting round the cliff and the old pine (viewing-deck.md §4.6). */
   dressing: DeckDressing | null;
   View: () => ReactElement;
+  /** Its models, to build ahead (world/prebuilt.ts). */
+  models: ReadonlyArray<readonly [string, () => unknown]>;
   /** Which build's card is up (1–3), from the target E would use; null for none. */
   near(key: string | undefined): 1 | 2 | 3 | null;
   step(dt: number): void;
@@ -187,6 +190,10 @@ export function attachDeck(controller: GameController, store: CraftStore): DeckA
   return {
     plan,
     dressing,
+    models: [
+      ...([1, 2, 3] as const).flatMap((k) => [[`deck.stage.${k}`, () => stageModel(controller, plan, k)] as const, [`deck.edges.${k}`, () => stageEdges(controller, plan, k)] as const]),
+      ...(dressing ? [['deck.bonsai', () => bonsaiModel(dressing.bonsai.cliff)] as const] : []),
+    ],
     View: () => (
       <>
         <DeckView controller={controller} store={store} plan={plan} link={link} />
@@ -232,11 +239,19 @@ const _p = new Vector3();
 const _s = new Vector3();
 const Y = new Vector3(0, 1, 0);
 
+/** A stage of the deck, and the outline of its ghost (built ahead: `models`). */
+const stageModel = (controller: GameController, plan: DeckPlan, k: Stage) => prebuilt(`deck.stage.${k}`, () => deckStageModel(plan, k, (n) => controller.terrain.height(n), R));
+const stageEdges = (controller: GameController, plan: DeckPlan, k: Stage) =>
+  prebuilt(`deck.edges.${k}`, () => {
+    const g = stageModel(controller, plan, k);
+    return g.solid ? new EdgesGeometry(g.solid, 35) : null;
+  });
+
 function DeckView({ controller, store, plan, link }: { controller: GameController; store: CraftStore; plan: DeckPlan; link: { ghost: number } }) {
   const stage = useStore(store, (s) => s.deckStage);
   const building = useStore(store, (s) => s.deckBuilding !== null);
-  const geos = useMemo(() => ([1, 2, 3] as const).map((k) => deckStageModel(plan, k, (n) => controller.terrain.height(n), R)), [plan, controller]);
-  const ghosts = useMemo(() => geos.map((g) => (g.solid ? { fill: g.solid, edges: new EdgesGeometry(g.solid, 35) } : null)), [geos]);
+  const geos = useMemo(() => ([1, 2, 3] as const).map((k) => stageModel(controller, plan, k)), [plan, controller]);
+  const ghosts = useMemo(() => geos.map((g, i) => (g.solid ? { fill: g.solid, edges: stageEdges(controller, plan, (i + 1) as Stage)! } : null)), [geos, controller, plan]);
   const mats = useMemo(
     () => ({
       fill: new MeshBasicMaterial({ color: '#a8d8ff', transparent: true, opacity: 0, depthWrite: false, side: DoubleSide, toneMapped: false }),
@@ -304,7 +319,7 @@ function DeckView({ controller, store, plan, link }: { controller: GameControlle
 
 /** The old pine on the upper rim, leaning out over it (viewing-deck.md §4.6): drawn with the trees' swaying bark, needle and (for its creepers) leaf materials. */
 function Bonsai({ controller, at }: { controller: GameController; at: DeckDressing['bonsai'] }) {
-  const geo = useMemo(() => bonsaiModel(at.cliff), [at]);
+  const geo = useMemo(() => prebuilt('deck.bonsai', () => bonsaiModel(at.cliff)), [at]);
   const mats = useMemo(() => sharedPropMaterials<PropMaterials>(), []);
   useEffect(
     () => () => {

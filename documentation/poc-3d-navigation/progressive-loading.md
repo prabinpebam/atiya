@@ -9,7 +9,7 @@
 >
 > Only the path to T1 keeps a load-time budget. What follows is bounded by frame rate and memory.
 >
-> **Status: planned, not started.** Other fixes land first, and the owner's decisions in §6 come before phase 5. The measurements in §1 are from 28 September 2026 (commit `085e431`).
+> **Status: implemented** (phases 1–6 and 8; phase 7, workers, isn't needed yet at 1× CPU; phase 9 is optional). The decisions in §6 were taken as proposed. What was built, where it differs from this spec and the measurements are in §9. The audit in §1 is from 28 September 2026 (commit `085e431`).
 
 ## 1. Audit: today's load, measured
 
@@ -297,6 +297,8 @@ A group's materials are made when it mounts, after its textures have arrived. Th
 4. **The budget model:** should the tiered budgets (§5.6) replace the rising on-demand waiver?
 5. **Workers:** time slicing first, and workers only where they pay (§5.7), rather than moving every builder to a worker at once?
 
+**Taken as proposed** when the owner asked for the implementation (30 September 2026): 1 yes (the load only; the rule holds from `game:complete`); 2 yes; 3 yes; 4 yes (with the before-live figure at 1.6 MB, §9.4); 5 yes (slicing only so far).
+
 ## 7. Plan
 
 Each phase ships on its own and leaves the game better. Visual changes need the owner's look.
@@ -319,11 +321,67 @@ Phases 1–3 need no design sign-off, and they cut the slow-network time the mos
 
 | # | Criterion | Evidence | Status |
 |---|---|---|---|
-| 1 | The greeting shows at first paint, before the game's JS | E2E with the JS held back; the audit's first paint ≤ 0.6 s (fast) / 1.2 s (slow) | Not started |
-| 2 | The planet is live within budget | The audit: ≤ 2.5 s (4×, fast) and ≤ 7 s (4×, slow) | Not started |
-| 3 | No long task after the planet is live | The audit's long-task list: none over 50 ms | Not started |
-| 4 | Everything is summoned nearest first, and is solid and usable only once seen | Unit (the scheduler); E2E (a far tree isn't a target before its reveal) | Not started |
-| 5 | The summoning reads as a moment, and reduced motion gets none of its motion | A real-GPU look (a recording); E2E under reduced motion | Not started |
-| 6 | ≤ 1.5 MB downloaded before the planet is live | The audit's resource list | Not started |
-| 7 | The complete planet within the runtime budgets | `perfStats()`: draw calls, heap, texture memory; fps while summoning | Not started |
-| 8 | Nothing ever pops after `game:complete` | E2E: counts unchanged after `complete`; AGENTS.md's no-culling rule with the load exception | Not started |
+| 1 | The greeting shows at first paint, before the game's JS | E2E "Prabin's welcome is on the page from the first paint…" holds the game's JS back, reads the greeting and turns its page, then checks the handoff keeps the line. The audit's first paint: 0.33 s (1×), 0.32 s (4×, fast), 0.71 s (4×, slow) | Done |
+| 2 | The planet is live within budget | The audit, 4× CPU: 5.9 s on the fast connection (budget 2.5 s) and 13.9 s on the slow one (budget 7 s), down from 6.2 s unthrottled and 17.7 s slow. At 1×: 1.57 s unthrottled and 3.49 s on the fast connection (from 2.28 s and 4.16 s) | Partly: faster everywhere, within budget only at 1×. What's left is the critical path's own work (§9.5) |
+| 3 | No long task after the planet is live | The audit's long tasks between live and complete: none at 1× (from 5, the longest 108 ms). At 4×: 9, the longest 157 ms (from 11, the longest 513 ms), each one model's build | Done at 1×; at 4×, §9.5 |
+| 4 | Everything is summoned nearest first, and is solid and usable only once seen | Unit: `summon.test.ts` (the order, the wave), `summoner.test.ts` (obstacles join as things appear; targets wait for their group). E2E "the planet is playable before it is complete…": live before complete, nothing revealed or held-back obstacle released at live, a tree not out and the props group hidden until its reveal, then everything out | Done |
+| 5 | The summoning reads as a moment, and reduced motion gets none of its motion | Real-GPU contact sheet (the page's greeting and drawn planet, the cross-fade, the pops). Unit: `popPose` under reduced motion is the settled pose at once; the grass is simply there; `SummonFx` draws no bursts | Done; the owner's look is pending |
+| 6 | ≤ 1.5 MB downloaded before the planet is live | `size-report.mjs`: 1,583 KB (from 2.4–2.6 MB) | Partly: under the 1.6 MB it now checks (§9.4) |
+| 7 | The complete planet within the runtime budgets | The audit at complete: 89 programs (91 before), 267 draw calls (265 before; the budget's 180 was never met, §9.4), JS heap 65 MB at live, 0 NaN pixels, 73 textures | Done, as before |
+| 8 | Nothing ever pops after `game:complete` | The summoner stops at `complete` (no further reveals, holds or pops); AGENTS.md's no-culling rule has the load exception | Done |
+
+## 9. As built (30 September 2026)
+
+### 9.1 What runs, in order
+
+1. **T0, the page** (`src/pages/play.astro`, `platform/greeting.ts`): the header, a small drawn planet turning (SVG, tokens only), a bar, a status line, and Prabin's talk box with his first line, chosen before the first paint (first visit, touch, or returning). E, Enter or **Next** turn its pages; Space, Esc or the close button end it. The gate starts the game's code and warms the cache with the first tier of textures and the visitor's character (`warmCriticalAssets`), so the game's loaders find them there.
+2. **T1, live** (`game-mount.tsx`): the tier-1 textures, the Chopper, home and crafting chunks (they level the ground under what they build), the ground built in slices (`prepareGround`), then the scene mounts in a transition, so React builds it component by component and the page's welcome stays responsive. The warm-up compiles, three frames draw, and `game:live`: the loading scene cross-fades out, "The planet is ready." is announced, and the game takes the talk box over at the line reached.
+3. **T2, the summoning** (`world/summoner.ts`, the order in the pure `world/summon.ts`): Prabin (and Chopper and the family), the props, the home, the grass, the crafting, the wildlife, the clouds. Each group is prepared (its textures, its models built ahead a slice at a time: `world/prebuilt.ts`, the props' and the grass's generators, the wildlife's `prepareWildlife`), mounted hidden in a transition (`Summoned` in `Scene.tsx`), compiled on its own (its shadow programs too), its textures uploaded and its programs' uniforms looked up a few a frame, and then revealed. Then `game:complete`.
+4. **T3, idle**: the moon's texture (`requestIdleCallback`, at most 3 s after complete).
+
+### 9.2 Where it differs from §5
+
+| Spec | As built | Why |
+|---|---|---|
+| The chunks' models leave the critical path (§5.1) | The Chopper, home and crafting chunks' code is still waited for; only their views are summoned. The props (now their own chunk) and the nature chunk (the wildlife, the grass, the activation cues, the sparkles) aren't waited for; `Slot` in `Scene.tsx` draws their views once they've arrived | The home and the crafting level the ground under what they build (their pads), and they own targets and seats the planet needs at T1 |
+| Groups 2 and 5, the near and far props, apart | One props group; each prop is timed by the wave (`waveTimes`, 12 u/s outward from the character, a few a frame), so the near ones still come first | Simpler, and it reads the same |
+| The pop in a vertex shader (`aBorn`, `uNow`) | Instance matrices written each frame while a prop is popping (`stepPops` in `Props.tsx`), then left alone; groups that rise are scaled about the planet's centre | The shadows follow for free, and it costs nothing once the planet is complete |
+| A worker for the biggest builders (phase 7) | Not built: slicing, the transitions and building ahead cleared the long tasks at 1× | Decision 5 |
+| Tests skip only the pops | Tests (`game.test.pop = '0'`) also build without slicing and reveal every group at once, in order | Software rendering's frames are slow: sliced, the summoning took 40 s in the E2E browser; unsliced, about 8 s |
+
+Other things found and fixed on the way:
+
+- **Shadow programs compiled on their first draw.** `compile` only sees a mesh's own material, so each caster's depth program was built, blocking, when its group first cast a shadow (9 programs, the biggest stalls after live). The summoner now compiles them too (`shadowDepthMaterial`: the material three's shadow map will use, without the fog), and only for what will cast a shadow when the group appears.
+- **Dev only:** Chopper's body was disposed by StrictMode's rehearsal unmount while his programs compiled (`glGetProgramiv` warnings); the dispose is deferred now.
+- **The rabbits' painter** parsed colour strings for every vertex; the coats are parsed once now, and the kit reuses a blob it has built before (`Kit.blob`). The models are unchanged bit for bit (`wildlifeModels.test.ts`) and build in about half the time.
+- **The family's skins** are lossless WebP now (146 KB → 75 KB, pixel-identical; `compose-family.py` writes them).
+- **An unknown deep link's notice** ("Couldn't find that place…") is said once the planet is live, after "The planet is ready.", not overwritten by it.
+
+### 9.3 Measurements
+
+The test build, served by `astro preview`, on the owner's desktop (RTX 4090 through ANGLE/D3D11), `npm run perf:audit` (medians; each run a new browser, so the cache starts empty):
+
+| | 1× | 1×, fast network | 4× CPU | 4×, fast network | 4×, slow network |
+|---|---|---|---|---|---|
+| First paint: the welcome | 0.33 s | 0.41 s | 0.49 s | 0.32 s | 0.71 s |
+| Live (was: playable, §1.2) | **1.57 s** (2.28) | **3.49 s** (4.16) | **4.22 s** (6.21) | 5.89 s | **13.9 s** (17.7) |
+| Complete | 2.89 s | 5.04 s | 8.85 s | 10.6 s | 20.2 s |
+| Long tasks, live → complete | none | none | 9, the longest 157 ms | 11, the longest 169 ms | 10, the longest 177 ms |
+
+At complete: 89 programs, 267 draw calls, 1.51 M triangles in all passes, 73 textures, 0 NaN pixels; the JS heap 65 MB at live.
+
+### 9.4 Budgets
+
+`scripts/size-report.mjs` checks the tiers (§5.6), and the rising on-demand waiver is retired ([plan.md](./plan.md) §6):
+
+- the critical JS: 449.7 KB gz (≤ 450);
+- each chunk fetched later: the largest 37.2 KB gz (≤ 150), 130.2 KB in all;
+- before the planet is live: 1,583 KB. That's the gate 4, the critical JS 450, the chunks still waited for 94, the first tier of textures 871 and the character 163. The check is at ≤ 1.6 MB, not the 1.5 MB of §5.6: that figure assumed about 780 KB of first-tier textures, but the shared kit material reads every surface mask when it's made, so all of them are T1 (871 KB).
+
+The draw-call figure in §5.6 (≤ 180) was never the planet's: it was 265 before this work and is 267 now (the summoning's sparkles, one instanced draw).
+
+### 9.5 What's left
+
+- **Live at 4× CPU** is 4.2 s, not 2.5 s. What remains on the critical path is the world's own work: generating the layout, attaching the home (its route planner's grid) and the crafting, building the ground and the landmarks, and compiling the shaders. The next steps, in order of what they'd save: move the home's and the crafting's pads (pure data) into the main bundle, so their chunks can be summoned rather than waited for (this also brings the before-live download under 1.5 MB); then a worker for the ground and the route planner's grid (phase 7).
+- **The long tasks left at 4×** are single models built ahead (Chopper's body, the house, the yard, the old pine: 100–160 ms each at 4×). Splitting those builders into steps, or a worker, would clear them.
+- **Phase 9** (a service worker; cached geometry) is still optional.

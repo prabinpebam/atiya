@@ -75,19 +75,35 @@ const state = (page: Page) => page.evaluate(() => (window as any).__game.getStat
  * The blade grass is thinned to a quarter (a dev/test-only flag) unless `grass: 'full'`: only its own
  * tests need all of it, and it's the costliest thing to draw in software. Prabin's welcome (the talk
  * that opens as the game starts) is off too (another test-only flag), unless `welcome`, and so is the
- * lantern the visitor starts with (so the backpack starts empty), unless `lantern`.
+ * lantern the visitor starts with (so the backpack starts empty), unless `lantern`. The planet's summoning
+ * (progressive-loading.md) runs without its pops (another test-only flag: the order and the gating stay),
+ * unless `pop`, and it waits for the planet to be complete unless `complete: false`.
  */
-async function openPlanet(page: Page, path = '/play/', { grass = 'thin', welcome = false, lantern = false }: { grass?: 'thin' | 'full'; welcome?: boolean; lantern?: boolean } = {}) {
-  await page.addInitScript(([d, w, l]) => {
+async function openPlanet(
+  page: Page,
+  path = '/play/',
+  {
+    grass = 'thin',
+    welcome = false,
+    lantern = false,
+    pop = false,
+    complete = true,
+    beforeGame,
+  }: { grass?: 'thin' | 'full'; welcome?: boolean; lantern?: boolean; pop?: boolean; complete?: boolean; beforeGame?: () => Promise<void> } = {},
+) {
+  await page.addInitScript(([d, w, l, p]) => {
     localStorage.setItem('game.test.grassDensity', d);
     localStorage.setItem('game.test.welcome', w);
     localStorage.setItem('game.test.lantern', l);
-  }, [grass === 'full' ? '1' : '0.25', welcome ? '1' : '0', lantern ? '1' : '0']);
+    localStorage.setItem('game.test.pop', p);
+  }, [grass === 'full' ? '1' : '0.25', welcome ? '1' : '0', lantern ? '1' : '0', pop ? '1' : '0']);
   await page.goto(path);
   const cont = page.getByRole('button', { name: 'Continue anyway' });
-  await page.waitForFunction(() => (window as any).__game || document.querySelector('[data-gate-continue]'));
+  await page.waitForFunction(() => (window as any).__game || (window as any).__loadScreen || document.querySelector('[data-gate-continue]'));
   if (await cont.isVisible()) await cont.click();
+  await beforeGame?.();
   await page.waitForFunction(() => (window as any).__game && (window as any).__game.getState().phase !== 'loading', null, { timeout: 30_000 });
+  if (complete) await page.waitForFunction(() => (window as any).__game.loadStage().tier === 'complete', null, { timeout: 60_000 });
 }
 
 async function startPlanet(page: Page) {
@@ -167,16 +183,62 @@ test.describe('capability gate', () => {
   });
 });
 
+test.describe('loading', () => {
+  test('the planet is playable before it is complete: the rest is summoned group by group, and nothing is solid or usable before it appears', async ({ page }) => {
+    test.setTimeout(180_000);
+    // (a tier-2 texture is held back, so the planet stays live, not complete, while it's checked)
+    let release = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    await page.route('**/textures/conifer-atlas*', async (r) => {
+      await held;
+      await r.continue();
+    });
+    await openPlanet(page, '/play/', { pop: true, complete: false });
+    const live = await page.evaluate(() => (window as any).__game.loadStage());
+    expect(live.tier).toBe('live');
+    expect(live.revealed).toEqual([]);
+    expect(live.held).toBeGreaterThan(0);
+    expect(await page.evaluate(() => (window as any).__game.summoned('hardwood', 0))).toBe(false);
+    expect(await page.evaluate(() => (window as any).__game.__gfx()?.scene.getObjectByName('summon-props')?.visible ?? false)).toBe(false);
+    // it plays at once
+    await page.locator('.game-region').focus();
+    const before = await state(page);
+    await page.keyboard.down('w');
+    await page.waitForTimeout(700);
+    await page.keyboard.up('w');
+    expect((await state(page)).pLocal[2]).toBeLessThan(before.pLocal[2] - 0.02);
+
+    release();
+    await page.waitForFunction(() => (window as any).__game.loadStage().tier === 'complete', null, { timeout: 120_000 });
+    const done = await page.evaluate(() => (window as any).__game.loadStage());
+    expect(done.revealed).toEqual(['prabin', 'props', 'home', 'grass', 'craft', 'wildlife', 'clouds']);
+    expect(done.held).toBe(0);
+    expect(done.marks['game:live']).toBeLessThan(done.marks['game:group:prabin']);
+    expect(done.marks['game:group:clouds']).toBeLessThanOrEqual(done.marks['game:complete']);
+    expect(await page.evaluate(() => (window as any).__game.__gfx()?.scene.getObjectByName('summon-props')?.visible)).toBe(true);
+    // the trees come out as the wave reaches them
+    await expect.poll(() => page.evaluate(() => [0, 1, 2].every((i) => (window as any).__game.summoned('hardwood', i))), { timeout: 20_000 }).toBe(true);
+  });
+});
+
 test.describe('rendering', () => {
-  test('hand-painted textures all load before the planet appears (no procedural fallback)', async ({ page }) => {
+  test('hand-painted textures all load, the first tier before the planet is live (no procedural fallback)', async ({ page }) => {
     const statuses: number[] = [];
-    page.on('response', (r) => r.url().includes('/textures/') && statuses.push(r.status()));
-    await openPlanet(page);
+    const urls = new Set<string>();
+    page.on('response', (r) => r.url().includes('/textures/') && statuses.push(r.status()) && urls.add(r.url()));
+    await openPlanet(page, '/play/', { complete: false });
+    // (the ground's, the buildings' and the character's textures are in by the time the planet is playable)
+    const first = await page.evaluate(() => (window as any).__game.tierTextures(1) as { name: string; ready: boolean }[]);
+    expect(first.filter((t) => !t.ready).map((t) => t.name)).toEqual([]);
+    await page.waitForFunction(() => (window as any).__game.loadStage().tier === 'complete', null, { timeout: 60_000 });
+    // (the moon's comes last, when the browser is idle)
+    await expect.poll(async () => (await state(page)).textures.pending, { timeout: 15_000 }).toBe(0);
     const s = await state(page);
     expect(s.textures.failed).toBe(0);
     expect(s.textures.pending).toBe(0);
     expect(s.textures.loaded).toBeGreaterThanOrEqual(12);
-    expect(statuses.length).toBe(s.textures.loaded);
+    // (the page warms the first tier's, so those are fetched twice, the second time from the cache)
+    expect(urls.size).toBe(s.textures.loaded);
     expect(statuses.every((c) => c === 200)).toBe(true);
   });
 
@@ -2129,7 +2191,9 @@ test.describe('player character', () => {
     page.on('response', (r) => r.url().endsWith('/models/character.glb') && glb.push(String(r.status())));
     await startPlanet(page);
     await expect.poll(async () => (await state(page)).avatar, { timeout: 20_000 }).toBe('model');
-    expect(glb).toEqual(['200']);
+    // (the page warms the cache with it, so the loader's request is answered from the cache)
+    expect(glb.length).toBeGreaterThan(0);
+    expect(glb.every((s) => s === '200')).toBe(true);
     expect((await state(page)).outlines).toBeGreaterThan(0);
   });
 
@@ -2258,15 +2322,40 @@ test.describe('player character', () => {
 });
 
 test.describe('planet', () => {
-  test("the game starts at once with Prabin's welcome: he faces you, E goes through his lines, then WASD moves; keys are ignored when a HUD button has focus", async ({ page }) => {
+  test("Prabin's welcome is on the page from the first paint and the game takes it over where it was: he faces you, E goes through his lines, a step ends it; keys are ignored when a HUD button has focus", async ({ page }) => {
     test.setTimeout(150_000);
-    await openPlanet(page, '/play/', { welcome: true });
+    // (the game's code is held back, so the welcome is read while the planet loads)
+    let release = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    await page.route('**/game-mount*.js', async (r) => {
+      await held;
+      await r.continue();
+    });
+    let second = '';
+    await openPlanet(page, '/play/', {
+      welcome: true,
+      beforeGame: async () => {
+        const greet = page.locator('[data-greeting]');
+        await expect(greet).toBeVisible();
+        await expect(greet).toContainText('Prabin');
+        await expect(greet).toContainText('Welcome to my little planet');
+        await expect(page.locator('[data-load-scene]')).toBeVisible();
+        await greet.getByRole('button', { name: /Next/ }).click();
+        await expect(greet).not.toContainText('Welcome to my little planet');
+        second = (await greet.locator('[data-greeting-line]').textContent()) ?? '';
+        release();
+      },
+    });
     await expect(page.getByRole('button', { name: 'Start exploring' })).toHaveCount(0);
     await expect(page.locator('.game-region')).toBeFocused();
+    // the page's welcome is handed over: the game's talk box goes on from the same line
+    await expect(page.locator('[data-greeting]')).toHaveCount(0);
+    await expect(page.locator('[data-load-scene]')).toHaveCount(0);
     const talk = page.getByTestId('talk-box');
     await expect(talk).toBeVisible();
     await expect(talk).toContainText('Prabin');
-    await expect(talk).toContainText('Welcome to my little planet');
+    await expect(talk).toContainText(second);
+    expect((await state(page)).talk!.index).toBe(1);
     const prabin = await page.evaluate(() => (window as any).__game.family().find((p: { id: string }) => p.id === 'prabin'));
     expect(prabin.chatting).toBe(true);
     expect(prabin.d).toBeLessThan(1.6);
@@ -2274,23 +2363,17 @@ test.describe('planet', () => {
     const lines = (await state(page)).talk!.lines as string[];
     expect(lines.join(' ')).toMatch(/W A S D/);
     expect(lines.at(-1)).toMatch(/notice board/);
-    // nothing moves while he talks
-    const still = await state(page);
-    await page.keyboard.down('w');
-    await page.waitForTimeout(400);
-    await page.keyboard.up('w');
-    expect((await state(page)).pLocal).toEqual(still.pLocal);
-    for (let i = 0; i < 2 * lines.length && (await state(page)).talk; i++) {
-      await page.waitForTimeout(350);
-      await page.keyboard.press('e');
-    }
-    await expect(talk).toBeHidden();
+    await page.waitForTimeout(350);
+    await page.keyboard.press('e');
+    await expect.poll(async () => (await state(page)).talk?.index).toBe(2);
     await expect(page.locator('.game-region')).toBeFocused();
 
+    // a step ends the welcome and walks
     const before = await state(page);
     await page.keyboard.down('w');
     await page.waitForTimeout(700);
     await page.keyboard.up('w');
+    await expect(talk).toBeHidden();
     const after = await state(page);
     expect(after.pLocal[2]).toBeLessThan(before.pLocal[2] - 0.02);
 

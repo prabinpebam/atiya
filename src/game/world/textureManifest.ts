@@ -9,7 +9,8 @@ export const TEXTURES = {
       0.6015,
       0.0893
     ],
-    "bytes": 53432
+    "bytes": 53432,
+    "tier": 1
   },
   "dirt": {
     "url": "/textures/dirt.webp",
@@ -19,7 +20,8 @@ export const TEXTURES = {
       0.4143,
       0.1677
     ],
-    "bytes": 46562
+    "bytes": 46562,
+    "tier": 1
   },
   "cobble": {
     "url": "/textures/cobble.webp",
@@ -29,7 +31,8 @@ export const TEXTURES = {
       0.675,
       0.5213
     ],
-    "bytes": 16410
+    "bytes": 16410,
+    "tier": 1
   },
   "sand": {
     "url": "/textures/sand.webp",
@@ -39,7 +42,8 @@ export const TEXTURES = {
       0.577,
       0.2566
     ],
-    "bytes": 47078
+    "bytes": 47078,
+    "tier": 1
   },
   "riverbed": {
     "url": "/textures/riverbed.webp",
@@ -49,7 +53,8 @@ export const TEXTURES = {
       0.1561,
       0.0799
     ],
-    "bytes": 55398
+    "bytes": 55398,
+    "tier": 1
   },
   "rock": {
     "url": "/textures/rock.webp",
@@ -59,7 +64,8 @@ export const TEXTURES = {
       0.3493,
       0.1658
     ],
-    "bytes": 17700
+    "bytes": 17700,
+    "tier": 1
   },
   "boulder": {
     "url": "/textures/boulder.webp",
@@ -69,7 +75,8 @@ export const TEXTURES = {
       0.4867,
       0.4867
     ],
-    "bytes": 32642
+    "bytes": 32642,
+    "tier": 1
   },
   "water": {
     "url": "/textures/water.webp",
@@ -79,7 +86,8 @@ export const TEXTURES = {
       0.2065,
       0.2065
     ],
-    "bytes": 60404
+    "bytes": 60404,
+    "tier": 1
   },
   "paint-grain": {
     "url": "/textures/paint-grain.webp",
@@ -89,7 +97,8 @@ export const TEXTURES = {
       0.5265,
       0.5265
     ],
-    "bytes": 32524
+    "bytes": 32524,
+    "tier": 1
   },
   "surf-wood": {
     "url": "/textures/surf-wood.webp",
@@ -99,7 +108,8 @@ export const TEXTURES = {
       0.5349,
       0.5349
     ],
-    "bytes": 76614
+    "bytes": 76614,
+    "tier": 1
   },
   "surf-shingle": {
     "url": "/textures/surf-shingle.webp",
@@ -109,7 +119,8 @@ export const TEXTURES = {
       0.7098,
       0.7098
     ],
-    "bytes": 42046
+    "bytes": 42046,
+    "tier": 1
   },
   "surf-plaster": {
     "url": "/textures/surf-plaster.webp",
@@ -119,7 +130,8 @@ export const TEXTURES = {
       0.5066,
       0.5066
     ],
-    "bytes": 33086
+    "bytes": 33086,
+    "tier": 1
   },
   "surf-stone": {
     "url": "/textures/surf-stone.webp",
@@ -129,7 +141,8 @@ export const TEXTURES = {
       0.7216,
       0.7216
     ],
-    "bytes": 49024
+    "bytes": 49024,
+    "tier": 1
   },
   "surf-brick": {
     "url": "/textures/surf-brick.webp",
@@ -139,7 +152,8 @@ export const TEXTURES = {
       0.6652,
       0.6652
     ],
-    "bytes": 22576
+    "bytes": 22576,
+    "tier": 1
   },
   "surf-metal": {
     "url": "/textures/surf-metal.webp",
@@ -149,7 +163,8 @@ export const TEXTURES = {
       0.3642,
       0.3642
     ],
-    "bytes": 26542
+    "bytes": 26542,
+    "tier": 1
   },
   "surf-canvas": {
     "url": "/textures/surf-canvas.webp",
@@ -159,7 +174,8 @@ export const TEXTURES = {
       0.5221,
       0.5221
     ],
-    "bytes": 31724
+    "bytes": 31724,
+    "tier": 1
   },
   "surf-bark": {
     "url": "/textures/surf-bark.webp",
@@ -169,27 +185,32 @@ export const TEXTURES = {
       0.6089,
       0.6089
     ],
-    "bytes": 29744
+    "bytes": 29744,
+    "tier": 1
   },
   "plaza": {
     "url": "/textures/plaza.webp",
     "kind": "decal",
-    "bytes": 174794
+    "bytes": 174794,
+    "tier": 1
   },
   "leaf-broad": {
     "url": "/textures/leaf-broad.webp",
     "kind": "tint",
-    "bytes": 13410
+    "bytes": 13410,
+    "tier": 1
   },
   "leaf-single": {
     "url": "/textures/leaf-single.webp",
     "kind": "tint",
-    "bytes": 4896
+    "bytes": 4896,
+    "tier": 1
   },
   "moon": {
     "url": "/textures/moon.webp",
     "kind": "sprite",
-    "bytes": 15122
+    "bytes": 15122,
+    "tier": 3
   },
   "chopper-fur": {
     "url": "/textures/chopper-fur.webp",
@@ -199,12 +220,14 @@ export const TEXTURES = {
       0.5233,
       0.5233
     ],
-    "bytes": 32856
+    "bytes": 32856,
+    "tier": 2
   },
   "picnic-mat": {
     "url": "/textures/picnic-mat.webp",
     "kind": "decal",
-    "bytes": 13708
+    "bytes": 13708,
+    "tier": 2
   },
   "conifer-atlas": {
     "url": "/textures/conifer-atlas.webp",
@@ -215,7 +238,8 @@ export const TEXTURES = {
       "conifer-bough",
       "conifer-tufts",
       "conifer-crown"
-    ]
+    ],
+    "tier": 2
   },
   "pond-atlas": {
     "url": "/textures/pond-atlas.webp",
@@ -226,7 +250,8 @@ export const TEXTURES = {
       "pond-reeds",
       "pond-iris",
       "pond-fern"
-    ]
+    ],
+    "tier": 2
   },
   "cloud-atlas": {
     "url": "/textures/cloud-atlas.webp",
@@ -263,12 +288,14 @@ export const TEXTURES = {
         0.97949,
         0.34961
       ]
-    ]
+    ],
+    "tier": 2
   },
   "cloud-normal": {
     "url": "/textures/cloud-normal.webp",
     "kind": "normal",
-    "bytes": 13946
+    "bytes": 13946,
+    "tier": 2
   },
   "tuft-atlas": {
     "url": "/textures/tuft-atlas.webp",
@@ -333,17 +360,20 @@ export const TEXTURES = {
         0.95117,
         0.48633
       ]
-    ]
+    ],
+    "tier": 2
   },
   "grass-normal": {
     "url": "/textures/grass-normal.webp",
     "kind": "normal",
-    "bytes": 17456
+    "bytes": 17456,
+    "tier": 1
   },
   "cobble-normal": {
     "url": "/textures/cobble-normal.webp",
     "kind": "normal",
-    "bytes": 8216
+    "bytes": 8216,
+    "tier": 1
   }
 } as const;
 

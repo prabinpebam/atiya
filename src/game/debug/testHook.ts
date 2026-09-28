@@ -4,7 +4,7 @@ import type { GameController } from '../controller';
 import { UP, arcDistance, moveAlong, orientationFor, tangentToward } from '../math/sphere';
 import { rotateAbout } from '../math/steer';
 import { riverDistance } from '../world/features';
-import { textureStatus } from '../world/textures';
+import { gameTexture, textureStatus, tierTextures } from '../world/textures';
 import { litLamps } from '../world/lampLights';
 import { outlineMaterial } from '../player/outline';
 
@@ -130,6 +130,12 @@ export interface GameTestHook {
   ducks(): { canFeed: boolean; fed: number; tosses: number; spot: boolean; duck: string | null; toSpot: number | null };
   /** What the grass placed (null when the grass chunk is absent), and its knee-high meadows. */
   grass(): { stats: Record<string, number> | null; meadows: number };
+  /** Progressive loading (progressive-loading.md): the tier, the groups revealed so far, and how many obstacles still wait for theirs. */
+  loadStage(): { tier: string; revealed: string[]; held: number; marks: Record<string, number> };
+  /** A loading tier's textures, and whether each has loaded. */
+  tierTextures(tier: 1 | 2 | 3): { name: string; ready: boolean }[];
+  /** Is the thing at this layout position out yet (a prop's birth has passed)? */
+  summoned(kind: 'hardwood' | 'fruit' | 'cedar' | 'bushes' | 'boulders' | 'rocks', i: number): boolean;
   /** Stands the character in the i-th knee-high meadow. */
   visitMeadow(i?: number): boolean;
   groundInfo(): {
@@ -197,6 +203,7 @@ export function installTestHook(c: GameController): void {
         hover: c.sim.hover,
         wind: { ...c.wind },
         textures: textureStatus(),
+        loadTier: c.summoner.tier,
       };
     },
     landmarks: () => c.landmarks.map((l) => l.id),
@@ -637,6 +644,15 @@ export function installTestHook(c: GameController): void {
       };
     },
     grass: () => ({ stats: c.grassStats ? { ...c.grassStats } : null, meadows: c.grassMeadows.length }),
+    loadStage: () => ({
+      ...c.summoner.stage(),
+      marks: Object.fromEntries(performance.getEntriesByType('mark').filter((m) => m.name.startsWith('game:')).map((m) => [m.name, Math.round(m.startTime)])),
+    }),
+    tierTextures: (tier) => tierTextures(tier).map((name) => ({ name, ready: gameTexture(name) !== null })),
+    summoned: (kind, i) => {
+      const it = c.props[kind][i];
+      return Boolean(it) && c.summoner.isRevealed('props') && c.summoner.out(it.n);
+    },
     visitMeadow: (i = 0) => {
       const m = c.grassMeadows[i % Math.max(1, c.grassMeadows.length)];
       if (!m) return false;

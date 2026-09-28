@@ -8,6 +8,7 @@ import { decide, probeCapabilities, type GateDecision } from './capabilities';
 import { prefs } from './prefs';
 import { parsePlayUrl } from './url';
 import { withBase } from './base';
+import { hideLoadScene, startLoadScene, warmCriticalAssets } from './greeting';
 
 const container = document.getElementById('game-container') as HTMLElement;
 
@@ -16,8 +17,15 @@ function landmarks(): LandmarkData[] {
   return el?.textContent ? (JSON.parse(el.textContent) as LandmarkData[]) : [];
 }
 
+/** A gate card over the page (the loading scene and the welcome are hidden behind it). */
 function panel(html: string, focusSelector?: string): void {
-  container.innerHTML = `<div class="overlay"><div class="card center-card gate-card">${html}</div></div>`;
+  container.querySelector('[data-gate-panel]')?.remove();
+  hideLoadScene(container, true);
+  const el = document.createElement('div');
+  el.className = 'overlay';
+  el.dataset.gatePanel = '';
+  el.innerHTML = `<div class="card center-card gate-card">${html}</div>`;
+  container.append(el);
   if (focusSelector) container.querySelector<HTMLElement>(focusSelector)?.focus();
 }
 
@@ -27,9 +35,11 @@ function bindClassic(): void {
   container.querySelectorAll('[data-gate-classic]').forEach((a) => a.addEventListener('click', () => prefs.setMode('classic')));
 }
 
+/** The loading scene (play.astro): Prabin's welcome, the little planet and the bar (greeting.ts). */
 function showLoading(): void {
-  panel(`<p class="card-title" role="status">Loading the planet…</p><p>Prefer a normal website? <a href="${withBase('/classic/')}" data-gate-classic>Classic site</a></p>`);
-  bindClassic();
+  container.querySelector('[data-gate-panel]')?.remove();
+  hideLoadScene(container, false);
+  startLoadScene(container).progress(0.08);
 }
 
 function showFallback(): void {
@@ -94,7 +104,9 @@ async function load(quality: 'high' | 'low' = 'high'): Promise<void> {
     if (q === 'high' || q === 'low') quality = q;
   }
   container.dataset.gate = 'loading';
+  performance.mark('game:gate');
   showLoading();
+  warmCriticalAssets(prefs.getCharacter());
   let timedOut = false;
   const timer = window.setTimeout(() => {
     timedOut = true;
@@ -104,6 +116,7 @@ async function load(quality: 'high' | 'low' = 'high'): Promise<void> {
     await installDevRefreshPreamble();
     const { mountGame } = await import('../game-mount');
     if (timedOut) return;
+    performance.mark('game:chunk');
     window.clearTimeout(timer);
     container.dataset.gate = 'loaded';
     await mountGame(container, landmarks(), { quality });

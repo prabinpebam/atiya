@@ -43,6 +43,7 @@ import { RIVER_WATER_U } from '../terrain';
 import { pondPlants } from '../pondPlants';
 import type { PropInstance } from '../layout';
 import { LILY_VARIANTS, lilyCluster } from './lilies';
+import { prebuildSteps, prebuilt } from '../prebuilt';
 
 const R = CONFIG.planetRadius;
 const _x = new Vector3();
@@ -164,32 +165,46 @@ function yardModel(home: Homestead, houseH: number, ht: (n: Vector3) => number) 
 }
 const PORCH_LAMP = { color: new Color('#ffd49a'), intensity: 3.6, range: 3.0 } as const;
 
+/** The home's fixed models, each built on its own (ahead, in slices, by `homeSteps`). */
+const HOME_MODELS = {
+  house: houseModel,
+  door: doorLeafModel,
+  ring: fireRingModel,
+  flames: flamesModel,
+  campA: () => campChairModel('#3f7fb8'),
+  campB: () => campChairModel('#d9534f'),
+  log: logBenchModel,
+  guitar: guitarModel,
+  table: tableModel,
+  chair: () => chairModel('#f2c14e'),
+  armchair: armchairModel,
+  side: sideTableModel,
+  food: picnicFoodModel,
+  post: lightPostModel,
+  lego: legoModel,
+  carA: () => toyCarModel('#2f7fe0'),
+  carB: () => toyCarModel('#f6c629'),
+} as const;
+type HomeModels = { [K in keyof typeof HOME_MODELS]: ReturnType<(typeof HOME_MODELS)[K]> };
+const homeModels = (): HomeModels =>
+  Object.fromEntries(Object.entries(HOME_MODELS).map(([k, make]) => [k, prebuilt(`home.${k}`, make as () => unknown)])) as HomeModels;
+const lilyVariant = (v: number) => prebuilt(`home.lily.${v}`, () => lilyCluster(v));
+
+/** The home's models, built ahead one at a time while the home waits for its turn (the summoner's preparation). */
+export function homeSteps(controller: GameController, home: Homestead): Generator<void, void> {
+  const ht = (n: Vector3) => controller.terrain.height(n);
+  return prebuildSteps([
+    ...Object.entries(HOME_MODELS).map(([k, make]) => [`home.${k}`, make as () => unknown] as const),
+    ['home.yard', () => yardModel(home, ht(home.house.n), ht)],
+    ...Array.from({ length: LILY_VARIANTS }, (_, v) => [`home.lily.${v}`, () => lilyCluster(v)] as const),
+  ]);
+}
+
 /** The owner's home by the pond (docs: family.md §3): house, campsite, picnic, and their day–night life. */
 export function HomeView({ controller, home, family }: { controller: GameController; home: Homestead; family: Family }) {
   const paused = useStore(controller.store, selectAmbientPaused);
   const ht = (n: Vector3) => controller.terrain.height(n);
-  const models = useMemo(
-    () => ({
-      house: houseModel(),
-      door: doorLeafModel(),
-      ring: fireRingModel(),
-      flames: flamesModel(),
-      campA: campChairModel('#3f7fb8'),
-      campB: campChairModel('#d9534f'),
-      log: logBenchModel(),
-      guitar: guitarModel(),
-      table: tableModel(),
-      chair: chairModel('#f2c14e'),
-      armchair: armchairModel(),
-      side: sideTableModel(),
-      food: picnicFoodModel(),
-      post: lightPostModel(),
-      lego: legoModel(),
-      carA: toyCarModel('#2f7fe0'),
-      carB: toyCarModel('#f6c629'),
-    }),
-    [],
-  );
+  const models = useMemo(homeModels, []);
   // (on its levelled pad: the ground under the house and its steps is flat, ground.md)
   const houseH = ht(home.house.n);
 
@@ -213,13 +228,14 @@ export function HomeView({ controller, home, family }: { controller: GameControl
   }, [home, controller]);
 
   const lego = useMemo(() => legoSpot(home, R), [home]);
-  const yard = useMemo(() => yardModel(home, houseH, ht), [home, houseH, controller]);
+  // (the one home's yard, so its model is built once, ahead: homeSteps)
+  const yard = useMemo(() => prebuilt('home.yard', () => yardModel(home, houseH, ht)), [home, houseH, controller]);
   // the water lilies on the pond (the same spots as the rest of the pond's plants), a few cluster variants
   const lilies = useMemo(() => {
     const pond = controller.props.pond;
     if (!pond) return [];
     const items = pondPlants(pond, controller.props.river, controller.terrain, home).lilies;
-    return Array.from({ length: LILY_VARIANTS }, (_, v) => ({ geo: lilyCluster(v), items: items.filter((_, i) => i % LILY_VARIANTS === v) }));
+    return Array.from({ length: LILY_VARIANTS }, (_, v) => ({ geo: lilyVariant(v), items: items.filter((_, i) => i % LILY_VARIANTS === v) }));
   }, [controller, home]);
 
   // the campfire's flames flicker; after dusk it (and the porch lantern) really light the scene

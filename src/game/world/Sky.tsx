@@ -8,6 +8,7 @@ import { cloud } from './propModels';
 import { CLOUD_COUNT, CLOUD_VARIANTS, cloudBillboard, cloudLayout, cloudOrientation, cloudPosition, driftClouds, ringFrame, type Cloud } from './clouds';
 import { TEXTURES } from './textureManifest';
 import { gameTexture } from './textures';
+import { popPose } from './summon';
 
 let cloudMat: MeshStandardMaterial | null = null;
 let spriteMode = false;
@@ -68,6 +69,11 @@ export function cloudMaterial(): MeshStandardMaterial {
   } else {
     cloudMat = new MeshStandardMaterial({ vertexColors: true, roughness: 1, emissive: '#ffffff', emissiveIntensity: 0.3, fog: false });
   }
+  return cloudMat;
+}
+
+/** The cloud material if the clouds have been summoned (it's made with them, after their textures), else null. */
+export function cloudMaterialMade(): MeshStandardMaterial | null {
   return cloudMat;
 }
 
@@ -142,9 +148,19 @@ export function Clouds({ controller }: { controller: GameController }) {
   };
   useLayoutEffect(write);
   // follows the camera every frame (tilt, fly-overs); only the drift stops when ambient motion is paused
+  const faded = useRef(!sprites);
   useFrame((_, dt) => {
     if (!paused) driftClouds(items, dt);
     write();
+    // summoned: the painted clouds fade in, and the sky is clear until then (progressive-loading.md §5.5)
+    if (!faded.current) {
+      const at = controller.summoner.revealed.get('clouds');
+      const s = controller.store.getState();
+      const t = at === undefined ? -1 : (performance.now() - at) / 1000;
+      const pose = popPose('fade', t, 0, controller.summoner.instant || s.reducedMotionSystem || s.reducedMotionUser);
+      mat.opacity = pose.alpha;
+      if (pose.done) faded.current = true;
+    }
   });
 
   return <instancedMesh ref={ref} args={[geo, mat, CLOUD_COUNT]} frustumCulled={false} renderOrder={-1} name="clouds" />;

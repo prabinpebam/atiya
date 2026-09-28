@@ -23,7 +23,10 @@
   --p-color-gold-200: #ffe2a3;
   --p-color-gold-300: #ffd27a;
   --p-color-green-300: #b9f09a;
+  --p-color-green-500: #7cc15a;
+  --p-color-green-600: #5a9e45;
   --p-color-green-700: #2f7d32;
+  --p-color-green-800: #2c5e2e;
   --p-color-red-300: #ff9a8a;
   --p-color-red-500: #e5484d;
   --p-color-red-700: #b3412f;
@@ -74,6 +77,12 @@
   --color-sky-top: var(--p-color-sky-400);
   --color-sky-mid: var(--p-color-sky-300);
   --color-sky-low: var(--p-color-sky-200);
+  --color-loader-meadow: var(--p-color-green-500);
+  --color-loader-meadow-shade: var(--p-color-green-600);
+  --color-loader-tree: var(--p-color-green-800);
+  --color-loader-roof: var(--p-color-red-700);
+  --color-loader-wall: var(--p-color-paper-50);
+  --color-loader-bar: var(--p-color-gold-300);
   --color-poster-from: var(--p-color-sky-700);
   --color-poster-to: var(--p-color-sky-800);
   --color-stage-light: var(--p-color-stage-100);
@@ -189,6 +198,8 @@
   --dur-base: 180ms;
   --dur-slow: 220ms;
   --dur-loop: 900ms;
+  --dur-reveal: 700ms;
+  --dur-turn: 40s;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -200,6 +211,7 @@
   --layer-chrome: 30;
   --layer-toast: 35;
   --layer-overlay: 40;
+  --layer-greeting: 42;
   --layer-drag: 45;
   --layer-skip: 1000;
   --c-btn-h: 44px;

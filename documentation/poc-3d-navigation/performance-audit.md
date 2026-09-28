@@ -9,7 +9,7 @@ A measured audit of the 3D planet: what it costs to load and to draw, where that
   - A 4090 is latency-bound on this scene (≈ 1 ms per frame at 4K). Its numbers show *relative* costs, not what a laptop iGPU will do.
   - SwiftShader (a CPU rasterizer) was used as a second, very slow "GPU". It is vertex-bound here: halving the resolution barely changes its frame time.
 - **Slow CPU:** Chrome DevTools CPU throttling ×4, roughly a mid-range laptop or phone.
-- **Time to playable:** the `game:playable` mark, as a median over 4 runs.
+- **Time to playable:** the `game:playable` mark, as a median over 4 runs. Since [progressive loading](./progressive-loading.md), it's `game:live`, and the audit also reports first paint, `game:complete`, the long tasks between them and, with `--net fast|slow`, a throttled connection (§9.3 there has the numbers).
 - **Visual check:** 7 fixed views (spawn by day and night, Lighthouse at dusk, Library, pond, bridge at night, forest) rendered before and after under SwiftShader, with ambient motion paused. The images were compared pixel by pixel.
 - **Geometry check:** a checksum of every mesh's triangle stream (indices expanded), before and after.
 - **Re-run it:** `npm run perf:audit` ([scripts/perf-audit.mjs](https://github.com/prabinpebam/atiya/blob/main/scripts/perf-audit.mjs)) against a dev or test server. The `__game.perfStats()` test hook returns the scene census.

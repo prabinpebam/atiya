@@ -18,7 +18,7 @@ import {
 import { CONFIG } from '../config';
 import type { GameController } from '../controller';
 import { tangentToward } from '../math/sphere';
-import { selectAmbientPaused } from '../state/store';
+import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import { FLOWER_KINDS, type Pond, type PropInstance } from './layout';
 import { kitMaterials, providePropMaterials } from './materials';
 import { WIND_GLSL, windUniforms } from './windField';
@@ -32,6 +32,8 @@ import { gameTexture } from './textures';
 import { propMatrix } from './propFrame';
 import { BLOOM_COLOURS } from '../inventory/items';
 import { CYCLES } from '../systems/actions';
+import { WAVE, popPose, type PopKind } from './summon';
+import { runSliced } from './summoner';
 
 const R = CONFIG.planetRadius;
 const Y = new Vector3(0, 1, 0);
@@ -117,7 +119,71 @@ export function swayMaterial(base: Material, strength: number, from: number, key
   return material;
 }
 
-/** All instances are always drawn (the scene is small; no culling means nothing ever pops in). */
+/** Where a mesh's instances are in their summoning: their resting matrices, births (s) in order, and the first still popping. */
+interface PopState {
+  base: Float32Array;
+  born: Float64Array | null;
+  order: Int32Array | null;
+  lo: number;
+}
+
+/** The summoner and the motion setting, for the props' pops (set by `Props`). */
+let popEnv: { controller: GameController } | null = null;
+
+const _pm = new Matrix4();
+const _pb = new Matrix4();
+const _pa = new Vector3();
+const _ps = new Vector3();
+
+/**
+ * One frame of a mesh's instances being summoned: each is hidden until its birth, pops (world/summon.ts
+ * `popPose`) and settles at its resting matrix. Returns true once every one has settled (nothing left to do).
+ */
+function stepPops(mesh: InstancedMesh, st: PopState, items: readonly PropInstance[], kind: PopKind, lag: number, env: { controller: GameController }): boolean {
+  const s = env.controller.summoner;
+  if (!s.isRevealed('props')) return false;
+  const arr = mesh.instanceMatrix.array as Float32Array;
+  if (!st.born) {
+    const born = new Float64Array(items.length);
+    // (something the layout doesn't list, like the pond's plants: by its distance, on the same wave)
+    const at = s.revealed.get('props')!;
+    const from = s.origin ?? Y;
+    items.forEach((it, i) => (born[i] = (s.bornAt.get(it.n) ?? at + (Math.acos(Math.min(1, Math.max(-1, it.n.dot(from)))) * R * 1000) / WAVE.speed) / 1000 + lag));
+    st.born = born;
+    st.order = Int32Array.from(items.keys()).sort((a, b) => born[a] - born[b]);
+    // hidden until born
+    for (let i = 0; i < items.length; i++) for (let k = 0; k < 16; k++) arr[i * 16 + k] = k === 15 ? 1 : 0;
+    for (let i = 0; i < items.length; i++) for (let k = 12; k < 15; k++) arr[i * 16 + k] = st.base[i * 16 + k];
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+  const now = performance.now() / 1000;
+  const reduced = s.instant || selectReducedMotion(env.controller.store.getState());
+  const order = st.order!;
+  let touched = false;
+  for (let k = st.lo; k < order.length; k++) {
+    const i = order[k];
+    const t = now - st.born[i];
+    if (t < 0) break;
+    const p = popPose(kind, t, (i * 0.618) % 1, reduced);
+    touched = true;
+    if (p.done) {
+      arr.set(st.base.subarray(i * 16, i * 16 + 16), i * 16);
+      if (k === st.lo) st.lo++;
+      continue;
+    }
+    // about its base: a drop, a wiggle about a horizontal axis, then the (stretched) scale
+    const a = (i * 2.399) % (Math.PI * 2);
+    _pa.set(Math.cos(a), 0, Math.sin(a));
+    _pm.makeRotationAxis(_pa, p.wiggle).scale(_ps.set(p.scale, p.scale * p.stretch, p.scale));
+    _pm.setPosition(0, p.drop, 0);
+    _pb.fromArray(st.base, i * 16).multiply(_pm);
+    _pb.toArray(arr, i * 16);
+  }
+  if (touched) mesh.instanceMatrix.needsUpdate = true;
+  return st.lo >= order.length;
+}
+
+/** All instances are always drawn once the planet is complete (no culling: nothing pops in after the summoning). */
 function Instanced({
   geometry,
   material,
@@ -127,6 +193,8 @@ function Instanced({
   lift,
   depthMaterial,
   register,
+  pop,
+  lag = 0,
 }: {
   geometry: BufferGeometry;
   material: Material;
@@ -138,14 +206,24 @@ function Instanced({
   depthMaterial?: Material;
   /** Receives the mesh (per-instance effects: wobble, shudder, regrowth). */
   register?: (mesh: InstancedMesh | null) => void;
+  /** How its instances appear as they're summoned (progressive-loading.md §5.5), and how long after their birth (s: a crown lags its trunk). */
+  pop?: PopKind;
+  lag?: number;
 }) {
   const ref = useRef<InstancedMesh>(null);
+  const popState = useRef<PopState | null>(null);
 
   useLayoutEffect(() => {
     if (ref.current) writeInstances(ref.current, items, colorFor, lift);
+    popState.current = ref.current && pop ? { base: ref.current.instanceMatrix.array.slice() as Float32Array, born: null, order: null, lo: 0 } : null;
     register?.(ref.current);
     return () => register?.(null);
-  }, [items, colorFor, lift, register]);
+  }, [items, colorFor, lift, register, pop]);
+  useFrame(() => {
+    const st = popState.current;
+    const mesh = ref.current;
+    if (st && mesh && popEnv && stepPops(mesh, st, items, pop!, lag, popEnv)) popState.current = null;
+  });
 
   if (!items.length) return null;
   return (
@@ -199,7 +277,7 @@ function PondView({ controller, pond }: { controller: GameController; pond: Pond
     const fb = parts.fallback;
     return (
       <group name="pond">
-        <Instanced geometry={fb.reedGeo} material={kitMaterials().solid} items={fb.reedItems} shadow={false} lift={-0.03} />
+        <Instanced pop="flower" geometry={fb.reedGeo} material={kitMaterials().solid} items={fb.reedItems} shadow={false} lift={-0.03} />
       </group>
     );
   }
@@ -207,9 +285,9 @@ function PondView({ controller, pond }: { controller: GameController; pond: Pond
   const tint = (p: PropInstance) => vary(p, 0.2);
   return (
     <group name="pond">
-      <Instanced geometry={geo.reeds} material={mat} depthMaterial={depth} items={plants.reeds} colorFor={tint} lift={0} />
-      <Instanced geometry={geo.irises} material={mat} depthMaterial={depth} items={plants.irises} colorFor={tint} lift={0} />
-      <Instanced geometry={geo.ferns} material={mat} depthMaterial={depth} items={plants.ferns} colorFor={tint} shadow={false} lift={0} />
+      <Instanced pop="flower" geometry={geo.reeds} material={mat} depthMaterial={depth} items={plants.reeds} colorFor={tint} lift={0} />
+      <Instanced pop="flower" geometry={geo.irises} material={mat} depthMaterial={depth} items={plants.irises} colorFor={tint} lift={0} />
+      <Instanced pop="flower" geometry={geo.ferns} material={mat} depthMaterial={depth} items={plants.ferns} colorFor={tint} shadow={false} lift={0} />
     </group>
   );
 }
@@ -448,25 +526,53 @@ function makePropMaterials() {
   };
 }
 
+/** The props' models, built a piece at a time (a generator: `prepareProps` builds them in slices before they mount). */
+function* buildPropGeometry() {
+  const out = {
+    hardwood: hardwood(),
+    apple: (yield, hardwood('#e8453c')),
+    orange: (yield, hardwood('#ff9a2e')),
+    cedars: [(yield, cedar(0)), (yield, cedar(1)), (yield, cedar(2))],
+    bush: (yield, leafyBush()),
+    flowerBush: (yield, leafyBush('#ff7fa8')),
+    sprigs: [(yield, flowerSprig('#fff6e8')), (yield, flowerSprig('#ffd84d', '#f59b2a'))],
+    rock: (yield, rock()),
+    boulder: (yield, boulder()),
+    pebble: (yield, pebble()),
+    stems: {} as Record<(typeof FLOWER_KINDS)[number], ReturnType<typeof flowerStems>>,
+    blooms: {} as Record<(typeof FLOWER_KINDS)[number], ReturnType<typeof flowerBlooms>>,
+  };
+  for (const k of FLOWER_KINDS) {
+    yield;
+    out.stems[k] = flowerStems(k);
+    out.blooms[k] = flowerBlooms(k);
+  }
+  yield;
+  propMaterials();
+  return out;
+}
+
+let propGeometry: ReturnType<typeof buildPropGeometry> extends Generator<unknown, infer T> ? T | null : never = null;
+
+/** Builds the props' models in slices of a frame's spare time (the summoner runs it before they mount). */
+export async function prepareProps(): Promise<void> {
+  propGeometry ??= await runSliced(buildPropGeometry());
+}
+
+function propModels() {
+  if (!propGeometry) {
+    const g = buildPropGeometry();
+    let r = g.next();
+    while (!r.done) r = g.next();
+    propGeometry = r.value;
+  }
+  return propGeometry;
+}
+
 export function Props({ controller }: { controller: GameController }) {
   const layout = controller.props;
-  const geo = useMemo(
-    () => ({
-      hardwood: hardwood(),
-      apple: hardwood('#e8453c'),
-      orange: hardwood('#ff9a2e'),
-      cedars: [cedar(0), cedar(1), cedar(2)],
-      bush: leafyBush(),
-      flowerBush: leafyBush('#ff7fa8'),
-      sprigs: [flowerSprig('#fff6e8'), flowerSprig('#ffd84d', '#f59b2a')],
-      rock: rock(),
-      boulder: boulder(),
-      pebble: pebble(),
-      stems: Object.fromEntries(FLOWER_KINDS.map((k) => [k, flowerStems(k)])),
-      blooms: Object.fromEntries(FLOWER_KINDS.map((k) => [k, flowerBlooms(k)])),
-    }),
-    [],
-  );
+  popEnv = { controller };
+  const geo = useMemo(propModels, []);
   const mats = useMemo(propMaterials, []);
 
   const apples = useMemo(() => layout.fruit.filter((_, i) => i % 2 === 0), [layout]);
@@ -487,38 +593,38 @@ export function Props({ controller }: { controller: GameController }) {
         ] as const
       ).map(([key, g, items]) => (
         <group key={key}>
-          <Instanced geometry={g.solid} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`${key}:solid`)} />
-          <Instanced geometry={g.leaves} material={mats.broad.material} depthMaterial={mats.broad.depth} items={items} colorFor={tint} register={fx.reg(`${key}:leaves`)} />
-          {g.fruit && <Instanced geometry={g.fruit} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`${key}:fruit`)} />}
+          <Instanced pop="tree" geometry={g.solid} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`${key}:solid`)} />
+          <Instanced pop="tree" lag={0.08} geometry={g.leaves} material={mats.broad.material} depthMaterial={mats.broad.depth} items={items} colorFor={tint} register={fx.reg(`${key}:leaves`)} />
+          {g.fruit && <Instanced pop="tree" geometry={g.fruit} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`${key}:fruit`)} />}
         </group>
       ))}
       {geo.cedars.map((g, v) => {
         const items = layout.cedar.filter((_, i) => i % geo.cedars.length === v);
         return (
           <group key={`cedar-${v}`}>
-            <Instanced geometry={g.solid} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`cedar${v}:solid`)} />
-            <Instanced geometry={g.leaves} material={mats.needle.material} depthMaterial={mats.needle.depth} items={items} colorFor={tint} register={fx.reg(`cedar${v}:leaves`)} />
+            <Instanced pop="tree" geometry={g.solid} material={mats.tree} items={items} colorFor={tint} register={fx.reg(`cedar${v}:solid`)} />
+            <Instanced pop="tree" lag={0.08} geometry={g.leaves} material={mats.needle.material} depthMaterial={mats.needle.depth} items={items} colorFor={tint} register={fx.reg(`cedar${v}:leaves`)} />
           </group>
         );
       })}
-      <Instanced geometry={geo.bush.solid} material={mats.bush} items={layout.bushes} colorFor={tint} />
-      <Instanced geometry={geo.bush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.bushes} colorFor={tint} />
-      <Instanced geometry={geo.flowerBush.solid} material={mats.bush} items={layout.flowerBushes} colorFor={tint} />
-      <Instanced geometry={geo.flowerBush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.flowerBushes} colorFor={tint} />
+      <Instanced pop="tree" geometry={geo.bush.solid} material={mats.bush} items={layout.bushes} colorFor={tint} />
+      <Instanced pop="tree" lag={0.08} geometry={geo.bush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.bushes} colorFor={tint} />
+      <Instanced pop="tree" geometry={geo.flowerBush.solid} material={mats.bush} items={layout.flowerBushes} colorFor={tint} />
+      <Instanced pop="tree" lag={0.08} geometry={geo.flowerBush.leaves} material={mats.broadBush.material} depthMaterial={mats.broadBush.depth} items={layout.flowerBushes} colorFor={tint} />
       {geo.sprigs.map((g, v) => (
         <group key={`sprig-${v}`}>
           {/* too low to cast a shadow worth its shadow-pass cost */}
-          <Instanced geometry={g.solid} material={mats.flower} items={sprigSets[v]} colorFor={tint} shadow={false} />
-          <Instanced geometry={g.leaves} material={mats.broadBush.material} items={sprigSets[v]} colorFor={tint} shadow={false} />
+          <Instanced pop="flower" geometry={g.solid} material={mats.flower} items={sprigSets[v]} colorFor={tint} shadow={false} />
+          <Instanced pop="flower" geometry={g.leaves} material={mats.broadBush.material} items={sprigSets[v]} colorFor={tint} shadow={false} />
         </group>
       ))}
-      <Instanced geometry={geo.rock} material={mats.rock} items={layout.rocks} colorFor={tint} />
-      <Instanced geometry={geo.boulder} material={mats.rock} items={layout.boulders} colorFor={tint} register={fx.reg('boulder')} />
-      <Instanced geometry={geo.pebble} material={mats.rock} items={layout.pebbles} colorFor={tint} shadow={false} lift={-0.03} />
+      <Instanced pop="rock" geometry={geo.rock} material={mats.rock} items={layout.rocks} colorFor={tint} />
+      <Instanced pop="rock" geometry={geo.boulder} material={mats.rock} items={layout.boulders} colorFor={tint} register={fx.reg('boulder')} />
+      <Instanced pop="rock" geometry={geo.pebble} material={mats.rock} items={layout.pebbles} colorFor={tint} shadow={false} lift={-0.03} />
       {FLOWER_KINDS.map((k) => (
         <group key={k}>
-          <Instanced geometry={geo.stems[k]} material={mats.flower} items={layout.flowers[k]} shadow={false} register={fx.reg(`${k}:stems`)} />
-          <Instanced geometry={geo.blooms[k]} material={mats.flower} items={layout.flowers[k]} colorFor={bloomColor} shadow={false} register={fx.reg(`${k}:blooms`)} />
+          <Instanced pop="flower" geometry={geo.stems[k]} material={mats.flower} items={layout.flowers[k]} shadow={false} register={fx.reg(`${k}:stems`)} />
+          <Instanced pop="flower" geometry={geo.blooms[k]} material={mats.flower} items={layout.flowers[k]} colorFor={bloomColor} shadow={false} register={fx.reg(`${k}:blooms`)} />
         </group>
       ))}
       {layout.pond && <PondView controller={controller} pond={layout.pond} />}
