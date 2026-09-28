@@ -149,7 +149,7 @@ Constraints:
 
 | Action | Keyboard | Mouse / touch | Gamepad (P1) |
 |---|---|---|---|
-| Move | **W A S D** / **Arrow keys** (screen-relative: W/↑ = away from camera) | **Click/tap on ground** → auto-walk along great circle (P0); as built, on touch, **drag anywhere**: a floating stick walks you, pushed to the rim it runs ([touch controls](../game-ui/touch.md)) | Left stick (analog speed) |
+| Move | **W A S D** / **Arrow keys** (screen-relative: W/↑ = away from camera) | **Click/tap on ground** → auto-walk along great circle (P0); as built, the mouse shows the walk cursor over the ground, and the click leaves a marker there (a ripple, then a ring until the walk ends; [design system §6.5](../game-ui/design-system.md)), as built, on touch, **drag anywhere**: a floating stick walks you, pushed to the rim it runs ([touch controls](../game-ui/touch.md)) | Left stick (analog speed) |
 | Run | Hold **Shift** (setting: *Run toggle*, P1) | Auto-walk uses run; on touch, push the stick to its rim | Hold B / right trigger |
 | Interact / open | **E**, **Enter** | Click/tap the preview card; click/tap a landmark (or its label) → **fast travel** to its approach point | A |
 | Close / back (as built: the owner's rule, [design system §6.7](../game-ui/design-system.md)) | **Space**: closes the open dialog, menu or panel, stands up, ends a conversation (a focused text field, checkbox, radio or slider keeps its own Space; on a backpack slot Space is its right-click). **Esc** closes too | Close button / tap backdrop | B |

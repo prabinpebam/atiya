@@ -74,6 +74,7 @@ Each component has one class family, reads only surface roles and tokens, and ha
 | Toast | `.toast` | `hud.css` | Top centre, one at a time, announced; 4 to 9 s by length. |
 | View controls | `.view-controls`, `.compass`, `.view-home` | `hud.css` | The compass and Reset, bottom right. Turning and tilting without a drag are the menu's View group (`.menu-view`). |
 | Character picker | `.character-picker`, `.avatar-btn` | `hud.css` | A radio group of portraits, top right. |
+| Cursors | `cursors.css` (generated) | `cursors.css` | The game's own mouse cursors (the website keeps the system's): **arrow** (the default), **pointer** (a button, a link, a slot, a recipe, a landmark to travel to), **walk** (over the ground: the arrow with the gold ring the click leaves), **not allowed** (a disabled control), **grab** and **grabbing** (dragging the planet's view, turning Chopper on his card), **ew-resize** (the clock's scrubber). Font Awesome Free shapes outlined in wood ink and cream with a soft shadow, so they read on the sky, the grass and the panels; 32 px with a 64 px copy for sharp screens (`image-set`), a system fallback on each. Made by `node scripts/build-cursors.mjs` (images in `src/assets/cursors/`, hotspots found from the pixels), which also writes the states' selectors: never edit `cursors.css` by hand. The ground state is `data-cursor="walk"` on the game region (a ray–sphere test on every mouse move, `WalkMarker`), a landmark under the mouse is `data-hover="landmark"`. |
 | Hotbar and slot | `.hotbar`, `.slot`, `.slot-key`, `.slot-count` | `panels.css` | Nine slots, the backpack and the whistle. The selected slot uses `--surface-highlight`. |
 | Backpack, crafting, paint | `.inv-panel`, `.craft-panel`, `.paint-panel` | `panels.css` | Wood panels on the overlay layer, at a fixed size: head (title, help button, tools, close) and sections; no help text of their own. The crafting screen is the inventory panel in two columns: the recipe book down the left, the detail over the backpack and hotbar (`.craft-book`, `.craft-grid`, `.craft-need`; [crafting screen](./crafting-screen.md)). |
 | Help popover | `.help-pop`, `.help-btn`, `.help-card`, `.help-keys` | `panels.css` | A panel's keys and gestures behind a question-mark button ("Show controls") in its head: shown on hover or focus, pinned by a press, closed by <kbd>Escape</kbd> or leaving (WCAG 1.4.13). A key / what-it-does list per group, the touch gestures on touch. A game panel never spells its controls out inline. |
@@ -170,6 +171,15 @@ A target is offered while you're within its reach of its edge (so a big tree and
 - **The chest and crafting table** also wake and sparkle (`ReadyCue`).
 
 The ring is a soft gradient band with highlights running round it; its hue drifts a little either side of the base colour (a small turn about the grey axis) without leaving the colour family. Sparkles are additive points that rise, drift, twinkle and fade. It costs 4 draw calls at most (two rings and two sparkle clouds, hidden when unused), with all motion in the shaders and no per-frame buffer uploads. Under reduced motion or when ambient motion is paused, the ring and sparkles hold still but stay visible, and they appear and go without fading. Every cue has its text twin: the prompt or the landmark card.
+
+#### Click to walk: where you're going
+
+A click or tap on the ground (the planet mesh) walks the character there (`controller.walkToWorldPoint`, which keeps the point in `controller.walkMark`), and `WalkMarker` (in `world/cues.tsx`, one more draw) marks it:
+
+- **The ripple:** two pale gold rings spread from the point and fade (0.65 s, the second 0.14 s behind), so the eye sees where the click landed.
+- **The marker:** a small ring pops in and breathes gently until the walk ends (you arrive, a key or a drag takes over, or you're stuck), then fades. A new click moves it.
+- **Readable anywhere:** a soft dark halo under the gold, like the cursors' outline, so it shows on light paths and bright grass alike. It's draped on the ground (the planet curves, the land rolls), and its pale gold is lighter than the ring of what <kbd>E</kbd> uses, so the two don't read as one.
+- **Reduced motion:** no ripple, and the ring holds still. Its text twin is the character walking there.
 
 ### 6.6 Toasts and the talk guard
 

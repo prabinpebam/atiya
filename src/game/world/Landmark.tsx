@@ -507,8 +507,9 @@ export function Landmark({ controller, geo, data }: { controller: GameController
       name={`landmark-${geo.id}`}
       onClick={onClick}
       onPointerDown={(e) => e.stopPropagation()}
-      onPointerOver={() => (document.body.style.cursor = 'pointer')}
-      onPointerOut={() => (document.body.style.cursor = '')}
+      // the game's pointer while it's under the mouse (a click travels there; cursors.css)
+      onPointerOver={() => controller.region?.setAttribute('data-hover', 'landmark')}
+      onPointerOut={() => controller.region?.removeAttribute('data-hover')}
     >
       <group ref={body}>
         <KitModel geo={model.geo} />

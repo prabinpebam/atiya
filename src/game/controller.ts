@@ -322,6 +322,8 @@ export class GameController {
   readonly view = { pitch: CONFIG.camera.pitchDeg as number, targetPitch: CONFIG.camera.pitchDeg as number, yawPending: 0 };
   /** True once the current pointer gesture became a view drag (so its click doesn't walk). */
   viewDragged = false;
+  /** Where the last click or tap on the ground walks to (planet-local, at the ground's radius): the marker it leaves (cues.tsx). */
+  walkMark: Vector3 | null = null;
   private drag: { id: number; x: number; y: number; lastX: number; lastY: number; active: boolean } | null = null;
   paused = false;
   private readonly buffer = new InteractBuffer();
@@ -1154,6 +1156,7 @@ export class GameController {
     }
     const local = point.clone().normalize().applyQuaternion(this.sim.planetQ.clone().invert());
     this.sim.startAutoWalk(local);
+    this.walkMark = local.multiplyScalar(point.length());
   }
 
   // ---------- Chopper (chopper.md) ----------

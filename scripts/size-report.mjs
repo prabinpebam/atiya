@@ -16,8 +16,9 @@ const GAME_BUDGET_KB = 450;
 // 95 → 96 KB for riding the swing (the visitor's seat and pump, and the family's swing activities, in the crafting and home chunks)
 // 96 → 103 KB for the viewing deck (its three builds' models and plan, the bench, the iron ore on the boulders, in the crafting chunk; the family's visits, in the home chunk)
 // 103 → 106 KB for the deck's planting and the old pine on its cliff (viewing-deck.md §4.6, in the crafting chunk);
-// 106 → 107 KB for the panels' help popover and the crafting screen's fixed layout (crafting-screen.md §4.3); pending the owner's OK
-const DEFERRED_BUDGET_KB = 107;
+// 106 → 107 KB for the panels' help popover and the crafting screen's fixed layout (crafting-screen.md §4.3);
+// 107 → 108 KB for the click-to-walk marker and the walk cursor's ground test (design system §6.5, in the wildlife chunk); pending the owner's OK
+const DEFERRED_BUDGET_KB = 108;
 const GATE_BUDGET_KB = 8;
 
 if (!existsSync(ASSETS)) {

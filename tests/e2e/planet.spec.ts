@@ -2133,6 +2133,28 @@ test.describe('planet', () => {
     await expect(page.locator('.game-region')).toBeFocused();
   });
 
+  test('click to walk: the walk cursor over the ground (not the sky), a marker where the character goes, gone once it stops', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    const region = page.locator('.game-region');
+    const box = (await region.boundingBox())!;
+    const marker = () => page.evaluate(() => (window as any).__game.__gfx()?.scene.getObjectByName('walk-marker')?.visible ?? null);
+    expect(await marker()).toBe(false);
+    // the sky: the game's arrow; the ground: the walk cursor (a generated image, not the system's)
+    await page.mouse.move(box.x + 30, box.y + box.height * 0.3);
+    await expect(region).not.toHaveAttribute('data-cursor', 'walk');
+    const gx = box.x + box.width * 0.58;
+    const gy = box.y + box.height * 0.78;
+    await page.mouse.move(gx, gy);
+    await expect(region).toHaveAttribute('data-cursor', 'walk');
+    expect(await region.evaluate((el) => getComputedStyle(el).cursor)).toMatch(/image-set|url\(/);
+    // a click walks there and leaves the marker, which goes once the walk ends
+    await page.mouse.click(gx, gy);
+    await expect.poll(marker).toBe(true);
+    await expect.poll(async () => (await state(page)).autoWalk, { timeout: 60_000 }).toBe(false);
+    await expect.poll(marker, { timeout: 20_000 }).toBe(false);
+  });
+
   test('preview-card Open returns focus to the card button after closing', async ({ page }) => {
     await startPlanet(page);
     await page.evaluate(() => (window as any).__game.teleport('library'));
