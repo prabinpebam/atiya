@@ -55,7 +55,10 @@ function HowToPlay({ controller }: { controller: GameController }) {
               <Keys k="E" />: open a building's card, or use what the gold ring glows round (shake a tree, pick a flower, talk, sit down).
             </li>
             <li>
-              <Keys k="Space" />: close what's open, stand up or stop talking. <Keys k="Enter" /> presses the chosen button.
+              <Keys k="Space" />: close what's open, stand up or stop talking; otherwise, jump. <Keys k="Enter" /> presses the chosen button.
+            </li>
+            <li>
+              <Keys k="X" />: sit on the grass. <Keys k="Z" />: lie back and look at the sky. The same key, <Keys k="Space" /> or a step gets you up.
             </li>
             <li>
               <Keys k="I" />: the backpack. <Keys k="1" />–<Keys k="9" />: pick a hotbar slot. <Keys k="F" />: whistle for Chopper. <Keys k="M" />: the menu.
@@ -73,6 +76,7 @@ function HowToPlay({ controller }: { controller: GameController }) {
           <li>Shake trees and pick flowers, keep what you find in the chest, and make things at the crafting table.</li>
           <li>Dig clay on the banks and build a furnace: it smelts iron ore into ingots for nails.</li>
           <li>Prabin's family lives by the pond, and Chopper is never far away. Say hello.</li>
+          <li>At night, pick your lantern in the hotbar to light the way. Sit or lie down anywhere from the menu's Rest group.</li>
         </ul>
       </section>
     </>
@@ -154,6 +158,24 @@ export default function MenuDialog({ controller }: { controller: GameController 
                 <button type="button" className="btn" onClick={() => controller.tiltViewStep(-1)}>
                   Tilt to side <kbd>PgDn</kbd>
                 </button>
+              </div>
+            </section>
+            <section aria-labelledby="menu-rest">
+              <h3 id="menu-rest">Rest</h3>
+              <div className="menu-view" role="group" aria-label="Rest here">
+                {(['sit', 'lie'] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      controller.closeMenu();
+                      controller.restAs?.(k);
+                    }}
+                  >
+                    {k === 'sit' ? 'Sit down' : 'Lie down'} <kbd>{k === 'sit' ? 'X' : 'Z'}</kbd>
+                  </button>
+                ))}
               </div>
             </section>
             <section aria-labelledby="menu-settings">

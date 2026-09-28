@@ -17,6 +17,7 @@ This follows established patterns rather than inventing new ones:
 | `apple`, `orange` | Apple, Orange | 64 | Shaking a fruit tree while its fruit is ripe (6 per shake; the fruit regrows in 90 s) |
 | `stone` | Stone | 64 | Mining a boulder (1 per hit, 3 hits) |
 | `iron` | Iron ore | 64 | Mining a boulder streaked with rusty ore nuggets, one in three (every third hit also drops a lump; its prompt is **Mine iron ore**; [viewing-deck.md](./viewing-deck.md)); it's smelted into iron ingots at [the furnace](./furnace.md) |
+| `lantern` | Lantern | 1 | The visitor starts with one (given once); held while it's the selected hotbar slot, it lights the way at night ([rest.md](./rest.md)) |
 | `clay` | Clay | 64 | Digging a grey-blue clay bed on the banks of the stream and the pond (2 per dig; it fills back up in 75 s; [furnace.md](./furnace.md)) |
 | `tulip-<colour>`, `cosmos-<colour>`, `pansy-<colour>` | e.g. *Red tulip* | 64 | Picking a flower (the flower regrows in 60 s) |
 | `jute` | Jute | 64 | Picking a jute plant in the row behind the vegetable garden (2 per plant; it's cut to stubble and grows back in 90 s; [swing.md](./swing.md)) |

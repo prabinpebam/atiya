@@ -14,7 +14,7 @@ import { withLampLights } from '../world/lampLights';
 import { addOcclusionOutline, countOutlines } from './outline';
 import { SEAT } from '../systems/seating';
 import { selectAmbientPaused } from '../state/store';
-import { actionPose, type ActionPose, type Dir } from './actionPoses';
+import type { ActionPose, Dir } from './actionPoses';
 import { pickaxe as pickaxeModel } from '../world/propModels';
 import { kitMaterials } from '../world/materials';
 import type { ActionKind } from '../systems/actions';
@@ -198,6 +198,7 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     }
     controller.onArrive = () => {
       if (!jump || controller.store.getState().reducedMotionUser || controller.store.getState().reducedMotionSystem) return;
+      jump.timeScale = 1;
       jump.reset().setEffectiveWeight(1).fadeIn(0.08).play();
     };
     return () => {
@@ -254,6 +255,7 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
 
   const blend = useRef(0);
   const flying = useRef(false);
+  const inAir = useRef(false);
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
     const sim = controller.sim;
@@ -261,6 +263,13 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     const fly = sim.travel?.mode === 'flyover';
     if (fly && !flying.current && jump) jump.reset().setEffectiveWeight(1).fadeIn(0.08).play();
     flying.current = fly;
+    // Space: the jump clip, sped up to the hop's time in the air
+    const air = sim.jumpV > 0 || sim.jumpH > 0;
+    if (air && !inAir.current && jump) {
+      jump.timeScale = jump.getClip().duration / 0.6;
+      jump.reset().setEffectiveWeight(1).fadeIn(0.05).play();
+    }
+    inAir.current = air;
     const speed = sim.speed;
     if (root.current) root.current.rotation.y = sim.heading + MODEL_YAW;
     blend.current = damp(blend.current, Math.min(1, speed / 1.2), 10, dt);
@@ -288,8 +297,9 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
     }
     let pickScale = 0;
     const la = lastAct.current;
-    if (la) {
-      const ap = actionPose(la.kind, la.t);
+    // (the poses come with the crafting chunk, loaded before the scene)
+    const ap = la && controller.actionPose?.(la.kind, la.t);
+    if (la && ap) {
       const w = ap.w * la.fade;
       if (w > 1e-3) {
         applyActionPose(limbs, spine, sim.heading, ap, w);
@@ -297,6 +307,8 @@ function KenneyAvatar({ controller, id }: { controller: GameController; id: Char
       }
       pickScale = act.kind === 'mine' ? ap.pickaxe : 0;
     }
+    // resting on the grass and what's carried (the lantern): the crafting chunk poses them
+    controller.gear?.({ hands: limbs, root: root.current, body: seatGroup.current, time: clock.current, heading: sim.heading, aim: aimBone, pose: (p, w) => applyActionPose(limbs, spine, sim.heading, p, w) });
     // the pickaxe sits in the right hand, its handle along the forearm, its head swung forward
     const pm = pick.current;
     const rh = limbs[1];
@@ -359,7 +371,7 @@ export function Player({ controller }: { controller: GameController }) {
     // flying: the body rises above the ground under it
     const b = body.current;
     if (!b) return;
-    b.position.set(0, controller.sim.hover, 0);
+    b.position.set(0, controller.sim.hover + controller.sim.jumpH, 0);
     // on the swing: the whole body swings about the ropes' pivot (swing.md §6)
     const q = rideTilt(controller, tiltQ);
     if (q) {

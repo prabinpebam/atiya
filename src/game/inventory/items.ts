@@ -17,7 +17,7 @@ export type BloomColour = (typeof BLOOM_COLOURS)[number]['name'];
 
 export type FlowerItemId = `${FlowerItemKind}-${BloomColour}`;
 export type PaintId = `paint-${BloomColour}`;
-export type ItemId = 'log' | 'leaves' | 'apple' | 'orange' | 'stone' | 'iron' | 'jute' | 'clay' | 'planks' | 'beam' | 'slab' | 'rope' | 'nails' | 'block' | 'firewood' | 'ingot' | FlowerItemId | PaintId;
+export type ItemId = 'log' | 'leaves' | 'apple' | 'orange' | 'stone' | 'iron' | 'jute' | 'clay' | 'planks' | 'beam' | 'slab' | 'rope' | 'nails' | 'block' | 'firewood' | 'ingot' | 'lantern' | FlowerItemId | PaintId;
 
 export interface ItemDef {
   id: ItemId;
@@ -54,6 +54,8 @@ const BASE: ItemDef[] = [
   { id: 'block', name: 'Stone block', maxStack: 64, icon: 'block', model: 'stone', tint: '#a8a397' },
   { id: 'firewood', name: 'Firewood', maxStack: 64, icon: 'firewood', model: 'log', tint: '#a0713f' },
   { id: 'ingot', name: 'Iron ingot', maxStack: 64, icon: 'ingot', model: 'stone', tint: '#95a1ad' },
+  // the visitor's hand lantern (rest.md): held while it's the selected hotbar slot, it lights the way at night
+  { id: 'lantern', name: 'Lantern', maxStack: 1, icon: 'lantern', model: 'stone', tint: '#e0a64a' },
 ];
 
 const FLOWERS: ItemDef[] = FLOWER_ITEM_KINDS.flatMap((k) =>

@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { Quaternion, Vector3, type Camera, type Scene, type WebGLRenderer } from 'three';
+import { Quaternion, Vector3, type Camera, type Object3D, type Scene, type WebGLRenderer } from 'three';
 import { CONFIG } from './config';
 import type { LandmarkData, MoveIntent } from './types';
 import { arrivalOrientation, landmarkGeometry, type LandmarkGeometry } from './math/landmarks';
@@ -13,7 +13,7 @@ import type { HomeSpot } from './world/homestead';
 import type { DuckFeed } from './systems/duckFeed';
 import { REACH, buildTargets, pickTarget, targetLabel, type Target } from './systems/interactables';
 import { ActionRunner, CYCLES, actionFor, type ActionKind, type BeatKind } from './systems/actions';
-import { EXTRA_POSES } from './player/actionPoses';
+import type { ActionPose } from './player/actionPoses';
 import { Inventory, type Stack } from './inventory/inventory';
 import { BLOOM_COLOURS, flowerItem, itemDef, stackLabel, type ItemId } from './inventory/items';
 import { Drops } from './world/dropSim';
@@ -81,7 +81,19 @@ export interface CraftAttachment {
   /** Its screens in the HUD: the crafting screen, the palette and the site card. */
   Screens: ComponentType;
   step(dt: number): void;
-  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean; swing: SwingState | null; deck: DeckState | null; furnace: FurnaceState | null };
+  state(): { built: boolean; colour: string; building: boolean; ghost: number; near: boolean; swing: SwingState | null; deck: DeckState | null; furnace: FurnaceState | null; lantern: { held: boolean; lamp: number } };
+}
+
+/** What the avatar hands the crafting chunk each frame to pose and place what the character carries (the lantern: rest.md). */
+export interface GearFrame {
+  hands: ReadonlyArray<{ side: 1 | -1; arm: Object3D | null; fore: Object3D | null; hand: Object3D | null }>;
+  root: Object3D | null;
+  /** The group the body sits in (lowered to rest), the clock (s), and the avatar's own pose tools. */
+  body: Object3D | null;
+  time: number;
+  heading: number;
+  aim: (bone: Object3D | null, child: Object3D | null, dir: Vector3, w: number) => void;
+  pose: (p: ActionPose, w: number) => void;
 }
 
 /** The furnace (furnace.md), for the test hook: built, going up, the ghost, its card, how hot it is, and each clay bed (where, by which water, seconds until it's full again). */
@@ -242,7 +254,9 @@ export class GameController {
   craft: CraftAttachment | null = null;
   /** The action cycles and the extra action poses, for a chunk to extend (the home chunk adds watering) without importing them itself. */
   readonly cycles = CYCLES;
-  readonly poses = EXTRA_POSES;
+  readonly poses: Partial<Record<ActionKind, (t: number) => ActionPose>> = {};
+  /** The pose for an action cycle at `t` s (the shake, the swing of the pickaxe…): the crafting chunk's, with the extras above. */
+  actionPose: ((kind: ActionKind, t: number) => ActionPose) | null = null;
   /** Touch controls, on touch-capable devices once their chunk has loaded. */
   touch: TouchAttachment | null = null;
   /** Things rabbits and ground birds shy away from besides the character: Chopper, the children. */
@@ -304,6 +318,14 @@ export class GameController {
   lastStepSurface: Surface | null = null;
   /** Called when a fast travel lands (the avatar plays a little hop). */
   onArrive: (() => void) | null = null;
+  /** Sitting on the grass or lying back on it, anywhere (X / Z, or the menu): which, the pose's blend 0–1 and where it's heading (rest.md). */
+  readonly rest: { kind: 'sit' | 'lie' | null; k: number; goal: number } = { kind: null, k: 0, goal: 0 };
+  /** The resting poses and what the character carries (the lantern), from the crafting chunk: the avatar calls them each frame. */
+  gear: ((f: GearFrame) => void) | null = null;
+  /** Sit on the grass (X) or lie back on it (Z) wherever you are; the same key again stands you up (the crafting chunk: rest.md). */
+  restAs: ((kind: 'sit' | 'lie') => void) | null = null;
+  /** A shooting star is crossing the sky (world/ShootingStars.tsx; for the test hook). */
+  meteor = false;
   /** Which avatar is on screen: the rigged model, or the procedural fallback (loading / failed). */
   avatar: 'model' | 'procedural' = 'procedural';
   /** Which character's model is on screen (null while the procedural stand-in shows). */
@@ -544,7 +566,7 @@ export class GameController {
     const s = this.store.getState();
     const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.craftScreen && !s.chopperOpen && !s.talk;
     const seat = this.seatMotion;
-    const intent: MoveIntent = playing && !seat.stage && !this.action.busy ? this.keyboard.intent() : NO_INTENT;
+    const intent: MoveIntent = playing && !seat.stage && !this.action.busy && !this.rest.kind ? this.keyboard.intent() : NO_INTENT;
     this.updateView(delta, playing, selectReducedMotion(s));
     const dt = Math.min(Math.max(delta, 0), CONFIG.maxDt);
     // wading: slower in deeper water (the sim eases toward the new speed)
@@ -580,7 +602,7 @@ export class GameController {
         if (e.id === PLAZA) this.announce('Back at the plaza, facing north.');
       } else if (e.type === 'autowalk-blocked') {
         this.showToast("Can't get through that way — try another path.");
-      }
+      } else if (e.type === 'landed') this.sound.step(surfaceAt(this.sim.pLocal, this.geos, this.terrain, this.wadeDepth), true);
     }
     this.updateFade();
 
@@ -768,10 +790,16 @@ export class GameController {
       return;
     }
     if (action === 'back') {
-      // Space goes back: off the bench or the swing, or out of an action (Escape does too)
+      // Space goes back: off the bench or the swing, up off the grass, or out of an action (Escape does
+      // too); with nothing to go back from, it jumps
       if (e.repeat) return;
-      if (this.seatMotion.seated) this.standUp();
-      else this.cancelAction();
+      if (this.seatMotion.seated || this.rest.goal > 0) this.standUp();
+      else if (this.action.busy) this.cancelAction();
+      else this.jump();
+      return;
+    }
+    if (action === 'sit' || action === 'lie') {
+      if (!e.repeat) this.restAs?.(action);
       return;
     }
     if (action === 'interact') {
@@ -781,7 +809,7 @@ export class GameController {
     }
     if (action === 'menu') {
       if (e.repeat) return;
-      if (e.code === 'Escape' && this.seatMotion.seated) this.standUp();
+      if (e.code === 'Escape' && (this.seatMotion.seated || this.rest.goal > 0)) this.standUp();
       else this.openMenu();
       return;
     }
@@ -807,7 +835,7 @@ export class GameController {
       else this.returnHome();
       return;
     }
-    if (this.seatMotion.seated && (action === 'up' || action === 'down' || action === 'left' || action === 'right')) {
+    if ((this.seatMotion.seated || this.rest.goal > 0) && (action === 'up' || action === 'down' || action === 'left' || action === 'right')) {
       // a fresh press stands you up (a key still held from walking over doesn't)
       if (e.repeat) return;
       this.standUp();
@@ -880,6 +908,11 @@ export class GameController {
 
   /** Stand up from the bench (Space, Escape, E, a movement key, a click, or the prompt's button). */
   standUp(): void {
+    if (this.rest.goal > 0) {
+      this.rest.goal = 0;
+      this.store.setState({ seated: false });
+      return;
+    }
     if (!this.seatMotion.seated) return;
     this.seatMotion.stand(this.sim.pLocal);
     this.store.setState({ seated: false, canFeed: false });
@@ -887,9 +920,15 @@ export class GameController {
 
   /** Leave the seat at once (fast travel, reset). */
   private leaveSeat(): void {
+    Object.assign(this.rest, { kind: null, k: 0, goal: 0 });
     if (!this.seatMotion.stage) return;
     this.seatMotion.clear();
     this.store.setState({ seated: false, canFeed: false });
+  }
+
+  /** Space with nothing to go back from: a hop, on the way you were going. */
+  jump(): void {
+    if (this.store.getState().phase === 'playing' && !this.seatMotion.stage && !this.rest.kind && !this.action.busy) this.sim.jump();
   }
 
   /** Move the character along its sit-down / stand-up path, turning it to face out from the bench. */
@@ -1160,7 +1199,7 @@ export class GameController {
   walkToWorldPoint(point: Vector3): void {
     const s = this.store.getState();
     if (s.phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel) return;
-    if (this.seatMotion.stage) {
+    if (this.seatMotion.stage || this.rest.kind) {
       this.standUp();
       return;
     }

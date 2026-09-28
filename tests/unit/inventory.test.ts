@@ -8,12 +8,12 @@ const C = (i: number): SlotRef => ({ c: 'chest', i });
 const ids = (inv: Inventory, c: 'backpack' | 'chest' = 'backpack') => inv.slots(c).map((s) => (s ? `${s.id}:${s.n}` : '-'));
 
 describe('items', () => {
-  it('registers 8 materials, 8 crafted ones, 3 flowers × 7 colours and 7 paints, each with a name and a 64 stack', () => {
-    // (clay; stone blocks, firewood and iron ingots: furnace.md)
-    expect(ITEM_IDS.length).toBe(8 + 8 + 3 * BLOOM_COLOURS.length + BLOOM_COLOURS.length);
+  it('registers 8 materials, 8 crafted ones, the lantern, 3 flowers × 7 colours and 7 paints, each with a name and a 64 stack (the lantern alone: 1)', () => {
+    // (clay; stone blocks, firewood and iron ingots: furnace.md; the lantern: rest.md)
+    expect(ITEM_IDS.length).toBe(8 + 8 + 1 + 3 * BLOOM_COLOURS.length + BLOOM_COLOURS.length);
     for (const id of ITEM_IDS) {
       expect(itemDef(id).name.length).toBeGreaterThan(2);
-      expect(itemDef(id).maxStack).toBe(64);
+      expect(itemDef(id).maxStack).toBe(id === 'lantern' ? 1 : 64);
     }
     expect(flowerItem('tulip', 0)).toBe('tulip-red');
     expect(flowerItem('pansy', 6)).toBe('pansy-blue');

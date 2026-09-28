@@ -36,7 +36,8 @@ interface AutoWalk {
 export type SimEvent =
   | { type: 'travel-complete'; id: string }
   | { type: 'autowalk-arrived' }
-  | { type: 'autowalk-blocked' };
+  | { type: 'autowalk-blocked' }
+  | { type: 'landed' };
 
 const SPAWN_HEADING = Math.PI; // facing −Z (screen-up)
 
@@ -61,6 +62,9 @@ export function flyoverProfile(progress: number, rise: number, drop: number): { 
   return { glide: easeInOutCubic((p - rise) / Math.max(1e-6, 1 - rise - drop)), hover: 1 };
 }
 
+/** A jump (Space): its take-off speed (u/s) and gravity (u/s²): about a third of a unit up, 0.4 s in the air. */
+export const JUMP = { v: 3.2, g: 16 };
+
 /**
  * Kinematic "rotate the planet under a fixed player" simulation (spec §5.2–5.3).
  * Pure: no rendering, no DOM. World space = camera frame; the player stands at (0, R, 0).
@@ -77,6 +81,9 @@ export class PlanetSim {
   autoWalk: AutoWalk | null = null;
   /** Multiplier on walk/run speed, set by the controller each step (e.g. slower while wading). */
   speedFactor = 1;
+  /** A jump: how high the feet are off the ground (u) and how fast they're rising (u/s). It carries on the way you were going. */
+  jumpH = 0;
+  jumpV = 0;
   /** Soft things the character is squeezing past (collision.md §3), and how long it's pressed on each. */
   readonly passing = new Set<Obstacle>();
   private readonly press = new Map<Obstacle, number>();
@@ -123,6 +130,7 @@ export class PlanetSim {
   startTravel(to: Quaternion, id: string, mode: TravelMode): void {
     this.autoWalk = null;
     this.vel.set(0, 0, 0);
+    this.jumpH = this.jumpV = 0;
     const duration = mode === 'fade' ? this.cfg.reducedMotionFade : this.cfg.fastTravelDuration;
     this.travel = { from: this.planetQ.clone(), to: to.clone().normalize(), elapsed: 0, duration, mode, id };
   }
@@ -134,6 +142,13 @@ export class PlanetSim {
 
   cancelAutoWalk(): void {
     this.autoWalk = null;
+  }
+
+  /** Jump, if on the ground (not already in the air, not travelling). */
+  jump(): boolean {
+    if (this.travel || this.jumpH > 0 || this.jumpV > 0) return false;
+    this.jumpV = JUMP.v;
+    return true;
   }
 
   /**
@@ -180,6 +195,14 @@ export class PlanetSim {
     if (desired.lengthSq() === 0 && this.vel.length() < 1e-3) this.vel.set(0, 0, 0);
 
     this.integrate(dt);
+    if (this.jumpV > 0 || this.jumpH > 0) {
+      this.jumpV -= JUMP.g * dt;
+      this.jumpH += this.jumpV * dt;
+      if (this.jumpH <= 0) {
+        this.jumpH = this.jumpV = 0;
+        this.events.push({ type: 'landed' });
+      }
+    }
 
     if (this.vel.length() > 1e-3) {
       this.heading = dampAngle(this.heading, Math.atan2(this.vel.x, this.vel.z), this.cfg.turnHalfLife, dt);

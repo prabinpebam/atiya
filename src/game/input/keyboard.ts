@@ -18,6 +18,8 @@ export type GameAction =
   | 'inventory'
   | 'drop'
   | 'whistle'
+  | 'sit'
+  | 'lie'
   | 'slot1'
   | 'slot2'
   | 'slot3'
@@ -63,6 +65,9 @@ export const KEY_BINDINGS: Record<string, GameAction> = {
   KeyQ: 'drop',
   // whistle for Chopper
   KeyF: 'whistle',
+  // rest anywhere: sit on the grass (X, as World of Warcraft's sit) or lie back on it (Z, as the prone key in shooters)
+  KeyX: 'sit',
+  KeyZ: 'lie',
   Digit1: 'slot1',
   Digit2: 'slot2',
   Digit3: 'slot3',

@@ -226,6 +226,15 @@
       "group": "Features"
     },
     {
+      "path": "poc-3d-navigation/rest.md",
+      "title": "Jumping, resting, the lantern and shooting stars",
+      "order": 33.8,
+      "icon": "self_improvement",
+      "status": "done",
+      "updated": "2026-09-28",
+      "group": "Features"
+    },
+    {
       "path": "poc-3d-navigation/chopper.md",
       "title": "Chopper",
       "order": 34,

@@ -164,6 +164,11 @@ export function installTestHook(c: GameController): void {
         seated: s.seated,
         seatStage: c.seatMotion.stage,
         seatPose: c.seatMotion.pose,
+        /** Resting on the grass (rest.md): sitting or lying, and the pose's blend; and a jump's height (u). */
+        rest: c.rest.kind,
+        restK: c.rest.k,
+        jump: c.sim.jumpH,
+        meteor: c.meteor,
         /** Arc distance (u) from the player to the nearest bench's centre. */
         benchD: c.seats.length ? Math.min(...c.seats.map((b) => Math.acos(Math.max(-1, Math.min(1, b.n.dot(c.sim.pLocal)))) * CONFIG.planetRadius)) : Infinity,
         open: s.openId,

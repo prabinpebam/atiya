@@ -14,6 +14,7 @@ const RULES: [RegExp, string][] = [
   [/Press E to feed the ducks, or Space to stand up\./g, 'Tap Feed the ducks, or Stand up.'],
   [/Press E to swing higher, or Space to get off\./g, 'Tap Swing higher, or Stand up to get off.'],
   [/Press Space to stand up\./g, 'Tap Stand up to get up.'],
+  [/Press Space to get up\./g, 'Tap Stand up to get up.'],
   [/Press E to /g, 'Tap the prompt to '],
   [/: press E\./g, ': tap the prompt.'],
 ];

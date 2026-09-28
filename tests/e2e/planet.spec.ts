@@ -35,6 +35,11 @@ type GameState = {
   seatStage: 'sitting' | 'seated' | 'standing' | null;
   seatPose: number;
   benchD: number;
+  /** Resting on the grass (rest.md): sitting or lying, the pose's blend; a jump's height (u); a shooting star in the sky. */
+  rest: 'sit' | 'lie' | null;
+  restK: number;
+  jump: number;
+  meteor: boolean;
   target: { kind: string; key: string; label: string } | null;
   acting: 'shake' | 'mine' | 'pick' | 'open' | 'water' | null;
   invScreen: 'backpack' | 'chest' | null;
@@ -69,13 +74,15 @@ const state = (page: Page) => page.evaluate(() => (window as any).__game.getStat
  * Load /play, accept the software-rendering interstitial (headless SwiftShader), wait for the game.
  * The blade grass is thinned to a quarter (a dev/test-only flag) unless `grass: 'full'`: only its own
  * tests need all of it, and it's the costliest thing to draw in software. Prabin's welcome (the talk
- * that opens as the game starts) is off too (another test-only flag), unless `welcome`.
+ * that opens as the game starts) is off too (another test-only flag), unless `welcome`, and so is the
+ * lantern the visitor starts with (so the backpack starts empty), unless `lantern`.
  */
-async function openPlanet(page: Page, path = '/play/', { grass = 'thin', welcome = false }: { grass?: 'thin' | 'full'; welcome?: boolean } = {}) {
-  await page.addInitScript(([d, w]) => {
+async function openPlanet(page: Page, path = '/play/', { grass = 'thin', welcome = false, lantern = false }: { grass?: 'thin' | 'full'; welcome?: boolean; lantern?: boolean } = {}) {
+  await page.addInitScript(([d, w, l]) => {
     localStorage.setItem('game.test.grassDensity', d);
     localStorage.setItem('game.test.welcome', w);
-  }, [grass === 'full' ? '1' : '0.25', welcome ? '1' : '0']);
+    localStorage.setItem('game.test.lantern', l);
+  }, [grass === 'full' ? '1' : '0.25', welcome ? '1' : '0', lantern ? '1' : '0']);
   await page.goto(path);
   const cont = page.getByRole('button', { name: 'Continue anyway' });
   await page.waitForFunction(() => (window as any).__game || document.querySelector('[data-gate-continue]'));
@@ -332,7 +339,8 @@ test.describe('day–night', () => {
     await startPlanet(page);
     const badge = page.getByTestId('time-badge');
     await expect(badge).toHaveAttribute('role', 'slider');
-    expect(await badge.evaluate((el) => getComputedStyle(el).cursor)).toBe('ew-resize');
+    // (the game's own resize cursor, with the system's as its fallback: cursors.css)
+    expect(await badge.evaluate((el) => getComputedStyle(el).cursor)).toMatch(/ew-resize$/);
     const start = (await state(page)).hours;
     expect(start).toBeCloseTo(10.5, 2);
     const box = (await badge.boundingBox())!;
@@ -357,7 +365,8 @@ test.describe('day–night', () => {
     await expect(badge.locator('[data-icon="moon"]')).toBeVisible();
     await page.mouse.up();
     expect((await hidden()).scrubbing).toBe(false);
-    expect(await badge.evaluate((el) => getComputedStyle(el).cursor)).toBe('ew-resize');
+    // (the game's own resize cursor, with the system's as its fallback: cursors.css)
+    expect(await badge.evaluate((el) => getComputedStyle(el).cursor)).toMatch(/ew-resize$/);
     const s = await state(page);
     expect(s.timeMode).toBe('cycle');
     expect(await page.evaluate(() => localStorage.getItem('site.timeMode'))).toBe('day');
@@ -903,6 +912,116 @@ test.describe('benches', () => {
     d = await ducks();
     expect(d.canFeed).toBe(false);
     expect((await state(page)).menuOpen).toBe(false);
+  });
+});
+
+test.describe('rest, jump & lantern', () => {
+  const frames = (page: Page, n: number) =>
+    page.evaluate((n) => {
+      const g = (window as any).__game;
+      g.pause();
+      g.advance(n);
+      g.resume();
+    }, n);
+
+  test('Space jumps when there is nothing to go back from; X sits on the grass and Z lies back, anywhere; Space, the key again or a step gets you up; the menu has them too', async ({ page }) => {
+    test.setTimeout(150_000);
+    await startPlanet(page);
+    // a hop: up and down again, and it doesn't open anything (the sim held still, so the frames drawn in
+    // software between the press and the check don't run the whole hop)
+    await page.evaluate(() => (window as any).__game.pause());
+    await page.keyboard.press('Space');
+    const air = await page.evaluate(() => {
+      const g = (window as any).__game;
+      g.advance(10);
+      return g.getState().jump as number;
+    });
+    expect(air).toBeGreaterThan(0.15);
+    await page.evaluate(() => (window as any).__game.resume());
+    let s = await state(page);
+    expect(s.menuOpen).toBe(false);
+    await frames(page, 40);
+    expect((await state(page)).jump).toBe(0);
+    // X: sit on the grass; the prompt offers to stand up, and Space does (no jump)
+    const prompt = page.getByTestId('seat-prompt');
+    await page.keyboard.press('KeyX');
+    await frames(page, 70);
+    s = await state(page);
+    expect([s.rest, s.restK, s.seated]).toEqual(['sit', 1, true]);
+    await expect(page.getByTestId('live-region')).toContainText('Sitting on the grass.');
+    await expect(prompt.getByRole('button', { name: /Stand up/ })).toBeVisible();
+    // Z from there lies back (going on from the sit), and X sits up again
+    await page.keyboard.press('KeyZ');
+    await frames(page, 70);
+    s = await state(page);
+    expect([s.rest, s.restK]).toEqual(['lie', 1]);
+    await page.keyboard.press('KeyX');
+    await frames(page, 70);
+    s = await state(page);
+    expect([s.rest, s.restK]).toEqual(['sit', 1]);
+    await page.keyboard.press('Space');
+    await frames(page, 70);
+    s = await state(page);
+    expect([s.rest, s.seated, s.jump]).toEqual([null, false, 0]);
+    // the same key again stands you up; so does a step, and then you walk on
+    await page.keyboard.press('KeyZ');
+    await frames(page, 70);
+    await page.keyboard.press('KeyZ');
+    await frames(page, 70);
+    expect((await state(page)).rest).toBeNull();
+    await page.keyboard.press('KeyX');
+    await frames(page, 70);
+    const at = (await state(page)).pLocal;
+    await page.keyboard.down('KeyW');
+    await expect.poll(async () => (await state(page)).rest, { timeout: 30_000 }).toBeNull();
+    await expect.poll(async () => { const p = (await state(page)).pLocal; return Math.hypot(p[0] - at[0], p[1] - at[1], p[2] - at[2]); }, { timeout: 30_000 }).toBeGreaterThan(0.02);
+    await page.keyboard.up('KeyW');
+    // the menu's Rest group (for touch and the mouse): Sit down, Lie down
+    await page.keyboard.press('KeyM');
+    const menu = page.getByTestId('menu-dialog');
+    await expect(menu.getByRole('heading', { name: 'Rest' })).toBeVisible();
+    await menu.getByRole('button', { name: /Lie down/ }).click();
+    await expect(menu).toBeHidden();
+    await frames(page, 70);
+    expect((await state(page)).rest).toBe('lie');
+    await prompt.getByRole('button', { name: /Stand up/ }).click();
+    await frames(page, 70);
+    expect((await state(page)).rest).toBeNull();
+  });
+
+  test('the visitor starts with a lantern: held while it is the selected hotbar slot, it lights up at night (a real lamp), set down while resting; and shooting stars cross the night sky', async ({ page }) => {
+    test.setTimeout(240_000);
+    await openPlanet(page, '/play/', { lantern: true });
+    await expect.poll(async () => (await state(page)).phase).toBe('playing');
+    const lantern = async () => (await page.evaluate(() => (window as any).__game.craft().lantern)) as { held: boolean; lamp: number };
+    const inv = () => page.evaluate(() => (window as any).__game.inventory().backpack as (string | null)[]);
+    expect((await inv())[0]).toBe('lantern:1');
+    await page.evaluate(() => (window as any).__game.setTime(12));
+    await frames(page, 5);
+    // in the hand (slot 1 is selected), dark by day
+    expect(await lantern()).toEqual({ held: true, lamp: 0 });
+    await page.evaluate(() => (window as any).__game.setTime(22));
+    await frames(page, 5);
+    expect((await lantern()).lamp).toBeGreaterThan(1);
+    expect(await page.evaluate(() => (window as any).__game.lamps())).toBeGreaterThan(0);
+    // another slot: put away, and the light goes with it
+    await page.keyboard.press('Digit2');
+    await frames(page, 5);
+    expect(await lantern()).toEqual({ held: false, lamp: 0 });
+    await page.keyboard.press('Digit1');
+    // given only once: still one after a reload
+    await startPlanet(page);
+    expect((await inv()).filter((x) => x?.startsWith('lantern')).length).toBe(1);
+    // a shooting star soon after night falls (they run on the rendered frames, which are slow in software)
+    await page.evaluate(() => (window as any).__game.setTime(23));
+    await expect.poll(async () => (await state(page)).meteor, { timeout: 90_000, intervals: [100] }).toBe(true);
+    // and none by day
+    await page.evaluate(() => (window as any).__game.setTime(12));
+    await page.waitForTimeout(1500);
+    for (let i = 0; i < 10; i++) {
+      expect((await state(page)).meteor).toBe(false);
+      await page.waitForTimeout(300);
+    }
   });
 });
 
@@ -1572,7 +1691,7 @@ test.describe("crafting & Chopper's house", () => {
   });
 
   test('the crafting table: its own prompt, the recipe book beside the backpack at a fixed size, the controls in a help popover, have / need, bulk crafting by keyboard, the landing, Space hands back the planet', async ({ page }) => {
-    test.setTimeout(150_000);
+    test.setTimeout(240_000);
     await startPlanet(page);
     await give(page, [
       ['log', 3],

@@ -27,6 +27,7 @@ import { SwingView } from './SwingView';
 import { CraftScreens } from './ui';
 import { attachDeck } from './deck';
 import { attachFurnace } from './furnace';
+import { attachGear } from './gear';
 
 const KEY = 'site.dogHouse';
 const SWING_KEY = 'site.swing';
@@ -387,6 +388,8 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
   const deck = attachDeck(controller, store);
   // (after the other targets: the clay beds keep clear of them)
   const furnace = attachFurnace(controller, store);
+  // resting anywhere and the lantern (rest.md)
+  const gear = attachGear(controller);
 
   return {
     View: () => (
@@ -402,6 +405,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
       const s = store.getState();
       const g = controller.store.getState();
       const reduced = selectReducedMotion(g);
+      gear.step(dt, reduced);
       // the ghost, by how close you are; the site card only while the site is what E would use (its prompt
       // is up), so it never shows for the garden or the home beside it
       const d = site ? arcDistance(controller.sim.pLocal, site.n, R) : Infinity;
@@ -473,6 +477,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
       const s = store.getState();
       const sw = crafting.swing;
       return {
+        lantern: { held: gear.held(), lamp: gear.lamp.intensity },
         built: s.built,
         colour: s.colour,
         building: s.building !== null,

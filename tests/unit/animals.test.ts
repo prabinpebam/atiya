@@ -129,6 +129,22 @@ describe('wildlife', () => {
     for (const k of kits) expect(d(k.n, mum.n)).toBeLessThan(0.6);
   });
 
+  it('rabbits keep out of what gets built later (Chopper’s house), and one caught where it went up gets out', () => {
+    const { w, env } = world(new Vector3(0, -1, 0));
+    const r = w.rabbits[3];
+    // a house goes up on its patch, a little way off, and another right where a kit sits
+    const house = { n: moveAlong(r.n, r.dir, 1.0 / R), radiusU: 0.62 };
+    const kit = w.rabbits.find((k) => k.mum)!;
+    const onKit = { n: kit.n.clone(), radiusU: 0.4 };
+    env.obstacles = [...env.obstacles, house, onKit];
+    let inHouse = 0;
+    run(w, env, 90, () => {
+      for (const x of w.rabbits) if (x !== kit && d(x.n, house.n) < house.radiusU) inHouse++;
+    });
+    expect(inHouse).toBe(0);
+    expect(d(kit.n, onKit.n)).toBeGreaterThan(onKit.radiusU);
+  });
+
   it('a rabbit freezes upright when the character is near, and bolts when it is close', () => {
     const { w, env } = world();
     const r = w.rabbits[0];

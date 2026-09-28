@@ -16,7 +16,7 @@
  */
 import { Color, Matrix4, Vector3, type Material } from 'three';
 
-export const LAMP_MAX = 10;
+export const LAMP_MAX = 11;
 
 export interface Lamp {
   /** Position in planet-local space (the planet root's frame). */
@@ -30,6 +30,8 @@ export interface Lamp {
   range: number;
   /** Spot cone: outer and inner half-angles (radians). */
   cone?: [number, number];
+  /** Packed before the others (the lantern the character carries: it's never the one left out). */
+  first?: boolean;
 }
 
 const lamps = new Set<Lamp>();
@@ -53,19 +55,21 @@ export const lampUniforms = {
 export function updateLampUniforms(planet: Matrix4): number {
   const U = lampUniforms;
   let n = 0;
-  for (const l of lamps) {
-    if (l.intensity <= 1e-4 || n >= LAMP_MAX) continue;
-    U.uLampPos.value[n].copy(l.pos).applyMatrix4(planet);
-    U.uLampColor.value[n].set(l.color.r, l.color.g, l.color.b).multiplyScalar(l.intensity);
-    if (l.dir && l.cone) {
-      U.uLampDir.value[n].copy(l.dir).transformDirection(planet);
-      U.uLampParams.value[n].set(l.range, Math.cos(l.cone[0]), Math.cos(l.cone[1]));
-    } else {
-      U.uLampDir.value[n].set(0, 1, 0);
-      U.uLampParams.value[n].set(l.range, -2, -1);
+  // (two passes: the lamps marked `first`, then the rest)
+  for (let pass = 0; pass < 2; pass++)
+    for (const l of lamps) {
+      if (!l.first !== (pass === 1) || l.intensity <= 1e-4 || n >= LAMP_MAX) continue;
+      U.uLampPos.value[n].copy(l.pos).applyMatrix4(planet);
+      U.uLampColor.value[n].set(l.color.r, l.color.g, l.color.b).multiplyScalar(l.intensity);
+      if (l.dir && l.cone) {
+        U.uLampDir.value[n].copy(l.dir).transformDirection(planet);
+        U.uLampParams.value[n].set(l.range, Math.cos(l.cone[0]), Math.cos(l.cone[1]));
+      } else {
+        U.uLampDir.value[n].set(0, 1, 0);
+        U.uLampParams.value[n].set(l.range, -2, -1);
+      }
+      n++;
     }
-    n++;
-  }
   U.uLampCount.value = n;
   return n;
 }

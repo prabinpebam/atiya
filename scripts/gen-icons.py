@@ -97,6 +97,8 @@ ITEMS: dict[str, str] = {
     "block": "one chunky cube-shaped grey stone building block, rough-hewn with chiselled flat faces, slightly chipped edges and a few darker speckles, seen at a 3/4 angle from above, clearly a thick cube and not a flat tile",
     "firewood": "a small stack of three split firewood sticks lying crosswise, pale freshly split wood faces on one side and rough dark-brown bark on the other, tied round the middle with a twist of twine",
     "ingot": "one iron ingot bar: a trapezoid block of cast iron with sloping bevelled sides, cool blue-grey steel colour, a slightly lighter flat top with a soft metallic sheen and a faint cast texture",
+    # carried at night (the lantern: a hand lantern the visitor starts with)
+    "lantern": "a small old-fashioned hand lantern: a black iron frame with a round top cap and a wire carrying ring, four glass panes with a glowing warm golden candle flame inside lighting the glass, a little square iron base",
     "paint": "a small round tin paint pot with its lid off and a little wire handle, filled to the brim with glossy PURE WHITE paint, one thick white drip running down its grey metal side",
 }
 

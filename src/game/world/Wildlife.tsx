@@ -9,6 +9,7 @@ import { selectAmbientPaused } from '../state/store';
 import { kitMaterials } from './materials';
 import { DUCK_NECK, birdBody, birdWing, duck, duckHead, duckNest, duckling, fishModel, rabbit } from './wildlifeModels';
 import { RIVER_WATER_U } from './terrain';
+import { ShootingStars } from './ShootingStars';
 import { birdsOut, createWildlife, meadowSpots, stepWildlife, type Rabbit, type WildEnv, type Wildlife as World } from './animals';
 
 const R = CONFIG.planetRadius;
@@ -74,7 +75,8 @@ export function Wildlife({ controller }: { controller: GameController }) {
       // Chopper and the children: rabbits bolt from them and ground birds take off, as from the character
       threats: controller.threats,
       night: 0,
-      obstacles: [...controller.geos.map((g) => ({ n: g.n, radiusU: g.footprintU })), ...layout.obstacles],
+      // (the live list: what gets built later, Chopper's house, the swing, the furnace, is in it too)
+      obstacles: controller.staticObstacles,
       inWater: (n) => terrain.inWater(n),
       pond: layout.pond ? { n: layout.pond.n, shore: (n) => terrain.pondShore(n) } : null,
       river: layout.river,
@@ -224,6 +226,8 @@ export function Wildlife({ controller }: { controller: GameController }) {
       <Herd geometry={geo.fish} material={mat} count={world.fish.length} onMesh={set('fish')} shadow={false} />
       <Herd geometry={geo.bird} material={mat} count={world.birds.length} onMesh={set('bird')} />
       <Herd geometry={geo.wing} material={mat} count={world.birds.length * 2} onMesh={set('wing')} shadow={false} />
+      {/* (the night sky's shooting stars: they add themselves to the scene, in the camera frame) */}
+      <ShootingStars controller={controller} />
     </group>
   );
 }

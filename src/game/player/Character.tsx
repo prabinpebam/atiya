@@ -9,7 +9,6 @@ import { Kit, type KitGeometry, type V3 } from '../world/kit';
 import { KitModel } from '../world/KitModel';
 import { addOcclusionOutline, countOutlines } from './outline';
 import { SEAT } from '../systems/seating';
-import { actionPose } from './actionPoses';
 
 /** The avatar's scale and its hip pivot height (local units), for sitting on benches. */
 const AVATAR_SCALE = 0.96;
@@ -224,8 +223,8 @@ export function ProceduralAvatar({ controller }: { controller: GameController })
     if (head.current) head.current.rotation.z = reduced ? 0 : Math.sin(phase.current) * 0.04 * walk;
     // action cycles: the arms follow the same poses (forward component → swing, up → raise), the body bends
     const act = controller.action;
-    if (act.kind) {
-      const ap = actionPose(act.kind, act.t);
+    const ap = act.kind && controller.actionPose?.(act.kind, act.t);
+    if (ap) {
       const w = ap.w;
       const armAngle = (d: readonly [number, number, number]) => -Math.atan2(d[0], -d[1]);
       if (armL.current) armL.current.rotation.x = mix(armL.current.rotation.x, armAngle(ap.arms.l.upper), w);

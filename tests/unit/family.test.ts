@@ -356,6 +356,7 @@ describe('the welcome: Prabin meets the visitor as the game starts', () => {
     expect(keys.join(' ')).toMatch(/Press E/);
     expect(touch.join(' ')).not.toMatch(/\b(press|W A S D|Shift)\b/i);
     expect(touch.join(' ')).toMatch(/Drag anywhere to walk/);
+    for (const lines of [keys, touch]) expect(lines.join(' ')).toMatch(/lantern/);
     for (const lines of [keys, touch, back]) expect(lines.at(-1)).toMatch(/notice board by the path to the Lighthouse/);
     expect(back.length).toBeLessThan(keys.length);
   });

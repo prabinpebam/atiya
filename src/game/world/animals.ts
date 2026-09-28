@@ -191,9 +191,14 @@ export function nearestThreat(n: Vector3, env: Pick<WildEnv, 'player' | 'threats
 }
 
 function onLand(env: WildEnv, n: Vector3, pad = 0.12): boolean {
-  if (env.inWater(n)) return false;
-  for (const o of env.obstacles) if (dist(n, o.n) < o.radiusU + pad) return false;
-  return true;
+  return !env.inWater(n) && overlap(env, n, pad) <= 0;
+}
+
+/** How far (u) `n` is inside the obstacle it's deepest in (≤ 0: clear of them all). */
+function overlap(env: WildEnv, n: Vector3, pad = 0.12): number {
+  let m = -Infinity;
+  for (const o of env.obstacles) m = Math.max(m, o.radiusU + pad - dist(n, o.n));
+  return m;
 }
 
 /** How far (u) `n` is inside open water: > 0 inside, < 0 outside (pond shore or stream bank). */
@@ -299,9 +304,11 @@ export function createWildlife(env: WildEnv, spots: readonly Vector3[], seed = 4
 
 /** Plan the next hop from the rabbit's heading; turn away from water and obstacles. Returns false if boxed in. */
 function planHop(r: Rabbit, env: WildEnv, len: number, time: number, rand: () => number): boolean {
+  // (caught where something has since been built, like Chopper's house: any hop that gets it further out will do)
+  const stuck = overlap(env, r.n);
   for (let tries = 0; tries < 6; tries++) {
     const to = moveAlong(r.n, r.dir, len / R);
-    if (onLand(env, to)) {
+    if (onLand(env, to) || (stuck > 0 && !env.inWater(to) && overlap(env, to) < stuck - 1e-4)) {
       r.from.copy(r.n);
       r.to.copy(to);
       r.hop = 0;
