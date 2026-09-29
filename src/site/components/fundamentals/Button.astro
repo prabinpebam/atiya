@@ -141,9 +141,11 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
     color: var(--c-button-primary-text);
   }
 
-  .button[data-variant='primary']:hover {
-    background: var(--c-button-primary-bg-hover);
-    color: var(--c-button-primary-text);
+  @media (hover: hover) {
+    .button[data-variant='primary']:hover {
+      background: var(--c-button-primary-bg-hover);
+      color: var(--c-button-primary-text);
+    }
   }
 
   .button[data-variant='secondary'] {
@@ -152,9 +154,11 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
     color: var(--c-button-secondary-text);
   }
 
-  .button[data-variant='secondary']:hover {
-    background: var(--c-button-hover-wash);
-    color: var(--c-button-secondary-text);
+  @media (hover: hover) {
+    .button[data-variant='secondary']:hover {
+      background: var(--c-button-hover-wash);
+      color: var(--c-button-secondary-text);
+    }
   }
 
   .button[data-variant='quiet'] {
@@ -163,9 +167,11 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
     padding-inline: var(--space-4);
   }
 
-  .button[data-variant='quiet']:hover {
-    background: var(--c-button-hover-wash);
-    color: var(--color-accent-hover);
+  @media (hover: hover) {
+    .button[data-variant='quiet']:hover {
+      background: var(--c-button-hover-wash);
+      color: var(--color-accent-hover);
+    }
   }
 
   .button:active:not(:disabled, [aria-disabled='true']) {
@@ -194,9 +200,11 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
     height: var(--text-sm);
   }
 
-  .button:hover .end[data-icon='chevron-right'],
-  .button:hover .end[data-icon='arrow-right'] {
-    transform: translateX(var(--space-0-5));
+  @media (hover: hover) {
+    .button:hover .end[data-icon='chevron-right'],
+    .button:hover .end[data-icon='arrow-right'] {
+      transform: translateX(var(--space-0-5));
+    }
   }
 
   .end {

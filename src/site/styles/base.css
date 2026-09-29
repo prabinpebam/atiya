@@ -91,9 +91,27 @@ a {
   text-underline-offset: 0.18em;
 }
 
-a:hover {
+@media (hover: hover) {
+  a:hover {
+    color: var(--color-accent-hover);
+    text-decoration-thickness: var(--border-strong);
+  }
+}
+
+/* touch: no grey tap flash (each control shows its own pressed state instead) and no double-tap
+   zoom delay on things you press; pinch zoom stays */
+a,
+button,
+summary,
+label,
+[role='combobox'],
+[role='option'] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+a:active {
   color: var(--color-accent-hover);
-  text-decoration-thickness: var(--border-strong);
 }
 
 :focus-visible {

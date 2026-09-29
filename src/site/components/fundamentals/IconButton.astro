@@ -109,17 +109,21 @@ const i = svgOf(icon);
     height: var(--size-icon-lg);
   }
 
-  .icon-button:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-text);
+  @media (hover: hover) {
+    .icon-button:hover {
+      background: var(--color-bg-hover);
+      color: var(--color-text);
+    }
   }
 
   .icon-button[data-variant='secondary'] {
     border-color: var(--color-border);
   }
 
-  .icon-button[data-variant='secondary']:hover {
-    border-color: var(--color-border-strong);
+  @media (hover: hover) {
+    .icon-button[data-variant='secondary']:hover {
+      border-color: var(--color-border-strong);
+    }
   }
 
   .icon-button[data-variant='primary'] {
@@ -127,9 +131,11 @@ const i = svgOf(icon);
     color: var(--color-on-accent);
   }
 
-  .icon-button[data-variant='primary']:hover {
-    background: var(--color-accent-hover);
-    color: var(--color-on-accent);
+  @media (hover: hover) {
+    .icon-button[data-variant='primary']:hover {
+      background: var(--color-accent-hover);
+      color: var(--color-on-accent);
+    }
   }
 
   /* on a photograph or the smoke: always the dark mode's raised surface */
@@ -140,8 +146,10 @@ const i = svgOf(icon);
     box-shadow: var(--shadow-sm);
   }
 
-  .icon-button[data-variant='overlay']:hover {
-    background: var(--color-bg-hover);
+  @media (hover: hover) {
+    .icon-button[data-variant='overlay']:hover {
+      background: var(--color-bg-hover);
+    }
   }
 
   .icon-button[aria-pressed='true'] {

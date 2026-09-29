@@ -60,7 +60,7 @@ const titleId = `hero-${Math.random().toString(36).slice(2, 8)}`;
         <Image
           src={picture.src}
           srcset={picture.srcset}
-          sizes={layout === 'split' ? '(max-width: 56rem) 92vw, 46vw' : '(max-width: 76rem) 92vw, 76rem'}
+          sizes={layout === 'split' ? '(max-width: 40rem) 92vw, 46vw' : '(max-width: 76rem) 92vw, 76rem'}
           alt={picture.alt}
           width={picture.width}
           height={picture.height}
@@ -147,14 +147,27 @@ const titleId = `hero-${Math.random().toString(36).slice(2, 8)}`;
     }
   }
 
-  @media (max-width: 56rem) {
+  /* a phone held upright: one column, the picture first, less room above it */
+  @media (max-width: 40rem) {
+    .hero {
+      gap: var(--space-8);
+      padding-block-start: var(--space-8);
+    }
+
     .hero[data-layout='split'] {
       grid-template-columns: minmax(0, 1fr);
-      gap: var(--space-8);
     }
 
     .hero[data-layout='split'] .picture {
       order: -1;
+    }
+  }
+
+  /* a phone on its side: side by side (above), with the name near the top */
+  @media (max-height: 30rem) {
+    .hero {
+      gap: var(--space-8);
+      padding-block-start: var(--space-8);
     }
   }
 </style>

@@ -99,9 +99,11 @@ const uid = Math.random().toString(36).slice(2, 8);
     transition: background-color var(--duration-instant) var(--ease-standard);
   }
 
-  a:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-text);
+  @media (hover: hover) {
+    a:hover {
+      background: var(--color-bg-hover);
+      color: var(--color-text);
+    }
   }
 
   a[aria-current='page'] {

@@ -88,8 +88,15 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
     transition: transform var(--duration-slow) var(--ease-standard);
   }
 
-  .card:hover .zoom {
-    transform: scale(1.02);
+  @media (hover: hover) {
+    .card:hover .zoom {
+      transform: scale(1.02);
+    }
+  }
+
+  /* touch: the card answers the press */
+  .card:has(.title:active) .zoom {
+    transform: scale(0.99);
   }
 
   .words {
@@ -114,11 +121,13 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
     inset: 0;
   }
 
-  .card:hover .title {
-    text-decoration: underline;
-    text-decoration-thickness: var(--border-strong);
-    text-decoration-color: var(--color-highlight);
-    text-underline-offset: 0.12em;
+  @media (hover: hover) {
+    .card:hover .title {
+      text-decoration: underline;
+      text-decoration-thickness: var(--border-strong);
+      text-decoration-color: var(--color-highlight);
+      text-underline-offset: 0.12em;
+    }
   }
 
   .title:focus-visible {

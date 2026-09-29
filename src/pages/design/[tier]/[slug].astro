@@ -316,14 +316,23 @@ const singular = { fundamental: 'Fundamental', compound: 'Compound', layout: 'La
     text-decoration: none;
   }
 
-  .tokens a:hover {
-    background: var(--color-accent-soft);
-    color: var(--color-on-accent-soft);
+  @media (hover: hover) {
+    .tokens a:hover {
+      background: var(--color-accent-soft);
+      color: var(--color-on-accent-soft);
+    }
   }
 
   .tokens code {
     font-family: var(--font-code);
     font-size: var(--text-sm);
+  }
+
+  /* a finger needs the full 44 px */
+  @media (pointer: coarse) {
+    .tokens a {
+      min-height: var(--size-touch);
+    }
   }
 
   .muted {

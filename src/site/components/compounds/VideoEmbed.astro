@@ -159,8 +159,10 @@ const embedSrc =
     border-radius: var(--radius-none);
   }
 
-  .facade:hover::after {
-    opacity: 1;
+  @media (hover: hover) {
+    .facade:hover::after {
+      opacity: 1;
+    }
   }
 
   .play-mark {
@@ -181,9 +183,11 @@ const embedSrc =
       background-color var(--duration-instant) var(--ease-standard);
   }
 
-  .facade:hover .play-mark {
-    background: var(--color-bg-hover);
-    transform: translate(-50%, -50%) scale(1.06);
+  @media (hover: hover) {
+    .facade:hover .play-mark {
+      background: var(--color-bg-hover);
+      transform: translate(-50%, -50%) scale(1.06);
+    }
   }
 
   .play-icon {

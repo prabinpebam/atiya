@@ -182,8 +182,10 @@ const chosenIcon = iconOf(chosen?.icon);
     font-size: var(--text-sm);
   }
 
-  .combo:hover {
-    border-color: var(--c-control-border-hover);
+  @media (hover: hover) {
+    .combo:hover {
+      border-color: var(--c-control-border-hover);
+    }
   }
 
   .combo[aria-expanded='true'] {
@@ -245,10 +247,16 @@ const chosenIcon = iconOf(chosen?.icon);
     background: transparent;
   }
 
-  .select[data-trigger='icon'] .combo:hover,
   .select[data-trigger='icon'] .combo[aria-expanded='true'] {
     background: var(--color-bg-hover);
     border-color: transparent;
+  }
+
+  @media (hover: hover) {
+    .select[data-trigger='icon'] .combo:hover {
+      background: var(--color-bg-hover);
+      border-color: transparent;
+    }
   }
 
   /* the list: our own, not the browser's */

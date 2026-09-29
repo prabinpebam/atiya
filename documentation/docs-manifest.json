@@ -145,6 +145,15 @@
       "group": "Site UI"
     },
     {
+      "path": "site-ui/mobile-audit.md",
+      "title": "On a phone: audit and fixes",
+      "order": 20.6,
+      "icon": "smartphone",
+      "status": "done",
+      "updated": "2026-09-29",
+      "group": "Site UI"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 21,

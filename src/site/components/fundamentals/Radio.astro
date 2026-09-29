@@ -85,8 +85,10 @@ const described = hint ? `${id}-hint` : undefined;
       transform var(--duration-fast) var(--ease-spring);
   }
 
-  .input:hover {
-    border-color: var(--c-control-border-hover);
+  @media (hover: hover) {
+    .input:hover {
+      border-color: var(--c-control-border-hover);
+    }
   }
 
   .input:checked {

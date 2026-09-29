@@ -193,8 +193,10 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
     color: var(--color-text-muted);
   }
 
-  .input:hover {
-    border-color: var(--c-control-border-hover);
+  @media (hover: hover) {
+    .input:hover {
+      border-color: var(--c-control-border-hover);
+    }
   }
 
   .input:focus-visible {

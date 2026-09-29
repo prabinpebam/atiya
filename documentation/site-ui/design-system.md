@@ -40,6 +40,7 @@ The rules for the website's pages: the landing, the classic site and the design 
   - `media.ts`: wrapping, swipes, the nearest slide;
   - `controls.ts`: the slider's values.
 - **Base styles** (`src/site/styles/base.css`) set element defaults only: the reset, type, links, the focus ring, selection, and `.sr-only`.
+- **Assets:** the font cuts in `src/site/assets/fonts/` (generated; §9).
 - **Helpers:** `src/site/design/meta.ts` (the base path and the theme colours), `samples.ts` (the library's sample media) and `typography.ts` (curly quotes).
 
 ## 3. The tiers
@@ -107,6 +108,16 @@ The design library is the full, live version (examples, props, keys, tokens, use
 - **Structure:** one h1 per page; a skip link first; landmarks with names; `aria-current` on the current page; live regions for counters.
 - **Checked by axe** in both modes on the library, the layouts and the pages (the E2E group).
 
+### Phones and touch ([the mobile audit](mobile-audit.md))
+
+- **Hover is an enhancement.** Every `:hover` rule sits inside `@media (hover: hover)`, so a tap never leaves a phone stuck in a hover state (tested). Anything with hover feedback also has a pressed state (`:active`) for touch.
+- **No grey tap flash, no double-tap delay.** Base styles turn off the tap highlight and set `touch-action: manipulation` on controls; pinch zoom stays, and zoom is never disabled.
+- **Reflow from 320 px:** no sideways scroll at any width (tested at 320, 360, 430 and 844×390). Long words break; running text hyphenates below 40 rem.
+- **The first screen:** on a phone, upright or on its side, the page's heading (and the landing's primary action) is on it.
+- **The header is compact on phones** (`--c-header-height-compact`, below 40 rem or 30 rem of height), tucks away while you read down, and returns on the way up or on focus.
+- **Everything reachable on a phone:** the header's action moves into the menu (or to the footer where there's no menu). The menu closes on a tap outside and scrolls inside on a short screen.
+- **Height queries** use the `short` breakpoint token (30 rem), as width queries use theirs.
+
 ## 8. Copy
 
 - **Case and labels:** sentence case. Buttons are verbs of three words or fewer; field labels are nouns; errors say what happened and how to fix it; no "OK", "Submit" or an instruction to click.
@@ -116,14 +127,19 @@ The design library is the full, live version (examples, props, keys, tokens, use
 ## 9. Performance
 
 - **No game code:** site pages load none (tested on the landing). Their scripts are small per-component modules.
-- **Fonts:** about 200 KB on a typical page, with the italics fetched only when used and the two first-needed faces preloaded.
+- **Fonts, cut to what the site uses:** `python scripts/build-site-fonts.py` pins the axes the site never varies (Fraunces' SOFT and WONK, read from the `axes` tokens) and keeps optical size and weight. Newsreader is cut to the weights the tokens use. It writes `src/site/assets/fonts/` and `src/site/styles/fonts.css`; never hand-edit either.
+  - **Weight:** 159 to 241 KB on a page, italics fetched only when used.
+  - **Preloads:** each layout preloads the faces its first screen is set in (`PageShell`'s `preload`), so text doesn't re-wrap as fonts arrive.
+  - **The playground:** only the library's type playground loads the full four-axis Fraunces (`--font-specimen`).
 - **Pictures:** sized, `srcset`, lazy unless they're the lead. Videos load their metadata only.
+- **Measured on a phone** (Lighthouse's mobile throttling): LCP under 2.5 s and CLS under 0.1 on the landing, the index and a section ([the mobile audit](mobile-audit.md) §4).
 
 ## 10. Checks
 
 | What | Command |
 |---|---|
 | Tokens up to date | `node scripts/build-site-tokens.mjs --check` (also in the unit test) |
+| Fonts up to date | `python scripts/build-site-fonts.py --check` |
 | The rules | `npx vitest run tests/unit/siteDesignSystem.test.ts tests/unit/siteBehaviour.test.ts tests/unit/siteControls.test.ts` |
-| In the browser | `npx playwright test -g "site design system|landing & classic"` |
+| In the browser | `npx playwright test -g "site design system|site on a phone|landing & classic"` |
 | Types | `npm run check` |

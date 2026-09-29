@@ -62,9 +62,11 @@ const i = icon ? svgOf(icon) : null;
     transition: background-color var(--duration-instant) var(--ease-standard);
   }
 
-  a.tag:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-text);
+  @media (hover: hover) {
+    a.tag:hover {
+      background: var(--color-bg-hover);
+      color: var(--color-text);
+    }
   }
 
   .tag[data-tone='accent'] {

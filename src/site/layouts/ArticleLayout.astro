@@ -49,7 +49,7 @@ interface Props {
 const { title, description, nav, action, crumbs, header, dropcap = true, prev, next } = Astro.props;
 ---
 
-<PageShell title={title} description={description}>
+<PageShell title={title} description={description} preload={['display', 'display-italic', 'text', 'ui']}>
   <SiteHeader nav={nav} action={action} />
   <main id="main" class="page" tabindex="-1">
     <article class="article">

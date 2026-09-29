@@ -57,9 +57,11 @@ const end = external ? svgOf('external') : variant === 'standalone' ? svgOf('arr
       text-decoration-thickness var(--duration-instant) var(--ease-standard);
   }
 
-  .link:hover {
-    color: var(--color-accent-hover);
-    text-decoration-thickness: var(--border-strong);
+  @media (hover: hover) {
+    .link:hover {
+      color: var(--color-accent-hover);
+      text-decoration-thickness: var(--border-strong);
+    }
   }
 
   .icon {
@@ -87,22 +89,31 @@ const end = external ? svgOf('external') : variant === 'standalone' ? svgOf('arr
     margin-inline-start: var(--space-2);
   }
 
-  .link[data-variant='standalone']:hover {
-    text-decoration-line: underline;
+  @media (hover: hover) {
+    .link[data-variant='standalone']:hover {
+      text-decoration-line: underline;
+    }
   }
 
-  .link[data-variant='standalone']:hover .icon[data-icon='arrow-right'] {
-    transform: translateX(var(--space-1));
+  @media (hover: hover) {
+    .link[data-variant='standalone']:hover .icon[data-icon='arrow-right'] {
+      transform: translateX(var(--space-1));
+    }
   }
 
   .link[data-variant='quiet'] {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
     color: var(--color-text-muted);
     text-decoration-color: var(--color-rule);
   }
 
-  .link[data-variant='quiet']:hover {
-    color: var(--color-text);
-    text-decoration-color: currentColor;
+  @media (hover: hover) {
+    .link[data-variant='quiet']:hover {
+      color: var(--color-text);
+      text-decoration-color: currentColor;
+    }
   }
 
   .link[aria-current='page'] {

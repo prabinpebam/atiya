@@ -205,9 +205,14 @@ const total = items.length;
     background: currentColor;
   }
 
-  .dot:hover,
   .dot[aria-current='true'] {
     color: var(--color-accent);
+  }
+
+  @media (hover: hover) {
+    .dot:hover {
+      color: var(--color-accent);
+    }
   }
 
   @media (max-width: 40rem) {

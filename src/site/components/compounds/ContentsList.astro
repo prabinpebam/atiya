@@ -74,7 +74,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
   .numeral {
     font-family: var(--font-display);
-    font-variation-settings: var(--axes-display-crisp);
+    font-variation-settings: var(--axes-display);
     font-size: var(--text-h1);
     font-weight: var(--weight-light);
     font-variant-numeric: lining-nums tabular-nums;
@@ -99,15 +99,24 @@ const pad = (n: number) => String(n).padStart(2, '0');
     inset: 0;
   }
 
-  .entry:hover .title {
-    text-decoration: underline;
-    text-decoration-thickness: var(--border-strong);
-    text-decoration-color: var(--color-highlight);
-    text-underline-offset: 0.12em;
+  @media (hover: hover) {
+    .entry:hover .title {
+      text-decoration: underline;
+      text-decoration-thickness: var(--border-strong);
+      text-decoration-color: var(--color-highlight);
+      text-underline-offset: 0.12em;
+    }
   }
 
-  .entry:hover .numeral {
-    color: var(--color-accent);
+  @media (hover: hover) {
+    .entry:hover .numeral {
+      color: var(--color-accent);
+    }
+  }
+
+  /* touch: the entry answers the press (hover doesn't exist there) */
+  .entry:has(.title:active) {
+    background: var(--color-bg-hover);
   }
 
   .numeral {

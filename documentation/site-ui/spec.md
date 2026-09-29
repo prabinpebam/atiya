@@ -121,7 +121,7 @@ Anthropic's [frontend-design skill](https://github.com/anthropics/skills/blob/ma
 
 | Tier | Where | Made of | Count |
 |---|---|---|---|
-| 0: tokens and foundations | `src/site/design/` (tokens, icons, meta, samples, typography), `src/site/scripts/` (pure behaviour), `src/site/styles/` (generated tokens, base) | Nothing but data | 238 tokens |
+| 0: tokens and foundations | `src/site/design/` (tokens, icons, meta, samples, typography), `src/site/scripts/` (pure behaviour), `src/site/styles/` (generated tokens and fonts, base), `src/site/assets/` (the font cuts) | Nothing but data | 241 tokens |
 | 1: fundamentals | `src/site/components/fundamentals/` | Tier 0 only | 24 |
 | 2: compounds | `src/site/components/compounds/` | Fundamentals and tier 0 | 16 |
 | 3: layouts | `src/site/layouts/` | Compounds, fundamentals and tier 0 | 4 |

@@ -51,8 +51,8 @@ The look of the website's pages (the landing, the classic site, the design libra
 | **Newsreader** (Production Type; variable wght; roman and italic) | Text: everything you read at length | Drawn for reading news and long reads on screens: sturdy, open, with an italic that holds up in a quotation. Set with old-style figures, as a book is |
 | **Figtree** (Erik Kennedy; variable wght) | Interface: buttons, fields, navigation, captions, meta | A clean geometric sans that's round and warm on a button and clear at 14 px in a caption |
 
-- **Licence and hosting:** all three are Google Fonts under the SIL OFL. They're served from the site through Fontsource, with no request to Google ([the spec](spec.md) §1.4).
-- **Weight:** a typical page loads about 200 KB of fonts: Fraunces roman (121 KB), Newsreader roman (58 KB) and Figtree (20 KB), with the italics fetched only where they're used. The two needed first (Fraunces and Figtree) are preloaded.
+- **Licence and hosting:** all three are Google Fonts under the SIL OFL (none has a Reserved Font Name). They're served from the site, cut to what it uses, with no request to Google ([the spec](spec.md) §1.4).
+- **Weight:** a page loads 159 to 241 KB of fonts. Fraunces is served with SOFT and WONK built in (60 KB roman, 77 KB italic, down from 118 and 146 KB), Newsreader cut to its regular to semibold weights (38 KB), and Figtree as it is (19 KB), with the italics fetched only where they're used. Each layout preloads the faces its first screen needs ([the mobile audit](mobile-audit.md) §3.1).
 
 ### 3.1 The ramp
 
@@ -60,7 +60,7 @@ Interface sizes are fixed. Reading and display sizes are fluid: each grows smoot
 
 | Token | Size | Face and setting | Use |
 |---|---|---|---|
-| `--text-jumbo` | 56 to 136 px | Fraunces light, tight, SOFT 30 | Section numerals, a number that is the point |
+| `--text-jumbo` | 56 to 136 px | Fraunces light, tight | Section numerals, a number that is the point |
 | `--text-display` | 46 to 100 px | Fraunces light, tight | The landing's name, an index's title |
 | `--text-h1` | 38 to 68 px | Fraunces 460, snug | An article's title |
 | `--text-quote` | 26 to 44 px | Fraunces italic, WONK on | Pull quotes |

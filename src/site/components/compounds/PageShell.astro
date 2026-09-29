@@ -6,16 +6,19 @@
  * @tier compound
  * @a11y Sets the page's language and a skip link to #main, the first thing Tab reaches.
  * @a11y Applies the saved theme before paint, so there's no flash of the wrong mode.
+ * @a11y Fetches the faces the first screen is set in first, so text doesn't re-wrap as fonts arrive (layout shift).
  */
-import '@fontsource-variable/fraunces/full.css';
-import '@fontsource-variable/fraunces/full-italic.css';
-import '@fontsource-variable/newsreader/wght.css';
-import '@fontsource-variable/newsreader/wght-italic.css';
-import '@fontsource-variable/figtree/wght.css';
+import '../../styles/fonts.css';
 import '../../styles/site.css';
-import frauncesUrl from '@fontsource-variable/fraunces/files/fraunces-latin-full-normal.woff2?url';
-import figtreeUrl from '@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url';
+import frauncesRoman from '../../assets/fonts/fraunces-roman.woff2?url';
+import frauncesItalic from '../../assets/fonts/fraunces-italic.woff2?url';
+import newsreaderRoman from '../../assets/fonts/newsreader-roman.woff2?url';
+import figtreeRoman from '../../assets/fonts/figtree-roman.woff2?url';
 import { THEME_COLOR, withBase } from '../../design/meta';
+
+/** The faces a page can ask to have first: the ones its opening sets in. */
+export type PreloadFace = 'display' | 'display-italic' | 'text' | 'ui';
+const FONT_URL: Record<PreloadFace, string> = { display: frauncesRoman, 'display-italic': frauncesItalic, text: newsreaderRoman, ui: figtreeRoman };
 
 interface Props {
   /** The document title: the page's own title, then the site's name. */
@@ -28,6 +31,8 @@ interface Props {
   imageAlt?: string;
   /** Keep the page out of search results (the layout demos). */
   noindex?: boolean;
+  /** The faces the page's first screen is set in, fetched before anything else (the rest load when used). */
+  preload?: PreloadFace[];
 }
 
 const {
@@ -36,6 +41,7 @@ const {
   image = '/og-image.jpg',
   imageAlt = 'A cozy tiny planet with a brick plaza, little buildings and a character, painted in soft colours.',
   noindex = false,
+  preload = ['display', 'ui'],
 } = Astro.props;
 // social previews need an absolute URL: `site` is set when deploying
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
@@ -53,8 +59,7 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
     <meta name="theme-color" content={THEME_COLOR.light} media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content={THEME_COLOR.dark} media="(prefers-color-scheme: dark)" />
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
-    <link rel="preload" href={frauncesUrl} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={figtreeUrl} as="font" type="font/woff2" crossorigin />
+    {preload.map((face) => <link rel="preload" href={FONT_URL[face]} as="font" type="font/woff2" crossorigin />)}
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />

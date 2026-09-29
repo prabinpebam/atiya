@@ -34,6 +34,17 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
     font-variant-numeric: oldstyle-nums proportional-nums;
     color: var(--color-text);
     max-width: var(--size-measure);
+    /* a long word or an address breaks rather than widening a phone's page */
+    overflow-wrap: break-word;
+  }
+
+  /* a narrow column: hyphenate running text, as a magazine's narrow columns are (never headings) */
+  @media (max-width: 40rem) {
+    .prose :global(p),
+    .prose :global(li) {
+      hyphens: auto;
+      hyphenate-limit-chars: 7 3 3;
+    }
   }
 
   .prose[data-size='lead'] {
@@ -123,9 +134,11 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
     text-underline-offset: 0.18em;
   }
 
-  .prose :global(a:hover) {
-    color: var(--color-accent-hover);
-    text-decoration-thickness: var(--border-strong);
+  @media (hover: hover) {
+    .prose :global(a:hover) {
+      color: var(--color-accent-hover);
+      text-decoration-thickness: var(--border-strong);
+    }
   }
 
   .prose :global(strong) {
@@ -227,7 +240,7 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
     float: inline-start;
     margin: 0.06em 0.1em 0 0;
     font-family: var(--font-display);
-    font-variation-settings: var(--axes-display-crisp);
+    font-variation-settings: var(--axes-display);
     font-size: 4.35em;
     font-weight: var(--weight-display);
     line-height: var(--leading-tight);

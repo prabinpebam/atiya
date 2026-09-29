@@ -71,7 +71,7 @@ const year = new Date().getFullYear();
 
   ul {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
     gap: var(--space-1) var(--space-6);
     margin: 0;
     padding: 0;
@@ -87,9 +87,11 @@ const year = new Date().getFullYear();
     text-decoration: none;
   }
 
-  a:hover {
-    color: var(--color-accent);
-    text-decoration: underline;
+  @media (hover: hover) {
+    a:hover {
+      color: var(--color-accent);
+      text-decoration: underline;
+    }
   }
 
   .colophon {

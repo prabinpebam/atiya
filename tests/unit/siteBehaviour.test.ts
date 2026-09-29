@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { keyAction, matchIndex, printable } from '../../src/site/scripts/listbox';
 import { applyTheme, parseTheme, readTheme, resolveTheme, THEME_KEY } from '../../src/site/scripts/theme';
 import { clampIndex, counter, nearest, swipe, wrap } from '../../src/site/scripts/media';
+import { tuck, TUCK_SLACK } from '../../src/site/scripts/header';
 import { smart } from '../../src/site/design/typography';
 import { loadSite, resolveDocument, cssValue, merge, type Resolver } from '../../src/site/design/tokenModel';
 
@@ -95,6 +96,22 @@ describe('media helpers', () => {
     expect(counter(2, 7)).toBe('3 of 7');
     expect(clampIndex(9, 5)).toBe(4);
     expect(clampIndex(-1, 5)).toBe(0);
+  });
+});
+
+describe('the header on a phone: tucks away reading down, back on the way up', () => {
+  const H = 56;
+  it('down tucks it, up brings it back, a jitter keeps what it was', () => {
+    expect(tuck(400, 480, H, false, false)).toBe(true);
+    expect(tuck(480, 440, H, true, false)).toBe(false);
+    expect(tuck(480, 480 + TUCK_SLACK - 1, H, true, false)).toBe(true);
+    expect(tuck(480, 480 - (TUCK_SLACK - 1), H, false, false)).toBe(false);
+  });
+
+  it('never near the top, and never while it is busy (the menu or a list open, focus inside)', () => {
+    expect(tuck(0, 40, H, false, false)).toBe(false);
+    expect(tuck(300, 600, H, false, true)).toBe(false);
+    expect(tuck(600, 40, H, true, false)).toBe(false);
   });
 });
 

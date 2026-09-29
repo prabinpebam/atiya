@@ -7,6 +7,9 @@ import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Slider from '../../components/fundamentals/Slider.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
+// the full variable Fraunces (all four axes), for the playground only: the site serves a lighter cut
+import '@fontsource-variable/fraunces/full.css';
+import '@fontsource-variable/fraunces/full-italic.css';
 import { siteTokens } from '../../design/tokens';
 import { resolve, toCss } from '../../design/tokenModel';
 import { tokenAnchor } from '../tokenLinks';
@@ -193,7 +196,7 @@ const tables = ['leading', 'tracking', 'weight', 'axes'].map((g) => ({ g, list: 
 
   .play-sample {
     margin: 0;
-    font-family: var(--font-display);
+    font-family: var(--font-specimen);
     font-size: var(--text-display);
     line-height: var(--leading-tight);
     letter-spacing: var(--tracking-display);

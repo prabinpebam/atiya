@@ -3,7 +3,7 @@
  * the colour theme (no flash, remembered), the custom select's keyboard, the lightbox, the carousel,
  * and axe on the design library and the layouts in both modes. No WebGL here: these pages are fast.
  */
-import { expect, test, type Page } from '@playwright/test';
+import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const noSeriousViolations = async (page: Page) => {
@@ -134,5 +134,105 @@ test.describe('site design system', () => {
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     }
     expect(errors).toEqual([]);
+  });
+});
+
+/** The classic site on a phone (documentation/site-ui/mobile-audit.md). */
+const { defaultBrowserType: _browser, ...PIXEL } = devices['Pixel 7'];
+
+test.describe('site on a phone', () => {
+  test.use(PIXEL);
+
+  const CLASSIC = ['/', '/classic/', '/classic/workshop/'];
+  // controls smaller than 44 px, leaving out links inside a sentence and stretched links (their card is the target)
+  const smallTargets = (page: Page) =>
+    page.evaluate(() => {
+      const inText = (e: Element) => {
+        const p = e.parentElement;
+        return e.tagName === 'A' && !!p && ['P', 'LI', 'FIGCAPTION', 'SPAN', 'EM', 'STRONG', 'DIV'].includes(p.tagName) && p.textContent!.trim().length > e.textContent!.trim().length + 5;
+      };
+      const stretched = (e: Element) => getComputedStyle(e, '::after').position === 'absolute';
+      return [...document.querySelectorAll('a[href], button, [role="combobox"], input:not([type="hidden"]), summary')]
+        .filter((e) => {
+          const b = e.getBoundingClientRect();
+          return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !inText(e) && !stretched(e);
+        })
+        .map((e) => ({ e, b: e.getBoundingClientRect() }))
+        .filter(({ b }) => b.height < 44 || b.width < 44)
+        .map(({ e, b }) => `${e.tagName} "${(e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 24)}" ${Math.round(b.width)}x${Math.round(b.height)}`);
+    });
+
+  test('no sideways scroll, and every control at least 44 px, from 320 px wide to a phone on its side', async ({ page }) => {
+    for (const size of [
+      { width: 320, height: 640 },
+      { width: 360, height: 780 },
+      { width: 430, height: 932 },
+      { width: 844, height: 390 },
+    ]) {
+      await page.setViewportSize(size);
+      for (const path of CLASSIC) {
+        await page.goto(path);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${path} at ${size.width}`).toBe(0);
+        expect(await smallTargets(page), `${path} at ${size.width}`).toEqual([]);
+      }
+    }
+  });
+
+  test('the first screen shows the name and the way in, upright and on its side', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/');
+    const cta = page.getByRole('main').getByRole('link', { name: 'Explore the planet' });
+    expect((await cta.boundingBox())!.y + (await cta.boundingBox())!.height).toBeLessThanOrEqual(640);
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto('/');
+    expect((await page.getByRole('heading', { level: 1 }).boundingBox())!.y).toBeLessThan(200);
+    // the compact header: no more than a seventh of a phone on its side
+    expect((await page.locator('[data-site-header]').boundingBox())!.height).toBeLessThanOrEqual(58);
+  });
+
+  test('the menu carries the way into the planet, closes on a tap outside, and scrolls inside on a phone on its side', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto('/classic/workshop/');
+    const toggle = page.locator('[data-menu-toggle]');
+    await toggle.tap();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(toggle).toHaveAttribute('aria-label', 'Close menu');
+    const nav = page.getByRole('navigation', { name: 'Sections' });
+    await expect(nav.getByRole('link', { name: 'Explore in 3D' })).toHaveAttribute('href', '/play/?at=workshop');
+    await expect(nav.getByRole('link', { name: 'Workshop' })).toHaveAttribute('aria-current', 'page');
+    await noSeriousViolations(page);
+    await page.touchscreen.tap(180, 700);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(nav).toBeHidden();
+    await page.setViewportSize({ width: 844, height: 390 });
+    await toggle.tap();
+    const box = (await nav.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(390);
+  });
+
+  test('the header tucks away while reading down, and comes back on the way up or to focus', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.goto('/classic/workshop/');
+    const header = page.locator('[data-site-header]');
+    await page.mouse.wheel(0, 600);
+    await expect(header).toHaveAttribute('data-tucked', '');
+    await page.mouse.wheel(0, -150);
+    await expect(header).not.toHaveAttribute('data-tucked', '');
+    await page.mouse.wheel(0, 400);
+    await expect(header).toHaveAttribute('data-tucked', '');
+    await page.locator('[data-menu-toggle]').focus();
+    await expect(header).not.toHaveAttribute('data-tucked', '');
+  });
+
+  test('an article loads its own cut of the fonts: under 250 KB of type, none of it the full Fraunces', async ({ page }) => {
+    const fonts: { url: string; size: number }[] = [];
+    page.on('response', async (r) => {
+      if (r.request().resourceType() === 'font') fonts.push({ url: r.url(), size: (await r.body()).length });
+    });
+    await page.goto('/classic/workshop/');
+    await page.evaluate(() => document.fonts.ready);
+    await expect.poll(() => fonts.length).toBeGreaterThanOrEqual(4);
+    expect(fonts.filter((f) => /latin-full/.test(f.url))).toEqual([]);
+    expect(fonts.reduce((n, f) => n + f.size, 0)).toBeLessThan(250 * 1024);
   });
 });

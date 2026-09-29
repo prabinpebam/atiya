@@ -66,7 +66,14 @@ const { prev, next, label = 'More stories' } = Astro.props;
     transition: background-color var(--duration-instant) var(--ease-standard);
   }
 
-  .link:hover {
+  @media (hover: hover) {
+    .link:hover {
+      background: var(--color-bg-hover);
+      color: var(--color-text);
+    }
+  }
+
+  .link:active {
     background: var(--color-bg-hover);
     color: var(--color-text);
   }

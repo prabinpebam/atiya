@@ -110,8 +110,10 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
     transition: transform var(--duration-base) var(--ease-spring);
   }
 
-  .card:hover .image-shell {
-    transform: translateY(calc(var(--space-0-5) * -1));
+  @media (hover: hover) {
+    .card:hover .image-shell {
+      transform: translateY(calc(var(--space-0-5) * -1));
+    }
   }
 
   .gallery[data-breakout='full'] .image-shell {

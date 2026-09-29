@@ -75,8 +75,10 @@ const { label, orientation = 'vertical', maxHeight = 'md', ...rest } = Astro.pro
     background: var(--c-scrollbar-thumb);
   }
 
-  .scroll-area::-webkit-scrollbar-thumb:hover {
-    background: var(--c-scrollbar-thumb-hover);
+  @media (hover: hover) {
+    .scroll-area::-webkit-scrollbar-thumb:hover {
+      background: var(--c-scrollbar-thumb-hover);
+    }
   }
 
   @supports not selector(::-webkit-scrollbar) {

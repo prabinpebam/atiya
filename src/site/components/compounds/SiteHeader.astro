@@ -1,18 +1,21 @@
 ---
 /**
  * The site's masthead: the name, the sections, the colour theme and the way into the planet. It stays
- * at the top while you read; under 56 rem the sections fold into a menu.
+ * at the top while you read; on a phone (or a phone on its side) it's compact and tucks away as you
+ * scroll down, and comes back the moment you scroll up. Under 56 rem the sections fold into a menu,
+ * which also carries the way into the planet on a phone.
  * @tier compound
  * @a11y A banner landmark with a labelled navigation; the current section is marked aria-current.
- * @a11y The menu button says whether the menu is open (aria-expanded) and what it controls.
+ * @a11y The menu button says whether the menu is open (aria-expanded), what it controls, and changes its name and icon to Close menu.
  * @a11y The theme switch is the custom select: Match system, Light or Dark, remembered.
+ * @a11y A tucked-away header comes back when anything in it takes focus, while the menu or the theme list is open, and never moves with reduced motion.
  * @key Escape: closes the menu
  */
 import Button from '../fundamentals/Button.astro';
 import IconButton from '../fundamentals/IconButton.astro';
 import Select from '../fundamentals/Select.astro';
 import { SITE_NAME, withBase } from '../../design/meta';
-import type { IconName } from '../../design/icons';
+import { svgOf, type IconName } from '../../design/icons';
 
 export interface NavItem {
   label: string;
@@ -23,7 +26,7 @@ export interface NavItem {
 interface Props {
   /** The sections, in order. */
   nav?: NavItem[];
-  /** The one action at the end of the bar (Explore the planet). */
+  /** The one action at the end of the bar (Explore the planet); on a phone it moves into the menu. */
   action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
   /** Where the name goes (the site's home). */
   homeHref?: string;
@@ -42,9 +45,16 @@ const themes = [
   { value: 'light', label: 'Light', icon: 'theme-light' as const },
   { value: 'dark', label: 'Dark', icon: 'theme-dark' as const },
 ];
+const open = svgOf('menu');
+const close = svgOf('close');
 ---
 
-<header class="site-header" data-site-header>
+<header
+  class="site-header"
+  data-site-header
+  data-icon-open={`${open.viewBox}|${open.d}`}
+  data-icon-close={`${close.viewBox}|${close.d}`}
+>
   <div class="bar">
     <p class="brand">
       <a class="name" href={homeHref}>{SITE_NAME}</a>
@@ -70,6 +80,13 @@ const themes = [
                 </a>
               </li>
             ))}
+            {action && (
+              <li class="nav-action">
+                <Button variant="primary" href={action.href} icon={action.icon} block {...action.data}>
+                  {action.label}
+                </Button>
+              </li>
+            )}
           </ul>
         </nav>
       )
@@ -97,6 +114,12 @@ const themes = [
     z-index: var(--layer-sticky);
     background: var(--c-header-bg);
     border-block-end: var(--border-hairline) solid var(--color-rule);
+    transition: transform var(--duration-base) var(--ease-standard);
+  }
+
+  /* tucked away while you read down (a phone); back as you scroll up */
+  .site-header[data-tucked] {
+    transform: translateY(-100%);
   }
 
   .bar {
@@ -124,12 +147,11 @@ const themes = [
   }
 
   .brand a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
     color: var(--color-text);
     text-decoration: none;
-  }
-
-  .brand a:hover {
-    color: var(--color-accent);
   }
 
   .slash {
@@ -150,7 +172,7 @@ const themes = [
     list-style: none;
   }
 
-  .nav a {
+  .nav a:not([data-variant]) {
     display: inline-flex;
     align-items: center;
     min-height: var(--size-touch);
@@ -165,13 +187,23 @@ const themes = [
     transition: background-size var(--duration-base) var(--ease-standard);
   }
 
-  .nav a:hover,
   .nav a[aria-current='page'] {
     background-size: 100% var(--border-strong);
+    font-weight: var(--weight-semibold);
   }
 
-  .nav a[aria-current='page'] {
-    font-weight: var(--weight-semibold);
+  @media (hover: hover) {
+    .brand a:hover {
+      color: var(--color-accent);
+    }
+
+    .nav a:not([data-variant]):hover {
+      background-size: 100% var(--border-strong);
+    }
+  }
+
+  .nav-action {
+    display: none;
   }
 
   .tools {
@@ -185,10 +217,11 @@ const themes = [
     display: none;
   }
 
+  /* ---------- tablets and phones: the sections fold into a menu ---------- */
   @media (max-width: 56rem) {
     .bar {
       flex-wrap: wrap;
-      gap: var(--space-2) var(--space-4);
+      gap: 0 var(--space-4);
     }
 
     .menu {
@@ -199,7 +232,13 @@ const themes = [
       order: 3;
       flex-basis: 100%;
       display: none;
-      padding-block-end: var(--space-4);
+      /* a long menu scrolls inside, under the bar, even on a phone on its side */
+      max-height: calc(100dvh - var(--c-header-height));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-block: var(--space-2) var(--space-4);
+      scrollbar-width: thin;
+      scrollbar-color: var(--c-scrollbar-thumb) transparent;
     }
 
     .site-header[data-menu-open] .nav {
@@ -208,24 +247,68 @@ const themes = [
 
     .nav ul {
       flex-direction: column;
-      gap: 0;
+      gap: var(--space-1);
     }
 
-    .nav a {
+    .nav a:not([data-variant]) {
       width: 100%;
+      min-height: var(--c-control-height-md);
+      padding-inline: var(--space-3);
+      border-radius: var(--radius-md);
       font-size: var(--text-lg);
+      background-image: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav a:not([data-variant]):active {
+      background-color: var(--color-bg-hover);
+    }
+
+    .nav a[aria-current='page'] {
+      background-color: var(--color-accent-soft);
+      color: var(--color-on-accent-soft);
     }
   }
 
+  /* ---------- phones: a compact bar, and the way into the planet moves into the menu ---------- */
   @media (max-width: 40rem) {
-    .action {
+    .bar {
+      min-height: var(--c-header-height-compact);
+    }
+
+    .nav {
+      max-height: calc(100dvh - var(--c-header-height-compact));
+    }
+
+    /* one line for the bar: the action moves into the menu (or to the footer, where there's no menu),
+       and a part's own name gives way to the page's heading and side navigation */
+    .action,
+    .brand .slash,
+    .brand .section {
       display: none;
+    }
+
+    .nav-action {
+      display: block;
+      margin-block-start: var(--space-3);
+    }
+  }
+
+  /* a phone on its side: the same compact bar */
+  @media (max-height: 30rem) {
+    .bar {
+      min-height: var(--c-header-height-compact);
+    }
+
+    .nav {
+      max-height: calc(100dvh - var(--c-header-height-compact));
     }
   }
 </style>
 
 <script>
   import { THEMES, applyTheme, readTheme, type Theme } from '../../scripts/theme';
+  import { tuck } from '../../scripts/header';
 
   const store = (() => {
     try {
@@ -234,6 +317,9 @@ const themes = [
       return null;
     }
   })();
+
+  // where the header tucks away as you scroll: phones, upright or on their side
+  const small = matchMedia('(max-width: 56rem), (max-height: 30rem)');
 
   document.querySelectorAll<HTMLElement>('[data-site-header]').forEach((header) => {
     const sw = header.querySelector<HTMLElement>('[data-theme-switch]');
@@ -246,24 +332,62 @@ const themes = [
         if ((THEMES as readonly string[]).includes(v)) applyTheme(v, document.documentElement, store);
       });
     }
-    const toggle = header.querySelector<HTMLElement>('[data-menu-toggle]');
+
+    const toggle = header.querySelector<HTMLButtonElement>('[data-menu-toggle]');
     const nav = header.querySelector<HTMLElement>('[data-nav]');
-    if (!toggle || !nav) return;
-    const btn = toggle.querySelector<HTMLButtonElement>('button') ?? (toggle as HTMLButtonElement);
+    const isOpen = () => header.hasAttribute('data-menu-open');
     const setOpen = (open: boolean) => {
+      if (!toggle) return;
       header.toggleAttribute('data-menu-open', open);
-      btn.setAttribute('aria-expanded', String(open));
-      btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-      btn.dataset.label = open ? 'Close menu' : 'Open menu';
+      toggle.setAttribute('aria-expanded', String(open));
+      const label = open ? 'Close menu' : 'Open menu';
+      toggle.setAttribute('aria-label', label);
+      toggle.dataset.label = label;
+      // the icon says what a press will do
+      const [viewBox, d] = (open ? header.dataset.iconClose : header.dataset.iconOpen)!.split('|');
+      const svg = toggle.querySelector('svg');
+      svg?.setAttribute('viewBox', viewBox);
+      svg?.querySelector('path')?.setAttribute('d', d);
     };
-    btn.addEventListener('click', () => setOpen(!header.hasAttribute('data-menu-open')));
-    header.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && header.hasAttribute('data-menu-open')) {
-        setOpen(false);
-        btn.focus();
-      }
-    });
-    nav.addEventListener('click', (e) => (e.target as Element).closest('a') && setOpen(false));
+    if (toggle && nav) {
+      toggle.addEventListener('click', () => setOpen(!isOpen()));
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isOpen()) {
+          setOpen(false);
+          toggle.focus();
+        }
+      });
+      nav.addEventListener('click', (e) => (e.target as Element).closest('a') && setOpen(false));
+      // a tap anywhere else closes it
+      document.addEventListener('pointerdown', (e) => {
+        if (isOpen() && !header.contains(e.target as Node)) setOpen(false);
+      });
+      // back to the wide layout: nothing stays open behind it
+      matchMedia('(min-width: 56rem)').addEventListener('change', (m) => m.matches && setOpen(false));
+    }
+
+    // tuck the header away while reading down on a phone; bring it back on the way up
+    let lastY = scrollY;
+    let queued = false;
+    const busy = () => isOpen() || header.contains(document.activeElement) || !!header.querySelector('[aria-expanded="true"]');
+    const update = () => {
+      queued = false;
+      const y = scrollY;
+      const hidden = small.matches && tuck(lastY, y, header.offsetHeight, header.hasAttribute('data-tucked'), busy());
+      header.toggleAttribute('data-tucked', hidden);
+      lastY = y;
+    };
+    addEventListener(
+      'scroll',
+      () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(update);
+      },
+      { passive: true },
+    );
+    header.addEventListener('focusin', () => header.removeAttribute('data-tucked'));
+    small.addEventListener('change', update);
   });
 
   // a way into the planet or the classic site remembers which the visitor chose (the landing reads it)

@@ -55,10 +55,11 @@
   --p-color-shade-dark: rgb(0 0 0 / 0.42);
   --p-color-shade-dark-strong: rgb(0 0 0 / 0.6);
   --p-color-shade-image: rgb(12 10 8 / 0.62);
-  --p-font-fraunces: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
-  --p-font-newsreader: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
-  --p-font-figtree: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --p-font-fraunces: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --p-font-newsreader: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --p-font-figtree: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --p-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+  --p-font-fraunces-full: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
   --color-bg: light-dark(var(--p-color-stock-50), var(--p-color-stock-900));
   --color-bg-raised: light-dark(var(--p-color-stock-0), var(--p-color-stock-850));
   --color-bg-sunk: light-dark(var(--p-color-stock-100), var(--p-color-stock-950));
@@ -93,9 +94,9 @@
   --font-text: var(--p-font-newsreader);
   --font-ui: var(--p-font-figtree);
   --font-code: var(--p-font-mono);
+  --font-specimen: var(--p-font-fraunces-full);
   --axes-display: 'SOFT' 100, 'WONK' 0;
   --axes-display-italic: 'SOFT' 100, 'WONK' 1;
-  --axes-display-crisp: 'SOFT' 30, 'WONK' 0;
   --text-sm: 0.875rem;
   --text-md: 1rem;
   --text-lg: 1.125rem;
@@ -190,6 +191,7 @@
   --breakpoint-sm: 40rem;
   --breakpoint-md: 56rem;
   --breakpoint-lg: 72rem;
+  --breakpoint-short: 30rem;
   --opacity-disabled: 0.45;
   --c-control-height-sm: 2.5rem;
   --c-control-height-md: 3rem;
@@ -242,6 +244,7 @@
   --c-dropcap-color: var(--color-accent);
   --c-header-height: 4.5rem;
   --c-header-bg: var(--color-bg);
+  --c-header-height-compact: 3.5rem;
   --c-lightbox-thumb: 4.5rem;
   --c-lightbox-thumb-on: var(--color-highlight);
 }

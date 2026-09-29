@@ -22,7 +22,7 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
 The landing, the classic site and the design library have their **own** design system, separate from the game's. Rules: [documentation/site-ui/design-system.md](./documentation/site-ui/design-system.md); look: [visual-language.md](./documentation/site-ui/visual-language.md). Read them before any change to the site's UI.
 
 - **Four tiers, each made only from the tiers below it:**
-  - tokens and foundations (`src/site/design/`, `src/site/scripts/`, `src/site/styles/`);
+  - tokens and foundations (`src/site/design/`, `src/site/scripts/`, `src/site/styles/`, `src/site/assets/`);
   - fundamentals (`src/site/components/fundamentals/`, tier 0 only);
   - compounds (`src/site/components/compounds/`, fundamentals and tier 0, never another compound);
   - layouts (`src/site/layouts/`, compounds and fundamentals).
@@ -42,7 +42,15 @@ The landing, the classic site and the design library have their **own** design s
   - a story in `src/site/stories/<Name>.stories.astro`, made of `<Example title>` blocks.
 
   The design library (`/design/`) builds its pages from these (`src/site/library/registry.ts`); nothing in it is kept by hand.
-- **Icons** are Font Awesome solid as data in `src/site/design/icons.ts`, drawn with `svgOf`. **Fonts** are the three self-hosted Google Fonts (Fraunces, Newsreader, Figtree, via pinned `@fontsource-variable/*`). Never a font or icon CDN.
+- **Icons** are Font Awesome solid as data in `src/site/design/icons.ts`, drawn with `svgOf`. **Fonts** are the three self-hosted Google Fonts (Fraunces, Newsreader, Figtree), cut to the axes and weights the site uses by `python scripts/build-site-fonts.py` (it reads the pins from the `axes` tokens and writes `src/site/assets/fonts/` and `src/site/styles/fonts.css`; never hand-edit either; `--check` fails if stale). Only the library's type playground loads the full Fraunces. Never a font or icon CDN.
+- **Phones** ([mobile-audit.md](./documentation/site-ui/mobile-audit.md)):
+  - every `:hover` rule goes inside `@media (hover: hover)` and has an `:active` twin for touch (tested);
+  - no sideways scroll from 320 px;
+  - 44 px targets;
+  - the header's action must stay reachable in the menu;
+  - height queries use the `short` breakpoint token.
+
+  Check with the E2E group "site on a phone".
 - **Enforced by** `tests/unit/siteDesignSystem.test.ts` (tokens, raw values, tiers, sealing, docs and stories, contrast in both modes, copy, base paths) and the E2E group "site design system" (`tests/e2e/site.spec.ts`).
 
 ### Game UI design system
@@ -211,7 +219,7 @@ Tier 3 triggers (these are the "risky change" cases; otherwise don't):
 - A targeted run failed for a reason you don't understand, or the fix touched more than the original change.
 
 Rules of thumb:
-- Map the change to E2E groups by area: `landing & classic`, `site design system` (the website's components, theme, select, lightbox, carousel, the design library, axe in both modes), `capability gate`, `rendering` (post FX, exposure, textures), `day–night` (sky, lamps, clouds, clock), `view controls`, `landscape & wind` (terrain, water, wading, wind), `doors`, `sound`, `player character`, `planet` (movement, proximity, dialogs, travel, reset, a11y). Run the one or two groups you touched, or a single test by title.
+- Map the change to E2E groups by area: `landing & classic`, `site design system` (the website's components, theme, select, lightbox, carousel, the design library, axe in both modes), `site on a phone` (the website at 320 to 430 px and on its side: reflow, targets, the menu, the tucking header, the font budget), `capability gate`, `rendering` (post FX, exposure, textures), `day–night` (sky, lamps, clouds, clock), `view controls`, `landscape & wind` (terrain, water, wading, wind), `doors`, `sound`, `player character`, `planet` (movement, proximity, dialogs, travel, reset, a11y). Run the one or two groups you touched, or a single test by title.
 - Don't re-run a check whose inputs haven't changed since it last passed (e.g. unit tests after a docs-only fix, or E2E after only editing a unit test).
 - Don't re-capture README screenshots unless the change visibly alters that view.
 - A timeout under host load isn't a regression: re-run that one test before investigating, and compare with the baseline only if it fails again.
