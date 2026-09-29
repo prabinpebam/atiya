@@ -1,0 +1,140 @@
+---
+/**
+ * An article's opening spread: its topic, the title set large, the standfirst in soft italic, the
+ * byline with the date and reading time, and the lead picture, wide, with its caption.
+ * @tier compound
+ * @a11y The title is the page's h1; the date is a real <time>; the byline's picture is decorative (the name is written beside it).
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Avatar from '../fundamentals/Avatar.astro';
+import Image from '../fundamentals/Image.astro';
+import Caption from '../fundamentals/Caption.astro';
+
+interface Props {
+  /** The article’s title (its h1). */
+  title: string;
+  /** The soft italic line under the title: what the story is about. */
+  standfirst?: string;
+  /** The practice area or kind of story; a link if it has an index. */
+  topic?: { label: string; href?: string };
+  /** Who wrote it; the picture is decorative, the name is written. */
+  author?: { name: string; avatar?: string };
+  /** ISO date (2026-09-29). */
+  date?: string;
+  /** "6 min read". */
+  readingTime?: string;
+  /** The lead picture, with its caption and credit. */
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string };
+  /** How wide the lead picture runs: wide, or full bleed. */
+  pictureWidth?: 'wide' | 'full';
+  /** The title's level: 1 on a page, 2 when shown inside another page (the library). */
+  level?: 1 | 2;
+}
+
+const { title, standfirst, topic, author, date, readingTime, picture, pictureWidth = 'wide', level = 1 } = Astro.props;
+const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : null;
+---
+
+<header class="article-header">
+  <div class="words">
+    {topic && <p class="topic"><Tag tone="accent" href={topic.href}>{topic.label}</Tag></p>}
+    <Heading level={level} size="h1">{title}</Heading>
+    {standfirst && <Text variant="standfirst">{standfirst}</Text>}
+    {
+      (author || shown || readingTime) && (
+        <div class="byline">
+          {author && <Avatar name={author.name} src={author.avatar} size="sm" decorative />}
+          <p class="meta">
+            {author && <span class="name">{author.name}</span>}
+            {shown && (
+              <Text as="time" variant="meta" datetime={date}>
+                {shown}
+              </Text>
+            )}
+            {readingTime && (
+              <Text as="span" variant="meta">
+                {readingTime}
+              </Text>
+            )}
+          </p>
+        </div>
+      )
+    }
+  </div>
+  {
+    picture && (
+      <figure class="picture" data-width={pictureWidth}>
+        <Image
+          src={picture.src}
+          srcset={picture.srcset}
+          sizes={pictureWidth === 'full' ? '100vw' : '(max-width: 76rem) 92vw, 76rem'}
+          alt={picture.alt}
+          width={picture.width}
+          height={picture.height}
+          ratio="21/9"
+          radius={pictureWidth === 'full' ? 'none' : 'feature'}
+          priority
+        />
+        {picture.caption && <div class="caption"><Caption credit={picture.credit}>{picture.caption}</Caption></div>}
+      </figure>
+    )
+  }
+</header>
+
+<style>
+  .article-header {
+    display: grid;
+    gap: var(--space-block);
+    padding-block-start: var(--space-section);
+  }
+
+  .words {
+    display: grid;
+    gap: var(--space-5);
+    /* starts where the reading column starts, and may run wider to the right */
+    width: min(var(--size-popout), 100% - max(var(--space-gutter), (100% - var(--size-measure)) / 2) - var(--space-gutter));
+    margin-inline-start: max(var(--space-gutter), (100% - var(--size-measure)) / 2);
+  }
+
+  .topic {
+    margin: 0;
+  }
+
+  .byline {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-block-start: var(--space-2);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+  }
+
+  .name {
+    font-weight: var(--weight-semibold);
+  }
+
+  .picture {
+    display: grid;
+    gap: var(--space-3);
+    width: min(var(--size-wide), 100% - var(--space-gutter) * 2);
+    margin: 0 auto;
+  }
+
+  .picture[data-width='full'] {
+    width: 100%;
+  }
+
+  .picture[data-width='full'] .caption {
+    padding-inline: var(--space-gutter);
+  }
+</style>

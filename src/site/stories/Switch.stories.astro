@@ -1,0 +1,17 @@
+---
+import Example from '../library/Example.astro';
+import Switch from '../components/fundamentals/Switch.astro';
+---
+
+<Example title="Settings" layout="stack" description="A switch changes a setting immediately.">
+  <Switch label="Enable preview" checked />
+  <Switch label="Remember theme" />
+</Example>
+
+<Example title="Disabled" layout="stack">
+  <Switch label="Sync choices" disabled />
+</Example>
+
+<Example title="Inline" description="The label stays on the start side and the thumb moves with a spring.">
+  <Switch label="Use compact" checked />
+</Example>

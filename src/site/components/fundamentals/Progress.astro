@@ -1,0 +1,130 @@
+---
+/**
+ * A progress bar for loading, saving or completion. Use indeterminate progress when the wait has no
+ * useful percentage yet.
+ * @tier fundamental
+ * @a11y The progressbar has a visible label, or a visually hidden one when hideLabel is set.
+ * @a11y Determinate progress announces min, max and now; indeterminate omits aria-valuenow.
+ * @a11y Value text is optional and never the only signal.
+ */
+import { clampRangeValue, formatSliderValue } from '../../scripts/controls';
+
+interface Props {
+  /** Completion from 0 to 100; leave undefined for indeterminate progress. */
+  value?: number;
+  /** The progress label. */
+  label: string;
+  /** Hides the label visually while keeping it for assistive technology. */
+  hideLabel?: boolean;
+  /** Shows the numeric value beside the label. */
+  showValue?: boolean;
+  /** Accent is the normal tone; highlight is for temporary emphasis only. */
+  tone?: 'accent' | 'highlight';
+  /** Bar height. */
+  size?: 'sm' | 'md';
+  /** The progressbar id. */
+  id?: string;
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { value, label, hideLabel = false, showValue = false, tone = 'accent', size = 'md', id = `progress-${Math.random().toString(36).slice(2, 8)}`, ...rest } = Astro.props;
+const determinate = value !== undefined;
+const pct = determinate ? clampRangeValue(Number(value), 0, 100) : undefined;
+const labelId = `${id}-label`;
+---
+
+<div class="progress-wrap" data-tone={tone} data-size={size} style={determinate ? `--progress: ${pct}%` : undefined} {...rest}>
+  <div class:list={['head', { 'sr-only': hideLabel }]}>
+    <span class="label" id={labelId}>{label}</span>
+    {showValue && determinate && <span class="value">{formatSliderValue(pct ?? 0, 'percent')}</span>}
+  </div>
+  <div
+    class="bar"
+    role="progressbar"
+    id={id}
+    aria-labelledby={labelId}
+    aria-valuemin={determinate ? 0 : undefined}
+    aria-valuemax={determinate ? 100 : undefined}
+    aria-valuenow={determinate ? pct : undefined}
+    data-indeterminate={determinate ? undefined : ''}
+  >
+    <span class="fill"></span>
+  </div>
+</div>
+
+<style>
+  .progress-wrap {
+    display: grid;
+    gap: var(--space-2);
+    font-family: var(--font-ui);
+    color: var(--color-text);
+  }
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .value {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+  }
+
+  .bar {
+    position: relative;
+    overflow: hidden;
+    block-size: var(--c-progress-height);
+    border-radius: var(--radius-pill);
+    background: var(--c-progress-track);
+  }
+
+  .progress-wrap[data-size='sm'] .bar {
+    block-size: calc(var(--c-progress-height) / 2);
+  }
+
+  .fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    inline-size: var(--progress, 0%);
+    border-radius: var(--radius-pill);
+    background: var(--c-progress-fill);
+  }
+
+  .progress-wrap[data-tone='highlight'] .fill {
+    background: var(--color-highlight);
+  }
+
+  .bar[data-indeterminate] .fill {
+    inline-size: 50%;
+    animation: progress-slide var(--duration-slower) var(--ease-standard) infinite;
+  }
+
+  @keyframes progress-slide {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(220%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bar[data-indeterminate] .fill {
+      animation: none;
+      transform: none;
+    }
+  }
+</style>

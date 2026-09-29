@@ -1,55 +1,53 @@
 ---
-import { withBase } from '../game/platform/base';
-import BaseLayout from '../layouts/BaseLayout.astro';
+import LandingLayout from '../site/layouts/LandingLayout.astro';
+import Button from '../site/components/fundamentals/Button.astro';
+import Link from '../site/components/fundamentals/Link.astro';
+import { withBase } from '../site/design/meta';
 ---
 
-<BaseLayout title="Prabin Pebam — Principal Design Manager" bodyClass="landing">
-  <main class="landing-main">
-    <section class="landing-hero" aria-labelledby="landing-title">
-      <p class="kicker">Portfolio</p>
-      <h1 id="landing-title">Prabin Pebam</h1>
-      <p class="lede">Principal Design Manager. Placeholder tagline about leading design teams and shipping products people love.</p>
-      <div class="landing-ctas">
-        <a class="btn big" href={withBase('/play/')} data-mode="play">Explore the planet</a>
-        <a class="btn big" href={withBase('/classic/')} data-mode="classic">Classic site</a>
-      </div>
-      <p class="muted">The planet is a small 3D world you can walk around. The classic site has the same content as regular pages. <a href={withBase('/docs/')}>How this site was built</a></p>
-    </section>
-    <figure class="landing-poster" aria-hidden="true">
-      <img
-        src={withBase('/poster/landing-1200.webp')}
-        srcset={`${withBase('/poster/landing-800.webp')} 800w, ${withBase('/poster/landing-1200.webp')} 1200w`}
-        sizes="(max-width: 760px) 90vw, 46vw"
-        width="1200"
-        height="800"
-        alt=""
-        fetchpriority="high"
-        decoding="async"
-      />
-    </figure>
-  </main>
-  <script>
-    const params = new URLSearchParams(location.search);
-    const mode = params.get('mode');
-    const store = (m: string) => {
-      try {
-        localStorage.setItem('site.mode', m);
-      } catch {}
-    };
-    if (mode === 'classic' || mode === 'play') {
-      store(mode);
-      // (the base path: `/atiya` on GitHub Pages)
-      const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
-      location.replace(base + (mode === 'classic' ? '/classic/' : '/play/'));
-    }
-    let last: string | null = null;
+<LandingLayout
+  title="Prabin Pebam — Principal Design Manager"
+  hero={{
+    title: 'Prabin Pebam',
+    standfirst: 'Principal Design Manager. Placeholder tagline about leading design teams and shipping products people love.',
+    picture: {
+      src: withBase('/poster/landing-1200.webp'),
+      srcset: `${withBase('/poster/landing-800.webp')} 800w, ${withBase('/poster/landing-1200.webp')} 1200w`,
+      alt: 'A painted tiny planet with a brick plaza, little buildings and a character.',
+      width: 1200,
+      height: 800,
+    },
+  }}
+>
+  <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>
+  <Button variant="secondary" size="lg" href={withBase('/classic/')} data-mode="classic">Classic site</Button>
+  <Fragment slot="note">
+    The planet is a small 3D world you can walk around. The classic site has the same content as regular pages. <Link href={withBase('/docs/')}>How this site was built</Link>
+  </Fragment>
+</LandingLayout>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const mode = params.get('mode');
+  const store = (m: string) => {
     try {
-      last = localStorage.getItem('site.mode');
+      localStorage.setItem('site.mode', m);
     } catch {}
-    const primary = last === 'classic' ? 'classic' : 'play';
-    document.querySelectorAll<HTMLAnchorElement>('[data-mode]').forEach((a) => {
-      a.classList.toggle('primary', a.dataset.mode === primary);
-      a.addEventListener('click', () => store(a.dataset.mode!));
-    });
-  </script>
-</BaseLayout>
+  };
+  if (mode === 'classic' || mode === 'play') {
+    store(mode);
+    // (the base path: `/atiya` on GitHub Pages)
+    const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+    location.replace(base + (mode === 'classic' ? '/classic/' : '/play/'));
+  }
+  let last: string | null = null;
+  try {
+    last = localStorage.getItem('site.mode');
+  } catch {}
+  // the way the visitor went last time is the primary action
+  const primary = last === 'classic' ? 'classic' : 'play';
+  document.querySelectorAll<HTMLAnchorElement>('main a[data-mode]').forEach((a) => {
+    a.dataset.variant = a.dataset.mode === primary ? 'primary' : 'secondary';
+    a.addEventListener('click', () => store(a.dataset.mode!));
+  });
+</script>

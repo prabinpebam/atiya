@@ -1,0 +1,18 @@
+---
+/**
+ * A layout's sample page, for the design library's viewport preview: the layout's story rendered on
+ * its own (a whole document). Not linked from the site; kept out of search.
+ */
+import { catalog } from '../../../site/library/registry';
+
+export function getStaticPaths() {
+  return catalog()
+    .filter((e) => e.tier === 'layout' && e.story)
+    .map((e) => ({ params: { slug: e.slug }, props: { name: e.name } }));
+}
+
+const stories = import.meta.glob<{ default: (props: Record<string, unknown>) => unknown }>('../../../site/stories/*.stories.astro', { eager: true });
+const Story = stories[`../../../site/stories/${Astro.props.name}.stories.astro`]!.default;
+---
+
+<Story />

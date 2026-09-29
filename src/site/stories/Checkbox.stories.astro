@@ -1,0 +1,17 @@
+---
+import Example from '../library/Example.astro';
+import Checkbox from '../components/fundamentals/Checkbox.astro';
+---
+
+<Example title="Choices" layout="stack" description="A single checkbox works for one independent choice, with the whole row as the target.">
+  <Checkbox label="Show case studies" checked />
+  <Checkbox label="Include motion notes" hint="Add details about transitions in the classic site." />
+</Example>
+
+<Example title="Indeterminate" layout="stack" description="Mixed state is set by the component script for parent choices.">
+  <Checkbox label="Select sections" indeterminate hint="Some design library sections are selected." />
+</Example>
+
+<Example title="Disabled" layout="stack" description="Disabled rows keep their label and hint visible.">
+  <Checkbox label="Send updates" disabled hint="Newsletter work is not part of this preview." />
+</Example>

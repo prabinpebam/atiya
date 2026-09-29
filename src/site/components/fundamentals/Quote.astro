@@ -1,0 +1,128 @@
+---
+/**
+ * A quotation. A block quote sits in the column, in italic behind a marigold rule; a pull quote lifts
+ * a line out of the story and sets it large in Fraunces' soft italic, the way a magazine breaks up a
+ * long page. Attribute it: who said it, and where.
+ * @tier fundamental
+ * @a11y A figure: the words in a blockquote, the attribution in its figcaption; the quote mark is drawn and hidden.
+ * @a11y A pull quote repeats a line from the text, so it's fine for a screen reader to meet it twice; don't put anything only there.
+ */
+import { svgOf } from '../../design/icons';
+
+interface Props {
+  /** block: a quotation in the column; pull: a line lifted out of the story, set large. */
+  variant?: 'block' | 'pull';
+  /** Who said it. */
+  cite?: string;
+  /** Where: a book, a talk, a role. */
+  source?: string;
+  /** The source's address (the blockquote's cite). */
+  sourceHref?: string;
+  /** How far a pull quote steps out of the column (read by the article's grid). */
+  width?: 'content' | 'popout' | 'wide';
+}
+
+const { variant = 'block', cite, source, sourceHref, width = variant === 'pull' ? 'popout' : 'content' } = Astro.props;
+const mark = svgOf('quote');
+---
+
+<figure class="quote" data-variant={variant} data-breakout={width === 'content' ? undefined : width}>
+  {
+    variant === 'pull' && (
+      <svg class="mark" viewBox={mark.viewBox} aria-hidden="true" focusable="false" data-icon={mark.name}>
+        <path fill="currentColor" d={mark.d} />
+      </svg>
+    )
+  }
+  <blockquote cite={sourceHref}><slot /></blockquote>
+  {
+    (cite || source) && (
+      <figcaption class="by">
+        <span class="rule" aria-hidden="true" />
+        <span>
+          {cite && <span class="name">{cite}</span>}
+          {cite && source && ', '}
+          {source && (sourceHref ? <a href={sourceHref}>{source}</a> : <cite>{source}</cite>)}
+        </span>
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .quote {
+    margin: 0;
+    color: var(--color-text);
+  }
+
+  blockquote {
+    margin: 0;
+  }
+
+  .quote[data-variant='block'] blockquote {
+    padding-inline-start: var(--space-6);
+    border-inline-start: var(--border-quote) solid var(--c-quote-rule);
+    font-family: var(--font-text);
+    font-size: var(--text-lead);
+    font-style: italic;
+    line-height: var(--leading-heading);
+  }
+
+  .quote[data-variant='block'] .by {
+    padding-inline-start: calc(var(--space-6) + var(--border-quote));
+  }
+
+  .quote[data-variant='pull'] {
+    display: grid;
+    gap: var(--space-4);
+    padding-block: var(--space-4);
+  }
+
+  .quote[data-variant='pull'] blockquote {
+    font-family: var(--font-display);
+    font-size: var(--text-quote);
+    font-style: italic;
+    font-variation-settings: var(--axes-display-italic);
+    font-weight: var(--weight-regular);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-heading);
+    text-wrap: balance;
+  }
+
+  .mark {
+    width: var(--space-10);
+    height: var(--space-10);
+    color: var(--c-quote-mark);
+  }
+
+  .by {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-block-start: var(--space-4);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    color: var(--color-text-muted);
+  }
+
+  .quote[data-variant='pull'] .by {
+    margin-block-start: 0;
+  }
+
+  .rule {
+    flex: none;
+    width: var(--space-6);
+    height: var(--border-strong);
+    background: var(--c-quote-rule);
+  }
+
+  .name {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+  }
+
+  cite {
+    font-style: normal;
+  }
+</style>

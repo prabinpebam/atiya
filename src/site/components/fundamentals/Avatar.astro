@@ -1,0 +1,71 @@
+---
+/**
+ * A person's picture, round. Without a picture it shows their initials on the accent's soft tint.
+ * @tier fundamental
+ * @a11y With a picture, alt is the person's name unless the name is written beside it (then pass decorative).
+ */
+interface Props {
+  /** The person's name: the picture's alt text, and the initials when there's no picture. */
+  name: string;
+  /** The picture (square; it’s cropped round). */
+  src?: string;
+  /** sm 40 px, md 56 px, lg 96 px. */
+  size?: 'sm' | 'md' | 'lg';
+  /** The name is written next to it: hide the picture from assistive tech. */
+  decorative?: boolean;
+}
+
+const { name, src, size = 'md', decorative = false } = Astro.props;
+const initials = name
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((w) => w[0]!.toUpperCase())
+  .join('');
+---
+
+{
+  src ? (
+    <img class="avatar" data-size={size} src={src} alt={decorative ? '' : name} width="192" height="192" loading="lazy" decoding="async" />
+  ) : (
+    <span class="avatar initials" data-size={size} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : name} aria-hidden={decorative ? 'true' : undefined}>
+      {initials}
+    </span>
+  )
+}
+
+<style>
+  .avatar {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: var(--size-avatar-md);
+    height: var(--size-avatar-md);
+    border-radius: var(--radius-round);
+    background: var(--color-bg-sunk);
+    object-fit: cover;
+  }
+
+  .avatar[data-size='sm'] {
+    width: var(--size-avatar-sm);
+    height: var(--size-avatar-sm);
+  }
+
+  .avatar[data-size='lg'] {
+    width: var(--size-avatar-lg);
+    height: var(--size-avatar-lg);
+  }
+
+  .initials {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+  }
+
+  .initials[data-size='lg'] {
+    font-size: var(--text-h3);
+  }
+</style>

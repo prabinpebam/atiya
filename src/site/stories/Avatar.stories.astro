@@ -1,0 +1,17 @@
+---
+import Example from '../library/Example.astro';
+import Avatar from '../components/fundamentals/Avatar.astro';
+import { withBase } from '../design/meta';
+---
+
+<Example title="Sizes" description="A picture, round; without one, the initials.">
+  <Avatar name="Prabin Pebam" src={withBase('/avatars/npc/prabin.webp')} size="sm" />
+  <Avatar name="Prabin Pebam" src={withBase('/avatars/npc/prabin.webp')} />
+  <Avatar name="Prabin Pebam" src={withBase('/avatars/npc/prabin.webp')} size="lg" />
+</Example>
+
+<Example title="Initials" description="When there's no picture.">
+  <Avatar name="Design Library" size="sm" />
+  <Avatar name="Design Library" />
+  <Avatar name="Design Library" size="lg" />
+</Example>

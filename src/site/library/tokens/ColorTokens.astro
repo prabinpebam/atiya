@@ -1,0 +1,255 @@
+---
+/**
+ * The colour tokens, shown as colour: the primitive ramps as printed swatch strips, and every
+ * semantic role in both modes side by side with its contrast on the page. Library-only.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import { siteTokens } from '../../design/tokens';
+import { resolve, contrast, parseColour, over, aliasOf, type Token } from '../../design/tokenModel';
+import { tokenAnchor } from '../tokenLinks';
+
+const m = siteTokens();
+const prim = m.tokens.filter((t) => t.path[0] === 'p' && t.path[1] === 'color');
+const ramps = new Map<string, Token[]>();
+for (const t of prim) {
+  const key = t.path.length > 3 ? t.path[2] : 'ink and chalk';
+  if (!ramps.has(key)) ramps.set(key, []);
+  ramps.get(key)!.push(t);
+}
+const rampNotes: Record<string, string> = {
+  stock: 'Paper stock: warm neutrals from uncoated white to charcoal.',
+  'ink and chalk': 'The two text colours: warm press black and warm off-white.',
+  indigo: 'The spot ink: everything you can act on.',
+  marigold: 'The highlighter: marks, rules, drop caps. Never text on paper.',
+  leaf: 'Success.',
+  poppy: 'Errors.',
+  smoke: "The lightbox\u2019s smoke (translucent).",
+  shade: 'Shadow tints and the shade under text on a picture (translucent).',
+};
+const roles = m.tokens.filter((t) => t.path[0] === 'color');
+const bgOf = (mode: 'light' | 'dark') => parseColour(resolve(m.byPath.get('color.bg')!, m.byPath, mode));
+const TEXTY = new Set(['text', 'text-muted', 'accent', 'accent-hover', 'positive', 'negative', 'focus', 'border', 'border-strong', 'highlight-ink', 'highlight']);
+function ratio(t: Token, mode: 'light' | 'dark'): string | null {
+  if (!TEXTY.has(t.path[1])) return null;
+  const bg = bgOf(mode);
+  const c = over(parseColour(resolve(t, m.byPath, mode)), bg);
+  return contrast(c, bg).toFixed(1);
+}
+const floor = (t: Token) => (['border', 'border-strong', 'focus'].includes(t.path[1]) ? 3 : 4.5);
+const refName = (t: Token, mode: 'light' | 'dark') => {
+  const a = aliasOf(t, mode);
+  return a ? `--${a.replace(/\./g, '-')}` : resolve(t, m.byPath, mode);
+};
+---
+
+<section class="block" aria-labelledby="palette">
+  <Heading level={2} size="h2" id="palette">The palette</Heading>
+  <Text narrow>Primitives: the raw inks and stocks. Private: only tokens read them. A component asks for a role (below), never a primitive.</Text>
+  {
+    [...ramps].map(([name, list]) => (
+      <div class="ramp">
+        <div class="ramp-head">
+          <Heading level={3} size="h4">
+            {name.charAt(0).toUpperCase() + name.slice(1)}
+          </Heading>
+          <Text variant="small" tone="muted">
+            {rampNotes[name] ?? ''}
+          </Text>
+        </div>
+        <ol class="strip">
+          {list.map((t) => (
+            <li id={tokenAnchor(t.name)}>
+              <span class="chip" style={`--swatch: var(${t.name})`} />
+              <span class="chip-name">{t.path[t.path.length - 1]}</span>
+              <code class="chip-value">{resolve(t, m.byPath)}</code>
+            </li>
+          ))}
+        </ol>
+      </div>
+    ))
+  }
+</section>
+
+<section class="block" aria-labelledby="roles">
+  <Heading level={2} size="h2" id="roles">Roles, in both modes</Heading>
+  <Text narrow>
+    Each role is a light-dark() pair: the page follows the system unless the visitor picks a mode, and a subtree can switch with color-scheme alone. The ratio is the role’s contrast on the page: text needs 4.5:1, outlines and the focus ring 3:1.
+  </Text>
+  <div class="roles" role="table" aria-label="Colour roles in light and dark">
+    <div class="row head" role="row">
+      <span role="columnheader">Role</span>
+      <span role="columnheader">Light</span>
+      <span role="columnheader">Dark</span>
+    </div>
+    {
+      roles.map((t) => (
+        <div class="row" role="row" id={tokenAnchor(t.name)}>
+          <span class="role" role="rowheader">
+            <code>{t.name}</code>
+            <Text as="span" variant="small" tone="muted">
+              {t.description}
+            </Text>
+          </span>
+          {(['light', 'dark'] as const).map((mode) => {
+            const r = ratio(t, mode);
+            return (
+              <span class="cell" role="cell" data-scheme={mode}>
+                <span class="swatch" style={`--swatch: var(${t.name})`} />
+                <span class="cell-text">
+                  <code>{refName(t, mode)}</code>
+                  {r && (
+                    <Tag size="sm" tone={Number(r) >= floor(t) ? 'positive' : 'negative'} icon={Number(r) >= floor(t) ? 'success' : 'error'}>
+                      {r}:1
+                    </Tag>
+                  )}
+                </span>
+              </span>
+            );
+          })}
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  .block {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .ramp {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .ramp-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .strip li {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .chip {
+    height: var(--space-16);
+    border-radius: var(--radius-md);
+    background:
+      linear-gradient(var(--swatch), var(--swatch)),
+      repeating-conic-gradient(var(--color-bg-sunk) 0 25%, var(--color-bg) 0 50%) 0 0 / var(--space-4) var(--space-4);
+    box-shadow: inset 0 0 0 var(--border-hairline) var(--color-rule);
+  }
+
+  .chip-name {
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-sm);
+  }
+
+  .chip-value,
+  code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .roles {
+    display: grid;
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .row:last-child {
+    border-block-end: 0;
+  }
+
+  .head {
+    background: var(--color-bg-sunk);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .head span {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .role {
+    display: grid;
+    gap: var(--space-1);
+    align-content: center;
+    padding: var(--space-4);
+  }
+
+  .role code {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  .swatch {
+    flex: none;
+    width: var(--space-12);
+    height: var(--space-12);
+    border-radius: var(--radius-md);
+    background:
+      linear-gradient(var(--swatch), var(--swatch)),
+      repeating-conic-gradient(var(--color-bg-sunk) 0 25%, var(--color-bg) 0 50%) 0 0 / var(--space-3) var(--space-3);
+    box-shadow: inset 0 0 0 var(--border-hairline) var(--color-rule);
+  }
+
+  .cell-text {
+    display: grid;
+    gap: var(--space-1);
+    justify-items: start;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .cell code {
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 56rem) {
+    .row {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .role {
+      grid-column: 1 / -1;
+      padding-block-end: 0;
+    }
+
+    .head span:first-child {
+      display: none;
+    }
+  }
+</style>

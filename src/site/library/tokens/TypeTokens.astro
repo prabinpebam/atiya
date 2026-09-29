@@ -1,0 +1,288 @@
+---
+/**
+ * The type tokens, set in type: the three faces as specimens, a playground for Fraunces' axes, and
+ * the whole ramp at its real size (it grows with the window, so drag the window). Library-only.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Slider from '../../components/fundamentals/Slider.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import { siteTokens } from '../../design/tokens';
+import { resolve, toCss } from '../../design/tokenModel';
+import { tokenAnchor } from '../tokenLinks';
+
+const m = siteTokens();
+const pick = (g: string) => m.tokens.filter((t) => t.path[0] === g);
+const faces = [
+  { token: '--font-display', name: 'Fraunces', role: 'Display: headlines, standfirsts, pull quotes, drop caps, big numbers', by: 'Undercase Type (Phaedra Charles, Flavia Zimbardi), SIL Open Font License', axes: 'Weight 100 to 900, optical size 9 to 144, SOFT 0 to 100, WONK 0 to 1; italic', why: 'A soft, warm display serif from the tradition of 1970s magazine faces. Its SOFT axis rounds every serif, which is what makes the headlines friendly rather than stern.', sample: 'A little planet, set in soft type', face: 'display' },
+  { token: '--font-text', name: 'Newsreader', role: 'Text: everything you read at length', by: 'Production Type, SIL Open Font License', axes: 'Weight 200 to 800; italic (the site loads the text optical size)', why: 'Drawn for reading news and long reads on screens: sturdy, open, with an italic that holds up in a quotation.', sample: 'Pictures carry this site, and the words sit quietly beside them.', face: 'text' },
+  { token: '--font-ui', name: 'Figtree', role: 'Interface: controls, navigation, captions, meta', by: 'Erik Kennedy, SIL Open Font License', axes: 'Weight 300 to 900; italic', why: 'A clean, friendly geometric sans: clear at 14 px in a caption, round and warm on a button.', sample: 'Explore the planet, or read the classic site', face: 'ui' },
+];
+const RAMP_FACE: Record<string, string> = { sm: 'ui', md: 'ui', lg: 'ui', body: 'text', lead: 'text', h4: 'display', h3: 'display', h2: 'display', h1: 'display', quote: 'display-italic', display: 'display', jumbo: 'display' };
+const RAMP_SAMPLE: Record<string, string> = { sm: 'A caption under a picture', md: 'Explore the planet', lg: 'Show the code', body: 'The planet turns under your feet as you walk.', lead: 'A standfirst: what the story is about, in a line.', h4: 'A small heading', h3: 'A section heading', h2: 'A chapter heading', h1: 'An article title', quote: 'A line worth lifting', display: 'Prabin Pebam', jumbo: '07' };
+const px = (v: unknown) => (typeof v === 'object' && v && 'value' in v ? Math.round(Number((v as { value: number }).value) * 16) : null);
+const ramp = pick('text').map((t) => ({ t, min: t.fluidMin !== undefined ? px(t.fluidMin) : px(t.value), max: px(t.value) }));
+const tables = ['leading', 'tracking', 'weight', 'axes'].map((g) => ({ g, list: pick(g) }));
+---
+
+<section class="block" aria-labelledby="faces">
+  <Heading level={2} size="h2" id="faces">Three faces, three jobs</Heading>
+  <Text narrow>Each face has one job, so the page reads as a magazine does: the display face speaks, the text face reads, the interface face works. All three are served from this site (no font request leaves it).</Text>
+  <div class="faces">
+    {
+      faces.map((f) => (
+        <article class="face" id={tokenAnchor(f.token)}>
+          <p class="aa" data-face={f.face} aria-hidden="true">
+            Aa
+          </p>
+          <div class="face-body">
+            <Heading level={3} size="h3">
+              {f.name}
+            </Heading>
+            <Text variant="label" tone="accent">
+              {f.role}
+            </Text>
+            <p class="sample" data-face={f.face}>
+              {f.sample}
+            </p>
+            <Text variant="small">{f.why}</Text>
+            <Text variant="meta">{f.by}</Text>
+            <Text variant="meta">{f.axes}</Text>
+            <code class="token">{f.token}</code>
+          </div>
+        </article>
+      ))
+    }
+  </div>
+</section>
+
+<section class="block" aria-labelledby="play">
+  <Heading level={2} size="h2" id="play">Play with the display face</Heading>
+  <Text narrow>Fraunces is a variable font: these are its real axes, live. The site sets headlines fully soft and upright, and turns WONK on only in the italic, where its leaning letters are at their friendliest.</Text>
+  <div class="play" data-type-play>
+    <p class="play-sample" contenteditable="true" spellcheck="false" aria-label="Sample text: type to change it" data-play-sample>Soft, warm, wonky</p>
+    <div class="play-controls">
+      <Slider label="Weight" min={100} max={900} step={10} value={460} data-axis="wght" />
+      <Slider label="Softness (SOFT)" min={0} max={100} step={1} value={100} data-axis="SOFT" />
+      <Slider label="Optical size (opsz)" min={9} max={144} step={1} value={144} data-axis="opsz" />
+      <div class="play-switches">
+        <Switch label="Wonky letters (WONK)" data-axis="WONK" />
+        <Switch label="Italic" data-axis="ital" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" aria-labelledby="ramp">
+  <Heading level={2} size="h2" id="ramp">The ramp</Heading>
+  <Text narrow>Fixed sizes for the interface, fluid ones for reading and display: each grows smoothly from a 360 px window to a 1280 px one, and none grows more than 2.5 times, so zooming still enlarges text. Resize the window to see it move.</Text>
+  <ol class="ramp">
+    {
+      ramp.reverse().map(({ t, min, max }) => (
+        <li id={tokenAnchor(t.name)}>
+          <div class="ramp-meta">
+            <code>{t.name}</code>
+            <Text variant="meta">{min === max ? `${max} px` : `${min} to ${max} px`}</Text>
+            <Text variant="small" tone="muted">
+              {t.description}
+            </Text>
+          </div>
+          <p class="ramp-sample" data-face={RAMP_FACE[t.path[1]]} style={`--text-sample: var(${t.name})`}>
+            {RAMP_SAMPLE[t.path[1]] ?? 'The little planet'}
+          </p>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+{
+  tables.map(({ g, list }) => (
+    <section class="block" aria-labelledby={`t-${g}`}>
+      <Heading level={2} size="h3" id={`t-${g}`}>
+        {g === 'axes' ? 'Axes' : g.charAt(0).toUpperCase() + g.slice(1)}
+      </Heading>
+      <ul class="rows">
+        {list.map((t) => (
+          <li id={tokenAnchor(t.name)}>
+            <code>{t.name}</code>
+            <code class="value">{toCss(t.value, t.type, () => '', t.unit) || resolve(t, m.byPath)}</code>
+            <Text as="span" variant="small" tone="muted">
+              {t.description}
+            </Text>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))
+}
+
+<style>
+  .block {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .faces {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .face {
+    display: grid;
+    grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr);
+    gap: var(--space-8);
+    padding-block: var(--space-8);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .aa {
+    margin: 0;
+    font-size: var(--text-jumbo);
+    line-height: var(--leading-tight);
+    color: var(--color-accent);
+  }
+
+  .face-body {
+    display: grid;
+    gap: var(--space-2);
+    align-content: start;
+  }
+
+  .sample {
+    margin-block: var(--space-2);
+    font-size: var(--text-h3);
+    line-height: var(--leading-heading);
+  }
+
+  [data-face='display'] {
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-weight: var(--weight-display);
+  }
+
+  [data-face='display-italic'] {
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display-italic);
+    font-style: italic;
+  }
+
+  [data-face='text'] {
+    font-family: var(--font-text);
+  }
+
+  [data-face='ui'] {
+    font-family: var(--font-ui);
+  }
+
+  .token,
+  code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+  }
+
+  .play {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 1fr);
+    gap: var(--space-8);
+    align-items: center;
+    padding: var(--space-8);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-xl);
+  }
+
+  .play-sample {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+    font-weight: var(--weight-display);
+    font-variation-settings: var(--axes-display);
+    overflow-wrap: anywhere;
+    outline-offset: var(--space-2);
+    border-radius: var(--radius-md);
+  }
+
+  .play-controls {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .play-switches {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .ramp,
+  .rows {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ramp li {
+    display: grid;
+    grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: baseline;
+    padding-block: var(--space-5);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .ramp-meta {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .ramp-sample {
+    margin: 0;
+    font-size: var(--text-sample);
+    line-height: var(--leading-snug);
+    overflow-wrap: anywhere;
+  }
+
+  .rows li {
+    display: grid;
+    grid-template-columns: minmax(12rem, 18rem) minmax(8rem, 12rem) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: baseline;
+    padding-block: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .value {
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 56rem) {
+    .face,
+    .play,
+    .ramp li,
+    .rows li {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-3);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-type-play]').forEach((play) => {
+    const sample = play.querySelector<HTMLElement>('[data-play-sample]')!;
+    const read = () => {
+      const axes: Record<string, string> = {};
+      play.querySelectorAll<HTMLElement>('[data-axis]').forEach((el) => {
+        const input = el.querySelector('input');
+        if (!input) return;
+        axes[el.dataset.axis!] = input.type === 'checkbox' ? (input.checked ? '1' : '0') : input.value;
+      });
+      sample.style.fontWeight = axes.wght;
+      sample.style.fontStyle = axes.ital === '1' ? 'italic' : 'normal';
+      sample.style.fontVariationSettings = `'SOFT' ${axes.SOFT}, 'WONK' ${axes.WONK}, 'opsz' ${axes.opsz}`;
+    };
+    play.addEventListener('input', read);
+    play.addEventListener('change', read);
+    read();
+  });
+</script>

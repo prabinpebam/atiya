@@ -1,0 +1,140 @@
+---
+/**
+ * A story on an index: its picture, its topic, its title, one line on what it's about, and when. The
+ * whole card is one link (to its title), so it's one stop for the keyboard and a big target for a
+ * finger. Feature spreads the picture beside the words for the lead story; compact leaves it out.
+ * @tier compound
+ * @a11y One link per card, on the title; the rest of the card is clickable through it (a stretched link), so a screen reader hears the title, not the whole card.
+ * @a11y The heading level is set by the page (h2 on an index, h3 under a section heading).
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Image from '../fundamentals/Image.astro';
+import Tag from '../fundamentals/Tag.astro';
+
+interface Props {
+  /** The story’s address. */
+  href: string;
+  /** The story’s title: the card’s one link. */
+  title: string;
+  /** One line: the outcome, the tension, the point. */
+  dek?: string;
+  /** The topic (a practice area). */
+  topic?: string;
+  /** When, or how long it takes to read. */
+  meta?: string;
+  /** The story’s picture (cropped 3:2, or 4:3 for a feature). */
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number };
+  /** standard: picture above; feature: picture beside, larger type; compact: no picture. */
+  variant?: 'standard' | 'feature' | 'compact';
+  /** The title’s heading level: h2 on an index, h3 under a section heading. */
+  headingLevel?: 2 | 3;
+}
+
+const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' : 'compact', headingLevel = 2 } = Astro.props;
+---
+
+<article class="card" data-variant={variant}>
+  {
+    picture && variant !== 'compact' && (
+      <div class="picture">
+        <div class="zoom">
+          <Image
+            src={picture.src}
+            srcset={picture.srcset}
+            sizes={variant === 'feature' ? '(max-width: 56rem) 92vw, 50vw' : '(max-width: 40rem) 92vw, (max-width: 72rem) 46vw, 30vw'}
+            alt={picture.alt}
+            width={picture.width}
+            height={picture.height}
+            ratio={variant === 'feature' ? '4/3' : '3/2'}
+          />
+        </div>
+      </div>
+    )
+  }
+  <div class="words">
+    {topic && <p class="topic"><Tag size="sm">{topic}</Tag></p>}
+    <Heading level={headingLevel} size={variant === 'feature' ? 'h2' : 'h3'}><a class="title" href={href}>{title}</a></Heading>
+    {dek && <Text variant={variant === 'feature' ? 'lead' : 'body'} tone="muted">{dek}</Text>}
+    {meta && <Text variant="meta">{meta}</Text>}
+  </div>
+</article>
+
+<style>
+  .card {
+    position: relative;
+    display: grid;
+    gap: var(--space-5);
+    align-content: start;
+  }
+
+  .card[data-variant='feature'] {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: var(--space-10);
+    align-items: center;
+  }
+
+  .card[data-variant='compact'] {
+    padding-block-start: var(--space-5);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .picture {
+    overflow: hidden;
+    border-radius: var(--c-image-radius);
+  }
+
+  .zoom {
+    transition: transform var(--duration-slow) var(--ease-standard);
+  }
+
+  .card:hover .zoom {
+    transform: scale(1.02);
+  }
+
+  .words {
+    display: grid;
+    gap: var(--space-3);
+    align-content: start;
+  }
+
+  .topic {
+    margin: 0;
+  }
+
+  .title {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  /* the whole card follows the title's link */
+  .title::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .card:hover .title {
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-strong);
+    text-decoration-color: var(--color-highlight);
+    text-underline-offset: 0.12em;
+  }
+
+  .title:focus-visible {
+    outline: none;
+  }
+
+  .title:focus-visible::after {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+    border-radius: var(--c-image-radius);
+  }
+
+  @media (max-width: 56rem) {
+    .card[data-variant='feature'] {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-5);
+    }
+  }
+</style>

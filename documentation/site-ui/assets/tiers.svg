@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 420" role="img" aria-labelledby="t d" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <title id="t">The site's four tiers</title>
+  <desc id="d">Tokens at the bottom; fundamentals are built from tokens only; compounds from fundamentals and tokens; layouts from compounds and fundamentals. Pages use layouts. Arrows only point up: nothing uses a tier at its own level or above.</desc>
+  <style>
+    .band { fill: #f4f1eb; stroke: #d3ccc0; stroke-width: 1.5; }
+    .t0 { fill: #fdf1d6; stroke: #f4b942; }
+    .name { font-size: 22px; font-weight: 600; fill: #211e1a; }
+    .num { font-size: 40px; font-weight: 300; fill: #8a5a00; }
+    .note { font-size: 14px; fill: #655d53; }
+    .arrow { stroke: #3a3c9e; stroke-width: 2.5; fill: none; marker-end: url(#head); }
+    .head { fill: #3a3c9e; }
+    .pages { fill: #3a3c9e; }
+    .pages-text { font-size: 16px; font-weight: 600; fill: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .band { fill: #221f1b; stroke: #4a443c; }
+      .t0 { fill: #3a2a0a; stroke: #f4b942; }
+      .name { fill: #efeae2; }
+      .num { fill: #f7cb6b; }
+      .note { fill: #ada496; }
+      .arrow { stroke: #a9aef2; }
+      .head, .pages { fill: #a9aef2; }
+      .pages-text { fill: #12100e; }
+    }
+  </style>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0 L10 5 L0 10 z" /></marker>
+  </defs>
+  <rect class="pages" x="300" y="8" width="280" height="40" rx="20" />
+  <text class="pages-text" x="440" y="34" text-anchor="middle">Pages (content)</text>
+  <rect class="band" x="40" y="70" width="800" height="70" rx="18" />
+  <text class="num" x="72" y="120">3</text>
+  <text class="name" x="120" y="104">Layouts</text>
+  <text class="note" x="120" y="126">Whole pages, defined once: Landing, Index, Article, Library</text>
+  <rect class="band" x="40" y="160" width="800" height="70" rx="18" />
+  <text class="num" x="72" y="210">2</text>
+  <text class="name" x="120" y="194">Compounds</text>
+  <text class="note" x="120" y="216">The site's own pieces: header, hero, figure, gallery, lightbox, carousel, story card</text>
+  <rect class="band" x="40" y="250" width="800" height="70" rx="18" />
+  <text class="num" x="72" y="300">1</text>
+  <text class="name" x="120" y="284">Fundamentals</text>
+  <text class="note" x="120" y="306">Controls, type and media: button, select, checkbox, slider, image, prose, quote</text>
+  <rect class="band t0" x="40" y="340" width="800" height="70" rx="18" />
+  <text class="num" x="72" y="390">0</text>
+  <text class="name" x="120" y="374">Tokens and foundations</text>
+  <text class="note" x="120" y="396">DTCG tokens (light and dark), icons as data, pure behaviour modules, base styles</text>
+  <path class="arrow" d="M790 340 V 234" />
+  <path class="arrow" d="M790 250 V 144" />
+  <path class="arrow" d="M790 160 V 74" />
+  <path class="arrow" d="M540 70 V 52" />
+  <text class="note" x="690" y="330" text-anchor="end">each tier uses any tier below it, never its own</text>
+</svg>

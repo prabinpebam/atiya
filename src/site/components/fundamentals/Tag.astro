@@ -1,0 +1,106 @@
+---
+/**
+ * A tag: a topic, a status, a kind. Small and round. As a link it goes to everything with that tag.
+ * @tier fundamental
+ * @a11y A tag that's a link says where it goes by its words; a status tag isn't colour alone (its word carries it).
+ */
+import { svgOf, type IconName } from '../../design/icons';
+
+interface Props {
+  /** neutral: a topic; accent: the one that matters here; highlight: new or featured; positive, negative: a status. */
+  tone?: 'neutral' | 'accent' | 'highlight' | 'positive' | 'negative';
+  /** md 32 px (44 px to touch as a link), sm 24 px. */
+  size?: 'sm' | 'md';
+  /** Makes it a link to everything with this tag. */
+  href?: string;
+  /** An icon before the word (a status). */
+  icon?: IconName;
+}
+
+const { tone = 'neutral', size = 'md', href, icon } = Astro.props;
+const Tag = href ? 'a' : 'span';
+const i = icon ? svgOf(icon) : null;
+---
+
+<Tag class="tag" data-tone={tone} data-size={size} href={href}>
+  {
+    i && (
+      <svg class="icon" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name}>
+        <path fill="currentColor" d={i.d} />
+      </svg>
+    )
+  }
+  <slot />
+</Tag>
+
+<style>
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    min-height: var(--space-8);
+    padding: 0 var(--space-3);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .tag[data-size='sm'] {
+    min-height: var(--space-6);
+    padding: 0 var(--space-2);
+  }
+
+  a.tag {
+    min-height: var(--size-touch);
+    transition: background-color var(--duration-instant) var(--ease-standard);
+  }
+
+  a.tag:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
+
+  .tag[data-tone='accent'] {
+    border-color: transparent;
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .tag[data-tone='highlight'] {
+    border-color: transparent;
+    background: var(--color-highlight);
+    color: var(--color-on-highlight);
+  }
+
+  .tag[data-tone='positive'] {
+    border-color: transparent;
+    background: var(--color-positive-soft);
+    color: var(--color-text);
+  }
+
+  .tag[data-tone='negative'] {
+    border-color: transparent;
+    background: var(--color-negative-soft);
+    color: var(--color-text);
+  }
+
+  .tag[data-tone='positive'] .icon {
+    color: var(--color-positive);
+  }
+
+  .tag[data-tone='negative'] .icon {
+    color: var(--color-negative);
+  }
+
+  .icon {
+    width: var(--text-sm);
+    height: var(--text-sm);
+  }
+</style>

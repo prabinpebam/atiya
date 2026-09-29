@@ -1,0 +1,20 @@
+---
+import Example from '../library/Example.astro';
+import SiteHeader from '../components/compounds/SiteHeader.astro';
+import { withBase } from '../design/meta';
+
+const nav = [
+  { label: 'Work', href: withBase('/classic/workshop/'), current: true },
+  { label: 'Leadership', href: withBase('/classic/town-hall/') },
+  { label: 'Writing', href: withBase('/classic/library/') },
+  { label: 'About', href: withBase('/classic/post-office/') },
+];
+---
+
+<Example title="With sections and an action" layout="block" bleed description="Narrow the window: under 56 rem the sections fold into a menu. The theme switch is the custom select.">
+  <SiteHeader nav={nav} action={{ label: 'Explore in 3D', href: withBase('/play/'), icon: 'planet' }} navLabel="Sections (example)" />
+</Example>
+
+<Example title="Just the name" layout="block" bleed description="The landing's masthead: the name and the theme switch.">
+  <SiteHeader />
+</Example>

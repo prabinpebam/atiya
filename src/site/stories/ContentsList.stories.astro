@@ -1,0 +1,15 @@
+---
+import Example from '../library/Example.astro';
+import ContentsList from '../components/compounds/ContentsList.astro';
+import { withBase } from '../design/meta';
+
+const entries = [
+  { href: withBase('/classic/workshop/'), title: 'Workshop', kicker: 'Selected case studies', summary: 'Products, the bets, how the team shipped, and what changed.' },
+  { href: withBase('/classic/town-hall/'), title: 'Town Hall', kicker: 'How I lead', summary: 'Building and growing design teams, and the rituals behind them.' },
+  { href: withBase('/classic/library/'), title: 'Library', kicker: 'Writing', summary: 'Essays and notes on design leadership, systems and craft.' },
+];
+---
+
+<Example title="A contents page" layout="block" description="For a few entries in an order that means something: the numbers are the list’s own.">
+  <ContentsList entries={entries} label="Sections (example)" headingLevel={3} />
+</Example>

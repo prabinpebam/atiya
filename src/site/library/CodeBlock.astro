@@ -1,0 +1,65 @@
+---
+/**
+ * The library's code block: a story's source, monospaced on sunk paper, scrollable, with a copy
+ * button. Library-only (not a tier of the system).
+ */
+import IconButton from '../components/fundamentals/IconButton.astro';
+
+interface Props {
+  code: string;
+  /** Names the block for assistive tech ("Code: Variants"). */
+  label: string;
+}
+
+const { code, label } = Astro.props;
+---
+
+<div class="code-block" data-code-block>
+  <pre tabindex="0" aria-label={label}><code>{code}</code></pre>
+  <span class="copy"><IconButton label="Copy code" icon="copy" size="sm" tooltip="top" data-copy="" /></span>
+  <span class="sr-only" role="status" data-copy-status></span>
+</div>
+
+<style>
+  .code-block {
+    position: relative;
+  }
+
+  pre {
+    margin: 0;
+    max-height: 28rem;
+    overflow: auto;
+    padding: var(--space-5) var(--space-6);
+    padding-inline-end: var(--space-16);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-sunk);
+    color: var(--color-text);
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    line-height: var(--leading-body);
+    tab-size: 2;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-scrollbar-thumb) transparent;
+  }
+
+  .copy {
+    position: absolute;
+    inset-block-start: var(--space-2);
+    inset-inline-end: var(--space-2);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-code-block]').forEach((block) => {
+    const btn = block.querySelector<HTMLButtonElement>('[data-copy]');
+    const status = block.querySelector<HTMLElement>('[data-copy-status]');
+    btn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(block.querySelector('code')?.textContent ?? '');
+        if (status) status.textContent = 'Copied the code';
+      } catch {
+        if (status) status.textContent = "Couldn't copy: select the code and copy it instead";
+      }
+    });
+  });
+</script>

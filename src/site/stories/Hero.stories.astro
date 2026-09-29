@@ -1,0 +1,25 @@
+---
+import Example from '../library/Example.astro';
+import Hero from '../components/compounds/Hero.astro';
+import Button from '../components/fundamentals/Button.astro';
+import { sample } from '../design/samples';
+import { withBase } from '../design/meta';
+
+const plaza = sample('plaza');
+const dusk = sample('lighthouse-dusk');
+---
+
+<Example title="Split" layout="block" bleed description="Words and picture side by side; on a phone the picture comes first.">
+  <Hero level={2} title="A little planet" standfirst="Walk around a portfolio, or read it as plain pages." picture={plaza}>
+    <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet">Explore the planet</Button>
+    <Button variant="secondary" size="lg" href={withBase('/classic/')}>Classic site</Button>
+  </Hero>
+</Example>
+
+<Example title="Stacked" layout="block" bleed description="The picture below, wide: for a section’s opening.">
+  <Hero level={2} title="The lighthouse" kicker="Vision and design leadership" standfirst="Where design, AI and product craft are heading." picture={dusk} layout="stacked" size="h1" />
+</Example>
+
+<Example title="Type only" layout="block" bleed description="No picture: the headline carries the page.">
+  <Hero level={2} title="Notes" standfirst="Short pieces on design leadership, systems and craft." />
+</Example>

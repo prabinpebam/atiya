@@ -1,0 +1,19 @@
+---
+import Example from '../library/Example.astro';
+import { withBase } from '../design/meta';
+import Tag from '../components/fundamentals/Tag.astro';
+---
+
+<Example title="Tones" description="A topic, the one that matters here, something new, and a status (with a word, never colour alone).">
+  <Tag>Design systems</Tag>
+  <Tag tone="accent">Leadership</Tag>
+  <Tag tone="highlight">New</Tag>
+  <Tag tone="positive" icon="success">Published</Tag>
+  <Tag tone="negative" icon="error">Needs review</Tag>
+</Example>
+
+<Example title="Links and sizes" description="A tag that's a link goes to everything with that topic.">
+  <Tag href={withBase('/classic/workshop/')}>Case studies</Tag>
+  <Tag href={withBase('/classic/library/')}>Writing</Tag>
+  <Tag size="sm">Small</Tag>
+</Example>

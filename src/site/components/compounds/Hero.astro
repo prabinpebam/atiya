@@ -1,0 +1,160 @@
+---
+/**
+ * A page's opening: the title set large in soft Fraunces, a standfirst, the page's one or two actions,
+ * and a picture given room. Split puts the picture beside the words; stacked puts it below, wide;
+ * type leaves the picture out and lets the headline carry the page.
+ * @tier compound
+ * @a11y The title is the page's h1; the picture has its own alt (or is marked decorative when the words say it all).
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Image from '../fundamentals/Image.astro';
+
+export interface HeroPicture {
+  src: string;
+  srcset?: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+interface Props {
+  /** The page’s title, set large. */
+  title: string;
+  /** The line under the title: what this page, or this person, is about. */
+  standfirst?: string;
+  /** A short label above the title, in sentence case (only when it tells the reader something). */
+  kicker?: string;
+  /** The picture beside or below the words. */
+  picture?: HeroPicture;
+  /** split: words and picture side by side; stacked: the picture below, wide; type: no picture. */
+  layout?: 'split' | 'stacked' | 'type';
+  /** display for a front page; h1 for an inner page. */
+  size?: 'display' | 'h1';
+  /** The title's level: 1 on a page, 2 when shown inside another page (the library). */
+  level?: 1 | 2;
+}
+
+const { title, standfirst, kicker, picture, layout = picture ? 'split' : 'type', size = 'display', level = 1 } = Astro.props;
+const hasActions = Astro.slots.has('default');
+const titleId = `hero-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class="hero" data-layout={layout} aria-labelledby={titleId}>
+  <div class="words">
+    {kicker && <Text variant="label" tone="muted">{kicker}</Text>}
+    <Heading level={level} size={size} id={titleId}>{title}</Heading>
+    {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
+    {
+      hasActions && (
+        <div class="actions">
+          <slot />
+        </div>
+      )
+    }
+    {Astro.slots.has('note') && <div class="note"><slot name="note" /></div>}
+  </div>
+  {
+    picture && layout !== 'type' && (
+      <div class="picture">
+        <Image
+          src={picture.src}
+          srcset={picture.srcset}
+          sizes={layout === 'split' ? '(max-width: 56rem) 92vw, 46vw' : '(max-width: 76rem) 92vw, 76rem'}
+          alt={picture.alt}
+          width={picture.width}
+          height={picture.height}
+          ratio={layout === 'split' ? '4/3' : '21/9'}
+          radius="feature"
+          priority
+        />
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .hero {
+    display: grid;
+    gap: var(--space-12);
+    align-items: center;
+    max-width: var(--size-wide);
+    margin-inline: auto;
+    padding: var(--space-section) var(--space-gutter) 0;
+  }
+
+  .hero[data-layout='split'] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+
+  .hero[data-layout='stacked'] {
+    gap: var(--space-block);
+  }
+
+  .words {
+    display: grid;
+    gap: var(--space-6);
+    align-content: center;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-block-start: var(--space-2);
+  }
+
+  .note {
+    max-width: var(--size-measure-narrow);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* the site's one page-load moment: the words rise into place, the picture settles (no fade on
+     text, so its contrast never dips); reduced motion leaves everything where it is */
+  @media (prefers-reduced-motion: no-preference) {
+    .words > * {
+      animation: rise var(--duration-slower) var(--ease-enter) both;
+    }
+
+    .words > :nth-child(2) {
+      animation-delay: var(--duration-instant);
+    }
+
+    .words > :nth-child(3) {
+      animation-delay: var(--duration-fast);
+    }
+
+    .words > :nth-child(n + 4) {
+      animation-delay: var(--duration-base);
+    }
+
+    .picture {
+      animation: settle var(--duration-slower) var(--ease-enter) both;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      transform: translateY(var(--space-4));
+    }
+  }
+
+  @keyframes settle {
+    from {
+      opacity: 0;
+      transform: scale(1.03);
+    }
+  }
+
+  @media (max-width: 56rem) {
+    .hero[data-layout='split'] {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-8);
+    }
+
+    .hero[data-layout='split'] .picture {
+      order: -1;
+    }
+  }
+</style>

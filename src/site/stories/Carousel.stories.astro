@@ -1,0 +1,20 @@
+---
+import Example from '../library/Example.astro';
+import Carousel from '../components/compounds/Carousel.astro';
+import Lightbox from '../components/compounds/Lightbox.astro';
+import { SAMPLES } from '../design/samples';
+---
+
+<Example title="A quiet carousel" layout="block" description="There is no rotation: the reader moves slide by slide.">
+  <Carousel items={SAMPLES.slice(0, 5)} label="Painted planet tour" lightbox="carousel-quiet" />
+</Example>
+
+<Example title="With a peek" layout="block" description="A sliver of the next slide hints that there is more to see.">
+  <Carousel items={SAMPLES} label="Planet scenes" peek lightbox="carousel-peek" />
+</Example>
+
+<Example title="Content width" layout="block" description="The same controls work in a narrower story column.">
+  <Carousel items={SAMPLES.slice(2, 6)} label="Water and dusk scenes" width="content" />
+</Example>
+
+<Lightbox />

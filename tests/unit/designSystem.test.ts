@@ -10,7 +10,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(__dirname, '../..');
-const STYLES = ['base', 'components', 'site', 'hud', 'panels'].map((f) => join(ROOT, 'src/styles', `${f}.css`));
+const STYLES = ['base', 'components', 'hud', 'panels'].map((f) => join(ROOT, 'src/styles', `${f}.css`));
 const TOKENS_CSS = readFileSync(join(ROOT, 'src/styles/tokens.css'), 'utf8');
 const TOKENS_JSON = JSON.parse(readFileSync(join(ROOT, 'src/design/tokens.json'), 'utf8'));
 

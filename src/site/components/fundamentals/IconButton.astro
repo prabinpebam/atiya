@@ -1,0 +1,203 @@
+---
+/**
+ * A round button with only an icon. Its label is its accessible name and shows as a tooltip on hover
+ * and keyboard focus, so nobody has to guess what it does.
+ * @tier fundamental
+ * @a11y The label is required: it names the button (aria-label) and is the tooltip's text.
+ * @a11y A toggle takes pressed (aria-pressed); a link takes href.
+ * @a11y At least 44 px to touch at every size.
+ * @key Enter: activates it
+ * @key Space: activates a button
+ */
+import { svgOf, type IconName } from '../../design/icons';
+
+interface Props {
+  /** What it does, as a verb ("Close", "Next image"). Names it and is the tooltip. */
+  label: string;
+  /** Which icon (src/site/design/icons.ts). */
+  icon: IconName;
+  /** quiet: no fill until hovered; secondary: outlined; primary: filled with the accent; overlay: on a photograph or the lightbox's smoke. */
+  variant?: 'quiet' | 'secondary' | 'primary' | 'overlay';
+  /** sm 40 px (44 to touch), md 48 px, lg 56 px. */
+  size?: 'sm' | 'md' | 'lg';
+  /** Makes it a link. */
+  href?: string;
+  /** A toggle's state. */
+  pressed?: boolean;
+  /** Can’t be pressed. */
+  disabled?: boolean;
+  /** Where the tooltip shows; none hides it (when the label is visible nearby). */
+  tooltip?: 'bottom' | 'top' | 'none';
+  /** A <button>’s type. */
+  type?: 'button' | 'submit';
+  /** The element’s id. */
+  id?: string;
+  /** What it opens or changes. */
+  'aria-controls'?: string;
+  /** Whether what it controls is open. */
+  'aria-expanded'?: 'true' | 'false';
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, icon, variant = 'quiet', size = 'md', href, pressed, disabled = false, tooltip = 'bottom', type = 'button', ...rest } = Astro.props;
+const isLink = href !== undefined && !disabled;
+const Tag = isLink ? 'a' : 'button';
+const i = svgOf(icon);
+---
+
+<Tag
+  class="icon-button"
+  data-variant={variant}
+  data-size={size}
+  data-tip={tooltip === 'none' ? undefined : tooltip}
+  data-label={label}
+  aria-label={label}
+  aria-pressed={pressed === undefined ? undefined : pressed ? 'true' : 'false'}
+  href={isLink ? href : undefined}
+  type={isLink ? undefined : type}
+  disabled={!isLink && disabled ? true : undefined}
+  {...rest}
+>
+  <svg class="glyph" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name}><path fill="currentColor" d={i.d}></path></svg>
+</Tag>
+
+<style>
+  .icon-button {
+    position: relative;
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: var(--c-control-height-md);
+    height: var(--c-control-height-md);
+    padding: 0;
+    border: var(--border-control) solid transparent;
+    border-radius: var(--radius-round);
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+      background-color var(--duration-instant) var(--ease-standard),
+      color var(--duration-instant) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .icon-button[data-size='sm'] {
+    width: var(--c-control-height-sm);
+    height: var(--c-control-height-sm);
+  }
+
+  .icon-button[data-size='sm']::before {
+    content: '';
+    position: absolute;
+    inset: calc((var(--c-control-height-sm) - var(--size-touch)) / 2);
+    border-radius: var(--radius-round);
+  }
+
+  .icon-button[data-size='lg'] {
+    width: var(--c-control-height-lg);
+    height: var(--c-control-height-lg);
+  }
+
+  .glyph {
+    width: var(--size-icon);
+    height: var(--size-icon);
+  }
+
+  .icon-button[data-size='lg'] .glyph {
+    width: var(--size-icon-lg);
+    height: var(--size-icon-lg);
+  }
+
+  .icon-button:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
+
+  .icon-button[data-variant='secondary'] {
+    border-color: var(--color-border);
+  }
+
+  .icon-button[data-variant='secondary']:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  .icon-button[data-variant='primary'] {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+
+  .icon-button[data-variant='primary']:hover {
+    background: var(--color-accent-hover);
+    color: var(--color-on-accent);
+  }
+
+  /* on a photograph or the smoke: always the dark mode's raised surface */
+  .icon-button[data-variant='overlay'] {
+    color-scheme: dark;
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .icon-button[data-variant='overlay']:hover {
+    background: var(--color-bg-hover);
+  }
+
+  .icon-button[aria-pressed='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .icon-button:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+
+  .icon-button:disabled {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  /* the tooltip: the label, on hover and keyboard focus */
+  .icon-button[data-tip]::after {
+    content: attr(data-label);
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-start: calc(100% + var(--space-2));
+    z-index: var(--layer-dropdown);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, calc(var(--space-1) * -1));
+    transition:
+      opacity var(--duration-fast) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .icon-button[data-tip='top']::after {
+    inset-block-start: auto;
+    inset-block-end: calc(100% + var(--space-2));
+    transform: translate(-50%, var(--space-1));
+  }
+
+  @media (hover: hover) {
+    .icon-button[data-tip]:hover::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      transition-delay: var(--duration-slow);
+    }
+  }
+
+  .icon-button[data-tip]:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+</style>

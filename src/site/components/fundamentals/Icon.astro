@@ -1,0 +1,53 @@
+---
+/**
+ * A Font Awesome solid icon, drawn inline. Decorative by default; give it a label only when it stands
+ * alone and means something (a status), never as a button's only name (IconButton names itself).
+ * @tier fundamental
+ * @a11y Hidden from assistive tech unless it has a label, then it's an image with that name.
+ */
+import { svgOf, type IconName } from '../../design/icons';
+
+interface Props {
+  /** Which icon (the set is in src/site/design/icons.ts). */
+  name: IconName;
+  /** text: sits in a line of text (1.125 rem); lg: stands alone (1.5 rem); inherit: 1em. */
+  size?: 'text' | 'lg' | 'inherit';
+  /** Only for a meaningful icon on its own (a status mark). */
+  label?: string;
+}
+
+const { name, size = 'text', label } = Astro.props;
+const i = svgOf(name);
+---
+
+<svg
+  class="icon"
+  data-size={size}
+  viewBox={i.viewBox}
+  aria-hidden={label ? undefined : 'true'}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  focusable="false"
+  data-icon={i.name}><path fill="currentColor" d={i.d}></path></svg
+>
+
+<style>
+  .icon {
+    flex: none;
+    display: inline-block;
+    width: var(--size-icon);
+    height: var(--size-icon);
+    vertical-align: -0.15em;
+    overflow: visible;
+  }
+
+  .icon[data-size='lg'] {
+    width: var(--size-icon-lg);
+    height: var(--size-icon-lg);
+  }
+
+  .icon[data-size='inherit'] {
+    width: 1em;
+    height: 1em;
+  }
+</style>

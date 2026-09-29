@@ -24,6 +24,9 @@
   },
   "dependencies": {
     "@astrojs/react": "6.0.6",
+    "@fontsource-variable/figtree": "5.3.0",
+    "@fontsource-variable/fraunces": "5.3.0",
+    "@fontsource-variable/newsreader": "5.3.0",
     "@fortawesome/free-solid-svg-icons": "7.3.1",
     "@react-three/drei": "10.7.8",
     "@react-three/fiber": "9.7.0",

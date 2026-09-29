@@ -1,0 +1,102 @@
+---
+/**
+ * A component's props, read from its `interface Props` (registry.ts): name, type, default and what it
+ * does. Library-only.
+ */
+import type { PropDoc } from './registry';
+
+interface Props {
+  props: PropDoc[];
+  caption: string;
+}
+
+const { props, caption } = Astro.props;
+---
+
+<div class="wrap" tabindex="0" role="region" aria-label={caption}>
+  <table>
+    <caption class="sr-only">{caption}</caption>
+    <thead>
+      <tr><th scope="col">Prop</th><th scope="col">Type</th><th scope="col">Default</th><th scope="col">What it does</th></tr>
+    </thead>
+    <tbody>
+      {
+        props.map((p) => (
+          <tr>
+            <th scope="row">
+              <code>{p.name}</code>
+              {!p.optional && <span class="required">required</span>}
+            </th>
+            <td>
+              <code class="type">{p.type}</code>
+            </td>
+            <td>{p.default ? <code>{p.default}</code> : <span class="none">none</span>}</td>
+            <td>{p.description}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .wrap {
+    overflow-x: auto;
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-scrollbar-thumb) transparent;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+
+  th,
+  td {
+    padding: var(--space-3) var(--space-4);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-block-end: 0;
+  }
+
+  thead th {
+    background: var(--color-bg-sunk);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+  }
+
+  tbody th {
+    font-weight: var(--weight-regular);
+    white-space: nowrap;
+  }
+
+  code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+  }
+
+  .type {
+    color: var(--color-accent);
+    word-break: break-word;
+  }
+
+  .required {
+    display: block;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  .none {
+    color: var(--color-text-muted);
+  }
+</style>

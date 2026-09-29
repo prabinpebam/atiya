@@ -1,0 +1,21 @@
+---
+import Example from '../library/Example.astro';
+import Radio from '../components/fundamentals/Radio.astro';
+---
+
+<Example title="A group" layout="stack" description="Radios share a name when exactly one choice should win.">
+  <Radio name="entry" value="classic" label="Open classic" checked hint="Start with the paper-like website." />
+  <Radio name="entry" value="planet" label="Explore planet" hint="Start with the 3D little planet." />
+  <Radio name="entry" value="library" label="Browse library" hint="Start with the component catalogue." />
+</Example>
+
+<Example title="Horizontal" description="Short options can sit in a row when the labels stay easy to scan.">
+  <Radio name="density" value="calm" label="Show calm" checked />
+  <Radio name="density" value="rich" label="Show rich" />
+  <Radio name="density" value="dense" label="Show dense" />
+</Example>
+
+<Example title="Disabled" layout="stack">
+  <Radio name="release" value="current" label="Use current" checked />
+  <Radio name="release" value="draft" label="Use draft" disabled hint="Draft controls are not ready for the classic site." />
+</Example>

@@ -1,0 +1,518 @@
+---
+/**
+ * A dropdown to pick one option from a short list, with its own list (not the browser's): rounded,
+ * with icons, descriptions and a check on the chosen one. For two or three always-visible choices, use
+ * radio buttons instead.
+ * @tier fundamental
+ * @a11y The WAI-ARIA select-only combobox: a combobox that owns a listbox; the active option is
+ * announced through aria-activedescendant while focus stays on the combobox.
+ * @a11y The label is always there (visually hidden only with hideLabel); a hint and an error are tied to it.
+ * @a11y Works in a form: a hidden input carries the value, and it fires change.
+ * @key Down / Enter / Space: opens the list (on the chosen option)
+ * @key Up / Down: moves through the options
+ * @key Home / End: first / last option (opens the list if it's closed)
+ * @key Page Up / Page Down: ten options at a time
+ * @key Letters: jumps to the option that starts with what you type
+ * @key Enter / Space: chooses the option and closes the list
+ * @key Alt + Up: chooses the option and closes the list
+ * @key Tab: chooses the option and moves on
+ * @key Escape: closes the list without choosing
+ */
+import { svgOf, type IconName } from '../../design/icons';
+
+export interface SelectOption {
+  value: string;
+  label: string;
+  /** A second line under the label. */
+  description?: string;
+  icon?: IconName;
+  disabled?: boolean;
+}
+
+interface Props {
+  /** Names the field. Always present: hide it visually with hideLabel only when the context names it. */
+  label: string;
+  /** The choices, in order. */
+  options: SelectOption[];
+  /** The chosen option's value (the first option if left out and there's no placeholder). */
+  value?: string;
+  /** Shown until something is chosen. */
+  placeholder?: string;
+  /** The form field's name. */
+  name?: string;
+  /** The combobox’s id (the list and options derive theirs from it). */
+  id?: string;
+  /** A line under the field that helps choose. */
+  hint?: string;
+  /** What went wrong and how to fix it. */
+  error?: string;
+  /** Can’t be opened. */
+  disabled?: boolean;
+  /** Keeps the label for assistive tech but hides it (the header’s theme switch). */
+  hideLabel?: boolean;
+  /** md 48 px, sm 40 px. */
+  size?: 'sm' | 'md';
+  /** field: a text field with the value; icon: a round button showing the chosen option's icon (the theme switch). */
+  trigger?: 'field' | 'icon';
+  /** Which edge the list lines up with. */
+  align?: 'start' | 'end';
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, options, value, placeholder, name, id = `select-${Math.random().toString(36).slice(2, 8)}`, hint, error, disabled = false, hideLabel = false, size = 'md', trigger = 'field', align = 'start', ...rest } = Astro.props;
+const selectedIndex = Math.max(-1, options.findIndex((o) => o.value === value));
+const chosen = selectedIndex >= 0 ? options[selectedIndex] : placeholder ? null : options[0];
+const chosenIndex = chosen ? options.indexOf(chosen) : -1;
+const described = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
+const check = svgOf('check');
+const caret = svgOf('chevron-down');
+const iconOf = (n?: IconName) => (n ? svgOf(n) : null);
+const chosenIcon = iconOf(chosen?.icon);
+---
+
+<div class="select" data-select data-size={size} data-trigger={trigger} data-align={align} data-invalid={error ? '' : undefined} {...rest}>
+  <span class:list={['label', { 'sr-only': hideLabel }]} id={`${id}-label`}>{label}</span>
+  <div class="field">
+    <div
+      class="combo"
+      role="combobox"
+      id={id}
+      tabindex={disabled ? undefined : 0}
+      aria-controls={`${id}-list`}
+      aria-expanded="false"
+      aria-haspopup="listbox"
+      aria-labelledby={trigger === 'icon' ? `${id}-label ${id}-value` : `${id}-label`}
+      aria-describedby={described}
+      aria-invalid={error ? 'true' : undefined}
+      aria-disabled={disabled ? 'true' : undefined}
+      data-combo
+    >
+      {
+        chosenIcon && (
+          <svg class="value-icon" viewBox={chosenIcon.viewBox} aria-hidden="true" focusable="false" data-icon={chosenIcon.name} data-value-icon>
+            <path fill="currentColor" d={chosenIcon.d} />
+          </svg>
+        )
+      }
+      <span class:list={['value', { placeholder: !chosen, 'sr-only': trigger === 'icon' }]} id={`${id}-value`} data-value-text>{chosen ? chosen.label : placeholder}</span>
+      {
+        trigger === 'field' && (
+          <svg class="caret" viewBox={caret.viewBox} aria-hidden="true" focusable="false" data-icon={caret.name}>
+            <path fill="currentColor" d={caret.d} />
+          </svg>
+        )
+      }
+    </div>
+    <div class="list" role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`} tabindex="-1" data-list>
+      {
+        options.map((o, i) => {
+          const oi = iconOf(o.icon);
+          return (
+            <div
+              class="option"
+              role="option"
+              id={`${id}-opt-${i}`}
+              aria-selected={i === chosenIndex ? 'true' : 'false'}
+              aria-disabled={o.disabled ? 'true' : undefined}
+              data-value={o.value}
+              data-label={o.label}
+              data-option
+            >
+              {oi ? (
+                <svg class="option-icon" viewBox={oi.viewBox} aria-hidden="true" focusable="false" data-icon={oi.name}>
+                  <path fill="currentColor" d={oi.d} />
+                </svg>
+              ) : null}
+              <span class="option-text">
+                <span class="option-label">{o.label}</span>
+                {o.description && <span class="option-description">{o.description}</span>}
+              </span>
+              <svg class="tick" viewBox={check.viewBox} aria-hidden="true" focusable="false" data-icon={check.name}>
+                <path fill="currentColor" d={check.d} />
+              </svg>
+            </div>
+          );
+        })
+      }
+    </div>
+  </div>
+  {name && <input type="hidden" name={name} value={chosen?.value ?? ''} data-input />}
+  {hint && <p class="hint" id={`${id}-hint`}>{hint}</p>}
+  {error && <p class="error" id={`${id}-error`}>{error}</p>}
+</div>
+
+<style>
+  .select {
+    display: grid;
+    gap: var(--space-2);
+    font-family: var(--font-ui);
+    min-width: 0;
+  }
+
+  .label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--color-text);
+  }
+
+  .field {
+    position: relative;
+  }
+
+  .combo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--c-control-height-md);
+    padding: 0 var(--c-control-pad-x);
+    border: var(--border-control) solid var(--c-control-border);
+    border-radius: var(--c-control-radius);
+    background: var(--c-control-fill);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    cursor: pointer;
+    user-select: none;
+    transition:
+      border-color var(--duration-instant) var(--ease-standard),
+      box-shadow var(--duration-instant) var(--ease-standard);
+  }
+
+  .select[data-size='sm'] .combo {
+    min-height: var(--c-control-height-sm);
+    font-size: var(--text-sm);
+  }
+
+  .combo:hover {
+    border-color: var(--c-control-border-hover);
+  }
+
+  .combo[aria-expanded='true'] {
+    border-color: var(--color-accent);
+  }
+
+  .combo[aria-disabled='true'] {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  .select[data-invalid] .combo {
+    border-color: var(--color-negative);
+  }
+
+  .value {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .value-icon,
+  .option-icon {
+    flex: none;
+    width: var(--size-icon);
+    height: var(--size-icon);
+  }
+
+  .caret {
+    flex: none;
+    width: var(--text-sm);
+    height: var(--text-sm);
+    color: var(--color-text-muted);
+    transition: transform var(--duration-base) var(--ease-spring);
+  }
+
+  .combo[aria-expanded='true'] .caret {
+    transform: rotate(180deg);
+  }
+
+  /* the icon trigger: a round button showing the chosen option's icon */
+  .select[data-trigger='icon'] {
+    display: inline-grid;
+  }
+
+  .select[data-trigger='icon'] .combo {
+    justify-content: center;
+    width: var(--c-control-height-md);
+    min-height: var(--c-control-height-md);
+    padding: 0;
+    border-color: transparent;
+    border-radius: var(--radius-round);
+    background: transparent;
+  }
+
+  .select[data-trigger='icon'] .combo:hover,
+  .select[data-trigger='icon'] .combo[aria-expanded='true'] {
+    background: var(--color-bg-hover);
+    border-color: transparent;
+  }
+
+  /* the list: our own, not the browser's */
+  .list {
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-start: calc(100% + var(--space-2));
+    z-index: var(--layer-dropdown);
+    min-width: 100%;
+    max-height: var(--c-listbox-max-height);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-1-5);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--c-listbox-radius);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-md);
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-scrollbar-thumb) transparent;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(calc(var(--space-2) * -1)) scale(0.98);
+    transform-origin: top center;
+    transition:
+      opacity var(--duration-fast) var(--ease-exit),
+      transform var(--duration-fast) var(--ease-exit),
+      visibility 0s linear var(--duration-fast);
+  }
+
+  .select[data-trigger='icon'] .list {
+    min-width: max-content;
+  }
+
+  .select[data-align='end'] .list {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    transform-origin: top right;
+  }
+
+  .select[data-placement='top'] .list {
+    inset-block-start: auto;
+    inset-block-end: calc(100% + var(--space-2));
+    transform-origin: bottom center;
+  }
+
+  .select[data-open] .list {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--duration-base) var(--ease-enter),
+      transform var(--duration-base) var(--ease-spring),
+      visibility 0s;
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--size-touch);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--c-listbox-option-radius);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    cursor: pointer;
+  }
+
+  .select[data-size='sm'] .option {
+    font-size: var(--text-sm);
+  }
+
+  .option[data-active] {
+    background: var(--color-bg-hover);
+  }
+
+  .option[aria-selected='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+    font-weight: var(--weight-semibold);
+  }
+
+  .option[aria-disabled='true'] {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  .option-text {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .option-description {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular);
+  }
+
+  .option[aria-selected='true'] .option-description {
+    color: var(--color-on-accent-soft);
+  }
+
+  .tick {
+    flex: none;
+    width: var(--text-sm);
+    height: var(--text-sm);
+    visibility: hidden;
+  }
+
+  .option[aria-selected='true'] .tick {
+    visibility: visible;
+  }
+
+  /* keyboard focus is on the combobox; the active option shows it too */
+  .combo:focus-visible + .list .option[data-active] {
+    outline: var(--border-strong) solid var(--color-focus);
+    outline-offset: calc(var(--border-strong) * -1);
+  }
+
+  .hint,
+  .error {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .error {
+    color: var(--color-negative);
+    font-weight: var(--weight-medium);
+  }
+</style>
+
+<script>
+  import { keyAction, matchIndex, TYPEAHEAD_MS } from '../../scripts/listbox';
+
+  function init(root: HTMLElement) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = '';
+    const combo = root.querySelector<HTMLElement>('[data-combo]')!;
+    const list = root.querySelector<HTMLElement>('[data-list]')!;
+    const options = [...root.querySelectorAll<HTMLElement>('[data-option]')];
+    const input = root.querySelector<HTMLInputElement>('[data-input]');
+    const valueText = root.querySelector<HTMLElement>('[data-value-text]')!;
+    const labels = options.map((o) => o.dataset.label ?? '');
+    let open = false;
+    let active = options.findIndex((o) => o.getAttribute('aria-selected') === 'true');
+    let typed = '';
+    let typedAt = 0;
+
+    const usable = (i: number) => i >= 0 && options[i]?.getAttribute('aria-disabled') !== 'true';
+
+    function setActive(i: number) {
+      active = i;
+      options.forEach((o, k) => o.toggleAttribute('data-active', k === i));
+      if (open && i >= 0) {
+        combo.setAttribute('aria-activedescendant', options[i].id);
+        options[i].scrollIntoView({ block: 'nearest' });
+      } else combo.removeAttribute('aria-activedescendant');
+    }
+
+    function place() {
+      root.removeAttribute('data-placement');
+      const r = combo.getBoundingClientRect();
+      const h = list.scrollHeight;
+      const below = innerHeight - r.bottom;
+      if (below < h + 16 && r.top > below) root.dataset.placement = 'top';
+    }
+
+    function setOpen(o: boolean) {
+      if (combo.getAttribute('aria-disabled') === 'true') return;
+      open = o;
+      combo.setAttribute('aria-expanded', String(o));
+      root.toggleAttribute('data-open', o);
+      if (o) place();
+      setActive(o ? active : -1);
+      if (!o) active = options.findIndex((x) => x.getAttribute('aria-selected') === 'true');
+    }
+
+    function choose(i: number) {
+      if (!usable(i)) return;
+      const prev = options.findIndex((x) => x.getAttribute('aria-selected') === 'true');
+      options.forEach((o, k) => o.setAttribute('aria-selected', String(k === i)));
+      const o = options[i];
+      valueText.textContent = o.dataset.label ?? '';
+      valueText.classList.remove('placeholder');
+      const icon = o.querySelector('.option-icon');
+      const shown = root.querySelector('[data-value-icon]');
+      if (icon && shown) {
+        shown.setAttribute('viewBox', icon.getAttribute('viewBox') ?? '');
+        shown.setAttribute('data-icon', icon.getAttribute('data-icon') ?? '');
+        shown.innerHTML = icon.innerHTML;
+      }
+      active = i;
+      if (prev === i) return;
+      if (input) {
+        input.value = o.dataset.value ?? '';
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      root.dispatchEvent(new CustomEvent('select-change', { bubbles: true, detail: { value: o.dataset.value } }));
+    }
+
+    combo.addEventListener('click', () => setOpen(!open));
+    combo.addEventListener('keydown', (e) => {
+      const act = keyAction(e, { open, active, count: options.length });
+      switch (act.type) {
+        case 'none':
+          return;
+        case 'open':
+          e.preventDefault();
+          setOpen(true);
+          setActive(act.active);
+          return;
+        case 'move':
+          e.preventDefault();
+          setActive(act.active);
+          return;
+        case 'commit':
+          if (act.keepFocus) e.preventDefault();
+          choose(act.active);
+          setOpen(false);
+          return;
+        case 'close':
+          e.preventDefault();
+          setOpen(false);
+          return;
+        case 'type': {
+          const now = performance.now();
+          typed = now - typedAt > TYPEAHEAD_MS ? act.char : typed + act.char;
+          typedAt = now;
+          const i = matchIndex(labels, typed, active);
+          if (i < 0) return;
+          if (!open) setOpen(true);
+          setActive(i);
+        }
+      }
+    });
+    combo.addEventListener('blur', (e) => {
+      if (!open) return;
+      const to = (e as FocusEvent).relatedTarget as Node | null;
+      if (to && list.contains(to)) return;
+      setOpen(false);
+    });
+    options.forEach((o, i) => {
+      o.addEventListener('pointermove', () => open && usable(i) && active !== i && setActive(i));
+      // keep focus on the combobox while the pointer is down on an option
+      o.addEventListener('pointerdown', (e) => e.preventDefault());
+      o.addEventListener('click', () => {
+        if (!usable(i)) return;
+        choose(i);
+        setOpen(false);
+        combo.focus();
+      });
+    });
+    list.addEventListener('pointerdown', (e) => e.preventDefault());
+    document.addEventListener('pointerdown', (e) => {
+      if (open && !root.contains(e.target as Node)) setOpen(false);
+    });
+    // set from outside (the theme switch shows the saved theme): no change event if it's already chosen
+    root.addEventListener('select-set', (e) => {
+      const i = options.findIndex((o) => o.dataset.value === (e as CustomEvent<{ value: string }>).detail.value);
+      if (i >= 0) choose(i);
+    });
+    root.dispatchEvent(new CustomEvent('select-ready', { bubbles: true }));
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-select]').forEach(init);
+</script>

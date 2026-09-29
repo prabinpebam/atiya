@@ -1,0 +1,187 @@
+---
+/**
+ * A set of pictures arranged as a quiet magazine gallery: a grid, a lead-image mosaic or a horizontal
+ * row. Each picture is a full-size link that the page’s Lightbox can enhance.
+ * @tier compound
+ * @a11y Every picture is a link to the full image, so the gallery works without JavaScript.
+ * @a11y The overall caption describes the set; each image still carries its own alt text.
+ * @key Enter: opens the focused picture link
+ */
+import Image from '../fundamentals/Image.astro';
+import Caption from '../fundamentals/Caption.astro';
+
+export interface GalleryItem {
+  /** The displayed image. */
+  src: string;
+  /** Responsive sources for the displayed image. */
+  srcset?: string;
+  /** What the picture shows. */
+  alt: string;
+  /** The picture’s caption in the lightbox. */
+  caption?: string;
+  /** The picture’s own width. */
+  width: number;
+  /** The picture’s own height. */
+  height: number;
+  /** The full-size image opened by the link. */
+  full?: string;
+  /** The thumbnail the lightbox filmstrip uses. */
+  thumb?: string;
+  /** Which part stays in a crop. */
+  focus?: string;
+}
+
+interface Props {
+  /** The pictures to show. */
+  items: GalleryItem[];
+  /** A caption for the whole set. */
+  caption?: string;
+  /** grid: equal cells; mosaic: first image leads; row: horizontal filmstrip. */
+  layout?: 'grid' | 'mosaic' | 'row';
+  /** Where the article layout may place it. */
+  width?: 'content' | 'popout' | 'wide' | 'full';
+  /** The lightbox group name. */
+  lightbox?: string;
+  /** The image sizes hint. */
+  sizes?: string;
+}
+
+const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes } = Astro.props;
+const columns = items.length > 2 ? '3' : '2';
+const ratio = layout === 'row' ? '4/3' : '1/1';
+---
+
+<figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width}>
+  <div class="items">
+    {
+      items.map((item) => {
+        const full = item.full ?? item.src;
+        const thumb = item.thumb ?? item.src;
+        const itemCaption = item.caption ?? '';
+        return (
+          <a class="card" href={full} data-lightbox={lightbox} data-caption={itemCaption} data-thumb={thumb} data-alt={item.alt}>
+            <span class="image-shell">
+              <Image
+                src={item.src}
+                srcset={item.srcset}
+                sizes={sizes}
+                alt={item.alt}
+                width={item.width}
+                height={item.height}
+                ratio={ratio}
+                focus={item.focus}
+                radius={width === 'full' ? 'none' : 'default'}
+                fill
+              />
+            </span>
+          </a>
+        );
+      })
+    }
+  </div>
+  {caption && <Caption>{caption}</Caption>}
+</figure>
+
+<style>
+  .gallery {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+  }
+
+  .items {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .card {
+    display: block;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .image-shell {
+    display: block;
+    height: 100%;
+    border-radius: var(--c-image-radius);
+    overflow: clip;
+    background: var(--c-image-placeholder);
+    transition: transform var(--duration-base) var(--ease-spring);
+  }
+
+  .card:hover .image-shell {
+    transform: translateY(calc(var(--space-0-5) * -1));
+  }
+
+  .gallery[data-breakout='full'] .image-shell {
+    border-radius: var(--radius-none);
+  }
+
+  .gallery[data-layout='row'] .items {
+    display: flex;
+    gap: var(--space-3);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-color: var(--c-scrollbar-thumb) transparent;
+    scrollbar-width: thin;
+  }
+
+  .gallery[data-layout='row'] .items::-webkit-scrollbar {
+    height: var(--c-scrollbar-size);
+  }
+
+  .gallery[data-layout='row'] .items::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background: var(--c-scrollbar-thumb);
+  }
+
+  .gallery[data-layout='row'] .items::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .gallery[data-layout='row'] .card {
+    flex: 0 0 var(--size-measure-narrow);
+    scroll-snap-align: start;
+  }
+
+  @media (min-width: 40rem) {
+    .gallery[data-layout='grid'][data-columns='2'] .items {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .gallery[data-layout='grid'][data-columns='3'] .items,
+    .gallery[data-layout='mosaic'] .items {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .gallery[data-layout='mosaic'] .card:first-child {
+      grid-column: span 2;
+      grid-row: span 2;
+    }
+
+    /* after the lead (four cells), rows of three: the last picture fills any gap at the end */
+    .gallery[data-layout='mosaic'] .card:last-child:nth-child(3n + 2) {
+      grid-column: span 2;
+    }
+
+    .gallery[data-layout='mosaic'] .card:last-child:nth-child(3n + 1):not(:first-child) {
+      grid-column: span 3;
+    }
+
+    .gallery[data-layout='mosaic'] .card:last-child:nth-child(3n + 2) .image-shell {
+      aspect-ratio: 2 / 1;
+    }
+
+    .gallery[data-layout='mosaic'] .card:last-child:nth-child(3n + 1):not(:first-child) .image-shell {
+      aspect-ratio: 3 / 1;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .gallery[data-layout='row'] .card {
+      flex-basis: 100%;
+    }
+  }
+</style>

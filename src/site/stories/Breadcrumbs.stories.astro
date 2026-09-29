@@ -1,0 +1,9 @@
+---
+import Example from '../library/Example.astro';
+import Breadcrumbs from '../components/compounds/Breadcrumbs.astro';
+import { withBase } from '../design/meta';
+---
+
+<Example title="Two levels down" description="The current page is the last item, not a link.">
+  <Breadcrumbs trail={[{ label: 'Home', href: withBase('/') }, { label: 'Work', href: withBase('/classic/workshop/') }]} current="Building a planet you can walk around" />
+</Example>

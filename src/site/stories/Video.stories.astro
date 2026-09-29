@@ -1,0 +1,19 @@
+---
+import Example from '../library/Example.astro';
+import Video from '../components/fundamentals/Video.astro';
+import { SAMPLE_VIDEO } from '../design/samples';
+
+const captions = { src: SAMPLE_VIDEO.captions, label: 'English', srclang: 'en' };
+---
+
+<Example title="A native video" layout="block" description="The browser controls do the work: captions, keyboard support, no autoplay and a poster while metadata loads.">
+  <Video src={SAMPLE_VIDEO.src} poster={SAMPLE_VIDEO.poster} width={SAMPLE_VIDEO.width} height={SAMPLE_VIDEO.height} captions={captions} ratio="3/2" />
+</Example>
+
+<Example title="Muted loop" layout="block" description="Looping is explicit and still starts only when the reader presses play.">
+  <Video src={SAMPLE_VIDEO.src} poster={SAMPLE_VIDEO.poster} width={SAMPLE_VIDEO.width} height={SAMPLE_VIDEO.height} captions={captions} ratio="16/9" muted loop />
+</Example>
+
+<Example title="Full bleed square" layout="block" description="Use the square edge when the article layout lets the video run to the edge.">
+  <Video src={SAMPLE_VIDEO.src} poster={SAMPLE_VIDEO.poster} width={SAMPLE_VIDEO.width} height={SAMPLE_VIDEO.height} captions={captions} ratio="16/9" radius="none" />
+</Example>

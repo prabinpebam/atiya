@@ -1,0 +1,99 @@
+---
+/**
+ * The page's frame: the document and its head (title, description, social card, the browser's theme
+ * colour, the fonts), the saved colour theme applied before the first paint, and a skip link. Every
+ * layout starts with it and puts id="main" on its main content.
+ * @tier compound
+ * @a11y Sets the page's language and a skip link to #main, the first thing Tab reaches.
+ * @a11y Applies the saved theme before paint, so there's no flash of the wrong mode.
+ */
+import '@fontsource-variable/fraunces/full.css';
+import '@fontsource-variable/fraunces/full-italic.css';
+import '@fontsource-variable/newsreader/wght.css';
+import '@fontsource-variable/newsreader/wght-italic.css';
+import '@fontsource-variable/figtree/wght.css';
+import '../../styles/site.css';
+import frauncesUrl from '@fontsource-variable/fraunces/files/fraunces-latin-full-normal.woff2?url';
+import figtreeUrl from '@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url';
+import { THEME_COLOR, withBase } from '../../design/meta';
+
+interface Props {
+  /** The document title: the page's own title, then the site's name. */
+  title: string;
+  /** The search and social-card summary. */
+  description?: string;
+  /** The social card's image (root-relative; the base path is added). */
+  image?: string;
+  /** What the social card's image shows. */
+  imageAlt?: string;
+  /** Keep the page out of search results (the layout demos). */
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = 'Portfolio of Prabin Pebam, Principal Design Manager.',
+  image = '/og-image.jpg',
+  imageAlt = 'A cozy tiny planet with a brick plaza, little buildings and a character, painted in soft colours.',
+  noindex = false,
+} = Astro.props;
+// social previews need an absolute URL: `site` is set when deploying
+const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content={THEME_COLOR.light} media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content={THEME_COLOR.dark} media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
+    <link rel="preload" href={frauncesUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={figtreeUrl} as="font" type="font/woff2" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={imageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script is:inline>
+      // the saved theme, before the first paint (scripts/theme.ts owns the rules)
+      try {
+        var t = localStorage.getItem('site.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <slot />
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    inset-inline-start: var(--space-4);
+    inset-block-start: var(--space-4);
+    z-index: var(--layer-skip);
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+    transform: translateY(-200%);
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .skip:focus {
+    transform: none;
+  }
+</style>

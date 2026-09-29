@@ -1,0 +1,88 @@
+---
+/**
+ * A focusable scrolling region with the site's slim custom scrollbar. Use it when a panel needs its
+ * own scroll without taking over the page.
+ * @tier fundamental
+ * @a11y The region is labelled, focusable, and uses native scrolling once focused.
+ * @a11y Keyboard scrolling stays native: arrows, Page keys, Home and End work by browser rules.
+ * @key Arrow keys: scrolls the focused region
+ * @key Page Up / Page Down: scrolls by a page
+ * @key Home / End: scrolls to an edge
+ */
+interface Props {
+  /** The region's accessible name. */
+  label: string;
+  /** Which directions can scroll. */
+  orientation?: 'vertical' | 'horizontal' | 'both';
+  /** Maximum height when vertical scrolling is available. */
+  maxHeight?: 'sm' | 'md' | 'lg';
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, orientation = 'vertical', maxHeight = 'md', ...rest } = Astro.props;
+---
+
+<div class="scroll-area" role="region" tabindex="0" aria-label={label} data-orientation={orientation} data-max-height={maxHeight} {...rest}>
+  <slot />
+</div>
+
+<style>
+  .scroll-area {
+    max-block-size: var(--c-listbox-max-height);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border-radius: var(--radius-lg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-scrollbar-thumb) var(--c-scrollbar-track);
+  }
+
+  .scroll-area[data-max-height='sm'] {
+    max-block-size: calc(var(--c-listbox-max-height) - var(--space-20));
+  }
+
+  .scroll-area[data-max-height='lg'] {
+    max-block-size: calc(var(--c-listbox-max-height) + var(--space-24));
+  }
+
+  .scroll-area[data-orientation='vertical'] {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .scroll-area[data-orientation='horizontal'] {
+    max-block-size: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .scroll-area[data-orientation='both'] {
+    overflow: auto;
+  }
+
+  .scroll-area::-webkit-scrollbar {
+    inline-size: var(--c-scrollbar-size);
+    block-size: var(--c-scrollbar-size);
+  }
+
+  .scroll-area::-webkit-scrollbar-track {
+    border-radius: var(--radius-pill);
+    background: var(--c-scrollbar-track);
+  }
+
+  .scroll-area::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background: var(--c-scrollbar-thumb);
+  }
+
+  .scroll-area::-webkit-scrollbar-thumb:hover {
+    background: var(--c-scrollbar-thumb-hover);
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    .scroll-area {
+      scrollbar-width: thin;
+      scrollbar-color: var(--c-scrollbar-thumb) var(--c-scrollbar-track);
+    }
+  }
+</style>

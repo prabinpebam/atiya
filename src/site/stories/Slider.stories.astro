@@ -1,0 +1,16 @@
+---
+import Example from '../library/Example.astro';
+import Slider from '../components/fundamentals/Slider.astro';
+---
+
+<Example title="Density" layout="stack" description="The filled track and output update as the native range input changes.">
+  <Slider label="Density" name="density" min={0} max={100} value={55} format="percent" hint="Preview how much content a design page shows at once." />
+</Example>
+
+<Example title="With units" layout="stack">
+  <Slider label="Delay" name="delay" min={0} max={12} step={0.5} value={3.5} unit=" s" hint="Tune the wait before the next image changes." />
+</Example>
+
+<Example title="Disabled" layout="stack">
+  <Slider label="Volume" min={0} max={100} value={40} format="percent" disabled hint="Audio controls live in the planet experience." />
+</Example>

@@ -1,0 +1,164 @@
+---
+/**
+ * The rest: the z-index layers stacked in order, the breakpoints, opacity, and every component token
+ * grouped by its component, with what it resolves to in each mode. Library-only.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import { siteTokens } from '../../design/tokens';
+import { resolve, aliasOf } from '../../design/tokenModel';
+import { tokenAnchor, tokenHref } from '../tokenLinks';
+
+const m = siteTokens();
+const layers = m.tokens.filter((t) => t.path[0] === 'layer');
+const bps = m.tokens.filter((t) => t.path[0] === 'breakpoint' || t.path[0] === 'opacity');
+const comps = new Map<string, typeof m.tokens>();
+for (const t of m.tokens.filter((x) => x.path[0] === 'c')) {
+  if (!comps.has(t.path[1])) comps.set(t.path[1], []);
+  comps.get(t.path[1])!.push(t);
+}
+const aliasName = (p: string) => `--${p.replace(/\./g, '-')}`;
+---
+
+<section class="block" aria-labelledby="layers">
+  <Heading level={2} size="h2" id="layers">Layers</Heading>
+  <Text narrow>The only z-index values in the site, from the page up to the skip link.</Text>
+  <ol class="stack" reversed>
+    {
+      [...layers].reverse().map((t, i) => (
+        <li id={tokenAnchor(t.name)} style={`--i: ${i}`}>
+          <code>{t.name}</code>
+          <Text as="span" variant="meta">
+            {resolve(t, m.byPath)}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+<section class="block" aria-labelledby="bps">
+  <Heading level={2} size="h2" id="bps">Breakpoints and opacity</Heading>
+  <Text narrow>CSS can’t read a variable in a media query, so a test checks that every width query uses one of these values.</Text>
+  <ul class="rows">
+    {
+      bps.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <code>{t.name}</code>
+          <Text as="span" variant="meta">
+            {resolve(t, m.byPath)}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<section class="block" aria-labelledby="components">
+  <Heading level={2} size="h2" id="components">Component tokens</Heading>
+  <Text narrow>A component’s own decisions, named after it and built from the semantic tier: change a button’s padding here and every button follows.</Text>
+  {
+    [...comps].map(([name, list]) => (
+      <div class="comp">
+        <Heading level={3} size="h4">
+          {name}
+        </Heading>
+        <ul class="rows">
+          {list.map((t) => {
+            const a = aliasOf(t);
+            return (
+              <li id={tokenAnchor(t.name)}>
+                <code>{t.name}</code>
+                <span class="ref">
+                  {a ? (
+                    <a href={tokenHref(aliasName(a))}>
+                      <code>{aliasName(a)}</code>
+                    </a>
+                  ) : (
+                    <code>{resolve(t, m.byPath)}</code>
+                  )}
+                </span>
+                <Text as="span" variant="meta">
+                  {t.dark !== undefined || (a && resolve(t, m.byPath, 'light') !== resolve(t, m.byPath, 'dark'))
+                    ? `${resolve(t, m.byPath, 'light')} / ${resolve(t, m.byPath, 'dark')}`
+                    : resolve(t, m.byPath)}
+                </Text>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ))
+  }
+</section>
+
+<style>
+  .block {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .stack,
+  .rows {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .stack {
+    gap: var(--space-2);
+  }
+
+  .stack li {
+    display: grid;
+    grid-template-columns: minmax(10rem, 13rem) minmax(3rem, 4rem) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: center;
+    margin-inline-start: calc(var(--i) * var(--space-4));
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .rows li {
+    display: grid;
+    grid-template-columns: minmax(12rem, 18rem) minmax(10rem, 16rem) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: baseline;
+    padding-block: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .comp {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .ref a {
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 56rem) {
+    .stack li,
+    .rows li {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-1);
+      margin-inline-start: 0;
+    }
+  }
+</style>

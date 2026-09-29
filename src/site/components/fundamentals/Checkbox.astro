@@ -1,0 +1,185 @@
+---
+/**
+ * A single checkbox for one on/off choice. Use it when the choice can stand alone, or let
+ * ChoiceGroup make a related set.
+ * @tier fundamental
+ * @a11y A native checkbox carries the state, including mixed when indeterminate is set.
+ * @a11y The label is always visible, and the whole row is at least 44 px and clickable.
+ * @a11y Hints are tied to the input with aria-describedby.
+ * @key Space: toggles it
+ */
+import { svgOf } from '../../design/icons';
+
+interface Props {
+  /** The visible label when no slot is supplied. */
+  label?: string;
+  /** The form field's name. */
+  name?: string;
+  /** The submitted value. */
+  value?: string;
+  /** The input's id. */
+  id?: string;
+  /** Starts checked. */
+  checked?: boolean;
+  /** Shows the mixed state until the user changes it. */
+  indeterminate?: boolean;
+  /** Prevents changes and softens the row. */
+  disabled?: boolean;
+  /** Supporting text under the label. */
+  hint?: string;
+  /** Makes the control required in a form. */
+  required?: boolean;
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, name, value = 'on', id = `checkbox-${Math.random().toString(36).slice(2, 8)}`, checked = false, indeterminate = false, disabled = false, hint, required = false, ...rest } = Astro.props;
+const check = svgOf('check');
+const minus = svgOf('minus');
+const hasSlot = Astro.slots.has('default');
+const described = hint ? `${id}-hint` : undefined;
+---
+
+<label class="checkbox" data-checkbox data-indeterminate={indeterminate ? '' : undefined} data-disabled={disabled ? '' : undefined} {...rest}>
+  <span class="box">
+    <input
+      class="input"
+      type="checkbox"
+      id={id}
+      name={name}
+      value={value}
+      checked={checked}
+      disabled={disabled}
+      required={required}
+      aria-describedby={described}
+      aria-checked={indeterminate ? 'mixed' : undefined}
+      data-control
+    />
+    <svg class="mark" viewBox={check.viewBox} aria-hidden="true" focusable="false" data-icon={check.name}>
+      <path fill="currentColor" d={check.d} />
+    </svg>
+    <svg class="minus" viewBox={minus.viewBox} aria-hidden="true" focusable="false" data-icon={minus.name}>
+      <path fill="currentColor" d={minus.d} />
+    </svg>
+  </span>
+  <span class="content">
+    <span class="label">{hasSlot ? <slot /> : label}</span>
+    {hint && <span class="hint" id={`${id}-hint`}>{hint}</span>}
+  </span>
+</label>
+
+<style>
+  .checkbox {
+    display: grid;
+    grid-template-columns: var(--c-check-size) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--size-touch);
+    font-family: var(--font-ui);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .checkbox[data-disabled] {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  .box {
+    position: relative;
+    display: grid;
+    place-items: center;
+    inline-size: var(--c-check-size);
+    block-size: var(--c-check-size);
+  }
+
+  .input {
+    appearance: none;
+    inline-size: var(--c-check-size);
+    block-size: var(--c-check-size);
+    margin: 0;
+    border: var(--border-control) solid var(--c-control-border);
+    border-radius: var(--c-check-radius);
+    background: var(--c-control-fill);
+    cursor: inherit;
+    transition:
+      background-color var(--duration-instant) var(--ease-standard),
+      border-color var(--duration-instant) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .input:hover {
+    border-color: var(--c-control-border-hover);
+  }
+
+  .input:checked,
+  .input:indeterminate {
+    border-color: var(--c-check-on);
+    background: var(--c-check-on);
+  }
+
+  .input:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+
+  .input:disabled {
+    cursor: not-allowed;
+  }
+
+  .mark,
+  .minus {
+    position: absolute;
+    inline-size: var(--text-sm);
+    block-size: var(--text-sm);
+    color: var(--c-check-mark);
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+    transition:
+      opacity var(--duration-fast) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .input:checked ~ .mark,
+  .input:indeterminate ~ .minus {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .input:indeterminate ~ .mark {
+    opacity: 0;
+  }
+
+  .content {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .label {
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+  }
+
+  .hint {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-checkbox]').forEach((root) => {
+    if (root.dataset.ready) return;
+    root.dataset.ready = '';
+    const input = root.querySelector<HTMLInputElement>('[data-control]');
+    if (!input) return;
+    input.indeterminate = root.dataset.indeterminate !== undefined;
+    input.addEventListener('change', () => {
+      root.removeAttribute('data-indeterminate');
+      input.indeterminate = false;
+      input.removeAttribute('aria-checked');
+    });
+  });
+</script>

@@ -1,0 +1,229 @@
+---
+/**
+ * A video with a caption: either a local file using the Video fundamental, or a privacy-friendly
+ * YouTube/Vimeo facade that loads the remote player only after the reader presses play.
+ * @tier compound
+ * @a11y Embedded players start as a real link with a local poster and a "Play video" name.
+ * @a11y The iframe is created only after activation and carries the video’s title.
+ * @a11y Local files keep native controls, captions and no autoplay.
+ * @key Enter / Space: plays an embedded video facade
+ */
+import Video, { type VideoCaptions } from '../fundamentals/Video.astro';
+import Image from '../fundamentals/Image.astro';
+import Caption from '../fundamentals/Caption.astro';
+import { svgOf } from '../../design/icons';
+
+interface Props {
+  /** file: local media; youtube or vimeo: a facade that swaps to an iframe. */
+  kind?: 'file' | 'youtube' | 'vimeo';
+  /** The video title for the facade label and iframe. */
+  title: string;
+  /** The local MP4 file when kind is file. */
+  src?: string;
+  /** An optional WebM source when kind is file. */
+  webm?: string;
+  /** The provider video id when kind is youtube or vimeo. */
+  id?: string;
+  /** The local poster image. */
+  poster: string;
+  /** Responsive sources for the poster. */
+  posterSrcset?: string;
+  /** What the poster shows when it is not inside the labelled play link. */
+  posterAlt?: string;
+  /** The media’s own width. */
+  mediaWidth: number;
+  /** The media’s own height. */
+  mediaHeight: number;
+  /** A single captions track for local video. */
+  captions?: VideoCaptions;
+  /** The caption below the media. */
+  caption?: string;
+  /** Who made the video or poster. */
+  credit?: string;
+  /** Where the article layout may place it. */
+  width?: 'content' | 'popout' | 'wide' | 'full';
+  /** Crop to a shape. */
+  ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** Starts a local file silent. */
+  muted?: boolean;
+  /** Repeats a local file when it reaches the end. */
+  loop?: boolean;
+}
+
+const {
+  kind = 'file',
+  title,
+  src,
+  webm,
+  id,
+  poster,
+  posterSrcset,
+  posterAlt = '',
+  mediaWidth,
+  mediaHeight,
+  captions,
+  caption,
+  credit,
+  width: breakout = 'wide',
+  ratio = '16/9',
+  muted = false,
+  loop = false,
+} = Astro.props;
+const play = svgOf('play');
+const pageHref = kind === 'youtube' ? `https://www.youtube.com/watch?v=${id ?? ''}` : kind === 'vimeo' ? `https://vimeo.com/${id ?? ''}` : src;
+const embedSrc =
+  kind === 'youtube'
+    ? `https://www.youtube-nocookie.com/embed/${id ?? ''}?autoplay=1`
+    : kind === 'vimeo'
+      ? `https://player.vimeo.com/video/${id ?? ''}?autoplay=1&dnt=1`
+      : undefined;
+---
+
+<figure class="video-embed" data-kind={kind} data-breakout={breakout}>
+  {
+    kind === 'file' ? (
+      src && <Video src={src} webm={webm} poster={poster} width={mediaWidth} height={mediaHeight} captions={captions} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} muted={muted} loop={loop} />
+    ) : (
+      <div class="embed-box" data-ratio={ratio}>
+        <a class="facade" href={pageHref} aria-label={`Play video: ${title}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
+          <Image src={poster} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} />
+          <span class="play-mark" aria-hidden="true">
+            <svg class="play-icon" viewBox={play.viewBox} focusable="false" data-icon={play.name}><path fill="currentColor" d={play.d} /></svg>
+          </span>
+        </a>
+      </div>
+    )
+  }
+  {caption && <Caption credit={credit}>{caption}</Caption>}
+</figure>
+
+<style>
+  .video-embed {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+  }
+
+  .embed-box {
+    position: relative;
+    background: var(--c-image-placeholder);
+  }
+
+  .embed-box[data-ratio='1/1'] {
+    aspect-ratio: 1 / 1;
+  }
+
+  .embed-box[data-ratio='4/5'] {
+    aspect-ratio: 4 / 5;
+  }
+
+  .embed-box[data-ratio='3/4'] {
+    aspect-ratio: 3 / 4;
+  }
+
+  .embed-box[data-ratio='4/3'] {
+    aspect-ratio: 4 / 3;
+  }
+
+  .embed-box[data-ratio='3/2'] {
+    aspect-ratio: 3 / 2;
+  }
+
+  .embed-box[data-ratio='16/9'] {
+    aspect-ratio: 16 / 9;
+  }
+
+  .embed-box[data-ratio='21/9'] {
+    aspect-ratio: 21 / 9;
+  }
+
+  .facade {
+    position: relative;
+    display: block;
+    height: 100%;
+    color: var(--color-on-image);
+    text-decoration: none;
+  }
+
+  .facade::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--c-image-radius-feature);
+    background: var(--color-image-shade);
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-standard);
+  }
+
+  .video-embed[data-breakout='full'] .facade::after {
+    border-radius: var(--radius-none);
+  }
+
+  .facade:hover::after {
+    opacity: 1;
+  }
+
+  .play-mark {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    z-index: var(--layer-raised);
+    display: grid;
+    place-items: center;
+    width: var(--c-control-height-lg);
+    height: var(--c-control-height-lg);
+    border-radius: var(--radius-round);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-md);
+    transform: translate(-50%, -50%);
+    transition:
+      transform var(--duration-fast) var(--ease-spring),
+      background-color var(--duration-instant) var(--ease-standard);
+  }
+
+  .facade:hover .play-mark {
+    background: var(--color-bg-hover);
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+
+  .play-icon {
+    width: var(--size-icon-lg);
+    height: var(--size-icon-lg);
+    margin-inline-start: var(--space-0-5);
+  }
+
+  :global(.video-embed-frame) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: var(--c-image-radius-feature);
+    background: var(--c-image-placeholder);
+  }
+
+  .video-embed[data-breakout='full'] :global(.video-embed-frame) {
+    border-radius: var(--radius-none);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLAnchorElement>('[data-video-embed]').forEach((facade) => {
+    if (facade.dataset.ready !== undefined) return;
+    facade.dataset.ready = '';
+    facade.addEventListener('click', (event) => {
+      if (event instanceof MouseEvent && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+      const src = facade.dataset.embedSrc;
+      const title = facade.dataset.title || 'Video';
+      if (!src) return;
+      event.preventDefault();
+      const iframe = document.createElement('iframe');
+      iframe.className = 'video-embed-frame';
+      iframe.src = src;
+      iframe.title = title;
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+      facade.replaceWith(iframe);
+      iframe.focus();
+    });
+  });
+</script>

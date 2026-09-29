@@ -1,0 +1,126 @@
+---
+/**
+ * A small loading indicator for short waits. Prefer progress when you know how much work remains.
+ * @tier fundamental
+ * @a11y It is a role="status" region with a visually hidden label.
+ * @a11y Reduced motion keeps a static, readable loading mark.
+ */
+interface Props {
+  /** The status text announced to assistive technology. */
+  label?: string;
+  /** Ring spins an ink arc; dots bounce three soft dots. */
+  variant?: 'ring' | 'dots';
+  /** Visual size. */
+  size?: 'sm' | 'md' | 'lg';
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label = 'Loading', variant = 'ring', size = 'md', ...rest } = Astro.props;
+---
+
+<span class="spinner" role="status" data-variant={variant} data-size={size} {...rest}>
+  <span class="sr-only">{label}</span>
+  {
+    variant === 'ring' ? (
+      <span class="ring" aria-hidden="true"></span>
+    ) : (
+      <span class="dots" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </span>
+    )
+  }
+</span>
+
+<style>
+  .spinner {
+    display: inline-grid;
+    place-items: center;
+    inline-size: var(--c-control-height-md);
+    block-size: var(--c-control-height-md);
+    color: var(--color-accent);
+  }
+
+  .spinner[data-size='sm'] {
+    inline-size: var(--size-touch);
+    block-size: var(--size-touch);
+  }
+
+  .spinner[data-size='lg'] {
+    inline-size: var(--c-control-height-lg);
+    block-size: var(--c-control-height-lg);
+  }
+
+  .ring {
+    inline-size: var(--size-icon);
+    block-size: var(--size-icon);
+    border: var(--border-strong) solid var(--color-border);
+    border-inline-end-color: currentColor;
+    border-radius: var(--radius-round);
+    animation: spinner-turn var(--duration-slower) linear infinite;
+  }
+
+  .spinner[data-size='sm'] .ring {
+    inline-size: var(--text-sm);
+    block-size: var(--text-sm);
+  }
+
+  .spinner[data-size='lg'] .ring {
+    inline-size: var(--size-icon-lg);
+    block-size: var(--size-icon-lg);
+  }
+
+  .dots {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5);
+  }
+
+  .dots span {
+    inline-size: var(--space-2);
+    block-size: var(--space-2);
+    border-radius: var(--radius-round);
+    background: currentColor;
+    animation: spinner-bounce var(--duration-slower) var(--ease-spring) infinite;
+  }
+
+  .spinner[data-size='sm'] .dots span {
+    inline-size: var(--space-1-5);
+    block-size: var(--space-1-5);
+  }
+
+  .spinner[data-size='lg'] .dots span {
+    inline-size: var(--space-3);
+    block-size: var(--space-3);
+  }
+
+  .dots span:nth-child(2) {
+    animation-delay: var(--duration-fast);
+  }
+
+  .dots span:nth-child(3) {
+    animation-delay: var(--duration-base);
+  }
+
+  @keyframes spinner-turn {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @keyframes spinner-bounce {
+    50% {
+      transform: translateY(calc(var(--space-1) * -1));
+      opacity: var(--opacity-disabled);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring,
+    .dots span {
+      animation: none;
+    }
+  }
+</style>

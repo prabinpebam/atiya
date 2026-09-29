@@ -1,0 +1,108 @@
+---
+/**
+ * The page's foot: where else to go (the planet, the classic site, the design library, how the site was
+ * built), the colophon and the small print. Quiet, on the sunk paper.
+ * @tier compound
+ * @a11y A contentinfo landmark; the link list is labelled.
+ */
+import { SITE_NAME, withBase } from '../../design/meta';
+
+interface Props {
+  /** Links to show; the defaults are the site's ways around. */
+  links?: { label: string; href: string }[];
+  /** A line of small print under the colophon. */
+  note?: string;
+}
+
+const {
+  links = [
+    { label: 'Explore the planet', href: withBase('/play/') },
+    { label: 'Classic site', href: withBase('/classic/') },
+    { label: 'Design library', href: withBase('/design/') },
+    { label: 'How this site was built', href: withBase('/docs/') },
+  ],
+  note = 'Views are my own.',
+} = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="inner">
+    <p class="name">{SITE_NAME}</p>
+    <nav aria-label="Elsewhere on the site">
+      <ul>
+        {
+          links.map((l) => (
+            <li>
+              <a href={l.href}>{l.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <p class="colophon">Set in Fraunces, Newsreader and Figtree. {note} &copy; {year} {SITE_NAME}.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-block-start: var(--space-section);
+    background: var(--color-bg-sunk);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--space-8) var(--space-12);
+    max-width: var(--size-max);
+    margin-inline: auto;
+    padding: var(--space-16) var(--space-gutter) var(--space-12);
+  }
+
+  .name {
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-size: var(--text-h3);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: var(--space-1) var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
+
+  .colophon {
+    grid-column: 1 / -1;
+    padding-block-start: var(--space-6);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  @media (max-width: 40rem) {
+    .inner {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

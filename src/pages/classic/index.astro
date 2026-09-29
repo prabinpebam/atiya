@@ -1,27 +1,20 @@
 ---
-import { withBase } from '../../game/platform/base';
-import { getCollection } from 'astro:content';
-import ClassicLayout from '../../layouts/ClassicLayout.astro';
+import IndexLayout from '../../site/layouts/IndexLayout.astro';
+import ContentsList from '../../site/components/compounds/ContentsList.astro';
+import { classicNav, classicSections, exploreAction, sectionHref } from '../../site/classic';
 
-const entries = (await getCollection('landmarks')).sort((a, b) => a.data.order - b.data.order);
+const sections = await classicSections();
 ---
 
-<ClassicLayout title="Prabin Pebam — Principal Design Manager" exploreHref={withBase('/play/')}>
-  <section class="classic-hero">
-    <h1>Prabin Pebam</h1>
-    <p class="lede">Principal Design Manager. Placeholder tagline about building design teams and products people love.</p>
-  </section>
-  <ul class="classic-grid">
-    {
-      entries.map((e) => (
-        <li class="classic-card" style={`--accent: ${e.data.accent}`}>
-          <p class="kicker">{e.data.kicker}</p>
-          <h2>
-            <a href={withBase(`/classic/${e.id}/`)}>{e.data.title}</a>
-          </h2>
-          <p>{e.data.summary}</p>
-        </li>
-      ))
-    }
-  </ul>
-</ClassicLayout>
+<IndexLayout
+  title="Prabin Pebam — Principal Design Manager"
+  heading="Prabin Pebam"
+  standfirst="Principal Design Manager. Placeholder tagline about building design teams and products people love."
+  nav={classicNav(sections)}
+  action={exploreAction()}
+>
+  <ContentsList
+    label="Sections"
+    entries={sections.map((s) => ({ href: sectionHref(s.id), title: s.data.title, kicker: s.data.kicker, summary: s.data.summary }))}
+  />
+</IndexLayout>

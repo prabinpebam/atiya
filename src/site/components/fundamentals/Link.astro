@@ -1,0 +1,114 @@
+---
+/**
+ * A link. Inline links sit in running text, underlined; a standalone link ends a block ("Read the case
+ * study") in the interface face with a direction; a quiet link is for footers and meta. The words say
+ * where it goes, never a bare instruction to click or to read more.
+ * @tier fundamental
+ * @a11y Underlined in text (colour alone doesn't mark a link); an external link says it opens a new tab.
+ * @a11y The current page in a set of links is marked aria-current.
+ * @key Enter: follows it
+ */
+import { svgOf } from '../../design/icons';
+
+interface Props {
+  /** Where it goes (root-relative paths go through withBase). */
+  href: string;
+  /** inline: in running text; standalone: at the end of a block, with a direction; quiet: footers, meta. */
+  variant?: 'inline' | 'standalone' | 'quiet';
+  /** Opens in a new tab: adds the external icon and says so. */
+  external?: boolean;
+  /** Marks the current page in a set of links. */
+  current?: boolean;
+  /** A file to download (the link's text names it). */
+  download?: boolean;
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { href, variant = 'inline', external = false, current = false, download = false, ...rest } = Astro.props;
+const end = external ? svgOf('external') : variant === 'standalone' ? svgOf('arrow-right') : null;
+---
+
+<a
+  class="link"
+  data-variant={variant}
+  href={href}
+  target={external ? '_blank' : undefined}
+  rel={external ? 'noopener' : undefined}
+  aria-current={current ? 'page' : undefined}
+  download={download ? '' : undefined}
+  {...rest}
+  ><slot />{
+    end && (
+      <svg class="icon" viewBox={end.viewBox} aria-hidden="true" focusable="false" data-icon={end.name}>
+        <path fill="currentColor" d={end.d} />
+      </svg>
+    )
+  }{external && <span class="sr-only"> (opens in a new tab)</span>}</a
+>
+
+<style>
+  .link {
+    color: var(--color-accent);
+    text-decoration-line: underline;
+    text-decoration-thickness: var(--border-hairline);
+    text-underline-offset: 0.18em;
+    transition:
+      color var(--duration-instant) var(--ease-standard),
+      text-decoration-thickness var(--duration-instant) var(--ease-standard);
+  }
+
+  .link:hover {
+    color: var(--color-accent-hover);
+    text-decoration-thickness: var(--border-strong);
+  }
+
+  .icon {
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    margin-inline-start: 0.3em;
+    vertical-align: -0.05em;
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .link[data-variant='standalone'] {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    font-family: var(--font-ui);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+  }
+
+  .link[data-variant='standalone'] .icon {
+    width: var(--text-sm);
+    height: var(--text-sm);
+    margin-inline-start: var(--space-2);
+  }
+
+  .link[data-variant='standalone']:hover {
+    text-decoration-line: underline;
+  }
+
+  .link[data-variant='standalone']:hover .icon[data-icon='arrow-right'] {
+    transform: translateX(var(--space-1));
+  }
+
+  .link[data-variant='quiet'] {
+    color: var(--color-text-muted);
+    text-decoration-color: var(--color-rule);
+  }
+
+  .link[data-variant='quiet']:hover {
+    color: var(--color-text);
+    text-decoration-color: currentColor;
+  }
+
+  .link[aria-current='page'] {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+    text-decoration-color: var(--color-highlight);
+    text-decoration-thickness: var(--border-strong);
+  }
+</style>

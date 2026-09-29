@@ -1,0 +1,71 @@
+---
+/**
+ * The design library's page: the masthead with the library's own name, a side navigation of every
+ * token page, component and layout, and the content beside it. Defined once; every library page uses it.
+ * @tier layout
+ * @a11y One main landmark (id="main" for the skip link), a banner, two navigations with their own names, and a contentinfo.
+ */
+import PageShell from '../components/compounds/PageShell.astro';
+import SiteHeader from '../components/compounds/SiteHeader.astro';
+import SideNav from '../components/compounds/SideNav.astro';
+import SiteFooter from '../components/compounds/SiteFooter.astro';
+import { withBase } from '../design/meta';
+
+interface Props {
+  /** The page's title (the document title adds the library's name). */
+  title: string;
+  /** The search and social-card summary. */
+  description?: string;
+  /** The side navigation's groups, with the current page marked. */
+  nav: { title: string; items: { label: string; href: string; current?: boolean; note?: string }[] }[];
+}
+
+const { title, description, nav } = Astro.props;
+---
+
+<PageShell title={`${title} · Design library · Prabin Pebam`} description={description ?? `${title}, in the design library of Prabin Pebam's site.`}>
+  <SiteHeader section={{ label: 'Design library', href: withBase('/design/') }} action={{ label: 'Classic site', href: withBase('/classic/') }} />
+  <div class="library">
+    <aside class="side">
+      <SideNav label="Design library" groups={nav} />
+    </aside>
+    <main id="main" class="content" tabindex="-1">
+      <slot />
+    </main>
+  </div>
+  <SiteFooter />
+</PageShell>
+
+<style>
+  .library {
+    display: grid;
+    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+    gap: var(--space-12);
+    max-width: var(--size-max);
+    margin-inline: auto;
+    padding: var(--space-10) var(--space-gutter) 0;
+  }
+
+  .side {
+    position: sticky;
+    inset-block-start: calc(var(--c-header-height) + var(--space-6));
+    align-self: start;
+  }
+
+  .content {
+    min-width: 0;
+    outline: none;
+  }
+
+  @media (max-width: 56rem) {
+    .library {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-6);
+      padding-block-start: var(--space-6);
+    }
+
+    .side {
+      position: static;
+    }
+  }
+</style>

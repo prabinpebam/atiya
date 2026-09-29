@@ -1,0 +1,195 @@
+---
+/**
+ * A native range slider with a visible value. Use it for a continuous preference, such as density or
+ * reading pace, when exact typing is not needed.
+ * @tier fundamental
+ * @a11y A native range input keeps keyboard and assistive technology support.
+ * @a11y The output mirrors the current value and is tied to the control.
+ * @a11y Hints are tied to the input with aria-describedby.
+ * @key Left / Down: lowers the value
+ * @key Right / Up: raises the value
+ * @key Home / End: minimum / maximum
+ * @key Page Up / Page Down: larger steps
+ */
+import { clampRangeValue, formatSliderValue, sliderFillPercent, type SliderFormat } from '../../scripts/controls';
+
+interface Props {
+  /** The visible slider label. */
+  label: string;
+  /** The form field's name. */
+  name?: string;
+  /** The control's id. */
+  id?: string;
+  /** Minimum value. */
+  min?: number;
+  /** Maximum value. */
+  max?: number;
+  /** Step size. */
+  step?: number;
+  /** Initial value. */
+  value?: number;
+  /** Supporting text under the slider. */
+  hint?: string;
+  /** Suffix for number formatting, such as " min". */
+  unit?: string;
+  /** How the output is formatted. */
+  format?: SliderFormat;
+  /** Prevents changes. */
+  disabled?: boolean;
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, name, id = `slider-${Math.random().toString(36).slice(2, 8)}`, min = 0, max = 100, step = 1, value = min, hint, unit = '', format = 'number', disabled = false, ...rest } = Astro.props;
+const current = clampRangeValue(Number(value), Number(min), Number(max));
+const fill = sliderFillPercent(current, Number(min), Number(max));
+const output = formatSliderValue(current, format, unit);
+const described = hint ? `${id}-hint` : undefined;
+---
+
+<div class="slider" data-slider data-disabled={disabled ? '' : undefined} data-format={format} data-unit={unit} style={`--fill: ${fill}%`} {...rest}>
+  <div class="head">
+    <label class="label" for={id}>{label}</label>
+    <output class="value" for={id} data-output>{output}</output>
+  </div>
+  <input
+    class="range"
+    id={id}
+    name={name}
+    type="range"
+    min={min}
+    max={max}
+    step={step}
+    value={current}
+    disabled={disabled}
+    aria-describedby={described}
+    data-range
+  />
+  {hint && <p class="hint" id={`${id}-hint`}>{hint}</p>}
+</div>
+
+<style>
+  .slider {
+    display: grid;
+    gap: var(--space-2);
+    font-family: var(--font-ui);
+    color: var(--color-text);
+  }
+
+  .slider[data-disabled] {
+    opacity: var(--opacity-disabled);
+  }
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .value {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+  }
+
+  .range {
+    appearance: none;
+    inline-size: 100%;
+    min-block-size: var(--size-touch);
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .range:disabled {
+    cursor: not-allowed;
+  }
+
+  .range::-webkit-slider-runnable-track {
+    block-size: var(--c-slider-track);
+    border-radius: var(--radius-pill);
+    background: linear-gradient(to right, var(--c-slider-fill) 0%, var(--c-slider-fill) var(--fill), var(--c-slider-rest) var(--fill), var(--c-slider-rest) 100%);
+  }
+
+  .range::-webkit-slider-thumb {
+    appearance: none;
+    inline-size: var(--c-slider-thumb);
+    block-size: var(--c-slider-thumb);
+    margin-block-start: calc((var(--c-slider-track) - var(--c-slider-thumb)) / 2);
+    border: var(--border-strong) solid var(--c-control-fill);
+    border-radius: var(--radius-round);
+    background: var(--c-slider-fill);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .range:active::-webkit-slider-thumb {
+    transform: scale(1.08);
+  }
+
+  .range::-moz-range-track,
+  .range::-moz-range-progress {
+    block-size: var(--c-slider-track);
+    border-radius: var(--radius-pill);
+  }
+
+  .range::-moz-range-track {
+    background: var(--c-slider-rest);
+  }
+
+  .range::-moz-range-progress {
+    background: var(--c-slider-fill);
+  }
+
+  .range::-moz-range-thumb {
+    inline-size: var(--c-slider-thumb);
+    block-size: var(--c-slider-thumb);
+    border: var(--border-strong) solid var(--c-control-fill);
+    border-radius: var(--radius-round);
+    background: var(--c-slider-fill);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .range:active::-moz-range-thumb {
+    transform: scale(1.08);
+  }
+
+  .hint {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+</style>
+
+<script>
+  import { formatSliderValue, sliderFillPercent, type SliderFormat } from '../../scripts/controls';
+
+  document.querySelectorAll<HTMLElement>('[data-slider]').forEach((root) => {
+    if (root.dataset.ready) return;
+    root.dataset.ready = '';
+    const input = root.querySelector<HTMLInputElement>('[data-range]');
+    const output = root.querySelector<HTMLOutputElement>('[data-output]');
+    if (!input || !output) return;
+    const min = Number(input.min);
+    const max = Number(input.max);
+    const format = (root.dataset.format === 'percent' ? 'percent' : 'number') as SliderFormat;
+    const unit = root.dataset.unit ?? '';
+    const update = () => {
+      const value = Number(input.value);
+      root.style.setProperty('--fill', `${sliderFillPercent(value, min, max)}%`);
+      output.textContent = formatSliderValue(value, format, unit);
+    };
+    input.addEventListener('input', update);
+    update();
+  });
+</script>

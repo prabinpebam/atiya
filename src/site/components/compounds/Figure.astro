@@ -1,0 +1,97 @@
+---
+/**
+ * A magazine figure: one carefully sized picture, its caption and optional credit. If it belongs to a
+ * lightbox group, the picture is a plain link first and an enhanced lightbox trigger second.
+ * @tier compound
+ * @a11y The image alt says what the picture shows; the caption adds context and credit.
+ * @a11y With JavaScript off, a lightbox figure is still a link to the full-size picture.
+ * @key Enter: opens the picture link
+ */
+import Image from '../fundamentals/Image.astro';
+import Caption from '../fundamentals/Caption.astro';
+
+interface Props {
+  /** The displayed image. */
+  src: string;
+  /** What the picture shows. */
+  alt: string;
+  /** The picture’s own width. */
+  imageWidth: number;
+  /** The picture’s own height. */
+  imageHeight: number;
+  /** Responsive sources for the displayed image. */
+  srcset?: string;
+  /** The image’s responsive sizes hint. */
+  sizes?: string;
+  /** The full-size image opened by the lightbox link. */
+  full?: string;
+  /** The thumbnail the lightbox filmstrip uses. */
+  thumb?: string;
+  /** The figure caption. */
+  caption: string;
+  /** Who made the picture. */
+  credit?: string;
+  /** Where the article layout may place it. */
+  width?: 'content' | 'popout' | 'wide' | 'full';
+  /** Crop to a shape. Omit to keep the picture’s own ratio. */
+  ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** Which part stays in a crop. */
+  focus?: string;
+  /** Above the fold: load it first. */
+  priority?: boolean;
+  /** The lightbox group name. */
+  lightbox?: string;
+}
+
+const {
+  src,
+  alt,
+  imageWidth,
+  imageHeight,
+  srcset,
+  sizes,
+  full,
+  thumb,
+  caption,
+  credit,
+  width = 'content',
+  ratio,
+  focus,
+  priority = false,
+  lightbox,
+} = Astro.props;
+const radius = width === 'full' ? 'none' : 'default';
+const href = full ?? src;
+const lightboxThumb = thumb ?? src;
+---
+
+<figure class="figure" data-breakout={width}>
+  {
+    lightbox ? (
+      <a class="media-link" href={href} data-lightbox={lightbox} data-caption={caption} data-thumb={lightboxThumb} data-alt={alt}>
+        <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} focus={focus} radius={radius} priority={priority} />
+      </a>
+    ) : (
+      <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} focus={focus} radius={radius} priority={priority} />
+    )
+  }
+  <Caption credit={credit}>{caption}</Caption>
+</figure>
+
+<style>
+  .figure {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+  }
+
+  .media-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .media-link:hover {
+    color: inherit;
+  }
+</style>

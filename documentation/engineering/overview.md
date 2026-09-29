@@ -1,6 +1,6 @@
 # Engineering overview
 
-> **TL;DR.** An Astro 7 static site with two faces. The **classic site** is plain HTML pages generated from Markdown content. The **planet** at `/play/` is a React Three Fiber game loaded behind a capability gate. Simulation is kept in pure, unit-tested TypeScript; rendering is in React components, and the UI is semantic DOM. GitHub Actions builds the site with the base path `/atiya` and publishes it to GitHub Pages together with this documentation at `/atiya/docs/`. The rules agents follow day to day are in [AGENTS.md](https://github.com/prabinpebam/atiya/blob/main/AGENTS.md).
+> **TL;DR.** An Astro 7 static site with two faces. The **classic site** is plain HTML pages generated from Markdown content, set in its own design system (tokens, fundamentals, compounds, layouts, with a live library at `/design/`). The **planet** at `/play/` is a React Three Fiber game loaded behind a capability gate. Simulation is kept in pure, unit-tested TypeScript; rendering is in React components, and the UI is semantic DOM. GitHub Actions builds the site with the base path `/atiya` and publishes it to GitHub Pages together with this documentation at `/atiya/docs/`. The rules agents follow day to day are in [AGENTS.md](https://github.com/prabinpebam/atiya/blob/main/AGENTS.md).
 
 ## Stack
 
@@ -20,7 +20,7 @@ The reasons behind the stack are in [the tech-stack research](../poc-3d-navigati
 
 | Path | What lives there |
 |---|---|
-| `src/pages/` | `index.astro` (landing), `classic/` (plain pages per landmark), `play.astro` (the game page) |
+| `src/pages/` | `index.astro` (landing), `classic/` (plain pages per landmark), `design/` (the design library), `play.astro` (the game page) |
 | `src/content/landmarks/` | The landmark content (Markdown with frontmatter), shared by the classic pages and the game |
 | `src/game/platform/` | `gate.ts` (the capability gate: no React or three), `base.ts` (`withBase`), prefs |
 | `src/game/controller.ts` | The game controller: input, simulation step, targets, talk, travel, settings |
@@ -28,8 +28,9 @@ The reasons behind the stack are in [the tech-stack research](../poc-3d-navigati
 | `src/game/world/` | The scene: terrain, props, the kit, foliage, sky, day and night, water, wildlife; Chopper (`chopper/`), the home and family (`home/`), crafting (`craft/`) |
 | `src/game/inventory/`, `src/game/audio/`, `src/game/player/` | Backpack rules and items, the sound engine, the player characters |
 | `src/game/ui/` | The DOM HUD, dialogs, menus and the priority arbiter (`lanes.ts`) |
-| `src/design/tokens.json` | The design tokens: the source of truth for every UI value |
-| `src/styles/` | `tokens.css` (generated), `base`, `components`, `site`, `hud`, `panels` |
+| `src/design/tokens.json` | The game's design tokens: the source of truth for every game UI value |
+| `src/site/` | The website's own design system ([site design system](../site-ui/design-system.md)): DTCG tokens and foundations (`design/`, `scripts/`, `styles/`), fundamentals and compounds (`components/`), `layouts/`, stories and the design library (`stories/`, `library/`) |
+| `src/styles/` | The game's styles: `tokens.css` (generated), `base`, `components`, `hud`, `panels`, `cursors` |
 | `scripts/` | Asset and token builders (textures, audio, music, icons, characters, portraits, tokens), the bundle-size report and the performance audit |
 | `assets-src/` | Asset sources: texture prompts, the icon style set, character skins, `CREDITS.md` |
 | `public/` | Generated assets: textures, audio, models, icons, avatars |
@@ -47,7 +48,8 @@ The reasons behind the stack are in [the tech-stack research](../poc-3d-navigati
 | `npm run e2e` | Playwright and axe, against a `--mode test` build |
 | `npm run verify:prod` | Production build, bundle budgets (the game's initial JS at most 450 KB gzip; on-demand chunks within theirs), and a check that no test hook ships |
 | `npm run perf:audit` | Real-GPU load and frame measurements (see [the performance audit](../poc-3d-navigation/performance-audit.md)) |
-| `node scripts/build-tokens.mjs` | Regenerates `tokens.css` and [the token reference](../game-ui/tokens.md) |
+| `node scripts/build-tokens.mjs` | Regenerates the game's `tokens.css` and [the token reference](../game-ui/tokens.md) |
+| `node scripts/build-site-tokens.mjs` | Regenerates the site's `src/site/styles/tokens.css` and [its token reference](../site-ui/tokens.md) from the DTCG resolver |
 | `python scripts/build-textures.py`, `build-audio.py`, `gen-icons.py` | Regenerate textures, sounds and item icons; never hand-edit their outputs |
 
 ## Validation: run what the change needs

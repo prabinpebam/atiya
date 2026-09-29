@@ -1,0 +1,32 @@
+---
+import Example from '../library/Example.astro';
+import Button from '../components/fundamentals/Button.astro';
+---
+
+<Example title="Variants" description="One primary per view. Secondary for the alternative, quiet for a light action.">
+  <Button variant="primary">Explore the planet</Button>
+  <Button variant="secondary">Read the story</Button>
+  <Button variant="quiet">Show more work</Button>
+</Example>
+
+<Example title="Sizes" description="Small is 40 px tall but still 44 px to touch; large is for a page's one call to action.">
+  <Button variant="primary" size="sm">Save</Button>
+  <Button variant="primary">Save changes</Button>
+  <Button variant="primary" size="lg">Explore the planet</Button>
+</Example>
+
+<Example title="With icons" description="An icon before the label says what; after it, where.">
+  <Button variant="primary" icon="planet">Explore the planet</Button>
+  <Button variant="secondary" iconEnd="chevron-right">Next story</Button>
+  <Button variant="secondary" href="https://github.com/prabinpebam/atiya" external>See the code</Button>
+</Example>
+
+<Example title="States" description="Disabled can't be pressed; loading keeps its label and says it's busy.">
+  <Button variant="primary" disabled>Send message</Button>
+  <Button variant="primary" loading>Sending</Button>
+  <Button variant="secondary" disabled>Download</Button>
+</Example>
+
+<Example title="Full width" layout="stack" description="In a narrow column or a form's end.">
+  <Button variant="primary" block>Send message</Button>
+</Example>

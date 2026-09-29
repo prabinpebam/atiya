@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>The site is an Astro static site with a classic set of pages and a 3D planet you walk around to reach the same content. Start with <a href="seed-spec.md">the seed spec</a> for the why, <a href="poc-3d-navigation/spec.md">the planet spec</a> for the game, <a href="game-ui/design-system.md">the design system</a> for the UI rules and <a href="engineering/overview.md">the engineering overview</a> for how it's built and shipped.</p>
+  <p>The site is an Astro static site with a classic set of pages and a 3D planet you walk around to reach the same content. Start with <a href="seed-spec.md">the seed spec</a> for the why, <a href="poc-3d-navigation/spec.md">the planet spec</a> for the game, <a href="game-ui/design-system.md">the game's design system</a> and <a href="site-ui/design-system.md">the site's</a> for the UI rules and <a href="engineering/overview.md">the engineering overview</a> for how it's built and shipped.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -22,6 +22,7 @@
       <tr><td>The planet</td><td>Spec, plan, Definition of Done; stack and interaction research; art direction; performance audit</td></tr>
       <tr><td>Features</td><td>Collecting and the backpack; crafting and Chopper's house; Chopper; home and family; Prabin, navigation and the plaza</td></tr>
       <tr><td>Game UI</td><td>Design system, spec, touch controls, tokens, Definition of Done</td></tr>
+      <tr><td>Site UI</td><td>The website's own design system, visual language, spec, tokens, Definition of Done (separate from the game's)</td></tr>
       <tr><td>Engineering</td><td>Stack, repository map, commands, validation tiers, deploy, this docs site</td></tr>
     </tbody>
   </table>
@@ -39,6 +40,29 @@
     <a href="ia-navigation/README.md">
       <h3 class="slate-card__title">Information architecture</h3>
       <p class="slate-card__body">Journeys, sitemap, content model, navigation, templates and governance.</p>
+    </a>
+  </article>
+</div>
+
+<h2>The site's design system</h2>
+<p>The landing, the classic site and the design library are set like a clean printed magazine, with their own design system in four tiers (tokens, fundamentals, compounds, layouts). It's separate from the game's. The live catalogue is on the site at <code>/design/</code>.</p>
+<div class="slate-card-grid" data-cols="3">
+  <article class="slate-card slate-card--interactive">
+    <a href="site-ui/design-system.md">
+      <h3 class="slate-card__title">Site design system</h3>
+      <p class="slate-card__body">The tiers, the token rules, how to write a component and its story, and the checks.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="site-ui/visual-language.md">
+      <h3 class="slate-card__title">Visual language</h3>
+      <p class="slate-card__body">Paper, ink, an indigo spot and a marigold highlighter; Fraunces, Newsreader and Figtree; pictures given room.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="site-ui/spec.md">
+      <h3 class="slate-card__title">Spec: research to v2</h3>
+      <p class="slate-card__body">The research, the first draft, its critique, and the system as built, with its Definition of Done.</p>
     </a>
   </article>
 </div>

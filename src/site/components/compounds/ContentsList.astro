@@ -1,0 +1,133 @@
+---
+/**
+ * A magazine's contents page: each part of the site with its number, its name set large, and a line on
+ * what's there. For an index whose entries are few and in an order that means something (the classic
+ * site's sections); a grid of story cards suits a longer, picture-led index better.
+ * @tier compound
+ * @a11y An ordered list: the numbers are the list's own (shown, and read as positions); each entry is one link, on its name.
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+
+export interface ContentsEntry {
+  href: string;
+  title: string;
+  /** A short label for the kind of thing it is. */
+  kicker?: string;
+  summary?: string;
+}
+
+interface Props {
+  /** The entries, in their order (the numbers follow it). */
+  entries: ContentsEntry[];
+  /** The list's accessible name. */
+  label: string;
+  /** The entries’ heading level (h2 on an index). */
+  headingLevel?: 2 | 3;
+}
+
+const { entries, label, headingLevel = 2 } = Astro.props;
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<ol class="contents" aria-label={label}>
+  {
+    entries.map((e, i) => (
+      <li class="entry">
+        <span class="numeral" aria-hidden="true">
+          {pad(i + 1)}
+        </span>
+        <div class="words">
+          <Heading level={headingLevel} size="h2">
+            <a class="title" href={e.href}>
+              {e.title}
+            </a>
+          </Heading>
+          {e.kicker && <Text variant="label" tone="muted">{e.kicker}</Text>}
+          {e.summary && <Text tone="muted">{e.summary}</Text>}
+        </div>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .contents {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .entry {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(4rem, 8rem) minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: baseline;
+    padding-block: var(--space-8);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .entry:last-child {
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .numeral {
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display-crisp);
+    font-size: var(--text-h1);
+    font-weight: var(--weight-light);
+    font-variant-numeric: lining-nums tabular-nums;
+    line-height: var(--leading-tight);
+    color: var(--color-highlight-ink);
+  }
+
+  .words {
+    display: grid;
+    gap: var(--space-2);
+    max-width: var(--size-measure);
+  }
+
+  .title {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .title::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .entry:hover .title {
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-strong);
+    text-decoration-color: var(--color-highlight);
+    text-underline-offset: 0.12em;
+  }
+
+  .entry:hover .numeral {
+    color: var(--color-accent);
+  }
+
+  .numeral {
+    transition: color var(--duration-base) var(--ease-standard);
+  }
+
+  .title:focus-visible {
+    outline: none;
+  }
+
+  .title:focus-visible::after {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: calc(var(--border-focus-offset) * -1);
+    border-radius: var(--radius-lg);
+  }
+
+  @media (max-width: 40rem) {
+    .entry {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-2);
+    }
+  }
+</style>

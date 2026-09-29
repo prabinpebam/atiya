@@ -1,0 +1,16 @@
+---
+import Example from '../library/Example.astro';
+import Spinner from '../components/fundamentals/Spinner.astro';
+---
+
+<Example title="Ring sizes" description="A status label is always present, even when it is visually hidden.">
+  <Spinner size="sm" label="Loading tokens" />
+  <Spinner label="Loading stories" />
+  <Spinner size="lg" label="Loading planet" />
+</Example>
+
+<Example title="Dots" description="Dots are softer for small inline waits.">
+  <Spinner variant="dots" size="sm" label="Loading preview" />
+  <Spinner variant="dots" label="Loading preview" />
+  <Spinner variant="dots" size="lg" label="Loading preview" />
+</Example>

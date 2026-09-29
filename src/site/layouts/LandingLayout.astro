@@ -1,0 +1,58 @@
+---
+/**
+ * The front page: the masthead, an opening that gives the name and the picture room, the ways in,
+ * and whatever sections follow. Defined once; the site's landing uses it.
+ * @tier layout
+ * @a11y One h1 (the opening's title), a main landmark with id="main" for the skip link.
+ */
+import PageShell from '../components/compounds/PageShell.astro';
+import SiteHeader from '../components/compounds/SiteHeader.astro';
+import Hero, { type HeroPicture } from '../components/compounds/Hero.astro';
+import SiteFooter from '../components/compounds/SiteFooter.astro';
+import type { NavItem } from '../components/compounds/SiteHeader.astro';
+
+interface Props {
+  /** The document title. */
+  title: string;
+  /** The search and social-card summary. */
+  description?: string;
+  /** The opening: the name, the standfirst, the picture. */
+  hero: { title: string; standfirst?: string; kicker?: string; picture?: HeroPicture; layout?: 'split' | 'stacked' | 'type' };
+  /** The site’s sections, for the header (the landing shows none). */
+  nav?: NavItem[];
+}
+
+const { title, description, hero, nav } = Astro.props;
+---
+
+<PageShell title={title} description={description}>
+  <SiteHeader nav={nav} />
+  <main id="main" class="landing" tabindex="-1">
+    <Hero {...hero}>
+      <slot />
+      {Astro.slots.has('note') && <slot name="note" slot="note" />}
+    </Hero>
+    {
+      Astro.slots.has('after') && (
+        <div class="after">
+          <slot name="after" />
+        </div>
+      )
+    }
+  </main>
+  <SiteFooter />
+</PageShell>
+
+<style>
+  .landing {
+    outline: none;
+  }
+
+  .after {
+    display: grid;
+    gap: var(--space-section);
+    max-width: var(--size-wide);
+    margin: var(--space-section) auto 0;
+    padding-inline: var(--space-gutter);
+  }
+</style>

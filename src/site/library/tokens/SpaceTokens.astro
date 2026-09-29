@@ -1,0 +1,189 @@
+---
+/**
+ * Space and size, measured out: the spacing scale as bars, the three fluid spaces that make the
+ * whitespace (with their range), and the page widths drawn to scale. Library-only.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import { siteTokens } from '../../design/tokens';
+import { resolve, toCss } from '../../design/tokenModel';
+import { tokenAnchor } from '../tokenLinks';
+
+const m = siteTokens();
+const space = m.tokens.filter((t) => t.path[0] === 'space');
+const fixed = space.filter((t) => t.fluidMin === undefined);
+const fluid = space.filter((t) => t.fluidMin !== undefined);
+const sizes = m.tokens.filter((t) => t.path[0] === 'size');
+const widths = sizes.filter((t) => ['measure-narrow', 'measure', 'popout', 'wide', 'max'].includes(t.path[1]));
+const others = sizes.filter((t) => !widths.includes(t));
+const rem = (t: (typeof space)[number]) => {
+  const v = t.value as { value: number; unit: string };
+  return v.unit === 'rem' ? `${v.value * 16} px` : `${v.value}${v.unit}`;
+};
+---
+
+<section class="block" aria-labelledby="scale">
+  <Heading level={2} size="h2" id="scale">The spacing scale</Heading>
+  <Text narrow>A 4 px step for everything inside a component: padding, gaps, the space between a label and its field.</Text>
+  <ol class="bars">
+    {
+      fixed.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <code>{t.name}</code>
+          <span class="bar" style={`--bar: var(${t.name})`} />
+          <Text as="span" variant="meta">
+            {rem(t)}
+          </Text>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+<section class="block" aria-labelledby="white">
+  <Heading level={2} size="h2" id="white">The whitespace</Heading>
+  <Text narrow>Three fluid spaces carry the magazine’s room to breathe: the page’s side margin, the gap around a figure or a quote, and the space between a page’s sections. Each grows with the window.</Text>
+  <ol class="bars">
+    {
+      fluid.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <code>{t.name}</code>
+          <span class="bar fluid" style={`--bar: var(${t.name})`} />
+          <Text as="span" variant="meta">
+            {`${toCss(t.fluidMin, t.type, () => '')} to ${resolve(t, m.byPath)}`}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+<section class="block" aria-labelledby="widths">
+  <Heading level={2} size="h2" id="widths">Page widths</Heading>
+  <Text narrow>The reading column, and how far pictures step out of it. Drawn to scale against the widest.</Text>
+  <ol class="widths">
+    {
+      widths.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <span class="width" style={`--w: var(${t.name})`}>
+            <code>{t.name}</code>
+            <Text as="span" variant="meta">
+              {resolve(t, m.byPath)}
+            </Text>
+          </span>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+<section class="block" aria-labelledby="sizes">
+  <Heading level={2} size="h3" id="sizes">Other sizes</Heading>
+  <ul class="rows">
+    {
+      others.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <span class="square" style={`--sq: var(${t.name})`} />
+          <code>{t.name}</code>
+          <Text as="span" variant="meta">
+            {resolve(t, m.byPath)}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .block {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .bars,
+  .widths,
+  .rows {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bars li {
+    display: grid;
+    grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr) minmax(6rem, auto);
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+    padding-block: var(--space-2);
+  }
+
+  .bars li > :last-child:nth-child(4) {
+    grid-column: 2 / -1;
+  }
+
+  .bar {
+    width: var(--bar);
+    height: var(--space-4);
+    border-radius: var(--radius-xs);
+    background: var(--color-accent);
+  }
+
+  .bar.fluid {
+    background: var(--color-highlight);
+  }
+
+  code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+  }
+
+  .widths li {
+    display: grid;
+    gap: var(--space-1);
+    padding-block: var(--space-3);
+  }
+
+  .width {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    width: calc(100% * var(--w) / var(--size-max));
+    min-width: max-content;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .rows li {
+    display: grid;
+    grid-template-columns: var(--space-12) minmax(9rem, 12rem) minmax(5rem, 7rem) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: center;
+    padding-block: var(--space-2);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .square {
+    width: min(var(--sq), var(--space-12));
+    height: min(var(--sq), var(--space-12));
+    border-radius: var(--radius-xs);
+    background: var(--color-highlight);
+  }
+
+  @media (max-width: 40rem) {
+    .bars li,
+    .rows li {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

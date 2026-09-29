@@ -1,0 +1,47 @@
+---
+import IndexLayout from '../layouts/IndexLayout.astro';
+import StoryCard from '../components/compounds/StoryCard.astro';
+import { sample } from '../design/samples';
+import { withBase } from '../design/meta';
+
+const nav = [
+  { label: 'Work', href: withBase('/classic/workshop/') },
+  { label: 'Leadership', href: withBase('/classic/town-hall/') },
+  { label: 'Writing', href: withBase('/classic/library/'), current: true },
+  { label: 'About', href: withBase('/classic/post-office/') },
+];
+const stories = [
+  { title: 'Painting with generated textures', dek: 'A frozen style set keeps every surface in one hand.', topic: 'Craft', meta: '6 min read', picture: sample('bridge') },
+  { title: 'A pond that reads as one body of water', dek: 'One level, one shader, and a lobed shore.', topic: 'Engineering', meta: '4 min read', picture: sample('pond') },
+  { title: 'Wind that everything shares', dek: 'Grass, trees and flags sway to the same gusts.', topic: 'Craft', meta: '5 min read', picture: sample('waterfall') },
+  { title: 'Why the planet turns, not the camera', dek: 'Keeping the sky, the sun and the moon in frame.', topic: 'Engineering', meta: '3 min read', picture: sample('plaza-night') },
+];
+---
+
+<IndexLayout
+  title="Writing — Prabin Pebam"
+  heading="Writing"
+  standfirst="Notes on design leadership, systems and craft, and on building a planet in the open."
+  nav={nav}
+  action={{ label: 'Explore in 3D', href: withBase('/play/'), icon: 'planet' }}
+>
+  <div class="stories">
+    <StoryCard variant="feature" href={withBase('/classic/library/')} title="A printed page for a little planet" dek="How the classic pages were set like a clean magazine, so the pictures do the talking." topic="Case study" meta="6 min read" picture={sample('lighthouse-dusk')} />
+    <div class="grid">
+      {stories.map((s) => <StoryCard href={withBase('/classic/library/')} {...s} />)}
+    </div>
+  </div>
+</IndexLayout>
+
+<style>
+  .stories {
+    display: grid;
+    gap: var(--space-section);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    gap: var(--space-16) var(--space-8);
+  }
+</style>

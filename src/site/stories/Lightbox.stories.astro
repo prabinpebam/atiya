@@ -1,0 +1,41 @@
+---
+import Example from '../library/Example.astro';
+import Image from '../components/fundamentals/Image.astro';
+import Lightbox from '../components/compounds/Lightbox.astro';
+import { SAMPLES } from '../design/samples';
+
+const pictures = SAMPLES.slice(0, 4);
+---
+
+<Example title="Plain links" layout="block" description="The lightbox listens for ordinary picture links with data-lightbox; without JavaScript, each link opens the image.">
+  <div class="story-grid">
+    {
+      pictures.map((item) => (
+        <a class="story-link" href={item.full} data-lightbox="lightbox-story" data-caption={item.caption} data-thumb={item.thumb} data-alt={item.alt}>
+          <Image src={item.src} srcset={item.srcset} alt={item.alt} width={item.width} height={item.height} ratio="4/3" />
+        </a>
+      ))
+    }
+  </div>
+</Example>
+
+<Lightbox />
+
+<style>
+  .story-grid {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .story-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  @media (min-width: 40rem) {
+    .story-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

@@ -1,0 +1,32 @@
+---
+import LibraryLayout from '../layouts/LibraryLayout.astro';
+import Heading from '../components/fundamentals/Heading.astro';
+import Text from '../components/fundamentals/Text.astro';
+import Button from '../components/fundamentals/Button.astro';
+import { libraryNav } from '../library/nav';
+---
+
+<LibraryLayout title="A sample page" nav={libraryNav('/design/fundamentals/button/')}>
+  <div class="sample">
+    <Heading level={1} size="h1">A sample page</Heading>
+    <Text variant="lead">The library’s own layout: the masthead with its name, the side navigation of every token page and component, and the page beside it.</Text>
+    <div class="row">
+      <Button variant="primary">Explore the planet</Button>
+      <Button variant="secondary">Read the story</Button>
+    </div>
+  </div>
+</LibraryLayout>
+
+<style>
+  .sample {
+    display: grid;
+    gap: var(--space-6);
+    max-width: var(--size-popout);
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+</style>

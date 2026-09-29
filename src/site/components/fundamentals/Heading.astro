@@ -1,0 +1,90 @@
+---
+/**
+ * A heading. Its level is the outline (h1 once per page, then in order); its size is how big it looks,
+ * so a card's h3 can be small and a section opener's h2 huge. Set in Fraunces, soft.
+ * @tier fundamental
+ * @a11y The level sets the document outline; never skip one for the look (choose a size instead).
+ */
+interface Props {
+  /** The outline level: h1 once per page, then in order. */
+  level: 1 | 2 | 3 | 4 | 5 | 6;
+  /** jumbo and display for openers, h1 to h4 for the ramp, ui for a small heading in the interface face. Defaults to the level's own. */
+  size?: 'jumbo' | 'display' | 'h1' | 'h2' | 'h3' | 'h4' | 'ui';
+  /** The soft, wonky italic: a standfirst-like heading, a section's name. */
+  italic?: boolean;
+  /** muted: a quieter heading (a group's name). */
+  tone?: 'default' | 'muted';
+  /** The heading’s id (a link target, a label). */
+  id?: string;
+}
+
+const { level, size, italic = false, tone = 'default', id } = Astro.props;
+const Tag = `h${level}` as 'h1';
+const look = size ?? (level <= 4 ? (`h${level}` as 'h1') : 'ui');
+---
+
+<Tag class="heading" data-size={look} data-italic={italic ? '' : undefined} data-tone={tone} id={id}><slot /></Tag>
+
+<style>
+  .heading {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: var(--weight-display);
+    font-variation-settings: var(--axes-display);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+    color: var(--color-text);
+    text-wrap: balance;
+  }
+
+  .heading[data-size='jumbo'] {
+    font-size: var(--text-jumbo);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+  }
+
+  .heading[data-size='display'] {
+    font-size: var(--text-display);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+  }
+
+  .heading[data-size='h1'] {
+    font-size: var(--text-h1);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+  }
+
+  .heading[data-size='h2'] {
+    font-size: var(--text-h2);
+    line-height: var(--leading-snug);
+  }
+
+  .heading[data-size='h3'] {
+    font-size: var(--text-h3);
+  }
+
+  .heading[data-size='h4'] {
+    font-size: var(--text-h4);
+  }
+
+  .heading[data-size='ui'] {
+    font-family: var(--font-ui);
+    font-variation-settings: normal;
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    line-height: var(--leading-ui);
+  }
+
+  .heading[data-italic] {
+    font-style: italic;
+    font-variation-settings: var(--axes-display-italic);
+  }
+
+  .heading[data-tone='muted'] {
+    color: var(--color-text-muted);
+  }
+</style>

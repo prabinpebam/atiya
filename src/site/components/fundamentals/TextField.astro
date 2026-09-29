@@ -1,0 +1,247 @@
+---
+/**
+ * A labelled text entry field for forms, search and short notes. Use multiline when the answer needs
+ * more than one line.
+ * @tier fundamental
+ * @a11y A native input or textarea keeps platform editing, autocomplete and validation.
+ * @a11y Labels are always present; hints and errors are tied with aria-describedby.
+ * @a11y Error state uses aria-invalid, a message and an icon, not colour alone.
+ * @key Tab: moves focus
+ * @key Enter: submits a single-line field
+ */
+import { svgOf, type IconName } from '../../design/icons';
+
+interface Props {
+  /** The visible field label. */
+  label: string;
+  /** The input type for single-line fields. */
+  type?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'number' | 'password';
+  /** The form field's name. */
+  name?: string;
+  /** The control's id. */
+  id?: string;
+  /** Initial value. */
+  value?: string | number;
+  /** Placeholder text, used only as a hint. */
+  placeholder?: string;
+  /** Supporting text under the field. */
+  hint?: string;
+  /** What went wrong and how to fix it. */
+  error?: string;
+  /** Makes the field required and shows a small Required note. */
+  required?: boolean;
+  /** Shows a small Optional note when the field may be skipped. */
+  optional?: boolean;
+  /** Prevents editing. */
+  disabled?: boolean;
+  /** Draws a leading icon inside the field. */
+  icon?: IconName;
+  /** Browser autocomplete hint. */
+  autocomplete?: string;
+  /** Renders a textarea instead of an input. */
+  multiline?: boolean;
+  /** Textarea rows. */
+  rows?: number;
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const {
+  label,
+  type = 'text',
+  name,
+  id = `field-${Math.random().toString(36).slice(2, 8)}`,
+  value = '',
+  placeholder,
+  hint,
+  error,
+  required = false,
+  optional = false,
+  disabled = false,
+  icon,
+  autocomplete,
+  multiline = false,
+  rows = 4,
+  ...rest
+} = Astro.props;
+const described = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
+const leading = icon ? svgOf(icon) : null;
+const errorIcon = error ? svgOf('error') : null;
+const note = required ? 'Required' : optional ? 'Optional' : undefined;
+---
+
+<div class="text-field" data-invalid={error ? '' : undefined} data-disabled={disabled ? '' : undefined} {...rest}>
+  <label class="label" for={id}>
+    <span>{label}</span>
+    {note && <span class="note">{note}</span>}
+  </label>
+  <span class="control">
+    {
+      leading && (
+        <svg class="leading" viewBox={leading.viewBox} aria-hidden="true" focusable="false" data-icon={leading.name}>
+          <path fill="currentColor" d={leading.d} />
+        </svg>
+      )
+    }
+    {
+      multiline ? (
+        <textarea
+          class="input"
+          id={id}
+          name={name}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          autocomplete={autocomplete}
+          rows={rows}
+          aria-required={required ? 'true' : undefined}
+          aria-describedby={described}
+          aria-invalid={error ? 'true' : undefined}
+          data-has-icon={leading ? '' : undefined}>{value}</textarea>
+      ) : (
+        <input
+          class="input"
+          id={id}
+          type={type}
+          name={name}
+          value={value}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          autocomplete={autocomplete}
+          aria-required={required ? 'true' : undefined}
+          aria-describedby={described}
+          aria-invalid={error ? 'true' : undefined}
+          data-has-icon={leading ? '' : undefined}
+        />
+      )
+    }
+  </span>
+  {hint && <p class="hint" id={`${id}-hint`}>{hint}</p>}
+  {
+    error && errorIcon && (
+      <p class="error" id={`${id}-error`}>
+        <svg class="error-icon" viewBox={errorIcon.viewBox} aria-hidden="true" focusable="false" data-icon={errorIcon.name}>
+          <path fill="currentColor" d={errorIcon.d} />
+        </svg>
+        <span>{error}</span>
+      </p>
+    )
+  }
+</div>
+
+<style>
+  .text-field {
+    display: grid;
+    gap: var(--space-2);
+    font-family: var(--font-ui);
+    color: var(--color-text);
+  }
+
+  .text-field[data-disabled] {
+    opacity: var(--opacity-disabled);
+  }
+
+  .label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .note {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  .control {
+    position: relative;
+    display: block;
+  }
+
+  .input {
+    inline-size: 100%;
+    min-block-size: var(--c-control-height-md);
+    padding-block: var(--space-2);
+    padding-inline: var(--c-control-pad-x);
+    border: var(--border-control) solid var(--c-control-border);
+    border-radius: var(--c-control-radius);
+    background: var(--c-control-fill);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-md);
+    line-height: var(--leading-ui);
+    transition:
+      border-color var(--duration-instant) var(--ease-standard),
+      box-shadow var(--duration-instant) var(--ease-standard);
+  }
+
+  textarea.input {
+    min-block-size: calc(var(--c-control-height-md) * 2);
+    resize: vertical;
+  }
+
+  .input[data-has-icon] {
+    padding-inline-start: calc(var(--c-control-pad-x) + var(--size-icon) + var(--space-2));
+  }
+
+  .input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .input:hover {
+    border-color: var(--c-control-border-hover);
+  }
+
+  .input:focus-visible {
+    border-color: var(--color-accent);
+  }
+
+  .input:disabled {
+    cursor: not-allowed;
+  }
+
+  .text-field[data-invalid] .input {
+    border-color: var(--color-negative);
+  }
+
+  .leading {
+    position: absolute;
+    inset-inline-start: var(--c-control-pad-x);
+    inset-block-start: calc((var(--c-control-height-md) - var(--size-icon)) / 2);
+    inline-size: var(--size-icon);
+    block-size: var(--size-icon);
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  .hint,
+  .error {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+
+  .hint {
+    color: var(--color-text-muted);
+  }
+
+  .error {
+    display: flex;
+    align-items: start;
+    gap: var(--space-2);
+    color: var(--color-negative);
+    font-weight: var(--weight-medium);
+  }
+
+  .error-icon {
+    flex: none;
+    inline-size: var(--size-icon);
+    block-size: var(--size-icon);
+    margin-block-start: var(--space-0-5);
+  }
+</style>

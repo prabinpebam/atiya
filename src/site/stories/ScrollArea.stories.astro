@@ -1,0 +1,29 @@
+---
+import Example from '../library/Example.astro';
+import ScrollArea from '../components/fundamentals/ScrollArea.astro';
+---
+
+<Example title="Vertical" layout="block" description="Focus the region, then use the keyboard or wheel to scroll.">
+  <ScrollArea label="Design library sections" maxHeight="sm">
+    <ul>
+      <li>Tokens set the colour, type and spacing.</li>
+      <li>Fundamentals turn tokens into controls.</li>
+      <li>Compounds combine fundamentals for the site.</li>
+      <li>Layouts set whole-page rhythm.</li>
+      <li>Stories show the component in real contexts.</li>
+      <li>Props explain how to use each component.</li>
+      <li>Accessibility notes stay beside each example.</li>
+      <li>Keyboard notes stay visible in the catalogue.</li>
+      <li>Source links point to the repository.</li>
+      <li>Light and dark previews share the same tokens.</li>
+      <li>Every new control gets a story.</li>
+      <li>Every story uses real site copy.</li>
+    </ul>
+  </ScrollArea>
+</Example>
+
+<Example title="Both axes" layout="block">
+  <ScrollArea label="Long component path" orientation="both" maxHeight="sm">
+    <pre>src/site/components/fundamentals/ScrollArea.astro keeps a focused region scrollable without taking over the whole page.</pre>
+  </ScrollArea>
+</Example>

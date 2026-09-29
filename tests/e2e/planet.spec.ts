@@ -122,11 +122,13 @@ test.describe('landing & classic', () => {
     const scripts: string[] = [];
     page.on('request', (r) => r.resourceType() === 'script' && scripts.push(r.url()));
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Explore the planet' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Classic site' })).toBeVisible();
-    expect(scripts.filter((s) => /_astro\//.test(s))).toEqual([]);
+    const main = page.getByRole('main');
+    await expect(main.getByRole('link', { name: 'Explore the planet' })).toBeVisible();
+    await expect(main.getByRole('link', { name: 'Classic site' })).toBeVisible();
+    // the site's own small scripts (the theme switch, the modes) but nothing of the game's
+    expect(scripts.filter((s) => /game-|three|fiber|react|zustand/i.test(s))).toEqual([]);
     // painted key art: sized (no layout shift), loaded, and the social card is advertised
-    const poster = page.locator('.landing-poster img');
+    const poster = main.getByRole('img', { name: /tiny planet/ });
     await expect(poster).toHaveAttribute('width', '1200');
     await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     const og = await page.locator('meta[property="og:image"]').getAttribute('content');
@@ -149,7 +151,7 @@ test.describe('landing & classic', () => {
     await expect(page).toHaveURL(/\/classic\/$/);
     expect(await page.evaluate(() => localStorage.getItem('site.mode'))).toBe('classic');
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Classic site' })).toHaveClass(/primary/);
+    await expect(page.getByRole('main').getByRole('link', { name: 'Classic site' })).toHaveAttribute('data-variant', 'primary');
   });
 });
 

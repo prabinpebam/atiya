@@ -1,0 +1,83 @@
+---
+import ArticleLayout from '../layouts/ArticleLayout.astro';
+import Figure from '../components/compounds/Figure.astro';
+import Gallery from '../components/compounds/Gallery.astro';
+import Carousel from '../components/compounds/Carousel.astro';
+import VideoEmbed from '../components/compounds/VideoEmbed.astro';
+import Quote from '../components/fundamentals/Quote.astro';
+import { SAMPLES, SAMPLE_VIDEO, sample } from '../design/samples';
+import { withBase } from '../design/meta';
+
+const nav = [
+  { label: 'Work', href: withBase('/classic/workshop/'), current: true },
+  { label: 'Leadership', href: withBase('/classic/town-hall/') },
+  { label: 'Writing', href: withBase('/classic/library/') },
+  { label: 'About', href: withBase('/classic/post-office/') },
+];
+const lead = sample('plaza');
+const dusk = sample('lighthouse-dusk');
+const pictures = SAMPLES.map((s) => ({ ...s, caption: s.caption }));
+---
+
+<ArticleLayout
+  title="A printed page for a little planet — Prabin Pebam"
+  description="How the site's classic pages were set like a magazine: three faces, one spot colour, and pictures given room."
+  nav={nav}
+  action={{ label: 'Explore in 3D', href: withBase('/play/'), icon: 'planet' }}
+  crumbs={{ trail: [{ label: 'Work', href: withBase('/classic/workshop/') }], current: 'A printed page for a little planet' }}
+  header={{
+    title: 'A printed page for a little planet',
+    standfirst: 'The planet is loud and playful. The pages beside it are quiet: set like a clean magazine, so the pictures do the talking.',
+    topic: { label: 'Case study', href: withBase('/classic/workshop/') },
+    author: { name: 'Prabin Pebam', avatar: withBase('/avatars/npc/prabin.webp') },
+    date: '2026-09-29',
+    readingTime: '6 min read',
+    picture: { ...lead, caption: lead.caption, credit: 'Concept art' },
+  }}
+  prev={{ href: withBase('/classic/greenhouse/'), title: 'Greenhouse' }}
+  next={{ href: withBase('/classic/lighthouse/'), title: 'Lighthouse' }}
+>
+  <p>
+    Most of this site is a small world you can walk around. The rest of it, the classic pages, had to do the opposite job: sit still, read well, and get out of the way of the pictures. So they’re set the way a clean printed magazine is set, with a lot of white paper, one spot colour, and type that does the talking.
+  </p>
+  <p>
+    Three faces share the work. Fraunces, a soft display serif, sets the headlines and the quotes. Newsreader sets everything you read at length. Figtree, a friendly sans, sets everything you press. Each has one job, and the page never asks a face to do another’s.
+  </p>
+
+  <h2>Paper, ink and one spot colour</h2>
+  <p>
+    The page is a natural white, never pure; the ink is a warm press black. Everything you can act on is printed in a single indigo spot, and a marigold highlighter marks the rest: the rule beside a quote, the bullets of a list, the frame you’re looking at in the lightbox.
+  </p>
+  <Figure src={dusk.src} srcset={dusk.srcset} sizes="(max-width: 52rem) 92vw, 52rem" alt={dusk.alt} imageWidth={dusk.width} imageHeight={dusk.height} caption="Dark mode is the same page at dusk: the roles keep their jobs, only the inks change." credit="Concept art" width="popout" lightbox="article" full={dusk.full} thumb={dusk.thumb} />
+  <p>
+    In the dark, the paper turns to charcoal and the indigo lifts to a lavender that still reads at 8.5:1. Nothing is designed twice: each colour is a pair, and the browser picks the half that fits.
+  </p>
+
+  <Quote variant="pull" cite="The design system’s first rule">Pictures carry this site, so every one is given the space and the care of a printed plate.</Quote>
+
+  <h2>Pictures, given room</h2>
+  <p>
+    A picture can sit in the column, step out of it, run wide or bleed to the edges. Galleries open in a lightbox with a smoky scrim and a filmstrip, so you can walk through a set without losing your place in the story.
+  </p>
+  <Gallery items={pictures.slice(0, 5)} layout="mosaic" caption="Five views of the planet: the plaza, the workshop, the pond, the waterfall and the bridge." lightbox="article" />
+  <p>A carousel does the same job in less space, for a set you browse rather than study.</p>
+  <Carousel items={pictures} label="The planet, in seven pictures" lightbox="tour" peek />
+
+  <h2>Moving pictures</h2>
+  <p>Video plays in place, with its captions, and nothing starts on its own.</p>
+  <VideoEmbed
+    title="A drift over the planet"
+    src={SAMPLE_VIDEO.src}
+    poster={SAMPLE_VIDEO.poster}
+    mediaWidth={SAMPLE_VIDEO.width}
+    mediaHeight={SAMPLE_VIDEO.height}
+    captions={{ src: SAMPLE_VIDEO.captions, label: 'English', srclang: 'en' }}
+    caption={SAMPLE_VIDEO.description}
+    width="wide"
+  />
+
+  <hr />
+  <p>
+    Every value on this page, from the width of the column to the curve a switch’s thumb springs along, is a named token. Every piece is a component made only from the tier below it. The <a href={withBase('/design/')}>design library</a> shows them all.
+  </p>
+</ArticleLayout>

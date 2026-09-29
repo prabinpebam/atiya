@@ -1,0 +1,97 @@
+{
+  "$description": "The dark context: colour roles on the charcoal page.",
+  "color": {
+    "$type": "color",
+    "$description": "The dark context: the same roles on the charcoal page.",
+    "bg": {
+      "$value": "{p.color.stock.900}"
+    },
+    "bg-raised": {
+      "$value": "{p.color.stock.850}"
+    },
+    "bg-sunk": {
+      "$value": "{p.color.stock.950}"
+    },
+    "bg-hover": {
+      "$value": "{p.color.stock.800}"
+    },
+    "text": {
+      "$value": "{p.color.chalk}"
+    },
+    "text-muted": {
+      "$value": "{p.color.stock.400}"
+    },
+    "rule": {
+      "$value": "{p.color.stock.750}"
+    },
+    "border": {
+      "$value": "{p.color.stock.500}"
+    },
+    "border-strong": {
+      "$value": "{p.color.stock.300}"
+    },
+    "accent": {
+      "$value": "{p.color.indigo.300}"
+    },
+    "accent-hover": {
+      "$value": "{p.color.indigo.200}"
+    },
+    "on-accent": {
+      "$value": "{p.color.stock.950}"
+    },
+    "accent-soft": {
+      "$value": "{p.color.indigo.950}"
+    },
+    "on-accent-soft": {
+      "$value": "{p.color.indigo.200}"
+    },
+    "highlight": {
+      "$value": "{p.color.marigold.400}"
+    },
+    "on-highlight": {
+      "$value": "{p.color.stock.950}"
+    },
+    "highlight-ink": {
+      "$value": "{p.color.marigold.300}"
+    },
+    "mark": {
+      "$value": "{p.color.marigold.900}"
+    },
+    "focus": {
+      "$value": "{p.color.marigold.300}"
+    },
+    "positive": {
+      "$value": "{p.color.leaf.300}"
+    },
+    "positive-soft": {
+      "$value": "{p.color.leaf.900}"
+    },
+    "negative": {
+      "$value": "{p.color.poppy.300}"
+    },
+    "negative-soft": {
+      "$value": "{p.color.poppy.900}"
+    },
+    "scrim": {
+      "$value": "{p.color.smoke.900}"
+    },
+    "smoke": {
+      "$value": "{p.color.smoke.700}"
+    },
+    "smoke-faint": {
+      "$value": "{p.color.smoke.500}"
+    },
+    "on-image": {
+      "$value": "{p.color.stock.0}"
+    },
+    "image-shade": {
+      "$value": "{p.color.shade.image}"
+    },
+    "shadow": {
+      "$value": "{p.color.shade.dark}"
+    },
+    "shadow-strong": {
+      "$value": "{p.color.shade.dark-strong}"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+---
+import Example from '../library/Example.astro';
+import IconButton from '../components/fundamentals/IconButton.astro';
+import Image from '../components/fundamentals/Image.astro';
+import { sample } from '../design/samples';
+
+const p = sample('waterfall');
+---
+
+<Example title="Variants" description="Hover or focus one: the tooltip is its label.">
+  <IconButton label="Open menu" icon="menu" />
+  <IconButton label="Search the site" icon="search" variant="secondary" />
+  <IconButton label="Explore the planet" icon="planet" variant="primary" />
+</Example>
+
+<Example title="Sizes" description="40, 48 and 56 px; every one is at least 44 px to touch.">
+  <IconButton label="Close" icon="close" size="sm" variant="secondary" />
+  <IconButton label="Close" icon="close" variant="secondary" />
+  <IconButton label="Close" icon="close" size="lg" variant="secondary" />
+</Example>
+
+<Example title="A toggle and a disabled one">
+  <IconButton label="Mute sound" icon="sound-on" pressed={false} />
+  <IconButton label="Mute sound" icon="sound-off" pressed={true} />
+  <IconButton label="Next picture" icon="chevron-right" disabled />
+</Example>
+
+<Example title="On a picture" layout="block" description="The overlay variant keeps its own dark surface, so it reads on any picture.">
+  <div class="demo-over">
+    <Image src={p.src} srcset={p.srcset} sizes="40rem" alt={p.alt} width={p.width} height={p.height} ratio="16/9" />
+    <span class="demo-buttons">
+      <IconButton label="Previous picture" icon="chevron-left" variant="overlay" size="lg" tooltip="top" />
+      <IconButton label="Next picture" icon="chevron-right" variant="overlay" size="lg" tooltip="top" />
+    </span>
+  </div>
+</Example>
+
+<style>
+  .demo-over {
+    position: relative;
+    max-width: var(--size-measure);
+  }
+
+  .demo-buttons {
+    position: absolute;
+    inset: auto var(--space-4) var(--space-4) auto;
+    display: flex;
+    gap: var(--space-2);
+  }
+</style>

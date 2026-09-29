@@ -17,6 +17,34 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
 - `/play` uses a **capability-gated dynamic import**, not a `client:only` island. `src/game/platform/gate.ts` must never import React or three. Game code is emitted as `game-*` chunks, and gated-out devices must never request them.
 - `window.__game` exists only in dev and `--mode test` builds, never in production.
 
+### Site design system (the website, not the game)
+
+The landing, the classic site and the design library have their **own** design system, separate from the game's. Rules: [documentation/site-ui/design-system.md](./documentation/site-ui/design-system.md); look: [visual-language.md](./documentation/site-ui/visual-language.md). Read them before any change to the site's UI.
+
+- **Four tiers, each made only from the tiers below it:**
+  - tokens and foundations (`src/site/design/`, `src/site/scripts/`, `src/site/styles/`);
+  - fundamentals (`src/site/components/fundamentals/`, tier 0 only);
+  - compounds (`src/site/components/compounds/`, fundamentals and tier 0, never another compound);
+  - layouts (`src/site/layouts/`, compounds and fundamentals).
+
+  Pages (`src/pages/index.astro`, `src/pages/classic/`) use a layout and carry no `<style>`. The game and the site never import each other; the one shared helper is `withBase` (re-exported by `src/site/design/meta.ts`).
+- **Tokens are W3C DTCG 2025.10:**
+  - `site.resolver.json` merges the base set `tokens.json` with the theme contexts `tokens.light.json` and `tokens.dark.json`;
+  - values are 2025.10 objects;
+  - after a change, run `node scripts/build-site-tokens.mjs` (never hand-edit `src/site/styles/tokens.css` or `documentation/site-ui/tokens.md`).
+- **Colour roles are `light-dark()` pairs.** The page follows the system unless `<html data-theme>` is set (the header's theme switch, `localStorage['site.theme']`). Never branch on the theme: a subtree switches with `color-scheme`.
+- **Components read tokens only:** never a primitive, never a raw value. Width media queries use only the breakpoint tokens (40, 56, 72 rem).
+- **Fundamentals are sealed:** no `class` or `style` props. Compounds lay them out from their own wrappers and never restyle them. `:global` is allowed only in Prose, Lightbox and VideoEmbed (markup they didn't write).
+- **Page-wide pieces are placed by the layout.** The Lightbox is one per page: a gallery or figure marks its links `a[data-lightbox="group"]` and never imports it.
+- **Every component documents itself:**
+  - a doc comment (a summary, `@tier`, `@a11y`, `@key`);
+  - a JSDoc comment on every prop;
+  - a story in `src/site/stories/<Name>.stories.astro`, made of `<Example title>` blocks.
+
+  The design library (`/design/`) builds its pages from these (`src/site/library/registry.ts`); nothing in it is kept by hand.
+- **Icons** are Font Awesome solid as data in `src/site/design/icons.ts`, drawn with `svgOf`. **Fonts** are the three self-hosted Google Fonts (Fraunces, Newsreader, Figtree, via pinned `@fontsource-variable/*`). Never a font or icon CDN.
+- **Enforced by** `tests/unit/siteDesignSystem.test.ts` (tokens, raw values, tiers, sealing, docs and stories, contrast in both modes, copy, base paths) and the E2E group "site design system" (`tests/e2e/site.spec.ts`).
+
 ### Game UI design system
 
 The rules are in [documentation/game-ui/design-system.md](./documentation/game-ui/design-system.md). Read it before any UI change.
@@ -37,7 +65,7 @@ The rules are in [documentation/game-ui/design-system.md](./documentation/game-u
 - **Click to walk** leaves a marker where the character is going (`WalkMarker` in `world/cues.tsx`, from `controller.walkMark`): a ripple, then a ring until the walk ends.
 - **Surfaces:** components read colour only through `--surface-*` roles.
   - The game is **wood**: `body.play` and its panels carry `.surface-wood`; primary actions are gold.
-  - The website pages (landing, classic) are **paper**, the default.
+  - **Paper** is the default surface on `:root`. The website's pages (landing, classic) have their own system since 2026-09-29 (see **Site design system** above) and no longer use it.
   - A new surface must define every role and re-declare `color`.
 - **One thing asks at a time.** The bottom-centre focus lane and the bottom-left aside are decided by the pure `src/game/ui/lanes.ts` (`focusLane`, `asideLane`). `controller.interact()` routes E through `focusLane` as well.
   - Never show two lane surfaces by juggling z-indexes. Give a new surface a rank in `lanes.ts` and a unit test.
@@ -65,7 +93,7 @@ The rules are in [documentation/game-ui/design-system.md](./documentation/game-u
 - **Update the spec in the same change as the code.** When the build differs from a spec, update its "as built" section and its Definition of Done evidence.
 - **A new page** gets:
   - one H1 and a TL;DR;
-  - an entry in `documentation/docs-manifest.json` with a `group` (Site, Planet, Features, Game UI, Engineering), a global `order` (groups sort by their lowest order: 10s, 20s, 30s, 40s, 50s) and a Material Symbols `icon`;
+  - an entry in `documentation/docs-manifest.json` with a `group` (Site, Site UI, Planet, Features, Game UI, Engineering), a global `order` (groups sort by their lowest order: 10s, 20.1–20.9, 20s, 30s, 40s, 50s) and a Material Symbols `icon`;
   - a card on `landing.html` if it starts a new topic.
 - Slate's rules apply: no emoji, no inline styles or scripts in pages, no invented facts, and no meta-documentation (reviews update the pages they review).
 - **Links must stay inside `documentation/`**, because files outside it aren't published. Link to code and repository files with a GitHub URL (`https://github.com/prabinpebam/atiya/blob/main/<path>`).
@@ -79,7 +107,7 @@ The rules are in [documentation/game-ui/design-system.md](./documentation/game-u
 - **Base path (GitHub Pages):** the site is deployed at `https://prabinpebam.github.io/atiya/` by `.github/workflows/deploy.yml`, built with `BASE_PATH=/atiya`. Never hard-code a root-relative URL (`/play/`, `/textures/…`): wrap it in `withBase()` from `src/game/platform/base.ts` (in `.astro` pages too), and use `import.meta.env.BASE_URL` in inline page scripts. The generated manifests keep root-relative URLs; their consumers add the base. Check a change that adds URLs with a base build (`$env:BASE_PATH='/atiya'; npm run build; npx astro preview`).
 - Game keys are active only while the game region has focus. Never intercept Tab.
 - **View:** never rotate the camera's yaw. User rotation is `PlanetSim.rotateView` (a planet spin about world +Y), so the sky, sun and moon rig stays in the camera frame. Tilt is `controller.view.pitch`. The compass uses map north (`math/compass.ts`), not geographic north, because the plaza sits on the pole. Planet clicks are taps: check `controller.viewDragged` and `e.delta` so a drag never walks.
-- **No third-party game IP** (Nintendo names, characters, music, fonts, UI). Use CC0 or original assets only, and log every asset in `assets-src/CREDITS.md`. Two owner-approved exceptions: the background music (the owner's own tracks) and Font Awesome Free icons (CC BY 4.0, attributed in CREDITS).
+- **No third-party game IP** (Nintendo names, characters, music, fonts, UI). Use CC0 or original assets only, and log every asset in `assets-src/CREDITS.md`. Three owner-approved exceptions: the background music (the owner's own tracks), Font Awesome Free icons (CC BY 4.0, attributed in CREDITS), and the website's three Google Fonts (SIL OFL, self-hosted; not used in the game).
 - **Item icons** (inventory art) are generated, never drawn by hand or taken from elsewhere: `python scripts/gen-icons.py icon <id>` paints each one image-to-image against the **frozen golden style set** in `assets-src/icons/style/` with the fixed style block, and `build` makes `public/icons/*.webp` and `inventory/iconManifest.ts`. Colour variants are re-tinted from one painting, not generated separately. Don't regenerate the golden set without regenerating every icon, and view each new icon (and `contact-sheet.png`) before using it. See `assets-src/icons/README.md`.
 - **Collecting & inventory** (docs: `documentation/poc-3d-navigation/collection-inventory.md`): the slot rules are pure in `inventory/inventory.ts` (containers, picking up) and `inventory/screenOps.ts` (what the screen does: Minecraft Java's clicks and drags, Mouse Tweaks' shift-drag and wheel, sorting and the chest shortcuts; it loads with the screen, so keep screen-only operations there, not in the main bundle's `Inventory` class; keep both unit-tested), items in `inventory/items.ts`, world drops in `world/dropSim.ts` (not `drops.ts`: it would collide with `Drops.tsx` on Windows), targets in `systems/interactables.ts`, and the fixed action cycles in `systems/actions.ts`. A new source of items is a target kind plus a cycle whose beats spawn drops; never add items to the backpack directly from the world (they go through drops and the magnet). Call `controller.invChanged()` after every inventory change (it re-renders and saves). A target that belongs to a chunk (crafting, the family, the garden's can and plants) is pushed by the chunk with its own `label` / `use` / `usable` / `icon`; a chunk plays a cycle with `controller.startAction` and reads `controller.cycles` / `controller.poses` instead of importing `systems/actions.ts` at runtime. The action poses (`player/actionPoses.ts`) now load with the crafting chunk, which sets `controller.actionPose` (a chunk's own pose in `controller.poses`, like the watering, comes first); the avatars ask the controller, never import them (it took 0.9 KB off the initial bundle). The garden's rules are pure in `world/home/garden.ts` (docs: `family.md` §6.2).
 - **UI control icons:** use Font Awesome Free *solid* icons (`@fortawesome/free-solid-svg-icons`, pinned) through `src/game/ui/Icon.tsx` for every other icon need: import each icon by name so the bundle keeps only those used. The icons module lives in the initial bundle, so an icon a chunk adds costs the initial JS too: reuse one the game already ships where it fits. Never use emojis or text symbols (☀ 🔊 ↗ ▲ …) as icons, and don't load an icon font or CDN. `Icon` renders `aria-hidden` SVG with `data-icon`; give the button its own accessible name.
@@ -183,7 +211,7 @@ Tier 3 triggers (these are the "risky change" cases; otherwise don't):
 - A targeted run failed for a reason you don't understand, or the fix touched more than the original change.
 
 Rules of thumb:
-- Map the change to E2E groups by area: `landing & classic`, `capability gate`, `rendering` (post FX, exposure, textures), `day–night` (sky, lamps, clouds, clock), `view controls`, `landscape & wind` (terrain, water, wading, wind), `doors`, `sound`, `player character`, `planet` (movement, proximity, dialogs, travel, reset, a11y). Run the one or two groups you touched, or a single test by title.
+- Map the change to E2E groups by area: `landing & classic`, `site design system` (the website's components, theme, select, lightbox, carousel, the design library, axe in both modes), `capability gate`, `rendering` (post FX, exposure, textures), `day–night` (sky, lamps, clouds, clock), `view controls`, `landscape & wind` (terrain, water, wading, wind), `doors`, `sound`, `player character`, `planet` (movement, proximity, dialogs, travel, reset, a11y). Run the one or two groups you touched, or a single test by title.
 - Don't re-run a check whose inputs haven't changed since it last passed (e.g. unit tests after a docs-only fix, or E2E after only editing a unit test).
 - Don't re-capture README screenshots unless the change visibly alters that view.
 - A timeout under host load isn't a regression: re-run that one test before investigating, and compare with the baseline only if it fails again.

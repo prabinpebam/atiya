@@ -1,0 +1,24 @@
+---
+import Example from '../library/Example.astro';
+import Figure from '../components/compounds/Figure.astro';
+import Lightbox from '../components/compounds/Lightbox.astro';
+import { sample } from '../design/samples';
+
+const plaza = sample('plaza');
+const lighthouse = sample('lighthouse-dusk');
+const night = sample('plaza-night');
+---
+
+<Example title="A content figure" layout="block" description="A single plate with a caption and a soft image radius.">
+  <Figure src={plaza.src} srcset={plaza.srcset} alt={plaza.alt} imageWidth={plaza.width} imageHeight={plaza.height} full={plaza.full} thumb={plaza.thumb} caption={plaza.caption} credit="Painted concept art" lightbox="figure-story" />
+</Example>
+
+<Example title="A popout figure" layout="block" description="The root only declares data-breakout; the article grid decides where it lands.">
+  <Figure src={lighthouse.src} srcset={lighthouse.srcset} alt={lighthouse.alt} imageWidth={lighthouse.width} imageHeight={lighthouse.height} full={lighthouse.full} thumb={lighthouse.thumb} caption={lighthouse.caption} width="popout" lightbox="figure-story" />
+</Example>
+
+<Example title="A full figure" layout="block" bleed description="Full bleed keeps the picture square at the edge.">
+  <Figure src={night.src} srcset={night.srcset} alt={night.alt} imageWidth={night.width} imageHeight={night.height} full={night.full} thumb={night.thumb} caption={night.caption} width="full" lightbox="figure-story" />
+</Example>
+
+<Lightbox />

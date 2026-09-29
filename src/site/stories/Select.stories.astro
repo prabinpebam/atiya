@@ -1,0 +1,38 @@
+---
+import Example from '../library/Example.astro';
+import Select from '../components/fundamentals/Select.astro';
+
+const faces = [
+  { value: 'display', label: 'Fraunces', description: 'Headlines, quotes, big numbers' },
+  { value: 'text', label: 'Newsreader', description: 'Reading' },
+  { value: 'ui', label: 'Figtree', description: 'The interface' },
+];
+const themes = [
+  { value: 'system', label: 'Match system', icon: 'theme-system' as const },
+  { value: 'light', label: 'Light', icon: 'theme-light' as const },
+  { value: 'dark', label: 'Dark', icon: 'theme-dark' as const },
+];
+const places = ['Amphitheater', 'Greenhouse', 'Library', 'Lighthouse', 'Post Office', 'Town Hall', 'Workshop', 'The plaza', 'The pond', 'The waterfall', 'The bridge', 'The viewing deck'].map((p) => ({ value: p.toLowerCase().replace(/\s+/g, '-'), label: p }));
+---
+
+<Example title="A field" layout="stack" description="The list is our own: rounded, with a second line and a check on the chosen option. Try the arrow keys, Home and End, or type a letter.">
+  <Select label="Typeface" options={faces} value="text" name="face" hint="The face this block is set in." />
+</Example>
+
+<Example title="With icons" layout="stack">
+  <Select label="Colour theme" options={themes} value="system" />
+</Example>
+
+<Example title="A long list" layout="stack" description="It scrolls inside, keeps the active option in view, and opens upward when there's no room below.">
+  <Select label="Go to a place" options={places} placeholder="Choose a place" />
+</Example>
+
+<Example title="Small, invalid and disabled" layout="stack">
+  <Select label="Typeface" options={faces} size="sm" />
+  <Select label="Place" options={places} placeholder="Choose a place" error="Choose a place to see it on the planet." />
+  <Select label="Typeface" options={faces} disabled />
+</Example>
+
+<Example title="An icon trigger" description="A round button showing the chosen option's icon: the header's theme switch. Its label is visually hidden but always there.">
+  <Select label="Colour theme" options={themes} value="system" trigger="icon" hideLabel />
+</Example>

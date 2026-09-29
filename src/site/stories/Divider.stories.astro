@@ -1,0 +1,17 @@
+---
+import Example from '../library/Example.astro';
+import Divider from '../components/fundamentals/Divider.astro';
+import Text from '../components/fundamentals/Text.astro';
+---
+
+<Example title="Hairline" layout="stack">
+  <Text>The end of one part.</Text>
+  <Divider />
+  <Text>The start of the next.</Text>
+</Example>
+
+<Example title="Dinkus" layout="stack" description="Three marigold dots: a turn in the story, as a magazine sets it.">
+  <Text>And that was the last of the summer.</Text>
+  <Divider variant="dinkus" spacing="lg" />
+  <Text>By October, the team had doubled.</Text>
+</Example>

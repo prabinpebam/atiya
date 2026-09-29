@@ -1,0 +1,150 @@
+/* ---------- The site's base: element defaults only (design-system.md §3) ----------
+ * Tier 0 with the tokens: this file styles elements and two utilities, never a component. Every value
+ * comes from a token (tokens.css, generated); tests/unit/siteDesignSystem.test.ts enforces it. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-ui);
+  font-size: 100%;
+  line-height: var(--leading-ui);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  font-optical-sizing: auto;
+  scroll-padding-top: var(--c-header-height);
+  scrollbar-color: var(--c-scrollbar-thumb) var(--color-bg);
+  hanging-punctuation: first;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-variation-settings: var(--axes-display);
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
+}
+
+p,
+li,
+figcaption {
+  text-wrap: pretty;
+}
+
+img,
+picture,
+video,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+img,
+video {
+  height: auto;
+}
+
+input,
+button,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration-thickness: var(--border-hairline);
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+  text-decoration-thickness: var(--border-strong);
+}
+
+:focus-visible {
+  outline: var(--border-focus) solid var(--color-focus);
+  outline-offset: var(--border-focus-offset);
+}
+
+::selection {
+  background: var(--color-mark);
+  color: var(--color-text);
+}
+
+mark {
+  background: var(--color-mark);
+  color: var(--color-text);
+  border-radius: var(--radius-xs);
+  padding-inline: var(--space-0-5);
+}
+
+/* force a subtree into one mode: every colour role is a light-dark() pair */
+[data-scheme='light'] {
+  color-scheme: light;
+}
+
+[data-scheme='dark'] {
+  color-scheme: dark;
+}
+
+[data-scheme] {
+  color: var(--color-text);
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

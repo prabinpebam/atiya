@@ -1,0 +1,19 @@
+---
+import Example from '../library/Example.astro';
+import Skeleton from '../components/fundamentals/Skeleton.astro';
+---
+
+<Example title="Text" layout="stack" description="Text skeletons hold the reading rhythm while content streams in.">
+  <Skeleton shape="text" lines={4} />
+</Example>
+
+<Example title="Blocks" layout="stack" description="Blocks match the image ratios used elsewhere in the classic site.">
+  <Skeleton shape="block" ratio="16/9" />
+  <Skeleton shape="block" ratio="4/3" />
+</Example>
+
+<Example title="Circles" description="Circle skeletons are for avatars and compact identity marks.">
+  <Skeleton shape="circle" size="sm" />
+  <Skeleton shape="circle" />
+  <Skeleton shape="circle" size="lg" />
+</Example>

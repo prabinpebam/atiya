@@ -1,0 +1,28 @@
+---
+import Example from '../library/Example.astro';
+import { withBase } from '../design/meta';
+import Prose from '../components/fundamentals/Prose.astro';
+---
+
+<Example title="Rich text" layout="block" description="What Markdown produces, set as a magazine sets it: a drop cap, headings, lists, a quotation, a dinkus.">
+  <Prose dropcap>
+    <p>Walking is the whole interface. The planet turns under your feet, so the path ahead always rises to meet you, and every landmark you reach opens a part of the story. The <a href={withBase('/classic/')}>classic site</a> has the same words as plain pages.</p>
+    <h2>What’s on the planet</h2>
+    <p>Seven landmarks, a plaza at the pole, a family at home and a small dog called Chopper. Each landmark is a section of the site:</p>
+    <ul>
+      <li><strong>The workshop</strong> holds the case studies.</li>
+      <li><strong>The town hall</strong> is about leading teams.</li>
+      <li><strong>The library</strong> holds the writing.</li>
+    </ul>
+    <blockquote><p>The classic site must stay reachable from every state.</p></blockquote>
+    <hr />
+    <h3>How it’s drawn</h3>
+    <p>Everything is built in code from small parts, painted with generated textures, and lit by a sun that sets. Read the <code>art-pipeline</code> notes for how.</p>
+  </Prose>
+</Example>
+
+<Example title="Lead size" layout="block" description="A short introduction, a size up.">
+  <Prose size="lead">
+    <p>A portfolio you can walk around, and the same portfolio as plain pages.</p>
+  </Prose>
+</Example>

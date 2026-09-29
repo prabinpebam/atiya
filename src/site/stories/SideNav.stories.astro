@@ -1,0 +1,29 @@
+---
+import Example from '../library/Example.astro';
+import SideNav from '../components/compounds/SideNav.astro';
+import { withBase } from '../design/meta';
+
+const groups = [
+  { title: 'Start', items: [{ label: 'Overview', href: withBase('/design/') }] },
+  {
+    title: 'Tokens',
+    items: [
+      { label: 'Colour', href: withBase('/design/tokens/color/'), current: true },
+      { label: 'Typography', href: withBase('/design/tokens/typography/') },
+      { label: 'Motion', href: withBase('/design/tokens/motion/'), note: 'New' },
+    ],
+  },
+];
+---
+
+<Example title="Groups and the current page" layout="block" description="The library’s own navigation, as a component: on a narrow screen it folds into a disclosure.">
+  <div class="demo-side">
+    <SideNav label="Example navigation" groups={groups} />
+  </div>
+</Example>
+
+<style>
+  .demo-side {
+    max-width: 17rem;
+  }
+</style>

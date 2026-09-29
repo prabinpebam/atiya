@@ -1,0 +1,25 @@
+---
+import Example from '../library/Example.astro';
+import Tag from '../components/fundamentals/Tag.astro';
+import Text from '../components/fundamentals/Text.astro';
+---
+
+<Example title="What it sets" layout="stack" description="PageShell is a whole document, so it can’t sit in a box on this page: this page is one. Every layout starts with it.">
+  <Text variant="small">The document’s language, the viewport and the title; the description and the social card; the browser’s theme colour for each mode (read from the tokens); the three typefaces, with the two needed first preloaded; the saved colour theme, applied before the first paint; and a skip link to the main content, the first stop for Tab.</Text>
+  <div class="demo-tags">
+    <Tag>lang="en"</Tag>
+    <Tag>color-scheme: light dark</Tag>
+    <Tag>theme-color from tokens</Tag>
+    <Tag>Fonts preloaded</Tag>
+    <Tag>No theme flash</Tag>
+    <Tag>Skip to content</Tag>
+  </div>
+</Example>
+
+<style>
+  .demo-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+</style>

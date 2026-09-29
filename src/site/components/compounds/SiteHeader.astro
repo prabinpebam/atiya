@@ -1,0 +1,279 @@
+---
+/**
+ * The site's masthead: the name, the sections, the colour theme and the way into the planet. It stays
+ * at the top while you read; under 56 rem the sections fold into a menu.
+ * @tier compound
+ * @a11y A banner landmark with a labelled navigation; the current section is marked aria-current.
+ * @a11y The menu button says whether the menu is open (aria-expanded) and what it controls.
+ * @a11y The theme switch is the custom select: Match system, Light or Dark, remembered.
+ * @key Escape: closes the menu
+ */
+import Button from '../fundamentals/Button.astro';
+import IconButton from '../fundamentals/IconButton.astro';
+import Select from '../fundamentals/Select.astro';
+import { SITE_NAME, withBase } from '../../design/meta';
+import type { IconName } from '../../design/icons';
+
+export interface NavItem {
+  label: string;
+  href: string;
+  current?: boolean;
+}
+
+interface Props {
+  /** The sections, in order. */
+  nav?: NavItem[];
+  /** The one action at the end of the bar (Explore the planet). */
+  action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
+  /** Where the name goes (the site's home). */
+  homeHref?: string;
+  /** A second name beside the site's, for a part of the site with its own nav (the design library). */
+  section?: { label: string; href: string };
+  /** The navigation's accessible name. */
+  navLabel?: string;
+}
+
+const { nav = [], action, homeHref = withBase('/'), section, navLabel = 'Sections' } = Astro.props;
+// unique per header, so a page can show more than one (the design library does)
+const uid = Math.random().toString(36).slice(2, 8);
+const navId = `site-nav-${uid}`;
+const themes = [
+  { value: 'system', label: 'Match system', icon: 'theme-system' as const },
+  { value: 'light', label: 'Light', icon: 'theme-light' as const },
+  { value: 'dark', label: 'Dark', icon: 'theme-dark' as const },
+];
+---
+
+<header class="site-header" data-site-header>
+  <div class="bar">
+    <p class="brand">
+      <a class="name" href={homeHref}>{SITE_NAME}</a>
+      {
+        section && (
+          <>
+            <span class="slash" aria-hidden="true">/</span>
+            <a class="section" href={section.href}>
+              {section.label}
+            </a>
+          </>
+        )
+      }
+    </p>
+    {
+      nav.length > 0 && (
+        <nav class="nav" id={navId} aria-label={navLabel} data-nav>
+          <ul>
+            {nav.map((n) => (
+              <li>
+                <a href={n.href} aria-current={n.current ? 'page' : undefined}>
+                  {n.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+    <div class="tools">
+      <Select label="Colour theme" hideLabel trigger="icon" align="end" options={themes} value="system" id={`site-theme-${uid}`} data-theme-switch="" />
+      {
+        action && (
+          <span class="action">
+            <Button variant="primary" size="sm" href={action.href} icon={action.icon} {...action.data}>
+              {action.label}
+            </Button>
+          </span>
+        )
+      }
+      {nav.length > 0 && <span class="menu"><IconButton label="Open menu" icon="menu" aria-controls={navId} aria-expanded="false" tooltip="none" data-menu-toggle="" /></span>}
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--layer-sticky);
+    background: var(--c-header-bg);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    max-width: var(--size-max);
+    min-height: var(--c-header-height);
+    margin-inline: auto;
+    padding-inline: var(--space-gutter);
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin: 0;
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-size: var(--text-h4);
+    font-weight: var(--weight-display);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+    white-space: nowrap;
+  }
+
+  .brand a {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .brand a:hover {
+    color: var(--color-accent);
+  }
+
+  .slash {
+    color: var(--color-text-muted);
+  }
+
+  .section {
+    font-style: italic;
+    font-variation-settings: var(--axes-display-italic);
+  }
+
+  .nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    background-image: linear-gradient(var(--color-accent), var(--color-accent));
+    background-size: 0% var(--border-strong);
+    background-position: 0 calc(100% - var(--space-2));
+    background-repeat: no-repeat;
+    transition: background-size var(--duration-base) var(--ease-standard);
+  }
+
+  .nav a:hover,
+  .nav a[aria-current='page'] {
+    background-size: 100% var(--border-strong);
+  }
+
+  .nav a[aria-current='page'] {
+    font-weight: var(--weight-semibold);
+  }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-inline-start: auto;
+  }
+
+  .menu {
+    display: none;
+  }
+
+  @media (max-width: 56rem) {
+    .bar {
+      flex-wrap: wrap;
+      gap: var(--space-2) var(--space-4);
+    }
+
+    .menu {
+      display: inline-flex;
+    }
+
+    .nav {
+      order: 3;
+      flex-basis: 100%;
+      display: none;
+      padding-block-end: var(--space-4);
+    }
+
+    .site-header[data-menu-open] .nav {
+      display: block;
+    }
+
+    .nav ul {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .nav a {
+      width: 100%;
+      font-size: var(--text-lg);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .action {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { THEMES, applyTheme, readTheme, type Theme } from '../../scripts/theme';
+
+  const store = (() => {
+    try {
+      return localStorage;
+    } catch {
+      return null;
+    }
+  })();
+
+  document.querySelectorAll<HTMLElement>('[data-site-header]').forEach((header) => {
+    const sw = header.querySelector<HTMLElement>('[data-theme-switch]');
+    if (sw) {
+      const show = () => sw.dispatchEvent(new CustomEvent('select-set', { detail: { value: readTheme(store) } }));
+      if (sw.dataset.ready !== undefined) show();
+      else sw.addEventListener('select-ready', show, { once: true });
+      sw.addEventListener('select-change', (e) => {
+        const v = (e as CustomEvent<{ value: string }>).detail.value as Theme;
+        if ((THEMES as readonly string[]).includes(v)) applyTheme(v, document.documentElement, store);
+      });
+    }
+    const toggle = header.querySelector<HTMLElement>('[data-menu-toggle]');
+    const nav = header.querySelector<HTMLElement>('[data-nav]');
+    if (!toggle || !nav) return;
+    const btn = toggle.querySelector<HTMLButtonElement>('button') ?? (toggle as HTMLButtonElement);
+    const setOpen = (open: boolean) => {
+      header.toggleAttribute('data-menu-open', open);
+      btn.setAttribute('aria-expanded', String(open));
+      btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      btn.dataset.label = open ? 'Close menu' : 'Open menu';
+    };
+    btn.addEventListener('click', () => setOpen(!header.hasAttribute('data-menu-open')));
+    header.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && header.hasAttribute('data-menu-open')) {
+        setOpen(false);
+        btn.focus();
+      }
+    });
+    nav.addEventListener('click', (e) => (e.target as Element).closest('a') && setOpen(false));
+  });
+
+  // a way into the planet or the classic site remembers which the visitor chose (the landing reads it)
+  document.querySelectorAll<HTMLAnchorElement>('[data-site-header] a[data-site-mode]').forEach((a) =>
+    a.addEventListener('click', () => {
+      try {
+        localStorage.setItem('site.mode', a.dataset.siteMode!);
+      } catch {
+        /* private mode */
+      }
+    }),
+  );
+</script>

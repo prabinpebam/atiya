@@ -1,0 +1,24 @@
+---
+import Example from '../library/Example.astro';
+import Text from '../components/fundamentals/Text.astro';
+---
+
+<Example title="Reading" layout="stack" description="Body for running text; lead for a bigger opening paragraph; standfirst for the soft italic line under a title.">
+  <Text variant="standfirst">How a small planet became the front door of a portfolio.</Text>
+  <Text variant="lead">The planet turns under your feet as you walk, so the path ahead always rises to meet you.</Text>
+  <Text>Each landmark holds a part of the story, and the classic site holds the same words as plain pages, for anyone who would rather read than walk.</Text>
+</Example>
+
+<Example title="Interface" layout="stack" description="Figtree for everything you act on or scan: ui, small, meta and label.">
+  <Text variant="ui">Pick a colour theme for the site.</Text>
+  <Text variant="small">The planet needs WebGL 2; the classic site works everywhere.</Text>
+  <Text variant="meta" as="time" datetime="2026-09-29">29 September 2026</Text>
+  <Text variant="label">Typeface</Text>
+</Example>
+
+<Example title="Tones" layout="stack" description="Colour adds meaning to words that already carry it: never the only signal.">
+  <Text variant="small" tone="muted">Muted: a hint or a secondary line.</Text>
+  <Text variant="small" tone="accent">Accent: a word that belongs to the interface.</Text>
+  <Text variant="small" tone="positive">Positive: your message is on its way.</Text>
+  <Text variant="small" tone="negative">Negative: that address is missing an @. Add it and send again.</Text>
+</Example>

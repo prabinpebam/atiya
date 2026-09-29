@@ -1,0 +1,22 @@
+---
+import Example from '../library/Example.astro';
+import Heading from '../components/fundamentals/Heading.astro';
+---
+
+<Example title="The ramp" layout="stack" description="The level is the outline; the size is the look. Every size is fluid: it grows with the window.">
+  <Heading level={2} size="display">Display</Heading>
+  <Heading level={2} size="h1">An article’s title</Heading>
+  <Heading level={2} size="h2">A chapter heading</Heading>
+  <Heading level={3} size="h3">A section heading</Heading>
+  <Heading level={4} size="h4">A small heading</Heading>
+  <Heading level={5} size="ui">An interface heading</Heading>
+</Example>
+
+<Example title="Italic and muted" layout="stack" description="The soft, wonky italic names a section; muted names a group.">
+  <Heading level={2} size="h2" italic>Notes from the workshop</Heading>
+  <Heading level={3} size="ui" tone="muted">Related stories</Heading>
+</Example>
+
+<Example title="Jumbo" layout="stack" description="For a section opener or a number that is the point.">
+  <Heading level={2} size="jumbo">Chapter one</Heading>
+</Example>

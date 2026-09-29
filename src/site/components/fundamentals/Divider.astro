@@ -1,0 +1,48 @@
+---
+/**
+ * A break between things: a hairline rule, or the three-dot dinkus a magazine sets between the parts
+ * of a story when the subject turns.
+ * @tier fundamental
+ * @a11y A separator (hr); the dinkus's dots are drawn, so nothing is read out but the break.
+ */
+interface Props {
+  /** hairline: a thin rule; dinkus: three dots, centred, for a turn in a story; space: whitespace only. */
+  variant?: 'hairline' | 'dinkus' | 'space';
+  /** How much room around it. */
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const { variant = 'hairline', spacing = 'md' } = Astro.props;
+---
+
+<hr class="divider" data-variant={variant} data-spacing={spacing} />
+
+<style>
+  .divider {
+    width: 100%;
+    height: var(--border-hairline);
+    margin: var(--space-8) 0;
+    border: 0;
+    background: var(--color-rule);
+  }
+
+  .divider[data-spacing='sm'] {
+    margin-block: var(--space-4);
+  }
+
+  .divider[data-spacing='lg'] {
+    margin-block: var(--space-block);
+  }
+
+  .divider[data-variant='space'] {
+    background: transparent;
+  }
+
+  .divider[data-variant='dinkus'] {
+    height: var(--space-2);
+    background:
+      radial-gradient(circle, var(--color-highlight) 45%, transparent 50%) center / var(--space-2) var(--space-2) no-repeat,
+      radial-gradient(circle, var(--color-highlight) 45%, transparent 50%) calc(50% - var(--space-6)) 50% / var(--space-2) var(--space-2) no-repeat,
+      radial-gradient(circle, var(--color-highlight) 45%, transparent 50%) calc(50% + var(--space-6)) 50% / var(--space-2) var(--space-2) no-repeat;
+  }
+</style>

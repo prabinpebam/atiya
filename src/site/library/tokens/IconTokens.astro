@@ -1,0 +1,67 @@
+---
+/**
+ * The icons: every Font Awesome solid icon the site uses, by the name components ask for it.
+ * Library-only.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import { ICONS, type IconName } from '../../design/icons';
+
+const names = Object.keys(ICONS).sort() as IconName[];
+---
+
+<section class="block" aria-labelledby="icons">
+  <Heading level={2} size="h2" id="icons">The set</Heading>
+  <Text narrow>
+    Font Awesome Free, solid, the same family the planet’s interface uses (CC BY 4.0). Each is data in src/site/design/icons.ts, drawn as inline SVG on the server: no icon font, no request. An icon is never a button’s only name, and never an emoji or a text symbol.
+  </Text>
+  <ul class="grid">
+    {
+      names.map((n) => (
+        <li id={`icon-${n}`}>
+          <span class="glyph">
+            <Icon name={n} size="lg" />
+          </span>
+          <code>{n}</code>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .block {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    padding: var(--space-5) var(--space-2);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-sunk);
+  }
+
+  .glyph {
+    color: var(--color-text);
+  }
+
+  code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+</style>

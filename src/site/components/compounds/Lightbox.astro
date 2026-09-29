@@ -1,0 +1,383 @@
+---
+/**
+ * The page’s one image lightbox: a native modal dialog with a smoke scrim, previous and next controls,
+ * a live counter, captions and a filmstrip. Figures, galleries and carousels only provide links.
+ * @tier compound
+ * @a11y Uses <dialog>.showModal(), so focus is trapped, the page behind is inert and Escape closes it.
+ * @a11y The opener keeps focus history; closing returns focus to the thumbnail that opened it.
+ * @a11y The counter is announced politely, and every filmstrip thumbnail is a named button.
+ * @key Left / Right: previous / next image
+ * @key Home / End: first / last image
+ * @key Escape: closes the lightbox
+ */
+import IconButton from '../fundamentals/IconButton.astro';
+import Caption from '../fundamentals/Caption.astro';
+
+interface Props {
+  /** A page-unique id for the dialog. */
+  id?: string;
+}
+
+const { id = 'site-lightbox' } = Astro.props;
+---
+
+<dialog class="lightbox" id={id} aria-label="Image viewer" data-lightbox-dialog>
+  <div class="smoke" aria-hidden="true"></div>
+  <div class="shell">
+    <div class="topbar">
+      <p class="counter" aria-live="polite" aria-atomic="true" data-lightbox-counter>1 of 1</p>
+      <IconButton label="Close" icon="close" variant="overlay" tooltip="none" data-lightbox-close="" />
+    </div>
+    <div class="stage-row">
+      <span class="side"><IconButton label="Previous image" icon="chevron-left" variant="overlay" size="lg" tooltip="none" data-lightbox-prev="" /></span>
+      <div class="stage" data-lightbox-stage>
+        <img class="stage-image" alt="" data-lightbox-image />
+      </div>
+      <span class="side"><IconButton label="Next image" icon="chevron-right" variant="overlay" size="lg" tooltip="none" data-lightbox-next="" /></span>
+    </div>
+    <div class="caption-wrap" data-lightbox-caption-wrap>
+      <Caption as="p" tone="on-image" align="center"><span data-lightbox-caption></span></Caption>
+    </div>
+    <div class="filmstrip" role="group" aria-label="Pictures" data-lightbox-strip></div>
+  </div>
+</dialog>
+
+<style>
+  /* the whole viewport, so the smoke has no edge; the content keeps its own width */
+  .lightbox {
+    color-scheme: dark;
+    position: fixed;
+    inset: 0;
+    z-index: var(--layer-lightbox);
+    width: 100dvw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-on-image);
+    overflow: hidden;
+  }
+
+  .lightbox:not([open]) {
+    display: none;
+  }
+
+  .lightbox::backdrop {
+    background: var(--color-scrim);
+    backdrop-filter: blur(var(--space-2));
+  }
+
+  .smoke {
+    position: absolute;
+    inset: calc(var(--space-24) * -1);
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 18% 24%, var(--color-smoke), transparent 36%),
+      radial-gradient(circle at 82% 18%, var(--color-smoke-faint), transparent 34%),
+      radial-gradient(circle at 48% 86%, var(--color-smoke), transparent 40%);
+    filter: blur(var(--space-8));
+    animation: drift var(--duration-drift) linear infinite;
+  }
+
+  .shell {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    gap: var(--space-4);
+    height: 100%;
+    max-width: var(--size-max);
+    margin-inline: auto;
+    padding: var(--space-6);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .counter {
+    margin: 0;
+    color: var(--color-on-image);
+    font-family: var(--font-ui);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .stage-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 0;
+  }
+
+  .stage {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    border-radius: var(--radius-xl);
+    background: var(--color-image-shade);
+    overflow: clip;
+    touch-action: pan-y;
+  }
+
+  .stage-image {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    object-fit: contain;
+    opacity: 1;
+    transition: opacity var(--duration-slow) var(--ease-standard);
+  }
+
+  .stage[data-fading] .stage-image {
+    opacity: 0;
+  }
+
+  .caption-wrap[hidden] {
+    display: none;
+  }
+
+  .filmstrip {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-block: var(--space-1);
+    scrollbar-color: var(--c-scrollbar-thumb) transparent;
+    scrollbar-width: thin;
+  }
+
+  .filmstrip::-webkit-scrollbar {
+    height: var(--c-scrollbar-size);
+  }
+
+  .filmstrip::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background: var(--c-scrollbar-thumb);
+  }
+
+  .filmstrip::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  :global(.lightbox [data-lightbox-thumb]) {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: var(--c-lightbox-thumb);
+    height: var(--c-lightbox-thumb);
+    padding: var(--space-0);
+    border: var(--border-strong) solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  :global(.lightbox [data-lightbox-thumb][aria-current='true']) {
+    border-color: var(--c-lightbox-thumb-on);
+  }
+
+  :global(.lightbox [data-lightbox-thumb] img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @keyframes drift {
+    50% {
+      transform: translate3d(var(--space-8), calc(var(--space-6) * -1), 0) scale(1.04);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .lightbox {
+      width: 100dvw;
+      height: 100dvh;
+      max-height: 100dvh;
+    }
+
+    .shell {
+      padding: var(--space-3);
+    }
+
+    .stage-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* on a phone, swipe (or the filmstrip) instead of the side buttons */
+    .side {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .smoke {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { counter, swipe, wrap } from '../../scripts/media';
+
+  interface LightboxItem {
+    link: HTMLAnchorElement;
+    href: string;
+    thumb: string;
+    caption: string;
+    alt: string;
+  }
+
+  const itemFrom = (link: HTMLAnchorElement): LightboxItem => {
+    const img = link.querySelector<HTMLImageElement>('img');
+    return {
+      link,
+      href: link.href,
+      thumb: link.dataset.thumb || img?.currentSrc || img?.src || link.href,
+      caption: link.dataset.caption || '',
+      alt: link.dataset.alt || img?.alt || '',
+    };
+  };
+
+  document.querySelectorAll<HTMLDialogElement>('[data-lightbox-dialog]').forEach((dialog) => {
+    if (dialog.dataset.ready !== undefined) return;
+    dialog.dataset.ready = '';
+
+    const image = dialog.querySelector<HTMLImageElement>('[data-lightbox-image]');
+    const stage = dialog.querySelector<HTMLElement>('[data-lightbox-stage]');
+    const count = dialog.querySelector<HTMLElement>('[data-lightbox-counter]');
+    const caption = dialog.querySelector<HTMLElement>('[data-lightbox-caption]');
+    const captionWrap = dialog.querySelector<HTMLElement>('[data-lightbox-caption-wrap]');
+    const strip = dialog.querySelector<HTMLElement>('[data-lightbox-strip]');
+    const close = dialog.querySelector<HTMLButtonElement>('[data-lightbox-close]');
+    const prev = dialog.querySelector<HTMLButtonElement>('[data-lightbox-prev]');
+    const next = dialog.querySelector<HTMLButtonElement>('[data-lightbox-next]');
+    if (!image || !stage || !count || !caption || !captionWrap || !strip || !close || !prev || !next) return;
+
+    let items: LightboxItem[] = [];
+    let index = 0;
+    let opener: HTMLElement | null = null;
+    let down: { x: number; y: number; id: number } | null = null;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const preload = (i: number) => {
+      if (items.length < 2) return;
+      const src = items[wrap(i, items.length)]?.href;
+      if (!src) return;
+      const img = new Image();
+      img.src = src;
+    };
+
+    const paintStrip = () => {
+      strip.textContent = '';
+      items.forEach((item, i) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.lightboxThumb = '';
+        button.setAttribute('aria-label', item.alt ? `Show picture ${i + 1}: ${item.alt}` : `Show picture ${i + 1}`);
+        if (i === index) button.setAttribute('aria-current', 'true');
+        const img = document.createElement('img');
+        img.src = item.thumb;
+        img.alt = '';
+        button.append(img);
+        button.addEventListener('click', () => render(i));
+        strip.append(button);
+      });
+      strip.querySelector<HTMLElement>('[aria-current="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    };
+
+    const render = (nextIndex: number, instant = false) => {
+      if (!items.length) return;
+      index = wrap(nextIndex, items.length);
+      const item = items[index];
+      const apply = () => {
+        image.src = item.href;
+        image.alt = item.alt;
+        count.textContent = counter(index, items.length);
+        caption.textContent = item.caption;
+        captionWrap.hidden = item.caption.length === 0;
+        paintStrip();
+        preload(index + 1);
+        preload(index - 1);
+      };
+      if (instant || reduce) {
+        apply();
+        stage.removeAttribute('data-fading');
+        return;
+      }
+      stage.setAttribute('data-fading', '');
+      window.setTimeout(() => {
+        apply();
+        requestAnimationFrame(() => stage.removeAttribute('data-fading'));
+      }, 90);
+    };
+
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      const link = target instanceof Element ? target.closest<HTMLAnchorElement>('a[data-lightbox]') : null;
+      if (!link || !document.contains(link)) return;
+      if (event instanceof MouseEvent && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+      if (typeof dialog.showModal !== 'function') return;
+      const group = link.dataset.lightbox || '';
+      const links = [...document.querySelectorAll<HTMLAnchorElement>('a[data-lightbox]')].filter((a) => (a.dataset.lightbox || '') === group);
+      items = links.map(itemFrom);
+      index = Math.max(0, links.indexOf(link));
+      opener = link;
+      event.preventDefault();
+      if (!dialog.open) dialog.showModal();
+      render(index, true);
+      close.focus();
+    });
+
+    close.addEventListener('click', () => dialog.close());
+    prev.addEventListener('click', () => render(index - 1));
+    next.addEventListener('click', () => render(index + 1));
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => {
+      opener?.focus();
+      opener = null;
+    });
+    dialog.addEventListener('keydown', (event) => {
+      if (!dialog.open) return;
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        render(index - 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        render(index + 1);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        render(0);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        render(items.length - 1);
+      }
+    });
+    stage.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse') return;
+      down = { x: event.clientX, y: event.clientY, id: event.pointerId };
+      stage.setPointerCapture(event.pointerId);
+    });
+    stage.addEventListener('pointerup', (event) => {
+      if (!down || down.id !== event.pointerId) return;
+      const dir = swipe(event.clientX - down.x, event.clientY - down.y);
+      down = null;
+      if (dir !== 0) render(index + dir);
+    });
+  });
+</script>

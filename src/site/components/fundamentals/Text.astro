@@ -1,0 +1,105 @@
+---
+/**
+ * Running text and the interface's words, as a set of named styles: body (Newsreader, for reading),
+ * lead and standfirst (the bigger opening lines), and the interface's ui, small, meta and label (Figtree).
+ * Pick the style for the job, not a size.
+ * @tier fundamental
+ * @a11y Never below 14 px for anything you need to read; meta and small are the floor.
+ */
+interface Props {
+  /** body: reading text; lead: a bigger opening paragraph; standfirst: the soft italic line under a title; ui: interface text; small: a secondary line; meta: dates and bylines; label: a short bold name. */
+  variant?: 'body' | 'lead' | 'standfirst' | 'ui' | 'small' | 'meta' | 'label';
+  /** The element: a paragraph by default. */
+  as?: 'p' | 'span' | 'div' | 'strong' | 'time';
+  /** Colour for meaning the words already carry: never the only signal. */
+  tone?: 'default' | 'muted' | 'accent' | 'positive' | 'negative';
+  /** A time's machine-readable date (with as="time"). */
+  datetime?: string;
+  /** Keeps a short measure (standfirsts, short intros). */
+  narrow?: boolean;
+  /** The element’s id (for aria-describedby). */
+  id?: string;
+}
+
+const { variant = 'body', as = 'p', tone = 'default', datetime, narrow = false, id } = Astro.props;
+const Tag = as;
+---
+
+<Tag class="text" data-variant={variant} data-tone={tone} data-narrow={narrow ? '' : undefined} datetime={as === 'time' ? datetime : undefined} id={id}><slot /></Tag>
+
+<style>
+  .text {
+    margin: 0;
+    color: var(--color-text);
+    text-wrap: pretty;
+  }
+
+  .text[data-variant='body'] {
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+  }
+
+  .text[data-variant='lead'] {
+    font-family: var(--font-text);
+    font-size: var(--text-lead);
+    line-height: var(--leading-heading);
+  }
+
+  .text[data-variant='standfirst'] {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings: var(--axes-display-italic);
+    font-weight: var(--weight-regular);
+    font-size: var(--text-lead);
+    line-height: var(--leading-heading);
+  }
+
+  .text[data-variant='ui'] {
+    font-family: var(--font-ui);
+    font-size: var(--text-md);
+    line-height: var(--leading-ui);
+  }
+
+  .text[data-variant='small'] {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+
+  .text[data-variant='meta'] {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+    color: var(--color-text-muted);
+  }
+
+  .text[data-variant='label'] {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    line-height: var(--leading-ui);
+  }
+
+  .text[data-tone='muted'] {
+    color: var(--color-text-muted);
+  }
+
+  .text[data-tone='accent'] {
+    color: var(--color-accent);
+  }
+
+  .text[data-tone='positive'] {
+    color: var(--color-positive);
+  }
+
+  .text[data-tone='negative'] {
+    color: var(--color-negative);
+  }
+
+  .text[data-narrow] {
+    max-width: var(--size-measure-narrow);
+  }
+</style>

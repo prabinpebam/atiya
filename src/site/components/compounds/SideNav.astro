@@ -1,0 +1,152 @@
+---
+/**
+ * A side navigation for a part of the site with many pages (the design library): named groups of
+ * links, the current page marked, scrolling on its own. On narrow screens it folds into a disclosure
+ * above the content.
+ * @tier compound
+ * @a11y A labelled navigation landmark; each group is a list under its own heading; the current page is aria-current.
+ * @a11y On narrow screens a native disclosure (details) shows and hides it: nothing to learn.
+ */
+interface Props {
+  /** The navigation's accessible name. */
+  label: string;
+  /** Named groups of links; mark the current page with current. */
+  groups: { title: string; items: { label: string; href: string; current?: boolean; note?: string }[] }[];
+}
+
+const { label, groups } = Astro.props;
+const current = groups.flatMap((g) => g.items).find((i) => i.current);
+const uid = Math.random().toString(36).slice(2, 8);
+---
+
+<nav class="side-nav" aria-label={label}>
+  <details class="fold" open data-side-nav>
+    <summary class="toggle">
+      <span class="toggle-label">{current ? current.label : label}</span>
+    </summary>
+    <div class="scroll">
+      {
+        groups.map((g, gi) => (
+          <section class="group" aria-labelledby={`side-nav-${uid}-${gi}`}>
+            <h2 class="title" id={`side-nav-${uid}-${gi}`}>
+              {g.title}
+            </h2>
+            <ul>
+              {g.items.map((i) => (
+                <li>
+                  <a href={i.href} aria-current={i.current ? 'page' : undefined}>
+                    <span>{i.label}</span>
+                    {i.note && <span class="note">{i.note}</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+  </details>
+</nav>
+
+<style>
+  .side-nav {
+    font-family: var(--font-ui);
+  }
+
+  .toggle {
+    display: none;
+  }
+
+  .scroll {
+    display: grid;
+    gap: var(--space-8);
+    max-height: calc(100dvh - var(--c-header-height) - var(--space-12));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-inline-end: var(--space-3);
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-scrollbar-thumb) transparent;
+  }
+
+  .title {
+    margin-block-end: var(--space-2);
+    font-family: var(--font-ui);
+    font-variation-settings: normal;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    color: var(--color-text-muted);
+  }
+
+  ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    min-height: var(--size-touch);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    text-decoration: none;
+    transition: background-color var(--duration-instant) var(--ease-standard);
+  }
+
+  a:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
+
+  a[aria-current='page'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+    font-weight: var(--weight-semibold);
+  }
+
+  .note {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular);
+  }
+
+  a[aria-current='page'] .note {
+    color: var(--color-on-accent-soft);
+  }
+
+  @media (max-width: 56rem) {
+    .toggle {
+      display: flex;
+      align-items: center;
+      min-height: var(--c-control-height-md);
+      padding: 0 var(--space-4);
+      border: var(--border-control) solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-raised);
+      font-weight: var(--weight-semibold);
+      cursor: pointer;
+    }
+
+    .fold[open] .toggle {
+      margin-block-end: var(--space-4);
+    }
+
+    .scroll {
+      max-height: none;
+    }
+  }
+</style>
+
+<script>
+  // open on wide screens (a sidebar), folded on narrow ones until asked for
+  const wide = matchMedia('(min-width: 56rem)');
+  const sync = () => document.querySelectorAll<HTMLDetailsElement>('[data-side-nav]').forEach((d) => (d.open = wide.matches));
+  sync();
+  wide.addEventListener('change', sync);
+</script>

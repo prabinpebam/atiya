@@ -1,0 +1,35 @@
+---
+import Example from '../library/Example.astro';
+import VideoEmbed from '../components/compounds/VideoEmbed.astro';
+import { SAMPLE_VIDEO, sample } from '../design/samples';
+
+const captions = { src: SAMPLE_VIDEO.captions, label: 'English', srclang: 'en' };
+const poster = sample('waterfall');
+---
+
+<Example title="A local file" layout="block" description="Local media keeps native controls and captions.">
+  <VideoEmbed
+    kind="file"
+    title="Planet tour"
+    src={SAMPLE_VIDEO.src}
+    poster={SAMPLE_VIDEO.poster}
+    mediaWidth={SAMPLE_VIDEO.width}
+    mediaHeight={SAMPLE_VIDEO.height}
+    captions={captions}
+    caption={SAMPLE_VIDEO.description}
+  />
+</Example>
+
+<Example title="A YouTube facade" layout="block" description="Only the local poster loads at first. The remote player is requested after Play video.">
+  <VideoEmbed
+    kind="youtube"
+    id="aqz-KE-bpKQ"
+    title="Big Buck Bunny sample"
+    poster={poster.src}
+    posterSrcset={poster.srcset}
+    posterAlt={poster.alt}
+    mediaWidth={poster.width}
+    mediaHeight={poster.height}
+    caption="A privacy-friendly facade for a remote video."
+  />
+</Example>

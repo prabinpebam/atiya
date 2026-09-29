@@ -1,0 +1,16 @@
+---
+import Example from '../library/Example.astro';
+import Icon from '../components/fundamentals/Icon.astro';
+import Text from '../components/fundamentals/Text.astro';
+---
+
+<Example title="Sizes" description="In a line of text, standing alone, or at the size of the text around it.">
+  <Icon name="planet" />
+  <Icon name="planet" size="lg" />
+  <Text variant="lead">A planet <Icon name="planet" size="inherit" /> in a line</Text>
+</Example>
+
+<Example title="A meaningful icon" description="Only a status on its own gets a label; everywhere else the words beside it say it.">
+  <Icon name="success" size="lg" label="Sent" />
+  <Icon name="error" size="lg" label="Not sent" />
+</Example>

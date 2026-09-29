@@ -1,0 +1,246 @@
+---
+/**
+ * Long-form text as a magazine sets it: the rich text of an article or a page (Markdown's output, or
+ * plain HTML) in Newsreader with a comfortable measure, headings in soft Fraunces, a drop cap if you
+ * want one, a dinkus for a rule, and a grid that lets figures, galleries and quotes step out of the
+ * column (they declare data-breakout="popout", "wide" or "full").
+ * @tier fundamental
+ * @a11y Keeps the document's own headings and lists: it only styles them.
+ * @a11y The reading column stays under about 70 characters; text never sits on a picture without a shade.
+ */
+interface Props {
+  /** A drop cap on the first paragraph: for an article's opening. */
+  dropcap?: boolean;
+  /** Lay the text on the breakout grid: children sit in the reading column unless they declare data-breakout. */
+  breakout?: boolean;
+  /** lead: the whole block a size up (a short introduction). */
+  size?: 'body' | 'lead';
+  /** The element’s id. */
+  id?: string;
+}
+
+const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
+---
+
+<div class="prose" data-dropcap={dropcap ? '' : undefined} data-breakout={breakout ? 'grid' : undefined} data-size={size} id={id}>
+  <slot />
+</div>
+
+<style>
+  .prose {
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    font-variant-numeric: oldstyle-nums proportional-nums;
+    color: var(--color-text);
+    max-width: var(--size-measure);
+  }
+
+  .prose[data-size='lead'] {
+    font-size: var(--text-lead);
+    line-height: var(--leading-heading);
+  }
+
+  /* ---------- the breakout grid: content, popout, wide, full ---------- */
+  .prose[data-breakout] {
+    display: grid;
+    max-width: none;
+    grid-template-columns:
+      [full-start] minmax(var(--space-gutter), 1fr)
+      [wide-start] minmax(0, calc((var(--size-wide) - var(--size-popout)) / 2))
+      [popout-start] minmax(0, calc((var(--size-popout) - var(--size-measure)) / 2))
+      [content-start] min(var(--size-measure), 100% - var(--space-gutter) * 2)
+      [content-end] minmax(0, calc((var(--size-popout) - var(--size-measure)) / 2))
+      [popout-end] minmax(0, calc((var(--size-wide) - var(--size-popout)) / 2))
+      [wide-end] minmax(var(--space-gutter), 1fr)
+      [full-end];
+  }
+
+  .prose[data-breakout] > :global(*) {
+    grid-column: content;
+  }
+
+  .prose[data-breakout] > :global([data-breakout='popout']) {
+    grid-column: popout;
+  }
+
+  .prose[data-breakout] > :global([data-breakout='wide']) {
+    grid-column: wide;
+  }
+
+  .prose[data-breakout] > :global([data-breakout='full']) {
+    grid-column: full;
+  }
+
+  /* ---------- flow: space between blocks, more before a heading or a picture ---------- */
+  .prose > :global(* + *) {
+    margin-block-start: var(--space-5);
+  }
+
+  .prose > :global(* + h2) {
+    margin-block-start: var(--space-block);
+  }
+
+  .prose > :global(* + h3),
+  .prose > :global(* + h4) {
+    margin-block-start: var(--space-10);
+  }
+
+  .prose > :global(h2 + *),
+  .prose > :global(h3 + *),
+  .prose > :global(h4 + *) {
+    margin-block-start: var(--space-4);
+  }
+
+  .prose > :global(* + [data-breakout]),
+  .prose > :global([data-breakout] + *),
+  .prose > :global(* + figure),
+  .prose > :global(figure + *) {
+    margin-block-start: var(--space-block);
+  }
+
+  /* ---------- the type ---------- */
+  .prose :global(h2) {
+    font-size: var(--text-h2);
+    line-height: var(--leading-snug);
+  }
+
+  .prose :global(h3) {
+    font-size: var(--text-h3);
+  }
+
+  .prose :global(h4) {
+    font-size: var(--text-h4);
+  }
+
+  .prose :global(p) {
+    hanging-punctuation: first;
+  }
+
+  .prose :global(a) {
+    color: var(--color-accent);
+    text-decoration-thickness: var(--border-hairline);
+    text-underline-offset: 0.18em;
+  }
+
+  .prose :global(a:hover) {
+    color: var(--color-accent-hover);
+    text-decoration-thickness: var(--border-strong);
+  }
+
+  .prose :global(strong) {
+    font-weight: var(--weight-semibold);
+  }
+
+  .prose :global(ul),
+  .prose :global(ol) {
+    padding-inline-start: var(--space-6);
+  }
+
+  .prose :global(li + li) {
+    margin-block-start: var(--space-2);
+  }
+
+  .prose :global(ul > li::marker) {
+    color: var(--color-highlight);
+  }
+
+  .prose :global(ol > li::marker) {
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .prose :global(blockquote) {
+    padding-inline-start: var(--space-6);
+    border-inline-start: var(--border-quote) solid var(--c-quote-rule);
+    font-style: italic;
+  }
+
+  .prose :global(hr) {
+    height: var(--space-2);
+    margin-block: var(--space-block);
+    border: 0;
+    background:
+      radial-gradient(circle, var(--color-highlight) 45%, transparent 50%) center / var(--space-2) var(--space-2) no-repeat,
+      radial-gradient(circle, var(--color-highlight) 45%, transparent 50%) calc(50% - var(--space-6)) 50% / var(--space-2) var(--space-2) no-repeat,
+      radial-gradient(circle, var(--color-highlight) 45%, transparent 50%) calc(50% + var(--space-6)) 50% / var(--space-2) var(--space-2) no-repeat;
+  }
+
+  .prose :global(code) {
+    padding: var(--space-0-5) var(--space-1-5);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-sunk);
+    font-family: var(--font-code);
+    font-size: 0.85em;
+  }
+
+  .prose :global(pre) {
+    overflow-x: auto;
+    padding: var(--space-5) var(--space-6);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-sunk);
+    font-size: var(--text-sm);
+    line-height: var(--leading-body);
+  }
+
+  .prose :global(pre code) {
+    padding: 0;
+    background: none;
+  }
+
+  .prose :global(img) {
+    border-radius: var(--c-image-radius);
+    background: var(--c-image-placeholder);
+  }
+
+  .prose :global(figcaption) {
+    margin-block-start: var(--space-3);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    color: var(--color-text-muted);
+  }
+
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .prose :global(th),
+  .prose :global(td) {
+    padding: var(--space-2) var(--space-3);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    text-align: start;
+  }
+
+  .prose :global(th) {
+    font-weight: var(--weight-semibold);
+  }
+
+  /* ---------- the drop cap: three lines deep, in the accent ---------- */
+  .prose[data-dropcap] > :global(p:first-of-type::first-letter) {
+    float: inline-start;
+    margin: 0.06em 0.1em 0 0;
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display-crisp);
+    font-size: 4.35em;
+    font-weight: var(--weight-display);
+    line-height: var(--leading-tight);
+    color: var(--c-dropcap-color);
+  }
+
+  @supports (initial-letter: 3) or (-webkit-initial-letter: 3) {
+    .prose[data-dropcap] > :global(p:first-of-type::first-letter) {
+      float: none;
+      margin: 0 0.12em 0 0;
+      font-size: 1em;
+      -webkit-initial-letter: 3;
+      initial-letter: 3;
+    }
+  }
+</style>

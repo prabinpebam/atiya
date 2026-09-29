@@ -1,0 +1,112 @@
+---
+/**
+ * A picture: responsive (srcset and sizes), sized so nothing jumps as it loads, on a paper-coloured
+ * placeholder, softly rounded in the text and square at full bleed. Pictures carry this site, so every
+ * one is given the space and the care of a printed plate.
+ * @tier fundamental
+ * @a11y alt is required: what the picture shows and why it's there; an empty alt only for decoration.
+ * @a11y Width and height are required, so the page doesn't shift as it loads (CLS).
+ */
+interface Props {
+  /** The picture (the size a middle-sized screen needs). */
+  src: string;
+  /** What it shows, for someone who can't see it. "" only for pure decoration. */
+  alt: string;
+  /** The picture's own size (px), for its aspect ratio. */
+  width: number;
+  /** The picture’s own height (px). */
+  height: number;
+  /** The same picture at other widths, for the browser to choose. */
+  srcset?: string;
+  /** How wide it shows at each breakpoint, for srcset. */
+  sizes?: string;
+  /** Crop to a shape: the picture fills it (fit cover). Omit to keep the picture's own ratio. */
+  ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** cover fills a crop; contain shows the whole picture inside it. */
+  fit?: 'cover' | 'contain';
+  /** Which part stays in a crop ("50% 30%"). */
+  focus?: string;
+  /** default: softly rounded; feature: rounder, for a lead picture; none: square (full bleed, filmstrips). */
+  radius?: 'default' | 'feature' | 'none';
+  /** Above the fold: load it first. */
+  priority?: boolean;
+  /** Fill the container's height too (a gallery cell, a carousel slide). */
+  fill?: boolean;
+}
+
+const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', focus, radius = 'default', priority = false, fill = false } = Astro.props;
+---
+
+<img
+  class="image"
+  src={src}
+  srcset={srcset}
+  sizes={sizes}
+  alt={alt}
+  width={width}
+  height={height}
+  loading={priority ? 'eager' : 'lazy'}
+  decoding="async"
+  fetchpriority={priority ? 'high' : undefined}
+  data-ratio={ratio}
+  data-fit={fit}
+  data-radius={radius}
+  data-fill={fill ? '' : undefined}
+  style={focus ? `--focus: ${focus}` : undefined}
+/>
+
+<style>
+  .image {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--c-image-radius);
+    background: var(--c-image-placeholder);
+    object-fit: cover;
+    object-position: var(--focus, 50% 50%);
+  }
+
+  .image[data-fit='contain'] {
+    object-fit: contain;
+  }
+
+  .image[data-radius='feature'] {
+    border-radius: var(--c-image-radius-feature);
+  }
+
+  .image[data-radius='none'] {
+    border-radius: var(--radius-none);
+  }
+
+  .image[data-fill] {
+    height: 100%;
+  }
+
+  .image[data-ratio='1/1'] {
+    aspect-ratio: 1 / 1;
+  }
+
+  .image[data-ratio='4/5'] {
+    aspect-ratio: 4 / 5;
+  }
+
+  .image[data-ratio='3/4'] {
+    aspect-ratio: 3 / 4;
+  }
+
+  .image[data-ratio='4/3'] {
+    aspect-ratio: 4 / 3;
+  }
+
+  .image[data-ratio='3/2'] {
+    aspect-ratio: 3 / 2;
+  }
+
+  .image[data-ratio='16/9'] {
+    aspect-ratio: 16 / 9;
+  }
+
+  .image[data-ratio='21/9'] {
+    aspect-ratio: 21 / 9;
+  }
+</style>

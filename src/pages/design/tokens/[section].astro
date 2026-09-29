@@ -1,0 +1,61 @@
+---
+/**
+ * The design library's token pages: colour, type, space, shape, motion, layers, icons. Each shows the
+ * tokens as what they are (a swatch, a size, a curve), read from the resolved token files.
+ */
+import LibraryLayout from '../../../site/layouts/LibraryLayout.astro';
+import Heading from '../../../site/components/fundamentals/Heading.astro';
+import Text from '../../../site/components/fundamentals/Text.astro';
+import Tag from '../../../site/components/fundamentals/Tag.astro';
+import Link from '../../../site/components/fundamentals/Link.astro';
+import ColorTokens from '../../../site/library/tokens/ColorTokens.astro';
+import TypeTokens from '../../../site/library/tokens/TypeTokens.astro';
+import SpaceTokens from '../../../site/library/tokens/SpaceTokens.astro';
+import ShapeTokens from '../../../site/library/tokens/ShapeTokens.astro';
+import MotionTokens from '../../../site/library/tokens/MotionTokens.astro';
+import LayerTokens from '../../../site/library/tokens/LayerTokens.astro';
+import IconTokens from '../../../site/library/tokens/IconTokens.astro';
+import { libraryNav, TOKEN_PAGES } from '../../../site/library/nav';
+import { withBase } from '../../../site/design/meta';
+
+export function getStaticPaths() {
+  return TOKEN_PAGES.map((p) => ({ params: { section: p.slug } }));
+}
+
+const { section } = Astro.params;
+const page = TOKEN_PAGES.find((p) => p.slug === section)!;
+const View = { color: ColorTokens, typography: TypeTokens, space: SpaceTokens, shape: ShapeTokens, motion: MotionTokens, layers: LayerTokens, icons: IconTokens }[page.slug];
+---
+
+<LibraryLayout title={page.label} description={page.summary} nav={libraryNav(`/design/tokens/${page.slug}/`)}>
+  <article class="tokens">
+    <header class="intro">
+      <p class="tier"><Tag tone="accent" href={withBase('/design/#tokens')}>Tokens</Tag></p>
+      <Heading level={1} size="h1">{page.label}</Heading>
+      <Text variant="lead">{page.summary}</Text>
+      <p class="source">
+        <Link href="https://github.com/prabinpebam/atiya/blob/main/src/site/design/site.resolver.json" variant="quiet" external>The token files on GitHub</Link>
+      </p>
+    </header>
+    <View />
+  </article>
+</LibraryLayout>
+
+<style>
+  .tokens {
+    display: grid;
+    gap: var(--space-16);
+    max-width: var(--size-wide);
+  }
+
+  .intro {
+    display: grid;
+    gap: var(--space-4);
+    max-width: var(--size-popout);
+  }
+
+  .tier,
+  .source {
+    margin: 0;
+  }
+</style>

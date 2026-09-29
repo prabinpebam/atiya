@@ -1,0 +1,22 @@
+---
+import Example from '../library/Example.astro';
+import TextField from '../components/fundamentals/TextField.astro';
+---
+
+<Example title="Basic fields" layout="stack" description="Labels stay visible; placeholders only add a hint.">
+  <TextField label="Your name" name="name" autocomplete="name" required />
+  <TextField label="Email address" name="email" type="email" autocomplete="email" optional placeholder="you@example.com" />
+</Example>
+
+<Example title="With icon" layout="stack">
+  <TextField label="Search" type="search" icon="search" placeholder="Search the classic site" hint="Search across case studies, notes and the design library." />
+</Example>
+
+<Example title="Multiline" layout="stack">
+  <TextField label="Note" multiline rows={5} hint="Use this for a short message about the portfolio." />
+</Example>
+
+<Example title="Error and disabled" layout="stack">
+  <TextField label="Website" type="url" value="classic-site" error="The website address is incomplete. Add https:// and try again." />
+  <TextField label="Phone number" type="tel" disabled placeholder="Not needed for this form" />
+</Example>

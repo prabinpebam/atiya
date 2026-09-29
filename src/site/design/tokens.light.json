@@ -1,0 +1,127 @@
+{
+  "$description": "The light context: colour roles on the natural-white page.",
+  "color": {
+    "$type": "color",
+    "$description": "Semantic colour roles. Each is a light value with its dark twin in $extensions (emitted as light-dark()), so a subtree can switch mode with color-scheme alone.",
+    "bg": {
+      "$value": "{p.color.stock.50}",
+      "$description": "The page"
+    },
+    "bg-raised": {
+      "$value": "{p.color.stock.0}",
+      "$description": "Cards, the dropdown list, controls' fill"
+    },
+    "bg-sunk": {
+      "$value": "{p.color.stock.100}",
+      "$description": "Wells, code, image placeholders, tracks"
+    },
+    "bg-hover": {
+      "$value": "{p.color.stock.100}",
+      "$description": "The wash under a hovered quiet button or option"
+    },
+    "text": {
+      "$value": "{p.color.ink}",
+      "$description": "Body text and headlines"
+    },
+    "text-muted": {
+      "$value": "{p.color.stock.600}",
+      "$description": "Captions, meta, hints (4.5:1 on every surface)"
+    },
+    "rule": {
+      "$value": "{p.color.stock.200}",
+      "$description": "Hairline rules and dividers (decorative: no contrast floor)"
+    },
+    "border": {
+      "$value": "{p.color.stock.500}",
+      "$description": "Control outlines (3:1 non-text contrast)"
+    },
+    "border-strong": {
+      "$value": "{p.color.stock.700}",
+      "$description": "A hovered control's outline"
+    },
+    "accent": {
+      "$value": "{p.color.indigo.700}",
+      "$description": "The spot ink: links, primary buttons, checked controls"
+    },
+    "accent-hover": {
+      "$value": "{p.color.indigo.800}",
+      "$description": "Accent under the pointer"
+    },
+    "on-accent": {
+      "$value": "{p.color.stock.0}",
+      "$description": "Text and marks on the accent"
+    },
+    "accent-soft": {
+      "$value": "{p.color.indigo.100}",
+      "$description": "The selected option, a pressed chip"
+    },
+    "on-accent-soft": {
+      "$value": "{p.color.indigo.800}",
+      "$description": "Text on accent-soft"
+    },
+    "highlight": {
+      "$value": "{p.color.marigold.400}",
+      "$description": "Marigold: the quote rule and mark, list bullets, the dinkus, the progress highlight, the lightbox's current frame"
+    },
+    "on-highlight": {
+      "$value": "{p.color.ink}",
+      "$description": "Text on the highlight"
+    },
+    "highlight-ink": {
+      "$value": "{p.color.marigold.700}",
+      "$description": "Marigold as type: big numerals and the like, dark enough to read (4.5:1 on paper)"
+    },
+    "mark": {
+      "$value": "{p.color.marigold.200}",
+      "$description": "Behind highlighted text (mark, ::selection)"
+    },
+    "focus": {
+      "$value": "{p.color.indigo.600}",
+      "$description": "The focus ring (3:1 on every surface)"
+    },
+    "positive": {
+      "$value": "{p.color.leaf.600}",
+      "$description": "Success text and marks"
+    },
+    "positive-soft": {
+      "$value": "{p.color.leaf.100}",
+      "$description": "Behind a success message"
+    },
+    "negative": {
+      "$value": "{p.color.poppy.600}",
+      "$description": "Errors"
+    },
+    "negative-soft": {
+      "$value": "{p.color.poppy.100}",
+      "$description": "Behind an error message"
+    },
+    "scrim": {
+      "$value": "{p.color.smoke.900}",
+      "$description": "Behind a modal: the lightbox's smoke"
+    },
+    "smoke": {
+      "$value": "{p.color.smoke.700}",
+      "$description": "The lightbox's drifting wisps"
+    },
+    "smoke-faint": {
+      "$value": "{p.color.smoke.500}",
+      "$description": "The lightbox's faint wisps"
+    },
+    "on-image": {
+      "$value": "{p.color.stock.0}",
+      "$description": "Text laid on a photograph, over image-shade"
+    },
+    "image-shade": {
+      "$value": "{p.color.shade.image}",
+      "$description": "The shade under text on a photograph"
+    },
+    "shadow": {
+      "$value": "{p.color.shade.light}",
+      "$description": "Shadow tint"
+    },
+    "shadow-strong": {
+      "$value": "{p.color.shade.light-strong}",
+      "$description": "Shadow tint for dialogs and the dropdown list"
+    }
+  }
+}

@@ -1,0 +1,101 @@
+---
+/**
+ * A layout's live preview: the real page in a frame, at a phone's, a tablet's or a desktop's width,
+ * scaled to fit, with a link to open it on its own. Library-only.
+ */
+import Button from '../components/fundamentals/Button.astro';
+
+interface Props {
+  src: string;
+  /** Names the frame ("ArticleLayout, with sample content"). */
+  title: string;
+}
+
+const { src, title } = Astro.props;
+const sizes = [
+  { id: 'phone', label: 'Phone', width: 390 },
+  { id: 'tablet', label: 'Tablet', width: 820 },
+  { id: 'desktop', label: 'Desktop', width: 1280 },
+];
+---
+
+<div class="viewport" data-viewport data-width="1280">
+  <div class="bar">
+    <div class="sizes" role="group" aria-label="Preview width">
+      {
+        sizes.map((s) => (
+          <Button size="sm" variant="quiet" aria-pressed={s.id === 'desktop' ? 'true' : 'false'} data-size-width={String(s.width)}>
+            {s.label}
+          </Button>
+        ))
+      }
+    </div>
+    <Button size="sm" variant="secondary" href={src} external>Open the page</Button>
+  </div>
+  <div class="stage" data-stage>
+    <iframe src={src} title={title} loading="lazy" data-frame></iframe>
+  </div>
+</div>
+
+<style>
+  .viewport {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .sizes {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .stage {
+    position: relative;
+    height: 44rem;
+    overflow: hidden;
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-sunk);
+  }
+
+  iframe {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 50%;
+    height: 100%;
+    border: 0;
+    background: var(--color-bg);
+    transform-origin: top center;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-viewport]').forEach((vp) => {
+    const stage = vp.querySelector<HTMLElement>('[data-stage]')!;
+    const frame = vp.querySelector<HTMLIFrameElement>('[data-frame]')!;
+    const buttons = [...vp.querySelectorAll<HTMLButtonElement>('[data-size-width]')];
+    let width = 1280;
+    const fit = () => {
+      const scale = Math.min(1, stage.clientWidth / width);
+      frame.style.width = `${width}px`;
+      frame.style.height = `${stage.clientHeight / scale}px`;
+      frame.style.transform = `translateX(-50%) scale(${scale})`;
+    };
+    buttons.forEach((b) =>
+      b.addEventListener('click', () => {
+        width = Number(b.dataset.sizeWidth);
+        buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        fit();
+      }),
+    );
+    new ResizeObserver(fit).observe(stage);
+    fit();
+  });
+</script>

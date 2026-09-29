@@ -1,0 +1,181 @@
+---
+/**
+ * A labelled set of radio buttons or checkboxes. Use radios when one answer wins, and checkboxes
+ * when several independent answers can be chosen.
+ * @tier compound
+ * @a11y A fieldset and legend group the choices with native inputs inside.
+ * @a11y Hints and errors are tied to the fieldset with aria-describedby.
+ * @a11y Card choices still use the native input; the tile border is an extra visual cue.
+ * @key Tab: enters and leaves the group
+ * @key Arrow keys: move through a radio group
+ * @key Space: selects or toggles a choice
+ */
+import Checkbox from '../fundamentals/Checkbox.astro';
+import Radio from '../fundamentals/Radio.astro';
+
+export interface ChoiceOption {
+  /** Submitted value. */
+  value: string;
+  /** Visible option label. */
+  label: string;
+  /** Supporting text under the option. */
+  hint?: string;
+  /** Prevents choosing this option. */
+  disabled?: boolean;
+}
+
+interface Props {
+  /** The visible group label. */
+  legend: string;
+  /** Choices to render, in order. */
+  options: ChoiceOption[];
+  /** Radio for one answer; checkbox for many. */
+  type?: 'radio' | 'checkbox';
+  /** Shared form field name. */
+  name: string;
+  /** Current value: a string for radio, a string array for checkboxes. */
+  value?: string | string[];
+  /** Supporting text under the legend. */
+  hint?: string;
+  /** What went wrong and how to fix it. */
+  error?: string;
+  /** Stacks choices or lets them wrap in a row. */
+  orientation?: 'vertical' | 'horizontal';
+  /** Plain list or bordered card choices. */
+  variant?: 'list' | 'cards';
+  /** The fieldset id. */
+  id?: string;
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const {
+  legend,
+  options,
+  type = 'radio',
+  name,
+  value = type === 'checkbox' ? [] : '',
+  hint,
+  error,
+  orientation = 'vertical',
+  variant = 'list',
+  id = `choice-${Math.random().toString(36).slice(2, 8)}`,
+  ...rest
+} = Astro.props;
+const selected = Array.isArray(value) ? value : value ? [value] : [];
+const described = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
+---
+
+<fieldset class="choice-group" id={id} data-orientation={orientation} data-variant={variant} aria-describedby={described} aria-invalid={error ? 'true' : undefined} {...rest}>
+  <legend class="legend">{legend}</legend>
+  {hint && <p class="hint" id={`${id}-hint`}>{hint}</p>}
+  <div class="choices">
+    {
+      options.map((option, index) => (
+        <div class="choice-card">
+          {type === 'checkbox' ? (
+            <Checkbox
+              label={option.label}
+              hint={option.hint}
+              name={name}
+              value={option.value}
+              checked={selected.includes(option.value)}
+              disabled={option.disabled}
+              id={`${id}-${index}`}
+            />
+          ) : (
+            <Radio
+              label={option.label}
+              hint={option.hint}
+              name={name}
+              value={option.value}
+              checked={selected.includes(option.value)}
+              disabled={option.disabled}
+              id={`${id}-${index}`}
+            />
+          )}
+        </div>
+      ))
+    }
+  </div>
+  {error && <p class="error" id={`${id}-error`}>{error}</p>}
+</fieldset>
+
+<style>
+  .choice-group {
+    display: grid;
+    gap: var(--space-3);
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-family: var(--font-ui);
+    color: var(--color-text);
+  }
+
+  .legend {
+    padding: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .hint,
+  .error {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+
+  .hint {
+    color: var(--color-text-muted);
+  }
+
+  .error {
+    color: var(--color-negative);
+    font-weight: var(--weight-medium);
+  }
+
+  .choices {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .choice-group[data-orientation='horizontal'] .choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .choice-card {
+    border-radius: var(--radius-lg);
+  }
+
+  .choice-group[data-variant='cards'] .choice-card {
+    padding: var(--space-4);
+    border: var(--border-control) solid var(--color-border);
+    background: var(--color-bg-raised);
+    transition:
+      background-color var(--duration-instant) var(--ease-standard),
+      border-color var(--duration-instant) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .choice-group[data-variant='cards'] .choice-card:has(input:checked) {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  .choice-group[data-variant='cards'] .choice-card:has(input:focus-visible) {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  .choice-group[data-variant='cards'] .choice-card:has(input:disabled) {
+    opacity: var(--opacity-disabled);
+  }
+
+  .choice-group[data-variant='cards'] .choice-card:active:has(input:not(:disabled)) {
+    transform: scale(0.99);
+  }
+</style>

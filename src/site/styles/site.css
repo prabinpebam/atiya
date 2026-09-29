@@ -1,0 +1,4 @@
+/* The site's global styles: the generated tokens, then element defaults. Components carry their own
+ * scoped styles. Imported once, by PageShell. Not the game's styles (src/styles/global.css). */
+@import './tokens.css';
+@import './base.css';

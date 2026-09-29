@@ -1,0 +1,108 @@
+---
+/**
+ * The way on from the end of a story: the previous and the next one, by name, side by side. Either
+ * can be left out (the first and the last).
+ * @tier compound
+ * @a11y A navigation named "More stories"; each link's name is its direction and the story's title.
+ */
+import Icon from '../fundamentals/Icon.astro';
+
+interface Props {
+  /** The story before this one. */
+  prev?: { href: string; title: string };
+  /** The story after this one. */
+  next?: { href: string; title: string };
+  /** The navigation's accessible name. */
+  label?: string;
+}
+
+const { prev, next, label = 'More stories' } = Astro.props;
+---
+
+<nav class="next-prev" aria-label={label}>
+  {
+    prev ? (
+      <a class="link" href={prev.href} data-dir="prev">
+        <span class="dir">
+          <Icon name="arrow-left" size="inherit" />
+          Previous
+        </span>
+        <span class="title">{prev.title}</span>
+      </a>
+    ) : (
+      <span />
+    )
+  }
+  {
+    next && (
+      <a class="link" href={next.href} data-dir="next">
+        <span class="dir">
+          Next
+          <Icon name="arrow-right" size="inherit" />
+        </span>
+        <span class="title">{next.title}</span>
+      </a>
+    )
+  }
+</nav>
+
+<style>
+  .next-prev {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+    padding-block-start: var(--space-8);
+  }
+
+  .link {
+    display: grid;
+    gap: var(--space-2);
+    align-content: start;
+    padding: var(--space-5) var(--space-6);
+    border-radius: var(--radius-lg);
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background-color var(--duration-instant) var(--ease-standard);
+  }
+
+  .link:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
+
+  .link[data-dir='next'] {
+    justify-items: end;
+    text-align: end;
+  }
+
+  .dir {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--color-accent);
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-size: var(--text-h4);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+    text-wrap: balance;
+  }
+
+  @media (max-width: 40rem) {
+    .next-prev {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .link[data-dir='next'] {
+      justify-items: start;
+      text-align: start;
+    }
+  }
+</style>

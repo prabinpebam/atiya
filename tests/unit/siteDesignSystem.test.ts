@@ -1,0 +1,369 @@
+/**
+ * The site's design system, enforced (docs: documentation/site-ui/design-system.md). Separate from the
+ * game's (designSystem.test.ts). Tokens are DTCG 2025.10, resolved, generated and up to date; every
+ * component, layout and page style reads tokens only (never a primitive, never a raw value); the tiers
+ * import only from the tiers below them; fundamentals are sealed; every component documents itself and
+ * has a story; colour roles pass WCAG contrast in both modes; the copy keeps to the rules.
+ */
+import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
+import { siteTokens, SOURCES } from '../../src/site/design/tokens';
+import { contrast, over, parseColour, resolve, fluid, type Mode, type RGBA } from '../../src/site/design/tokenModel';
+import { docComment, frontmatter, importsOf, propsOf, scriptImports, styles } from '../../src/site/library/registry';
+import resolver from '../../src/site/design/site.resolver.json';
+
+const ROOT = join(__dirname, '../..');
+const rel = (f: string) => relative(ROOT, f).split(sep).join('/');
+const read = (f: string) => readFileSync(f, 'utf8');
+const walk = (dir: string, re: RegExp): string[] =>
+  existsSync(dir)
+    ? readdirSync(dir).flatMap((f) => {
+        const p = join(dir, f);
+        return statSync(p).isDirectory() ? walk(p, re) : re.test(f) ? [p] : [];
+      })
+    : [];
+
+const TIER_DIRS = {
+  fundamental: join(ROOT, 'src/site/components/fundamentals'),
+  compound: join(ROOT, 'src/site/components/compounds'),
+  layout: join(ROOT, 'src/site/layouts'),
+} as const;
+type Tier = keyof typeof TIER_DIRS;
+const tierFiles = (Object.keys(TIER_DIRS) as Tier[]).flatMap((tier) => walk(TIER_DIRS[tier], /\.astro$/).map((file) => ({ tier, file, name: file.split(sep).pop()!.replace(/\.astro$/, ''), src: read(file) })));
+const siteAstro = [
+  ...walk(join(ROOT, 'src/site'), /\.astro$/),
+  join(ROOT, 'src/pages/index.astro'),
+  ...walk(join(ROOT, 'src/pages/classic'), /\.astro$/),
+  ...walk(join(ROOT, 'src/pages/design'), /\.astro$/),
+];
+const TOKENS_CSS = read(join(ROOT, 'src/site/styles/tokens.css'));
+const BASE_CSS = read(join(ROOT, 'src/site/styles/base.css'));
+const model = siteTokens();
+
+// ---------- tokens ----------
+describe('tokens: DTCG 2025.10, one source of truth', () => {
+  it('tokens.css and the reference page are generated from the resolver and up to date', () => {
+    expect(() => execFileSync(process.execPath, [join(ROOT, 'scripts/build-site-tokens.mjs'), '--check'], { stdio: 'pipe' })).not.toThrow();
+  });
+
+  it('the resolver is a 2025.10 document with a light and a dark theme context', () => {
+    expect(resolver.version).toBe('2025.10');
+    expect(Object.keys(resolver.modifiers.theme.contexts).sort()).toEqual(['dark', 'light']);
+    expect(resolver.modifiers.theme.default).toBe('light');
+  });
+
+  it('every token resolves in both modes (no dangling alias, no cycle)', () => {
+    for (const mode of ['light', 'dark'] as Mode[]) for (const t of model.tokens) expect(() => resolve(t, model.byPath, mode), t.path.join('.')).not.toThrow();
+  });
+
+  it('primitive colours use the 2025.10 colour object (colorSpace, components, hex)', () => {
+    const prim = model.tokens.filter((t) => t.path[0] === 'p' && t.type === 'color');
+    expect(prim.length).toBeGreaterThan(40);
+    for (const t of prim) {
+      const v = t.value as { colorSpace: string; components: number[]; hex: string };
+      expect(v.colorSpace, t.name).toBe('srgb');
+      expect(v.components).toHaveLength(3);
+      expect(v.hex).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  });
+
+  it('dimensions and durations use the 2025.10 {value, unit} object, in rem or px (ms for time)', () => {
+    for (const t of model.tokens.filter((x) => ['dimension', 'duration'].includes(x.type) && typeof x.value !== 'string')) {
+      const v = t.value as { value: number; unit: string };
+      expect(typeof v.value, t.name).toBe('number');
+      expect(t.type === 'duration' ? ['ms', 's'] : ['px', 'rem'], t.name).toContain(v.unit);
+    }
+  });
+
+  it('both theme contexts define the same colour roles, and every role is an alias of a primitive', () => {
+    const light = SOURCES['tokens.light.json'].color as Record<string, { $value?: unknown }>;
+    const dark = SOURCES['tokens.dark.json'].color as Record<string, { $value?: unknown }>;
+    const roles = (o: Record<string, unknown>) => Object.keys(o).filter((k) => !k.startsWith('$')).sort();
+    expect(roles(dark)).toEqual(roles(light));
+    for (const ctx of [light, dark]) for (const r of roles(ctx)) expect(String(ctx[r].$value), r).toMatch(/^\{p\.color\.[\w.-]+\}$/);
+  });
+
+  it('component colour tokens alias semantic roles, never primitives', () => {
+    const bad = model.tokens.filter((t) => t.path[0] === 'c' && typeof t.value === 'string' && /\{p\./.test(t.value)).map((t) => t.name);
+    expect(bad).toEqual([]);
+  });
+
+  it('fluid sizes grow at most 2.5x, so 200% zoom still enlarges text (WCAG 1.4.4)', () => {
+    const fluidTokens = model.tokens.filter((t) => t.fluidMin !== undefined);
+    expect(fluidTokens.length).toBeGreaterThan(8);
+    for (const t of fluidTokens) {
+      const min = (t.fluidMin as { value: number }).value;
+      const max = (t.value as { value: number }).value;
+      expect(max / min, t.name).toBeLessThanOrEqual(2.5);
+      expect(max, t.name).toBeGreaterThan(min);
+    }
+    expect(fluid('1rem', '2rem')).toBe('clamp(1rem, 0.6087rem + 1.7391vw, 2rem)');
+  });
+});
+
+// ---------- contrast ----------
+const role = (name: string, mode: Mode): RGBA => parseColour(resolve(model.byPath.get(`color.${name}`)!, model.byPath, mode));
+const on = (fg: string, bg: string, mode: Mode) => {
+  const b = role(bg, mode);
+  return contrast(over(role(fg, mode), b), b);
+};
+
+describe('contrast: both modes pass WCAG 2.2 AA', () => {
+  const modes: Mode[] = ['light', 'dark'];
+  it.each(modes)('%s: text roles at 4.5:1 on every surface', (mode) => {
+    for (const bg of ['bg', 'bg-raised', 'bg-sunk', 'bg-hover'])
+      for (const fg of ['text', 'text-muted', 'accent', 'accent-hover', 'positive', 'negative', 'highlight-ink']) expect(on(fg, bg, mode), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(modes)('%s: text on the filled roles at 4.5:1', (mode) => {
+    const pairs: [string, string][] = [
+      ['on-accent', 'accent'],
+      ['on-accent', 'accent-hover'],
+      ['on-accent-soft', 'accent-soft'],
+      ['on-highlight', 'highlight'],
+      ['text', 'mark'],
+      ['text', 'positive-soft'],
+      ['text', 'negative-soft'],
+      ['text', 'accent-soft'],
+    ];
+    for (const [fg, bg] of pairs) expect(on(fg, bg, mode), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(modes)('%s: outlines and the focus ring at 3:1 (non-text contrast)', (mode) => {
+    for (const bg of ['bg', 'bg-raised']) {
+      expect(on('border', bg, mode), `border on ${bg}`).toBeGreaterThanOrEqual(3);
+      expect(on('focus', bg, mode), `focus on ${bg}`).toBeGreaterThanOrEqual(3);
+      expect(on('accent', bg, mode), `checked fill on ${bg}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('text on a picture: white over the image shade, even on the whitest pixel', () => {
+    const white: RGBA = [255, 255, 255, 1];
+    const shaded = over(role('image-shade', 'light'), white);
+    expect(contrast(role('on-image', 'light'), shaded)).toBeGreaterThanOrEqual(4.5);
+    // the lightbox: its (dark) text on the smoke, over the lightest page
+    const smoke = over(role('scrim', 'dark'), parseColour(resolve(model.byPath.get('p.color.stock.0')!, model.byPath)));
+    expect(contrast(role('text', 'dark'), smoke)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(role('text-muted', 'dark'), smoke)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('marigold is a highlighter, never text on paper: it fails 3:1 on the light page, so no text role uses it there', () => {
+    expect(on('highlight', 'bg', 'light')).toBeLessThan(3);
+    for (const r of ['text', 'text-muted', 'accent', 'focus', 'border']) expect(resolve(model.byPath.get(`color.${r}`)!, model.byPath, 'light')).not.toBe(resolve(model.byPath.get('color.highlight')!, model.byPath, 'light'));
+  });
+});
+
+// ---------- CSS: tokens only ----------
+interface Decl {
+  file: string;
+  sel: string;
+  prop: string;
+  value: string;
+}
+function declarations(css: string, file: string): Decl[] {
+  const out: Decl[] = [];
+  const src = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const m of src.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const sel = m[1].trim();
+    for (const d of m[2].split(';')) {
+      const i = d.indexOf(':');
+      if (i < 0) continue;
+      out.push({ file, sel, prop: d.slice(0, i).trim(), value: d.slice(i + 1).trim() });
+    }
+  }
+  return out;
+}
+const cssOf = siteAstro.map((f) => ({ file: rel(f), css: styles(read(f)) })).concat({ file: 'src/site/styles/base.css', css: BASE_CSS });
+const all = cssOf.flatMap((c) => declarations(c.css, c.file));
+const where = (d: Decl) => `${d.file} ${d.sel} { ${d.prop}: ${d.value} }`;
+const bare = (v: string) => v.replace(/var\([^()]*(\([^()]*\))?[^()]*\)/g, '');
+
+describe('CSS reads tokens, never raw values', () => {
+  const COLOUR = /#[0-9a-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color-mix)\(|\b(?:white|black|red|green|blue|yellow|gray|grey|orange|purple|pink|gold|silver)\b/i;
+
+  it('found the site styles', () => {
+    expect(all.length).toBeGreaterThan(800);
+  });
+
+  it('no colour literals', () => {
+    expect(all.filter((d) => !d.prop.startsWith('--') && COLOUR.test(d.value)).map(where)).toEqual([]);
+  });
+
+  it('never a primitive (--p-*) in a stylesheet', () => {
+    expect(all.filter((d) => /var\(--p-/.test(d.value)).map(where)).toEqual([]);
+  });
+
+  it('never a primitive in a component, layout or page (only the library shows them)', () => {
+    const bad = siteAstro.filter((f) => !rel(f).startsWith('src/site/library/') && /--p-[\w-]+/.test(read(f).replace(/\/\*[\s\S]*?\*\//g, ''))).map(rel);
+    expect(bad).toEqual([]);
+  });
+
+  it('never a game token: the two systems are separate', () => {
+    expect(all.filter((d) => /var\(--(surface|c-(hud|panel|slot|wood))/.test(d.value)).map(where)).toEqual([]);
+  });
+
+  it('z-index from the layer scale', () => {
+    expect(all.filter((d) => d.prop === 'z-index' && !/^var\(--layer-[\w-]+\)$/.test(d.value)).map(where)).toEqual([]);
+  });
+
+  it('type from its scales: sizes, weights, line heights, families', () => {
+    expect(all.filter((d) => d.prop === 'font-size' && !/^(var\(--text-[\w-]+\)|[\d.]+em|100%|inherit)$/.test(d.value)).map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'font').map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'font-weight' && !/^(var\(--weight-[\w-]+\)|inherit)$/.test(d.value)).map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'line-height' && !/^(var\(--leading-[\w-]+\)|0|inherit)$/.test(d.value)).map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'font-family' && !/^(var\(--font-[\w-]+\)|inherit)$/.test(d.value)).map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'letter-spacing' && !/^(var\(--tracking-[\w-]+\)|inherit|0)$/.test(d.value)).map(where)).toEqual([]);
+  });
+
+  it('radii, borders and shadows from their scales', () => {
+    expect(all.filter((d) => /radius$/.test(d.prop) && !/^(var\(--(radius|c)-[\w-]+\)|0|inherit)$/.test(d.value)).map(where)).toEqual([]);
+    expect(all.filter((d) => /^(border|outline)(-(top|right|bottom|left|block|inline|width)(-(start|end|width))?)?$/.test(d.prop) && /(^|\s)[\d.]+(px|rem)\b/.test(bare(d.value))).map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'box-shadow' && /(^|\s)-?[\d.]*[1-9][\d.]*(px|rem)\b/.test(bare(d.value))).map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'box-shadow' && !/var\(--/.test(d.value) && d.value !== 'none').map(where)).toEqual([]);
+  });
+
+  it('motion from the duration and easing tokens (the reduced-motion reset excepted)', () => {
+    const motion = all.filter((d) => /^(transition|animation)(-duration|-timing-function|-delay)?$/.test(d.prop) && !d.value.includes('!important'));
+    const raw = (v: string) => bare(v).replace(/\b0m?s\b/g, '');
+    const bad = motion.filter((d) => /(^|[\s,(])[\d.]+m?s\b/.test(raw(d.value)) || /cubic-bezier\(|steps\(/.test(d.value) || /\b(ease|ease-in|ease-out|ease-in-out)\b/.test(bare(d.value)));
+    expect(bad.map(where)).toEqual([]);
+  });
+
+  it('spacing (padding, margin, gap, inset) from the space scale: no px or rem literals', () => {
+    const SPACING = /^(padding|margin|gap|row-gap|column-gap|inset)(-(top|right|bottom|left|inline|block)(-(start|end))?)?$/;
+    const bad = all.filter((d) => SPACING.test(d.prop) && d.sel !== '.sr-only' && /(^|[\s(,*-])[\d.]*[1-9][\d.]*(px|rem)\b/.test(bare(d.value)));
+    expect(bad.map(where)).toEqual([]);
+  });
+
+  it('width queries only at the breakpoint tokens', () => {
+    const bps = new Set(model.tokens.filter((t) => t.path[0] === 'breakpoint').map((t) => resolve(t, model.byPath)));
+    const bad: string[] = [];
+    for (const c of cssOf) for (const m of c.css.matchAll(/@(?:media|container)[^{]*\((?:min|max)-width:\s*([\d.]+\w+)\)/g)) if (!bps.has(m[1])) bad.push(`${c.file}: ${m[0]}`);
+    // client scripts' matchMedia too
+    for (const f of siteAstro) for (const m of read(f).matchAll(/matchMedia\('\((?:min|max)-width:\s*([\d.]+\w+)\)'\)/g)) if (!bps.has(m[1])) bad.push(`${rel(f)}: ${m[0]}`);
+    expect(bad).toEqual([]);
+  });
+
+  it('every var() the site uses is defined: a token, a local custom property, or data set inline', () => {
+    const defined = new Set([...TOKENS_CSS.matchAll(/(--[\w-]+):/g)].map((m) => m[1]));
+    for (const d of all) if (d.prop.startsWith('--')) defined.add(d.prop);
+    // data custom properties set from the template (style attributes) or a script
+    for (const f of siteAstro) {
+      const outside = read(f).replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
+      for (const m of outside.matchAll(/(--[\w-]+)\s*:\s*[$`'"\w]/g)) defined.add(m[1]);
+      for (const m of outside.matchAll(/setProperty\(\s*'(--[\w-]+)'/g)) defined.add(m[1]);
+    }
+    const missing = new Set<string>();
+    for (const d of all) for (const m of d.value.matchAll(/var\((--[\w-]+)/g)) if (!defined.has(m[1])) missing.add(`${m[1]} in ${where(d)}`);
+    expect([...missing]).toEqual([]);
+  });
+
+  it('no global styles, except where a component styles what it did not write (and says why)', () => {
+    const ALLOWED: Record<string, string> = {
+      'Prose.astro': 'rich text from Markdown',
+      'Lightbox.astro': 'the filmstrip its script builds',
+      'VideoEmbed.astro': 'the iframe its script swaps in',
+    };
+    const bad = siteAstro.filter((f) => !ALLOWED[f.split(sep).pop()!] && (/:global\(/.test(styles(read(f))) || /<style[^>]*is:global/.test(read(f)))).map(rel);
+    expect(bad).toEqual([]);
+  });
+
+  it('pages carry no styles of their own: layouts and components do (stories and the library excepted)', () => {
+    const pages = [join(ROOT, 'src/pages/index.astro'), ...walk(join(ROOT, 'src/pages/classic'), /\.astro$/)];
+    expect(pages.filter((f) => /<style/.test(read(f))).map(rel)).toEqual([]);
+  });
+});
+
+// ---------- tiers ----------
+const TIER_OF_DIR: Record<string, Tier> = { fundamentals: 'fundamental', compounds: 'compound', layouts: 'layout' };
+const RANK: Record<Tier, number> = { fundamental: 1, compound: 2, layout: 3 };
+const FOUNDATION = /^(\.\.\/)+(design|scripts|styles)\/[\w./-]+$|^@fontsource-variable\/|^astro(:|\/)/;
+
+describe('tiers: tokens → fundamentals → compounds → layouts, each made only from the tiers before it', () => {
+  it('found every tier', () => {
+    const count = (t: Tier) => tierFiles.filter((f) => f.tier === t).length;
+    expect(count('fundamental')).toBeGreaterThanOrEqual(20);
+    expect(count('compound')).toBeGreaterThanOrEqual(12);
+    expect(count('layout')).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each(tierFiles.map((f) => [`${f.tier} ${f.name}`, f] as const))('%s imports only from lower tiers and tier 0', (_, f) => {
+    const bad: string[] = [];
+    for (const i of [...importsOf(frontmatter(f.src)).map((x) => x.spec), ...scriptImports(f.src)]) {
+      if (i.endsWith('.astro')) {
+        const dir = /(fundamentals|compounds|layouts)\/[A-Z]\w*\.astro$/.exec(i)?.[1];
+        const target = dir ? TIER_OF_DIR[dir] : null;
+        if (!target || RANK[target] >= RANK[f.tier]) bad.push(i);
+      } else if (!FOUNDATION.test(i)) bad.push(i);
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('the game and the site never import each other (only the base-path helper is shared)', () => {
+    const siteSrc = walk(join(ROOT, 'src/site'), /\.(astro|ts)$/);
+    const toGame = siteSrc.filter((f) => /from ['"][^'"]*\/game\//.test(read(f)) && !f.endsWith(`${sep}meta.ts`)).map(rel);
+    expect(toGame).toEqual([]);
+    const gameSrc = walk(join(ROOT, 'src/game'), /\.(tsx?|astro)$/);
+    expect(gameSrc.filter((f) => /from ['"][^'"]*\/site\//.test(read(f))).map(rel)).toEqual([]);
+  });
+
+  it('fundamentals are sealed: no class or style props (a compound lays them out, never restyles them)', () => {
+    for (const f of tierFiles.filter((x) => x.tier === 'fundamental')) {
+      const names = propsOf(frontmatter(f.src)).props.map((p) => p.name);
+      expect(names, f.name).not.toContain('class');
+      expect(names, f.name).not.toContain('style');
+      expect(f.src, f.name).not.toMatch(/Astro\.props\.(class|style)\b/);
+    }
+  });
+});
+
+// ---------- documentation ----------
+describe('every component documents itself and has a story', () => {
+  it.each(tierFiles.map((f) => [`${f.tier} ${f.name}`, f] as const))('%s', (_, f) => {
+    const fm = frontmatter(f.src);
+    const doc = docComment(fm);
+    expect(doc.summary.length, 'a summary').toBeGreaterThan(40);
+    expect(doc.tier, '@tier').toBe(f.tier);
+    expect(doc.a11y.length, '@a11y notes').toBeGreaterThan(0);
+    const { props } = propsOf(fm);
+    expect(props.filter((p) => p.name !== 'data-*' && !p.description).map((p) => p.name), 'every prop has a JSDoc comment').toEqual([]);
+    const story = join(ROOT, 'src/site/stories', `${f.name}.stories.astro`);
+    expect(existsSync(story), 'a story').toBe(true);
+    if (f.tier !== 'layout') expect(read(story), 'the story has examples').toMatch(/<Example\b[^>]*title="/);
+    // a component that takes keys says which
+    if (/addEventListener\(\s*'keydown'/.test(f.src)) expect(doc.keys.length, '@key lines').toBeGreaterThan(0);
+  });
+
+  it('no story without a component', () => {
+    const names = new Set(tierFiles.map((f) => f.name));
+    const orphans = walk(join(ROOT, 'src/site/stories'), /\.stories\.astro$/).map((f) => f.split(sep).pop()!.replace('.stories.astro', '')).filter((n) => !names.has(n));
+    expect(orphans).toEqual([]);
+  });
+});
+
+// ---------- copy and paths ----------
+describe('copy and paths', () => {
+  const text = siteAstro.map((f) => [rel(f), read(f)] as const);
+
+  it('no emoji or text symbols as icons (Font Awesome through src/site/design/icons.ts)', () => {
+    const bad = text.filter(([, s]) => /[\p{Extended_Pictographic}\u2600-\u27BF\u2190-\u21FF]/u.test(s.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, ''))).map(([f]) => f);
+    expect(bad).toEqual([]);
+  });
+
+  it('no vague labels or filler: "click here", "OK", "Submit", "read more", lorem ipsum', () => {
+    const banned = [/click here/i, />\s*(OK|Okay|Submit)\s*</, />\s*read more\s*</i, /lorem ipsum/i];
+    expect(text.flatMap(([f, s]) => banned.filter((b) => b.test(s)).map((b) => `${f}: ${b}`))).toEqual([]);
+  });
+
+  it('no hard-coded root-relative URL: every one goes through withBase (the site lives under /atiya/)', () => {
+    const bad = text.flatMap(([f, s]) => [...s.matchAll(/\b(?:href|src|srcset|poster)="\/(?!\/)[^"]*"/g)].map((m) => `${f}: ${m[0]}`));
+    expect(bad).toEqual([]);
+  });
+
+  it('no font or icon from a CDN: the fonts are self-hosted, the icons are data', () => {
+    const bad = text.filter(([, s]) => /fonts\.googleapis|fonts\.gstatic|use\.fontawesome|kit\.fontawesome|cdnjs|unpkg|jsdelivr/.test(s)).map(([f]) => f);
+    expect(bad).toEqual([]);
+  });
+});

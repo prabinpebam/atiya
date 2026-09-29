@@ -1,0 +1,138 @@
+---
+/**
+ * The design library's front page: what the system is, its four tiers, and a way into each.
+ */
+import LibraryLayout from '../../site/layouts/LibraryLayout.astro';
+import Heading from '../../site/components/fundamentals/Heading.astro';
+import Text from '../../site/components/fundamentals/Text.astro';
+import Link from '../../site/components/fundamentals/Link.astro';
+import { byTier, routeOf, TIERS } from '../../site/library/registry';
+import { libraryNav, TOKEN_PAGES } from '../../site/library/nav';
+import { siteTokens } from '../../site/design/tokens';
+import { withBase } from '../../site/design/meta';
+
+const tokenCount = siteTokens().tokens.length;
+const tiers = [
+  { key: 'tokens', n: 0, title: 'Tokens', blurb: `${tokenCount} named decisions: colour in two modes, the type ramp, space, shape, motion. Nothing else holds a raw value.`, items: TOKEN_PAGES.map((p) => ({ label: p.label, href: withBase(`/design/tokens/${p.slug}/`), note: p.summary })) },
+  ...TIERS.map((t, i) => ({
+    key: t.route,
+    n: i + 1,
+    title: t.title,
+    blurb: t.blurb,
+    items: byTier(t.tier).map((e) => ({ label: e.name, href: withBase(routeOf(e)), note: e.summary.split(/(?<=\.)\s/)[0] })),
+  })),
+];
+---
+
+<LibraryLayout title="Overview" description="The design system behind Prabin Pebam's site: tokens, fundamentals, compounds and layouts, live." nav={libraryNav('/design/')}>
+  <article class="overview">
+    <header class="intro">
+      <Heading level={1} size="display">Design library</Heading>
+      <Text variant="standfirst" narrow>The site's design system, set out like a printed specimen book: every token, component and layout, live, in light and dark.</Text>
+    </header>
+
+    <section class="principles" aria-labelledby="principles">
+      <Heading level={2} size="h3" id="principles">How it's built</Heading>
+      <Text>
+        Four tiers, each made only from the ones before it. Tokens hold every value. Fundamentals are built from tokens alone. Compounds are the site's own reusable pieces, built from fundamentals. Layouts are whole pages, built from compounds and fundamentals, and each is defined once. A test enforces the order, so a raw colour or a sideways import fails the build.
+      </Text>
+      <Text>
+        Everything on these pages is the real component, rendered from the same code the site runs. Each example has its source, and the props, keys and tokens are read from the component itself.
+      </Text>
+    </section>
+
+    {
+      tiers.map((t) => (
+        <section class="tier" id={t.key} aria-labelledby={`tier-${t.key}`}>
+          <p class="numeral" aria-hidden="true">
+            {t.n}
+          </p>
+          <div class="tier-body">
+            <Heading level={2} size="h2" id={`tier-${t.key}`}>
+              {t.title}
+            </Heading>
+            <Text variant="lead" tone="muted">
+              {t.blurb}
+            </Text>
+            <ul class="items">
+              {t.items.map((i) => (
+                <li>
+                  <Link href={i.href} variant="standalone">
+                    {i.label}
+                  </Link>
+                  <Text variant="small" tone="muted">
+                    {i.note}
+                  </Text>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ))
+    }
+  </article>
+</LibraryLayout>
+
+<style>
+  .overview {
+    display: grid;
+    gap: var(--space-section);
+    max-width: var(--size-wide);
+  }
+
+  .intro {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .principles {
+    display: grid;
+    gap: var(--space-4);
+    max-width: var(--size-measure);
+  }
+
+  .tier {
+    display: grid;
+    grid-template-columns: minmax(4rem, 10rem) minmax(0, 1fr);
+    gap: var(--space-8);
+    padding-block-start: var(--space-8);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .numeral {
+    margin: 0;
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display-crisp);
+    font-size: var(--text-jumbo);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-tight);
+    color: var(--color-highlight-ink);
+  }
+
+  .tier-body {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+  }
+
+  .items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: var(--space-4) var(--space-8);
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .items li {
+    display: grid;
+    align-content: start;
+  }
+
+  @media (max-width: 40rem) {
+    .tier {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-2);
+    }
+  }
+</style>

@@ -1,0 +1,33 @@
+---
+import Example from '../library/Example.astro';
+import ChoiceGroup from '../components/compounds/ChoiceGroup.astro';
+
+const entryOptions = [
+  { value: 'classic', label: 'Open classic', hint: 'Start with the paper-like portfolio.' },
+  { value: 'planet', label: 'Explore planet', hint: 'Start with the 3D little planet.' },
+  { value: 'library', label: 'Browse library', hint: 'Start with tokens and components.' },
+];
+
+const filterOptions = [
+  { value: 'case-studies', label: 'Show studies' },
+  { value: 'process', label: 'Show process' },
+  { value: 'systems', label: 'Show systems' },
+  { value: 'planet', label: 'Show planet' },
+];
+---
+
+<Example title="Radio list" layout="stack" description="The fieldset and legend name the whole set.">
+  <ChoiceGroup legend="Where to start" name="entry-choice" options={entryOptions} value="planet" hint="Choose where the preview should begin." />
+</Example>
+
+<Example title="Checkbox list" layout="stack">
+  <ChoiceGroup legend="Filters" type="checkbox" name="filters" options={filterOptions} value={['case-studies', 'systems']} />
+</Example>
+
+<Example title="Cards" layout="stack" description="Cards add a bordered tile while the input stays native.">
+  <ChoiceGroup legend="Preview" name="preview-choice" options={entryOptions} value="classic" variant="cards" />
+</Example>
+
+<Example title="Horizontal and error" layout="stack">
+  <ChoiceGroup legend="Topics" type="checkbox" name="topic-error" options={filterOptions} orientation="horizontal" variant="cards" error="No topic is selected. Choose at least one topic to filter the library." />
+</Example>

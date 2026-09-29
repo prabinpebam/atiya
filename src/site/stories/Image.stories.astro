@@ -1,0 +1,39 @@
+---
+import Example from '../library/Example.astro';
+import Image from '../components/fundamentals/Image.astro';
+import { sample } from '../design/samples';
+
+const plaza = sample('plaza');
+const pond = sample('pond');
+const night = sample('plaza-night');
+---
+
+<Example title="Its own shape" layout="stack" description="Responsive, sized so the page doesn’t jump, softly rounded.">
+  <Image src={plaza.src} srcset={plaza.srcset} sizes="(max-width: 56rem) 92vw, 60rem" alt={plaza.alt} width={plaza.width} height={plaza.height} />
+</Example>
+
+<Example title="Cropped to a ratio" description="The picture fills the shape; focus keeps the part that matters.">
+  <div class="demo-grid">
+    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="1/1" focus="40% 60%" />
+    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="4/5" />
+    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" />
+  </div>
+</Example>
+
+<Example title="Radius" description="Default in the text, feature for a lead picture, none at full bleed.">
+  <div class="demo-grid">
+    <Image src={night.src} srcset={night.srcset} sizes="20rem" alt={night.alt} width={night.width} height={night.height} ratio="4/3" />
+    <Image src={night.src} srcset={night.srcset} sizes="20rem" alt={night.alt} width={night.width} height={night.height} ratio="4/3" radius="feature" />
+    <Image src={night.src} srcset={night.srcset} sizes="20rem" alt={night.alt} width={night.width} height={night.height} ratio="4/3" radius="none" />
+  </div>
+</Example>
+
+<style>
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+    width: 100%;
+  }
+</style>

@@ -1,0 +1,24 @@
+---
+import Example from '../library/Example.astro';
+import Gallery from '../components/compounds/Gallery.astro';
+import Lightbox from '../components/compounds/Lightbox.astro';
+import { SAMPLES } from '../design/samples';
+
+const firstFour = SAMPLES.slice(0, 4);
+const firstFive = SAMPLES.slice(0, 5);
+const all = SAMPLES;
+---
+
+<Example title="A grid gallery" layout="block" description="Equal cells make a calm contact sheet.">
+  <Gallery items={firstFour} caption="Clockwise from top left: the plaza, the workshop, the pond and the waterfall." lightbox="gallery-grid" />
+</Example>
+
+<Example title="A mosaic gallery" layout="block" description="The first picture leads, the rest support it.">
+  <Gallery items={firstFive} layout="mosaic" caption="A small tour from the plaza out to the bridge." lightbox="gallery-mosaic" />
+</Example>
+
+<Example title="A picture row" layout="block" description="A horizontal row works for a long, filmstrip-like sequence.">
+  <Gallery items={all} layout="row" caption="Seven painted moments from the planet, from day through night." lightbox="gallery-row" />
+</Example>
+
+<Lightbox />

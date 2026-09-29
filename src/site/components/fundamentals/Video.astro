@@ -1,0 +1,123 @@
+---
+/**
+ * A native video: controls, captions and a poster, sized before it loads so the page stays still.
+ * It never autoplays; the reader starts it when they are ready.
+ * @tier fundamental
+ * @a11y Uses the browser’s own controls, so keyboard, captions and media preferences stay familiar.
+ * @a11y Width and height are required to reserve the video’s shape before metadata arrives.
+ * @a11y Captions are a <track kind="captions"> and the file stays available as a fallback link.
+ * @key Space: plays or pauses when focused
+ * @key Left / Right: seeks with native controls
+ */
+export interface VideoCaptions {
+  /** The caption file, usually a local .vtt. */
+  src: string;
+  /** The caption menu label, such as "English". */
+  label: string;
+  /** The caption language, such as "en". */
+  srclang: string;
+}
+
+interface Props {
+  /** The MP4 file. */
+  src: string;
+  /** An optional WebM source, listed before the MP4 when present. */
+  webm?: string;
+  /** The local poster shown before playback. */
+  poster?: string;
+  /** The video’s own size, for its aspect ratio. */
+  width: number;
+  /** The video’s own height. */
+  height: number;
+  /** A single captions track. */
+  captions?: VideoCaptions;
+  /** Crop to a shape. Omit to keep the video’s own ratio. */
+  ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** default: softly rounded; feature: rounder; none: square. */
+  radius?: 'default' | 'feature' | 'none';
+  /** Starts silent. */
+  muted?: boolean;
+  /** Repeats when it reaches the end. */
+  loop?: boolean;
+  /** A page-unique id. */
+  id?: string;
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { src, webm, poster, width, height, captions, ratio, radius = 'default', muted = false, loop = false, id, ...rest } = Astro.props;
+---
+
+<video
+  class="video"
+  id={id}
+  controls
+  playsinline
+  preload="metadata"
+  poster={poster}
+  width={width}
+  height={height}
+  muted={muted}
+  loop={loop}
+  data-ratio={ratio}
+  data-radius={radius}
+  {...rest}
+>
+  {webm && <source src={webm} type="video/webm" />}
+  <source src={src} type="video/mp4" />
+  {captions && <track kind="captions" src={captions.src} label={captions.label} srclang={captions.srclang} default />}
+  <a class="fallback" href={src}>Download video</a>
+</video>
+
+<style>
+  .video {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--c-image-radius);
+    background: var(--c-image-placeholder);
+    object-fit: cover;
+  }
+
+  .video[data-radius='feature'] {
+    border-radius: var(--c-image-radius-feature);
+  }
+
+  .video[data-radius='none'] {
+    border-radius: var(--radius-none);
+  }
+
+  .video[data-ratio='1/1'] {
+    aspect-ratio: 1 / 1;
+  }
+
+  .video[data-ratio='4/5'] {
+    aspect-ratio: 4 / 5;
+  }
+
+  .video[data-ratio='3/4'] {
+    aspect-ratio: 3 / 4;
+  }
+
+  .video[data-ratio='4/3'] {
+    aspect-ratio: 4 / 3;
+  }
+
+  .video[data-ratio='3/2'] {
+    aspect-ratio: 3 / 2;
+  }
+
+  .video[data-ratio='16/9'] {
+    aspect-ratio: 16 / 9;
+  }
+
+  .video[data-ratio='21/9'] {
+    aspect-ratio: 21 / 9;
+  }
+
+  .fallback {
+    color: var(--color-accent);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+</style>

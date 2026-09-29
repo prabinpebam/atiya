@@ -46,7 +46,7 @@ The source of truth is `src/design/tokens.json`, in the [W3C Design Tokens (DTCG
 | Surface | Where | Look |
 |---|---|---|
 | `.surface-wood` | `body.play` (the whole game), the backpack, crafting, paint and the dialogs on it | Dark wood-brown, cream text, **gold** primary actions with dark text, light-blue links. Key caps stay light so they read as keys. `color-scheme: dark`. |
-| `.surface-paper` (the default, on `:root`) | The landing and classic pages | Warm off-white, ink text, blue primary actions and links. |
+| `.surface-paper` (the default, on `:root`) | The default under the game's surfaces. The landing and the classic pages used it until 2026-09-29, when the website moved to its own, separate design system ([site design system](../site-ui/design-system.md)) | Warm off-white, ink text, blue primary actions and links. |
 
 Both surfaces define every role (a test checks), and each surface re-declares `color`, because inherited text colour doesn't follow a changed custom property.
 

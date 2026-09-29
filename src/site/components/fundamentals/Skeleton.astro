@@ -1,0 +1,132 @@
+---
+/**
+ * A quiet placeholder that holds space while content loads. Use it only when real content will replace
+ * it soon.
+ * @tier fundamental
+ * @a11y It is hidden from assistive technology, so nearby loading text or status carries the message.
+ * @a11y Reduced motion shows a static placeholder instead of a shimmer.
+ */
+interface Props {
+  /** Text lines, a rectangular block or a circular avatar. */
+  shape?: 'text' | 'block' | 'circle';
+  /** Number of text lines. */
+  lines?: number;
+  /** Block aspect ratio. */
+  ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** Circle size. */
+  size?: 'sm' | 'md' | 'lg';
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { shape = 'text', lines = 3, ratio = '16/9', size = 'md', ...rest } = Astro.props;
+const count = Math.max(1, Math.floor(lines));
+---
+
+<div class="skeleton" data-shape={shape} data-ratio={ratio} data-size={size} aria-hidden="true" {...rest}>
+  {
+    shape === 'text' ? (
+      Array.from({ length: count }, (_, i) => <span class="line" data-last={i === count - 1 ? '' : undefined}></span>)
+    ) : (
+      <span class="shape"></span>
+    )
+  }
+</div>
+
+<style>
+  .skeleton {
+    display: grid;
+    gap: var(--space-2);
+    inline-size: 100%;
+  }
+
+  .line,
+  .shape {
+    display: block;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: linear-gradient(90deg, var(--color-bg-sunk), var(--color-bg-hover), var(--color-bg-sunk));
+    background-size: 200% 100%;
+    animation: skeleton-shimmer var(--duration-drift) linear infinite;
+  }
+
+  .line {
+    block-size: var(--text-md);
+  }
+
+  .line[data-last] {
+    inline-size: calc(100% - var(--space-20));
+  }
+
+  .skeleton[data-shape='block'] .shape {
+    inline-size: 100%;
+  }
+
+  .skeleton[data-ratio='1/1'] .shape {
+    aspect-ratio: 1 / 1;
+  }
+
+  .skeleton[data-ratio='4/5'] .shape {
+    aspect-ratio: 4 / 5;
+  }
+
+  .skeleton[data-ratio='3/4'] .shape {
+    aspect-ratio: 3 / 4;
+  }
+
+  .skeleton[data-ratio='4/3'] .shape {
+    aspect-ratio: 4 / 3;
+  }
+
+  .skeleton[data-ratio='3/2'] .shape {
+    aspect-ratio: 3 / 2;
+  }
+
+  .skeleton[data-ratio='16/9'] .shape {
+    aspect-ratio: 16 / 9;
+  }
+
+  .skeleton[data-ratio='21/9'] .shape {
+    aspect-ratio: 21 / 9;
+  }
+
+  .skeleton[data-shape='circle'] {
+    inline-size: var(--size-avatar-md);
+  }
+
+  .skeleton[data-shape='circle'] .shape {
+    inline-size: var(--size-avatar-md);
+    block-size: var(--size-avatar-md);
+    border-radius: var(--radius-round);
+  }
+
+  .skeleton[data-shape='circle'][data-size='sm'],
+  .skeleton[data-shape='circle'][data-size='sm'] .shape {
+    inline-size: var(--size-avatar-sm);
+    block-size: var(--size-avatar-sm);
+  }
+
+  .skeleton[data-shape='circle'][data-size='lg'],
+  .skeleton[data-shape='circle'][data-size='lg'] .shape {
+    inline-size: var(--size-avatar-lg);
+    block-size: var(--size-avatar-lg);
+  }
+
+  @keyframes skeleton-shimmer {
+    from {
+      background-position: 100% 0;
+    }
+
+    to {
+      background-position: -100% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .line,
+    .shape {
+      animation: none;
+      background: var(--color-bg-sunk);
+    }
+  }
+</style>

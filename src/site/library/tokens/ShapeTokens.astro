@@ -1,0 +1,181 @@
+---
+/**
+ * Shape: every radius on a real square, the border widths as lines, and the three shadows on cards
+ * (in both modes: a shadow on charcoal is a different thing). Library-only.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import { siteTokens } from '../../design/tokens';
+import { resolve } from '../../design/tokenModel';
+import { tokenAnchor } from '../tokenLinks';
+
+const m = siteTokens();
+const radius = m.tokens.filter((t) => t.path[0] === 'radius');
+const border = m.tokens.filter((t) => t.path[0] === 'border');
+const shadow = m.tokens.filter((t) => t.path[0] === 'shadow');
+---
+
+<section class="block" aria-labelledby="radius">
+  <Heading level={2} size="h2" id="radius">Radii</Heading>
+  <Text narrow>Rounded and friendly, but not one radius for everything: small controls are the roundest, pictures softly rounded, a full-bleed picture square.</Text>
+  <ul class="tiles">
+    {
+      radius.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <span class="tile" style={`--radius-sample: var(${t.name})`} />
+          <code>{t.name}</code>
+          <Text as="span" variant="meta">
+            {resolve(t, m.byPath)}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<section class="block" aria-labelledby="borders">
+  <Heading level={2} size="h2" id="borders">Borders</Heading>
+  <ul class="lines">
+    {
+      border.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <span class="line" style={`--b: var(${t.name})`} />
+          <code>{t.name}</code>
+          <Text as="span" variant="meta">
+            {resolve(t, m.byPath)}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<section class="block" aria-labelledby="shadows">
+  <Heading level={2} size="h2" id="shadows">Shadows</Heading>
+  <Text narrow>Print has no shadows, so they’re rare: only what floats over the page (the dropdown list, a dialog) casts one. Warm on paper, deep on charcoal.</Text>
+  <div class="modes">
+    {
+      (['light', 'dark'] as const).map((mode) => (
+        <div class="stage" data-scheme={mode}>
+          <Text variant="label" tone="muted">
+            {mode === 'light' ? 'Light' : 'Dark'}
+          </Text>
+          <ul class="cards">
+            {shadow.map((t) => (
+              <li id={mode === 'light' ? tokenAnchor(t.name) : undefined}>
+                <span class="card" style={`--sh: var(${t.name})`}>
+                  <code>{t.name}</code>
+                </span>
+                <Text as="span" variant="small" tone="muted">
+                  {t.description}
+                </Text>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  .block {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .tiles,
+  .lines,
+  .cards {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tiles {
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: var(--space-8) var(--space-6);
+  }
+
+  .tiles li {
+    display: grid;
+    gap: var(--space-1);
+    align-content: start;
+  }
+
+  .tile {
+    width: var(--space-24);
+    height: var(--space-24);
+    margin-block-end: var(--space-2);
+    border-radius: var(--radius-sample);
+    background: var(--color-accent-soft);
+    box-shadow: inset 0 0 0 var(--border-control) var(--color-accent);
+  }
+
+  code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+  }
+
+  .lines li {
+    display: grid;
+    grid-template-columns: minmax(6rem, 10rem) minmax(10rem, 14rem) minmax(4rem, 6rem) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: center;
+    padding-block: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .line {
+    height: var(--b);
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+  }
+
+  .modes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  .stage {
+    display: grid;
+    gap: var(--space-6);
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg);
+  }
+
+  .cards {
+    gap: var(--space-8);
+  }
+
+  .cards li {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .card {
+    display: grid;
+    place-items: center;
+    min-height: var(--space-20);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    box-shadow: var(--sh);
+    color: var(--color-text);
+  }
+
+  @media (max-width: 56rem) {
+    .modes,
+    .lines li {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

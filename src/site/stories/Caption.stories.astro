@@ -1,0 +1,19 @@
+---
+import Example from '../library/Example.astro';
+import Caption from '../components/fundamentals/Caption.astro';
+import Image from '../components/fundamentals/Image.astro';
+import { sample } from '../design/samples';
+
+const p = sample('lighthouse-dusk');
+---
+
+<Example title="Under a picture" layout="stack" description="What it shows, then who made it.">
+  <figure class="demo-figure">
+    <Image src={p.src} srcset={p.srcset} sizes="40rem" alt={p.alt} width={p.width} height={p.height} />
+    <Caption credit="Concept art, painted with GPT Image">The lighthouse at dusk, its beam sweeping the sky.</Caption>
+  </figure>
+</Example>
+
+<Example title="Centred" layout="stack">
+  <Caption as="p" align="center">The plaza, where every path on the planet begins.</Caption>
+</Example>

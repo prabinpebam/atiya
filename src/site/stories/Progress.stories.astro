@@ -1,0 +1,18 @@
+---
+import Example from '../library/Example.astro';
+import Progress from '../components/fundamentals/Progress.astro';
+---
+
+<Example title="Determinate" layout="stack" description="Show the value when it helps the reader understand the wait.">
+  <Progress label="Loading the planet" value={68} showValue />
+  <Progress label="Indexing the library" value={32} size="sm" />
+</Example>
+
+<Example title="Highlight" layout="stack" description="Highlight is for a temporary callout, not body text.">
+  <Progress label="Preparing the preview" value={45} tone="highlight" showValue />
+</Example>
+
+<Example title="Indeterminate" layout="stack" description="Use this when the work is real but a percentage would be misleading.">
+  <Progress label="Loading pictures" />
+  <Progress label="Loading pictures" hideLabel />
+</Example>

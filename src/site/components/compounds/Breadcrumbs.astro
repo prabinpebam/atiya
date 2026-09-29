@@ -1,0 +1,63 @@
+---
+/**
+ * The trail from the home page to this one, for pages two or more levels down (a case study, a note, a
+ * component in the library). Top-level pages don't show one.
+ * @tier compound
+ * @a11y A navigation named Breadcrumb with an ordered list; the current page is the last item, not a link, marked aria-current.
+ */
+import Link from '../fundamentals/Link.astro';
+import Icon from '../fundamentals/Icon.astro';
+
+interface Props {
+  /** The pages above this one, from the top. */
+  trail: { label: string; href: string }[];
+  /** This page's name. */
+  current: string;
+}
+
+const { trail, current } = Astro.props;
+---
+
+<nav class="crumbs" aria-label="Breadcrumb">
+  <ol>
+    {
+      trail.map((t) => (
+        <li>
+          <Link href={t.href} variant="quiet">
+            {t.label}
+          </Link>
+          <Icon name="chevron-right" size="inherit" />
+        </li>
+      ))
+    }
+    <li><span aria-current="page">{current}</span></li>
+  </ol>
+</nav>
+
+<style>
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--size-touch);
+    color: var(--color-text-muted);
+  }
+
+  [aria-current='page'] {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+  }
+</style>

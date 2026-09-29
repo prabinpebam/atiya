@@ -1,0 +1,341 @@
+---
+/**
+ * A component's page in the design library: what it's for, its live examples (from its story), its
+ * props, its keyboard and accessibility notes, the tokens it reads, and what it's built from and used
+ * by. Every fundamental, compound and layout gets one from the registry.
+ */
+import LibraryLayout from '../../../site/layouts/LibraryLayout.astro';
+import Heading from '../../../site/components/fundamentals/Heading.astro';
+import Text from '../../../site/components/fundamentals/Text.astro';
+import Tag from '../../../site/components/fundamentals/Tag.astro';
+import Link from '../../../site/components/fundamentals/Link.astro';
+import PropsTable from '../../../site/library/PropsTable.astro';
+import CodeBlock from '../../../site/library/CodeBlock.astro';
+import ViewportFrame from '../../../site/library/ViewportFrame.astro';
+import { catalog, examplesOf, find, routeOf, TIERS } from '../../../site/library/registry';
+import { libraryNav } from '../../../site/library/nav';
+import { withBase } from '../../../site/design/meta';
+import { tokenHref } from '../../../site/library/tokenLinks';
+
+export function getStaticPaths() {
+  return catalog().map((e) => ({ params: { tier: TIERS.find((t) => t.tier === e.tier)!.route, slug: e.slug }, props: { name: e.name } }));
+}
+
+const stories = import.meta.glob<{ default: (props: Record<string, unknown>) => unknown }>('../../../site/stories/*.stories.astro', { eager: true });
+const entry = find(Astro.props.name)!;
+const tier = TIERS.find((t) => t.tier === entry.tier)!;
+const Story = stories[`../../../site/stories/${entry.name}.stories.astro`]?.default;
+Astro.locals.storyCode = entry.story ? examplesOf(entry.story) : {};
+const isLayout = entry.tier === 'layout';
+const demo = withBase(`/design/demo/${entry.slug}/`);
+const link = (name: string) => {
+  const e = find(name);
+  return e ? withBase(routeOf(e)) : undefined;
+};
+const repo = `https://github.com/prabinpebam/atiya/blob/main/${entry.file}`;
+const storySource = entry.story?.replace(/^---[\s\S]*?---\s*/, '') ?? '';
+const singular = { fundamental: 'Fundamental', compound: 'Compound', layout: 'Layout' }[entry.tier];
+---
+
+<LibraryLayout title={entry.name} description={entry.summary} nav={libraryNav(routeOf(entry))}>
+  <article class="doc">
+    <header class="intro">
+      <p class="tier"><Tag tone="accent" href={withBase(`/design/#${tier.route}`)}>{singular}</Tag></p>
+      <Heading level={1} size="h1">{entry.name}</Heading>
+      <Text variant="lead">{entry.summary}</Text>
+      <p class="source"><Link href={repo} variant="quiet" external>Source on GitHub</Link></p>
+    </header>
+
+    {
+      isLayout ? (
+        <section aria-labelledby="preview">
+          <Heading level={2} size="h3" id="preview">
+            Preview
+          </Heading>
+          <ViewportFrame src={demo} title={`${entry.name}, with sample content`} />
+          {storySource && (
+            <details class="story-source">
+              <summary>Show the code</summary>
+              <CodeBlock code={storySource.trim()} label={`Code: ${entry.name} sample page`} />
+            </details>
+          )}
+        </section>
+      ) : Story ? (
+        <section aria-labelledby="examples">
+          <Heading level={2} size="h3" id="examples">
+            Examples
+          </Heading>
+          <Story />
+        </section>
+      ) : (
+        <Text tone="negative">This component has no story yet: add src/site/stories/{entry.name}.stories.astro.</Text>
+      )
+    }
+
+    {
+      entry.props.length > 0 && (
+        <section aria-labelledby="props">
+          <Heading level={2} size="h3" id="props">
+            Props
+          </Heading>
+          <PropsTable props={entry.props} caption={`${entry.name} props`} />
+          {entry.types.map((t) => (
+            <>
+              <Heading level={3} size="h4">
+                {t.name}
+              </Heading>
+              <PropsTable props={t.props} caption={`${t.name} fields`} />
+            </>
+          ))}
+        </section>
+      )
+    }
+
+    {
+      (entry.a11y.length > 0 || entry.keys.length > 0) && (
+        <section aria-labelledby="access">
+          <Heading level={2} size="h3" id="access">
+            Accessibility
+          </Heading>
+          {entry.a11y.length > 0 && (
+            <ul class="notes">
+              {entry.a11y.map((n) => (
+                <li>{n}</li>
+              ))}
+            </ul>
+          )}
+          {entry.keys.length > 0 && (
+            <div class="keys" role="region" aria-label="Keyboard" tabindex="0">
+              <table>
+                <caption class="sr-only">Keyboard</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Key</th>
+                    <th scope="col">What it does</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entry.keys.map((k) => (
+                    <tr>
+                      <th scope="row">
+                        {k.keys.split(/\s*\/\s*/).map((key, i) => (
+                          <>
+                            {i > 0 && ' or '}
+                            <kbd>{key}</kbd>
+                          </>
+                        ))}
+                      </th>
+                      <td>{k.action}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )
+    }
+
+    <section aria-labelledby="anatomy">
+      <Heading level={2} size="h3" id="anatomy">Built from</Heading>
+      <dl class="anatomy">
+        <div>
+          <dt>Uses</dt>
+          <dd>
+            {
+              entry.uses.length ? (
+                <ul class="chips">
+                  {entry.uses.map((u) => (
+                    <li>
+                      <Tag href={link(u)}>{u}</Tag>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span class="muted">Tokens only</span>
+              )
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Used by</dt>
+          <dd>
+            {
+              entry.usedBy.length ? (
+                <ul class="chips">
+                  {entry.usedBy.map((u) => (
+                    <li>
+                      <Tag href={link(u)}>{u}</Tag>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span class="muted">{isLayout ? 'Pages' : 'Pages and content'}</span>
+              )
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Tokens it reads</dt>
+          <dd>
+            <ul class="tokens">
+              {
+                entry.tokens.map((t) => (
+                  <li>
+                    <a href={tokenHref(t)}>
+                      <code>{t}</code>
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </dd>
+        </div>
+      </dl>
+    </section>
+  </article>
+</LibraryLayout>
+
+<style>
+  .doc {
+    display: grid;
+    gap: var(--space-16);
+    max-width: var(--size-wide);
+  }
+
+  .intro {
+    display: grid;
+    gap: var(--space-4);
+    max-width: var(--size-popout);
+  }
+
+  .tier,
+  .source {
+    margin: 0;
+  }
+
+  section {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+  }
+
+  .notes {
+    display: grid;
+    gap: var(--space-2);
+    max-width: var(--size-measure);
+    margin: 0;
+    padding-inline-start: var(--space-5);
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+  }
+
+  .keys {
+    overflow-x: auto;
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+  }
+
+  th,
+  td {
+    padding: var(--space-3) var(--space-4);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-block-end: 0;
+  }
+
+  thead th {
+    background: var(--color-bg-sunk);
+    font-weight: var(--weight-semibold);
+  }
+
+  tbody th {
+    font-weight: var(--weight-regular);
+    white-space: nowrap;
+  }
+
+  kbd {
+    display: inline-block;
+    min-width: var(--space-6);
+    padding: var(--space-0-5) var(--space-2);
+    border: var(--border-hairline) solid var(--color-border);
+    border-block-end-width: var(--border-strong);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-raised);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    text-align: center;
+  }
+
+  .anatomy {
+    display: grid;
+    gap: var(--space-6);
+    margin: 0;
+  }
+
+  .anatomy dt {
+    margin-block-end: var(--space-2);
+    font-weight: var(--weight-semibold);
+  }
+
+  .anatomy dd {
+    margin: 0;
+  }
+
+  .chips,
+  .tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tokens a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--space-8);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-sunk);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .tokens a:hover {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .tokens code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+  }
+
+  .muted {
+    color: var(--color-text-muted);
+  }
+
+  .story-source summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    font-weight: var(--weight-semibold);
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+</style>

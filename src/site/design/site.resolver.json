@@ -1,0 +1,41 @@
+{
+  "name": "Site tokens",
+  "version": "2025.10",
+  "description": "The site's tokens in two colour contexts. The build emits every colour role that differs as a light-dark() pair, so the page follows the system (or <html data-theme>) and any subtree can switch with color-scheme.",
+  "sets": {
+    "base": {
+      "description": "Primitives, scales, type, motion and component tokens.",
+      "sources": [
+        {
+          "$ref": "tokens.json"
+        }
+      ]
+    }
+  },
+  "modifiers": {
+    "theme": {
+      "description": "The colour theme.",
+      "contexts": {
+        "light": [
+          {
+            "$ref": "tokens.light.json"
+          }
+        ],
+        "dark": [
+          {
+            "$ref": "tokens.dark.json"
+          }
+        ]
+      },
+      "default": "light"
+    }
+  },
+  "resolutionOrder": [
+    {
+      "$ref": "#/sets/base"
+    },
+    {
+      "$ref": "#/modifiers/theme"
+    }
+  ]
+}

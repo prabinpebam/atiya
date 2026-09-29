@@ -1,0 +1,25 @@
+---
+import Example from '../library/Example.astro';
+import ArticleHeader from '../components/compounds/ArticleHeader.astro';
+import { sample } from '../design/samples';
+import { withBase } from '../design/meta';
+
+const plaza = sample('plaza');
+---
+
+<Example title="The opening spread" layout="block" bleed description="Topic, title, standfirst, byline, and the lead picture running wide.">
+  <ArticleHeader
+    level={2}
+    title="Building a planet you can walk around"
+    standfirst="How a portfolio became a small 3D world, and why the classic site stayed one tap away."
+    topic={{ label: 'Case study', href: withBase('/classic/workshop/') }}
+    author={{ name: 'Prabin Pebam', avatar: withBase('/avatars/npc/prabin.webp') }}
+    date="2026-09-29"
+    readingTime="12 min read"
+    picture={{ ...plaza, caption: plaza.caption, credit: 'Concept art' }}
+  />
+</Example>
+
+<Example title="Words only" layout="block" bleed>
+  <ArticleHeader level={2} title="Workshop" standfirst="Deep dives into products, the bets and what changed." topic={{ label: 'Selected case studies' }} />
+</Example>

@@ -1,22 +1,35 @@
 ---
-import { withBase } from '../../game/platform/base';
-import { getCollection, render } from 'astro:content';
-import ClassicLayout from '../../layouts/ClassicLayout.astro';
+import { render } from 'astro:content';
+import ArticleLayout from '../../site/layouts/ArticleLayout.astro';
+import { classicNav, classicSections, exploreAction, sectionHref, type Section } from '../../site/classic';
+import { withBase } from '../../site/design/meta';
 
 export async function getStaticPaths() {
-  const entries = await getCollection('landmarks');
-  return entries.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+  const sections = await classicSections();
+  return sections.map((entry, i) => ({ params: { id: entry.id }, props: { entry, prev: sections[i - 1], next: sections[i + 1], sections } }));
 }
 
-const { entry } = Astro.props;
+interface Props {
+  entry: Section;
+  prev?: Section;
+  next?: Section;
+  sections: Section[];
+}
+
+const { entry, prev, next, sections } = Astro.props;
 const { Content } = await render(entry);
+const link = (s?: Section) => (s ? { href: sectionHref(s.id), title: s.data.title } : undefined);
 ---
 
-<ClassicLayout title={`${entry.data.title} — Prabin Pebam`} description={entry.data.summary} exploreHref={withBase(`/play/?at=${entry.id}`)}>
-  <article class="classic-article" style={`--accent: ${entry.data.accent}`}>
-    <p class="kicker">{entry.data.kicker}</p>
-    <h1>{entry.data.title}</h1>
-    <p class="lede">{entry.data.summary}</p>
-    <Content />
-  </article>
-</ClassicLayout>
+<ArticleLayout
+  title={`${entry.data.title} — Prabin Pebam`}
+  description={entry.data.summary}
+  nav={classicNav(sections, entry.id)}
+  action={exploreAction(entry.id)}
+  crumbs={{ trail: [{ label: 'Classic site', href: withBase('/classic/') }], current: entry.data.title }}
+  header={{ title: entry.data.title, standfirst: entry.data.summary, topic: { label: entry.data.kicker } }}
+  prev={link(prev)}
+  next={link(next)}
+>
+  <Content />
+</ArticleLayout>

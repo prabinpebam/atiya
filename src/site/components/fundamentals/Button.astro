@@ -1,0 +1,220 @@
+---
+/**
+ * A button, or a link that looks like one. One primary per view; its label starts with a verb and is
+ * three words or fewer ("Explore the planet", "Save changes"), never "OK", "Submit" or an instruction to click.
+ * @tier fundamental
+ * @a11y A link when it has an href (it goes somewhere), a <button> when it does something.
+ * @a11y Every size is at least 44 px to touch: the small one pads its hit area.
+ * @a11y Loading keeps the label, marks it busy and can't be pressed; an external link says it opens a new tab.
+ * @key Enter: activates it
+ * @key Space: activates a button
+ */
+import { svgOf, type IconName } from '../../design/icons';
+
+interface Props {
+  /** primary: the one main action; secondary: an outlined alternative; quiet: a light, text-weight action. */
+  variant?: 'primary' | 'secondary' | 'quiet';
+  /** sm 40 px (44 px to touch), md 48 px, lg 56 px. */
+  size?: 'sm' | 'md' | 'lg';
+  /** Makes it a link. */
+  href?: string;
+  /** A <button>'s type. */
+  type?: 'button' | 'submit' | 'reset';
+  /** An icon before the label. */
+  icon?: IconName;
+  /** An icon after the label: a direction (chevron-right, arrow-down). */
+  iconEnd?: IconName;
+  /** Can’t be pressed (a link loses its href and says so). */
+  disabled?: boolean;
+  /** Busy: a spinner, and it can't be pressed. */
+  loading?: boolean;
+  /** Fills its container's width. */
+  block?: boolean;
+  /** Opens in a new tab (links only): adds the external icon and says so. */
+  external?: boolean;
+  /** The element’s id. */
+  id?: string;
+  /** What it opens or changes (a menu, a panel). */
+  'aria-controls'?: string;
+  /** Whether what it controls is open. */
+  'aria-expanded'?: 'true' | 'false';
+  /** A toggle’s state. */
+  'aria-pressed'?: 'true' | 'false';
+  /** The id of a hint that explains it. */
+  'aria-describedby'?: string;
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { variant = 'secondary', size = 'md', href, type = 'button', icon, iconEnd, disabled = false, loading = false, block = false, external = false, ...rest } = Astro.props;
+const isLink = href !== undefined && !disabled;
+const Tag = isLink ? 'a' : 'button';
+const start = icon ? svgOf(icon) : null;
+const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
+---
+
+<Tag
+  class="button"
+  data-variant={variant}
+  data-size={size}
+  data-block={block ? '' : undefined}
+  href={isLink ? href : undefined}
+  target={isLink && external ? '_blank' : undefined}
+  rel={isLink && external ? 'noopener' : undefined}
+  type={isLink ? undefined : type}
+  disabled={!isLink && (disabled || loading) ? true : undefined}
+  aria-disabled={href !== undefined && disabled ? 'true' : undefined}
+  aria-busy={loading ? 'true' : undefined}
+  {...rest}
+>
+  {loading && <span class="spinner" aria-hidden="true" />}
+  {
+    start && (
+      <svg class="icon" viewBox={start.viewBox} aria-hidden="true" focusable="false" data-icon={start.name}>
+        <path fill="currentColor" d={start.d} />
+      </svg>
+    )
+  }
+  <span class="label"><slot /></span>
+  {
+    end && (
+      <svg class="icon end" viewBox={end.viewBox} aria-hidden="true" focusable="false" data-icon={end.name}>
+        <path fill="currentColor" d={end.d} />
+      </svg>
+    )
+  }
+  {external && <span class="sr-only">(opens in a new tab)</span>}
+</Tag>
+
+<style>
+  .button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--c-control-height-md);
+    padding: 0 var(--c-button-pad-x-md);
+    border: var(--border-control) solid transparent;
+    border-radius: var(--c-button-radius);
+    font-family: var(--font-ui);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+    letter-spacing: var(--tracking-label);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition:
+      background-color var(--duration-instant) var(--ease-standard),
+      border-color var(--duration-instant) var(--ease-standard),
+      color var(--duration-instant) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .button[data-size='sm'] {
+    min-height: var(--c-control-height-sm);
+    padding: 0 var(--c-button-pad-x-sm);
+    font-size: var(--text-sm);
+  }
+
+  /* a 40 px button still takes a 44 px touch */
+  .button[data-size='sm']::after {
+    content: '';
+    position: absolute;
+    inset: calc((var(--c-control-height-sm) - var(--size-touch)) / 2) 0;
+  }
+
+  .button[data-size='lg'] {
+    min-height: var(--c-control-height-lg);
+    padding: 0 var(--c-button-pad-x-lg);
+    font-size: var(--text-lg);
+  }
+
+  .button[data-block] {
+    display: flex;
+    width: 100%;
+  }
+
+  .button[data-variant='primary'] {
+    background: var(--c-button-primary-bg);
+    color: var(--c-button-primary-text);
+  }
+
+  .button[data-variant='primary']:hover {
+    background: var(--c-button-primary-bg-hover);
+    color: var(--c-button-primary-text);
+  }
+
+  .button[data-variant='secondary'] {
+    background: transparent;
+    border-color: var(--c-button-secondary-border);
+    color: var(--c-button-secondary-text);
+  }
+
+  .button[data-variant='secondary']:hover {
+    background: var(--c-button-hover-wash);
+    color: var(--c-button-secondary-text);
+  }
+
+  .button[data-variant='quiet'] {
+    background: transparent;
+    color: var(--c-button-quiet-text);
+    padding-inline: var(--space-4);
+  }
+
+  .button[data-variant='quiet']:hover {
+    background: var(--c-button-hover-wash);
+    color: var(--color-accent-hover);
+  }
+
+  .button:active:not(:disabled, [aria-disabled='true']) {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  .button:disabled,
+  .button[aria-disabled='true'] {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  .button[aria-busy='true'] {
+    opacity: 1;
+    cursor: progress;
+  }
+
+  .icon {
+    flex: none;
+    width: var(--size-icon);
+    height: var(--size-icon);
+  }
+
+  .button[data-size='sm'] .icon {
+    width: var(--text-sm);
+    height: var(--text-sm);
+  }
+
+  .button:hover .end[data-icon='chevron-right'],
+  .button:hover .end[data-icon='arrow-right'] {
+    transform: translateX(var(--space-0-5));
+  }
+
+  .end {
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .spinner {
+    width: var(--size-icon);
+    height: var(--size-icon);
+    border: var(--border-strong) solid currentColor;
+    border-inline-end-color: transparent;
+    border-radius: var(--radius-round);
+    animation: spin var(--duration-slower) linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+</style>

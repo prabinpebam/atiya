@@ -1,0 +1,136 @@
+---
+/**
+ * One live example in a component's page: a titled canvas that renders the real component, a switch to
+ * preview it in light or dark whatever the page's theme, and its source (taken from the story file, so
+ * the code shown is the code that ran). Library-only.
+ */
+import Heading from '../components/fundamentals/Heading.astro';
+import Text from '../components/fundamentals/Text.astro';
+import Button from '../components/fundamentals/Button.astro';
+import CodeBlock from './CodeBlock.astro';
+import { slugOf } from './registry';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** How the canvas lays out its children. */
+  layout?: 'row' | 'stack' | 'block' | 'center';
+  /** No padding: for full-width pieces (a header, a carousel). */
+  bleed?: boolean;
+}
+
+const { title, description, layout = 'row', bleed = false } = Astro.props;
+const code = Astro.locals.storyCode?.[title];
+const id = `example-${slugOf(title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'))}`;
+---
+
+<section class="example" aria-labelledby={id}>
+  <div class="head">
+    <div class="titles">
+      <Heading level={3} size="h4" id={id}>{title}</Heading>
+      {description && <Text variant="small" tone="muted">{description}</Text>}
+    </div>
+    <div class="modes" role="group" aria-label="Preview in">
+      <Button size="sm" variant="quiet" icon="theme-light" aria-pressed="false" data-preview-mode="light">Light</Button>
+      <Button size="sm" variant="quiet" icon="theme-dark" aria-pressed="false" data-preview-mode="dark">Dark</Button>
+    </div>
+  </div>
+  <div class="canvas" data-layout={layout} data-bleed={bleed ? '' : undefined} data-canvas>
+    <slot />
+  </div>
+  {
+    code && (
+      <details class="source">
+        <summary>Show the code</summary>
+        <CodeBlock code={code} label={`Code: ${title}`} />
+      </details>
+    )
+  }
+</section>
+
+<style>
+  .example {
+    display: grid;
+    gap: var(--space-4);
+    margin-block: var(--space-12);
+  }
+
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-6);
+  }
+
+  .titles {
+    display: grid;
+    gap: var(--space-1);
+    max-width: var(--size-measure);
+  }
+
+  .modes {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .canvas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-8);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg);
+    color: var(--color-text);
+    transition: background-color var(--duration-base) var(--ease-standard);
+  }
+
+  .canvas[data-layout='stack'] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .canvas[data-layout='block'] {
+    display: block;
+  }
+
+  .canvas[data-layout='center'] {
+    justify-content: center;
+  }
+
+  .canvas[data-bleed] {
+    padding: 0;
+    overflow: clip;
+  }
+
+  .source summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    font-weight: var(--weight-semibold);
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+
+  .source[open] summary {
+    margin-block-end: var(--space-2);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.example').forEach((ex) => {
+    const canvas = ex.querySelector<HTMLElement>('[data-canvas]');
+    const buttons = [...ex.querySelectorAll<HTMLButtonElement>('[data-preview-mode]')];
+    buttons.forEach((b) =>
+      b.addEventListener('click', () => {
+        const on = b.getAttribute('aria-pressed') !== 'true';
+        buttons.forEach((x) => x.setAttribute('aria-pressed', String(on && x === b)));
+        if (!canvas) return;
+        if (on) canvas.dataset.scheme = b.dataset.previewMode;
+        else delete canvas.dataset.scheme;
+      }),
+    );
+  });
+</script>

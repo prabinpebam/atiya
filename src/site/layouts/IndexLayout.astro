@@ -1,0 +1,67 @@
+---
+/**
+ * An index: a section's front page, with its title set large, a standfirst, and the list of what's in
+ * it (story cards or a contents list) below, with the whitespace a magazine's section opener has.
+ * Defined once; the classic site's front page and every future index (work, notes) use it.
+ * @tier layout
+ * @a11y One h1, the page's title; the list's headings are h2. A main landmark with id="main".
+ */
+import PageShell from '../components/compounds/PageShell.astro';
+import SiteHeader, { type NavItem } from '../components/compounds/SiteHeader.astro';
+import SiteFooter from '../components/compounds/SiteFooter.astro';
+import Breadcrumbs from '../components/compounds/Breadcrumbs.astro';
+import Heading from '../components/fundamentals/Heading.astro';
+import Text from '../components/fundamentals/Text.astro';
+import type { IconName } from '../design/icons';
+
+interface Props {
+  /** The document title. */
+  title: string;
+  /** The search and social-card summary. */
+  description?: string;
+  /** The page's own title (its h1). */
+  heading: string;
+  /** The soft italic line under the title. */
+  standfirst?: string;
+  /** The site’s sections, for the header. */
+  nav?: NavItem[];
+  /** The header's one action. */
+  action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
+  /** For an index below the top level. */
+  crumbs?: { trail: { label: string; href: string }[]; current: string };
+}
+
+const { title, description, heading, standfirst, nav, action, crumbs } = Astro.props;
+---
+
+<PageShell title={title} description={description}>
+  <SiteHeader nav={nav} action={action} />
+  <main id="main" class="index" tabindex="-1">
+    <header class="intro">
+      {crumbs && <Breadcrumbs trail={crumbs.trail} current={crumbs.current} />}
+      <Heading level={1} size="display">{heading}</Heading>
+      {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
+    </header>
+    <div class="list">
+      <slot />
+    </div>
+  </main>
+  <SiteFooter />
+</PageShell>
+
+<style>
+  .index {
+    display: grid;
+    gap: var(--space-section);
+    max-width: var(--size-wide);
+    margin-inline: auto;
+    padding: var(--space-section) var(--space-gutter) 0;
+    outline: none;
+  }
+
+  .intro {
+    display: grid;
+    gap: var(--space-6);
+    max-width: var(--size-popout);
+  }
+</style>

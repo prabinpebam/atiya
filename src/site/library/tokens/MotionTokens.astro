@@ -1,0 +1,185 @@
+---
+/**
+ * Motion: each easing drawn as its curve and played on a dot, each duration played on a bar. Nothing
+ * moves until you ask (Play), and with reduced motion on, it doesn't move at all. Library-only.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import { siteTokens } from '../../design/tokens';
+import { resolve } from '../../design/tokenModel';
+import { tokenAnchor } from '../tokenLinks';
+
+const m = siteTokens();
+const eases = m.tokens.filter((t) => t.path[0] === 'ease');
+const durations = m.tokens.filter((t) => t.path[0] === 'duration');
+// a curve's path in a 100 x 100 box (y up), overshoot allowed
+const curve = (v: number[]) => `M0 100 C ${v[0] * 100} ${100 - v[1] * 100}, ${v[2] * 100} ${100 - v[3] * 100}, 100 0`;
+---
+
+<section class="block" aria-labelledby="eases">
+  <Heading level={2} size="h2" id="eases">Easings</Heading>
+  <Text narrow>Standard for most movement; enter for what arrives, exit for what leaves; spring for a small, friendly overshoot (a switch’s thumb, a check popping in). Motion answers something you did: the site has one orchestrated moment and no ambient animation.</Text>
+  <div class="play-all"><Button variant="secondary" size="sm" icon="play" data-play-motion="">Play the easings</Button></div>
+  <ul class="eases" data-motion-group>
+    {
+      eases.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <svg class="curve" viewBox="-10 -30 120 160" aria-hidden="true">
+            <path class="axis" d="M0 100 H100 M0 100 V0" />
+            <path class="path" d={curve(t.value as number[])} />
+          </svg>
+          <span class="track">
+            <span class="dot" style={`--e: var(${t.name})`} />
+          </span>
+          <code>{t.name}</code>
+          <Text as="span" variant="meta">
+            {resolve(t, m.byPath)}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<section class="block" aria-labelledby="durations">
+  <Heading level={2} size="h2" id="durations">Durations</Heading>
+  <div class="play-all"><Button variant="secondary" size="sm" icon="play" data-play-motion="">Play the durations</Button></div>
+  <ul class="durations" data-motion-group>
+    {
+      durations.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <code>{t.name}</code>
+          <span class="track">
+            <span class="fill" style={`--d: var(${t.name})`} />
+          </span>
+          <Text as="span" variant="meta">
+            {resolve(t, m.byPath)}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .block {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .eases,
+  .durations {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .eases {
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: var(--space-8);
+  }
+
+  .eases li {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .curve {
+    width: var(--space-24);
+    height: auto;
+    overflow: visible;
+  }
+
+  .axis {
+    fill: none;
+    stroke: var(--color-rule);
+    stroke-width: 2;
+  }
+
+  .path {
+    fill: none;
+    stroke: var(--color-accent);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  .track {
+    position: relative;
+    display: block;
+    height: var(--space-4);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-sunk);
+  }
+
+  .dot {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: var(--space-4);
+    height: var(--space-4);
+    border-radius: var(--radius-round);
+    background: var(--color-highlight);
+    transition: inset-inline-start var(--duration-slower) var(--e);
+  }
+
+  [data-playing] .dot {
+    inset-inline-start: calc(100% - var(--space-4));
+  }
+
+  .durations li {
+    display: grid;
+    grid-template-columns: minmax(10rem, 13rem) minmax(0, 1fr) minmax(4rem, 5rem);
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+    padding-block: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .durations li > :last-child {
+    grid-column: 2 / -1;
+  }
+
+  .fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    transition: width var(--d) linear;
+  }
+
+  [data-playing] .fill {
+    width: 100%;
+  }
+
+  code {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+  }
+
+  @media (max-width: 40rem) {
+    .durations li {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-play-motion]').forEach((b) => {
+    const group = b.closest('section')?.querySelector<HTMLElement>('[data-motion-group]');
+    b.addEventListener('click', () => {
+      if (!group) return;
+      group.removeAttribute('data-playing');
+      // restart from the start on the next frame
+      requestAnimationFrame(() => requestAnimationFrame(() => group.setAttribute('data-playing', '')));
+    });
+  });
+</script>

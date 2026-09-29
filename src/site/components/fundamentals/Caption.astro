@@ -1,0 +1,59 @@
+---
+/**
+ * A caption: what a picture shows and, if it matters, who made it. Small, in the interface face, set
+ * off from the text it follows. Figures, galleries, carousels and the lightbox all caption with it.
+ * @tier fundamental
+ * @a11y A figcaption names its figure; the credit is part of the caption, not an image's alt text.
+ */
+interface Props {
+  /** figcaption inside a <figure>; p or div elsewhere. */
+  as?: 'figcaption' | 'p' | 'div';
+  /** Who made the picture ("Painted with GPT Image"); shown after the caption. */
+  credit?: string;
+  /** on-image: white on the photograph's shade (a caption laid over a picture). */
+  tone?: 'default' | 'on-image';
+  /** start, or centred under a centred picture. */
+  align?: 'start' | 'center';
+  /** The element’s id (for aria-describedby). */
+  id?: string;
+}
+
+const { as = 'figcaption', credit, tone = 'default', align = 'start', id } = Astro.props;
+const Tag = as;
+---
+
+<Tag class="caption" data-tone={tone} data-align={align} id={id}>
+  <span class="text"><slot /></span>
+  {credit && <span class="credit">{credit}</span>}
+</Tag>
+
+<style>
+  .caption {
+    display: block;
+    max-width: var(--size-measure);
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    color: var(--color-text-muted);
+    text-wrap: pretty;
+  }
+
+  .caption[data-align='center'] {
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .text {
+    color: var(--color-text);
+  }
+
+  .credit {
+    margin-inline-start: var(--space-2);
+  }
+
+  .caption[data-tone='on-image'],
+  .caption[data-tone='on-image'] .text {
+    color: var(--color-on-image);
+  }
+</style>

@@ -1,0 +1,137 @@
+---
+/**
+ * A single radio choice. Use it in a named group when exactly one option should be selected.
+ * @tier fundamental
+ * @a11y A native radio carries the selected state and joins its group by name.
+ * @a11y The label is always visible, and the whole row is at least 44 px and clickable.
+ * @a11y Hints are tied to the input with aria-describedby.
+ * @key Arrow keys: move through radios with the same name
+ * @key Space: selects it
+ */
+interface Props {
+  /** The visible label when no slot is supplied. */
+  label?: string;
+  /** The radio group's form name. */
+  name?: string;
+  /** The submitted value. */
+  value?: string;
+  /** The input's id. */
+  id?: string;
+  /** Starts selected. */
+  checked?: boolean;
+  /** Prevents selecting this option. */
+  disabled?: boolean;
+  /** Supporting text under the label. */
+  hint?: string;
+  /** Makes the group required in a form. */
+  required?: boolean;
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, name, value, id = `radio-${Math.random().toString(36).slice(2, 8)}`, checked = false, disabled = false, hint, required = false, ...rest } = Astro.props;
+const hasSlot = Astro.slots.has('default');
+const described = hint ? `${id}-hint` : undefined;
+---
+
+<label class="radio" data-disabled={disabled ? '' : undefined} {...rest}>
+  <span class="circle">
+    <input class="input" type="radio" id={id} name={name} value={value} checked={checked} disabled={disabled} required={required} aria-describedby={described} />
+    <span class="dot"></span>
+  </span>
+  <span class="content">
+    <span class="label">{hasSlot ? <slot /> : label}</span>
+    {hint && <span class="hint" id={`${id}-hint`}>{hint}</span>}
+  </span>
+</label>
+
+<style>
+  .radio {
+    display: grid;
+    grid-template-columns: var(--c-check-size) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--size-touch);
+    font-family: var(--font-ui);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .radio[data-disabled] {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  .circle {
+    position: relative;
+    display: grid;
+    place-items: center;
+    inline-size: var(--c-check-size);
+    block-size: var(--c-check-size);
+  }
+
+  .input {
+    appearance: none;
+    inline-size: var(--c-check-size);
+    block-size: var(--c-check-size);
+    margin: 0;
+    border: var(--border-control) solid var(--c-control-border);
+    border-radius: var(--radius-round);
+    background: var(--c-control-fill);
+    cursor: inherit;
+    transition:
+      border-color var(--duration-instant) var(--ease-standard),
+      box-shadow var(--duration-instant) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .input:hover {
+    border-color: var(--c-control-border-hover);
+  }
+
+  .input:checked {
+    border-color: var(--c-check-on);
+    background: var(--c-control-fill);
+  }
+
+  .input:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+
+  .dot {
+    position: absolute;
+    inline-size: calc(var(--c-check-size) - var(--space-3));
+    block-size: calc(var(--c-check-size) - var(--space-3));
+    border-radius: var(--radius-round);
+    background: var(--c-check-on);
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+    transition:
+      opacity var(--duration-fast) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-spring);
+  }
+
+  .input:checked + .dot {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .content {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .label {
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+  }
+
+  .hint {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+</style>

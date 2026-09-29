@@ -100,6 +100,51 @@
       "group": "Site"
     },
     {
+      "path": "site-ui/design-system.md",
+      "title": "Site design system",
+      "order": 20.1,
+      "icon": "style",
+      "status": "stable",
+      "updated": "2026-09-29",
+      "group": "Site UI"
+    },
+    {
+      "path": "site-ui/visual-language.md",
+      "title": "Visual language",
+      "order": 20.2,
+      "icon": "newspaper",
+      "status": "stable",
+      "updated": "2026-09-29",
+      "group": "Site UI"
+    },
+    {
+      "path": "site-ui/spec.md",
+      "title": "Spec: research to v2",
+      "order": 20.3,
+      "icon": "rule",
+      "status": "done",
+      "updated": "2026-09-29",
+      "group": "Site UI"
+    },
+    {
+      "path": "site-ui/tokens.md",
+      "title": "Site design tokens",
+      "order": 20.4,
+      "icon": "token",
+      "status": "stable",
+      "updated": "2026-09-29",
+      "group": "Site UI"
+    },
+    {
+      "path": "site-ui/dod.md",
+      "title": "Definition of Done",
+      "order": 20.5,
+      "icon": "task_alt",
+      "status": "done",
+      "updated": "2026-09-29",
+      "group": "Site UI"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 21,
