@@ -87,9 +87,11 @@ const id = `example-${slugOf(title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
     transition: background-color var(--duration-base) var(--ease-standard);
   }
 
+  /* one column: a grid sizes to its items' real heights (a wrapping flex column can mis-measure a
+     picture whose height follows its width, and let it spill out of the frame) */
   .canvas[data-layout='stack'] {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    align-items: start;
   }
 
   .canvas[data-layout='block'] {

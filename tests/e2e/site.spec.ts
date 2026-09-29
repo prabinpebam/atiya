@@ -135,6 +135,39 @@ test.describe('site design system', () => {
     }
     expect(errors).toEqual([]);
   });
+
+  test('no example spills out of its frame, on a desktop or a phone', async ({ page }) => {
+    for (const size of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(size);
+      await page.goto('/design/');
+      const links = await page.locator('nav[aria-label="Design library"] a').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href')!));
+      for (const href of links.filter((h) => /\/(fundamentals|compounds)\//.test(h))) {
+        await page.goto(href);
+        // what's shown (not a closed disclosure, not inside something that scrolls or clips) stays inside the canvas
+        const spills = await page.evaluate(() =>
+          [...document.querySelectorAll<HTMLElement>('[data-canvas]:not([data-bleed])')].flatMap((c) => {
+            const cb = c.getBoundingClientRect();
+            const clipped = (e: Element) => {
+              for (let p = e.parentElement; p && p !== c; p = p.parentElement) if (getComputedStyle(p).overflow !== 'visible') return true;
+              return false;
+            };
+            return [...c.querySelectorAll('*')]
+              .filter((e) => e.checkVisibility() && !clipped(e) && !e.closest('dialog, [role="listbox"]'))
+              .filter((e) => {
+                const b = e.getBoundingClientRect();
+                return b.height > 0 && (b.bottom > cb.bottom + 2 || b.right > cb.right + 2);
+              })
+              .slice(0, 1)
+              .map((e) => `${c.closest('.example')?.querySelector('h3')?.textContent?.trim()}: ${e.tagName.toLowerCase()}.${e.className}`);
+          }),
+        );
+        expect(spills, `${href} at ${size.width}`).toEqual([]);
+      }
+    }
+  });
 });
 
 /** The classic site on a phone (documentation/site-ui/mobile-audit.md). */
