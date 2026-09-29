@@ -482,7 +482,7 @@ Lists whose items take a background (hover, selected, current): the dropdown’s
 | `--c-minimap-width` | `3.25rem` |  | 52 px: the strip, room for the longest pill at 150%; it takes pointer input only inside itself |
 | `--c-minimap-width-touch` | `3.75rem` |  | 60 px: the strip on a touch screen |
 | `--c-minimap-inset` | `1rem` |  | Between the strip and the edge of the scrolling area: clear of the page scrollbar (6 to 10 px wide, 3 px in) |
-| `--c-minimap-gap` | `0.375rem` |  | The space between two pills (6 px): a 10 px row |
+| `--c-minimap-gap` | `0.5rem` |  | The space between two pills (8 px): a 12 px row |
 | `--c-minimap-row-touch` | `1.5rem` |  | The least a row is on a touch screen: 24 px (the WCAG 2.5.8 minimum for a target) |
 | `--c-minimap-bar` | `0.25rem` |  | A pill: 4 px thick, at rest, hovered or current alike (only its length changes) |
 | `--c-minimap-bar-1` | `2rem` |  | A level-1 heading pill (when the title is not the page title): 32 px |

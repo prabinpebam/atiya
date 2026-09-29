@@ -26,7 +26,7 @@ A slim strip along the right edge of a long article: one indicator per landmark,
 
 ## 2. Indicators
 
-The look is the owner's mock, at about a seventh of its drawn size: a column of soft, fully rounded pills, right-aligned, 4 px thick whatever their state (hover never changes a pill's height), in rows 10 px apart.
+The look is the owner's mock, at about a seventh of its drawn size: a column of soft pills, right-aligned, 4 px thick whatever their state (hover never changes a pill's height), in rows 12 px apart (an 8 px gap). The ends are full half-circles (`--radius-pill`), and every length is rounded to whole pixels, so both ends sit on the pixel grid and render crisp.
 
 | Kind | Pill (mouse) | On touch |
 |---|---|---|
@@ -34,7 +34,7 @@ The look is the owner's mock, at about a seventh of its drawn size: a column of 
 | Picture, gallery or carousel | 16 px long | × 1.15 |
 
 - **Only headings differ:** by the owner's choice, every landmark is the same pill, and only a heading's length (its level) sets it apart. The kind is in the tooltip ("Image", "Gallery · 6 images") and the button's accessible name ("Jump to image: …"), never in colour alone.
-- **Rows:** every mark is right-aligned in a full-width row button, 10 px tall with a mouse, at least 24 px on touch (the WCAG 2.5.8 minimum). So targets never overlap. With a mouse they're smaller than the spec's 16 px, for the owner's denser look; the page scrolls as usual, so the strip stays an extra way to move.
+- **Rows:** every mark is right-aligned in a full-width row button, 12 px tall with a mouse, at least 24 px on touch (the WCAG 2.5.8 minimum). So targets never overlap. With a mouse they're smaller than the spec's 16 px, for the owner's look; the page scrolls as usual, so the strip stays an extra way to move.
 - **Colours:**
   - at rest, one soft neutral for every mark (`--c-minimap-tick`, the `indicator` role): a light warm grey on dark, as in the mock, and stock-500 on paper (3:1);
   - the landmark being read, the spot indigo (`--c-minimap-current`);

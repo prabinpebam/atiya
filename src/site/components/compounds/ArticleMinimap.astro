@@ -110,11 +110,13 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
     border-radius: var(--radius-xs);
   }
 
-  /* every landmark is the same fully rounded pill; it grows lengthwise only, leftward (never thicker) */
+  /* every landmark is the same fully rounded pill (ends a half-circle of its thickness); it grows lengthwise
+     only, leftward, never thicker. Its length is whole pixels, so both round ends sit on the pixel grid and
+     render crisp (a fractional length blurs the left end until the pill reads as square-ended) */
   .tick {
     display: block;
     flex: none;
-    inline-size: calc(var(--len) * (1 + var(--lift) * var(--c-minimap-magnify)));
+    inline-size: round(calc(var(--len) * (1 + var(--lift) * var(--c-minimap-magnify))), 1px);
     block-size: var(--mark-h);
     border-radius: var(--radius-pill);
     background: currentColor;
@@ -208,7 +210,7 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
     }
 
     .tick {
-      inline-size: calc(var(--len) * var(--c-minimap-touch-scale) * (1 + var(--lift) * var(--c-minimap-magnify)));
+      inline-size: round(calc(var(--len) * var(--c-minimap-touch-scale) * (1 + var(--lift) * var(--c-minimap-magnify))), 1px);
     }
 
     .tip {
