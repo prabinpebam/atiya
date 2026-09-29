@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Builds the documentation's diagrams (documentation/content/*.md) from their readable sources in
+ * Builds the documentation's diagrams (the pages in DIAGRAMS below) from their readable sources in
  * assets-src/docs-diagrams/, into Slate's inline figure profile (slate-viewport-motion): presentation
  * attributes with the host's semantic colour roles (so they follow the docs' light and dark themes),
  * explicit polygon arrowheads, fit targets on every label, and a motion step per subject.
@@ -20,6 +20,7 @@ const DIAGRAMS = [
   { name: 'model', page: 'documentation/content/model.md', prefix: 'cp-model' },
   { name: 'structures', page: 'documentation/content/ia.md', prefix: 'cp-structures' },
   { name: 'media', page: 'documentation/content/media.md', prefix: 'cp-media' },
+  { name: 'separation', page: 'documentation/engineering/app-separation.md', prefix: 'eng-sep' },
 ];
 
 const V = (n) => `var(--color-${n})`;

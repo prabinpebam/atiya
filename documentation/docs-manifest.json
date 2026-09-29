@@ -512,6 +512,15 @@
       "status": "stable",
       "updated": "2026-09-26",
       "group": "Engineering"
+    },
+    {
+      "path": "engineering/app-separation.md",
+      "title": "Separating the site and the planet",
+      "order": 52,
+      "icon": "call_split",
+      "status": "draft",
+      "updated": "2026-09-29",
+      "group": "Engineering"
     }
   ]
 }

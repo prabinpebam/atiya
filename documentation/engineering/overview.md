@@ -18,6 +18,8 @@ The reasons behind the stack are in [the tech-stack research](../poc-3d-navigati
 
 ## Repository map
 
+The site and the planet share this layout today. [Separating the site and the planet](app-separation.md) proposes two apps with their own dev servers, dependencies and checks.
+
 | Path | What lives there |
 |---|---|
 | `src/pages/` | `index.astro` (landing), `classic/` (plain pages per landmark), `design/` (the design library), `play.astro` (the game page) |

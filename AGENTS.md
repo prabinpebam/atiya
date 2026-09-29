@@ -115,7 +115,7 @@ The site's content, IA and navigation are data (spec: [documentation/content/spe
 - Slate's rules apply: no emoji, no inline styles or scripts in pages, no invented facts, and no meta-documentation (reviews update the pages they review).
 - **Links must stay inside `documentation/`**, because files outside it aren't published. Link to code and repository files with a GitHub URL (`https://github.com/prabinpebam/atiya/blob/main/<path>`).
 - Never edit `documentation/shell/`: it's generated. After a Slate update, run `node slate/scripts/runtime-host.mjs sync --repo . --host documentation`, then `check`.
-- The content docs' figures (`<figure data-diagram="…">`) are generated from `assets-src/docs-diagrams/` by `node scripts/build-doc-diagrams.mjs` (`--check` finds stale ones); edit the source, never the inline SVG.
+- Docs figures marked `<figure data-diagram="…">` (the content and engineering pages) are generated from `assets-src/docs-diagrams/` by `node scripts/build-doc-diagrams.mjs` (`--check` finds stale ones); edit the source, never the inline SVG.
 - There's no `package-lock.json` in `slate/`, because of the package-feed policy.
 
 ### Commands

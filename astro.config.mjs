@@ -42,12 +42,20 @@ export default defineConfig({
       dedupe: ['three', 'react', 'react-dom'],
     },
     optimizeDeps: {
-      // Pre-bundled at dev start-up, so none is discovered mid-session: a late discovery re-bundles
-      // the deps and the dev server then answers the old URLs with "504 Outdated Optimize Dep".
+      // Pre-bundled at dev start-up, so none is discovered mid-session: a late discovery re-bundles the
+      // deps under a new hash, and the game's lazily loaded modules, already served with the old one, get
+      // "504 Outdated Optimize Dep" and a second copy of three and React. tests/unit/devDeps.test.ts
+      // fails when the game imports a package that isn't listed here.
       include: [
+        // also pre-bundled by @astrojs/react; listed so the game's list is complete on its own
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'react/jsx-dev-runtime',
         'three',
         'three/examples/jsm/geometries/RoundedBoxGeometry.js',
         'three/examples/jsm/utils/BufferGeometryUtils.js',
+        'three/examples/jsm/utils/SkeletonUtils.js',
         '@react-three/fiber',
         '@react-three/drei',
         '@react-three/postprocessing',
