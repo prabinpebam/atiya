@@ -1265,7 +1265,7 @@ test.describe('home & family', () => {
     for (const m of swing) expect(m).toBeGreaterThan(0.05);
   });
 
-  test('Prabin: he starts by the crafting table; Talk to Prabin opens the dialog with his name and a welcome', async ({ page }) => {
+  test('Prabin: he starts by the crafting table; Talk to Prabin opens the dialog with his name, his talking head and a welcome', async ({ page }) => {
     test.setTimeout(120_000);
     await startPlanet(page);
     const f = await family(page);
@@ -1278,6 +1278,11 @@ test.describe('home & family', () => {
     const box = page.getByTestId('talk-box');
     await expect(box).toBeVisible();
     await expect(box.locator('.talk-name')).toHaveText('Prabin');
+    // his face, beside his name, nodding along while the line types out
+    const head = box.getByTestId('talk-head');
+    await expect(head).toBeVisible();
+    await expect(head.locator('img')).toHaveAttribute('src', /\/avatars\/npc\/prabin\.webp$/);
+    await expect.poll(() => head.locator('img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBe(192);
     expect((await state(page)).talk!.lines.length).toBeGreaterThanOrEqual(2);
     await page.keyboard.press('Escape');
     await expect(box).toHaveCount(0);
@@ -2377,6 +2382,7 @@ test.describe('planet', () => {
         const greet = page.locator('[data-greeting]');
         await expect(greet).toBeVisible();
         await expect(greet).toContainText('Prabin');
+        await expect(greet.locator('.talk-head img')).toBeVisible();
         await expect(greet).toContainText('Welcome to my little planet');
         await expect(page.locator('[data-load-scene]')).toBeVisible();
         await greet.getByRole('button', { name: /Next/ }).click();
@@ -2553,6 +2559,8 @@ test.describe('planet', () => {
     const menu = page.getByTestId('menu-dialog');
     await expect(menu).toBeVisible();
     await noSeriousViolations(page);
+    await menu.getByRole('button', { name: /Fast travel/ }).click();
+    await expect(menu.getByRole('heading', { name: 'Fast travel' })).toBeVisible();
     await menu.getByRole('button', { name: /Post Office/ }).click();
     await expect(menu).toBeHidden();
     await expect.poll(async () => (await state(page)).nearby, { timeout: 15_000 }).toBe('post-office');
@@ -2594,13 +2602,41 @@ test.describe('planet', () => {
     }
   });
 
-  test('parallel landmark nav is keyboard reachable and travels', async ({ page }) => {
+  test('fast travel: T opens the places as tiles (so does the header button), the arrow keys go from tile to tile, a number flies there; the shortcuts work with the focus on nothing; B opens and closes the backpack', async ({ page }) => {
+    test.setTimeout(120_000);
     await startPlanet(page);
-    await page.locator('.game-region').focus();
-    await page.keyboard.press('Tab');
-    const nav = page.getByRole('navigation', { name: 'Planet landmarks' });
-    await expect(nav.getByRole('button').first()).toBeFocused();
-    await nav.getByRole('button', { name: /Town Hall/ }).click();
+    const menu = page.getByTestId('menu-dialog');
+    // the header's button
+    await page.getByTestId('travel-button').click();
+    await expect(menu.getByRole('heading', { name: 'Fast travel' })).toBeVisible();
+    const tiles = menu.locator('.travel-tile');
+    await expect(tiles).toHaveCount(8);
+    await expect(tiles.first()).toBeFocused();
+    await expect(tiles.last()).toContainText('The plaza');
+    await expect(tiles.last()).toHaveAttribute('aria-current', 'location');
+    await noSeriousViolations(page);
+    // T closes it, as it opened it
+    await page.keyboard.press('t');
+    await expect(menu).toBeHidden();
+    // with the focus on nothing, T still opens it
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press('t');
+    await expect(menu.getByRole('heading', { name: 'Fast travel' })).toBeVisible();
+    await page.keyboard.press('ArrowRight');
+    await expect(tiles.nth(1)).toBeFocused();
+    await expect(tiles.nth(1)).toContainText('Town Hall');
+    await page.keyboard.press('Space');
+    await expect(menu).toBeHidden();
+    // B for the backpack, both ways
+    await page.keyboard.press('b');
+    await expect(page.getByTestId('inventory-screen')).toBeVisible();
+    await page.keyboard.press('b');
+    await expect(page.getByTestId('inventory-screen')).toHaveCount(0);
+    // a place's number flies there
+    await page.keyboard.press('t');
+    await expect(menu.getByRole('heading', { name: 'Fast travel' })).toBeVisible();
+    await page.keyboard.press('2');
+    await expect(menu).toBeHidden();
     // the fly-over is ~16 frames at the capped step: slow under software rendering
     await expect.poll(async () => (await state(page)).nearby, { timeout: 20_000 }).toBe('town-hall');
   });

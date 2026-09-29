@@ -16,6 +16,7 @@ export type GameAction =
   | 'faceNorth'
   | 'home'
   | 'inventory'
+  | 'travel'
   | 'drop'
   | 'whistle'
   | 'sit'
@@ -60,8 +61,11 @@ export const KEY_BINDINGS: Record<string, GameAction> = {
   KeyN: 'faceNorth',
   KeyH: 'home',
   Home: 'home',
-  // inventory (Minecraft: 1–9 select a hotbar slot, Q drops; I opens the backpack since E interacts here)
+  // inventory (Minecraft: 1–9 select a hotbar slot, Q drops; I or B opens and closes the backpack, since E interacts here)
   KeyI: 'inventory',
+  KeyB: 'inventory',
+  // fast travel: the places, as tiles
+  KeyT: 'travel',
   KeyQ: 'drop',
   // whistle for Chopper
   KeyF: 'whistle',

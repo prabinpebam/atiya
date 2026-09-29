@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Color } from 'three';
-import { LEAF_HUE_JITTER, cedar, hardwood } from '../../src/game/world/foliage';
+import { LEAF_HUE_JITTER } from '../../src/game/world/foliage';
+import { cedar, hardwood } from '../../src/game/world/trees';
 
 /** Hue (0…1) of each leaf card (its four corners share one colour). */
 function cardHues(tree: ReturnType<typeof hardwood>): number[] {

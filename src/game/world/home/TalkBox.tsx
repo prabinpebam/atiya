@@ -4,6 +4,10 @@ import { faCaretDown, faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { GameController } from '../../controller';
 import { selectReducedMotion } from '../../state/store';
 import { Icon } from '../../ui/Icon';
+import { withBase } from '../../platform/base';
+
+/** Who has a talking head (a portrait rendered from their model: `scripts/render-npc-portraits.mjs`). */
+const HEADS = new Set(['prabin', 'rojina', 'laija', 'lingjel']);
 
 /** Characters per second of the dialog's typewriter reveal. */
 const TALK_CPS = 45;
@@ -40,8 +44,21 @@ export function TalkBox({ controller }: { controller: GameController }) {
   if (!talk) return null;
   const done = shown >= line.length;
   const last = talk.index === talk.lines.length - 1;
+  const head = HEADS.has(talk.id);
   return (
-    <section className="card talk-box lane" role="dialog" aria-label={`Talking with ${talk.name}`} data-testid="talk-box" data-handed={talk.shown !== undefined ? '' : undefined}>
+    <section
+      className={`card talk-box lane${head ? ' has-head' : ''}`}
+      role="dialog"
+      aria-label={`Talking with ${talk.name}`}
+      data-testid="talk-box"
+      data-handed={talk.shown !== undefined ? '' : undefined}
+    >
+      {head && (
+        // the speaker's face, nodding along while the line types out
+        <div className={`talk-head${!done && !reduced ? ' speaking' : ''}`} aria-hidden="true" data-testid="talk-head">
+          <img src={withBase(`/avatars/npc/${talk.id}.webp`)} alt="" width="192" height="192" />
+        </div>
+      )}
       <p className="talk-name">{talk.name}</p>
       <p className="sr-only">{line}</p>
       <p className="talk-line" aria-hidden="true" data-testid="talk-line">

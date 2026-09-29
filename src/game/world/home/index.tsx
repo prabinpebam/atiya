@@ -11,6 +11,7 @@ import { CRAFT_STAND, FAMILY, Family, KIDS, LinePicker, welcomeLines, type Dialo
 import { FamilyView } from './FamilyView';
 import { HomeView, homeSteps } from './HomeView';
 import { runSliced } from '../summoner';
+import { renderPortrait } from './portrait';
 import { TalkBox } from './TalkBox';
 import { homePads } from './homePads';
 import { DuckFeed } from '../../systems/duckFeed';
@@ -154,6 +155,7 @@ export function attachHome(controller: GameController): HomeAttachment | null {
     garden,
     View,
     People,
+    portrait: (id, gl, size) => renderPortrait(gl, id as NpcId, size),
     Hud: () => <TalkBox controller={controller} />,
   };
 }

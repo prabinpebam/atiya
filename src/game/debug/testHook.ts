@@ -132,6 +132,8 @@ export interface GameTestHook {
   grass(): { stats: Record<string, number> | null; meadows: number };
   /** Progressive loading (progressive-loading.md): the tier, the groups revealed so far, and how many obstacles still wait for theirs. */
   loadStage(): { tier: string; revealed: string[]; held: number; marks: Record<string, number> };
+  /** One of the family's talking-head portrait (a WebP data URL), rendered from their model as it stands: scripts/render-npc-portraits.mjs. */
+  npcPortrait(id: string, size?: number): string | null;
   /** A loading tier's textures, and whether each has loaded. */
   tierTextures(tier: 1 | 2 | 3): { name: string; ready: boolean }[];
   /** Is the thing at this layout position out yet (a prop's birth has passed)? */
@@ -648,6 +650,7 @@ export function installTestHook(c: GameController): void {
       ...c.summoner.stage(),
       marks: Object.fromEntries(performance.getEntriesByType('mark').filter((m) => m.name.startsWith('game:')).map((m) => [m.name, Math.round(m.startTime)])),
     }),
+    npcPortrait: (id, size) => (c.gfx ? (c.home?.portrait?.(id, c.gfx.gl, size) ?? null) : null),
     tierTextures: (tier) => tierTextures(tier).map((name) => ({ name, ready: gameTexture(name) !== null })),
     summoned: (kind, i) => {
       const it = c.props[kind][i];

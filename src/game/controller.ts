@@ -27,7 +27,7 @@ import { Terrain, wadeSpeedFactor } from './world/terrain';
 import { KeyboardInput, VIEW_HOLD_ACTIONS } from './input/keyboard';
 import { createGameStore, selectAmbientPaused, selectReducedMotion, type GameStore } from './state/store';
 import { ReadyCue } from './systems/readyCue';
-import { TALK_GUARD_MS, focusLane, toastMs } from './ui/lanes';
+import { TALK_GUARD_MS, focusLane, overlayOpen, toastMs } from './ui/lanes';
 import type { ChopperBrain, DogWorld, Spot } from './world/chopper/brain';
 import { buildPlaySearch, classicHrefFor, parsePlayUrl } from './platform/url';
 import { prefs } from './platform/prefs';
@@ -175,6 +175,8 @@ export interface HomeAttachment {
   garden: { holder: string | null; wet: readonly number[]; can: { n: Vector3; facing: Vector3 }; plants: ReadonlyArray<{ n: Vector3; kind: string; stands: ReadonlyArray<{ n: Vector3; facing: Vector3 }> }> };
   /** Its part of the HUD: the talk dialog box. */
   Hud: ComponentType;
+  /** One of them's talking-head portrait as a WebP data URL (for `scripts/render-npc-portraits.mjs`; home/portrait.ts). */
+  portrait?(id: string, gl: import('three').WebGLRenderer, size?: number): string | null;
 }
 
 /** What the game asks of Chopper's mind (the real one is `ChopperBrain`, in his chunk). */
@@ -482,7 +484,9 @@ export class GameController {
     };
     window.addEventListener('pointerdown', onGesture, true);
     window.addEventListener('keydown', onGesture, true);
+    window.addEventListener('keydown', this.onStrayKey);
     this.cleanups.push(
+      () => window.removeEventListener('keydown', this.onStrayKey),
       () => window.removeEventListener('popstate', onPop),
       () => document.removeEventListener('visibilitychange', onVis),
       () => window.removeEventListener('pointerdown', onGesture, true),
@@ -925,6 +929,10 @@ export class GameController {
       if (!e.repeat && s.phase === 'playing') this.toggleInventory();
       return;
     }
+    if (action === 'travel') {
+      if (!e.repeat) this.openTravel();
+      return;
+    }
     if (action === 'whistle') {
       if (!e.repeat && s.phase === 'playing') this.whistle();
       return;
@@ -950,6 +958,17 @@ export class GameController {
     }
     this.keyboard.down(action);
     if (this.sim.autoWalk && action !== 'run' && !VIEW_HOLD_ACTIONS.has(action)) this.sim.cancelAutoWalk();
+  };
+
+  /**
+   * A key pressed with nothing focused (the focus fell back to the page, after a click on nothing):
+   * the planet takes it, so the shortcuts always work. (A screen that's open keeps its own focus.)
+   */
+  private onStrayKey = (e: KeyboardEvent): void => {
+    const r = this.region;
+    if (!r || e.defaultPrevented || document.activeElement !== document.body || overlayOpen(this.store.getState()) || !KeyboardInput.actionFor(e.code)) return;
+    r.focus({ preventScroll: true });
+    this.onKeyDown({ code: e.code, repeat: e.repeat, ctrlKey: e.ctrlKey, metaKey: e.metaKey, target: r, preventDefault: () => e.preventDefault() });
   };
 
   onKeyUp = (e: KeyEventLike): void => {
@@ -1711,6 +1730,12 @@ export class GameController {
     prefs.setTimeMode(m);
     this.timeFrozen = false;
     this.store.setState({ timeMode: m });
+  }
+
+  /** Fast travel (T, or the header's button): the menu dialog's page of places, as tiles. */
+  openTravel(): void {
+    this.openMenu();
+    if (this.store.getState().menuOpen) this.store.setState({ menuOpen: 'travel', target: null });
   }
 
   /** How to play (the notice board, or the menu's Show controls): the menu dialog's help page. */

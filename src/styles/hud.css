@@ -343,6 +343,65 @@ body.play {
   animation: none;
 }
 
+/* the talking head: the speaker's portrait on a sky disc in a gold ring, over the box's top-left corner,
+ * the name plate beside it and the line beside that; it nods along while the line types out */
+.talk-box.has-head {
+  padding-left: calc(var(--c-talk-head) + var(--space-8));
+}
+
+.talk-head {
+  position: absolute;
+  left: var(--space-4);
+  top: calc(-1 * var(--space-8));
+  width: var(--c-talk-head);
+  height: var(--c-talk-head);
+  overflow: hidden;
+  border: var(--border-base) solid var(--surface-accent);
+  border-radius: var(--radius-round);
+  background: radial-gradient(circle at 50% 30%, var(--color-sky-low), var(--color-sky-mid) 62%, var(--color-sky-top));
+  box-shadow:
+    0 0 0 var(--border-base) var(--surface-bg),
+    var(--shadow-lift);
+}
+
+.talk-head img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: 50% 85%;
+}
+
+.talk-head.speaking img {
+  animation: talk-nod var(--dur-loop) var(--ease-standard) infinite;
+}
+
+.talk-box.has-head .talk-name {
+  left: calc(var(--c-talk-head) + var(--space-6));
+}
+
+@media (max-width: 480px) {
+  .talk-box.has-head {
+    padding-left: calc(var(--c-talk-head-sm) + var(--space-6));
+  }
+
+  .talk-head {
+    top: calc(-1 * var(--space-6));
+    width: var(--c-talk-head-sm);
+    height: var(--c-talk-head-sm);
+  }
+
+  .talk-box.has-head .talk-name {
+    left: calc(var(--c-talk-head-sm) + var(--space-5));
+  }
+}
+
+@keyframes talk-nod {
+  50% {
+    transform: translateY(2px) rotate(-1.5deg);
+  }
+}
+
 .talk-name {
   position: absolute;
   top: calc(-1 * var(--space-4-5));
@@ -607,44 +666,6 @@ body.play {
   pointer-events: none;
 }
 
-/* The landmark list: parallel DOM navigation, shown when it has focus */
-.landmark-nav {
-  position: absolute;
-  left: var(--space-4);
-  top: 72px;
-  z-index: var(--layer-chrome);
-}
-
-.landmark-nav:not(:focus-within) {
-  position: absolute !important;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-.landmark-nav:focus-within {
-  padding: var(--space-3-5);
-  border: var(--border-base) solid var(--surface-border);
-  border-radius: var(--radius-lg);
-  background: var(--surface-bg);
-  box-shadow: var(--shadow-card);
-}
-
-.landmark-nav h2 {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-md);
-}
-
-.landmark-nav ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-1-5);
-}
-
 /* R2: the character picker (top right, under the header) */
 .character-picker {
   position: absolute;
@@ -716,6 +737,7 @@ body.play {
   .lane,
   .talk-box,
   .talk-more,
+  .talk-head img,
   .site-card,
   .toast {
     animation: none;

@@ -93,13 +93,13 @@ Minecraft's `Inventory.add`:
 | Click a hotbar slot | Select it |
 | <kbd>Q</kbd> | Drop one of the selected item: it's thrown 1.8 u ahead, with a 2 s pick-up delay |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | Drop the selected slot's whole stack |
-| <kbd>I</kbd> | Open the inventory (backpack) screen |
+| <kbd>I</kbd> or <kbd>B</kbd> | Open (and close) the inventory (backpack) screen |
 
 Changing the selection shows the item's name above the hotbar for 2 s, as Minecraft does. Screen readers hear it via the live region.
 
 ### 4.3 Inventory and chest screens
 
-<kbd>I</kbd> (or the backpack button in the header) opens the **Backpack** screen: the main inventory (27) above the hotbar row (9). **Open chest** opens the **Chest** screen: the chest's 27 slots on top, then your backpack below. Only one screen is open at a time. While one is open the planet is paused for input (like the menu), and nothing else can be activated.
+<kbd>I</kbd> or <kbd>B</kbd> (or the backpack button by the hotbar, which shows its key) opens the **Backpack** screen: the main inventory (27) above the hotbar row (9). **Open chest** opens the **Chest** screen: the chest's 27 slots on top, then your backpack below. Only one screen is open at a time. While one is open the planet is paused for input (like the menu), and nothing else can be activated.
 
 **Mouse (Minecraft Java):**
 
@@ -118,7 +118,7 @@ Changing the selection shows the item's name above the hotbar for 2 s, as Minecr
 | <kbd>1</kbd>–<kbd>9</kbd> while hovering a slot | Swap that slot with hotbar slot N | — |
 | <kbd>Q</kbd> / <kbd>Ctrl</kbd>+<kbd>Q</kbd> while hovering a slot | Drop one / the whole stack into the world | — |
 | Click outside the panel | — | Left: throw the whole cursor stack; right: throw one |
-| <kbd>E</kbd>, <kbd>I</kbd>, <kbd>Space</kbd> (off a slot) or <kbd>Esc</kbd> | Close the screen | Close; the cursor stack goes back into the backpack (§4.1), and anything that doesn't fit is dropped at your feet |
+| <kbd>E</kbd>, <kbd>I</kbd>, <kbd>B</kbd>, <kbd>Space</kbd> (off a slot) or <kbd>Esc</kbd> | Close the screen | Close; the cursor stack goes back into the backpack (§4.1), and anything that doesn't fit is dropped at your feet |
 
 Two Minecraft Java inputs have nothing to act on here: the planet has no off-hand (so no <kbd>F</kbd> swap) and no Creative mode (so no middle-click clone or middle-drag). The middle button sorts instead, as the Inventory Tweaks mod does.
 

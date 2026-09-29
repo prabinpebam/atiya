@@ -60,7 +60,8 @@ const cross = icon(faXmark);
       <div class="load-bar" aria-hidden="true"><span class="load-fill" data-load-fill></span></div>
       <p class="load-status" role="status" data-load-status></p>
     </div>
-    <section class="card talk-box lane" role="dialog" aria-label="Talking with Prabin" data-greeting hidden>
+    <section class="card talk-box lane has-head" role="dialog" aria-label="Talking with Prabin" data-greeting hidden>
+      <div class="talk-head" aria-hidden="true"><img src={withBase('/avatars/npc/prabin.webp')} alt="" width="192" height="192" /></div>
       <p class="talk-name">Prabin</p>
       <p class="talk-line" data-greeting-line>{greeting.first[0]}</p>
       <div class="talk-actions">

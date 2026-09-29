@@ -18,6 +18,7 @@
     "size": "node scripts/size-report.mjs",
     "build:character": "node scripts/build-character.mjs",
     "build:portraits": "node scripts/render-portraits.mjs",
+    "build:npc-portraits": "node scripts/render-npc-portraits.mjs",
     "verify:prod": "astro build && node scripts/size-report.mjs --prod",
     "perf:audit": "node scripts/perf-audit.mjs"
   },

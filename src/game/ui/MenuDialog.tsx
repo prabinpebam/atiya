@@ -1,5 +1,7 @@
-/** The menu (settings, places, the classic site) and its How to play page, loaded on demand by the HUD. */
-import { useEffect, useRef } from 'react';
+/** The menu (settings, the classic site), its How to play page and its fast travel page, loaded on demand by the HUD. */
+import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { faBookOpen, faEnvelope, faHouse, faLandmark, faMicrophoneLines, faScrewdriverWrench, faSeedling, faTowerObservation, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { Icon } from './Icon';
 import { useStore } from 'zustand';
 import type { GameController } from '../controller';
 import { prefs } from '../platform/prefs';
@@ -22,6 +24,89 @@ const Keys = ({ k }: { k: string }) => (
     ))}
   </>
 );
+
+/** Each place's sign on its fast travel tile (a landmark without one gets the town hall's). */
+const PLACE_ICONS: Record<string, IconDefinition> = {
+  workshop: faScrewdriverWrench,
+  'town-hall': faLandmark,
+  lighthouse: faTowerObservation,
+  library: faBookOpen,
+  amphitheater: faMicrophoneLines,
+  greenhouse: faSeedling,
+  'post-office': faEnvelope,
+};
+
+/**
+ * Fast travel (T, or the header's button): every place as a tile, with its sign, name and what's inside,
+ * and a number key (the plaza is H). Arrow keys go from tile to tile; Enter or the number flies there;
+ * T, Space or Esc closes. Where you are is marked.
+ */
+function TravelPage({ controller }: { controller: GameController }) {
+  const nearby = useStore(controller.store, (s) => s.nearbyId);
+  // (read as the page opens: you're not moving while it's up)
+  const atSpawn = controller.isAtSpawn();
+  const grid = useRef<HTMLUListElement>(null);
+  const places = [...controller.landmarks].sort((a, b) => a.order - b.order);
+  // arrow keys: the next tile along, or the nearest one in the row above or below
+  const onKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
+    const tiles = Array.from(grid.current?.querySelectorAll<HTMLButtonElement>('.travel-tile') ?? []);
+    const i = tiles.indexOf(document.activeElement as HTMLButtonElement);
+    if (i < 0) return;
+    let next = -1;
+    if (e.code === 'ArrowRight') next = Math.min(tiles.length - 1, i + 1);
+    else if (e.code === 'ArrowLeft') next = Math.max(0, i - 1);
+    else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
+      const r = tiles.map((t) => t.getBoundingClientRect());
+      const down = e.code === 'ArrowDown';
+      const row = r.filter((b) => (down ? b.top > r[i].top + 4 : b.top < r[i].top - 4));
+      if (!row.length) return e.preventDefault();
+      const top = down ? Math.min(...row.map((b) => b.top)) : Math.max(...row.map((b) => b.top));
+      const cx = r[i].left + r[i].width / 2;
+      next = r.reduce((best, b, k) => (Math.abs(b.top - top) < 4 && (best < 0 || Math.abs(b.left + b.width / 2 - cx) < Math.abs(r[best].left + r[best].width / 2 - cx)) ? k : best), -1);
+    } else return;
+    e.preventDefault();
+    tiles[next]?.focus();
+  };
+  return (
+    <>
+      <h2 id="menu-title">Fast travel</h2>
+      <p className="muted travel-lead">Pick a place and fly there.</p>
+      <ul ref={grid} className="travel-grid" onKeyDown={onKeyDown}>
+        {places.map((l, i) => (
+          <li key={l.id}>
+            <button
+              type="button"
+              className="travel-tile"
+              style={{ ['--accent' as string]: l.accent }}
+              aria-current={nearby === l.id ? 'location' : undefined}
+              aria-keyshortcuts={String(i + 1)}
+              onClick={() => controller.travelTo(l.id)}
+            >
+              <span className="travel-sign" aria-hidden="true">
+                <Icon icon={PLACE_ICONS[l.id] ?? faLandmark} />
+              </span>
+              <strong>{l.title}</strong>
+              <span className="travel-kicker">{l.kicker}</span>
+              {nearby === l.id && <span className="travel-here">You're here</span>}
+              <kbd>{i + 1}</kbd>
+            </button>
+          </li>
+        ))}
+        <li>
+          <button type="button" className="travel-tile plaza" aria-current={atSpawn ? 'location' : undefined} aria-keyshortcuts="H" onClick={() => controller.returnHome()}>
+            <span className="travel-sign" aria-hidden="true">
+              <Icon icon={faHouse} />
+            </span>
+            <strong>The plaza</strong>
+            <span className="travel-kicker">Where you started, facing north</span>
+            {atSpawn && <span className="travel-here">You're here</span>}
+            <kbd>H</kbd>
+          </button>
+        </li>
+      </ul>
+    </>
+  );
+}
 
 /** How to play (the notice board by the path to the Lighthouse, or the menu's Show controls): the controls and some tips. */
 function HowToPlay({ controller }: { controller: GameController }) {
@@ -61,7 +146,10 @@ function HowToPlay({ controller }: { controller: GameController }) {
               <Keys k="X" />: sit on the grass. <Keys k="Z" />: lie back and look at the sky. The same key, <Keys k="Space" /> or a step gets you up.
             </li>
             <li>
-              <Keys k="I" />: the backpack. <Keys k="1" />–<Keys k="9" />: pick a hotbar slot. <Keys k="F" />: whistle for Chopper. <Keys k="M" />: the menu.
+              <Keys k="I" /> or <Keys k="B" />: open or close the backpack. <Keys k="1" />–<Keys k="9" />: pick a hotbar slot. <Keys k="F" />: whistle for Chopper.
+            </li>
+            <li>
+              <Keys k="T" />: fast travel, every place as a tile (its number flies there). <Keys k="M" />: the menu.
             </li>
             <li>
               In the backpack and the chest: drag stacks between slots, <Keys k="Shift" />-click moves a stack across, <Keys k="R" /> sorts.
@@ -86,6 +174,7 @@ function HowToPlay({ controller }: { controller: GameController }) {
 export default function MenuDialog({ controller }: { controller: GameController }) {
   const menuOpen = useStore(controller.store, (s) => s.menuOpen);
   const help = menuOpen === 'help';
+  const travel = menuOpen === 'travel';
   const reducedSystem = useStore(controller.store, (s) => s.reducedMotionSystem);
   const reduced = useStore(controller.store, selectReducedMotion);
   const pauseAmbient = useStore(controller.store, (s) => s.pauseAmbient);
@@ -106,7 +195,7 @@ export default function MenuDialog({ controller }: { controller: GameController 
   return (
     <dialog
       ref={ref}
-      className="dialog menu-dialog"
+      className={`dialog menu-dialog${travel ? ' travel-dialog' : ''}`}
       aria-labelledby="menu-title"
       data-testid="menu-dialog"
       onCancel={(e) => {
@@ -114,6 +203,18 @@ export default function MenuDialog({ controller }: { controller: GameController 
         controller.closeMenu();
       }}
       onKeyDown={(e) => {
+        // fast travel's keys: a place's number (the plaza is H) flies there; T closes, as it opened
+        if (travel && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          const n = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
+          const place = n ? [...controller.landmarks].sort((a, b) => a.order - b.order)[Number(n[1]) - 1] : undefined;
+          if (place || e.code === 'KeyH' || e.code === 'KeyT') {
+            e.preventDefault();
+            if (place) controller.travelTo(place.id);
+            else if (e.code === 'KeyH') controller.returnHome();
+            else controller.closeMenu();
+            return;
+          }
+        }
         if (!spaceBack(e)) return;
         e.preventDefault();
         controller.closeMenu();
@@ -123,25 +224,18 @@ export default function MenuDialog({ controller }: { controller: GameController 
       }}
     >
       <div className="dialog-body">
-        {help ? (
+        {travel ? (
+          <TravelPage controller={controller} />
+        ) : help ? (
           <HowToPlay controller={controller} />
         ) : (
           <>
             <h2 id="menu-title">Menu</h2>
             <section aria-labelledby="menu-places">
-              <h3 id="menu-places">Travel to</h3>
-              <ul className="menu-list">
-                {controller.landmarks.map((l) => (
-                  <li key={l.id}>
-                    <button type="button" className="btn menu-item" style={{ ['--accent' as string]: l.accent }} onClick={() => controller.travelTo(l.id)}>
-                      <span className="dot" aria-hidden="true" />
-                      <span>
-                        <strong>{l.title}</strong> <span className="muted">{l.kicker}</span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <h3 id="menu-places">Places</h3>
+              <button type="button" className="btn" onClick={() => controller.openTravel()}>
+                Fast travel <kbd>T</kbd>
+              </button>
             </section>
             <section aria-labelledby="menu-view">
               <h3 id="menu-view">View</h3>
@@ -219,7 +313,7 @@ export default function MenuDialog({ controller }: { controller: GameController 
           </>
         )}
         <div className="actions">
-          {!help && (
+          {!help && !travel && (
             <button type="button" className="btn" onClick={() => controller.openHelp()}>
               Show controls
             </button>

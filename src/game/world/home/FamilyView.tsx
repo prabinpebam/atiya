@@ -39,6 +39,7 @@ import { seatHip } from './seats';
 import { PROP_SCALE } from '../homestead';
 import { Kit } from '../kit';
 import { withBase } from '../../platform/base';
+import { PORTRAIT_RIGS } from './portrait';
 
 const R = CONFIG.planetRadius;
 /** Ground speed (u/s) of the run clip at 1× for a 1.25 u character (as the player's avatar). */
@@ -264,6 +265,12 @@ function Person({ controller, family, id }: { controller: GameController; family
 
   const root = useRef<Group>(null);
   const pivot = useRef<Group>(null);
+  // (for the talking heads' portraits: portrait.ts)
+  useEffect(() => {
+    if (!root.current || !rig.head || !pivot.current) return;
+    PORTRAIT_RIGS.set(id, { root: root.current, head: rig.head, pivot: pivot.current, bones: rig.bones });
+    return () => void PORTRAIT_RIGS.delete(id);
+  }, [rig, id]);
   const held = useRef<Group>(null);
   const paper = useRef<Group>(null);
   const bubble = useRef<Group>(null);

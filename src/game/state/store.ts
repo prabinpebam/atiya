@@ -35,8 +35,8 @@ export interface GameState {
   loadTier: LoadTier;
   mounted: readonly SummonGroup[];
   openId: string | null;
-  /** The menu (true), or its How to play page ('help': from the notice board or the menu's Show controls). */
-  menuOpen: boolean | 'help';
+  /** The menu (true), its How to play page ('help': from the notice board or the menu's Show controls), or its fast travel page ('travel': T, or the header's button). */
+  menuOpen: boolean | 'help' | 'travel';
   traveling: 'flyover' | 'fade' | null;
   reducedMotionSystem: boolean;
   reducedMotionUser: boolean;

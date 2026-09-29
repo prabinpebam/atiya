@@ -83,10 +83,14 @@ export function Hotbar({ controller }: { controller: GameController }) {
           type="button"
           className="slot backpack-btn"
           aria-label="Open backpack (I)"
+          title="Open backpack (I or B)"
           data-testid="backpack-button"
           onClick={() => controller.openInventory('backpack')}
         >
           <Icon icon={faBriefcase} />
+          <span className="slot-key" aria-hidden="true">
+            I
+          </span>
         </button>
         <button
           type="button"
@@ -100,6 +104,9 @@ export function Hotbar({ controller }: { controller: GameController }) {
           }}
         >
           <Icon icon={faDog} />
+          <span className="slot-key" aria-hidden="true">
+            F
+          </span>
         </button>
       </div>
     </div>

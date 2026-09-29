@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BoxGeometry, BufferGeometry, Float32BufferAttribute } from 'three';
 import { Kit, indexExact } from '../../src/game/world/kit';
-import { hardwood } from '../../src/game/world/foliage';
+import { hardwood } from '../../src/game/world/trees';
 
 /** Every attribute of a geometry, expanded to plain triangles. */
 function expanded(g: BufferGeometry): Record<string, number[]> {

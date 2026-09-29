@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Vector3, type BufferGeometry } from 'three';
-import { cedar, hardwood } from '../../src/game/world/foliage';
+import { cedar, hardwood } from '../../src/game/world/trees';
 import { SURFACES } from '../../src/game/world/kit';
 
 const BARK = SURFACES.indexOf('bark');

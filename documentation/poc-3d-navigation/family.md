@@ -137,6 +137,12 @@ the home (within 7 u of it, never into the pond).
 - **E:** the NPC pauses what they're doing (a sitter stays seated), turns to face you and gestures;
   the **dialog box** slides up at the bottom: the name plate, the line with a typewriter reveal
   (≈ 45 characters/s; instant under Reduce motion), and a blinking "more" marker.
+  - **The talking head:** the speaker's face in a round portrait on a sky disc and a gold ring,
+    over the box's top-left corner with the name plate beside it; it nods gently while the line
+    types out (still under Reduce motion). The portraits are rendered from their models as they
+    stand in the game, in their idle and with what they hold put down (`world/home/portrait.ts`),
+    and baked into `public/avatars/npc/<id>.webp` (about 4 KB each) by `npm run build:npc-portraits`
+    against a running dev server. Prabin's is on the page's welcome too, from its first paint.
   - **E, Enter or a click:** completes the line if it's still typing, else the next line;
     after the last, it closes. **Space** (or **Esc**, or the close button) closes at any time. Movement is paused while talking.
   - A conversation is 2–3 lines: a greeting that fits the time of day, then one or two from the

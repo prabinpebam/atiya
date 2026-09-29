@@ -226,6 +226,11 @@
   --c-scrollbar: 6px;
   --c-stick-size: 7.5rem;
   --c-stick-knob: 3.5rem;
+  --c-travel-tile: 10rem;
+  --c-travel-sign: 3rem;
+  --c-travel-width: 760px;
+  --c-talk-head: 5.5rem;
+  --c-talk-head-sm: 4rem;
 }
 
 :root,

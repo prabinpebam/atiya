@@ -16,6 +16,7 @@ import {
   faClipboardList,
   faComment,
   faHammer,
+  faLocationDot,
   faMoon,
   faPaw,
   faPersonWalking,
@@ -31,24 +32,6 @@ import { withBase } from '../platform/base';
 import { focusLane, laneBeneath, overlayOpen } from './lanes';
 
 const toClassic = () => prefs.setMode('classic');
-
-function LoadingOverlay({ controller }: { controller: GameController }) {
-  const phase = useStore(controller.store, (s) => s.phase);
-  if (phase !== 'loading') return null;
-  return (
-    <div className="overlay" role="status">
-      <div className="card center-card">
-        <p className="card-title">Loading the planet…</p>
-        <p>
-          Prefer a normal website?{' '}
-          <a href={withBase('/classic/')} onClick={toClassic}>
-            Go to the classic site
-          </a>
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function PreviewCard({ controller }: { controller: GameController }) {
   const nearbyId = useStore(controller.store, (s) => s.nearbyId);
@@ -184,26 +167,6 @@ function LiveRegion({ controller }: { controller: GameController }) {
     <div className="sr-only" role="status" aria-live="polite" data-testid="live-region">
       {text}
     </div>
-  );
-}
-
-/** Parallel DOM navigation: every landmark reachable without the canvas (spec §6). */
-function LandmarkNav({ controller }: { controller: GameController }) {
-  const phase = useStore(controller.store, (s) => s.phase);
-  if (phase === 'loading') return null;
-  return (
-    <nav className="landmark-nav" aria-label="Planet landmarks">
-      <h2>Travel to a place</h2>
-      <ul>
-        {controller.landmarks.map((l) => (
-          <li key={l.id}>
-            <button type="button" className="btn" onClick={() => controller.travelTo(l.id)}>
-              {l.title} — {l.kicker}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </nav>
   );
 }
 
@@ -396,6 +359,10 @@ function MenuButton({ controller, target }: { controller: GameController; target
     <>
       <TimeBadge controller={controller} />
       <SoundButton controller={controller} />
+      {/* every place reachable without the canvas (spec §6): fast travel's tiles */}
+      <button type="button" className="btn icon-btn" aria-label="Fast travel" title="Fast travel (T)" aria-haspopup="dialog" onClick={() => controller.openTravel()} data-testid="travel-button">
+        <Icon icon={faLocationDot} />
+      </button>
       <button type="button" className="btn icon-btn" aria-label="Menu" title="Menu (M)" aria-haspopup="dialog" onClick={() => controller.openMenu()} data-testid="menu-button">
         <Icon icon={faBars} />
       </button>
@@ -433,7 +400,6 @@ export function Hud({ controller }: { controller: GameController }) {
   const HomeHud = controller.home?.Hud ?? null;
   return (
     <>
-      <LandmarkNav controller={controller} />
       <PreviewCard controller={controller} />
       <ActionPrompt controller={controller} />
       {HomeHud && <HomeHud />}
@@ -455,7 +421,6 @@ export function Hud({ controller }: { controller: GameController }) {
       <ChopperCardSlot controller={controller} />
       {CraftScreens && <CraftScreens />}
       <MenuButton controller={controller} target={controller.hudActions} />
-      <LoadingOverlay controller={controller} />
       <ContextLost controller={controller} />
     </>
   );

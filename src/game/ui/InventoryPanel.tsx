@@ -35,7 +35,7 @@ const SLOT_KEYS: Keys = [
   ['1 to 9', 'to the hotbar'],
   ['Q', 'drop'],
   ['R', 'sort'],
-  ['E', 'close'],
+  ['I, B or E', 'close'],
 ];
 const SLOT_TOUCH: Keys = [
   ['Tap', 'take or place'],
@@ -408,8 +408,8 @@ export default function InventoryPanel({
     // (the tool buttons keep their own Enter and Space; slot keys act on the hovered slot, else the focused one)
     const onSlot = (e.target as HTMLElement).dataset.slot !== undefined;
     const r = hovered.current ?? (onSlot ? order[focusIdx] : null);
-    // E / I close (the key that opened it, as in Minecraft), and Space off a slot (on one it's a right-click)
-    if (e.code === 'Escape' || e.code === 'KeyE' || e.code === 'KeyI' || (!onSlot && spaceBack(e))) {
+    // E / I / B close (the key that opened it, as in Minecraft), and Space off a slot (on one it's a right-click)
+    if (e.code === 'Escape' || e.code === 'KeyE' || e.code === 'KeyI' || e.code === 'KeyB' || (!onSlot && spaceBack(e))) {
       e.preventDefault();
       onClose();
       return;

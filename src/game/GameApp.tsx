@@ -24,7 +24,7 @@ export function GameApp({ controller }: { controller: GameController }) {
         className="game-region"
         tabIndex={0}
         role="region"
-        aria-label="Planet explorer — use arrow keys or W A S D to move, Shift to run, E to open a place or use what you stand at (shake a tree, mine a boulder, pick a flower, open the chest, meet Chopper), Space to close it, stand up or stop talking, F to whistle for Chopper, I for the backpack, 1 to 9 for the hotbar, Q to drop, M for the menu. Comma and period rotate the view, Page Up and Page Down tilt it, N faces north, H returns to the plaza."
+        aria-label="Planet explorer — use arrow keys or W A S D to move, Shift to run, E to open a place or use what you stand at (shake a tree, mine a boulder, pick a flower, open the chest, meet Chopper), Space to close it, stand up or stop talking, F to whistle for Chopper, I or B for the backpack, 1 to 9 for the hotbar, Q to drop, T to fast travel, M for the menu. Comma and period rotate the view, Page Up and Page Down tilt it, N faces north, H returns to the plaza."
         aria-describedby="planet-help"
         onKeyDown={controller.onKeyDown}
         onKeyUp={controller.onKeyUp}
@@ -56,8 +56,8 @@ export function GameApp({ controller }: { controller: GameController }) {
         </Canvas>
       </div>
       <p id="planet-help" className="sr-only">
-        A small planet with seven places to visit. Walk close to a building to preview it and press E to open it. Use the landmark list or the
-        menu to travel directly. Drag the planet, or use the View buttons in the menu, to rotate and tilt the view; the compass button faces north
+        A small planet with seven places to visit. Walk close to a building to preview it and press E to open it. Use Fast travel (T, or its button
+        in the header) to go straight to a place. Drag the planet, or use the View buttons in the menu, to rotate and tilt the view; the compass button faces north
         again and Reset returns to the plaza. The classic website is always available from the header.
       </p>
       <Hud controller={controller} />

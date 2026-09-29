@@ -1,7 +1,8 @@
 import { describe, it } from 'vitest';
 import type { BufferGeometry } from 'three';
 import { landmarkModel } from '../../src/game/world/models';
-import { cedar, hardwood, leafyBush } from '../../src/game/world/foliage';
+import { leafyBush } from '../../src/game/world/foliage';
+import { cedar, hardwood } from '../../src/game/world/trees';
 import { cloud, flowerBlooms, flowerStems, reeds, rock } from '../../src/game/world/propModels';
 
 const tris = (g: BufferGeometry | null) => (g ? (g.index ? g.index.count : g.getAttribute('position').count) / 3 : 0);
