@@ -96,6 +96,13 @@ The rules are in [documentation/game-ui/design-system.md](./documentation/game-u
   - Style touch-only changes with `[data-input='touch']` (the last input used), never a pointer media query. Touch copy never names a key; reword announcements in `forTouch`.
   - Every drag and two-finger gesture keeps a single-pointer alternative (tap to walk, the compass buttons). Test touch with real CDP touch events (`Input.dispatchTouchEvent`; a point missing from the next event has lifted, `touchEnd` lifts them all), as the E2E "touch" group does.
 
+### Content (data, not code)
+
+The site's content, IA and navigation are data (spec: [documentation/content/spec.md](./documentation/content/spec.md); plan and Definition of Done: [plan.md](./documentation/content/plan.md)). Until the platform's phase 0 lands, today's pages still hold some copy; don't add more.
+- Editorial copy, menu items, content URLs and media paths never go in `src/pages/`, `src/layouts/` or `src/site/`. They go in `content/` (the mock API, shaped exactly like the `/v1` responses) and reach pages only through the repository (`src/site/content/repository.ts`). Interface strings stay in code.
+- Content media lives in `content/media/<owner>/<id>/` as a master plus a JSON sidecar (alt, credit, licence, focus). Generated sizes are never committed; code-owned assets (the planet's, the design library's samples) stay in `public/`.
+- IDs never change; a renamed published slug needs a redirect (the routes lock enforces it). The planet's places target IA pages; they never define a second taxonomy.
+
 ### Documentation site (the source of truth)
 
 - `documentation/` is a [Slate](./slate/README.md) host. The package is vendored in `slate/`; the adapter skill is `.github/skills/slate/SKILL.md`.

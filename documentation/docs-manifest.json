@@ -163,6 +163,60 @@
       "group": "Site UI"
     },
     {
+      "path": "content/spec.md",
+      "title": "Content platform",
+      "order": 20.8,
+      "icon": "schema",
+      "status": "draft",
+      "updated": "2026-09-29",
+      "group": "Content"
+    },
+    {
+      "path": "content/model.md",
+      "title": "Content model",
+      "order": 20.81,
+      "icon": "data_object",
+      "status": "draft",
+      "updated": "2026-09-29",
+      "group": "Content"
+    },
+    {
+      "path": "content/ia.md",
+      "title": "IA, routes and navigation",
+      "order": 20.82,
+      "icon": "account_tree",
+      "status": "draft",
+      "updated": "2026-09-29",
+      "group": "Content"
+    },
+    {
+      "path": "content/api.md",
+      "title": "Content API contract",
+      "order": 20.83,
+      "icon": "api",
+      "status": "draft",
+      "updated": "2026-09-29",
+      "group": "Content"
+    },
+    {
+      "path": "content/media.md",
+      "title": "Media and assets",
+      "order": 20.84,
+      "icon": "perm_media",
+      "status": "draft",
+      "updated": "2026-09-29",
+      "group": "Content"
+    },
+    {
+      "path": "content/plan.md",
+      "title": "Plan and Definition of Done",
+      "order": 20.85,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-09-29",
+      "group": "Content"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 21,

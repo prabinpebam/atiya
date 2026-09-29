@@ -57,6 +57,10 @@ Recommended utilities:
 7. [Editorial and governance rules](./07-editorial-and-governance.md)
 8. [Validation plan](./08-validation-plan.md)
 
+## Implementation
+
+The [content platform](../content/spec.md) implements this package as data: the [content model](../content/model.md) encodes its content types, vocabularies and lifecycle, and [IA, routes and navigation](../content/ia.md) derives the sitemap, menus and navigation rules from content.
+
 ## Recommended sequence
 
 1. Inventory candidate projects using the worksheet in the content inventory.
