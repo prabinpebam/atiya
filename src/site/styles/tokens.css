@@ -234,6 +234,7 @@
   --c-listbox-max-height: 18rem;
   --c-listbox-radius: var(--radius-lg);
   --c-listbox-option-radius: var(--radius-md);
+  --c-list-item-gap: var(--space-1);
   --c-scrollbar-thumb: var(--color-border);
   --c-scrollbar-thumb-hover: var(--color-border-strong);
   --c-scrollbar-track: var(--color-bg-sunk);

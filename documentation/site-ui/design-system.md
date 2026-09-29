@@ -60,6 +60,7 @@ The rules for the website's pages: the landing, the classic site and the design 
 - **Place, don't position.** Figures, galleries, quotes and videos declare how far they step out of the text (`data-breakout="popout|wide|full"`); Prose's grid places them.
 - **Layouts are defined once.** A page picks the layout that fits; a new kind of page gets a new layout only if no existing one fits, and that layout is then reused.
 - **IDs are unique per instance** (a random suffix), so a page can show a component twice, as the library does.
+- **Lists whose items take a background** (hover, selected, current: the dropdown's options, the side navigation, the phone menu) keep a little room between items, `--c-list-item-gap` (4 px), so a hovered item never merges with the selected one beside it.
 
 ## 4. Writing a component
 

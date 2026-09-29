@@ -68,6 +68,9 @@ test.describe('site design system', () => {
     await expect(combo).toBeFocused();
     // the pointer: open, pick, and the list closes
     await combo.click();
+    // a little room between options, so a hovered one never merges with the chosen one
+    const optionGaps = await field.getByRole('option').evaluateAll((os) => os.slice(1).map((o, i) => o.getBoundingClientRect().top - os[i].getBoundingClientRect().bottom));
+    expect(Math.min(...optionGaps)).toBeGreaterThanOrEqual(2);
     await field.getByRole('option', { name: /Fraunces/ }).click();
     await expect(input).toHaveValue('display');
     await expect(field.getByRole('option', { name: /Fraunces/ })).toHaveAttribute('aria-selected', 'true');
@@ -128,6 +131,9 @@ test.describe('site design system', () => {
     await page.goto('/design/');
     const links = await page.locator('nav[aria-label="Design library"] a').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href')!));
     expect(links.length).toBeGreaterThan(45);
+    // the side navigation's items keep a little room between them (the current pill and a hovered one never touch)
+    const navGaps = await page.locator('nav[aria-label="Design library"] section').nth(2).locator('a').evaluateAll((as) => as.slice(1).map((a, i) => a.getBoundingClientRect().top - as[i].getBoundingClientRect().bottom));
+    expect(Math.min(...navGaps)).toBeGreaterThanOrEqual(2);
     for (const href of links) {
       const res = await page.goto(href);
       expect(res?.status(), href).toBe(200);

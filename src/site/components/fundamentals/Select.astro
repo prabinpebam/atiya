@@ -262,6 +262,8 @@ const chosenIcon = iconOf(chosen?.icon);
   /* the list: our own, not the browser's */
   .list {
     position: absolute;
+    display: grid;
+    gap: var(--c-list-item-gap);
     inset-inline-start: 0;
     inset-block-start: calc(100% + var(--space-2));
     z-index: var(--layer-dropdown);
