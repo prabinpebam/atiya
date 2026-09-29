@@ -130,6 +130,18 @@
     "shadow-strong": {
       "$value": "{p.color.shade.light-strong}",
       "$description": "Shadow tint for dialogs and the dropdown list"
+    },
+    "frost": {
+      "$value": "{p.color.frost.indigo-light}",
+      "$description": "A frosted surface: the scrollbar handle"
+    },
+    "frost-strong": {
+      "$value": "{p.color.frost.indigo-light-strong}",
+      "$description": "A frosted surface under the pointer"
+    },
+    "frost-rim": {
+      "$value": "{p.color.frost.rim-light}",
+      "$description": "The light along a frosted edge"
     }
   }
 }

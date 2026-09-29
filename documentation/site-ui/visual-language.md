@@ -130,6 +130,7 @@ Motion answers what you do; nothing moves on its own.
 
 ## 7. Icons and voice
 
+- **Scrollbars:** no gutter and no arrow buttons: a slim handle of frosted glass, tinted with the spot indigo, floats over the edge while you scroll and fades away at rest, so a column keeps its whole measure.
 - **Icons:** Font Awesome Pro Duotone, drawn inline from data and printed in two colours: the drawing in the text colour (ink, the indigo of a link, white on a primary button) over a marigold second layer, the site's two spot inks. A status is tonal, both layers in its own colour, so marigold never blurs what a colour means. They're never an emoji or a text symbol, and never a button's only name: an icon button's label is its accessible name and its tooltip.
 - **Voice:**
   - sentence case;

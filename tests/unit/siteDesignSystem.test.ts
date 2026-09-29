@@ -282,8 +282,8 @@ describe('CSS reads tokens, never raw values', () => {
   it('every var() the site uses is defined: a token, a local custom property, or data set inline', () => {
     const defined = new Set([...TOKENS_CSS.matchAll(/(--[\w-]+):/g)].map((m) => m[1]));
     for (const d of all) if (d.prop.startsWith('--')) defined.add(d.prop);
-    // data custom properties set from the template (style attributes) or a script
-    for (const f of siteAstro) {
+    // data custom properties set from the template (style attributes) or a script (a component's or tier 0's)
+    for (const f of [...siteAstro, ...walk(join(ROOT, 'src/site/scripts'), /\.ts$/)]) {
       const outside = read(f).replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
       for (const m of outside.matchAll(/(--[\w-]+)\s*:\s*[$`'"\w]/g)) defined.add(m[1]);
       for (const m of outside.matchAll(/setProperty\(\s*'(--[\w-]+)'/g)) defined.add(m[1]);
@@ -301,6 +301,16 @@ describe('CSS reads tokens, never raw values', () => {
     };
     const bad = siteAstro.filter((f) => !ALLOWED[f.split(sep).pop()!] && (/:global\(/.test(styles(read(f))) || /<style[^>]*is:global/.test(read(f)))).map(rel);
     expect(bad).toEqual([]);
+  });
+
+  it('no native scrollbar styling: every scroller hides the native bar and gets the overlay handle (data-scrollbar)', () => {
+    const css = walk(join(ROOT, 'src/site'), /\.(astro|css)$/).filter((f) => !f.endsWith('tokens.css'));
+    const bad = css.filter((f) => /scrollbar-color|scrollbar-width:\s*(thin|auto)|::-webkit-scrollbar-(thumb|track|button|corner)/.test(styles(read(f)) || read(f))).map(rel);
+    expect(bad).toEqual([]);
+    // what scrolls in a component opts in (the carousel's slide track alone hides its bar: its buttons and dots move it)
+    const opted = walk(join(ROOT, 'src/site'), /\.astro$/).filter((f) => /overflow(-[xy])?:\s*(auto|scroll)/.test(styles(read(f))));
+    const missing = opted.filter((f) => !/data-scrollbar|scrollbars'/.test(read(f)) && !f.endsWith(`${sep}Carousel.astro`)).map(rel);
+    expect(missing).toEqual([]);
   });
 
   it('pages carry no styles of their own: layouts and components do (stories and the library excepted)', () => {

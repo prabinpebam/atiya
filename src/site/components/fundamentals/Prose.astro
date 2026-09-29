@@ -189,8 +189,10 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
     font-size: 0.85em;
   }
 
+  /* a code block from Markdown can't carry data-scrollbar: it gets the overlay handle from the script */
   .prose :global(pre) {
     overflow-x: auto;
+    scrollbar-width: none;
     padding: var(--space-5) var(--space-6);
     border-radius: var(--radius-lg);
     background: var(--color-bg-sunk);
@@ -256,4 +258,15 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
       initial-letter: 3;
     }
   }
+
+  .prose :global(pre)::-webkit-scrollbar {
+    display: none;
+  }
 </style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { overlay } from '../../scripts/scrollbars';
+
+  each<HTMLElement>('.prose pre', overlay);
+</script>

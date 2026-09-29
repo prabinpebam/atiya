@@ -239,6 +239,51 @@ test.describe('site design system', () => {
     expect(await off.evaluate((el) => getComputedStyle(el, '::before').forcedColorAdjust)).toBe('none');
   });
 
+  test('overlay scrollbars: no gutter anywhere, and a frosted handle over the edge in use that follows the scroll and drags', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/fundamentals/select/');
+    // no native bar: the page and the side nav keep their whole width
+    expect(await page.evaluate(() => innerWidth - document.documentElement.clientWidth)).toBe(0);
+    const nav = page.locator('nav[aria-label="Design library"] .scroll');
+    expect(await nav.evaluate((el: HTMLElement) => el.offsetWidth - el.clientWidth)).toBe(0);
+    const thumb = page.locator('nav[aria-label="Design library"] .scroll + .sb-thumb[data-axis="y"]');
+    await page.mouse.move(1400, 850);
+    await expect(thumb).not.toHaveAttribute('data-show', '');
+
+    await nav.hover();
+    await expect(thumb).toHaveAttribute('data-show', '');
+    expect(await thumb.evaluate((t) => getComputedStyle(t).backdropFilter)).toContain('blur');
+    // it sits over the scroller's far edge, inside it
+    const edge = await nav.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const tr = document.querySelector('nav[aria-label="Design library"] .scroll + .sb-thumb[data-axis="y"]')!.getBoundingClientRect();
+      return { right: r.right - tr.right, inside: tr.top >= r.top - 1 && tr.bottom <= r.bottom + 1 };
+    });
+    expect(edge.right).toBeGreaterThan(0);
+    expect(edge.right).toBeLessThan(8);
+    expect(edge.inside).toBe(true);
+
+    await nav.evaluate((el) => el.scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForTimeout(100);
+    const top0 = (await thumb.boundingBox())!.y;
+    await page.mouse.wheel(0, 300);
+    await expect.poll(async () => (await thumb.boundingBox())!.y).toBeGreaterThan(top0);
+
+    // dragging the handle scrolls the list
+    const before = await nav.evaluate((el) => el.scrollTop);
+    const b = (await thumb.boundingBox())!;
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + 80, { steps: 5 });
+    await page.mouse.up();
+    expect(await nav.evaluate((el) => el.scrollTop)).toBeGreaterThan(before + 40);
+
+    // the page's own handle shows while the page scrolls
+    await page.mouse.move(700, 450);
+    await page.mouse.wheel(0, 500);
+    await expect(page.locator('body > .sb-thumb[data-page][data-axis="y"]')).toHaveAttribute('data-show', '');
+  });
+
   test('the library changes pages without a reload: the side nav keeps its scroll and the theme, and the new page works', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => localStorage.setItem('site.theme', 'dark'));

@@ -27,7 +27,7 @@ const uid = Math.random().toString(36).slice(2, 8);
     <summary class="toggle">
       <span class="toggle-label">{current ? current.label : label}</span>
     </summary>
-    <div class="scroll">
+    <div class="scroll" data-scrollbar>
       {
         groups.map((g, gi) => (
           <section class="group" aria-labelledby={`side-nav-${uid}-${gi}`}>
@@ -67,8 +67,6 @@ const uid = Math.random().toString(36).slice(2, 8);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-inline-end: var(--space-3);
-    scrollbar-width: thin;
-    scrollbar-color: var(--c-scrollbar-thumb) transparent;
   }
 
   .title {

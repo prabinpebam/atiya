@@ -38,7 +38,7 @@ const { id = 'site-lightbox' } = Astro.props;
     <div class="caption-wrap" data-lightbox-caption-wrap>
       <Caption as="p" tone="on-image" align="center"><span data-lightbox-caption></span></Caption>
     </div>
-    <div class="filmstrip" role="group" aria-label="Pictures" data-lightbox-strip></div>
+    <div class="filmstrip" role="group" aria-label="Pictures" data-lightbox-strip data-scrollbar></div>
   </div>
 </dialog>
 
@@ -155,21 +155,6 @@ const { id = 'site-lightbox' } = Astro.props;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     padding-block: var(--space-1);
-    scrollbar-color: var(--c-scrollbar-thumb) transparent;
-    scrollbar-width: thin;
-  }
-
-  .filmstrip::-webkit-scrollbar {
-    height: var(--c-scrollbar-size);
-  }
-
-  .filmstrip::-webkit-scrollbar-thumb {
-    border-radius: var(--radius-pill);
-    background: var(--c-scrollbar-thumb);
-  }
-
-  .filmstrip::-webkit-scrollbar-track {
-    background: transparent;
   }
 
   :global(.lightbox [data-lightbox-thumb]) {

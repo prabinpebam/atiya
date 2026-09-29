@@ -36,6 +36,7 @@ The landing, the classic site and the design library have their **own** design s
 - **Components read tokens only:** never a primitive, never a raw value. Width media queries use only the breakpoint tokens (40, 56, 72 rem).
 - **Fundamentals are sealed:** no `class` or `style` props. Compounds lay them out from their own wrappers and never restyle them. `:global` is allowed only in Prose, Lightbox and VideoEmbed (markup they didn't write).
 - **Page-wide pieces are placed by the layout.** The Lightbox is one per page: a gallery or figure marks its links `a[data-lightbox="group"]` and never imports it.
+- **Scrollbars are overlays** (design system §3): no native bar, no gutter, no arrow buttons; `scripts/scrollbars.ts` floats a frosted, indigo-tinted handle over the edge in use. A new scroller carries `data-scrollbar` (never `scrollbar-width: thin`, `scrollbar-color` or `::-webkit-scrollbar-thumb`: a unit test fails on them). The game keeps its own `.scroll-thin`.
 - **Scripts run on every page:** the design library changes pages without a reload (Astro's `ClientRouter`, `PageShell`'s `router`, set only by the LibraryLayout, with the side nav kept by `transition:persist`). A component's client script sets up its elements through `each(selector, (el, signal) => …)` from `src/site/scripts/page.ts` (never a bare `querySelectorAll` loop) and passes `signal` to every `window`/`document`/media-query listener. A unit test holds this.
 - **Every component documents itself:**
   - a doc comment (a summary, `@tier`, `@a11y`, `@key`);

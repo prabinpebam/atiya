@@ -52,7 +52,7 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
 ---
 
 <figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width}>
-  <div class="items">
+  <div class="items" data-scrollbar>
     {
       items.map((item) => {
         const full = item.full ?? item.src;
@@ -126,21 +126,6 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
-    scrollbar-color: var(--c-scrollbar-thumb) transparent;
-    scrollbar-width: thin;
-  }
-
-  .gallery[data-layout='row'] .items::-webkit-scrollbar {
-    height: var(--c-scrollbar-size);
-  }
-
-  .gallery[data-layout='row'] .items::-webkit-scrollbar-thumb {
-    border-radius: var(--radius-pill);
-    background: var(--c-scrollbar-thumb);
-  }
-
-  .gallery[data-layout='row'] .items::-webkit-scrollbar-track {
-    background: transparent;
   }
 
   .gallery[data-layout='row'] .card {

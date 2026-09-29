@@ -103,7 +103,7 @@ const chosenIcon = iconOf(chosen?.icon);
         )
       }
     </div>
-    <div class="list" role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`} tabindex="-1" data-list>
+    <div class="list" role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`} tabindex="-1" data-list data-scrollbar>
       {
         options.map((o, i) => {
           const oi = iconOf(o.icon);
@@ -276,8 +276,6 @@ const chosenIcon = iconOf(chosen?.icon);
     border-radius: var(--c-listbox-radius);
     background: var(--color-bg-raised);
     box-shadow: var(--shadow-md);
-    scrollbar-width: thin;
-    scrollbar-color: var(--c-scrollbar-thumb) transparent;
     visibility: hidden;
     opacity: 0;
     transform: translateY(calc(var(--space-2) * -1)) scale(0.98);

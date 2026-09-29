@@ -13,7 +13,7 @@ interface Props {
 const { props, caption } = Astro.props;
 ---
 
-<div class="wrap" tabindex="0" role="region" aria-label={caption}>
+<div class="wrap" tabindex="0" role="region" aria-label={caption} data-scrollbar>
   <table>
     <caption class="sr-only">{caption}</caption>
     <thead>
@@ -44,8 +44,6 @@ const { props, caption } = Astro.props;
     overflow-x: auto;
     border: var(--border-hairline) solid var(--color-rule);
     border-radius: var(--radius-lg);
-    scrollbar-width: thin;
-    scrollbar-color: var(--c-scrollbar-thumb) transparent;
   }
 
   table {

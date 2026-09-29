@@ -45,7 +45,8 @@ The rules for the website's pages: the landing, the classic site and the design 
   - `theme.ts`;
   - `media.ts`: wrapping, swipes, the nearest slide;
   - `controls.ts`: the slider's values;
-  - `page.ts`: runs a component's script on every page, including pages swapped in without a reload (§4).
+  - `page.ts`: runs a component's script on every page, including pages swapped in without a reload (§4);
+  - `scrollbars.ts`: the overlay scrollbars (§3): the handle's size and place (`thumbGeometry`) and dragging it (`dragTo`).
 - **Base styles** (`src/site/styles/base.css`) set element defaults only: the reset, type, links, the focus ring, selection, and `.sr-only`.
 - **Assets:** the font cuts in `src/site/assets/fonts/` (generated; §9).
 - **Helpers:** `src/site/design/meta.ts` (the base path and the theme colours), `samples.ts` (the library's sample media) and `typography.ts` (curly quotes).
@@ -66,6 +67,12 @@ The rules for the website's pages: the landing, the classic site and the design 
 - **Place, don't position.** Figures, galleries, quotes and videos declare how far they step out of the text (`data-breakout="popout|wide|full"`); Prose's grid places them.
 - **Layouts are defined once.** A page picks the layout that fits; a new kind of page gets a new layout only if no existing one fits, and that layout is then reused.
 - **IDs are unique per instance** (a random suffix), so a page can show a component twice, as the library does.
+- **Scrollbars are overlays.** No native bar anywhere: no gutter (a scroller keeps its whole width) and no arrow buttons. Instead a frosted handle floats over the edge at the scroll position: indigo-tinted glass (`--c-scrollbar-thumb`) over a blur (`--c-scrollbar-blur`), with a light rim.
+  - It shows while the scroller is hovered, scrolled or focused from the keyboard, or while it's being dragged, and fades out at rest. The page's own handle also shows while the pointer is near its edge. It widens to `--c-scrollbar-size-hover` to be grabbed and dragged.
+  - Scrolling stays native (wheel, touch, keys); the handle only shows the position and can be dragged. It's `aria-hidden`.
+  - A scroller opts in with `data-scrollbar` (base.css hides its native bar; PageShell's script adds the handle through `scripts/scrollbars.ts`). Prose adds it to Markdown's code blocks. The carousel's slide track alone has no handle: its buttons and dots move it. A unit test fails on native scrollbar styling, or on a component that scrolls without opting in.
+  - Reduce transparency gives a solid handle (`--c-scrollbar-solid`), and forced colours a plain one in the text colour.
+  - A horizontal ScrollArea never lets its content set its width (`contain: inline-size`): it scrolls instead of pushing the page wider.
 - **Lists whose items take a background** (hover, selected, current: the dropdown's options, the side navigation, the phone menu) keep a little room between items, `--c-list-item-gap` (4 px), so a hovered item never merges with the selected one beside it.
 
 ## 4. Writing a component

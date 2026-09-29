@@ -98,6 +98,15 @@
     },
     "shadow-strong": {
       "$value": "{p.color.shade.dark-strong}"
+    },
+    "frost": {
+      "$value": "{p.color.frost.indigo-dark}"
+    },
+    "frost-strong": {
+      "$value": "{p.color.frost.indigo-dark-strong}"
+    },
+    "frost-rim": {
+      "$value": "{p.color.frost.rim-dark}"
     }
   }
 }

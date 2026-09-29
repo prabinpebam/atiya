@@ -15,7 +15,7 @@ const { code, label } = Astro.props;
 ---
 
 <div class="code-block" data-code-block>
-  <pre tabindex="0" aria-label={label}><code>{code}</code></pre>
+  <pre tabindex="0" aria-label={label} data-scrollbar><code>{code}</code></pre>
   <span class="copy"><IconButton label="Copy code" icon="copy" size="sm" tooltip="top" data-copy="" /></span>
   <span class="sr-only" role="status" data-copy-status></span>
 </div>
@@ -38,8 +38,6 @@ const { code, label } = Astro.props;
     font-size: var(--text-sm);
     line-height: var(--leading-body);
     tab-size: 2;
-    scrollbar-width: thin;
-    scrollbar-color: var(--c-scrollbar-thumb) transparent;
   }
 
   .copy {

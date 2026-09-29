@@ -1,5 +1,6 @@
 /* ---------- The site's base: element defaults only (design-system.md §3) ----------
- * Tier 0 with the tokens: this file styles elements and two utilities, never a component. Every value
+ * Tier 0 with the tokens: this file styles elements, two utilities and the overlay scrollbar's handle
+ * (which scripts/scrollbars.ts adds), never a component. Every value
  * comes from a token (tokens.css, generated); tests/unit/siteDesignSystem.test.ts enforces it. */
 
 *,
@@ -18,7 +19,6 @@ html {
   text-size-adjust: 100%;
   font-optical-sizing: auto;
   scroll-padding-top: var(--c-header-height);
-  scrollbar-color: var(--c-scrollbar-thumb) var(--color-bg);
   hanging-punctuation: first;
 }
 
@@ -72,6 +72,94 @@ canvas {
 img,
 video {
   height: auto;
+}
+
+/* ---------- Overlay scrollbars (scripts/scrollbars.ts, design-system §3) ----------
+ * No native bar anywhere: no gutter, no arrow buttons. A frosted, indigo-tinted handle floats over the
+ * edge at the scroll position while the scroller is in use, and fades out at rest. */
+html,
+[data-scrollbar] {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+[data-scrollbar]::-webkit-scrollbar {
+  display: none;
+}
+
+.sb-thumb {
+  --sb-t: var(--c-scrollbar-size);
+  position: absolute;
+  z-index: var(--layer-raised);
+  border-radius: var(--radius-pill);
+  background: var(--c-scrollbar-thumb);
+  box-shadow:
+    inset 0 0 0 var(--border-hairline) var(--c-scrollbar-rim),
+    var(--shadow-sm);
+  -webkit-backdrop-filter: blur(var(--c-scrollbar-blur)) saturate(var(--c-scrollbar-saturate));
+  backdrop-filter: blur(var(--c-scrollbar-blur)) saturate(var(--c-scrollbar-saturate));
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    inline-size var(--duration-fast) var(--ease-standard),
+    block-size var(--duration-fast) var(--ease-standard),
+    inset-inline-start var(--duration-fast) var(--ease-standard),
+    inset-block-start var(--duration-fast) var(--ease-standard);
+}
+
+/* it runs along the far edge (--sb-edge, from the script), growing inwards when grabbed */
+.sb-thumb[data-axis='y'] {
+  inline-size: var(--sb-t);
+  inset-inline-start: calc(var(--sb-edge) - var(--sb-t) - var(--c-scrollbar-inset));
+}
+
+.sb-thumb[data-axis='x'] {
+  block-size: var(--sb-t);
+  inset-block-start: calc(var(--sb-edge) - var(--sb-t) - var(--c-scrollbar-inset));
+}
+
+.sb-thumb[data-page] {
+  position: fixed;
+  z-index: var(--layer-dropdown);
+}
+
+.sb-thumb[data-show] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sb-thumb[data-drag] {
+  --sb-t: var(--c-scrollbar-size-hover);
+  background: var(--c-scrollbar-thumb-hover);
+}
+
+@media (hover: hover) {
+  .sb-thumb:hover {
+    --sb-t: var(--c-scrollbar-size-hover);
+    background: var(--c-scrollbar-thumb-hover);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .sb-thumb {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--c-scrollbar-solid);
+  }
+}
+
+/* forced colours: a plain handle in the text colour */
+@media (forced-colors: active) {
+  .sb-thumb {
+    forced-color-adjust: none;
+    background: currentColor;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* icons (Font Awesome Duotone, design-system §2): the primary layer in the text colour, the secondary

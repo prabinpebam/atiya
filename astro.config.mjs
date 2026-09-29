@@ -42,6 +42,8 @@ export default defineConfig({
       dedupe: ['three', 'react', 'react-dom'],
     },
     optimizeDeps: {
+      // Pre-bundled at dev start-up, so none is discovered mid-session: a late discovery re-bundles
+      // the deps and the dev server then answers the old URLs with "504 Outdated Optimize Dep".
       include: [
         'three',
         'three/examples/jsm/geometries/RoundedBoxGeometry.js',
@@ -52,6 +54,13 @@ export default defineConfig({
         'postprocessing',
         'zustand',
         'zustand/vanilla',
+        // the game's icons, reached only through its lazily loaded chunk
+        '@fortawesome/free-solid-svg-icons',
+        // the design library's client-side router (astro:transitions)
+        'astro/virtual-modules/transitions-router.js',
+        'astro/virtual-modules/transitions-types.js',
+        'astro/virtual-modules/transitions-events.js',
+        'astro/virtual-modules/transitions-swap-functions.js',
       ],
     },
     build: {

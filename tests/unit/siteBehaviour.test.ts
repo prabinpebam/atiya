@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { keyAction, matchIndex, printable } from '../../src/site/scripts/listbox';
 import { applyTheme, parseTheme, readTheme, resolveTheme, THEME_KEY } from '../../src/site/scripts/theme';
 import { clampIndex, counter, nearest, reveal, swipe, wrap } from '../../src/site/scripts/media';
+import { dragTo, thumbGeometry } from '../../src/site/scripts/scrollbars';
 import { tuck, TUCK_SLACK } from '../../src/site/scripts/header';
 import { smart } from '../../src/site/design/typography';
 import { loadSite, resolveDocument, cssValue, merge, type Resolver } from '../../src/site/design/tokenModel';
@@ -104,6 +105,34 @@ describe('media helpers', () => {
     expect(reveal(380, 460, 0, 400, 8)).toBe(68);
     // wider than the strip: its start wins
     expect(reveal(20, 520, 0, 400, 8)).toBe(12);
+  });
+});
+
+describe('overlay scrollbars: where the handle sits, and dragging it', () => {
+  it('no handle when everything fits', () => {
+    expect(thumbGeometry(400, 400, 0, 394, 40)).toBeNull();
+    expect(thumbGeometry(400, 400.5, 0, 394, 40)).toBeNull();
+  });
+
+  it('as long as the view is of the content, never shorter than the minimum, never longer than the track', () => {
+    expect(thumbGeometry(400, 800, 0, 400, 40)).toEqual({ size: 200, offset: 0 });
+    expect(thumbGeometry(400, 100000, 0, 400, 40)!.size).toBe(40);
+    expect(thumbGeometry(400, 401, 0, 30, 40)!.size).toBe(30);
+  });
+
+  it('runs from one end of its track to the other as the content scrolls, and stays inside it', () => {
+    expect(thumbGeometry(400, 800, 400, 400, 40)).toEqual({ size: 200, offset: 200 });
+    expect(thumbGeometry(400, 800, 200, 400, 40)!.offset).toBe(100);
+    expect(thumbGeometry(400, 800, 9999, 400, 40)!.offset).toBe(200);
+    expect(thumbGeometry(400, 800, -50, 400, 40)!.offset).toBe(0);
+  });
+
+  it('dragging the handle scrolls in proportion, clamped to the content', () => {
+    // 400 px of content to scroll through, 200 px of track for the handle to travel
+    expect(dragTo(0, 100, 400, 800, 400, 200)).toBe(200);
+    expect(dragTo(200, -500, 400, 800, 400, 200)).toBe(0);
+    expect(dragTo(200, 500, 400, 800, 400, 200)).toBe(400);
+    expect(dragTo(120, 30, 400, 400, 400, 400)).toBe(120);
   });
 });
 

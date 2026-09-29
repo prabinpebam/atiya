@@ -8,6 +8,7 @@
  * @a11y Applies the saved theme before paint, so there's no flash of the wrong mode.
  * @a11y Fetches the faces the first screen is set in first, so text doesn't re-wrap as fonts arrive (layout shift).
  * @a11y With router, links within the section change the page without a reload; the new page's title is announced.
+ * @a11y Sets up the overlay scrollbars (the page's and every data-scrollbar region's): scrolling stays native, the handle only shows it.
  */
 import { ClientRouter } from 'astro:transitions';
 import '../../styles/fonts.css';
@@ -96,6 +97,15 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
     <slot />
   </body>
 </html>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { overlay, overlayPage } from '../../scripts/scrollbars';
+
+  // the frosted overlay handles: the page's own, and every region that opts in
+  overlayPage();
+  each<HTMLElement>('[data-scrollbar]', overlay);
+</script>
 
 <style>
   .skip {

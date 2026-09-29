@@ -1,9 +1,11 @@
 ---
 import Example from '../library/Example.astro';
 import ScrollArea from '../components/fundamentals/ScrollArea.astro';
+import Image from '../components/fundamentals/Image.astro';
+import { SAMPLES } from '../design/samples';
 ---
 
-<Example title="Vertical" layout="block" description="Focus the region, then use the keyboard or wheel to scroll.">
+<Example title="Vertical" layout="block" description="No gutter and no arrow buttons: hover, scroll or focus it and a frosted handle floats over the edge. Drag the handle, or use the wheel or the keyboard.">
   <ScrollArea label="Design library sections" maxHeight="sm">
     <ul>
       <li>Tokens set the colour, type and spacing.</li>
@@ -27,3 +29,23 @@ import ScrollArea from '../components/fundamentals/ScrollArea.astro';
     <pre>src/site/components/fundamentals/ScrollArea.astro keeps a focused region scrollable without taking over the whole page.</pre>
   </ScrollArea>
 </Example>
+
+<Example title="Over pictures" layout="block" description="The handle is frosted glass tinted with the spot indigo: it blurs what passes under it, so it reads over a photograph as well as over paper.">
+  <ScrollArea label="Planet scenes" orientation="horizontal">
+    <div class="row">
+      {SAMPLES.map((p) => <span class="cell"><Image src={p.thumb} alt={p.alt} width={p.width} height={p.height} ratio="3/2" /></span>)}
+    </div>
+  </ScrollArea>
+</Example>
+
+<style>
+  .row {
+    display: flex;
+    gap: var(--space-3);
+  }
+
+  .cell {
+    flex: none;
+    inline-size: calc(var(--size-avatar-lg) * 2);
+  }
+</style>

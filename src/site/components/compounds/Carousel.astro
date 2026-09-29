@@ -133,7 +133,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
         ))}
       </div>
     ) : (
-      <div class="strip" role="group" aria-label="Choose slide" data-wrap={pager === 'filmstrip-wrap' ? '' : undefined} data-carousel-strip>
+      <div class="strip" role="group" aria-label="Choose slide" data-wrap={pager === 'filmstrip-wrap' ? '' : undefined} data-carousel-strip data-scrollbar>
         {items.map((item, index) => (
           <button class="thumb" type="button" aria-label={`Show slide ${index + 1}: ${item.alt}`} aria-current={index === 0 ? 'true' : undefined} data-carousel-dot={String(index)}>
             <Image src={item.thumb ?? item.src} alt="" width={item.width} height={item.height} ratio="3/2" focus={item.focus} radius="none" />
@@ -163,10 +163,6 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     scrollbar-width: none;
-  }
-
-  .track::-webkit-scrollbar {
-    display: none;
   }
 
   .slide {
@@ -253,8 +249,6 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-behavior: smooth;
-    scrollbar-width: thin;
-    scrollbar-color: var(--c-scrollbar-thumb) transparent;
   }
 
   .strip[data-wrap] {
