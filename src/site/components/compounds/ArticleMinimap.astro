@@ -1,15 +1,16 @@
 ---
 /**
  * The article minimap: a slim strip along the right edge of a long article, one indicator per landmark
- * (a heading, a standalone picture, a gallery or carousel), showing where the reader is. Hovering or
+ * (a heading, a standalone picture, a gallery or carousel), all the same soft pill, headings longer
+ * the higher their level, showing where the reader is. Hovering or
  * focusing an indicator previews its landmark in a tooltip; choosing it jumps there. It never gets in
  * the way: only the strip takes pointer input, it hides where it would cover text, and it scrolls on its
  * own without a scrollbar. The layout places it once, beside the element it maps (data-minimap-source).
  * @tier compound
  * @a11y A labelled navigation landmark ("Article outline"); every indicator is a real button named by its kind and label ("Jump to heading: …").
  * @a11y The landmark being read is marked aria-current="location"; the tooltip is a status message, announced as focus or hover moves.
- * @a11y Kind is shown by shape (bar, rectangle, grid), never by colour alone; reduced motion turns off the smooth scroll and the growth.
- * @a11y Rows are 16 px for a mouse and 24 px on touch (the WCAG 2.5.8 minimum); it's an extra way to move, the page scrolls as usual.
+ * @a11y Every mark is the same pill: a heading's length shows its level, and the kind is in the tooltip and the button's name, never in colour alone; reduced motion turns off the smooth scroll and the growth.
+ * @a11y Rows are the pill plus a gap (10 px), at least 24 px on touch (the WCAG 2.5.8 minimum); it's an extra way to move, the page scrolls as usual.
  * @key Tab: moves through the indicators
  * @key Enter / Space: jumps to the focused indicator's landmark
  */
@@ -32,7 +33,7 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
   <template data-minimap-row>
     <li class="item">
       <button class="row" type="button">
-        <span class="tick"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></span>
+        <span class="tick"></span>
       </button>
     </li>
   </template>
@@ -83,16 +84,20 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
     margin: 0;
   }
 
-  /* a full-width row is the target, not the tick */
+  /* a full-width row is the target, the pill plus the gap (a dense column of pills); --lift (0 to 1) is
+     how much it grows: the wave, or being current */
   .row {
-    --grow: max(calc(var(--wave, 0) * var(--c-minimap-magnify)), calc(var(--is-current, 0) * var(--c-minimap-current-grow)));
+    --mark-h: var(--c-minimap-bar);
+    --row-h: var(--c-minimap-bar-active);
+    --len: var(--c-minimap-media);
+    --lift: max(var(--wave, 0), calc(var(--is-current, 0) * var(--c-minimap-current-grow)));
     display: flex;
     align-items: center;
     justify-content: flex-end;
     inline-size: 100%;
-    block-size: var(--c-minimap-row);
+    block-size: calc(var(--row-h) + var(--c-minimap-gap));
     margin: 0;
-    padding: 0 var(--space-2) 0 0;
+    padding: 0 var(--space-1) 0 0;
     border: 0;
     background: transparent;
     color: var(--c-minimap-tick);
@@ -106,75 +111,51 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
     border-radius: var(--radius-xs);
   }
 
+  /* every landmark is the same fully rounded pill; it grows lengthwise, leftward */
   .tick {
     display: block;
+    flex: none;
+    inline-size: calc(var(--len) + var(--lift) * var(--c-minimap-grow));
+    block-size: var(--mark-h);
     border-radius: var(--radius-pill);
     background: currentColor;
-    transform-origin: 100% 50%;
     transition:
-      transform var(--duration-fast) var(--ease-standard),
+      inline-size var(--duration-fast) var(--ease-standard),
+      block-size var(--duration-fast) var(--ease-standard),
       color var(--duration-fast) var(--ease-standard);
   }
 
-  .cell {
-    display: none;
-  }
-
-  /* a heading: a thin bar, longer the higher the level, stretching lengthwise only */
-  .row[data-kind='heading'] .tick {
-    inline-size: var(--bar-len, var(--c-minimap-bar-5));
-    block-size: var(--c-minimap-bar);
-    transform: scaleX(calc(1 + var(--grow)));
+  /* only headings differ: longer the higher the level */
+  .row[data-kind='heading'] {
+    --len: var(--c-minimap-bar-5);
   }
 
   .row[data-level='1'] {
-    --bar-len: var(--c-minimap-bar-1);
+    --len: var(--c-minimap-bar-1);
   }
 
   .row[data-level='2'] {
-    --bar-len: var(--c-minimap-bar-2);
+    --len: var(--c-minimap-bar-2);
   }
 
   .row[data-level='3'] {
-    --bar-len: var(--c-minimap-bar-3);
+    --len: var(--c-minimap-bar-3);
   }
 
   .row[data-level='4'] {
-    --bar-len: var(--c-minimap-bar-4);
-  }
-
-  /* a picture: a short, thicker rectangle; a gallery: a small 2 x 2 grid. Both scale evenly */
-  .row[data-kind='image'] .tick {
-    inline-size: var(--c-minimap-image-w);
-    block-size: var(--c-minimap-image-h);
-    border-radius: var(--radius-xs);
-    transform: scale(calc(1 + var(--grow) * var(--c-minimap-magnify-even)));
-  }
-
-  .row[data-kind='gallery'] .tick {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-0-5);
-    inline-size: var(--c-minimap-gallery);
-    block-size: var(--c-minimap-gallery);
-    border-radius: 0;
-    background: none;
-    transform: scale(calc(1 + var(--grow) * var(--c-minimap-magnify-even)));
-  }
-
-  .row[data-kind='gallery'] .cell {
-    display: block;
-    border-radius: 0;
-    background: currentColor;
+    --len: var(--c-minimap-bar-4);
   }
 
   /* the landmark being read; hover or focus wins over it */
+  /* 4 px at rest; 6 px when current or active (the row keeps its height, so nothing moves) */
   .row[aria-current='location'] {
     --is-current: 1;
+    --mark-h: var(--c-minimap-bar-active);
     color: var(--c-minimap-current);
   }
 
   .row[data-active] {
+    --mark-h: var(--c-minimap-bar-active);
     color: var(--c-minimap-active);
   }
 
@@ -218,29 +199,25 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
     font-weight: var(--weight-regular);
   }
 
-  /* touch: a wider strip, taller rows, larger and thicker marks (the same differences), a tooltip closer and narrower */
+  /* touch: a wider strip, rows at least 24 px, pills a little larger (the same differences), a tooltip
+     closer and narrower */
   @media (pointer: coarse) {
     .minimap {
       inline-size: var(--c-minimap-width-touch);
     }
 
     .row {
-      block-size: var(--c-minimap-row-touch);
+      --mark-h: calc(var(--c-minimap-bar) * var(--c-minimap-touch-scale));
+      --row-h: calc(var(--c-minimap-bar-active) * var(--c-minimap-touch-scale));
+      min-block-size: var(--c-minimap-row-touch);
     }
 
-    .row[data-kind='heading'] .tick {
-      inline-size: calc(var(--bar-len, var(--c-minimap-bar-5)) * var(--c-minimap-touch-scale));
-      block-size: var(--c-minimap-bar-touch);
+    .row:is([aria-current='location'], [data-active]) {
+      --mark-h: calc(var(--c-minimap-bar-active) * var(--c-minimap-touch-scale));
     }
 
-    .row[data-kind='image'] .tick {
-      inline-size: calc(var(--c-minimap-image-w) * var(--c-minimap-touch-scale));
-      block-size: calc(var(--c-minimap-image-h) * var(--c-minimap-touch-scale));
-    }
-
-    .row[data-kind='gallery'] .tick {
-      inline-size: calc(var(--c-minimap-gallery) * var(--c-minimap-touch-scale));
-      block-size: calc(var(--c-minimap-gallery) * var(--c-minimap-touch-scale));
+    .tick {
+      inline-size: calc((var(--len) + var(--lift) * var(--c-minimap-grow)) * var(--c-minimap-touch-scale));
     }
 
     .tip {

@@ -146,6 +146,10 @@
     "icon-secondary": {
       "$value": "{p.color.indigo.400}",
       "$description": "A duotone icon's second layer: the spot indigo, light enough to sit under ink and dark enough to read on paper (3.2:1)"
+    },
+    "indicator": {
+      "$value": "{p.color.stock.500}",
+      "$description": "A quiet mark in a strip of marks (the minimap pills): soft, still 3:1 on paper"
     }
   }
 }

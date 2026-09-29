@@ -3,7 +3,7 @@
 A slim strip along the right edge of a long article: one indicator per landmark, the reader's place, a preview on hover, focus or tap, and a jump to any landmark. It's built to stay out of the way of reading, scrolling and the page's other controls. The [site design system](design-system.md) holds the general rules; this page is the minimap's behaviour as built.
 
 > **TL;DR.** `ArticleMinimap` (a compound) is placed once by the article layout and maps the element marked `data-minimap-source`.
-> - **Indicators:** headings are thin bars, longer for higher levels. Pictures are short, thicker rectangles, and a gallery or carousel is a small 2 × 2 grid, counted once whatever it holds.
+> - **Indicators:** a dense column of soft, fully rounded pills, all alike except that a heading's pill is longer the higher its level. A picture, gallery or carousel (counted once, whatever it holds) is a short pill; the tooltip says which kind it is.
 > - **Place and hover:** the landmark being read is highlighted in indigo and marked `aria-current="location"`. Hover or focus shows a tooltip and magnifies the indicator, with its neighbours growing less, like a dock.
 > - **Choosing:** a click, Enter or a tap scrolls the landmark to 18% down the view, below the sticky header.
 > - **Out of the way:** only the strip takes pointer input, and it hides wherever it would cover text (as on a phone). It scrolls on its own, without a scrollbar and without passing the scroll on to the page.
@@ -26,18 +26,23 @@ A slim strip along the right edge of a long article: one indicator per landmark,
 
 ## 2. Indicators
 
-| Kind | Shape (mouse) | On touch |
-|---|---|---|
-| Heading, level 1 to 4 | A bar 2 px thick, 28, 24, 16 and 10 px long (6 px from level 5) | × 1.25 long, 3 px thick |
-| Picture | A 12 × 7 px rectangle | × 1.25 |
-| Gallery or carousel | A 12 px 2 × 2 grid of squares | × 1.25 |
+The look is the owner's mock, at about a seventh of its drawn size: a dense column of soft, fully rounded pills, right-aligned: 4 px thick at rest, 6 px when current or under the pointer or focus, in rows 10 px apart (the 6 px plus a 4 px gap, so a pill thickening never moves its neighbours).
 
-- **Shape carries the kind,** never colour alone. Every indicator is right-aligned in a full-width row button: 16 px for a mouse, 24 px on touch (the WCAG 2.5.8 minimum). So targets are uniform and never overlap.
-- **Colours:** at rest the strong border colour (`--c-minimap-tick`), the landmark being read the spot indigo (`--c-minimap-current`), under the pointer or focus the text colour (`--c-minimap-active`). Hover or focus wins over current.
+| Kind | Pill (mouse) | On touch |
+|---|---|---|
+| Heading, level 1 to 4 | 38, 34, 24 and 16 px long (10 px from level 5) | × 1.15 |
+| Picture, gallery or carousel | 16 px long | × 1.15 |
+
+- **Only headings differ:** by the owner's choice, every landmark is the same pill, and only a heading's length (its level) sets it apart. The kind is in the tooltip ("Image", "Gallery · 6 images") and the button's accessible name ("Jump to image: …"), never in colour alone.
+- **Rows:** every mark is right-aligned in a full-width row button, 10 px tall with a mouse, at least 24 px on touch (the WCAG 2.5.8 minimum). So targets never overlap. With a mouse they're smaller than the spec's 16 px, for the owner's denser look; the page scrolls as usual, so the strip stays an extra way to move.
+- **Colours:**
+  - at rest, one soft neutral for every mark (`--c-minimap-tick`, the `indicator` role): a light warm grey on dark, as in the mock, and stock-500 on paper (3:1);
+  - the landmark being read, the spot indigo (`--c-minimap-current`);
+  - under the pointer or focus, the text colour (`--c-minimap-active`), which wins over current.
 - **Growth:**
-  - the current indicator grows by 18%;
-  - the active one grows by 70%, and its three neighbours on each side by 60%, 32% and 12% of that (the wave, `WAVE`);
-  - a bar stretches lengthwise only, while pictures and galleries scale evenly, by 45% of that, so their shapes hold.
+  - the active pill gets 6 px longer, leftward (`--c-minimap-grow`), and its three neighbours on each side 60%, 32% and 12% of that (the wave, `WAVE`);
+  - the current pill takes half the growth;
+  - the strip (48 px) leaves room for the longest pill as it grows.
 - **Reduced motion** turns off the growth animation and the smooth scroll.
 
 ## 3. Placement

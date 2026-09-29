@@ -607,7 +607,8 @@ test.describe('article minimap', () => {
     const strip = nav.locator('.strip');
     const b = (await strip.boundingBox())!;
     await page.mouse.move(b.x + b.width / 2, b.y + b.height - 4);
-    await expect.poll(() => strip.evaluate((s) => s.scrollTop)).toBeGreaterThan(40);
+    // it runs to the end of the list (however far it overflows)
+    await expect.poll(() => strip.evaluate((s) => s.scrollHeight - s.clientHeight - s.scrollTop)).toBeLessThan(1);
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
     const at = await strip.evaluate((s) => s.scrollTop);
     await page.waitForTimeout(300);

@@ -110,6 +110,9 @@
     },
     "icon-secondary": {
       "$value": "{p.color.indigo.300}"
+    },
+    "indicator": {
+      "$value": "{p.color.stock.300}"
     }
   }
 }
