@@ -274,6 +274,9 @@
   --c-carousel-thumb: 5rem;
   --c-carousel-thumb-on: var(--color-accent);
   --c-carousel-thumb-rest: 0.7;
+  --c-carousel-peek-scale: 0.88;
+  --c-carousel-peek-opacity: 0.7;
+  --c-carousel-peek-min: 2rem;
 }
 
 :root[data-theme='light'] {

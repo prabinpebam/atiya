@@ -12,8 +12,10 @@ const MANY = [...SAMPLES, ...SAMPLES];
   <Carousel items={SAMPLES.slice(0, 5)} label="Painted planet tour" lightbox="carousel-quiet" />
 </Example>
 
-<Example title="With a peek" layout="block" description="A sliver of the next slide hints that there is more to see.">
-  <Carousel items={SAMPLES} label="Planet scenes" peek lightbox="carousel-peek" />
+<Example title="With a peek" layout="block" description="The neighbours show a little smaller, fading to nothing across their width. Where the page has room they reach out beside the carousel, so they aren't cut off (here the frame is the page); a phone shows one slide. Choosing a neighbour brings it to the middle.">
+  <div class="column">
+    <Carousel items={SAMPLES} label="Planet scenes" peek lightbox="carousel-peek" />
+  </div>
 </Example>
 
 <Example title="Content width" layout="block" description="The same controls work in a narrower story column.">
@@ -33,3 +35,11 @@ const MANY = [...SAMPLES, ...SAMPLES];
 </Example>
 
 <Lightbox />
+
+<style>
+  /* a column narrower than the frame, like an article's, so the peek has room beside it */
+  .column {
+    max-inline-size: var(--size-measure);
+    margin-inline: auto;
+  }
+</style>

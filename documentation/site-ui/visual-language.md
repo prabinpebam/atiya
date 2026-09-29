@@ -116,6 +116,7 @@ Interface sizes are fixed. Reading and display sizes are fluid: each grows smoot
 
 - **Sized and placed:** every picture has a width and height (no layout shift), a responsive `srcset` and a paper-coloured placeholder, and it loads lazily unless it's the lead.
 - **Given room:** captions are Figtree 14 px in muted ink with the credit after them, and a gallery has one caption for the set, as a magazine does.
+- **A carousel's peek is a hint, never a cut:** its neighbouring slides show a little smaller (88%), fading from 70% at the edge nearest the slide being shown to nothing at their far edge. Where the page has room beside the carousel they reach out into it, up to the page's main region, so they aren't cut off. Where it has less, what shows fades out before the edge. A phone shows one slide at a time. Choosing a neighbour brings it to the middle.
 - **The lightbox follows the theme:** a smoky scrim, paper-white in light mode and black in dark, with slow drifting wisps, its controls and caption in the page's own ink, the picture as large as fits, the caption under it, and a filmstrip of the set along the bottom with the current frame ringed in marigold.
 
 ![The lightbox in light mode: the picture on paper-white smoke, previous and next at the sides, the caption, the counter and a filmstrip with the current frame ringed.](assets/lightbox.jpg)

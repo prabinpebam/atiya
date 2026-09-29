@@ -3,9 +3,13 @@
  * A non-rotating carousel: a scroll-snap row of captioned pictures with previous and next buttons and
  * a counter (which can be left out), and dots or a filmstrip of thumbnails to pick a slide. The
  * filmstrip scrolls sideways in one row, or wraps onto more rows. It never moves unless the reader asks.
+ * With peek, the neighbouring slides show a little smaller, fading to nothing across their width; where
+ * the page has room beside the carousel they reach out into it (up to the page's main region, or a box
+ * marked data-bleed-bounds), so they aren't cut off.
  * @tier compound
  * @a11y Follows the APG carousel pattern without rotation; every slide is a named group.
  * @a11y The previous and next buttons stop at the ends instead of wrapping.
+ * @a11y A peeking slide is only a hint: choosing it (a click or tap) brings it to the middle rather than opening it.
  * @a11y Arrow keys work when the slide track has focus; dots or thumbnails are buttons for direct slide choice, named after the slide they show.
  * @a11y Without the buttons the counter stays for screen readers (announced as the slide changes); the dots or filmstrip remain the visible way to move.
  * @key Left / Right: previous / next slide when the track is focused
@@ -42,7 +46,7 @@ interface Props {
   label?: string;
   /** Where the article layout may place it. */
   width?: 'content' | 'popout' | 'wide' | 'full';
-  /** Shows a sliver of the next slide. */
+  /** Shows the neighbouring slides, smaller and fading out, reaching beside the carousel where the page has room. */
   peek?: boolean;
   /** The lightbox group name. */
   lightbox?: string;
@@ -93,16 +97,18 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
             />
           );
           return (
-            <figure class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
-              {lightbox ? (
-                <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt}>
-                  {picture}
-                </a>
-              ) : (
-                picture
-              )}
-              <Caption>{item.caption}</Caption>
-            </figure>
+            <div class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
+              <figure class="slide-body">
+                {lightbox ? (
+                  <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt}>
+                    {picture}
+                  </a>
+                ) : (
+                  picture
+                )}
+                <Caption>{item.caption}</Caption>
+              </figure>
+            </div>
           );
         })
       }
@@ -165,17 +171,61 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
     scrollbar-width: none;
   }
 
+  /* the slide is what snaps (never transformed: a snap is measured as drawn); its figure is what peeks */
   .slide {
     flex: 0 0 100%;
-    display: grid;
-    gap: var(--space-3);
     min-width: 0;
-    margin: 0;
     scroll-snap-align: center;
   }
 
+  .slide-body {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+  }
+
+  /* peek: the track reaches out by --bleed-start / --bleed-end (the room beside the carousel, from the
+     script) and keeps --inset of each neighbour in view where there's none; the slide being shown keeps
+     the carousel's width. Before the script runs: a plain sliver of each neighbour. */
+  .carousel[data-peek] .viewport {
+    margin-inline: calc(var(--bleed-start, 0px) * -1) calc(var(--bleed-end, 0px) * -1);
+  }
+
+  .carousel[data-peek] .track {
+    padding-inline: calc(var(--bleed-start, 0px) + var(--inset, var(--c-carousel-peek-min))) calc(var(--bleed-end, 0px) + var(--inset, var(--c-carousel-peek-min)));
+    scroll-padding-inline: var(--bleed-start, 0px) var(--bleed-end, 0px);
+  }
+
+  /* with too little room for a whole neighbour, what shows fades out before the edge: nothing is cut off */
+  .carousel[data-peek][data-bleed='partial'] .viewport {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      currentColor calc(var(--bleed-start, 0px) + var(--inset, 0px)),
+      currentColor calc(100% - var(--bleed-end, 0px) - var(--inset, 0px)),
+      transparent
+    );
+  }
+
+  /* a neighbour (--peek 1; 0 in the middle, from the script as it scrolls): smaller, and fading out across
+     its whole width, away from the slide being shown */
   .carousel[data-peek] .slide {
-    flex-basis: calc(100% - var(--space-16));
+    --peek: 0;
+  }
+
+  .carousel[data-peek] .slide-body {
+    transform: scale(calc(1 - var(--peek) * (1 - var(--c-carousel-peek-scale))));
+    opacity: calc(1 - var(--peek) * (1 - var(--c-carousel-peek-opacity)));
+    mask-image: linear-gradient(to right, currentColor calc((1 - var(--peek)) * 100%), transparent);
+  }
+
+  .carousel[data-peek] .slide[data-side='before'] .slide-body {
+    transform-origin: 100% 50%;
+    mask-image: linear-gradient(to left, currentColor calc((1 - var(--peek)) * 100%), transparent);
+  }
+
+  .carousel[data-peek] .slide[data-side='after'] .slide-body {
+    transform-origin: 0 50%;
   }
 
   .slide-link {
@@ -286,9 +336,10 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
     opacity: 1;
   }
 
+  /* a phone shows one slide at a time */
   @media (max-width: 40rem) {
-    .carousel[data-peek] .slide {
-      flex-basis: 100%;
+    .carousel[data-peek] .track {
+      --inset: 0px;
     }
   }
 
@@ -316,6 +367,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
     const dots = [...root.querySelectorAll<HTMLButtonElement>('[data-carousel-dot]')];
     const strip = root.querySelector<HTMLElement>('[data-carousel-strip]');
     if (!track || !count || slides.length === 0) return;
+    const peek = root.hasAttribute('data-peek');
 
     let current = 0;
     let revealed = 0;
@@ -330,7 +382,11 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
       update(nearest(track.scrollLeft, offsets()));
     };
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const offsets = () => slides.map((slide) => slide.offsetLeft - track.offsetLeft);
+    // where each slide sits in the scroll (the track's own padding, a peek's room, taken off)
+    const offsets = () => {
+      const pad = parseFloat(getComputedStyle(track).paddingInlineStart) || 0;
+      return slides.map((slide) => slide.offsetLeft - track.offsetLeft - pad);
+    };
 
     const update = (i: number) => {
       current = clampIndex(i, slides.length);
@@ -356,7 +412,9 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
       const nextIndex = clampIndex(i, slides.length);
       // already there: no glide, nothing to wait for
       asked = nearest(track.scrollLeft, offsets()) !== nextIndex;
-      slides[nextIndex]?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduce ? 'auto' : 'smooth' });
+      // to the slide's place in the layout (scrollIntoView would centre its box as drawn, and a peeking
+      // slide is drawn smaller)
+      track.scrollTo({ left: offsets()[nextIndex], behavior: reduce ? 'auto' : 'smooth' });
       update(nextIndex);
     };
 
@@ -381,6 +439,67 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
       frame = requestAnimationFrame(() => update(nearest(track.scrollLeft, offsets())));
     });
     window.addEventListener('resize', () => update(nearest(track.scrollLeft, offsets())), { signal });
+
+    if (peek) {
+      const narrow = matchMedia('(max-width: 40rem)');
+      const rem = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const token = (name: string) => {
+        const v = getComputedStyle(root).getPropertyValue(name).trim();
+        return v.endsWith('rem') ? parseFloat(v) * rem() : parseFloat(v);
+      };
+      // the room beside the carousel, up to its bounds (and the viewport); no more than a whole neighbour needs
+      const room = () => {
+        const r = root.getBoundingClientRect();
+        const box = (root.closest('[data-bleed-bounds]') ?? root.closest('main') ?? document.documentElement).getBoundingClientRect();
+        const left = Math.max(box.left, 0);
+        const right = Math.min(box.right, document.documentElement.clientWidth);
+        const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        const whole = r.width * token('--c-carousel-peek-scale') + gap;
+        const min = token('--c-carousel-peek-min');
+        const start = narrow.matches ? 0 : Math.max(0, Math.min(r.left - left, whole));
+        const end = narrow.matches ? 0 : Math.max(0, Math.min(right - r.right, whole));
+        const inset = narrow.matches ? 0 : Math.max(0, min - Math.min(start, end));
+        root.style.setProperty('--bleed-start', `${start}px`);
+        root.style.setProperty('--bleed-end', `${end}px`);
+        root.style.setProperty('--inset', `${inset}px`);
+        root.dataset.bleed = start >= whole - 1 && end >= whole - 1 ? 'full' : 'partial';
+      };
+      // how far each slide is from the middle: 0 there, 1 a whole slide away (a neighbour)
+      const shade = () => {
+        const tr = track.getBoundingClientRect();
+        const pad = parseFloat(getComputedStyle(track).scrollPaddingInlineStart) || 0;
+        const middle = tr.left + pad + root.getBoundingClientRect().width / 2;
+        const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        for (const slide of slides) {
+          const centre = tr.left + slide.offsetLeft - track.offsetLeft - track.scrollLeft + slide.offsetWidth / 2;
+          const d = (centre - middle) / (slide.offsetWidth + gap);
+          slide.style.setProperty('--peek', Math.min(1, Math.abs(d)).toFixed(3));
+          slide.dataset.side = d < 0 ? 'before' : 'after';
+        }
+      };
+      let shading = 0;
+      const reshade = () => {
+        if (!shading) shading = requestAnimationFrame(() => ((shading = 0), shade()));
+      };
+      const relayout = () => {
+        room();
+        shade();
+      };
+      track.addEventListener('scroll', reshade, { passive: true });
+      new ResizeObserver(relayout).observe(root);
+      window.addEventListener('resize', relayout, { signal });
+      narrow.addEventListener('change', relayout, { signal });
+      relayout();
+      // a peeking slide is a hint: choosing it brings it to the middle (not the lightbox)
+      slides.forEach((slide, i) =>
+        slide.addEventListener('click', (e) => {
+          if (i === current) return;
+          e.preventDefault();
+          e.stopPropagation();
+          go(i);
+        }),
+      );
+    }
     update(0);
   });
 </script>

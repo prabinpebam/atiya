@@ -35,7 +35,7 @@ const id = `example-${slugOf(title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
       <Button size="sm" variant="quiet" icon="theme-dark" aria-pressed="false" data-preview-mode="dark">Dark</Button>
     </div>
   </div>
-  <div class="canvas" data-layout={layout} data-bleed={bleed ? '' : undefined} data-canvas>
+  <div class="canvas" data-layout={layout} data-bleed={bleed ? '' : undefined} data-bleed-bounds data-canvas>
     <slot />
   </div>
   {
