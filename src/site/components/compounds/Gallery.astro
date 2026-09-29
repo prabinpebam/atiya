@@ -1,7 +1,8 @@
 ---
 /**
  * A set of pictures arranged as a quiet magazine gallery: a grid, a lead-image mosaic or a horizontal
- * row. Each picture is a full-size link that the page’s Lightbox can enhance.
+ * row. Each picture is a full-size link that the page’s Lightbox can enhance. Photographs fill their
+ * cells; marks, logos and artwork that mustn't be cropped sit whole on the cell's paper (fit contain).
  * @tier compound
  * @a11y Every picture is a link to the full image, so the gallery works without JavaScript.
  * @a11y The overall caption describes the set; each image still carries its own alt text.
@@ -44,9 +45,11 @@ interface Props {
   lightbox?: string;
   /** The image sizes hint. */
   sizes?: string;
+  /** cover: each picture fills its cell (cropped); contain: each shows whole, on the cell's paper. */
+  fit?: 'cover' | 'contain';
 }
 
-const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes } = Astro.props;
+const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover' } = Astro.props;
 const columns = items.length > 2 ? '3' : '2';
 const ratio = layout === 'row' ? '4/3' : '1/1';
 ---
@@ -69,6 +72,7 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
                 width={item.width}
                 height={item.height}
                 ratio={ratio}
+                fit={fit}
                 focus={item.focus}
                 radius={width === 'full' ? 'none' : 'default'}
                 fill

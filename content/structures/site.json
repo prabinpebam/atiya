@@ -1,0 +1,30 @@
+{
+  "home": {
+    "id": "home",
+    "kind": "hub",
+    "slug": "",
+    "title": "Prabin Pebam",
+    "navLabel": "Home",
+    "template": "home",
+    "children": [
+      {
+        "id": "leadership",
+        "kind": "hub",
+        "slug": "leadership",
+        "title": "Leadership",
+        "template": "leadershipOverview",
+        "summary": "How teams, culture and design influence are built.",
+        "children": [
+          {
+            "id": "do-what-makes-you-proud",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "do-what-makes-you-proud"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

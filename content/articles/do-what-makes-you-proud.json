@@ -1,0 +1,254 @@
+{
+  "id": "do-what-makes-you-proud",
+  "type": "article",
+  "kind": "note",
+  "slug": "do-what-makes-you-proud",
+  "title": "Do what makes you proud",
+  "summary": "How a team identity became a conversation about aspiration, accountability, craft, and the ambition to do great work for ourselves.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-09-29",
+  "updatedAt": "2026-09-29",
+  "locale": "en",
+  "hero": {
+    "media": "articles/do-what-makes-you-proud/wd-meadow-day"
+  },
+  "body": [
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Project",
+          "value": "Team rebranding"
+        },
+        {
+          "label": "Year",
+          "value": "2024"
+        },
+        {
+          "label": "Team",
+          "value": "25 members"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "A rebrand designed to move the team, not simply rename it."
+    },
+    {
+      "type": "text",
+      "markdown": "The Windows Design team in India needed more than a visual refresh. I wanted the identity to help people reconnect with why they design, raise the standard they set for themselves, and see individual ambition as a force that could strengthen the whole team."
+    },
+    {
+      "type": "gallery",
+      "layout": "mosaic",
+      "fit": "contain",
+      "width": "wide",
+      "lightbox": true,
+      "caption": "The WD mark, explored in different materials and finishes.",
+      "items": [
+        {
+          "media": "articles/do-what-makes-you-proud/mark-finishes"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/mark-pale-stone"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/mark-sculpted-clay"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/mark-clay-to-stone"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "“Be better than yesterday.”"
+    },
+    {
+      "type": "text",
+      "markdown": "This was the benchmark the whole narrative kept returning to. It doesn’t mean better than a peer, and it isn’t an external bar. Everyone can reach it, and no one is ever finished with it."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Interest creates energy. Ownership turns it into progress."
+    },
+    {
+      "type": "text",
+      "markdown": "I called the mindset **excited accountability**. First, be interested: aligned with the work and passionate about it. Then, be accountable: want to impress through the quality of the outcome. Neither works for long without the other."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Accountability should energize, not pressure."
+    },
+    {
+      "type": "text",
+      "markdown": "It isn’t compliance, surveillance, or pressure from above. It’s the pride of taking an idea far enough, and refining it deeply enough, that the result can stand on its own."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Ambition is a loop, not a push."
+    },
+    {
+      "type": "text",
+      "markdown": "**Inspiration → Excited accountability → Faster learning → Recognition → Renewed aspiration**"
+    },
+    {
+      "type": "text",
+      "markdown": "Inspiration feeds interest. Interest makes accountability feel chosen rather than imposed. Accountability speeds up learning. Better work earns recognition and self-respect. That raises your aspiration, and the loop starts again at a higher level."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Don’t optimize for approval. Optimize for your best work."
+    },
+    {
+      "type": "text",
+      "markdown": "We’re not here to make a manager say yes or to win leadership approval. We’re here to do our best work, become thought leaders in our areas, and hold ourselves to a world-class benchmark. Approval matters, but it can’t be the highest standard."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "“Do it for yourself.” Own the outcome, not merely the task."
+    },
+    {
+      "type": "text",
+      "markdown": "Ambition shouldn’t come from being told to be ambitious. It should come from the fact that making something excellent is meaningful in itself. So the standard had to come from within:"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "Would I be proud to put my name behind this?"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Do what makes you proud."
+    },
+    {
+      "type": "text",
+      "markdown": "That’s why the slogan carries weight. It isn’t motivational decoration. It sums up how we wanted to work: personal aspiration, disciplined craft, accountability for outcomes, and the courage to aim higher."
+    },
+    {
+      "type": "figure",
+      "media": "articles/do-what-makes-you-proud/lettering",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The identity was a vehicle for a more demanding conversation."
+    },
+    {
+      "type": "text",
+      "markdown": "**Shared language.** *Pride*, *craft*, and *own the outcome* became part of reviews, team rituals, and everyday conversations."
+    },
+    {
+      "type": "text",
+      "markdown": "**Team energy.** Keeping a team energized is hard. It becomes possible when each person drives their own ambition."
+    },
+    {
+      "type": "video",
+      "embed": {
+        "provider": "youtube",
+        "id": "vIVX-KVUWAE"
+      },
+      "title": "The team video",
+      "poster": "articles/do-what-makes-you-proud/team-video-poster",
+      "duration": 140,
+      "caption": "The team video: a ribbon of colour passes from one person to the next.",
+      "width": "wide"
+    },
+    {
+      "type": "text",
+      "markdown": "**Visible adoption.** Team T-shirts and slide templates carried the idea into everyday work."
+    },
+    {
+      "type": "figure",
+      "media": "articles/do-what-makes-you-proud/tshirt",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "carousel",
+      "label": "Slide templates",
+      "peek": true,
+      "lightbox": true,
+      "items": [
+        {
+          "media": "articles/do-what-makes-you-proud/slide-clay"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/slide-clay-to-stone"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/slide-swan-lilac"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/slide-mark-lilac"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/slide-mark-sage"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/slide-swan-sage"
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "media": "articles/do-what-makes-you-proud/slide-templates",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "A shared standard, defined by each person."
+    },
+    {
+      "type": "text",
+      "markdown": "The most meaningful outcome wasn’t visual consistency. It was that the team could point to a shared idea of quality without reducing it to a checklist. “Do what makes you proud” made the standard memorable while leaving each person room to decide what pride asked of them."
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "figure",
+      "media": "articles/do-what-makes-you-proud/wd-meadow-night",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Navigating to the best you"
+    },
+    {
+      "type": "text",
+      "markdown": "**In the Loom of Destiny**\\\nWe are the weavers of our own tapestry,\\\nThreads spun from choices, both bold and wary.\\\nEach decision, a shuttle across time,\\\nStitching our essence, a rhythm sublime."
+    },
+    {
+      "type": "text",
+      "markdown": "**The Whisper of Small Choices**\\\nListen closely to the rustle of leaves,\\\nFor in the flutter of mundane moments, we believe.\\\nThe morning brew—black or with cream?\\\nThe path to work—left or right, it seems.\\\nThese whispers of small choices, soft and fleet,\\\nShape the contours of our life’s heartbeat."
+    },
+    {
+      "type": "text",
+      "markdown": "**The Grand Crossroads Beckon**\\\nYet, behold the grand crossroads, wide and vast,\\\nWhere destiny unfurls its sail, taut and fast.\\\nTo leap or linger, to risk or retreat,\\\nHere, our souls dance on the edge of fate.\\\nThe career switch, the leap of faith,\\\nThe moonlit kiss, the uncharted wraith.\\\nThese monumental choices, etched in stardust,\\\nDefine the constellations of our wanderlust."
+    },
+    {
+      "type": "text",
+      "markdown": "**The Symphony of Regrets and Triumphs**\\\nAnd what of the roads not taken?\\\nThey echo in the chambers of our hearts, unshaken.\\\nRegrets, like minor chords, hum their refrain,\\\nYet they harmonize with triumphs, easing our pain.\\\nFor we are not mere sum of our grand deeds,\\\nBut the symphony of every choice, every seed."
+    },
+    {
+      "type": "text",
+      "markdown": "**Navigating to the Best You**\\\nSo, my fellow travelers, as we gather here,\\\nLet us honor the mosaic of our yesteryears.\\\nEmbrace the tiny stitches, the cosmic leaps,\\\nFor within them lies the map to our soul’s keeps.\\\nCareer decisions—the compass of our flight,\\\nGuiding us toward the brightest starlight.\\\nLet’s set sail, charting our course anew,\\\nNavigating to the best version of me and you."
+    }
+  ]
+}

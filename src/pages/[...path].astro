@@ -1,0 +1,75 @@
+---
+/**
+ * Every page the site structure places (documentation/content/ia.md §3): its paths come from the route
+ * table, and each node renders with its template. The home hub stays on src/pages/index.astro until the
+ * landing moves into content; the classic pages keep their own routes until the IA replaces them.
+ */
+import ArticleLayout from '../site/layouts/ArticleLayout.astro';
+import IndexLayout from '../site/layouts/IndexLayout.astro';
+import Blocks from '../site/content/Blocks.astro';
+import { getArticle, getPerson, getRoute, getRoutes, getSite } from '../site/content/repository';
+import { picture } from '../site/content/pictures';
+import { readingMinutes } from '../site/content/reading';
+import { classicNav, classicSections, exploreAction } from '../site/classic';
+import { withBase } from '../site/design/meta';
+import type { ComponentProps } from 'astro/types';
+
+export function getStaticPaths() {
+  return getRoutes()
+    .filter((r) => !(r.node.kind === 'hub' && r.node.template === 'home'))
+    .map((r) => ({ params: { path: r.path.slice(1, -1) }, props: { path: r.path } }));
+}
+
+const route = getRoute(Astro.props.path)!;
+const site = getSite();
+const nav = classicNav(await classicSections());
+const action = exploreAction();
+const docTitle = `${route.title} — ${site.name}`;
+// the trail from the home page to the hub above (the IA shows it from the second level down)
+const crumbs = route.ancestors.length > 1 ? { trail: route.ancestors.map((c) => ({ label: c.label, href: withBase(c.path) })), current: route.title } : undefined;
+
+const node = route.node;
+const article = node.kind === 'item' && node.item.type === 'article' ? getArticle(node.item.id)! : undefined;
+
+let header: ComponentProps<typeof ArticleLayout>['header'] | undefined;
+if (article) {
+  const owner = getPerson(site.owner)!;
+  const hero = article.hero && (await picture(article.hero.media, 'wide'));
+  const avatar = owner.avatar ? await picture(owner.avatar, 'card') : undefined;
+  const parent = route.parent;
+  const parentCrumb = route.ancestors.at(-1);
+  header = {
+    title: article.title,
+    standfirst: article.summary,
+    topic: parent && parent.template !== 'home' && parentCrumb ? { label: parentCrumb.label, href: withBase(parentCrumb.path) } : undefined,
+    author: { name: owner.name, avatar: avatar?.thumb },
+    date: article.publishedAt,
+    readingTime: `${readingMinutes(article)} min read`,
+    picture: hero && { ...hero, caption: article.hero?.caption ?? hero.caption, credit: article.hero?.credit ?? hero.credit },
+  };
+}
+
+// a hub lists what it places, as story cards
+const stories =
+  node.kind === 'hub'
+    ? await Promise.all(
+        getRoutes()
+          .filter((r) => r.parent === node && r.node.kind === 'item' && r.node.item.type === 'article')
+          .map(async (r) => {
+            const a = getArticle((r.node as { item: { id: string } }).item.id)!;
+            const p = a.hero && (await picture(a.hero.media, 'card'));
+            return { href: withBase(r.path), title: a.title, dek: a.summary, meta: `${readingMinutes(a)} min read`, picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height } };
+          }),
+      )
+    : [];
+---
+
+{
+  article && header ? (
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} action={action} crumbs={crumbs} header={header}>
+      <Blocks blocks={article.body} />
+    </ArticleLayout>
+  ) : (
+    node.kind === 'hub' && <IndexLayout title={docTitle} description={node.summary} heading={node.title} standfirst={node.summary} nav={nav} action={action} crumbs={crumbs} stories={stories} />
+  )
+}

@@ -279,6 +279,9 @@
   --c-carousel-thumb-rest: 0.7;
   --c-carousel-peek-scale: 0.88;
   --c-carousel-peek-min: 2rem;
+  --c-video-play: 4.5rem;
+  --c-video-play-icon: 1.75rem;
+  --c-index-card-min: 18rem;
   --c-minimap-width: 3.25rem;
   --c-minimap-width-touch: 3.75rem;
   --c-minimap-inset: 1rem;

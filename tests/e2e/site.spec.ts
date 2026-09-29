@@ -663,3 +663,68 @@ test.describe('article minimap', () => {
   });
 });
 
+
+// ---------- content ----------
+test.describe('content', () => {
+  const ARTICLE = '/leadership/do-what-makes-you-proud/';
+
+  test('an article from content/: the site structure gives its path, its hub lists it, and its blocks render', async ({ page }) => {
+    await page.goto('/leadership/');
+    await expect(page.getByRole('heading', { level: 1, name: 'Leadership' })).toBeVisible();
+    await page.getByRole('link', { name: 'Do what makes you proud' }).first().click();
+    await expect(page).toHaveURL(new RegExp(`${ARTICLE}$`));
+
+    await expect(page).toHaveTitle('Do what makes you proud \u2014 Prabin Pebam');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Do what makes you proud');
+    const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' });
+    await expect(crumbs.getByRole('link')).toHaveText(['Home', 'Leadership']);
+    // the facts, as description pairs
+    await expect(page.locator('article dl dt')).toHaveText(['Project', 'Year', 'Team']);
+    await expect(page.locator('article dl dd')).toHaveText(['Team rebranding', '2024', '25 members']);
+    // every heading block, with its anchor; the pull quote; the poem's line breaks
+    await expect(page.locator('article h2')).toHaveCount(11);
+    await expect(page.locator('#be-better-than-yesterday')).toHaveText('\u201cBe better than yesterday.\u201d');
+    await expect(page.locator('article blockquote')).toContainText('Would I be proud to put my name behind this?');
+    expect(await page.locator('article p br').count()).toBeGreaterThanOrEqual(30);
+
+    // every picture in a figure has alt text and sizes to choose from (the byline's avatar is decorative)
+    const imgs = await page.locator('article figure img').evaluateAll((els) => (els as HTMLImageElement[]).map((i) => ({ alt: i.alt, srcset: i.srcset })));
+    expect(imgs.length).toBe(16);
+    expect(imgs.filter((i) => !i.alt || !/\b\d+w\b/.test(i.srcset))).toEqual([]);
+    const first = page.locator('[data-gallery] img').first();
+    await first.scrollIntoViewIfNeeded();
+    await expect.poll(() => first.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
+    await expect(page.locator('[data-gallery] img').first()).toHaveAttribute('data-fit', 'contain');
+    // the minimap lists the headings and the pictures
+    expect(await page.locator('nav[aria-label="Article outline"] button').count()).toBeGreaterThanOrEqual(15);
+  });
+
+  test('the video: our own poster and play button, its length, and the player only after Play', async ({ page }) => {
+    const remote: string[] = [];
+    await page.route(/youtube(-nocookie)?\.com|ytimg\.com/, (route) => {
+      remote.push(route.request().url());
+      return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>player</title>' });
+    });
+    await page.goto(ARTICLE);
+    const play = page.getByRole('link', { name: 'Play video: The team video (2 minutes 20 seconds)' });
+    await play.scrollIntoViewIfNeeded();
+    await expect(play.locator('img')).toHaveAttribute('srcset', /\d+w/);
+    await expect(page.locator('.video-embed .duration')).toHaveText('2:20');
+    expect(remote).toEqual([]);
+    await play.click();
+    const frame = page.locator('iframe.video-embed-frame');
+    await expect(frame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/vIVX-KVUWAE?autoplay=1');
+    await expect(frame).toHaveAttribute('title', 'The team video');
+    await expect.poll(() => remote.some((u) => u.includes('youtube-nocookie.com/embed/vIVX-KVUWAE'))).toBe(true);
+  });
+
+  test('the article and its hub pass axe in light and dark', async ({ page }) => {
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      for (const path of ['/leadership/', ARTICLE]) {
+        await page.goto(path);
+        await noSeriousViolations(page);
+      }
+    }
+  });
+});

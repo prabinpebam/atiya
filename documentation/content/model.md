@@ -294,14 +294,14 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | `text` | `markdown` | `Prose` |
 | `heading` | `level` (2 to 4), `text` | `Prose` heading, with an anchor id; it's also a minimap landmark |
 | `figure` | `media`, `caption?`, `credit?`, `width` (`content`, `popout`, `wide`, `full`), `lightbox?` | `Figure` |
-| `gallery` | `gallery` (a gallery ID) or `items` (media refs); `layout?`, `caption?`, `lightbox?` | `Gallery` |
+| `gallery` | `gallery` (a gallery ID) or `items` (media refs); `layout?`, `fit?` (`cover`, or `contain` for marks and artwork that mustn't be cropped), `caption?`, `width?`, `lightbox?` | `Gallery` |
 | `carousel` | `gallery` (a gallery ID) or `items` (`{ media, caption? }[]`); `label`, `peek?`, `pager?`, `arrows?` | `Carousel` |
-| `video` | `media` (a video asset) or `embed` (`{ provider: youtube or vimeo, id }`), `caption?`, `width?` | `VideoEmbed` |
+| `video` | `media` (a video asset) or `embed` (`{ provider: youtube or vimeo, id }`); `title` (the player's name); `poster` (an image media ID: the site's own thumbnail, shown until the reader presses Play); `duration?` (seconds, shown on the poster); `caption?`, `credit?`, `width?` | `VideoEmbed` |
 | `quote` | `text`, `cite?` (text or person), `variant` (`block`, `pull`) | `Quote` |
 | `divider` | none | `Divider` |
 | `collection` | `source` (a query: `type`, `filter`, `sort`, `limit`), `presentation` (`cards` or `list`), `heading?` | `StoryCard` grid or `ContentsList` |
 | `related` | `items` (item refs), `heading?` | `StoryCard` grid |
-| `facts` | `items` (`{ label, value }[]`) | New: a definition list (the case study's scan layer uses it too) |
+| `facts` | `items` (`{ label, value }[]`, one to six) | `Facts`: a fact box of label and value pairs (the case study's scan layer uses it too) |
 | `metrics` | `items` (`{ value, label, note? }[]`) | New: a metrics list |
 | `callout` | `tone` (`note`, `caution`), `markdown` | New |
 

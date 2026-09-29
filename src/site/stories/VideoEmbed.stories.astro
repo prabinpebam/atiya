@@ -20,7 +20,7 @@ const poster = sample('waterfall');
   />
 </Example>
 
-<Example title="A YouTube facade" layout="block" description="Only the local poster loads at first. The remote player is requested after Play video.">
+<Example title="A YouTube facade" layout="block" description="Only the local poster loads at first, with a large play button and the video's length on its corner. The remote player is requested after Play video, and starts playing.">
   <VideoEmbed
     kind="youtube"
     id="aqz-KE-bpKQ"
@@ -30,6 +30,7 @@ const poster = sample('waterfall');
     posterAlt={poster.alt}
     mediaWidth={poster.width}
     mediaHeight={poster.height}
+    duration={635}
     caption="A privacy-friendly facade for a remote video."
   />
 </Example>

@@ -3,7 +3,7 @@
  * A video with a caption: either a local file using the Video fundamental, or a privacy-friendly
  * YouTube/Vimeo facade that loads the remote player only after the reader presses play.
  * @tier compound
- * @a11y Embedded players start as a real link with a local poster and a "Play video" name.
+ * @a11y Embedded players start as a real link with a local poster and a "Play video" name that includes the length, when given.
  * @a11y The iframe is created only after activation and carries the video’s title.
  * @a11y Local files keep native controls, captions and no autoplay.
  * @key Enter / Space: plays an embedded video facade
@@ -48,6 +48,8 @@ interface Props {
   muted?: boolean;
   /** Repeats a local file when it reaches the end. */
   loop?: boolean;
+  /** An embedded video's length in seconds, shown on its poster. */
+  duration?: number;
 }
 
 const {
@@ -68,8 +70,16 @@ const {
   ratio = '16/9',
   muted = false,
   loop = false,
+  duration,
 } = Astro.props;
 const play = svgOf('play');
+// 140 → "2:20" on the poster, and "2 minutes 20 seconds" in the link's name
+const mins = duration ? Math.floor(duration / 60) : 0;
+const secs = duration ? duration % 60 : 0;
+const clock = duration ? `${mins}:${String(secs).padStart(2, '0')}` : undefined;
+const spoken = duration
+  ? [mins && `${mins} minute${mins === 1 ? '' : 's'}`, secs && `${secs} second${secs === 1 ? '' : 's'}`].filter(Boolean).join(' ')
+  : undefined;
 const pageHref = kind === 'youtube' ? `https://www.youtube.com/watch?v=${id ?? ''}` : kind === 'vimeo' ? `https://vimeo.com/${id ?? ''}` : src;
 const embedSrc =
   kind === 'youtube'
@@ -85,11 +95,16 @@ const embedSrc =
       src && <Video src={src} webm={webm} poster={poster} width={mediaWidth} height={mediaHeight} captions={captions} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} muted={muted} loop={loop} />
     ) : (
       <div class="embed-box" data-ratio={ratio}>
-        <a class="facade" href={pageHref} aria-label={`Play video: ${title}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
+        <a class="facade" href={pageHref} aria-label={`Play video: ${title}${spoken ? ` (${spoken})` : ''}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
           <Image src={poster} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} />
           <span class="play-mark" aria-hidden="true">
             <svg class="play-icon" viewBox={play.viewBox} focusable="false" data-icon={play.name}><Fragment set:html={play.body} /></svg>
           </span>
+          {clock && (
+            <span class="duration" aria-hidden="true">
+              {clock}
+            </span>
+          )}
         </a>
       </div>
     )
@@ -104,9 +119,15 @@ const embedSrc =
     margin: 0;
   }
 
+  /* rounded like the poster, so the placeholder never shows at its corners */
   .embed-box {
     position: relative;
+    border-radius: var(--c-image-radius-feature);
     background: var(--c-image-placeholder);
+  }
+
+  .video-embed[data-breakout='full'] .embed-box {
+    border-radius: var(--radius-none);
   }
 
   .embed-box[data-ratio='1/1'] {
@@ -171,8 +192,8 @@ const embedSrc =
     z-index: var(--layer-raised);
     display: grid;
     place-items: center;
-    width: var(--c-control-height-lg);
-    height: var(--c-control-height-lg);
+    width: var(--c-video-play);
+    height: var(--c-video-play);
     border-radius: var(--radius-round);
     background: var(--color-bg-raised);
     color: var(--color-text);
@@ -191,9 +212,25 @@ const embedSrc =
   }
 
   .play-icon {
-    width: var(--size-icon-lg);
-    height: var(--size-icon-lg);
-    margin-inline-start: var(--space-0-5);
+    width: var(--c-video-play-icon);
+    height: var(--c-video-play-icon);
+    margin-inline-start: var(--space-1);
+  }
+
+  /* the length, on the poster's corner: light text on the image shade, readable over any picture */
+  .duration {
+    position: absolute;
+    inset: auto var(--space-3) var(--space-3) auto;
+    z-index: var(--layer-raised);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-image-shade);
+    color: var(--color-on-image);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--leading-ui);
   }
 
   :global(.video-embed-frame) {

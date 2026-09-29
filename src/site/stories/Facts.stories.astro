@@ -1,0 +1,26 @@
+---
+import Example from '../library/Example.astro';
+import Facts from '../components/compounds/Facts.astro';
+---
+
+<Example title="A story's facts" description="The project, the year and the team, before the first paragraph.">
+  <Facts
+    items={[
+      { label: 'Project', value: 'Team rebranding' },
+      { label: 'Year', value: '2024' },
+      { label: 'Team', value: '25 members' },
+    ]}
+  />
+</Example>
+
+<Example title="More facts wrap" description="On a narrow column the pairs wrap onto a second row and keep their gaps.">
+  <Facts
+    items={[
+      { label: 'Project', value: 'This site' },
+      { label: 'Year', value: '2026' },
+      { label: 'Built with', value: 'Astro, React Three Fiber' },
+      { label: 'Hosting', value: 'GitHub Pages' },
+      { label: 'Docs', value: 'Slate' },
+    ]}
+  />
+</Example>

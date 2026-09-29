@@ -7,6 +7,7 @@ How the site moves from hardcoded content to data-driven content, in phases that
 > - **Phase 1: the IA.** The site structure becomes the information architecture (its routes at the root, templates, menus and rules); `/classic/` redirects; the planet structure is re-pointed at the new pages.
 > - **Phase 2: the first articles.** Three case studies, four practice areas, Leadership and About, with their media organised, plus the three new blocks they need.
 > - **Phase 3: API-ready.** The `api` adapter, a mock server, contract tests, OpenAPI, snapshots, webhook rebuilds and previews.
+> - **Built so far:** the first article, end to end, from the contract to the page (§8).
 > - **Decided:** O1 (the IA's routes at the root) and O2 (a navigation structure per channel, so the planet can diverge from the site). Still open before phase 1: O5 (the home page) and O7 (talks and side projects on the site) (§7).
 
 ## 1. Today's content, and where it goes
@@ -157,3 +158,34 @@ The migration is then a snapshot to compare, the `api` adapter pointed at the ba
 | O5 | **The home page.** The landing's planet-or-pages choice folded into the IA's home page, or kept as its own step before it | Folded in: the planet as the hero's action, remembering the last choice | Phase 1 |
 | O6 | **Notes.** In the first release or later | Later, as the IA advises, once there's a maintenance plan | Phase 2 |
 | O7 | **Talks and side projects on the site.** The planet has the Amphitheater (talks) and the Greenhouse (prototypes, galleries); the IA has no pages for them | Talks as articles under About until there are enough for a Talks hub; prototypes as case studies under Work (`engagementType: prototype-or-experiment`); a gallery the planet shows gets its own page under Work (V13); one only embedded in a body needs none | Phase 1 |
+
+## 8. As built
+
+**The first slice (29 September 2026): one article, end to end.** Phase 0's pipeline, built as far as the first article needs. The landing and the classic pages keep their own copy until the rest of phase 0.
+
+| Part | Where | What it does |
+|---|---|---|
+| Contract | [schema.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/content/schema.ts) | Zod schemas: the article, its blocks (text, heading, figure, gallery, carousel, video, quote, divider, facts), image media, a person, the site settings and the site structure (hub and item nodes). Unknown fields are errors |
+| Files adapter | [source.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/content/source.ts), [load.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/content/load.ts) | Reads `content/` through `import.meta.glob`, so the dev server reloads a page when its content changes. Validates everything and checks every reference, naming each problem by file and field |
+| Repository | [repository.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/content/repository.ts) | The only way pages read content: `getArticle`, `getRoute`, `canonicalPath` and the rest |
+| Routes | [routes.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/content/routes.ts), [\[...path\].astro](https://github.com/prabinpebam/atiya/blob/main/src/pages/%5B...path%5D.astro) | Paths from the site structure ([structures §3](ia.md#3-routes)); V12 and the reserved paths are enforced. The home hub is still `src/pages/index.astro` |
+| Media | [pictures.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/content/pictures.ts) | The `local` strategy: WebP at each slot's widths ([media §5](media.md#5-the-pipeline)), a full size for the lightbox and a thumbnail |
+| Blocks | [Blocks.astro](https://github.com/prabinpebam/atiya/blob/main/src/site/content/Blocks.astro), [markdown.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/content/markdown.ts) | One design-system component per block; the Markdown subset escapes everything else |
+| Design system | Facts (new); VideoEmbed, Gallery, IndexLayout | A fact box; the video's length on its poster and a larger play button; galleries that keep marks and artwork whole (`fit: contain`); an index's story cards |
+| Checks | [content.test.ts](https://github.com/prabinpebam/atiya/blob/main/tests/unit/content.test.ts); the E2E group "content" | The contract, the routes, the loader's checks and the real `content/`: media budgets, no unused media. The E2E group renders the article and its hub, plays the video facade and runs axe |
+
+**The first article.** [/leadership/do-what-makes-you-proud/](https://prabinpebam.github.io/atiya/leadership/do-what-makes-you-proud/), listed on its hub, [/leadership/](https://prabinpebam.github.io/atiya/leadership/).
+- **Content:** `content/articles/do-what-makes-you-proud.json`, placed by `content/structures/site.json` (home, then Leadership), with `content/site.json` and `content/people/prabin.json`.
+- **Media:** 16 WebP masters with sidecars in `content/media/articles/do-what-makes-you-proud/` (2.4 MB).
+- **Video:** on YouTube, unlisted, and shown as an embed. Its poster is a frame from the video, and only that poster loads until the reader presses Play.
+
+**Not yet, against the spec:**
+- **Menus:** the header still lists the classic sections. The site structure's menus come with phase 1, so Leadership isn't in the header yet.
+- **`content:check`:** it's the unit test for now, not its own script.
+- **Scope:** only image media so far; video files, documents, the gallery resource, `related` and `ref:` to other item types come with the content that needs them.
+
+**Adding an article:**
+1. **Media:** masters and their sidecars go in `content/media/articles/<id>/`: WebP or JPEG, at most 2560 px and 1.5 MB, with alt text in every sidecar.
+2. **The article:** write `content/articles/<id>.json` with the blocks in [model §6](model.md#6-blocks).
+3. **Its place:** give it a node under its hub in `content/structures/site.json`.
+4. **Check:** `npx vitest run tests/unit/content.test.ts` names any problem, by file and field.
