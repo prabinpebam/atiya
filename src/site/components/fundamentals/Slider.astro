@@ -172,9 +172,10 @@ const described = hint ? `${id}-hint` : undefined;
 </style>
 
 <script>
+  import { each } from '../../scripts/page';
   import { formatSliderValue, sliderFillPercent, type SliderFormat } from '../../scripts/controls';
 
-  document.querySelectorAll<HTMLElement>('[data-slider]').forEach((root) => {
+  each<HTMLElement>('[data-slider]', (root) => {
     if (root.dataset.ready) return;
     root.dataset.ready = '';
     const input = root.querySelector<HTMLInputElement>('[data-range]');

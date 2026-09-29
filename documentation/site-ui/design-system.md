@@ -39,7 +39,8 @@ The rules for the website's pages: the landing, the classic site and the design 
   - `listbox.ts`: the select's APG keys and typeahead;
   - `theme.ts`;
   - `media.ts`: wrapping, swipes, the nearest slide;
-  - `controls.ts`: the slider's values.
+  - `controls.ts`: the slider's values;
+  - `page.ts`: runs a component's script on every page, including pages swapped in without a reload (§4).
 - **Base styles** (`src/site/styles/base.css`) set element defaults only: the reset, type, links, the focus ring, selection, and `.sr-only`.
 - **Assets:** the font cuts in `src/site/assets/fonts/` (generated; §9).
 - **Helpers:** `src/site/design/meta.ts` (the base path and the theme colours), `samples.ts` (the library's sample media) and `typography.ts` (curly quotes).
@@ -71,7 +72,7 @@ The rules for the website's pages: the landing, the classic site and the design 
    - `@key Keys: action` lines if it takes keys.
 
    Every prop in `interface Props` has a JSDoc comment. Defaults go in the `Astro.props` destructuring, because the library reads them.
-2. **Styles and script.** Styles are scoped, in the file, from tokens only. A client `<script>` initialises every instance by a `data-*` hook and guards against a second init. Logic beyond wiring goes in `src/site/scripts/` with a unit test.
+2. **Styles and script.** Styles are scoped, in the file, from tokens only. A client `<script>` initialises every instance through `each('[data-…]', (el, signal) => …)` (`src/site/scripts/page.ts`), never a bare `querySelectorAll` loop: a bundled script runs once, but the library swaps pages in without a reload, and `each` sets up each new page's elements, once each. Pass `signal` to every listener on `window`, `document` or a media query, so a swapped-out instance stops listening. Logic beyond wiring goes in `src/site/scripts/` with a unit test.
 3. **The story.** Add `src/site/stories/<Name>.stories.astro` with one `<Example title="…" description="…">` per variant or state. What's inside each Example is what the library shows as code, so keep it clean. Use `withBase()` for root-relative links, real copy about the site (never lorem ipsum or invented personal facts), and `SAMPLES` or `SAMPLE_VIDEO` for media. A layout's story is a whole page: the library frames it at `/design/demo/<slug>/`.
 4. **Check it.** The library page appears by itself at `/design/<tier>/<kebab-name>/`. Run `npx vitest related <file> --run` and the "site design system" E2E group if it has behaviour.
 
@@ -100,6 +101,11 @@ The design library is the full, live version (examples, props, keys, tokens, use
 - **Examples:** each `<Example>` renders the real component, with a Light or Dark preview switch (it sets `color-scheme` on the canvas) and its source cut from the story file.
 - **Token pages** (`src/site/library/tokens/`) show tokens as what they are, read from the resolved model, and are the one place primitives are shown.
 - **Library-only helpers** (Example, CodeBlock, PropsTable, ViewportFrame, the token views) live in `src/site/library/`. They follow the token rules but aren't a tier: product code never imports them.
+- **Moving around without a reload.** Library pages change through Astro's client-side router (`PageShell`'s `router`, set by the LibraryLayout only), so you don't lose your place in the side navigation:
+  - The navigation is kept across pages (`transition:persist`), with its scroll and its fold. SideNav's `follow` marks the new page as current and brings its link into view only if it's out of sight.
+  - The chosen theme carries over to each swapped-in page. The new page's title is announced, and Back and Forward work.
+  - Links out of the library (the classic site, the layout demos) are ordinary page loads. Every other page ships no router.
+  - The E2E test "the library changes pages without a reload" holds this.
 
 ## 7. Accessibility
 

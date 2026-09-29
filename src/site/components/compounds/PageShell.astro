@@ -7,7 +7,9 @@
  * @a11y Sets the page's language and a skip link to #main, the first thing Tab reaches.
  * @a11y Applies the saved theme before paint, so there's no flash of the wrong mode.
  * @a11y Fetches the faces the first screen is set in first, so text doesn't re-wrap as fonts arrive (layout shift).
+ * @a11y With router, links within the section change the page without a reload; the new page's title is announced.
  */
+import { ClientRouter } from 'astro:transitions';
 import '../../styles/fonts.css';
 import '../../styles/site.css';
 import frauncesRoman from '../../assets/fonts/fraunces-roman.woff2?url';
@@ -33,6 +35,8 @@ interface Props {
   noindex?: boolean;
   /** The faces the page's first screen is set in, fetched before anything else (the rest load when used). */
   preload?: PreloadFace[];
+  /** Change pages without a reload (Astro's client-side router), so what the layout keeps across pages (a side nav) stays put. */
+  router?: boolean;
 }
 
 const {
@@ -42,6 +46,7 @@ const {
   imageAlt = 'A cozy tiny planet with a brick plaza, little buildings and a character, painted in soft colours.',
   noindex = false,
   preload = ['display', 'ui'],
+  router = false,
 } = Astro.props;
 // social previews need an absolute URL: `site` is set when deploying
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
@@ -68,12 +73,22 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
+    {router && <ClientRouter />}
     <script is:inline>
       // the saved theme, before the first paint (scripts/theme.ts owns the rules)
       try {
         var t = localStorage.getItem('site.theme');
         if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
       } catch (e) {}
+      // a page swapped in without a reload keeps the theme chosen on this one
+      if (!window.siteThemeSwap) {
+        window.siteThemeSwap = true;
+        document.addEventListener('astro:before-swap', function (e) {
+          var d = document.documentElement.dataset.theme;
+          if (d) e.newDocument.documentElement.dataset.theme = d;
+          else delete e.newDocument.documentElement.dataset.theme;
+        });
+      }
     </script>
   </head>
   <body>

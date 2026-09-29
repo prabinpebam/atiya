@@ -392,9 +392,10 @@ const chosenIcon = iconOf(chosen?.icon);
 </style>
 
 <script>
+  import { each } from '../../scripts/page';
   import { keyAction, matchIndex, TYPEAHEAD_MS } from '../../scripts/listbox';
 
-  function init(root: HTMLElement) {
+  function init(root: HTMLElement, signal: AbortSignal) {
     if (root.dataset.ready) return;
     root.dataset.ready = '';
     const combo = root.querySelector<HTMLElement>('[data-combo]')!;
@@ -515,7 +516,7 @@ const chosenIcon = iconOf(chosen?.icon);
     list.addEventListener('pointerdown', (e) => e.preventDefault());
     document.addEventListener('pointerdown', (e) => {
       if (open && !root.contains(e.target as Node)) setOpen(false);
-    });
+    }, { signal });
     // set from outside (the theme switch shows the saved theme): no change event if it's already chosen
     root.addEventListener('select-set', (e) => {
       const i = options.findIndex((o) => o.dataset.value === (e as CustomEvent<{ value: string }>).detail.value);
@@ -524,5 +525,5 @@ const chosenIcon = iconOf(chosen?.icon);
     root.dispatchEvent(new CustomEvent('select-ready', { bubbles: true }));
   }
 
-  document.querySelectorAll<HTMLElement>('[data-select]').forEach(init);
+  each<HTMLElement>('[data-select]', init);
 </script>

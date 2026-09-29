@@ -173,7 +173,8 @@ const curve = (v: number[]) => `M0 100 C ${v[0] * 100} ${100 - v[1] * 100}, ${v[
 </style>
 
 <script>
-  document.querySelectorAll<HTMLButtonElement>('[data-play-motion]').forEach((b) => {
+  import { each } from '../../scripts/page';
+  each<HTMLButtonElement>('[data-play-motion]', (b) => {
     const group = b.closest('section')?.querySelector<HTMLElement>('[data-motion-group]');
     b.addEventListener('click', () => {
       if (!group) return;

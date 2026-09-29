@@ -77,7 +77,8 @@ const sizes = [
 </style>
 
 <script>
-  document.querySelectorAll<HTMLElement>('[data-viewport]').forEach((vp) => {
+  import { each } from '../scripts/page';
+  each<HTMLElement>('[data-viewport]', (vp) => {
     const stage = vp.querySelector<HTMLElement>('[data-stage]')!;
     const frame = vp.querySelector<HTMLIFrameElement>('[data-frame]')!;
     const buttons = [...vp.querySelectorAll<HTMLButtonElement>('[data-size-width]')];

@@ -172,7 +172,8 @@ const described = hint ? `${id}-hint` : undefined;
 </style>
 
 <script>
-  document.querySelectorAll<HTMLElement>('[data-checkbox]').forEach((root) => {
+  import { each } from '../../scripts/page';
+  each<HTMLElement>('[data-checkbox]', (root) => {
     if (root.dataset.ready) return;
     root.dataset.ready = '';
     const input = root.querySelector<HTMLInputElement>('[data-control]');

@@ -316,6 +316,7 @@ const close = svgOf('close');
 </style>
 
 <script>
+  import { each } from '../../scripts/page';
   import { THEMES, applyTheme, readTheme, type Theme } from '../../scripts/theme';
   import { tuck } from '../../scripts/header';
 
@@ -330,7 +331,7 @@ const close = svgOf('close');
   // where the header tucks away as you scroll: phones, upright or on their side
   const small = matchMedia('(max-width: 56rem), (max-height: 30rem)');
 
-  document.querySelectorAll<HTMLElement>('[data-site-header]').forEach((header) => {
+  each<HTMLElement>('[data-site-header]', (header, signal) => {
     const sw = header.querySelector<HTMLElement>('[data-theme-switch]');
     if (sw) {
       const show = () => sw.dispatchEvent(new CustomEvent('select-set', { detail: { value: readTheme(store) } }));
@@ -370,9 +371,9 @@ const close = svgOf('close');
       // a tap anywhere else closes it
       document.addEventListener('pointerdown', (e) => {
         if (isOpen() && !header.contains(e.target as Node)) setOpen(false);
-      });
+        }, { signal });
       // back to the wide layout: nothing stays open behind it
-      matchMedia('(min-width: 56rem)').addEventListener('change', (m) => m.matches && setOpen(false));
+      matchMedia('(min-width: 56rem)').addEventListener('change', (m) => m.matches && setOpen(false), { signal });
     }
 
     // tuck the header away while reading down on a phone; bring it back on the way up
@@ -393,14 +394,14 @@ const close = svgOf('close');
         queued = true;
         requestAnimationFrame(update);
       },
-      { passive: true },
+      { passive: true, signal },
     );
     header.addEventListener('focusin', () => header.removeAttribute('data-tucked'));
-    small.addEventListener('change', update);
+    small.addEventListener('change', update, { signal });
   });
 
   // a way into the planet or the classic site remembers which the visitor chose (the landing reads it)
-  document.querySelectorAll<HTMLAnchorElement>('[data-site-header] a[data-site-mode]').forEach((a) =>
+  each<HTMLAnchorElement>('[data-site-header] a[data-site-mode]', (a) =>
     a.addEventListener('click', () => {
       try {
         localStorage.setItem('site.mode', a.dataset.siteMode!);

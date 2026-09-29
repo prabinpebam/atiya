@@ -229,9 +229,10 @@ const total = items.length;
 </style>
 
 <script>
+  import { each } from '../../scripts/page';
   import { clampIndex, counter, nearest } from '../../scripts/media';
 
-  document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((root) => {
+  each<HTMLElement>('[data-carousel]', (root, signal) => {
     if (root.dataset.ready !== undefined) return;
     root.dataset.ready = '';
 
@@ -281,7 +282,7 @@ const total = items.length;
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => update(nearest(track.scrollLeft, offsets())));
     });
-    window.addEventListener('resize', () => update(nearest(track.scrollLeft, offsets())));
+    window.addEventListener('resize', () => update(nearest(track.scrollLeft, offsets())), { signal });
     update(0);
   });
 </script>

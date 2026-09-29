@@ -50,7 +50,8 @@ const { code, label } = Astro.props;
 </style>
 
 <script>
-  document.querySelectorAll<HTMLElement>('[data-code-block]').forEach((block) => {
+  import { each } from '../scripts/page';
+  each<HTMLElement>('[data-code-block]', (block) => {
     const btn = block.querySelector<HTMLButtonElement>('[data-copy]');
     const status = block.querySelector<HTMLElement>('[data-copy-status]');
     btn?.addEventListener('click', async () => {

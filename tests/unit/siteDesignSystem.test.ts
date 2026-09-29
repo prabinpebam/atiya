@@ -307,6 +307,17 @@ describe('CSS reads tokens, never raw values', () => {
     const pages = [join(ROOT, 'src/pages/index.astro'), ...walk(join(ROOT, 'src/pages/classic'), /\.astro$/)];
     expect(pages.filter((f) => /<style/.test(read(f))).map(rel)).toEqual([]);
   });
+
+  it('client scripts set up every page through scripts/page.ts (the library swaps pages in without a reload)', () => {
+    const scripts = walk(join(ROOT, 'src/site'), /\.astro$/)
+      .map((f) => [f, [...read(f).matchAll(/<script(?![^>]*is:inline)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n')] as const)
+      .filter(([, s]) => s.trim().length > 0);
+    expect(scripts.length).toBeGreaterThanOrEqual(12);
+    const bad = scripts
+      .filter(([, s]) => !/from '(\.\.\/)+scripts\/page'/.test(s) || /^\s{0,2}document\.querySelectorAll/m.test(s))
+      .map(([f]) => rel(f));
+    expect(bad).toEqual([]);
+  });
 });
 
 // ---------- tiers ----------

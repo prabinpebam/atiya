@@ -6,21 +6,24 @@
  * @tier compound
  * @a11y A labelled navigation landmark; each group is a list under its own heading; the current page is aria-current.
  * @a11y On narrow screens a native disclosure (details) shows and hides it: nothing to learn.
+ * @a11y With follow, the current page moves with the address when the page changes without a reload.
  */
 interface Props {
   /** The navigation's accessible name. */
   label: string;
   /** Named groups of links; mark the current page with current. */
   groups: { title: string; items: { label: string; href: string; current?: boolean; note?: string }[] }[];
+  /** Mark the current page from the address after each page change: for a nav kept across pages that change without a reload. */
+  follow?: boolean;
 }
 
-const { label, groups } = Astro.props;
+const { label, groups, follow = false } = Astro.props;
 const current = groups.flatMap((g) => g.items).find((i) => i.current);
 const uid = Math.random().toString(36).slice(2, 8);
 ---
 
 <nav class="side-nav" aria-label={label}>
-  <details class="fold" open data-side-nav>
+  <details class="fold" open data-side-nav data-follow={follow ? '' : undefined}>
     <summary class="toggle">
       <span class="toggle-label">{current ? current.label : label}</span>
     </summary>
@@ -35,7 +38,7 @@ const uid = Math.random().toString(36).slice(2, 8);
               {g.items.map((i) => (
                 <li>
                   <a href={i.href} aria-current={i.current ? 'page' : undefined}>
-                    <span>{i.label}</span>
+                    <span data-label>{i.label}</span>
                     {i.note && <span class="note">{i.note}</span>}
                   </a>
                 </li>
@@ -156,9 +159,49 @@ const uid = Math.random().toString(36).slice(2, 8);
 </style>
 
 <script>
-  // open on wide screens (a sidebar), folded on narrow ones until asked for
+  import { onEveryPage } from '../../scripts/page';
+
   const wide = matchMedia('(min-width: 56rem)');
+  const path = (p: string) => p.replace(/\/+$/, '');
+
+  // open on wide screens (a sidebar), folded on narrow ones until asked for (and again after a pick)
   const sync = () => document.querySelectorAll<HTMLDetailsElement>('[data-side-nav]').forEach((d) => (d.open = wide.matches));
-  sync();
   wide.addEventListener('change', sync);
+
+  // a nav kept across pages marks the page it's now on, and keeps it in view within its own scroll
+  const follow = () =>
+    document.querySelectorAll<HTMLElement>('[data-side-nav][data-follow]').forEach((fold) => {
+      let now: HTMLAnchorElement | null = null;
+      fold.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
+        const here = path(a.pathname) === path(location.pathname);
+        if (here) {
+          a.setAttribute('aria-current', 'page');
+          now = a;
+        } else a.removeAttribute('aria-current');
+      });
+      const link = now as HTMLAnchorElement | null;
+      if (!link) return;
+      const label = fold.querySelector('.toggle-label');
+      if (label) label.textContent = link.querySelector('[data-label]')?.textContent ?? '';
+      const scroll = fold.querySelector<HTMLElement>('.scroll');
+      if (!scroll || !wide.matches) return;
+      const s = scroll.getBoundingClientRect();
+      const r = link.getBoundingClientRect();
+      if (r.top < s.top) scroll.scrollTop -= s.top - r.top;
+      else if (r.bottom > s.bottom) scroll.scrollTop += r.bottom - s.bottom;
+    });
+
+  onEveryPage(() => {
+    sync();
+    follow();
+  });
+
+  // moving the kept nav into the new page resets its scroll: carry it over
+  const kept = new Map<HTMLElement, number>();
+  const followed = () => document.querySelectorAll<HTMLElement>('[data-side-nav][data-follow] .scroll');
+  document.addEventListener('astro:before-swap', () => followed().forEach((s) => kept.set(s, s.scrollTop)));
+  document.addEventListener('astro:after-swap', () => {
+    kept.forEach((y, s) => (s.scrollTop = y));
+    kept.clear();
+  });
 </script>

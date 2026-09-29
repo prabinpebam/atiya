@@ -211,7 +211,8 @@ const embedSrc =
 </style>
 
 <script>
-  document.querySelectorAll<HTMLAnchorElement>('[data-video-embed]').forEach((facade) => {
+  import { each } from '../../scripts/page';
+  each<HTMLAnchorElement>('[data-video-embed]', (facade) => {
     if (facade.dataset.ready !== undefined) return;
     facade.dataset.ready = '';
     facade.addEventListener('click', (event) => {

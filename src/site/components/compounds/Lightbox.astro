@@ -231,6 +231,7 @@ const { id = 'site-lightbox' } = Astro.props;
 </style>
 
 <script>
+  import { each } from '../../scripts/page';
   import { counter, swipe, wrap } from '../../scripts/media';
 
   interface LightboxItem {
@@ -252,7 +253,7 @@ const { id = 'site-lightbox' } = Astro.props;
     };
   };
 
-  document.querySelectorAll<HTMLDialogElement>('[data-lightbox-dialog]').forEach((dialog) => {
+  each<HTMLDialogElement>('[data-lightbox-dialog]', (dialog, signal) => {
     if (dialog.dataset.ready !== undefined) return;
     dialog.dataset.ready = '';
 
@@ -340,7 +341,7 @@ const { id = 'site-lightbox' } = Astro.props;
       if (!dialog.open) dialog.showModal();
       render(index, true);
       close.focus();
-    });
+    }, { signal });
 
     close.addEventListener('click', () => dialog.close());
     prev.addEventListener('click', () => render(index - 1));

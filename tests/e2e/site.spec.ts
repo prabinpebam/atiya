@@ -174,6 +174,48 @@ test.describe('site design system', () => {
       }
     }
   });
+
+  test('the library changes pages without a reload: the side nav keeps its scroll and the theme, and the new page works', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => localStorage.setItem('site.theme', 'dark'));
+    await page.goto('/design/fundamentals/button/');
+    await page.evaluate(() => ((window as unknown as { kept: number }).kept = 1));
+    const nav = page.locator('nav[aria-label="Design library"]');
+    const scroll = nav.locator('.scroll');
+    // scroll the nav until Select is part-way down it
+    const top = await scroll.evaluate((el) => {
+      const a = [...el.querySelectorAll('a')].find((x) => x.textContent?.trim() === 'Select')!;
+      el.scrollTop += a.getBoundingClientRect().top - el.getBoundingClientRect().top - 200;
+      return el.scrollTop;
+    });
+    expect(top).toBeGreaterThan(0);
+
+    await nav.getByRole('link', { name: 'Select', exact: true }).click();
+    await expect(page).toHaveURL(/\/design\/fundamentals\/select\/$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Select');
+    expect(await page.evaluate(() => (window as unknown as { kept?: number }).kept)).toBe(1);
+    expect(Math.abs((await scroll.evaluate((el) => el.scrollTop)) - top)).toBeLessThanOrEqual(1);
+    await expect(nav.getByRole('link', { name: 'Select', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(nav.getByRole('link', { name: 'Button', exact: true })).not.toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+    // the swapped-in page's scripts are set up: a select opens
+    const combo = page.getByRole('main').getByRole('combobox').first();
+    await combo.click();
+    await expect(combo).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Escape');
+
+    // back works without a reload too
+    await page.goBack();
+    await expect(page).toHaveURL(/\/design\/fundamentals\/button\/$/);
+    await expect(nav.getByRole('link', { name: 'Button', exact: true })).toHaveAttribute('aria-current', 'page');
+    expect(await page.evaluate(() => (window as unknown as { kept?: number }).kept)).toBe(1);
+
+    // leaving the library is an ordinary page load
+    await page.getByRole('banner').getByRole('link', { name: 'Classic site' }).first().click();
+    await expect(page).toHaveURL(/\/classic\/$/);
+    expect(await page.evaluate(() => (window as unknown as { kept?: number }).kept)).toBeUndefined();
+  });
 });
 
 /** The classic site on a phone (documentation/site-ui/mobile-audit.md). */

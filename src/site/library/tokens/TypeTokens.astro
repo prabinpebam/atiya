@@ -271,7 +271,8 @@ const tables = ['leading', 'tracking', 'weight', 'axes'].map((g) => ({ g, list: 
 </style>
 
 <script>
-  document.querySelectorAll<HTMLElement>('[data-type-play]').forEach((play) => {
+  import { each } from '../../scripts/page';
+  each<HTMLElement>('[data-type-play]', (play) => {
     const sample = play.querySelector<HTMLElement>('[data-play-sample]')!;
     const read = () => {
       const axes: Record<string, string> = {};

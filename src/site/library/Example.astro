@@ -122,7 +122,8 @@ const id = `example-${slugOf(title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
 </style>
 
 <script>
-  document.querySelectorAll<HTMLElement>('.example').forEach((ex) => {
+  import { each } from '../scripts/page';
+  each<HTMLElement>('.example', (ex) => {
     const canvas = ex.querySelector<HTMLElement>('[data-canvas]');
     const buttons = [...ex.querySelectorAll<HTMLButtonElement>('[data-preview-mode]')];
     buttons.forEach((b) =>
