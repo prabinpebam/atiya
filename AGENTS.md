@@ -101,7 +101,7 @@ The rules are in [documentation/game-ui/design-system.md](./documentation/game-u
 The site's content, IA and navigation are data (spec: [documentation/content/spec.md](./documentation/content/spec.md); plan and Definition of Done: [plan.md](./documentation/content/plan.md)). Until the platform's phase 0 lands, today's pages still hold some copy; don't add more.
 - Editorial copy, menu items, content URLs and media paths never go in `src/pages/`, `src/layouts/` or `src/site/`. They go in `content/` (the mock API, shaped exactly like the `/v1` responses) and reach pages only through the repository (`src/site/content/repository.ts`). Interface strings stay in code.
 - Content media lives in `content/media/<owner>/<id>/` as a master plus a JSON sidecar (alt, credit, licence, focus). Generated sizes are never committed; code-owned assets (the planet's, the design library's samples) stay in `public/`.
-- IDs never change; a renamed published slug needs a redirect (the routes lock enforces it). The planet's places target IA pages; they never define a second taxonomy.
+- IDs never change; a renamed published slug needs a redirect (the routes lock enforces it). Content items never name a channel: the site and the planet each map them through their own structure (`structures/site`, `structures/planet`). Every published item has one canonical page on the site, and everything the planet shows has one (V12, V13).
 
 ### Documentation site (the source of truth)
 
@@ -115,6 +115,7 @@ The site's content, IA and navigation are data (spec: [documentation/content/spe
 - Slate's rules apply: no emoji, no inline styles or scripts in pages, no invented facts, and no meta-documentation (reviews update the pages they review).
 - **Links must stay inside `documentation/`**, because files outside it aren't published. Link to code and repository files with a GitHub URL (`https://github.com/prabinpebam/atiya/blob/main/<path>`).
 - Never edit `documentation/shell/`: it's generated. After a Slate update, run `node slate/scripts/runtime-host.mjs sync --repo . --host documentation`, then `check`.
+- The content docs' figures (`<figure data-diagram="…">`) are generated from `assets-src/docs-diagrams/` by `node scripts/build-doc-diagrams.mjs` (`--check` finds stale ones); edit the source, never the inline SVG.
 - There's no `package-lock.json` in `slate/`, because of the package-feed policy.
 
 ### Commands

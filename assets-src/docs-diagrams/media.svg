@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420">
+<title>The media pipeline</title>
+<desc>A master file and its JSON sidecar are committed under content/media. The content check validates alt text, credit and budgets. At build, images go through Astro's image pipeline to WebP sizes from 480 to 2560 pixels; video, captions and PDFs are copied as they are. Both go to dist/ and are published on GitHub Pages. Later, the backend's media service can provide the masters and the sizes instead.</desc>
+<g id="master">
+<rect class="src" x="40" y="60" width="220" height="96" rx="14" />
+<text class="name" x="58" y="90">Master + sidecar</text>
+<text class="code" x="58" y="114">content/media/…/</text>
+<text class="code" x="58" y="136">cover.jpg + cover.json</text>
+</g>
+<g id="check">
+<rect class="gate" x="300" y="72" width="200" height="72" rx="14" />
+<text class="name" x="318" y="102">content:check</text>
+<text class="note" x="318" y="126">alt, credit, budgets</text>
+</g>
+<g id="images">
+<rect class="box" x="540" y="30" width="200" height="96" rx="14" />
+<text class="name" x="558" y="60">Images</text>
+<text class="note" x="558" y="84">astro:assets → WebP</text>
+<text class="note" x="558" y="106">480 to 2560 px</text>
+</g>
+<g id="files">
+<rect class="box" x="540" y="162" width="200" height="72" rx="14" />
+<text class="name" x="558" y="192">Video, captions, PDF</text>
+<text class="note" x="558" y="216">copied as they are</text>
+</g>
+<g id="output">
+<rect class="out" x="780" y="96" width="180" height="72" rx="14" />
+<text class="out-name" x="798" y="126">dist/</text>
+<text class="out-note" x="798" y="150">GitHub Pages</text>
+</g>
+<g id="backend">
+<rect class="later" x="40" y="296" width="220" height="72" rx="14" />
+<text class="name" x="58" y="326">Backend media</text>
+<text class="note" x="58" y="350">later: remote or cdn</text>
+</g>
+<path class="arrow" d="M260 108 H297" />
+<path class="arrow" d="M500 108 H518 V78 H537" />
+<path class="arrow" d="M500 108 H518 V198 H537" />
+<path class="arrow" d="M740 78 H758 V124 H777" />
+<path class="arrow" d="M740 198 H758 V140 H777" />
+<path class="dashed" d="M150 296 V159" />
+</svg>

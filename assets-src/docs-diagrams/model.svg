@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 540">
+<title>Content items and the structures that place them</title>
+<desc>Content items (articles, case studies, practice areas, leadership topics, galleries and the résumé) never refer to a channel. The site structure places each item once, which gives it its canonical page; the planet structure shows items in its own way and links each place to a page of the site. Redirects point old paths at the site structure. Items refer to people, vocabulary terms and media by ID; the site settings name the owner and the social card.</desc>
+<g id="redirects">
+<rect class="box" x="100" y="40" width="220" height="64" rx="14" />
+<text class="name" x="118" y="68">Redirects</text>
+<text class="note" x="118" y="90">old path → site</text>
+</g>
+<g id="site-structure">
+<rect class="box" x="390" y="40" width="220" height="64" rx="14" />
+<text class="name" x="408" y="68">Site structure</text>
+<text class="note" x="408" y="90">page tree · menus · URLs</text>
+</g>
+<g id="planet-structure">
+<rect class="box" x="680" y="40" width="220" height="64" rx="14" />
+<text class="name" x="698" y="68">Planet structure</text>
+<text class="note" x="698" y="90">places · entries</text>
+</g>
+<text class="label" x="620" y="62">full page</text>
+<g id="items">
+<rect class="docs" x="40" y="160" width="920" height="220" rx="20" />
+<text class="name" x="64" y="194">Content items</text>
+<text class="note" x="64" y="218">No parent, order or URL: they never know where they're shown</text>
+<rect class="chip" x="64" y="236" width="272" height="48" rx="12" />
+<text class="chip-name" x="82" y="266">Article</text>
+<rect class="chip" x="364" y="236" width="272" height="48" rx="12" />
+<text class="chip-name" x="382" y="266">Case study</text>
+<rect class="chip" x="664" y="236" width="272" height="48" rx="12" />
+<text class="chip-name" x="682" y="266">Practice area</text>
+<rect class="chip" x="64" y="300" width="272" height="48" rx="12" />
+<text class="chip-name" x="82" y="330">Leadership topic</text>
+<rect class="chip" x="364" y="300" width="272" height="48" rx="12" />
+<text class="chip-name" x="382" y="330">Gallery</text>
+<rect class="chip" x="664" y="300" width="272" height="48" rx="12" />
+<text class="chip-name" x="682" y="330">Résumé</text>
+</g>
+<text class="label" x="510" y="136">places once</text>
+<text class="label" x="800" y="136">shows</text>
+<g id="people">
+<rect class="box" x="40" y="440" width="200" height="64" rx="14" />
+<text class="name" x="58" y="468">People</text>
+<text class="note" x="58" y="490">owner, collaborators</text>
+</g>
+<g id="vocabularies">
+<rect class="box" x="280" y="440" width="200" height="64" rx="14" />
+<text class="name" x="298" y="468">Vocabularies</text>
+<text class="note" x="298" y="490">contributions, topics…</text>
+</g>
+<g id="media">
+<rect class="box" x="520" y="440" width="200" height="64" rx="14" />
+<text class="name" x="538" y="468">Media</text>
+<text class="note" x="538" y="490">master + sidecar</text>
+</g>
+<g id="settings">
+<rect class="box" x="760" y="440" width="200" height="64" rx="14" />
+<text class="name" x="778" y="468">Site settings</text>
+<text class="note" x="778" y="490">owner, social card</text>
+</g>
+<text class="label" x="150" y="414">by ID</text>
+<text class="label" x="390" y="414">by ID</text>
+<text class="label" x="630" y="414">by ID</text>
+<path class="arrow" d="M320 72 H387" />
+<path class="arrow" d="M680 72 H613" />
+<path class="arrow" d="M500 104 V157" />
+<path class="arrow" d="M790 104 V157" />
+<path class="arrow" d="M140 380 V437" />
+<path class="arrow" d="M380 380 V437" />
+<path class="arrow" d="M620 380 V437" />
+<path class="arrow" d="M760 472 H723" />
+</svg>

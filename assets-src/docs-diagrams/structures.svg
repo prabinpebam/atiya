@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 450">
+<title>The same content items, two structures</title>
+<desc>In the middle, the content items: case studies, practice areas, leadership topics, articles, galleries and the résumé. On the left, the site structure places each once in the IA's page tree (Home, Work, Expertise, Leadership, About, Contact and Résumé), which gives each its canonical page. On the right, the planet structure shows the same items in its own places (Workshop, Town Hall, Lighthouse, Library, Amphitheater, Greenhouse and Post Office), arranged its own way, and links each place to a page of the site for the full page.</desc>
+<g id="site">
+<rect class="box" x="40" y="40" width="240" height="320" rx="16" />
+<text class="name" x="60" y="72">Site structure</text>
+<text class="note" x="60" y="94">the IA's page tree</text>
+<text class="line" x="60" y="132">Home</text>
+<text class="line" x="60" y="162">Work</text>
+<text class="line" x="60" y="192">Expertise</text>
+<text class="line" x="60" y="222">Leadership</text>
+<text class="line" x="60" y="252">About</text>
+<text class="line" x="60" y="282">Contact</text>
+<text class="line" x="60" y="312">Résumé</text>
+</g>
+<g id="items">
+<rect class="docs" x="380" y="40" width="240" height="320" rx="16" />
+<text class="name" x="400" y="72">Content items</text>
+<text class="note" x="400" y="94">channel-agnostic</text>
+<rect class="chip" x="400" y="112" width="200" height="30" rx="8" />
+<text class="line" x="414" y="132">Case studies</text>
+<rect class="chip" x="400" y="150" width="200" height="30" rx="8" />
+<text class="line" x="414" y="170">Practice areas</text>
+<rect class="chip" x="400" y="188" width="200" height="30" rx="8" />
+<text class="line" x="414" y="208">Leadership topics</text>
+<rect class="chip" x="400" y="226" width="200" height="30" rx="8" />
+<text class="line" x="414" y="246">Articles</text>
+<rect class="chip" x="400" y="264" width="200" height="30" rx="8" />
+<text class="line" x="414" y="284">Galleries</text>
+<rect class="chip" x="400" y="302" width="200" height="30" rx="8" />
+<text class="line" x="414" y="322">Résumé</text>
+</g>
+<g id="planet">
+<rect class="box" x="720" y="40" width="240" height="320" rx="16" />
+<text class="name" x="740" y="72">Planet structure</text>
+<text class="note" x="740" y="94">its own places</text>
+<text class="line" x="740" y="132">Workshop</text>
+<text class="line" x="740" y="162">Town Hall</text>
+<text class="line" x="740" y="192">Lighthouse</text>
+<text class="line" x="740" y="222">Library</text>
+<text class="line" x="740" y="252">Amphitheater</text>
+<text class="line" x="740" y="282">Greenhouse</text>
+<text class="line" x="740" y="312">Post Office</text>
+</g>
+<text class="label" x="300" y="184">canonical</text>
+<text class="label" x="646" y="184">shows</text>
+<text class="label" x="444" y="416">full page</text>
+<path class="arrow" d="M280 200 H377" />
+<path class="arrow" d="M720 200 H623" />
+<path class="arrow" d="M840 360 V398 H160 V363" />
+</svg>

@@ -7,12 +7,16 @@ How the site's content, information architecture (IA) and navigation become data
 > - **One contract, two sources.** A single set of schemas (Zod, exported as JSON Schema) describes every resource. Two source adapters return it: `files` reads the mock JSON in `content/`, and `api` calls the backend. The mock files have exactly the shape of the API's responses, so switching is one environment variable.
 > - **Built at build time.** The site stays static on GitHub Pages. A publish in the backend triggers a rebuild through a webhook.
 > - **Media by reference.** Content names a media asset by its ID. The asset's master file and its metadata (alt text, credit, focus point) live side by side under `content/media/`, and the build generates the sizes the page needs.
-> - **The IA is data too.** Routes, menus, breadcrumbs and the planet's places are all derived from the content. They implement the [information architecture](../ia-navigation/README.md) already specified, rather than restating it.
+> - **Items and structures.** Articles, case studies, galleries and the résumé are channel-agnostic content items. Each channel has its own **structure** mapping them into its navigation:
+>   - the site's page tree, menus and URLs, implementing the [information architecture](../ia-navigation/README.md);
+>   - the planet's places.
+>
+>   The two can diverge, and one rule joins them: everything the planet shows has a canonical page on the site.
 
-<figure class="slate-figure">
+<figure class="slate-figure" data-diagram="architecture">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 550" role="img" aria-labelledby="cp-arch__title cp-arch__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="cp-arch__title">How content reaches the page</title>
-<desc id="cp-arch__desc">Two sources, the mock JSON files in content/ today and the backend API at /v1 later, feed one source adapter chosen by CONTENT_SOURCE. The adapter's output is validated against the contract (schemas and integrity checks), stored by Astro's content layer, queried through the repository, mapped to view models, rendered by the layouts of the design system and published as static pages on GitHub Pages. The planet on /play reads its places from the same repository. A publish in the backend triggers a rebuild through a webhook.</desc>
+<desc id="cp-arch__desc">Two sources, the mock JSON files in content/ today and the backend API at /v1 later, feed one source adapter chosen by CONTENT_SOURCE. The adapter's output is validated against the contract (schemas and integrity checks), stored by Astro's content layer, queried through the repository, mapped to view models, rendered by the layouts of the design system and published as static pages on GitHub Pages. The planet on /play reads its own structure from the same repository. A publish in the backend triggers a rebuild through a webhook.</desc>
 <g id="cp-arch__source-files" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="cp-arch__body-1" x="40" y="40" width="200" height="72" rx="14" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <text x="58" y="70" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-arch__body-1" data-slate-fit-padding="16">Mock JSON files</text>
@@ -23,7 +27,7 @@ How the site's content, information architecture (IA) and navigation become data
 <text x="58" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-arch__body-2" data-slate-fit-padding="16">Backend API</text>
 <text x="58" y="186" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-arch__body-2" data-slate-fit-padding="16">/v1 · later</text>
 </g>
-<text x="40" y="232" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13">publish → webhook → rebuild</text>
+<text x="40" y="232" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">publish → webhook → rebuild</text>
 <g id="cp-arch__adapter" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
 <rect id="cp-arch__body-3" x="280" y="86" width="200" height="72" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
 <text x="298" y="116" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-arch__body-3" data-slate-fit-padding="16">Source adapter</text>
@@ -62,7 +66,7 @@ How the site's content, information architecture (IA) and navigation become data
 <g id="cp-arch__planet" data-slate-svg-step="10" data-slate-svg-effect="fade-rise">
 <rect id="cp-arch__body-10" x="760" y="436" width="200" height="72" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
 <text x="778" y="466" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-arch__body-10" data-slate-fit-padding="16">The planet</text>
-<text x="778" y="490" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-arch__body-10" data-slate-fit-padding="16">/play reads places</text>
+<text x="778" y="490" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-arch__body-10" data-slate-fit-padding="16">its own structure</text>
 </g>
 <g id="cp-arch__flow-1" data-slate-svg-step="11" data-slate-svg-effect="draw">
 <path d="M240 76 L258 76 L258 114 L270 114" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
@@ -101,7 +105,7 @@ How the site's content, information architecture (IA) and navigation become data
 <polygon points="860,435 865,426 855,426" fill="var(--color-neutral-fg-2)" />
 </g>
 </svg>
-<figcaption>How content reaches the page: a content source (the mock files today, the backend API later) is read by one adapter, validated against the contract, cached by Astro's content layer, queried through the repository, mapped to view models and rendered by the layouts into static pages. The planet reads the same repository.</figcaption>
+<figcaption>How content reaches the page: a content source (the mock files today, the backend API later) is read by one adapter, validated against the contract, cached by Astro's content layer, queried through the repository, mapped to view models and rendered by the layouts into static pages. The planet reads its own structure from the same repository.</figcaption>
 </figure>
 
 <details class="slate-figure-data">
@@ -125,7 +129,7 @@ How the site's content, information architecture (IA) and navigation become data
 **Goals**
 
 - **G1: a clean frontend.** The site is a renderer: it knows templates, blocks and components, not what the portfolio says.
-- **G2: a data-driven IA.** Pages, their URLs, the menus, breadcrumbs, related links and the planet's places come from content.
+- **G2: data-driven navigation, per channel.** Pages, their URLs, the menus, breadcrumbs and related links (the site), and the places and what they show (the planet), come from each channel's structure. The same content can be arranged differently in each.
 - **G3: swap without rewrites.** Moving from mock files to a backend changes one adapter and some configuration. No page, layout, component or test fixture changes.
 - **G4: safe by construction.** Content is validated at the boundary. A broken reference, a missing alt text or an unpublishable case study fails the build, never the reader.
 - **G5: organised media in the repository.** Every image and video a page uses lives in a predictable folder next to its metadata, with budgets that keep the repository healthy.
@@ -143,12 +147,13 @@ How the site's content, information architecture (IA) and navigation become data
 | Data (in the content source) | Code (in the repository's `src/`) |
 |---|---|
 | Editorial copy: titles, summaries, bodies, captions, quotes | Interface strings: button names, `aria-label`s, error messages, "Skip to content" |
-| The IA: which pages exist, their URLs, their parents and order | Templates: how each type of page is laid out (layouts) |
-| Menus: primary, actions, footer, local navigation | The rules that apply them (current location, breadcrumbs) |
+| Content items: articles, case studies, practice areas, leadership topics, galleries, the résumé | Templates: how each type of page is laid out (layouts) |
+| The site structure: the page tree (and so the URLs), hubs and their sections | The route renderer and the templates it picks |
+| Menus: primary, actions, footer | The rules that apply them (current location, breadcrumbs, local navigation) |
 | Taxonomies: practice areas, contributions, outcome types, topics | The vocabularies' constraints (limits, required fields), as schema |
 | SEO fields, social cards, redirects | The sitemap and feed generators |
 | Media assets and their metadata (alt, caption, credit, licence, focus) | The image pipeline (sizes, formats) |
-| The planet's places: which landmark leads to which page, and its words | The planet's world: geometry, models and rules (`src/game/`) |
+| The planet structure: its places, their words, what each shows, and their world placement | The planet's world: models, rules and behaviour (`src/game/`) |
 | Site settings: name, positioning, owner, social profiles | Tokens, components, the design system |
 
 Interface strings stay in code because they belong to the design system's copy rules and to accessibility, not to the portfolio. They're gathered in one module so they can be localised later (§9).
@@ -165,10 +170,11 @@ Interface strings stay in code because they belong to the design system's copy r
 | D6 | Bodies are typed blocks; text inside them is a Markdown subset (CommonMark, no raw HTML) | Blocks map to the design system's components; Markdown is easy to write in JSON and every CMS can store it | Structured spans (Portable Text): cleaner, but painful to author by hand; raw HTML (unsafe) |
 | D7 | Media by ID; master and metadata side by side; sizes generated at build by `astro:assets` | G5; alt text and credit travel with the file; nothing generated is committed | Committing generated sizes (doubles the repository); URLs in content (breaks the swap to a CDN) |
 | D8 | Stable IDs for references, slugs for URLs; renaming a published slug needs a redirect (enforced) | The IA's rule: "redirect renamed pages" | References by slug (break on rename) |
-| D9 | Routes are derived from content: a route table maps every path to a resource | G2; one place answers "does this URL exist, and what is it?" | Hand-written Astro routes per type (the IA lives in code) |
-| D10 | The planet's places are separate resources that point at IA pages | The IA's rule for experimental navigation: no second, conflicting taxonomy | Planet geometry inside each page's content (mixes channels) |
+| D9 | Routes are derived from the site structure: a route table maps every path to a node and its item | G2; one place answers "does this URL exist, and what is it?" | Hand-written Astro routes per type (the IA lives in code); a parent field on each item (ties content to one arrangement) |
+| D10 | Content items are channel-agnostic; each channel (site, planet) has its own structure that maps them (the owner's decision O2) | The planet may diverge from the site now or later, with no change to content or to the other channel | One shared tree (forces one channel to bend to the other); planet fields on items (mixes channels) |
 | D11 | Only `published` and `stale` content in a public visibility is built; everything else fails closed | The governance lifecycle and visibility rules | Filtering in templates (easy to forget) |
 | D12 | The API is versioned in its path (`/v1/`); changes within a version are additive only | Old snapshots and builds keep working | Header versioning (harder to mirror in files) |
+| D13 | Every published item has exactly one canonical page in the site structure, and everything the planet shows has one (V12, V13) | Stable URLs, one place to link to, and the planet's way out to the full page always works | Letting each channel stand alone (dead ends in the planet; duplicate pages on the site) |
 
 ## 4. The source adapter
 
@@ -197,7 +203,7 @@ export interface ContentSource {
 
 1. **Load.** Each collection in `src/content.config.ts` uses a custom loader, `contentLoader('case-studies')`, which calls the configured source. Astro's content layer stores the result and reloads only what changed (by digest). In development the `files` adapter watches `content/`.
 2. **Validate.** The loader parses every item with its Zod schema. Then an integrity pass checks every reference (IDs of pages, people, media and taxonomy terms), unique slugs, menu targets, redirects and the IA rules ([model §8](model.md#8-validation-rules)). Any failure stops the build, naming the resource and the field.
-3. **Query.** Pages and layouts call only the repository (`src/site/content/repository.ts`): `getSite()`, `getMenu('primary')`, `getRoute(path)`, `getCaseStudy(slug)`, `listCaseStudies({ practiceArea, featured })`, `getPlaces()`. Nothing else reads the source, the file system or `fetch`.
+3. **Query.** Pages and layouts call only the repository (`src/site/content/repository.ts`): `getSite()`, `getMenu('primary')`, `getRoute(path)`, `getCaseStudy(slug)`, `listCaseStudies({ practiceArea, featured })`, `getStructure('site')`, `getStructure('planet')`. Nothing else reads the source, the file system or `fetch`.
 4. **Map.** View mappers turn entities into the props the design system takes. A case study becomes `ArticleLayout` props, for example, and a figure block becomes `Figure` props with a resolved image. They also resolve links (a target becomes an `href` through `withBase`) and media (an ID becomes `src`, `srcset`, `width`, `height`, `alt` and `focus`).
 5. **Render.** One catch-all route, `src/pages/[...path].astro`, gets its static paths from the route table and picks a template by resource type ([IA §3](ia.md#3-routes)). The block renderer maps body blocks to components ([model §6](model.md#6-blocks)). Pages carry no copy and no styles.
 

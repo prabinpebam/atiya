@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 550">
+<title>How content reaches the page</title>
+<desc>Two sources, the mock JSON files in content/ today and the backend API at /v1 later, feed one source adapter chosen by CONTENT_SOURCE. The adapter's output is validated against the contract (schemas and integrity checks), stored by Astro's content layer, queried through the repository, mapped to view models, rendered by the layouts of the design system and published as static pages on GitHub Pages. The planet on /play reads its own structure from the same repository. A publish in the backend triggers a rebuild through a webhook.</desc>
+<g id="source-files">
+<rect class="src" x="40" y="40" width="200" height="72" rx="14" />
+<text class="name" x="58" y="70">Mock JSON files</text>
+<text class="note" x="58" y="94">content/ · today</text>
+</g>
+<g id="source-api">
+<rect class="later" x="40" y="132" width="200" height="72" rx="14" />
+<text class="name" x="58" y="162">Backend API</text>
+<text class="note" x="58" y="186">/v1 · later</text>
+</g>
+<text class="label" x="40" y="232">publish → webhook → rebuild</text>
+<g id="adapter">
+<rect class="box" x="280" y="86" width="200" height="72" rx="14" />
+<text class="name" x="298" y="116">Source adapter</text>
+<text class="note" x="298" y="140">files | api</text>
+</g>
+<g id="contract">
+<rect class="gate" x="520" y="86" width="200" height="72" rx="14" />
+<text class="name" x="538" y="116">Contract</text>
+<text class="note" x="538" y="140">schemas · integrity</text>
+</g>
+<g id="content-layer">
+<rect class="box" x="760" y="86" width="200" height="72" rx="14" />
+<text class="name" x="778" y="116">Content layer</text>
+<text class="note" x="778" y="140">Astro loaders, cached</text>
+</g>
+<g id="repository">
+<rect class="box" x="760" y="300" width="200" height="72" rx="14" />
+<text class="name" x="778" y="330">Repository</text>
+<text class="note" x="778" y="354">getRoute, getMenu, …</text>
+</g>
+<g id="view-models">
+<rect class="box" x="520" y="300" width="200" height="72" rx="14" />
+<text class="name" x="538" y="330">View models</text>
+<text class="note" x="538" y="354">entities → props</text>
+</g>
+<g id="layouts">
+<rect class="box" x="280" y="300" width="200" height="72" rx="14" />
+<text class="name" x="298" y="330">Layouts</text>
+<text class="note" x="298" y="354">the design system</text>
+</g>
+<g id="pages">
+<rect class="out" x="40" y="300" width="200" height="72" rx="14" />
+<text class="out-name" x="58" y="330">Static pages</text>
+<text class="out-note" x="58" y="354">GitHub Pages</text>
+</g>
+<g id="planet">
+<rect class="box" x="760" y="436" width="200" height="72" rx="14" />
+<text class="name" x="778" y="466">The planet</text>
+<text class="note" x="778" y="490">its own structure</text>
+</g>
+<path class="arrow" d="M240 76 H258 V114 H277" />
+<path class="arrow" d="M240 168 H258 V130 H277" />
+<path class="arrow" d="M480 122 H517" />
+<path class="arrow" d="M720 122 H757" />
+<path class="arrow" d="M860 158 V297" />
+<path class="arrow" d="M760 336 H723" />
+<path class="arrow" d="M520 336 H483" />
+<path class="arrow" d="M280 336 H243" />
+<path class="arrow" d="M860 372 V433" />
+</svg>

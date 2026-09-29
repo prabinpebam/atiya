@@ -3,13 +3,13 @@
 Where the pictures, videos and files the content uses live in the repository, what metadata travels with each, the budgets that keep the repository healthy, and how the build turns masters into what a page needs. The [content model](model.md) references media by ID; the [spec](spec.md) explains why (D7).
 
 > **TL;DR.**
-> - **Where:** every content asset lives under `content/media/`, in a folder named after what owns it (`case-studies/<id>/`, `pages/<id>/`, `people/<id>/`, `site/`, `shared/`).
+> - **Where:** every content asset lives under `content/media/`, in a folder named after what owns it: a content item (`articles/<id>/`, `case-studies/<id>/`, `galleries/<id>/`), a structure's node or place (`structures/site/<node>/`, `structures/planet/<place>/`), a person, the site, or `shared/`.
 > - **Master and sidecar:** each asset is a master file plus a JSON sidecar with the same name, holding alt text, caption, credit, licence and focus point. The asset's ID is its path without the extension.
 > - **Generated at build:** masters are committed; the sizes a page needs are generated at build by Astro's image pipeline and are never committed. Video, captions and PDFs are copied as they are.
 > - **Budgets:** photos at most 2560 px and 1.5 MB, video at most 20 MB and 90 seconds (longer goes to YouTube or Vimeo), no Git LFS. The check enforces them.
 > - **With a backend,** the same IDs resolve through the backend's media service instead. Only the media resolver's strategy changes.
 
-<figure class="slate-figure">
+<figure class="slate-figure" data-diagram="media">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" role="img" aria-labelledby="cp-media__title cp-media__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="cp-media__title">The media pipeline</title>
 <desc id="cp-media__desc">A master file and its JSON sidecar are committed under content/media. The content check validates alt text, credit and budgets. At build, images go through Astro's image pipeline to WebP sizes from 480 to 2560 pixels; video, captions and PDFs are copied as they are. Both go to dist/ and are published on GitHub Pages. Later, the backend's media service can provide the masters and the sizes instead.</desc>
@@ -98,10 +98,13 @@ Where the pictures, videos and files the content uses live in the repository, wh
 
 ```text
 content/media/
-├── site/                          site-wide: the social card, the owner's portrait
+├── site/                          site-wide: the social card
 │   ├── social-card.jpg
 │   └── social-card.json
-├── pages/<page-id>/               a page's own media (the home hero)
+├── structures/
+│   ├── site/<node-id>/            a hub's own media (the home hero)
+│   └── planet/<place-id>/         a place's own media, if it ever needs any
+├── articles/<article-id>/         an article's figures (pages, notes, talks)
 ├── case-studies/<case-study-id>/  a case study's cover and figures
 │   ├── cover.jpg
 │   ├── cover.json
@@ -113,7 +116,7 @@ content/media/
 │   └── walkthrough-poster.jpg (+ .json)
 ├── practice-areas/<id>/
 ├── leadership-topics/<id>/
-├── notes/<id>/                    later
+├── galleries/<gallery-id>/         a gallery's images
 ├── people/<person-id>/            portraits
 └── shared/                        used by more than one document (rare; prefer the owner's folder)
 ```
@@ -208,7 +211,7 @@ Content and components don't change between strategies: a block still names an I
 | Asset today | Becomes | Why |
 |---|---|---|
 | `public/og-image.jpg` | `site/social-card` | The site's default social card |
-| `public/poster/landing-*.webp` (the landing's hero) | `pages/home/hero` (one master) | Home-page content |
+| `public/poster/landing-*.webp` (the landing's hero) | `structures/site/home/hero` (one master) | The home hub's content |
 | The owner's portrait in `public/avatars/npc/prabin.webp` | `people/prabin/portrait` (one master) | Used by articles as the author's picture. The planet keeps its own copy, since it's rendered from the game |
 | `public/design/samples/*` | Stays | The design library's sample media, owned by the library |
 

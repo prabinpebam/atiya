@@ -1,114 +1,118 @@
 # Content model
 
-Every resource the site renders, its fields, how resources refer to each other, the blocks a body is made of, and the rules the build enforces. The model implements the IA's [taxonomy and content model](../ia-navigation/03-taxonomy-and-content-model.md), [templates](../ia-navigation/05-page-and-content-templates.md) and [governance](../ia-navigation/07-editorial-and-governance.md). Where this page and those differ, the IA is right and this page is fixed. The architecture is in the [spec](spec.md); the transport is in the [API contract](api.md).
+Every resource the site and the planet render, its fields, how resources refer to each other, the blocks a body is made of, and the rules the build enforces. The model separates two things:
+- **Content items:** what the portfolio says (articles, case studies, galleries, the résumé).
+- **Structures:** how each channel arranges those items (the site's page tree and menus, the planet's places).
+
+The items encode the IA's [taxonomy and content model](../ia-navigation/03-taxonomy-and-content-model.md) and [governance](../ia-navigation/07-editorial-and-governance.md). The structures are specified in [navigation structures](ia.md), and the transport in the [API contract](api.md).
 
 > **TL;DR.**
-> - **Resources:** four kinds of document (standard page, case study, practice area, leadership topic), with notes to come; the vocabularies; people; media; menus; the planet's places; redirects; and one settings resource, `site`.
-> - **Shared fields:** every document has a stable `id` for references and a `slug` for its URL, plus a title, a summary, a lifecycle `status`, a `visibility`, dates, SEO fields and a `body` of typed blocks.
-> - **Blocks** map one to one onto the design system's components (text, heading, figure, gallery, carousel, video, quote, divider…). Text is a small Markdown subset with no raw HTML.
-> - **References:** by ID. A link that can point at anything is a *target* (`{ "type": "caseStudy", "id": "…" }`, a URL, or an app route like the planet).
-> - **The build refuses bad content:** a missing required field, a dangling reference, a missing alt text, an unpublishable visibility, or a published URL that disappears without a redirect.
+> - **Content items are channel-agnostic.** They are articles, case studies, practice areas, leadership topics, galleries and the résumé. None knows where it's shown: it has no parent, order or URL of its own.
+> - **Each channel has a structure** that maps the same items into its navigation:
+>   - the **site structure** is the page tree, the menus and so the URLs;
+>   - the **planet structure** is the places, what each shows, and its way out to the full page.
+>
+>   The two can diverge. Changing one never touches an item or the other structure.
+> - **Shared item fields:** a stable `id` for references, a `slug` (the default URL segment), a title, a summary, a lifecycle `status`, a `visibility`, dates, SEO fields and a `body` of typed blocks.
+> - **Blocks** map one to one onto the design system's components. Text is a small Markdown subset with no raw HTML.
+> - **The build refuses bad content:** a missing field, a dangling reference, a missing alt text, an unpublishable visibility, an item placed twice on the site, a planet entry without a page on the site, or a published URL that disappears without a redirect.
 
-<figure class="slate-figure">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" role="img" aria-labelledby="cp-model__title cp-model__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
-<title id="cp-model__title">The content model's resources and references</title>
-<desc id="cp-model__desc">Documents (pages, case studies, practice areas, leadership topics and, later, notes) sit in the IA tree by their parent and hold a body of blocks. Menus, places and redirects point at documents through targets. The route table is derived from the documents. Documents refer to people, vocabulary terms and media by ID. The site settings name the owner and the social card.</desc>
-<g id="cp-model__menus" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-1" x="40" y="40" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="58" y="68" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-1" data-slate-fit-padding="16">Menus</text>
-<text x="58" y="90" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-1" data-slate-fit-padding="16">primary, actions, footer</text>
+<figure class="slate-figure" data-diagram="model">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 540" role="img" aria-labelledby="cp-model__title cp-model__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
+<title id="cp-model__title">Content items and the structures that place them</title>
+<desc id="cp-model__desc">Content items (articles, case studies, practice areas, leadership topics, galleries and the résumé) never refer to a channel. The site structure places each item once, which gives it its canonical page; the planet structure shows items in its own way and links each place to a page of the site. Redirects point old paths at the site structure. Items refer to people, vocabulary terms and media by ID; the site settings name the owner and the social card.</desc>
+<g id="cp-model__redirects" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
+<rect id="cp-model__body-1" x="100" y="40" width="220" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="118" y="68" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-1" data-slate-fit-padding="16">Redirects</text>
+<text x="118" y="90" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-1" data-slate-fit-padding="16">old path → site</text>
 </g>
-<g id="cp-model__places" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-2" x="280" y="40" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="298" y="68" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-2" data-slate-fit-padding="16">Places</text>
-<text x="298" y="90" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-2" data-slate-fit-padding="16">the planet's landmarks</text>
+<g id="cp-model__site-structure" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
+<rect id="cp-model__body-2" x="390" y="40" width="220" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="408" y="68" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-2" data-slate-fit-padding="16">Site structure</text>
+<text x="408" y="90" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-2" data-slate-fit-padding="16">page tree · menus · URLs</text>
 </g>
-<g id="cp-model__redirects" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-3" x="520" y="40" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="538" y="68" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-3" data-slate-fit-padding="16">Redirects</text>
-<text x="538" y="90" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-3" data-slate-fit-padding="16">old path → target</text>
+<g id="cp-model__planet-structure" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
+<rect id="cp-model__body-3" x="680" y="40" width="220" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="698" y="68" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-3" data-slate-fit-padding="16">Planet structure</text>
+<text x="698" y="90" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-3" data-slate-fit-padding="16">places · entries</text>
 </g>
-<g id="cp-model__routes" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-4" x="760" y="40" width="200" height="64" rx="14" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" stroke-dasharray="6 5" />
-<text x="778" y="68" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-4" data-slate-fit-padding="16">Route table</text>
-<text x="778" y="90" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-4" data-slate-fit-padding="16">derived: path → document</text>
+<text x="620" y="62" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">full page</text>
+<g id="cp-model__items" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
+<rect id="cp-model__body-4" x="40" y="160" width="920" height="220" rx="20" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
+<text x="64" y="194" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-4" data-slate-fit-padding="16">Content items</text>
+<text x="64" y="218" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="cp-model__body-4" data-slate-fit-padding="16">No parent, order or URL: they never know where they're shown</text>
+<rect id="cp-model__body-5" x="64" y="236" width="272" height="48" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="82" y="266" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-5" data-slate-fit-padding="16">Article</text>
+<rect id="cp-model__body-6" x="364" y="236" width="272" height="48" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="382" y="266" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-6" data-slate-fit-padding="16">Case study</text>
+<rect id="cp-model__body-7" x="664" y="236" width="272" height="48" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="682" y="266" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-7" data-slate-fit-padding="16">Practice area</text>
+<rect id="cp-model__body-8" x="64" y="300" width="272" height="48" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="82" y="330" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-8" data-slate-fit-padding="16">Leadership topic</text>
+<rect id="cp-model__body-9" x="364" y="300" width="272" height="48" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="382" y="330" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-9" data-slate-fit-padding="16">Gallery</text>
+<rect id="cp-model__body-10" x="664" y="300" width="272" height="48" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="682" y="330" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-10" data-slate-fit-padding="16">Résumé</text>
 </g>
-<g id="cp-model__documents" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-5" x="40" y="152" width="920" height="184" rx="20" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
-<text x="64" y="186" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-5" data-slate-fit-padding="16">Documents</text>
-<text x="64" y="210" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="cp-model__body-5" data-slate-fit-padding="16">In the IA tree by their parent; each holds a body of blocks</text>
-<rect id="cp-model__body-6" x="64" y="238" width="160" height="56" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="80" y="272" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-6" data-slate-fit-padding="16">Page</text>
-<rect id="cp-model__body-7" x="244" y="238" width="160" height="56" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="260" y="272" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-7" data-slate-fit-padding="16">Case study</text>
-<rect id="cp-model__body-8" x="424" y="238" width="160" height="56" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="440" y="272" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-8" data-slate-fit-padding="16">Practice area</text>
-<rect id="cp-model__body-9" x="604" y="238" width="160" height="56" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="620" y="272" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-9" data-slate-fit-padding="16">Leadership topic</text>
-<rect id="cp-model__body-10" x="784" y="238" width="152" height="56" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" stroke-dasharray="6 5" />
-<text x="800" y="272" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="cp-model__body-10" data-slate-fit-padding="16">Note (later)</text>
+<text x="510" y="136" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">places once</text>
+<text x="800" y="136" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">shows</text>
+<g id="cp-model__people" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
+<rect id="cp-model__body-11" x="40" y="440" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="58" y="468" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-11" data-slate-fit-padding="16">People</text>
+<text x="58" y="490" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-11" data-slate-fit-padding="16">owner, collaborators</text>
 </g>
-<g id="cp-model__people" data-slate-svg-step="6" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-11" x="40" y="400" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="58" y="428" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-11" data-slate-fit-padding="16">People</text>
-<text x="58" y="450" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-11" data-slate-fit-padding="16">owner, collaborators</text>
+<g id="cp-model__vocabularies" data-slate-svg-step="6" data-slate-svg-effect="fade-rise">
+<rect id="cp-model__body-12" x="280" y="440" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="298" y="468" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-12" data-slate-fit-padding="16">Vocabularies</text>
+<text x="298" y="490" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-12" data-slate-fit-padding="16">contributions, topics…</text>
 </g>
-<g id="cp-model__vocabularies" data-slate-svg-step="7" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-12" x="280" y="400" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="298" y="428" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-12" data-slate-fit-padding="16">Vocabularies</text>
-<text x="298" y="450" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-12" data-slate-fit-padding="16">contributions, topics…</text>
+<g id="cp-model__media" data-slate-svg-step="7" data-slate-svg-effect="fade-rise">
+<rect id="cp-model__body-13" x="520" y="440" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="538" y="468" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-13" data-slate-fit-padding="16">Media</text>
+<text x="538" y="490" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-13" data-slate-fit-padding="16">master + sidecar</text>
 </g>
-<g id="cp-model__media" data-slate-svg-step="8" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-13" x="520" y="400" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="538" y="428" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-13" data-slate-fit-padding="16">Media</text>
-<text x="538" y="450" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-13" data-slate-fit-padding="16">master + sidecar</text>
+<g id="cp-model__settings" data-slate-svg-step="8" data-slate-svg-effect="fade-rise">
+<rect id="cp-model__body-14" x="760" y="440" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="778" y="468" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-14" data-slate-fit-padding="16">Site settings</text>
+<text x="778" y="490" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-14" data-slate-fit-padding="16">owner, social card</text>
 </g>
-<g id="cp-model__site" data-slate-svg-step="9" data-slate-svg-effect="fade-rise">
-<rect id="cp-model__body-14" x="760" y="400" width="200" height="64" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="778" y="428" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-model__body-14" data-slate-fit-padding="16">Site</text>
-<text x="778" y="450" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-model__body-14" data-slate-fit-padding="16">settings, owner, social card</text>
+<text x="150" y="414" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">by ID</text>
+<text x="390" y="414" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">by ID</text>
+<text x="630" y="414" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">by ID</text>
+<g id="cp-model__flow-1" data-slate-svg-step="9" data-slate-svg-effect="draw">
+<path d="M320 72 L380 72" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="389,72 380,77 380,67" fill="var(--color-neutral-fg-2)" />
 </g>
-<text x="150" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">target</text>
-<text x="390" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">target</text>
-<text x="630" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">target</text>
-<text x="870" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">derived</text>
-<text x="150" y="372" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">by ID</text>
-<text x="390" y="372" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">by ID</text>
-<text x="630" y="372" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">by ID</text>
-<g id="cp-model__flow-1" data-slate-svg-step="10" data-slate-svg-effect="draw">
-<path d="M140 104 L140 142" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="140,151 145,142 135,142" fill="var(--color-neutral-fg-2)" />
+<g id="cp-model__flow-2" data-slate-svg-step="10" data-slate-svg-effect="draw">
+<path d="M680 72 L620 72" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="611,72 620,77 620,67" fill="var(--color-neutral-fg-2)" />
 </g>
-<g id="cp-model__flow-2" data-slate-svg-step="11" data-slate-svg-effect="draw">
-<path d="M380 104 L380 142" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="380,151 385,142 375,142" fill="var(--color-neutral-fg-2)" />
+<g id="cp-model__flow-3" data-slate-svg-step="11" data-slate-svg-effect="draw">
+<path d="M500 104 L500 150" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="500,159 505,150 495,150" fill="var(--color-neutral-fg-2)" />
 </g>
-<g id="cp-model__flow-3" data-slate-svg-step="12" data-slate-svg-effect="draw">
-<path d="M620 104 L620 142" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="620,151 625,142 615,142" fill="var(--color-neutral-fg-2)" />
+<g id="cp-model__flow-4" data-slate-svg-step="12" data-slate-svg-effect="draw">
+<path d="M790 104 L790 150" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="790,159 795,150 785,150" fill="var(--color-neutral-fg-2)" />
 </g>
-<g id="cp-model__flow-4" data-slate-svg-step="13" data-slate-svg-effect="draw">
-<path d="M860 152 L860 114" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="860,105 865,114 855,114" fill="var(--color-neutral-fg-2)" />
+<g id="cp-model__flow-5" data-slate-svg-step="13" data-slate-svg-effect="draw">
+<path d="M140 380 L140 430" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="140,439 145,430 135,430" fill="var(--color-neutral-fg-2)" />
 </g>
-<g id="cp-model__flow-5" data-slate-svg-step="14" data-slate-svg-effect="draw">
-<path d="M140 336 L140 390" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="140,399 145,390 135,390" fill="var(--color-neutral-fg-2)" />
+<g id="cp-model__flow-6" data-slate-svg-step="14" data-slate-svg-effect="draw">
+<path d="M380 380 L380 430" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="380,439 385,430 375,430" fill="var(--color-neutral-fg-2)" />
 </g>
-<g id="cp-model__flow-6" data-slate-svg-step="15" data-slate-svg-effect="draw">
-<path d="M380 336 L380 390" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="380,399 385,390 375,390" fill="var(--color-neutral-fg-2)" />
+<g id="cp-model__flow-7" data-slate-svg-step="15" data-slate-svg-effect="draw">
+<path d="M620 380 L620 430" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="620,439 625,430 615,430" fill="var(--color-neutral-fg-2)" />
 </g>
-<g id="cp-model__flow-7" data-slate-svg-step="16" data-slate-svg-effect="draw">
-<path d="M620 336 L620 390" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="620,399 625,390 615,390" fill="var(--color-neutral-fg-2)" />
-</g>
-<g id="cp-model__flow-8" data-slate-svg-step="17" data-slate-svg-effect="draw">
-<path d="M760 432 L730 432" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="721,432 730,437 730,427" fill="var(--color-neutral-fg-2)" />
+<g id="cp-model__flow-8" data-slate-svg-step="16" data-slate-svg-effect="draw">
+<path d="M760 472 L730 472" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="721,472 730,477 730,467" fill="var(--color-neutral-fg-2)" />
 </g>
 </svg>
-<figcaption>The resources and how they refer to each other. The site settings name the owner. Documents (pages, case studies, practice areas, leadership topics, notes) sit in the IA through their parent, reference people, vocabulary terms and media, and hold a body of blocks that also reference media and targets. Menus and places point at documents; redirects map old paths to targets.</figcaption>
+<figcaption>Content items sit in the middle and never refer to a channel. The site structure places them in a page tree (which gives every item its canonical path, and so the route table); the planet structure shows them in places and links each place to a page of the site. Redirects point old paths at the site structure. Items refer to people, vocabulary terms and media by ID; the site settings name the owner and the social card.</figcaption>
 </figure>
 
 <details class="slate-figure-data">
@@ -116,47 +120,43 @@ Every resource the site renders, its fields, how resources refer to each other, 
 
 | From | Field | To |
 |---|---|---|
-| Site | `owner` | Person |
-| Site | `socialImage` | Media |
-| Any document | `parent` | Page (its place in the IA) |
-| Any document | `hero`, blocks | Media |
-| Any document | `related` | Documents |
-| Case study | `practiceAreas.primary`, `.secondary` | Practice areas |
-| Case study | `contributions`, `outcomeTypes`, `engagementType`, `tools` | Vocabulary terms |
+| Site structure | a node's `item` | A content item (its canonical placement) |
+| Site structure | a hub's `children.from` | Content items, by query (placed automatically) |
+| Site structure | a menu entry | A node, or a URL or app route |
+| Planet structure | a place's `entries` | Content items, one by one or by query |
+| Planet structure | a place's `fullPage` | A node of the site structure |
+| Redirect | `to` | A node of the site structure, or an item |
+| Content item | `hero`, blocks | Media, galleries, other items |
+| Content item | `related` | Content items |
+| Case study | `practiceAreas`, `contributions`, `outcomeTypes`, `engagementType`, `tools` | Practice areas; vocabulary terms |
 | Case study | `testimonial.person`, `collaborators` | People |
-| Practice area | `related` | Practice areas |
-| Leadership topic, note | `evidence`, `related` | Case studies |
-| Menu item | `target` | A document, a URL or an app route |
-| Place | `target` | A document |
-| Redirect | `to` | A target |
+| Site settings | `owner`, `socialImage` | A person; media |
 
 </details>
 
 ## 1. Conventions
 
 - **Format.** JSON (UTF-8, two-space indent). One resource per file in the mock layout ([API §6](api.md#6-the-mock-api-files-that-mirror-it)).
-- **Names.** Fields are `camelCase`. Resource types in targets are `camelCase` singular (`caseStudy`); API paths are `kebab-case` plural (`/v1/case-studies`).
+- **Names.** Fields are `camelCase`. Resource types in references are `camelCase` singular (`caseStudy`); API paths are `kebab-case` plural (`/v1/case-studies`).
 - **IDs** are lowercase `kebab-case`, unique within their type, and **never change**. References use IDs.
-- **Slugs** are lowercase `kebab-case`, used only to build URLs, and may change (with a redirect, §8). A new document's slug usually equals its ID.
-- **Dates** are ISO 8601: `2026-09-29` or `2026-09-29T10:00:00Z`. A period of time uses the precision the story allows: `2021`, `2021-03`.
+- **Slugs** are lowercase `kebab-case`. An item's `slug` is the URL segment the site structure uses by default; a node may override it. Slugs may change, with a redirect (§8).
+- **Dates** are ISO 8601: `2026-09-29` or `2026-09-29T10:00:00Z`. A period uses the precision the story allows: `2021`, `2021-03`.
 - **Text lengths** are limits, not targets: a `summary` is at most 160 characters, a card phrase at most 80.
-- **Localisation.** Every resource has `locale` (default `en`). One locale is built today (§9 of the [spec](spec.md#9-security-privacy-and-localisation)).
+- **Localisation.** Every resource has `locale` (default `en`). One locale is built today ([spec §9](spec.md#9-security-privacy-and-localisation)).
 - **Unknown fields** are an error in the mock files (to catch typos), and ignored from the API (so the backend can add fields within a version, D12).
 
-## 2. Shared document fields
+## 2. Shared item fields
 
-Every document (page, case study, practice area, leadership topic, note) has these fields.
+Every content item has these fields. There's deliberately no `parent`, `order` or path: those belong to the structures.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `id` | string | yes | Stable identifier |
-| `type` | enum | yes | `page`, `caseStudy`, `practiceArea`, `leadershipTopic`, `note` |
-| `slug` | string | yes | The last URL segment ([IA §3](ia.md#3-routes)) |
-| `title` | string | yes | The page's H1 |
-| `navLabel` | string | no | A shorter name for menus and breadcrumbs ("Work"), when the title is long |
+| `type` | enum | yes | `article`, `caseStudy`, `practiceArea`, `leadershipTopic`, `gallery`, `resume` |
+| `slug` | string | yes | The default URL segment where the site structure places it |
+| `title` | string | yes | The H1 on a page; the heading of a card or a planet dialog |
+| `navLabel` | string | no | A shorter name for menus, breadcrumbs and the planet's labels |
 | `summary` | string ≤ 160 | yes | The standfirst, the card text and the meta description unless `seo.description` is set |
-| `parent` | page ID | no | Its parent in the IA; absent only for the home page |
-| `order` | integer | no | Editorial order among its siblings (the IA's default order is editorial, not chronological) |
 | `status` | enum | yes | The lifecycle (§7) |
 | `visibility` | enum | yes | `public`, `publicRedacted` or `summaryOnly`; anything else can't be published (§7) |
 | `publishedAt` | date | when published | The first publication; drives scheduled publishing |
@@ -164,22 +164,21 @@ Every document (page, case study, practice area, leadership topic, note) has the
 | `reviewedAt` | date | no | The last governance review; drives the "stale" check |
 | `locale` | string | yes | `en` |
 | `hero` | media ref | no | The lead picture, with an optional `caption` and `credit` override |
-| `body` | block[] | yes | The content (§6); may be empty for index pages |
-| `related` | document ref[] | no | Two or three, chosen editorially |
+| `body` | block[] | yes | The content (§6); may be empty for a gallery or the résumé |
+| `related` | item ref[] | no | Two or three, chosen editorially |
 | `seo` | object | no | `title`, `description`, `image` (media), `noindex` |
 
-## 3. Document types
+## 3. Content item types
 
-### Page
+### Article
 
-Every page in the sitemap that isn't one of the other types: home, the Work, Expertise and Leadership overviews, About, Contact, Resume, Colophon, Now, Privacy and the 404 page.
+Long-form writing that isn't a case study. Its `kind` picks the template.
 
-| Field | Type | Notes |
+| `kind` | For | Extra fields |
 |---|---|---|
-| `template` | enum | `home`, `workIndex`, `expertiseOverview`, `leadershipOverview`, `notesIndex`, `standard`, `contact`, `resume`, `notFound`: the layout and the section order the [templates](../ia-navigation/05-page-and-content-templates.md) define |
-| `sequence` | boolean | Whether its children's order has meaning, so they get previous and next links ([IA §2](ia.md#2-rules-that-stay-in-code)); default `false` |
-
-A page's sections are blocks: a home page is a `hero`, a `collection` of featured case studies, a `collection` of practice areas, and so on (§6).
+| `page` | About, Contact, Colophon, Privacy, Now | None |
+| `note` | Notes (later) | `topics` (topic term IDs) |
+| `talk` | A talk, panel or podcast | `event`, `date`, `venue?`, `recording` (a video media ID or an `embed`), `slides?` (a link) |
 
 ### Case study
 
@@ -235,36 +234,56 @@ The four practice areas are also a controlled vocabulary: their IDs are the only
 | `evidence` | case-study ID[] | |
 | `tradeOffs` | Markdown | Failure modes or trade-offs |
 
-### Note (later)
+### Gallery
 
-`topics` (topic term IDs), plus the shared fields. A note is published only when there's a maintenance plan (the IA's backlog), so the type is specified but not built in the first release.
+A set of pictures that stands on its own. A structure can show it as its own page or place, and a body can embed it (§6).
 
-## 4. Supporting resources
+| Field | Type | Notes |
+|---|---|---|
+| `items` | `{ media, caption? }[]` | In order; captions override the media's own |
+| `layout` | enum | `grid`, `mosaic` or `row`: the default when it's shown or embedded |
+| `caption` | Markdown | One caption for the set, as a magazine does |
+
+### Résumé
+
+One résumé, as structured data, so it renders as an HTML page and can feed other views.
+
+| Field | Type | Notes |
+|---|---|---|
+| `headline` | string | The current role and positioning |
+| `experience` | `{ role, organisation?, period, summary, highlights[] }[]` | Most recent first |
+| `capabilities` | `{ practiceArea, items[] }[]` | Grouped by practice area, not by software |
+| `education`, `recognition` | `{ title, organisation?, year?, note? }[]` | |
+| `file` | media ID | The downloadable PDF (secondary to the HTML page) |
+
+## 4. Structures and supporting resources
 
 | Resource | Fields | Notes |
 |---|---|---|
-| **Site** (one) | `name`, `positioning`, `description`, `owner` (person), `socialImage` (media), `profiles` (`{ label, href, kind }[]`), `contactEmail`, `disclaimer`, `locale` | Everything the site says about itself |
+| **Site structure** (one) | `home` (a node), `nodes` (the tree), `menus` (`primary`, `actions`, `footer`) | The site's IA: pages, URLs, menus ([structures §2](ia.md#2-the-site-structure)) |
+| **Planet structure** (one) | `places[]`: `{ id, order, label, kicker, summary ≤ 140, dialog: { intro, highlights ≤ 5 }, entries, fullPage, world }` | The planet's navigation ([structures §5](ia.md#5-the-planet-structure)); `world` is engineering-owned and validated by the game's rules |
+| **Site settings** (one) | `name`, `positioning`, `description`, `owner` (person), `socialImage` (media), `profiles` (`{ label, href, kind }[]`), `contactEmail`, `disclaimer`, `locale` | Everything the site says about itself |
 | **Person** | `id`, `name`, `role`, `bio` (Markdown), `avatar` (media), `links` | The owner, collaborators and testimonial givers (with permission) |
-| **Vocabulary term** | `id`, `label`, `description?`, `order` | One file per vocabulary: `contributions`, `outcomeTypes`, `engagementTypes`, `tools`, `topics` |
-| **Menu** | `key`, `label` (its accessible name), `items[]`: `{ id, label, target, children?, kind: link or action }` | `primary`, `actions`, `footer`, the local menus ([IA §4](ia.md#4-menus)) |
-| **Place** | `id`, `target` (document), `order`, `label`, `kicker`, `summary ≤ 140`, `dialog: { intro, highlights ≤ 5 }`, `world: { lat, lon, modelYawDeg, footprintU, approachDistanceU, variant, accent }` | The planet's landmark for an IA page ([IA §6](ia.md#6-the-planet)); `world` is engineering-owned and validated by the game's rules |
+| **Vocabulary** | `id`, `label`, `description?`, `order` per term | `contributions`, `outcomeTypes`, `engagementTypes`, `tools`, `topics` |
 | **Media** | `id`, `kind`, `file`, `alt`, `decorative`, `caption`, `credit`, `licence`, `focus`, and more | Specified in [media §3](media.md#3-the-metadata-sidecar) |
-| **Redirect** | `from` (path), `to` (target), `status` (301 or 302), `since` | Written whenever a published path changes |
+| **Redirect** | `from` (path), `to` (a site node or an item), `status` (301 or 302), `since` | Written whenever a published path changes |
 
 ## 5. References and targets
 
-- **A typed field holds an ID.** When the field can only point at one type, it's a bare ID: `"primary": "product-experience"`, `"cover": "case-studies/design-system-at-scale/cover"`.
-- **A target can point at anything a link can.** It's an object:
+- **A typed field holds an ID.** When a field can only point at one type, it's a bare ID: `"primary": "product-experience"`, `"cover": "case-studies/design-system-at-scale/cover"`.
+- **An item reference** names a type and an ID: `{ "type": "caseStudy", "id": "design-system-at-scale" }`.
+- **A target** is anything a link can point at:
 
 | Target | Resolves to |
 |---|---|
-| `{ "type": "page", "id": "work" }` (or any document type) | The document's path from the route table |
+| `{ "type": "node", "id": "work" }` | A node of the site structure: its path |
+| `{ "type": "caseStudy", "id": "…" }` (any item type) | The item's canonical path on the site |
 | `{ "type": "url", "href": "https://…" }` | The URL (https, http or mailto only) |
-| `{ "type": "app", "name": "play" }` | A route the code owns: `home`, `play`, `design`, `docs` |
-| `{ "type": "media", "id": "…" }` | A file to download (the résumé PDF) |
+| `{ "type": "app", "name": "play" }` | A route the code owns: `play`, `design`, `docs` |
+| `{ "type": "media", "id": "…" }` | A file to download (the résumé's PDF) |
 
-- **Inside Markdown**, an internal link uses the `ref:` scheme, `[the design system](ref:caseStudy/design-system-at-scale)`, so a slug change never breaks a link in a body.
-- **Resolution** happens in the view mappers: a target becomes an `href` through the route table and `withBase`, so the base path (`/atiya` on GitHub Pages) is never written into content.
+- **Inside Markdown**, an internal link uses the `ref:` scheme, `[the design system](ref:caseStudy/design-system-at-scale)`. It resolves to the item's canonical path, so a slug change or a move in the site structure never breaks a link in a body.
+- **Resolution** happens in the view mappers: a target becomes an `href` through the route table and `withBase`, so neither the base path (`/atiya` on GitHub Pages) nor any path is written into content.
 
 ## 6. Blocks
 
@@ -275,33 +294,40 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | `text` | `markdown` | `Prose` |
 | `heading` | `level` (2 to 4), `text` | `Prose` heading, with an anchor id; it's also a minimap landmark |
 | `figure` | `media`, `caption?`, `credit?`, `width` (`content`, `popout`, `wide`, `full`), `lightbox?` | `Figure` |
-| `gallery` | `items` (media refs), `layout` (`grid`, `mosaic`, `row`), `caption?`, `lightbox?` | `Gallery` |
-| `carousel` | `items` (`{ media, caption? }[]`), `label`, `peek?`, `pager?`, `arrows?` | `Carousel` |
+| `gallery` | `gallery` (a gallery ID) or `items` (media refs); `layout?`, `caption?`, `lightbox?` | `Gallery` |
+| `carousel` | `gallery` (a gallery ID) or `items` (`{ media, caption? }[]`); `label`, `peek?`, `pager?`, `arrows?` | `Carousel` |
 | `video` | `media` (a video asset) or `embed` (`{ provider: youtube or vimeo, id }`), `caption?`, `width?` | `VideoEmbed` |
 | `quote` | `text`, `cite?` (text or person), `variant` (`block`, `pull`) | `Quote` |
 | `divider` | none | `Divider` |
-| `hero` (pages) | `title?`, `standfirst?`, `media?`, `actions` (`{ label, target, variant }[]`) | `Hero` with `Button`s |
-| `collection` (pages) | `source` (a query: `type`, `filter`, `sort`, `limit`, `featured`), `presentation` (`cards` or `list`), `heading?` | `StoryCard` grid or `ContentsList` |
-| `related` | `items` (document refs), `heading?` | `StoryCard` grid |
+| `collection` | `source` (a query: `type`, `filter`, `sort`, `limit`), `presentation` (`cards` or `list`), `heading?` | `StoryCard` grid or `ContentsList` |
+| `related` | `items` (item refs), `heading?` | `StoryCard` grid |
 | `facts` | `items` (`{ label, value }[]`) | New: a definition list (the case study's scan layer uses it too) |
 | `metrics` | `items` (`{ value, label, note? }[]`) | New: a metrics list |
 | `callout` | `tone` (`note`, `caution`), `markdown` | New |
 
-**The Markdown subset** in `text`, `pointOfView`, `bio` and the like: paragraphs, emphasis, strong, inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks. Not allowed: raw HTML, images (use `figure`), headings (use `heading`, so every heading is a real landmark with a stable anchor), and tables (a block later).
+Hub pages in the site structure use the same blocks for their sections, plus a `hero` (`title?`, `standfirst?`, `media?`, `actions`: `{ label, target, variant }[]`, rendered by `Hero` with `Button`s).
+
+**The Markdown subset** in `text`, `pointOfView`, `bio` and the like:
+- **Allowed:** paragraphs, emphasis, strong, inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks.
+- **Not allowed:**
+  - raw HTML;
+  - images (use `figure`);
+  - headings (use `heading`, so every heading is a real landmark with a stable anchor);
+  - tables (a block later).
 
 ## 7. Lifecycle and visibility
 
 The governance lifecycle, as `status`:
 
-| Status | Built on the public site? | Notes |
+| Status | Built? | Notes |
 |---|---|---|
 | `draft` | No | Preview only |
 | `factReview` | No | Preview only |
 | `editorialReview` | No | Preview only |
 | `approved` | No | Ready; publishing is setting `published` (with `publishedAt`) |
-| `published` | Yes | Live and in navigation |
+| `published` | Yes | Live, where the structures place it |
 | `stale` | Yes | Live, and listed by `content:check` as due for review |
-| `archived` | No | Out of navigation; its path must redirect (§8) |
+| `archived` | No | Out of every structure; its path must redirect (§8) |
 
 `visibility` follows the IA: `public`, `publicRedacted` and `summaryOnly` can be published. `privateDiscussionOnly` and `notPublishable` exist so the inventory can record them, but the build refuses to publish them, and the `api` adapter never asks for them with the public token.
 
@@ -312,20 +338,22 @@ The build runs these checks (`npm run content:check`), and names the file and fi
 | ID | Rule |
 |---|---|
 | V1 | Every resource matches its schema; unknown fields in mock files are errors |
-| V2 | IDs are unique within a type; slugs are unique among siblings; paths are unique site-wide |
-| V3 | Every reference resolves to a published resource of the right type (a published page may not link to a draft) |
-| V4 | Every menu target and place target resolves; the primary menu has the IA's four destinations |
+| V2 | IDs are unique within a type; node slugs are unique among siblings; paths are unique site-wide |
+| V3 | Every reference resolves to a published resource of the right type (a published item may not link to a draft) |
+| V4 | Every menu entry, redirect and planet `fullPage` resolves; the primary menu has the IA's four destinations |
 | V5 | Every image used has alt text, unless it's marked `decorative`; third-party media has a credit and a licence |
 | V6 | A case study has one primary practice area, at most two secondary ones, at least one contribution, one or two outcome types, at least one constraint, and at least one practice-area link |
 | V7 | Card phrases respect the IA's limits (one practice area, one role phrase, one outcome phrase) |
 | V8 | Only the published statuses and public visibilities are built |
-| V9 | **Routes lock:** every path in `content/routes.lock.json` (written by each build of published content) still exists, or has a redirect. A renamed or archived page can't break a link silently |
-| V10 | The places' `world` values pass the game's `validateLandmarks` and layout tests |
+| V9 | **Routes lock:** every path in `content/routes.lock.json` (written by each build of published content) still exists, or has a redirect. A renamed, moved or archived page can't break a link silently |
+| V10 | The planet's `world` values pass the game's `validateLandmarks` and layout tests |
 | V11 | `stale` is reported (not failed) when `reviewedAt` is older than the review cadence (twice a year for case studies) |
+| V12 | **One canonical page:** every published item is placed on the site exactly once (by an item node or a hub's query). An item placed twice fails; an item placed nowhere is reported, since it has no page (except a gallery that's only embedded in bodies) |
+| V13 | **A way out from the planet:** every item a place shows has a canonical page on the site, and every place has a `fullPage`. The planet can arrange content its own way, but never shows something with no page to open |
 
 ## 9. An example
 
-A case study, in the mock layout at `content/case-studies/design-system-at-scale.json`. The words are placeholders, like the rest of today's content, until the owner writes them.
+A case study, in the mock layout at `content/case-studies/design-system-at-scale.json`. Its words are placeholders, like the rest of today's content, until the owner writes them. Nothing in it says where it appears: the site structure places it under Work, and the planet structure can show it in the Workshop, the Greenhouse or both.
 
 ```json
 {
@@ -334,8 +362,6 @@ A case study, in the mock layout at `content/case-studies/design-system-at-scale
   "slug": "design-system-at-scale",
   "title": "Placeholder: scaling a design system across many teams",
   "summary": "Placeholder: how a shared system replaced a dozen divergent kits.",
-  "parent": "work",
-  "order": 2,
   "status": "draft",
   "visibility": "public",
   "updatedAt": "2026-09-29",

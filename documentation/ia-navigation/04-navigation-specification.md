@@ -118,10 +118,9 @@ An interactive, spatial, or 3D navigation mode may express the site's character,
 - Conventional links and sitemap remain available.
 - Every destination has a stable URL.
 - Core content is reachable without pointer precision, motion, WebGL, or JavaScript.
-- The structure and labels match this specification.
 - Back-button behavior and deep links work.
 - Reduced-motion preferences are respected.
-- The experiment does not invent a second, conflicting taxonomy.
+- It may arrange and label content its own way: the owner decided (2026-09-29) that the planet has its own navigation structure, mapped onto the same content as the site. Everything it shows has a canonical page on the site, and every place links to one, so it never leads to a dead end ([navigation structures](../content/ia.md#5-the-planet-structure)).
 
 ## Footer navigation
 

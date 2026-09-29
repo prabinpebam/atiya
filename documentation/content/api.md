@@ -4,7 +4,7 @@ The contract a backend implements so the site can read content from it, and the 
 
 > **TL;DR.**
 > - **Shape:** read-only REST over HTTPS and JSON, versioned in the path (`/v1/`), with additive changes only within a version.
-> - **Endpoints:** one per resource type (`/v1/case-studies/{id}`, `/v1/navigation/{key}`, …), plus `/v1/routes`, the IA's route table.
+> - **Endpoints:** one per content item type (`/v1/articles/{id}`, `/v1/case-studies/{id}`, …), one per channel structure (`/v1/structures/site`, `/v1/structures/planet`), plus `/v1/routes`, the route table derived from the site structure.
 > - **Responses:** lists come in a `{ data, meta, links }` envelope with page-based paging, filters and `include` expansion. Errors are RFC 9457 problem details. Caching uses `ETag` and `If-None-Match`.
 > - **Auth:** public content needs a read token; drafts need a separate preview token. A publish sends a signed webhook, which becomes a GitHub `repository_dispatch` and a rebuild.
 > - **The mock API** is the `content/` folder: every endpoint maps to one file, and list endpoints are that folder with the same query semantics (shared code). A mock server serves the folder over HTTP to prove the two agree.
@@ -39,17 +39,17 @@ The contract a backend implements so the site can read content from it, and the 
 | Method and path | Returns | Notes |
 |---|---|---|
 | `GET /v1/site` | Site | The settings resource |
-| `GET /v1/routes` | Route[] | The route table: every built path, its type, ID, template, parent and breadcrumbs ([IA §3](ia.md#3-routes)) |
-| `GET /v1/navigation` and `/v1/navigation/{key}` | Menu[] and Menu | `primary`, `actions`, `footer` |
-| `GET /v1/pages` and `/v1/pages/{id}` | Page | |
+| `GET /v1/structures/{channel}` | Structure | `site`: the page tree and the menus ([structures §2](ia.md#2-the-site-structure)); `planet`: the places ([structures §5](ia.md#5-the-planet-structure)) |
+| `GET /v1/routes` | Route[] | Derived from the site structure: every built path, its node, item, template and breadcrumbs ([structures §3](ia.md#3-routes)) |
+| `GET /v1/articles` and `/v1/articles/{id}` | Article | Filters: `kind` (`page`, `note`, `talk`), `topic` |
 | `GET /v1/case-studies` and `/v1/case-studies/{id}` | Case study | Filters: `practiceArea`, `featured`, `contribution`, `outcomeType` |
 | `GET /v1/practice-areas` and `/v1/practice-areas/{id}` | Practice area | |
 | `GET /v1/leadership-topics` and `/v1/leadership-topics/{id}` | Leadership topic | |
-| `GET /v1/notes` and `/v1/notes/{id}` | Note | Later |
+| `GET /v1/galleries` and `/v1/galleries/{id}` | Gallery | |
+| `GET /v1/resume` | Résumé | A single resource |
 | `GET /v1/vocabularies/{name}` | Term[] | `contributions`, `outcome-types`, `engagement-types`, `tools`, `topics` |
 | `GET /v1/people` and `/v1/people/{id}` | Person | |
 | `GET /v1/media/{id}` | Media | The ID may contain slashes (`case-studies/x/cover`); includes the master's URL, size and type |
-| `GET /v1/places` and `/v1/places/{id}` | Place | The planet |
 | `GET /v1/redirects` | Redirect[] | |
 
 A request for a missing resource, or one the token can't see, returns `404` (not `403`), so the API doesn't reveal what exists.
@@ -105,6 +105,7 @@ When content or media is published, unpublished or changed, the backend sends a 
 |---|---|---|
 | `content.published` | A resource becomes `published`, or a published one changes | Rebuild |
 | `content.unpublished` | A published resource is archived or withdrawn | Rebuild; the routes lock requires a redirect |
+| `structure.updated` | A channel's structure (`site` or `planet`) changes | Rebuild; a moved site node needs a redirect (the routes lock) |
 | `media.updated` | A media file or its metadata changes | Rebuild |
 
 - **Payload:** `{ "event": "content.published", "type": "caseStudy", "id": "…", "at": "…" }`.
@@ -119,22 +120,23 @@ The `content/` folder is the mock API. Every endpoint maps to a file with exactl
 ```text
 content/
 ├── site.json                                  GET /v1/site
-├── navigation/{key}.json                      GET /v1/navigation/{key}
-├── pages/{id}.json                            GET /v1/pages/{id}
+├── structures/site.json                       GET /v1/structures/site
+├── structures/planet.json                     GET /v1/structures/planet
+├── articles/{id}.json                         GET /v1/articles/{id}
 ├── case-studies/{id}.json                     GET /v1/case-studies/{id}
 ├── practice-areas/{id}.json                   GET /v1/practice-areas/{id}
 ├── leadership-topics/{id}.json                GET /v1/leadership-topics/{id}
-├── notes/{id}.json                            GET /v1/notes/{id}           (later)
+├── galleries/{id}.json                        GET /v1/galleries/{id}
+├── resume.json                                GET /v1/resume
 ├── vocabularies/{name}.json                   GET /v1/vocabularies/{name}
 ├── people/{id}.json                           GET /v1/people/{id}
-├── places/{id}.json                           GET /v1/places/{id}
 ├── redirects.json                             GET /v1/redirects
 ├── media/{id}.json + media/{id}.{ext}         GET /v1/media/{id} and its master (see media)
 └── routes.lock.json                           written by the build; not an endpoint
 ```
 
 - **Lists** (`GET /v1/case-studies`) are the folder. The `files` adapter reads every file in it and applies the same filter, sort and paging functions the mock server uses (`src/site/content/query.ts`), so the semantics can't drift.
-- **`/v1/routes`** is derived from the resources by shared code, in the adapter and in the mock server alike.
+- **`/v1/routes`** is derived from the site structure and the items it maps by shared code, in the adapter and in the mock server alike.
 - **Media URLs.** In a file, a media resource names its master by a relative `file`. The mock server turns it into a `url`, as the real API would.
 - **The mock server** (`npm run content:serve`, phase 3) serves `content/` as `/v1/…` with the envelopes, filters, ETags and errors above. The contract test runs the `api` adapter against it and compares every resource with the `files` adapter's result.
 - **Snapshot.** `npm run content:snapshot` does the opposite: it reads a real API and writes this layout ([spec §6](spec.md#6-publishing-rebuilding-and-previews)).

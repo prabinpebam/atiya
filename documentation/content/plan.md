@@ -4,25 +4,25 @@ How the site moves from hardcoded content to data-driven content, in phases that
 
 > **TL;DR.**
 > - **Phase 0: the same site, from data.** The contract, the `files` adapter, the checks, and today's content moved into `content/`. No visible change.
-> - **Phase 1: the IA.** The routes, templates, menus and rules of the information architecture; `/classic/` redirects; the planet's places.
+> - **Phase 1: the IA.** The site structure becomes the information architecture (its routes at the root, templates, menus and rules); `/classic/` redirects; the planet structure is re-pointed at the new pages.
 > - **Phase 2: the first articles.** Three case studies, four practice areas, Leadership and About, with their media organised, plus the three new blocks they need.
 > - **Phase 3: API-ready.** The `api` adapter, a mock server, contract tests, OpenAPI, snapshots, webhook rebuilds and previews.
-> - **Before phase 1 you decide O1 and O2:** the URLs, and how the planet's landmarks map to the IA (§7). Phase 0 doesn't wait for them.
+> - **Decided:** O1 (the IA's routes at the root) and O2 (a navigation structure per channel, so the planet can diverge from the site). Still open before phase 1: O5 (the home page) and O7 (talks and side projects on the site) (§7).
 
 ## 1. Today's content, and where it goes
 
 | Where it's hardcoded today | What | Becomes |
 |---|---|---|
-| `src/pages/index.astro` | The landing's title, hero name, standfirst, picture and alt text, both buttons, the note and its link to the docs | `pages/home` (`hero` and `text` blocks); the picture becomes `media/pages/home/hero` |
-| `src/pages/classic/index.astro` | Title, heading, standfirst, the "Sections" list | A page with a `collection` block (phase 0); `/` in phase 1 |
+| `src/pages/index.astro` | The landing's title, hero name, standfirst, picture and alt text, both buttons, the note and its link to the docs | The site structure's `home` hub (`hero` and `text` blocks); the picture becomes `media/structures/site/home/hero` |
+| `src/pages/classic/index.astro` | Title, heading, standfirst, the "Sections" list | A `classic` hub listing its children (phase 0); gone in phase 1, when `/` is the IA's home |
 | `src/pages/classic/[id].astro` | The title pattern "— Prabin Pebam", the "Classic site" crumb | Derived from `site.name` and the route table |
-| `src/content/landmarks/*.md` (7) | Each landmark's title, kicker, summary, order and body; the dialog; the planet's placement | A page per landmark (phase 0), then IA pages (phase 1); and 7 `places` with `dialog` and `world` |
-| `src/site/classic.ts` | The header's menu (built from landmarks); the "Explore in 3D" label | `navigation/primary` and `navigation/actions` |
-| `src/site/components/compounds/SiteFooter.astro` | The footer's default links | `navigation/footer` |
+| `src/content/landmarks/*.md` (7) | Each landmark's title, kicker, summary, order and body; the dialog; the planet's placement | An article (kind `page`) per landmark under the `classic` hub (phase 0), replaced by the IA's pages (phase 1); and the planet structure's 7 places, with `dialog` and `world` |
+| `src/site/classic.ts` | The header's menu (built from landmarks); the "Explore in 3D" label | The site structure's `primary` and `actions` menus |
+| `src/site/components/compounds/SiteFooter.astro` | The footer's default links | The site structure's `footer` menu |
 | `src/site/design/meta.ts` | `SITE_NAME` | `site.name` |
 | `src/site/components/compounds/PageShell.astro` | The default description, social image and its alt text | `site.description`, `site.socialImage` |
 | `src/layouts/BaseLayout.astro` | The `/play` page's description | `site.description` |
-| `src/pages/play.astro` | The landmarks JSON for the game | Built from `places` and their targets |
+| `src/pages/play.astro` | The landmarks JSON for the game | Built from the planet structure |
 
 **Staying in code**, as the spec's boundary says:
 - interface strings;
@@ -41,20 +41,20 @@ The pipeline, proved on the content that exists, with no visible change.
 1. **The contract:** Zod schemas for every resource in the [model](model.md), in `src/site/content/schema/`, with JSON Schema output to `content/schema/`.
 2. **The `files` adapter,** the shared query functions (`query.ts`), and the custom loader behind Astro collections in `src/content.config.ts`.
 3. **The repository and view mappers,** and the link and media resolvers (the `local` strategy).
-4. **`npm run content:check`:** schema, integrity and the IA rules V1 to V8 and V10; wired into `npm test`.
-5. **Migration.** Write `content/`: `site`, the three menus, `pages/home`, `pages/classic`, one page per landmark (their bodies, from Markdown into blocks), 7 `places`, `people/prabin`, and the first media (§1). Delete `src/content/landmarks/` and the copy from the pages listed in §1.
-6. **Rendering from data:** the current routes (`/`, `/classic/`, `/classic/<id>/`) read the repository. `/play` builds its JSON from `places`.
+4. **`npm run content:check`:** schema, integrity and the rules V1 to V8, V10, V12 and V13 (V4's four primary destinations apply from phase 1); wired into `npm test`.
+5. **Migration.** Write `content/`: `site`; the site structure (the `home` hub, a `classic` hub with an item node per landmark, and the three menus); one article per landmark (their bodies, from Markdown into blocks); the planet structure (7 places, each showing its landmark's article, with that article as its full page); `people/prabin`; and the first media (§1). Delete `src/content/landmarks/` and the copy from the pages listed in §1.
+6. **Rendering from data:** the site structure reproduces the current routes (`/`, `/classic/`, `/classic/<id>/`), read through the repository. `/play` builds its JSON from the planet structure.
 7. **Guarding against regressions:** a unit test that fails on copy in `src/pages/` (text nodes and string props other than the interface strings' module), so hardcoding can't come back.
 
 ### Phase 1: the information architecture
 
-Needs decisions O1 and O2 (§7).
+Follows decisions O1 and O2; needs O5 and O7 (§7).
 
-1. **The tree and routes:** the [IA's](ia.md) pages as content (home, work, expertise, leadership, about, contact, resume, not-found), the route table, and `src/pages/[...path].astro` with a template per type. The current per-page routes are deleted.
+1. **The tree and routes:** the site structure becomes the [IA](ia.md#2-the-site-structure) at the root (hubs for home, work, expertise and leadership; item nodes for about, contact, the résumé and not-found), the route table, and `src/pages/[...path].astro` with a template per item type and one for hubs. The current per-page routes and the `classic` hub are deleted.
 2. **The rules** in `src/site/content/rules/`: current item, breadcrumbs, local navigation, previous and next, card metadata. Each has unit tests against fixtures.
-3. **Menus** from `navigation/*`: the header, the phone menu, the footer.
-4. **Redirects and the routes lock (V9):** `/classic/` and `/classic/<id>/` redirect by the O1 decision. `routes.lock.json` is written and checked from now on.
-5. **The planet:** places target IA pages by the O2 decision. The game's fast travel and dialog read from places; the landmark → page link uses the route table.
+3. **Menus** from the site structure: the header, the phone menu, the footer.
+4. **Redirects and the routes lock (V9):** `/classic/` redirects to `/`, and each `/classic/<id>/` to its place's full page (O1). `routes.lock.json` is written and checked from now on.
+5. **The planet structure** is re-pointed as [structures §7](ia.md#7-from-todays-site) proposes: each place gets its entries and its full page on the new site. The game's fast travel and dialogs read the planet structure; every link out uses the route table.
 6. **Outputs:** `sitemap.xml`, the 404 page, and each page's canonical and social-card tags from `seo` and `site`.
 
 ### Phase 2: the first articles
@@ -93,11 +93,11 @@ Each phase is done when every row for it is true and evidenced (a test name, a c
 | 1 | 0 | Every resource in `content/` validates; `content:check` passes and is part of `npm test` | Test run |
 | 2 | 0 | No editorial copy, menu item, content URL or media path remains in `src/pages/`, `src/layouts/` or `src/site/` (the §1 list is empty) | The regression unit test; a review of the diff |
 | 3 | 0 | The site looks and behaves as before: the site E2E groups and the planet's E2E pass unchanged | E2E |
-| 4 | 0 | `/play` gets its places from the repository; fast travel and dialogs are unchanged | The planet's E2E |
-| 5 | 1 | Every IA page renders from the route table; there are no per-page content routes | Route table test; E2E "content" group |
+| 4 | 0 | `/play` gets its places from the planet structure through the repository; fast travel and dialogs are unchanged | The planet's E2E |
+| 5 | 1 | Every page renders from the route table, which comes from the site structure; there are no per-page content routes | Route table test; E2E "content" group |
 | 6 | 1 | The current item, breadcrumbs, local navigation and previous/next follow the IA rules | Unit tests on the rules; E2E |
 | 7 | 1 | The old URLs redirect; the routes lock is enforced | E2E on redirects; a check that fails on a removed path |
-| 8 | 1 | The planet's places target IA pages; no second taxonomy (O2) | Unit test; the planet's E2E |
+| 8 | 1 | The channels are independent: rearranging the planet structure changes no item and no site path, and the reverse; every place and entry has a page on the site (V12, V13) | Unit tests that change one structure and compare the other's output; `content:check`; the planet's E2E |
 | 9 | 2 | Three case studies, four practice areas, Leadership, About, Contact and the résumé are published and pass V1 to V11 | `content:check`; E2E; the governance review recorded in each item's `reviewedAt` |
 | 10 | 2 | Every image has alt text and credit; video has captions and a poster; budgets hold | `content:check` |
 | 11 | 2 | Axe passes in light and dark on every template; bundle and font budgets hold | E2E; `npm run verify:prod` |
@@ -129,7 +129,7 @@ A new E2E group, **content**, covers:
 |---|---|---|
 | Long text is awkward to write in JSON | Slow authoring before the backend exists | Markdown in blocks; editor validation from the JSON Schemas. If it's still painful, a Markdown-with-front-matter importer can write the same JSON (it's an authoring tool, not a second format) |
 | The repository grows with media | Slow clones; the Pages size limit | Budgets and checks (media §4); video on a video host; masters only, never generated sizes |
-| The planet's landmarks don't match the IA | A second taxonomy, which the IA forbids | Decision O2 before phase 1 |
+| The planet and the site drift apart | Visitors find things on the planet with no page, or lose their way between the two | V12 and V13 fail the build on a dead end; every place links its full page on the site |
 | Build time grows with images | Slower deploys | Astro's content layer and image caches kept between CI runs |
 | A backend can't serve the contract exactly | The swap costs more than an adapter | The contract is plain REST and JSON; any backend can sit behind a thin adapter service that serves `/v1` |
 | Hardcoded copy creeps back | The goal erodes | The regression unit test (DoD 2) |
@@ -150,9 +150,10 @@ The migration is then a snapshot to compare, the `api` adapter pointed at the ba
 
 | ID | Decision | Recommendation | Needed by |
 |---|---|---|---|
-| O1 | **The URLs.** The IA's routes at the root (`/work/…`), with `/classic/…` redirecting; or a `/classic/` prefix kept in front of every IA path | The root, with redirects ([IA §7](ia.md#7-the-classic-site-and-the-home-page)) | Phase 1 |
-| O2 | **The planet's landmarks and the IA.** Which page each landmark leads to; what the Amphitheater (talks) and Greenhouse (side projects) become, since the IA has no pages for them; and whether Expertise needs a landmark | Map Workshop, Town Hall, Lighthouse and Post Office as proposed ([IA §6](ia.md#6-the-planet)); decide the other three with the IA's backlog | Phase 1 |
+| O1 | **The URLs.** The IA's routes at the root (`/work/…`), with `/classic/…` redirecting; or a `/classic/` prefix kept in front of every IA path | **Decided:** the root, with redirects ([structures §7](ia.md#7-from-todays-site)) | Phase 1 |
+| O2 | **The planet and the site.** One shared navigation, or one per channel | **Decided:** a structure per channel mapping the same items, joined by V12 and V13; the first planet structure is in [structures §7](ia.md#7-from-todays-site) | Phase 1 |
 | O3 | **Rich text.** A Markdown subset inside blocks (D6), or structured spans | The Markdown subset | Phase 0 |
 | O4 | **Video.** Short clips in the repository within the budget, and longer ones on YouTube or Vimeo | As proposed ([media §4](media.md#4-formats-and-budgets)) | Phase 2 |
 | O5 | **The home page.** The landing's planet-or-pages choice folded into the IA's home page, or kept as its own step before it | Folded in: the planet as the hero's action, remembering the last choice | Phase 1 |
 | O6 | **Notes.** In the first release or later | Later, as the IA advises, once there's a maintenance plan | Phase 2 |
+| O7 | **Talks and side projects on the site.** The planet has the Amphitheater (talks) and the Greenhouse (prototypes, galleries); the IA has no pages for them | Talks as articles under About until there are enough for a Talks hub; prototypes as case studies under Work (`engagementType: prototype-or-experiment`); a gallery the planet shows gets its own page under Work (V13); one only embedded in a body needs none | Phase 1 |
