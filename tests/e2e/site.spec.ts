@@ -152,12 +152,21 @@ test.describe('site design system', () => {
     await expect(wrapped.locator('[data-carousel-counter]')).toHaveText('14 of 14');
   });
 
-  test('a carousel with a peek: neighbours smaller and fading, reaching beside it where there is room, and a neighbour brings itself to the middle', async ({ page }) => {
+  test('a carousel with a peek: neighbours smaller under the carousel\'s own fade, reaching beside it where there is room, and a neighbour brings itself to the middle', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/design/demo/article-layout/');
     const car = page.locator('[data-carousel][data-peek]').first();
     await car.scrollIntoViewIfNeeded();
+    // the fade is the carousel's, not the slides': mid-glide no slide fades, and the mask stays put
+    const faded = () =>
+      car.evaluate((el) => ({
+        mask: getComputedStyle(el.querySelector('.viewport')!).maskImage,
+        slides: [...el.querySelectorAll('.slide-body')].filter((b) => getComputedStyle(b).opacity !== '1' || getComputedStyle(b).maskImage !== 'none').length,
+      }));
+    const before = await faded();
     await car.getByRole('button', { name: 'Next slide' }).click();
+    await page.waitForTimeout(120);
+    expect(await faded()).toEqual({ mask: before.mask, slides: 0 });
     await expect(car.locator('[data-carousel-counter]')).toHaveText(/^2 of /);
     await page.waitForTimeout(800);
     const g = await car.evaluate((el) => {
@@ -170,7 +179,6 @@ test.describe('site design system', () => {
         reachesOut: v.left < r.left - 50 && v.right > r.right + 50,
         centred: Math.abs(current.left + current.width / 2 - (r.left + r.width / 2)),
         scales: [scale(bodies[0]), scale(bodies[1]), scale(bodies[2])],
-        fades: getComputedStyle(bodies[2]).maskImage,
         pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       };
     });
@@ -179,7 +187,7 @@ test.describe('site design system', () => {
     expect(g.scales[1]).toBeCloseTo(1, 2);
     expect(g.scales[0]).toBeCloseTo(0.88, 2);
     expect(g.scales[2]).toBeCloseTo(0.88, 2);
-    expect(g.fades).toContain('linear-gradient');
+    expect(before.mask).toContain('linear-gradient');
     expect(g.pageOverflow).toBe(0);
 
     // choosing the neighbour on the right moves to it, and doesn't open the lightbox

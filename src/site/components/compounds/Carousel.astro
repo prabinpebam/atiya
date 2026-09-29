@@ -3,9 +3,11 @@
  * A non-rotating carousel: a scroll-snap row of captioned pictures with previous and next buttons and
  * a counter (which can be left out), and dots or a filmstrip of thumbnails to pick a slide. The
  * filmstrip scrolls sideways in one row, or wraps onto more rows. It never moves unless the reader asks.
- * With peek, the neighbouring slides show a little smaller, fading to nothing across their width; where
- * the page has room beside the carousel they reach out into it (up to the page's main region, or a box
- * marked data-bleed-bounds), so they aren't cut off.
+ * With peek, the neighbouring slides show a little smaller, and the carousel fades out beside the slide
+ * being shown: whole to its neighbours' near edges, then to nothing across a slide's width. The fade is the
+ * carousel's own and stays put, so the slides move under it. Where the page has room beside the carousel
+ * it reaches out into it (up to the page's main region, or a box marked data-bleed-bounds); where it has
+ * less, the fade ends at the edge, so nothing is cut off.
  * @tier compound
  * @a11y Follows the APG carousel pattern without rotation; every slide is a named group.
  * @a11y The previous and next buttons stop at the ends instead of wrapping.
@@ -46,7 +48,7 @@ interface Props {
   label?: string;
   /** Where the article layout may place it. */
   width?: 'content' | 'popout' | 'wide' | 'full';
-  /** Shows the neighbouring slides, smaller and fading out, reaching beside the carousel where the page has room. */
+  /** Shows the neighbouring slides, smaller, under a fade that reaches beside the carousel where the page has room. */
   peek?: boolean;
   /** The lightbox group name. */
   lightbox?: string;
@@ -152,6 +154,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
 
 <style>
   .carousel {
+    --slide-gap: var(--space-4);
     display: grid;
     gap: var(--space-4);
   }
@@ -163,7 +166,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
 
   .track {
     display: flex;
-    gap: var(--space-4);
+    gap: var(--slide-gap);
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
@@ -188,40 +191,41 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
      script) and keeps --inset of each neighbour in view where there's none; the slide being shown keeps
      the carousel's width. Before the script runs: a plain sliver of each neighbour. */
   .carousel[data-peek] .viewport {
+    --inset-now: var(--inset, var(--c-carousel-peek-min));
+    /* where each neighbour's near edge rests, from the viewport's sides, and the width of the slide shown */
+    --near-start: calc(var(--bleed-start, 0px) + var(--inset-now) - var(--slide-gap));
+    --near-end: calc(var(--bleed-end, 0px) + var(--inset-now) - var(--slide-gap));
+    --shown: calc(100% - var(--bleed-start, 0px) - var(--bleed-end, 0px) - 2 * var(--inset-now));
     margin-inline: calc(var(--bleed-start, 0px) * -1) calc(var(--bleed-end, 0px) * -1);
-  }
-
-  .carousel[data-peek] .track {
-    padding-inline: calc(var(--bleed-start, 0px) + var(--inset, var(--c-carousel-peek-min))) calc(var(--bleed-end, 0px) + var(--inset, var(--c-carousel-peek-min)));
-    scroll-padding-inline: var(--bleed-start, 0px) var(--bleed-end, 0px);
-  }
-
-  /* with too little room for a whole neighbour, what shows fades out before the edge: nothing is cut off */
-  .carousel[data-peek][data-bleed='partial'] .viewport {
+    /* the fade belongs to the carousel, not the slides: it stays put while they move under it. Whole from
+       the slide shown to its neighbours' near edges, then to nothing across a slide's width beyond them, or
+       by the viewport's edge where the page has less room, so nothing is cut off */
     mask-image: linear-gradient(
       to right,
-      transparent,
-      currentColor calc(var(--bleed-start, 0px) + var(--inset, 0px)),
-      currentColor calc(100% - var(--bleed-end, 0px) - var(--inset, 0px)),
-      transparent
+      transparent max(0px, calc(var(--near-start) - var(--shown))),
+      currentColor var(--near-start),
+      currentColor calc(100% - var(--near-end)),
+      transparent min(100%, calc(100% - var(--near-end) + var(--shown)))
     );
   }
 
-  /* a neighbour (--peek 1; 0 in the middle, from the script as it scrolls): smaller, and fading out across
-     its whole width, away from the slide being shown */
+  .carousel[data-peek] .track {
+    padding-inline: calc(var(--bleed-start, 0px) + var(--inset-now)) calc(var(--bleed-end, 0px) + var(--inset-now));
+    scroll-padding-inline: var(--bleed-start, 0px) var(--bleed-end, 0px);
+  }
+
+  /* a neighbour (--peek 1; 0 in the middle, from the script as it scrolls) is a little smaller, drawn from
+     its edge nearest the slide shown; its fade is the carousel's */
   .carousel[data-peek] .slide {
     --peek: 0;
   }
 
   .carousel[data-peek] .slide-body {
     transform: scale(calc(1 - var(--peek) * (1 - var(--c-carousel-peek-scale))));
-    opacity: calc(1 - var(--peek) * (1 - var(--c-carousel-peek-opacity)));
-    mask-image: linear-gradient(to right, currentColor calc((1 - var(--peek)) * 100%), transparent);
   }
 
   .carousel[data-peek] .slide[data-side='before'] .slide-body {
     transform-origin: 100% 50%;
-    mask-image: linear-gradient(to left, currentColor calc((1 - var(--peek)) * 100%), transparent);
   }
 
   .carousel[data-peek] .slide[data-side='after'] .slide-body {
@@ -338,8 +342,9 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
 
   /* a phone shows one slide at a time */
   @media (max-width: 40rem) {
-    .carousel[data-peek] .track {
+    .carousel[data-peek] .viewport {
       --inset: 0px;
+      mask-image: none;
     }
   }
 
@@ -447,22 +452,22 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
         const v = getComputedStyle(root).getPropertyValue(name).trim();
         return v.endsWith('rem') ? parseFloat(v) * rem() : parseFloat(v);
       };
-      // the room beside the carousel, up to its bounds (and the viewport); no more than a whole neighbour needs
+      // the room beside the carousel, up to its bounds (and the viewport): no more than the fade needs (the
+      // gap to a neighbour, then a slide's width)
       const room = () => {
         const r = root.getBoundingClientRect();
         const box = (root.closest('[data-bleed-bounds]') ?? root.closest('main') ?? document.documentElement).getBoundingClientRect();
         const left = Math.max(box.left, 0);
         const right = Math.min(box.right, document.documentElement.clientWidth);
         const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-        const whole = r.width * token('--c-carousel-peek-scale') + gap;
+        const reach = r.width + gap;
         const min = token('--c-carousel-peek-min');
-        const start = narrow.matches ? 0 : Math.max(0, Math.min(r.left - left, whole));
-        const end = narrow.matches ? 0 : Math.max(0, Math.min(right - r.right, whole));
+        const start = narrow.matches ? 0 : Math.max(0, Math.min(r.left - left, reach));
+        const end = narrow.matches ? 0 : Math.max(0, Math.min(right - r.right, reach));
         const inset = narrow.matches ? 0 : Math.max(0, min - Math.min(start, end));
         root.style.setProperty('--bleed-start', `${start}px`);
         root.style.setProperty('--bleed-end', `${end}px`);
         root.style.setProperty('--inset', `${inset}px`);
-        root.dataset.bleed = start >= whole - 1 && end >= whole - 1 ? 'full' : 'partial';
       };
       // how far each slide is from the middle: 0 there, 1 a whole slide away (a neighbour)
       const shade = () => {

@@ -12,7 +12,7 @@ const MANY = [...SAMPLES, ...SAMPLES];
   <Carousel items={SAMPLES.slice(0, 5)} label="Painted planet tour" lightbox="carousel-quiet" />
 </Example>
 
-<Example title="With a peek" layout="block" description="The neighbours show a little smaller, fading to nothing across their width. Where the page has room they reach out beside the carousel, so they aren't cut off (here the frame is the page); a phone shows one slide. Choosing a neighbour brings it to the middle.">
+<Example title="With a peek" layout="block" description="The neighbours show a little smaller, under the carousel's own fade: whole to their near edges, then to nothing across a slide's width. The slides move under it. Where the page has room the fade reaches out beside the carousel (here the frame is the page); where it has less, it ends at the edge. A phone shows one slide. Choosing a neighbour brings it to the middle.">
   <div class="column">
     <Carousel items={SAMPLES} label="Planet scenes" peek lightbox="carousel-peek" />
   </div>
