@@ -1,11 +1,13 @@
 ---
 /**
- * A non-rotating carousel: a scroll-snap row of captioned pictures with previous and next buttons,
- * pagination dots and a visible counter. It never moves unless the reader asks it to.
+ * A non-rotating carousel: a scroll-snap row of captioned pictures with previous and next buttons and
+ * a counter (which can be left out), and dots or a filmstrip of thumbnails to pick a slide. The
+ * filmstrip scrolls sideways in one row, or wraps onto more rows. It never moves unless the reader asks.
  * @tier compound
  * @a11y Follows the APG carousel pattern without rotation; every slide is a named group.
  * @a11y The previous and next buttons stop at the ends instead of wrapping.
- * @a11y Arrow keys work when the slide track has focus; dots are buttons for direct slide choice.
+ * @a11y Arrow keys work when the slide track has focus; dots or thumbnails are buttons for direct slide choice, named after the slide they show.
+ * @a11y Without the buttons the counter stays for screen readers (announced as the slide changes); the dots or filmstrip remain the visible way to move.
  * @key Left / Right: previous / next slide when the track is focused
  */
 import Image from '../fundamentals/Image.astro';
@@ -48,6 +50,10 @@ interface Props {
   id?: string;
   /** The image sizes hint. */
   sizes?: string;
+  /** Shows the previous and next buttons with the counter. Off, the dots or filmstrip are the controls. */
+  arrows?: boolean;
+  /** How to pick a slide: dots, or a filmstrip of thumbnails in one row that scrolls sideways or wrapping onto more rows. */
+  pager?: 'dots' | 'filmstrip' | 'filmstrip-wrap';
 }
 
 const {
@@ -58,8 +64,11 @@ const {
   lightbox,
   id = `carousel-${Math.random().toString(36).slice(2, 8)}`,
   sizes,
+  arrows = true,
+  pager = 'dots',
 } = Astro.props;
 const total = items.length;
+const status = total > 0 ? `1 of ${total}` : '0 of 0';
 ---
 
 <section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek ? '' : undefined} aria-roledescription="carousel" aria-label={label}>
@@ -99,20 +108,40 @@ const total = items.length;
       }
     </div>
   </div>
-  <div class="controls">
-    <IconButton label="Previous slide" icon="chevron-left" variant="secondary" disabled={total <= 1} data-carousel-prev="" />
-    <p class="status" aria-live="polite" aria-atomic="true" data-carousel-counter>{total > 0 ? `1 of ${total}` : '0 of 0'}</p>
-    <IconButton label="Next slide" icon="chevron-right" variant="secondary" disabled={total <= 1} data-carousel-next="" />
-  </div>
-  <div class="dots" role="group" aria-label="Choose slide">
-    {
-      items.map((_, index) => (
-        <button class="dot" type="button" aria-label={`Show slide ${index + 1}`} aria-current={index === 0 ? 'true' : undefined} data-carousel-dot={String(index)}>
-          <span class="sr-only">Show slide {index + 1}</span>
-        </button>
-      ))
-    }
-  </div>
+  {
+    arrows ? (
+      <div class="controls">
+        <IconButton label="Previous slide" icon="chevron-left" variant="secondary" disabled={total <= 1} data-carousel-prev="" />
+        <p class="status" aria-live="polite" aria-atomic="true" data-carousel-counter>
+          {status}
+        </p>
+        <IconButton label="Next slide" icon="chevron-right" variant="secondary" disabled={total <= 1} data-carousel-next="" />
+      </div>
+    ) : (
+      <p class="sr-only" aria-live="polite" aria-atomic="true" data-carousel-counter>
+        {status}
+      </p>
+    )
+  }
+  {
+    pager === 'dots' ? (
+      <div class="dots" role="group" aria-label="Choose slide">
+        {items.map((_, index) => (
+          <button class="dot" type="button" aria-label={`Show slide ${index + 1}`} aria-current={index === 0 ? 'true' : undefined} data-carousel-dot={String(index)}>
+            <span class="sr-only">Show slide {index + 1}</span>
+          </button>
+        ))}
+      </div>
+    ) : (
+      <div class="strip" role="group" aria-label="Choose slide" data-wrap={pager === 'filmstrip-wrap' ? '' : undefined} data-carousel-strip>
+        {items.map((item, index) => (
+          <button class="thumb" type="button" aria-label={`Show slide ${index + 1}: ${item.alt}`} aria-current={index === 0 ? 'true' : undefined} data-carousel-dot={String(index)}>
+            <Image src={item.thumb ?? item.src} alt="" width={item.width} height={item.height} ratio="3/2" focus={item.focus} radius="none" />
+          </button>
+        ))}
+      </div>
+    )
+  }
 </section>
 
 <style>
@@ -215,6 +244,54 @@ const total = items.length;
     }
   }
 
+  /* the filmstrip: one row that scrolls sideways (centred while it fits), or rows that wrap */
+  .strip {
+    display: flex;
+    justify-content: safe center;
+    gap: var(--space-2);
+    padding: var(--space-1);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-scrollbar-thumb) transparent;
+  }
+
+  .strip[data-wrap] {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .thumb {
+    flex: none;
+    width: var(--c-carousel-thumb);
+    padding: var(--space-0);
+    border: var(--border-strong) solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    overflow: hidden;
+    opacity: var(--c-carousel-thumb-rest);
+    cursor: pointer;
+    transition:
+      opacity var(--duration-fast) var(--ease-standard),
+      border-color var(--duration-fast) var(--ease-standard);
+  }
+
+  .thumb[aria-current='true'] {
+    border-color: var(--c-carousel-thumb-on);
+    opacity: 1;
+  }
+
+  @media (hover: hover) {
+    .thumb:hover {
+      opacity: 1;
+    }
+  }
+
+  .thumb:active {
+    opacity: 1;
+  }
+
   @media (max-width: 40rem) {
     .carousel[data-peek] .slide {
       flex-basis: 100%;
@@ -222,7 +299,8 @@ const total = items.length;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .track {
+    .track,
+    .strip {
       scroll-behavior: auto;
     }
   }
@@ -230,7 +308,7 @@ const total = items.length;
 
 <script>
   import { each } from '../../scripts/page';
-  import { clampIndex, counter, nearest } from '../../scripts/media';
+  import { clampIndex, counter, nearest, reveal } from '../../scripts/media';
 
   each<HTMLElement>('[data-carousel]', (root, signal) => {
     if (root.dataset.ready !== undefined) return;
@@ -242,32 +320,54 @@ const total = items.length;
     const next = root.querySelector<HTMLButtonElement>('[data-carousel-next]');
     const count = root.querySelector<HTMLElement>('[data-carousel-counter]');
     const dots = [...root.querySelectorAll<HTMLButtonElement>('[data-carousel-dot]')];
-    if (!track || !prev || !next || !count || slides.length === 0) return;
+    const strip = root.querySelector<HTMLElement>('[data-carousel-strip]');
+    if (!track || !count || slides.length === 0) return;
 
     let current = 0;
+    let revealed = 0;
     let frame = 0;
+    // a move the reader asked for: the counter already shows where it's going, so the glide's
+    // in-between positions don't count until the track settles (scrollend, or a pause where it's missing)
+    let asked = false;
+    let idle = 0;
+    const hasEnd = 'onscrollend' in window;
+    const settle = () => {
+      asked = false;
+      update(nearest(track.scrollLeft, offsets()));
+    };
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const offsets = () => slides.map((slide) => slide.offsetLeft - track.offsetLeft);
 
     const update = (i: number) => {
       current = clampIndex(i, slides.length);
       count.textContent = counter(current, slides.length);
-      prev.disabled = current === 0;
-      next.disabled = current === slides.length - 1;
+      if (prev) prev.disabled = current === 0;
+      if (next) next.disabled = current === slides.length - 1;
       dots.forEach((dot, n) => {
         if (n === current) dot.setAttribute('aria-current', 'true');
         else dot.removeAttribute('aria-current');
       });
+      // a filmstrip that scrolls keeps the frame being shown in view (within itself, not the page)
+      const on = dots[current];
+      if (strip && on && current !== revealed && strip.scrollWidth > strip.clientWidth) {
+        revealed = current;
+        const s = strip.getBoundingClientRect();
+        const r = on.getBoundingClientRect();
+        const by = reveal(r.left, r.right, s.left, s.right, on.offsetWidth / 2);
+        if (by) strip.scrollTo({ left: strip.scrollLeft + by, behavior: reduce ? 'auto' : 'smooth' });
+      }
     };
 
     const go = (i: number) => {
       const nextIndex = clampIndex(i, slides.length);
+      // already there: no glide, nothing to wait for
+      asked = nearest(track.scrollLeft, offsets()) !== nextIndex;
       slides[nextIndex]?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduce ? 'auto' : 'smooth' });
       update(nextIndex);
     };
 
-    prev.addEventListener('click', () => go(current - 1));
-    next.addEventListener('click', () => go(current + 1));
+    prev?.addEventListener('click', () => go(current - 1));
+    next?.addEventListener('click', () => go(current + 1));
     dots.forEach((dot, i) => dot.addEventListener('click', () => go(i)));
     track.addEventListener('keydown', (event) => {
       if (event.key === 'ArrowLeft') {
@@ -278,7 +378,11 @@ const total = items.length;
         go(current + 1);
       }
     });
+    track.addEventListener('scrollend', settle);
     track.addEventListener('scroll', () => {
+      window.clearTimeout(idle);
+      if (!hasEnd) idle = window.setTimeout(settle, 150);
+      if (asked) return;
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => update(nearest(track.scrollLeft, offsets())));
     });

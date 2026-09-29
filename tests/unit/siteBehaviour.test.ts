@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { keyAction, matchIndex, printable } from '../../src/site/scripts/listbox';
 import { applyTheme, parseTheme, readTheme, resolveTheme, THEME_KEY } from '../../src/site/scripts/theme';
-import { clampIndex, counter, nearest, swipe, wrap } from '../../src/site/scripts/media';
+import { clampIndex, counter, nearest, reveal, swipe, wrap } from '../../src/site/scripts/media';
 import { tuck, TUCK_SLACK } from '../../src/site/scripts/header';
 import { smart } from '../../src/site/design/typography';
 import { loadSite, resolveDocument, cssValue, merge, type Resolver } from '../../src/site/design/tokenModel';
@@ -96,6 +96,14 @@ describe('media helpers', () => {
     expect(counter(2, 7)).toBe('3 of 7');
     expect(clampIndex(9, 5)).toBe(4);
     expect(clampIndex(-1, 5)).toBe(0);
+  });
+
+  it('reveals a filmstrip frame: no scroll while it shows, just enough when it doesn\u2019t', () => {
+    expect(reveal(100, 180, 0, 400, 8)).toBe(0);
+    expect(reveal(-50, 30, 0, 400, 8)).toBe(-58);
+    expect(reveal(380, 460, 0, 400, 8)).toBe(68);
+    // wider than the strip: its start wins
+    expect(reveal(20, 520, 0, 400, 8)).toBe(12);
   });
 });
 

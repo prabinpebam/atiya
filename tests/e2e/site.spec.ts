@@ -115,6 +115,43 @@ test.describe('site design system', () => {
     await expect(carousel.getByRole('button', { name: 'Next slide' })).toBeDisabled();
   });
 
+  test('carousel variants: no arrows, a filmstrip that scrolls and keeps its frame in view, one that wraps', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/compounds/carousel/');
+    const example = (name: string) => page.locator('.example', { has: page.getByRole('heading', { name, exact: true }) }).locator('[data-carousel]');
+
+    const bare = example('Without the arrows');
+    await expect(bare.getByRole('button', { name: 'Next slide' })).toHaveCount(0);
+    await bare.getByRole('button', { name: 'Show slide 3' }).click();
+    await expect(bare.locator('[data-carousel-counter]')).toHaveText('3 of 5');
+
+    const film = example('With a filmstrip that scrolls');
+    const strip = film.locator('[data-carousel-strip]');
+    expect(await strip.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+    await film.getByRole('button', { name: /^Show slide 2:/ }).click();
+    await expect(film.locator('[data-carousel-counter]')).toHaveText('2 of 14');
+    for (let i = 0; i < 11; i++) await film.getByRole('button', { name: 'Next slide' }).click();
+    await expect(film.locator('[data-carousel-counter]')).toHaveText('13 of 14');
+    await page.waitForTimeout(600);
+    const inView = await strip.evaluate((el) => {
+      const s = el.getBoundingClientRect();
+      const r = el.querySelector('[aria-current="true"]')!.getBoundingClientRect();
+      return r.left >= s.left - 1 && r.right <= s.right + 1;
+    });
+    expect(inView).toBe(true);
+    // the glide ends where it was sent
+    await page.waitForTimeout(1500);
+    await expect(film.locator('[data-carousel-counter]')).toHaveText('13 of 14');
+
+    const wrapped = example('With a filmstrip that wraps');
+    const rows = await wrapped.locator('[data-carousel-strip] button').evaluateAll((bs) => new Set(bs.map((b) => Math.round(b.getBoundingClientRect().top))).size);
+    expect(rows).toBeGreaterThanOrEqual(2);
+    expect(await wrapped.locator('[data-carousel-strip]').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await expect(wrapped.getByRole('button', { name: 'Previous slide' })).toHaveCount(0);
+    await wrapped.getByRole('button', { name: /^Show slide 14:/ }).click();
+    await expect(wrapped.locator('[data-carousel-counter]')).toHaveText('14 of 14');
+  });
+
   test('the design library and the layouts pass axe in light and dark', async ({ page }) => {
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });

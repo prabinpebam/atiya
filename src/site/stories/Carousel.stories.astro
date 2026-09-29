@@ -3,6 +3,9 @@ import Example from '../library/Example.astro';
 import Carousel from '../components/compounds/Carousel.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
 import { SAMPLES } from '../design/samples';
+
+// the samples twice: more frames than a filmstrip row holds
+const MANY = [...SAMPLES, ...SAMPLES];
 ---
 
 <Example title="A quiet carousel" layout="block" description="There is no rotation: the reader moves slide by slide.">
@@ -15,6 +18,18 @@ import { SAMPLES } from '../design/samples';
 
 <Example title="Content width" layout="block" description="The same controls work in a narrower story column.">
   <Carousel items={SAMPLES.slice(2, 6)} label="Water and dusk scenes" width="content" />
+</Example>
+
+<Example title="Without the arrows" layout="block" description="arrows={false}: no buttons or counter below; the dots, a swipe or the arrow keys move it. The counter is still announced to screen readers.">
+  <Carousel items={SAMPLES.slice(0, 5)} label="Planet scenes without arrows" arrows={false} />
+</Example>
+
+<Example title="With a filmstrip that scrolls" layout="block" description='pager="filmstrip": thumbnails instead of dots, in one row that scrolls sideways and keeps the slide being shown in view. Centred while it fits.'>
+  <Carousel items={MANY} label="Planet scenes with a filmstrip" pager="filmstrip" />
+</Example>
+
+<Example title="With a filmstrip that wraps" layout="block" description='pager="filmstrip-wrap": every thumbnail in sight, wrapping onto more rows. Shown here without the arrows.'>
+  <Carousel items={MANY} label="Planet scenes with a wrapping filmstrip" pager="filmstrip-wrap" arrows={false} />
 </Example>
 
 <Lightbox />

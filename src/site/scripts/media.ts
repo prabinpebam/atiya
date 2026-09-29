@@ -34,3 +34,13 @@ export const counter = (i: number, n: number): string => `${i + 1} of ${n}`;
 
 /** Clamp to the slides that exist (a carousel doesn't wrap: its ends are real). */
 export const clampIndex = (i: number, n: number): number => Math.max(0, Math.min(n - 1, i));
+
+/**
+ * How far to scroll a strip so an item is in view with `pad` to spare: 0 if it already is. Positions
+ * are along the strip's axis (the item's start and end, the strip's visible start and end).
+ */
+export function reveal(start: number, end: number, viewStart: number, viewEnd: number, pad = 0): number {
+  if (start < viewStart + pad) return start - viewStart - pad;
+  if (end > viewEnd - pad) return Math.min(end - viewEnd + pad, start - viewStart - pad);
+  return 0;
+}
