@@ -388,6 +388,36 @@ describe('every component documents itself and has a story', () => {
 });
 
 // ---------- copy and paths ----------
+describe('icons: Font Awesome Duotone, imported one by one (scripts/import-site-icons.mjs)', () => {
+  const set = JSON.parse(read(join(ROOT, 'src/site/design/icon-set.json'))).icons as Record<string, string>;
+
+  it('the generated data is the set: the same names, the same Font Awesome icons, well-formed paths', async () => {
+    const { ICON_DATA } = await import('../../src/site/design/iconData');
+    expect(Object.keys(ICON_DATA).sort()).toEqual(Object.keys(set).sort());
+    for (const [name, i] of Object.entries(ICON_DATA)) {
+      expect(i.fa, name).toBe(set[name]);
+      expect(i.width, name).toBeGreaterThanOrEqual(256);
+      expect(i.width, name).toBeLessThanOrEqual(640);
+      expect(i.primary, name).toMatch(/^M[\d\s.MLHVCSQTAZmlhvcsqtaz-]+$/);
+      expect(i.secondary, name).toMatch(/^(M[\d\s.MLHVCSQTAZmlhvcsqtaz-]+)?$/);
+    }
+  });
+
+  it('iconData.ts is up to date (re-imported from the library when it is on this machine)', () => {
+    expect(() => execFileSync(process.execPath, [join(ROOT, 'scripts/import-site-icons.mjs'), '--check'], { stdio: 'pipe' })).not.toThrow();
+  });
+
+  it('the site never imports Font Awesome from a package: only its own imported data', () => {
+    const src = walk(join(ROOT, 'src/site'), /\.(astro|ts)$/).filter((f) => /@fortawesome/.test(read(f)));
+    expect(src.map(rel)).toEqual([]);
+  });
+
+  it('components draw an icon with both layers (svgOf body), never a single path of their own', () => {
+    const bad = walk(join(ROOT, 'src/site/components'), /\.astro$/).filter((f) => /<path[^>]*d=\{\w+\.d\}/.test(read(f)));
+    expect(bad.map(rel)).toEqual([]);
+  });
+});
+
 describe('copy and paths', () => {
   const text = siteAstro.map((f) => [rel(f), read(f)] as const);
 

@@ -90,7 +90,7 @@ const chosenIcon = iconOf(chosen?.icon);
       {
         chosenIcon && (
           <svg class="value-icon" viewBox={chosenIcon.viewBox} aria-hidden="true" focusable="false" data-icon={chosenIcon.name} data-value-icon>
-            <path fill="currentColor" d={chosenIcon.d} />
+            <Fragment set:html={chosenIcon.body} />
           </svg>
         )
       }
@@ -98,7 +98,7 @@ const chosenIcon = iconOf(chosen?.icon);
       {
         trigger === 'field' && (
           <svg class="caret" viewBox={caret.viewBox} aria-hidden="true" focusable="false" data-icon={caret.name}>
-            <path fill="currentColor" d={caret.d} />
+            <Fragment set:html={caret.body} />
           </svg>
         )
       }
@@ -120,7 +120,7 @@ const chosenIcon = iconOf(chosen?.icon);
             >
               {oi ? (
                 <svg class="option-icon" viewBox={oi.viewBox} aria-hidden="true" focusable="false" data-icon={oi.name}>
-                  <path fill="currentColor" d={oi.d} />
+                  <Fragment set:html={oi.body} />
                 </svg>
               ) : null}
               <span class="option-text">
@@ -128,7 +128,7 @@ const chosenIcon = iconOf(chosen?.icon);
                 {o.description && <span class="option-description">{o.description}</span>}
               </span>
               <svg class="tick" viewBox={check.viewBox} aria-hidden="true" focusable="false" data-icon={check.name}>
-                <path fill="currentColor" d={check.d} />
+                <Fragment set:html={check.body} />
               </svg>
             </div>
           );

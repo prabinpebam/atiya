@@ -30,7 +30,7 @@ const mark = svgOf('quote');
   {
     variant === 'pull' && (
       <svg class="mark" viewBox={mark.viewBox} aria-hidden="true" focusable="false" data-icon={mark.name}>
-        <path fill="currentColor" d={mark.d} />
+        <Fragment set:html={mark.body} />
       </svg>
     )
   }

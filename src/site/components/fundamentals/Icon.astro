@@ -1,7 +1,9 @@
 ---
 /**
- * A Font Awesome solid icon, drawn inline. Decorative by default; give it a label only when it stands
- * alone and means something (a status), never as a button's only name (IconButton names itself).
+ * A Font Awesome Duotone icon, drawn inline: its primary layer in the text colour, its secondary in the
+ * marigold spot colour (or, tonal, both in the text colour: for a status, whose colour carries meaning).
+ * Decorative by default; give it a label only when it stands alone and means something (a status),
+ * never as a button's only name (IconButton names itself).
  * @tier fundamental
  * @a11y Hidden from assistive tech unless it has a label, then it's an image with that name.
  */
@@ -14,9 +16,11 @@ interface Props {
   size?: 'text' | 'lg' | 'inherit';
   /** Only for a meaningful icon on its own (a status mark). */
   label?: string;
+  /** duo: ink and marigold; tonal: both layers in the text colour, the second lighter (a status). */
+  tone?: 'duo' | 'tonal';
 }
 
-const { name, size = 'text', label } = Astro.props;
+const { name, size = 'text', label, tone = 'duo' } = Astro.props;
 const i = svgOf(name);
 ---
 
@@ -28,7 +32,8 @@ const i = svgOf(name);
   role={label ? 'img' : undefined}
   aria-label={label}
   focusable="false"
-  data-icon={i.name}><path fill="currentColor" d={i.d}></path></svg
+  data-icon={i.name}
+  data-icon-tone={tone === 'tonal' ? 'tonal' : undefined}><Fragment set:html={i.body} /></svg
 >
 
 <style>

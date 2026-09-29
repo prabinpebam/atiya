@@ -74,6 +74,29 @@ video {
   height: auto;
 }
 
+/* icons (Font Awesome Duotone, design-system §2): the primary layer in the text colour, the secondary
+   printed under it in the marigold spot colour; a tonal icon (a status) keeps both in the text colour */
+.icon-primary {
+  fill: currentColor;
+}
+
+.icon-secondary {
+  fill: var(--c-icon-secondary);
+  opacity: var(--c-icon-secondary-opacity);
+}
+
+[data-icon-tone='tonal'] .icon-secondary {
+  fill: currentColor;
+  opacity: var(--c-icon-tonal-opacity);
+}
+
+@media (forced-colors: active) {
+  .icon-secondary {
+    fill: currentColor;
+    opacity: var(--c-icon-tonal-opacity);
+  }
+}
+
 input,
 button,
 textarea,

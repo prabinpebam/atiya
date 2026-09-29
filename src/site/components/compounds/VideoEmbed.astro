@@ -88,7 +88,7 @@ const embedSrc =
         <a class="facade" href={pageHref} aria-label={`Play video: ${title}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
           <Image src={poster} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} />
           <span class="play-mark" aria-hidden="true">
-            <svg class="play-icon" viewBox={play.viewBox} focusable="false" data-icon={play.name}><path fill="currentColor" d={play.d} /></svg>
+            <svg class="play-icon" viewBox={play.viewBox} focusable="false" data-icon={play.name}><Fragment set:html={play.body} /></svg>
           </span>
         </a>
       </div>

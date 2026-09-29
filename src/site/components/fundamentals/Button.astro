@@ -70,7 +70,7 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
   {
     start && (
       <svg class="icon" viewBox={start.viewBox} aria-hidden="true" focusable="false" data-icon={start.name}>
-        <path fill="currentColor" d={start.d} />
+        <Fragment set:html={start.body} />
       </svg>
     )
   }
@@ -78,7 +78,7 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
   {
     end && (
       <svg class="icon end" viewBox={end.viewBox} aria-hidden="true" focusable="false" data-icon={end.name}>
-        <path fill="currentColor" d={end.d} />
+        <Fragment set:html={end.body} />
       </svg>
     )
   }

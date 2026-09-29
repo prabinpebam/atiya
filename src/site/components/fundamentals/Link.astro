@@ -40,7 +40,7 @@ const end = external ? svgOf('external') : variant === 'standalone' ? svgOf('arr
   ><slot />{
     end && (
       <svg class="icon" viewBox={end.viewBox} aria-hidden="true" focusable="false" data-icon={end.name}>
-        <path fill="currentColor" d={end.d} />
+        <Fragment set:html={end.body} />
       </svg>
     )
   }{external && <span class="sr-only"> (opens in a new tab)</span>}</a

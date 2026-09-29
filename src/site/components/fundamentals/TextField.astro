@@ -79,7 +79,7 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
     {
       leading && (
         <svg class="leading" viewBox={leading.viewBox} aria-hidden="true" focusable="false" data-icon={leading.name}>
-          <path fill="currentColor" d={leading.d} />
+          <Fragment set:html={leading.body} />
         </svg>
       )
     }
@@ -121,8 +121,8 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
   {
     error && errorIcon && (
       <p class="error" id={`${id}-error`}>
-        <svg class="error-icon" viewBox={errorIcon.viewBox} aria-hidden="true" focusable="false" data-icon={errorIcon.name}>
-          <path fill="currentColor" d={errorIcon.d} />
+        <svg class="error-icon" viewBox={errorIcon.viewBox} aria-hidden="true" focusable="false" data-icon={errorIcon.name} data-icon-tone="tonal">
+          <Fragment set:html={errorIcon.body} />
         </svg>
         <span>{error}</span>
       </p>

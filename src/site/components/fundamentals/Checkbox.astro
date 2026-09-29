@@ -56,10 +56,10 @@ const described = hint ? `${id}-hint` : undefined;
       data-control
     />
     <svg class="mark" viewBox={check.viewBox} aria-hidden="true" focusable="false" data-icon={check.name}>
-      <path fill="currentColor" d={check.d} />
+      <Fragment set:html={check.body} />
     </svg>
     <svg class="minus" viewBox={minus.viewBox} aria-hidden="true" focusable="false" data-icon={minus.name}>
-      <path fill="currentColor" d={minus.d} />
+      <Fragment set:html={minus.body} />
     </svg>
   </span>
   <span class="content">

@@ -1,12 +1,13 @@
 ---
 /**
- * The icons: every Font Awesome solid icon the site uses, by the name components ask for it.
+ * The icons: every Font Awesome Duotone icon the site has imported, by the name components ask for
+ * it, in both tones.
  * Library-only.
  */
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
-import { ICONS, type IconName } from '../../design/icons';
+import { ICONS, svgOf, type IconName } from '../../design/icons';
 
 const names = Object.keys(ICONS).sort() as IconName[];
 ---
@@ -14,7 +15,10 @@ const names = Object.keys(ICONS).sort() as IconName[];
 <section class="block" aria-labelledby="icons">
   <Heading level={2} size="h2" id="icons">The set</Heading>
   <Text narrow>
-    Font Awesome Free, solid, the same family the planet’s interface uses (CC BY 4.0). Each is data in src/site/design/icons.ts, drawn as inline SVG on the server: no icon font, no request. An icon is never a button’s only name, and never an emoji or a text symbol.
+    Font Awesome Pro Duotone, licensed to the site’s owner. Two layers, printed like a two-colour job: the primary in the text colour, the secondary under it in marigold. A status is tonal (both layers in its own colour), and forced colours draw every icon that way. Icons with one layer, like a check or a chevron, are all primary.
+  </Text>
+  <Text narrow>
+    Only the icons listed here are imported, as path data drawn inline on the server: no icon font, no request. To add one, run node scripts/import-site-icons.mjs name=font-awesome-name. An icon is never a button’s only name, and never an emoji or a text symbol.
   </Text>
   <ul class="grid">
     {
@@ -22,8 +26,10 @@ const names = Object.keys(ICONS).sort() as IconName[];
         <li id={`icon-${n}`}>
           <span class="glyph">
             <Icon name={n} size="lg" />
+            <Icon name={n} size="lg" tone="tonal" />
           </span>
           <code>{n}</code>
+          {svgOf(n).name !== n && <code class="fa">{svgOf(n).name}</code>}
         </li>
       ))
     }
@@ -47,6 +53,7 @@ const names = Object.keys(ICONS).sort() as IconName[];
 
   li {
     display: grid;
+    align-content: start;
     justify-items: center;
     gap: var(--space-2);
     padding: var(--space-5) var(--space-2);
@@ -55,7 +62,14 @@ const names = Object.keys(ICONS).sort() as IconName[];
   }
 
   .glyph {
+    display: flex;
+    gap: var(--space-3);
     color: var(--color-text);
+  }
+
+  .fa {
+    margin-block-start: calc(var(--space-2) * -1);
+    color: var(--color-text-muted);
   }
 
   code {

@@ -25,8 +25,8 @@ const i = icon ? svgOf(icon) : null;
 <Tag class="tag" data-tone={tone} data-size={size} href={href}>
   {
     i && (
-      <svg class="icon" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name}>
-        <path fill="currentColor" d={i.d} />
+      <svg class="icon" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name} data-icon-tone={tone === 'neutral' || tone === 'accent' ? undefined : 'tonal'}>
+        <Fragment set:html={i.body} />
       </svg>
     )
   }

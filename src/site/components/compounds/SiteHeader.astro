@@ -52,8 +52,8 @@ const close = svgOf('close');
 <header
   class="site-header"
   data-site-header
-  data-icon-open={`${open.viewBox}|${open.d}`}
-  data-icon-close={`${close.viewBox}|${close.d}`}
+  data-icon-open={`${open.viewBox}|${open.name}|${open.body}`}
+  data-icon-close={`${close.viewBox}|${close.name}|${close.body}`}
 >
   <div class="bar">
     <p class="brand">
@@ -354,10 +354,13 @@ const close = svgOf('close');
       toggle.setAttribute('aria-label', label);
       toggle.dataset.label = label;
       // the icon says what a press will do
-      const [viewBox, d] = (open ? header.dataset.iconClose : header.dataset.iconOpen)!.split('|');
+      const [viewBox, name, body] = (open ? header.dataset.iconClose : header.dataset.iconOpen)!.split('|');
       const svg = toggle.querySelector('svg');
-      svg?.setAttribute('viewBox', viewBox);
-      svg?.querySelector('path')?.setAttribute('d', d);
+      if (svg) {
+        svg.setAttribute('viewBox', viewBox);
+        svg.dataset.icon = name;
+        svg.innerHTML = body;
+      }
     };
     if (toggle && nav) {
       toggle.addEventListener('click', () => setOpen(!isOpen()));

@@ -12,7 +12,7 @@ export const TOKEN_PAGES = [
   { slug: 'shape', label: 'Shape', summary: 'Radii, borders and the few shadows.' },
   { slug: 'motion', label: 'Motion', summary: 'Durations and easings, and what moves.' },
   { slug: 'layers', label: 'Layers and breakpoints', summary: 'The z-index scale, the breakpoints and the component tokens.' },
-  { slug: 'icons', label: 'Icons', summary: 'The Font Awesome solid icons the site uses.' },
+  { slug: 'icons', label: 'Icons', summary: 'The Font Awesome Duotone icons the site uses, in both tones.' },
 ] as const;
 
 export type NavGroup = { title: string; items: { label: string; href: string; current?: boolean; note?: string }[] };

@@ -1,93 +1,37 @@
 /**
- * The site's icons (tier 0, with the tokens): Font Awesome Free *solid*, the same set the game uses,
- * as data. Components draw them as inline SVG (`svgOf`), so the icons render on the server and no icon
- * font or CDN is ever loaded. Add an icon here by name before using it; the design library shows them
- * all (/design/tokens/icons/). Docs: documentation/site-ui/design-system.md §2.
+ * The site's icons (tier 0, with the tokens): Font Awesome Pro *Duotone*, licensed to the site's owner,
+ * as data. Only the icons the site uses are imported (`src/site/design/icon-set.json`, by
+ * `node scripts/import-site-icons.mjs <name>=<font-awesome-name>`, into the generated `iconData.ts`).
+ * Components draw them as inline SVG (`svgOf`): two layers, the primary in the text colour and the
+ * secondary in the marigold spot colour (base.css; `data-tone="tonal"` for both in the text colour).
+ * No icon font, CDN or package. The design library shows them all (/design/tokens/icons/).
+ * Docs: documentation/site-ui/design-system.md §2.
  */
-import {
-  faArrowLeft,
-  faArrowRight,
-  faArrowUpRightFromSquare,
-  faCheck,
-  faChevronDown,
-  faChevronLeft,
-  faChevronRight,
-  faChevronUp,
-  faCircleCheck,
-  faCircleExclamation,
-  faCircleHalfStroke,
-  faCircleInfo,
-  faCompress,
-  faDesktop,
-  faExpand,
-  faGlobe,
-  faImages,
-  faMagnifyingGlass,
-  faMinus,
-  faMoon,
-  faPause,
-  faPlay,
-  faPlus,
-  faQuoteLeft,
-  faBars,
-  faSun,
-  faXmark,
-  faVolumeHigh,
-  faVolumeXmark,
-  faArrowDown,
-  faCopy,
-} from '@fortawesome/free-solid-svg-icons';
+import { ICON_DATA, type IconPaths } from './iconData';
 
-export interface IconDef {
-  iconName: string;
-  icon: [number, number, unknown, unknown, string | string[]];
-}
+export const ICONS = ICON_DATA;
 
-export const ICONS = {
-  'arrow-left': faArrowLeft,
-  'arrow-right': faArrowRight,
-  'arrow-down': faArrowDown,
-  'external': faArrowUpRightFromSquare,
-  check: faCheck,
-  'chevron-down': faChevronDown,
-  'chevron-left': faChevronLeft,
-  'chevron-right': faChevronRight,
-  'chevron-up': faChevronUp,
-  success: faCircleCheck,
-  error: faCircleExclamation,
-  info: faCircleInfo,
-  'theme-system': faCircleHalfStroke,
-  'theme-light': faSun,
-  'theme-dark': faMoon,
-  desktop: faDesktop,
-  expand: faExpand,
-  compress: faCompress,
-  planet: faGlobe,
-  gallery: faImages,
-  search: faMagnifyingGlass,
-  minus: faMinus,
-  plus: faPlus,
-  play: faPlay,
-  pause: faPause,
-  quote: faQuoteLeft,
-  menu: faBars,
-  close: faXmark,
-  copy: faCopy,
-  'sound-on': faVolumeHigh,
-  'sound-off': faVolumeXmark,
-} as const satisfies Record<string, IconDef>;
-
-export type IconName = keyof typeof ICONS;
+export type IconName = keyof typeof ICON_DATA;
 
 export interface SvgData {
+  /** The box to draw it in. */
   viewBox: string;
-  d: string;
+  /** Its Font Awesome name (data-icon). */
   name: string;
+  /** The <svg>'s content: the secondary layer (if it has one) under the primary. */
+  body: string;
+  /** Whether it has a second layer. */
+  duo: boolean;
 }
 
-/** An icon as the parts of an inline <svg>: its viewBox, its path and its Font Awesome name. */
+/** An icon as the parts of an inline <svg>. */
 export function svgOf(name: IconName): SvgData {
-  const def = ICONS[name] as IconDef;
-  const [w, h, , , path] = def.icon;
-  return { viewBox: `0 0 ${w} ${h}`, d: Array.isArray(path) ? path.join(' ') : path, name: def.iconName };
+  const i = ICON_DATA[name] as IconPaths;
+  const secondary = i.secondary ? `<path class="icon-secondary" d="${i.secondary}"/>` : '';
+  return {
+    viewBox: `0 0 ${i.width} 512`,
+    name: i.fa.split('/').pop()!,
+    body: `${secondary}<path class="icon-primary" d="${i.primary}"/>`,
+    duo: i.secondary.length > 0,
+  };
 }

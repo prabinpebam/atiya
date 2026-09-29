@@ -34,7 +34,12 @@ The rules for the website's pages: the landing, the classic site and the design 
 
 ### Icons, behaviour and base (also tier 0)
 
-- **Icons** are data: Font Awesome Free solid, by name, in `src/site/design/icons.ts`, drawn inline with `svgOf(name)`. Add an icon there before using it. No icon font, no CDN, no emoji or text symbol.
+- **Icons** are Font Awesome Pro *Duotone* (licensed to the site's owner), imported one by one as data:
+  - `src/site/design/icon-set.json` lists them: the name components use, then the Font Awesome name (`classic-solid/` in front for one Duotone lacks, like `plus`).
+  - `node scripts/import-site-icons.mjs <name>=<font-awesome-name>` adds one from the owner's local copy of the library and writes the generated `iconData.ts`, with the font coordinates flipped to SVG ones. Never hand-edit that file. Import only what the site uses, and look at a new icon before using it: some of the library's names draw something else (its `volume-high` is a speaker cabinet, its `clock` a watch).
+  - `svgOf(name)` gives the inline SVG's box and its two layers. The primary layer (`.icon-primary`) takes the text colour; the secondary (`.icon-secondary`) is printed under it in marigold (`--c-icon-secondary`), like a two-colour job. An icon with one layer (a check, a chevron) is all primary.
+  - A status is **tonal** (`data-icon-tone="tonal"`, the Icon's `tone`): both layers in its own colour, the second at `--c-icon-tonal-opacity`. So are icons on a marigold fill, and every icon in forced colours.
+  - No icon font, no CDN, no package, no emoji or text symbol.
 - **Behaviour** that isn't just DOM wiring is pure and unit-tested in `src/site/scripts/`:
   - `listbox.ts`: the select's APG keys and typeahead;
   - `theme.ts`;
@@ -149,6 +154,7 @@ The design library is the full, live version (examples, props, keys, tokens, use
 |---|---|
 | Tokens up to date | `node scripts/build-site-tokens.mjs --check` (also in the unit test) |
 | Fonts up to date | `python scripts/build-site-fonts.py --check` |
+| Icons up to date | `node scripts/import-site-icons.mjs --check` (also in the unit test; without the library it checks only that the data covers the set) |
 | The rules | `npx vitest run tests/unit/siteDesignSystem.test.ts tests/unit/siteBehaviour.test.ts tests/unit/siteControls.test.ts` |
 | In the browser | `npx playwright test -g "site design system|site on a phone|landing & classic"` |
 | Types | `npm run check` |

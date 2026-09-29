@@ -10,7 +10,22 @@ import Text from '../components/fundamentals/Text.astro';
   <Text variant="lead">A planet <Icon name="planet" size="inherit" /> in a line</Text>
 </Example>
 
-<Example title="A meaningful icon" description="Only a status on its own gets a label; everywhere else the words beside it say it.">
-  <Icon name="success" size="lg" label="Sent" />
-  <Icon name="error" size="lg" label="Not sent" />
+<Example title="Two colours, like a print" description="Duotone: the primary layer takes the text colour, the secondary is printed under it in marigold. Icons with one layer (a check, a chevron) are all primary.">
+  <Icon name="mail" size="lg" />
+  <Icon name="calendar" size="lg" />
+  <Icon name="theme-light" size="lg" />
+  <Icon name="gallery" size="lg" />
+  <Icon name="check" size="lg" />
+</Example>
+
+<Example title="Tonal" description='tone="tonal": both layers in the text colour, the second lighter. For a status, whose colour already means something; forced colours draw every icon this way.'>
+  <Icon name="mail" size="lg" tone="tonal" />
+  <Icon name="calendar" size="lg" tone="tonal" />
+  <Icon name="theme-light" size="lg" tone="tonal" />
+  <Icon name="gallery" size="lg" tone="tonal" />
+</Example>
+
+<Example title="A meaningful icon" description="Only a status on its own gets a label; everywhere else the words beside it say it. A status is tonal.">
+  <Icon name="success" size="lg" label="Sent" tone="tonal" />
+  <Icon name="error" size="lg" label="Not sent" tone="tonal" />
 </Example>

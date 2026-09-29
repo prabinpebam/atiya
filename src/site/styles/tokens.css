@@ -250,6 +250,9 @@
   --c-header-height-compact: 3.5rem;
   --c-lightbox-thumb: 4.5rem;
   --c-lightbox-thumb-on: var(--color-highlight);
+  --c-icon-secondary: var(--color-highlight);
+  --c-icon-secondary-opacity: 1;
+  --c-icon-tonal-opacity: 0.4;
   --c-carousel-thumb: 5rem;
   --c-carousel-thumb-on: var(--color-accent);
   --c-carousel-thumb-rest: 0.7;
