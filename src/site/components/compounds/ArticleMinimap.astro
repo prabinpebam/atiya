@@ -88,14 +88,13 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
      how much it grows: the wave, or being current */
   .row {
     --mark-h: var(--c-minimap-bar);
-    --row-h: var(--c-minimap-bar-active);
     --len: var(--c-minimap-media);
     --lift: max(var(--wave, 0), calc(var(--is-current, 0) * var(--c-minimap-current-grow)));
     display: flex;
     align-items: center;
     justify-content: flex-end;
     inline-size: 100%;
-    block-size: calc(var(--row-h) + var(--c-minimap-gap));
+    block-size: calc(var(--mark-h) + var(--c-minimap-gap));
     margin: 0;
     padding: 0 var(--space-1) 0 0;
     border: 0;
@@ -111,17 +110,16 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
     border-radius: var(--radius-xs);
   }
 
-  /* every landmark is the same fully rounded pill; it grows lengthwise, leftward */
+  /* every landmark is the same fully rounded pill; it grows lengthwise only, leftward (never thicker) */
   .tick {
     display: block;
     flex: none;
-    inline-size: calc(var(--len) + var(--lift) * var(--c-minimap-grow));
+    inline-size: calc(var(--len) * (1 + var(--lift) * var(--c-minimap-magnify)));
     block-size: var(--mark-h);
     border-radius: var(--radius-pill);
     background: currentColor;
     transition:
       inline-size var(--duration-fast) var(--ease-standard),
-      block-size var(--duration-fast) var(--ease-standard),
       color var(--duration-fast) var(--ease-standard);
   }
 
@@ -147,15 +145,13 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
   }
 
   /* the landmark being read; hover or focus wins over it */
-  /* 4 px at rest; 6 px when current or active (the row keeps its height, so nothing moves) */
+  /* the landmark being read; hover or focus wins over it. Only colour and length change: never the height */
   .row[aria-current='location'] {
     --is-current: 1;
-    --mark-h: var(--c-minimap-bar-active);
     color: var(--c-minimap-current);
   }
 
   .row[data-active] {
-    --mark-h: var(--c-minimap-bar-active);
     color: var(--c-minimap-active);
   }
 
@@ -208,16 +204,11 @@ const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.pr
 
     .row {
       --mark-h: calc(var(--c-minimap-bar) * var(--c-minimap-touch-scale));
-      --row-h: calc(var(--c-minimap-bar-active) * var(--c-minimap-touch-scale));
       min-block-size: var(--c-minimap-row-touch);
     }
 
-    .row:is([aria-current='location'], [data-active]) {
-      --mark-h: calc(var(--c-minimap-bar-active) * var(--c-minimap-touch-scale));
-    }
-
     .tick {
-      inline-size: calc((var(--len) + var(--lift) * var(--c-minimap-grow)) * var(--c-minimap-touch-scale));
+      inline-size: calc(var(--len) * var(--c-minimap-touch-scale) * (1 + var(--lift) * var(--c-minimap-magnify)));
     }
 
     .tip {

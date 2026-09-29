@@ -26,11 +26,11 @@ A slim strip along the right edge of a long article: one indicator per landmark,
 
 ## 2. Indicators
 
-The look is the owner's mock, at about a seventh of its drawn size: a dense column of soft, fully rounded pills, right-aligned: 4 px thick at rest, 6 px when current or under the pointer or focus, in rows 10 px apart (the 6 px plus a 4 px gap, so a pill thickening never moves its neighbours).
+The look is the owner's mock, at about a seventh of its drawn size: a column of soft, fully rounded pills, right-aligned, 4 px thick whatever their state (hover never changes a pill's height), in rows 10 px apart.
 
 | Kind | Pill (mouse) | On touch |
 |---|---|---|
-| Heading, level 1 to 4 | 38, 34, 24 and 16 px long (10 px from level 5) | × 1.15 |
+| Heading, level 1 to 5 | 32, 24, 18, 13.5 and 10 px long: each level three quarters of the one above (a 25% step) | × 1.15 |
 | Picture, gallery or carousel | 16 px long | × 1.15 |
 
 - **Only headings differ:** by the owner's choice, every landmark is the same pill, and only a heading's length (its level) sets it apart. The kind is in the tooltip ("Image", "Gallery · 6 images") and the button's accessible name ("Jump to image: …"), never in colour alone.
@@ -40,14 +40,14 @@ The look is the owner's mock, at about a seventh of its drawn size: a dense colu
   - the landmark being read, the spot indigo (`--c-minimap-current`);
   - under the pointer or focus, the text colour (`--c-minimap-active`), which wins over current.
 - **Growth:**
-  - the active pill gets 6 px longer, leftward (`--c-minimap-grow`), and its three neighbours on each side 60%, 32% and 12% of that (the wave, `WAVE`);
-  - the current pill takes half the growth;
-  - the strip (48 px) leaves room for the longest pill as it grows.
+  - the active pill grows to 150% of its length, leftward (`--c-minimap-magnify`), and its three neighbours on each side take 60%, 32% and 12% of that growth (the wave, `WAVE`). It never gets thicker;
+  - the current pill grows to 115%;
+  - the strip (52 px) leaves room for the longest pill at 150%.
 - **Reduced motion** turns off the growth animation and the smooth scroll.
 
 ## 3. Placement
 
-- **On a page that scrolls:** the strip is fixed 16 px from the right edge, clear of the overlay scrollbar's handle (6 to 10 px wide, 3 px in). It sits below the sticky header and 24 px above the bottom, and is 48 px wide (56 on touch).
+- **On a page that scrolls:** the strip is fixed 16 px from the right edge, clear of the overlay scrollbar's handle (6 to 10 px wide, 3 px in). It sits below the sticky header and 24 px above the bottom, and is 52 px wide (60 on touch).
 - **In a box that scrolls** (the design library's examples): the strip sits inside that box, 16 px from its edges, so a side panel pushes it along with the content.
 - **Stacking:** it's on its own layer (`--layer-minimap`, 50), over the article but under the header, menus, dialogs and the lightbox.
 - **Never over text:** the strip shows only where the text column leaves it room (checked on load and on every resize). So it's hidden on a phone, and on a phone held sideways when a pull quote steps out that far.
