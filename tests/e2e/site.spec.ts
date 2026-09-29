@@ -175,6 +175,33 @@ test.describe('site design system', () => {
     }
   });
 
+  test('the switch: its thumb sits as far from the top and the bottom as from the end it rests at, off and on', async ({ page }) => {
+    await page.goto('/design/fundamentals/switch/');
+    const sw = page.getByRole('main').getByRole('switch').first();
+    const gaps = () =>
+      sw.evaluate((el) => {
+        const s = getComputedStyle(el);
+        const b = getComputedStyle(el, '::before');
+        const t = parseFloat(b.height);
+        const above = parseFloat(b.top) + parseFloat(b.marginTop) + parseFloat(s.borderTopWidth);
+        const start = parseFloat(b.left) + parseFloat(b.marginLeft) + parseFloat(s.borderLeftWidth) + new DOMMatrix(b.transform).m41;
+        const w = parseFloat(s.width);
+        return { above, below: parseFloat(s.height) - above - t, rest: (el as HTMLInputElement).checked ? w - start - t : start };
+      });
+    for (let i = 0; i < 2; i++) {
+      await page.waitForTimeout(400); // the thumb's slide
+      const g = await gaps();
+      expect(Math.abs(g.above - g.below), JSON.stringify(g)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(g.rest - g.above), JSON.stringify(g)).toBeLessThanOrEqual(0.5);
+      await sw.click();
+    }
+    // forced colours: the track keeps an outline and the thumb shows where it sits
+    await page.emulateMedia({ forcedColors: 'active' });
+    const off = page.getByRole('main').getByRole('switch').nth(1);
+    await expect(off).toHaveCSS('outline-style', 'solid');
+    expect(await off.evaluate((el) => getComputedStyle(el, '::before').forcedColorAdjust)).toBe('none');
+  });
+
   test('the library changes pages without a reload: the side nav keeps its scroll and the theme, and the new page works', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => localStorage.setItem('site.theme', 'dark'));

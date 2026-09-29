@@ -62,7 +62,7 @@ const hasSlot = Astro.slots.has('default');
     inline-size: var(--c-switch-width);
     block-size: var(--c-switch-height);
     margin: 0;
-    border: var(--border-control) solid transparent;
+    border: 0;
     border-radius: var(--radius-pill);
     background: var(--c-switch-track-off);
     cursor: inherit;
@@ -71,6 +71,8 @@ const hasSlot = Astro.slots.has('default');
       transform var(--duration-fast) var(--ease-spring);
   }
 
+  /* no border: it would take the thumb's room unevenly (Chrome rounds a 1.5 px border down), so the
+     thumb sits the same distance from the top, the bottom and either end */
   .input::before {
     content: '';
     position: absolute;
@@ -94,5 +96,20 @@ const hasSlot = Astro.slots.has('default');
 
   .input:active:not(:disabled) {
     transform: scale(0.98);
+  }
+
+  /* forced colours drop the track's fill: an outline keeps its shape (the focus ring replaces it),
+     and the thumb takes the text colour so where it sits (the state) still shows */
+  @media (forced-colors: active) {
+    .input:not(:focus-visible) {
+      outline: var(--border-control) solid;
+      outline-offset: calc(var(--border-control) * -1);
+    }
+
+    .input::before {
+      forced-color-adjust: none;
+      background: currentColor;
+      box-shadow: none;
+    }
   }
 </style>
