@@ -50,6 +50,9 @@
   --p-color-smoke-500: rgb(120 110 98 / 0.18);
   --p-color-smoke-700: rgb(70 62 54 / 0.35);
   --p-color-smoke-900: rgb(16 14 12 / 0.9);
+  --p-color-mist-500: rgb(231 226 217 / 0.3);
+  --p-color-mist-700: rgb(211 204 192 / 0.35);
+  --p-color-mist-900: rgb(251 250 247 / 0.92);
   --p-color-shade-light: rgb(40 30 18 / 0.1);
   --p-color-shade-light-strong: rgb(40 30 18 / 0.18);
   --p-color-shade-dark: rgb(0 0 0 / 0.42);
@@ -91,9 +94,9 @@
   --color-positive-soft: light-dark(var(--p-color-leaf-100), var(--p-color-leaf-900));
   --color-negative: light-dark(var(--p-color-poppy-600), var(--p-color-poppy-300));
   --color-negative-soft: light-dark(var(--p-color-poppy-100), var(--p-color-poppy-900));
-  --color-scrim: var(--p-color-smoke-900);
-  --color-smoke: var(--p-color-smoke-700);
-  --color-smoke-faint: var(--p-color-smoke-500);
+  --color-scrim: light-dark(var(--p-color-mist-900), var(--p-color-smoke-900));
+  --color-smoke: light-dark(var(--p-color-mist-700), var(--p-color-smoke-700));
+  --color-smoke-faint: light-dark(var(--p-color-mist-500), var(--p-color-smoke-500));
   --color-on-image: var(--p-color-stock-0);
   --color-image-shade: var(--p-color-shade-image);
   --color-shadow: light-dark(var(--p-color-shade-light), var(--p-color-shade-dark));

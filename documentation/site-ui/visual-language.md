@@ -36,7 +36,7 @@ The look of the website's pages (the landing, the classic site, the design libra
 | Marigold (the highlighter) | `#F4B942` | `#F4B942` | The quote rule and quote mark, list bullets, the dinkus, the filmstrip's current frame, the progress highlight. Never text on paper |
 | Deep marigold | `#8A5A00` | `#F7CB6B` | Marigold as type, for the big numerals (5.7:1) |
 | Leaf and poppy | `#2D6E45` and `#B0312A` | `#86CFA0` and `#F3A59C` | Success and errors, always with a word and an icon |
-| Smoke | `rgb(16 14 12 / 0.9)`, wisps at 0.35 and 0.18 | the same | The lightbox's scrim: pictures on smoke, not on a flat black |
+| Smoke | paper-white mist `rgb(251 250 247 / 0.92)`, warm-grey wisps at 0.35 and 0.3 | warm black `rgb(16 14 12 / 0.9)`, wisps at 0.35 and 0.18 | The lightbox's scrim: pictures on smoke, not on a flat fill; white on light, black on dark |
 
 - **Warmth:** the neutrals are a warm stock ramp (14 steps from `#FFFFFF` to `#12100E`), and shadows are tinted brown (`rgb(40 30 18 / 0.1)`), never grey.
 - **Contrast:** every role is tested in both modes ([the design system](design-system.md) §7).
@@ -116,9 +116,9 @@ Interface sizes are fixed. Reading and display sizes are fluid: each grows smoot
 
 - **Sized and placed:** every picture has a width and height (no layout shift), a responsive `srcset` and a paper-coloured placeholder, and it loads lazily unless it's the lead.
 - **Given room:** captions are Figtree 14 px in muted ink with the credit after them, and a gallery has one caption for the set, as a magazine does.
-- **The lightbox is dark whatever the page:** a smoky scrim with slow drifting wisps, the picture as large as fits, the caption under it, and a filmstrip of the set along the bottom with the current frame ringed in marigold.
+- **The lightbox follows the theme:** a smoky scrim, paper-white in light mode and black in dark, with slow drifting wisps, its controls and caption in the page's own ink, the picture as large as fits, the caption under it, and a filmstrip of the set along the bottom with the current frame ringed in marigold.
 
-![The lightbox: the picture on smoke, previous and next at the sides, the caption, the counter and a filmstrip with the current frame ringed.](assets/lightbox.jpg)
+![The lightbox in light mode: the picture on paper-white smoke, previous and next at the sides, the caption, the counter and a filmstrip with the current frame ringed.](assets/lightbox.jpg)
 
 ## 6. Motion
 

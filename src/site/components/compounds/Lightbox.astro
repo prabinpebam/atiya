@@ -1,7 +1,8 @@
 ---
 /**
- * The page’s one image lightbox: a native modal dialog with a smoke scrim, previous and next controls,
- * a live counter, captions and a filmstrip. Figures, galleries and carousels only provide links.
+ * The page’s one image lightbox: a native modal dialog with a smoke scrim (paper-white in light mode,
+ * black in dark), previous and next controls, a live counter, captions and a filmstrip. Figures,
+ * galleries and carousels only provide links.
  * @tier compound
  * @a11y Uses <dialog>.showModal(), so focus is trapped, the page behind is inert and Escape closes it.
  * @a11y The opener keeps focus history; closing returns focus to the thumbnail that opened it.
@@ -26,26 +27,26 @@ const { id = 'site-lightbox' } = Astro.props;
   <div class="shell">
     <div class="topbar">
       <p class="counter" aria-live="polite" aria-atomic="true" data-lightbox-counter>1 of 1</p>
-      <IconButton label="Close" icon="close" variant="overlay" tooltip="none" data-lightbox-close="" />
+      <IconButton label="Close" icon="close" variant="secondary" tooltip="none" data-lightbox-close="" />
     </div>
     <div class="stage-row">
-      <span class="side"><IconButton label="Previous image" icon="chevron-left" variant="overlay" size="lg" tooltip="none" data-lightbox-prev="" /></span>
+      <span class="side"><IconButton label="Previous image" icon="chevron-left" variant="secondary" size="lg" tooltip="none" data-lightbox-prev="" /></span>
       <div class="stage" data-lightbox-stage>
         <img class="stage-image" alt="" data-lightbox-image />
       </div>
-      <span class="side"><IconButton label="Next image" icon="chevron-right" variant="overlay" size="lg" tooltip="none" data-lightbox-next="" /></span>
+      <span class="side"><IconButton label="Next image" icon="chevron-right" variant="secondary" size="lg" tooltip="none" data-lightbox-next="" /></span>
     </div>
     <div class="caption-wrap" data-lightbox-caption-wrap>
-      <Caption as="p" tone="on-image" align="center"><span data-lightbox-caption></span></Caption>
+      <Caption as="p" align="center"><span data-lightbox-caption></span></Caption>
     </div>
     <div class="filmstrip" role="group" aria-label="Pictures" data-lightbox-strip data-scrollbar></div>
   </div>
 </dialog>
 
 <style>
-  /* the whole viewport, so the smoke has no edge; the content keeps its own width */
+  /* the whole viewport, so the smoke has no edge; the content keeps its own width. The scrim is the
+     dialog's own background (it follows the theme there; ::backdrop only blurs the page) */
   .lightbox {
-    color-scheme: dark;
     position: fixed;
     inset: 0;
     z-index: var(--layer-lightbox);
@@ -56,8 +57,8 @@ const { id = 'site-lightbox' } = Astro.props;
     margin: 0;
     padding: 0;
     border: 0;
-    background: transparent;
-    color: var(--color-on-image);
+    background: var(--color-scrim);
+    color: var(--color-text);
     overflow: hidden;
   }
 
@@ -66,7 +67,7 @@ const { id = 'site-lightbox' } = Astro.props;
   }
 
   .lightbox::backdrop {
-    background: var(--color-scrim);
+    background: transparent;
     backdrop-filter: blur(var(--space-2));
   }
 
@@ -102,7 +103,7 @@ const { id = 'site-lightbox' } = Astro.props;
 
   .counter {
     margin: 0;
-    color: var(--color-on-image);
+    color: var(--color-text);
     font-family: var(--font-ui);
     font-size: var(--text-md);
     font-weight: var(--weight-semibold);
@@ -124,7 +125,6 @@ const { id = 'site-lightbox' } = Astro.props;
     min-height: 0;
     height: 100%;
     border-radius: var(--radius-xl);
-    background: var(--color-image-shade);
     overflow: clip;
     touch-action: pan-y;
   }

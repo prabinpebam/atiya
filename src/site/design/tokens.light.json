@@ -104,15 +104,15 @@
       "$description": "Behind an error message"
     },
     "scrim": {
-      "$value": "{p.color.smoke.900}",
-      "$description": "Behind a modal: the lightbox's smoke"
+      "$value": "{p.color.mist.900}",
+      "$description": "Behind a modal: the lightbox's smoke, paper-white on light and black on dark"
     },
     "smoke": {
-      "$value": "{p.color.smoke.700}",
+      "$value": "{p.color.mist.700}",
       "$description": "The lightbox's drifting wisps"
     },
     "smoke-faint": {
-      "$value": "{p.color.smoke.500}",
+      "$value": "{p.color.mist.500}",
       "$description": "The lightbox's faint wisps"
     },
     "on-image": {

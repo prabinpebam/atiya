@@ -16,7 +16,7 @@ interface Props {
   label: string;
   /** Which icon (src/site/design/icons.ts). */
   icon: IconName;
-  /** quiet: no fill until hovered; secondary: outlined; primary: filled with the accent; overlay: on a photograph or the lightbox's smoke. */
+  /** quiet: no fill until hovered; secondary: outlined; primary: filled with the accent; overlay: on a photograph. */
   variant?: 'quiet' | 'secondary' | 'primary' | 'overlay';
   /** sm 40 px (44 to touch), md 48 px, lg 56 px. */
   size?: 'sm' | 'md' | 'lg';
@@ -138,7 +138,7 @@ const i = svgOf(icon);
     }
   }
 
-  /* on a photograph or the smoke: always the dark mode's raised surface */
+  /* on a photograph: always the dark mode's raised surface */
   .icon-button[data-variant='overlay'] {
     color-scheme: dark;
     background: var(--color-bg-raised);

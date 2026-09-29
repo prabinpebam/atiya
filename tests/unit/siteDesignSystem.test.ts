@@ -145,10 +145,20 @@ describe('contrast: both modes pass WCAG 2.2 AA', () => {
     const white: RGBA = [255, 255, 255, 1];
     const shaded = over(role('image-shade', 'light'), white);
     expect(contrast(role('on-image', 'light'), shaded)).toBeGreaterThanOrEqual(4.5);
-    // the lightbox: its (dark) text on the smoke, over the lightest page
-    const smoke = over(role('scrim', 'dark'), parseColour(resolve(model.byPath.get('p.color.stock.0')!, model.byPath)));
-    expect(contrast(role('text', 'dark'), smoke)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(role('text-muted', 'dark'), smoke)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('the lightbox: its text on the smoke (paper-white on light, black on dark), whatever the page behind it', () => {
+    const page = (p: string) => parseColour(resolve(model.byPath.get(p)!, model.byPath));
+    for (const mode of ['light', 'dark'] as Mode[]) {
+      for (const behind of ['p.color.stock.0', 'p.color.stock.950', 'p.color.indigo.700']) {
+        const smoke = over(role('scrim', mode), page(behind));
+        expect(contrast(role('text', mode), smoke), `text on ${mode} smoke over ${behind}`).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(role('text-muted', mode), smoke), `muted on ${mode} smoke over ${behind}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+    // the smoke is the theme's own: light on light, dark on dark
+    expect(role('scrim', 'light')[0]).toBeGreaterThan(240);
+    expect(role('scrim', 'dark')[0]).toBeLessThan(30);
   });
 
   it('marigold is a highlighter, never text on paper: it fails 3:1 on the light page, so no text role uses it there', () => {
