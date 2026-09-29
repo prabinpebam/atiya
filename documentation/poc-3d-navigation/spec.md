@@ -525,7 +525,7 @@ Shake trees, mine boulders and pick flowers; what falls flies into a **Minecraft
 - **Inventory** (`inventory/inventory.ts`, pure and unit-tested): a 36-slot backpack (hotbar 0–8) and a 27-slot chest, stacks of 64, saved in `localStorage site.inventory`.
   - **Pick-ups:** fill Minecraft-style (top up stacks, hotbar first).
   - **Screens:** every Minecraft Java slot control: click, right-click half/one, Shift+click quick-move (chest → hotbar from the right), double-click gather, left-drag spread and right-drag one each, 1–9 swap, Q / Ctrl+Q drop, and click outside to throw; also Shift+double-click (every stack of an item), a live drag preview, Mouse Tweaks' Shift+drag and wheel, and sorting and chest shortcuts ([collection-inventory.md](./collection-inventory.md) §4.3).
-  - **Keyboard and touch:** a keyboard-only mode (roving grid; Enter, Space, Shift+Enter) and touch (tap, long-press, a Move toggle).
+  - **Keyboard and touch:** a keyboard-only mode (roving grid; Enter, Space, Shift+Enter) and touch (tap, long-press, a drag that carries the stack above the finger).
 - **Characters:** the actions are keyed procedurally in the character's own frame (`player/actionPoses.ts`) and applied with `aimBone` over the idle and walk clips. The pickaxe is drawn along the right forearm.
 - **Art:** the item icons are GPT Image 2.5 art generated against a frozen **golden style set** (`assets-src/icons/`, `scripts/gen-icons.py`). The 21 flower colours are re-tinted from three white-petalled paintings. They ship as 26 × 96 px WebP, ≈ 78 KB, fetched only when shown.
 - **Sounds:** the existing CC0 sprites re-pitched: a pick-up pop (the sparkle), a pickaxe knock (a stone step) and a leaf rustle (the cloth swish).

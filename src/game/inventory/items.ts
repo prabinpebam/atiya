@@ -43,7 +43,7 @@ const BASE: ItemDef[] = [
   // picked from the jute row behind the vegetable garden (swing.md)
   { id: 'jute', name: 'Jute', maxStack: 64, icon: 'jute', model: 'leaves', tint: '#d9b86a' },
   // dug from the clay beds on the banks of the stream and the pond (furnace.md)
-  { id: 'clay', name: 'Clay', maxStack: 64, icon: 'clay', model: 'stone', tint: '#5f86c9' },
+  { id: 'clay', name: 'Clay', maxStack: 64, icon: 'clay', model: 'stone', tint: '#b5aa9c' },
   // crafted at the crafting table (crafting.md)
   { id: 'planks', name: 'Planks', maxStack: 64, icon: 'planks', model: 'log', tint: '#d9b27c' },
   { id: 'beam', name: 'Wooden beam', maxStack: 64, icon: 'beam', model: 'log', tint: '#b8844f' },

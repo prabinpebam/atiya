@@ -11,7 +11,7 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from 'react';
 import { useStore } from 'zustand';
-import { faArrowsUpDownLeftRight, faCircleQuestion, faXmark, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { faCircleQuestion, faXmark, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import type { GameController } from '../controller';
 import { BACKPACK_SLOTS, CHEST_SLOTS, HOTBAR, type ContainerId, type Screen, type SlotRef } from '../inventory/inventory';
 import { itemDef, stackLabel, type ItemId } from '../inventory/items';
@@ -40,11 +40,10 @@ const SLOT_KEYS: Keys = [
 const SLOT_TOUCH: Keys = [
   ['Tap', 'take or place'],
   ['Hold', 'half, or one'],
-  ['Drag a stack', 'put it there'],
+  ['Drag a stack', 'carry it (it floats above your finger); lift to put it there'],
   ['Tap, then drag', 'spread'],
   ['Hold, then drag', 'one each'],
   ['Double-tap', 'gather'],
-  ['Move on', 'taps and drags move stacks (tap twice: every stack of it)'],
 ];
 
 /**
@@ -107,15 +106,20 @@ function HelpPopover({ groups }: { groups: ReadonlyArray<{ title: string; keys: 
 type Section = { title: string; c: ContainerId; from: number; to: number; id: string };
 /**
  * A press on a slot that may become a drag: `spread` (a stack held: spread it on release), `quick`
- * (Shift or Move: quick-move every slot passed over), `touch` (a finger: a tap, a long-press, or a drag
- * that carries the stack to where it lifts).
+ * (Shift: quick-move every slot passed over), `touch` (a finger: a tap, a long-press, or a drag that
+ * carries the stack to where it lifts). A finger's drag starts where it pressed (`x0`, `y0`), is over
+ * `over` now, and is `carrying` the stack once it has moved off the spot with nothing held.
  */
-type Drag = { mode: 'spread' | 'quick' | 'touch'; button: 0 | 2; refs: SlotRef[]; start: SlotRef; pressed: boolean };
+type Drag = { mode: 'spread' | 'quick' | 'touch'; button: 0 | 2; refs: SlotRef[]; start: SlotRef; pressed: boolean; x0: number; y0: number; over: SlotRef | null; carrying: boolean };
 
 const LONG_PRESS_MS = 450;
 const DOUBLE_MS = 300;
 /** Wheel travel (px) per item moved: one notch of a mouse wheel. */
 const WHEEL_STEP = 100;
+/** How far a finger moves (px) before its press becomes a drag that carries the stack. */
+const CARRY_PX = 10;
+/** How far above the fingertip (px) a carried or held stack floats, so the finger never hides it. */
+const LIFT_PX = 62;
 
 const keyOf = (r: SlotRef) => `${r.c}:${r.i}`;
 const items = (n: number) => `${n} item${n === 1 ? '' : 's'}`;
@@ -153,7 +157,8 @@ export default function InventoryPanel({
   /** Every slot in reading order (for arrow keys). */
   const order = useMemo(() => sections.flatMap((s) => Array.from({ length: s.to - s.from }, (_, k) => ({ c: s.c, i: s.from + k }) as SlotRef)), [sections]);
   const [focusIdx, setFocusIdx] = useState(0);
-  const [moveMode, setMoveMode] = useState(false);
+  /** A stack a finger is carrying (touch): where it came from, and the slot it would land in now. */
+  const [lift, setLift] = useState<{ from: SlotRef; over: SlotRef | null } | null>(null);
   const hovered = useRef<SlotRef | null>(null);
   const drag = useRef<Drag | null>(null);
   /** The drag being previewed (Minecraft shows where a spread will land before you let go). */
@@ -199,7 +204,7 @@ export default function InventoryPanel({
   };
 
   const click = (r: SlotRef, button: 0 | 2, shift: boolean) => {
-    if (shift || moveMode) return quick(r);
+    if (shift) return quick(r);
     const key = keyOf(r);
     const now = performance.now();
     if (button === 0 && inv.held && lastClick.current && lastClick.current.key === key && now - lastClick.current.t < DOUBLE_MS) {
@@ -248,8 +253,8 @@ export default function InventoryPanel({
     e.preventDefault();
     (e.currentTarget as HTMLElement).focus({ preventScroll: true });
     const button = e.button as 0 | 2;
-    const d: Drag = { mode: 'spread', button, refs: [r], start: r, pressed: true };
-    if (e.shiftKey || moveMode) {
+    const d: Drag = { mode: 'spread', button, refs: [r], start: r, pressed: true, x0: e.clientX, y0: e.clientY, over: r, carrying: false };
+    if (e.shiftKey) {
       // Shift-drag (Mouse Tweaks): the first slot now, each slot passed over after it
       click(r, button, true);
       drag.current = { ...d, mode: 'quick' };
@@ -257,6 +262,7 @@ export default function InventoryPanel({
     }
     if (e.pointerType === 'touch' && button === 0) {
       // touch: tap = left-click, long-press = right-click, a drag carries the stack (or spreads a held one)
+      place(e.clientX, e.clientY, true);
       window.clearTimeout(press.current);
       press.current = window.setTimeout(() => {
         press.current = undefined;
@@ -307,16 +313,40 @@ export default function InventoryPanel({
   useEffect(() => {
     // follow a drag under the pointer (a finger's pointer stays captured by the slot it pressed)
     const move = (e: PointerEvent) => {
-      if (!drag.current) return;
+      const d = drag.current;
+      if (!d) return;
       const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]');
       const [c, i] = el?.dataset.slot?.split(':') ?? [];
-      if (c === 'backpack' || c === 'chest') dragOver({ c, i: Number(i) });
+      const r: SlotRef | null = c === 'backpack' || c === 'chest' ? { c, i: Number(i) } : null;
+      d.over = r;
+      if (d.mode === 'touch') {
+        // a finger that moves off the spot with nothing held picks the stack up and carries it, above the fingertip
+        if (!d.carrying && !inv.held && inv.get(d.start) && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > CARRY_PX) {
+          d.carrying = true;
+          window.clearTimeout(press.current);
+          press.current = undefined;
+        }
+        const at = r ? keyOf(r) : '';
+        if (d.carrying) setLift((l) => (l && (l.over ? keyOf(l.over) : '') === at ? l : { from: d.start, over: r }));
+      }
+      if (r) dragOver(r);
     };
     const up = () => {
       const d = drag.current;
       drag.current = null;
       setPreview(null);
+      setLift(null);
       if (!d) return;
+      if (d.carrying) {
+        // the carried stack goes where the finger lifts (merged or swapped, anything swapped going back where it came from);
+        // lifted off the slots, or back on its own, it stays put
+        const to = d.over;
+        if (!to || keyOf(to) === keyOf(d.start) || !inv.get(d.start)) return;
+        leftClick(inv, d.start);
+        leftClick(inv, to);
+        if (inv.held && !inv.get(d.start)) leftClick(inv, d.start);
+        return changed();
+      }
       if (press.current !== undefined) {
         // a short touch: a left-click
         window.clearTimeout(press.current);
@@ -325,14 +355,6 @@ export default function InventoryPanel({
         return;
       }
       if (d.mode === 'quick') return;
-      const last = d.refs[d.refs.length - 1];
-      if (d.mode === 'touch' && d.refs.length > 1 && !inv.held && inv.get(d.start)) {
-        // a finger dragged a stack from one slot to another: put it there (merge or swap), and anything swapped back where it came from
-        leftClick(inv, d.start);
-        leftClick(inv, last);
-        if (inv.held && !inv.get(d.start)) leftClick(inv, d.start);
-        return changed();
-      }
       if (inv.held && (d.refs.length > 1 || (d.mode === 'touch' && d.button === 2 && d.refs.length))) {
         spread(inv, d.refs, d.button === 0);
         changed();
@@ -360,10 +382,11 @@ export default function InventoryPanel({
     if (moved) changed(false);
   };
 
-  // the cursor stack follows the pointer
-  const onMove = (e: ReactPointerEvent) => {
-    if (cursor.current) cursor.current.style.transform = `translate(${e.clientX - 22}px, ${e.clientY - 22}px)`;
+  // the cursor stack follows the pointer (a finger's floats above the fingertip, where the finger can't hide it)
+  const place = (x: number, y: number, finger: boolean) => {
+    if (cursor.current) cursor.current.style.transform = `translate(${x - 22}px, ${y - 22 - (finger ? LIFT_PX : 0)}px)`;
   };
+  const onMove = (e: ReactPointerEvent) => place(e.clientX, e.clientY, e.pointerType === 'touch');
 
   // click outside the panel with a stack held: throw it (left: all, right: one)
   const onBackdrop = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -432,7 +455,7 @@ export default function InventoryPanel({
   };
 
   const plan = preview && preview.refs.length > 1 ? planSpread(inv, preview.refs, preview.even) : null;
-  const held = plan && inv.held ? (plan.left > 0 ? { id: inv.held.id, n: plan.left } : null) : inv.held;
+  const held = plan && inv.held ? (plan.left > 0 ? { id: inv.held.id, n: plan.left } : null) : (inv.held ?? (lift ? inv.get(lift.from) : null));
   let flat = 0;
   return (
     <div className="inv-backdrop surface-wood" data-testid={`${kind}-screen`} onPointerMove={onMove} onPointerDown={onBackdrop} onContextMenu={(e) => e.preventDefault()}>
@@ -442,15 +465,6 @@ export default function InventoryPanel({
             {icon && <Icon icon={icon} />} {title}
           </h2>
           <HelpPopover groups={[...(help ? [help] : []), { title: screen === 'chest' ? 'Backpack and chest' : 'Backpack', keys: touch ? SLOT_TOUCH : SLOT_KEYS }]} />
-          <button
-            type="button"
-            className={`btn inv-move${moveMode ? ' on' : ''}`}
-            aria-pressed={moveMode}
-            onClick={() => setMoveMode((m) => !m)}
-            title="Taps move stacks between sections (like Shift+click)"
-          >
-            <Icon icon={faArrowsUpDownLeftRight} /> Move
-          </button>
           <button type="button" className="btn inv-close" aria-label="Close" onClick={onClose}>
             <Icon icon={faXmark} />
           </button>
@@ -497,7 +511,7 @@ export default function InventoryPanel({
                       slotEls.current[idx] = el;
                     }}
                     type="button"
-                    className={`slot${sec.id === 'inv-hotbar' && r.i === inv.selected ? ' selected' : ''}${ghost ? ' spread' : ''}`}
+                    className={`slot${sec.id === 'inv-hotbar' && r.i === inv.selected ? ' selected' : ''}${ghost ? ' spread' : ''}${lift && keyOf(lift.from) === keyOf(r) ? ' lifting' : ''}${lift?.over && keyOf(lift.over) === keyOf(r) && keyOf(lift.from) !== keyOf(r) ? ' drop-target' : ''}`}
                     tabIndex={idx === focusIdx ? 0 : -1}
                     aria-label={`${name}: ${st ? stackLabel(st.id, st.n) : 'empty'}`}
                     data-slot={keyOf(r)}
@@ -526,12 +540,12 @@ export default function InventoryPanel({
           </section>
         ))}
       </div>
-      {tip && !inv.held && (
+      {tip && !inv.held && !lift && (
         <div className="inv-tip" style={{ left: tip.x, top: tip.y } as CSSProperties} aria-hidden="true">
           {tip.text}
         </div>
       )}
-      <div ref={cursor} className="inv-cursor" aria-hidden="true" data-testid="inventory-cursor">
+      <div ref={cursor} className={`inv-cursor${lift ? ' carrying' : ''}`} aria-hidden="true" data-testid="inventory-cursor">
         {held && <SlotFace stack={held} />}
       </div>
     </div>

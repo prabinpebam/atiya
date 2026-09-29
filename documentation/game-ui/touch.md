@@ -59,7 +59,7 @@ Captured on Chromium with touch emulation (iPhone 13 size, 390 × 844 and 844 ×
 | A7 | HUD buttons have no `touch-action`, the planet has no callout or selection guard, the page has no overscroll guard | Double-tap zoom on a button, long-press callouts, pull-to-refresh |
 | A8 | Nothing handles `pointercancel` beyond ending the view drag | A system gesture mid-walk must stop the character |
 
-What already works: the planet has `touch-action: none`, the canvas fills `100dvh`, both orientations lay out, every HUD control is a real button, and the inventory has touch rules of its own (tap, long-press, a Move toggle; [collecting](../poc-3d-navigation/collection-inventory.md) §4).
+What already works: the planet has `touch-action: none`, the canvas fills `100dvh`, both orientations lay out, every HUD control is a real button, and the inventory has touch rules of its own (tap, long-press, and dragging a stack that floats above the finger; [collecting](../poc-3d-navigation/collection-inventory.md) §4).
 
 ## 3. Spec and plan v1 (first draft)
 

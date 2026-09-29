@@ -18,7 +18,7 @@ This follows established patterns rather than inventing new ones:
 | `stone` | Stone | 64 | Mining a boulder (1 per hit, 3 hits) |
 | `iron` | Iron ore | 64 | Mining a boulder streaked with rusty ore nuggets, one in three (every third hit also drops a lump; its prompt is **Mine iron ore**; [viewing-deck.md](./viewing-deck.md)); it's smelted into iron ingots at [the furnace](./furnace.md) |
 | `lantern` | Lantern | 1 | The visitor starts with one (given once); held while it's the selected hotbar slot, it lights the way at night ([rest.md](./rest.md)) |
-| `clay` | Clay | 64 | Digging a grey-blue clay bed on the banks of the stream and the pond (2 per dig; it fills back up in 75 s; [furnace.md](./furnace.md)) |
+| `clay` | Clay | 64 | Digging a grey clay bed on the banks of the stream and the pond (2 per dig; it fills back up in 75 s; [furnace.md](./furnace.md)) |
 | `tulip-<colour>`, `cosmos-<colour>`, `pansy-<colour>` | e.g. *Red tulip* | 64 | Picking a flower (the flower regrows in 60 s) |
 | `jute` | Jute | 64 | Picking a jute plant in the row behind the vegetable garden (2 per plant; it's cut to stubble and grows back in 90 s; [swing.md](./swing.md)) |
 
@@ -154,11 +154,11 @@ Two Minecraft Java inputs have nothing to act on here: the planet has no off-han
 **Touch** (Minecraft Pocket's gestures, plus drag-and-drop):
 
 - **Tap** = left-click; **long-press** (450 ms) = right-click (half, or put one down).
-- **Drag a stack** from one slot to another: it goes there (merging, or swapping, and what was there goes back where it came from).
+- **Drag a stack** from one slot to another: once the finger moves off it, the stack lifts and floats a size up about 60 px above the fingertip, where the finger can't hide it; its own slot dims and the slot under the finger shows the drop ring. Lift the finger and it goes there (merging, or swapping, and what was there goes back where it came from); lifted off the slots or back on its own slot, it stays put. A stack held after a tap floats above the finger the same way.
 - **Tap to pick up, then drag:** spread it evenly (the left-drag), with the same preview.
 - **Long-press, then drag:** one in each slot (the right-drag).
 - **Double-tap** with a stack held: gather.
-- A **Move** toggle in the panel makes taps and drags quick-move instead (tap the same slot twice quickly: every stack of that item). The section tools grow to 44 px.
+- The section tools grow to 44 px. (A **Move** toggle that made taps quick-move was removed: dragging is the way across on touch, and Shift+click on a keyboard.)
 - The help button's popover in the panel's head ("Show controls") switches to these gestures on touch; the panel has no help text of its own ([crafting screen §4.3](../game-ui/crafting-screen.md)).
 
 **Presentation:**

@@ -150,11 +150,11 @@ export function furnaceGhost(): { fill: BufferGeometry; edges: BufferGeometry } 
   return { fill, edges: new EdgesGeometry(fill, 30) };
 }
 
-/** The clay's colours: slate blue, darker where it's wet, and the lumps' glossy blue. */
-export const CLAY_COLOURS = { bed: '#6e88ae', wet: '#566f98', lump: '#6f93cc' } as const;
+/** The clay's colours: a soft warm grey, darker where it's wet, and the lumps' paler, glossy grey (the item's icon). */
+export const CLAY_COLOURS = { bed: '#a39c92', wet: '#827b72', lump: '#b5aa9c' } as const;
 
 /**
- * The clay beds, all in one mesh (planet-local): each a flattened, lobed patch of slate-blue clay on
+ * The clay beds, all in one mesh (planet-local): each a flattened, lobed patch of grey clay on
  * the bank, tilted to the ground, with a darker wet middle, scoop marks and a little wooden paddle
  * pushed into its back edge. `tilt` gives each bed's up (the ground's normal there).
  */

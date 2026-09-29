@@ -900,6 +900,45 @@ test.describe('touch', () => {
   });
 });
 
+test.describe('touch inventory', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+  test('a dragged stack floats above the finger, its slot dims and the slot under the finger shows where it goes; lifting puts it there (no Move toggle)', async ({ page }) => {
+    test.setTimeout(150_000);
+    await openPlanet(page);
+    await page.evaluate(() => (window as any).__game.giveItem('stone', 5));
+    const from = (await page.evaluate(() => (window as any).__game.inventory().backpack as (string | null)[])).indexOf('stone:5');
+    expect(from).toBeGreaterThanOrEqual(0);
+    await page.getByTestId('backpack-button').tap();
+    const screen = page.getByTestId('inventory-screen');
+    await expect(screen.getByRole('dialog', { name: 'Backpack' })).toBeVisible();
+    await expect(screen.getByRole('button', { name: /^Move/ })).toHaveCount(0);
+    const src = screen.locator(`[data-slot="backpack:${from}"]`);
+    const dst = screen.locator('[data-slot="backpack:12"]');
+    const a = (await src.boundingBox())!;
+    const b = (await dst.boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: string, pts: [number, number][]) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y]) => ({ x, y, id: 1 })) } as any);
+    const [x0, y0] = [a.x + a.width / 2, a.y + a.height / 2];
+    const [x1, y1] = [b.x + b.width / 2, b.y + b.height / 2];
+    await touch('touchStart', [[x0, y0]]);
+    for (let i = 1; i <= 8; i++) await touch('touchMove', [[x0 + ((x1 - x0) * i) / 8, y0 + ((y1 - y0) * i) / 8]]);
+    // carried: it floats a size up above the fingertip, its own slot waits dimmed, the slot under the finger is marked
+    const cursor = page.getByTestId('inventory-cursor');
+    await expect(cursor).toHaveClass(/carrying/);
+    const c = (await cursor.boundingBox())!;
+    expect(c.y + c.height).toBeLessThan(y1 - 10);
+    await expect(src).toHaveClass(/lifting/);
+    await expect(dst).toHaveClass(/drop-target/);
+    await touch('touchEnd', []);
+    await expect(cursor).not.toHaveClass(/carrying/);
+    const inv = await page.evaluate(() => (window as any).__game.inventory());
+    expect(inv.backpack[12]).toBe('stone:5');
+    expect(inv.backpack[from]).toBeNull();
+    expect(inv.held).toBeNull();
+  });
+});
+
 test.describe('benches', () => {
   test('walking up to the plaza bench offers a seat; E sits, Space stands up (not the menu), and a movement key stands up and walks off', async ({ page }) => {
     test.setTimeout(120_000);
@@ -2026,7 +2065,7 @@ test.describe("crafting & Chopper's house", () => {
     await startPlanet(page);
     const g = (f: string, ...a: unknown[]) => page.evaluate(([f, a]) => (window as any).__game[f as string](...(a as unknown[])), [f, a] as const);
     const furnace = async () => (await craft(page)).furnace!;
-    // clay: a grey-blue bed on the bank, the dig, two lumps come to the backpack, and it's dug out until it fills back up
+    // clay: a grey bed on the bank, the dig, two lumps come to the backpack, and it's dug out until it fills back up
     expect(await g('nearTarget', 'clay', 'clay:0')).toBe('clay:0');
     await expect(prompt(page).getByRole('button', { name: /Dig clay/ })).toBeVisible();
     await page.keyboard.press('KeyE');
