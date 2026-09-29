@@ -1,7 +1,7 @@
 ---
 /**
  * A Font Awesome Duotone icon, drawn inline: its primary layer in the text colour, its secondary in the
- * marigold spot colour (or, tonal, both in the text colour: for a status, whose colour carries meaning).
+ * spot indigo (or, tonal, both in the text colour: for a status, whose colour carries meaning).
  * Decorative by default; give it a label only when it stands alone and means something (a status),
  * never as a button's only name (IconButton names itself).
  * @tier fundamental
@@ -16,7 +16,7 @@ interface Props {
   size?: 'text' | 'lg' | 'inherit';
   /** Only for a meaningful icon on its own (a status mark). */
   label?: string;
-  /** duo: ink and marigold; tonal: both layers in the text colour, the second lighter (a status). */
+  /** duo: the text colour over the spot indigo; tonal: both layers in the text colour, the second lighter (a status). */
   tone?: 'duo' | 'tonal';
 }
 

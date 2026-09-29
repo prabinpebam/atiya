@@ -3,7 +3,8 @@
  * as data. Only the icons the site uses are imported (`src/site/design/icon-set.json`, by
  * `node scripts/import-site-icons.mjs <name>=<font-awesome-name>`, into the generated `iconData.ts`).
  * Components draw them as inline SVG (`svgOf`): two layers, the primary in the text colour and the
- * secondary in the marigold spot colour (base.css; `data-tone="tonal"` for both in the text colour).
+ * secondary in the spot indigo (base.css; `data-icon-tone="tonal"` for both in the text colour, as on a
+ * status or an accent fill). An icon of the site's own (the planet) is a file in assets-src/site-icons/.
  * No icon font, CDN or package. The design library shows them all (/design/tokens/icons/).
  * Docs: documentation/site-ui/design-system.md §2.
  */
@@ -30,7 +31,8 @@ export function svgOf(name: IconName): SvgData {
   const secondary = i.secondary ? `<path class="icon-secondary" d="${i.secondary}"/>` : '';
   return {
     viewBox: `0 0 ${i.width} 512`,
-    name: i.fa.split('/').pop()!,
+    // a Font Awesome name (without its style), or a file of the site's own (without its extension)
+    name: i.fa.split('/').pop()!.replace(/\.svg$/, ''),
     body: `${secondary}<path class="icon-primary" d="${i.primary}"/>`,
     duo: i.secondary.length > 0,
   };

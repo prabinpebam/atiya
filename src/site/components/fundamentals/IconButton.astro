@@ -58,7 +58,7 @@ const i = svgOf(icon);
   disabled={!isLink && disabled ? true : undefined}
   {...rest}
 >
-  <svg class="glyph" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name}><Fragment set:html={i.body} /></svg>
+  <svg class="glyph" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name} data-icon-tone={variant === 'primary' ? 'tonal' : undefined}><Fragment set:html={i.body} /></svg>
 </Tag>
 
 <style>

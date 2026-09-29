@@ -167,7 +167,7 @@ html::-webkit-scrollbar,
 }
 
 /* icons (Font Awesome Duotone, design-system §2): the primary layer in the text colour, the secondary
-   printed under it in the marigold spot colour; a tonal icon (a status) keeps both in the text colour */
+   printed under it in the spot indigo; a tonal icon (a status, one on an accent fill) keeps both in the text colour */
 .icon-primary {
   fill: currentColor;
 }

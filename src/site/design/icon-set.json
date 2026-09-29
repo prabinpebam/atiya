@@ -32,7 +32,7 @@
     "minus": "minus",
     "pause": "pause",
     "pen": "pen-nib",
-    "planet": "globe",
+    "planet": "file:assets-src/site-icons/planet.svg",
     "play": "play",
     "plus": "classic-solid/plus",
     "quote": "quote-left",

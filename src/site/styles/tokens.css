@@ -104,6 +104,7 @@
   --color-frost: light-dark(var(--p-color-frost-indigo-light), var(--p-color-frost-indigo-dark));
   --color-frost-strong: light-dark(var(--p-color-frost-indigo-light-strong), var(--p-color-frost-indigo-dark-strong));
   --color-frost-rim: light-dark(var(--p-color-frost-rim-light), var(--p-color-frost-rim-dark));
+  --color-icon-secondary: light-dark(var(--p-color-indigo-400), var(--p-color-indigo-300));
   --font-display: var(--p-font-fraunces);
   --font-text: var(--p-font-newsreader);
   --font-ui: var(--p-font-figtree);
@@ -268,7 +269,7 @@
   --c-header-height-compact: 3.5rem;
   --c-lightbox-thumb: 4.5rem;
   --c-lightbox-thumb-on: var(--color-highlight);
-  --c-icon-secondary: var(--color-highlight);
+  --c-icon-secondary: var(--color-icon-secondary);
   --c-icon-secondary-opacity: 1;
   --c-icon-tonal-opacity: 0.4;
   --c-carousel-thumb: 5rem;

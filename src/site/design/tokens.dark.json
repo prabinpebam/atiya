@@ -107,6 +107,9 @@
     },
     "frost-rim": {
       "$value": "{p.color.frost.rim-dark}"
+    },
+    "icon-secondary": {
+      "$value": "{p.color.indigo.300}"
     }
   }
 }

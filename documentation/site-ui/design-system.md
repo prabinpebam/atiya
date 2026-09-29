@@ -36,9 +36,10 @@ The rules for the website's pages: the landing, the classic site and the design 
 
 - **Icons** are Font Awesome Pro *Duotone* (licensed to the site's owner), imported one by one as data:
   - `src/site/design/icon-set.json` lists them: the name components use, then the Font Awesome name (`classic-solid/` in front for one Duotone lacks, like `plus`).
+  - An icon of the site's own (the little planet) is an SVG in the same two-layer format in `assets-src/site-icons/`, listed as `file:<path>`.
   - `node scripts/import-site-icons.mjs <name>=<font-awesome-name>` adds one from the owner's local copy of the library and writes the generated `iconData.ts`, with the font coordinates flipped to SVG ones. Never hand-edit that file. Import only what the site uses, and look at a new icon before using it: some of the library's names draw something else (its `volume-high` is a speaker cabinet, its `clock` a watch).
-  - `svgOf(name)` gives the inline SVG's box and its two layers. The primary layer (`.icon-primary`) takes the text colour; the secondary (`.icon-secondary`) is printed under it in marigold (`--c-icon-secondary`), like a two-colour job. An icon with one layer (a check, a chevron) is all primary.
-  - A status is **tonal** (`data-icon-tone="tonal"`, the Icon's `tone`): both layers in its own colour, the second at `--c-icon-tonal-opacity`. So are icons on a marigold fill, and every icon in forced colours.
+  - `svgOf(name)` gives the inline SVG's box and its two layers. The primary layer (`.icon-primary`) takes the text colour; the secondary (`.icon-secondary`) is printed under it in the spot indigo (`--c-icon-secondary`: indigo-400 on light, 3.2:1 on paper; indigo-300 on dark), like a two-ink print. An icon with one layer (a check, a chevron) is all primary.
+  - A status is **tonal** (`data-icon-tone="tonal"`, the Icon's `tone`): both layers in its own colour, the second at `--c-icon-tonal-opacity`. So are icons on an accent fill (primary Button and IconButton) or a marigold one (Tag), where the second colour would sink into the fill, and every icon in forced colours.
   - No icon font, no CDN, no package, no emoji or text symbol.
 - **Behaviour** that isn't just DOM wiring is pure and unit-tested in `src/site/scripts/`:
   - `listbox.ts`: the select's APG keys and typeahead;

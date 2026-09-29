@@ -49,6 +49,8 @@ const { variant = 'secondary', size = 'md', href, type = 'button', icon, iconEnd
 const isLink = href !== undefined && !disabled;
 const Tag = isLink ? 'a' : 'button';
 const start = icon ? svgOf(icon) : null;
+// on the accent fill an indigo second layer would sink into it: the icon is tonal there
+const tonal = variant === 'primary' ? 'tonal' : undefined;
 const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
 ---
 
@@ -69,7 +71,7 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
   {loading && <span class="spinner" aria-hidden="true" />}
   {
     start && (
-      <svg class="icon" viewBox={start.viewBox} aria-hidden="true" focusable="false" data-icon={start.name}>
+      <svg class="icon" viewBox={start.viewBox} aria-hidden="true" focusable="false" data-icon={start.name} data-icon-tone={tonal}>
         <Fragment set:html={start.body} />
       </svg>
     )
@@ -77,7 +79,7 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
   <span class="label"><slot /></span>
   {
     end && (
-      <svg class="icon end" viewBox={end.viewBox} aria-hidden="true" focusable="false" data-icon={end.name}>
+      <svg class="icon end" viewBox={end.viewBox} aria-hidden="true" focusable="false" data-icon={end.name} data-icon-tone={tonal}>
         <Fragment set:html={end.body} />
       </svg>
     )

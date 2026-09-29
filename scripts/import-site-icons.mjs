@@ -5,7 +5,8 @@
  * The site draws Font Awesome Pro *Duotone* icons (licensed to the site's owner) from a local copy of
  * the library, never a CDN or a package. Only the icons the site asks for are copied, as path data:
  * `src/site/design/icon-set.json` lists them (the name components use → the Font Awesome name, with
- * an optional `style/` prefix for an icon Duotone lacks), and this script writes the generated
+ * an optional `style/` prefix for an icon Duotone lacks, or `file:<path>` for one of the site's own,
+ * drawn in the same two-layer format and kept in assets-src/site-icons/), and this script writes the generated
  * `src/site/design/iconData.ts`. Never hand-edit that file.
  *
  *   node scripts/import-site-icons.mjs                     re-import every icon in the set
@@ -80,11 +81,18 @@ function flipPath(d) {
 }
 
 function load(spec) {
+  if (spec.startsWith('file:')) return fromSvg(spec, join(ROOT, spec.slice(5)), spec);
   const [style, name] = spec.includes('/') ? spec.split('/') : ['duotone', spec];
   const prefix = STYLES[style];
   if (!prefix) throw new Error(`${spec}: style must be one of ${Object.keys(STYLES).join(', ')}`);
   const file = join(library, 'icons', style, `${prefix}-${name}.svg`);
   if (!existsSync(file)) throw new Error(`${spec}: not in the library (${file})`);
+  return fromSvg(spec, file, `${style === 'duotone' ? '' : `${style}/`}${name}`);
+}
+
+/** One icon from its SVG: a duotone in font coordinates (flipped here), or a plain y-down one. */
+function fromSvg(spec, file, fa) {
+  if (!existsSync(file)) throw new Error(`${spec}: no such file (${file})`);
   const svg = readFileSync(file, 'utf8');
   const box = /viewBox="0 0 (\d+) 512"/.exec(svg);
   if (!box) throw new Error(`${spec}: expected a 0 0 w 512 viewBox`);
@@ -92,11 +100,11 @@ function load(spec) {
   const paths = [...svg.matchAll(/<path [^>]*\bd="([^"]+)"/g)].map((m) => m[1]);
   if (groups.length === 0 && paths.length === 1) {
     // a plain y-down icon (the classic styles): one layer, already in SVG coordinates
-    return { fa: `${style}/${name}`, width: Number(box[1]), primary: paths[0], secondary: '' };
+    return { fa, width: Number(box[1]), primary: paths[0], secondary: '' };
   }
   if (groups.length !== paths.length || paths.length < 1 || paths.length > 2) throw new Error(`${spec}: unexpected SVG structure`);
   const [secondary, primary] = paths.length === 2 ? groups : ['', groups[0]];
-  return { fa: `${style === 'duotone' ? '' : `${style}/`}${name}`, width: Number(box[1]), primary: flipPath(primary), secondary: secondary ? flipPath(secondary) : '' };
+  return { fa, width: Number(box[1]), primary: flipPath(primary), secondary: secondary ? flipPath(secondary) : '' };
 }
 
 function render() {

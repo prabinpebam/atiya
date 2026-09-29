@@ -142,6 +142,10 @@
     "frost-rim": {
       "$value": "{p.color.frost.rim-light}",
       "$description": "The light along a frosted edge"
+    },
+    "icon-secondary": {
+      "$value": "{p.color.indigo.400}",
+      "$description": "A duotone icon's second layer: the spot indigo, light enough to sit under ink and dark enough to read on paper (3.2:1)"
     }
   }
 }

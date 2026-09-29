@@ -161,6 +161,15 @@ describe('contrast: both modes pass WCAG 2.2 AA', () => {
     expect(role('scrim', 'dark')[0]).toBeLessThan(30);
   });
 
+  it('the second layer of a duotone icon reads on the page in both modes (3:1), and stays apart from the ink over it', () => {
+    for (const mode of ['light', 'dark'] as Mode[]) {
+      expect(on('icon-secondary', 'bg', mode), `on the page, ${mode}`).toBeGreaterThanOrEqual(3);
+      expect(on('icon-secondary', 'bg-raised', mode), `on a card, ${mode}`).toBeGreaterThanOrEqual(3);
+      // the layers never merge; hue does the rest (cream over lavender on dark), and neither outweighs the other
+      expect(contrast(role('icon-secondary', mode), role('text', mode)), `against the ink, ${mode}`).toBeGreaterThanOrEqual(1.5);
+    }
+  });
+
   it('marigold is a highlighter, never text on paper: it fails 3:1 on the light page, so no text role uses it there', () => {
     expect(on('highlight', 'bg', 'light')).toBeLessThan(3);
     for (const r of ['text', 'text-muted', 'accent', 'focus', 'border']) expect(resolve(model.byPath.get(`color.${r}`)!, model.byPath, 'light')).not.toBe(resolve(model.byPath.get('color.highlight')!, model.byPath, 'light'));
