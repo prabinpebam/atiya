@@ -12,6 +12,7 @@ import SiteFooter from '../components/compounds/SiteFooter.astro';
 import Breadcrumbs from '../components/compounds/Breadcrumbs.astro';
 import ArticleHeader from '../components/compounds/ArticleHeader.astro';
 import NextPrev from '../components/compounds/NextPrev.astro';
+import ArticleMinimap from '../components/compounds/ArticleMinimap.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
 import Prose from '../components/fundamentals/Prose.astro';
 import type { IconName } from '../design/icons';
@@ -52,7 +53,7 @@ const { title, description, nav, action, crumbs, header, dropcap = true, prev, n
 <PageShell title={title} description={description} preload={['display', 'display-italic', 'text', 'ui']}>
   <SiteHeader nav={nav} action={action} />
   <main id="main" class="page" tabindex="-1">
-    <article class="article">
+    <article class="article" data-minimap-source>
       {
         crumbs && (
           <div class="crumbs">
@@ -74,6 +75,7 @@ const { title, description, nav, action, crumbs, header, dropcap = true, prev, n
         </div>
       )
     }
+    <ArticleMinimap />
     <Lightbox />
   </main>
   <SiteFooter />

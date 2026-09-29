@@ -326,9 +326,10 @@ describe('CSS reads tokens, never raw values', () => {
     const css = walk(join(ROOT, 'src/site'), /\.(astro|css)$/).filter((f) => !f.endsWith('tokens.css'));
     const bad = css.filter((f) => /scrollbar-color|scrollbar-width:\s*(thin|auto)|::-webkit-scrollbar-(thumb|track|button|corner)/.test(styles(read(f)) || read(f))).map(rel);
     expect(bad).toEqual([]);
-    // what scrolls in a component opts in (the carousel's slide track alone hides its bar: its buttons and dots move it)
+    // what scrolls in a component opts in; two hide their bar by design: the carousel's slide track (its buttons and dots move it)
+    // and the article minimap's strip (a slim column that scrolls without a scrollbar)
     const opted = walk(join(ROOT, 'src/site'), /\.astro$/).filter((f) => /overflow(-[xy])?:\s*(auto|scroll)/.test(styles(read(f))));
-    const missing = opted.filter((f) => !/data-scrollbar|scrollbars'/.test(read(f)) && !f.endsWith(`${sep}Carousel.astro`)).map(rel);
+    const missing = opted.filter((f) => !/data-scrollbar|scrollbars'/.test(read(f)) && !/[\\/](Carousel|ArticleMinimap)\.astro$/.test(f)).map(rel);
     expect(missing).toEqual([]);
   });
 

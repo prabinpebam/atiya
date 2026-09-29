@@ -197,6 +197,7 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --layer-base: 0;
   --layer-raised: 1;
+  --layer-minimap: 50;
   --layer-sticky: 100;
   --layer-dropdown: 200;
   --layer-overlay: 300;
@@ -278,6 +279,33 @@
   --c-carousel-peek-scale: 0.88;
   --c-carousel-peek-opacity: 0.7;
   --c-carousel-peek-min: 2rem;
+  --c-minimap-width: 3rem;
+  --c-minimap-width-touch: 3.5rem;
+  --c-minimap-inset: 1rem;
+  --c-minimap-row: 1rem;
+  --c-minimap-row-touch: 1.5rem;
+  --c-minimap-bar: 0.125rem;
+  --c-minimap-bar-touch: 0.1875rem;
+  --c-minimap-bar-1: 1.75rem;
+  --c-minimap-bar-2: 1.5rem;
+  --c-minimap-bar-3: 1rem;
+  --c-minimap-bar-4: 0.625rem;
+  --c-minimap-bar-5: 0.375rem;
+  --c-minimap-image-w: 0.75rem;
+  --c-minimap-image-h: 0.4375rem;
+  --c-minimap-gallery: 0.75rem;
+  --c-minimap-touch-scale: 1.25;
+  --c-minimap-tick: var(--color-border-strong);
+  --c-minimap-current: var(--color-accent);
+  --c-minimap-active: var(--color-text);
+  --c-minimap-magnify: 0.7;
+  --c-minimap-magnify-even: 0.45;
+  --c-minimap-current-grow: 0.18;
+  --c-minimap-tip-max: 18rem;
+  --c-minimap-tip-gap: 0.5rem;
+  --c-minimap-edge-zone: 3.5rem;
+  --c-minimap-edge-speed: 0.875rem;
+  --c-minimap-pin: 3600ms;
 }
 
 :root[data-theme='light'] {

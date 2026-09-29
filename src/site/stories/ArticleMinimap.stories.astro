@@ -1,0 +1,80 @@
+---
+import Example from '../library/Example.astro';
+import ArticleMinimap from '../components/compounds/ArticleMinimap.astro';
+import ScrollArea from '../components/fundamentals/ScrollArea.astro';
+import Figure from '../components/compounds/Figure.astro';
+import Gallery from '../components/compounds/Gallery.astro';
+import Heading from '../components/fundamentals/Heading.astro';
+import Text from '../components/fundamentals/Text.astro';
+import { SAMPLES } from '../design/samples';
+
+// a long article: sections and subsections, with pictures between them
+const sections = ['Paper and ink', 'One spot colour', 'Three faces', 'Pictures, given room', 'Galleries and carousels', 'Moving pictures', 'Controls you press', 'Scrollbars that float', 'The design library', 'Tokens all the way down', 'Light and dark', 'On a phone', 'Keyboard first', 'Reduced motion'];
+---
+
+<Example title="A long article in its own scroll" layout="block" description="Headings are bars (longer for a higher level), pictures short rectangles, galleries a small grid. Hover or focus one for a preview; choose it to jump there. With more landmarks than fit, the strip scrolls on its own (hold the mouse near its top or bottom). Here the article scrolls in a box, so the strip sits inside that box.">
+  <ScrollArea label="A long article" maxHeight="lg">
+    <article class="demo" id="minimap-demo-long">
+      {
+        sections.map((title, i) => (
+          <section>
+            <Heading level={2}>{title}</Heading>
+            <Text>Most of this site is a small world you can walk around. The classic pages sit still, read well and get out of the way of the pictures.</Text>
+            {i % 3 === 1 && <Figure src={SAMPLES[i % SAMPLES.length].src} alt={SAMPLES[i % SAMPLES.length].alt} imageWidth={SAMPLES[0].width} imageHeight={SAMPLES[0].height} caption={SAMPLES[i % SAMPLES.length].caption} />}
+            <Heading level={3}>{`${title}, in detail`}</Heading>
+            <Text>Every value is a named token, and every piece is made only from the tier below it.</Text>
+            {i % 4 === 2 && <Gallery items={SAMPLES.slice(0, 4)} layout="grid" caption={`Four views for ${title.toLowerCase()}`} />}
+          </section>
+        ))
+      }
+    </article>
+  </ScrollArea>
+  <ArticleMinimap source="#minimap-demo-long" label="Long article outline" />
+</Example>
+
+<Example title="An article of pictures" layout="block" description="Only pictures: each is a landmark, named by its alt text.">
+  <ScrollArea label="An article of pictures" maxHeight="md">
+    <article class="demo" id="minimap-demo-pictures">
+      {SAMPLES.slice(0, 5).map((p) => <Figure src={p.src} alt={p.alt} imageWidth={p.width} imageHeight={p.height} caption={p.caption} />)}
+    </article>
+  </ScrollArea>
+  <ArticleMinimap source="#minimap-demo-pictures" label="Pictures outline" />
+</Example>
+
+<Example title="A gallery first, and a heading inside it" layout="block" description="A gallery is one landmark, whatever it holds: the heading inside it isn't listed on its own.">
+  <ScrollArea label="An article that opens with a gallery" maxHeight="md">
+    <article class="demo" id="minimap-demo-gallery">
+      <figure class="set" data-gallery aria-label="The plaza, from above">
+        <Heading level={3}>Inside the gallery</Heading>
+        <Gallery items={SAMPLES.slice(0, 3)} layout="grid" />
+      </figure>
+      <Heading level={2}>After the gallery</Heading>
+      <Text>The first landmark is the gallery; this heading comes after it.</Text>
+      <Heading level={2}>Further on</Heading>
+      <Text>The minimap marks where you are as you scroll.</Text>
+      <Text>Keep going, and the next landmark takes over at the reading line, a quarter of the way down.</Text>
+    </article>
+  </ScrollArea>
+  <ArticleMinimap source="#minimap-demo-gallery" label="Gallery article outline" />
+</Example>
+
+<style>
+  /* a text column with room beside it for the strip */
+  .demo {
+    display: grid;
+    gap: var(--space-6);
+    max-inline-size: var(--size-measure);
+    padding: var(--space-6);
+  }
+
+  .demo section {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .set {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+  }
+</style>

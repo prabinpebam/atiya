@@ -4,6 +4,7 @@ import { keyAction, matchIndex, printable } from '../../src/site/scripts/listbox
 import { applyTheme, parseTheme, readTheme, resolveTheme, THEME_KEY } from '../../src/site/scripts/theme';
 import { clampIndex, counter, nearest, reveal, swipe, wrap } from '../../src/site/scripts/media';
 import { dragTo, thumbGeometry } from '../../src/site/scripts/scrollbars';
+import { accessibleName, currentIndex, readingLine, JUMP_RATIO, edgeSpeed, isMeaningfulImage, jumpTarget, kindText, repeatsTitle, signature, tidy, waveAt, WAVE } from '../../src/site/scripts/minimap';
 import { tuck, TUCK_SLACK } from '../../src/site/scripts/header';
 import { smart } from '../../src/site/design/typography';
 import { loadSite, resolveDocument, cssValue, merge, type Resolver } from '../../src/site/design/tokenModel';
@@ -133,6 +134,84 @@ describe('overlay scrollbars: where the handle sits, and dragging it', () => {
     expect(dragTo(200, -500, 400, 800, 400, 200)).toBe(0);
     expect(dragTo(200, 500, 400, 800, 400, 200)).toBe(400);
     expect(dragTo(120, 30, 400, 400, 400, 400)).toBe(120);
+  });
+});
+
+describe('the article minimap', () => {
+  it('the current landmark is the last whose top has passed the reading line; before the first, the first', () => {
+    expect(currentIndex([300, 900, 1500], 200)).toBe(0);
+    expect(currentIndex([150, 900, 1500], 200)).toBe(0);
+    expect(currentIndex([-400, 180, 1500], 200)).toBe(1);
+    expect(currentIndex([-900, -300, -10], 200)).toBe(2);
+    expect(currentIndex([], 200)).toBe(0);
+  });
+
+  it('the reading line sits a quarter down what the sticky header leaves, so a jumped-to landmark is always past it', () => {
+    expect(readingLine(800)).toBe(200);
+    expect(readingLine(900, 72)).toBe(72 + 0.25 * 828);
+    for (const [h, sticky] of [[900, 72], [700, 72], [500, 56], [1400, 0]]) {
+      const landing = sticky + Math.max(JUMP_RATIO * h, 24);
+      expect(landing, `${h} tall, ${sticky} header`).toBeLessThan(readingLine(h, sticky));
+    }
+  });
+
+  it('the wave: the active indicator grows most, three either side less and less, none beyond', () => {
+    expect(waveAt(5, null)).toBe(0);
+    expect(waveAt(5, 5)).toBe(1);
+    expect([waveAt(4, 5), waveAt(6, 5)]).toEqual([WAVE[1], WAVE[1]]);
+    expect(waveAt(2, 5)).toBe(WAVE[3]);
+    expect(waveAt(1, 5)).toBe(0);
+    expect(WAVE[1]).toBeGreaterThan(WAVE[2]);
+    expect(WAVE[2]).toBeGreaterThan(WAVE[3]);
+  });
+
+  it('edge auto-scroll: faster nearer the edge, up to the maximum; nothing in the middle', () => {
+    expect(edgeSpeed(200, 400, 56, 14)).toBe(0);
+    expect(edgeSpeed(0, 400, 56, 14)).toBe(-14);
+    expect(edgeSpeed(400, 400, 56, 14)).toBe(14);
+    expect(edgeSpeed(28, 400, 56, 14)).toBe(-7);
+    expect(Math.abs(edgeSpeed(10, 400, 56, 14))).toBeGreaterThan(Math.abs(edgeSpeed(40, 400, 56, 14)));
+    // a short strip splits itself between the two zones
+    expect(edgeSpeed(50, 60, 56, 14)).toBeGreaterThan(0);
+  });
+
+  it('a jump lands 18% down (never under 24 px) below any sticky header, and never above the start', () => {
+    expect(jumpTarget(2000, 1000, 72, 24)).toBe(2000 - 180 - 72);
+    expect(jumpTarget(2000, 100, 0, 24)).toBe(2000 - 24);
+    expect(jumpTarget(50, 1000, 72, 24)).toBe(0);
+  });
+
+  it('the list is drawn again only when its count, kinds, levels or labels change', () => {
+    const a = [{ kind: 'heading' as const, level: 2, label: 'Paper' }, { kind: 'image' as const, label: 'The plaza' }];
+    expect(signature(a)).toBe(signature(a.map((x) => ({ ...x }))));
+    expect(signature(a)).not.toBe(signature([{ ...a[0], level: 3 }, a[1]]));
+    expect(signature(a)).not.toBe(signature([a[0], { ...a[1], label: 'The pond' }]));
+    expect(signature(a)).not.toBe(signature([a[0]]));
+  });
+
+  it('what the tooltip and the button say', () => {
+    expect(kindText({ kind: 'heading', level: 2, label: 'x' })).toBe('Heading 2');
+    expect(kindText({ kind: 'image', label: 'x' })).toBe('Image');
+    expect(kindText({ kind: 'gallery', label: 'x', count: 6 })).toBe('Gallery · 6 images');
+    expect(kindText({ kind: 'gallery', label: 'x', count: 1 })).toBe('Gallery · 1 image');
+    expect(accessibleName({ kind: 'heading', level: 2, label: 'Pictures, given room' })).toBe('Jump to heading: Pictures, given room');
+    expect(accessibleName({ kind: 'gallery', label: 'Five views' })).toBe('Jump to gallery: Five views');
+    expect(tidy('  a\n  b  ')).toBe('a b');
+    expect(tidy('x'.repeat(200), 20)).toHaveLength(20);
+  });
+
+  it('only meaningful pictures: said something, not decorative, not an icon or emoji', () => {
+    expect(isMeaningfulImage({ alt: 'The plaza', hidden: false, width: 640, height: 400 })).toBe(true);
+    expect(isMeaningfulImage({ alt: null, caption: 'The plaza', hidden: false, width: 640, height: 400 })).toBe(true);
+    expect(isMeaningfulImage({ alt: 'The plaza', hidden: true, width: 640, height: 400 })).toBe(false);
+    expect(isMeaningfulImage({ alt: '  ', hidden: false, width: 640, height: 400 })).toBe(false);
+    expect(isMeaningfulImage({ alt: 'Prabin', hidden: false, width: 56, height: 56 })).toBe(false);
+    expect(isMeaningfulImage({ alt: 'smile', hidden: false, width: 20, height: 20 })).toBe(false);
+  });
+
+  it('the article title is left out when it only repeats the page title', () => {
+    expect(repeatsTitle('A printed page for a little planet', 'A printed page for a little planet — Prabin Pebam')).toBe(true);
+    expect(repeatsTitle('Paper and ink', 'A printed page for a little planet — Prabin Pebam')).toBe(false);
   });
 });
 

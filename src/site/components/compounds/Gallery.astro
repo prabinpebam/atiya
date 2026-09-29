@@ -51,7 +51,7 @@ const columns = items.length > 2 ? '3' : '2';
 const ratio = layout === 'row' ? '4/3' : '1/1';
 ---
 
-<figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width}>
+<figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width} data-gallery>
   <div class="items" data-scrollbar>
     {
       items.map((item) => {

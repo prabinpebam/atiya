@@ -47,7 +47,8 @@ The rules for the website's pages: the landing, the classic site and the design 
   - `media.ts`: wrapping, swipes, the nearest slide;
   - `controls.ts`: the slider's values;
   - `page.ts`: runs a component's script on every page, including pages swapped in without a reload (§4);
-  - `scrollbars.ts`: the overlay scrollbars (§3): the handle's size and place (`thumbGeometry`) and dragging it (`dragTo`).
+  - `scrollbars.ts`: the overlay scrollbars (§3): the handle's size and place (`thumbGeometry`) and dragging it (`dragTo`);
+  - `minimap.ts`: the article minimap's rules ([the minimap](minimap.md)): the current landmark, the wave, edge auto-scroll, the jump's landing, which pictures count.
 - **Base styles** (`src/site/styles/base.css`) set element defaults only: the reset, type, links, the focus ring, selection, and `.sr-only`.
 - **Assets:** the font cuts in `src/site/assets/fonts/` (generated; §9).
 - **Helpers:** `src/site/design/meta.ts` (the base path and the theme colours), `samples.ts` (the library's sample media) and `typography.ts` (curly quotes).
@@ -97,7 +98,7 @@ The design library is the full, live version (examples, props, keys, tokens, use
 | Tier | Components |
 |---|---|
 | **Fundamentals** | **Type:** Heading, Text, Link, Caption, Prose, Quote, Tag, Divider. **Media:** Icon, Image, Video, Avatar. **Actions:** Button, IconButton. **Form controls:** Select (the custom dropdown), Checkbox, Radio, Switch, TextField, Slider. **Feedback:** Progress, Spinner, Skeleton. **Scrolling:** ScrollArea (the custom scrollbar) |
-| **Compounds** | **Page frame:** PageShell, SiteHeader, SiteFooter, SideNav, Breadcrumbs, NextPrev. **Openings:** Hero, ArticleHeader. **Indexes:** StoryCard, ContentsList. **Media:** Figure, Gallery, Lightbox, Carousel, VideoEmbed. **Forms:** ChoiceGroup |
+| **Compounds** | **Page frame:** PageShell, SiteHeader, SiteFooter, SideNav, Breadcrumbs, NextPrev. **Openings:** Hero, ArticleHeader. **Indexes:** StoryCard, ContentsList. **Media:** Figure, Gallery, Lightbox, Carousel, VideoEmbed. **Wayfinding:** ArticleMinimap ([the minimap](minimap.md)). **Forms:** ChoiceGroup |
 | **Layouts** | **LandingLayout** (the front page), **IndexLayout** (a section's front page), **ArticleLayout** (a long read: case studies, notes, the classic sections), **LibraryLayout** (the design library) |
 
 ![A layout's page in the library: the real article page framed at desktop width, with phone and tablet switches and its source below.](assets/library-layout-page.jpg)

@@ -408,7 +408,8 @@ test.describe('site on a phone', () => {
       return [...document.querySelectorAll('a[href], button, [role="combobox"], input:not([type="hidden"]), summary')]
         .filter((e) => {
           const b = e.getBoundingClientRect();
-          return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !inText(e) && !stretched(e);
+          // the article minimap's rows are 24 px on touch (WCAG 2.5.8): an extra way to move, the page scrolls as usual
+          return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !inText(e) && !stretched(e) && !e.closest('[data-minimap]');
         })
         .map((e) => ({ e, b: e.getBoundingClientRect() }))
         .filter(({ b }) => b.height < 44 || b.width < 44)
@@ -503,3 +504,153 @@ test.describe('site on a phone', () => {
     expect(fonts.reduce((n, f) => n + f.size, 0)).toBeLessThan(250 * 1024);
   });
 });
+
+/** The article minimap (documentation/site-ui/minimap.md). */
+test.describe('article minimap', () => {
+  const outline = 'nav[aria-label="Article outline"]';
+  const state = (page: Page, nav = outline) =>
+    page.locator(nav).evaluate((n) => {
+      const rows = [...n.querySelectorAll<HTMLElement>('.row')];
+      const tip = n.querySelector('[data-minimap-tip]')!;
+      return {
+        kinds: rows.map((r) => r.dataset.kind! + (r.dataset.level ?? '')),
+        current: rows.findIndex((r) => r.getAttribute('aria-current') === 'location'),
+        active: rows.findIndex((r) => r.hasAttribute('data-active')),
+        tip: tip.hasAttribute('data-show') ? [...tip.children].map((c) => c.textContent!.trim()).join(' | ') : null,
+      };
+    });
+  const current = (page: Page) => state(page).then((s) => s.current);
+
+  test('one indicator per landmark, where the reader is, a preview on hover or focus, and a jump that lands below the header', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/demo/article-layout/');
+    const nav = page.getByRole('navigation', { name: 'Article outline' });
+    await expect(nav).toBeVisible();
+    const rows = nav.locator('.row');
+    let s = await state(page);
+    // the lead picture, three headings, a picture, a gallery, a carousel; not the title (the page's own), the author's avatar or the video's poster
+    expect(s.kinds).toEqual(['image', 'heading2', 'image', 'heading2', 'gallery', 'gallery', 'heading2']);
+    expect(s.current).toBe(0);
+    // only the strip takes pointer input
+    expect(await nav.evaluate((n) => [n, n.querySelector('.strip')!, n.querySelector('[data-minimap-tip]')!].map((e) => getComputedStyle(e).pointerEvents))).toEqual(['none', 'auto', 'none']);
+    await expect(rows.nth(1)).toHaveAccessibleName('Jump to heading: Paper, ink and one spot colour');
+    await expect(rows.nth(4)).toHaveAccessibleName(/^Jump to gallery: /);
+
+    // hover: active, a preview, and the wave
+    await rows.nth(2).hover();
+    s = await state(page);
+    expect(s.active).toBe(2);
+    expect(s.tip).toMatch(/lighthouse.* \| Image$/i);
+    const waves = await rows.evaluateAll((rs) => rs.map((r) => Number((r as HTMLElement).style.getPropertyValue('--wave') || 0)));
+    expect(waves[2]).toBe(1);
+    expect(waves[1]).toBeGreaterThan(waves[0]);
+    expect(waves[3]).toBe(waves[1]);
+    expect(waves[6]).toBe(0);
+
+    // a jump: the landmark lands 18% down below the sticky header, and is the one being read
+    await rows.nth(3).click();
+    await expect.poll(() => current(page)).toBe(3);
+    await page.waitForTimeout(600);
+    const top = await page.locator('#pictures').evaluate((h) => h.getBoundingClientRect().top);
+    expect(Math.abs(top - (72 + 0.18 * 900))).toBeLessThan(24);
+
+    // the keyboard: focus previews, Enter jumps
+    await rows.nth(6).focus();
+    expect((await state(page)).tip).toBe('Moving pictures | Heading 2');
+    await page.keyboard.press('Enter');
+    await expect.poll(() => current(page)).toBe(6);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  });
+
+  test('opening at a heading anchor marks it current, and the heading keeps its id', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/demo/article-layout/#pictures');
+    await expect.poll(() => current(page)).toBe(3);
+    await expect(page.locator('h2#pictures')).toHaveCount(1);
+  });
+
+  test('content that changes after load: the list rebuilds, and landmarks moved down move the reading position', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/demo/article-layout/');
+    await page.evaluate(() => {
+      const h = document.createElement('h3');
+      h.textContent = 'Added later';
+      document.querySelector('.article .prose')!.append(h);
+    });
+    await expect.poll(() => state(page).then((s) => s.kinds.length)).toBe(8);
+    expect((await state(page)).kinds.at(-1)).toBe('heading3');
+    // at the second heading, then a tall block (a late picture) pushes everything below the lead down
+    await page.locator('#paper-and-ink').evaluate((h) => window.scrollTo(0, h.getBoundingClientRect().top + scrollY - 100));
+    await expect.poll(() => current(page)).toBe(1);
+    // as a late picture does (scroll anchoring off, as when it loads below the reader's anchor)
+    await page.evaluate(() => {
+      document.documentElement.style.overflowAnchor = 'none';
+      const tall = document.createElement('div');
+      tall.style.height = '1600px';
+      document.querySelector('.article .prose')!.prepend(tall);
+    });
+    await expect.poll(() => current(page)).toBe(0);
+  });
+
+  test('in a box of its own: the strip sits inside it, scrolls on its own without chaining, and auto-scrolls near its edges', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/compounds/article-minimap/');
+    const nav = page.getByRole('navigation', { name: 'Long article outline' });
+    await page.getByRole('region', { name: 'A long article', exact: true }).scrollIntoViewIfNeeded();
+    const g = await nav.evaluate((el) => {
+      const box = el.parentElement!.querySelector('[role="region"]')!.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const strip = el.querySelector('.strip')!;
+      return { inside: r.left >= box.left && r.right <= box.right - 8 && r.top >= box.top && r.bottom <= box.bottom, rows: strip.children.length, overflow: strip.scrollHeight > strip.clientHeight };
+    });
+    expect(g).toEqual({ inside: true, rows: 36, overflow: true });
+    const strip = nav.locator('.strip');
+    const b = (await strip.boundingBox())!;
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height - 4);
+    await expect.poll(() => strip.evaluate((s) => s.scrollTop)).toBeGreaterThan(40);
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    const at = await strip.evaluate((s) => s.scrollTop);
+    await page.waitForTimeout(300);
+    expect(await strip.evaluate((s) => s.scrollTop)).toBe(at);
+    // at its end, the wheel doesn't pass on to the page
+    await strip.evaluate((s) => (s.scrollTop = s.scrollHeight));
+    const y = await page.evaluate(() => scrollY);
+    await page.mouse.wheel(0, 400);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => scrollY)).toBe(y);
+    // only pictures; a gallery first, the heading inside it not listed
+    expect((await state(page, 'nav[aria-label="Pictures outline"]')).kinds).toEqual(['image', 'image', 'image', 'image', 'image']);
+    expect((await state(page, 'nav[aria-label="Gallery article outline"]')).kinds).toEqual(['gallery', 'heading2', 'heading2']);
+  });
+
+  test('touch: a tap selects and jumps at once, a second tap takes over, and the first tap\u2019s timer leaves it be', async ({ browser, baseURL }) => {
+    const ctx = await browser.newContext({ ...PIXEL, viewport: { width: 1280, height: 800 } });
+    const page = await ctx.newPage();
+    await page.goto(new URL('/design/demo/article-layout/', baseURL).href);
+    const rows = page.locator(`${outline} .row`);
+    expect((await rows.first().boundingBox())!.height).toBeGreaterThanOrEqual(24);
+    await rows.nth(3).tap();
+    let s = await state(page);
+    expect(s.active).toBe(3);
+    expect(s.tip).toMatch(/^Pictures, given room/);
+    await expect.poll(() => current(page)).toBe(3);
+    await page.waitForTimeout(2000);
+    await rows.nth(1).tap();
+    // past the first tap's 3.6 s: the second selection stays
+    await page.waitForTimeout(2200);
+    s = await state(page);
+    expect(s.active).toBe(1);
+    expect(s.tip).toMatch(/^Paper, ink/);
+    await expect.poll(() => state(page).then((x) => x.active), { timeout: 5000 }).toBe(-1);
+    await ctx.close();
+  });
+
+  test('on a phone the strip stays out of the way of the text', async ({ browser, baseURL }) => {
+    const ctx = await browser.newContext({ ...PIXEL });
+    const page = await ctx.newPage();
+    await page.goto(new URL('/design/demo/article-layout/', baseURL).href);
+    await expect(page.locator(outline)).toBeHidden();
+    await ctx.close();
+  });
+});
+

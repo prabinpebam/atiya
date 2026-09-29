@@ -1,0 +1,626 @@
+---
+/**
+ * The article minimap: a slim strip along the right edge of a long article, one indicator per landmark
+ * (a heading, a standalone picture, a gallery or carousel), showing where the reader is. Hovering or
+ * focusing an indicator previews its landmark in a tooltip; choosing it jumps there. It never gets in
+ * the way: only the strip takes pointer input, it hides where it would cover text, and it scrolls on its
+ * own without a scrollbar. The layout places it once, beside the element it maps (data-minimap-source).
+ * @tier compound
+ * @a11y A labelled navigation landmark ("Article outline"); every indicator is a real button named by its kind and label ("Jump to heading: …").
+ * @a11y The landmark being read is marked aria-current="location"; the tooltip is a status message, announced as focus or hover moves.
+ * @a11y Kind is shown by shape (bar, rectangle, grid), never by colour alone; reduced motion turns off the smooth scroll and the growth.
+ * @a11y Rows are 16 px for a mouse and 24 px on touch (the WCAG 2.5.8 minimum); it's an extra way to move, the page scrolls as usual.
+ * @key Tab: moves through the indicators
+ * @key Enter / Space: jumps to the focused indicator's landmark
+ */
+interface Props {
+  /** The strip's accessible name. */
+  label?: string;
+  /** A selector for the element whose landmarks it maps. */
+  source?: string;
+}
+
+const { label = 'Article outline', source = '[data-minimap-source]' } = Astro.props;
+---
+
+<nav class="minimap" aria-label={label} data-minimap data-source={source} hidden>
+  <ol class="strip" data-minimap-strip></ol>
+  <div class="tip" role="status" aria-live="polite" data-minimap-tip>
+    <span class="tip-label" data-tip-label></span>
+    <span class="tip-kind" data-tip-kind></span>
+  </div>
+  <template data-minimap-row>
+    <li class="item">
+      <button class="row" type="button">
+        <span class="tick"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></span>
+      </button>
+    </li>
+  </template>
+</nav>
+
+<style>
+  /* the frame takes no pointer input: only the strip and its rows do, so the space around it never
+     blocks the article */
+  .minimap {
+    position: fixed;
+    inset-block: calc(var(--c-header-height) + var(--space-4)) var(--space-6);
+    inset-inline-end: var(--c-minimap-inset);
+    z-index: var(--layer-minimap);
+    display: flex;
+    flex-direction: column;
+    inline-size: var(--c-minimap-width);
+    font-family: var(--font-ui);
+    pointer-events: none;
+  }
+
+  .minimap[hidden] {
+    display: none;
+  }
+
+  /* an article that scrolls in a box of its own: the strip sits inside that box (the script places it) */
+  .minimap[data-mode='container'] {
+    position: absolute;
+    inset: auto;
+  }
+
+  /* centred when short; scrolls on its own, without a scrollbar and without chaining to the page, when long */
+  .strip {
+    max-block-size: 100%;
+    margin: auto 0;
+    padding: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    list-style: none;
+    pointer-events: auto;
+  }
+
+  .strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .item {
+    margin: 0;
+  }
+
+  /* a full-width row is the target, not the tick */
+  .row {
+    --grow: max(calc(var(--wave, 0) * var(--c-minimap-magnify)), calc(var(--is-current, 0) * var(--c-minimap-current-grow)));
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    inline-size: 100%;
+    block-size: var(--c-minimap-row);
+    margin: 0;
+    padding: 0 var(--space-2) 0 0;
+    border: 0;
+    background: transparent;
+    color: var(--c-minimap-tick);
+    cursor: pointer;
+    touch-action: pan-y;
+  }
+
+  .row:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: calc(var(--border-focus) * -1);
+    border-radius: var(--radius-xs);
+  }
+
+  .tick {
+    display: block;
+    border-radius: var(--radius-pill);
+    background: currentColor;
+    transform-origin: 100% 50%;
+    transition:
+      transform var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+
+  .cell {
+    display: none;
+  }
+
+  /* a heading: a thin bar, longer the higher the level, stretching lengthwise only */
+  .row[data-kind='heading'] .tick {
+    inline-size: var(--bar-len, var(--c-minimap-bar-5));
+    block-size: var(--c-minimap-bar);
+    transform: scaleX(calc(1 + var(--grow)));
+  }
+
+  .row[data-level='1'] {
+    --bar-len: var(--c-minimap-bar-1);
+  }
+
+  .row[data-level='2'] {
+    --bar-len: var(--c-minimap-bar-2);
+  }
+
+  .row[data-level='3'] {
+    --bar-len: var(--c-minimap-bar-3);
+  }
+
+  .row[data-level='4'] {
+    --bar-len: var(--c-minimap-bar-4);
+  }
+
+  /* a picture: a short, thicker rectangle; a gallery: a small 2 x 2 grid. Both scale evenly */
+  .row[data-kind='image'] .tick {
+    inline-size: var(--c-minimap-image-w);
+    block-size: var(--c-minimap-image-h);
+    border-radius: var(--radius-xs);
+    transform: scale(calc(1 + var(--grow) * var(--c-minimap-magnify-even)));
+  }
+
+  .row[data-kind='gallery'] .tick {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-0-5);
+    inline-size: var(--c-minimap-gallery);
+    block-size: var(--c-minimap-gallery);
+    border-radius: 0;
+    background: none;
+    transform: scale(calc(1 + var(--grow) * var(--c-minimap-magnify-even)));
+  }
+
+  .row[data-kind='gallery'] .cell {
+    display: block;
+    border-radius: 0;
+    background: currentColor;
+  }
+
+  /* the landmark being read; hover or focus wins over it */
+  .row[aria-current='location'] {
+    --is-current: 1;
+    color: var(--c-minimap-current);
+  }
+
+  .row[data-active] {
+    color: var(--c-minimap-active);
+  }
+
+  /* outside the strip's scroll, so it isn't clipped; never takes pointer input */
+  .tip {
+    position: absolute;
+    inset-block-start: var(--tip-y, 50%);
+    inset-inline-end: calc(100% + var(--c-minimap-tip-gap));
+    display: grid;
+    inline-size: max-content;
+    max-inline-size: min(var(--c-minimap-tip-max), calc(100vw - var(--c-minimap-width) - var(--c-minimap-inset) - var(--space-8)));
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-text);
+    color: var(--color-bg);
+    box-shadow: var(--shadow-md);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-50%);
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+
+  .tip[data-show] {
+    opacity: 1;
+  }
+
+  .tip-label,
+  .tip-kind {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .tip-label {
+    font-weight: var(--weight-semibold);
+  }
+
+  .tip-kind {
+    font-weight: var(--weight-regular);
+  }
+
+  /* touch: a wider strip, taller rows, larger and thicker marks (the same differences), a tooltip closer and narrower */
+  @media (pointer: coarse) {
+    .minimap {
+      inline-size: var(--c-minimap-width-touch);
+    }
+
+    .row {
+      block-size: var(--c-minimap-row-touch);
+    }
+
+    .row[data-kind='heading'] .tick {
+      inline-size: calc(var(--bar-len, var(--c-minimap-bar-5)) * var(--c-minimap-touch-scale));
+      block-size: var(--c-minimap-bar-touch);
+    }
+
+    .row[data-kind='image'] .tick {
+      inline-size: calc(var(--c-minimap-image-w) * var(--c-minimap-touch-scale));
+      block-size: calc(var(--c-minimap-image-h) * var(--c-minimap-touch-scale));
+    }
+
+    .row[data-kind='gallery'] .tick {
+      inline-size: calc(var(--c-minimap-gallery) * var(--c-minimap-touch-scale));
+      block-size: calc(var(--c-minimap-gallery) * var(--c-minimap-touch-scale));
+    }
+
+    .tip {
+      inset-inline-end: calc(100% + var(--space-1));
+      max-inline-size: min(var(--size-measure-narrow), calc(100vw - var(--c-minimap-width-touch) - var(--c-minimap-inset) - var(--space-6)));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tick,
+    .tip {
+      transition: none;
+    }
+  }
+
+  @media print {
+    .minimap {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { reveal } from '../../scripts/media';
+  import { accessibleName, currentIndex, edgeSpeed, isMeaningfulImage, jumpTarget, kindText, readingLine, repeatsTitle, signature, tidy, waveAt, type Landmark } from '../../scripts/minimap';
+
+  interface Entry extends Landmark {
+    el: Element;
+  }
+
+  const GROUPS = '[data-gallery], [data-carousel]';
+
+  /** The landmarks in document order: headings, meaningful standalone pictures, galleries and carousels (as one each). */
+  function collect(source: Element): Entry[] {
+    const groups = [...source.querySelectorAll(GROUPS)];
+    const out: Entry[] = [];
+    for (const el of source.querySelectorAll<HTMLElement>(`h1, h2, h3, h4, h5, h6, img, ${GROUPS}`)) {
+      // hidden, a dialog (the lightbox) or a video's poster: not part of the reading
+      if (el.closest('[hidden], [aria-hidden="true"], dialog, [data-video-embed]')) continue;
+      if (groups.some((g) => g !== el && g.contains(el))) continue;
+      if (el.matches(GROUPS)) {
+        const count = el.matches('[data-carousel]') ? el.querySelectorAll('[data-carousel-slide]').length : el.querySelectorAll('img').length;
+        const label = tidy(el.getAttribute('aria-label')) || tidy(el.querySelector('figcaption')?.textContent) || 'Gallery';
+        out.push({ el, kind: 'gallery', label, count });
+      } else if (/^H[1-6]$/.test(el.tagName)) {
+        const level = Number(el.tagName[1]);
+        const label = tidy(el.textContent);
+        if (!label || (level === 1 && repeatsTitle(label, document.title))) continue;
+        out.push({ el, kind: 'heading', level, label });
+      } else {
+        const img = el as HTMLImageElement;
+        const alt = img.getAttribute('alt');
+        const caption = img.closest('figure')?.querySelector('figcaption')?.textContent ?? null;
+        const r = img.getBoundingClientRect();
+        const role = img.getAttribute('role');
+        const decorative = alt === '' || role === 'presentation' || role === 'none';
+        if (!isMeaningfulImage({ alt, caption, hidden: decorative, width: r.width || img.width, height: r.height || img.height })) continue;
+        out.push({ el, kind: 'image', label: tidy(alt) || tidy(caption) });
+      }
+    }
+    return out;
+  }
+
+  /** The nearest ancestor that scrolls the source vertically, or null for the page itself. */
+  function scrollParent(el: Element): HTMLElement | null {
+    for (let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      const oy = getComputedStyle(p).overflowY;
+      if (oy === 'auto' || oy === 'scroll') return p;
+    }
+    return null;
+  }
+
+  const px = (name: string, from: Element = document.documentElement): number => {
+    const v = getComputedStyle(from).getPropertyValue(name).trim();
+    const n = parseFloat(v);
+    if (v.endsWith('rem')) return n * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
+    // a duration, in ms (the build's minifier may write 3600ms as 3.6s)
+    if (v.endsWith('ms')) return n;
+    if (v.endsWith('s')) return n * 1000;
+    return n;
+  };
+
+  each<HTMLElement>('[data-minimap]', (nav, signal) => {
+    const source = document.querySelector(nav.dataset.source || '[data-minimap-source]');
+    const strip = nav.querySelector<HTMLOListElement>('[data-minimap-strip]');
+    const tip = nav.querySelector<HTMLElement>('[data-minimap-tip]');
+    const tipLabel = nav.querySelector<HTMLElement>('[data-tip-label]');
+    const tipKind = nav.querySelector<HTMLElement>('[data-tip-kind]');
+    const template = nav.querySelector<HTMLTemplateElement>('[data-minimap-row]');
+    if (!source || !strip || !tip || !tipLabel || !tipKind || !template) return;
+
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    const container = scrollParent(source);
+    if (container) {
+      // inside the box that scrolls, not at the browser's edge: a side panel pushes it along with the content
+      const host = container.parentElement!;
+      if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+      container.after(nav);
+      nav.dataset.mode = 'container';
+    }
+
+    let entries: Entry[] = [];
+    let rows: HTMLButtonElement[] = [];
+    let sig = '';
+    let current = -1;
+    let active: number | null = null;
+    let pinned = 0;
+    let pinTimer = 0;
+    let ignoreClickUntil = 0;
+    let frame = 0;
+    let edgeLoop = 0;
+    let speed = 0;
+    let touch: { id: number; x: number; y: number; row: number } | null = null;
+
+    // the scrolling area's box, in viewport coordinates
+    const area = () => {
+      if (container) return container.getBoundingClientRect();
+      const w = document.documentElement.clientWidth;
+      return { top: 0, left: 0, right: w, bottom: innerHeight, width: w, height: innerHeight } as DOMRect;
+    };
+
+    // in a box: along its right edge, inset top and bottom
+    const place = () => {
+      if (!container) return;
+      const inset = px('--c-minimap-inset');
+      const width = nav.getBoundingClientRect().width || px('--c-minimap-width');
+      nav.style.top = `${container.offsetTop + inset}px`;
+      nav.style.height = `${Math.max(0, container.clientHeight - 2 * inset)}px`;
+      nav.style.left = `${container.offsetLeft + container.clientWidth - inset - width}px`;
+    };
+
+    // never over the text: shown only where the column leaves it room
+    const roomy = () => {
+      const a = area();
+      const width = px(matchMedia('(pointer: coarse)').matches ? '--c-minimap-width-touch' : '--c-minimap-width');
+      const left = a.right - px('--c-minimap-inset') - width;
+      let textRight = -Infinity;
+      for (const t of [...source.querySelectorAll('p, li, blockquote, h2, h3, h4')].slice(0, 40)) {
+        const r = t.getBoundingClientRect();
+        if (r.width > 0) textRight = Math.max(textRight, r.right);
+      }
+      return left >= textRight + px('--space-2');
+    };
+
+    const showTip = (i: number | null) => {
+      if (i === null || !entries[i]) {
+        tip.removeAttribute('data-show');
+        return;
+      }
+      tipLabel.textContent = entries[i].label;
+      tipKind.textContent = kindText(entries[i]);
+      tip.setAttribute('data-show', '');
+      placeTip();
+    };
+
+    const placeTip = () => {
+      const row = active === null ? null : rows[active];
+      if (!row) return;
+      tip.style.setProperty('--tip-y', `${row.offsetTop - strip.scrollTop + row.offsetHeight / 2}px`);
+    };
+
+    const setActive = (i: number | null) => {
+      active = i;
+      rows.forEach((r, n) => {
+        r.style.setProperty('--wave', String(waveAt(n, i)));
+        r.toggleAttribute('data-active', n === i);
+      });
+      showTip(i);
+    };
+
+    const setCurrent = (i: number) => {
+      if (i === current) return;
+      current = i;
+      rows.forEach((r, n) => (n === i ? r.setAttribute('aria-current', 'location') : r.removeAttribute('aria-current')));
+      // keep it in view while the strip overflows, unless the reader is browsing the strip
+      const row = rows[i];
+      if (row && active === null && strip.scrollHeight > strip.clientHeight) {
+        const by = reveal(row.offsetTop - strip.offsetTop, row.offsetTop - strip.offsetTop + row.offsetHeight, strip.scrollTop, strip.scrollTop + strip.clientHeight, row.offsetHeight);
+        if (by) strip.scrollTop += by;
+      }
+    };
+
+    const render = () => {
+      strip.textContent = '';
+      rows = entries.map((e, i) => {
+        const li = (template.content.firstElementChild as HTMLElement).cloneNode(true) as HTMLElement;
+        const row = li.querySelector('button')!;
+        row.dataset.kind = e.kind;
+        if (e.level) row.dataset.level = String(e.level);
+        row.dataset.index = String(i);
+        row.setAttribute('aria-label', accessibleName(e));
+        strip.append(li);
+        return row;
+      });
+      current = -1;
+      if (active !== null && active >= rows.length) active = null;
+      setActive(active);
+    };
+
+    // where the reader is: the last landmark past the reading line
+    const update = () => {
+      frame = 0;
+      if (!entries.length) return;
+      const a = area();
+      const tops = entries.map((e) => e.el.getBoundingClientRect().top - a.top);
+      setCurrent(currentIndex(tops, readingLine(a.height, sticky())));
+      if (active !== null) placeTip();
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    // the list itself: drawn again only when it changes (count, kinds, levels, labels)
+    const rebuild = () => {
+      const next = collect(source);
+      const s = signature(next);
+      entries = next;
+      if (s !== sig) {
+        sig = s;
+        render();
+      }
+      place();
+      nav.hidden = entries.length === 0 || !roomy();
+      update();
+    };
+
+    // a sticky header's height, as the page declares it for anchors (scroll-padding-top)
+    const sticky = () => parseFloat(getComputedStyle(container ?? document.documentElement).scrollPaddingTop) || 0;
+
+    const jump = (i: number) => {
+      const e = entries[i];
+      if (!e) return;
+      const behavior = reduce.matches ? 'auto' : 'smooth';
+      const minGap = px('--space-6');
+      if (container) {
+        const top = e.el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+        container.scrollTo({ top: jumpTarget(top, container.clientHeight, sticky(), minGap), behavior });
+      } else {
+        const top = e.el.getBoundingClientRect().top + scrollY;
+        window.scrollTo({ top: jumpTarget(top, innerHeight, sticky(), minGap), behavior });
+      }
+    };
+
+    const rowOf = (target: EventTarget | null) => {
+      const row = target instanceof Element ? target.closest<HTMLButtonElement>('.row') : null;
+      return row && strip.contains(row) ? Number(row.dataset.index) : null;
+    };
+
+    // a tap selects at once and stays a while (touch has no hover); a later tap isn't undone by this one's timer
+    const pin = (i: number) => {
+      window.clearTimeout(pinTimer);
+      const mine = ++pinned;
+      setActive(i);
+      pinTimer = window.setTimeout(() => {
+        if (pinned === mine) setActive(null);
+      }, px('--c-minimap-pin'));
+    };
+
+    // edge auto-scroll for a mouse held near the strip's top or bottom: one loop at a time
+    const stopEdge = () => {
+      speed = 0;
+      cancelAnimationFrame(edgeLoop);
+      edgeLoop = 0;
+    };
+    const runEdge = () => {
+      edgeLoop = 0;
+      if (!speed) return;
+      const before = strip.scrollTop;
+      strip.scrollTop += speed;
+      placeTip();
+      if (strip.scrollTop === before) return stopEdge();
+      edgeLoop = requestAnimationFrame(runEdge);
+    };
+
+    strip.addEventListener(
+      'pointermove',
+      (e) => {
+        if (e.pointerType !== 'mouse') {
+          if (touch && e.pointerId === touch.id && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 8) touch = null;
+          return;
+        }
+        const i = rowOf(e.target);
+        if (i !== null && i !== active) setActive(i);
+        if (strip.scrollHeight <= strip.clientHeight) return stopEdge();
+        const r = strip.getBoundingClientRect();
+        speed = edgeSpeed(e.clientY - r.top, r.height, px('--c-minimap-edge-zone'), px('--c-minimap-edge-speed'));
+        if (!speed) stopEdge();
+        else if (!edgeLoop) edgeLoop = requestAnimationFrame(runEdge);
+      },
+      { signal },
+    );
+    strip.addEventListener(
+      'pointerleave',
+      (e) => {
+        stopEdge();
+        if (e.pointerType === 'mouse' && !strip.contains(document.activeElement)) setActive(null);
+      },
+      { signal },
+    );
+    strip.addEventListener(
+      'pointerdown',
+      (e) => {
+        if (e.pointerType === 'mouse') return;
+        const i = rowOf(e.target);
+        touch = i === null ? null : { id: e.pointerId, x: e.clientX, y: e.clientY, row: i };
+      },
+      { signal },
+    );
+    strip.addEventListener('pointercancel', () => (touch = null), { signal });
+    strip.addEventListener(
+      'pointerup',
+      (e) => {
+        if (e.pointerType === 'mouse' || !touch || e.pointerId !== touch.id) return;
+        const i = touch.row;
+        touch = null;
+        // the click the browser sends after a tap is this same choice
+        ignoreClickUntil = performance.now() + 700;
+        pin(i);
+        jump(i);
+      },
+      { signal },
+    );
+    strip.addEventListener(
+      'click',
+      (e) => {
+        const i = rowOf(e.target);
+        if (i === null) return;
+        if (performance.now() < ignoreClickUntil) return;
+        setActive(i);
+        jump(i);
+      },
+      { signal },
+    );
+    strip.addEventListener('focusin', (e) => {
+      const i = rowOf(e.target);
+      if (i !== null) setActive(i);
+    }, { signal });
+    strip.addEventListener(
+      'focusout',
+      (e) => {
+        if (!strip.contains(e.relatedTarget as Node | null) && !strip.matches(':hover')) setActive(null);
+      },
+      { signal },
+    );
+    strip.addEventListener('scroll', () => placeTip(), { passive: true, signal });
+
+    (container ?? window).addEventListener('scroll', schedule, { passive: true, signal });
+    window.addEventListener(
+      'resize',
+      () => {
+        place();
+        nav.hidden = entries.length === 0 || !roomy();
+        schedule();
+      },
+      { signal },
+    );
+
+    // content and layout change after load (lazy pictures, embeds, galleries drawn in the browser)
+    let rebuildFrame = 0;
+    const later = () => {
+      cancelAnimationFrame(rebuildFrame);
+      rebuildFrame = requestAnimationFrame(rebuild);
+    };
+    const mo = new MutationObserver(later);
+    mo.observe(source, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['alt', 'aria-label', 'hidden', 'aria-hidden'] });
+    const ro = new ResizeObserver(later);
+    ro.observe(source);
+    if (container) ro.observe(container);
+    source.addEventListener('load', later, { capture: true, signal });
+
+    signal.addEventListener('abort', () => {
+      mo.disconnect();
+      ro.disconnect();
+      stopEdge();
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(rebuildFrame);
+      window.clearTimeout(pinTimer);
+    });
+
+    rebuild();
+  });
+</script>
