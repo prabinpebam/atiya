@@ -224,6 +224,20 @@ test.describe('site on a phone', () => {
     await expect(header).not.toHaveAttribute('data-tucked', '');
   });
 
+  test('contrast settings: Increase Contrast strengthens muted text and rules; forced colours keep the current page marked', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    const muted = () => page.locator('.contents .text').first().evaluate((e) => getComputedStyle(e).color);
+    await page.goto('/classic/');
+    const normal = await muted();
+    await page.emulateMedia({ contrast: 'more' });
+    expect(await muted()).not.toBe(normal);
+    await page.emulateMedia({ contrast: 'no-preference', forcedColors: 'active' });
+    await page.goto('/classic/workshop/');
+    await page.locator('[data-menu-toggle]').tap();
+    const current = page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Workshop' });
+    expect(await current.evaluate((e) => getComputedStyle(e).textDecorationLine)).toBe('underline');
+  });
+
   test('an article loads its own cut of the fonts: under 250 KB of type, none of it the full Fraunces', async ({ page }) => {
     const fonts: { url: string; size: number }[] = [];
     page.on('response', async (r) => {

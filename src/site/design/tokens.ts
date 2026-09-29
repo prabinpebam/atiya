@@ -6,12 +6,14 @@ import resolver from './site.resolver.json';
 import base from './tokens.json';
 import light from './tokens.light.json';
 import dark from './tokens.dark.json';
+import contrastMore from './tokens.contrast-more.json';
 import { loadSite, type Model, type Resolver } from './tokenModel';
 
 export const SOURCES: Record<string, Record<string, unknown>> = {
   'tokens.json': base,
   'tokens.light.json': light,
   'tokens.dark.json': dark,
+  'tokens.contrast-more.json': contrastMore,
 };
 
 export function siteTokens(): Model {

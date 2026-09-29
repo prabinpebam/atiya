@@ -27,9 +27,17 @@
       "$value": "{p.color.stock.600}",
       "$description": "Captions, meta, hints (4.5:1 on every surface)"
     },
+    "muted-strong": {
+      "$value": "{p.color.stock.700}",
+      "$description": "Muted text when the reader asks for more contrast (prefers-contrast: more)"
+    },
     "rule": {
       "$value": "{p.color.stock.200}",
       "$description": "Hairline rules and dividers (decorative: no contrast floor)"
+    },
+    "rule-strong": {
+      "$value": "{p.color.stock.500}",
+      "$description": "Rules when the reader asks for more contrast (3:1)"
     },
     "border": {
       "$value": "{p.color.stock.500}",

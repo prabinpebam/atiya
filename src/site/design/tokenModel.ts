@@ -19,6 +19,8 @@ export interface Token {
   description: string;
   /** The value in the dark context, when it differs. */
   dark?: unknown;
+  /** The value when the reader asks for more contrast (the contrast modifier's `more` context), when it differs. */
+  more?: unknown;
   /** A fluid size's value at the small end, from `$extensions["site.fluid"].min`. */
   fluidMin?: unknown;
   /** A number's CSS unit, from `$extensions["site.unit"]` (tracking in em). */
@@ -122,6 +124,14 @@ export function loadSite(resolver: Resolver, read: (ref: string) => Json): Model
     const d = dark.byPath.get(t.path.join('.'));
     if (d && JSON.stringify(d.value) !== JSON.stringify(t.value)) t.dark = d.value;
   }
+  // the contrast modifier's `more` context aliases roles, so one permutation covers both themes
+  if (resolver.modifiers?.contrast?.contexts.more) {
+    const more = index(resolveDocument(resolver, read, { theme: 'light', contrast: 'more' }));
+    for (const t of light.tokens) {
+      const m = more.byPath.get(t.path.join('.'));
+      if (m && JSON.stringify(m.value) !== JSON.stringify(t.value)) t.more = m.value;
+    }
+  }
   return light;
 }
 
@@ -187,6 +197,26 @@ export function cssValue(t: Token, byPath: Map<string, Token>): string {
   if (t.dark !== undefined) return `light-dark(${v}, ${toCss(t.dark, t.type, ref, t.unit)})`;
   if (t.fluidMin !== undefined) return fluid(toCss(t.fluidMin, t.type, ref), v);
   return v;
+}
+
+/** The token's CSS value when the reader asks for more contrast (only for tokens the `more` context changes). */
+export function cssMore(t: Token, byPath: Map<string, Token>): string {
+  return toCss(t.more, t.type, aliasRef(byPath, t.path.join('.')), t.unit);
+}
+
+/** The literal a token resolves to with more contrast, in a mode. */
+export function resolveMore(t: Token, byPath: Map<string, Token>, mode: Mode = 'light'): string {
+  if (t.more === undefined) return resolve(t, byPath, mode);
+  return toCss(
+    t.more,
+    t.type,
+    (p) => {
+      const target = byPath.get(p);
+      if (!target) throw new Error(`${t.path.join('.')}: unknown alias {${p}}`);
+      return resolveMore(target, byPath, mode);
+    },
+    t.unit,
+  );
 }
 
 /** The literal a token resolves to in a mode (aliases followed all the way). */

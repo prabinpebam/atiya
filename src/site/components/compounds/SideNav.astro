@@ -122,6 +122,15 @@ const uid = Math.random().toString(36).slice(2, 8);
     color: var(--color-on-accent-soft);
   }
 
+  /* forced colours strip the pill: the current page keeps an underline */
+  @media (forced-colors: active) {
+    a[aria-current='page'] {
+      text-decoration-line: underline;
+      text-decoration-thickness: var(--border-strong);
+      text-underline-offset: 0.3em;
+    }
+  }
+
   @media (max-width: 56rem) {
     .toggle {
       display: flex;

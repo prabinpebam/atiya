@@ -20,6 +20,7 @@ The rules for the website's pages: the landing, the classic site and the design 
 - **Source:** `src/site/design/site.resolver.json` (DTCG 2025.10).
   - The base set is `tokens.json`: primitives `p.*`, the type, space, shape, motion and layer scales, and the component tokens `c.*`.
   - The `theme` modifier adds `tokens.light.json` or `tokens.dark.json`, the colour roles.
+  - The `contrast` modifier (`normal` or `more`) adds `tokens.contrast-more.json` when the reader asks for more contrast. It points the muted text, outlines and rules at their strong roles (aliases, so one file serves both themes), and the build writes them inside `@media (prefers-contrast: more)`.
   - Values use the 2025.10 objects (colours `{colorSpace, components, hex}`; dimensions and durations `{value, unit}`).
   - `$extensions` holds only vendor data: `site.fluid.min` (a fluid size's value at 360 px) and `site.unit` (a number's CSS unit, for tracking in `em`).
 - **Build:** after any change, run `node scripts/build-site-tokens.mjs`. It writes `src/site/styles/tokens.css` and [tokens.md](tokens.md); never hand-edit either. The unit test fails on stale output.
@@ -117,6 +118,7 @@ The design library is the full, live version (examples, props, keys, tokens, use
 - **The header is compact on phones** (`--c-header-height-compact`, below 40 rem or 30 rem of height), tucks away while you read down, and returns on the way up or on focus.
 - **Everything reachable on a phone:** the header's action moves into the menu (or to the footer where there's no menu). The menu closes on a tap outside and scrolls inside on a short screen.
 - **Height queries** use the `short` breakpoint token (30 rem), as width queries use theirs.
+- **Contrast settings:** `prefers-contrast: more` (iOS Increase Contrast) strengthens muted text to 7:1 or more, outlines to 4.5:1 and rules to 3:1 (tested). In forced colours, a state shown by a fill (the current page's pill) gets a non-colour mark too, such as an underline.
 
 ## 8. Copy
 

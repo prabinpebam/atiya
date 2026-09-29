@@ -304,6 +304,15 @@ const close = svgOf('close');
       max-height: calc(100dvh - var(--c-header-height-compact));
     }
   }
+
+  /* forced colours (Windows high contrast) strip fills: the current section keeps an underline */
+  @media (forced-colors: active) {
+    .nav a[aria-current='page'] {
+      text-decoration-line: underline;
+      text-decoration-thickness: var(--border-strong);
+      text-underline-offset: 0.3em;
+    }
+  }
 </style>
 
 <script>

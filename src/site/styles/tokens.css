@@ -66,7 +66,9 @@
   --color-bg-hover: light-dark(var(--p-color-stock-100), var(--p-color-stock-800));
   --color-text: light-dark(var(--p-color-ink), var(--p-color-chalk));
   --color-text-muted: light-dark(var(--p-color-stock-600), var(--p-color-stock-400));
+  --color-muted-strong: light-dark(var(--p-color-stock-700), var(--p-color-stock-300));
   --color-rule: light-dark(var(--p-color-stock-200), var(--p-color-stock-750));
+  --color-rule-strong: var(--p-color-stock-500);
   --color-border: var(--p-color-stock-500);
   --color-border-strong: light-dark(var(--p-color-stock-700), var(--p-color-stock-300));
   --color-accent: light-dark(var(--p-color-indigo-700), var(--p-color-indigo-300));
@@ -255,4 +257,13 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+}
+
+/* the contrast modifier's "more" context: iOS Increase Contrast and the like */
+@media (prefers-contrast: more) {
+  :root {
+    --color-text-muted: var(--color-muted-strong);
+    --color-rule: var(--color-rule-strong);
+    --color-border: var(--color-border-strong);
+  }
 }

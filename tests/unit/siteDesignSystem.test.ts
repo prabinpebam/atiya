@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { siteTokens, SOURCES } from '../../src/site/design/tokens';
-import { contrast, over, parseColour, resolve, fluid, type Mode, type RGBA } from '../../src/site/design/tokenModel';
+import { contrast, over, parseColour, resolve, resolveMore, fluid, type Mode, type RGBA } from '../../src/site/design/tokenModel';
 import { docComment, frontmatter, importsOf, propsOf, scriptImports, styles } from '../../src/site/library/registry';
 import resolver from '../../src/site/design/site.resolver.json';
 
@@ -48,10 +48,12 @@ describe('tokens: DTCG 2025.10, one source of truth', () => {
     expect(() => execFileSync(process.execPath, [join(ROOT, 'scripts/build-site-tokens.mjs'), '--check'], { stdio: 'pipe' })).not.toThrow();
   });
 
-  it('the resolver is a 2025.10 document with a light and a dark theme context', () => {
+  it('the resolver is a 2025.10 document with a light and a dark theme context, and a normal and a more contrast context', () => {
     expect(resolver.version).toBe('2025.10');
     expect(Object.keys(resolver.modifiers.theme.contexts).sort()).toEqual(['dark', 'light']);
     expect(resolver.modifiers.theme.default).toBe('light');
+    expect(Object.keys(resolver.modifiers.contrast.contexts).sort()).toEqual(['more', 'normal']);
+    expect(resolver.modifiers.contrast.default).toBe('normal');
   });
 
   it('every token resolves in both modes (no dangling alias, no cycle)', () => {
@@ -152,6 +154,16 @@ describe('contrast: both modes pass WCAG 2.2 AA', () => {
   it('marigold is a highlighter, never text on paper: it fails 3:1 on the light page, so no text role uses it there', () => {
     expect(on('highlight', 'bg', 'light')).toBeLessThan(3);
     for (const r of ['text', 'text-muted', 'accent', 'focus', 'border']) expect(resolve(model.byPath.get(`color.${r}`)!, model.byPath, 'light')).not.toBe(resolve(model.byPath.get('color.highlight')!, model.byPath, 'light'));
+  });
+
+  it.each(modes)('%s, more contrast (prefers-contrast: more): muted text at 7:1 (AAA), outlines at 4.5:1, rules at 3:1', (mode) => {
+    const more = (name: string) => parseColour(resolveMore(model.byPath.get(`color.${name}`)!, model.byPath, mode));
+    const bg = role('bg', mode);
+    expect(contrast(more('text-muted'), bg), 'muted').toBeGreaterThanOrEqual(7);
+    expect(contrast(more('border'), bg), 'border').toBeGreaterThanOrEqual(4.5);
+    expect(contrast(more('rule'), bg), 'rule').toBeGreaterThanOrEqual(3);
+    // and the build writes them inside the media query
+    expect(TOKENS_CSS).toMatch(/@media \(prefers-contrast: more\) \{\s*:root \{[^}]*--color-text-muted: var\(--color-muted-strong\)/);
   });
 });
 

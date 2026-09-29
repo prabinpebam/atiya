@@ -1,0 +1,15 @@
+{
+  "$description": "The \"more contrast\" context (iOS Increase Contrast, prefers-contrast: more): muted text, control outlines and rules take their strong roles. Aliases to roles, so it works in both themes.",
+  "color": {
+    "$type": "color",
+    "text-muted": {
+      "$value": "{color.muted-strong}"
+    },
+    "border": {
+      "$value": "{color.border-strong}"
+    },
+    "rule": {
+      "$value": "{color.rule-strong}"
+    }
+  }
+}

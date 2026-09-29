@@ -32,7 +32,7 @@
 | 17 | Works under the deploy's base path | A `BASE_PATH=/atiya` build with no root-relative URL left in the site's HTML; the unit test bans hard-coded root-relative URLs | Done |
 | 18 | No regressions | `npx vitest run` (639 passed at the last full run), `npm run check` (0 errors), `npm run verify:prod` (budgets met: game JS 449.1 of 450 KB, unchanged), and the E2E groups "landing & classic", "site design system" and the planet-to-classic round trip (10 of 10). The full E2E suite wasn't run: the change doesn't touch the game | Done |
 | 19 | Documented as the source of truth | This folder, registered in the docs manifest (the "Site UI" group) and on [the docs home](../index.html); AGENTS.md has a "Site design system" section; the engineering overview and the game's design system point here | Done |
-| 20 | **Works on smartphones** | [mobile-audit.md](mobile-audit.md): an audit at 320 to 430 px and on its side, with 14 findings fixed. LCP 2.18 s and CLS 0.005 under mobile throttling; no sideways scroll or small targets; the way into the planet is in the menu; the header is compact and tucks away; no hover sticks on touch. The E2E group "site on a phone" and the unit rules for hover and height queries | Done |
+| 20 | **Works on smartphones** | [mobile-audit.md](mobile-audit.md): an audit at 320 to 430 px and on its side, and a second pass (200% zoom and text, forced colours, Increase Contrast, gestures), with 16 findings fixed and 2 accepted with reasons. LCP 2.18 s and CLS 0.005 under mobile throttling; no sideways scroll or small targets; the way into the planet is in the menu; the header is compact and tucks away; no hover sticks on touch. The E2E group "site on a phone" and the unit rules for hover and height queries | Done |
 
 ## Deferred
 

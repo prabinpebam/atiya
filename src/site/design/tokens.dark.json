@@ -21,8 +21,14 @@
     "text-muted": {
       "$value": "{p.color.stock.400}"
     },
+    "muted-strong": {
+      "$value": "{p.color.stock.300}"
+    },
     "rule": {
       "$value": "{p.color.stock.750}"
+    },
+    "rule-strong": {
+      "$value": "{p.color.stock.500}"
     },
     "border": {
       "$value": "{p.color.stock.500}"

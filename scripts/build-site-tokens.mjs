@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { loadSite, cssValue, resolve, groupOf, tier, toCss, FLUID_FROM, FLUID_TO } from '../src/site/design/tokenModel.ts';
+import { loadSite, cssValue, cssMore, resolve, resolveMore, groupOf, tier, toCss, FLUID_FROM, FLUID_TO } from '../src/site/design/tokenModel.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DESIGN = join(ROOT, 'src/site/design');
@@ -36,6 +36,12 @@ export function buildCss(m = model()) {
   lines.push('}', '');
   lines.push(":root[data-theme='light'] {", '  color-scheme: light;', '}', '');
   lines.push(":root[data-theme='dark'] {", '  color-scheme: dark;', '}', '');
+  const more = m.tokens.filter((t) => t.more !== undefined);
+  if (more.length) {
+    lines.push('/* the contrast modifier\'s "more" context: iOS Increase Contrast and the like */', '@media (prefers-contrast: more) {', '  :root {');
+    for (const t of more) lines.push(`    ${t.name}: ${cssMore(t, m.byPath)};`);
+    lines.push('  }', '}', '');
+  }
   return lines.join('\n');
 }
 
@@ -80,6 +86,13 @@ export function buildDoc(m = model()) {
         out.push(`| ${code(t.name)} | ${code(v)} | ${v === r ? '' : code(r)} | ${esc(t.description)} |`);
       }
     }
+    out.push('');
+  }
+  const more = tokens.filter((t) => t.more !== undefined);
+  if (more.length) {
+    out.push('## More contrast', '', 'The resolver\'s `contrast` modifier: when the reader asks for more contrast (`prefers-contrast: more`, iOS Increase Contrast), these roles take their strong values, in both themes.', '');
+    out.push('| Token | Becomes | Light | Dark |', '|---|---|---|---|');
+    for (const t of more) out.push(`| ${code(t.name)} | ${code(cssMore(t, byPath))} | ${code(resolveMore(t, byPath, 'light'))} | ${code(resolveMore(t, byPath, 'dark'))} |`);
     out.push('');
   }
   return out.join('\n');

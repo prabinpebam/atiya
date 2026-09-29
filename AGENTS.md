@@ -29,7 +29,7 @@ The landing, the classic site and the design library have their **own** design s
 
   Pages (`src/pages/index.astro`, `src/pages/classic/`) use a layout and carry no `<style>`. The game and the site never import each other; the one shared helper is `withBase` (re-exported by `src/site/design/meta.ts`).
 - **Tokens are W3C DTCG 2025.10:**
-  - `site.resolver.json` merges the base set `tokens.json` with the theme contexts `tokens.light.json` and `tokens.dark.json`;
+  - `site.resolver.json` merges the base set `tokens.json` with the theme contexts `tokens.light.json` and `tokens.dark.json`, then the contrast modifier (`tokens.contrast-more.json`, written inside `@media (prefers-contrast: more)`);
   - values are 2025.10 objects;
   - after a change, run `node scripts/build-site-tokens.mjs` (never hand-edit `src/site/styles/tokens.css` or `documentation/site-ui/tokens.md`).
 - **Colour roles are `light-dark()` pairs.** The page follows the system unless `<html data-theme>` is set (the header's theme switch, `localStorage['site.theme']`). Never branch on the theme: a subtree switches with `color-scheme`.

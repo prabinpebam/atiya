@@ -1,7 +1,7 @@
 {
   "name": "Site tokens",
   "version": "2025.10",
-  "description": "The site's tokens in two colour contexts. The build emits every colour role that differs as a light-dark() pair, so the page follows the system (or <html data-theme>) and any subtree can switch with color-scheme.",
+  "description": "The site's tokens in two colour themes and two contrast levels. The build emits every colour role that differs between the themes as a light-dark() pair (the page follows the system or <html data-theme>, and a subtree can switch with color-scheme), and the roles the 'more' contrast context changes inside @media (prefers-contrast: more).",
   "sets": {
     "base": {
       "description": "Primitives, scales, type, motion and component tokens.",
@@ -28,6 +28,20 @@
         ]
       },
       "default": "light"
+    },
+    "contrast": {
+      "description": "The contrast the reader asks for (prefers-contrast).",
+      "contexts": {
+        "normal": [
+          {}
+        ],
+        "more": [
+          {
+            "$ref": "tokens.contrast-more.json"
+          }
+        ]
+      },
+      "default": "normal"
     }
   },
   "resolutionOrder": [
@@ -36,6 +50,9 @@
     },
     {
       "$ref": "#/modifiers/theme"
+    },
+    {
+      "$ref": "#/modifiers/contrast"
     }
   ]
 }

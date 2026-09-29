@@ -11,7 +11,9 @@ An audit of the website on smartphones (the landing, the classic site and, in pa
 > - the name is on the first screen of a phone held sideways;
 > - there are no small tap targets and no stuck hover states.
 >
-> Five end-to-end tests and three unit rules keep it that way.
+> A **second pass** covered what people change on their phones: page zoom and text at 200% reflow cleanly; iOS **Increase Contrast** is now honoured (a `contrast` modifier in the token resolver); forced colours keep the current page marked; and the lightbox and carousel swipe as they should.
+>
+> Six end-to-end tests and four unit rules keep it that way.
 
 ![The landing on a phone held on its side, before and after: before, the picture filled the screen and the name was 784 px down; after, the name and the picture sit side by side on the first screen.](assets/mobile-landscape.jpg)
 
@@ -151,16 +153,38 @@ Layout, across 320, 360, 390, 430 and 844×390:
 - **Markdown tables:** a wide table would scroll inside its own box only if wrapped, and Markdown can't wrap it. The classic content has no tables; add a rehype wrapper when one arrives.
 - **Content, not layout:** each classic section's first heading repeats its topic tag (the placeholder copy). Worth fixing when the real case studies are written.
 
-## 6. How it's kept
+## 6. Second pass: zoom, contrast settings and gestures
+
+The first pass tested phones as they come. The second tested them as people set them up, and as they're held.
+
+**Method:**
+- **Safari's page zoom:** a 390 px phone at 150% and 200% lays out at 260 and 195 CSS px.
+- **Android's text scaling:** the root font at 200%, on a 360 px phone.
+- **Forced colours** (Windows high contrast).
+- **Increase Contrast:** iOS's setting, which reports `prefers-contrast: more`.
+- **Gestures:** the lightbox's swipe (real touch events) and the carousel's scroll.
+
+| # | Finding | Severity | Evidence | Fix | Status |
+|---|---|---|---|---|---|
+| 15 | **Increase Contrast was ignored.** A reader who asks for more contrast got the same soft greys: muted text at 6.2:1, rules at 1.2:1 | Medium | `prefers-contrast: more` changed nothing | A second modifier in the DTCG resolver, `contrast` (`normal` or `more`), orthogonal to the theme. Its `more` context points the muted text, outlines and rules at strong roles, which the build writes inside `@media (prefers-contrast: more)`. Muted text goes to 9.2:1 (light) and 11.2:1 (dark), outlines to 9.2 and 11.2, rules to 3.7 and 4.7 | Fixed |
+| 16 | **Forced colours hid the current page in the menu.** The indigo pill is a background, and forced colours remove backgrounds, so nothing marked where you are | Medium | Screenshot in forced colours | In forced colours the current section is underlined (the header's menu and the design library's side navigation) | Fixed |
+| 17 | **At 200% zoom (195 px) and at 200% text, the header takes two rows** (93 px and 185 px): the name above, the controls below | Low | Measurements | Accepted: this is reflow doing its job (WCAG 1.4.10). Nothing is hidden or cut, there's no sideways scroll, and the header tucks away as you read | Accepted |
+| 18 | **Gestures** | None | The lightbox swipes both ways (3 of 6, then back to 2 of 6); the filmstrip sits on screen (the side buttons give way to swiping). The carousel is native scroll-snap (`touch-action: auto`, so a finger pans it); its counter and dots follow the scroll; `overscroll-behavior: contain` stops a swipe at its end triggering the browser's back gesture | None needed | Pass |
+
+Nothing on the classic pages scrolls sideways at 260 px, at 195 px or with 200% text, and nothing is clipped. The only elements whose content exceeds their box are the visually hidden labels, which is by design.
+
+## 7. How it's kept
 
 - **E2E group "site on a phone"** (`tests/e2e/site.spec.ts`):
   - no sideways scroll and no control under 44 px at 320, 360, 430 and 844×390 on the landing, the index and a section;
   - the name and the primary action on the first screen, upright and on its side, with a header of at most 58 px;
   - the menu (the way into the planet, a tap outside, scrolling on its side, axe with it open);
   - the tucking header (down, up, and focus);
+  - Increase Contrast strengthens the muted text; forced colours keep the current page underlined;
   - an article under 250 KB of fonts, none of them the full Fraunces.
 - **Unit** (`tests/unit/siteDesignSystem.test.ts`, `siteBehaviour.test.ts`):
   - every `:hover` inside `@media (hover: hover)`;
   - width and height queries only at the breakpoint tokens (now with `short`, 30 rem of height);
   - the font files' budget and generation;
-  - the header's tuck rule.
+  - the header's tuck rule;
+  - with more contrast, muted text at 7:1 or more, outlines at 4.5:1 and rules at 3:1, in both themes.
