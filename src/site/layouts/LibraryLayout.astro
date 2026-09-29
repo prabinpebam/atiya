@@ -38,8 +38,12 @@ const { title, description, nav } = Astro.props;
 </PageShell>
 
 <style>
+  /* fills the page's column (it grows so the footer sits at the bottom) */
   .library {
+    flex: 1 0 auto;
     display: grid;
+    align-content: start;
+    inline-size: 100%;
     grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
     gap: var(--space-12);
     max-width: var(--size-max);

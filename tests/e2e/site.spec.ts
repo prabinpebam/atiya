@@ -284,6 +284,31 @@ test.describe('site design system', () => {
     await expect(page.locator('body > .sb-thumb[data-page][data-axis="y"]')).toHaveAttribute('data-show', '');
   });
 
+  test('the footer rests on the bottom edge of a short page, and follows the content of a long one', async ({ page }) => {
+    const footer = () =>
+      page.evaluate(() => {
+        const f = document.querySelector('footer.site-footer')!.getBoundingClientRect();
+        // + 0 turns a rounded -0 into 0
+        return { toViewportBottom: Math.round(innerHeight - f.bottom) + 0, belowIt: Math.round(document.documentElement.scrollHeight - (f.bottom + scrollY)) + 0 };
+      });
+    // taller than the article: no gap under the footer
+    await page.setViewportSize({ width: 1440, height: 2400 });
+    await page.goto('/classic/workshop/');
+    expect(await footer()).toEqual({ toViewportBottom: 0, belowIt: 0 });
+    // shorter than the article: the footer is below the fold, the last thing on the page
+    await page.setViewportSize({ width: 1440, height: 800 });
+    await page.goto('/classic/workshop/');
+    const long = await footer();
+    expect(long.toViewportBottom).toBeLessThan(0);
+    expect(long.belowIt).toBe(0);
+    // the header still sticks, and a centred layout keeps its width
+    await page.evaluate(() => window.scrollTo(0, 400));
+    expect(await page.evaluate(() => Math.round(document.querySelector('.site-header')!.getBoundingClientRect().top))).toBe(0);
+    await page.setViewportSize({ width: 1440, height: 2400 });
+    await page.goto('/classic/');
+    expect(await page.evaluate(() => Math.round(document.querySelector('main')!.getBoundingClientRect().width))).toBeGreaterThan(1100);
+  });
+
   test('the library changes pages without a reload: the side nav keeps its scroll and the theme, and the new page works', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => localStorage.setItem('site.theme', 'dark'));

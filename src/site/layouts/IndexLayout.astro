@@ -50,8 +50,12 @@ const { title, description, heading, standfirst, nav, action, crumbs } = Astro.p
 </PageShell>
 
 <style>
+  /* fills the page's column (it grows so the footer sits at the bottom; its rows keep their gaps) */
   .index {
+    flex: 1 0 auto;
     display: grid;
+    align-content: start;
+    inline-size: 100%;
     gap: var(--space-section);
     max-width: var(--size-wide);
     margin-inline: auto;
