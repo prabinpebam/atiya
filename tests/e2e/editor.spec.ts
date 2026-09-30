@@ -206,6 +206,56 @@ test.describe('editor', () => {
     await expect(page.locator('[data-editor-multibar]')).toBeHidden();
   });
 
+  test('turn into: a paragraph becomes a list and a heading and back, and tiles become headings and paragraphs and back', async ({ page }) => {
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string; level?: number; items?: unknown[] }[];
+    const p = blocks().findIndex((b) => b.type === 'text' && !b.markdown!.startsWith('- '));
+    const original = blocks()[p];
+
+    // the inspector's Turn into: a bulleted list (Escape closes the choices without a change)
+    await page.locator(`[data-editor-select="${p}"]`).click();
+    await page.locator(`[data-block-form="${p}"] [data-editor-turn-open]`).click();
+    await expect(page.locator('#editor-turn')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#editor-turn')).toBeHidden();
+    await page.locator(`[data-block-form="${p}"] [data-editor-turn-open]`).click();
+    await expect(page.locator('#editor-turn [data-editor-turn-to="paragraph"]')).toHaveAttribute('aria-current', 'true');
+    await page.locator('#editor-turn [data-editor-turn-to="bulleted"]').click();
+    await expect.poll(() => blocks()[p].markdown ?? '').toMatch(/^- /);
+    // the keys, on the outline: a heading 3, then a paragraph again
+    await page.locator(`[data-editor-select="${p}"]`).focus();
+    await page.keyboard.press('Control+Alt+3');
+    await expect.poll(() => blocks()[p]).toMatchObject({ type: 'heading', level: 3 });
+    await page.locator(`[data-editor-select="${p}"]`).focus();
+    await page.keyboard.press('Control+Alt+0');
+    await expect.poll(() => blocks()[p].type).toBe('text');
+
+    // on the canvas, while its words are being edited: the keys, and the toolbar offers Turn into
+    const words = frame(page).locator('[data-editor-editable="rich"]').first();
+    await words.click();
+    await expect(frame(page).locator('[data-chrome-turn]')).toBeVisible();
+    await page.keyboard.press('Control+Alt+2');
+    await expect.poll(() => blocks()[p]).toMatchObject({ type: 'heading', level: 2 });
+    await page.locator(`[data-editor-select="${p}"]`).focus();
+    await page.keyboard.press('Control+Alt+0');
+    await expect.poll(() => blocks()[p].type).toBe('text');
+
+    // tiles into headings and paragraphs, and those, selected, back into the same tiles
+    const t = blocks().findIndex((b) => b.type === 'tiles');
+    const tiles = blocks()[t];
+    const n = (tiles.items as unknown[]).length;
+    await page.locator(`[data-editor-select="${t}"]`).click();
+    await page.locator(`[data-block-form="${t}"] [data-editor-turn-open]`).click();
+    await page.locator('#editor-turn [data-editor-turn-to="untile"]').click();
+    await expect.poll(() => blocks().slice(t, t + 2 * n).map((b) => b.type)).toEqual(Array.from({ length: n }, () => ['heading', 'text']).flat());
+    await page.locator(`[data-editor-select="${t}"]`).click();
+    await page.locator(`[data-editor-select="${t + 2 * n - 1}"]`).click({ modifiers: ['Shift'] });
+    await page.locator('[data-editor-group="turn"]').click();
+    await page.locator('#editor-turn [data-editor-turn-to="tiles"]').click();
+    await expect.poll(() => blocks()[t]).toEqual(tiles);
+    expect(original.type).toBe('text');
+  });
+
   test("the page's settings save; a value the contract refuses says why and isn't written", async ({ page }) => {
     await openArticle(page);
     await page.getByRole('tab', { name: 'Page' }).click();

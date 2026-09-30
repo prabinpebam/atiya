@@ -12,6 +12,7 @@
  * @key Ctrl + Shift + D: duplicate it
  * @key Delete: delete it
  * @key Ctrl + B / Ctrl + I / Ctrl + K: bold, italic, link, while editing text
+ * @key Ctrl + Alt + 0 / 2 / 3 / 4, Ctrl + Shift + 7 / 8 / 9: turn a text block into a paragraph, a heading, a list or a quote (also while editing it)
  */
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import '../../styles/editor-tokens.css';
@@ -33,6 +34,9 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     <span class="tag" data-chrome-label></span>
     <IconButton label="Move up" icon="arrow-up" size="sm" variant="secondary" tooltip="top" data-chrome-op="up" />
     <IconButton label="Move down" icon="arrow-down" size="sm" variant="secondary" tooltip="top" data-chrome-op="down" />
+    <span class="turn" data-chrome-turn hidden>
+      <IconButton label="Turn into…" icon="convert" size="sm" variant="secondary" tooltip="top" data-chrome-op="turn" />
+    </span>
     <IconButton label="Duplicate" icon="duplicate" size="sm" variant="secondary" tooltip="top" data-chrome-op="duplicate" />
     <IconButton label="Add a block below" icon="plus" size="sm" variant="secondary" tooltip="top" data-chrome-op="add" />
     <IconButton label="Delete" icon="delete" size="sm" variant="secondary" tooltip="top" data-chrome-op="delete" />

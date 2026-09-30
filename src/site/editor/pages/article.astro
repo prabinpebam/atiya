@@ -8,6 +8,7 @@ import Inspector, { type Thumb } from '../components/Inspector.astro';
 import BlockPalette from '../components/BlockPalette.astro';
 import MediaGrid, { type MediaCard } from '../components/MediaGrid.astro';
 import InsertForms from '../components/InsertForms.astro';
+import TurnInto from '../components/TurnInto.astro';
 import ArticleForm from '../components/ArticleForm.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
@@ -87,6 +88,9 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         </Dialog>
         <Dialog id="editor-picker" title="Choose a picture" size="lg">
           <MediaGrid mode="pick" media={cards} owner={`articles/${id}`} />
+        </Dialog>
+        <Dialog id="editor-turn" title="Turn into" size="lg">
+          <TurnInto />
         </Dialog>
         <Dialog id="editor-insert-quote" title="Add a quote">
           <InsertForms kind="quote" />

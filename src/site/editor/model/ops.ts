@@ -4,7 +4,7 @@
  * against the contract; these only keep the shape right.
  */
 import type { Article, Block } from '../../content/schema';
-import { parseMarkdown, plainText } from '../../content/markdown';
+import { parseMarkdown, plainText, serializeBlocks, type Inline } from '../../content/markdown';
 
 export type Body = Block[];
 
@@ -188,4 +188,116 @@ export function parseDuration(text: string): number | undefined | null {
   if (m[6]) return Number(m[6]) || null;
   if (m[4] !== undefined) return Number(m[4]) * 60 + Number(m[5]) || null;
   return (Number(m[1] ?? 0) * 3600 + Number(m[2]) * 60 + Number(m[3])) || null;
+}
+
+// ---------- turning text into another kind (documentation/editor/spec.md §3.3) ----------
+
+/** The kinds a text block can be turned into, and back, at any time. */
+export type TextKind = 'paragraph' | 'heading-2' | 'heading-3' | 'heading-4' | 'quote' | 'pull-quote' | 'bulleted' | 'numbered';
+
+export const TEXT_KINDS: { value: TextKind; label: string; what: string }[] = [
+  { value: 'paragraph', label: 'Paragraph', what: 'Words, with bold, italic and links' },
+  { value: 'heading-2', label: 'Heading 2', what: 'A section' },
+  { value: 'heading-3', label: 'Heading 3', what: 'Within a section' },
+  { value: 'heading-4', label: 'Heading 4', what: 'A small heading' },
+  { value: 'quote', label: 'Quote', what: 'A quotation in the column' },
+  { value: 'pull-quote', label: 'Pull quote', what: 'A line lifted out and set large' },
+  { value: 'bulleted', label: 'Bulleted list', what: 'One item a line' },
+  { value: 'numbered', label: 'Numbered list', what: 'One item a line, in order' },
+];
+
+/** The text kind a block is, or null for a block that isn't text (a picture, tiles, a divider). */
+export function textKindOf(b: Block): TextKind | null {
+  if (b.type === 'heading') return `heading-${b.level}`;
+  if (b.type === 'quote') return b.variant === 'pull' ? 'pull-quote' : 'quote';
+  if (b.type !== 'text') return null;
+  const first = parseMarkdown(b.markdown)[0];
+  return first?.t === 'ul' ? 'bulleted' : first?.t === 'ol' ? 'numbered' : 'paragraph';
+}
+
+const words = (nodes: Inline[]): string => nodes.map((n) => (n.t === 'text' || n.t === 'code' ? n.v : n.t === 'br' ? ' ' : words(n.c))).join('');
+
+/** A text block's words as lines: a paragraph's lines (split at its line breaks), a list's items, a heading's or a quote's text. */
+export function linesOf(b: Block): Inline[][] {
+  const kept = (lines: Inline[][]) => lines.filter((l) => words(l).trim());
+  if (b.type === 'text')
+    return kept(
+      parseMarkdown(b.markdown).flatMap((m) => {
+        if (m.t !== 'p') return m.items;
+        const lines: Inline[][] = [[]];
+        for (const n of m.c) {
+          if (n.t === 'br') lines.push([]);
+          else lines[lines.length - 1].push(n);
+        }
+        return lines;
+      }),
+    );
+  if (b.type === 'heading' || b.type === 'quote') return kept(b.text.split(/\n+/).map((l): Inline[] => [{ t: 'text', v: l.trim() }]));
+  return [];
+}
+
+/**
+ * Lines as a block of a text kind. A paragraph keeps its marks and puts each line on its own (a line
+ * break between them); a list makes each line an item; a heading or a quote takes the plain words, on
+ * one line. A heading keeps its anchor, and a quote its source, when it only changes level or style.
+ */
+export function toTextKind(lines: Inline[][], to: TextKind, from?: Block): Block {
+  const plain = lines.map((l) => words(l).replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ');
+  if (to === 'paragraph') return { type: 'text', markdown: serializeBlocks([{ t: 'p', c: lines.flatMap((l, k): Inline[] => (k ? [{ t: 'br' }, ...l] : l)) }]) };
+  if (to === 'bulleted' || to === 'numbered') return { type: 'text', markdown: serializeBlocks([{ t: to === 'bulleted' ? 'ul' : 'ol', items: lines }]) };
+  if (to === 'quote' || to === 'pull-quote') return { type: 'quote', variant: to === 'pull-quote' ? 'pull' : 'block', text: plain, ...(from?.type === 'quote' && from.cite ? { cite: from.cite } : {}) };
+  return { type: 'heading', level: Number(to.slice(-1)) as 2 | 3 | 4, text: plain, ...(from?.type === 'heading' && from.id ? { id: from.id } : {}) };
+}
+
+/** A text block turned into another text kind, keeping its words (a block that isn't text is left as it is). */
+export const convertText = (b: Block, to: TextKind): Block => (textKindOf(b) === null ? b : toTextKind(linesOf(b), to, b));
+
+/** A list, or a paragraph of several lines, as one paragraph a line (null if it has one line). */
+export function splitLines(b: Block): Block[] | null {
+  const lines = linesOf(b);
+  if (b.type !== 'text' || lines.length < 2) return null;
+  return lines.map((l) => ({ type: 'text', markdown: serializeBlocks([{ t: 'p', c: l }]) }));
+}
+
+/** Several text blocks as one list: each block's lines become its items. */
+export const joinAsList = (blocks: Block[], ordered: boolean): Block => toTextKind(blocks.flatMap(linesOf), ordered ? 'numbered' : 'bulleted');
+
+/**
+ * Label and text pairs as tiles: a heading (or a short line) then its words, two to six times. Returns
+ * why not when the blocks aren't such pairs.
+ */
+export function asTiles(blocks: Block[]): { ok: true; block: Block } | { ok: false; why: string } {
+  if (blocks.length % 2 || blocks.length < 4 || blocks.length > 12) return { ok: false, why: 'Tiles come from two to six pairs: a label (a heading or a short line), then its words.' };
+  const items: { label: string; text: string }[] = [];
+  for (let k = 0; k < blocks.length; k += 2) {
+    const [label, text] = [blocks[k], blocks[k + 1]];
+    if (textKindOf(label) === null || textKindOf(text) === null) return { ok: false, why: 'Only text becomes tiles: headings, paragraphs, quotes and lists.' };
+    const name = linesOf(label).map(words).join(' ').replace(/\s+/g, ' ').trim();
+    if (!name || name.length > 40) return { ok: false, why: `A tile's label is at most 40 characters: "${name.slice(0, 40)}…" is longer.` };
+    items.push({ label: name, text: (toTextKind(linesOf(text), 'paragraph') as { markdown: string }).markdown });
+  }
+  return { ok: true, block: { type: 'tiles', items } };
+}
+
+/** Tiles back as a heading (level 3) and a paragraph for each. */
+export function tilesToText(b: Block): Block[] | null {
+  if (b.type !== 'tiles') return null;
+  return b.items.flatMap((t): Block[] => [
+    { type: 'heading', level: 3, text: t.label },
+    { type: 'text', markdown: t.text },
+  ]);
+}
+
+/**
+ * The text kind a key asks for, by the key's place (Shift + 7 types "&"): Ctrl or Cmd + Alt + 0 a
+ * paragraph, + 2, 3 or 4 a heading of that level; Ctrl or Cmd + Shift + 7 a numbered list, 8 a bulleted
+ * list, 9 a quote. Null for any other key.
+ */
+export function turnShortcut(e: { ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean; code: string }): TextKind | null {
+  if (!(e.ctrlKey || e.metaKey)) return null;
+  const d = /^(?:Digit|Numpad)(\d)$/.exec(e.code)?.[1];
+  if (!d) return null;
+  if (e.altKey && !e.shiftKey) return d === '0' ? 'paragraph' : ['2', '3', '4'].includes(d) ? (`heading-${d}` as TextKind) : null;
+  if (e.shiftKey && !e.altKey) return d === '7' ? 'numbered' : d === '8' ? 'bulleted' : d === '9' ? 'quote' : null;
+  return null;
 }

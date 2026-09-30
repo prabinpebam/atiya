@@ -15,6 +15,7 @@
  * @key Alt + Up / Alt + Down: move the block, or the selected blocks together
  * @key Delete: delete the block, or the selected blocks (Undo brings them back)
  * @key Escape: clear the selection
+ * @key Ctrl + Alt + 0 / 2 / 3 / 4, Ctrl + Shift + 7 / 8 / 9: turn the block, or the selected blocks, into a paragraph, a heading, a list or a quote
  */
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
@@ -41,6 +42,7 @@ const { blocks } = Astro.props;
     <span class="group-tools">
       <IconButton label="Move the selected blocks up" icon="arrow-up" size="sm" tooltip="none" data-editor-group="up" />
       <IconButton label="Move the selected blocks down" icon="arrow-down" size="sm" tooltip="none" data-editor-group="down" />
+      <IconButton label="Turn the selected blocks into…" icon="convert" size="sm" tooltip="none" data-editor-group="turn" />
       <IconButton label="Clear the selection" icon="close" size="sm" tooltip="none" data-editor-group="clear" />
     </span>
   </div>

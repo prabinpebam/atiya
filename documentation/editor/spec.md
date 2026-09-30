@@ -187,10 +187,13 @@ Paragraphs (text blocks), headings, quotes, the title and the standfirst are edi
 | Enter | Edit its text, or open its settings if it has none |
 | Alt + Up, Alt + Down | Move it up or down |
 | Ctrl or Cmd + Shift + D | Duplicate it (Ctrl+D is the browser's bookmark) |
+| Ctrl or Cmd + Alt + 0, 2, 3, 4 | Turn it into a paragraph, or a heading of that level (while its text is being edited, too) |
+| Ctrl or Cmd + Shift + 7, 8, 9 | Turn it into a numbered list, a bulleted list or a quote |
 | Delete or Backspace | Delete it (Undo brings it back) |
 | Ctrl or Cmd + Z, Shift + Ctrl or Cmd + Z | Undo, redo (the document's history) |
 
 - **The outline** lists every block (its kind's icon, and its first words or its picture's alt text). Clicking a row selects the block and scrolls the canvas to it. Rows can be dragged to reorder; every drag has a keyboard and button alternative (Move up, Move down), as WCAG 2.5.7 asks.
+- **Turn into, any time.** Any text block (a paragraph, a heading, a quote, a list) turns into any other kind of text, and back: from the block toolbar on the canvas, the inspector, the outline's selection bar or the keys above. Its words stay: a paragraph or a list keeps its bold, italic, code and links, a heading or a quote takes the plain words, a paragraph's lines become a list's items (and back), and a heading keeps its anchor, a quote its source, while only the level or the style changes. The choices, like the palette's, also make one block from several (one bulleted or numbered list; tiles, from pairs of a label and its words) and several from one (a list's items or a paragraph's lines as paragraphs; tiles as headings and paragraphs). A choice that doesn't fit what's selected isn't offered, or says why. Each is one step in the history.
 - **Several blocks at once.** In the outline, Shift + click (or Shift + Up and Down) selects a range, Ctrl or Cmd + click adds or removes one block, Ctrl or Cmd + A selects them all, and Escape clears the selection. A bar over the rows says how many are selected, with Move up, Move down and Clear. The selection then moves together, one step at a time, in its order (a row's own Move buttons and Alt + Up and Down do the same; nothing moves past the start or the end). Dragging one of its rows drags them all, and Delete deletes them all. Each of these is one step in the history. The inspector shows the block clicked last; clicking a block on the canvas ends the selection.
 - **Undo and redo** step through whole-document snapshots, one step per change: a block added, moved, deleted or reconfigured, a setting changed, or one editing session of one block's text (from entering it to leaving it). The history lasts for the browser session. While you're typing, Ctrl+Z is the browser's own undo within that text; the top bar's Undo first ends the editing session, then steps back. Picture details (alt text, caption, focus) belong to the picture, not the article, and aren't in the article's history: the media screen says so.
 
@@ -214,7 +217,7 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 
 | Block | Its settings |
 |---|---|
-| Paragraph | None: its words are edited on the page. Convert to a heading or a quote |
+| Paragraph | None: its words are edited on the page. Turn into any other kind of text (§3.3) |
 | Heading | Level (2, 3 or 4); anchor (optional; made from its words if left empty) |
 | Picture | The picture (media field: thumbnail, Replace, and its alt text); width (content, popout, wide, full); caption and credit (each left empty to use the picture's own); open in the lightbox |
 | Gallery | Its pictures (add, remove, reorder); layout (grid, mosaic, row); fit (cover, or contain for artwork); width; caption; open in the lightbox |

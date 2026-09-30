@@ -130,6 +130,71 @@ describe('document operations', () => {
   });
 });
 
+// ---------- turning text into another kind ----------
+describe('turning text into another kind, any time', () => {
+  const para = (markdown: string): Block => ({ type: 'text', markdown });
+
+  it('knows each kind of text, and nothing else', () => {
+    expect(ops.textKindOf(para('words'))).toBe('paragraph');
+    expect(ops.textKindOf(para('- a\n- b'))).toBe('bulleted');
+    expect(ops.textKindOf(para('1. a\n2. b'))).toBe('numbered');
+    expect(ops.textKindOf(h('Title', 3))).toBe('heading-3');
+    expect(ops.textKindOf({ type: 'quote', text: 'q', variant: 'pull' })).toBe('pull-quote');
+    expect(ops.textKindOf({ type: 'divider' })).toBeNull();
+    expect(ops.TEXT_KINDS.map((k) => k.value)).toEqual(['paragraph', 'heading-2', 'heading-3', 'heading-4', 'quote', 'pull-quote', 'bulleted', 'numbered']);
+  });
+
+  it('keeps the words: marks where the kind holds them, plain words where it doesn\'t, lines as items and back', () => {
+    const p = para('A **bold** start,\\\nand a [link](https://example.com).');
+    expect(ops.convertText(p, 'heading-2')).toEqual({ type: 'heading', level: 2, text: 'A bold start, and a link.' });
+    expect(ops.convertText(p, 'pull-quote')).toEqual({ type: 'quote', variant: 'pull', text: 'A bold start, and a link.' });
+    const list = ops.convertText(p, 'bulleted');
+    expect(list).toEqual({ type: 'text', markdown: '- A **bold** start,\n- and a [link](https://example.com).' });
+    expect(ops.convertText(list, 'numbered')).toEqual({ type: 'text', markdown: '1. A **bold** start,\n2. and a [link](https://example.com).' });
+    expect(ops.convertText(list, 'paragraph')).toEqual(p);
+    // a heading's words, escaped where Markdown would read them
+    expect(ops.convertText(h('2024: *the* year'), 'paragraph')).toEqual({ type: 'text', markdown: '2024: \\*the\\* year' });
+  });
+
+  it("keeps a heading's anchor and a quote's source while only the level or the style changes", () => {
+    expect(ops.convertText({ type: 'heading', level: 2, text: 'T', id: 'intro' }, 'heading-4')).toEqual({ type: 'heading', level: 4, text: 'T', id: 'intro' });
+    expect(ops.convertText({ type: 'quote', text: 'Q', cite: 'Someone', variant: 'block' }, 'pull-quote')).toEqual({ type: 'quote', text: 'Q', cite: 'Someone', variant: 'pull' });
+    expect(ops.convertText({ type: 'heading', level: 2, text: 'T', id: 'intro' }, 'paragraph')).toEqual({ type: 'text', markdown: 'T' });
+    expect(ops.convertText({ type: 'divider' }, 'paragraph')).toEqual({ type: 'divider' });
+  });
+
+  it('splits a list or a paragraph of lines into paragraphs, and joins blocks into one list', () => {
+    expect(ops.splitLines(para('- one\n- **two**'))).toEqual([para('one'), para('**two**')]);
+    expect(ops.splitLines(para('just one line'))).toBeNull();
+    expect(ops.joinAsList([h('Intro'), para('a\\\nb'), para('- c')], true)).toEqual({ type: 'text', markdown: '1. Intro\n2. a\n3. b\n4. c' });
+  });
+
+  it('makes tiles from label and text pairs, says why not otherwise, and turns tiles back', () => {
+    const pairs: Block[] = [h('Challenge', 3), para('Re-energize the team.'), h('Core idea', 3), para('**Do what makes you proud.** A standard.')];
+    const made = ops.asTiles(pairs);
+    expect(made).toEqual({ ok: true, block: { type: 'tiles', items: [{ label: 'Challenge', text: 'Re-energize the team.' }, { label: 'Core idea', text: '**Do what makes you proud.** A standard.' }] } });
+    expect(made.ok && ops.tilesToText(made.block)).toEqual(pairs);
+    expect(ops.asTiles(pairs.slice(0, 3))).toMatchObject({ ok: false });
+    expect(ops.asTiles([h('x'.repeat(41)), para('y'), h('a'), para('b')])).toMatchObject({ ok: false, why: expect.stringMatching(/40 characters/) });
+    expect(ops.asTiles([h('a'), { type: 'divider' }, h('b'), para('c')])).toMatchObject({ ok: false, why: expect.stringMatching(/Only text/) });
+    expect(ops.tilesToText(para('x'))).toBeNull();
+  });
+
+  it('reads the keys by their place: Ctrl or Cmd + Alt + 0, 2, 3, 4; Ctrl or Cmd + Shift + 7, 8, 9', () => {
+    const key = (code: string, o: { alt?: boolean; shift?: boolean; meta?: boolean } = {}) => ops.turnShortcut({ ctrlKey: !o.meta, metaKey: !!o.meta, altKey: !!o.alt, shiftKey: !!o.shift, code });
+    expect(key('Digit0', { alt: true })).toBe('paragraph');
+    expect(key('Digit2', { alt: true })).toBe('heading-2');
+    expect(key('Numpad4', { alt: true, meta: true })).toBe('heading-4');
+    expect(key('Digit7', { shift: true })).toBe('numbered');
+    expect(key('Digit8', { shift: true })).toBe('bulleted');
+    expect(key('Digit9', { shift: true })).toBe('quote');
+    expect(key('Digit1', { alt: true })).toBeNull();
+    expect(key('Digit2', { alt: true, shift: true })).toBeNull();
+    expect(ops.turnShortcut({ ctrlKey: false, metaKey: false, altKey: true, shiftKey: false, code: 'Digit2' })).toBeNull();
+    expect(key('KeyB', { shift: true })).toBeNull();
+  });
+});
+
 // ---------- the canvas's DOM, back to Markdown ----------
 const text = (v: string): MiniNode => ({ nodeType: 3, nodeName: '#text', textContent: v, childNodes: [] });
 const el = (name: string, kids: MiniNode[] = [], attrs: Record<string, string> = {}): MiniNode => ({

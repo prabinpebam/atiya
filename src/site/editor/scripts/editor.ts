@@ -251,6 +251,79 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   };
   const inGroup = (i: number) => picked.size > 1 && picked.has(i);
 
+  // ---------- turning blocks into another kind ----------
+  let turnTarget: number[] = [];
+  const KIND_NAME = Object.fromEntries(ops.TEXT_KINDS.map((k) => [k.value, k.label.toLowerCase()])) as Record<ops.TextKind, string>;
+  const isKind = (v: string): v is ops.TextKind => ops.TEXT_KINDS.some((k) => k.value === v);
+  /** Opens the choices that fit the blocks (one, or a selection), each one's kind marked, a choice that can't be used disabled with why. */
+  const openTurn = (indices: number[]) => {
+    const d = dialog('editor-turn');
+    turnTarget = indices.filter((k) => k >= 0 && k < doc.body.length).sort((a, b) => a - b);
+    if (!d || !turnTarget.length) return;
+    const blocks = turnTarget.map((k) => doc.body[k]);
+    const one = blocks.length === 1 ? blocks[0] : null;
+    const texts = blocks.filter((b) => ops.textKindOf(b) !== null).length;
+    const choice = (v: string) => d.querySelector<HTMLButtonElement>(`[data-editor-turn-to="${v}"]`)!;
+    const set = (v: string, shown: boolean, enabled = true) => {
+      const c = choice(v);
+      c.hidden = !shown;
+      c.disabled = !enabled;
+      c.removeAttribute('aria-current');
+    };
+    for (const k of ops.TEXT_KINDS) set(k.value, texts > 0);
+    if (one && ops.textKindOf(one)) choice(ops.textKindOf(one)!).setAttribute('aria-current', 'true');
+    const tiles = ops.asTiles(blocks);
+    set('join-bulleted', blocks.length > 1, texts === blocks.length);
+    set('join-numbered', blocks.length > 1, texts === blocks.length);
+    set('tiles', blocks.length > 1, tiles.ok);
+    set('split', !!one && !!ops.splitLines(one));
+    set('untile', one?.type === 'tiles');
+    d.querySelectorAll<HTMLElement>('[data-turn-group]').forEach((g) => (g.hidden = !g.querySelector('[data-editor-turn-to]:not([hidden])')));
+    const why = d.querySelector<HTMLElement>('[data-editor-turn-why]')!;
+    why.textContent = blocks.length > 1 && !tiles.ok ? `Tiles: ${tiles.why}` : blocks.length > 1 && texts < blocks.length ? 'Only text (headings, paragraphs, quotes and lists) becomes a different kind; the rest stays as it is.' : '';
+    why.hidden = !why.textContent;
+    d.showModal();
+    d.querySelector<HTMLElement>('[data-editor-turn-to]:not([hidden]):not(:disabled)')?.focus();
+  };
+  /** Turns the blocks into another kind: each one (a text kind), several into one (a list, tiles) or one into several. */
+  const turnInto = (indices: number[], to: string) => {
+    const at = indices.filter((k) => k >= 0 && k < doc.body.length).sort((a, b) => a - b);
+    if (!at.length) return;
+    const blocks = at.map((k) => doc.body[k]);
+    const instead = (out: Block[]) => ops.insert(ops.removeMany(doc.body, at), at[0], ...out);
+    if (isKind(to)) {
+      const changing = at.filter((k) => ops.textKindOf(doc.body[k]) !== null && ops.textKindOf(doc.body[k]) !== to);
+      if (!changing.length) return announce(at.length > 1 ? `They're already ${KIND_NAME[to]}s` : `It's already a ${KIND_NAME[to]}`);
+      let next = doc.body;
+      for (const k of changing) next = ops.replace(next, k, ops.convertText(next[k], to));
+      change(body(next), ALL, at.length > 1 ? { select: selected, picked: at } : { select: at[0] });
+      return announce(at.length > 1 ? `Turned ${changing.length} blocks into: ${KIND_NAME[to]}` : `Turned into a ${KIND_NAME[to]}`);
+    }
+    if (to === 'join-bulleted' || to === 'join-numbered') {
+      if (blocks.some((b) => ops.textKindOf(b) === null)) return announce('Only text can be joined into a list', 'negative');
+      change(body(instead([ops.joinAsList(blocks, to === 'join-numbered')])), ALL, { select: at[0] });
+      return announce(`Joined ${at.length} blocks into one list`);
+    }
+    if (to === 'tiles') {
+      const r = ops.asTiles(blocks);
+      if (!r.ok) return announce(r.why, 'negative');
+      change(body(instead([r.block])), ALL, { select: at[0] });
+      return announce(`Made ${at.length / 2} tiles`);
+    }
+    if (to === 'split') {
+      const parts = ops.splitLines(blocks[0]);
+      if (!parts) return;
+      change(body(instead(parts)), ALL, { select: at[0] });
+      return announce(`Split into ${parts.length} paragraphs`);
+    }
+    if (to === 'untile') {
+      const parts = ops.tilesToText(blocks[0]);
+      if (!parts) return;
+      change(body(instead(parts)), ALL, { select: at[0] });
+      return announce(`Turned into ${parts.length / 2} headings and paragraphs`);
+    }
+  };
+
   // ---------- undo and redo ----------
   const undo = () => {
     toCanvas({ type: 'flush' });
@@ -346,6 +419,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       case 'op':
         blockOp(m.index as number, m.op as 'up' | 'down' | 'duplicate' | 'delete');
         break;
+      case 'turn':
+        if (typeof m.to === 'string') turnInto([m.index as number], m.to);
+        else openTurn([m.index as number]);
+        break;
       case 'pending': {
         const at = m.index as number;
         const block: Block = m.kind === 'heading' ? { type: 'heading', level: 2, text: String(m.value) } : { type: 'text', markdown: String(m.value) };
@@ -432,12 +509,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (input) input.value = href.startsWith('ref:') ? '' : href;
     d?.showModal();
   };
-  const plainOf = (b: Block) => (b.type === 'text' ? plainText(b.markdown).replace(/\s+/g, ' ').trim() : '');
 
   on(root, 'click', (e) => {
     const t = e.target as Element;
     const el = t.closest<HTMLElement>(
-      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-convert], [data-editor-pick], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-tiles], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
+      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-turn-to], [data-editor-pick], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-tiles], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
     );
     if (!el) return;
     const d = el.dataset;
@@ -449,14 +525,15 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       if (m.ctrlKey || m.metaKey) return pickToggle(n);
       return setSelected(n, { tab: true, canvas: true, scroll: true });
     }
+    if (d.editorGroup === 'turn') return openTurn(group());
     if (d.editorGroup) return d.editorGroup === 'clear' ? clearPicked() : moveGroup(d.editorGroup === 'up' ? -1 : 1);
     if (d.editorMove) return inGroup(i) ? moveGroup(d.editorMove === 'up' ? -1 : 1) : blockOp(i, d.editorMove as 'up' | 'down');
     if (d.editorAddAt !== undefined) return openPalette(Number(d.editorAddAt));
     if (d.editorBlockOp) return blockOp(i, d.editorBlockOp as 'duplicate' | 'delete');
-    if (d.editorConvert) {
-      const text = plainOf(doc.body[i]);
-      const next: Block = d.editorConvert === 'heading' ? { type: 'heading', level: 2, text } : { type: 'quote', variant: 'block', text };
-      return change(body(ops.replace(doc.body, i, next)), ALL, { select: i });
+    if (d.editorTurnOpen !== undefined) return openTurn(inGroup(Number(d.editorTurnOpen)) ? group() : [Number(d.editorTurnOpen)]);
+    if (d.editorTurnTo) {
+      dialog('editor-turn')?.close();
+      return turnInto(turnTarget, d.editorTurnTo);
     }
     if (d.editorPick) {
       const path = d.editorPick;
@@ -697,7 +774,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (!b) return;
     const i = Number(b.dataset.editorSelect);
     const mod = e.ctrlKey || e.metaKey;
-    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && inGroup(i)) {
+    const kind = ops.turnShortcut(e);
+    if (kind) {
+      e.preventDefault();
+      turnInto(inGroup(i) ? group() : [i], kind);
+      afterReady.push(() => root.querySelector<HTMLElement>(`[data-editor-select="${i}"]`)?.focus());
+    } else if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && inGroup(i)) {
       e.preventDefault();
       moveGroup(e.key === 'ArrowUp' ? -1 : 1, i);
     } else if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {

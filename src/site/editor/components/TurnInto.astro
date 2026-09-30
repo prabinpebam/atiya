@@ -1,0 +1,158 @@
+---
+/**
+ * The choices for turning blocks into another kind (documentation/editor/spec.md §3.3): any kind of text
+ * (a paragraph, a heading, a quote, a list); from several blocks, one list or tiles; from one, several
+ * (a list's items as paragraphs, tiles as headings and paragraphs). The article editor shows the choices
+ * that fit what's selected, marks the kind a block already is, and says why a choice can't be used.
+ * @tier editor
+ * @a11y Every choice is a button named by what it makes, with a line on what it does; the block's own kind is marked current; a choice that can't be used is disabled, its reason in words (a status).
+ * @key Ctrl or Cmd + Alt + 0: a paragraph
+ * @key Ctrl or Cmd + Alt + 2 / 3 / 4: a heading of that level
+ * @key Ctrl or Cmd + Shift + 7 / 8: a numbered / bulleted list
+ * @key Ctrl or Cmd + Shift + 9: a quote
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import { TEXT_KINDS } from '../model/ops';
+import type { IconName } from '../../design/icons';
+
+const KIND_ICON: Record<string, IconName> = {
+  paragraph: 'paragraph',
+  'heading-2': 'heading',
+  'heading-3': 'heading',
+  'heading-4': 'heading',
+  quote: 'quote',
+  'pull-quote': 'quote',
+  bulleted: 'bulleted',
+  numbered: 'numbered',
+};
+const GROUPS: { id: string; title: string; choices: { value: string; label: string; what: string; icon: IconName }[] }[] = [
+  { id: 'kinds', title: 'A different kind', choices: TEXT_KINDS.map((k) => ({ ...k, icon: KIND_ICON[k.value] })) },
+  {
+    id: 'together',
+    title: 'One block from several',
+    choices: [
+      { value: 'join-bulleted', label: 'One bulleted list', what: "Each block's lines become its items", icon: 'bulleted' },
+      { value: 'join-numbered', label: 'One numbered list', what: "Each block's lines become its items, in order", icon: 'numbered' },
+      { value: 'tiles', label: 'Tiles', what: 'Pairs of a label (a heading or a short line), then its words', icon: 'tiles' },
+    ],
+  },
+  {
+    id: 'apart',
+    title: 'Several blocks from one',
+    choices: [
+      { value: 'split', label: 'Separate paragraphs', what: 'One paragraph for each line or item', icon: 'paragraph' },
+      { value: 'untile', label: 'Headings and paragraphs', what: 'A heading and a paragraph for each tile', icon: 'heading' },
+    ],
+  },
+];
+---
+
+<div class="turn" data-editor-turn>
+  {
+    GROUPS.map((g) => (
+      <section class="group" data-turn-group={g.id} aria-labelledby={`turn-${g.id}`}>
+        <Heading level={3} size="ui" id={`turn-${g.id}`}>
+          {g.title}
+        </Heading>
+        <div class="grid">
+          {g.choices.map((c) => (
+            <button class="choice" type="button" data-editor-turn-to={c.value} aria-describedby={`turn-what-${c.value}`}>
+              <Icon name={c.icon} size="lg" />
+              <span class="name">{c.label}</span>
+              <span class="what" id={`turn-what-${c.value}`}>
+                {c.what}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+    ))
+  }
+  <p class="why" role="status" data-editor-turn-why hidden></p>
+</div>
+
+<style>
+  .turn {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .group {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .group[hidden],
+  .choice[hidden],
+  .why[hidden] {
+    display: none;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
+    gap: var(--space-3);
+  }
+
+  .choice {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1-5);
+    min-block-size: var(--size-touch);
+    padding: var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    text-align: start;
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast) var(--ease-standard),
+      background-color var(--duration-fast) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .choice:hover:not(:disabled) {
+      border-color: var(--color-accent);
+      background: var(--color-accent-soft);
+    }
+  }
+
+  .choice:active:not(:disabled) {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  .choice[aria-current='true'] {
+    border-color: var(--color-accent);
+  }
+
+  .choice:disabled {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  .choice:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus);
+  }
+
+  .name {
+    font-weight: var(--weight-semibold);
+  }
+
+  .what {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+
+  .why {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+  }
+</style>

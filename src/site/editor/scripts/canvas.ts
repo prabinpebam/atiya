@@ -4,6 +4,7 @@
  * edits text in place and tells the article editor what the writer did. The editor owns the document
  * and saves it; this only reports (select, text, split, merge, insert, move…) and redraws when told.
  */
+import { turnShortcut, type TextKind } from '../model/ops';
 import { markdownOf, plainOf } from '../model/dom';
 import { serializeInline } from '../../content/markdown';
 
@@ -20,7 +21,8 @@ type Out =
   | { type: 'op'; index: number; op: 'up' | 'down' | 'duplicate' | 'delete' }
   | { type: 'pending'; index: number; kind: 'text' | 'heading'; value: string }
   | { type: 'link-request'; href: string }
-  | { type: 'key'; key: 'undo' | 'redo' | 'save' | 'settings' };
+  | { type: 'key'; key: 'undo' | 'redo' | 'save' | 'settings' }
+  | { type: 'turn'; index: number; to?: TextKind };
 
 const SOURCE = 'editor-canvas';
 const TEXTY = new Set(['text', 'heading', 'quote']);
@@ -49,6 +51,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   if (window.parent === window) return; // only inside the editor's frame
   const post = (m: Out) => window.parent.postMessage({ source: SOURCE, ...m }, location.origin);
   const kinds: Kind[] = JSON.parse(chrome.querySelector('[data-editor-blocks]')?.textContent ?? '[]');
+  const turnButton = chrome.querySelector<HTMLElement>('[data-chrome-turn]');
   const prose = document.querySelector<HTMLElement>('.prose');
   const header = document.querySelector<HTMLElement>('.article-header');
   const fields: Record<Field, HTMLElement | null> = {
@@ -125,6 +128,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     toolbar.style.setProperty('--x', `${r.right + scrollX}px`);
     toolbar.style.setProperty('--y', `${r.top + scrollY}px`);
     toolLabel.textContent = selected !== null ? (kinds[selected]?.kind ?? '') : '';
+    if (turnButton) turnButton.hidden = selected === null || !(TEXTY.has(typeOf(selected)) || typeOf(selected) === 'tiles');
   };
   const select = (i: number | null, field: Field | null = null, tell = true, scroll = false) => {
     selected = i;
@@ -203,6 +207,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       if (b.dataset.chromeOp && selected !== null) {
         const op = b.dataset.chromeOp;
         if (op === 'add') post({ type: 'insert', index: selected + 1 });
+        else if (op === 'turn') post({ type: 'turn', index: selected });
         else post({ type: 'op', index: selected, op: op as 'up' | 'down' | 'duplicate' | 'delete' });
       } else if (b.hasAttribute('data-chrome-insert-button') && insertAt >= 0) post({ type: 'insert', index: insertAt });
       else if (b.dataset.chromeFormatOp) formatOp(b.dataset.chromeFormatOp);
@@ -446,6 +451,16 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         e.preventDefault();
         send(true);
         post({ type: 'key', key: 'save' });
+        return;
+      }
+      // turn the block into another kind of text, even while its words are being typed (they're sent first)
+      const kind = turnShortcut(e);
+      if (kind) {
+        const at = editing ? editing.index : selected;
+        if (at === null || at < 0) return;
+        e.preventDefault();
+        send(true);
+        post({ type: 'turn', index: at, to: kind });
         return;
       }
       if (editing) {
