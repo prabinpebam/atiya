@@ -129,6 +129,7 @@ const STATUS: SelectOption[] = [
             {b.type === 'figure' && (
               <>
                 <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width} options={WIDTHS} />
+                <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
                 <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint="Left empty, the picture's own caption shows." />
                 <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
                 <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
@@ -160,6 +161,7 @@ const STATUS: SelectOption[] = [
                 <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout ?? 'grid'} options={[{ value: 'grid', label: 'Grid', description: 'Equal cells' }, { value: 'mosaic', label: 'Mosaic', description: 'The first picture leads' }, { value: 'row', label: 'Row', description: 'A filmstrip' }]} />
                 <Select label="Fit" name={`body.${i}.fit`} id={id(i, 'fit')} value={b.fit ?? 'cover'} options={[{ value: 'cover', label: 'Fill each cell', description: 'Cropped to the cell' }, { value: 'contain', label: 'Show each whole', description: 'For marks and artwork' }]} />
                 <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
+                <Switch label="Show the captions" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
                 <TextField label="Caption for the set" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional />
                 <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
               </>
@@ -171,6 +173,7 @@ const STATUS: SelectOption[] = [
                 <Switch label="Show the neighbours (peek)" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />
                 <Select label="Pager" name={`body.${i}.pager`} id={id(i, 'pager')} value={b.pager ?? 'dots'} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Filmstrip, wrapping' }]} />
                 <Switch label="Previous and next buttons" name={`body.${i}.arrows`} id={id(i, 'arrows')} checked={b.arrows !== false} data-type="bool-default-true" />
+                <Switch label="Show the captions" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
                 <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
               </>
             )}
@@ -180,6 +183,7 @@ const STATUS: SelectOption[] = [
                 <TextField label="Address" type="url" name={`body.${i}.embed`} id={id(i, 'embed')} value={videoUrl(b)} data-type="video-url" hint="A YouTube or Vimeo link." />
                 <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title} required hint="Names the player." />
                 <TextField label="Length" name={`body.${i}.duration`} id={id(i, 'duration')} value={duration(b.duration)} data-type="duration" optional hint="Minutes and seconds (2:20), shown on the poster." />
+                <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
                 <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional />
                 <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
                 <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
@@ -255,6 +259,7 @@ const STATUS: SelectOption[] = [
           </div>
         </div>
       </div>
+      {article.hero && <Switch label="Show the lead picture's caption" name="hero.showCaption" id="page-hero-showCaption" checked={article.hero.showCaption !== false} data-type="bool-default-true" />}
       {article.hero && <TextField label="Lead picture's caption" name="hero.caption" id="page-hero-caption" value={article.hero.caption ?? ''} optional hint="Left empty, the picture's own caption shows." />}
 
       <Heading level={3} size="ui">Search and sharing</Heading>

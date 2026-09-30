@@ -256,6 +256,24 @@ test.describe('editor', () => {
     expect(original.type).toBe('text');
   });
 
+  test("a picture's caption can be hidden completely, credit and all, and shown again", async ({ page }) => {
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; showCaption?: boolean }[];
+    const i = blocks().findIndex((b) => b.type === 'figure');
+    await page.locator(`[data-editor-select="${i}"]`).click();
+    const figures = () => frame(page).locator('article figure').filter({ has: frame(page).locator('img') });
+    const toggle = page.locator(`[data-block-form="${i}"]`).getByLabel('Show the caption and credit');
+    await expect(toggle).toBeChecked();
+    const captions = await frame(page).locator('article figcaption').count();
+    await toggle.click();
+    await expect.poll(() => blocks()[i].showCaption).toBe(false);
+    await expect.poll(() => frame(page).locator('article figcaption').count()).toBe(captions - 1);
+    await page.locator(`[data-block-form="${i}"]`).getByLabel('Show the caption and credit').click();
+    await expect.poll(() => blocks()[i]).not.toHaveProperty('showCaption');
+    await expect.poll(() => frame(page).locator('article figcaption').count()).toBe(captions);
+    expect(await figures().count()).toBeGreaterThan(0);
+  });
+
   test("the page's settings save; a value the contract refuses says why and isn't written", async ({ page }) => {
     await openArticle(page);
     await page.getByRole('tab', { name: 'Page' }).click();

@@ -12,7 +12,7 @@ import { buildRoutes } from '../../src/site/content/routes';
 import { ContentError, headingId, loadContent } from '../../src/site/content/load';
 import { content } from '../../src/site/content/repository';
 import { readingMinutes } from '../../src/site/content/reading';
-import { block, type SiteStructure } from '../../src/site/content/schema';
+import { article, block, type SiteStructure } from '../../src/site/content/schema';
 import { renderInlineMarkdown } from '../../src/site/content/markdown';
 
 const ROOT = join(__dirname, '../..');
@@ -255,5 +255,17 @@ describe('the tiles block (short labelled statements)', () => {
     expect(renderInlineMarkdown('**Do what makes you proud.** A standard chosen from within.')).toBe('<strong>Do what makes you proud.</strong> A standard chosen from within.');
     expect(renderInlineMarkdown('See [the story](ref:article/a).', { resolveRef: () => '/work/a/' })).toBe('See <a href="/work/a/">the story</a>.');
     expect(renderInlineMarkdown('<script>')).toBe('&lt;script&gt;');
+  });
+});
+
+describe('captions can be hidden', () => {
+  it('takes showCaption on a picture, a gallery, a carousel, a video and a lead picture, and only as true or false', () => {
+    const ok = (b: unknown) => block.safeParse(b).success;
+    expect(ok({ type: 'figure', media: 'shared/x', showCaption: false })).toBe(true);
+    expect(ok({ type: 'gallery', items: [{ media: 'shared/x' }, { media: 'shared/y' }], showCaption: false })).toBe(true);
+    expect(ok({ type: 'carousel', items: [{ media: 'shared/x' }, { media: 'shared/y' }], label: 'L', showCaption: false })).toBe(true);
+    expect(ok({ type: 'video', embed: { provider: 'youtube', id: 'abcdef' }, title: 'V', poster: 'shared/x', showCaption: false })).toBe(true);
+    expect(ok({ type: 'figure', media: 'shared/x', showCaption: 'no' })).toBe(false);
+    expect(article.safeParse({ id: 'a', type: 'article', kind: 'note', slug: 'a', title: 'A', summary: 'S', status: 'draft', visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [], hero: { media: 'shared/x', showCaption: false } }).success).toBe(true);
   });
 });

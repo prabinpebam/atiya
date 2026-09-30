@@ -89,8 +89,8 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
           alt={p.alt}
           imageWidth={p.width}
           imageHeight={p.height}
-          caption={b.caption ?? p.caption ?? ''}
-          credit={b.credit ?? p.credit}
+          caption={b.showCaption === false ? '' : (b.caption ?? p.caption ?? '')}
+          credit={b.showCaption === false ? undefined : (b.credit ?? p.credit)}
           width={b.width}
           focus={p.focus}
           full={p.full}
@@ -101,12 +101,12 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
     }
     if ('ps' in v && v.b.type === 'gallery') {
       const { b, ps } = v;
-      const items = ps.map((p, n) => ({ ...p, caption: b.items[n].caption ?? p.caption }));
-      return <Gallery items={items} layout={b.layout} fit={b.fit} caption={b.caption} width={b.width} sizes={SIZES.popout} lightbox={b.lightbox ? lightbox : undefined} />;
+      const items = ps.map((p, n) => ({ ...p, caption: b.showCaption === false ? '' : (b.items[n].caption ?? p.caption) }));
+      return <Gallery items={items} layout={b.layout} fit={b.fit} caption={b.showCaption === false ? undefined : b.caption} width={b.width} sizes={SIZES.popout} lightbox={b.lightbox ? lightbox : undefined} />;
     }
     if ('ps' in v && v.b.type === 'carousel') {
       const { b, ps } = v;
-      const items = ps.map((p, n) => ({ ...p, caption: b.items[n].caption ?? p.caption ?? '' }));
+      const items = ps.map((p, n) => ({ ...p, caption: b.showCaption === false ? '' : (b.items[n].caption ?? p.caption ?? '') }));
       return <Carousel items={items} label={b.label} peek={b.peek} pager={b.pager} arrows={b.arrows} sizes={SIZES.wide} lightbox={b.lightbox ? `${lightbox}-carousel-${i}` : undefined} />;
     }
     if ('p' in v && v.b.type === 'video') {
@@ -122,8 +122,8 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
           mediaWidth={p.width}
           mediaHeight={p.height}
           duration={b.duration}
-          caption={b.caption}
-          credit={b.credit}
+          caption={b.showCaption === false ? undefined : b.caption}
+          credit={b.showCaption === false ? undefined : b.credit}
           width={b.width ?? 'wide'}
         />
       );

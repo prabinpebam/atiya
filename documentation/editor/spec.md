@@ -219,10 +219,10 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 |---|---|
 | Paragraph | None: its words are edited on the page. Turn into any other kind of text (§3.3) |
 | Heading | Level (2, 3 or 4); anchor (optional; made from its words if left empty) |
-| Picture | The picture (media field: thumbnail, Replace, and its alt text); width (content, popout, wide, full); caption and credit (each left empty to use the picture's own); open in the lightbox |
-| Gallery | Its pictures (add, remove, reorder); layout (grid, mosaic, row); fit (cover, or contain for artwork); width; caption; open in the lightbox |
-| Carousel | Its pictures; label; peek; pager (dots, filmstrip, wrapping filmstrip); arrows; open in the lightbox |
-| Video | Address (YouTube or Vimeo; the provider and ID are taken from it); title; poster (media field); length (minutes and seconds); caption; credit; width |
+| Picture | The picture (media field: thumbnail, Replace, and its alt text); width (content, popout, wide, full); show the caption and credit (off: nothing under the picture, nor in the lightbox); caption and credit (each left empty to use the picture's own); open in the lightbox |
+| Gallery | Its pictures (add, remove, reorder); layout (grid, mosaic, row); fit (cover, or contain for artwork); width; show the captions (off: no caption for the set, none for its pictures in the lightbox); caption; open in the lightbox |
+| Carousel | Its pictures; label; peek; pager (dots, filmstrip, wrapping filmstrip); arrows; show the captions (off: none under any slide, nor in the lightbox); open in the lightbox |
+| Video | Address (YouTube or Vimeo; the provider and ID are taken from it); title; poster (media field); length (minutes and seconds); show the caption and credit; caption; credit; width |
 | Quote | Style (block or pull); who said it. Its words are edited on the page |
 | Facts | Its pairs: add, remove, reorder (one to six) |
 | Divider | None |
@@ -236,7 +236,7 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
   - status: the lifecycle up to Published ([model §7](../content/model.md#7-lifecycle-and-visibility)); once published, the status is fixed, like the address;
   - visibility: public, public with details removed, or summary only.
 - **Where it appears:** the section (hub) that places it, or "Not on the site yet". This edits the site structure. It's fixed once the article is published.
-- **Lead picture:** a media field, which can be removed.
+- **Lead picture:** a media field, which can be removed; its caption (left empty to use the picture's own), and whether to show it.
 - **Search and sharing:** the SEO title, the description and the image, and whether to keep the page out of search.
 - **Dates:** published, updated and last reviewed. The server keeps "Updated" and "Published" true (§9); a date set by hand in the same change wins.
 - **Delete:** a draft can be deleted, and with it, if you ask, the pictures in its own folder that nothing else uses. A published article can't be deleted until the site has redirects.

@@ -51,7 +51,7 @@ if (article) {
     author: { name: owner.name, avatar: avatar?.thumb },
     date: article.publishedAt,
     readingTime: `${readingMinutes(article)} min read`,
-    picture: hero && { ...hero, caption: article.hero?.caption ?? hero.caption, credit: article.hero?.credit ?? hero.credit },
+    picture: hero && (article.hero?.showCaption === false ? { ...hero, caption: undefined, credit: undefined } : { ...hero, caption: article.hero?.caption ?? hero.caption, credit: article.hero?.credit ?? hero.credit }),
   };
 }
 

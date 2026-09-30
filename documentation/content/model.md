@@ -301,6 +301,7 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | `divider` | none | `Divider` |
 | `collection` | `source` (a query: `type`, `filter`, `sort`, `limit`), `presentation` (`cards` or `list`), `heading?` | `StoryCard` grid or `ContentsList` |
 | `related` | `items` (item refs), `heading?` | `StoryCard` grid |
+| (pictures) | `showCaption` on `figure`, `gallery`, `carousel`, `video` and an article's `hero` | `false`: no caption and no credit under the picture (or the set, or any slide), and none in the lightbox. Left out: shown (the block's caption, else the picture's own) |
 | `facts` | `items` (`{ label, value }[]`, one to six) | `Facts`: a fact box of label and value pairs (the case study's scan layer uses it too) |
 | `tiles` | `items` (`{ label, text }[]`, two to six; `label` at most 40 characters, `text` one paragraph of the Markdown subset), `width` (`content`, `popout` (the default) or `wide`) | `TileGrid`: short labelled statements as tiles (the challenge, the intent, the role, the core idea), two or three to a row |
 | `metrics` | `items` (`{ value, label, note? }[]`) | New: a metrics list |

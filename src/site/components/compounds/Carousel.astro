@@ -27,7 +27,7 @@ export interface CarouselItem {
   srcset?: string;
   /** What the picture shows. */
   alt: string;
-  /** The slide caption. */
+  /** The slide caption. Empty: no caption under the slide. */
   caption: string;
   /** The picture’s own width. */
   width: number;
@@ -108,7 +108,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
                 ) : (
                   picture
                 )}
-                <Caption>{item.caption}</Caption>
+                {item.caption && <Caption>{item.caption}</Caption>}
               </figure>
             </div>
           );
