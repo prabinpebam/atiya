@@ -160,7 +160,7 @@ function HowToPlay({ controller }: { controller: GameController }) {
       <section aria-labelledby="help-tips">
         <h3 id="help-tips">Tips</h3>
         <ul className="help-list">
-          <li>Every building holds part of Prabin's work: walk up to one to see what's inside.</li>
+          <li>Each building will hold part of Prabin's work. Most are still being fitted out: walk up to one to see what's there so far.</li>
           <li>Shake trees and pick flowers, keep what you find in the chest, and make things at the crafting table.</li>
           <li>Dig clay on the banks and build a furnace: it smelts iron ore into ingots for nails.</li>
           <li>Prabin's family lives by the pond, and Chopper is never far away. Say hello.</li>

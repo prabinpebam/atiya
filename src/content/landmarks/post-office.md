@@ -1,7 +1,7 @@
 ---
 title: Post Office
 kicker: Contact · résumé
-summary: Say hello, grab my résumé, or find me on the usual networks.
+summary: "Ways to get in touch, and my résumé. Being set up now."
 order: 7
 lat: 57
 lon: -90
@@ -11,13 +11,10 @@ approachDistanceU: 2.3
 variant: post-office
 accent: "#2fa3b5"
 dialog:
-  intro: Placeholder — contact options and a downloadable résumé.
-  highlights:
-    - "Email (placeholder)"
-    - "LinkedIn · Bluesky · GitHub (placeholder)"
-    - "Résumé PDF (placeholder)"
+  intro: "This building is still being fitted out. Contact details and a résumé will be here soon."
+  highlights: []
 ---
 
 ## Contact · résumé
 
-*Placeholder content for the POC.* Contact details, social profiles, and a downloadable résumé.
+This part of the site is under construction. Contact details and a résumé will be here soon.

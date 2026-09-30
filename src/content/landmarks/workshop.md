@@ -1,7 +1,7 @@
 ---
 title: Workshop
 kicker: Selected case studies
-summary: Deep dives into products I've led — the problem, the bets we made, how the team shipped, and what changed.
+summary: "Case studies of products I’ve led: the problem, the bets, how the team shipped and what changed. Being written now."
 order: 1
 lat: 57
 lon: 0
@@ -11,17 +11,12 @@ approachDistanceU: 2.6
 variant: workshop
 accent: "#e07a3f"
 dialog:
-  intro: Placeholder — three to five case studies, each with scope, role, decisions, and outcomes.
-  highlights:
-    - "Case study A — reimagining a core productivity flow (placeholder)"
-    - "Case study B — scaling a design system across teams (placeholder)"
-    - "Case study C — shipping an AI-assisted experience responsibly (placeholder)"
+  intro: "This building is still being fitted out. Case studies of the products I’ve led will go here: the problem, my role, the decisions and what changed."
+  highlights: []
 ---
 
 ## Selected case studies
 
-*Placeholder content for the POC.* Each case study will follow a two-layer format: a one-screen **impact card** (problem, scope, role, team size, outcome) followed by the deeper narrative — decision log, trade-offs, org context, and what I'd do differently.
+This part of the site is under construction. It will hold case studies of products I’ve led, each with the problem, the scope, my role and the outcome, then the full story: the decisions, the trade-offs and what I’d do differently.
 
-- **Case study A** — Reimagining a core productivity flow.
-- **Case study B** — Scaling a design system across many teams.
-- **Case study C** — Shipping an AI-assisted experience responsibly.
+They’re being written now. Come back soon.

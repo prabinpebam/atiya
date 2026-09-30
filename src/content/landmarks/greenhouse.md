@@ -1,7 +1,7 @@
 ---
 title: Greenhouse
 kicker: Side projects & experiments
-summary: Prototypes, tools, and experiments I grow on the side — including this little planet.
+summary: "Prototypes, tools and experiments I build on the side, including this little planet. Being written up now."
 order: 6
 lat: 25
 lon: 45
@@ -11,13 +11,13 @@ approachDistanceU: 2.5
 variant: greenhouse
 accent: "#3fb67a"
 dialog:
-  intro: Placeholder — experiments and prototypes, with notes on what I learned.
+  intro: "This building is still being fitted out. Notes on side projects and experiments will grow here. This little planet is one of them."
   highlights:
-    - "This planet: a 3D navigation experiment"
-    - "AI prototyping experiments (placeholder)"
-    - "Open-source tools and Figma community files"
+    - "This little planet: a 3D way to explore the site"
 ---
 
 ## Side projects & experiments
 
-*Placeholder content for the POC.* Prototypes, tools, and experiments — including the build story of this site.
+This part of the site is under construction. Notes on prototypes, tools and experiments will grow here.
+
+This little planet is one of them. Until its write-up is ready, the notes on [how this site was built](../../docs/) show how it’s made.

@@ -2224,8 +2224,8 @@ export const LINES: Record<NpcId, Lines> = {
       night: ['Still exploring? The lamps are on, have a look round.', 'Hello, night owl!'],
     },
     pool: [
-      'Every building here is part of my work. Walk up to one and have a look.',
-      'The Workshop has my case studies. Start there, if you like.',
+      'Each building will hold part of my work. Walk up to one and have a look.',
+      'The Lighthouse has my first story. The other buildings are still being fitted out.',
       'If you’d rather read it all as regular pages, the classic site is one click away.',
       'Try the crafting table between the Workshop and the Post Office.',
       'Have you met Chopper? Say hi to him for me.',

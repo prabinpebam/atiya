@@ -8,7 +8,7 @@ export function welcomeLines(touch: readonly string[] | null, back: boolean): st
   const board = 'The notice board by the path to the Lighthouse has all the controls and tips. Have fun!';
   if (back) return ['Welcome back to my little planet! Have a look round.', board];
   return [
-    'Hi, I’m Prabin. Welcome to my little planet! Every building here holds part of my work, so feel free to explore.',
+    'Hi, I’m Prabin. Welcome to my little planet! Each building will hold part of my work. Most are still being fitted out, so come back soon.',
     ...(touch ?? ['Walk with W A S D or the arrow keys, and hold Shift to run. Drag the planet to turn the view.', 'Press E to open a building, or to use what a gold ring glows round, and Space to close it again.']),
     'There’s a lantern in your backpack for the evenings: pick it in your hotbar and it lights the way.',
     board,
