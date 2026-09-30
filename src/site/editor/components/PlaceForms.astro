@@ -1,16 +1,16 @@
 ---
 /**
- * The Planet screen's settings (documentation/sections/spec.md §7.4): a dialog for each of the seven
- * buildings, opened from its column on the board: its name, what it holds, its summary, how its list reads
- * and its section on the site. The buildings themselves are the game's: they can't be added, removed or
- * moved here, so there's no New section and no Move left or right.
+ * The Planet screen's settings (documentation/sections/spec.md §7.4): a form for each of the seven
+ * buildings, shown in the Settings tab when it's the chosen one: its name, what it holds, its summary, how
+ * its list reads and its section on the site. The buildings themselves are the game's: they can't be added,
+ * removed or moved here, so there's no New section and no Move up or down.
  * @tier editor
- * @a11y Each dialog is a form named after its building; a refusal shows in it, as an alert.
+ * @a11y Each form is named after its building; a refusal shows in it, as an alert.
  */
 import TextField from '../../components/fundamentals/TextField.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Button from '../../components/fundamentals/Button.astro';
-import Dialog from '../../components/compounds/Dialog.astro';
+import { VIEW_OPTIONS as VIEWS } from '../server/screens';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import type { PlanetStructure } from '../../content/schema';
 
@@ -26,6 +26,8 @@ export interface PlaceSettings {
 interface Props {
   /** The seven buildings, in the world's order. */
   places: PlaceSettings[];
+  /** The chosen building, whose form shows. */
+  selected: string;
   /** The site's sections, for "On the site". */
   sections: SelectOption[];
   /** The planet structure and its version, for the screen's script. */
@@ -33,12 +35,7 @@ interface Props {
   version: string;
 }
 
-const { places, sections, planet, version } = Astro.props;
-const VIEWS: SelectOption[] = [
-  { value: 'list', label: 'List', description: 'Rows of titles, words first' },
-  { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
-  { value: 'bento', label: 'Bento', description: 'A lead, then halves and thirds' },
-];
+const { places, selected, sections, planet, version } = Astro.props;
 const onSite: SelectOption[] = [{ value: '', label: 'Home', description: "The home page's list of sections" }, ...sections];
 const state = JSON.stringify({ planet, version }).replace(/</g, '\\u003c');
 ---
@@ -46,7 +43,7 @@ const state = JSON.stringify({ planet, version }).replace(/</g, '\\u003c');
 <div data-editor-planet>
   {
     places.map((p) => (
-      <Dialog id={`place-settings-${p.id}`} title={`${p.title} settings`} size="md">
+      <div data-manager-settings={p.id} hidden={p.id !== selected}>
         <form class="form" data-planet-place={p.id} novalidate aria-label={`${p.title} settings`}>
           <TextField label="Name" name="title" value={p.title} required hint="On its card, in fast travel and over its list." />
           <TextField label="What it holds" name="kicker" value={p.kicker} required hint="Over its name on its card." />
@@ -60,7 +57,7 @@ const state = JSON.stringify({ planet, version }).replace(/</g, '\\u003c');
             </Button>
           </div>
         </form>
-      </Dialog>
+      </div>
     ))
   }
   <script is:inline type="application/json" data-editor-planet-state set:html={state} />
@@ -74,7 +71,6 @@ const state = JSON.stringify({ planet, version }).replace(/</g, '\\u003c');
 
   .actions {
     display: flex;
-    justify-content: end;
   }
 
   .issue {
@@ -89,5 +85,6 @@ const state = JSON.stringify({ planet, version }).replace(/</g, '\\u003c');
   import { each } from '../../scripts/page';
   import { initPlanet } from '../scripts/planet';
 
-  each<HTMLElement>('[data-editor-planet]', (root, signal) => initPlanet(root, signal));
+  // the whole screen: its moves come from the list of pages
+  each<HTMLElement>('[data-manager="planet"]', (root, signal) => initPlanet(root, signal));
 </script>

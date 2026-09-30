@@ -206,16 +206,16 @@ How the [spec](spec.md) is built: six phases, in the order the owner asked for t
   - deleting a mapped draft takes it off the planet;
   - axe in both modes.
 
-### S7: one board for Sections and Planet (the owner's follow-up)
+### S7: one pattern for Sections and Planet (the owner's follow-up)
 
-The owner asked for the two screens to be one pattern, for published pages to move freely, for many pages per section, and for drag and drop between sections.
-1. **The board** (`SectionBoard.astro`, `scripts/board.ts`): a column per section or building, cards with a handle, pointer drag, Alt+arrows, a Move dialog and Find ([spec §7.2](spec.md#72-sections)). It emits `board:move`; each screen's script writes its own structure.
-2. **Settings in dialogs:** each section's (with Move left and right), home's and New section (`SectionForms.astro`); each building's (`PlaceForms.astro`). The tree and the planet's cards go.
+The owner asked for the two screens to be one pattern, for published pages to move freely, for many pages per section, and for drag and drop between sections. A board of columns came first; the owner then asked for two columns instead: the list of sections, and the chosen section's Pages and Settings as tabs.
+1. **The two columns** (`SectionManager.astro`, `scripts/manager.ts`, [spec §7.2](spec.md#72-sections)): the list of sections (the choice and the tab in the address), each section's list of pages (a handle, a checkbox, its status, Edit), Find, Show, a selection, pointer drag within the list or onto a section, Alt+Up and Alt+Down, and a Move dialog. It emits `manager:move` and `manager:reorder`; each screen's script writes its own structure, through `placeAll` and `putAllIn` (several pages together, each keeping its node).
+2. **Settings in the tab:** each section's (with Move up and down) and home's (`SectionForms.astro`), each building's (`PlaceForms.astro`); New section is a dialog under the list (`NewSection.astro`). The tree, the planet's cards and the board go.
 3. **Moves without redirects** (D11): the store stops refusing changes to published pages, the page's settings unlock its slug, status and section, and stale redirects become warnings.
 
 **Tests:**
-- unit: a published page moves freely and no redirect is written; a stale redirect is a warning; `place` and `putIn` at a position;
-- E2E "editor": the Sections board (a new section moved left; a published page dragged with the mouse, moved back with Move and on with the keys; its old address a 404; Find), the Planet board, and axe on both.
+- unit: a published page moves freely and no redirect is written; a stale redirect is a warning; `placeAll` and `putAllIn` (order, nodes, a place among the pages that stay);
+- E2E "editor": the Sections screen (a new section opened and moved; a published page dragged onto another section, its old address a 404; Move; the keys; a drag within the list; Find and Show; a selection moved with Move selected and by dragging), the Planet screen, and axe on both.
 
 ## 2. Definition of Done
 
@@ -241,7 +241,7 @@ Each phase is done when every row for it is true and evidenced. **All rows were 
 | 16 | S6 | Pages are mapped to buildings, reordered and taken off in edit mode, separately from the site; the rules refuse with reasons | E2E "editor": "planet: pages put in buildings…" |
 | 17 | All | Every new screen and view passes axe in light and dark, and the design-system tests pass | E2E axe tests (site, editor, planet); `siteDesignSystem.test.ts` |
 | 18 | All | The spec's "As built" and the related docs match the build: the content model, structures, edit mode, the game UI design system and AGENTS.md | The docs changes in each phase's commit |
-| 19 | S7 | Sections and Planet are the same board; a page moves by drag, keys or Move, within a section or to another, and a section of many pages stays usable | E2E "editor": "sections: a board of sections and pages…", "planet: pages put in buildings…"; screenshots with 21 pages in a column |
+| 19 | S7 | Sections and Planet are the same two columns (the list of sections; the chosen one's Pages and Settings tabs); pages move by drag (within the list or onto a section), keys or Move, one or a selection at a time, and a section of many pages stays usable (Find, Show, the selection) | E2E "editor": "sections: the sections beside the chosen one's pages and settings…", "planet: pages put in buildings…"; screenshots with 21 pages in a section, in light, dark and on a phone |
 | 20 | S7 | A published page moves, is renamed or unpublished like a draft, and nothing is redirected | `editorServer.test.ts`: "a published page moves freely"; `content.test.ts` (V19 warnings); E2E "editor": the old address is a 404 and `redirects.json` is unchanged |
 
 ## 3. Validation per phase

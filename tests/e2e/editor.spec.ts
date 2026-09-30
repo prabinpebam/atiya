@@ -413,21 +413,22 @@ test.describe('editor', () => {
     const before = site();
     expect(pagesOf('lighthouse')).toEqual([ARTICLE]);
 
-    // the same board as Sections: off the Lighthouse with Move, then into the Workshop; the site doesn't change
-    await page.goto('/_edit/planet/');
-    await expect(page.locator('[data-board-column]')).toHaveCount(8);
-    const move = async (to: string) => {
-      await page.locator(`[data-board-grip="${ARTICLE}"]`).click();
-      await page.locator('#board-move').getByRole('button', { name: to }).click();
+    // the same two columns as Sections: off the Lighthouse with Move, then into the Workshop from the pages not on the planet; the site doesn't change
+    await page.goto('/_edit/planet/?building=lighthouse');
+    await expect(page.locator('[data-manager-section]')).toHaveCount(8);
+    const move = async (id: string, to: string) => {
+      await page.locator(`[data-manager-grip="${id}"]`).click();
+      await page.locator('#manager-move').getByRole('button', { name: to, exact: true }).click();
     };
-    await move('Not on the planet');
+    await move(ARTICLE, 'Not on the planet');
     await expect.poll(() => pagesOf('lighthouse')).toEqual([]);
-    await move('Workshop');
+    await page.goto('/_edit/planet/?building=_off');
+    await move(ARTICLE, 'Workshop');
     await expect.poll(() => pagesOf('workshop')).toEqual([ARTICLE]);
     expect(site()).toBe(before);
 
-    // a building's own words, from its column
-    await page.locator('[data-dialog-open="place-settings-workshop"]').click();
+    // a building's own words, in its Settings tab
+    await page.goto('/_edit/planet/?building=workshop&tab=settings');
     const form = page.locator('[data-planet-place="workshop"]');
     await form.getByLabel('What it holds').fill('Case studies');
     await form.getByRole('button', { name: 'Save the building' }).click();
@@ -446,14 +447,12 @@ test.describe('editor', () => {
     await page.goto('/_edit/articles/');
     await page.locator(`[data-editor-duplicate="${ARTICLE}"]`).click();
     await expect(page).toHaveURL(new RegExp(`/_edit/articles/${copy}/$`));
-    await page.goto('/_edit/planet/');
-    await page.locator(`[data-board-grip="${copy}"]`).click();
-    await page.locator('#board-move').getByRole('button', { name: 'Library' }).click();
+    await page.goto('/_edit/planet/?building=_off');
+    await move(copy, 'Library');
     await expect.poll(() => pagesOf('library')).toEqual([copy]);
-    await page.goto('/_edit/sections/');
-    await page.locator(`[data-board-grip="${copy}"]`).click();
-    await page.locator('#board-move').getByRole('button', { name: 'Not on the site' }).click();
-    await expect(page.locator('[data-board-issue]')).toContainText("isn't on the site; a page on the planet needs its page on the site");
+    await page.goto('/_edit/sections/?section=leadership');
+    await move(copy, 'Not on the site');
+    await expect(page.locator('[data-manager-issue]')).toContainText("isn't on the site; a page on the planet needs its page on the site");
     expect(site()).toContain(`"id":"${copy}"`);
     await page.goto('/_edit/articles/');
     await page.locator(`[data-editor-delete="${copy}"]`).click();
@@ -485,61 +484,115 @@ test.describe('editor', () => {
     await expect(page.getByRole('button', { name: 'Delete the picture' })).toBeDisabled();
   });
 
-  test('sections: a board of sections and pages; a new section moved left; a published page dragged to another section, moved with Move and the keys, its old address simply gone', async ({ page }) => {
+  test('sections: the sections beside the chosen one\'s pages and settings; a new section moved up; a published page dragged onto another section, back with Move, its old address simply gone; the keys; a selection moved together; Find and Show', async ({ page }) => {
     const structure = () => readJson(join(FIXTURE, 'content/structures/site.json'));
     const ids = () => structure().home.children.map((c: { id: string }) => c.id) as string[];
     const pagesOf = (id: string) => (structure().home.children.find((c: { id: string }) => c.id === id).children ?? []).map((c: { item: { id: string } }) => c.item.id);
     const redirects = () => JSON.stringify(readJson(join(FIXTURE, 'content/redirects.json')));
     const before = redirects();
-    // every column in view, so the drag goes straight from one to another
-    await page.setViewportSize({ width: 1600, height: 1400 });
+    const section = (id: string) => page.locator(`[data-manager-section="${id}"]`);
+    const grip = (id: string) => page.locator(`[data-manager-grip="${id}"]`);
+    const moveTo = async (name: string) => page.locator('#manager-move').getByRole('button', { name, exact: true }).click();
+    /** Drags a page's handle onto `at` (a section in the list, or a row: its top half). */
+    const drag = async (id: string, at: import('@playwright/test').Locator, top = false) => {
+      const a = (await grip(id).boundingBox())!;
+      await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+      await page.mouse.down();
+      const b = (await at.boundingBox())!;
+      await page.mouse.move(b.x + b.width / 2, top ? b.y + 4 : b.y + b.height / 2, { steps: 12 });
+      await expect(page.locator('[data-manager-ghost]')).toBeVisible();
+      await page.mouse.up();
+    };
     await page.goto('/_edit/sections/');
     const count = ids().length;
-    await expect(page.locator('[data-board-column]')).toHaveCount(count + 1);
+    // the home page, each section, and the pages in none
+    await expect(page.locator('[data-manager-section]')).toHaveCount(count + 2);
 
-    // a new section goes last, and moves left from its settings
+    // a new section goes last and opens; Move up, in its settings, moves it
     await page.locator('[data-dialog-open="new-section"]').click();
     await page.locator('#new-section').getByLabel('Title').fill('Field notes');
     await page.locator('#new-section').getByRole('button', { name: 'Add the section' }).click();
-    await expect.poll(ids).toContain('field-notes');
+    await expect(page).toHaveURL(/[?&]section=field-notes$/);
     expect(ids().at(-1)).toBe('field-notes');
     expect(structure().home.children.at(-1)).toMatchObject({ id: 'field-notes', kind: 'hub', slug: 'field-notes', title: 'Field notes', view: 'tiles' });
-    await page.locator('[data-dialog-open="section-settings-field-notes"]').click();
-    await page.locator('#section-settings-field-notes').getByRole('button', { name: 'Move left' }).click();
+    await expect(section('field-notes')).toHaveAttribute('aria-current', 'true');
+    await page.getByRole('tab', { name: 'Settings' }).click();
+    await expect(page).toHaveURL(/tab=settings/);
+    await page.locator('[data-sections-hub="field-notes"]').getByRole('button', { name: 'Move up' }).click();
     await expect.poll(() => ids().indexOf('field-notes')).toBe(count - 1);
+    // and back down with the keys, on its place in the list
+    await expect(page.locator('[data-sections-hub="field-notes"]')).toBeVisible({ timeout: 15_000 });
+    await section('field-notes').focus();
+    await page.keyboard.press('Alt+ArrowDown');
+    await expect.poll(() => ids().at(-1)).toBe('field-notes');
 
-    // the published page, dragged from Leadership into Field notes: it moves, and no redirect is written
-    const grip = page.locator(`[data-board-grip="${ARTICLE}"]`);
-    const target = page.locator('[data-board-column="field-notes"] [data-board-list]');
-    await target.scrollIntoViewIfNeeded();
-    await grip.scrollIntoViewIfNeeded();
-    const from = (await grip.boundingBox())!;
-    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-    await page.mouse.down();
-    const to = (await target.boundingBox())!;
-    await page.mouse.move(to.x + to.width / 2, to.y + 10, { steps: 12 });
-    await expect(page.locator('[data-board-column="field-notes"]')).toHaveAttribute('data-drop-target', '');
-    await page.mouse.up();
+    // the published page, dragged from Leadership onto Field notes in the list: it moves, and no redirect is written
+    await page.goto('/_edit/sections/?section=leadership');
+    await drag(ARTICLE, section('field-notes'));
     await expect.poll(() => pagesOf('field-notes')).toEqual([ARTICLE]);
     expect(pagesOf('leadership')).toEqual([]);
     expect(redirects()).toBe(before);
     expect((await page.request.get(`/field-notes/${ARTICLE}/`)).status()).toBe(200);
     expect((await page.request.get(`/leadership/${ARTICLE}/`)).status()).toBe(404);
+    await expect(section('field-notes')).toBeFocused({ timeout: 15_000 });
 
-    // back to Leadership with Move (a click on the handle), then off and on with the keys
-    await expect(page.locator(`[data-board-grip="${ARTICLE}"]`)).toBeFocused({ timeout: 15_000 });
-    await page.locator(`[data-board-grip="${ARTICLE}"]`).click();
-    await page.locator('#board-move').getByRole('button', { name: 'Leadership' }).click();
+    // back to Leadership with Move: the handle's click, in Field notes
+    await section('field-notes').click();
+    await expect(page).toHaveURL(/section=field-notes/);
+    await grip(ARTICLE).click();
+    await moveTo('Leadership');
     await expect.poll(() => pagesOf('leadership')).toEqual([ARTICLE]);
-    await expect(page.locator(`[data-board-grip="${ARTICLE}"]`)).toBeFocused({ timeout: 15_000 });
-    await page.keyboard.press('Alt+ArrowLeft');
-    await expect.poll(() => pagesOf(ids()[ids().indexOf('leadership') - 1])).toEqual([ARTICLE]);
 
-    // Find narrows every column
-    await page.getByLabel('Find a page').fill('proud');
-    await expect(page.locator('[data-board-card]:not([hidden])')).toHaveCount(1);
-    await page.getByLabel('Find a page').fill('nothing like it');
-    await expect(page.locator('[data-board-card]:not([hidden])')).toHaveCount(0);
+    // two copies (drafts, in Leadership too): the keys move one; the two, selected, move together
+    for (let i = 0; i < 2; i++) {
+      await page.goto('/_edit/articles/');
+      await page.locator(`[data-editor-duplicate="${ARTICLE}"]`).click();
+      await expect(page).toHaveURL(/\/_edit\/articles\/.+-copy(-2)?\/$/);
+    }
+    const [one, two] = [`${ARTICLE}-copy`, `${ARTICLE}-copy-2`];
+    expect(pagesOf('leadership')).toEqual([ARTICLE, one, two]);
+    await page.goto('/_edit/sections/?section=leadership');
+    await grip(two).focus();
+    await page.keyboard.press('Alt+ArrowUp');
+    await expect.poll(() => pagesOf('leadership')).toEqual([ARTICLE, two, one]);
+    await expect(grip(two)).toBeFocused({ timeout: 15_000 });
+    // and a drag within the list: the last to the top
+    await drag(one, page.locator(`[data-manager-row="${ARTICLE}"]`), true);
+    await expect.poll(() => pagesOf('leadership')).toEqual([one, ARTICLE, two]);
+
+    // Find and Show narrow the list
+    const panel = page.locator('[data-manager-pages="leadership"]');
+    const shown = panel.locator('[data-manager-row]:visible');
+    await expect(shown).toHaveCount(3);
+    await panel.getByLabel('Find a page').fill('copy');
+    await expect(shown).toHaveCount(2);
+    await expect(panel.locator('[data-manager-count]')).toHaveText('2 of 3 pages');
+    await panel.getByLabel('Find a page').fill('');
+    await panel.getByRole('combobox', { name: 'Show' }).click();
+    await page.getByRole('option', { name: 'Published', exact: true }).click();
+    await expect(shown).toHaveCount(1);
+    await panel.getByRole('combobox', { name: 'Show' }).click();
+    await page.getByRole('option', { name: 'Every status' }).click();
+    await expect(shown).toHaveCount(3);
+
+    // select the two copies, and move them to Writing in one go, in their order
+    await panel.locator(`[data-manager-pick="${two}"]`).click();
+    await panel.locator(`[data-manager-pick="${one}"]`).click();
+    await expect(panel.locator('[data-manager-count]')).toHaveText('2 selected');
+    await panel.getByRole('button', { name: 'Move selected' }).click();
+    await expect(page.locator('[data-manager-move-name]')).toHaveText('2 pages, in Leadership');
+    await moveTo('Writing');
+    await expect.poll(() => pagesOf('writing')).toEqual([one, two]);
+    expect(pagesOf('leadership')).toEqual([ARTICLE]);
+
+    // a selection dragged onto a section goes with it: all of it, in its order
+    await page.goto('/_edit/sections/?section=writing');
+    const writing = page.locator('[data-manager-pages="writing"]');
+    await writing.getByText('Select all').click();
+    await expect(writing.locator('[data-manager-count]')).toHaveText('2 selected');
+    await drag(two, section('talks'));
+    await expect.poll(() => pagesOf('talks')).toEqual([one, two]);
+    expect(pagesOf('writing')).toEqual([]);
   });
 
   test('navigation: a section in and out from Sections and from Navigation; a link added, renamed, moved and removed; the header follows', async ({ page }) => {
@@ -549,8 +602,8 @@ test.describe('editor', () => {
     expect(nodes()).toContain('contact');
 
     // from Sections: Contact's switch off takes it out of the navigation, and nothing else changes
-    await page.goto('/_edit/sections/');
-    await page.locator('[data-dialog-open="section-settings-contact"]').click();
+    await page.goto('/_edit/sections/?section=contact');
+    await page.getByRole('tab', { name: 'Settings' }).click();
     const form = page.locator('[data-sections-hub="contact"]');
     await form.getByRole('switch', { name: 'In the navigation' }).uncheck();
     await form.getByRole('button', { name: 'Save the section' }).click();

@@ -502,7 +502,7 @@ Edit mode's own dimensions (the local CMS). Written to editor-tokens.css, which 
 | `--c-editor-device-tablet` | `48rem` |  | The canvas at tablet width (768 px) |
 | `--c-editor-device-phone` | `24.375rem` |  | The canvas at phone width (390 px) |
 | `--c-editor-thumb` | `9rem` |  | The narrowest a picture gets in the media library's grid |
-| `--c-editor-board-column` | `17rem` |  | A column of the Sections and Planet boards: a section or a building, and its pages |
+| `--c-editor-section-list` | `18rem` |  | The Sections and Planet screens' list of sections (or buildings), beside the selected one's pages and settings |
 
 ## `c.minimap` · Component
 

@@ -8,6 +8,7 @@ import { picture } from '../../content/pictures';
 import type { Article } from '../../content/schema';
 import { hubs } from '../model/structure';
 import { ownerLabel, ownerOf, references } from '../model/references';
+import { withBase } from '../../design/meta';
 
 export { references, type Reference } from '../model/references';
 
@@ -20,6 +21,44 @@ export function load(): Loaded {
     if (e instanceof ContentError) return { ok: false, issues: e.issues };
     throw e;
   }
+}
+
+/** How a section, or a building, lists its pages (documentation/sections/spec.md §3.4). */
+export const VIEW_OPTIONS = [
+  { value: 'list', label: 'List', description: 'Rows of titles, words first' },
+  { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
+  { value: 'bento', label: 'Bento', description: 'A lead, then halves and thirds' },
+];
+
+const KIND_LABEL: Record<Article['kind'], string> = { note: 'Article', page: 'Page', gallery: 'Gallery', talk: 'Talk' };
+
+/** A page as the Sections and Planet screens list it. */
+export interface ListedPage {
+  id: string;
+  title: string;
+  /** Article, Page, Gallery or Talk. */
+  kind: string;
+  /** Its status, as the Pages screen names it, and the tag's tone. */
+  status: string;
+  tone: 'positive' | 'neutral' | 'highlight';
+  published: boolean;
+  /** Its editor. */
+  href: string;
+}
+
+export function listedPage(index: ContentIndex, id: string): ListedPage {
+  const a = index.articles.get(id);
+  const published = !!a && isPublished(a);
+  const status = a?.status ?? 'draft';
+  return {
+    id,
+    title: a?.title ?? id,
+    kind: KIND_LABEL[a?.kind ?? 'note'],
+    status: published ? STATUS_LABEL.published : STATUS_LABEL[status],
+    tone: published ? 'positive' : status === 'draft' ? 'neutral' : 'highlight',
+    published,
+    href: withBase(`/_edit/articles/${id}/`),
+  };
 }
 
 export interface ArticleRow {

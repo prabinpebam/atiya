@@ -402,18 +402,26 @@ A `ready` from a building other than the open one is ignored, because it belongs
 
 ### 7.2 Sections
 
-The Sections screen ([edit mode §5](../editor/spec.md#5-sections-the-site-structure)) and the Planet screen (§7.4) are **one board**, `SectionBoard`. The only difference is that the site's sections are the owner's and the planet's buildings are the game's:
-- **A column per section**, in order, with its name, its address, a count and a settings button. Its pages are cards: a handle, the title (a link to the page's editor), Published or Draft, and its address. The last column holds the pages that aren't in one ("Not on the site").
-- **Many pages.** The columns wrap onto as many rows as they need, so every section is in view at once. A long column scrolls on its own within the screen, and **Find a page** narrows every column at once.
-- **Moving a page.** Drag its handle to another place in its column or to another column (the target column is outlined and a line marks the place; near an edge, the screen and the column scroll along). Alt+Up and Alt+Down move it within its column, Alt+Left and Alt+Right to the column beside. A click on the handle opens **Move**, with Move up, Move down and a button per column: the touch and keyboard route to everything a drag does.
+The Sections screen ([edit mode §5](../editor/spec.md#5-sections-the-site-structure)) and the Planet screen (§7.4) are **one pattern**, `SectionManager`: the sections listed on the left, and the chosen one on the right, with its pages and its settings as two tabs. The only difference is that the site's sections are the owner's and the planet's buildings are the game's:
+- **The list of sections** (on the left, in view as the screen scrolls): the home page, then each section in order with its address and how many pages it holds, then "Not on the site" (the pages that aren't in one). Choosing one shows it on the right; the address keeps the choice (`?section=`) and the tab (`&tab=settings`), so Back works and a save comes back to it. On a phone the list is above, and choosing a section brings its pages into view.
+- **Pages** is a list, one row per page, as long as the section needs: a handle, a checkbox labelled with the title (its kind and address under it), its status and Edit (its editor). It scales to many pages:
+  - **Find a page** and **Show** (every status, published, not published) narrow the list, and the count says how many show;
+  - **a selection** (the checkboxes, or Select all, which takes the pages that show) moves together: Move selected, or dragging any of its handles.
+- **Moving pages.**
+  - **Drag** a handle to another place in the list (a line marks where), or onto a section in the list on the left (outlined) to move it there, at the end. Near the top or bottom, the screen scrolls along; Esc cancels.
+  - **Alt+Up and Alt+Down** on a handle move the page within its section.
+  - **Move** (a click on the handle, or Move selected) has Move up, Move down (for one page) and a button for every section: the touch and keyboard route to everything a drag does.
 - **Published pages move freely** (D11). A page's address follows its section, so a move changes it, and the old address simply goes, with no redirect. Its slug and status can change at any time too. Only Delete asks for a draft (unpublish first).
-- **A section's settings** open from its column, in a dialog:
+- **Settings** is the chosen section's form:
   - **View** (List, Tiles, Bento) replaces Template.
   - **In the navigation** is a switch that adds the section to the top navigation (at the end) or removes it. It edits the same `menus.primary` as the Navigation screen.
-  - **Move left** and **Move right** reorder the sections.
-- **New section** asks for the title, the view, and whether it goes in the navigation (on by default). It's always a section under home, added last. **Home page** opens home's own settings.
+  - **Move up** and **Move down** reorder the sections (and Alt+Up and Alt+Down on a section in the list).
+  - The home page's settings are its title, menu label and summary; its Pages tab says it lists the sections rather than holding pages.
+- **New section** (under the list) asks for the title, the view, and whether it goes in the navigation (on by default). It's always a section under home, added last, and opens once it's made.
 
-Every operation on the structure keeps its other fields (`menus`) as they are, and moving a page keeps its node (V21). A refusal (V13, for instance) shows above the board, naming the page and the rule.
+Every operation on the structure keeps its other fields (`menus`) as they are, and moving a page keeps its node (V21). A refusal (V13, for instance) shows over the two columns, naming the page and the rule.
+
+**Why two columns, not a board.** A board (a column per section, its pages as cards) was tried first and dropped: its cards were cramped, and wrapping columns spread a section with many pages down the screen. A list of sections beside one section's list of pages keeps every section in reach as a drop target while the pages get a full-width row each, with room to find, filter and select.
 
 ### 7.3 Navigation (new screen, U5)
 
@@ -431,10 +439,11 @@ Every operation on the structure keeps its other fields (`menus`) as they are, a
 
 ### 7.4 Planet (new screen, U12)
 
-`/_edit/planet/` is the same board as Sections (§7.2), over the seven buildings, separate from the site's sections:
-- **A column per building**, with its name, kicker and settings (kicker, summary, view and "On the site": the `site` section, or Home). Its pages are cards, moved by dragging, by the keys or with Move, exactly as in Sections. The last column holds the pages that aren't in a building ("Not on the planet").
-- **Buildings can't be added, removed or reordered here.** The screen says so: they're the game's. So there's no New section and no Move left or right.
-- **The rules** (V13, V15) are checked on save. A refusal says why, naming the page and the building. A page that isn't on the site can't go in a building: place it in Sections first.
+`/_edit/planet/` is the same two columns as Sections (§7.2), over the seven buildings, separate from the site's sections:
+- **The list** holds the seven buildings, each with what it holds and how many pages, then "Not on the planet" (the pages that aren't in a building); the address keeps the choice (`?building=`).
+- **Pages** and **Settings** (kicker, summary, view and "On the site": the `site` section, or Home) work exactly as in Sections: drag, the keys, Move, Find, Show and a selection.
+- **Buildings can't be added, removed or reordered here.** The screen says so: they're the game's. So there's no New section and no Move up or down for a building.
+- **The rules** (V13, V15) are checked on save. A refusal says why, naming the page and the building. A page that isn't on the site can't go in a building (its handle and checkbox are off, and its row says to place it in Sections first).
 
 ### 7.5 A page's settings
 
@@ -549,6 +558,9 @@ Filled in as each phase lands.
   - **The rules in the editor:** taking a page on the planet off the site is refused with V13's reason; deleting a page takes it off the planet in the same write (S4).
   - **Tests:** unit (the page's building saved, moved, taken off, refused off the site, and a delete; `editorServer.test.ts`); E2E "editor": a page taken off one building and put in another from the list, a building's words, "On the planet" in the page's settings, a draft on the planet refused off the site, a delete taking it off, and axe on the new screen.
 - **One board (30 September 2026):** Sections and Planet became the same screen (§7.2, §7.4), and published pages move freely (D11).
-  - **The board** (`SectionBoard.astro`, `scripts/board.ts`): wrapping columns, cards with a handle, pointer drag with a ghost, a drop line and edge scrolling, Alt+arrows, the Move dialog and Find. It sends `board:move` (the page, where it was, where it goes); `scripts/sections.ts` turns that into `place` or `unplace`, `scripts/planet.ts` into `putIn` or `takeOff` (both now take a position). Settings are dialogs: `SectionForms.astro` (each section, home and New section) and `PlaceForms.astro` (each building). `StructureTree.astro` and `PlanetEditor.astro` are gone.
+  - **The board** (`SectionBoard.astro`, `scripts/board.ts`): a column per section with its pages as cards, dragged between columns. Replaced the same day (below).
   - **No redirects on moves:** the store no longer refuses a move, a rename, taking a page off the site or unpublishing because a page is published; `content/redirects.json` keeps only the classic site's addresses, and stale entries are skipped with a warning (V19). The page's settings no longer lock its slug, status or section.
-  - **Tests:** unit (a published page moves freely, and nothing is written for its old address; a stale redirect is a warning); E2E "editor": the Sections board (a new section moved left, a published page dragged with the mouse to another section, back with Move, on with Alt+Left, the old address a 404, no redirect written, Find), the Planet board (Move to and from a building, a building's settings, a draft refused off the site from the board), and axe on both.
+- **Two columns (30 September 2026):** the owner found the board's tiles a poor fit and asked for the earlier list of sections back, beside the chosen section's Pages and Settings tabs, with pages dragged onto a section in the list (§7.2, §7.4).
+  - **`SectionManager.astro` and `scripts/manager.ts`:** the list of sections (links; the choice and the tab in the address), the Tabs compound, each section's list of pages (a handle, a checkbox labelled with its title, its status, Edit), Find, Show, the selection, pointer drag (within the list, or onto a section; one page or the selection; a ghost with the count; edge scrolling; Esc cancels), Alt+Up and Alt+Down, and Move. It sends `manager:move` ({ pages, from, to, index }) and `manager:reorder` ({ section, by }); `scripts/sections.ts` turns a move into `placeAll` or `unplace`, `scripts/planet.ts` into `putAllIn` or `takeOff` (new: several pages placed together, each keeping its node). After a save the screen reloads with the focus where the change landed, and announces it.
+  - **Settings in the tab:** `SectionForms.astro` and `PlaceForms.astro` render each form, the chosen one shown; `NewSection.astro` is the New section button and its dialog, under the list. `SectionBoard.astro` and `board.ts` are gone; the `c.editor.board-column` token became `c.editor.section-list`.
+  - **Tests:** unit (`placeAll` and `putAllIn`: several pages, their order, their nodes, a place among those that stay; a published page moves freely, and nothing is written for its old address; a stale redirect is a warning); E2E "editor": the Sections screen (a new section opened, moved up in its settings and down with the keys; a published page dragged onto another section, its old address a 404 and no redirect written; back with Move; a page moved with Alt+Up and dragged within the list; Find and Show; two pages selected and moved with Move selected; a selection dragged onto a section), the Planet screen (Move to and from a building, a building's settings, a draft refused off the site), and axe on both.

@@ -1,0 +1,539 @@
+---
+/**
+ * Sections and their pages in two columns (documentation/sections/spec.md §7.2, §7.4): the sections (or the
+ * planet's buildings) listed on the left, and the chosen one on the right, with two tabs: Pages, a list
+ * that scales (Find, a status filter, and a selection that moves together), and Settings. A page moves by
+ * dragging its handle to another place in the list, or onto a section on the left; the handle's click (and
+ * Move selected) opens Move, which does the same without dragging; Alt with Up or Down moves it from the
+ * keyboard. The Sections and Planet screens both use it: only what a move writes, and whether sections can
+ * be added and reordered, differ.
+ * @tier editor
+ * @a11y The sections are a navigation list of links, the chosen one aria-current; its pages and its settings are tabs (APG).
+ * @a11y Each page's handle is a button named "Move <page>", its checkbox is labelled with its title, and Edit (described by the title) opens its editor.
+ * @a11y Every drag has a single-pointer alternative (Move, and its buttons) and keys (WCAG 2.5.7); a saved move is announced, and the count (a live region) says what the list shows or what's selected.
+ * @key Alt + Up / Down on a page's handle: moves the page up or down in its section
+ * @key Alt + Up / Down on a section: moves the section up or down (when sections can be reordered)
+ * @key Enter / Space on a page's handle: opens Move
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import Tabs from '../../components/compounds/Tabs.astro';
+import type { IconName } from '../../design/icons';
+import type { ListedPage } from '../server/screens';
+
+export interface ManagedPage extends ListedPage {
+  /** A line under its title: its address, or why it can't move here. */
+  note?: string;
+  /** Whether it can be moved or selected (a page that isn't on the site can't go in a building). */
+  movable: boolean;
+}
+
+export interface ManagedSection {
+  /** The section's (or building's) ID; the pages in none are `_off`. */
+  id: string;
+  title: string;
+  /** A line under its name: its address, or what it holds. */
+  meta?: string;
+  icon?: IconName;
+  /** Its pages, in order; left out when it holds none of its own (the home page). */
+  pages?: ManagedPage[];
+  /** Whether its settings form is in the settings slot (as `[data-manager-settings="<id>"]`). */
+  settings: boolean;
+  /** What the tab it has nothing for says instead (the home page's Pages, the pages-in-none's Settings). */
+  about?: string;
+}
+
+interface Props {
+  /** Which screen it is (`sections` or `planet`): the screen's script starts on `[data-manager="<screen>"]`. */
+  screen: string;
+  /** Names the list of sections ("The site's sections"). */
+  label: string;
+  /** The sections, in order, the pages-in-none last. */
+  sections: ManagedSection[];
+  /** The section shown first (from the address). */
+  selected: string;
+  /** The tab shown first: `pages` or `settings`. */
+  tab?: string;
+  /** The address's parameter for the chosen section (`section`, `building`). */
+  param: string;
+  /** Whether sections can be reordered here (Alt with Up or Down on a section). */
+  reorder?: boolean;
+}
+
+const { screen, label, sections, selected, tab = 'pages', param, reorder = false } = Astro.props;
+const current = sections.some((s) => s.id === selected) ? selected : sections[0]?.id;
+const SHOW = [
+  { value: 'all', label: 'Every status' },
+  { value: 'published', label: 'Published' },
+  { value: 'unpublished', label: 'Not published' },
+];
+const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
+---
+
+<div class="manager" data-manager={screen} data-param={param} data-reorder={reorder ? '' : undefined}>
+  <p class="issue" role="alert" data-manager-issue hidden></p>
+  <div class="split">
+    <nav class="list" aria-label={label} data-manager-sections data-scrollbar>
+      <ul class="sections">
+        {
+          sections.map((s) => (
+            <li>
+              <a class="section" href={`?${param}=${s.id}`} aria-current={s.id === current ? 'true' : undefined} data-manager-section={s.id} data-holds={s.pages ? '' : undefined} data-off={s.id === '_off' ? '' : undefined}>
+                {s.icon && <Icon name={s.icon} />}
+                <span class="section-words">
+                  <span class="section-name">{s.title}</span>
+                  {s.meta && <span class="section-meta">{s.meta}</span>}
+                </span>
+                {s.pages && <Tag size="sm">{String(s.pages.length)}</Tag>}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="list-tools">
+        <slot name="tools" />
+      </div>
+    </nav>
+
+    <div class="detail" data-manager-detail>
+      {
+        sections.map((s) => (
+          <header class="head" data-manager-head={s.id} hidden={s.id !== current}>
+            <Heading level={2} size="h4">
+              {s.title}
+            </Heading>
+            {s.meta && (
+              <Text variant="small" tone="muted">
+                {s.meta}
+              </Text>
+            )}
+          </header>
+        ))
+      }
+      <Tabs
+        label="The section"
+        id="manager-tabs"
+        selected={tab}
+        tabs={[
+          { id: 'pages', label: 'Pages', icon: 'article' },
+          { id: 'settings', label: 'Settings', icon: 'settings' },
+        ]}
+      >
+        <Fragment slot="pages">
+          {sections.map((s) => (
+            <div class="pages" data-manager-pages={s.id} hidden={s.id !== current}>
+              {s.pages ? (
+                <>
+                  <div class="filters">
+                    <div class="find">
+                      <TextField label="Find a page" type="search" icon="search" data-manager-find="" />
+                    </div>
+                    <Select label="Show" size="md" value="all" options={SHOW} data-manager-show="" />
+                  </div>
+                  <div class="selection">
+                    <Checkbox label="Select all" disabled={!s.pages.some((p) => p.movable)} data-manager-all="" />
+                    <span class="count" data-manager-count aria-live="polite">
+                      <Text as="span" variant="small" tone="muted">
+                        {count(s.pages.length)}
+                      </Text>
+                    </span>
+                    <Button variant="secondary" size="sm" icon="arrow-right" disabled data-manager-move-selected="">
+                      Move selected
+                    </Button>
+                  </div>
+                  <ol class="rows" data-manager-list={s.id} hidden={s.pages.length === 0}>
+                    {s.pages.map((p) => (
+                      <li class="row" data-manager-row={p.id} data-name={p.title} data-title={p.title.toLowerCase()} data-published={p.published ? '' : undefined}>
+                        <IconButton label={`Move ${p.title}`} icon="drag" size="sm" tooltip="none" disabled={!p.movable} data-manager-grip={p.id} />
+                        <span class="pick">
+                          <Checkbox label={p.title} hint={[p.kind, p.note].filter(Boolean).join(' · ')} disabled={!p.movable} data-manager-pick={p.id} />
+                        </span>
+                        <Tag size="sm" tone={p.tone}>
+                          {p.status}
+                        </Tag>
+                        <Button variant="quiet" size="sm" icon="edit" href={p.href} aria-describedby={`page-title-${p.id}`}>
+                          Edit
+                        </Button>
+                        <span class="sr-only" id={`page-title-${p.id}`}>
+                          {p.title}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                  <p class="empty" data-manager-empty hidden={s.pages.length > 0}>
+                    <Text as="span" variant="small" tone="muted">
+                      {s.id === '_off' ? 'None: every page has its place.' : 'No pages yet. From another section, drag a page onto this one in the list.'}
+                    </Text>
+                  </p>
+                  <p class="empty" data-manager-nomatch hidden>
+                    <Text as="span" variant="small" tone="muted">
+                      No page here matches.
+                    </Text>
+                  </p>
+                </>
+              ) : (
+                <Text tone="muted">{s.about}</Text>
+              )}
+            </div>
+          ))}
+        </Fragment>
+        <Fragment slot="settings">
+          <slot name="settings" />
+          {sections
+            .filter((s) => !s.settings)
+            .map((s) => (
+              <div data-manager-settings={s.id} hidden={s.id !== current}>
+                <Text tone="muted">{s.about}</Text>
+              </div>
+            ))}
+        </Fragment>
+      </Tabs>
+    </div>
+  </div>
+
+  <div class="ghost" data-manager-ghost hidden aria-hidden="true">
+    <span class="ghost-title" data-manager-ghost-title></span>
+    <span class="ghost-count" data-manager-ghost-count hidden></span>
+  </div>
+
+  <Dialog id="manager-move" title="Move" size="sm">
+    <div class="move">
+      <p class="move-name" data-manager-move-name>A page</p>
+      <div class="move-row" data-manager-move-steps>
+        <Button variant="secondary" size="sm" icon="arrow-up" data-manager-move-by="-1">Move up</Button>
+        <Button variant="secondary" size="sm" icon="arrow-down" data-manager-move-by="1">Move down</Button>
+      </div>
+      <Heading level={3} size="ui">Move to</Heading>
+      <ul class="move-to">
+        {
+          sections
+            .filter((s) => s.pages)
+            .map((s) => (
+              <li>
+                <Button variant="quiet" size="sm" data-manager-move-to={s.id}>
+                  {s.title}
+                </Button>
+              </li>
+            ))
+        }
+      </ul>
+    </div>
+  </Dialog>
+</div>
+
+<style>
+  .manager {
+    display: grid;
+    gap: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: var(--c-editor-section-list) minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  /* the sections stay in view (and scroll on their own) while a long list of pages scrolls past */
+  .list {
+    position: sticky;
+    inset-block-start: var(--space-4);
+    display: grid;
+    gap: var(--space-4);
+    max-block-size: calc(100dvh - var(--c-editor-topbar) - var(--space-8));
+    overflow: auto;
+    padding: var(--space-3);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .sections {
+    display: grid;
+    gap: var(--space-0-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .section {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--size-touch);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  @media (hover: hover) {
+    .section:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .section:active {
+    background: var(--color-bg-hover);
+  }
+
+  .section[aria-current='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .section:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: calc(var(--border-focus) * -1);
+  }
+
+  /* where a dragged page would go */
+  .section[data-drop-target] {
+    outline: var(--border-strong) solid var(--color-accent);
+    outline-offset: calc(var(--border-strong) * -1);
+  }
+
+  .section[data-off] {
+    margin-block-start: var(--space-2);
+  }
+
+  .section-words {
+    display: grid;
+    flex: 1;
+    min-inline-size: 0;
+  }
+
+  .section-name {
+    font-weight: var(--weight-semibold);
+  }
+
+  .section-meta {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .section[aria-current='true'] .section-meta {
+    color: inherit;
+  }
+
+  .list-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .detail {
+    display: grid;
+    gap: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .head[hidden],
+  .pages[hidden],
+  .row[hidden],
+  .empty[hidden] {
+    display: none;
+  }
+
+  .pages {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-3);
+  }
+
+  .find {
+    flex: 1;
+    min-inline-size: min(100%, var(--c-editor-section-list));
+  }
+
+  .selection {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .count {
+    flex: 1;
+  }
+
+  /* the pages, one row each, as a list that runs as long as it needs */
+  .rows {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    list-style: none;
+  }
+
+  .rows[hidden] {
+    display: none;
+  }
+
+  .row {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .row:first-child {
+    border-block-start: 0;
+  }
+
+  .row[data-picked] {
+    background: var(--color-accent-soft);
+  }
+
+  .row[data-dragging] {
+    opacity: var(--opacity-disabled);
+  }
+
+  .pick {
+    min-inline-size: 0;
+  }
+
+  .row[data-drop='before']::before,
+  .row[data-drop='after']::after {
+    content: '';
+    position: absolute;
+    inset-inline: var(--space-2);
+    block-size: var(--border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+  }
+
+  .row[data-drop='before']::before {
+    inset-block-start: calc(var(--border-strong) / -2);
+  }
+
+  .row[data-drop='after']::after {
+    inset-block-end: calc(var(--border-strong) / -2);
+  }
+
+  .empty {
+    margin: 0;
+  }
+
+  /* what's being dragged, beside the pointer (the script sets --x and --y) */
+  .ghost {
+    position: fixed;
+    inset-inline-start: var(--x);
+    inset-block-start: var(--y);
+    z-index: var(--layer-overlay);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    max-inline-size: var(--c-editor-section-list);
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-lg);
+    pointer-events: none;
+    transform: translate(var(--space-4), -50%);
+  }
+
+  .ghost[hidden],
+  .ghost-count[hidden] {
+    display: none;
+  }
+
+  .ghost-title {
+    overflow: hidden;
+    font-weight: var(--weight-medium);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ghost-count {
+    flex: none;
+    padding-inline: var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .move {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .move-name {
+    margin: 0;
+    font-weight: var(--weight-medium);
+  }
+
+  .move-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .move-row[hidden] {
+    display: none;
+  }
+
+  .move-to {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (max-width: 56rem) {
+    .split {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-6);
+    }
+
+    .list {
+      position: static;
+      max-block-size: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initManager } from '../scripts/manager';
+
+  each<HTMLElement>('[data-manager]', (root, signal) => initManager(root, signal));
+</script>

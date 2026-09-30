@@ -1,53 +1,61 @@
 ---
-/** Edit mode's sections: the site's sections and their pages, as a board (documentation/editor/spec.md §5). Dev only: injected by integrations/editor.mjs. */
+/** Edit mode's sections: the site's sections listed beside the chosen one's pages and settings (documentation/editor/spec.md §5). Dev only: injected by integrations/editor.mjs. */
 import EditorLayout from '../EditorLayout.astro';
-import SectionBoard, { type BoardColumn } from '../components/SectionBoard.astro';
+import SectionManager, { type ManagedSection } from '../components/SectionManager.astro';
 import SectionForms, { type SectionSettings } from '../components/SectionForms.astro';
+import NewSection from '../components/NewSection.astro';
 import ContentIssues from '../components/ContentIssues.astro';
-import Button from '../../components/fundamentals/Button.astro';
-import { load } from '../server/screens';
+import { listedPage, load } from '../server/screens';
 import { readDoc } from '../server/store';
 import { STRUCTURE } from '../server/articles';
 import { inMenu } from '../model/structure';
-import { isPublished } from '../../content/load';
-import { withBase } from '../../design/meta';
 import type { HubNode, SiteStructure } from '../../content/schema';
 
 export const prerender = false;
 
 const loaded = load();
 const doc = readDoc<SiteStructure>(STRUCTURE);
-let columns: BoardColumn[] = [];
+const tab = Astro.url.searchParams.get('tab') === 'settings' ? 'settings' : 'pages';
+let sections: ManagedSection[] = [];
 let settings: SectionSettings[] = [];
+let selected = '';
 if (loaded.ok && doc) {
   const index = loaded.index;
   const s = doc.value;
   const pathOf = (id: string) => index.routes.find((r) => r.node.id === id)?.path ?? '';
-  const sections = (s.home.children ?? []).filter((c): c is HubNode => c.kind === 'hub');
-  const editor = (id: string) => withBase(`/_edit/articles/${id}/`);
+  const hubs = (s.home.children ?? []).filter((c): c is HubNode => c.kind === 'hub');
   const placed = new Set<string>();
-  columns = sections.map((h) => ({
-    id: h.id,
-    title: h.title,
-    meta: pathOf(h.id),
-    settings: `section-settings-${h.id}`,
-    pages: (h.children ?? []).flatMap((c) => {
-      if (c.kind !== 'item') return [];
-      placed.add(c.item.id);
-      const a = index.articles.get(c.item.id);
-      return [{ id: c.item.id, title: a?.title ?? c.item.id, published: !!a && isPublished(a), href: editor(c.item.id), note: pathOf(c.id), movable: true }];
-    }),
-  }));
-  columns.push({
-    id: '_off',
-    title: 'Not on the site',
-    meta: 'Drafts, and pages without an address',
-    pages: [...index.articles.values()].filter((a) => !placed.has(a.id)).map((a) => ({ id: a.id, title: a.title, published: isPublished(a), href: editor(a.id), movable: true })),
-  });
+  sections = [
+    { id: s.home.id, title: 'Home page', meta: '/', icon: 'home', settings: true, about: 'The home page lists the sections, in their order here. It holds no pages of its own.' },
+    ...hubs.map(
+      (h): ManagedSection => ({
+        id: h.id,
+        title: h.title,
+        meta: pathOf(h.id),
+        icon: 'folder',
+        settings: true,
+        pages: (h.children ?? []).flatMap((c) => {
+          if (c.kind !== 'item') return [];
+          placed.add(c.item.id);
+          return [{ ...listedPage(index, c.item.id), note: pathOf(c.id), movable: true }];
+        }),
+      }),
+    ),
+    {
+      id: '_off',
+      title: 'Not on the site',
+      meta: 'Pages without a section',
+      settings: false,
+      about: 'These pages have no section, so no address. Move one into a section to give it one.',
+      pages: [...index.articles.values()].filter((a) => !placed.has(a.id)).map((a) => ({ ...listedPage(index, a.id), note: 'No address yet', movable: true })),
+    },
+  ];
   settings = [
     { id: s.home.id, title: s.home.title, navLabel: s.home.navLabel, summary: s.home.summary, slug: '', view: 'tiles', inNav: false, path: '/', home: true },
-    ...sections.map((h) => ({ id: h.id, title: h.title, navLabel: h.navLabel, summary: h.summary, slug: h.slug, view: h.view ?? 'tiles', inNav: inMenu(s, h.id), path: pathOf(h.id) })),
+    ...hubs.map((h) => ({ id: h.id, title: h.title, navLabel: h.navLabel, summary: h.summary, slug: h.slug, view: h.view ?? 'tiles', inNav: inMenu(s, h.id), path: pathOf(h.id) })),
   ];
+  const asked = Astro.url.searchParams.get('section');
+  selected = sections.some((x) => x.id === asked) ? asked! : (hubs[0]?.id ?? s.home.id);
 }
 ---
 
@@ -55,23 +63,14 @@ if (loaded.ok && doc) {
   title="Sections"
   screen="sections"
   heading="Sections"
-  intro="The site's sections and their pages. Drag a page to another section, or to another place in its own. A page that moves gets its new address; the old one simply goes."
+  intro="The site's sections and their pages. Choose a section to see its pages and its settings. To move a page to another section, drag it onto that section in the list, or use Move. A page that moves gets its new address; the old one simply goes."
 >
   {
     loaded.ok && doc ? (
-      <>
-        <SectionBoard label="The site's sections" columns={columns}>
-          <Fragment slot="tools">
-            <Button variant="secondary" size="sm" icon="home" data-dialog-open={`section-settings-${doc.value.home.id}`}>
-              Home page
-            </Button>
-            <Button variant="primary" size="sm" icon="plus" data-dialog-open="new-section">
-              New section
-            </Button>
-          </Fragment>
-        </SectionBoard>
-        <SectionForms sections={settings} structure={doc.value} version={doc.version} />
-      </>
+      <SectionManager screen="sections" label="The site's sections" param="section" sections={sections} selected={selected} tab={tab} reorder>
+        <NewSection slot="tools" />
+        <SectionForms slot="settings" sections={settings} selected={selected} structure={doc.value} version={doc.version} />
+      </SectionManager>
     ) : (
       <ContentIssues issues={loaded.ok ? [{ file: 'content/structures/site.json', message: 'missing' }] : loaded.issues} />
     )

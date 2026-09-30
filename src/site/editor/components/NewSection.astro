@@ -1,0 +1,51 @@
+---
+/**
+ * New section (documentation/editor/spec.md §5): a button beside the list of sections, and the dialog it
+ * opens, asking for the title, the summary, the view and whether it goes in the navigation. The section goes
+ * after the others, directly under the home page (the site is three levels: V22), and opens once it's made.
+ * @tier editor
+ * @a11y The dialog is a form; a refusal shows in it, as an alert, and the focus returns to the button when it closes.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import { VIEW_OPTIONS as VIEWS } from '../server/screens';
+
+---
+
+<Button variant="secondary" size="sm" icon="plus" data-dialog-open="new-section">New section</Button>
+<Dialog id="new-section" title="New section" size="md">
+  <form class="form" data-sections-new novalidate>
+    <TextField label="Title" name="title" required hint="Its heading, and its address made from it." />
+    <TextField label="Summary" name="summary" multiline rows={2} optional />
+    <Select label="View" name="view" value="tiles" options={VIEWS} />
+    <Switch label="In the navigation" name="inNav" checked data-sections-in-nav="" />
+    <Text variant="small" tone="muted">It goes after the other sections, under the home page.</Text>
+    <p class="issue" role="alert" data-editor-form-issue hidden></p>
+    <div class="actions">
+      <Button variant="primary" type="submit" icon="plus">Add the section</Button>
+    </div>
+  </form>
+</Dialog>
+
+<style>
+  .form {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: end;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+</style>

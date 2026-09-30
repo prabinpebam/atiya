@@ -8,7 +8,7 @@ import * as ops from '../../src/site/editor/model/ops';
 import * as paste from '../../src/site/editor/model/paste';
 import * as planet from '../../src/site/editor/model/planet';
 import { inlineOf, markdownOf, plainOf, type MiniNode } from '../../src/site/editor/model/dom';
-import { addHub, addLink, inMenu, menuOf, moveEntry, nodeOf, childSlugs, findHub, hubs, nodeIds, place, relabelEntry, removeEntry, reorder, sectionOf, setInMenu, unplace, updateHub } from '../../src/site/editor/model/structure';
+import { addHub, addLink, inMenu, menuOf, moveEntry, nodeOf, childSlugs, findHub, hubs, nodeIds, place, placeAll, relabelEntry, removeEntry, reorder, sectionOf, setInMenu, unplace, updateHub } from '../../src/site/editor/model/structure';
 import { slugify, today, unique } from '../../src/site/editor/model/ids';
 import { actionsUrl, groupChanges, resourceName, resourceOf, suggestMessage, type Titles } from '../../src/site/editor/model/names';
 import { ownerLabel, ownerOf, references } from '../../src/site/editor/model/references';
@@ -423,6 +423,23 @@ describe('the site structure', () => {
     const off = unplace(STRUCTURE, { type: 'article', id: 'b' });
     expect(off.menus?.primary).toEqual([{ node: 'lead' }, { label: 'GitHub', href: 'https://github.com/x' }]);
   });
+
+  it('moves several pages together, in the order given, each with its node, to a place among the pages that stay (a selection in the list)', () => {
+    const A = { type: 'article', id: 'a' } as const;
+    const B = { type: 'article', id: 'b' } as const;
+    const NEW = { type: 'article', id: 'new' } as const;
+    const both = placeAll(STRUCTURE, 'notes', [{ item: B, nodeId: 'x' }, { item: A, nodeId: 'y' }]);
+    expect(findHub(both, 'notes')?.children?.map((c) => c.id)).toEqual(['b', 'a']);
+    expect(findHub(both, 'lead')?.children).toEqual([]);
+    expect(nodeOf(both, B)).toEqual(nodeOf(STRUCTURE, B));
+    expect(both.menus).toEqual(STRUCTURE.menus);
+    const three = placeAll(STRUCTURE, 'lead', [{ item: NEW, nodeId: 'new' }], 1);
+    expect(findHub(three, 'lead')?.children?.map((c) => c.id)).toEqual(['a', 'new', 'b']);
+    // a and new leave, b stays: index 1 is after b
+    const after = placeAll(three, 'lead', [{ item: A, nodeId: 'a' }, { item: NEW, nodeId: 'new' }], 1);
+    expect(findHub(after, 'lead')?.children?.map((c) => c.id)).toEqual(['b', 'a', 'new']);
+    expect(place(STRUCTURE, 'notes', A, 'a')).toEqual(placeAll(STRUCTURE, 'notes', [{ item: A, nodeId: 'a' }]));
+  });
 });
 
 describe('the navigation, as edit mode changes it (documentation/sections/spec.md §7.3)', () => {
@@ -472,6 +489,13 @@ describe('the planet, as edit mode changes it (documentation/sections/spec.md §
     expect(planet.putIn(PLANET, 'library', 'c').places[1].pages).toEqual([{ type: 'article', id: 'c' }]);
     expect(planet.takeOff(PLANET, 'a').places[0].pages.map((r) => r.id)).toEqual(['b']);
     expect(JSON.stringify(PLANET)).toBe(before);
+  });
+
+  it('puts several pages in a building together, in the order given, at a place among the pages that stay', () => {
+    const ids = (p: PlanetStructure) => p.places.map((x) => x.pages.map((r) => r.id));
+    expect(ids(planet.putAllIn(PLANET, 'library', ['b', 'a']))).toEqual([[], ['b', 'a']]);
+    expect(ids(planet.putAllIn(PLANET, 'workshop', ['a'], 1))).toEqual([['b', 'a'], []]);
+    expect(ids(planet.putAllIn(PLANET, 'workshop', ['b', 'c'], 0))).toEqual([['b', 'c', 'a'], []]);
   });
 
   it("moves a page within its building's ends, and changes a building's words (an empty site goes back to none)", () => {

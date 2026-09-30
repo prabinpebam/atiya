@@ -1,20 +1,18 @@
 ---
 /**
- * The Sections screen's settings (documentation/editor/spec.md §5): a dialog for each section, and one for
- * the home page, opened from its column on the board (or the board's Home page button); and New section.
- * A section's settings are its title, menu label, summary, address (slug), view and whether it's in the
- * navigation; its place among the sections moves with Move left and Move right. Its address can change at
- * any time, published pages and all: the old addresses simply go.
+ * The Sections screen's settings (documentation/editor/spec.md §5): a form for the home page and for each
+ * section, shown in the Settings tab when it's the chosen one. A section's settings are its title, menu
+ * label, summary, address (slug), view and whether it's in the navigation; its place among the sections
+ * moves with Move up and Move down. Its address can change at any time, published pages and all: the old
+ * addresses simply go.
  * @tier editor
- * @a11y Each dialog is a form named after its section; a refusal shows in it, as an alert.
+ * @a11y Each form is named after its section; a refusal shows in it, as an alert.
  */
 import TextField from '../../components/fundamentals/TextField.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
 import Button from '../../components/fundamentals/Button.astro';
-import Text from '../../components/fundamentals/Text.astro';
-import Dialog from '../../components/compounds/Dialog.astro';
-import type { SelectOption } from '../../components/fundamentals/Select.astro';
+import { VIEW_OPTIONS as VIEWS } from '../server/screens';
 import type { SiteStructure } from '../../content/schema';
 
 export interface SectionSettings {
@@ -34,17 +32,14 @@ export interface SectionSettings {
 interface Props {
   /** The home page, then the sections in order. */
   sections: SectionSettings[];
+  /** The chosen section, whose form shows. */
+  selected: string;
   /** The site structure and its version, for the screen's script. */
   structure: SiteStructure;
   version: string;
 }
 
-const { sections, structure, version } = Astro.props;
-const VIEWS: SelectOption[] = [
-  { value: 'list', label: 'List', description: 'Rows of titles, words first' },
-  { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
-  { value: 'bento', label: 'Bento', description: 'A lead, then halves and thirds' },
-];
+const { sections, selected, structure, version } = Astro.props;
 const order = sections.filter((s) => !s.home);
 const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
 ---
@@ -52,7 +47,7 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
 <div data-editor-sections>
   {
     sections.map((s) => (
-      <Dialog id={`section-settings-${s.id}`} title={s.home ? 'The home page' : `${s.title} settings`} size="md">
+      <div data-manager-settings={s.id} hidden={s.id !== selected}>
         <form class="form" data-sections-hub={s.id} novalidate aria-label={`${s.title} settings`}>
           <TextField label="Title" name="title" value={s.title} required hint={s.home ? 'The name over the home page.' : 'Its heading.'} />
           <TextField label="Menu label" name="navLabel" value={s.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs (at most 24 characters)." />
@@ -62,11 +57,11 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
           {!s.home && <Switch label="In the navigation" name="inNav" checked={s.inNav} data-sections-in-nav="" />}
           {!s.home && (
             <div class="row">
-              <Button variant="secondary" size="sm" icon="arrow-left" disabled={order.indexOf(s) === 0} data-sections-move="left" data-node={s.id}>
-                Move left
+              <Button variant="secondary" size="sm" icon="arrow-up" disabled={order.indexOf(s) === 0} data-sections-move="up" data-node={s.id}>
+                Move up
               </Button>
-              <Button variant="secondary" size="sm" icon="arrow-right" disabled={order.indexOf(s) === order.length - 1} data-sections-move="right" data-node={s.id}>
-                Move right
+              <Button variant="secondary" size="sm" icon="arrow-down" disabled={order.indexOf(s) === order.length - 1} data-sections-move="down" data-node={s.id}>
+                Move down
               </Button>
             </div>
           )}
@@ -77,22 +72,9 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
             </Button>
           </div>
         </form>
-      </Dialog>
+      </div>
     ))
   }
-  <Dialog id="new-section" title="New section" size="md">
-    <form class="form" data-sections-new novalidate>
-      <TextField label="Title" name="title" required hint="Its heading, and its address made from it." />
-      <TextField label="Summary" name="summary" multiline rows={2} optional />
-      <Select label="View" name="view" value="tiles" options={VIEWS} />
-      <Switch label="In the navigation" name="inNav" checked data-sections-in-nav="" />
-      <Text variant="small" tone="muted">It goes after the other sections, under the home page.</Text>
-      <p class="issue" role="alert" data-editor-form-issue hidden />
-      <div class="actions">
-        <Button variant="primary" type="submit" icon="plus">Add the section</Button>
-      </div>
-    </form>
-  </Dialog>
   <script is:inline type="application/json" data-editor-sections-state set:html={state} />
 </div>
 
@@ -110,7 +92,6 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
 
   .actions {
     display: flex;
-    justify-content: end;
   }
 
   .issue {
@@ -125,5 +106,6 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
   import { each } from '../../scripts/page';
   import { initSections } from '../scripts/sections';
 
-  each<HTMLElement>('[data-editor-sections]', (root, signal) => initSections(root, signal));
+  // the whole screen: its moves come from the list of pages, and New section from beside the sections
+  each<HTMLElement>('[data-manager="sections"]', (root, signal) => initSections(root, signal));
 </script>

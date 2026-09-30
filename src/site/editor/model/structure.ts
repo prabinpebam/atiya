@@ -105,12 +105,21 @@ export function unplace(structure: SiteStructure, item: ItemRef): SiteStructure 
  * there with its node (V21); a new one gets a node with `nodeId`.
  */
 export function place(structure: SiteStructure, hubId: string, item: ItemRef, nodeId: string, index?: number): SiteStructure {
-  const node: ItemNode = nodeOf(structure, item) ?? { id: nodeId, kind: 'item', item: { type: 'article', id: item.id } };
-  const without = detach(structure, item);
+  return placeAll(structure, hubId, [{ item, nodeId }], index);
+}
+
+/**
+ * Places several items in a hub together, in the order given, from `index` among the children that stay
+ * (the end if left out): each one already placed, here or anywhere else, moves with its node (V21); a new one
+ * gets a node with its `nodeId`.
+ */
+export function placeAll(structure: SiteStructure, hubId: string, items: { item: ItemRef; nodeId: string }[], index?: number): SiteStructure {
+  const nodes: ItemNode[] = items.map(({ item, nodeId }) => nodeOf(structure, item) ?? { id: nodeId, kind: 'item', item: { type: 'article', id: item.id } });
+  const without = items.reduce((s, { item }) => detach(s, item), structure);
   return mapHubs(without, (h) => {
     if (h.id !== hubId) return h;
     const children = [...(h.children ?? [])];
-    children.splice(index === undefined ? children.length : Math.max(0, Math.min(index, children.length)), 0, clone(node));
+    children.splice(index === undefined ? children.length : Math.max(0, Math.min(index, children.length)), 0, ...nodes.map(clone));
     return { ...h, children };
   });
 }
