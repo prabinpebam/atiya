@@ -18,6 +18,8 @@ interface State {
   version: string;
   structureVersion: string | null;
   section: string;
+  planetVersion: string | null;
+  place: string;
   published: boolean;
   article: Article;
   canvas: string;
@@ -27,6 +29,7 @@ interface State {
 type Refresh = { canvas?: boolean; outline?: boolean; inspector?: boolean };
 type Pick = { mode: 'single' | 'multiple'; min: number; title: string; onChoose: (ids: string[]) => void };
 const STRUCTURE = '/content/structures/site.json';
+const PLANET = '/content/structures/planet.json';
 const ALL: Refresh = { canvas: true, outline: true, inspector: true };
 
 export function initEditor(root: HTMLElement, signal: AbortSignal) {
@@ -63,21 +66,29 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   updateUndo();
 
   // ---------- saving: one queue, never two at once ----------
-  type Job = { section?: string | null; refresh: Refresh };
+  type Job = { section?: string | null; place?: string | null; refresh: Refresh };
   const afterReady: (() => void)[] = [];
   const queue = new SaveQueue<Job>(
-    (waiting, request) => ({ ...(waiting ?? {}), ...(request.section !== undefined ? { section: request.section } : {}), refresh: { ...(waiting?.refresh ?? {}), ...request.refresh } }),
+    (waiting, request) => ({
+      ...(waiting ?? {}),
+      ...(request.section !== undefined ? { section: request.section } : {}),
+      ...(request.place !== undefined ? { place: request.place } : {}),
+      refresh: { ...(waiting?.refresh ?? {}), ...request.refresh },
+    }),
     async (job, more) => {
       announce('Saving\u2026');
       const r = await api<{ article: Article }>('PUT', `articles/${state.id}`, {
         article: doc,
         ...(job.section !== undefined ? { section: job.section } : {}),
-        ifMatch: { [state.key]: state.version, ...(state.structureVersion ? { [STRUCTURE]: state.structureVersion } : {}) },
+        ...(job.place !== undefined ? { place: job.place } : {}),
+        ifMatch: { [state.key]: state.version, ...(state.structureVersion ? { [STRUCTURE]: state.structureVersion } : {}), ...(state.planetVersion ? { [PLANET]: state.planetVersion } : {}) },
       });
       if (r.ok) {
         state.version = r.data.versions?.[state.key] ?? state.version;
         if (r.data.versions?.[STRUCTURE]) state.structureVersion = r.data.versions[STRUCTURE];
+        if (r.data.versions?.[PLANET]) state.planetVersion = r.data.versions[PLANET];
         if (job.section !== undefined) state.section = job.section ?? '';
+        if (job.place !== undefined) state.place = job.place ?? '';
         const server = r.data.article;
         // edits made while this save was in flight are newer than the server's copy: keep them
         doc = more() ? { ...doc, updatedAt: server.updatedAt, ...(server.publishedAt ? { publishedAt: server.publishedAt } : {}) } : server;
@@ -98,7 +109,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       return 'failed';
     },
   );
-  const save = (opts: { section?: string | null; refresh?: Refresh } = {}) => queue.push({ ...(opts.section !== undefined ? { section: opts.section } : {}), refresh: opts.refresh ?? {} });
+  const save = (opts: { section?: string | null; place?: string | null; refresh?: Refresh } = {}) =>
+    queue.push({ ...(opts.section !== undefined ? { section: opts.section } : {}), ...(opts.place !== undefined ? { place: opts.place } : {}), refresh: opts.refresh ?? {} });
 
   // ---------- refreshing the outline, the inspector and the canvas ----------
   const reloadCanvas = () => frame.contentWindow?.location.reload();
@@ -180,13 +192,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   };
 
   // ---------- changes ----------
-  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; history?: boolean; picked?: number[] } = {}) => {
+  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; place?: string | null; history?: boolean; picked?: number[] } = {}) => {
     if (opts.history !== false) checkpoint();
     doc = next;
     if (opts.select !== undefined) selected = opts.select;
     picked = new Set(opts.picked ?? []);
     if (!opts.picked) anchor = selected;
-    void save({ refresh, ...(opts.section !== undefined ? { section: opts.section } : {}) });
+    void save({ refresh, ...(opts.section !== undefined ? { section: opts.section } : {}), ...(opts.place !== undefined ? { place: opts.place } : {}) });
   };
   const body = (b: Block[]) => ({ ...doc, body: b });
   const blockOp = (i: number, op: 'up' | 'down' | 'duplicate' | 'delete') => {
@@ -471,6 +483,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       value = v;
     } else value = t.value.trim() === '' ? undefined : t.value;
     if (t.name === '__section') return change(doc, ALL, { section: (value as string | undefined) ?? null });
+    if (t.name === '__place') return change(doc, { inspector: true }, { place: (value as string | undefined) ?? null });
     const renders = t.name.startsWith('body.') || t.name.startsWith('hero.') || ['title', 'summary', 'publishedAt', 'kind'].includes(t.name);
     change(ops.setPath(doc, t.name, value), { canvas: renders, outline: t.name.startsWith('body.') });
   });

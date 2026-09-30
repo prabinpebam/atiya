@@ -3,8 +3,8 @@
  * must stay true: new IDs and slugs, the dates, the section an article is placed in, and the locks on a
  * published article. Every change is one store transaction.
  */
-import { article as articleSchema, type Article, type PlanetStructure, type SiteStructure } from '../../content/schema';
-import { placeOfPage, takeOff } from '../model/planet';
+import { PLACE_IDS, article as articleSchema, type Article, type PlaceId, type PlanetStructure, type SiteStructure } from '../../content/schema';
+import { placeOfPage, putIn, takeOff } from '../model/planet';
 import { isPublished } from '../../content/load';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { slugify, today, unique } from '../model/ids';
@@ -34,6 +34,8 @@ export interface SaveArticle {
   article: Article;
   /** The section (hub id) to place it in, null to take it off the site; left out, it stays where it is. */
   section?: string | null;
+  /** The building to put it in on the planet, null to take it off the planet; left out, it stays where it is. */
+  place?: string | null;
   ifMatch: Record<string, string | null>;
 }
 
@@ -66,6 +68,18 @@ export async function saveArticle(req: SaveArticle): Promise<Result & { article?
       const moved = req.section === null ? unplace(s.value, ref) : place(s.value, req.section, ref, unique(req.id, nodeIds(unplace(s.value, ref))));
       changes.push({ key: STRUCTURE, bytes: jsonBytes(moved) });
       ifMatch[STRUCTURE] = req.ifMatch[STRUCTURE] ?? s.version;
+    }
+  }
+  // on the planet: one transaction with the article and its section, so V13 (a page on the planet is on the
+  // site) is checked on the result (documentation/sections/spec.md §7.6)
+  if (req.place !== undefined) {
+    const planet = readDoc<PlanetStructure>(PLANET);
+    if (!planet) return refuse(PLANET, 'missing');
+    if ((placeOfPage(planet.value, req.id) ?? null) !== req.place) {
+      if (req.place !== null && !(PLACE_IDS as readonly string[]).includes(req.place)) return refuse(PLANET, `"${req.place}" isn't a building`, 'place');
+      const moved = req.place === null ? takeOff(planet.value, req.id) : putIn(planet.value, req.place as PlaceId, req.id);
+      changes.push({ key: PLANET, bytes: jsonBytes(moved) });
+      ifMatch[PLANET] = req.ifMatch[PLANET] ?? planet.version;
     }
   }
   const r = await commit({ changes, ifMatch });

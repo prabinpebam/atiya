@@ -37,13 +37,17 @@ interface Props {
   sections: SelectOption[];
   /** The section it's in ('' for none). */
   section: string;
+  /** The planet's buildings it can go in. */
+  places: SelectOption[];
+  /** The building it's in on the planet ('' for none). */
+  place: string;
   /** Published: its slug, status and section are fixed. */
   published: boolean;
   /** Its address on the site, when placed. */
   path: string | null;
 }
 
-const { article, media, sections, section, published, path } = Astro.props;
+const { article, media, sections, section, places, place, published, path } = Astro.props;
 const WIDTHS: SelectOption[] = [
   { value: 'content', label: 'In the column', description: 'As wide as the text' },
   { value: 'popout', label: 'Stepping out', description: 'A little wider than the text' },
@@ -245,6 +249,7 @@ const STATUS: SelectOption[] = [
       <Select label="Status" name="status" id="page-status" value={article.status} disabled={published} options={STATUS} hint={published ? "Fixed while it's published." : 'Published articles go on the site when you publish.'} />
       <Select label="Visibility" name="visibility" id="page-visibility" value={article.visibility} options={[{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }]} />
       <Select label="Section" name="__section" id="page-section" value={section} disabled={published} options={[{ value: '', label: 'Not on the site yet' }, ...sections]} hint={published ? "Fixed while it's published." : 'Where it sits on the site, and so its address.'} />
+      <Select label="On the planet" name="__place" id="page-place" value={place} options={[{ value: '', label: 'Not on the planet', description: 'Only on the site' }, ...places]} hint="The building it's read in on the planet. It needs its page on the site too." />
 
       <div class="media-field">
         <span class="field-label">Lead picture</span>

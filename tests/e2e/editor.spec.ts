@@ -401,6 +401,58 @@ test.describe('editor', () => {
     expect(JSON.stringify(readJson(join(FIXTURE, 'content/structures/site.json')))).not.toContain(copy);
   });
 
+  test('planet: pages put in buildings, moved and taken off, apart from the site; a page\'s own "On the planet"; the rules refuse, and a delete takes a page off', async ({ page }) => {
+    const planet = () => readJson(join(FIXTURE, 'content/structures/planet.json')).places as { id: string; kicker: string; pages: { id: string }[] }[];
+    const pagesOf = (id: string) => planet().find((p) => p.id === id)!.pages.map((r) => r.id);
+    const site = () => JSON.stringify(readJson(join(FIXTURE, 'content/structures/site.json')));
+    const before = site();
+    expect(pagesOf('lighthouse')).toEqual([ARTICLE]);
+
+    // off the Lighthouse, then into the Workshop from "Pages not on the planet": the site doesn't change
+    await page.goto('/_edit/planet/');
+    await page.getByRole('button', { name: 'Take Do what makes you proud off the planet' }).click();
+    await expect.poll(() => pagesOf('lighthouse')).toEqual([]);
+    await page.locator(`[data-planet-put="${ARTICLE}"] [role="combobox"]`).click();
+    await page.getByRole('option', { name: /^Workshop/ }).click();
+    await expect.poll(() => pagesOf('workshop')).toEqual([ARTICLE]);
+    expect(site()).toBe(before);
+
+    // a building's own words
+    const form = page.locator('[data-planet-place="workshop"]');
+    await form.getByLabel('What it holds').fill('Case studies');
+    await form.getByRole('button', { name: 'Save the building' }).click();
+    await expect.poll(() => planet().find((p) => p.id === 'workshop')!.kicker).toBe('Case studies');
+
+    // the page's settings: back to the Lighthouse, saved with the page
+    await openArticle(page);
+    await page.getByRole('tab', { name: 'Page' }).click();
+    await page.getByRole('combobox', { name: 'On the planet' }).click();
+    await page.getByRole('option', { name: /^Lighthouse/ }).click();
+    await expect.poll(() => pagesOf('lighthouse')).toEqual([ARTICLE]);
+    expect(pagesOf('workshop')).toEqual([]);
+
+    // a draft on the planet can't leave the site (V13), and deleting it takes it off the planet
+    const copy = `${ARTICLE}-copy`;
+    await page.goto('/_edit/articles/');
+    await page.locator(`[data-editor-duplicate="${ARTICLE}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`/_edit/articles/${copy}/$`));
+    await page.goto('/_edit/planet/');
+    const add = page.locator('[data-planet-add="library"]');
+    await add.getByRole('combobox').click();
+    await page.getByRole('option', { name: /^Do what makes you proud \(copy\)/ }).click();
+    await add.getByRole('button', { name: 'Add page' }).click();
+    await expect.poll(() => pagesOf('library')).toEqual([copy]);
+    await page.goto('/_edit/sections/');
+    await page.getByRole('button', { name: 'Take Do what makes you proud (copy) off the site' }).click();
+    await expect(page.getByText(/isn't on the site; a page on the planet needs its page on the site/).first()).toBeVisible();
+    expect(site()).toContain(`"id":"${copy}"`);
+    await page.goto('/_edit/articles/');
+    await page.locator(`[data-editor-delete="${copy}"]`).click();
+    await page.locator('#delete-article').getByRole('button', { name: 'Delete the draft' }).click();
+    await expect(page).toHaveURL(/\/_edit\/articles\/$/);
+    await expect.poll(() => pagesOf('library')).toEqual([]);
+  });
+
   test('media: an upload becomes a WebP master with its alt text, usable at once; its details save; a used picture cannot be deleted', async ({ page }) => {
     await page.goto('/_edit/media/');
     await page.getByText('Upload a picture').click();
@@ -565,7 +617,7 @@ test.describe('editor', () => {
   });
 
   test('every screen passes axe, in light and in dark', async ({ page }) => {
-    const screens = ['/_edit/', '/_edit/articles/', `/_edit/articles/${ARTICLE}/`, '/_edit/sections/', '/_edit/navigation/', `/_edit/media/?id=articles/${ARTICLE}/tshirt`, '/_edit/settings/', '/_edit/publish/'];
+    const screens = ['/_edit/', '/_edit/articles/', `/_edit/articles/${ARTICLE}/`, '/_edit/sections/', '/_edit/navigation/', '/_edit/planet/', `/_edit/media/?id=articles/${ARTICLE}/tshirt`, '/_edit/settings/', '/_edit/publish/'];
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
       for (const path of screens) {

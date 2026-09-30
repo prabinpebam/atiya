@@ -114,7 +114,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 
 **Not in this version**
 - Designing: new layouts, colours, fonts or free positioning. Those belong to the design system and its code.
-- The planet's structure (`structures/planet`): what each building holds is content now, and its screen comes in the [sections plan's S6](../sections/plan.md#s6-edit-mode-for-the-planet-u12). The buildings themselves are the game's.
+- Adding, removing or moving the planet's buildings: they're the game's ([sections spec §5.1](../sections/spec.md#51-buildings-are-fixed-whats-in-them-is-content)). What each holds is edited on the Planet screen.
 - Menus beyond the header's navigation: the footer's links and the header's action stay in code. The navigation itself is `menus.primary`, edited on the Navigation screen ([sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)).
 - Several people at once, roles and permissions, scheduled publishing and comments: there is one owner, and git is the history.
 - Video files: videos are YouTube or Vimeo embeds with a local poster ([media §4](../content/media.md#4-formats-and-budgets)).
@@ -127,6 +127,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 | Pages | `/_edit/articles/` | Every page of every kind (Article, Page, Gallery), with its kind, section, status and last update; search and filters; new, duplicate and delete |
 | Article editor | `/_edit/articles/<id>/` | The canvas, the outline and the inspector (§3) |
 | Sections | `/_edit/sections/` | The site structure: sections, what each holds and in what order, each one's view and whether it's in the navigation; pages not yet on the site (§5) |
+| Planet | `/_edit/planet/` | The planet's seven buildings: each one's words, view and section on the site, its pages in order, and the pages not on the planet ([sections spec §7.4](../sections/spec.md#74-planet-new-screen-u12)) |
 | Navigation | `/_edit/navigation/` | The top navigation: a preview of the header, its entries in order (sections, pages, custom links), their labels, and adding, moving and removing them ([sections spec §7.3](../sections/spec.md#73-navigation-new-screen-u5)) |
 | Media | `/_edit/media/` | The media library: upload, alt text, captions, credits, focus points, where each picture is used (§6) |
 | Settings | `/_edit/settings/` | The site settings and the owner's profile |

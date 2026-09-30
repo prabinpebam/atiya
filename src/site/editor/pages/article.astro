@@ -19,13 +19,14 @@ import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import { load, mediaCards, sectionOptions, STATUS_LABEL } from '../server/screens';
 import { readDoc } from '../server/store';
-import { STRUCTURE, articleKey } from '../server/articles';
+import { PLANET, STRUCTURE, articleKey } from '../server/articles';
 import { isPublished } from '../../content/load';
 import { getPlacement } from '../../content/repository';
 import { sectionOf } from '../model/structure';
+import { placeOfPage } from '../model/planet';
 import { excerptOf, kindOf } from '../model/ops';
 import { withBase } from '../../design/meta';
-import type { Article, Block, SiteStructure } from '../../content/schema';
+import type { Article, Block, PlanetStructure, SiteStructure } from '../../content/schema';
 import type { IconName } from '../../design/icons';
 
 export const prerender = false;
@@ -38,6 +39,9 @@ const structure = readDoc<SiteStructure>(STRUCTURE);
 const article = doc.value;
 const published = isPublished(article);
 const section = structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '';
+const planet = readDoc<PlanetStructure>(PLANET);
+const place = planet ? (placeOfPage(planet.value, id) ?? '') : '';
+const places = (planet?.value.places ?? []).map((p) => ({ value: p.id, label: p.title, description: p.kicker }));
 const route = loaded.ok ? getPlacement('article', id) : undefined;
 
 const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', facts: 'facts', tiles: 'tiles' };
@@ -52,6 +56,8 @@ const state = {
   version: doc.version,
   structureVersion: structure?.version ?? null,
   section,
+  planetVersion: planet?.version ?? null,
+  place,
   published,
   article,
   canvas: withBase(`/_edit/canvas/articles/${id}/`),
@@ -63,7 +69,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
 
 <EditorLayout title={article.title} screen="article" nav={false}>
   <Fragment slot="title">
-    <Link href={withBase('/_edit/articles/')} variant="quiet">Articles</Link>
+    <Link href={withBase('/_edit/articles/')} variant="quiet">Pages</Link>
     <Text as="span" variant="ui"><strong>{article.title}</strong></Text>
     <Tag size="sm" tone={published ? 'positive' : 'neutral'}>{STATUS_LABEL[article.status]}</Tag>
   </Fragment>
@@ -81,7 +87,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
       <Studio>
         <Outline slot="outline" blocks={blocks} />
         <CanvasFrame slot="canvas" src={state.canvas} />
-        <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} published={published} path={route?.path ?? null} />
+        <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} places={places} place={place} published={published} path={route?.path ?? null} />
         <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
         <Dialog id="editor-palette" title="Add a block" size="lg">
           <BlockPalette />

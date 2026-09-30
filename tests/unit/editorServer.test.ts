@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
+import { deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
 import { deleteMedia, MAX_BYTES, MAX_SIDE, replaceMaster, saveSidecar, upload } from '../../src/site/editor/server/media';
 import { changes, discard, publish, push } from '../../src/site/editor/server/git';
 import editor from '../../integrations/editor.mjs';
@@ -45,6 +46,49 @@ afterEach(() => {
   if (saved === undefined) delete process.env.CONTENT_ROOT;
   else process.env.CONTENT_ROOT = saved;
   rmSync(dir, { recursive: true, force: true });
+});
+
+// ---------- a page's places, on the site and the planet, in one transaction (documentation/sections/spec.md §7.6) ----------
+describe("a page's building", () => {
+  const PLACES = ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office'];
+  const planet = () => JSON.parse(readFileSync(join(content, 'structures', 'planet.json'), 'utf8')) as { places: { id: string; pages: { id: string }[] }[] };
+  const pagesOf = (id: string) => planet().places.find((p) => p.id === id)!.pages.map((r) => r.id);
+  const seedPlanet = () => put('/content/structures/planet.json', { places: PLACES.map((id) => ({ id, title: id, kicker: 'K', summary: 'S', pages: [] })) });
+
+  /** A save of the page as it is, with its version (as the editor sends it), and a change to its places. */
+  const save = (over: { place?: string | null; section?: string | null }) => {
+    const a = readDoc<Record<string, unknown>>('/content/articles/a.json')!;
+    return saveArticle({ id: 'a', article: a.value as never, ifMatch: { '/content/articles/a.json': a.version }, ...over });
+  };
+
+  it('saves with the page, moves between buildings, and comes off', async () => {
+    seedPlanet();
+    expect(await save({ place: 'workshop' })).toMatchObject({ ok: true });
+    expect(pagesOf('workshop')).toEqual(['a']);
+    expect(await save({ place: 'library' })).toMatchObject({ ok: true });
+    expect([pagesOf('workshop'), pagesOf('library')]).toEqual([[], ['a']]);
+    expect(await save({ place: null })).toMatchObject({ ok: true });
+    expect(pagesOf('library')).toEqual([]);
+  });
+
+  it('refuses a page on the planet without its page on the site (V13), and changes nothing', async () => {
+    seedPlanet();
+    const r = await save({ section: null, place: 'workshop' });
+    expect(r.ok).toBe(false);
+    expect(JSON.stringify(r)).toMatch(/isn't on the site; a page on the planet needs its page on the site/);
+    expect(pagesOf('workshop')).toEqual([]);
+    expect(readFileSync(join(content, 'structures', 'site.json'), 'utf8')).toContain('"id": "a"');
+    // an unknown building is refused before anything is written
+    expect(await save({ place: 'castle' })).toMatchObject({ ok: false });
+  });
+
+  it('deleting a draft takes it off the planet in the same transaction', async () => {
+    seedPlanet();
+    await save({ place: 'greenhouse' });
+    expect(pagesOf('greenhouse')).toEqual(['a']);
+    expect(await deleteArticle('a', false, {})).toMatchObject({ ok: true });
+    expect(pagesOf('greenhouse')).toEqual([]);
+  });
 });
 
 // ---------- media ----------

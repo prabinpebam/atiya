@@ -4,9 +4,9 @@
  * { ok, versions } or { ok: false, issues } with 409 (a conflict) or 422 (the contract's refusal).
  */
 import type { APIRoute } from 'astro';
-import type { Article, ImageMedia, SiteSettings, Person, SiteStructure } from '../../content/schema';
+import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure } from '../../content/schema';
 import { commit, jsonBytes, readDoc, type Result } from '../server/store';
-import { createArticle, deleteArticle, duplicateArticle, saveArticle, STRUCTURE } from '../server/articles';
+import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
 import { deleteMedia, replaceMaster, saveSidecar, upload } from '../server/media';
 import { changes, discard, publish, push } from '../server/git';
 import { content } from '../../content/repository';
@@ -50,8 +50,8 @@ export const ALL: APIRoute = async ({ request, params, url }) => {
       if (id && !ID.test(id)) return json({ ok: false }, 404);
       if (method === 'POST' && !id) return result(await createArticle(await body(request)));
       if (method === 'PUT' && id && parts.length === 2) {
-        const b = await body<{ article: Article; section?: string | null; ifMatch: Record<string, string | null> }>(request);
-        return result(await saveArticle({ id, article: b.article, section: b.section, ifMatch: b.ifMatch ?? {} }));
+        const b = await body<{ article: Article; section?: string | null; place?: string | null; ifMatch: Record<string, string | null> }>(request);
+        return result(await saveArticle({ id, article: b.article, section: b.section, place: b.place, ifMatch: b.ifMatch ?? {} }));
       }
       if (method === 'POST' && id && parts[2] === 'duplicate') return result(await duplicateArticle(id));
       if (method === 'DELETE' && id) {
@@ -64,6 +64,11 @@ export const ALL: APIRoute = async ({ request, params, url }) => {
     if (method === 'PUT' && path === 'structure') {
       const b = await body<{ structure: SiteStructure; ifMatch: Record<string, string | null> }>(request);
       return result(await commit({ changes: [{ key: STRUCTURE, bytes: jsonBytes(b.structure) }], ifMatch: { [STRUCTURE]: b.ifMatch?.[STRUCTURE] ?? null } }));
+    }
+    // the planet structure: what each building holds (documentation/sections/spec.md §7.4); the loader checks V13 to V16
+    if (method === 'PUT' && path === 'planet') {
+      const b = await body<{ planet: PlanetStructure; ifMatch: Record<string, string | null> }>(request);
+      return result(await commit({ changes: [{ key: PLANET, bytes: jsonBytes(b.planet) }], ifMatch: { [PLANET]: b.ifMatch?.[PLANET] ?? null } }));
     }
     if (method === 'PUT' && path === 'site') {
       const b = await body<{ site: SiteSettings; ifMatch: Record<string, string | null> }>(request);

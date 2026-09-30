@@ -1,0 +1,47 @@
+---
+/** Edit mode's planet: what each building holds (documentation/sections/spec.md §7.4). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import PlanetEditor, { type PlaceView } from '../components/PlanetEditor.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load, sectionOptions } from '../server/screens';
+import { readDoc } from '../server/store';
+import { PLANET } from '../server/articles';
+import { isPublished } from '../../content/load';
+import type { PlanetStructure } from '../../content/schema';
+
+export const prerender = false;
+
+const loaded = load();
+const doc = readDoc<PlanetStructure>(PLANET);
+let places: PlaceView[] = [];
+let unmapped: { id: string; title: string; onSite: boolean; published: boolean }[] = [];
+if (loaded.ok && doc) {
+  const index = loaded.index;
+  const mapped = new Set(doc.value.places.flatMap((p) => p.pages.map((r) => r.id)));
+  places = doc.value.places.map((p) => ({
+    id: p.id,
+    title: p.title,
+    kicker: p.kicker,
+    summary: p.summary,
+    view: p.view ?? 'tiles',
+    site: p.site ?? '',
+    pages: p.pages.map((r) => {
+      const a = index.articles.get(r.id);
+      return { id: r.id, title: a?.title ?? r.id, published: !!a && isPublished(a) };
+    }),
+  }));
+  unmapped = [...index.articles.values()]
+    .filter((a) => !mapped.has(a.id))
+    .map((a) => ({ id: a.id, title: a.title, onSite: index.routes.some((r) => r.node.kind === 'item' && r.node.item.id === a.id), published: isPublished(a) }));
+}
+---
+
+<EditorLayout title="Planet" screen="planet" heading="Planet" intro="What each of the planet's seven buildings holds, separate from the site's sections. The buildings themselves are the game's: they can't be added, removed or moved here. A page in a building needs its page on the site too.">
+  {
+    loaded.ok && doc ? (
+      <PlanetEditor places={places} sections={sectionOptions(loaded.index)} unmapped={unmapped} planet={doc.value} version={doc.version} />
+    ) : (
+      <ContentIssues issues={loaded.ok ? [{ file: 'content/structures/planet.json', message: 'missing' }] : loaded.issues} />
+    )
+  }
+</EditorLayout>
