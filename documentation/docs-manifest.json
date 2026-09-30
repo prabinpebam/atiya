@@ -244,6 +244,24 @@
       "group": "Content"
     },
     {
+      "path": "sections/spec.md",
+      "title": "Sections, pages and the planet",
+      "order": 20.89,
+      "icon": "view_quilt",
+      "status": "draft",
+      "updated": "2026-09-30",
+      "group": "Content"
+    },
+    {
+      "path": "sections/plan.md",
+      "title": "Sections: plan and DoD",
+      "order": 20.895,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-09-30",
+      "group": "Content"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 21,
