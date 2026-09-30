@@ -40,6 +40,10 @@ interface Props {
   router?: boolean;
   /** In dev, reload when a content file changes on disk (off for a screen that holds unsaved edits of its own). */
   liveContent?: boolean;
+  /** The page's canonical address, when it isn't this one (a page shown elsewhere, a redirect): a path on the site, the base path is added. */
+  canonical?: string;
+  /** Send the reader on to this address at once (a page that moved): a path on the site, the base path is added. */
+  redirect?: string;
 }
 
 const {
@@ -51,6 +55,8 @@ const {
   preload = ['display', 'ui'],
   router = false,
   liveContent = true,
+  canonical,
+  redirect,
 } = Astro.props;
 // social previews need an absolute URL: `site` is set when deploying
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
@@ -63,7 +69,9 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    {noindex && <meta name="robots" content="noindex" />}
+    {(noindex || redirect) && <meta name="robots" content="noindex" />}
+    {redirect && <meta http-equiv="refresh" content={`0; url=${withBase(redirect)}`} />}
+    {(canonical ?? redirect) && <link rel="canonical" href={new URL(withBase(canonical ?? redirect!), Astro.site ?? Astro.url).href} />}
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content={THEME_COLOR.light} media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content={THEME_COLOR.dark} media="(prefers-color-scheme: dark)" />

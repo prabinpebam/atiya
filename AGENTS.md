@@ -103,6 +103,10 @@ The site's content, IA and navigation are data (spec: [documentation/content/spe
 - Content media lives in `content/media/<owner>/<id>/` as a master plus a JSON sidecar (alt, credit, licence, focus). Generated sizes are never committed; code-owned assets (the planet's, the design library's samples) stay in `public/`.
 - **An article** is `content/articles/<id>.json` (blocks), its masters and sidecars in `content/media/articles/<id>/`, and a node in `content/structures/site.json`. The contract is `src/site/content/schema.ts`; `tests/unit/content.test.ts` checks the files, their references and the media budgets, and `src/pages/[...path].astro` renders every node the structure places (docs: `documentation/content/plan.md` §8).
 - IDs never change; a renamed published slug needs a redirect (the routes lock enforces it). Content items never name a channel: the site and the planet each map them through their own structure (`structures/site`, `structures/planet`). Every published item has one canonical page on the site, and everything the planet shows has one (V12, V13).
+- **Sections and pages** (spec: [documentation/sections/spec.md](./documentation/sections/spec.md); plan: [plan.md](./documentation/sections/plan.md)). The site is exactly three levels: the home hub, its sections, their pages (V22); every node ID is unique and a moved page keeps its node (V21).
+  - A section has a `view` (`list`, `tiles`, `bento`), rendered by `IndexLayout`. A page is the article resource with a `kind` (`note` shown as Article, `page`, `gallery`), which decides its opening.
+  - The header's navigation is `menus.primary` in the site structure (sections, pages, custom links), rendered on every page through `siteNav` (`src/site/content/navigation.ts`). Never hardcode a menu.
+  - An address that moved goes in `content/redirects.json`; `[...path].astro` builds a static redirect page for it (V19). Every structure operation keeps the fields it doesn't touch (`menus`).
 
 ### Edit mode (the local CMS)
 

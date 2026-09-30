@@ -115,7 +115,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 **Not in this version**
 - Designing: new layouts, colours, fonts or free positioning. Those belong to the design system and its code.
 - The planet's structure (`structures/planet`) and the classic pages (`src/content/landmarks/`), until the content platform's phase 0 moves them into `content/` ([plan](../content/plan.md)). The home page's hub is still `src/pages/index.astro`.
-- Menus: the header still lists the classic sections. Menus become editable when the site renders them from the site structure (content plan phase 1).
+- Menus: the header's navigation is the site structure's `menus.primary` ([sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)). Its Navigation screen comes in that plan's phase S3.
 - Several people at once, roles and permissions, scheduled publishing and comments: there is one owner, and git is the history.
 - Video files: videos are YouTube or Vimeo embeds with a local poster ([media §4](../content/media.md#4-formats-and-budgets)).
 
@@ -257,9 +257,9 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 
 The site structure's tree ([structures §2](../content/ia.md#2-the-site-structure)), as a tree view.
 
-- **A hub** shows its title and address, and what it places, in order. Its settings are its title, its menu label, its summary, its slug and its template. New section adds a hub under the home page.
+- **A section** (a hub under the home page) shows its title and address, and its pages, in order. Its settings are its title, its menu label, its summary, its slug and its view (List, Tiles or Bento: how it lists its pages, [sections spec §3.4](../sections/spec.md#34-the-section-view-u6)). New section adds a section under the home page, with its summary and view. The site is three levels, so there are no sections inside sections and no pages directly under the home page (V22).
 - **An article's node** can be reordered (drag, or Move up and Move down). A draft's node can also be moved to another hub or removed from the site (the article stays in `content/`, listed under "Not on the site yet" with Place under…).
-- **The home hub** has only its title and menu label here, until the landing moves into content.
+- **The home hub** has its title, its menu label and its summary: the home page's name and the line under it ([sections spec §3.5](../sections/spec.md#35-the-home-page-decision-o5)).
 - **Drafts can be placed.** A node may place a draft: its route is resolved and checked like any other (so two drafts can't claim one address), and the build leaves it out until it's published. So an article's section is chosen when it's created, and publishing it is only a status change (§9).
 - **Published addresses are fixed.** A node that places a published article, and every hub above one, keeps its slug and place until the site has redirects; the screen says why.
 

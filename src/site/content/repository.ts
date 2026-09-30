@@ -22,6 +22,10 @@ export function content(): ContentIndex {
 }
 
 export const getSite = () => content().site;
+/** The site structure: the tree of sections and pages, and the navigation. */
+export const getStructure = () => content().structure;
+/** Old addresses and where they now lead. */
+export const getRedirects = () => content().redirects;
 export const getArticle = (id: string) => content().articles.get(id);
 export const getPerson = (id: string) => content().people.get(id);
 /** The routes the site builds: hubs and published items. */

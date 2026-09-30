@@ -25,7 +25,7 @@ const { title, description, nav } = Astro.props;
 ---
 
 <PageShell title={`${title} · Design library · Prabin Pebam`} description={description ?? `${title}, in the design library of Prabin Pebam's site.`} preload={['display', 'text', 'ui']} router>
-  <SiteHeader section={{ label: 'Design library', href: withBase('/design/') }} action={{ label: 'Classic site', href: withBase('/classic/') }} />
+  <SiteHeader section={{ label: 'Design library', href: withBase('/design/') }} action={{ label: 'Visit the site', href: withBase('/') }} />
   <div class="library">
     <aside class="side" transition:persist="library-nav">
       <SideNav label="Design library" groups={nav} follow />

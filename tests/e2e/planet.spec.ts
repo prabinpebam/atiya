@@ -124,7 +124,7 @@ test.describe('landing & classic', () => {
     await page.goto('/');
     const main = page.getByRole('main');
     await expect(main.getByRole('link', { name: 'Explore the planet' })).toBeVisible();
-    await expect(main.getByRole('link', { name: 'Classic site' })).toBeVisible();
+    await expect(main.getByRole('link', { name: 'Read the site' })).toBeVisible();
     // the site's own small scripts (the theme switch, the modes) but nothing of the game's
     expect(scripts.filter((s) => /game-|three|fiber|react|zustand/i.test(s))).toEqual([]);
     // painted key art: sized (no layout shift), loaded, and the social card is advertised
@@ -137,21 +137,28 @@ test.describe('landing & classic', () => {
     await noSeriousViolations(page);
   });
 
-  test('classic pages render content and link back into 3D', async ({ page }) => {
+  test("the classic site's old addresses go on to the sections they became, which link back into 3D", async ({ page }) => {
     await page.goto('/classic/workshop/');
-    await expect(page.getByRole('heading', { level: 1, name: 'Workshop' })).toBeVisible();
+    await expect(page).toHaveURL(/\/work\/$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Work' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Explore in 3D' })).toHaveAttribute('href', '/play/?at=workshop');
     await noSeriousViolations(page);
+    // the moved page itself: a canonical link and a plain link to the new address, kept out of search results
+    const moved = await (await page.request.get('/classic/lighthouse/')).text();
+    expect(moved).toMatch(/<meta http-equiv="refresh" content="0; url=\/leadership\/"/);
+    expect(moved).toMatch(/<link rel="canonical" href="[^"]*\/leadership\/"/);
+    expect(moved).toMatch(/<meta name="robots" content="noindex"/);
     await page.goto('/classic/');
+    await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).hash).toBe('/#sections');
     await noSeriousViolations(page);
   });
 
-  test('?mode=classic redirects to the classic site and remembers it', async ({ page }) => {
+  test('?mode=classic goes to the site and remembers it', async ({ page }) => {
     await page.goto('/play/?mode=classic');
-    await expect(page).toHaveURL(/\/classic\/$/);
+    await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).hash).toBe('/#sections');
     expect(await page.evaluate(() => localStorage.getItem('site.mode'))).toBe('classic');
     await page.goto('/');
-    await expect(page.getByRole('main').getByRole('link', { name: 'Classic site' })).toHaveAttribute('data-variant', 'primary');
+    await expect(page.getByRole('main').getByRole('link', { name: 'Read the site' })).toHaveAttribute('data-variant', 'primary');
   });
 });
 
@@ -2525,7 +2532,7 @@ test.describe('planet', () => {
   });
 
   test('deep link opens the dialog; Back closes it without leaving the site', async ({ page }) => {
-    await page.goto('/classic/');
+    await page.goto('/');
     await openPlanet(page, '/play/?at=library&open=1');
     const dialog = page.getByTestId('landmark-dialog');
     await expect(dialog).toBeVisible();
@@ -2548,7 +2555,8 @@ test.describe('planet', () => {
     await page.evaluate(() => (window as any).__game.teleport('workshop'));
     await expect(page.getByTestId('preview-card')).toBeVisible();
     await page.locator('.play-header').getByRole('link', { name: 'Classic site' }).click();
-    await expect(page).toHaveURL(/\/classic\/workshop\/$/);
+    // the building's old classic address, which goes on to the section it became
+    await expect(page).toHaveURL(/\/work\/$/);
     await page.getByRole('link', { name: 'Explore in 3D' }).click();
     await openPlanet(page, page.url());
     expect((await state(page)).nearby).toBe('workshop');

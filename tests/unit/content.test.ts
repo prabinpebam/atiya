@@ -11,8 +11,9 @@ import { normalize, parseInline, runs, parseMarkdown, plainText, renderMarkdown,
 import { buildRoutes } from '../../src/site/content/routes';
 import { ContentError, headingId, loadContent } from '../../src/site/content/load';
 import { content } from '../../src/site/content/repository';
-import { readingMinutes } from '../../src/site/content/reading';
-import { article, block, type SiteStructure } from '../../src/site/content/schema';
+import { pageMeasure, pictureCount, readingMinutes } from '../../src/site/content/reading';
+import { article, block, siteStructure, type Article, type SiteStructure } from '../../src/site/content/schema';
+import { exploreHref, siteNav } from '../../src/site/content/navigation';
 import { renderInlineMarkdown } from '../../src/site/content/markdown';
 
 const ROOT = join(__dirname, '../..');
@@ -101,11 +102,12 @@ describe('the Markdown subset', () => {
 
 describe('routes from the site structure', () => {
   const found = (items: Record<string, { slug: string; title: string }>) => (type: string, id: string) => (type === 'article' && items[id] ? { ...items[id], published: true } : undefined);
-  const tree = (children: unknown[]): SiteStructure => ({ home: { id: 'home', kind: 'hub', slug: '', title: 'Home', template: 'home', children } }) as SiteStructure;
+  const tree = (children: unknown[]): SiteStructure => ({ home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children } }) as SiteStructure;
+  const section = (id: string, children: unknown[] = [], extra: object = {}) => ({ id, kind: 'hub', slug: id, title: id, ...extra, children });
 
   it('a path is the chain of slugs; an item node takes its item slug; the trail runs from the home page', () => {
     const { routes, errors } = buildRoutes(
-      tree([{ id: 'leadership', kind: 'hub', slug: 'leadership', title: 'Leadership', template: 'leadershipOverview', children: [{ id: 'n', kind: 'item', item: { type: 'article', id: 'a' } }] }]),
+      tree([{ id: 'leadership', kind: 'hub', slug: 'leadership', title: 'Leadership', view: 'bento', children: [{ id: 'n', kind: 'item', item: { type: 'article', id: 'a' } }] }]),
       found({ a: { slug: 'a-story', title: 'A story' } }),
     );
     expect(errors).toEqual([]);
@@ -114,23 +116,43 @@ describe('routes from the site structure', () => {
     expect(story.title).toBe('A story');
     expect(story.ancestors.map((c) => c.path)).toEqual(['/', '/leadership/']);
     expect(story.parent?.id).toBe('leadership');
+    expect(story.label).toBe('A story');
   });
 
   it('refuses a reserved path, an item placed twice (V12), a missing item and a taken path', () => {
     const { errors } = buildRoutes(
       tree([
-        { id: 'play', kind: 'hub', slug: 'play', title: 'Play', template: 'notesIndex' },
-        { id: 'x1', kind: 'item', item: { type: 'article', id: 'a' } },
-        { id: 'x2', kind: 'item', slug: 'other', item: { type: 'article', id: 'a' } },
-        { id: 'x3', kind: 'item', item: { type: 'article', id: 'missing' } },
-        { id: 'x4', kind: 'item', slug: 'a', item: { type: 'article', id: 'b' } },
+        section('play'),
+        section('s', [
+          { id: 'x1', kind: 'item', item: { type: 'article', id: 'a' } },
+          { id: 'x2', kind: 'item', slug: 'other', item: { type: 'article', id: 'a' } },
+          { id: 'x3', kind: 'item', item: { type: 'article', id: 'missing' } },
+          { id: 'x4', kind: 'item', slug: 'a', item: { type: 'article', id: 'b' } },
+        ]),
       ]),
       found({ a: { slug: 'a', title: 'A' }, b: { slug: 'b', title: 'B' } }),
     );
     expect(errors.join('\n')).toMatch(/\/play\/ is reserved/);
     expect(errors.join('\n')).toMatch(/placed twice/);
     expect(errors.join('\n')).toMatch(/"missing", which doesn't exist/);
-    expect(errors.join('\n')).toMatch(/\/a\/ is already taken/);
+    expect(errors.join('\n')).toMatch(/\/s\/a\/ is already taken/);
+  });
+
+  it('is three levels, home, sections and pages (V22), and every node has its own ID (V21)', () => {
+    const lookup = found({ a: { slug: 'a', title: 'A' }, b: { slug: 'b', title: 'B' } });
+    const errs = (t: SiteStructure) => buildRoutes(t, lookup).errors.join('\n');
+    expect(errs(tree([section('s', [{ id: 'n', kind: 'item', item: { type: 'article', id: 'a' } }])]))).toBe('');
+    expect(errs(tree([{ id: 'n', kind: 'item', item: { type: 'article', id: 'a' } }]))).toMatch(/a page belongs in a section/);
+    expect(errs(tree([section('s', [section('t')])]))).toMatch(/a section can't hold another section/);
+    expect(errs(tree([section('s', [{ id: 's', kind: 'item', item: { type: 'article', id: 'a' } }])]))).toMatch(/node s: another node has this ID/);
+  });
+
+  it('a section keeps its view, and a hub or a structure that names another item type is refused', () => {
+    const ok = siteStructure.safeParse(tree([section('s', [], { view: 'list' })]));
+    expect(ok.success).toBe(true);
+    expect(siteStructure.safeParse(tree([section('s', [], { view: 'carousel' })])).success).toBe(false);
+    expect(siteStructure.safeParse(tree([section('s', [], { template: 'workIndex' })])).success).toBe(false);
+    expect(siteStructure.safeParse(tree([section('s', [{ id: 'n', kind: 'item', item: { type: 'caseStudy', id: 'a' } }])])).success).toBe(false);
   });
 
   it('heading anchors come from their words', () => {
@@ -143,7 +165,7 @@ describe('the loader checks what it is given', () => {
   const base = {
     '/content/site.json': { name: 'N', description: 'D', owner: 'p', locale: 'en' },
     '/content/people/p.json': { id: 'p', name: 'P' },
-    '/content/structures/site.json': { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', template: 'home', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] } },
+    '/content/structures/site.json': { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] }] } },
     '/content/media/articles/a/pic.json': { kind: 'image', file: 'pic.webp', alt: 'A picture.', visibility: 'public' },
     '/content/articles/a.json': {
       id: 'a', type: 'article', kind: 'note', slug: 'a', title: 'A', summary: 'S', status: 'published', visibility: 'public', updatedAt: '2026-09-29', locale: 'en',
@@ -162,7 +184,7 @@ describe('the loader checks what it is given', () => {
 
   it('a valid set loads, with the item at its canonical path', () => {
     const c = loadContent(base, masters);
-    expect(c.canonical.get('article/a')).toBe('/a/');
+    expect(c.canonical.get('article/a')).toBe('/s/a/');
     expect(c.media.get('articles/a/pic')?.master).toBe('/content/media/articles/a/pic.webp');
   });
 
@@ -179,11 +201,11 @@ describe('the loader checks what it is given', () => {
   it('a draft can be placed: its address is resolved and checked, but only published items are built', () => {
     const article = base['/content/articles/a.json'];
     const c = loadContent({ ...base, '/content/articles/a.json': { ...article, status: 'draft' } }, masters);
-    expect(c.routes.find((r) => r.path === '/a/')?.published).toBe(false);
+    expect(c.routes.find((r) => r.path === '/s/a/')?.published).toBe(false);
     expect(c.canonical.has('article/a')).toBe(false);
     // a node placing something that doesn't exist still fails
     const s = base['/content/structures/site.json'] as { home: { children: unknown[] } };
-    const broken = { home: { ...s.home, children: [{ id: 'x', kind: 'item', item: { type: 'article', id: 'nope' } }] } };
+    const broken = { home: { ...s.home, children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', children: [{ id: 'x', kind: 'item', item: { type: 'article', id: 'nope' } }] }] } };
     expect(problems({ ...base, '/content/structures/site.json': broken }).join('\n')).toMatch(/"nope", which doesn't exist/);
   });
 
@@ -267,5 +289,120 @@ describe('captions can be hidden', () => {
     expect(ok({ type: 'video', embed: { provider: 'youtube', id: 'abcdef' }, title: 'V', poster: 'shared/x', showCaption: false })).toBe(true);
     expect(ok({ type: 'figure', media: 'shared/x', showCaption: 'no' })).toBe(false);
     expect(article.safeParse({ id: 'a', type: 'article', kind: 'note', slug: 'a', title: 'A', summary: 'S', status: 'draft', visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [], hero: { media: 'shared/x', showCaption: false } }).success).toBe(true);
+  });
+});
+
+// ---------- sections, pages and the navigation (documentation/sections/spec.md §3, §4) ----------
+describe('the navigation and the redirects', () => {
+  const page = (id: string, extra: Partial<Article> = {}) => ({
+    id, type: 'article', kind: 'note', slug: id, title: id.toUpperCase(), summary: 'S', status: 'published', visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [], ...extra,
+  });
+  const docs = (menus: unknown, redirects?: unknown, drafts: string[] = []) => ({
+    '/content/site.json': { name: 'N', description: 'D', owner: 'p', locale: 'en' },
+    '/content/people/p.json': { id: 'p', name: 'P' },
+    '/content/articles/a.json': page('a'),
+    '/content/articles/b.json': page('b', { navLabel: 'Bee', ...(drafts.includes('b') ? { status: 'draft' } : {}) }),
+    '/content/structures/site.json': {
+      home: {
+        id: 'home', kind: 'hub', slug: '', title: 'Home',
+        children: [
+          { id: 'work', kind: 'hub', slug: 'work', title: 'Work', navLabel: 'Our work', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] },
+          { id: 'about', kind: 'hub', slug: 'about', title: 'About', children: [{ id: 'b', kind: 'item', item: { type: 'article', id: 'b' } }] },
+        ],
+      },
+      ...(menus ? { menus } : {}),
+    },
+    ...(redirects ? { '/content/redirects.json': redirects } : {}),
+  });
+  const problems = (d: Record<string, unknown>) => {
+    try {
+      loadContent(d, new Set());
+      return '';
+    } catch (e) {
+      return (e as ContentError).problems.join('\n');
+    }
+  };
+
+  it('lists the entries in order, with their labels and addresses; a section is current on its pages; a link never is', () => {
+    const c = loadContent(docs({ primary: [{ node: 'work' }, { node: 'about', label: 'Me' }, { node: 'b' }, { label: 'GitHub', href: 'https://github.com/x' }, { label: 'Docs', href: '/docs/' }] }), new Set());
+    const built = c.routes.filter((r) => r.published);
+    const at = (path: string) => built.find((r) => r.path === path);
+    expect(siteNav(c.structure, built)).toEqual([
+      { label: 'Our work', href: '/work/' },
+      { label: 'Me', href: '/about/' },
+      { label: 'Bee', href: '/about/b/' },
+      { label: 'GitHub', href: 'https://github.com/x' },
+      { label: 'Docs', href: '/docs/' },
+    ]);
+    expect(siteNav(c.structure, built, at('/work/a/')).filter((e) => e.current).map((e) => e.label)).toEqual(['Our work']);
+    expect(siteNav(c.structure, built, at('/about/b/')).filter((e) => e.current).map((e) => e.label)).toEqual(['Me', 'Bee']);
+    expect(siteNav(c.structure, built, at('/')).some((e) => e.current)).toBe(false);
+  });
+
+  it("a draft page's entry waits until it's published; no menu, no navigation", () => {
+    const c = loadContent(docs({ primary: [{ node: 'work' }, { node: 'b' }] }, undefined, ['b']), new Set());
+    expect(siteNav(c.structure, c.routes.filter((r) => r.published)).map((e) => e.label)).toEqual(['Our work']);
+    const none = loadContent(docs(undefined), new Set());
+    expect(siteNav(none.structure, none.routes)).toEqual([]);
+  });
+
+  it('refuses an entry that points nowhere, a bad address, more than eight entries or a long label (V17)', () => {
+    expect(problems(docs({ primary: [{ node: 'nowhere' }] }))).toMatch(/menus\.primary\.0: node "nowhere" isn't in the site's tree/);
+    expect(problems(docs({ primary: [{ label: 'Gone', href: '/gone/' }] }))).toMatch(/\/gone\/ isn't a page of this site/);
+    expect(problems(docs({ primary: [{ label: 'X', href: 'javascript:alert(1)' }] }))).toMatch(/an https, http or mailto address/);
+    expect(problems(docs({ primary: Array.from({ length: 9 }, () => ({ node: 'work' })) }))).toMatch(/at most eight entries/);
+    expect(problems(docs({ primary: [{ node: 'work', label: 'x'.repeat(25) }] }))).toMatch(/menus\.primary\.0\.label/);
+    expect(problems(docs({ primary: [{ label: 'Planet', href: '/play/' }, { label: 'Mail', href: 'mailto:a@b.c' }] }))).toBe('');
+  });
+
+  it('sends an old address to a built page, never from a page that exists (V19)', () => {
+    const ok = loadContent(docs(undefined, [{ from: '/classic/', to: '/#sections' }, { from: '/classic/x/', to: '/work/' }]), new Set());
+    expect(ok.redirects).toHaveLength(2);
+    expect(problems(docs(undefined, [{ from: '/work/', to: '/about/' }]))).toMatch(/\/work\/ is a page of the site/);
+    expect(problems(docs(undefined, [{ from: '/old/', to: '/nowhere/' }]))).toMatch(/\/nowhere\/ isn't a published page/);
+    expect(problems(docs(undefined, [{ from: '/old/', to: '/work/' }, { from: '/old/', to: '/about/' }]))).toMatch(/redirects twice/);
+  });
+
+  it('"Explore in 3D" goes to the building a section came from (its old address redirects to it), from the section and its pages; else the plaza', () => {
+    const c = loadContent(docs(undefined, [{ from: '/classic/workshop/', to: '/work/' }]), new Set());
+    const at = (path: string) => c.routes.find((r) => r.path === path);
+    expect(exploreHref(at('/work/'), c.redirects)).toBe('/play/?at=workshop');
+    expect(exploreHref(at('/work/a/'), c.redirects)).toBe('/play/?at=workshop');
+    expect(exploreHref(at('/about/'), c.redirects)).toBe('/play/');
+    expect(exploreHref(at('/'), c.redirects)).toBe('/play/');
+    expect(exploreHref()).toBe('/play/');
+  });
+});
+
+describe('a page opens as its kind reads', () => {
+  const base = { id: 'x', type: 'article', slug: 'x', title: 'X', summary: 'S', status: 'published', visibility: 'public', updatedAt: '2026-09-30', locale: 'en' } as const;
+  const words = { type: 'text', markdown: 'word '.repeat(440).trim() } as const;
+  const pictures = [
+    { type: 'figure', media: 'a/one' },
+    { type: 'gallery', items: [{ media: 'a/two' }, { media: 'a/three' }, { media: 'a/one' }] },
+  ] as const;
+
+  it('an article measures its reading time, a gallery its pictures (each once), a page nothing', () => {
+    const a = article.parse({ ...base, kind: 'note', body: [words] });
+    expect(pageMeasure(a)).toBe('2 min read');
+    const g = article.parse({ ...base, kind: 'gallery', body: pictures });
+    expect(pictureCount(g)).toBe(3);
+    expect(pageMeasure(g)).toBe('3 pictures');
+    expect(pageMeasure(article.parse({ ...base, kind: 'gallery', body: [pictures[0]] }))).toBe('1 picture');
+    expect(pageMeasure(article.parse({ ...base, kind: 'page', body: [words] }))).toBeUndefined();
+  });
+});
+
+describe('the real content is three levels, with its navigation and redirects', () => {
+  it('seven sections in the navigation, the first story in Leadership, and every classic address redirected', () => {
+    const c = content();
+    const sections = c.structure.home.children ?? [];
+    expect(sections.map((n) => n.id)).toEqual(['work', 'about', 'leadership', 'writing', 'talks', 'side-projects', 'contact']);
+    expect(sections.every((n) => n.kind === 'hub' && n.summary && n.view)).toBe(true);
+    expect((c.structure.menus?.primary ?? []).map((e) => ('node' in e ? e.node : e.label))).toEqual(sections.map((n) => n.id));
+    expect(c.canonical.get('article/do-what-makes-you-proud')).toBe('/leadership/do-what-makes-you-proud/');
+    const froms = c.redirects.map((r) => r.from);
+    for (const id of ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office']) expect(froms).toContain(`/classic/${id}/`);
+    expect(froms).toContain('/classic/');
   });
 });

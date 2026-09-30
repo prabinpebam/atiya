@@ -13,7 +13,7 @@ const waterfall = sample('waterfall');
 <Example title="Feature" layout="block" description="The lead story: the picture beside the words.">
   <StoryCard
     variant="feature"
-    href={withBase('/classic/workshop/')}
+    href={withBase('/work/')}
     title="Building a planet you can walk around"
     dek="How a portfolio became a small 3D world, and why the classic site stayed one tap away."
     topic="Case study"
@@ -24,20 +24,32 @@ const waterfall = sample('waterfall');
 
 <Example title="Standard" layout="block" description="A grid of them makes an index. The whole card is one link, on its title.">
   <div class="demo-cards">
-    <StoryCard href={withBase('/classic/greenhouse/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." topic="Craft" meta="6 min read" picture={bridge} headingLevel={3} />
-    <StoryCard href={withBase('/classic/library/')} title="A pond that reads as one body of water" dek="One level, one shader, and a lobed shore." topic="Engineering" meta="4 min read" picture={pond} headingLevel={3} />
-    <StoryCard href={withBase('/classic/lighthouse/')} title="Wind that everything shares" dek="Grass, trees and flags sway to the same gusts." topic="Craft" meta="5 min read" picture={waterfall} headingLevel={3} />
+    <StoryCard href={withBase('/side-projects/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." topic="Craft" meta="6 min read" picture={bridge} headingLevel={3} />
+    <StoryCard href={withBase('/writing/')} title="A pond that reads as one body of water" dek="One level, one shader, and a lobed shore." topic="Engineering" meta="4 min read" picture={pond} headingLevel={3} />
+    <StoryCard href={withBase('/leadership/')} title="Wind that everything shares" dek="Grass, trees and flags sway to the same gusts." topic="Craft" meta="5 min read" picture={waterfall} headingLevel={3} />
+  </div>
+</Example>
+
+<Example title="Row" layout="block" description="A line of a section's list view: the words first, a small picture at the end of the row.">
+  <div class="demo-rows">
+    <StoryCard variant="row" href={withBase('/writing/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." meta="6 min read" picture={bridge} headingLevel={3} />
+    <StoryCard variant="row" href={withBase('/writing/')} title="A pond that reads as one body of water" dek="One level, one shader, and a lobed shore." meta="4 min read" picture={pond} headingLevel={3} />
   </div>
 </Example>
 
 <Example title="Compact" layout="block" description="No picture: for a long list.">
   <div class="demo-cards">
-    <StoryCard href={withBase('/classic/library/')} title="Why the planet turns, not the camera" dek="Keeping the sky, the sun and the moon in frame." meta="3 min read" headingLevel={3} />
-    <StoryCard href={withBase('/classic/library/')} title="One thing asks at a time" dek="How the game decides which prompt to show." meta="4 min read" headingLevel={3} />
+    <StoryCard href={withBase('/writing/')} title="Why the planet turns, not the camera" dek="Keeping the sky, the sun and the moon in frame." meta="3 min read" headingLevel={3} />
+    <StoryCard href={withBase('/writing/')} title="One thing asks at a time" dek="How the game decides which prompt to show." meta="4 min read" headingLevel={3} />
   </div>
 </Example>
 
 <style>
+  .demo-rows {
+    display: grid;
+    gap: var(--space-8);
+  }
+
   .demo-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));

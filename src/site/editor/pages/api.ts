@@ -33,7 +33,7 @@ export const ALL: APIRoute = async ({ request, params, url }) => {
       const index = content();
       const route = index.routes.find((r) => r.path === at);
       if (route?.node.kind === 'item' && route.node.item.type === 'article') return json({ label: 'Edit this page', href: `/_edit/articles/${route.node.item.id}/` });
-      if (route?.node.kind === 'hub' && route.node.template !== 'home') return json({ label: 'Edit this section', href: '/_edit/sections/' });
+      if (route?.node.kind === 'hub' && route.path !== '/') return json({ label: 'Edit this section', href: '/_edit/sections/' });
       return json({ label: 'Edit mode', href: '/_edit/' });
     }
 

@@ -1,20 +1,23 @@
 ---
 /**
- * Every page the site structure places (documentation/content/ia.md §3): its paths come from the route
- * table (hubs and published items), and the content Page renders each with its template. The home hub
- * stays on src/pages/index.astro until the landing moves into content; the classic pages keep their own
- * routes until the IA replaces them.
+ * Every page the site structure places (documentation/sections/spec.md §3): its sections and their pages,
+ * from the route table (published pages only), each rendered by the content Page; and every address that
+ * moved (content/redirects.json), rendered as a redirect page. The home page is src/pages/index.astro.
  */
 import Page from '../site/content/Page.astro';
-import { getRoute, getRoutes } from '../site/content/repository';
+import Moved from '../site/content/Moved.astro';
+import { getRedirects, getRoute, getRoutes } from '../site/content/repository';
 
 export function getStaticPaths() {
-  return getRoutes()
-    .filter((r) => !(r.node.kind === 'hub' && r.node.template === 'home'))
-    .map((r) => ({ params: { path: r.path.slice(1, -1) }, props: { path: r.path } }));
+  const pages = getRoutes()
+    .filter((r) => r.path !== '/')
+    .map((r) => ({ params: { path: r.path.slice(1, -1) }, props: { path: r.path, moved: undefined } }));
+  const moved = getRedirects().map((m) => ({ params: { path: m.from.slice(1, -1) }, props: { path: m.from, moved: m } }));
+  return [...pages, ...moved];
 }
 
-const route = getRoute(Astro.props.path)!;
+const { path, moved } = Astro.props;
+const route = moved ? undefined : getRoute(path);
 ---
 
-<Page route={route} />
+{moved ? <Moved redirect={moved} /> : <Page route={route} />}

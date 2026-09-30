@@ -180,7 +180,7 @@ The migration is then a snapshot to compare, the `api` adapter pointed at the ba
 - **Video:** on YouTube, unlisted, and shown as an embed. Its poster is a frame from the video, and only that poster loads until the reader presses Play.
 
 **Not yet, against the spec:**
-- **Menus:** the header still lists the classic sections. The site structure's menus come with phase 1, so Leadership isn't in the header yet.
+- **Menus:** built with the sections work ([sections plan S2](../sections/plan.md#s2-sections-pages-and-the-navigation-u2-to-u7)): the header's navigation is `menus.primary`, the home page lists the sections, and `/classic/` redirects. The `actions` and `footer` menus stay in code.
 - **`content:check`:** it's the unit test for now, not its own script.
 - **Scope:** only image media so far; video files, documents, the gallery resource, `related` and `ref:` to other item types come with the content that needs them.
 

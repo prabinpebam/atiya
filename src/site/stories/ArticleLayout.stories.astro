@@ -9,10 +9,10 @@ import { SAMPLES, SAMPLE_VIDEO, sample } from '../design/samples';
 import { withBase } from '../design/meta';
 
 const nav = [
-  { label: 'Work', href: withBase('/classic/workshop/'), current: true },
-  { label: 'Leadership', href: withBase('/classic/town-hall/') },
-  { label: 'Writing', href: withBase('/classic/library/') },
-  { label: 'About', href: withBase('/classic/post-office/') },
+  { label: 'Work', href: withBase('/work/'), current: true },
+  { label: 'Leadership', href: withBase('/about/') },
+  { label: 'Writing', href: withBase('/writing/') },
+  { label: 'About', href: withBase('/contact/') },
 ];
 const lead = sample('plaza');
 const dusk = sample('lighthouse-dusk');
@@ -24,18 +24,18 @@ const pictures = SAMPLES.map((s) => ({ ...s, caption: s.caption }));
   description="How the site's classic pages were set like a magazine: three faces, one spot colour, and pictures given room."
   nav={nav}
   action={{ label: 'Explore in 3D', href: withBase('/play/'), icon: 'planet' }}
-  crumbs={{ trail: [{ label: 'Work', href: withBase('/classic/workshop/') }], current: 'A printed page for a little planet' }}
+  crumbs={{ trail: [{ label: 'Work', href: withBase('/work/') }], current: 'A printed page for a little planet' }}
   header={{
     title: 'A printed page for a little planet',
     standfirst: 'The planet is loud and playful. The pages beside it are quiet: set like a clean magazine, so the pictures do the talking.',
-    topic: { label: 'Case study', href: withBase('/classic/workshop/') },
+    topic: { label: 'Case study', href: withBase('/work/') },
     author: { name: 'Prabin Pebam', avatar: withBase('/avatars/npc/prabin.webp') },
     date: '2026-09-29',
     readingTime: '6 min read',
     picture: { ...lead, caption: lead.caption, credit: 'Concept art' },
   }}
-  prev={{ href: withBase('/classic/greenhouse/'), title: 'Greenhouse' }}
-  next={{ href: withBase('/classic/lighthouse/'), title: 'Lighthouse' }}
+  prev={{ href: withBase('/side-projects/'), title: 'Greenhouse' }}
+  next={{ href: withBase('/leadership/'), title: 'Lighthouse' }}
 >
   <p>
     Most of this site is a small world you can walk around. The rest of it, the classic pages, had to do the opposite job: sit still, read well, and get out of the way of the pictures. So they’re set the way a clean printed magazine is set, with a lot of white paper, one spot colour, and type that does the talking.

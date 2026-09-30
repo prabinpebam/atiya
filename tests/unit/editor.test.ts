@@ -56,7 +56,8 @@ const put = (key: string, value: unknown) => {
 };
 const version = (key: string) => versionOf(readFileSync(pathOf(key, root)!));
 const article = (over: Record<string, unknown> = {}) => ({ id: 'a', type: 'article', kind: 'note', slug: 'a', title: 'A', summary: 'S', status: 'draft', visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [], ...over });
-const STRUCTURE = { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', template: 'home', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] } };
+const SECTION = { id: 's', kind: 'hub', slug: 's', title: 'S', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] };
+const STRUCTURE = { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [SECTION] } };
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'editor-store-'));
@@ -109,7 +110,7 @@ describe('the store', () => {
 
   it('is one transaction: a failure on the second rename leaves every file as it was', async () => {
     const sKey = '/content/structures/site.json';
-    const structure = { home: { ...STRUCTURE.home, children: [...STRUCTURE.home.children, { id: 'b', kind: 'item', item: { type: 'article', id: 'b' } }] } };
+    const structure = { home: { ...STRUCTURE.home, children: [{ ...SECTION, children: [...SECTION.children, { id: 'b', kind: 'item', item: { type: 'article', id: 'b' } }] }] } };
     const bKey = '/content/articles/b.json';
     let renames = 0;
     const r = await commit(

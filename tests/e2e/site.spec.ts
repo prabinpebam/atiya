@@ -8,7 +8,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { headingId } from '../../src/site/content/load';
 import { renderMarkdown } from '../../src/site/content/markdown';
-import type { Article } from '../../src/site/content/schema';
+import type { Article, HubNode, SiteStructure } from '../../src/site/content/schema';
 
 const noSeriousViolations = async (page: Page) => {
   const results = await new AxeBuilder({ page }).analyze();
@@ -19,7 +19,7 @@ const noSeriousViolations = async (page: Page) => {
 test.describe('site design system', () => {
   test('the theme: follows the system, a choice is kept and applied before the first paint', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto('/classic/');
+    await page.goto('/');
     const bg = () => page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
     const dark = await bg();
     await page.emulateMedia({ colorScheme: 'light' });
@@ -43,7 +43,7 @@ test.describe('site design system', () => {
     await page.addInitScript(() => {
       document.addEventListener('DOMContentLoaded', () => ((window as any).__themeAtLoad = document.documentElement.dataset.theme), { once: true });
     });
-    await page.goto('/classic/workshop/');
+    await page.goto('/leadership/do-what-makes-you-proud/');
     expect(await page.evaluate(() => (window as any).__themeAtLoad)).toBe('dark');
     await expect(combo).toContainText('Dark');
   });
@@ -347,11 +347,11 @@ test.describe('site design system', () => {
       });
     // taller than the article: no gap under the footer
     await page.setViewportSize({ width: 1440, height: 2400 });
-    await page.goto('/classic/workshop/');
+    await page.goto('/work/');
     expect(await footer()).toEqual({ toViewportBottom: 0, belowIt: 0 });
     // shorter than the article: the footer is below the fold, the last thing on the page
     await page.setViewportSize({ width: 1440, height: 800 });
-    await page.goto('/classic/workshop/');
+    await page.goto('/leadership/do-what-makes-you-proud/');
     const long = await footer();
     expect(long.toViewportBottom).toBeLessThan(0);
     expect(long.belowIt).toBe(0);
@@ -359,7 +359,7 @@ test.describe('site design system', () => {
     await page.evaluate(() => window.scrollTo(0, 400));
     expect(await page.evaluate(() => Math.round(document.querySelector('.site-header')!.getBoundingClientRect().top))).toBe(0);
     await page.setViewportSize({ width: 1440, height: 2400 });
-    await page.goto('/classic/');
+    await page.goto('/work/');
     expect(await page.evaluate(() => Math.round(document.querySelector('main')!.getBoundingClientRect().width))).toBeGreaterThan(1100);
   });
 
@@ -400,8 +400,8 @@ test.describe('site design system', () => {
     expect(await page.evaluate(() => (window as unknown as { kept?: number }).kept)).toBe(1);
 
     // leaving the library is an ordinary page load
-    await page.getByRole('banner').getByRole('link', { name: 'Classic site' }).first().click();
-    await expect(page).toHaveURL(/\/classic\/$/);
+    await page.getByRole('banner').getByRole('link', { name: 'Visit the site' }).first().click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/');
     expect(await page.evaluate(() => (window as unknown as { kept?: number }).kept)).toBeUndefined();
   });
 });
@@ -412,7 +412,7 @@ const { defaultBrowserType: _browser, ...PIXEL } = devices['Pixel 7'];
 test.describe('site on a phone', () => {
   test.use(PIXEL);
 
-  const CLASSIC = ['/', '/classic/', '/classic/workshop/'];
+  const CLASSIC = ['/', '/work/', '/leadership/', '/leadership/do-what-makes-you-proud/'];
   // controls smaller than 44 px, leaving out links inside a sentence and stretched links (their card is the target)
   const smallTargets = (page: Page) =>
     page.evaluate(() => {
@@ -462,14 +462,14 @@ test.describe('site on a phone', () => {
 
   test('the menu carries the way into the planet, closes on a tap outside, and scrolls inside on a phone on its side', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
-    await page.goto('/classic/workshop/');
+    await page.goto('/leadership/do-what-makes-you-proud/');
     const toggle = page.locator('[data-menu-toggle]');
     await toggle.tap();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await expect(toggle).toHaveAttribute('aria-label', 'Close menu');
     const nav = page.getByRole('navigation', { name: 'Sections' });
-    await expect(nav.getByRole('link', { name: 'Explore in 3D' })).toHaveAttribute('href', '/play/?at=workshop');
-    await expect(nav.getByRole('link', { name: 'Workshop' })).toHaveAttribute('aria-current', 'page');
+    await expect(nav.getByRole('link', { name: 'Explore in 3D' })).toHaveAttribute('href', /^\/play\//);
+    await expect(nav.getByRole('link', { name: 'Leadership' })).toHaveAttribute('aria-current', 'page');
     await noSeriousViolations(page);
     await page.touchscreen.tap(180, 700);
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -482,7 +482,7 @@ test.describe('site on a phone', () => {
 
   test('the header tucks away while reading down, and comes back on the way up or to focus', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
-    await page.goto('/classic/workshop/');
+    await page.goto('/leadership/do-what-makes-you-proud/');
     const header = page.locator('[data-site-header]');
     await page.mouse.wheel(0, 600);
     await expect(header).toHaveAttribute('data-tucked', '');
@@ -497,14 +497,14 @@ test.describe('site on a phone', () => {
   test('contrast settings: Increase Contrast strengthens muted text and rules; forced colours keep the current page marked', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     const muted = () => page.locator('.contents .text').first().evaluate((e) => getComputedStyle(e).color);
-    await page.goto('/classic/');
+    await page.goto('/');
     const normal = await muted();
     await page.emulateMedia({ contrast: 'more' });
     expect(await muted()).not.toBe(normal);
     await page.emulateMedia({ contrast: 'no-preference', forcedColors: 'active' });
-    await page.goto('/classic/workshop/');
+    await page.goto('/leadership/do-what-makes-you-proud/');
     await page.locator('[data-menu-toggle]').tap();
-    const current = page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Workshop' });
+    const current = page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Leadership' });
     expect(await current.evaluate((e) => getComputedStyle(e).textDecorationLine)).toBe('underline');
   });
 
@@ -513,7 +513,7 @@ test.describe('site on a phone', () => {
     page.on('response', async (r) => {
       if (r.request().resourceType() === 'font') fonts.push({ url: r.url(), size: (await r.body()).length });
     });
-    await page.goto('/classic/workshop/');
+    await page.goto('/leadership/do-what-makes-you-proud/');
     await page.evaluate(() => document.fonts.ready);
     await expect.poll(() => fonts.length).toBeGreaterThanOrEqual(4);
     expect(fonts.filter((f) => /latin-full/.test(f.url))).toEqual([]);
@@ -750,10 +750,48 @@ test.describe('content', () => {
     await expect.poll(() => remote.some((u) => u.includes('youtube-nocookie.com/embed/vIVX-KVUWAE'))).toBe(true);
   });
 
+  const STRUCTURE = JSON.parse(readFileSync(new URL('structures/site.json', CONTENT), 'utf8')) as SiteStructure;
+  const SECTIONS = (STRUCTURE.home.children ?? []).filter((n): n is HubNode => n.kind === 'hub');
+
+  test("the navigation is the site structure's: its entries on every page, in the header and the phone menu, the current one marked", async ({ page }) => {
+    const entries = (STRUCTURE.menus?.primary ?? []).map((e) => ('node' in e ? (e.label ?? SECTIONS.find((n) => n.id === e.node)?.navLabel ?? SECTIONS.find((n) => n.id === e.node)?.title) : e.label));
+    const nav = page.getByRole('navigation', { name: 'Sections' });
+    for (const path of ['/', '/work/', ARTICLE]) {
+      await page.goto(path);
+      await expect(nav.getByRole('link').filter({ hasNotText: 'Explore in 3D' }), path).toHaveText(entries as string[]);
+    }
+    await expect(nav.getByRole('link', { name: 'Leadership' })).toHaveAttribute('aria-current', 'page');
+    await expect(nav.locator('[aria-current]')).toHaveCount(1);
+    await page.goto('/work/');
+    await expect(nav.getByRole('link', { name: 'Work' })).toHaveAttribute('aria-current', 'page');
+    // on a phone, the same entries fold into the menu
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.locator('[data-menu-toggle]').click();
+    await expect(nav.getByRole('link').filter({ hasNotText: 'Explore in 3D' })).toHaveText(entries as string[]);
+  });
+
+  test('each section lists its pages in its view, and an empty one says so; the home page lists the sections', async ({ page }) => {
+    for (const s of SECTIONS) {
+      await page.goto(`/${s.slug}/`);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(s.title);
+      await expect(page.locator('main [data-view]')).toHaveAttribute('data-view', s.view ?? 'tiles');
+      const pages = (s.children ?? []).length;
+      if (pages) await expect(page.locator('main article.card')).toHaveCount(pages);
+      else await expect(page.getByText('Nothing here yet. This section is being written.')).toBeVisible();
+    }
+    await page.goto('/');
+    const list = page.getByRole('list', { name: 'Sections' });
+    await expect(list.getByRole('heading')).toHaveText(SECTIONS.map((s) => s.title));
+    await expect(list.getByText('Being written')).toHaveCount(SECTIONS.filter((s) => !(s.children ?? []).length).length);
+    // Read the site goes down to them, below the header
+    await page.getByRole('main').getByRole('link', { name: 'Read the site' }).click();
+    await expect.poll(() => page.evaluate(() => Math.round(document.getElementById('sections')!.getBoundingClientRect().top))).toBeGreaterThanOrEqual(56);
+  });
+
   test('the article and its hub pass axe in light and dark', async ({ page }) => {
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
-      for (const path of ['/leadership/', ARTICLE]) {
+      for (const path of ['/', '/leadership/', '/work/', '/about/', ARTICLE]) {
         await page.goto(path);
         await noSeriousViolations(page);
       }

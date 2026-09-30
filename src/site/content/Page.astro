@@ -1,17 +1,18 @@
 ---
 /**
- * A page the site structure places, rendered with its template (documentation/content/ia.md §3): an
- * item's page (an article, with the article layout) or a hub's (an index of what it places). The public
+ * A page the site structure places (documentation/sections/spec.md §3): a page, opened as its kind reads
+ * (an article's byline, date and reading time; a page's title only; a gallery's number of pictures), or a
+ * section, listing its published pages in its view. The navigation is the structure's (§4). The public
  * route renders it; so does edit mode's canvas, with `editable`, which adds only what the canvas needs
  * to find each block (a comment before it) and passes the page-end slot through for its overlay.
  */
 import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Blocks from './Blocks.astro';
-import { getArticle, getPerson, getRoutes, getSite } from './repository';
+import { getArticle, getPerson, getRedirects, getRoutes, getSite, getStructure } from './repository';
 import { picture } from './pictures';
-import { readingMinutes } from './reading';
-import { classicNav, classicSections, exploreAction } from '../classic';
+import { pageMeasure } from './reading';
+import { exploreAction, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import type { Route } from './routes';
 import type { Article } from './schema';
@@ -28,8 +29,8 @@ interface Props {
 
 const { route, editable = false } = Astro.props;
 const site = getSite();
-const nav = classicNav(await classicSections());
-const action = exploreAction();
+const nav = siteNav(getStructure(), getRoutes(), route);
+const action = exploreAction(route, getRedirects());
 const node = route?.node;
 const article = Astro.props.article ?? (node?.kind === 'item' && node.item.type === 'article' ? getArticle(node.item.id) : undefined);
 const title = route?.title ?? article?.title ?? site.name;
@@ -42,16 +43,19 @@ if (article) {
   const owner = getPerson(site.owner)!;
   const hero = article.hero && (await picture(article.hero.media, 'wide'));
   const avatar = owner.avatar ? await picture(owner.avatar, 'card') : undefined;
-  const parent = route?.parent;
-  const parentCrumb = route?.ancestors.at(-1);
+  // its section (a page's parent is always one: V22)
+  const section = route && route.ancestors.length > 1 ? route.ancestors.at(-1) : undefined;
+  const lead = hero && (article.hero?.showCaption === false ? { ...hero, caption: undefined, credit: undefined } : { ...hero, caption: article.hero?.caption ?? hero.caption, credit: article.hero?.credit ?? hero.credit });
+  const story = article.kind === 'note' || article.kind === 'talk';
   header = {
     title: article.title,
     standfirst: article.summary,
-    topic: parent && parent.template !== 'home' && parentCrumb ? { label: parentCrumb.label, href: withBase(parentCrumb.path) } : undefined,
-    author: { name: owner.name, avatar: avatar?.thumb },
-    date: article.publishedAt,
-    readingTime: `${readingMinutes(article)} min read`,
-    picture: hero && (article.hero?.showCaption === false ? { ...hero, caption: undefined, credit: undefined } : { ...hero, caption: article.hero?.caption ?? hero.caption, credit: article.hero?.credit ?? hero.credit }),
+    // an article carries its section, byline and date; a page and a gallery open with their words only
+    topic: story && section ? { label: section.label, href: withBase(section.path) } : undefined,
+    author: story ? { name: owner.name, avatar: avatar?.thumb } : undefined,
+    date: story ? article.publishedAt : undefined,
+    readingTime: pageMeasure(article),
+    picture: lead,
   };
 }
 
@@ -64,7 +68,7 @@ const stories =
           .map(async (r) => {
             const a = getArticle((r.node as { item: { id: string } }).item.id)!;
             const p = a.hero && (await picture(a.hero.media, 'card'));
-            return { href: withBase(r.path), title: a.title, dek: a.summary, meta: `${readingMinutes(a)} min read`, picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height } };
+            return { href: withBase(r.path), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height } };
           }),
       )
     : [];
@@ -77,6 +81,19 @@ const stories =
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>
   ) : (
-    node?.kind === 'hub' && <IndexLayout title={docTitle} description={node.summary} heading={node.title} standfirst={node.summary} nav={nav} action={action} crumbs={crumbs} stories={stories} />
+    node?.kind === 'hub' && (
+      <IndexLayout
+        title={docTitle}
+        description={node.summary}
+        heading={node.title}
+        standfirst={node.summary}
+        nav={nav}
+        action={action}
+        crumbs={crumbs}
+        stories={stories}
+        view={node.view}
+        empty="Nothing here yet. This section is being written."
+      />
+    )
   )
 }

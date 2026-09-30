@@ -2,7 +2,8 @@
 /**
  * A story on an index: its picture, its topic, its title, one line on what it's about, and when. The
  * whole card is one link (to its title), so it's one stop for the keyboard and a big target for a
- * finger. Feature spreads the picture beside the words for the lead story; compact leaves it out.
+ * finger. Feature spreads the picture beside the words for the lead story; row sets the words first
+ * with a small picture at the end, a line of a section's list; compact leaves the picture out.
  * @tier compound
  * @a11y One link per card, on the title; the rest of the card is clickable through it (a stretched link), so a screen reader hears the title, not the whole card.
  * @a11y The heading level is set by the page (h2 on an index, h3 under a section heading).
@@ -25,8 +26,8 @@ interface Props {
   meta?: string;
   /** The story’s picture (cropped 3:2, or 4:3 for a feature). */
   picture?: { src: string; srcset?: string; alt: string; width: number; height: number };
-  /** standard: picture above; feature: picture beside, larger type; compact: no picture. */
-  variant?: 'standard' | 'feature' | 'compact';
+  /** standard: picture above; feature: picture beside, larger type; row: words first, a small picture at the end (a list); compact: no picture. */
+  variant?: 'standard' | 'feature' | 'row' | 'compact';
   /** The title’s heading level: h2 on an index, h3 under a section heading. */
   headingLevel?: 2 | 3;
 }
@@ -42,7 +43,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
           <Image
             src={picture.src}
             srcset={picture.srcset}
-            sizes={variant === 'feature' ? '(max-width: 56rem) 92vw, 50vw' : '(max-width: 40rem) 92vw, (max-width: 72rem) 46vw, 30vw'}
+            sizes={variant === 'feature' ? '(max-width: 56rem) 92vw, 50vw' : variant === 'row' ? '(max-width: 40rem) 6rem, 11rem' : '(max-width: 40rem) 92vw, (max-width: 72rem) 46vw, 30vw'}
             alt={picture.alt}
             width={picture.width}
             height={picture.height}
@@ -77,6 +78,24 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
   .card[data-variant='compact'] {
     padding-block-start: var(--space-5);
     border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  /* a line of a list: the words first, the picture at the end of the row */
+  .card[data-variant='row'] {
+    grid-template-columns: minmax(0, 1fr) var(--c-index-row-picture);
+    gap: var(--space-8);
+    padding-block-start: var(--space-6);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .card[data-variant='row'] .picture {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .card[data-variant='row'] .words {
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .picture {
@@ -143,6 +162,13 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
   @media (max-width: 56rem) {
     .card[data-variant='feature'] {
       grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-5);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .card[data-variant='row'] {
+      grid-template-columns: minmax(0, 1fr) var(--c-index-row-picture-compact);
       gap: var(--space-5);
     }
   }

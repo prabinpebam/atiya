@@ -227,8 +227,12 @@ test.describe('editor', () => {
     await page.keyboard.press('Control+Alt+3');
     await expect.poll(() => blocks()[p]).toMatchObject({ type: 'heading', level: 3 });
     await page.locator(`[data-editor-select="${p}"]`).focus();
+    // the change reloads the canvas: mark the page it shows now, so the next step waits for the new one
+    const canvas = () => page.frames().find((f) => f.url().includes('/_edit/canvas/'))!;
+    await canvas().evaluate(() => ((window as unknown as { stale: boolean }).stale = true));
     await page.keyboard.press('Control+Alt+0');
     await expect.poll(() => blocks()[p].type).toBe('text');
+    await expect.poll(() => canvas().evaluate(() => !!(window as unknown as { stale?: boolean }).stale).catch(() => true)).toBe(false);
 
     // on the canvas, while its words are being edited: the keys, and the toolbar offers Turn into
     const words = frame(page).locator('[data-editor-editable="rich"]').first();
@@ -422,15 +426,17 @@ test.describe('editor', () => {
 
   test('sections: a new section, reordered with the keys, saved to the structure; a published page keeps its address', async ({ page }) => {
     await page.goto('/_edit/sections/');
+    const sections = readJson(join(FIXTURE, 'content/structures/site.json')).home.children.length;
     await page.locator('[data-dialog-open="new-section"]').click();
     await page.locator('#new-section').getByLabel('Title').fill('Field notes');
     await page.locator('#new-section').getByRole('button', { name: 'Add the section' }).click();
     const item = page.locator('[role="treeitem"][data-node="field-notes"]');
     await expect(item).toBeFocused({ timeout: 15_000 });
     await page.keyboard.press('Alt+ArrowUp');
-    await expect(page.locator('[role="treeitem"][data-node="field-notes"]')).toHaveAttribute('data-position', '0', { timeout: 15_000 });
+    // added last among the sections, then up one
+    await expect(page.locator('[role="treeitem"][data-node="field-notes"]')).toHaveAttribute('data-position', String(sections - 1), { timeout: 15_000 });
     const home = readJson(join(FIXTURE, 'content/structures/site.json')).home;
-    expect(home.children[0]).toMatchObject({ id: 'field-notes', slug: 'field-notes', title: 'Field notes' });
+    expect(home.children[sections - 1]).toMatchObject({ id: 'field-notes', kind: 'hub', slug: 'field-notes', title: 'Field notes', view: 'tiles' });
     await page.locator('[role="treeitem"][data-node="leadership"] .name').click();
     await expect(page.locator('[data-sections-hub="leadership"] input[name="slug"]')).toBeDisabled();
   });

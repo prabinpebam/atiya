@@ -21,7 +21,7 @@ interface Props {
   /** The section chosen at first ('' for none). */
   section?: string;
   /** The kind chosen at first. */
-  kind?: 'note' | 'page';
+  kind?: 'note' | 'page' | 'gallery';
   /** The article the delete confirmation deletes (left out, the opener sets it on the dialog). */
   article?: string;
 }
@@ -41,6 +41,7 @@ const { mode, sections = [], section = '', kind = 'note', article } = Astro.prop
         options={[
           { value: 'note', label: 'Article', description: 'A story, a note or an essay' },
           { value: 'page', label: 'Page', description: 'About, Contact and the like' },
+          { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' },
         ]}
       />
       <Select label="Section" name="section" value={section} options={[{ value: '', label: 'Not on the site yet', description: 'Place it later from Sections' }, ...sections]} hint="Where it sits on the site, and so its address." />

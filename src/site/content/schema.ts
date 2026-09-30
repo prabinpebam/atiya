@@ -76,10 +76,14 @@ export const block = z.discriminatedUnion('type', [
 
 const itemRef = z.strictObject({ type: z.enum(['article', 'caseStudy', 'practiceArea', 'leadershipTopic', 'gallery', 'resume']), id });
 
+/** A page's kind: how its opening reads (documentation/sections/spec.md §3.3). `note` is shown as "Article". */
+export const PAGE_KINDS = ['note', 'page', 'gallery', 'talk'] as const;
+export type PageKind = (typeof PAGE_KINDS)[number];
+
 export const article = z.strictObject({
   id,
   type: z.literal('article'),
-  kind: z.enum(['page', 'note', 'talk']),
+  kind: z.enum(PAGE_KINDS),
   slug: id,
   title: z.string().min(1),
   navLabel: z.string().optional(),
@@ -116,15 +120,27 @@ export const siteSettings = z.strictObject({
   contactEmail: z.email().optional(),
 });
 
-const itemType = z.enum(['article', 'caseStudy', 'practiceArea', 'leadershipTopic', 'gallery', 'resume']);
+/**
+ * What a structure places: a page (the article resource, whatever its kind). The content model's other
+ * item types have no repository or renderer yet, so a structure can't refer to them (spec §3.3).
+ */
+const pageRef = z.strictObject({ type: z.literal('article'), id });
+
+/** How a section (or a building on the planet) lists its pages. */
+export const SECTION_VIEWS = ['list', 'tiles', 'bento'] as const;
+export type SectionView = (typeof SECTION_VIEWS)[number];
+
+/** A navigation label: short enough for the header's row (V17). */
+const navLabel = z.string().min(1).max(24);
 
 export interface ItemNode {
   id: string;
   kind: 'item';
   slug?: string;
   navLabel?: string;
-  item: { type: z.infer<typeof itemType>; id: string };
+  item: { type: 'article'; id: string };
 }
+/** The home hub (the root) or a section (a hub directly under it): documentation/sections/spec.md §3. */
 export interface HubNode {
   id: string;
   kind: 'hub';
@@ -132,28 +148,49 @@ export interface HubNode {
   title: string;
   navLabel?: string;
   summary?: string;
-  template: 'home' | 'workIndex' | 'expertiseOverview' | 'leadershipOverview' | 'notesIndex';
+  view?: SectionView;
   sequence?: boolean;
   children?: SiteNode[];
 }
 export type SiteNode = HubNode | ItemNode;
 
-const itemNode = z.strictObject({ id, kind: z.literal('item'), slug: id.optional(), navLabel: z.string().optional(), item: z.strictObject({ type: itemType, id }) });
+const itemNode = z.strictObject({ id, kind: z.literal('item'), slug: id.optional(), navLabel: navLabel.optional(), item: pageRef });
 const hubNode: z.ZodType<HubNode> = z.lazy(() =>
   z.strictObject({
     id,
     kind: z.literal('hub'),
     slug: z.union([id, z.literal('')]),
     title: z.string().min(1),
-    navLabel: z.string().optional(),
+    navLabel: navLabel.optional(),
     summary: z.string().max(160).optional(),
-    template: z.enum(['home', 'workIndex', 'expertiseOverview', 'leadershipOverview', 'notesIndex']),
+    view: z.enum(SECTION_VIEWS).optional(),
     sequence: z.boolean().optional(),
     children: z.array(z.union([hubNode, itemNode])).optional(),
   }),
 );
 
-export const siteStructure = z.strictObject({ home: hubNode });
+/**
+ * An entry of the top navigation (spec §4.1): a node of the tree (a section or a page), with an
+ * optional label of its own, or a custom link (an https, http or mailto address, or a path on the site).
+ */
+export type MenuEntry = { node: string; label?: string } | { label: string; href: string };
+const menuEntry = z.union([
+  z.strictObject({ node: id, label: navLabel.optional() }),
+  z.strictObject({ label: navLabel, href: z.string().regex(/^(https?:\/\/\S+|mailto:\S+|\/[^\s]*)$/, 'an https, http or mailto address, or a path on this site (/…)') }),
+]);
+
+export const siteStructure = z.strictObject({
+  home: hubNode,
+  menus: z.strictObject({ primary: z.array(menuEntry).max(8, 'the navigation holds at most eight entries') }).optional(),
+});
+
+/** A page's old address sent on to its new one (spec §3.5, V19): both paths on this site. */
+export const redirects = z.array(
+  z.strictObject({
+    from: z.string().regex(/^\/[^\s#?]*\/$/, 'a path on this site, ending in /'),
+    to: z.string().regex(/^\/[^\s?]*$/, 'a path on this site (a #fragment may follow)'),
+  }),
+);
 
 export type ImageMedia = z.infer<typeof imageMedia>;
 export type Block = z.infer<typeof block>;
@@ -161,3 +198,4 @@ export type Article = z.infer<typeof article>;
 export type Person = z.infer<typeof person>;
 export type SiteSettings = z.infer<typeof siteSettings>;
 export type SiteStructure = z.infer<typeof siteStructure>;
+export type Redirect = z.infer<typeof redirects>[number];

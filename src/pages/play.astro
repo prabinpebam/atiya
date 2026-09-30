@@ -35,11 +35,11 @@ const cross = icon(faXmark);
 ---
 
 <BaseLayout title="Explore the little planet — Prabin Pebam" bodyClass="play surface-wood">
-  <a class="skip-link" href={withBase('/classic/')} data-classic-link>Skip to classic site</a>
+  <a class="skip-link" href={withBase('/#sections')} data-classic-link>Skip to classic site</a>
   <header class="play-header">
     <a class="brand" href={withBase('/')}>Prabin Pebam</a>
     <div class="play-actions">
-      <a class="btn" href={withBase('/classic/')} data-classic-link>Classic site</a>
+      <a class="btn" href={withBase('/#sections')} data-classic-link>Classic site</a>
       <div id="hud-actions" class="hud-actions"></div>
     </div>
   </header>
@@ -78,7 +78,7 @@ const cross = icon(faXmark);
     </section>
   </main>
   <noscript>
-    <div class="overlay"><div class="card center-card"><p class="card-title">The 3D planet needs JavaScript.</p><p><a class="btn primary" href={withBase('/classic/')}>Go to the classic site</a></p></div></div>
+    <div class="overlay"><div class="card center-card"><p class="card-title">The 3D planet needs JavaScript.</p><p><a class="btn primary" href={withBase('/#sections')}>Go to the classic site</a></p></div></div>
   </noscript>
   <script type="application/json" id="landmarks-data" set:html={json} />
   <script type="application/json" id="greeting-data" set:html={greetingJson} />

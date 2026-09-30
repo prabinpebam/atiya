@@ -73,7 +73,7 @@ export async function saveArticle(req: SaveArticle): Promise<Result & { article?
 export interface CreateArticle {
   title: string;
   summary: string;
-  kind: 'page' | 'note';
+  kind: 'page' | 'note' | 'gallery';
   section: string | null;
 }
 

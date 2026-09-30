@@ -1,6 +1,6 @@
 ---
 /**
- * The page's foot: where else to go (the planet, the classic site, the design library, how the site was
+ * The page's foot: where else to go (the planet, the home page, the design library, how the site was
  * built), the colophon and the small print. Quiet, on the sunk paper.
  * @tier compound
  * @a11y A contentinfo landmark; the link list is labelled.
@@ -17,7 +17,7 @@ interface Props {
 const {
   links = [
     { label: 'Explore the planet', href: withBase('/play/') },
-    { label: 'Classic site', href: withBase('/classic/') },
+    { label: 'Home', href: withBase('/') },
     { label: 'Design library', href: withBase('/design/') },
     { label: 'How this site was built', href: withBase('/docs/') },
   ],
@@ -82,6 +82,7 @@ const year = new Date().getFullYear();
     display: inline-flex;
     align-items: center;
     min-height: var(--size-touch);
+    min-width: var(--size-touch);
     color: var(--color-text);
     font-weight: var(--weight-medium);
     text-decoration: none;

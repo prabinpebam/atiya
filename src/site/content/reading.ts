@@ -16,3 +16,26 @@ export function wordCount(a: Article): number {
 }
 
 export const readingMinutes = (a: Article) => Math.max(1, Math.round(wordCount(a) / WORDS_PER_MINUTE));
+
+/** How many pictures a page shows in its body (a Gallery's measure instead of reading time; each picture once). */
+export function pictureCount(a: Article): number {
+  const ids = new Set<string>();
+  for (const b of a.body) {
+    if (b.type === 'figure') ids.add(b.media);
+    else if (b.type === 'gallery' || b.type === 'carousel') for (const i of b.items) ids.add(i.media);
+  }
+  return ids.size;
+}
+
+/**
+ * A page's measure, by its kind (documentation/sections/spec.md §3.3): an article's reading time, a
+ * gallery's number of pictures, and nothing for a page (About, Contact).
+ */
+export function pageMeasure(a: Article): string | undefined {
+  if (a.kind === 'page') return undefined;
+  if (a.kind === 'gallery') {
+    const n = pictureCount(a);
+    return `${n} ${n === 1 ? 'picture' : 'pictures'}`;
+  }
+  return `${readingMinutes(a)} min read`;
+}

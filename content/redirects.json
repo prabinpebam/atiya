@@ -1,0 +1,34 @@
+[
+  {
+    "from": "/classic/",
+    "to": "/#sections"
+  },
+  {
+    "from": "/classic/workshop/",
+    "to": "/work/"
+  },
+  {
+    "from": "/classic/town-hall/",
+    "to": "/about/"
+  },
+  {
+    "from": "/classic/lighthouse/",
+    "to": "/leadership/"
+  },
+  {
+    "from": "/classic/library/",
+    "to": "/writing/"
+  },
+  {
+    "from": "/classic/amphitheater/",
+    "to": "/talks/"
+  },
+  {
+    "from": "/classic/greenhouse/",
+    "to": "/side-projects/"
+  },
+  {
+    "from": "/classic/post-office/",
+    "to": "/contact/"
+  }
+]

@@ -1,9 +1,9 @@
 ---
 /**
- * An index: a section's front page, with its title set large, a standfirst, and the list of what's in
- * it below: story cards (the first as a feature, the rest in a grid) or a contents list, with the
- * whitespace a magazine's section opener has.
- * Defined once; the classic site's front page and every future index (work, notes) use it.
+ * An index: a section's front page, with its title set large, a standfirst, and its pages below in the
+ * section's view: a list (rows, words first), tiles (an even grid of cards) or a bento box (the lead
+ * across the page, then rows of halves and thirds), with the whitespace a magazine's section opener has.
+ * An empty section says so. Defined once; every section uses it (documentation/sections/spec.md §3.4).
  * @tier layout
  * @a11y One h1, the page's title; the list's headings are h2. A main landmark with id="main".
  */
@@ -32,15 +32,20 @@ interface Props {
   action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
   /** For an index below the top level. */
   crumbs?: { trail: { label: string; href: string }[]; current: string };
-  /** The stories in it: the first as a feature, the rest in a grid. */
+  /** The pages in it, in order. */
   stories?: Omit<ComponentProps<typeof StoryCard>, 'variant'>[];
+  /** How they're laid out: list (rows), tiles (an even grid) or bento (a lead, then halves and thirds). */
+  view?: 'list' | 'tiles' | 'bento';
+  /** What an empty section says, in place of its pages. */
+  empty?: string;
+  /** For an address that moved: the page sends the reader on to this path at once (and says so, with a link). */
+  redirect?: string;
 }
 
-const { title, description, heading, standfirst, nav, action, crumbs, stories = [] } = Astro.props;
-const [lead, ...rest] = stories;
+const { title, description, heading, standfirst, nav, action, crumbs, stories = [], view = 'tiles', empty, redirect } = Astro.props;
 ---
 
-<PageShell title={title} description={description} preload={['display', 'display-italic', 'text', 'ui']}>
+<PageShell title={title} description={description} redirect={redirect} preload={['display', 'display-italic', 'text', 'ui']}>
   <SiteHeader nav={nav} action={action} />
   <main id="main" class="index" tabindex="-1">
     <header class="intro">
@@ -48,19 +53,38 @@ const [lead, ...rest] = stories;
       <Heading level={1} size="display">{heading}</Heading>
       {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
     </header>
-    <div class="list">
+    <div class="list" data-view={view}>
       {
-        lead && (
-          <div class="stories">
-            <StoryCard {...lead} variant="feature" />
-            {rest.length > 0 && (
-              <div class="grid">
-                {rest.map((s) => (
-                  <StoryCard {...s} />
-                ))}
-              </div>
-            )}
-          </div>
+        stories.length > 0 ? (
+          view === 'list' ? (
+            <div class="rows">
+              {stories.map((s) => (
+                <StoryCard {...s} variant="row" />
+              ))}
+            </div>
+          ) : view === 'bento' ? (
+            <div class="bento">
+              {stories.map((s, i) => (
+                <div class="cell">
+                  <StoryCard {...s} variant={i === 0 ? 'feature' : undefined} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div class="grid">
+              {stories.map((s) => (
+                <StoryCard {...s} />
+              ))}
+            </div>
+          )
+        ) : (
+          empty && (
+            <div class="empty">
+              <Text variant="lead" tone="muted">
+                {empty}
+              </Text>
+            </div>
+          )
         )
       }
       <slot />
@@ -89,14 +113,63 @@ const [lead, ...rest] = stories;
     max-width: var(--size-popout);
   }
 
-  .stories {
-    display: grid;
-    gap: var(--space-section);
-  }
-
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-index-card-min)), 1fr));
     gap: var(--space-16) var(--space-8);
+  }
+
+  .rows {
+    display: grid;
+    gap: var(--space-8);
+    max-width: var(--size-popout);
+  }
+
+  /* the lead across the page, then rows of two halves and rows of three thirds (six columns) */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--space-16) var(--space-8);
+  }
+
+  .cell {
+    grid-column: span 2;
+  }
+
+  .cell:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .cell:nth-child(5n + 2),
+  .cell:nth-child(5n + 3) {
+    grid-column: span 3;
+  }
+
+  .empty {
+    max-width: var(--size-popout);
+    padding-block: var(--space-10);
+    border-block: var(--border-hairline) solid var(--color-rule);
+  }
+
+  @media (max-width: 56rem) {
+    .bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cell,
+    .cell:nth-child(5n + 2),
+    .cell:nth-child(5n + 3) {
+      grid-column: span 1;
+    }
+
+    .cell:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .bento {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 </style>

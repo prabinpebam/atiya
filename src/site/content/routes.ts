@@ -2,7 +2,9 @@
  * The route table, derived from the site structure (documentation/content/ia.md §3): a node's path is
  * the chain of slugs from the home hub down; an item's canonical path is the path of the node that
  * places it. Every node is resolved and checked, drafts included (so two drafts can't claim one address),
- * and each route says whether it's published: only those are built. Pure, so the rules are unit-tested.
+ * and each route says whether it's published: only those are built. The site is three levels, home,
+ * sections and pages (V22), and every node's ID is unique (V21: the navigation refers to nodes by ID;
+ * documentation/sections/spec.md §3.1, §4.1). Pure, so the rules are unit-tested.
  */
 import type { HubNode, SiteNode, SiteStructure } from './schema';
 
@@ -21,6 +23,8 @@ export interface Route {
   ancestors: Crumb[];
   /** The page's title: a hub's own, or the item's. */
   title: string;
+  /** Its label in the navigation and the breadcrumbs: the node's navLabel, else the item's, else the title. */
+  label: string;
   /** Built and public: a hub, or an item whose content is published. A draft's route exists only for the editor's canvas. */
   published: boolean;
 }
@@ -34,8 +38,14 @@ export function buildRoutes(structure: SiteStructure, lookup: ItemTitle): { rout
   const routes: Route[] = [];
   const errors: string[] = [];
   const placed = new Map<string, string>();
+  const ids = new Set<string>();
 
   const visit = (node: SiteNode, parentPath: string, parent: HubNode | undefined, ancestors: Crumb[], depth: number) => {
+    if (ids.has(node.id)) errors.push(`node ${node.id}: another node has this ID; every node's ID is unique (V21)`);
+    ids.add(node.id);
+    if (depth === 1 && node.kind === 'item') errors.push(`node ${node.id}: a page belongs in a section, not directly under the home page (V22)`);
+    if (depth === 2 && node.kind === 'hub') errors.push(`node ${node.id}: a section can't hold another section (V22)`);
+    if (depth > 2) return;
     let slug: string;
     let title: string;
     let label: string;
@@ -63,7 +73,7 @@ export function buildRoutes(structure: SiteStructure, lookup: ItemTitle): { rout
     if (depth === 1 && RESERVED.includes(slug)) errors.push(`node ${node.id}: /${slug}/ is reserved for the code`);
     const path = depth === 0 ? '/' : `${parentPath}${slug}/`;
     if (routes.some((r) => r.path === path)) errors.push(`node ${node.id}: ${path} is already taken`);
-    routes.push({ path, node, parent, ancestors, title, published });
+    routes.push({ path, node, parent, ancestors, title, label, published });
     if (node.kind === 'hub') for (const child of node.children ?? []) visit(child, path, node, [...ancestors, { label, path }], depth + 1);
   };
 

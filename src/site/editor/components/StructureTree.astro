@@ -39,7 +39,7 @@ export interface TreeItem {
   article?: string;
   published?: boolean;
   /** For a hub: its own fields, and whether a published page is under it (then its slug is fixed). */
-  hub?: { title: string; navLabel?: string; summary?: string; slug: string; template: string; locked: boolean; home: boolean };
+  hub?: { title: string; navLabel?: string; summary?: string; slug: string; view: string; locked: boolean; home: boolean };
 }
 
 interface Props {
@@ -52,11 +52,11 @@ interface Props {
 }
 
 const { items, unplaced, sections } = Astro.props;
-const TEMPLATES: SelectOption[] = [
-  { value: 'notesIndex', label: 'An index of stories' },
-  { value: 'workIndex', label: 'Work' },
-  { value: 'expertiseOverview', label: 'Expertise' },
-  { value: 'leadershipOverview', label: 'Leadership' },
+// how a section lists its pages (documentation/sections/spec.md §3.4)
+const VIEWS: SelectOption[] = [
+  { value: 'list', label: 'List', description: 'Rows of titles, words first' },
+  { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
+  { value: 'bento', label: 'Bento', description: 'A lead, then halves and thirds' },
 ];
 ---
 
@@ -90,8 +90,8 @@ const TEMPLATES: SelectOption[] = [
     <Dialog id="new-section" title="New section" size="sm">
       <form class="form" data-sections-new novalidate>
         <TextField label="Title" name="title" required hint="Its heading, and its address made from it." />
-        <Select label="Under" name="parent" value={items[0]?.node} options={sections} />
         <TextField label="Summary" name="summary" multiline rows={2} optional />
+        <Select label="View" name="view" value="tiles" options={VIEWS} />
         <p class="issue" role="alert" data-editor-form-issue hidden></p>
         <div class="actions">
           <Button variant="primary" type="submit" icon="plus">Add the section</Button>
@@ -113,9 +113,9 @@ const TEMPLATES: SelectOption[] = [
             <Heading level={3} size="ui">{it.title}</Heading>
             <TextField label="Title" name="title" value={it.hub!.title} required />
             <TextField label="Menu label" name="navLabel" value={it.hub!.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs." />
-            {!it.hub!.home && <TextField label="Summary" name="summary" value={it.hub!.summary ?? ''} multiline rows={2} optional hint="The standfirst under its title (at most 160 characters)." />}
+            <TextField label="Summary" name="summary" value={it.hub!.summary ?? ''} multiline rows={2} optional hint={it.hub!.home ? 'The line under the name on the home page (at most 160 characters).' : 'The standfirst under its title (at most 160 characters).'} />
             {!it.hub!.home && <TextField label="Slug" name="slug" value={it.hub!.slug} required disabled={it.hub!.locked} hint={it.hub!.locked ? 'Fixed: a published page is under it, and its address would change.' : `Its address: ${it.path}`} />}
-            {!it.hub!.home && <Select label="Template" name="template" value={it.hub!.template} options={TEMPLATES} />}
+            {!it.hub!.home && <Select label="View" name="view" value={it.hub!.view} options={VIEWS} hint="How it lists its pages." />}
             <p class="issue" role="alert" data-editor-form-issue hidden></p>
             <div class="actions">
               <Button variant="primary" type="submit">Save the section</Button>

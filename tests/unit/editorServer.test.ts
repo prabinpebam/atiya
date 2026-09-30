@@ -29,7 +29,7 @@ const article = (over: Record<string, unknown> = {}) => ({ id: 'a', type: 'artic
 const seed = () => {
   put('/content/site.json', { name: 'N', description: 'D', owner: 'p', locale: 'en' });
   put('/content/people/p.json', { id: 'p', name: 'P' });
-  put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', template: 'home', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] } });
+  put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] }] } });
   put('/content/articles/a.json', article());
 };
 const png = (w: number, h: number, alpha = false) => sharp({ create: { width: w, height: h, channels: alpha ? 4 : 3, background: alpha ? { r: 10, g: 120, b: 200, alpha: 0.5 } : { r: 200, g: 120, b: 60 } } }).png().toBuffer();

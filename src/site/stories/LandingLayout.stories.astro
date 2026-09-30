@@ -15,14 +15,14 @@ const plaza = sample('plaza');
   hero={{ title: 'Prabin Pebam', standfirst: 'Principal Design Manager. A portfolio you can walk around, and the same portfolio as plain pages.', picture: plaza }}
 >
   <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet">Explore the planet</Button>
-  <Button variant="secondary" size="lg" href={withBase('/classic/')}>Classic site</Button>
+  <Button variant="secondary" size="lg" href={withBase('/')}>Classic site</Button>
   <Fragment slot="note">The planet is a small 3D world; the classic site has the same content. <Link href={withBase('/docs/')}>How this site was built</Link></Fragment>
   <section slot="after" class="featured" aria-labelledby="featured">
     <Heading level={2} size="h2" id="featured">Selected work</Heading>
     <div class="grid">
-      <StoryCard href={withBase('/classic/workshop/')} title="A printed page for a little planet" dek="Three faces, one spot colour, and pictures given room." topic="Case study" picture={sample('lighthouse-dusk')} />
-      <StoryCard href={withBase('/classic/greenhouse/')} title="Building a planet you can walk around" dek="A portfolio as a small 3D world, with the classic site one tap away." topic="Side project" picture={sample('workshop')} />
-      <StoryCard href={withBase('/classic/town-hall/')} title="One thing asks at a time" dek="How a game decides which prompt to show." topic="Interaction" picture={sample('bridge')} />
+      <StoryCard href={withBase('/work/')} title="A printed page for a little planet" dek="Three faces, one spot colour, and pictures given room." topic="Case study" picture={sample('lighthouse-dusk')} />
+      <StoryCard href={withBase('/side-projects/')} title="Building a planet you can walk around" dek="A portfolio as a small 3D world, with the classic site one tap away." topic="Side project" picture={sample('workshop')} />
+      <StoryCard href={withBase('/about/')} title="One thing asks at a time" dek="How a game decides which prompt to show." topic="Interaction" picture={sample('bridge')} />
     </div>
   </section>
 </LandingLayout>

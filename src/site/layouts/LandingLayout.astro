@@ -1,7 +1,7 @@
 ---
 /**
- * The front page: the masthead, an opening that gives the name and the picture room, the ways in,
- * and whatever sections follow. Defined once; the site's landing uses it.
+ * The front page: the masthead with the site's navigation, an opening that gives the name and the
+ * picture room, the ways in, and what follows (the site's sections). Defined once; the home page uses it.
  * @tier layout
  * @a11y One h1 (the opening's title), a main landmark with id="main" for the skip link.
  */
@@ -18,11 +18,13 @@ interface Props {
   description?: string;
   /** The opening: the name, the standfirst, the picture. */
   hero: { title: string; standfirst?: string; kicker?: string; picture?: HeroPicture; layout?: 'split' | 'stacked' | 'type' };
-  /** The site’s sections, for the header (the landing shows none). */
+  /** The site’s navigation, for the header. */
   nav?: NavItem[];
+  /** The id of what follows the opening, so a link can jump to it (it lands below the header). */
+  afterId?: string;
 }
 
-const { title, description, hero, nav } = Astro.props;
+const { title, description, hero, nav, afterId } = Astro.props;
 ---
 
 <PageShell title={title} description={description} preload={['display', 'display-italic', 'ui']}>
@@ -34,7 +36,7 @@ const { title, description, hero, nav } = Astro.props;
     </Hero>
     {
       Astro.slots.has('after') && (
-        <div class="after">
+        <div class="after" id={afterId}>
           <slot name="after" />
         </div>
       )
@@ -55,5 +57,6 @@ const { title, description, hero, nav } = Astro.props;
     max-width: var(--size-wide);
     margin: var(--space-section) auto 0;
     padding-inline: var(--space-gutter);
+    scroll-margin-block-start: calc(var(--c-header-height) + var(--space-8));
   }
 </style>

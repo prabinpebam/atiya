@@ -2,14 +2,29 @@
 import LandingLayout from '../site/layouts/LandingLayout.astro';
 import Button from '../site/components/fundamentals/Button.astro';
 import Link from '../site/components/fundamentals/Link.astro';
+import ContentsList from '../site/components/compounds/ContentsList.astro';
 import { withBase } from '../site/design/meta';
+import { getPerson, getRoute, getRoutes, getSite, getStructure } from '../site/content/repository';
+import { siteNav } from '../site/content/navigation';
+
+// the home page is the site structure's root (documentation/sections/spec.md §3.5): its words are the
+// home hub's, and below the opening it lists the sections, each with its line and whether it's empty
+const site = getSite();
+const owner = getPerson(site.owner);
+const home = getRoute('/')!;
+const routes = getRoutes();
+const sections = routes.filter((r) => r.parent === home.node);
+const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === r.node).length;
 ---
 
 <LandingLayout
-  title="Prabin Pebam — Principal Design Manager"
+  title={owner?.role ? `${site.name} — ${owner.role}` : site.name}
+  description={site.description}
+  nav={siteNav(getStructure(), routes, home)}
+  afterId="sections"
   hero={{
-    title: 'Prabin Pebam',
-    standfirst: 'Principal Design Manager at Microsoft. This site is under construction: its sections are being written, so some are still empty. Come back soon.',
+    title: home.title,
+    standfirst: home.node.kind === 'hub' ? home.node.summary : undefined,
     picture: {
       src: withBase('/poster/landing-1200.webp'),
       srcset: `${withBase('/poster/landing-800.webp')} 800w, ${withBase('/poster/landing-1200.webp')} 1200w`,
@@ -20,9 +35,20 @@ import { withBase } from '../site/design/meta';
   }}
 >
   <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>
-  <Button variant="secondary" size="lg" href={withBase('/classic/')} data-mode="classic">Classic site</Button>
+  <Button variant="secondary" size="lg" href="#sections" data-mode="classic">Read the site</Button>
   <Fragment slot="note">
-    The planet is a small 3D world you can walk around. The classic site has the same content as regular pages. <Link href={withBase('/docs/')}>How this site was built</Link>
+    The planet is a small 3D world you can walk around. <Link href={withBase('/docs/')}>How this site was built</Link>
+  </Fragment>
+  <Fragment slot="after">
+    <ContentsList
+      label="Sections"
+      entries={sections.map((r) => ({
+        href: withBase(r.path),
+        title: r.title,
+        kicker: pages(r) === 0 ? 'Being written' : undefined,
+        summary: r.node.kind === 'hub' ? r.node.summary : undefined,
+      }))}
+    />
   </Fragment>
 </LandingLayout>
 
@@ -34,11 +60,16 @@ import { withBase } from '../site/design/meta';
       localStorage.setItem('site.mode', m);
     } catch {}
   };
-  if (mode === 'classic' || mode === 'play') {
+  // (the base path: `/atiya` on GitHub Pages)
+  const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+  if (mode === 'play') {
     store(mode);
-    // (the base path: `/atiya` on GitHub Pages)
-    const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
-    location.replace(base + (mode === 'classic' ? '/classic/' : '/play/'));
+    location.replace(base + '/play/');
+  } else if (mode === 'classic') {
+    // the site is this page: stay, and go down to its sections
+    store(mode);
+    history.replaceState(null, '', base + '/#sections');
+    document.getElementById('sections')?.scrollIntoView();
   }
   let last: string | null = null;
   try {

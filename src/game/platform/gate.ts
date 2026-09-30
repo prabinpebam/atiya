@@ -29,7 +29,7 @@ function panel(html: string, focusSelector?: string): void {
   if (focusSelector) container.querySelector<HTMLElement>(focusSelector)?.focus();
 }
 
-const CLASSIC = `<a class="btn primary" href="${withBase('/classic/')}" data-gate-classic>Go to the classic site</a>`;
+const CLASSIC = `<a class="btn primary" href="${withBase('/#sections')}" data-gate-classic>Go to the classic site</a>`;
 
 function bindClassic(): void {
   container.querySelectorAll('[data-gate-classic]').forEach((a) => a.addEventListener('click', () => prefs.setMode('classic')));
@@ -132,7 +132,7 @@ document.querySelectorAll('[data-classic-link]').forEach((a) => a.addEventListen
 const url = parsePlayUrl(location.search);
 if (url.mode === 'classic') {
   prefs.setMode('classic');
-  location.replace(withBase('/classic/'));
+  location.replace(withBase('/#sections'));
 } else {
   if (url.mode === 'play') prefs.setMode('play');
   const decision = decide(probeCapabilities());

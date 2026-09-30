@@ -104,17 +104,19 @@ They can diverge freely: changing one never changes an item or the other structu
 
 One resource, `structures/site`, holds the tree, the home node and the menus.
 
+> **As built (30 September 2026).** The owner's model is exactly three levels: the home page, its sections, and their pages ([sections spec §3](../sections/spec.md#3-sections-and-pages-u3-u6-u7)). So a hub is either the home hub or a section directly under it, an item node sits in a section, and every node's ID is unique (V21, V22). A section has a `view` (`list`, `tiles` or `bento`) rather than a `template`, and the navigation is `menus.primary` alone ([sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)). Placing by query, `hero`, `sections` and the `actions` and `footer` menus below are the longer-term design, not built.
+
 **Nodes.** Every node has an `id` (stable), a `slug` (its URL segment) and optional `children`.
 
 | Kind | What it is | Fields |
 |---|---|---|
-| `hub` | A page that presents: the home page, Work, Expertise, Leadership | `title`, `navLabel?`, `summary`, `template` (`home`, `workIndex`, `expertiseOverview`, `leadershipOverview`, `notesIndex`), `hero?`, `sections` (blocks such as `collection`), `sequence?`, `children` |
-| `item` | An item's canonical page | `item` (an item reference); `slug` defaults to the item's own |
+| `hub` | The home page, or a section: a page that lists its pages | `title`, `navLabel?`, `summary`, `view` (`list`, `tiles`, `bento`), `sequence?`, `children` |
+| `item` | A page's canonical address | `item` (a page reference, `{ type: "article", id }`); `slug` defaults to the page's own |
 
 **Placing by query.** A hub can place items automatically, so adding a case study needs no structure edit:
 
 ```json
-{ "id": "work", "kind": "hub", "slug": "work", "title": "Work", "template": "workIndex",
+{ "id": "work", "kind": "hub", "slug": "work", "title": "Work", "view": "tiles",
   "summary": "Selected case studies.",
   "children": { "from": { "type": "caseStudy", "sort": "featured.work,title" } } }
 ```
@@ -136,7 +138,7 @@ home          hub (home)                 /
 
 Later, with a maintenance plan: `notes` (a hub placing notes), `talks`, `now`, `colophon`, `privacy`, `work/archive`. Adding one is a structure change, not code.
 
-**Menus** live in the same resource, and their entries are targets ([model §5](model.md#5-references-and-targets)):
+**Menus** live in the same resource. As built, `menus.primary` is the header's navigation, and each entry is a node (a section or a page) or a custom link. The rest of this table is the longer-term design:
 
 | Menu | Entries (from the [navigation specification](../ia-navigation/04-navigation-specification.md)) | Where it shows |
 |---|---|---|
@@ -148,8 +150,8 @@ Later, with a maintenance plan: `notes` (a hub placing notes), `talks`, `now`, `
 
 - **A path is derived** from the chain of node slugs: `/` + the ancestors' slugs + the node's slug + `/`. The home node is `/`; the 404 hub is written to `/404.html`, which GitHub Pages serves for a missing path.
 - **An item's canonical path** is the path of the node that places it. Every `ref:` link, every item target and the planet's full-page links resolve through it.
-- **The route table** lists every built path: `{ path, node, item?, template, title, breadcrumbs, updatedAt }`. The `files` adapter derives it from the site structure; the API returns it from `GET /v1/routes` ([API §3](api.md#3-resources)).
-- **Rendering.** One catch-all route, `src/pages/[...path].astro`, takes its static paths from the route table and renders the template for the node: a hub's template, or the template for the item's type.
+- **The route table** lists every built path: `{ path, node, item?, title, label, breadcrumbs, updatedAt }`. The `files` adapter derives it from the site structure; the API returns it from `GET /v1/routes` ([API §3](api.md#3-resources)).
+- **Rendering.** One catch-all route, `src/pages/[...path].astro`, takes its static paths from the route table and renders the node: a section's page in its view, or a page as its kind opens. The home page is `src/pages/index.astro`, which reads the home hub. The same route builds the redirect pages in `content/redirects.json` (V19).
 - **Reserved paths** belong to the code, and a node may not claim them: `/play/` (the planet), `/design/` (the design library), `/docs/` (the documentation), `/_astro/` and `/media/` (build output).
 - **The base path** (`/atiya` on GitHub Pages) is added by `withBase` when a path becomes an `href`. It's never in content.
 - **Other outputs:** `sitemap.xml` (published, indexable paths with `updatedAt`) and, once notes exist, a feed.
@@ -208,9 +210,9 @@ One resource, `structures/planet`, holds the places in their fast-travel order.
 ## 7. From today's site
 
 **Decided (O1):** the IA's routes at the root.
-- **Home:** `/` becomes the IA's home hub. How the landing's planet-or-pages choice fits in is O5 (recommended: "Explore the planet" as the hero's action, remembering the visitor's last choice).
-- **Classic URLs:** `/classic/` redirects to `/`, and each `/classic/<landmark>/` redirects to the page its place's `fullPage` names.
-- **The header** keeps its "Explore in 3D" action, from the `actions` menu.
+- **Home:** `/` is the home hub's page. **Decided (O5, 30 September 2026):** the landing folded into it. The opening keeps both ways in ("Explore the planet", "Read the site"), and the sections follow ([sections spec §3.5](../sections/spec.md#35-the-home-page-decision-o5)).
+- **Classic URLs:** `/classic/` redirects to `/#sections`, and each `/classic/<landmark>/` to the section its topic became. The redirects are `content/redirects.json`, built as static pages.
+- **The header** keeps its "Explore in 3D" action, in code.
 
 **Decided (O2):** the planet has its own structure. The first planet structure keeps today's seven landmarks and words, and points them at the new site like this, until you rearrange it:
 

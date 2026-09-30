@@ -4,10 +4,10 @@ import { sample } from '../design/samples';
 import { withBase } from '../design/meta';
 
 const nav = [
-  { label: 'Work', href: withBase('/classic/workshop/') },
-  { label: 'Leadership', href: withBase('/classic/town-hall/') },
-  { label: 'Writing', href: withBase('/classic/library/'), current: true },
-  { label: 'About', href: withBase('/classic/post-office/') },
+  { label: 'Work', href: withBase('/work/') },
+  { label: 'Leadership', href: withBase('/about/') },
+  { label: 'Writing', href: withBase('/writing/'), current: true },
+  { label: 'About', href: withBase('/contact/') },
 ];
 const stories = [
   { title: 'A printed page for a little planet', dek: 'How the classic pages were set like a clean magazine, so the pictures do the talking.', topic: 'Case study', meta: '6 min read', picture: sample('lighthouse-dusk') },
@@ -15,7 +15,7 @@ const stories = [
   { title: 'A pond that reads as one body of water', dek: 'One level, one shader, and a lobed shore.', topic: 'Engineering', meta: '4 min read', picture: sample('pond') },
   { title: 'Wind that everything shares', dek: 'Grass, trees and flags sway to the same gusts.', topic: 'Craft', meta: '5 min read', picture: sample('waterfall') },
   { title: 'Why the planet turns, not the camera', dek: 'Keeping the sky, the sun and the moon in frame.', topic: 'Engineering', meta: '3 min read', picture: sample('plaza-night') },
-].map((s) => ({ ...s, href: withBase('/classic/library/') }));
+].map((s) => ({ ...s, href: withBase('/writing/') }));
 ---
 
 <IndexLayout
@@ -25,4 +25,5 @@ const stories = [
   nav={nav}
   action={{ label: 'Explore in 3D', href: withBase('/play/'), icon: 'planet' }}
   stories={stories}
+  view="bento"
 />

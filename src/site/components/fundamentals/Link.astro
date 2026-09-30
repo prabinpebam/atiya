@@ -105,6 +105,8 @@ const end = external ? svgOf('external') : variant === 'standalone' ? svgOf('arr
     display: inline-flex;
     align-items: center;
     min-height: var(--size-touch);
+    /* a short word (Home) is still a whole target */
+    min-width: var(--size-touch);
     color: var(--color-text-muted);
     text-decoration-color: var(--color-rule);
   }

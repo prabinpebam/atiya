@@ -116,8 +116,8 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
         const fields: Parameters<typeof updateHub>[2] = { title, navLabel: get('navLabel'), summary: get('summary') };
         const slug = get('slug');
         if (slug !== undefined && !form.querySelector<HTMLInputElement>('input[name="slug"]')?.disabled) fields.slug = slug;
-        const template = get('template');
-        if (template) fields.template = template as never;
+        const view = get('view');
+        if (view === 'list' || view === 'tiles' || view === 'bento') fields.view = view;
         void put(updateHub(state.structure, form.dataset.sectionsHub, fields), form.dataset.sectionsHub, form);
       } else if (form.hasAttribute('data-sections-new')) {
         e.preventDefault();
@@ -126,7 +126,10 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
         if (!title) return say(form, 'A section needs a title.');
         const id = unique(slugify(title), nodeIds(state.structure));
         const summary = String(d.get('summary') ?? '').trim();
-        void put(addHub(state.structure, String(d.get('parent') ?? state.structure.home.id), { id, kind: 'hub', slug: slugify(title), title, template: 'notesIndex', ...(summary ? { summary } : {}), children: [] }), id, form);
+        const v = String(d.get('view') ?? 'tiles');
+        const view = v === 'list' || v === 'bento' ? v : 'tiles';
+        // a section is always directly under the home page (three levels: V22)
+        void put(addHub(state.structure, state.structure.home.id, { id, kind: 'hub', slug: slugify(title), title, ...(summary ? { summary } : {}), view, children: [] }), id, form);
       }
     },
     { signal },

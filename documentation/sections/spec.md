@@ -136,7 +136,7 @@ A section's page is its heading, its standfirst and its pages, in its `view`:
 |---|---|---|
 | **List** | A contents page: one row per page, with its title set large, its one-line summary, its meta, and a small picture at the end of the row | Many pages, words first (writing, talks) |
 | **Tiles** | An even grid of cards: picture, title, summary, meta | A set of equals (case studies) |
-| **Bento** | A mosaic: the first page large across two columns, the rest in single cells, with a wide one every sixth | A few pages with a clear lead (leadership) |
+| **Bento** | A mosaic: the first page across the whole width (its picture beside its words), then a row of two halves and a row of three thirds, in turn | A few pages with a clear lead (leadership) |
 
 - **All three are the layout's, from the same card.** `IndexLayout` takes `view` and arranges `StoryCard`s:
   - `row`, a new variant, for the list;
@@ -508,3 +508,10 @@ A review of v1 against the code found fifteen problems. This is what each change
 Filled in as each phase lands.
 
 - **S1 (30 September 2026):** the copy of §2, and the V20 guard in `tests/unit/copy.test.ts`.
+- **S2 (30 September 2026):** sections, pages and the navigation.
+  - **The contract** (`schema.ts`): a hub's `view` replaced `template`; the `gallery` kind; structures refer only to pages (`article`); `menus.primary`; `content/redirects.json`. The loader checks V17, V19, V21 and V22.
+  - **The content:** the home hub's words, the seven sections (§3.6) with their summaries (what each holds; the status is the page's, not the summary's: "Being written" on the home page, the empty state on the section), and the navigation listing them.
+  - **The design system:** `StoryCard`'s `row` variant; `IndexLayout`'s `view` and `empty` (and `redirect`, for a moved address); `LandingLayout`'s `afterId`; `PageShell`'s `canonical` and `redirect`. Two component tokens, `--c-index-row-picture` and its compact twin.
+  - **The site:** `navigation.ts` (`siteNav`, `exploreHref`) on every page; `classic.ts` and the classic pages are gone. The home page is the home hub's, with the sections below the opening. The footer's "Classic site" became "Home", and the design library's header action "Visit the site".
+  - **Until S4:** "Explore in 3D" finds a section's building through its old classic address in `content/redirects.json`, and the game's building links reach their sections through those redirects. S4 replaces both with the planet structure.
+  - **Edit mode:** the Sections screen's View (for Template), New section always under home with its view, the home hub's summary, and Gallery among the kinds. Structure operations keep `menus`; a move keeps its node; taking a page off the site takes its navigation entry too.

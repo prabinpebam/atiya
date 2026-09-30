@@ -53,9 +53,11 @@ export function articleRows(index: ContentIndex): ArticleRow[] {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.title.localeCompare(b.title));
 }
 
-/** The sections an article can go in, for a select: every hub, indented by depth. */
+/** The sections a page can go in, for a select: every section (a page never sits directly under the home page: V22). */
 export function sectionOptions(index: ContentIndex) {
-  return hubs(index.structure).map((h) => ({ value: h.id, label: `${'\u2003'.repeat(h.depth)}${h.title}`, description: h.path }));
+  return hubs(index.structure)
+    .filter((h) => h.depth === 1)
+    .map((h) => ({ value: h.id, label: h.title, description: h.path }));
 }
 
 export interface LibraryPicture {

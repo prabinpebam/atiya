@@ -23,7 +23,8 @@ export function buildPlaySearch(at: string | null, open = false): string {
 }
 
 export function classicHrefFor(id: string | null): string {
-  return withBase(id ? `/classic/${id}/` : '/classic/');
+  // a building's classic page is its old address, which redirects to its section; the site's is its home page's list of sections
+  return withBase(id ? `/classic/${id}/` : '/#sections');
 }
 
 export function playHrefFor(id: string | null): string {

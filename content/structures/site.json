@@ -5,15 +5,33 @@
     "slug": "",
     "title": "Prabin Pebam",
     "navLabel": "Home",
-    "template": "home",
+    "summary": "Principal Design Manager at Microsoft. This site is under construction: its sections are being written, so some are still empty. Come back soon.",
     "children": [
+      {
+        "id": "work",
+        "kind": "hub",
+        "slug": "work",
+        "title": "Work",
+        "summary": "Case studies of products I’ve led: the problem, the bets, how the team shipped and what changed.",
+        "view": "tiles",
+        "children": []
+      },
+      {
+        "id": "about",
+        "kind": "hub",
+        "slug": "about",
+        "title": "About",
+        "summary": "Who I am, and how I lead and grow design teams.",
+        "view": "list",
+        "children": []
+      },
       {
         "id": "leadership",
         "kind": "hub",
         "slug": "leadership",
         "title": "Leadership",
-        "template": "leadershipOverview",
-        "summary": "How teams, culture and design influence are built.",
+        "summary": "How teams, culture and design influence are built. The first story is up, and more are on their way.",
+        "view": "bento",
         "children": [
           {
             "id": "do-what-makes-you-proud",
@@ -24,6 +42,67 @@
             }
           }
         ]
+      },
+      {
+        "id": "writing",
+        "kind": "hub",
+        "slug": "writing",
+        "title": "Writing",
+        "summary": "Essays and notes on design leadership, craft and building thoughtful products.",
+        "view": "list",
+        "children": []
+      },
+      {
+        "id": "talks",
+        "kind": "hub",
+        "slug": "talks",
+        "title": "Talks",
+        "summary": "Talks and conversations on design and leadership, with their recordings and slides.",
+        "view": "list",
+        "children": []
+      },
+      {
+        "id": "side-projects",
+        "kind": "hub",
+        "slug": "side-projects",
+        "title": "Side projects",
+        "summary": "Prototypes, tools and experiments I build on the side, including this little planet.",
+        "view": "tiles",
+        "children": []
+      },
+      {
+        "id": "contact",
+        "kind": "hub",
+        "slug": "contact",
+        "title": "Contact",
+        "summary": "Ways to get in touch, and my résumé.",
+        "view": "list",
+        "children": []
+      }
+    ]
+  },
+  "menus": {
+    "primary": [
+      {
+        "node": "work"
+      },
+      {
+        "node": "about"
+      },
+      {
+        "node": "leadership"
+      },
+      {
+        "node": "writing"
+      },
+      {
+        "node": "talks"
+      },
+      {
+        "node": "side-projects"
+      },
+      {
+        "node": "contact"
       }
     ]
   }

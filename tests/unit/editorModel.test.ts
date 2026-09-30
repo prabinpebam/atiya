@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import * as ops from '../../src/site/editor/model/ops';
 import * as paste from '../../src/site/editor/model/paste';
 import { inlineOf, markdownOf, plainOf, type MiniNode } from '../../src/site/editor/model/dom';
-import { addHub, childSlugs, findHub, hubs, nodeIds, place, reorder, sectionOf, unplace, updateHub } from '../../src/site/editor/model/structure';
+import { addHub, nodeOf, childSlugs, findHub, hubs, nodeIds, place, reorder, sectionOf, unplace, updateHub } from '../../src/site/editor/model/structure';
 import { slugify, today, unique } from '../../src/site/editor/model/ids';
 import { actionsUrl, groupChanges, resourceName, resourceOf, suggestMessage, type Titles } from '../../src/site/editor/model/names';
 import { ownerLabel, ownerOf, references } from '../../src/site/editor/model/references';
@@ -356,12 +356,12 @@ const STRUCTURE: SiteStructure = {
     kind: 'hub',
     slug: '',
     title: 'Home',
-    template: 'home',
     children: [
-      { id: 'lead', kind: 'hub', slug: 'leadership', title: 'Leadership', template: 'leadershipOverview', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }, { id: 'b', kind: 'item', slug: 'bee', item: { type: 'article', id: 'b' } }] },
-      { id: 'notes', kind: 'hub', slug: 'notes', title: 'Notes', template: 'notesIndex', children: [] },
+      { id: 'lead', kind: 'hub', slug: 'leadership', title: 'Leadership', view: 'bento', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }, { id: 'b', kind: 'item', slug: 'bee', navLabel: 'Bee', item: { type: 'article', id: 'b' } }] },
+      { id: 'notes', kind: 'hub', slug: 'notes', title: 'Notes', view: 'list', children: [] },
     ],
   },
+  menus: { primary: [{ node: 'lead' }, { node: 'b' }, { label: 'GitHub', href: 'https://github.com/x' }] },
 };
 
 describe('the site structure', () => {
@@ -395,8 +395,32 @@ describe('the site structure', () => {
     const edited = updateHub(STRUCTURE, 'notes', { title: 'Field notes', navLabel: '', summary: 'Short notes.' });
     expect(findHub(edited, 'notes')).toMatchObject({ title: 'Field notes', summary: 'Short notes.' });
     expect(findHub(edited, 'notes')).not.toHaveProperty('navLabel');
-    const added = addHub(STRUCTURE, 'home', { id: 'talks', kind: 'hub', slug: 'talks', title: 'Talks', template: 'notesIndex', children: [] });
+    const added = addHub(STRUCTURE, 'home', { id: 'talks', kind: 'hub', slug: 'talks', title: 'Talks', view: 'list', children: [] });
     expect(hubs(added).map((x) => x.path)).toContain('/talks/');
+    expect(findHub(updateHub(STRUCTURE, 'notes', { view: 'tiles' }), 'notes')?.view).toBe('tiles');
+  });
+
+  it('keeps the navigation through every operation on the tree (documentation/sections/spec.md §7.2)', () => {
+    const menus = JSON.stringify(STRUCTURE.menus);
+    const ops = [
+      place(STRUCTURE, 'notes', { type: 'article', id: 'a' }, 'a'),
+      place(STRUCTURE, 'notes', { type: 'article', id: 'new' }, 'new'),
+      reorder(STRUCTURE, 'lead', 0, 1),
+      updateHub(STRUCTURE, 'notes', { title: 'Field notes' }),
+      addHub(STRUCTURE, 'home', { id: 'talks', kind: 'hub', slug: 'talks', title: 'Talks', children: [] }),
+      unplace(STRUCTURE, { type: 'article', id: 'a' }),
+    ];
+    for (const o of ops) expect(JSON.stringify(o.menus)).toBe(menus);
+  });
+
+  it("moves a page with its node, so its address and its navigation entry follow it (V21); taking it off the site takes its entry too", () => {
+    const moved = place(STRUCTURE, 'notes', { type: 'article', id: 'b' }, 'fresh-id');
+    const node = findHub(moved, 'notes')?.children?.[0];
+    expect(node).toEqual({ id: 'b', kind: 'item', slug: 'bee', navLabel: 'Bee', item: { type: 'article', id: 'b' } });
+    expect(nodeOf(moved, { type: 'article', id: 'b' })?.id).toBe('b');
+    expect(moved.menus?.primary).toEqual(STRUCTURE.menus?.primary);
+    const off = unplace(STRUCTURE, { type: 'article', id: 'b' });
+    expect(off.menus?.primary).toEqual([{ node: 'lead' }, { label: 'GitHub', href: 'https://github.com/x' }]);
   });
 });
 

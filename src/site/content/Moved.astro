@@ -1,0 +1,31 @@
+---
+/**
+ * An address that moved (documentation/sections/spec.md §3.5, V19): GitHub Pages can't send a redirect,
+ * so the old address is a small page that sends the reader on at once (a meta refresh), names the new
+ * one as canonical, and links to it for a browser that doesn't follow the refresh.
+ */
+import IndexLayout from '../layouts/IndexLayout.astro';
+import Text from '../components/fundamentals/Text.astro';
+import Link from '../components/fundamentals/Link.astro';
+import { getRoutes, getStructure } from './repository';
+import { exploreAction, siteNav } from './navigation';
+import { withBase } from '../design/meta';
+import type { Redirect } from './schema';
+
+interface Props {
+  /** The old address and the new one. */
+  redirect: Redirect;
+}
+
+const { redirect } = Astro.props;
+---
+
+<IndexLayout
+  title="This page has moved — Prabin Pebam"
+  heading="This page has moved"
+  nav={siteNav(getStructure(), getRoutes())}
+  action={exploreAction()}
+  redirect={redirect.to}
+>
+  <Text variant="lead"><Link href={withBase(redirect.to)} variant="standalone">Go to its new address</Link></Text>
+</IndexLayout>

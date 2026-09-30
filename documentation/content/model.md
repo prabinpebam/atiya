@@ -172,13 +172,16 @@ Every content item has these fields. There's deliberately no `parent`, `order` o
 
 ### Article
 
-Long-form writing that isn't a case study. Its `kind` picks the template.
+Every page of the site, whatever it is: the owner's model is that a page is anything with its own address ([sections spec §3.3](../sections/spec.md#33-pages-one-resource-several-kinds-u7)). Its `kind` decides how its opening reads.
 
-| `kind` | For | Extra fields |
-|---|---|---|
-| `page` | About, Contact, Colophon, Privacy, Now | None |
-| `note` | Notes (later) | `topics` (topic term IDs) |
-| `talk` | A talk, panel or podcast | `event`, `date`, `venue?`, `recording` (a video media ID or an `embed`), `slides?` (a link) |
+| `kind` | Shown as | For | Its opening | Extra fields |
+|---|---|---|---|---|
+| `note` | Article | Stories, case studies, essays, notes | Its section, byline, date and reading time | `topics` (topic term IDs) |
+| `page` | Page | About, Contact, Colophon, Privacy, Now | Title and standfirst only | None |
+| `gallery` | Gallery | A set of pictures with a few words | Title, standfirst and the number of pictures | None |
+| `talk` | Talk | A talk, panel or podcast (reserved: edit mode refuses it until the fields below exist) | As an article | `event`, `date`, `venue?`, `recording` (a video media ID or an `embed`), `slides?` (a link) |
+
+As built, the structures refer only to this resource (`{ "type": "article", "id": … }`): the other item types below have no repository or renderer yet, so a structure that names one is refused.
 
 ### Case study
 
@@ -260,7 +263,8 @@ One résumé, as structured data, so it renders as an HTML page and can feed oth
 
 | Resource | Fields | Notes |
 |---|---|---|
-| **Site structure** (one) | `home` (a node), `nodes` (the tree), `menus` (`primary`, `actions`, `footer`) | The site's IA: pages, URLs, menus ([structures §2](ia.md#2-the-site-structure)) |
+| **Site structure** (one) | `home` (the tree: the home hub, its sections, their pages), `menus` (as built, `primary`: sections, pages and custom links) | The site's IA: pages, URLs, the navigation ([structures §2](ia.md#2-the-site-structure), [sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)) |
+| **Redirects** (one) | `[{ from, to }]`, both paths on the site | An address that moved, built as a static redirect page (V19) |
 | **Planet structure** (one) | `places[]`: `{ id, order, label, kicker, summary ≤ 140, dialog: { intro, highlights ≤ 5 }, entries, fullPage, world }` | The planet's navigation ([structures §5](ia.md#5-the-planet-structure)); `world` is engineering-owned and validated by the game's rules |
 | **Site settings** (one) | `name`, `positioning`, `description`, `owner` (person), `socialImage` (media), `profiles` (`{ label, href, kind }[]`), `contactEmail`, `disclaimer`, `locale` | Everything the site says about itself |
 | **Person** | `id`, `name`, `role`, `bio` (Markdown), `avatar` (media), `links` | The owner, collaborators and testimonial givers (with permission) |
