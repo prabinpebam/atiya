@@ -1,0 +1,144 @@
+---
+/**
+ * A file picker: a labelled drop zone around the browser's own file input, so a file can be chosen with
+ * the system dialog or dropped on the zone, with what was chosen shown in words.
+ * @tier fundamental
+ * @a11y A native file input keeps the platform's dialog and its keyboard use; its label is always there.
+ * @a11y The zone shows focus when the input has it; the chosen files are announced (a live region).
+ * @key Enter / Space: opens the system's file dialog
+ */
+import { svgOf } from '../../design/icons';
+
+interface Props {
+  /** The visible label. */
+  label: string;
+  /** The form field's name. */
+  name?: string;
+  /** The input's id. */
+  id?: string;
+  /** Which files it takes ("image/*"). */
+  accept?: string;
+  /** Takes several files. */
+  multiple?: boolean;
+  /** Supporting text under the zone. */
+  hint?: string;
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, name, id = `file-${Math.random().toString(36).slice(2, 8)}`, accept, multiple = false, hint, ...rest } = Astro.props;
+const icon = svgOf('upload');
+const described = hint ? `${id}-hint` : undefined;
+---
+
+<div class="file-field" data-file-field {...rest}>
+  <label class="label" for={id}>{label}</label>
+  <label class="zone" for={id}>
+    <input class="input" type="file" id={id} name={name} accept={accept} multiple={multiple} aria-describedby={described} />
+    <svg class="icon" viewBox={icon.viewBox} aria-hidden="true" focusable="false" data-icon={icon.name}><Fragment set:html={icon.body} /></svg>
+    <span class="call">{multiple ? 'Choose files, or drop them here' : 'Choose a file, or drop it here'}</span>
+    <span class="chosen" aria-live="polite" data-file-chosen>Nothing chosen yet</span>
+  </label>
+  {hint && <p class="hint" id={described}>{hint}</p>}
+</div>
+
+<style>
+  .file-field {
+    display: grid;
+    gap: var(--space-2);
+    font-family: var(--font-ui);
+    color: var(--color-text);
+  }
+
+  .label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .zone {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-1);
+    padding: var(--space-6) var(--space-4);
+    border: var(--border-control) dashed var(--c-control-border);
+    border-radius: var(--c-control-radius);
+    background: var(--c-control-fill);
+    text-align: center;
+    cursor: pointer;
+    transition:
+      border-color var(--duration-instant) var(--ease-standard),
+      background-color var(--duration-instant) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .zone:hover {
+      border-color: var(--c-control-border-hover);
+    }
+  }
+
+  .zone:active,
+  .zone[data-over] {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  .zone:focus-within {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  .input {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .icon {
+    inline-size: var(--size-icon-lg);
+    block-size: var(--size-icon-lg);
+  }
+
+  .call {
+    font-weight: var(--weight-semibold);
+  }
+
+  .chosen,
+  .hint {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  each<HTMLElement>('[data-file-field]', (root) => {
+    const input = root.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const zone = root.querySelector<HTMLElement>('.zone')!;
+    const chosen = root.querySelector<HTMLElement>('[data-file-chosen]')!;
+    const say = () => {
+      const files = [...(input.files ?? [])];
+      chosen.textContent = files.length ? files.map((f) => f.name).join(', ') : 'Nothing chosen yet';
+    };
+    input.addEventListener('change', say);
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.dataset.over = '';
+    });
+    zone.addEventListener('dragleave', () => delete zone.dataset.over);
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      delete zone.dataset.over;
+      if (!e.dataTransfer?.files.length) return;
+      const list = new DataTransfer();
+      for (const f of [...e.dataTransfer.files].slice(0, input.multiple ? undefined : 1)) list.items.add(f);
+      input.files = list.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+</script>

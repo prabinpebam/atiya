@@ -1,0 +1,48 @@
+---
+/**
+ * The article editor's studio (documentation/editor/spec.md §3): the outline, the canvas and the
+ * inspector side by side, filling the screen under the top bar. The page fills the named slots.
+ * @tier editor
+ * @a11y The three columns are in reading order: the outline, the page, its settings.
+ */
+---
+
+<div class="studio" data-editor-studio>
+  <div class="outline"><slot name="outline" /></div>
+  <div class="canvas"><slot name="canvas" /></div>
+  <div class="inspector"><slot name="inspector" /></div>
+  <slot />
+</div>
+
+<style>
+  .studio {
+    display: grid;
+    grid-template-columns: var(--c-editor-outline) minmax(0, 1fr) var(--c-editor-inspector);
+    block-size: 100%;
+    min-block-size: 0;
+  }
+
+  .outline,
+  .canvas,
+  .inspector {
+    min-block-size: 0;
+    min-inline-size: 0;
+  }
+
+  @media (max-width: 72rem) {
+    .studio {
+      grid-template-columns: minmax(0, 1fr) var(--c-editor-inspector);
+    }
+
+    .outline {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initEditor } from '../scripts/editor';
+
+  each<HTMLElement>('[data-editor-studio]', (root, signal) => initEditor(root, signal));
+</script>

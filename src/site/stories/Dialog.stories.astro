@@ -1,0 +1,39 @@
+---
+import Example from '../library/Example.astro';
+import Dialog from '../components/compounds/Dialog.astro';
+import Button from '../components/fundamentals/Button.astro';
+import TextField from '../components/fundamentals/TextField.astro';
+import Text from '../components/fundamentals/Text.astro';
+---
+
+<Example title="A question" description="A small dialog that asks one thing, with its one main action.">
+  <Button variant="secondary" data-dialog-open="story-dialog-ask">Delete the draft</Button>
+  <Dialog id="story-dialog-ask" title="Delete this draft?" size="sm">
+    <Text variant="ui">The article and its words go. Its pictures stay in the media library.</Text>
+    <Fragment slot="actions">
+      <Button variant="quiet" data-dialog-close="">Keep it</Button>
+      <Button variant="primary">Delete the draft</Button>
+    </Fragment>
+  </Dialog>
+</Example>
+
+<Example title="A form" description="A dialog holding a short form; it scrolls within itself on a short screen.">
+  <Button variant="primary" icon="plus" data-dialog-open="story-dialog-form">New article</Button>
+  <Dialog id="story-dialog-form" title="New article">
+    <form class="stack" method="dialog">
+      <TextField label="Title" required />
+      <TextField label="Summary" multiline rows={3} hint="At most 160 characters: the standfirst and the card's line." required />
+    </form>
+    <Fragment slot="actions">
+      <Button variant="quiet" data-dialog-close="">Cancel</Button>
+      <Button variant="primary">Create the draft</Button>
+    </Fragment>
+  </Dialog>
+</Example>
+
+<style>
+  .stack {
+    display: grid;
+    gap: var(--space-5);
+  }
+</style>

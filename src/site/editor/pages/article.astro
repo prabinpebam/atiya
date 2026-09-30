@@ -1,0 +1,131 @@
+---
+/** Edit mode's article editor (documentation/editor/spec.md §3). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import Studio from '../components/Studio.astro';
+import Outline from '../components/Outline.astro';
+import CanvasFrame from '../components/CanvasFrame.astro';
+import Inspector, { type Thumb } from '../components/Inspector.astro';
+import BlockPalette from '../components/BlockPalette.astro';
+import MediaGrid, { type MediaCard } from '../components/MediaGrid.astro';
+import InsertForms from '../components/InsertForms.astro';
+import ArticleForm from '../components/ArticleForm.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import { load, sectionOptions, STATUS_LABEL } from '../server/screens';
+import { readDoc } from '../server/store';
+import { STRUCTURE, articleKey } from '../server/articles';
+import { isPublished } from '../../content/load';
+import { getPlacement } from '../../content/repository';
+import { picture } from '../../content/pictures';
+import { sectionOf } from '../model/structure';
+import { excerptOf, kindOf } from '../model/ops';
+import { withBase } from '../../design/meta';
+import type { Article, Block, SiteStructure } from '../../content/schema';
+import type { IconName } from '../../design/icons';
+
+export const prerender = false;
+
+const id = Astro.params.id ?? '';
+const loaded = load();
+const doc = readDoc<Article>(articleKey(id));
+if (!doc) return new Response('No such article.', { status: 404 });
+const structure = readDoc<SiteStructure>(STRUCTURE);
+const article = doc.value;
+const published = isPublished(article);
+const section = structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '';
+const route = loaded.ok ? getPlacement('article', id) : undefined;
+
+const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', facts: 'facts' };
+let cards: MediaCard[] = [];
+const thumbs: Record<string, Thumb> = {};
+if (loaded.ok) {
+  cards = await Promise.all(
+    [...loaded.index.media.values()].map(async (m) => {
+      const p = await picture(m.id, 'card');
+      thumbs[m.id] = { thumb: p.thumb, alt: p.alt, width: p.width, height: p.height };
+      return { id: m.id, thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height };
+    }),
+  );
+}
+const blocks = article.body.map((b) => ({ kind: kindOf(b), excerpt: excerptOf(b, (m) => thumbs[m]?.alt), icon: ICON[b.type] }));
+const links = loaded.ok ? [...loaded.index.articles.values()].filter((a) => loaded.index.canonical.has(`article/${a.id}`)).map((a) => ({ value: `ref:article/${a.id}`, label: a.title })) : [];
+const publicPath = route?.published ? withBase(route.path) : null;
+const state = {
+  id,
+  key: articleKey(id),
+  version: doc.version,
+  structureVersion: structure?.version ?? null,
+  section,
+  published,
+  article,
+  canvas: withBase(`/_edit/canvas/articles/${id}/`),
+  publicPath,
+  media: Object.fromEntries(Object.entries(thumbs).map(([k, v]) => [k, { alt: v.alt, thumb: v.thumb }])),
+};
+const json = JSON.stringify(state).replace(/</g, '\\u003c');
+---
+
+<EditorLayout title={article.title} screen="article" nav={false}>
+  <Fragment slot="title">
+    <Link href={withBase('/_edit/articles/')} variant="quiet">Articles</Link>
+    <Text as="span" variant="ui"><strong>{article.title}</strong></Text>
+    <Tag size="sm" tone={published ? 'positive' : 'neutral'}>{STATUS_LABEL[article.status]}</Tag>
+  </Fragment>
+  <Fragment slot="tools">
+    <IconButton label="Undo" icon="undo" size="sm" data-editor-undo="" />
+    <IconButton label="Redo" icon="redo" size="sm" data-editor-redo="" />
+    <IconButton label="Desktop width" icon="desktop" size="sm" pressed={true} data-editor-device="desktop" />
+    <IconButton label="Tablet width" icon="tablet" size="sm" pressed={false} data-editor-device="tablet" />
+    <IconButton label="Phone width" icon="phone" size="sm" pressed={false} data-editor-device="phone" />
+    <IconButton label="Dark page" icon="theme-dark" size="sm" pressed={false} data-editor-theme="" />
+    <IconButton label="Preview without the editor" icon="preview" size="sm" pressed={false} data-editor-preview="" />
+    {publicPath && <IconButton label="View on the site" icon="external" size="sm" href={publicPath} />}
+  </Fragment>
+  {
+    loaded.ok ? (
+      <Studio>
+        <Outline slot="outline" blocks={blocks} />
+        <CanvasFrame slot="canvas" src={state.canvas} />
+        <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} published={published} path={route?.path ?? null} />
+        <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
+        <Dialog id="editor-palette" title="Add a block" size="lg">
+          <BlockPalette />
+        </Dialog>
+        <Dialog id="editor-picker" title="Choose a picture" size="lg">
+          <MediaGrid mode="pick" media={cards} owner={`articles/${id}`} />
+        </Dialog>
+        <Dialog id="editor-insert-quote" title="Add a quote">
+          <InsertForms kind="quote" />
+        </Dialog>
+        <Dialog id="editor-insert-facts" title="Add facts">
+          <InsertForms kind="facts" />
+        </Dialog>
+        <Dialog id="editor-insert-video" title="Add a video">
+          <InsertForms kind="video" />
+        </Dialog>
+        <Dialog id="editor-insert-carousel" title="Name the carousel" size="sm">
+          <InsertForms kind="carousel" />
+        </Dialog>
+        <Dialog id="editor-insert-link" title="Link" size="sm">
+          <InsertForms kind="link" articles={links} />
+        </Dialog>
+        <Dialog id="editor-conflict" title="This article changed elsewhere" size="sm">
+          <Text variant="ui">Its file was changed outside this editor (by hand, or in another tab) since you opened it. Reload it to carry on from what's there now; nothing you did after that was saved.</Text>
+          <Fragment slot="actions">
+            <Button variant="primary" icon="restore" data-editor-reload="">Reload it</Button>
+          </Fragment>
+        </Dialog>
+        <Dialog id="delete-article" title="Delete this draft?" size="sm">
+          <ArticleForm mode="delete" article={id} />
+        </Dialog>
+      </Studio>
+    ) : (
+      <ContentIssues issues={loaded.issues} />
+    )
+  }
+</EditorLayout>

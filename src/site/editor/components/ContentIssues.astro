@@ -1,0 +1,69 @@
+---
+/**
+ * The content's problems, when a file was broken by hand: each issue with its file and field, so the
+ * editor says what to fix rather than failing. Every screen shows it in place of its content.
+ * @tier editor
+ * @a11y A heading and a plain list; each file is named in code, each problem in words.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import type { Issue } from '../../content/load';
+
+interface Props {
+  /** The problems, from the content check. */
+  issues: Issue[];
+}
+
+const { issues } = Astro.props;
+---
+
+<section class="issues" aria-labelledby="content-issues">
+  <Heading level={2} size="h3" id="content-issues">The content has {issues.length} {issues.length === 1 ? 'problem' : 'problems'}</Heading>
+  <Text variant="ui" tone="muted">A file in the content folder was changed outside edit mode and no longer passes the content check. Fix these in the files, and this screen comes back.</Text>
+  <ul class="list">
+    {
+      issues.map((i) => (
+        <li>
+          <code>{i.file}</code>
+          {i.path && <span class="path">{i.path}</span>}
+          <span>{i.message}</span>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .issues {
+    display: grid;
+    gap: var(--space-4);
+    max-inline-size: var(--size-popout);
+  }
+
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-inline-start: var(--border-strong) solid var(--color-negative);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-raised);
+    font-size: var(--text-sm);
+  }
+
+  code {
+    font-family: var(--font-code);
+  }
+
+  .path {
+    color: var(--color-text-muted);
+  }
+</style>

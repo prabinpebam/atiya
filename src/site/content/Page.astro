@@ -1,0 +1,82 @@
+---
+/**
+ * A page the site structure places, rendered with its template (documentation/content/ia.md §3): an
+ * item's page (an article, with the article layout) or a hub's (an index of what it places). The public
+ * route renders it; so does edit mode's canvas, with `editable`, which adds only what the canvas needs
+ * to find each block (a comment before it) and passes the page-end slot through for its overlay.
+ */
+import ArticleLayout from '../layouts/ArticleLayout.astro';
+import IndexLayout from '../layouts/IndexLayout.astro';
+import Blocks from './Blocks.astro';
+import { getArticle, getPerson, getRoutes, getSite } from './repository';
+import { picture } from './pictures';
+import { readingMinutes } from './reading';
+import { classicNav, classicSections, exploreAction } from '../classic';
+import { withBase } from '../design/meta';
+import type { Route } from './routes';
+import type { Article } from './schema';
+import type { ComponentProps } from 'astro/types';
+
+interface Props {
+  /** The page's route (for an article not yet on the site, leave it out and pass the article). */
+  route?: Route;
+  /** The article to render when it isn't placed (edit mode's canvas previews an unplaced draft). */
+  article?: Article;
+  /** Edit mode's canvas: marks each block and keeps each link's written target. */
+  editable?: boolean;
+}
+
+const { route, editable = false } = Astro.props;
+const site = getSite();
+const nav = classicNav(await classicSections());
+const action = exploreAction();
+const node = route?.node;
+const article = Astro.props.article ?? (node?.kind === 'item' && node.item.type === 'article' ? getArticle(node.item.id) : undefined);
+const title = route?.title ?? article?.title ?? site.name;
+const docTitle = `${title} — ${site.name}`;
+// the trail from the home page to the hub above (the IA shows it from the second level down)
+const crumbs = route && route.ancestors.length > 1 ? { trail: route.ancestors.map((c) => ({ label: c.label, href: withBase(c.path) })), current: route.title } : undefined;
+
+let header: ComponentProps<typeof ArticleLayout>['header'] | undefined;
+if (article) {
+  const owner = getPerson(site.owner)!;
+  const hero = article.hero && (await picture(article.hero.media, 'wide'));
+  const avatar = owner.avatar ? await picture(owner.avatar, 'card') : undefined;
+  const parent = route?.parent;
+  const parentCrumb = route?.ancestors.at(-1);
+  header = {
+    title: article.title,
+    standfirst: article.summary,
+    topic: parent && parent.template !== 'home' && parentCrumb ? { label: parentCrumb.label, href: withBase(parentCrumb.path) } : undefined,
+    author: { name: owner.name, avatar: avatar?.thumb },
+    date: article.publishedAt,
+    readingTime: `${readingMinutes(article)} min read`,
+    picture: hero && { ...hero, caption: article.hero?.caption ?? hero.caption, credit: article.hero?.credit ?? hero.credit },
+  };
+}
+
+// a hub lists what it places (published), as story cards
+const stories =
+  node?.kind === 'hub'
+    ? await Promise.all(
+        getRoutes()
+          .filter((r) => r.parent === node && r.node.kind === 'item' && r.node.item.type === 'article')
+          .map(async (r) => {
+            const a = getArticle((r.node as { item: { id: string } }).item.id)!;
+            const p = a.hero && (await picture(a.hero.media, 'card'));
+            return { href: withBase(r.path), title: a.title, dek: a.summary, meta: `${readingMinutes(a)} min read`, picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height } };
+          }),
+      )
+    : [];
+---
+
+{
+  article && header ? (
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} action={action} crumbs={crumbs} header={header}>
+      <Blocks blocks={article.body} editable={editable} />
+      <slot name="page-end" slot="page-end" />
+    </ArticleLayout>
+  ) : (
+    node?.kind === 'hub' && <IndexLayout title={docTitle} description={node.summary} heading={node.title} standfirst={node.summary} nav={nav} action={action} crumbs={crumbs} stories={stories} />
+  )
+}

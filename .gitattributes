@@ -1,0 +1,2 @@
+# content JSON stays LF, so the files edit mode writes, git checks out and publish compares are the same bytes
+content/**/*.json text eol=lf

@@ -2,7 +2,9 @@
 /**
  * An item's body: each content block (documentation/content/model.md §6) rendered with the design
  * system's component for it, inside the article's Prose. Pictures are resolved here, at the widths of
- * the slot each block asks for; ref: links become the item's canonical path.
+ * the slot each block asks for; ref: links become the item's canonical path. In edit mode's canvas
+ * (`editable`), a comment before each block marks where it starts (no selector sees a comment, so the
+ * page lays out exactly as it will on the site) and each link keeps its written target.
  */
 import Figure from '../components/compounds/Figure.astro';
 import Gallery from '../components/compounds/Gallery.astro';
@@ -23,9 +25,12 @@ interface Props {
   blocks: Block[];
   /** The lightbox group the body's figures and galleries share. */
   lightbox?: string;
+  /** Edit mode's canvas: mark where each block starts, and keep each link's written target. */
+  editable?: boolean;
 }
 
-const { blocks, lightbox = 'article' } = Astro.props;
+const { blocks, lightbox = 'article', editable = false } = Astro.props;
+const mark = (i: number) => (editable ? `<!--editor-block:${i}-->` : '');
 
 // the layout's widths (the size-measure, size-popout and size-wide tokens), for the browser's pick
 const SIZES = {
@@ -70,7 +75,9 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
 ---
 
 {
-  views.map((v, i) => {
+  views.map((v, i) => [
+    <Fragment set:html={mark(i)} />,
+    (() => {
     if ('p' in v && v.b.type === 'figure') {
       const { b, p } = v;
       return (
@@ -127,7 +134,7 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
     const b = v.b;
     switch (b.type) {
       case 'text':
-        return <Fragment set:html={renderMarkdown(b.markdown, { resolveRef })} />;
+        return <Fragment set:html={renderMarkdown(b.markdown, { resolveRef, annotate: editable })} />;
       case 'quote':
         return (
           <Quote variant={b.variant} cite={b.cite}>
@@ -141,5 +148,6 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
       default:
         return null;
     }
-  })
+    })(),
+  ])
 }

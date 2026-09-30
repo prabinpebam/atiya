@@ -20,17 +20,30 @@ export interface ContentIndex {
   articles: Map<string, Article>;
   people: Map<string, Person>;
   media: Map<string, MediaRecord>;
+  /** Every node's route, drafts included (their `published` is false); only published ones are built. */
   routes: Route[];
-  /** Canonical paths, keyed `type/id`. */
+  /** Canonical paths of published items, keyed `type/id`. */
   canonical: Map<string, string>;
   /** Reported, not failed: a published item the site doesn't place (it has no page). */
   warnings: string[];
 }
 
+/** One thing wrong: the file (under the content folder), the field when there is one, and what's wrong. */
+export interface Issue {
+  file: string;
+  path?: string;
+  message: string;
+}
+
+export const describe = (i: Issue) => `${i.file}: ${i.path ? `${i.path}: ` : ''}${i.message}`;
+
 export class ContentError extends Error {
-  constructor(readonly problems: string[]) {
+  readonly problems: string[];
+  constructor(readonly issues: Issue[]) {
+    const problems = issues.map(describe);
     super(`The content in content/ has ${problems.length} problem${problems.length === 1 ? '' : 's'}:\n- ${problems.join('\n- ')}`);
     this.name = 'ContentError';
+    this.problems = problems;
   }
 }
 
@@ -53,13 +66,18 @@ export function mediaUsed(a: Article): string[] {
 /**
  * @param docs the JSON files under content/, keyed by their path from the project root (/content/…)
  * @param masters the media masters under content/media/, as paths from the project root
+ * @param readErrors files the source couldn't read (not valid JSON, not a content file)
  */
-export function loadContent(docs: Record<string, unknown>, masters: Set<string>): ContentIndex {
-  const problems: string[] = [];
+export function loadContent(docs: Record<string, unknown>, masters: Set<string>, readErrors: string[] = []): ContentIndex {
+  const issues: Issue[] = readErrors.map((e) => {
+    const at = e.indexOf(': ');
+    return { file: e.slice(0, at), message: e.slice(at + 2) };
+  });
+  const add = (file: string, message: string, path?: string) => issues.push({ file: file.replace(/^\//, ''), message, ...(path ? { path } : {}) });
   const parse = <T>(schema: z.ZodType<T>, file: string, data: unknown): T | undefined => {
     const r = schema.safeParse(data);
     if (r.success) return r.data;
-    for (const issue of r.error.issues) problems.push(`${file.slice(1)}: ${issue.path.join('.') || '(root)'}: ${issue.message}`);
+    for (const issue of r.error.issues) add(file, issue.message, issue.path.join('.') || '(root)');
     return undefined;
   };
 
@@ -76,61 +94,61 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>)
     else if (file === '/content/structures/site.json') structure = parse(siteStructure, file, data);
     else if (/^\/content\/articles\/[^/]+\.json$/.test(file)) {
       const a = parse(article, file, data);
-      if (a && a.id !== name) problems.push(`${file.slice(1)}: id "${a.id}" must match the file name`);
+      if (a && a.id !== name) add(file, `id "${a.id}" must match the file name`, 'id');
       else if (a) articles.set(a.id, a);
     } else if (/^\/content\/people\/[^/]+\.json$/.test(file)) {
       const p = parse(person, file, data);
-      if (p && p.id !== name) problems.push(`${file.slice(1)}: id "${p.id}" must match the file name`);
+      if (p && p.id !== name) add(file, `id "${p.id}" must match the file name`, 'id');
       else if (p) people.set(p.id, p);
     } else if ((m = /^\/content\/media\/(.+)\.json$/.exec(file))) {
       const s = parse(imageMedia, file, data);
       if (!s) continue;
       const dir = file.slice(0, file.lastIndexOf('/') + 1);
       const master = dir + s.file;
-      if (s.file.replace(/\.\w+$/, '') !== name) problems.push(`${file.slice(1)}: the master "${s.file}" must share the sidecar's name`);
-      else if (!masters.has(master)) problems.push(`${file.slice(1)}: its master ${master.slice(1)} is missing`);
+      if (s.file.replace(/\.\w+$/, '') !== name) add(file, `the master "${s.file}" must share the sidecar's name`, 'file');
+      else if (!masters.has(master)) add(file, `its master ${master.slice(1)} is missing`);
       else media.set(m[1], { ...s, id: m[1], master });
-    } else problems.push(`${file.slice(1)}: not a resource the content model knows`);
+    } else add(file, 'not a resource the content model knows');
   }
   for (const master of masters) {
     const sidecar = master.replace(/\.\w+$/, '.json');
-    if (!(sidecar in docs)) problems.push(`${master.slice(1)}: a master without its sidecar (${sidecar.split('/').pop()})`);
+    if (!(sidecar in docs)) add(master, `a master without its sidecar (${sidecar.split('/').pop()})`);
   }
-  if (!site) problems.push('content/site.json: missing');
-  if (!structure) problems.push('content/structures/site.json: missing');
+  if (!site) add('content/site.json', 'missing');
+  if (!structure) add('content/structures/site.json', 'missing');
 
   // references (V3, V5): media, people
   const needMedia = (from: string, id: string) => {
     const rec = media.get(id);
-    if (!rec) problems.push(`${from}: media "${id}" doesn't exist`);
-    else if (!PUBLIC.has(rec.visibility)) problems.push(`${from}: media "${id}" isn't public`);
+    if (!rec) add(from, `media "${id}" doesn't exist`);
+    else if (!PUBLIC.has(rec.visibility)) add(from, `media "${id}" isn't public`);
   };
   for (const a of articles.values()) {
     for (const id of mediaUsed(a)) needMedia(`content/articles/${a.id}.json`, id);
     const ids = new Set<string>();
     for (const b of a.body) if (b.type === 'heading') {
       const hid = b.id ?? headingId(b.text);
-      if (ids.has(hid)) problems.push(`content/articles/${a.id}.json: two headings share the anchor "${hid}"; give one an id`);
+      if (ids.has(hid)) add(`content/articles/${a.id}.json`, `two headings share the anchor "${hid}"; give one an id`);
       ids.add(hid);
     }
   }
   for (const p of people.values()) if (p.avatar) needMedia(`content/people/${p.id}.json`, p.avatar);
-  if (site && !people.has(site.owner)) problems.push(`content/site.json: owner "${site.owner}" isn't in content/people/`);
+  if (site && !people.has(site.owner)) add('content/site.json', `owner "${site.owner}" isn't in content/people/`, 'owner');
 
   let routes: Route[] = [];
   const warnings: string[] = [];
   if (structure) {
     const built = buildRoutes(structure, (type, id) => {
       const a = type === 'article' ? articles.get(id) : undefined;
-      return a && isPublished(a) ? { slug: a.slug, title: a.title, navLabel: a.navLabel } : undefined;
+      return a && { slug: a.slug, title: a.title, navLabel: a.navLabel, published: isPublished(a) };
     });
     routes = built.routes;
-    problems.push(...built.errors.map((e) => `content/structures/site.json: ${e}`));
+    for (const e of built.errors) add('content/structures/site.json', e);
     const placed = canonicalPaths(routes);
     for (const a of articles.values()) if (isPublished(a) && !placed.has(`article/${a.id}`)) warnings.push(`article "${a.id}" is published but the site structure doesn't place it, so it has no page (V12)`);
   }
 
-  if (problems.length) throw new ContentError(problems);
+  if (issues.length) throw new ContentError(issues);
   return { site: site!, structure: structure!, articles, people, media, routes, canonical: canonicalPaths(routes), warnings };
 }
 

@@ -1,0 +1,48 @@
+---
+/**
+ * The canvas's frame (documentation/editor/spec.md §3.1): the article as it will render, in an iframe
+ * the editor sizes to desktop, tablet or phone width, on the paper's sunk tone so the page stands out.
+ * @tier editor
+ * @a11y The frame is named ("The page, as it will look"); what's inside is the real page, with its own landmarks.
+ */
+interface Props {
+  /** The canvas route for this article. */
+  src: string;
+}
+
+const { src } = Astro.props;
+---
+
+<div class="canvas" data-editor-canvas data-device="desktop" data-scrollbar>
+  <iframe class="frame" src={src} title="The page, as it will look" data-editor-frame></iframe>
+</div>
+
+<style>
+  .canvas {
+    display: grid;
+    justify-items: center;
+    block-size: 100%;
+    padding: var(--space-4);
+    overflow: auto;
+    scrollbar-width: none;
+    background: var(--color-bg-sunk);
+  }
+
+  .frame {
+    inline-size: 100%;
+    block-size: 100%;
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-sm);
+    transition: inline-size var(--duration-base) var(--ease-standard);
+  }
+
+  .canvas[data-device='tablet'] .frame {
+    inline-size: min(100%, var(--c-editor-device-tablet));
+  }
+
+  .canvas[data-device='phone'] .frame {
+    inline-size: min(100%, var(--c-editor-device-phone));
+  }
+</style>

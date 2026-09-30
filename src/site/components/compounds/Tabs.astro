@@ -1,0 +1,159 @@
+---
+/**
+ * Tabs: a few views of one thing, one shown at a time, with the choice in a row of tabs above. The
+ * tabs follow the APG pattern: arrow keys move between them and show each at once (the panels are
+ * already on the page), Home and End go to the first and the last. Put each panel's content in the slot
+ * named after its tab's id.
+ * @tier compound
+ * @a11y A tablist of tabs, each controlling its tabpanel; the chosen tab is aria-selected and the only one Tab reaches.
+ * @a11y Each panel is named by its tab and can take focus, so its content is reachable after the tabs.
+ * @key Left / Right: the previous / next tab (wrapping), shown at once
+ * @key Home / End: the first / last tab
+ */
+import { svgOf, type IconName } from '../../design/icons';
+
+interface Props {
+  /** Names the tablist ("Settings"). */
+  label: string;
+  /** The tabs, in order: each id names the slot holding its panel. */
+  tabs: { id: string; label: string; icon?: IconName }[];
+  /** The tab shown first (the first if left out). */
+  selected?: string;
+  /** A page-unique prefix for the ids. */
+  id?: string;
+}
+
+const { label, tabs, selected, id = `tabs-${Math.random().toString(36).slice(2, 8)}` } = Astro.props;
+const current = tabs.some((t) => t.id === selected) ? selected : tabs[0]?.id;
+const panels = await Promise.all(tabs.map(async (t) => ({ ...t, html: Astro.slots.has(t.id) ? await Astro.slots.render(t.id) : '' })));
+---
+
+<div class="tabs" data-tabs id={id}>
+  <div class="list" role="tablist" aria-label={label}>
+    {
+      tabs.map((t) => {
+        const icon = t.icon ? svgOf(t.icon) : null;
+        return (
+          <button class="tab" type="button" role="tab" id={`${id}-${t.id}-tab`} aria-controls={`${id}-${t.id}`} aria-selected={t.id === current ? 'true' : 'false'} tabindex={t.id === current ? 0 : -1} data-tab={t.id}>
+            {icon && (
+              <svg class="icon" viewBox={icon.viewBox} aria-hidden="true" focusable="false" data-icon={icon.name}>
+                <Fragment set:html={icon.body} />
+              </svg>
+            )}
+            <span>{t.label}</span>
+          </button>
+        );
+      })
+    }
+  </div>
+  {
+    panels.map((t) => (
+      <div class="panel" role="tabpanel" id={`${id}-${t.id}`} aria-labelledby={`${id}-${t.id}-tab`} tabindex="0" hidden={t.id !== current} data-panel={t.id}>
+        <Fragment set:html={t.html} />
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .tabs {
+    display: grid;
+    gap: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .list {
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-sunk);
+  }
+
+  .tab {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-block-size: var(--size-touch);
+    padding: var(--space-2) var(--space-4);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .tab:hover {
+      color: var(--color-text);
+    }
+  }
+
+  .tab:active {
+    color: var(--color-text);
+  }
+
+  .tab[aria-selected='true'] {
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tab:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  .icon {
+    inline-size: var(--size-icon);
+    block-size: var(--size-icon);
+  }
+
+  .panel:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+    border-radius: var(--radius-sm);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  each<HTMLElement>('[data-tabs]', (root) => {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>(':scope > [role="tablist"] > [role="tab"]')];
+    const panels = [...root.querySelectorAll<HTMLElement>(':scope > [role="tabpanel"]')];
+    const show = (i: number, focus: boolean) => {
+      tabs.forEach((t, k) => {
+        t.setAttribute('aria-selected', k === i ? 'true' : 'false');
+        t.tabIndex = k === i ? 0 : -1;
+      });
+      panels.forEach((p, k) => (p.hidden = k !== i));
+      if (focus) tabs[i].focus();
+      root.dispatchEvent(new CustomEvent('tabs:change', { detail: { tab: tabs[i].dataset.tab }, bubbles: true }));
+    };
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => show(i, false));
+      tab.addEventListener('keydown', (e) => {
+        const last = tabs.length - 1;
+        const to = e.key === 'ArrowRight' ? (i === last ? 0 : i + 1) : e.key === 'ArrowLeft' ? (i === 0 ? last : i - 1) : e.key === 'Home' ? 0 : e.key === 'End' ? last : -1;
+        if (to < 0) return;
+        e.preventDefault();
+        show(to, true);
+      });
+    });
+    // another script can show a tab: dispatch tabs:select with { tab } on the root
+    root.addEventListener('tabs:select', (e) => {
+      const i = tabs.findIndex((t) => t.dataset.tab === (e as CustomEvent<{ tab: string }>).detail.tab);
+      if (i >= 0) show(i, false);
+    });
+  });
+</script>

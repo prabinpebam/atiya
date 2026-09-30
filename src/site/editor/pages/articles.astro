@@ -1,0 +1,42 @@
+---
+/** Edit mode's articles and pages (documentation/editor/spec.md §4). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import ArticleTable from '../components/ArticleTable.astro';
+import ArticleForm from '../components/ArticleForm.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import { articleRows, load, sectionOptions } from '../server/screens';
+
+export const prerender = false;
+
+const loaded = load();
+const wants = Astro.url.searchParams.get('new');
+const home = loaded.ok ? loaded.index.structure.home.id : '';
+---
+
+<EditorLayout title="Articles and pages" screen="articles" heading="Articles and pages" intro="Everything you've written, newest first. A page is an article that sits on its own (About, Contact).">
+  <Fragment slot="actions">
+    <Button variant="secondary" icon="page" data-dialog-open="new-page">New page</Button>
+    <Button variant="primary" icon="plus" data-dialog-open="new-article">New article</Button>
+  </Fragment>
+  {
+    loaded.ok ? (
+      <>
+        <ArticleTable rows={articleRows(loaded.index)} />
+        <Dialog id="new-article" title="New article" size="md">
+          <ArticleForm mode="new" kind="note" sections={sectionOptions(loaded.index)} />
+        </Dialog>
+        <Dialog id="new-page" title="New page" size="md">
+          <ArticleForm mode="new" kind="page" section={home} sections={sectionOptions(loaded.index)} />
+        </Dialog>
+        <Dialog id="delete-article" title="Delete this draft?" size="sm">
+          <ArticleForm mode="delete" />
+        </Dialog>
+      </>
+    ) : (
+      <ContentIssues issues={loaded.issues} />
+    )
+  }
+  {wants && <span hidden data-editor-autopen={wants === 'page' ? 'new-page' : 'new-article'} />}
+</EditorLayout>

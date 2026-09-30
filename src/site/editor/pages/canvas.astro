@@ -1,0 +1,25 @@
+---
+/**
+ * Edit mode's canvas (documentation/editor/spec.md §3.1): the article as it will render, drafts too,
+ * with the overlay that edits it. The article editor frames it. Dev only: injected by
+ * integrations/editor.mjs.
+ */
+import Page from '../../content/Page.astro';
+import CanvasChrome from '../components/CanvasChrome.astro';
+import { getPlacement } from '../../content/repository';
+import { load } from '../server/screens';
+import { kindOf } from '../model/ops';
+
+export const prerender = false;
+
+const loaded = load();
+if (!loaded.ok) return new Response('The content has problems: the article editor lists them.', { status: 500 });
+const article = loaded.index.articles.get(Astro.params.id ?? '');
+if (!article) return new Response('No such article.', { status: 404 });
+const route = getPlacement('article', article.id);
+const blocks = article.body.map((b) => ({ kind: kindOf(b), type: b.type }));
+---
+
+<Page route={route} article={article} editable>
+  <CanvasChrome slot="page-end" blocks={blocks} />
+</Page>

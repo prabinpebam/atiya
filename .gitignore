@@ -7,3 +7,8 @@ playwright-report/
 *.log
 .DS_Store
 assets-src/audio/.cache/
+
+# edit mode's test fixture: a throwaway repository of the content, and its remote (scripts/editor-test-server.mjs)
+.editor-test/
+.editor-test-remote.git/
+

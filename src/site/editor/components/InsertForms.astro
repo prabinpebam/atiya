@@ -1,0 +1,109 @@
+---
+/**
+ * What a block asks for before it exists (documentation/editor/spec.md §3.4): a quote's words, a set of
+ * facts, a video's address and title, a carousel's label, and the link form for text. Each is shown in a
+ * Dialog the article editor composes; the editor makes the block (or the link) from what's entered.
+ * @tier editor
+ * @a11y Labelled fields with hints; a missing value is named under the form (role="alert"); the submit button says what it adds.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import type { SelectOption } from '../../components/fundamentals/Select.astro';
+
+interface Props {
+  /** Which form. */
+  kind: 'quote' | 'facts' | 'video' | 'carousel' | 'link';
+  /** For the link form: the articles a link can go to. */
+  articles?: SelectOption[];
+}
+
+const { kind, articles = [] } = Astro.props;
+const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', facts: 'Add the facts', video: 'Add the video', carousel: 'Add the carousel', link: 'Set the link' };
+---
+
+<form class="form" data-editor-insert-form={kind} novalidate>
+  {
+    kind === 'quote' && (
+      <>
+        <TextField label="The quote" name="text" multiline rows={3} required />
+        <TextField label="Who said it" name="cite" optional />
+        <Select label="Style" name="variant" value="pull" options={[{ value: 'pull', label: 'Pulled out', description: 'A line lifted out and set large' }, { value: 'block', label: 'In the column', description: 'A quotation in the text' }]} />
+      </>
+    )
+  }
+  {
+    kind === 'facts' && (
+      <>
+        <Text variant="ui" tone="muted">A few short pairs, read before the first paragraph (up to six; more can be added later).</Text>
+        {[0, 1, 2].map((n) => (
+          <div class="pair">
+            <TextField label={`Label ${n + 1}`} name={`label${n}`} optional={n > 0} required={n === 0} />
+            <TextField label={`Value ${n + 1}`} name={`value${n}`} optional={n > 0} required={n === 0} />
+          </div>
+        ))}
+      </>
+    )
+  }
+  {
+    kind === 'video' && (
+      <>
+        <TextField label="Address" type="url" name="url" required hint="A YouTube or Vimeo link. The video isn't loaded until a reader presses Play." />
+        <TextField label="Title" name="title" required hint="Names the player." />
+        <TextField label="Length" name="duration" optional hint="Minutes and seconds (2:20), shown on the poster." />
+        <Text variant="ui" tone="muted">Next, choose its poster: the picture shown until Play.</Text>
+      </>
+    )
+  }
+  {kind === 'carousel' && <TextField label="Label" name="label" required hint="Names the carousel for assistive tech (\u201cSlide templates\u201d)." />}
+  {
+    kind === 'link' && (
+      <>
+        <TextField label="Address" type="url" name="href" optional hint="https://…, http://… or mailto:…" />
+        <Select label="Or an article" name="ref" placeholder="Choose an article" options={[{ value: '', label: 'None' }, ...articles]} hint="A link to an article follows it if its address ever changes." />
+      </>
+    )
+  }
+  <p class="issue" role="alert" data-editor-form-issue hidden></p>
+  <div class="actions">
+    {kind === 'link' && (
+      <Button variant="quiet" data-editor-unlink="">
+        Remove the link
+      </Button>
+    )}
+    <Button variant="quiet" data-dialog-close="">
+      Cancel
+    </Button>
+    <Button variant="primary" type="submit">
+      {SUBMIT[kind]}
+    </Button>
+  </div>
+</form>
+
+<style>
+  .form {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: var(--space-3);
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+</style>

@@ -1,0 +1,154 @@
+---
+/**
+ * The canvas's overlay (documentation/editor/spec.md §3.1, §3.2): drawn over the real page in edit
+ * mode's canvas, never inside it, so the page lays out as it will on the site. A box on the block under
+ * the pointer (named by its kind), a firm one on the selected block with its toolbar (move, duplicate,
+ * add below, delete), a "+" between blocks, and a format bar over a text selection.
+ * @tier editor
+ * @a11y The block toolbar and the format bar are named toolbars of named icon buttons; every action also has a key (§3.2, §3.3).
+ * @key Enter: edit the selected block's text
+ * @key Up / Down: select the block before / after
+ * @key Alt + Up / Alt + Down: move the selected block
+ * @key Ctrl + Shift + D: duplicate it
+ * @key Delete: delete it
+ * @key Ctrl + B / Ctrl + I / Ctrl + K: bold, italic, link, while editing text
+ */
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import '../../styles/editor-tokens.css';
+
+interface Props {
+  /** Each block's kind as the editor names it ("Heading 2"), and what it is. */
+  blocks: { kind: string; type: string }[];
+}
+
+const { blocks } = Astro.props;
+const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
+---
+
+<div class="chrome" data-editor-chrome>
+  <script is:inline type="application/json" data-editor-blocks set:html={json}></script>
+  <div class="box hover" data-chrome-hover hidden><span class="tag" data-chrome-hover-label></span></div>
+  <div class="box selected" data-chrome-selected hidden></div>
+  <div class="toolbar" role="toolbar" aria-label="Block" data-chrome-toolbar hidden>
+    <span class="tag" data-chrome-label></span>
+    <IconButton label="Move up" icon="arrow-up" size="sm" variant="secondary" tooltip="top" data-chrome-op="up" />
+    <IconButton label="Move down" icon="arrow-down" size="sm" variant="secondary" tooltip="top" data-chrome-op="down" />
+    <IconButton label="Duplicate" icon="duplicate" size="sm" variant="secondary" tooltip="top" data-chrome-op="duplicate" />
+    <IconButton label="Add a block below" icon="plus" size="sm" variant="secondary" tooltip="top" data-chrome-op="add" />
+    <IconButton label="Delete" icon="delete" size="sm" variant="secondary" tooltip="top" data-chrome-op="delete" />
+  </div>
+  <div class="insert" data-chrome-insert hidden>
+    <IconButton label="Add a block here" icon="plus" size="sm" variant="primary" tooltip="none" data-chrome-insert-button="" />
+  </div>
+  <div class="format" role="toolbar" aria-label="Text" data-chrome-format hidden>
+    <IconButton label="Bold" icon="bold" size="sm" variant="quiet" tooltip="top" data-chrome-format-op="bold" />
+    <IconButton label="Italic" icon="italic" size="sm" variant="quiet" tooltip="top" data-chrome-format-op="italic" />
+    <IconButton label="Code" icon="code" size="sm" variant="quiet" tooltip="top" data-chrome-format-op="code" />
+    <IconButton label="Link" icon="link" size="sm" variant="quiet" tooltip="top" data-chrome-format-op="link" />
+  </div>
+</div>
+
+<style>
+  .chrome {
+    position: absolute;
+    inset: 0 auto auto 0;
+    z-index: var(--layer-overlay);
+    inline-size: 0;
+    block-size: 0;
+  }
+
+  .box {
+    position: absolute;
+    inset-inline-start: var(--x, 0);
+    inset-block-start: var(--y, 0);
+    inline-size: var(--w, 0);
+    block-size: var(--h, 0);
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+  }
+
+  .hover {
+    outline: var(--border-control) dashed var(--color-border-strong);
+    outline-offset: var(--space-1);
+  }
+
+  .selected {
+    outline: var(--border-strong) solid var(--color-accent);
+    outline-offset: var(--space-1);
+  }
+
+  .tag {
+    position: absolute;
+    inset-block-end: calc(100% + var(--space-1-5));
+    inset-inline-start: calc(var(--space-1) * -1);
+    padding: var(--space-0-5) var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+    white-space: nowrap;
+  }
+
+  .hover .tag {
+    background: var(--color-text);
+    color: var(--color-bg);
+  }
+
+  .toolbar .tag {
+    position: static;
+  }
+
+  .toolbar,
+  .format {
+    position: absolute;
+    inset-inline-start: var(--x, 0);
+    inset-block-start: var(--y, 0);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-md);
+    transform: translate(-100%, calc(-100% - var(--space-3)));
+  }
+
+  .format {
+    transform: translate(-50%, calc(-100% - var(--space-2)));
+  }
+
+  .insert {
+    position: absolute;
+    inset-inline-start: var(--x, 0);
+    inset-block-start: var(--y, 0);
+    transform: translate(-50%, -50%);
+  }
+
+  .box[hidden],
+  .toolbar[hidden],
+  .format[hidden],
+  .insert[hidden] {
+    display: none;
+  }
+
+  /* a new paragraph or heading, waiting for its first words */
+  :global([data-editor-pending]:empty::before) {
+    content: attr(data-placeholder);
+    color: var(--color-text-muted);
+  }
+
+  :global([data-editor-editable]:focus) {
+    outline: none;
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initCanvas } from '../scripts/canvas';
+
+  each<HTMLElement>('[data-editor-chrome]', (chrome, signal) => initCanvas(chrome, signal));
+</script>

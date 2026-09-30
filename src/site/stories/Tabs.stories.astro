@@ -1,0 +1,41 @@
+---
+import Example from '../library/Example.astro';
+import Tabs from '../components/compounds/Tabs.astro';
+import Text from '../components/fundamentals/Text.astro';
+import TextField from '../components/fundamentals/TextField.astro';
+import Switch from '../components/fundamentals/Switch.astro';
+---
+
+<Example title="Two views of one thing" description="The editor's inspector: the selected block's settings, or the page's. Arrow keys move between the tabs.">
+  <Tabs
+    label="Settings"
+    tabs={[
+      { id: 'block', label: 'Block', icon: 'image' },
+      { id: 'page', label: 'Page', icon: 'page' },
+    ]}
+  >
+    <div slot="block" class="stack">
+      <TextField label="Caption" hint="Leave it empty to use the picture's own." />
+      <Switch label="Open in the lightbox" checked />
+    </div>
+    <div slot="page" class="stack">
+      <TextField label="Title" value="Do what makes you proud" />
+      <Text variant="small" tone="muted">The page's own settings.</Text>
+    </div>
+  </Tabs>
+</Example>
+
+<Example title="Three tabs, starting on the second" description="Selected picks the tab shown first.">
+  <Tabs label="Media" selected="details" tabs={[{ id: 'library', label: 'Library' }, { id: 'details', label: 'Details' }, { id: 'used', label: 'Used in' }]}>
+    <Text slot="library" variant="ui">Every picture, by folder.</Text>
+    <Text slot="details" variant="ui">Alt text, caption, credit and focus.</Text>
+    <Text slot="used" variant="ui">The articles that show it.</Text>
+  </Tabs>
+</Example>
+
+<style>
+  .stack {
+    display: grid;
+    gap: var(--space-5);
+  }
+</style>

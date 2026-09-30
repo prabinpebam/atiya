@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import sharp from 'sharp';
-import { plainText, renderMarkdown } from '../../src/site/content/markdown';
+import { normalize, parseInline, runs, parseMarkdown, plainText, renderMarkdown, serializeBlocks, serializeInline, type Inline } from '../../src/site/content/markdown';
 import { buildRoutes } from '../../src/site/content/routes';
 import { ContentError, headingId, loadContent, mediaUsed } from '../../src/site/content/load';
 import { content } from '../../src/site/content/repository';
@@ -36,8 +36,61 @@ describe('the Markdown subset', () => {
   it('links go only to https, http, mailto or a ref: that resolves', () => {
     expect(renderMarkdown('[site](https://example.com/a_b_c)')).toBe('<p><a href="https://example.com/a_b_c">site</a></p>');
     expect(renderMarkdown('[a case](ref:caseStudy/x)', { resolveRef: (r) => (r === 'caseStudy/x' ? '/work/x/' : undefined) })).toBe('<p><a href="/work/x/">a case</a></p>');
-    expect(() => renderMarkdown('[bad](javascript:alert(1))')).toThrow(/https, http, mailto or ref/);
+    expect(() => renderMarkdown('[bad](javascript:void0)')).toThrow(/https, http, mailto or ref/);
+    // a target with brackets or spaces isn't a link at all: it stays (escaped) text
+    expect(renderMarkdown('[bad](javascript:alert(1))')).toBe('<p>[bad](javascript:alert(1))</p>');
     expect(() => renderMarkdown('[gone](ref:caseStudy/nope)', { resolveRef: () => undefined })).toThrow(/unknown link target/);
+  });
+
+  it('marks nest (strong and emphasis), code holds plain text, a link holds marks but no link', () => {
+    expect(parseInline('*a **b** c*')).toEqual([{ t: 'em', c: [{ t: 'text', v: 'a ' }, { t: 'strong', c: [{ t: 'text', v: 'b' }] }, { t: 'text', v: ' c' }] }]);
+    expect(parseInline('`**x**`')).toEqual([{ t: 'code', v: '**x**' }]);
+    expect(parseInline('[a [b](https://x.y) c](https://z.z)')[0]).toMatchObject({ t: 'link', href: 'https://z.z' });
+    expect(renderMarkdown('[**bold** link](https://x.y)')).toBe('<p><a href="https://x.y"><strong>bold</strong> link</a></p>');
+  });
+
+  it('backslash escapes and double-backtick code make the delimiters literal', () => {
+    expect(renderMarkdown('2 \\* 3 \\_ x \\[y\\]')).toBe('<p>2 * 3 _ x [y]</p>');
+    expect(renderMarkdown('`` a`b ``')).toBe('<p><code>a`b</code></p>');
+    expect(renderMarkdown('snake_case stays')).toBe('<p>snake_case stays</p>');
+  });
+
+  it('the serializer writes a tree back so it parses to the same tree (compared by meaning)', () => {
+    const trees: Inline[][] = [
+      [{ t: 'text', v: 'plain * star _ under [br] \\ back' }],
+      [{ t: 'strong', c: [{ t: 'text', v: 'bold ' }] }, { t: 'text', v: 'after' }],
+      [{ t: 'em', c: [{ t: 'text', v: 'soft ' }, { t: 'strong', c: [{ t: 'text', v: 'both' }] }] }],
+      [{ t: 'code', v: 'a`b' }, { t: 'br' }, { t: 'link', href: 'ref:caseStudy/x', c: [{ t: 'em', c: [{ t: 'text', v: 'see' }] }] }],
+      [{ t: 'text', v: '- not a list\n1. nor this' }],
+      [{ t: 'text', v: 'un' }, { t: 'em', c: [{ t: 'text', v: 'believ' }] }, { t: 'text', v: 'able' }],
+    ];
+    for (const tree of trees) expect(normalize(parseInline(serializeInline(tree))), serializeInline(tree)).toEqual(normalize(tree));
+    const md = '- one **a**\n- two';
+    expect(serializeBlocks(parseMarkdown(md))).toBe(md);
+  });
+
+  it('fuzzed: any tree of text, marks, code, links and breaks survives serialize then parse, by meaning', () => {
+    let seed = Number(process.env.FUZZ_SEED ?? 7);
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    const pick = <T,>(xs: T[]) => xs[Math.floor(rnd() * xs.length)];
+    const CHARS = ['a', 'b', 'x', ' ', '*', '_', '`', '[', ']', '\\', '-', '.', '1', 'é', '(', ')'];
+    const text = () => Array.from({ length: 1 + Math.floor(rnd() * 5) }, () => pick(CHARS)).join('');
+    const tree = (depth: number, inLink: boolean): Inline[] =>
+      Array.from({ length: 1 + Math.floor(rnd() * 3) }, (): Inline => {
+        const r = rnd();
+        if (depth <= 0 || r < 0.35) return { t: 'text', v: text() };
+        if (r < 0.5) return { t: 'strong', c: tree(depth - 1, inLink) };
+        if (r < 0.65) return { t: 'em', c: tree(depth - 1, inLink) };
+        if (r < 0.75) return { t: 'code', v: text().replace(/\s+/g, 'y') };
+        if (r < 0.82) return { t: 'br' };
+        return inLink ? { t: 'text', v: text() } : { t: 'link', href: pick(['https://x.y/a_b', 'mailto:a@b.c', 'ref:article/x']), c: tree(depth - 1, true) };
+      });
+    const wordy = (nodes: Inline[]) => nodes; // keep the shape
+    for (let n = 0; n < Number(process.env.FUZZ_N ?? 3000); n++) {
+      const t = wordy(tree(3, false));
+      const md = serializeInline(t);
+      expect(runs(parseInline(md)), JSON.stringify({ md, t })).toEqual(runs(normalize(t)));
+    }
   });
 
   it('plain text drops the markup', () => {
@@ -46,7 +99,7 @@ describe('the Markdown subset', () => {
 });
 
 describe('routes from the site structure', () => {
-  const found = (items: Record<string, { slug: string; title: string }>) => (type: string, id: string) => (type === 'article' ? items[id] : undefined);
+  const found = (items: Record<string, { slug: string; title: string }>) => (type: string, id: string) => (type === 'article' && items[id] ? { ...items[id], published: true } : undefined);
   const tree = (children: unknown[]): SiteStructure => ({ home: { id: 'home', kind: 'hub', slug: '', title: 'Home', template: 'home', children } }) as SiteStructure;
 
   it('a path is the chain of slugs; an item node takes its item slug; the trail runs from the home page', () => {
@@ -122,9 +175,29 @@ describe('the loader checks what it is given', () => {
     expect(problems({ ...base, '/content/articles/a.json': { ...article, summary: 'x'.repeat(161) } }).join('\n')).toMatch(/summary/);
   });
 
-  it('a draft is not placed: its node fails, since only published items have pages', () => {
+  it('a draft can be placed: its address is resolved and checked, but only published items are built', () => {
     const article = base['/content/articles/a.json'];
-    expect(problems({ ...base, '/content/articles/a.json': { ...article, status: 'draft' } }).join('\n')).toMatch(/doesn't exist or isn't published/);
+    const c = loadContent({ ...base, '/content/articles/a.json': { ...article, status: 'draft' } }, masters);
+    expect(c.routes.find((r) => r.path === '/a/')?.published).toBe(false);
+    expect(c.canonical.has('article/a')).toBe(false);
+    // a node placing something that doesn't exist still fails
+    const s = base['/content/structures/site.json'] as { home: { children: unknown[] } };
+    const broken = { home: { ...s.home, children: [{ id: 'x', kind: 'item', item: { type: 'article', id: 'nope' } }] } };
+    expect(problems({ ...base, '/content/structures/site.json': broken }).join('\n')).toMatch(/"nope", which doesn't exist/);
+  });
+
+  it('a text block is one paragraph or one list', () => {
+    const article = base['/content/articles/a.json'];
+    expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [{ type: 'text', markdown: 'one\n\ntwo' }] } }).join('\n')).toMatch(/one paragraph or one list/);
+  });
+
+  it('issues name the file, the field and what is wrong', () => {
+    const article = base['/content/articles/a.json'];
+    try {
+      loadContent({ ...base, '/content/articles/a.json': { ...article, summary: '' } }, masters);
+    } catch (e) {
+      expect((e as ContentError).issues).toContainEqual(expect.objectContaining({ file: 'content/articles/a.json', path: 'summary' }));
+    }
   });
 });
 

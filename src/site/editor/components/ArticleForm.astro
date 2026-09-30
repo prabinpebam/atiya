@@ -1,0 +1,131 @@
+---
+/**
+ * The form that creates an article or a page (documentation/editor/spec.md §4): its title, its summary
+ * and where it goes. The server makes a valid draft from it (with an ID and slug from the title), places
+ * it and the editor opens it. Shown in a Dialog the page composes; also the delete confirmation's body.
+ * @tier editor
+ * @a11y Labelled fields with hints; a refused value is named under its field; the submit button says what it does.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import type { SelectOption } from '../../components/fundamentals/Select.astro';
+
+interface Props {
+  /** new: the create form; delete: the delete confirmation. */
+  mode: 'new' | 'delete';
+  /** The sections an article can go in. */
+  sections?: SelectOption[];
+  /** The section chosen at first ('' for none). */
+  section?: string;
+  /** The kind chosen at first. */
+  kind?: 'note' | 'page';
+  /** The article the delete confirmation deletes (left out, the opener sets it on the dialog). */
+  article?: string;
+}
+
+const { mode, sections = [], section = '', kind = 'note', article } = Astro.props;
+---
+
+{
+  mode === 'new' ? (
+    <form class="form" data-editor-new novalidate>
+      <TextField label="Title" name="title" required />
+      <TextField label="Summary" name="summary" multiline rows={3} required hint="At most 160 characters: the standfirst, the card's line and the search description." />
+      <Select
+        label="Kind"
+        name="kind"
+        value={kind}
+        options={[
+          { value: 'note', label: 'Article', description: 'A story, a note or an essay' },
+          { value: 'page', label: 'Page', description: 'About, Contact and the like' },
+        ]}
+      />
+      <Select label="Section" name="section" value={section} options={[{ value: '', label: 'Not on the site yet', description: 'Place it later from Sections' }, ...sections]} hint="Where it sits on the site, and so its address." />
+      <p class="issue" role="alert" data-editor-form-issue hidden />
+      <div class="actions">
+        <Button variant="quiet" data-dialog-close="">
+          Cancel
+        </Button>
+        <Button variant="primary" type="submit" icon="plus">
+          Create the draft
+        </Button>
+      </div>
+    </form>
+  ) : (
+    <form class="form" data-editor-delete-form data-article={article} novalidate>
+      <Text variant="ui">
+        <strong data-editor-delete-name /> goes, with its place on the site. This can't be undone here; until you publish, Publish can bring it back.
+      </Text>
+      <Checkbox label="Also delete the pictures in its folder that nothing else uses" name="media" />
+      <p class="issue" role="alert" data-editor-form-issue hidden />
+      <div class="actions">
+        <Button variant="quiet" data-dialog-close="">
+          Keep it
+        </Button>
+        <Button variant="primary" type="submit" icon="delete">
+          Delete the draft
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+<style>
+  .form {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: end;
+    gap: var(--space-3);
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { api, editorUrl, describeIssue } from '../scripts/client';
+
+  const show = (form: HTMLElement, text: string) => {
+    const el = form.querySelector<HTMLElement>('[data-editor-form-issue]')!;
+    el.textContent = text;
+    el.hidden = !text;
+  };
+
+  each<HTMLFormElement>('[data-editor-new]', (form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const body = { title: String(data.get('title') ?? ''), summary: String(data.get('summary') ?? ''), kind: String(data.get('kind') ?? 'note'), section: String(data.get('section') ?? '') || null };
+      if (!body.title.trim() || !body.summary.trim()) return show(form, 'A title and a summary are both needed.');
+      show(form, '');
+      const r = await api<{ id: string }>('POST', 'articles', body);
+      if (r.ok) location.assign(editorUrl(`articles/${r.data.id}/`));
+      else show(form, (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't create it.");
+    });
+  });
+
+  each<HTMLFormElement>('[data-editor-delete-form]', (form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const dialog = form.closest('dialog') as HTMLDialogElement;
+      const id = form.dataset.article ?? dialog?.dataset.article;
+      if (!id) return;
+      const withMedia = new FormData(form).get('media') ? '?media=1' : '';
+      const r = await api('DELETE', `articles/${id}${withMedia}`);
+      if (r.ok) location.assign(editorUrl('articles/'));
+      else show(form, (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't delete it.");
+    });
+  });
+</script>

@@ -1,7 +1,8 @@
 /**
  * The route table, derived from the site structure (documentation/content/ia.md §3): a node's path is
  * the chain of slugs from the home hub down; an item's canonical path is the path of the node that
- * places it. Pure, so the rules are unit-tested without a build.
+ * places it. Every node is resolved and checked, drafts included (so two drafts can't claim one address),
+ * and each route says whether it's published: only those are built. Pure, so the rules are unit-tested.
  */
 import type { HubNode, SiteNode, SiteStructure } from './schema';
 
@@ -20,12 +21,14 @@ export interface Route {
   ancestors: Crumb[];
   /** The page's title: a hub's own, or the item's. */
   title: string;
+  /** Built and public: a hub, or an item whose content is published. A draft's route exists only for the editor's canvas. */
+  published: boolean;
 }
 
 /** Paths the code owns: a node may not claim them. `classic` stays until the IA replaces it. */
-export const RESERVED = ['play', 'design', 'docs', '_astro', 'media', 'classic'];
+export const RESERVED = ['play', 'design', 'docs', '_astro', 'media', 'classic', '_edit'];
 
-export type ItemTitle = (type: string, id: string) => { slug: string; title: string; navLabel?: string } | undefined;
+export type ItemTitle = (type: string, id: string) => { slug: string; title: string; navLabel?: string; published: boolean } | undefined;
 
 export function buildRoutes(structure: SiteStructure, lookup: ItemTitle): { routes: Route[]; errors: string[] } {
   const routes: Route[] = [];
@@ -36,10 +39,11 @@ export function buildRoutes(structure: SiteStructure, lookup: ItemTitle): { rout
     let slug: string;
     let title: string;
     let label: string;
+    let published = true;
     if (node.kind === 'item') {
       const item = lookup(node.item.type, node.item.id);
       if (!item) {
-        errors.push(`node ${node.id}: places ${node.item.type} "${node.item.id}", which doesn't exist or isn't published`);
+        errors.push(`node ${node.id}: places ${node.item.type} "${node.item.id}", which doesn't exist`);
         return;
       }
       const key = `${node.item.type}/${node.item.id}`;
@@ -48,6 +52,7 @@ export function buildRoutes(structure: SiteStructure, lookup: ItemTitle): { rout
       slug = node.slug ?? item.slug;
       title = item.title;
       label = node.navLabel ?? item.navLabel ?? item.title;
+      published = item.published;
     } else {
       slug = node.slug;
       title = node.title;
@@ -58,7 +63,7 @@ export function buildRoutes(structure: SiteStructure, lookup: ItemTitle): { rout
     if (depth === 1 && RESERVED.includes(slug)) errors.push(`node ${node.id}: /${slug}/ is reserved for the code`);
     const path = depth === 0 ? '/' : `${parentPath}${slug}/`;
     if (routes.some((r) => r.path === path)) errors.push(`node ${node.id}: ${path} is already taken`);
-    routes.push({ path, node, parent, ancestors, title });
+    routes.push({ path, node, parent, ancestors, title, published });
     if (node.kind === 'hub') for (const child of node.children ?? []) visit(child, path, node, [...ancestors, { label, path }], depth + 1);
   };
 
@@ -66,7 +71,7 @@ export function buildRoutes(structure: SiteStructure, lookup: ItemTitle): { rout
   return { routes, errors };
 }
 
-/** The canonical path of each placed item, keyed `type/id`. */
+/** The canonical path of each placed and published item, keyed `type/id`. */
 export function canonicalPaths(routes: Route[]): Map<string, string> {
-  return new Map(routes.flatMap((r) => (r.node.kind === 'item' ? [[`${r.node.item.type}/${r.node.item.id}`, r.path] as const] : [])));
+  return new Map(routes.flatMap((r) => (r.node.kind === 'item' && r.published ? [[`${r.node.item.type}/${r.node.item.id}`, r.path] as const] : [])));
 }

@@ -1,0 +1,649 @@
+/**
+ * The article editor's controller (documentation/editor/spec.md §3, §8.6): the one owner of the article
+ * while it's open. It applies every change with the shared document operations, saves through one
+ * queue (never two saves at once), keeps the undo history, refreshes the outline and the inspector (by
+ * fetching the page and swapping those regions) and the canvas (by reloading it) after changes that
+ * re-render them, and talks to the canvas by postMessage (same origin only).
+ */
+import { api, announce, describeIssue, type Issue } from './client';
+import * as ops from '../model/ops';
+import { plainText } from '../../content/markdown';
+import type { Article, Block } from '../../content/schema';
+
+interface State {
+  id: string;
+  key: string;
+  version: string;
+  structureVersion: string | null;
+  section: string;
+  published: boolean;
+  article: Article;
+  canvas: string;
+  publicPath: string | null;
+  media: Record<string, { alt: string; thumb: string }>;
+}
+type Refresh = { canvas?: boolean; outline?: boolean; inspector?: boolean };
+type Pick = { mode: 'single' | 'multiple'; min: number; title: string; onChoose: (ids: string[]) => void };
+const STRUCTURE = '/content/structures/site.json';
+const ALL: Refresh = { canvas: true, outline: true, inspector: true };
+
+export function initEditor(root: HTMLElement, signal: AbortSignal) {
+  const readState = (): State => JSON.parse(document.querySelector('[data-editor-state]')?.textContent ?? '{}');
+  const state = readState();
+  let doc: Article = state.article;
+  let saved: Article = structuredClone(doc);
+  let selected: number | null = null;
+  const frame = root.querySelector<HTMLIFrameElement>('[data-editor-frame]')!;
+  const canvasBox = root.querySelector<HTMLElement>('[data-editor-canvas]')!;
+  const toCanvas = (m: Record<string, unknown>) => frame.contentWindow?.postMessage({ source: 'editor', ...m }, location.origin);
+  const dialog = (id: string) => document.getElementById(id) as HTMLDialogElement | null;
+  type Events = DocumentEventMap & WindowEventMap;
+  const on = <K extends keyof Events>(t: EventTarget, type: K, fn: (e: Events[K]) => void) => t.addEventListener(type, fn as EventListener, { signal });
+
+  // ---------- history ----------
+  const HKEY = `editor.history.${state.id}`;
+  const hist: { past: string[]; future: string[] } = JSON.parse(sessionStorage.getItem(HKEY) ?? '{"past":[],"future":[]}');
+  const persist = () => sessionStorage.setItem(HKEY, JSON.stringify({ past: hist.past.slice(-50), future: hist.future.slice(-50) }));
+  const updateUndo = () => {
+    document.querySelectorAll<HTMLButtonElement>('[data-editor-undo]').forEach((b) => (b.disabled = !hist.past.length));
+    document.querySelectorAll<HTMLButtonElement>('[data-editor-redo]').forEach((b) => (b.disabled = !hist.future.length));
+  };
+  const checkpoint = () => {
+    hist.past.push(JSON.stringify(doc));
+    hist.future = [];
+    persist();
+    updateUndo();
+  };
+  updateUndo();
+
+  // ---------- saving: one queue, never two at once ----------
+  let inFlight = false;
+  let queued: { section?: string | null; refresh: Refresh } | null = null;
+  let conflict = false;
+  const afterReady: (() => void)[] = [];
+
+  const save = async (opts: { section?: string | null; refresh?: Refresh } = {}) => {
+    if (conflict) return;
+    const refresh = { ...(queued?.refresh ?? {}), ...(opts.refresh ?? {}) };
+    queued = { ...(queued ?? {}), ...(opts.section !== undefined ? { section: opts.section } : {}), refresh };
+    if (inFlight) return;
+    inFlight = true;
+    while (queued && !conflict) {
+      const job = queued;
+      queued = null;
+      announce('Saving\u2026');
+      const r = await api<{ article: Article }>('PUT', `articles/${state.id}`, {
+        article: doc,
+        ...(job.section !== undefined ? { section: job.section } : {}),
+        ifMatch: { [state.key]: state.version, ...(state.structureVersion ? { [STRUCTURE]: state.structureVersion } : {}) },
+      });
+      if (r.ok) {
+        state.version = r.data.versions?.[state.key] ?? state.version;
+        if (r.data.versions?.[STRUCTURE]) state.structureVersion = r.data.versions[STRUCTURE];
+        if (job.section !== undefined) state.section = job.section ?? '';
+        const server = r.data.article;
+        doc = queued ? { ...doc, updatedAt: server.updatedAt, ...(server.publishedAt ? { publishedAt: server.publishedAt } : {}) } : server;
+        saved = structuredClone(server);
+        clearIssues();
+        announce('Saved');
+        await refreshAll(job.refresh);
+      } else if (r.status === 409) {
+        conflict = true;
+        announce('This article changed elsewhere', 'negative');
+        dialog('editor-conflict')?.showModal();
+      } else {
+        doc = structuredClone(saved);
+        showIssues(r.data.issues ?? []);
+        announce(`Not saved: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`, 'negative');
+      }
+    }
+    inFlight = false;
+  };
+
+  // ---------- refreshing the outline, the inspector and the canvas ----------
+  const reloadCanvas = () => frame.contentWindow?.location.reload();
+  const swap = async (names: string[]) => {
+    const html = await (await fetch(location.href, { headers: { 'X-Editor': '1' } })).text();
+    const next = new DOMParser().parseFromString(html, 'text/html');
+    const active = document.activeElement as HTMLElement | null;
+    const focusKey = active?.id || (active?.dataset.editorSelect !== undefined ? `select:${active.dataset.editorSelect}` : '');
+    const tab = root.querySelector<HTMLElement>('#inspector-tabs [role="tab"][aria-selected="true"]')?.dataset.tab;
+    const scroll = root.querySelector<HTMLElement>('[data-editor-inspector]')?.scrollTop ?? 0;
+    for (const name of names) {
+      const old = document.querySelector(`[data-region="${name}"]`);
+      const fresh = next.querySelector(`[data-region="${name}"]`);
+      if (old && fresh) old.replaceWith(document.importNode(fresh, true));
+    }
+    document.dispatchEvent(new Event('astro:page-load'));
+    Object.assign(state, { media: readState().media });
+    if (tab) root.querySelector('#inspector-tabs')?.dispatchEvent(new CustomEvent('tabs:select', { detail: { tab } }));
+    const ins = root.querySelector<HTMLElement>('[data-editor-inspector]');
+    if (ins) ins.scrollTop = scroll;
+    showBlock(selected);
+    if (focusKey) {
+      const el = focusKey.startsWith('select:') ? root.querySelector<HTMLElement>(`[data-editor-select="${focusKey.slice(7)}"]`) : document.getElementById(focusKey);
+      el?.focus({ preventScroll: true });
+    }
+  };
+  const refreshAll = async (r: Refresh) => {
+    const names = [...(r.outline ? ['outline'] : []), ...(r.inspector ? ['inspector', 'state'] : [])];
+    if (names.length) await swap(names);
+    if (r.canvas) reloadCanvas();
+  };
+
+  // ---------- selection ----------
+  const showBlock = (i: number | null) => {
+    root.querySelectorAll<HTMLFormElement>('[data-block-form]').forEach((f) => (f.hidden = Number(f.dataset.blockForm) !== i));
+    const none = root.querySelector<HTMLElement>('[data-editor-noblock]');
+    if (none) none.hidden = i !== null && i < doc.body.length;
+    root.querySelectorAll<HTMLElement>('[data-editor-select]').forEach((b) => {
+      const on = Number(b.dataset.editorSelect) === i;
+      if (on) b.setAttribute('aria-current', 'true');
+      else b.removeAttribute('aria-current');
+      b.closest('[data-row]')?.toggleAttribute('data-current', on);
+    });
+  };
+  const setSelected = (i: number | null, opts: { tab?: boolean; canvas?: boolean; scroll?: boolean } = {}) => {
+    selected = i !== null && i >= 0 && i < doc.body.length ? i : null;
+    showBlock(selected);
+    if (opts.tab && selected !== null) root.querySelector('#inspector-tabs')?.dispatchEvent(new CustomEvent('tabs:select', { detail: { tab: 'block' } }));
+    if (opts.canvas) toCanvas({ type: 'select', index: selected, scroll: !!opts.scroll });
+    sessionStorage.setItem(`editor.selected.${state.id}`, String(selected ?? ''));
+  };
+
+  // ---------- issues on fields ----------
+  const clearIssues = () => {
+    root.querySelectorAll('[data-editor-issue]').forEach((p) => {
+      (p as HTMLElement).hidden = true;
+      p.textContent = '';
+    });
+    root.querySelectorAll('[data-editor-inspector] [aria-invalid="true"]').forEach((el) => el.removeAttribute('aria-invalid'));
+  };
+  const showIssues = (issues: Issue[]) => {
+    for (const i of issues) {
+      const field = i.path ? root.querySelector<HTMLElement>(`[data-editor-inspector] [name="${CSS.escape(i.path)}"]`) : null;
+      field?.setAttribute('aria-invalid', 'true');
+      const form = field?.closest('form') ?? (selected !== null ? root.querySelector(`[data-block-form="${selected}"]`) : root.querySelector('[data-page-form]'));
+      const p = form?.querySelector<HTMLElement>('[data-editor-issue]');
+      if (p) {
+        p.textContent = describeIssue(i);
+        p.hidden = false;
+      }
+    }
+  };
+
+  // ---------- changes ----------
+  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; history?: boolean } = {}) => {
+    if (opts.history !== false) checkpoint();
+    doc = next;
+    if (opts.select !== undefined) selected = opts.select;
+    void save({ refresh, ...(opts.section !== undefined ? { section: opts.section } : {}) });
+  };
+  const body = (b: Block[]) => ({ ...doc, body: b });
+  const blockOp = (i: number, op: 'up' | 'down' | 'duplicate' | 'delete') => {
+    if (op === 'up' && i > 0) change(body(ops.move(doc.body, i, i - 1)), ALL, { select: i - 1 });
+    else if (op === 'down' && i < doc.body.length - 1) change(body(ops.move(doc.body, i, i + 1)), ALL, { select: i + 1 });
+    else if (op === 'duplicate') change(body(ops.duplicate(doc.body, i)), ALL, { select: i + 1 });
+    else if (op === 'delete') {
+      change(body(ops.remove(doc.body, i)), ALL, { select: doc.body.length > 1 ? Math.max(0, i - 1) : null });
+      announce(`Deleted: Undo brings it back`);
+    }
+  };
+  const insertBlock = (at: number, block: Block) => change(body(ops.insert(doc.body, at, block)), ALL, { select: at });
+
+  // ---------- undo and redo ----------
+  const undo = () => {
+    toCanvas({ type: 'flush' });
+    const prev = hist.past.pop();
+    if (!prev) return;
+    hist.future.push(JSON.stringify(doc));
+    persist();
+    updateUndo();
+    doc = JSON.parse(prev);
+    void save({ refresh: ALL });
+    announce('Undone');
+  };
+  const redo = () => {
+    const next = hist.future.pop();
+    if (!next) return;
+    hist.past.push(JSON.stringify(doc));
+    persist();
+    updateUndo();
+    doc = JSON.parse(next);
+    void save({ refresh: ALL });
+    announce('Redone');
+  };
+
+  // ---------- the canvas's messages ----------
+  let textSession = -1;
+  on(window, 'message', (e) => {
+    const m = (e as MessageEvent).data as { source?: string; type: string; [k: string]: unknown };
+    if ((e as MessageEvent).origin !== location.origin || (e as MessageEvent).source !== frame.contentWindow || m?.source !== 'editor-canvas') return;
+    switch (m.type) {
+      case 'ready': {
+        toCanvas({ type: 'mode', preview: document.querySelector('[data-editor-preview]')?.getAttribute('aria-pressed') === 'true' });
+        if (selected !== null) toCanvas({ type: 'select', index: selected });
+        afterReady.splice(0).forEach((fn) => fn());
+        break;
+      }
+      case 'select':
+        if (m.field) {
+          setSelected(null);
+          root.querySelector('#inspector-tabs')?.dispatchEvent(new CustomEvent('tabs:select', { detail: { tab: 'page' } }));
+        } else setSelected(m.index as number | null, { tab: true });
+        break;
+      case 'text': {
+        const i = m.index as number;
+        const b = doc.body[i];
+        const value = String(m.value ?? '');
+        if (!b) break;
+        if (!value.trim()) {
+          if (m.final && b.type === 'text') blockOp(i, 'delete');
+          break;
+        }
+        if (m.session !== textSession) {
+          textSession = m.session as number;
+          checkpoint();
+        }
+        const next: Block = b.type === 'text' ? { ...b, markdown: value } : b.type === 'heading' || b.type === 'quote' ? { ...b, text: value } : b;
+        doc = body(ops.replace(doc.body, i, next));
+        void save({ refresh: m.final ? { outline: true } : {} });
+        break;
+      }
+      case 'field': {
+        const f = m.field as 'title' | 'summary';
+        const value = String(m.value ?? '').trim();
+        if (!value) break;
+        if (m.session !== textSession) {
+          textSession = m.session as number;
+          checkpoint();
+        }
+        doc = { ...doc, [f]: value };
+        void save({ refresh: m.final ? { inspector: true } : {} });
+        break;
+      }
+      case 'split': {
+        const i = m.index as number;
+        const parts = m.parts as string[];
+        change(body(ops.split(doc.body, i, parts)), ALL, { select: i + 1 });
+        const endOfBlock = !String(parts[parts.length - 1] ?? '').trim();
+        afterReady.push(() => (endOfBlock ? toCanvas({ type: 'pending', index: i + 1, kind: 'text' }) : toCanvas({ type: 'focus', index: i + parts.length - 1, at: 'start' })));
+        break;
+      }
+      case 'merge': {
+        const i = m.index as number;
+        const prev = doc.body[i - 1];
+        const offset = prev?.type === 'text' ? plainText(prev.markdown).length : 0;
+        change(body(ops.merge(doc.body, i)), ALL, { select: i - 1 });
+        afterReady.push(() => toCanvas({ type: 'focus', index: i - 1, at: offset }));
+        break;
+      }
+      case 'insert':
+        openPalette(m.index as number);
+        break;
+      case 'op':
+        blockOp(m.index as number, m.op as 'up' | 'down' | 'duplicate' | 'delete');
+        break;
+      case 'pending': {
+        const at = m.index as number;
+        const block: Block = m.kind === 'heading' ? { type: 'heading', level: 2, text: String(m.value) } : { type: 'text', markdown: String(m.value) };
+        change(body(ops.insert(doc.body, at, block)), { outline: true, inspector: true }, { select: at });
+        break;
+      }
+      case 'link-request':
+        openLink(String(m.href ?? ''));
+        break;
+      case 'key':
+        if (m.key === 'undo') undo();
+        else if (m.key === 'redo') redo();
+        else if (m.key === 'save') void save();
+        else if (m.key === 'settings') root.querySelector<HTMLElement>(`[data-block-form="${selected}"] input, [data-block-form="${selected}"] [role="combobox"], [data-block-form="${selected}"] button`)?.focus();
+        break;
+    }
+  });
+
+  // ---------- the inspector's fields ----------
+  on(root, 'change', (e) => {
+    const t = e.target as HTMLInputElement;
+    if (!t.name || !t.closest('[data-editor-inspector]')) return;
+    const kind = t.closest<HTMLElement>('[data-type]')?.dataset.type ?? 'text';
+    const bad = (msg: string) => showIssues([{ file: state.key, path: t.name, message: msg }]);
+    let value: unknown;
+    if (t.type === 'checkbox') value = kind === 'bool-default-true' ? (t.checked ? undefined : false) : t.checked ? true : undefined;
+    else if (kind === 'number') value = Number(t.value);
+    else if (kind === 'duration') {
+      const d = ops.parseDuration(t.value);
+      if (d === null) return bad('Write the length as minutes and seconds (2:20).');
+      value = d;
+    } else if (kind === 'video-url') {
+      const v = ops.parseVideo(t.value);
+      if (!v) return bad('Use a YouTube or Vimeo link (https://youtu.be/…, https://vimeo.com/…).');
+      value = v;
+    } else value = t.value.trim() === '' ? undefined : t.value;
+    if (t.name === '__section') return change(doc, ALL, { section: (value as string | undefined) ?? null });
+    const renders = t.name.startsWith('body.') || t.name.startsWith('hero.') || ['title', 'summary', 'publishedAt', 'kind'].includes(t.name);
+    change(ops.setPath(doc, t.name, value), { canvas: renders, outline: t.name.startsWith('body.') });
+  });
+
+  // ---------- clicks ----------
+  let insertAt = doc.body.length;
+  let pick: Pick | null = null;
+  const chosen = new Set<string>();
+
+  const openPalette = (at: number) => {
+    insertAt = at;
+    toCanvas({ type: 'flush' });
+    dialog('editor-palette')?.showModal();
+  };
+  const openPicker = (p: Pick) => {
+    pick = p;
+    chosen.clear();
+    const d = dialog('editor-picker');
+    if (!d) return;
+    const title = d.querySelector(`#editor-picker-title`);
+    if (title) title.textContent = p.title;
+    d.querySelectorAll('[data-editor-media]').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    syncPicker();
+    d.showModal();
+  };
+  const syncPicker = () => {
+    const d = dialog('editor-picker');
+    const use = d?.querySelector<HTMLButtonElement>('[data-editor-media-use]');
+    const count = d?.querySelector<HTMLElement>('[data-editor-media-count]');
+    if (count) count.textContent = pick?.mode === 'multiple' ? `${chosen.size} chosen (at least ${pick.min})` : 'Choose one';
+    if (use) {
+      use.disabled = !pick || chosen.size < (pick?.min ?? 1);
+      use.hidden = pick?.mode !== 'multiple';
+    }
+  };
+  const choose = (ids: string[]) => {
+    const p = pick;
+    pick = null;
+    dialog('editor-picker')?.close();
+    p?.onChoose(ids);
+  };
+  let linkRequest = '';
+  const openLink = (href: string) => {
+    linkRequest = href;
+    const d = dialog('editor-insert-link');
+    const input = d?.querySelector<HTMLInputElement>('input[name="href"]');
+    if (input) input.value = href.startsWith('ref:') ? '' : href;
+    d?.showModal();
+  };
+  const plainOf = (b: Block) => (b.type === 'text' ? plainText(b.markdown).replace(/\s+/g, ' ').trim() : '');
+
+  on(root, 'click', (e) => {
+    const t = e.target as Element;
+    const el = t.closest<HTMLElement>(
+      '[data-editor-select], [data-editor-move], [data-editor-add-at], [data-editor-block-op], [data-editor-convert], [data-editor-pick], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
+    );
+    if (!el) return;
+    const d = el.dataset;
+    const i = Number(d.index ?? d.editorSelect ?? -1);
+    if (d.editorSelect !== undefined) return setSelected(Number(d.editorSelect), { tab: true, canvas: true, scroll: true });
+    if (d.editorMove) return blockOp(i, d.editorMove as 'up' | 'down');
+    if (d.editorAddAt !== undefined) return openPalette(Number(d.editorAddAt));
+    if (d.editorBlockOp) return blockOp(i, d.editorBlockOp as 'duplicate' | 'delete');
+    if (d.editorConvert) {
+      const text = plainOf(doc.body[i]);
+      const next: Block = d.editorConvert === 'heading' ? { type: 'heading', level: 2, text } : { type: 'quote', variant: 'block', text };
+      return change(body(ops.replace(doc.body, i, next)), ALL, { select: i });
+    }
+    if (d.editorPick) {
+      const path = d.editorPick;
+      const multiple = d.pickMode === 'multiple';
+      return openPicker({
+        mode: multiple ? 'multiple' : 'single',
+        min: 1,
+        title: multiple ? 'Add pictures' : 'Choose a picture',
+        onChoose: (ids) => {
+          if (multiple) {
+            const list = (ops.getPath(doc, path) as { media: string }[]) ?? [];
+            change(ops.setPath(doc, path, [...list, ...ids.map((media) => ({ media }))]), ALL);
+          } else if (path === 'hero.media') change({ ...doc, hero: { ...(doc.hero ?? {}), media: ids[0] } }, ALL);
+          else change(ops.setPath(doc, path, ids[0]), ALL);
+        },
+      });
+    }
+    if (d.editorClear === 'hero') {
+      const { hero: _h, ...rest } = doc;
+      return change(rest as Article, ALL);
+    }
+    if (d.editorItems) {
+      const b = doc.body[i] as Extract<Block, { type: 'gallery' | 'carousel' }>;
+      const n = Number(d.item);
+      const items = d.editorItems === 'remove' ? b.items.filter((_, k) => k !== n) : ops.move(b.items as unknown as Block[], n, d.editorItems === 'up' ? n - 1 : n + 1);
+      return change(body(ops.replace(doc.body, i, { ...b, items } as Block)), ALL);
+    }
+    if (d.editorFacts) {
+      const b = doc.body[i] as Extract<Block, { type: 'facts' }>;
+      const items = d.editorFacts === 'add' ? [...b.items, { label: 'Label', value: 'Value' }] : b.items.filter((_, k) => k !== Number(d.item));
+      return change(body(ops.replace(doc.body, i, { ...b, items })), ALL);
+    }
+    if (d.editorAdd) {
+      dialog('editor-palette')?.close();
+      return addBlock(d.editorAdd);
+    }
+    if (d.editorMedia && pick) {
+      const id = d.editorMedia;
+      if (pick.mode === 'single') return choose([id]);
+      if (chosen.has(id)) chosen.delete(id);
+      else chosen.add(id);
+      el.setAttribute('aria-pressed', chosen.has(id) ? 'true' : 'false');
+      return syncPicker();
+    }
+    if (d.editorMediaUse !== undefined && pick) return choose([...chosen]);
+    if (d.editorUnlink !== undefined) {
+      dialog('editor-insert-link')?.close();
+      return toCanvas({ type: 'link', href: '' });
+    }
+    if (d.editorReload !== undefined) return location.reload();
+  });
+
+  const addBlock = (type: string) => {
+    const at = insertAt;
+    if (type === 'text' || type === 'heading') return toCanvas({ type: 'pending', index: at, kind: type });
+    if (type === 'divider') return insertBlock(at, { type: 'divider' });
+    if (type === 'quote' || type === 'facts' || type === 'video') return dialog(`editor-insert-${type}`)?.showModal();
+    if (type === 'figure')
+      return openPicker({ mode: 'single', min: 1, title: 'Choose a picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
+    if (type === 'gallery')
+      return openPicker({ mode: 'multiple', min: 2, title: 'Choose the pictures (two or more)', onChoose: (ids) => insertBlock(at, { type: 'gallery', items: ids.map((media) => ({ media })), layout: 'grid', lightbox: true }) });
+    if (type === 'carousel')
+      return openPicker({
+        mode: 'multiple',
+        min: 2,
+        title: 'Choose the pictures (two or more)',
+        onChoose: (ids) => {
+          pendingCarousel = ids;
+          dialog('editor-insert-carousel')?.showModal();
+        },
+      });
+  };
+  let pendingCarousel: string[] = [];
+  let pendingVideo: { embed: { provider: 'youtube' | 'vimeo'; id: string }; title: string; duration?: number } | null = null;
+
+  on(root, 'submit', (e) => {
+    const form = (e.target as HTMLElement).closest<HTMLFormElement>('[data-editor-insert-form]');
+    if (!form) return;
+    e.preventDefault();
+    const data = new FormData(form);
+    const val = (k: string) => String(data.get(k) ?? '').trim();
+    const issue = (msg: string) => {
+      const p = form.querySelector<HTMLElement>('[data-editor-form-issue]')!;
+      p.textContent = msg;
+      p.hidden = !msg;
+    };
+    const kind = form.dataset.editorInsertForm;
+    const close = () => {
+      issue('');
+      form.reset();
+      form.closest('dialog')?.close();
+    };
+    if (kind === 'quote') {
+      if (!val('text')) return issue('Write the quote.');
+      close();
+      return insertBlock(insertAt, { type: 'quote', text: val('text'), variant: (val('variant') || 'pull') as 'pull' | 'block', ...(val('cite') ? { cite: val('cite') } : {}) });
+    }
+    if (kind === 'facts') {
+      const items = [0, 1, 2].map((n) => ({ label: val(`label${n}`), value: val(`value${n}`) })).filter((f) => f.label && f.value);
+      if (!items.length) return issue('Give at least one label and its value.');
+      close();
+      return insertBlock(insertAt, { type: 'facts', items });
+    }
+    if (kind === 'carousel') {
+      if (!val('label')) return issue('Name the carousel.');
+      const ids = pendingCarousel;
+      close();
+      return insertBlock(insertAt, { type: 'carousel', items: ids.map((media) => ({ media })), label: val('label'), lightbox: true });
+    }
+    if (kind === 'video') {
+      const embed = ops.parseVideo(val('url'));
+      if (!embed) return issue('Use a YouTube or Vimeo link.');
+      if (!val('title')) return issue('Give the video a title.');
+      const duration = ops.parseDuration(val('duration'));
+      if (duration === null) return issue('Write the length as minutes and seconds (2:20).');
+      pendingVideo = { embed, title: val('title'), ...(duration ? { duration } : {}) };
+      const at = insertAt;
+      close();
+      return openPicker({
+        mode: 'single',
+        min: 1,
+        title: 'Choose the poster',
+        onChoose: (ids) => {
+          if (pendingVideo) insertBlock(at, { type: 'video', ...pendingVideo, poster: ids[0], width: 'wide' });
+          pendingVideo = null;
+        },
+      });
+    }
+    if (kind === 'link') {
+      const href = val('href');
+      const ref = val('ref');
+      const target = ref || href || linkRequest;
+      if (target && !/^(https?:\/\/|mailto:|ref:)/i.test(target)) return issue('Use an address that starts with https://, http:// or mailto:, or choose an article.');
+      close();
+      return toCanvas({ type: 'link', href: target });
+    }
+  });
+
+  // a picture uploaded from the picker is chosen at once
+  on(root, 'media:uploaded' as keyof DocumentEventMap, async (e) => {
+    const id = (e as CustomEvent<{ id: string }>).detail.id;
+    await swap(['media-grid', 'state']);
+    announce('Uploaded');
+    if (pick?.mode === 'single') choose([id]);
+    else if (pick) {
+      chosen.add(id);
+      root.querySelector(`[data-editor-media="${CSS.escape(id)}"]`)?.setAttribute('aria-pressed', 'true');
+      syncPicker();
+    }
+  });
+
+  // ---------- the outline: drag, and keys ----------
+  on(root, 'pointerdown', (e) => {
+    const grip = (e.target as Element).closest<HTMLElement>('[data-editor-drag]');
+    if (!grip) return;
+    e.preventDefault();
+    const from = Number(grip.dataset.editorDrag);
+    const rows = [...root.querySelectorAll<HTMLElement>('[data-editor-outline] [data-row]')];
+    const row = rows[from];
+    row.dataset.dragging = '';
+    grip.setPointerCapture(e.pointerId);
+    let to = -1;
+    const move = (ev: PointerEvent) => {
+      const middles = rows.map((r) => {
+        const b = r.getBoundingClientRect();
+        return b.top + b.height / 2;
+      });
+      to = ops.dropTarget(middles, ev.clientY, from);
+      rows.forEach((r, k) => {
+        delete r.dataset.drop;
+        if (to < 0) return;
+        if (to < from && k === to) r.dataset.drop = 'before';
+        if (to > from && k === to) r.dataset.drop = 'after';
+      });
+    };
+    const up = () => {
+      grip.removeEventListener('pointermove', move);
+      rows.forEach((r) => delete r.dataset.drop);
+      delete row.dataset.dragging;
+      if (to >= 0) {
+        change(body(ops.move(doc.body, from, to)), ALL, { select: to });
+        announce(`Moved to position ${to + 1} of ${doc.body.length}`);
+      }
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', up, { once: true });
+    grip.addEventListener('pointercancel', up, { once: true });
+  });
+  on(root, 'keydown', (e) => {
+    const b = (e.target as Element).closest<HTMLElement>('[data-editor-select]');
+    if (!b) return;
+    const i = Number(b.dataset.editorSelect);
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault();
+      const to = e.key === 'ArrowUp' ? i - 1 : i + 1;
+      if (to < 0 || to >= doc.body.length) return;
+      blockOp(i, e.key === 'ArrowUp' ? 'up' : 'down');
+      announce(`Moved to position ${to + 1} of ${doc.body.length}`);
+      afterReady.push(() => root.querySelector<HTMLElement>(`[data-editor-select="${to}"]`)?.focus());
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      root.querySelector<HTMLElement>(`[data-editor-select="${i + (e.key === 'ArrowUp' ? -1 : 1)}"]`)?.focus();
+    } else if (e.key === 'Delete') {
+      e.preventDefault();
+      blockOp(i, 'delete');
+    }
+  });
+
+  // ---------- the top bar ----------
+  on(document, 'click', (e) => {
+    const t = (e.target as Element).closest<HTMLElement>('[data-editor-undo], [data-editor-redo], [data-editor-device], [data-editor-theme], [data-editor-preview]');
+    if (!t) return;
+    if (t.dataset.editorUndo !== undefined) return undo();
+    if (t.dataset.editorRedo !== undefined) return redo();
+    if (t.dataset.editorDevice) {
+      canvasBox.dataset.device = t.dataset.editorDevice;
+      document.querySelectorAll('[data-editor-device]').forEach((b) => b.setAttribute('aria-pressed', b === t ? 'true' : 'false'));
+      sessionStorage.setItem('editor.canvas.device', t.dataset.editorDevice);
+      return;
+    }
+    if (t.dataset.editorTheme !== undefined) {
+      const next = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
+      sessionStorage.setItem('editor.canvas.theme', next);
+      t.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
+      return toCanvas({ type: 'theme', theme: next });
+    }
+    if (t.dataset.editorPreview !== undefined) {
+      const on = t.getAttribute('aria-pressed') !== 'true';
+      t.setAttribute('aria-pressed', on ? 'true' : 'false');
+      return toCanvas({ type: 'mode', preview: on });
+    }
+  });
+  on(document, 'keydown', (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    const inField = (e.target as Element).closest('input, textarea, [contenteditable="true"], [role="combobox"]');
+    if (mod && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      toCanvas({ type: 'flush' });
+      void save();
+    } else if (mod && e.key.toLowerCase() === 'z' && !inField) {
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    }
+  });
+  const device = sessionStorage.getItem('editor.canvas.device');
+  if (device) document.querySelector<HTMLElement>(`[data-editor-device="${device}"]`)?.click();
+  addEventListener(
+    'beforeunload',
+    (e) => {
+      toCanvas({ type: 'flush' });
+      if (inFlight || queued) e.preventDefault();
+    },
+    { signal },
+  );
+
+  const last = sessionStorage.getItem(`editor.selected.${state.id}`);
+  setSelected(last ? Number(last) : null);
+}

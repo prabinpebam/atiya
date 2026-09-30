@@ -1,0 +1,210 @@
+---
+/**
+ * The article editor's outline (documentation/editor/spec.md §3.3): every block in order, by its kind and
+ * first words, to select it (the canvas scrolls to it) and reorder it: drag its handle, or use Move up
+ * and Move down (a single-pointer alternative to the drag, WCAG 2.5.7), or Alt+Up and Alt+Down.
+ * @tier editor
+ * @a11y A named list; each row's main button selects the block and is marked current when it's selected.
+ * @a11y Every drag has buttons and keys that do the same; a move is announced in the status.
+ * @key Up / Down: the previous / next block's row
+ * @key Alt + Up / Alt + Down: move the block
+ * @key Delete: delete the block (Undo brings it back)
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import type { IconName } from '../../design/icons';
+
+interface Props {
+  /** The blocks, in order: their kind, a few words, an icon. */
+  blocks: { kind: string; excerpt: string; icon: IconName }[];
+}
+
+const { blocks } = Astro.props;
+---
+
+<section class="outline" aria-labelledby="outline-title" data-region="outline" data-editor-outline>
+  <div class="head">
+    <Heading level={2} size="ui" id="outline-title">Outline</Heading>
+    <Text as="span" variant="small" tone="muted">{`${blocks.length} ${blocks.length === 1 ? 'block' : 'blocks'}`}</Text>
+  </div>
+  <ol class="rows" data-scrollbar>
+    {
+      blocks.map((b, i) => (
+        <li class="row" data-row={i}>
+          <span class="grip" data-editor-drag={i} aria-hidden="true">
+            <Icon name="drag" />
+          </span>
+          <button class="pick" type="button" data-editor-select={i} aria-label={`${b.kind}${b.excerpt ? `: ${b.excerpt}` : ''}`}>
+            <Icon name={b.icon} />
+            <span class="words">
+              <span class="kind">{b.kind}</span>
+              {b.excerpt && <span class="excerpt">{b.excerpt}</span>}
+            </span>
+          </button>
+          <span class="moves">
+            <IconButton label={`Move ${b.kind.toLowerCase()} up`} icon="arrow-up" size="sm" tooltip="none" disabled={i === 0} data-editor-move="up" data-index={String(i)} />
+            <IconButton label={`Move ${b.kind.toLowerCase()} down`} icon="arrow-down" size="sm" tooltip="none" disabled={i === blocks.length - 1} data-editor-move="down" data-index={String(i)} />
+          </span>
+        </li>
+      ))
+    }
+  </ol>
+  <div class="foot">
+    <Button variant="quiet" size="sm" icon="plus" block data-editor-add-at={String(blocks.length)}>Add a block</Button>
+  </div>
+</section>
+
+<style>
+  .outline {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    min-block-size: 0;
+    block-size: 100%;
+    border-inline-end: var(--border-hairline) solid var(--color-rule);
+    background: var(--color-bg-raised);
+  }
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-4) var(--space-2);
+  }
+
+  .rows {
+    display: grid;
+    align-content: start;
+    gap: var(--space-0-5);
+    margin: 0;
+    padding: var(--space-1) var(--space-2);
+    overflow: auto;
+    scrollbar-width: none;
+    list-style: none;
+  }
+
+  .row {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-1);
+    border-radius: var(--radius-md);
+  }
+
+  .row[data-dragging] {
+    opacity: var(--opacity-disabled);
+  }
+
+  .row[data-drop='before']::before,
+  .row[data-drop='after']::after {
+    content: '';
+    position: absolute;
+    inset-inline: var(--space-2);
+    block-size: var(--border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+  }
+
+  .row[data-drop='before']::before {
+    inset-block-start: calc(var(--space-0-5) * -1);
+  }
+
+  .row[data-drop='after']::after {
+    inset-block-end: calc(var(--space-0-5) * -1);
+  }
+
+  .grip {
+    display: grid;
+    place-items: center;
+    inline-size: var(--space-6);
+    block-size: var(--size-touch);
+    color: var(--color-text-muted);
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .pick {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-inline-size: 0;
+    min-block-size: var(--size-touch);
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .pick:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .pick:active {
+    background: var(--color-bg-hover);
+  }
+
+  .pick[aria-current='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .words {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .kind {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .excerpt {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pick[aria-current='true'] .excerpt {
+    color: var(--color-on-accent-soft);
+  }
+
+  .moves {
+    display: flex;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+
+  .row:focus-within .moves,
+  .row[data-current] .moves {
+    opacity: 1;
+  }
+
+  @media (hover: hover) {
+    .row:hover .moves {
+      opacity: 1;
+    }
+  }
+
+  .row:active .moves {
+    opacity: 1;
+  }
+
+  .foot {
+    padding: var(--space-2) var(--space-3) var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+</style>

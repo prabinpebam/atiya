@@ -1,0 +1,12 @@
+---
+import Example from '../library/Example.astro';
+import FileField from '../components/fundamentals/FileField.astro';
+---
+
+<Example title="One picture" description="A drop zone around the browser's own file input: choose with the system dialog, or drop a file on it.">
+  <FileField label="Picture" accept="image/*" hint="JPEG, PNG or WebP. It's resized to 2560 px and saved as WebP." />
+</Example>
+
+<Example title="Several files" description="Multiple takes a set; the chosen names are listed and announced.">
+  <FileField label="Pictures" accept="image/*" multiple />
+</Example>

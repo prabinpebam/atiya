@@ -1,0 +1,165 @@
+---
+/**
+ * The dashboard's panels (documentation/editor/spec.md §4): how many articles are in each state, the
+ * most recent ones, what's changed since the last publish, what needs attention (the content check's
+ * warnings, pictures without alt text), and the quick actions.
+ * @tier editor
+ * @a11y Each panel is a section with a heading; counts are text, not only numbers in boxes.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import { withBase } from '../../design/meta';
+import { STATUS_LABEL, type ArticleRow } from '../server/screens';
+
+interface Props {
+  /** How many articles are published, and in draft. */
+  counts: { published: number; draft: number; other: number };
+  /** The most recently updated articles. */
+  recent: ArticleRow[];
+  /** How many content files differ from the last publish. */
+  pending: number;
+  /** What needs attention, each with where to fix it. */
+  attention: { text: string; href: string }[];
+}
+
+const { counts, recent, pending, attention } = Astro.props;
+const to = (p: string) => withBase(`/_edit/${p}`);
+---
+
+<div class="panels">
+  <section class="panel wide" aria-labelledby="dash-actions">
+    <Heading level={2} size="h4" id="dash-actions">Start something</Heading>
+    <div class="row">
+      <Button variant="primary" icon="plus" href={to('articles/?new=note')}>New article</Button>
+      <Button variant="secondary" icon="page" href={to('articles/?new=page')}>New page</Button>
+      <Button variant="secondary" icon="upload" href={to('media/?upload=1')}>Upload pictures</Button>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="dash-counts">
+    <Heading level={2} size="h4" id="dash-counts">Articles and pages</Heading>
+    <dl class="counts">
+      <div><dt>Published</dt><dd>{counts.published}</dd></div>
+      <div><dt>Drafts</dt><dd>{counts.draft}</dd></div>
+      {counts.other > 0 && <div><dt>In review</dt><dd>{counts.other}</dd></div>}
+    </dl>
+    <Link href={to('articles/')} variant="standalone">See them all</Link>
+  </section>
+
+  <section class="panel" aria-labelledby="dash-publish">
+    <Heading level={2} size="h4" id="dash-publish">Since the last publish</Heading>
+    {
+      pending ? (
+        <Text variant="ui">{`${pending} ${pending === 1 ? 'content file has' : 'content files have'} changed and aren't on the site yet.`}</Text>
+      ) : (
+        <Text variant="ui" tone="muted">Nothing's waiting: the site has everything.</Text>
+      )
+    }
+    <Link href={to('publish/')} variant="standalone">Review and publish</Link>
+  </section>
+
+  <section class="panel wide" aria-labelledby="dash-recent">
+    <Heading level={2} size="h4" id="dash-recent">Recently updated</Heading>
+    <ul class="list">
+      {
+        recent.map((r) => (
+          <li>
+            <Link href={to(`articles/${r.id}/`)} variant="quiet">{r.title}</Link>
+            <Tag size="sm" tone={r.published ? 'positive' : 'neutral'}>{STATUS_LABEL[r.status]}</Tag>
+            <Text as="time" variant="small" tone="muted" datetime={r.updatedAt}>{r.updatedAt}</Text>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="panel wide" aria-labelledby="dash-attention">
+    <Heading level={2} size="h4" id="dash-attention">Needs attention</Heading>
+    {
+      attention.length ? (
+        <ul class="list">
+          {attention.map((a) => (
+            <li>
+              <Icon name="error" tone="tonal" />
+              <Link href={a.href} variant="quiet">{a.text}</Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Text variant="ui" tone="muted">Nothing: every picture has its alt text, and every published article has a page.</Text>
+      )
+    }
+  </section>
+</div>
+
+<style>
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+
+  .panel {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .wide {
+    grid-column: 1 / -1;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .counts {
+    display: flex;
+    gap: var(--space-8);
+    margin: 0;
+  }
+
+  dt {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--text-h2);
+    line-height: var(--leading-tight);
+  }
+
+  .list {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    min-block-size: var(--size-touch);
+  }
+
+  @media (max-width: 56rem) {
+    .panels {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

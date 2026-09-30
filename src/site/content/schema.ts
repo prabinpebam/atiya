@@ -31,7 +31,13 @@ export const imageMedia = z
 const mediaUse = z.strictObject({ media: mediaId, caption: z.string().optional() });
 
 export const block = z.discriminatedUnion('type', [
-  z.strictObject({ type: z.literal('text'), markdown: z.string().min(1) }),
+  z.strictObject({
+    type: z.literal('text'),
+    markdown: z
+      .string()
+      .min(1)
+      .refine((m) => !/\n[ \t]*\n/.test(m.trim()), 'a text block is one paragraph or one list: split it into two blocks at the blank line'),
+  }),
   z.strictObject({ type: z.literal('heading'), level: z.union([z.literal(2), z.literal(3), z.literal(4)]), text: z.string().min(1), id: id.optional() }),
   z.strictObject({ type: z.literal('figure'), media: mediaId, caption: z.string().optional(), credit: z.string().optional(), width: width.default('content'), lightbox: z.boolean().optional() }),
   z.strictObject({ type: z.literal('gallery'), items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), fit: z.enum(['cover', 'contain']).optional(), caption: z.string().optional(), width: width.optional(), lightbox: z.boolean().optional() }),

@@ -1,0 +1,237 @@
+---
+/**
+ * Edit mode's frame (documentation/editor/spec.md §2): the side navigation to its screens, and a top bar
+ * with the screen's title, the save status (a live region), the screen's own tools, the number of
+ * unpublished changes and Publish. The article editor turns the navigation off for its studio. Built
+ * from the site's compounds and fundamentals; only the editor imports it (and editor-tokens.css).
+ * @tier editor
+ * @a11y One main landmark (id="main"); the navigation is named "Edit mode"; the save status is announced (role="status").
+ */
+import PageShell from '../components/compounds/PageShell.astro';
+import SideNav from '../components/compounds/SideNav.astro';
+import Button from '../components/fundamentals/Button.astro';
+import Text from '../components/fundamentals/Text.astro';
+import Heading from '../components/fundamentals/Heading.astro';
+import '../styles/editor-tokens.css';
+import { withBase } from '../design/meta';
+import { changes } from './server/git';
+
+interface Props {
+  /** The document title: the screen's name. */
+  title: string;
+  /** Which screen, for the navigation's current item. */
+  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'media' | 'settings' | 'publish';
+  /** Show the side navigation (the article editor hides it for its studio). */
+  nav?: boolean;
+  /** The screen's h1, over its content; left out, the content fills the screen (the studio). */
+  heading?: string;
+  /** One line under the heading. */
+  intro?: string;
+}
+
+const { title, screen, nav = true, heading, intro } = Astro.props;
+const git = await changes();
+const pending = git.files.length;
+const to = (p: string) => withBase(`/_edit/${p}`);
+const groups = [
+  {
+    title: 'Content',
+    items: [
+      { label: 'Dashboard', href: to(''), current: screen === 'dashboard' },
+      { label: 'Articles and pages', href: to('articles/'), current: screen === 'articles' || screen === 'article' },
+      { label: 'Sections', href: to('sections/'), current: screen === 'sections' },
+      { label: 'Media', href: to('media/'), current: screen === 'media' },
+    ],
+  },
+  {
+    title: 'Site',
+    items: [
+      { label: 'Settings', href: to('settings/'), current: screen === 'settings' },
+      { label: 'Publish', href: to('publish/'), current: screen === 'publish', note: pending ? `${pending} to publish` : undefined },
+    ],
+  },
+];
+---
+
+<PageShell title={`${title} · Edit mode`} noindex preload={['ui']} liveContent={false}>
+  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined}>
+    <header class="top">
+      <a class="brand" href={to('')}>Edit mode</a>
+      <div class="title"><slot name="title" /></div>
+      <p class="status" role="status" aria-live="polite" data-editor-status></p>
+      <div class="tools"><slot name="tools" /></div>
+      {
+        pending > 0 && (
+          <Text as="span" variant="small" tone="muted">
+            {`${pending} ${pending === 1 ? 'change' : 'changes'} to publish`}
+          </Text>
+        )
+      }
+      <Button href={to('publish/')} variant={pending ? 'primary' : 'secondary'} size="sm" icon="publish">Publish</Button>
+    </header>
+    {
+      nav && (
+        <aside class="nav" data-scrollbar>
+          <SideNav label="Edit mode" groups={groups} />
+        </aside>
+      )
+    }
+    <main id="main" class="main" tabindex="-1" data-scrollbar>
+      {
+        heading ? (
+          <div class="screen">
+            <header class="screen-head">
+              <div class="screen-words">
+                <Heading level={1} size="h2">{heading}</Heading>
+                {intro && <Text variant="ui" tone="muted">{intro}</Text>}
+              </div>
+              <div class="screen-actions">
+                <slot name="actions" />
+              </div>
+            </header>
+            <slot />
+          </div>
+        ) : (
+          <slot />
+        )
+      }
+    </main>
+  </div>
+</PageShell>
+
+<style>
+  .editor {
+    display: grid;
+    grid-template-columns: var(--c-editor-nav) minmax(0, 1fr);
+    grid-template-rows: var(--c-editor-topbar) minmax(0, 1fr);
+    block-size: 100dvh;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+  }
+
+  .editor:not([data-nav]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .top {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-inline-size: 0;
+    padding-inline: var(--space-5);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    background: var(--color-bg-raised);
+  }
+
+  .brand {
+    flex: none;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-display);
+    text-decoration: none;
+  }
+
+  .title {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-3);
+    min-inline-size: 0;
+  }
+
+  .status {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    white-space: nowrap;
+  }
+
+  .status[data-tone='negative'] {
+    color: var(--color-negative);
+    font-weight: var(--weight-semibold);
+  }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .nav {
+    overflow: auto;
+    scrollbar-width: none;
+    padding: var(--space-5) var(--space-3);
+    border-inline-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .main {
+    min-block-size: 0;
+    overflow: auto;
+    scrollbar-width: none;
+    outline: none;
+  }
+
+  .editor:not([data-nav]) .main {
+    overflow: hidden;
+  }
+
+  .screen {
+    display: grid;
+    gap: var(--space-8);
+    max-inline-size: var(--size-wide);
+    padding: var(--space-8);
+  }
+
+  .screen-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .screen-words {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .screen-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  @media (max-width: 56rem) {
+    .editor {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
+    .top {
+      flex-wrap: wrap;
+      padding-block: var(--space-2);
+    }
+
+    .nav {
+      border-inline-end: 0;
+      border-block-end: var(--border-hairline) solid var(--color-rule);
+    }
+
+    .screen {
+      padding: var(--space-5);
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../scripts/page';
+
+  // a screen asked for with a dialog open (the dashboard's "New article" goes to Articles with it open)
+  each<HTMLElement>('[data-editor-autopen]', (el) => {
+    const dialog = document.getElementById(el.dataset.editorAutopen ?? '');
+    if (dialog instanceof HTMLDialogElement && !dialog.open) dialog.showModal();
+  });
+</script>

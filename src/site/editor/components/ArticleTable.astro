@@ -1,0 +1,209 @@
+---
+/**
+ * Every article and page, as a table: its title (the way into the editor), kind, section, status and
+ * last update, newest first, with a search and filters, View on the site when it's published, Duplicate,
+ * and Delete for a draft.
+ * @tier editor
+ * @a11y A table with a caption and column headers; each row's actions are named with the article's title.
+ * @a11y The search and filters update the rows in place and say how many show (a live region).
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import { withBase } from '../../design/meta';
+import { STATUS_LABEL, type ArticleRow } from '../server/screens';
+
+interface Props {
+  /** The articles, newest first. */
+  rows: ArticleRow[];
+}
+
+const { rows } = Astro.props;
+const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft' ? 'neutral' : 'highlight');
+---
+
+<section class="table-wrap" data-editor-articles>
+  <div class="filters">
+    <TextField label="Search titles" type="search" icon="search" data-editor-search="" />
+    <Select
+      label="Status"
+      size="md"
+      value="all"
+      options={[
+        { value: 'all', label: 'Every status' },
+        { value: 'draft', label: 'Drafts' },
+        { value: 'published', label: 'Published' },
+      ]}
+      data-editor-filter="status"
+    />
+    <Select
+      label="Kind"
+      size="md"
+      value="all"
+      options={[
+        { value: 'all', label: 'Every kind' },
+        { value: 'note', label: 'Articles' },
+        { value: 'page', label: 'Pages' },
+        { value: 'talk', label: 'Talks' },
+      ]}
+      data-editor-filter="kind"
+    />
+  </div>
+  <Text variant="small" tone="muted" as="p" id="articles-count">{`${rows.length} ${rows.length === 1 ? 'article' : 'articles'}`}</Text>
+  <table class="table" aria-describedby="articles-count">
+    <caption class="sr-only">Articles and pages</caption>
+    <thead>
+      <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Kind</th>
+        <th scope="col">Section</th>
+        <th scope="col">Status</th>
+        <th scope="col">Updated</th>
+        <th scope="col"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((r) => (
+          <tr data-row data-title={r.title.toLowerCase()} data-status={r.published ? 'published' : r.status === 'draft' ? 'draft' : 'other'} data-kind={r.kind}>
+            <th scope="row">
+              <Link href={withBase(`/_edit/articles/${r.id}/`)} variant="quiet">
+                {r.title}
+              </Link>
+            </th>
+            <td>{r.kind === 'page' ? 'Page' : r.kind === 'talk' ? 'Talk' : 'Article'}</td>
+            <td>{r.section?.title ?? <Text as="span" variant="small" tone="muted">Not on the site</Text>}</td>
+            <td>
+              <Tag tone={tone(r)} size="sm">{STATUS_LABEL[r.status]}</Tag>
+            </td>
+            <td>
+              <Text as="time" variant="small" datetime={r.updatedAt}>{r.updatedAt}</Text>
+            </td>
+            <td class="actions">
+              {r.path && (
+                <Link href={withBase(r.path)} variant="quiet" external>
+                  View
+                </Link>
+              )}
+              <Button variant="quiet" size="sm" data-editor-duplicate={r.id} aria-describedby={`title-${r.id}`}>
+                Duplicate
+              </Button>
+              {!r.published && (
+                <Button variant="quiet" size="sm" data-editor-delete={r.id} data-title={r.title}>
+                  Delete
+                </Button>
+              )}
+              <span class="sr-only" id={`title-${r.id}`}>{r.title}</span>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</section>
+
+<style>
+  .table-wrap {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: end;
+  }
+
+  .table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+  }
+
+  th,
+  td {
+    padding: var(--space-3) var(--space-3);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    text-align: start;
+    vertical-align: middle;
+  }
+
+  thead th {
+    color: var(--color-text-muted);
+    font-weight: var(--weight-semibold);
+  }
+
+  tbody th {
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  tr[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 56rem) {
+    .filters {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { announce, api, editorUrl } from '../scripts/client';
+
+  each<HTMLElement>('[data-editor-articles]', (root) => {
+    const rows = [...root.querySelectorAll<HTMLTableRowElement>('[data-row]')];
+    const count = root.querySelector<HTMLElement>('#articles-count')!;
+    const search = root.querySelector<HTMLInputElement>('[data-editor-search] input')!;
+    const filters: Record<string, string> = { status: 'all', kind: 'all' };
+    const apply = () => {
+      const q = search.value.trim().toLowerCase();
+      let shown = 0;
+      for (const r of rows) {
+        const hide = (q && !r.dataset.title!.includes(q)) || (filters.status !== 'all' && r.dataset.status !== filters.status) || (filters.kind !== 'all' && r.dataset.kind !== filters.kind);
+        r.hidden = !!hide;
+        if (!hide) shown++;
+      }
+      count.textContent = `${shown} ${shown === 1 ? 'article' : 'articles'}`;
+    };
+    search.addEventListener('input', apply);
+    root.querySelectorAll<HTMLElement>('[data-editor-filter]').forEach((sel) => {
+      sel.addEventListener('select-change', (e) => {
+        filters[sel.dataset.editorFilter!] = (e as CustomEvent<{ value: string }>).detail.value;
+        apply();
+      });
+    });
+    root.querySelectorAll<HTMLButtonElement>('[data-editor-duplicate]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        announce('Duplicating…');
+        const r = await api<{ id: string }>('POST', `articles/${b.dataset.editorDuplicate}/duplicate`);
+        if (r.ok) location.assign(editorUrl(`articles/${r.data.id}/`));
+        else announce(r.data.issues?.[0]?.message ?? "Couldn't duplicate it", 'negative');
+      }),
+    );
+    root.querySelectorAll<HTMLButtonElement>('[data-editor-delete]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const dialog = document.getElementById('delete-article') as HTMLDialogElement | null;
+        if (!dialog) return;
+        dialog.dataset.article = b.dataset.editorDelete;
+        const name = dialog.querySelector<HTMLElement>('[data-editor-delete-name]');
+        if (name) name.textContent = b.dataset.title ?? '';
+        dialog.showModal();
+      }),
+    );
+  });
+</script>

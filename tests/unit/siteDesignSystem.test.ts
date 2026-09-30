@@ -39,6 +39,8 @@ const siteAstro = [
   ...walk(join(ROOT, 'src/pages/design'), /\.astro$/),
 ];
 const TOKENS_CSS = read(join(ROOT, 'src/site/styles/tokens.css'));
+// edit mode's own tokens: written apart, imported only by the editor (documentation/editor/spec.md §10)
+const EDITOR_TOKENS_CSS = read(join(ROOT, 'src/site/styles/editor-tokens.css'));
 const BASE_CSS = read(join(ROOT, 'src/site/styles/base.css'));
 const model = siteTokens();
 
@@ -299,10 +301,10 @@ describe('CSS reads tokens, never raw values', () => {
   });
 
   it('every var() the site uses is defined: a token, a local custom property, or data set inline', () => {
-    const defined = new Set([...TOKENS_CSS.matchAll(/(--[\w-]+):/g)].map((m) => m[1]));
+    const defined = new Set([...(TOKENS_CSS + EDITOR_TOKENS_CSS).matchAll(/(--[\w-]+):/g)].map((m) => m[1]));
     for (const d of all) if (d.prop.startsWith('--')) defined.add(d.prop);
     // data custom properties set from the template (style attributes) or a script (a component's or tier 0's)
-    for (const f of [...siteAstro, ...walk(join(ROOT, 'src/site/scripts'), /\.ts$/)]) {
+    for (const f of [...siteAstro, ...walk(join(ROOT, 'src/site/scripts'), /\.ts$/), ...walk(join(ROOT, 'src/site/editor/scripts'), /\.ts$/)]) {
       const outside = read(f).replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
       for (const m of outside.matchAll(/(--[\w-]+)\s*:\s*[$`'"\w]/g)) defined.add(m[1]);
       for (const m of outside.matchAll(/setProperty\(\s*'(--[\w-]+)'/g)) defined.add(m[1]);
@@ -317,6 +319,7 @@ describe('CSS reads tokens, never raw values', () => {
       'Prose.astro': 'rich text from Markdown',
       'Lightbox.astro': 'the filmstrip its script builds',
       'VideoEmbed.astro': 'the iframe its script swaps in',
+      'CanvasChrome.astro': "edit mode's canvas: the page's own editable text and the paragraph its script adds",
     };
     const bad = siteAstro.filter((f) => !ALLOWED[f.split(sep).pop()!] && (/:global\(/.test(styles(read(f))) || /<style[^>]*is:global/.test(read(f)))).map(rel);
     expect(bad).toEqual([]);

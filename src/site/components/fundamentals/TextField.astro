@@ -15,7 +15,7 @@ interface Props {
   /** The visible field label. */
   label: string;
   /** The input type for single-line fields. */
-  type?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'number' | 'password';
+  type?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'number' | 'password' | 'date';
   /** The form field's name. */
   name?: string;
   /** The control's id. */
@@ -207,7 +207,9 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
     cursor: not-allowed;
   }
 
-  .text-field[data-invalid] .input {
+  /* invalid when rendered with an error, or when a script marks the field (a value a form refused) */
+  .text-field[data-invalid] .input,
+  .input[aria-invalid='true'] {
     border-color: var(--color-negative);
   }
 

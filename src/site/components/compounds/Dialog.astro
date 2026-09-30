@@ -1,0 +1,150 @@
+---
+/**
+ * A modal dialog: a title, what it asks or shows, and its actions, over a scrim. It's the browser's own
+ * modal <dialog>, so focus goes in when it opens, stays inside, and returns to what opened it; Escape
+ * and the close button close it. Open it from a button carrying data-dialog-open="<its id>".
+ * @tier compound
+ * @a11y A native modal dialog named by its title (aria-labelledby); the page behind it is inert.
+ * @a11y Focus moves into it on opening and returns to the opener on closing.
+ * @a11y The close button is always there, named; the dialog scrolls within itself on a short screen.
+ * @key Escape: closes it
+ * @key Tab: moves through its controls (and stays within it)
+ */
+import Heading from '../fundamentals/Heading.astro';
+import IconButton from '../fundamentals/IconButton.astro';
+
+interface Props {
+  /** Its id: a button with data-dialog-open set to this opens it. */
+  id: string;
+  /** Its title (its name for assistive tech). */
+  title: string;
+  /** How wide it can grow: sm for a question, md for a form, lg for a picker. */
+  size?: 'sm' | 'md' | 'lg';
+  /** The close button's name. */
+  closeLabel?: string;
+}
+
+const { id, title, size = 'md', closeLabel = 'Close' } = Astro.props;
+const hasActions = Astro.slots.has('actions');
+---
+
+<dialog class="dialog" id={id} data-dialog data-size={size} aria-labelledby={`${id}-title`}>
+  <div class="frame">
+    <header class="head">
+      <Heading level={2} size="h4" id={`${id}-title`}>{title}</Heading>
+      <IconButton label={closeLabel} icon="close" size="sm" tooltip="none" data-dialog-close="" />
+    </header>
+    <div class="body" data-scrollbar>
+      <slot />
+    </div>
+    {
+      hasActions && (
+        <footer class="actions">
+          <slot name="actions" />
+        </footer>
+      )
+    }
+  </div>
+</dialog>
+
+<style>
+  .dialog {
+    inline-size: min(100% - var(--space-gutter) * 2, var(--size-measure));
+    max-block-size: min(100% - var(--space-gutter) * 2, 100dvh - var(--space-8));
+    margin: auto;
+    padding: 0;
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+
+  .dialog[data-size='sm'] {
+    inline-size: min(100% - var(--space-gutter) * 2, var(--size-measure-narrow));
+  }
+
+  .dialog[data-size='lg'] {
+    inline-size: min(100% - var(--space-gutter) * 2, var(--size-popout));
+  }
+
+  .dialog::backdrop {
+    background: var(--color-scrim);
+  }
+
+  .dialog[open] {
+    animation: rise var(--duration-base) var(--ease-enter);
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(var(--space-3));
+    }
+  }
+
+  .frame {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    max-block-size: inherit;
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-4) var(--space-2) var(--space-6);
+  }
+
+  .body {
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    padding: var(--space-2) var(--space-6) var(--space-6);
+    font-family: var(--font-ui);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dialog[open] {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  each<HTMLDialogElement>('[data-dialog]', (dialog, signal) => {
+    // the header's close button, and any action marked data-dialog-close (Cancel)
+    dialog.querySelectorAll('[data-dialog-close]').forEach((b) => b.addEventListener('click', () => dialog.close()));
+    // a dialog holding a form starts in its first field, whoever opened it (APG dialog pattern)
+    new MutationObserver(() => {
+      if (!dialog.open) return;
+      const field = dialog.querySelector<HTMLElement>('.body input:not([type="hidden"]):not([disabled]), .body textarea:not([disabled]), .body [role="combobox"]');
+      field?.focus({ preventScroll: true });
+    }).observe(dialog, { attributes: true, attributeFilter: ['open'] });
+    signal.addEventListener('abort', () => dialog.close());
+    // a click on the scrim (outside the frame) closes it too
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+  });
+
+  each<HTMLElement>('[data-dialog-open]', (opener) => {
+    opener.addEventListener('click', () => {
+      const dialog = document.getElementById(opener.dataset.dialogOpen ?? '');
+      if (dialog instanceof HTMLDialogElement && !dialog.open) dialog.showModal();
+    });
+  });
+</script>

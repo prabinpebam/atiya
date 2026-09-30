@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import docsSite from './integrations/docs-site.mjs';
+import editor from './integrations/editor.mjs';
 
 // GitHub Pages serves this repository as a project site, https://<user>.github.io/<repo>/, so the
 // deploy workflow (.github/workflows/deploy.yml) builds with SITE_URL and BASE_PATH set. Locally, in
@@ -33,7 +34,7 @@ export default defineConfig({
   site,
   base,
   // the documentation site (documentation/, Slate) is published beside the game at <base>/docs/
-  integrations: [react(), docsSite()],
+  integrations: [react(), docsSite(), editor()],
   devToolbar: { enabled: false },
   vite: {
     plugins: [stripShaderComments()],

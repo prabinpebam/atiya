@@ -1,0 +1,115 @@
+---
+/**
+ * The block palette (documentation/editor/spec.md §3.4): the content model's blocks, in two groups, each
+ * with its icon and one line on what it's for. Choosing one adds it where the "+" was; a block that
+ * needs something first (a picture, a quote's words) asks for it before it exists. Shown in a Dialog.
+ * @tier editor
+ * @a11y Every block is a button named by its kind, with its description tied to it.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import type { IconName } from '../../design/icons';
+
+const GROUPS: { title: string; blocks: { type: string; name: string; what: string; icon: IconName }[] }[] = [
+  {
+    title: 'Text',
+    blocks: [
+      { type: 'text', name: 'Paragraph', what: 'Words, with bold, italic, code and links', icon: 'paragraph' },
+      { type: 'heading', name: 'Heading', what: 'A section title; the minimap lists it', icon: 'heading' },
+      { type: 'quote', name: 'Quote', what: 'Words someone said, in the column or pulled out', icon: 'quote' },
+      { type: 'facts', name: 'Facts', what: 'A few label and value pairs', icon: 'facts' },
+      { type: 'divider', name: 'Divider', what: 'A turn in the story', icon: 'minus' },
+    ],
+  },
+  {
+    title: 'Media',
+    blocks: [
+      { type: 'figure', name: 'Picture', what: 'One picture with its caption', icon: 'image' },
+      { type: 'gallery', name: 'Gallery', what: 'A set of pictures in a grid or a mosaic', icon: 'gallery' },
+      { type: 'carousel', name: 'Carousel', what: 'Pictures to browse, one at a time', icon: 'carousel' },
+      { type: 'video', name: 'Video', what: 'A YouTube or Vimeo video, with a poster', icon: 'video' },
+    ],
+  },
+];
+---
+
+<div class="palette" data-editor-palette>
+  {
+    GROUPS.map((g) => (
+      <section class="group" aria-labelledby={`palette-${g.title}`}>
+        <Heading level={3} size="ui" id={`palette-${g.title}`}>
+          {g.title}
+        </Heading>
+        <div class="grid">
+          {g.blocks.map((b) => (
+            <button class="choice" type="button" data-editor-add={b.type} aria-describedby={`palette-${b.type}`}>
+              <Icon name={b.icon} size="lg" />
+              <span class="name">{b.name}</span>
+              <span class="what" id={`palette-${b.type}`}>
+                {b.what}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .palette {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .group {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
+    gap: var(--space-3);
+  }
+
+  .choice {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1-5);
+    min-block-size: var(--size-touch);
+    padding: var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    text-align: start;
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast) var(--ease-standard),
+      background-color var(--duration-fast) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .choice:hover {
+      border-color: var(--color-accent);
+      background: var(--color-accent-soft);
+    }
+  }
+
+  .choice:active {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  .name {
+    font-weight: var(--weight-semibold);
+  }
+
+  .what {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+</style>

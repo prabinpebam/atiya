@@ -1,0 +1,32 @@
+---
+/** Edit mode's dashboard (documentation/editor/spec.md §4). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import Overview from '../components/Overview.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { articleRows, load } from '../server/screens';
+import { changes } from '../server/git';
+import { withBase } from '../../design/meta';
+
+export const prerender = false;
+
+const loaded = load();
+const git = await changes();
+let props: Parameters<typeof Overview>[0] | undefined;
+if (loaded.ok) {
+  const rows = articleRows(loaded.index);
+  const attention = [
+    ...[...loaded.index.media.values()].filter((m) => !m.alt && !m.decorative).map((m) => ({ text: `${m.id} has no alt text`, href: withBase(`/_edit/media/?id=${encodeURIComponent(m.id)}`) })),
+    ...loaded.index.warnings.map((w) => ({ text: w, href: withBase('/_edit/sections/') })),
+  ];
+  props = {
+    counts: { published: rows.filter((r) => r.published).length, draft: rows.filter((r) => r.status === 'draft').length, other: rows.filter((r) => !r.published && r.status !== 'draft').length },
+    recent: rows.slice(0, 5),
+    pending: git.files.length,
+    attention,
+  };
+}
+---
+
+<EditorLayout title="Dashboard" screen="dashboard" heading="Dashboard" intro="Everything in the site's content, edited here and published with git.">
+  {props ? <Overview {...props} /> : !loaded.ok && <ContentIssues issues={loaded.issues} />}
+</EditorLayout>

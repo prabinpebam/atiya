@@ -1,0 +1,218 @@
+---
+/**
+ * The media library's grid (documentation/editor/spec.md §6): every picture as a thumbnail with its alt
+ * text, searchable, and an upload form that asks for the alt text (or decorative) before a picture is
+ * saved. In the picker it chooses one picture, or several; in the library it opens a picture's details.
+ * @tier editor
+ * @a11y Each picture is a button named by its alt text (or its ID); chosen ones are aria-pressed.
+ * @a11y A picture without alt text says so in words, not only with its warning icon.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import FileField from '../../components/fundamentals/FileField.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+
+export interface MediaCard {
+  id: string;
+  thumb: string;
+  src: string;
+  alt: string;
+  decorative: boolean;
+  width: number;
+  height: number;
+}
+
+interface Props {
+  /** Every picture. */
+  media: MediaCard[];
+  /** pick: choose for a field or block; library: open a picture's details. */
+  mode: 'pick' | 'library';
+  /** The folder an upload goes to (an article's own, or shared). */
+  owner: string;
+}
+
+const { media, mode, owner } = Astro.props;
+---
+
+<div class="media-grid" data-region="media-grid" data-editor-media-grid data-mode={mode} data-owner={owner}>
+  <details class="upload" open={media.length === 0 ? true : undefined}>
+    <summary><Icon name="upload" /><span>Upload a picture</span></summary>
+    <form class="upload-form" data-editor-upload novalidate>
+      <FileField label="Picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif" hint="Up to 20 MB. Saved as WebP, at most 2560 px and 1.5 MB, without its location data." />
+      <TextField label="Alt text" name="alt" multiline rows={2} hint="What it shows, for someone who can't see it (250 characters at most). Leave it empty only if it's decorative." />
+      <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" />
+      <TextField label="Caption" name="caption" optional />
+      <p class="issue" role="alert" data-editor-form-issue hidden></p>
+      <div class="actions">
+        <Button variant="primary" type="submit" icon="upload">Upload it</Button>
+      </div>
+    </form>
+  </details>
+  <TextField label="Search pictures" type="search" icon="search" data-editor-media-search="" />
+  <ul class="grid" aria-label="Pictures">
+    {
+      media.map((m) => (
+        <li data-media-card={m.id} data-find={`${m.id} ${m.alt}`.toLowerCase()}>
+          <button class="card" type="button" aria-pressed="false" data-editor-media={m.id} aria-label={m.alt || m.id}>
+            <Image src={m.thumb} alt="" width={m.width} height={m.height} ratio="4/3" fit="contain" radius="default" />
+            <span class="id">{m.id.split('/').pop()}</span>
+            {!m.alt && !m.decorative && (
+              <span class="missing">
+                <Icon name="error" tone="tonal" />
+                <Text as="span" variant="small" tone="negative">No alt text</Text>
+              </span>
+            )}
+          </button>
+        </li>
+      ))
+    }
+  </ul>
+  {mode === 'pick' && (
+    <div class="pick-actions">
+      <Text as="span" variant="small" tone="muted" data-editor-media-count>Nothing chosen</Text>
+      <Button variant="primary" data-editor-media-use disabled>Use it</Button>
+    </div>
+  )}
+</div>
+
+<style>
+  .media-grid {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .upload {
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+  }
+
+  summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--size-touch);
+    padding-inline: var(--space-4);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+
+  .upload-form {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-2) var(--space-4) var(--space-4);
+  }
+
+  .actions,
+  .pick-actions {
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li[hidden] {
+    display: none;
+  }
+
+  .card {
+    display: grid;
+    gap: var(--space-1-5);
+    inline-size: 100%;
+    padding: var(--space-2);
+    border: var(--border-strong) solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    text-align: start;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .card:hover {
+      border-color: var(--color-border-strong);
+    }
+  }
+
+  .card:active {
+    border-color: var(--color-border-strong);
+  }
+
+  .card[aria-pressed='true'] {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  .id {
+    overflow: hidden;
+    font-size: var(--text-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .missing {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { api, describeIssue } from '../scripts/client';
+
+  each<HTMLElement>('[data-editor-media-grid]', (root) => {
+    const search = root.querySelector<HTMLInputElement>('[data-editor-media-search] input');
+    search?.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      root.querySelectorAll<HTMLElement>('[data-media-card]').forEach((li) => (li.hidden = !!q && !li.dataset.find!.includes(q)));
+    });
+    const form = root.querySelector<HTMLFormElement>('[data-editor-upload]');
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const issue = form.querySelector<HTMLElement>('[data-editor-form-issue]')!;
+      const data = new FormData(form);
+      const file = data.get('file');
+      if (!(file instanceof File) || !file.size) {
+        issue.textContent = 'Choose a picture to upload.';
+        issue.hidden = false;
+        return;
+      }
+      if (!data.get('decorative') && !String(data.get('alt') ?? '').trim()) {
+        issue.textContent = "Say what the picture shows (its alt text), or mark it decorative.";
+        issue.hidden = false;
+        return;
+      }
+      data.set('owner', root.dataset.owner ?? 'shared');
+      issue.hidden = true;
+      const r = await api<{ id: string }>('POST', 'media', data);
+      if (!r.ok) {
+        issue.textContent = (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't upload it.";
+        issue.hidden = false;
+        return;
+      }
+      root.dispatchEvent(new CustomEvent('media:uploaded', { bubbles: true, detail: { id: r.data.id } }));
+    });
+  });
+</script>
