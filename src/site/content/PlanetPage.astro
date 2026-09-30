@@ -9,9 +9,8 @@ import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Blocks from './Blocks.astro';
 import { getPlanet, getRoutes, getSite, placePages } from './repository';
-import { picture } from './pictures';
 import { pageMeasure } from './reading';
-import { openingOf } from './opening';
+import { cardPicture, openingOf } from './opening';
 import { withBase } from '../design/meta';
 import type { Place } from './schema';
 import type { PlanetFrame } from '../components/compounds/PlaceBar.astro';
@@ -44,8 +43,7 @@ const stories = current
   ? []
   : await Promise.all(
       pages.map(async ({ article: a }) => {
-        const p = a.hero && (await picture(a.hero.media, 'card'));
-        return { href: pageHref(a.id), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height } };
+        return { href: pageHref(a.id), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: await cardPicture(a) };
       }),
     );
 ---

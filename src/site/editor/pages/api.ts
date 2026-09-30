@@ -7,7 +7,7 @@ import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure } from '../../content/schema';
 import { commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
-import { deleteMedia, replaceMaster, saveSidecar, upload } from '../server/media';
+import { cropMedia, cropSource, deleteMedia, replaceMaster, saveSidecar, upload } from '../server/media';
 import { changes, discard, publish, push } from '../server/git';
 import { content } from '../../content/repository';
 import { picture } from '../../content/pictures';
@@ -106,6 +106,18 @@ export const ALL: APIRoute = async ({ request, params, url }) => {
           caption: String(form.get('caption') ?? ''),
         });
         return result(r);
+      }
+      // the crop: what it cuts from (the original of a copy), and the cut
+      if (method === 'GET' && id.endsWith('/crop')) {
+        const target = id.replace(/\/crop$/, '');
+        const src = await cropSource(target);
+        if (!src) return json({ ok: false, issues: [{ file: `content/media/${target}.json`, message: "doesn't exist" }] }, 404);
+        const p = await picture(src.id, 'popout');
+        return json({ ok: true, source: { id: src.id, src: p.src, srcset: p.srcset, width: src.width, height: src.height }, rect: src.rect, isCopy: src.isCopy });
+      }
+      if (method === 'POST' && id.endsWith('/crop')) {
+        const b = await body<{ rect: { x: number; y: number; width: number; height: number }; copy?: boolean }>(request);
+        return result(await cropMedia(id.replace(/\/crop$/, ''), b.rect, { copy: !!b.copy }));
       }
       if (method === 'POST' && id.endsWith('/replace')) {
         const form = await request.formData();

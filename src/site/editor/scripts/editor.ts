@@ -9,6 +9,8 @@ import { api, announce, describeIssue, swapRegions, type Issue } from './client'
 import * as ops from '../model/ops';
 import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
+import { openCrop } from './crop';
+import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
 import type { Article, Block } from '../../content/schema';
 
@@ -537,7 +539,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   on(root, 'click', (e) => {
     const t = e.target as Element;
     const el = t.closest<HTMLElement>(
-      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-turn-to], [data-editor-pick], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-tiles], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
+      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-turn-to], [data-editor-pick], [data-editor-crop], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-tiles], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
     );
     if (!el) return;
     const d = el.dataset;
@@ -575,8 +577,31 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         },
       });
     }
+    if (d.editorCrop) {
+      // a field's picture, cropped for its use; the thumbnail left empty crops the lead picture into one
+      const path = d.editorCrop;
+      const own = ops.getPath(doc, path) as string | undefined;
+      const id = own ?? (path === 'thumbnail' ? doc.hero?.media : undefined);
+      if (!id) return;
+      const use = path === 'hero.media' ? PICTURE_SPECS.lead : path === 'thumbnail' ? PICTURE_SPECS.thumbnail : undefined;
+      return openCrop({
+        id,
+        use,
+        copy: !own,
+        onSaved: (next) => {
+          // the same cropped copy, cut again: only the pictures change
+          if (next === id && own) return void refreshAll(ALL);
+          if (path === 'hero.media') change({ ...doc, hero: { ...(doc.hero ?? {}), media: next } }, ALL);
+          else change(ops.setPath(doc, path, next), ALL);
+        },
+      });
+    }
     if (d.editorClear === 'hero') {
       const { hero: _h, ...rest } = doc;
+      return change(rest as Article, ALL);
+    }
+    if (d.editorClear === 'thumbnail') {
+      const { thumbnail: _t, ...rest } = doc;
       return change(rest as Article, ALL);
     }
     if (d.editorItems) {

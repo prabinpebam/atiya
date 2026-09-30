@@ -3,7 +3,8 @@
  * A story on an index: its picture, its topic, its title, one line on what it's about, and when. The
  * whole card is one link (to its title), so it's one stop for the keyboard and a big target for a
  * finger. Feature spreads the picture beside the words for the lead story; row sets the words first
- * with a small picture at the end, a line of a section's list; compact leaves the picture out.
+ * with a small picture at the end, a line of a section's list; compact leaves the picture out. The
+ * picture is shown whole, in a 3:2 frame: a card never crops it (a thumbnail made 3:2 fills the frame).
  * @tier compound
  * @a11y One link per card, on the title; the rest of the card is clickable through it (a stretched link), so a screen reader hears the title, not the whole card.
  * @a11y The heading level is set by the page (h2 on an index, h3 under a section heading).
@@ -12,6 +13,7 @@ import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
 import Tag from '../fundamentals/Tag.astro';
+import { PICTURE_SPECS } from '../../design/pictures';
 
 interface Props {
   /** The story’s address. */
@@ -24,7 +26,7 @@ interface Props {
   topic?: string;
   /** When, or how long it takes to read. */
   meta?: string;
-  /** The story’s picture (cropped 3:2, or 4:3 for a feature). */
+  /** The story’s picture, shown whole in a 3:2 frame (never cropped). */
   picture?: { src: string; srcset?: string; alt: string; width: number; height: number };
   /** standard: picture above; feature: picture beside, larger type; row: words first, a small picture at the end (a list); compact: no picture. */
   variant?: 'standard' | 'feature' | 'row' | 'compact';
@@ -47,7 +49,8 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
             alt={picture.alt}
             width={picture.width}
             height={picture.height}
-            ratio={variant === 'feature' ? '4/3' : '3/2'}
+            ratio={PICTURE_SPECS.thumbnail.ratio}
+            fit="contain"
           />
         </div>
       </div>

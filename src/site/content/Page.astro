@@ -10,9 +10,8 @@ import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Blocks from './Blocks.astro';
 import { getArticle, getPlanet, getRoutes, getSite, getStructure } from './repository';
-import { picture } from './pictures';
 import { pageMeasure } from './reading';
-import { openingOf } from './opening';
+import { cardPicture, openingOf } from './opening';
 import { exploreAction, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import type { Route } from './routes';
@@ -54,8 +53,7 @@ const stories =
           .filter((r) => r.parent === node && r.node.kind === 'item' && r.node.item.type === 'article')
           .map(async (r) => {
             const a = getArticle((r.node as { item: { id: string } }).item.id)!;
-            const p = a.hero && (await picture(a.hero.media, 'card'));
-            return { href: withBase(r.path), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height } };
+            return { href: withBase(r.path), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: await cardPicture(a) };
           }),
       )
     : [];

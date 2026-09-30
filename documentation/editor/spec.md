@@ -238,7 +238,8 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
   - status: the lifecycle up to Published ([model §7](../content/model.md#7-lifecycle-and-visibility)); a published page can go back to Draft, which takes it off the site until it's published again;
   - visibility: public, public with details removed, or summary only.
 - **Where it appears:** the section (hub) that places it, or "Not on the site yet". This edits the site structure, and can change at any time: the page's address follows its section.
-- **Lead picture:** a media field, which can be removed; its caption (left empty to use the picture's own), and whether to show it.
+- **Lead picture:** a media field, which can be removed; its caption (left empty to use the picture's own), and whether to show it. Under it, a tip gives its shape and the size it stays sharp at (21:9, at least 2400 × 1029 px), and a note says what the page does with the picture in it ("This one is 1024 × 576 px (16:9). The page crops it to 21:9 around its focus point…", and when it's too small). **Crop** opens the crop at 21:9 (§6.1).
+- **Thumbnail:** the picture on its cards, shown whole in a 3:2 frame; left empty, the lead picture. The same tip and note (3:2, at least 960 × 640 px), Choose or Replace, Remove, and **Crop**: with the field empty, it crops the lead picture into a 3:2 copy of its own, so one lead picture gives both.
 - **Search and sharing:** the SEO title, the description and the image, and whether to keep the page out of search.
 - **Dates:** published, updated and last reviewed. The server keeps "Updated" and "Published" true (§9); a date set by hand in the same change wins.
 - **Delete:** a draft can be deleted, and with it, if you ask, the pictures in its own folder that nothing else uses. A published article goes back to Draft first, then can be deleted.
@@ -272,7 +273,8 @@ The site structure ([structures §2](../content/ia.md#2-the-site-structure)) in 
   - the picture, with its **focus point**: click where the crop must keep, stored as `focus` ([media §3](../content/media.md#3-the-metadata-sidecar));
   - alt text (required unless marked decorative; at most 250 characters; never "image of"), caption, credit, licence and source;
   - **Used in**: every document that refers to it, linking to the editor;
-  - Delete, only when nothing refers to it: no article in any state (its hero, blocks or social image), no person and not the site settings.
+  - **Crop**: Crop the picture (§6.1); a cropped copy links to its original, and an original lists its copies;
+  - Delete, only when nothing refers to it: no article in any state (its hero, thumbnail, blocks or social image), no person and not the site settings.
 - **Uploading** takes drag and drop or a file picker, one or many files, into an owner's folder (the article being edited, or `shared`). Each file asks for its alt text (or to be marked decorative) before it's saved. The editor then makes the master:
   - WebP (lossless if the source had transparency);
   - at most 2560 px on the long side and 1.5 MB (the budgets in [media §4](../content/media.md#4-formats-and-budgets));
@@ -281,6 +283,17 @@ The site structure ([structures §2](../content/ia.md#2-the-site-structure)) in 
   - with its JSON sidecar beside it, both written in one transaction.
 - **Media IDs never change.** There's no rename; replacing a picture keeps its ID and writes a new master.
 - **The media picker** (in the article editor and the settings) is the same library in a dialog, with upload, in single or multiple mode.
+
+### 6.1 The crop
+
+The crop follows the pattern of the established editors (Photos, WordPress's image editor, Sanity's crop): the picture whole, and a box over what to keep.
+- **The box** has eight handles; what it leaves out is veiled in the page's smoke, and a rule-of-thirds grid shows while it moves or has the focus. Dragging it moves it; a press elsewhere on the picture centres it there first; a handle resizes it from the opposite side (a corner keeps the shape and follows the pointer's further way; a side keeps the other axis centred).
+- **Shape:** Free, Original, 1:1, 4:5, 3:2, 4:3, 16:9 and 21:9. Opened from a field, it starts at that use's shape (the lead picture's 21:9, the thumbnail's 3:2) with the use's tip above the picture; from the library, at Free.
+- **Size** scales the box about its centre, from 5% to the largest of its shape. **Reset** goes back to the largest box of the starting shape.
+- **The readout** gives the size it makes ("1024 × 439 px (21:9), from 1024 × 576"), a polite live region; a warning says when that's narrower than its use shows.
+- **Keys** (on the crop area, which has the focus when it opens): the arrows move it by 1% of the picture (10% with Shift), + and − resize it, Home centres it. Shape, Size and a click to centre are the single-pointer ways (WCAG 2.5.7).
+- **Save the crop** never changes an original ([media §9](../content/media.md#9-shapes-thumbnails-and-crops)): an original is cut into a copy beside it, which the field then uses (or the library opens); a cropped copy is cut again from its original and updated where it's used. The dialog says which before you save.
+- **Built as:** `CropDialog.astro` and `scripts/crop.ts` (one dialog per screen, opened with `openCrop`), the geometry pure in `model/crop.ts` (unit-tested), and `GET`/`POST media/<id>/crop` (`cropSource`, `cropMedia` in `server/media.ts`), which cut with sharp and encode the copy as every master is.
 
 ## 7. Publishing
 
@@ -467,6 +480,7 @@ Built to this spec (the evidence for each point of the Definition of Done is in 
 - **One theme for all of edit mode.** The top bar's theme switch (on every screen) is the site header's: it sets `site.theme`, and the whole of edit mode changes with it, not only the canvas. Every page of the site follows a theme chosen on another (the `storage` event, `followTheme` in `scripts/theme.ts`), so the canvas, and any other open tab, change at once. It replaces v2's canvas-only "Dark page" toggle, at the owner's request.
 - **Screens that change in place.** A screen re-renders the regions a change affects by fetching itself and swapping them (`swapRegions` in `scripts/client.ts`), and the counts of changes to publish (the top bar's and the navigation's) come along every time. What left the page stops listening (the swap signals `astro:after-swap`, which `each` aborts on).
 - **Media:** the library is a grid grouped by folder beside a details pane that stays in view (the layout's `aside` slot, scrolling on its own when taller than the screen). The focus point is set by a click on the picture, or by the arrow keys (5% a step; Home for the centre). The address keeps the open picture (`?id=`), so Back works. Uploads in the library go to `shared`; in the picker, to the article's own folder (or `site`, `people/<id>` from the settings).
+- **Picture shapes and the crop** (30 September 2026, at the owner's request: a card had cropped a wide picture badly). Cards show a page's picture whole in a 3:2 frame; a page gained a Thumbnail (its cards' picture, the lead picture when empty); the lead picture's and the thumbnail's fields give their shape and sharp size as a tip, with a note on the picture in them; and every picture field, and the library, has Crop (§6.1), which makes copies and never changes an original. The shapes are single-sourced in `src/site/design/pictures.ts`, which the components frame to. The lead picture's crop on the page now uses its focus point, which it had ignored.
 - **Sections and Planet** share one pattern (`SectionManager.astro`, `scripts/manager.ts`): the list of sections beside the chosen one's Pages and Settings tabs, its pages a list with a drag handle, a checkbox, Find, Show, a selection that moves together, Alt+Up and Alt+Down, and a Move dialog; a page dragged onto a section in the list moves there. It replaced v2's tree beside a settings pane (a page couldn't move between sections in one gesture, and there was no way to work on many pages at once), and then a board of columns, dropped the same day because its cards were cramped. Published pages move like drafts, and nothing is redirected ([sections spec D11](../sections/spec.md#9-decisions)).
 - **Settings** has two forms, each saving its own file: the site (name, description, positioning, contact email, social image) and the owner's profile (name, role, bio, portrait, links as rows you add and remove).
 - **Publish** lists the changes as resources: a picture's master and sidecar are one row, discarded together in one transaction, so the check sees the result as a whole (discarding a picture an article still uses is refused, with the reason). The message offered names what changed ("Content: Do what makes you proud, 2 pictures, the site settings"). After a publish the screen shows the commit and a link to the deploy on GitHub Actions (made from the remote's address); after a failed push, why, with Push again.

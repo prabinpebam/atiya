@@ -5,6 +5,7 @@
  * details are rendered again from the server.
  */
 import { api, announce, describeIssue, swapRegions } from './client';
+import { openCrop } from './crop';
 import type { ImageMedia } from '../../content/schema';
 
 const sidecarKey = (id: string) => `/content/media/${id}.json`;
@@ -137,6 +138,17 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       await swapRegions(['media-details', 'media-grid']);
       announce('Saved');
     },
+    { signal },
+  );
+
+  // ---------- crop: a new copy opens; a copy cut again shows its new crop ----------
+  root.querySelector('[data-editor-media-crop]')?.addEventListener(
+    'click',
+    () =>
+      openCrop({
+        id: state.id,
+        onSaved: (next) => void show(next, next !== state.id).then(() => announce(next === state.id ? 'Cropped' : `Cropped into ${nameOf(next)}`)),
+      }),
     { signal },
   );
 

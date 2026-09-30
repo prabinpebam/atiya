@@ -23,6 +23,8 @@ export const imageMedia = z
     licence: z.strictObject({ name: z.string(), url: z.url().optional(), owner: z.string().optional() }).optional(),
     source: z.url().optional(),
     focus: z.string().regex(/^\d{1,3}% \d{1,3}%$/).optional(),
+    /** A cropped copy: the picture it was cut from, and where (in that picture's pixels). Cropping it again starts from there. */
+    crop: z.strictObject({ from: mediaId, x: z.int().min(0), y: z.int().min(0), width: z.int().min(1), height: z.int().min(1) }).optional(),
     visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
   })
   .refine((m) => m.alt || m.decorative, { message: 'an image needs alt text unless it is decorative', path: ['alt'] })
@@ -95,6 +97,8 @@ export const article = z.strictObject({
   reviewedAt: isoDate.optional(),
   locale: z.literal('en'),
   hero: z.strictObject({ media: mediaId, caption: z.string().optional(), credit: z.string().optional(), showCaption: z.boolean().optional() }).optional(),
+  /** The picture on its cards (shown whole); the lead picture when left out. */
+  thumbnail: mediaId.optional(),
   body: z.array(block),
   related: z.array(itemRef).max(3).optional(),
   topics: z.array(id).optional(),

@@ -164,6 +164,7 @@ Every content item has these fields. There's deliberately no `parent`, `order` o
 | `reviewedAt` | date | no | The last governance review; drives the "stale" check |
 | `locale` | string | yes | `en` |
 | `hero` | media ref | no | The lead picture, with an optional `caption` and `credit` override |
+| `thumbnail` | media ID | no | The picture on its cards, shown whole in a 3:2 frame; the lead picture when left out ([media §9](media.md#9-shapes-thumbnails-and-crops)) |
 | `body` | block[] | yes | The content (§6); may be empty for a gallery or the résumé |
 | `related` | item ref[] | no | Two or three, chosen editorially |
 | `seo` | object | no | `title`, `description`, `image` (media), `noindex` |

@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
 import { deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
-import { deleteMedia, MAX_BYTES, MAX_SIDE, replaceMaster, saveSidecar, upload } from '../../src/site/editor/server/media';
+import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, replaceMaster, saveSidecar, upload } from '../../src/site/editor/server/media';
 import { changes, discard, publish, push } from '../../src/site/editor/server/git';
 import editor from '../../integrations/editor.mjs';
 
@@ -143,6 +143,55 @@ describe('uploads', () => {
     expect(await upload({ file: { name: 'x.png', bytes: Buffer.from('not a picture') }, owner: 'shared', alt: 'x' })).toMatchObject({ ok: false, status: 422 });
     expect(existsSync(join(content, 'media/shared/x.webp'))).toBe(false);
     expect(existsSync(join(content, 'media/shared/x.json'))).toBe(false);
+  });
+});
+
+describe('the crop: a copy, never the original (documentation/editor/spec.md §6.1)', () => {
+  const add = async () => (await upload({ file: { name: 'mark.png', bytes: await png(1024, 576, true) }, owner: 'articles/a', alt: 'The mark' })) as { id: string };
+  const size = async (file: string) => {
+    const m = await sharp(readFileSync(join(content, 'media/articles/a', file))).metadata();
+    return [m.width, m.height, m.hasAlpha];
+  };
+
+  it('makes a copy of an original, named after its shape, with its details and where it came from; the original stays as it was', async () => {
+    const { id } = await add();
+    const before = readFileSync(join(content, 'media/articles/a/mark.webp'));
+    put('/content/media/articles/a/mark.json', { ...readDoc('/content/media/articles/a/mark.json')!.value as object, focus: '20% 30%', credit: 'Me' });
+    const r = await cropMedia(id, { x: 0, y: 69, width: 1024, height: 439 });
+    expect(r).toMatchObject({ ok: true, id: 'articles/a/mark-21x9', width: 1024, height: 439 });
+    expect(await size('mark-21x9.webp')).toEqual([1024, 439, true]);
+    expect(readDoc('/content/media/articles/a/mark-21x9.json')?.value).toEqual({ kind: 'image', file: 'mark-21x9.webp', alt: 'The mark', credit: 'Me', visibility: 'public', crop: { from: id, x: 0, y: 69, width: 1024, height: 439 } });
+    expect(readFileSync(join(content, 'media/articles/a/mark.webp')).equals(before)).toBe(true);
+    // a second copy of the same shape takes the next name
+    expect(await cropMedia(id, { x: 10, y: 60, width: 1000, height: 429 })).toMatchObject({ ok: true, id: 'articles/a/mark-21x9-2' });
+  });
+
+  it('cuts a copy again from its original (so it can grow back), or makes another copy when asked', async () => {
+    const { id } = await add();
+    const small = (await cropMedia(id, { x: 400, y: 200, width: 150, height: 100 })) as { id: string };
+    expect(small.id).toBe('articles/a/mark-3x2');
+    expect(await cropSource(small.id)).toMatchObject({ id, width: 1024, height: 576, rect: { x: 400, y: 200, width: 150, height: 100 }, isCopy: true });
+    expect(await cropMedia(small.id, { x: 0, y: 0, width: 864, height: 576 })).toMatchObject({ ok: true, id: small.id, width: 864, height: 576 });
+    expect(await size('mark-3x2.webp')).toEqual([864, 576, true]);
+    expect(readDoc(`/content/media/${small.id}.json`)?.value).toMatchObject({ crop: { from: id, x: 0, y: 0, width: 864, height: 576 } });
+    const other = await cropMedia(small.id, { x: 224, y: 0, width: 576, height: 576 }, { copy: true });
+    expect(other).toMatchObject({ ok: true, id: 'articles/a/mark-1x1' });
+    expect(readDoc('/content/media/articles/a/mark-1x1.json')?.value).toMatchObject({ crop: { from: id } });
+  });
+
+  it('refuses a rectangle outside the picture or in part pixels, and writes nothing', async () => {
+    const { id } = await add();
+    expect(await cropMedia(id, { x: 900, y: 0, width: 200, height: 100 })).toMatchObject({ ok: false, status: 422 });
+    expect(await cropMedia(id, { x: 0.5, y: 0, width: 200, height: 100 })).toMatchObject({ ok: false, status: 422 });
+    expect(await cropMedia('articles/a/none', { x: 0, y: 0, width: 10, height: 10 })).toMatchObject({ ok: false, status: 422 });
+    expect(existsSync(join(content, 'media/articles/a/mark-2x1.webp'))).toBe(false);
+  });
+
+  it("a page's thumbnail must be a picture that exists", async () => {
+    const { id } = await add();
+    const key = '/content/articles/a.json';
+    expect(await saveArticle({ id: 'a', article: article({ thumbnail: id }) as never, ifMatch: { [key]: readDoc(key)!.version } })).toMatchObject({ ok: true });
+    expect(await saveArticle({ id: 'a', article: article({ thumbnail: 'articles/a/gone' }) as never, ifMatch: { [key]: readDoc(key)!.version } })).toMatchObject({ ok: false, status: 422 });
   });
 });
 

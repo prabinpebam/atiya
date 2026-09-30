@@ -22,6 +22,7 @@
     "compress": "compress",
     "convert": "right-left",
     "copy": "copy",
+    "crop": "crop-simple",
     "dashboard": "gauge",
     "delete": "trash-can",
     "desktop": "desktop",

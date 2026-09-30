@@ -9,6 +9,14 @@ import { picture } from './pictures';
 import { pageMeasure } from './reading';
 import type { Article } from './schema';
 
+/** A page's picture on cards: its thumbnail, or else its lead picture. Cards show it whole (documentation/content/media.md §9). */
+export async function cardPicture(a: Article) {
+  const id = a.thumbnail ?? a.hero?.media;
+  if (!id) return undefined;
+  const p = await picture(id, 'card');
+  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height };
+}
+
 export interface Opening {
   title: string;
   standfirst?: string;

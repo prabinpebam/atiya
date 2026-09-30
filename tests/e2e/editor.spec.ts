@@ -461,6 +461,98 @@ test.describe('editor', () => {
     await expect.poll(() => pagesOf('library')).toEqual([]);
   });
 
+  test("crop: a picture's tip and note; the lead picture cropped to 21:9 into a copy (the original kept), a 3:2 thumbnail cut from it, the copy cut again in place; the library's crop; a card shows its thumbnail whole", async ({ page }) => {
+    const ORIGINAL = `articles/${ARTICLE}/mark-sculpted-clay`;
+    const media = join(FIXTURE, 'content/media');
+    const sidecar = (id: string) => readJson(join(media, `${id}.json`));
+    const dims = async (id: string) => {
+      const m = await sharp(readFileSync(join(media, `${id}.webp`))).metadata();
+      return [m.width, m.height];
+    };
+    const original = readFileSync(join(media, `${ORIGINAL}.webp`));
+    expect(readJson(articleFile()).hero.media).toBe(ORIGINAL);
+
+    await openArticle(page);
+    await page.getByRole('tab', { name: 'Page' }).click();
+    const lead = page.locator('[data-editor-picture="lead"]');
+    await expect(lead).toContainText('Best at 21:9, at least 2400 × 1029 px.');
+    await expect(lead).toContainText('This one is 1024 × 576 px (16:9). The page crops it to 21:9');
+
+    // the lead picture at its shape, 21:9: the keys and a handle move the box, and Save makes a copy
+    await lead.getByRole('button', { name: 'Crop' }).click();
+    const dialog = page.locator('#crop');
+    const readout = dialog.locator('[data-crop-readout]');
+    const shape = dialog.getByRole('combobox', { name: 'Shape' });
+    const save = dialog.getByRole('button', { name: 'Save the crop' });
+    await expect(shape).toContainText('21:9');
+    await expect(readout).toHaveText('1024 × 439 px (21:9), from 1024 × 576');
+    await expect(dialog.locator('[data-crop-warn]')).toBeVisible();
+    await expect(dialog.getByRole('group', { name: 'Crop area' })).toBeFocused();
+    await page.keyboard.press('-');
+    await expect(readout).not.toContainText('1024 × 439');
+    await expect(readout).toContainText('(21:9)');
+    const h = (await dialog.locator('[data-handle="se"]').boundingBox())!;
+    await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(h.x + h.width / 2 - 80, h.y + h.height / 2 - 40, { steps: 6 });
+    await page.mouse.up();
+    await expect(readout).toContainText('(21:9)');
+    await page.keyboard.press('Home');
+    await save.click();
+    await expect(dialog).toBeHidden();
+    const COPY = `${ORIGINAL}-21x9`;
+    await expect.poll(() => readJson(articleFile()).hero.media, { timeout: 15_000 }).toBe(COPY);
+    const cut = sidecar(COPY);
+    expect(cut).toMatchObject({ alt: sidecar(ORIGINAL).alt, crop: { from: ORIGINAL } });
+    expect(await dims(COPY)).toEqual([cut.crop.width, cut.crop.height]);
+    expect(Math.abs(cut.crop.width / cut.crop.height - 21 / 9)).toBeLessThan(0.01);
+    expect(readFileSync(join(media, `${ORIGINAL}.webp`)).equals(original)).toBe(true);
+
+    // the thumbnail, left empty, cropped from the lead picture: a 3:2 copy of the original, its own
+    const thumb = page.locator('[data-editor-picture="thumbnail"]');
+    await expect(thumb).toContainText('The lead picture');
+    await expect(thumb).toContainText('Best at 3:2, at least 960 × 640 px.');
+    await thumb.getByRole('button', { name: 'Crop' }).click();
+    await expect(shape).toContainText('3:2');
+    await expect(readout).toHaveText('864 × 576 px (3:2), from 1024 × 576');
+    await expect(dialog.locator('[data-crop-note]')).toContainText('makes a cropped copy');
+    await save.click();
+    const THUMB = `${ORIGINAL}-3x2`;
+    await expect.poll(() => readJson(articleFile()).thumbnail, { timeout: 15_000 }).toBe(THUMB);
+    expect(readJson(articleFile()).hero.media).toBe(COPY);
+    expect(sidecar(THUMB).crop).toMatchObject({ from: ORIGINAL, width: 864, height: 576 });
+
+    // the lead's copy, cut again from its original: the same picture, updated
+    await lead.getByRole('button', { name: 'Crop' }).click();
+    await expect(dialog.locator('[data-crop-note]')).toContainText('cuts this cropped copy again');
+    await dialog.getByRole('button', { name: 'Reset' }).click();
+    await expect(readout).toHaveText('1024 × 439 px (21:9), from 1024 × 576');
+    await save.click();
+    await expect.poll(() => sidecar(COPY).crop.width, { timeout: 15_000 }).toBe(1024);
+    expect(await dims(COPY)).toEqual([1024, 439]);
+    expect(readJson(articleFile()).hero.media).toBe(COPY);
+
+    // the library: the original lists its copies, and a crop there (any shape) makes another and opens it
+    await page.goto(`/_edit/media/?id=${ORIGINAL}`);
+    await expect(page.getByRole('list', { name: 'Cropped copies' }).getByRole('link')).toHaveCount(2);
+    await page.getByRole('button', { name: 'Crop the picture' }).click();
+    await expect(shape).toContainText('Free');
+    await expect(readout).toHaveText('1024 × 576 px (16:9), from 1024 × 576');
+    // (once the dialog has faded in: mid-fade, small text reads as low contrast)
+    await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
+    await noSeriousViolations(page, 'the crop');
+    await page.keyboard.press('-');
+    await save.click();
+    await expect(page).toHaveURL(new RegExp(`id=${ORIGINAL}-16x9$`), { timeout: 15_000 });
+    await expect(page.locator('[data-editor-media-details]')).toContainText('A cropped copy of mark-sculpted-clay');
+
+    // on the site, the section's card shows the thumbnail, whole
+    await page.goto('/leadership/');
+    const img = page.locator('main article.card img').first();
+    await expect(img).toHaveCSS('object-fit', 'contain');
+    expect(decodeURIComponent((await img.getAttribute('src')) ?? '')).toContain('mark-sculpted-clay-3x2');
+  });
+
   test('media: an upload becomes a WebP master with its alt text, usable at once; its details save; a used picture cannot be deleted', async ({ page }) => {
     await page.goto('/_edit/media/');
     await page.getByText('Upload a picture').click();

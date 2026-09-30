@@ -153,6 +153,7 @@ content/media/
 | `licence` | all | third-party: yes | `{ name, url?, owner? }`; the owner's own work is "All rights reserved" |
 | `source` | all | no | Where a third-party asset came from (URL) |
 | `focus` | image | no | The point to keep in a crop, as CSS `object-position` (default `50% 50%`) |
+| `crop` | image | no | A cropped copy's record: `from` (the original's ID) and `x`, `y`, `width`, `height` in the original's pixels. Cropping the copy again starts from there ([§9](#9-shapes-thumbnails-and-crops)) |
 | `poster` | video | yes | A media ID (an image with alt text) |
 | `captions` | video | yes | `[{ "file": "walkthrough.en.vtt", "srclang": "en", "label": "English", "default": true }]` |
 | `transcript` | video, audio | when speech carries meaning | Markdown |
@@ -190,7 +191,7 @@ content/media/
 - **Format:** WebP at quality 80; AVIF can be added as a second source later without touching content. Widths above the master's own size are skipped.
 - **Output** goes to `dist/_astro/` with content-hashed names, so a changed master gets a new URL and caches never serve an old picture.
 - **Caching:** Astro keeps generated images in `node_modules/.astro/assets`, and CI caches that folder between runs, so an unchanged master isn't processed again.
-- **Crops and focus:** a slot with a fixed ratio crops around `focus` (CSS `object-position`, as the `Image` fundamental already does).
+- **Crops and focus:** the lead picture's slot crops to its ratio around `focus` (CSS `object-position`, as the `Image` fundamental does); cards never crop ([§9](#9-shapes-thumbnails-and-crops)).
 
 **Other files.** A small build integration copies videos, their posters (which also go through the image pipeline), caption files and PDFs to `dist/media/<id>.<ext>`, after checking their budgets.
 
@@ -220,3 +221,24 @@ Content and components don't change between strategies: a block still names an I
 - **Credits** for content media live in the sidecars, not in `assets-src/CREDITS.md`, which stays the record for the code-owned assets. A colophon page can list every credited asset from the sidecars once it exists.
 - **Alt text** is required (V5). The check also flags alt text that repeats the caption word for word, or starts with "image of" or "picture of".
 - **Video** needs captions (WebVTT) and a poster with alt text. Speech that carries meaning needs a transcript. Nothing plays on its own (the design system's rule).
+
+## 9. Shapes, thumbnails and crops
+
+A picture is shown in one of two ways, and never cropped blindly:
+- **Framed whole.** Cards (a section's list, the home page, the planet's lists) show a page's picture whole, in a 3:2 frame: a picture of another shape sits in it with space around it, and a transparent one sits straight on the page.
+- **Cropped to a shape.** The lead picture runs across the top of its page at 21:9, cropped around its focus point.
+
+**The shapes are in one place,** `src/site/design/pictures.ts` (`PICTURE_SPECS`): each use's ratio, whether the design crops or frames it, and the widest it's shown, so a picture at least that wide stays sharp. The components frame to them, and edit mode shows them as tips.
+
+| Use | Field | Shape | Shown | Sharp from |
+|---|---|---|---|---|
+| Lead picture | `hero.media` | 21:9 | Across the top of its page, cropped around its focus point | 2400 × 1029 px |
+| Thumbnail | `thumbnail` (else the lead picture) | 3:2 | Whole on cards | 960 × 640 px |
+
+**A page can have its own thumbnail** (`thumbnail`, a media ID): the picture on its cards. Left out, cards use the lead picture. So one wide lead picture can have a 3:2 thumbnail cut from it.
+
+**Crops are copies.** Cropping (edit mode, [§6.1 of its spec](../editor/spec.md#61-the-crop)) never changes a picture:
+- cropping an original makes a new picture beside it, named after its shape (`mark-21x9`), with the original's details and a `crop` record of where it was cut;
+- cropping a cropped copy cuts again from its original (so it can grow back) and updates the copy, everywhere it's used;
+- a use can ask for another copy of a copy (the thumbnail cut from the lead picture's copy is a second copy of the original);
+- a copy is a picture like any other: its own master within the budgets, its own sidecar. If its original is deleted, it stays, and cropping it again starts from itself.

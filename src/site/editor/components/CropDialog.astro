@@ -1,0 +1,282 @@
+---
+/**
+ * The crop (documentation/editor/spec.md §6.1): the picture whole, with a box over the part to keep; what's
+ * left out is veiled in the page's smoke, and a rule-of-thirds grid shows while the box moves. The box moves
+ * by dragging it (a press elsewhere on the picture centres it there first) and resizes by its eight handles;
+ * Shape keeps a ratio (a use's own first, such as the lead picture's 21:9), Size scales it about its
+ * centre, and its size in pixels is read out, with a warning when it's smaller than its use shows. Saving
+ * makes a cropped copy, or cuts a copy again from its original: an original is never changed.
+ * One per screen, opened by the screen's script through openCrop (scripts/crop.ts).
+ * @tier editor
+ * @a11y The box is a focusable group named "Crop area" and described by the readout; the handles are for the pointer, and everything they do has a keyboard and single-pointer way: the arrow keys, Size, Shape and a click to centre.
+ * @a11y The readout is a polite live region: a move or a resize is heard as the size it leaves.
+ * @key Arrow keys (on the crop area): move it by 1% of the picture (with Shift, 10%)
+ * @key + / −: make it larger or smaller
+ * @key Home: centre it
+ */
+import Select from '../../components/fundamentals/Select.astro';
+import Slider from '../../components/fundamentals/Slider.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import type { SelectOption } from '../../components/fundamentals/Select.astro';
+import { HANDLES } from '../model/crop';
+
+const SHAPES: SelectOption[] = [
+  { value: 'free', label: 'Free', description: 'Any shape' },
+  { value: 'original', label: 'Original', description: 'The picture’s own shape' },
+  { value: '1/1', label: '1:1', description: 'Square' },
+  { value: '4/5', label: '4:5', description: 'Portrait' },
+  { value: '3/2', label: '3:2', description: 'Thumbnails, photographs' },
+  { value: '4/3', label: '4:3', description: 'Landscape' },
+  { value: '16/9', label: '16:9', description: 'Wide, video' },
+  { value: '21/9', label: '21:9', description: 'Lead pictures' },
+];
+---
+
+<Dialog id="crop" title="Crop the picture" size="lg">
+  <div class="crop" data-crop>
+    <p class="for" data-crop-for hidden></p>
+    <div class="stage">
+      <div class="frame" data-crop-frame>
+        <img class="source" data-crop-img alt="" draggable="false" />
+        <div class="veil" aria-hidden="true"></div>
+        <div class="box" data-crop-box tabindex="0" role="group" aria-label="Crop area" aria-describedby="crop-readout" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Home + -">
+          <span class="grid" aria-hidden="true"></span>
+          {HANDLES.map((h) => <span class="handle" data-handle={h} aria-hidden="true" />)}
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="shape">
+        <Select label="Shape" value="free" options={SHAPES} data-crop-shape="" />
+      </div>
+      <div class="size">
+        <Slider label="Size" min={5} max={100} step={1} value={100} unit="%" data-crop-size="" />
+      </div>
+    </div>
+    <p class="readout" id="crop-readout" data-crop-readout aria-live="polite"></p>
+    <p class="warn" data-crop-warn hidden></p>
+    <p class="note" data-crop-note></p>
+    <p class="issue" role="alert" data-crop-issue hidden></p>
+  </div>
+  <Fragment slot="actions">
+    <Button variant="quiet" icon="restore" data-crop-reset="">Reset</Button>
+    <Button variant="secondary" data-dialog-close="">Cancel</Button>
+    <Button variant="primary" icon="check" data-crop-save="">Save the crop</Button>
+  </Fragment>
+</Dialog>
+
+<style>
+  .crop {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .for,
+  .readout,
+  .warn,
+  .note,
+  .issue {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+
+  .for {
+    color: var(--color-text);
+  }
+
+  .readout {
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+  }
+
+  .note {
+    color: var(--color-text-muted);
+  }
+
+  .warn,
+  .issue {
+    color: var(--color-negative);
+    font-weight: var(--weight-medium);
+  }
+
+  .for[hidden],
+  .warn[hidden],
+  .issue[hidden] {
+    display: none;
+  }
+
+  .stage {
+    display: grid;
+    place-items: center;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-sunk);
+  }
+
+  /* exactly the picture's box: the crop's place is in percentages of it */
+  .frame {
+    position: relative;
+    inline-size: fit-content;
+    cursor: crosshair;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .source {
+    display: block;
+    max-inline-size: 100%;
+    max-block-size: min(var(--c-editor-crop-stage), 100dvh - var(--space-section) * 5);
+    pointer-events: none;
+  }
+
+  /* what's left out, veiled: the page's smoke with a hole where the box is */
+  .veil {
+    position: absolute;
+    inset: 0;
+    background: var(--color-scrim);
+    opacity: var(--c-editor-crop-veil);
+    pointer-events: none;
+    clip-path: polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, var(--l) var(--t), var(--r) var(--t), var(--r) var(--b), var(--l) var(--b), var(--l) var(--t));
+  }
+
+  .box {
+    position: absolute;
+    inset-inline-start: var(--l);
+    inset-block-start: var(--t);
+    inline-size: calc(var(--r) - var(--l));
+    block-size: calc(var(--b) - var(--t));
+    border: var(--border-strong) solid var(--color-accent);
+    cursor: move;
+  }
+
+  .box:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  /* the rule of thirds, while the box is moved or has the focus */
+  .grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+
+  .grid::before,
+  .grid::after {
+    content: '';
+    position: absolute;
+  }
+
+  .grid::before {
+    inset-block: 0;
+    inset-inline: 33.333%;
+    border-inline: var(--border-hairline) solid var(--color-bg);
+  }
+
+  .grid::after {
+    inset-inline: 0;
+    inset-block: 33.333%;
+    border-block: var(--border-hairline) solid var(--color-bg);
+  }
+
+  .box[data-active] .grid,
+  .box:focus-visible .grid {
+    opacity: 1;
+  }
+
+  .handle {
+    position: absolute;
+    inline-size: var(--c-editor-crop-handle);
+    block-size: var(--c-editor-crop-handle);
+    border: var(--border-strong) solid var(--color-bg);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    transform: translate(-50%, -50%);
+  }
+
+  /* each handle's target is the touch size, around its mark */
+  .handle::before {
+    content: '';
+    position: absolute;
+    inset: calc((var(--c-editor-crop-handle) - var(--size-touch)) / 2);
+  }
+
+  .handle[data-handle='nw'],
+  .handle[data-handle='w'],
+  .handle[data-handle='sw'] {
+    inset-inline-start: 0;
+  }
+
+  .handle[data-handle='n'],
+  .handle[data-handle='s'] {
+    inset-inline-start: 50%;
+  }
+
+  .handle[data-handle='ne'],
+  .handle[data-handle='e'],
+  .handle[data-handle='se'] {
+    inset-inline-start: 100%;
+  }
+
+  .handle[data-handle='nw'],
+  .handle[data-handle='n'],
+  .handle[data-handle='ne'] {
+    inset-block-start: 0;
+  }
+
+  .handle[data-handle='w'],
+  .handle[data-handle='e'] {
+    inset-block-start: 50%;
+  }
+
+  .handle[data-handle='sw'],
+  .handle[data-handle='s'],
+  .handle[data-handle='se'] {
+    inset-block-start: 100%;
+  }
+
+  .handle[data-handle='nw'],
+  .handle[data-handle='se'] {
+    cursor: nwse-resize;
+  }
+
+  .handle[data-handle='ne'],
+  .handle[data-handle='sw'] {
+    cursor: nesw-resize;
+  }
+
+  .handle[data-handle='n'],
+  .handle[data-handle='s'] {
+    cursor: ns-resize;
+  }
+
+  .handle[data-handle='e'],
+  .handle[data-handle='w'] {
+    cursor: ew-resize;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-4);
+  }
+
+  .shape {
+    flex: 1;
+  }
+
+  .size {
+    flex: 2;
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initCrop } from '../scripts/crop';
+
+  each<HTMLElement>('[data-crop]', (root, signal) => initCrop(root, signal));
+</script>

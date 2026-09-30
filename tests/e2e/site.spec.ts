@@ -776,8 +776,11 @@ test.describe('content', () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(s.title);
       await expect(page.locator('main [data-view]')).toHaveAttribute('data-view', s.view ?? 'tiles');
       const pages = (s.children ?? []).length;
-      if (pages) await expect(page.locator('main article.card')).toHaveCount(pages);
-      else await expect(page.getByText('Nothing here yet. This section is being written.')).toBeVisible();
+      if (pages) {
+        await expect(page.locator('main article.card')).toHaveCount(pages);
+        // a card shows its picture whole, never cropped (documentation/content/media.md §9)
+        for (const img of await page.locator('main article.card img').all()) await expect(img).toHaveCSS('object-fit', 'contain');
+      } else await expect(page.getByText('Nothing here yet. This section is being written.')).toBeVisible();
     }
     await page.goto('/');
     const list = page.getByRole('list', { name: 'Sections' });

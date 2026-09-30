@@ -20,6 +20,8 @@ import Text from '../../components/fundamentals/Text.astro';
 import type { Article, Block } from '../../content/schema';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { kindOf } from '../model/ops';
+import { pictureNote } from '../model/crop';
+import { PICTURE_SPECS, specTip } from '../../design/pictures';
 
 export interface Thumb {
   thumb: string;
@@ -58,6 +60,9 @@ const id = (i: number | string, f: string) => `f-${i}-${f.replace(/\W+/g, '-')}`
 const duration = (s?: number) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '');
 const videoUrl = (b: Extract<Block, { type: 'video' }>) => (b.embed.provider === 'youtube' ? `https://youtu.be/${b.embed.id}` : `https://vimeo.com/${b.embed.id}`);
 const thumbOf = (m?: string) => (m ? media[m] : undefined);
+// the lead picture, and what cards show (the thumbnail, or else the lead picture)
+const lead = thumbOf(article.hero?.media);
+const card = thumbOf(article.thumbnail ?? article.hero?.media);
 const STATUS: SelectOption[] = [
   { value: 'draft', label: 'Draft', description: 'Not on the site' },
   { value: 'factReview', label: 'Fact review', description: 'Not on the site' },
@@ -118,13 +123,16 @@ const STATUS: SelectOption[] = [
                 <span class="field-label">{b.type === 'video' ? 'Poster' : 'Picture'}</span>
                 <div class="media-row">
                   {thumbOf(b.type === 'video' ? b.poster : b.media) ? (
-                    <Image src={thumbOf(b.type === 'video' ? b.poster : b.media)!.thumb} alt="" width={thumbOf(b.type === 'video' ? b.poster : b.media)!.width} height={thumbOf(b.type === 'video' ? b.poster : b.media)!.height} ratio="4/3" fit="cover" />
+                    <Image src={thumbOf(b.type === 'video' ? b.poster : b.media)!.thumb} alt="" width={thumbOf(b.type === 'video' ? b.poster : b.media)!.width} height={thumbOf(b.type === 'video' ? b.poster : b.media)!.height} ratio="4/3" fit="contain" />
                   ) : (
                     <span />
                   )}
                   <div class="media-words">
                     <Text variant="small" tone="muted">{thumbOf(b.type === 'video' ? b.poster : b.media)?.alt || 'No alt text'}</Text>
-                    <Button variant="secondary" size="sm" icon="image" data-editor-pick={b.type === 'video' ? `body.${i}.poster` : `body.${i}.media`} data-pick-mode="single">Replace</Button>
+                    <div class="row">
+                      <Button variant="secondary" size="sm" icon="image" data-editor-pick={b.type === 'video' ? `body.${i}.poster` : `body.${i}.media`} data-pick-mode="single">Replace</Button>
+                      <Button variant="secondary" size="sm" icon="crop" data-editor-crop={b.type === 'video' ? `body.${i}.poster` : `body.${i}.media`}>Crop</Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -251,21 +259,41 @@ const STATUS: SelectOption[] = [
       <Select label="Section" name="__section" id="page-section" value={section} options={[{ value: '', label: 'Not on the site yet' }, ...sections]} hint="Where it sits on the site, and so its address. Moved, its old address simply goes." />
       <Select label="On the planet" name="__place" id="page-place" value={place} options={[{ value: '', label: 'Not on the planet', description: 'Only on the site' }, ...places]} hint="The building it's read in on the planet. It needs its page on the site too." />
 
-      <div class="media-field">
+      <div class="media-field" data-editor-picture="lead">
         <span class="field-label">Lead picture</span>
         <div class="media-row">
-          {thumbOf(article.hero?.media) ? <Image src={thumbOf(article.hero?.media)!.thumb} alt="" width={thumbOf(article.hero?.media)!.width} height={thumbOf(article.hero?.media)!.height} ratio="4/3" fit="cover" /> : <span />}
+          {lead ? <Image src={lead.thumb} alt="" width={lead.width} height={lead.height} ratio="4/3" fit="contain" /> : <span />}
           <div class="media-words">
-            <Text variant="small" tone="muted">{article.hero ? thumbOf(article.hero.media)?.alt || 'No alt text' : 'None'}</Text>
+            <Text variant="small" tone="muted">{article.hero ? lead?.alt || 'No alt text' : 'None'}</Text>
             <div class="row">
               <Button variant="secondary" size="sm" icon="image" data-editor-pick="hero.media" data-pick-mode="single">{article.hero ? 'Replace' : 'Choose'}</Button>
+              {article.hero && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="hero.media">Crop</Button>}
               {article.hero && <Button variant="quiet" size="sm" data-editor-clear="hero">Remove</Button>}
             </div>
           </div>
         </div>
+        <Text variant="small" tone="muted">{specTip(PICTURE_SPECS.lead)}</Text>
+        {lead && <Text variant="small">{pictureNote(PICTURE_SPECS.lead, lead.width, lead.height)}</Text>}
       </div>
       {article.hero && <Switch label="Show the lead picture's caption" name="hero.showCaption" id="page-hero-showCaption" checked={article.hero.showCaption !== false} data-type="bool-default-true" />}
       {article.hero && <TextField label="Lead picture's caption" name="hero.caption" id="page-hero-caption" value={article.hero.caption ?? ''} optional hint="Left empty, the picture's own caption shows." />}
+
+      <div class="media-field" data-editor-picture="thumbnail">
+        <span class="field-label">Thumbnail</span>
+        <div class="media-row">
+          {card ? <Image src={card.thumb} alt="" width={card.width} height={card.height} ratio="3/2" fit="contain" /> : <span />}
+          <div class="media-words">
+            <Text variant="small" tone="muted">{article.thumbnail ? card?.alt || 'No alt text' : article.hero ? 'The lead picture' : 'None'}</Text>
+            <div class="row">
+              <Button variant="secondary" size="sm" icon="image" data-editor-pick="thumbnail" data-pick-mode="single">{article.thumbnail ? 'Replace' : 'Choose'}</Button>
+              {card && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="thumbnail">Crop</Button>}
+              {article.thumbnail && <Button variant="quiet" size="sm" data-editor-clear="thumbnail">Remove</Button>}
+            </div>
+          </div>
+        </div>
+        <Text variant="small" tone="muted">{`${specTip(PICTURE_SPECS.thumbnail)} Left empty, the lead picture is used.`}</Text>
+        {card && <Text variant="small">{pictureNote(PICTURE_SPECS.thumbnail, card.width, card.height)}</Text>}
+      </div>
 
       <Heading level={3} size="ui">Search and sharing</Heading>
       <TextField label="Search title" name="seo.title" id="page-seo-title" value={article.seo?.title ?? ''} optional />

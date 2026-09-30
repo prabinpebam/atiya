@@ -11,6 +11,7 @@ import Tag from '../fundamentals/Tag.astro';
 import Avatar from '../fundamentals/Avatar.astro';
 import Image from '../fundamentals/Image.astro';
 import Caption from '../fundamentals/Caption.astro';
+import { PICTURE_SPECS } from '../../design/pictures';
 
 interface Props {
   /** The article’s title (its h1). */
@@ -25,8 +26,8 @@ interface Props {
   date?: string;
   /** Its measure: "6 min read", or "12 pictures" for a gallery. */
   readingTime?: string;
-  /** The lead picture, with its caption and credit. */
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string };
+  /** The lead picture, with its caption and credit, cropped to 21:9 around its focus point ("50% 30%"). */
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; caption?: string; credit?: string };
   /** How wide the lead picture runs: wide, or full bleed. */
   pictureWidth?: 'wide' | 'full';
   /** The title's level: 1 on a page, 2 when shown inside another page (the library). */
@@ -73,7 +74,8 @@ const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
           alt={picture.alt}
           width={picture.width}
           height={picture.height}
-          ratio="21/9"
+          ratio={PICTURE_SPECS.lead.ratio}
+          focus={picture.focus}
           radius={pictureWidth === 'full' ? 'none' : 'feature'}
           priority
         />

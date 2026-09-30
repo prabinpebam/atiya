@@ -10,4 +10,7 @@
   --c-editor-device-phone: 24.375rem;
   --c-editor-thumb: 9rem;
   --c-editor-section-list: 18rem;
+  --c-editor-crop-stage: 32rem;
+  --c-editor-crop-veil: 0.72;
+  --c-editor-crop-handle: 0.875rem;
 }

@@ -2,8 +2,9 @@
 /**
  * A picture's details in the media library (documentation/editor/spec.md §6): the picture with its focus
  * point (click where a crop must keep), its alt text, caption, credit, licence and source, where it's
- * used, Replace and Delete. The details save to the picture's sidecar, so they aren't part of any
- * article's undo. Delete is offered only when nothing refers to it.
+ * used, Crop (a cropped copy, or a copy cut again from its original; with the copies cut from it, or the
+ * picture it was cut from), Replace and Delete. The details save to the picture's sidecar, so they
+ * aren't part of any article's undo. Delete is offered only when nothing refers to it.
  * @tier editor
  * @a11y The focus point is set with a button over the picture (a click places it; the arrow keys move it by 5%, Home puts it back in the centre), and the point is read out in words.
  * @a11y A picture that can't be deleted says why, next to the disabled button.
@@ -38,9 +39,14 @@ interface Props {
   picture: PictureDetails | null;
   /** What refers to it: a label and the edit-mode screen to change it (from /_edit/). */
   usedIn: { label: string; href: string }[];
+  /** The cropped copies cut from it, by media ID. */
+  copies?: string[];
+  /** A cropped copy's original: its media ID, and whether it's still there. */
+  original?: { id: string; exists: boolean };
 }
 
-const { picture, usedIn } = Astro.props;
+const { picture, usedIn, copies = [], original } = Astro.props;
+const media = (id: string) => withBase(`/_edit/media/?id=${id}`);
 const sc = picture?.sidecar;
 const [fx, fy] = (sc?.focus ?? '50% 50%').split(' ').map((v) => parseInt(v, 10));
 const name = picture?.id.split('/').pop();
@@ -94,6 +100,35 @@ const state = picture ? JSON.stringify({ id: picture.id, version: picture.versio
           ) : (
             <Text variant="ui" tone="muted">Nothing uses it yet.</Text>
           )}
+        </section>
+
+        <section class="part" aria-labelledby="media-crop-title">
+          <Heading level={3} size="ui" id="media-crop-title">Crop</Heading>
+          {original ? (
+            original.exists ? (
+              <Text variant="small" tone="muted">
+                {'A cropped copy of '}
+                <Link href={media(original.id)} variant="standalone">{original.id.split('/').pop()}</Link>
+                {`, ${sc.crop!.width} × ${sc.crop!.height} px from ${sc.crop!.x}, ${sc.crop!.y}. Cropping it again starts from the whole original, and updates it everywhere it's used.`}
+              </Text>
+            ) : (
+              <Text variant="small" tone="muted">{`A cropped copy of ${original.id.split('/').pop()}, which has since been deleted: cropping it again starts from this copy.`}</Text>
+            )
+          ) : (
+            <Text variant="small" tone="muted">Cropping makes a copy beside it, with its details. This picture stays as it is.</Text>
+          )}
+          {copies.length > 0 && (
+            <ul class="list" aria-label="Cropped copies">
+              {copies.map((c) => (
+                <li>
+                  <Link href={media(c)} variant="standalone">{`Cropped copy: ${c.split('/').pop()}`}</Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div class="actions">
+            <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>
+          </div>
         </section>
 
         <form class="part" data-editor-media-replace novalidate aria-labelledby="media-replace-title">

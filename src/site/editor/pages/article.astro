@@ -11,6 +11,7 @@ import InsertForms from '../components/InsertForms.astro';
 import TurnInto from '../components/TurnInto.astro';
 import ArticleForm from '../components/ArticleForm.astro';
 import ContentIssues from '../components/ContentIssues.astro';
+import CropDialog from '../components/CropDialog.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
@@ -95,6 +96,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         <Dialog id="editor-picker" title="Choose a picture" size="lg">
           <MediaGrid mode="pick" media={cards} owner={`articles/${id}`} />
         </Dialog>
+        <CropDialog />
         <Dialog id="editor-turn" title="Turn into" size="lg">
           <TurnInto />
         </Dialog>

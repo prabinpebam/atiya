@@ -58,6 +58,7 @@ export const isPublished = (a: { status: string; visibility: string }) => PUBLIS
 /** Every media ID a document uses. */
 export function mediaUsed(a: Article): string[] {
   const ids = a.hero ? [a.hero.media] : [];
+  if (a.thumbnail) ids.push(a.thumbnail);
   for (const b of a.body) {
     if (b.type === 'figure') ids.push(b.media);
     else if (b.type === 'gallery' || b.type === 'carousel') ids.push(...b.items.map((i) => i.media));
