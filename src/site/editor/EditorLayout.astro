@@ -2,7 +2,9 @@
 /**
  * Edit mode's frame (documentation/editor/spec.md §2): the side navigation to its screens, and a top bar
  * with the screen's title, the save status (a live region), the screen's own tools, the number of
- * unpublished changes and Publish. The article editor turns the navigation off for its studio; a screen
+ * unpublished changes, the colour theme and Publish. The theme is the site's own choice (light, dark or
+ * the system's): it changes the whole of edit mode, its canvas with it. The article editor turns the
+ * navigation off for its studio; a screen
  * with a detail pane (Media) puts it in the aside slot, beside its content and in view as it scrolls. Built
  * from the site's compounds and fundamentals; only the editor imports it (and editor-tokens.css).
  * @tier editor
@@ -13,8 +15,10 @@ import SideNav from '../components/compounds/SideNav.astro';
 import Button from '../components/fundamentals/Button.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Heading from '../components/fundamentals/Heading.astro';
+import Select from '../components/fundamentals/Select.astro';
 import '../styles/editor-tokens.css';
 import { withBase } from '../design/meta';
+import { THEME_OPTIONS } from '../scripts/theme';
 import { changes } from './server/git';
 
 interface Props {
@@ -64,6 +68,7 @@ const groups = [
       <div class="title"><slot name="title" /></div>
       <p class="status" role="status" aria-live="polite" data-editor-status></p>
       <div class="tools"><slot name="tools" /></div>
+      <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" />
       <div class="pending" data-region="editor-pending">
         {
           pending > 0 && (
@@ -282,6 +287,18 @@ const groups = [
 
 <script>
   import { each } from '../scripts/page';
+  import { bindThemeSwitch } from '../scripts/theme';
+
+  // the colour theme, for the whole of edit mode: the canvas (a page of the site) follows it on its own
+  each<HTMLElement>('[data-editor-theme-switch]', (sw, signal) => {
+    let store: Storage | null = null;
+    try {
+      store = localStorage;
+    } catch {
+      /* private mode: the choice lasts for the page */
+    }
+    bindThemeSwitch(sw, document.documentElement, store, signal);
+  });
 
   // a screen asked for with a dialog open (the dashboard's "New article" goes to Articles with it open)
   each<HTMLElement>('[data-editor-autopen]', (el) => {

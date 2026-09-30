@@ -546,9 +546,6 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         document.querySelectorAll<HTMLElement>('[data-editor-editable]').forEach((el) => (el.contentEditable = preview ? 'false' : el.dataset.editorEditable === 'rich' ? 'true' : 'plaintext-only'));
         hoverBox.hidden = insert.hidden = format.hidden = true;
         redraw();
-      } else if (m.type === 'theme') {
-        if (m.theme === 'light' || m.theme === 'dark') document.documentElement.dataset.theme = m.theme;
-        else delete document.documentElement.dataset.theme;
       }
     },
     { signal },
@@ -574,7 +571,5 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   addEventListener('pagehide', () => sessionStorage.setItem(key, String(scrollY)), { signal });
   const y = Number(sessionStorage.getItem(key) ?? 0);
   if (y) requestAnimationFrame(() => scrollTo(0, y));
-  const theme = sessionStorage.getItem('editor.canvas.theme');
-  if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
   post({ type: 'ready', count: blocks.length });
 }

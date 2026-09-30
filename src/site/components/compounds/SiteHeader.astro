@@ -16,6 +16,7 @@ import IconButton from '../fundamentals/IconButton.astro';
 import Select from '../fundamentals/Select.astro';
 import { SITE_NAME, withBase } from '../../design/meta';
 import { svgOf, type IconName } from '../../design/icons';
+import { THEME_OPTIONS } from '../../scripts/theme';
 
 export interface NavItem {
   label: string;
@@ -40,11 +41,6 @@ const { nav = [], action, homeHref = withBase('/'), section, navLabel = 'Section
 // unique per header, so a page can show more than one (the design library does)
 const uid = Math.random().toString(36).slice(2, 8);
 const navId = `site-nav-${uid}`;
-const themes = [
-  { value: 'system', label: 'Match system', icon: 'theme-system' as const },
-  { value: 'light', label: 'Light', icon: 'theme-light' as const },
-  { value: 'dark', label: 'Dark', icon: 'theme-dark' as const },
-];
 const open = svgOf('menu');
 const close = svgOf('close');
 ---
@@ -92,7 +88,7 @@ const close = svgOf('close');
       )
     }
     <div class="tools">
-      <Select label="Colour theme" hideLabel trigger="icon" align="end" options={themes} value="system" id={`site-theme-${uid}`} data-theme-switch="" />
+      <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id={`site-theme-${uid}`} data-theme-switch="" />
       {
         action && (
           <span class="action">
@@ -315,7 +311,7 @@ const close = svgOf('close');
 
 <script>
   import { each } from '../../scripts/page';
-  import { THEMES, applyTheme, readTheme, type Theme } from '../../scripts/theme';
+  import { bindThemeSwitch } from '../../scripts/theme';
   import { tuck } from '../../scripts/header';
 
   const store = (() => {
@@ -331,15 +327,7 @@ const close = svgOf('close');
 
   each<HTMLElement>('[data-site-header]', (header, signal) => {
     const sw = header.querySelector<HTMLElement>('[data-theme-switch]');
-    if (sw) {
-      const show = () => sw.dispatchEvent(new CustomEvent('select-set', { detail: { value: readTheme(store) } }));
-      if (sw.dataset.ready !== undefined) show();
-      else sw.addEventListener('select-ready', show, { once: true });
-      sw.addEventListener('select-change', (e) => {
-        const v = (e as CustomEvent<{ value: string }>).detail.value as Theme;
-        if ((THEMES as readonly string[]).includes(v)) applyTheme(v, document.documentElement, store);
-      });
-    }
+    if (sw) bindThemeSwitch(sw, document.documentElement, store, signal);
 
     const toggle = header.querySelector<HTMLButtonElement>('[data-menu-toggle]');
     const nav = header.querySelector<HTMLElement>('[data-nav]');

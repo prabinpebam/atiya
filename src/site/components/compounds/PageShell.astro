@@ -104,6 +104,10 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
 <script>
   import { each } from '../../scripts/page';
   import { overlay, overlayPage } from '../../scripts/scrollbars';
+  import { followTheme } from '../../scripts/theme';
+
+  // a theme chosen on another page of the site (another tab, or edit mode around its canvas) applies here too
+  followTheme(document.documentElement);
 
   // the frosted overlay handles: the page's own, and every region that opts in
   overlayPage();

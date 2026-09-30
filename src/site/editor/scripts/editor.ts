@@ -586,7 +586,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
 
   // ---------- the top bar ----------
   on(document, 'click', (e) => {
-    const t = (e.target as Element).closest<HTMLElement>('[data-editor-undo], [data-editor-redo], [data-editor-device], [data-editor-theme], [data-editor-preview]');
+    const t = (e.target as Element).closest<HTMLElement>('[data-editor-undo], [data-editor-redo], [data-editor-device], [data-editor-preview]');
     if (!t) return;
     if (t.dataset.editorUndo !== undefined) return undo();
     if (t.dataset.editorRedo !== undefined) return redo();
@@ -595,12 +595,6 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       document.querySelectorAll('[data-editor-device]').forEach((b) => b.setAttribute('aria-pressed', b === t ? 'true' : 'false'));
       sessionStorage.setItem('editor.canvas.device', t.dataset.editorDevice);
       return;
-    }
-    if (t.dataset.editorTheme !== undefined) {
-      const next = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
-      sessionStorage.setItem('editor.canvas.theme', next);
-      t.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
-      return toCanvas({ type: 'theme', theme: next });
     }
     if (t.dataset.editorPreview !== undefined) {
       const on = t.getAttribute('aria-pressed') !== 'true';

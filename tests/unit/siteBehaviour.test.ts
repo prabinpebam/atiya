@@ -1,7 +1,7 @@
 /** The site's pure behaviour modules: the select's keyboard, the theme, the media helpers, typography, tokens. */
 import { describe, expect, it } from 'vitest';
 import { keyAction, matchIndex, printable } from '../../src/site/scripts/listbox';
-import { applyTheme, parseTheme, readTheme, resolveTheme, THEME_KEY } from '../../src/site/scripts/theme';
+import { applyTheme, parseTheme, readTheme, resolveTheme, themeFromStorage, THEME_KEY, THEME_OPTIONS } from '../../src/site/scripts/theme';
 import { clampIndex, counter, nearest, reveal, swipe, wrap } from '../../src/site/scripts/media';
 import { dragTo, thumbGeometry } from '../../src/site/scripts/scrollbars';
 import { accessibleName, currentIndex, readingLine, JUMP_RATIO, edgeSpeed, isMeaningfulImage, jumpTarget, kindText, repeatsTitle, signature, tidy, waveAt, WAVE } from '../../src/site/scripts/minimap';
@@ -82,6 +82,21 @@ describe('the theme', () => {
     expect(root.dataset.theme).toBeUndefined();
     expect(store.has(THEME_KEY)).toBe(false);
     expect(readTheme({ getItem: () => { throw new Error('private mode'); } })).toBe('system');
+  });
+
+  it("follows a choice made on another page of the site (another tab, edit mode around its canvas), and nothing else it stores", () => {
+    expect(themeFromStorage({ key: THEME_KEY, newValue: 'dark' })).toBe('dark');
+    expect(themeFromStorage({ key: THEME_KEY, newValue: null })).toBe('system');
+    expect(themeFromStorage({ key: null, newValue: null })).toBe('system');
+    expect(themeFromStorage({ key: 'editor.history.x', newValue: 'dark' })).toBeNull();
+  });
+
+  it('offers the same three choices wherever there is a switch (the header, edit mode)', () => {
+    expect(THEME_OPTIONS.map((o) => [o.value, o.label, o.icon])).toEqual([
+      ['system', 'Match system', 'theme-system'],
+      ['light', 'Light', 'theme-light'],
+      ['dark', 'Dark', 'theme-dark'],
+    ]);
   });
 });
 

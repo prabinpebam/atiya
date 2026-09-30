@@ -288,6 +288,34 @@ test.describe('editor', () => {
     expect(execFileSync('git', [`--git-dir=${REMOTE}`, 'log', '-1', '--format=%s', 'main'], { encoding: 'utf8' }).trim()).toBe('Content: the site settings');
   });
 
+  test('the theme switch changes the whole of edit mode, its canvas with it, and every other open page of the site', async ({ page, context }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await openArticle(page);
+    const site = await context.newPage();
+    await site.goto(`/leadership/${ARTICLE}/`);
+    const background = () => [document.querySelector('[data-editor-app]'), document.body, document.documentElement].map((el) => (el ? getComputedStyle(el).backgroundColor : '')).find((c) => c && c !== 'rgba(0, 0, 0, 0)') ?? '';
+    const light = await page.evaluate(background);
+    const canvasLight = await page.frame({ url: /\/_edit\/canvas\// })!.evaluate(background);
+
+    const theme = page.getByRole('combobox', { name: 'Colour theme' });
+    await theme.click();
+    await page.getByRole('option', { name: 'Dark' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(frame(page).locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(site.locator('html')).toHaveAttribute('data-theme', 'dark');
+    expect(await page.evaluate(background)).not.toBe(light);
+    expect(await page.frame({ url: /\/_edit\/canvas\// })!.evaluate(background)).not.toBe(canvasLight);
+
+    // it's the site's choice: kept on the next screen, from its first paint
+    await page.goto('/_edit/media/');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.getByRole('combobox', { name: 'Colour theme' }).click();
+    await expect(page.getByRole('option', { name: 'Dark' })).toHaveAttribute('aria-selected', 'true');
+    await page.getByRole('option', { name: 'Match system' }).click();
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./);
+    await expect(site.locator('html')).not.toHaveAttribute('data-theme', /./);
+  });
+
   test('every screen passes axe, in light and in dark', async ({ page }) => {
     const screens = ['/_edit/', '/_edit/articles/', `/_edit/articles/${ARTICLE}/`, '/_edit/sections/', `/_edit/media/?id=articles/${ARTICLE}/tshirt`, '/_edit/settings/', '/_edit/publish/'];
     for (const scheme of ['light', 'dark'] as const) {
