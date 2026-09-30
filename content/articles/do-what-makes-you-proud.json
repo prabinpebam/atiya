@@ -41,6 +41,50 @@
       "markdown": "The Windows Design team in India needed more than a visual refresh. I wanted the identity to help people reconnect with why they design, raise the standard they set for themselves, and see individual ambition as a force that could strengthen the whole team."
     },
     {
+      "type": "text",
+      "markdown": "My goal was to re-energize the team and make them reflect on their purpose and goal in life. I wanted to instill in them a desire to do great things and be ambitious."
+    },
+    {
+      "type": "tiles",
+      "items": [
+        {
+          "label": "Challenge",
+          "text": "Re-energize the team and make purpose feel personal, practical, and visible."
+        },
+        {
+          "label": "Intent",
+          "text": "Shift the conversation from completing tasks to owning meaningful outcomes."
+        },
+        {
+          "label": "My role",
+          "text": "Identity concept, narrative framing, visual direction, and team activation."
+        },
+        {
+          "label": "Core idea",
+          "text": "**Do what makes you proud.** A standard chosen from within."
+        }
+      ]
+    },
+    {
+      "type": "quote",
+      "text": "Be better than yesterday.",
+      "variant": "pull",
+      "cite": "A wise person"
+    },
+    {
+      "type": "text",
+      "markdown": "This was the mantra the whole narrative kept returning to. It doesn’t mean better than a peer, and it isn’t an external bar. Everyone can reach it, and no one is ever finished with it."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Interest creates energy. Ownership turns it into progress."
+    },
+    {
+      "type": "text",
+      "markdown": "I called the mindset **excited accountability**. First, be interested: aligned with the work and passionate about it. Then, be accountable: want to impress through the quality of the outcome. Neither works for long without the other."
+    },
+    {
       "type": "gallery",
       "layout": "mosaic",
       "fit": "contain",
@@ -61,24 +105,6 @@
           "media": "articles/do-what-makes-you-proud/mark-clay-to-stone"
         }
       ]
-    },
-    {
-      "type": "heading",
-      "level": 2,
-      "text": "“Be better than yesterday.”"
-    },
-    {
-      "type": "text",
-      "markdown": "This was the benchmark the whole narrative kept returning to. It doesn’t mean better than a peer, and it isn’t an external bar. Everyone can reach it, and no one is ever finished with it."
-    },
-    {
-      "type": "heading",
-      "level": 2,
-      "text": "Interest creates energy. Ownership turns it into progress."
-    },
-    {
-      "type": "text",
-      "markdown": "I called the mindset **excited accountability**. First, be interested: aligned with the work and passionate about it. Then, be accountable: want to impress through the quality of the outcome. Neither works for long without the other."
     },
     {
       "type": "heading",
