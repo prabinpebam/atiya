@@ -2,13 +2,19 @@
 /**
  * The article editor's outline (documentation/editor/spec.md §3.3): every block in order, by its kind and
  * first words, to select it (the canvas scrolls to it) and reorder it: drag its handle, or use Move up
- * and Move down (a single-pointer alternative to the drag, WCAG 2.5.7), or Alt+Up and Alt+Down.
+ * and Move down (a single-pointer alternative to the drag, WCAG 2.5.7), or Alt+Up and Alt+Down. Several
+ * blocks can be selected (Shift for a range, Ctrl or Cmd for one more) and moved, dragged or deleted
+ * together; a bar over the rows says how many, with Move up, Move down and Clear.
  * @tier editor
- * @a11y A named list; each row's main button selects the block and is marked current when it's selected.
- * @a11y Every drag has buttons and keys that do the same; a move is announced in the status.
+ * @a11y A named list; each row's main button selects the block and is marked current when it's selected; a block in a selection of several is pressed.
+ * @a11y Every drag has buttons and keys that do the same; a move, and how many blocks are selected, are announced in the status.
  * @key Up / Down: the previous / next block's row
- * @key Alt + Up / Alt + Down: move the block
- * @key Delete: delete the block (Undo brings it back)
+ * @key Shift + Up / Shift + Down: add the previous / next block to the selection
+ * @key Shift + click, Ctrl or Cmd + click: select a range, or one block more
+ * @key Ctrl or Cmd + A: select every block
+ * @key Alt + Up / Alt + Down: move the block, or the selected blocks together
+ * @key Delete: delete the block, or the selected blocks (Undo brings them back)
+ * @key Escape: clear the selection
  */
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
@@ -29,6 +35,14 @@ const { blocks } = Astro.props;
   <div class="head">
     <Heading level={2} size="ui" id="outline-title">Outline</Heading>
     <Text as="span" variant="small" tone="muted">{`${blocks.length} ${blocks.length === 1 ? 'block' : 'blocks'}`}</Text>
+  </div>
+  <div class="group" role="toolbar" aria-label="The selected blocks" data-editor-multibar hidden>
+    <span class="group-count" data-editor-multicount></span>
+    <span class="group-tools">
+      <IconButton label="Move the selected blocks up" icon="arrow-up" size="sm" tooltip="none" data-editor-group="up" />
+      <IconButton label="Move the selected blocks down" icon="arrow-down" size="sm" tooltip="none" data-editor-group="down" />
+      <IconButton label="Clear the selection" icon="close" size="sm" tooltip="none" data-editor-group="clear" />
+    </span>
   </div>
   <ol class="rows" data-scrollbar>
     {
@@ -58,9 +72,10 @@ const { blocks } = Astro.props;
 </section>
 
 <style>
+  /* the heading, the selection's bar (when several are selected), the rows, and Add a block */
   .outline {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     min-block-size: 0;
     block-size: 100%;
     border-inline-end: var(--border-hairline) solid var(--color-rule);
@@ -68,6 +83,7 @@ const { blocks } = Astro.props;
   }
 
   .head {
+    grid-row: 1;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -75,7 +91,35 @@ const { blocks } = Astro.props;
     padding: var(--space-4) var(--space-4) var(--space-2);
   }
 
+  .group {
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-inline: var(--space-2);
+    padding-inline: var(--space-3) var(--space-1);
+    border-radius: var(--radius-md);
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .group[hidden] {
+    display: none;
+  }
+
+  .group-count {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .group-tools {
+    display: flex;
+  }
+
   .rows {
+    grid-row: 3;
     display: grid;
     align-content: start;
     gap: var(--space-0-5);
@@ -153,9 +197,15 @@ const { blocks } = Astro.props;
     background: var(--color-bg-hover);
   }
 
-  .pick[aria-current='true'] {
+  .pick[aria-current='true'],
+  .pick[aria-pressed='true'] {
     background: var(--color-accent-soft);
     color: var(--color-on-accent-soft);
+  }
+
+  /* the block the inspector shows, among several selected */
+  .pick[aria-pressed='true'][aria-current='true'] {
+    box-shadow: inset var(--border-strong) 0 0 var(--color-accent);
   }
 
   .words {
@@ -178,7 +228,8 @@ const { blocks } = Astro.props;
     white-space: nowrap;
   }
 
-  .pick[aria-current='true'] .excerpt {
+  .pick[aria-current='true'] .excerpt,
+  .pick[aria-pressed='true'] .excerpt {
     color: var(--color-on-accent-soft);
   }
 
@@ -189,7 +240,8 @@ const { blocks } = Astro.props;
   }
 
   .row:focus-within .moves,
-  .row[data-current] .moves {
+  .row[data-current] .moves,
+  .row[data-picked] .moves {
     opacity: 1;
   }
 
@@ -204,6 +256,7 @@ const { blocks } = Astro.props;
   }
 
   .foot {
+    grid-row: 4;
     padding: var(--space-2) var(--space-3) var(--space-3);
     border-block-start: var(--border-hairline) solid var(--color-rule);
   }

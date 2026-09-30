@@ -41,6 +41,30 @@ describe('document operations', () => {
     expect(ops.move(body, 5, 0)).toBe(body);
   });
 
+  it('moves a selection of blocks together, one step, keeping their order; stops at either end', () => {
+    const list = ['a', 'b', 'c', 'd', 'e', 'f'];
+    expect(ops.range(4, 1)).toEqual([1, 2, 3, 4]);
+    // a run of blocks
+    expect(ops.moveMany(list, [2, 3], -1)).toEqual({ body: ['a', 'c', 'd', 'b', 'e', 'f'], indices: [1, 2] });
+    expect(ops.moveMany(list, [2, 3], 1)).toEqual({ body: ['a', 'b', 'e', 'c', 'd', 'f'], indices: [3, 4] });
+    // blocks apart: each steps past its neighbour, the gap stays
+    expect(ops.moveMany(list, [1, 4], -1)).toEqual({ body: ['b', 'a', 'c', 'e', 'd', 'f'], indices: [0, 3] });
+    expect(ops.moveMany(list, [1, 4], 1)).toEqual({ body: ['a', 'c', 'b', 'd', 'f', 'e'], indices: [2, 5] });
+    // at an end: nothing moves (the order never scrambles)
+    expect(ops.moveMany(list, [0, 3], -1)).toEqual({ body: list, indices: [0, 3] });
+    expect(ops.moveMany(list, [2, 5], 1)).toEqual({ body: list, indices: [2, 5] });
+    expect(ops.moveMany(list, [], 1)).toEqual({ body: list, indices: [] });
+  });
+
+  it('drags a selection to a new place in one piece, in its order, and deletes a selection', () => {
+    const list = ['a', 'b', 'c', 'd', 'e', 'f'];
+    expect(ops.moveGroupTo(list, [1, 3], 5)).toEqual({ body: ['a', 'c', 'e', 'b', 'd', 'f'], indices: [3, 4] });
+    expect(ops.moveGroupTo(list, [4, 5], 0)).toEqual({ body: ['e', 'f', 'a', 'b', 'c', 'd'], indices: [0, 1] });
+    expect(ops.moveGroupTo(list, [0, 1], 6)).toEqual({ body: ['c', 'd', 'e', 'f', 'a', 'b'], indices: [4, 5] });
+    expect(ops.moveGroupTo(list, [2, 3], 3)).toEqual({ body: list, indices: [2, 3] });
+    expect(ops.removeMany(list, [0, 2, 5])).toEqual(['b', 'd', 'e']);
+  });
+
   it('split keeps the first part and makes the rest new paragraphs; an empty head is dropped', () => {
     expect(ops.split(body, 0, ['on', 'e'])).toEqual([t('on'), t('e'), t('two'), t('three')]);
     expect(ops.split(body, 0, ['one', ''])).toEqual(body);

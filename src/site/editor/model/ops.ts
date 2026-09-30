@@ -22,6 +22,45 @@ export function move(body: Body, from: number, to: number): Body {
   return next;
 }
 
+/** Positions from one to another, both included, in order (a range picked with Shift). */
+export const range = (a: number, b: number): number[] => Array.from({ length: Math.abs(a - b) + 1 }, (_, k) => Math.min(a, b) + k);
+
+/**
+ * Moves several blocks one step up (-1) or down (1) together, keeping their order among themselves: each
+ * steps past the block beside it that isn't selected. Nothing moves if the group is already at that end.
+ * Returns the body and where the moved blocks are now.
+ */
+export function moveMany<T>(body: T[], indices: number[], dir: -1 | 1): { body: T[]; indices: number[] } {
+  const picked = new Set(indices.filter((i) => i >= 0 && i < body.length));
+  const at = [...picked].sort((a, b) => a - b);
+  if (!at.length || (dir < 0 && at[0] === 0) || (dir > 0 && at[at.length - 1] === body.length - 1)) return { body, indices: at };
+  const order = body.map((_, i) => i);
+  if (dir < 0) {
+    for (let k = 1; k < order.length; k++) if (picked.has(order[k]) && !picked.has(order[k - 1])) [order[k - 1], order[k]] = [order[k], order[k - 1]];
+  } else {
+    for (let k = order.length - 2; k >= 0; k--) if (picked.has(order[k]) && !picked.has(order[k + 1])) [order[k], order[k + 1]] = [order[k + 1], order[k]];
+  }
+  return { body: order.map((i) => body[i]), indices: order.flatMap((i, k) => (picked.has(i) ? [k] : [])) };
+}
+
+/**
+ * Moves several blocks together, in their order, to sit before the block now at `at` (the body's length:
+ * the end): a dragged selection. Returns the body and where the moved blocks are now.
+ */
+export function moveGroupTo<T>(body: T[], indices: number[], at: number): { body: T[]; indices: number[] } {
+  const picked = new Set(indices.filter((i) => i >= 0 && i < body.length));
+  const group = body.filter((_, i) => picked.has(i));
+  const rest = body.filter((_, i) => !picked.has(i));
+  const slot = Math.max(0, Math.min(rest.length, at - [...picked].filter((i) => i < at).length));
+  return { body: [...rest.slice(0, slot), ...group, ...rest.slice(slot)], indices: group.map((_, k) => slot + k) };
+}
+
+/** Removes several blocks. */
+export const removeMany = <T>(body: T[], indices: number[]): T[] => {
+  const picked = new Set(indices);
+  return body.filter((_, i) => !picked.has(i));
+};
+
 /**
  * Splits a text block (Enter, or a paste with blank lines): the first part stays, the rest become new
  * text blocks after it. Empty parts are dropped, except that an Enter at the end leaves nothing after

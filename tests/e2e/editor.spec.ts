@@ -175,6 +175,37 @@ test.describe('editor', () => {
     expect(last().items).toHaveLength(3);
   });
 
+  test('the outline: several blocks selected (Shift, Ctrl), moved together by the bar and the keys, deleted together, and undone', async ({ page }) => {
+    await openArticle(page);
+    const shape = () => (readJson(articleFile()).body as { type: string; markdown?: string; text?: string }[]).map((b) => `${b.type}:${(b.markdown ?? b.text ?? '').slice(0, 24)}`);
+    const before = shape();
+    // Shift + click: a range (positions 4 and 5)
+    await page.locator('[data-editor-select="3"]').click();
+    await page.locator('[data-editor-select="4"]').click({ modifiers: ['Shift'] });
+    await expect(page.locator('[data-editor-multicount]')).toHaveText('2 blocks selected');
+    await page.locator('[data-editor-group="up"]').click();
+    await saved(page);
+    expect(shape()).toEqual([...before.slice(0, 2), before[3], before[4], before[2], ...before.slice(5)]);
+    // the selection follows the blocks, and Alt + Down moves them back together
+    await expect(page.locator('[data-editor-select="2"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-editor-select="3"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('[data-editor-select="2"]').focus();
+    await page.keyboard.press('Alt+ArrowDown');
+    await saved(page);
+    expect(shape()).toEqual(before);
+    // Ctrl + click adds one apart; Delete deletes the three; Undo brings them back
+    await page.locator('[data-editor-select="0"]').click({ modifiers: ['Control'] });
+    await expect(page.locator('[data-editor-multicount]')).toHaveText('3 blocks selected');
+    await page.locator('[data-editor-select="0"]').focus();
+    await page.keyboard.press('Delete');
+    await saved(page);
+    expect(shape()).toHaveLength(before.length - 3);
+    await page.locator('[data-editor-undo]').click();
+    await saved(page);
+    expect(shape()).toEqual(before);
+    await expect(page.locator('[data-editor-multibar]')).toBeHidden();
+  });
+
   test("the page's settings save; a value the contract refuses says why and isn't written", async ({ page }) => {
     await openArticle(page);
     await page.getByRole('tab', { name: 'Page' }).click();

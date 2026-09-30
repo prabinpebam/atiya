@@ -34,6 +34,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   let doc: Article = state.article;
   let saved: Article = structuredClone(doc);
   let selected: number | null = null;
+  // several blocks selected in the outline (Shift, Ctrl or Cmd): moved, dragged and deleted together
+  let picked = new Set<number>();
+  let anchor: number | null = null;
+  const group = () => [...picked].sort((a, b) => a - b);
   const frame = root.querySelector<HTMLIFrameElement>('[data-editor-frame]')!;
   const canvasBox = root.querySelector<HTMLElement>('[data-editor-canvas]')!;
   const toCanvas = (m: Record<string, unknown>) => frame.contentWindow?.postMessage({ source: 'editor', ...m }, location.origin);
@@ -124,15 +128,29 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     root.querySelectorAll<HTMLFormElement>('[data-block-form]').forEach((f) => (f.hidden = Number(f.dataset.blockForm) !== i));
     const none = root.querySelector<HTMLElement>('[data-editor-noblock]');
     if (none) none.hidden = i !== null && i < doc.body.length;
+    const several = picked.size > 1;
     root.querySelectorAll<HTMLElement>('[data-editor-select]').forEach((b) => {
-      const on = Number(b.dataset.editorSelect) === i;
+      const n = Number(b.dataset.editorSelect);
+      const on = n === i;
       if (on) b.setAttribute('aria-current', 'true');
       else b.removeAttribute('aria-current');
+      if (several && picked.has(n)) b.setAttribute('aria-pressed', 'true');
+      else b.removeAttribute('aria-pressed');
       b.closest('[data-row]')?.toggleAttribute('data-current', on);
+      b.closest('[data-row]')?.toggleAttribute('data-picked', several && picked.has(n));
     });
+    const bar = root.querySelector<HTMLElement>('[data-editor-multibar]');
+    if (bar) bar.hidden = !several;
+    const count = root.querySelector<HTMLElement>('[data-editor-multicount]');
+    if (count) count.textContent = several ? `${picked.size} blocks selected` : '';
   };
-  const setSelected = (i: number | null, opts: { tab?: boolean; canvas?: boolean; scroll?: boolean } = {}) => {
+  const setSelected = (i: number | null, opts: { tab?: boolean; canvas?: boolean; scroll?: boolean; keep?: boolean } = {}) => {
     selected = i !== null && i >= 0 && i < doc.body.length ? i : null;
+    // a plain selection ends a selection of several
+    if (!opts.keep) {
+      picked = new Set();
+      anchor = selected;
+    }
     showBlock(selected);
     if (opts.tab && selected !== null) root.querySelector('#inspector-tabs')?.dispatchEvent(new CustomEvent('tabs:select', { detail: { tab: 'block' } }));
     if (opts.canvas) toCanvas({ type: 'select', index: selected, scroll: !!opts.scroll });
@@ -161,10 +179,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   };
 
   // ---------- changes ----------
-  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; history?: boolean } = {}) => {
+  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; history?: boolean; picked?: number[] } = {}) => {
     if (opts.history !== false) checkpoint();
     doc = next;
     if (opts.select !== undefined) selected = opts.select;
+    picked = new Set(opts.picked ?? []);
+    if (!opts.picked) anchor = selected;
     void save({ refresh, ...(opts.section !== undefined ? { section: opts.section } : {}) });
   };
   const body = (b: Block[]) => ({ ...doc, body: b });
@@ -179,9 +199,62 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   };
   const insertBlock = (at: number, block: Block) => change(body(ops.insert(doc.body, at, block)), ALL, { select: at });
 
+  // ---------- several blocks at once ----------
+  const announcePicked = () => announce(picked.size > 1 ? `${picked.size} blocks selected` : '');
+  const pickRange = (to: number) => {
+    const from = anchor ?? selected ?? to;
+    picked = new Set(ops.range(from, to));
+    anchor = from;
+    setSelected(to, { tab: true, canvas: true, scroll: true, keep: true });
+    announcePicked();
+  };
+  const pickToggle = (n: number) => {
+    if (!picked.size && selected !== null) picked.add(selected);
+    if (picked.has(n)) picked.delete(n);
+    else picked.add(n);
+    anchor = n;
+    const primary = picked.has(n) ? n : (group().at(-1) ?? null);
+    setSelected(primary, { tab: true, canvas: true, scroll: picked.has(n), keep: true });
+    announcePicked();
+  };
+  const pickAll = () => {
+    picked = new Set(doc.body.map((_, k) => k));
+    anchor = 0;
+    setSelected(selected ?? 0, { keep: true });
+    announcePicked();
+  };
+  const clearPicked = () => {
+    if (picked.size < 2) return;
+    picked = new Set();
+    anchor = selected;
+    showBlock(selected);
+    announce('Selection cleared');
+  };
+  /** Where a block in the group went (the one the inspector shows, or the one with the focus). */
+  const follow = (before: number[], after: number[], n: number | null) => (n !== null && before.includes(n) ? after[before.indexOf(n)] : (after[0] ?? null));
+  const moveGroup = (dir: -1 | 1, focus?: number) => {
+    const before = group();
+    const r = ops.moveMany(doc.body, before, dir);
+    if (r.body === doc.body) return announce(dir < 0 ? 'The selected blocks are already at the top' : 'The selected blocks are already at the end');
+    change(body(r.body), ALL, { select: follow(before, r.indices, selected), picked: r.indices });
+    anchor = follow(before, r.indices, anchor);
+    announce(`Moved ${r.indices.length} blocks to positions ${r.indices[0] + 1} to ${r.indices[r.indices.length - 1] + 1} of ${doc.body.length}`);
+    if (focus !== undefined) {
+      const to = follow(before, r.indices, focus);
+      afterReady.push(() => root.querySelector<HTMLElement>(`[data-editor-select="${to}"]`)?.focus());
+    }
+  };
+  const deleteGroup = () => {
+    const at = group();
+    change(body(ops.removeMany(doc.body, at)), ALL, { select: doc.body.length > at.length ? Math.max(0, Math.min(at[0], doc.body.length - at.length - 1)) : null });
+    announce(`Deleted ${at.length} blocks: Undo brings them back`);
+  };
+  const inGroup = (i: number) => picked.size > 1 && picked.has(i);
+
   // ---------- undo and redo ----------
   const undo = () => {
     toCanvas({ type: 'flush' });
+    picked = new Set();
     const prev = hist.past.pop();
     if (!prev) return;
     hist.future.push(JSON.stringify(doc));
@@ -192,6 +265,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     announce('Undone');
   };
   const redo = () => {
+    picked = new Set();
     const next = hist.future.pop();
     if (!next) return;
     hist.past.push(JSON.stringify(doc));
@@ -363,13 +437,20 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   on(root, 'click', (e) => {
     const t = e.target as Element;
     const el = t.closest<HTMLElement>(
-      '[data-editor-select], [data-editor-move], [data-editor-add-at], [data-editor-block-op], [data-editor-convert], [data-editor-pick], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-tiles], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
+      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-convert], [data-editor-pick], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-tiles], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
     );
     if (!el) return;
     const d = el.dataset;
     const i = Number(d.index ?? d.editorSelect ?? -1);
-    if (d.editorSelect !== undefined) return setSelected(Number(d.editorSelect), { tab: true, canvas: true, scroll: true });
-    if (d.editorMove) return blockOp(i, d.editorMove as 'up' | 'down');
+    if (d.editorSelect !== undefined) {
+      const n = Number(d.editorSelect);
+      const m = e as MouseEvent;
+      if (m.shiftKey) return pickRange(n);
+      if (m.ctrlKey || m.metaKey) return pickToggle(n);
+      return setSelected(n, { tab: true, canvas: true, scroll: true });
+    }
+    if (d.editorGroup) return d.editorGroup === 'clear' ? clearPicked() : moveGroup(d.editorGroup === 'up' ? -1 : 1);
+    if (d.editorMove) return inGroup(i) ? moveGroup(d.editorMove === 'up' ? -1 : 1) : blockOp(i, d.editorMove as 'up' | 'down');
     if (d.editorAddAt !== undefined) return openPalette(Number(d.editorAddAt));
     if (d.editorBlockOp) return blockOp(i, d.editorBlockOp as 'duplicate' | 'delete');
     if (d.editorConvert) {
@@ -547,14 +628,49 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const from = Number(grip.dataset.editorDrag);
     const rows = [...root.querySelectorAll<HTMLElement>('[data-editor-outline] [data-row]')];
     const row = rows[from];
-    row.dataset.dragging = '';
     grip.setPointerCapture(e.pointerId);
-    let to = -1;
-    const move = (ev: PointerEvent) => {
-      const middles = rows.map((r) => {
+    const middlesOf = () =>
+      rows.map((r) => {
         const b = r.getBoundingClientRect();
         return b.top + b.height / 2;
       });
+    if (inGroup(from)) {
+      // the whole selection moves: it lands before the row under the pointer
+      const before = group();
+      before.forEach((k) => (rows[k].dataset.dragging = ''));
+      let slot = -1;
+      const moveAll = (ev: PointerEvent) => {
+        const middles = middlesOf();
+        const at = middles.findIndex((m) => ev.clientY < m);
+        slot = at < 0 ? rows.length : at;
+        rows.forEach((r, k) => {
+          delete r.dataset.drop;
+          if (slot < rows.length && k === slot) r.dataset.drop = 'before';
+          if (slot === rows.length && k === rows.length - 1) r.dataset.drop = 'after';
+        });
+      };
+      const upAll = () => {
+        grip.removeEventListener('pointermove', moveAll);
+        rows.forEach((r) => {
+          delete r.dataset.drop;
+          delete r.dataset.dragging;
+        });
+        if (slot < 0) return;
+        const r = ops.moveGroupTo(doc.body, before, slot);
+        if (r.indices.every((k, n) => k === before[n])) return;
+        change(body(r.body), ALL, { select: follow(before, r.indices, selected), picked: r.indices });
+        anchor = follow(before, r.indices, anchor);
+        announce(`Moved ${r.indices.length} blocks to positions ${r.indices[0] + 1} to ${r.indices[r.indices.length - 1] + 1} of ${doc.body.length}`);
+      };
+      grip.addEventListener('pointermove', moveAll);
+      grip.addEventListener('pointerup', upAll, { once: true });
+      grip.addEventListener('pointercancel', upAll, { once: true });
+      return;
+    }
+    row.dataset.dragging = '';
+    let to = -1;
+    const move = (ev: PointerEvent) => {
+      const middles = middlesOf();
       to = ops.dropTarget(middles, ev.clientY, from);
       rows.forEach((r, k) => {
         delete r.dataset.drop;
@@ -580,7 +696,27 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const b = (e.target as Element).closest<HTMLElement>('[data-editor-select]');
     if (!b) return;
     const i = Number(b.dataset.editorSelect);
-    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    const mod = e.ctrlKey || e.metaKey;
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && inGroup(i)) {
+      e.preventDefault();
+      moveGroup(e.key === 'ArrowUp' ? -1 : 1, i);
+    } else if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault();
+      const next = i + (e.key === 'ArrowUp' ? -1 : 1);
+      if (next < 0 || next >= doc.body.length) return;
+      if (anchor === null || !picked.size) anchor = i;
+      pickRange(next);
+      root.querySelector<HTMLElement>(`[data-editor-select="${next}"]`)?.focus();
+    } else if (mod && e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      pickAll();
+    } else if (e.key === 'Escape' && picked.size > 1) {
+      e.preventDefault();
+      clearPicked();
+    } else if (e.key === 'Delete' && inGroup(i)) {
+      e.preventDefault();
+      deleteGroup();
+    } else if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault();
       const to = e.key === 'ArrowUp' ? i - 1 : i + 1;
       if (to < 0 || to >= doc.body.length) return;
