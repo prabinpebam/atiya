@@ -7,7 +7,7 @@ import { ContentError, isPublished, type ContentIndex, type Issue } from '../../
 import { picture } from '../../content/pictures';
 import type { Article } from '../../content/schema';
 import { hubs } from '../model/structure';
-import { ownerLabel, ownerOf } from '../model/references';
+import { ownerLabel, ownerOf, references } from '../model/references';
 
 export { references, type Reference } from '../model/references';
 
@@ -68,15 +68,18 @@ export interface LibraryPicture {
   decorative: boolean;
   width: number;
   height: number;
+  /** Something refers to it (an article in any state, a person, the site settings). */
+  used: boolean;
 }
 
 /** Every picture, for the library and the picker: grouped by folder (the article being edited first, when there is one). */
 export async function mediaCards(index: ContentIndex, first?: string): Promise<LibraryPicture[]> {
+  const refs = references(index);
   const cards = await Promise.all(
     [...index.media.values()].map(async (m) => {
       const p = await picture(m.id, 'card');
       const owner = ownerOf(m.id);
-      return { id: m.id, owner, ownerLabel: ownerLabel(index, owner), thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height };
+      return { id: m.id, owner, ownerLabel: ownerLabel(index, owner), thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height, used: refs.has(m.id) };
     }),
   );
   const rank = (c: LibraryPicture) => (c.owner === first ? 0 : 1);

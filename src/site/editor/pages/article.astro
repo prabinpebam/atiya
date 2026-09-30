@@ -39,7 +39,7 @@ const published = isPublished(article);
 const section = structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '';
 const route = loaded.ok ? getPlacement('article', id) : undefined;
 
-const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', facts: 'facts' };
+const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', facts: 'facts', tiles: 'tiles' };
 const cards: MediaCard[] = loaded.ok ? await mediaCards(loaded.index, `articles/${id}`) : [];
 const thumbs: Record<string, Thumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height }]));
 const blocks = article.body.map((b) => ({ kind: kindOf(b), excerpt: excerptOf(b, (m) => thumbs[m]?.alt), icon: ICON[b.type] }));
@@ -93,6 +93,9 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         </Dialog>
         <Dialog id="editor-insert-facts" title="Add facts">
           <InsertForms kind="facts" />
+        </Dialog>
+        <Dialog id="editor-insert-tiles" title="Add tiles">
+          <InsertForms kind="tiles" />
         </Dialog>
         <Dialog id="editor-insert-video" title="Add a video">
           <InsertForms kind="video" />

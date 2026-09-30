@@ -259,6 +259,11 @@ export function renderMarkdown(md: string, opts: MarkdownOptions = {}): string {
   return renderBlocks(parseMarkdown(md), opts);
 }
 
+/** A line of the subset (bold, italic, code, links, line breaks) as inline HTML, with no paragraph around it: a tile's statement. */
+export function renderInlineMarkdown(md: string, opts: MarkdownOptions = {}): string {
+  return renderInline(parseInline(md.replace(/\r\n/g, '\n').trim()), opts);
+}
+
 /** One styled stretch of a line: what a reader sees, whatever the nesting that made it. */
 export interface Run {
   text?: string;

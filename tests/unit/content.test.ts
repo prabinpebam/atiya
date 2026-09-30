@@ -9,10 +9,11 @@ import { join, relative, sep } from 'node:path';
 import sharp from 'sharp';
 import { normalize, parseInline, runs, parseMarkdown, plainText, renderMarkdown, serializeBlocks, serializeInline, type Inline } from '../../src/site/content/markdown';
 import { buildRoutes } from '../../src/site/content/routes';
-import { ContentError, headingId, loadContent, mediaUsed } from '../../src/site/content/load';
+import { ContentError, headingId, loadContent } from '../../src/site/content/load';
 import { content } from '../../src/site/content/repository';
 import { readingMinutes } from '../../src/site/content/reading';
-import type { SiteStructure } from '../../src/site/content/schema';
+import { block, type SiteStructure } from '../../src/site/content/schema';
+import { renderInlineMarkdown } from '../../src/site/content/markdown';
 
 const ROOT = join(__dirname, '../..');
 const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => (statSync(join(dir, n)).isDirectory() ? walk(join(dir, n)) : [join(dir, n)]));
@@ -221,13 +222,6 @@ describe('the content in content/', () => {
     expect(over).toEqual([]);
   });
 
-  it('every master is used by something (the repository never carries dead media)', () => {
-    const used = new Set([...c.articles.values()].flatMap(mediaUsed));
-    for (const p of c.people.values()) if (p.avatar) used.add(p.avatar);
-    const ids = masters.map((f) => key(f).replace(/^\/content\/media\//, '').replace(/\.\w+$/, ''));
-    expect(ids.filter((id) => !used.has(id))).toEqual([]);
-  });
-
   it('the article reads in a few minutes, from its words', () => {
     const a = c.articles.get('do-what-makes-you-proud')!;
     expect(readingMinutes(a)).toBeGreaterThanOrEqual(3);
@@ -240,5 +234,26 @@ describe('the content in content/', () => {
       expect(s.charCodeAt(0), key(f)).not.toBe(0xfeff);
       expect(s, key(f)).toBe(JSON.stringify(JSON.parse(s), null, 2) + '\n');
     }
+  });
+});
+
+describe('the tiles block (short labelled statements)', () => {
+  const tile = (label: string, text: string) => ({ label, text });
+  const ok = (b: unknown) => block.safeParse(b).success;
+
+  it('takes two to six tiles, each a short label and one paragraph, and a width', () => {
+    expect(ok({ type: 'tiles', items: [tile('Challenge', 'Re-energize the team.'), tile('Intent', 'Own the outcome.')] })).toBe(true);
+    expect(ok({ type: 'tiles', items: [tile('Challenge', 'x'), tile('Intent', 'y')], width: 'wide' })).toBe(true);
+    expect(ok({ type: 'tiles', items: [tile('Only one', 'x')] })).toBe(false);
+    expect(ok({ type: 'tiles', items: Array.from({ length: 7 }, (_, n) => tile(`T${n}`, 'x')) })).toBe(false);
+    expect(ok({ type: 'tiles', items: [tile('x'.repeat(41), 'x'), tile('Intent', 'y')] })).toBe(false);
+    expect(ok({ type: 'tiles', items: [tile('Challenge', 'one\n\ntwo'), tile('Intent', 'y')] })).toBe(false);
+    expect(ok({ type: 'tiles', items: [tile('Challenge', 'x'), tile('Intent', 'y')], width: 'full' })).toBe(false);
+  });
+
+  it("renders a tile's text inline: bold, italic and links, with no paragraph around it", () => {
+    expect(renderInlineMarkdown('**Do what makes you proud.** A standard chosen from within.')).toBe('<strong>Do what makes you proud.</strong> A standard chosen from within.');
+    expect(renderInlineMarkdown('See [the story](ref:article/a).', { resolveRef: () => '/work/a/' })).toBe('See <a href="/work/a/">the story</a>.');
+    expect(renderInlineMarkdown('<script>')).toBe('&lt;script&gt;');
   });
 });

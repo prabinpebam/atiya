@@ -114,7 +114,7 @@ Interface sizes are fixed. Reading and display sizes are fluid: each grows smoot
 
 ## 5. Pictures
 
-- **Sized and placed:** every picture has a width and height (no layout shift), a responsive `srcset` and a paper-coloured placeholder, and it loads lazily unless it's the lead.
+- **Sized and placed:** every picture has a width and height (no layout shift) and a responsive `srcset`, and it loads lazily unless it's the lead. Pictures have no background colour of their own: a transparent one sits straight on the page.
 - **Given room:** captions are Figtree 14 px in muted ink with the credit after them, and a gallery has one caption for the set, as a magazine does.
 - **A carousel's peek is a hint, never a cut:** its neighbouring slides show a little smaller (88%), under a fade that belongs to the carousel, not the slides: whole up to the neighbours' near edges, then to nothing across a slide's width beyond them. It stays put while the slides move under it, so the slide being shown never fades and the ones further out never flash into view. Where the page has room beside the carousel the fade reaches out into it, up to the page's main region. Where it has less, it ends at the edge, so nothing is cut off. A phone shows one slide at a time. Choosing a neighbour brings it to the middle.
 - **The lightbox follows the theme:** a smoky scrim, paper-white in light mode and black in dark, with slow drifting wisps, its controls and caption in the page's own ink, the picture as large as fits, the caption under it, and a filmstrip of the set along the bottom with the current frame ringed in marigold.

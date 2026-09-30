@@ -3,7 +3,7 @@
 import EditorLayout from '../EditorLayout.astro';
 import Overview from '../components/Overview.astro';
 import ContentIssues from '../components/ContentIssues.astro';
-import { articleRows, load } from '../server/screens';
+import { articleRows, load, references } from '../server/screens';
 import { changes } from '../server/git';
 import { withBase } from '../../design/meta';
 
@@ -14,9 +14,11 @@ const git = await changes();
 let props: Parameters<typeof Overview>[0] | undefined;
 if (loaded.ok) {
   const rows = articleRows(loaded.index);
+  const refs = references(loaded.index);
   const attention = [
     ...[...loaded.index.media.values()].filter((m) => !m.alt && !m.decorative).map((m) => ({ text: `${m.id} has no alt text`, href: withBase(`/_edit/media/?id=${encodeURIComponent(m.id)}`) })),
     ...loaded.index.warnings.map((w) => ({ text: w, href: withBase('/_edit/sections/') })),
+    ...[...loaded.index.media.keys()].filter((id) => !refs.has(id)).map((id) => ({ text: `${id} isn't used by anything: use it, or delete it`, href: withBase(`/_edit/media/?id=${id}`) })),
   ];
   props = {
     counts: { published: rows.filter((r) => r.published).length, draft: rows.filter((r) => r.status === 'draft').length, other: rows.filter((r) => !r.published && r.status !== 'draft').length },

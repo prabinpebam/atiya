@@ -150,6 +150,31 @@ test.describe('editor', () => {
     expect(bodyLength()).toBe(count + 2);
   });
 
+  test('tiles: added from the palette with two statements, shown on the page, and a third added in the inspector', async ({ page }) => {
+    await openArticle(page);
+    const count = await outlineRows(page).count();
+    await page.locator('[data-editor-outline] [data-editor-add-at]').click();
+    await page.locator('#editor-palette [data-editor-add="tiles"]').click();
+    const form = page.locator('#editor-insert-tiles');
+    await form.getByLabel('Tile 1: label').fill('Challenge');
+    await form.getByLabel('Tile 1: text').fill('Re-energize the team.');
+    await form.getByLabel('Tile 2: label').fill('Core idea');
+    await form.getByLabel('Tile 2: text').fill('**Do what makes you proud.** A standard chosen from within.');
+    await form.getByRole('button', { name: 'Add the tiles' }).click();
+    await expect(outlineRows(page)).toHaveCount(count + 1);
+    await saved(page);
+    const last = () => (readJson(articleFile()).body as { type: string; items?: { label: string }[] }[]).at(-1)!;
+    expect(last()).toMatchObject({ type: 'tiles', items: [{ label: 'Challenge' }, { label: 'Core idea' }] });
+    const grid = frame(page).locator('[data-tiles]').last();
+    await expect(grid.locator('dt')).toHaveText(['Challenge', 'Core idea']);
+    await expect(grid.locator('dd strong')).toHaveText('Do what makes you proud.');
+
+    await page.locator(`[data-editor-select="${count}"]`).click();
+    await page.locator('[data-editor-tiles="add"]').last().click();
+    await saved(page);
+    expect(last().items).toHaveLength(3);
+  });
+
   test("the page's settings save; a value the contract refuses says why and isn't written", async ({ page }) => {
     await openArticle(page);
     await page.getByRole('tab', { name: 'Page' }).click();

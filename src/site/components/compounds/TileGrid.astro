@@ -1,0 +1,84 @@
+---
+/**
+ * Short labelled statements, set as tiles: the challenge, the intent, the role, the idea. Each tile is a
+ * small label over a sentence or two, on the page's raised paper; two or three to a row, one on a
+ * phone. The scan layer of a story, a little wider than the text.
+ * @tier compound
+ * @a11y A description list: each label is a dt and its statement a dd, so a screen reader reads them as pairs.
+ */
+interface Props {
+  /** The tiles, in reading order: a short label, and its statement as inline HTML (bold, italic, code, links: the content layer renders it from Markdown). */
+  items: { label: string; html: string }[];
+  /** Tiles to a row on a wide screen. Left out: three for three or six tiles, otherwise two. */
+  columns?: 2 | 3;
+  /** Where the article layout places it: in the column, a little wider (the default) or wide. */
+  width?: 'content' | 'popout' | 'wide';
+}
+
+const { items, columns = items.length % 3 === 0 ? 3 : 2, width = 'popout' } = Astro.props;
+---
+
+<dl class="tiles" data-columns={columns} data-breakout={width === 'content' ? undefined : width} data-tiles>
+  {
+    items.map((i) => (
+      <div class="tile">
+        <dt>{i.label}</dt>
+        <dd set:html={i.html} />
+      </div>
+    ))
+  }
+</dl>
+
+<style>
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin: 0;
+  }
+
+  .tiles[data-columns='3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tile {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    padding: var(--space-5) var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  dt {
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    line-height: var(--leading-ui);
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--color-text);
+    font-family: var(--font-text);
+    font-size: var(--text-md);
+    line-height: var(--leading-snug);
+  }
+
+  @media (max-width: 56rem) {
+    .tiles[data-columns='3'] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .tiles,
+    .tiles[data-columns='3'] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

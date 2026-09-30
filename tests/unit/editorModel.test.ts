@@ -76,6 +76,9 @@ describe('document operations', () => {
     expect(ops.excerptOf({ type: 'figure', media: 'articles/a/cover', width: 'content' })).toBe('cover');
     expect(ops.excerptOf({ type: 'figure', media: 'articles/a/cover', width: 'content' }, () => 'A cover')).toBe('A cover');
     expect(ops.excerptOf({ type: 'divider' })).toBe('');
+    const tiles: Block = { type: 'tiles', items: [{ label: 'Challenge', text: 'x' }, { label: 'Intent', text: 'y' }] };
+    expect(ops.kindOf(tiles)).toBe('Tiles');
+    expect(ops.excerptOf(tiles)).toBe('Challenge, Intent');
   });
 
   it('counts only a change of words or blocks as meaningful (it moves Updated on)', () => {

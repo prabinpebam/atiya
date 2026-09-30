@@ -2,7 +2,7 @@
 /**
  * The dashboard's panels (documentation/editor/spec.md §4): how many articles are in each state, the
  * most recent ones, what's changed since the last publish, what needs attention (the content check's
- * warnings, pictures without alt text), and the quick actions.
+ * warnings, pictures without alt text, pictures nothing uses), and the quick actions.
  * @tier editor
  * @a11y Each panel is a section with a heading; counts are text, not only numbers in boxes.
  */
@@ -90,7 +90,7 @@ const to = (p: string) => withBase(`/_edit/${p}`);
           ))}
         </ul>
       ) : (
-        <Text variant="ui" tone="muted">Nothing: every picture has its alt text, and every published article has a page.</Text>
+        <Text variant="ui" tone="muted">Nothing: every picture has its alt text and is used, and every published article has a page.</Text>
       )
     }
   </section>

@@ -10,6 +10,7 @@ export function wordCount(a: Article): number {
     if (b.type === 'text') texts.push(plainText(b.markdown));
     else if (b.type === 'heading' || b.type === 'quote') texts.push(b.text);
     else if (b.type === 'facts') texts.push(...b.items.map((i) => `${i.label} ${i.value}`));
+    else if (b.type === 'tiles') texts.push(...b.items.map((i) => `${i.label} ${plainText(i.text)}`));
   }
   return texts.join(' ').split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 }

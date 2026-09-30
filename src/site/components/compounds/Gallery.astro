@@ -2,7 +2,8 @@
 /**
  * A set of pictures arranged as a quiet magazine gallery: a grid, a lead-image mosaic or a horizontal
  * row. Each picture is a full-size link that the page’s Lightbox can enhance. Photographs fill their
- * cells; marks, logos and artwork that mustn't be cropped sit whole on the cell's paper (fit contain).
+ * cells; marks, logos and artwork that mustn't be cropped sit whole in theirs (fit contain), with no
+ * background colour behind them.
  * @tier compound
  * @a11y Every picture is a link to the full image, so the gallery works without JavaScript.
  * @a11y The overall caption describes the set; each image still carries its own alt text.
@@ -45,7 +46,7 @@ interface Props {
   lightbox?: string;
   /** The image sizes hint. */
   sizes?: string;
-  /** cover: each picture fills its cell (cropped); contain: each shows whole, on the cell's paper. */
+  /** cover: each picture fills its cell (cropped); contain: each shows whole. */
   fit?: 'cover' | 'contain';
 }
 
@@ -110,7 +111,6 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
     height: 100%;
     border-radius: var(--c-image-radius);
     overflow: clip;
-    background: var(--c-image-placeholder);
     transition: transform var(--duration-base) var(--ease-spring);
   }
 

@@ -55,6 +55,22 @@ export const block = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('quote'), text: z.string().min(1), cite: z.string().optional(), variant: z.enum(['block', 'pull']).default('block') }),
   z.strictObject({ type: z.literal('divider') }),
   z.strictObject({ type: z.literal('facts'), items: z.array(z.strictObject({ label: z.string().min(1), value: z.string().min(1) })).min(1).max(6) }),
+  z.strictObject({
+    type: z.literal('tiles'),
+    items: z
+      .array(
+        z.strictObject({
+          label: z.string().min(1).max(40),
+          text: z
+            .string()
+            .min(1)
+            .refine((m) => !/\n[ \t]*\n/.test(m.trim()), "a tile's text is one paragraph"),
+        }),
+      )
+      .min(2)
+      .max(6),
+    width: z.enum(['content', 'popout', 'wide']).optional(),
+  }),
 ]);
 
 const itemRef = z.strictObject({ type: z.enum(['article', 'caseStudy', 'practiceArea', 'leadershipTopic', 'gallery', 'resume']), id });

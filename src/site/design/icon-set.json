@@ -70,6 +70,7 @@
     "theme-dark": "moon",
     "theme-light": "sun",
     "theme-system": "circle-half-stroke",
+    "tiles": "grip",
     "undo": "arrow-rotate-left",
     "upload": "cloud-arrow-up",
     "user": "user",

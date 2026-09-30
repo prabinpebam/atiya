@@ -11,10 +11,11 @@ import Gallery from '../components/compounds/Gallery.astro';
 import Carousel from '../components/compounds/Carousel.astro';
 import VideoEmbed from '../components/compounds/VideoEmbed.astro';
 import Facts from '../components/compounds/Facts.astro';
+import TileGrid from '../components/compounds/TileGrid.astro';
 import Quote from '../components/fundamentals/Quote.astro';
 import Divider from '../components/fundamentals/Divider.astro';
 import { withBase } from '../design/meta';
-import { renderMarkdown } from './markdown';
+import { renderInlineMarkdown, renderMarkdown } from './markdown';
 import { headingId } from './load';
 import { picture, type Picture } from './pictures';
 import { canonicalPath } from './repository';
@@ -143,6 +144,8 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
         );
       case 'facts':
         return <Facts items={b.items} />;
+      case 'tiles':
+        return <TileGrid items={b.items.map((t) => ({ label: t.label, html: renderInlineMarkdown(t.text, { resolveRef, annotate: editable }) }))} width={b.width} />;
       case 'divider':
         return <Divider />;
       default:

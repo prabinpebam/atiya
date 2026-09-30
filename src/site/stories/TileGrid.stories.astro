@@ -1,0 +1,25 @@
+---
+import Example from '../library/Example.astro';
+import TileGrid from '../components/compounds/TileGrid.astro';
+---
+
+<Example title="A story's brief" description="Four tiles, two to a row: a short label over a sentence or two. The statement can carry bold, italic and links.">
+  <TileGrid
+    items={[
+      { label: 'Challenge', html: 'Re-energize the team and make purpose feel personal, practical, and visible.' },
+      { label: 'Intent', html: 'Shift the conversation from completing tasks to owning meaningful outcomes.' },
+      { label: 'My role', html: 'Identity concept, narrative framing, visual direction, and team activation.' },
+      { label: 'Core idea', html: '<strong>Do what makes you proud.</strong> A standard chosen from within.' },
+    ]}
+  />
+</Example>
+
+<Example title="Three to a row" description="Three or six tiles set three to a row on a wide screen, two on a tablet and one on a phone.">
+  <TileGrid
+    items={[
+      { label: 'Tokens', html: 'Every colour, size and duration comes from one DTCG file.' },
+      { label: 'Components', html: 'Fundamentals, then compounds made only from them, then layouts.' },
+      { label: 'Library', html: 'Every component documents itself here, from its <em>stories</em>.' },
+    ]}
+  />
+</Example>

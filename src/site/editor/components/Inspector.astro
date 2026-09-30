@@ -194,6 +194,24 @@ const STATUS: SelectOption[] = [
               </div>
             )}
 
+            {b.type === 'tiles' && (
+              <>
+                <div class="tiles" data-editor-tiles-list>
+                  {b.items.map((t, n) => (
+                    <div class="tile">
+                      <TextField label={`Tile ${n + 1}: label`} name={`body.${i}.items.${n}.label`} id={id(i, `tl-${n}`)} value={t.label} required hint={n === 0 ? 'A word or two (40 characters at most).' : undefined} />
+                      <TextField label={`Tile ${n + 1}: text`} name={`body.${i}.items.${n}.text`} id={id(i, `tt-${n}`)} value={t.text} multiline rows={2} required hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
+                      <div class="row">
+                        <IconButton label={`Remove tile ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 2} data-editor-tiles="remove" data-index={String(i)} data-item={String(n)} />
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="secondary" size="sm" icon="plus" disabled={b.items.length >= 6} data-editor-tiles="add" data-index={String(i)}>Add a tile</Button>
+                </div>
+                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'popout'} options={WIDTHS.filter((w) => w.value !== 'full')} />
+              </>
+            )}
+
             {b.type === 'divider' && <Text variant="ui" tone="muted">A divider has no settings: it marks a turn in the story.</Text>}
 
             <p class="issue" role="alert" data-editor-issue hidden></p>
@@ -333,6 +351,18 @@ const STATUS: SelectOption[] = [
     grid-column: 1 / -1;
     display: flex;
     justify-content: end;
+  }
+
+  .tiles {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .tile {
+    display: grid;
+    gap: var(--space-2);
+    padding-block-end: var(--space-3);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
   }
 
   .fact {

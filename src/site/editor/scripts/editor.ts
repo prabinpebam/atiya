@@ -363,7 +363,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   on(root, 'click', (e) => {
     const t = e.target as Element;
     const el = t.closest<HTMLElement>(
-      '[data-editor-select], [data-editor-move], [data-editor-add-at], [data-editor-block-op], [data-editor-convert], [data-editor-pick], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
+      '[data-editor-select], [data-editor-move], [data-editor-add-at], [data-editor-block-op], [data-editor-convert], [data-editor-pick], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-tiles], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
     );
     if (!el) return;
     const d = el.dataset;
@@ -408,6 +408,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       const items = d.editorFacts === 'add' ? [...b.items, { label: 'Label', value: 'Value' }] : b.items.filter((_, k) => k !== Number(d.item));
       return change(body(ops.replace(doc.body, i, { ...b, items })), ALL);
     }
+    if (d.editorTiles) {
+      const b = doc.body[i] as Extract<Block, { type: 'tiles' }>;
+      const items = d.editorTiles === 'add' ? [...b.items, { label: 'Label', text: 'What it says.' }] : b.items.filter((_, k) => k !== Number(d.item));
+      return change(body(ops.replace(doc.body, i, { ...b, items })), ALL);
+    }
     if (d.editorAdd) {
       dialog('editor-palette')?.close();
       return addBlock(d.editorAdd);
@@ -432,7 +437,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const at = insertAt;
     if (type === 'text' || type === 'heading') return toCanvas({ type: 'pending', index: at, kind: type });
     if (type === 'divider') return insertBlock(at, { type: 'divider' });
-    if (type === 'quote' || type === 'facts' || type === 'video') return dialog(`editor-insert-${type}`)?.showModal();
+    if (type === 'quote' || type === 'facts' || type === 'tiles' || type === 'video') return dialog(`editor-insert-${type}`)?.showModal();
     if (type === 'figure')
       return openPicker({ mode: 'single', min: 1, title: 'Choose a picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
     if (type === 'gallery')
@@ -478,6 +483,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       if (!items.length) return issue('Give at least one label and its value.');
       close();
       return insertBlock(insertAt, { type: 'facts', items });
+    }
+    if (kind === 'tiles') {
+      const items = [0, 1, 2, 3].map((n) => ({ label: val(`label${n}`), text: val(`text${n}`) })).filter((t) => t.label && t.text);
+      if (items.length < 2) return issue('Give at least two tiles, each a label and its text.');
+      if (items.some((t) => t.label.length > 40)) return issue('Keep each label to 40 characters.');
+      close();
+      return insertBlock(insertAt, { type: 'tiles', items });
     }
     if (kind === 'carousel') {
       if (!val('label')) return issue('Name the carousel.');

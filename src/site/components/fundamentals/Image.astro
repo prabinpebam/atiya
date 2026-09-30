@@ -1,7 +1,8 @@
 ---
 /**
- * A picture: responsive (srcset and sizes), sized so nothing jumps as it loads, on a paper-coloured
- * placeholder, softly rounded in the text and square at full bleed. Pictures carry this site, so every
+ * A picture: responsive (srcset and sizes), sized so nothing jumps as it loads, softly rounded in the
+ * text and square at full bleed. It has no background colour of its own, so a transparent picture sits
+ * straight on the page. Pictures carry this site, so every
  * one is given the space and the care of a printed plate.
  * @tier fundamental
  * @a11y alt is required: what the picture shows and why it's there; an empty alt only for decoration.
@@ -61,7 +62,6 @@ const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', focus, rad
     width: 100%;
     height: auto;
     border-radius: var(--c-image-radius);
-    background: var(--c-image-placeholder);
     object-fit: cover;
     object-position: var(--focus, 50% 50%);
   }
