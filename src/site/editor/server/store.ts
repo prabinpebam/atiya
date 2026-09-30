@@ -87,13 +87,13 @@ async function withRetries(op: () => void): Promise<void> {
   }
 }
 
-/** The content check, and the published paths when the content is valid. */
-function check(snap: Pick<Snapshot, 'docs' | 'masters' | 'errors'>): { issues: Issue[]; published: Set<string> | null } {
+/** The content check: the issues the content would have. */
+function check(snap: Pick<Snapshot, 'docs' | 'masters' | 'errors'>): { issues: Issue[] } {
   try {
-    const index = loadContent(snap.docs, snap.masters, snap.errors);
-    return { issues: [], published: new Set(index.routes.filter((r) => r.published).map((r) => r.path)) };
+    loadContent(snap.docs, snap.masters, snap.errors);
+    return { issues: [] };
   } catch (e) {
-    if (e instanceof ContentError) return { issues: e.issues, published: null };
+    if (e instanceof ContentError) return { issues: e.issues };
     throw e;
   }
 }
@@ -153,14 +153,11 @@ async function apply(tx: Transaction, opts: StoreOptions): Promise<Result> {
     else masters.delete(t.key);
   }
   if (issues.length) return { ok: false, status: 422, issues };
+  // (a page's address can change freely: moving it to another section is taking it down and putting it up
+  // again there, with no redirect: documentation/sections/spec.md §7.2)
   const now = check({ docs, masters, errors: snap.errors });
   const after = now.issues.filter((i) => !before.has(describe(i)));
   if (after.length) return { ok: false, status: 422, issues: after };
-  // a published address stays until the site has redirects (V9): no change may make one disappear
-  if (was.published && now.published) {
-    const gone = [...was.published].filter((p) => !now.published!.has(p));
-    if (gone.length) return { ok: false, status: 422, issues: gone.map((p) => ({ file: 'content/structures/site.json', message: `${p} is published: its address can't change or go until the site has redirects` })) };
-  }
 
   // 3. temporary files, flushed, beside their targets
   const ordered = [...targets].sort((a, b) => rank(a) - rank(b));

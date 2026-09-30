@@ -1,50 +1,79 @@
 ---
-/** Edit mode's sections: the site structure (documentation/editor/spec.md §5). Dev only: injected by integrations/editor.mjs. */
+/** Edit mode's sections: the site's sections and their pages, as a board (documentation/editor/spec.md §5). Dev only: injected by integrations/editor.mjs. */
 import EditorLayout from '../EditorLayout.astro';
-import StructureTree, { type TreeItem } from '../components/StructureTree.astro';
+import SectionBoard, { type BoardColumn } from '../components/SectionBoard.astro';
+import SectionForms, { type SectionSettings } from '../components/SectionForms.astro';
 import ContentIssues from '../components/ContentIssues.astro';
-import { load, sectionOptions } from '../server/screens';
-import { inMenu } from '../model/structure';
+import Button from '../../components/fundamentals/Button.astro';
+import { load } from '../server/screens';
 import { readDoc } from '../server/store';
 import { STRUCTURE } from '../server/articles';
+import { inMenu } from '../model/structure';
 import { isPublished } from '../../content/load';
-import type { HubNode, SiteNode, SiteStructure } from '../../content/schema';
+import { withBase } from '../../design/meta';
+import type { HubNode, SiteStructure } from '../../content/schema';
 
 export const prerender = false;
 
 const loaded = load();
-const structure = readDoc<SiteStructure>(STRUCTURE);
-const items: TreeItem[] = [];
-let unplaced: { id: string; title: string }[] = [];
-if (loaded.ok && structure) {
+const doc = readDoc<SiteStructure>(STRUCTURE);
+let columns: BoardColumn[] = [];
+let settings: SectionSettings[] = [];
+if (loaded.ok && doc) {
   const index = loaded.index;
-  const pathOf = (n: SiteNode) => index.routes.find((r) => r.node.id === n.id)?.path ?? '';
-  const hasPublished = (h: HubNode): boolean => (h.children ?? []).some((c) => (c.kind === 'hub' ? hasPublished(c) : isPublished(index.articles.get(c.item.id) ?? { status: 'draft', visibility: 'public' })));
-  const visit = (n: SiteNode, depth: number, parent: HubNode | null, position: number, siblings: number) => {
-    if (n.kind === 'hub') {
-      items.push({ node: n.id, kind: 'hub', title: n.title, path: pathOf(n), depth, parent: parent?.id ?? null, position, siblings, hub: { title: n.title, navLabel: n.navLabel, summary: n.summary, slug: n.slug, view: n.view ?? 'tiles', locked: hasPublished(n), home: depth === 0, inNav: inMenu(structure.value, n.id) } });
-      (n.children ?? []).forEach((c, i, all) => visit(c, depth + 1, n, i, all.length));
-    } else {
-      const a = index.articles.get(n.item.id);
-      items.push({ node: n.id, kind: 'item', title: a?.title ?? n.item.id, path: pathOf(n), depth, parent: parent?.id ?? null, position, siblings, article: n.item.id, published: !!a && isPublished(a) });
-    }
-  };
-  visit(structure.value.home, 0, null, 0, 1);
-  const placed = new Set(items.filter((i) => i.article).map((i) => i.article));
-  unplaced = [...index.articles.values()].filter((a) => !placed.has(a.id)).map((a) => ({ id: a.id, title: a.title }));
+  const s = doc.value;
+  const pathOf = (id: string) => index.routes.find((r) => r.node.id === id)?.path ?? '';
+  const sections = (s.home.children ?? []).filter((c): c is HubNode => c.kind === 'hub');
+  const editor = (id: string) => withBase(`/_edit/articles/${id}/`);
+  const placed = new Set<string>();
+  columns = sections.map((h) => ({
+    id: h.id,
+    title: h.title,
+    meta: pathOf(h.id),
+    settings: `section-settings-${h.id}`,
+    pages: (h.children ?? []).flatMap((c) => {
+      if (c.kind !== 'item') return [];
+      placed.add(c.item.id);
+      const a = index.articles.get(c.item.id);
+      return [{ id: c.item.id, title: a?.title ?? c.item.id, published: !!a && isPublished(a), href: editor(c.item.id), note: pathOf(c.id), movable: true }];
+    }),
+  }));
+  columns.push({
+    id: '_off',
+    title: 'Not on the site',
+    meta: 'Drafts, and pages without an address',
+    pages: [...index.articles.values()].filter((a) => !placed.has(a.id)).map((a) => ({ id: a.id, title: a.title, published: isPublished(a), href: editor(a.id), movable: true })),
+  });
+  settings = [
+    { id: s.home.id, title: s.home.title, navLabel: s.home.navLabel, summary: s.home.summary, slug: '', view: 'tiles', inNav: false, path: '/', home: true },
+    ...sections.map((h) => ({ id: h.id, title: h.title, navLabel: h.navLabel, summary: h.summary, slug: h.slug, view: h.view ?? 'tiles', inNav: inMenu(s, h.id), path: pathOf(h.id) })),
+  ];
 }
-const json = JSON.stringify({ structure: structure?.value, version: structure?.version }).replace(/</g, '\\u003c');
 ---
 
-<EditorLayout title="Sections" screen="sections" heading="Sections" intro="The site's structure: its sections, what each one holds and in what order. A published page keeps its place until the site has redirects.">
+<EditorLayout
+  title="Sections"
+  screen="sections"
+  heading="Sections"
+  intro="The site's sections and their pages. Drag a page to another section, or to another place in its own. A page that moves gets its new address; the old one simply goes."
+>
   {
-    loaded.ok ? (
+    loaded.ok && doc ? (
       <>
-        <StructureTree items={items} unplaced={unplaced} sections={sectionOptions(loaded.index)} />
-        <script is:inline type="application/json" data-editor-sections-state set:html={json} />
+        <SectionBoard label="The site's sections" columns={columns}>
+          <Fragment slot="tools">
+            <Button variant="secondary" size="sm" icon="home" data-dialog-open={`section-settings-${doc.value.home.id}`}>
+              Home page
+            </Button>
+            <Button variant="primary" size="sm" icon="plus" data-dialog-open="new-section">
+              New section
+            </Button>
+          </Fragment>
+        </SectionBoard>
+        <SectionForms sections={settings} structure={doc.value} version={doc.version} />
       </>
     ) : (
-      <ContentIssues issues={loaded.issues} />
+      <ContentIssues issues={loaded.ok ? [{ file: 'content/structures/site.json', message: 'missing' }] : loaded.issues} />
     )
   }
 </EditorLayout>

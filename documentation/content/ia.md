@@ -203,10 +203,10 @@ One resource, `structures/planet`, holds the places in their fast-travel order.
 
 **Guarantees.** Every place has a `fullPage` that resolves, and every entry has a canonical page on the site (V13). The planet can show fewer, more or differently grouped items than the site, but never a dead end.
 
-## 6. Redirects and the routes lock
+## 6. Redirects
 
-- **Every build of published content writes `content/routes.lock.json`,** the list of published paths. It's committed.
-- **The next build checks it (V9).** A path that disappears (renamed, moved in the structure, or its item archived) must appear as a `from` in `redirects`, or the build fails and names it. Moving an item in the site structure is therefore safe: the build asks for the redirect.
+- **Moves aren't redirected** (the owner's call, [sections spec D11](../sections/spec.md#9-decisions)). A page that's renamed, moved to another section or unpublished simply leaves its old address. There's no routes lock: on a site under construction, simple moves matter more than old links.
+- **`content/redirects.json` holds the classic site's old addresses** (§7). A redirect that no longer fits (a page now lives at its source, or its target has gone) is left out of the build with a warning (V19).
 - **Redirect pages.** GitHub Pages can't send server redirects, so each redirect is built as a small static page: a meta refresh, a canonical link to the new path, and a plain link as a fallback. That's what Astro's `redirects` produce for static sites.
 
 ## 7. From today's site

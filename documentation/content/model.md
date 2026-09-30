@@ -264,7 +264,7 @@ One résumé, as structured data, so it renders as an HTML page and can feed oth
 | Resource | Fields | Notes |
 |---|---|---|
 | **Site structure** (one) | `home` (the tree: the home hub, its sections, their pages), `menus` (as built, `primary`: sections, pages and custom links) | The site's IA: pages, URLs, the navigation ([structures §2](ia.md#2-the-site-structure), [sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)) |
-| **Redirects** (one) | `[{ from, to }]`, both paths on the site | An address that moved, built as a static redirect page (V19) |
+| **Redirects** (one) | `[{ from, to }]`, both paths on the site | An old address to send on (today, the classic site's), built as a static redirect page (V19) |
 | **Planet structure** (one) | `places[]`: `{ id, title, kicker, summary ≤ 160, view?, site?, pages }`, each of the seven buildings once | The planet's navigation ([structures §5](ia.md#5-the-planet-structure), [sections spec §5](../sections/spec.md#5-the-planet-a-parallel-structure-u8u11)); the buildings' world is the game's code (`world/places.ts`) |
 | **Site settings** (one) | `name`, `positioning`, `description`, `owner` (person), `socialImage` (media), `profiles` (`{ label, href, kind }[]`), `contactEmail`, `disclaimer`, `locale` | Everything the site says about itself |
 | **Person** | `id`, `name`, `role`, `bio` (Markdown), `avatar` (media), `links` | The owner, collaborators and testimonial givers (with permission) |
@@ -351,7 +351,7 @@ The build runs these checks (`npm run content:check`), and names the file and fi
 | V6 | A case study has one primary practice area, at most two secondary ones, at least one contribution, one or two outcome types, at least one constraint, and at least one practice-area link |
 | V7 | Card phrases respect the IA's limits (one practice area, one role phrase, one outcome phrase) |
 | V8 | Only the published statuses and public visibilities are built |
-| V9 | **Routes lock:** every path in `content/routes.lock.json` (written by each build of published content) still exists, or has a redirect. A renamed, moved or archived page can't break a link silently |
+| V9 | **Retired** ([sections spec D11](../sections/spec.md#9-decisions)): there's no routes lock. A renamed, moved or unpublished page leaves its old address, with no redirect |
 | V10 | The planet's `world` values pass the game's `validateLandmarks` and layout tests |
 | V11 | `stale` is reported (not failed) when `reviewedAt` is older than the review cadence (twice a year for case studies) |
 | V12 | **One canonical page:** every published item is placed on the site exactly once (by an item node or a hub's query). An item placed twice fails; an item placed nowhere is reported, since it has no page (except a gallery that's only embedded in bodies) |

@@ -359,7 +359,7 @@ test.describe('editor', () => {
     expect(readJson(articleFile()).summary).toBe('A shorter summary, set in the test.');
   });
 
-  test('a new draft renders in the editor, not on the site; published, it is on the site at once and its address is fixed', async ({ page, request }) => {
+  test('a new draft renders in the editor, not on the site; published, it is on the site at once, and renamed, its old address simply goes', async ({ page, request }) => {
     await page.goto('/_edit/articles/');
     await page.locator('[data-dialog-open="new-article"]').click();
     const dialog = page.locator('#new-article');
@@ -379,7 +379,12 @@ test.describe('editor', () => {
     expect((await request.get('/leadership/a-test-story/')).status()).toBe(200);
     await page.reload();
     await page.getByRole('tab', { name: 'Page' }).click();
-    await expect(page.locator('#page-slug')).toBeDisabled();
+    await expect(page.locator('#page-slug')).toBeEditable();
+    await page.locator('#page-slug').fill('a-renamed-story');
+    await page.locator('#page-slug').press('Tab');
+    await saved(page);
+    expect((await request.get('/leadership/a-renamed-story/')).status()).toBe(200);
+    expect((await request.get('/leadership/a-test-story/')).status()).toBe(404);
   });
 
   test('duplicate makes a draft copy in the same section; delete removes a draft and its place on the site', async ({ page }) => {
@@ -408,16 +413,21 @@ test.describe('editor', () => {
     const before = site();
     expect(pagesOf('lighthouse')).toEqual([ARTICLE]);
 
-    // off the Lighthouse, then into the Workshop from "Pages not on the planet": the site doesn't change
+    // the same board as Sections: off the Lighthouse with Move, then into the Workshop; the site doesn't change
     await page.goto('/_edit/planet/');
-    await page.getByRole('button', { name: 'Take Do what makes you proud off the planet' }).click();
+    await expect(page.locator('[data-board-column]')).toHaveCount(8);
+    const move = async (to: string) => {
+      await page.locator(`[data-board-grip="${ARTICLE}"]`).click();
+      await page.locator('#board-move').getByRole('button', { name: to }).click();
+    };
+    await move('Not on the planet');
     await expect.poll(() => pagesOf('lighthouse')).toEqual([]);
-    await page.locator(`[data-planet-put="${ARTICLE}"] [role="combobox"]`).click();
-    await page.getByRole('option', { name: /^Workshop/ }).click();
+    await move('Workshop');
     await expect.poll(() => pagesOf('workshop')).toEqual([ARTICLE]);
     expect(site()).toBe(before);
 
-    // a building's own words
+    // a building's own words, from its column
+    await page.locator('[data-dialog-open="place-settings-workshop"]').click();
     const form = page.locator('[data-planet-place="workshop"]');
     await form.getByLabel('What it holds').fill('Case studies');
     await form.getByRole('button', { name: 'Save the building' }).click();
@@ -437,14 +447,13 @@ test.describe('editor', () => {
     await page.locator(`[data-editor-duplicate="${ARTICLE}"]`).click();
     await expect(page).toHaveURL(new RegExp(`/_edit/articles/${copy}/$`));
     await page.goto('/_edit/planet/');
-    const add = page.locator('[data-planet-add="library"]');
-    await add.getByRole('combobox').click();
-    await page.getByRole('option', { name: /^Do what makes you proud \(copy\)/ }).click();
-    await add.getByRole('button', { name: 'Add page' }).click();
+    await page.locator(`[data-board-grip="${copy}"]`).click();
+    await page.locator('#board-move').getByRole('button', { name: 'Library' }).click();
     await expect.poll(() => pagesOf('library')).toEqual([copy]);
     await page.goto('/_edit/sections/');
-    await page.getByRole('button', { name: 'Take Do what makes you proud (copy) off the site' }).click();
-    await expect(page.getByText(/isn't on the site; a page on the planet needs its page on the site/).first()).toBeVisible();
+    await page.locator(`[data-board-grip="${copy}"]`).click();
+    await page.locator('#board-move').getByRole('button', { name: 'Not on the site' }).click();
+    await expect(page.locator('[data-board-issue]')).toContainText("isn't on the site; a page on the planet needs its page on the site");
     expect(site()).toContain(`"id":"${copy}"`);
     await page.goto('/_edit/articles/');
     await page.locator(`[data-editor-delete="${copy}"]`).click();
@@ -476,21 +485,61 @@ test.describe('editor', () => {
     await expect(page.getByRole('button', { name: 'Delete the picture' })).toBeDisabled();
   });
 
-  test('sections: a new section, reordered with the keys, saved to the structure; a published page keeps its address', async ({ page }) => {
+  test('sections: a board of sections and pages; a new section moved left; a published page dragged to another section, moved with Move and the keys, its old address simply gone', async ({ page }) => {
+    const structure = () => readJson(join(FIXTURE, 'content/structures/site.json'));
+    const ids = () => structure().home.children.map((c: { id: string }) => c.id) as string[];
+    const pagesOf = (id: string) => (structure().home.children.find((c: { id: string }) => c.id === id).children ?? []).map((c: { item: { id: string } }) => c.item.id);
+    const redirects = () => JSON.stringify(readJson(join(FIXTURE, 'content/redirects.json')));
+    const before = redirects();
+    // every column in view, so the drag goes straight from one to another
+    await page.setViewportSize({ width: 1600, height: 1400 });
     await page.goto('/_edit/sections/');
-    const sections = readJson(join(FIXTURE, 'content/structures/site.json')).home.children.length;
+    const count = ids().length;
+    await expect(page.locator('[data-board-column]')).toHaveCount(count + 1);
+
+    // a new section goes last, and moves left from its settings
     await page.locator('[data-dialog-open="new-section"]').click();
     await page.locator('#new-section').getByLabel('Title').fill('Field notes');
     await page.locator('#new-section').getByRole('button', { name: 'Add the section' }).click();
-    const item = page.locator('[role="treeitem"][data-node="field-notes"]');
-    await expect(item).toBeFocused({ timeout: 15_000 });
-    await page.keyboard.press('Alt+ArrowUp');
-    // added last among the sections, then up one
-    await expect(page.locator('[role="treeitem"][data-node="field-notes"]')).toHaveAttribute('data-position', String(sections - 1), { timeout: 15_000 });
-    const home = readJson(join(FIXTURE, 'content/structures/site.json')).home;
-    expect(home.children[sections - 1]).toMatchObject({ id: 'field-notes', kind: 'hub', slug: 'field-notes', title: 'Field notes', view: 'tiles' });
-    await page.locator('[role="treeitem"][data-node="leadership"] .name').click();
-    await expect(page.locator('[data-sections-hub="leadership"] input[name="slug"]')).toBeDisabled();
+    await expect.poll(ids).toContain('field-notes');
+    expect(ids().at(-1)).toBe('field-notes');
+    expect(structure().home.children.at(-1)).toMatchObject({ id: 'field-notes', kind: 'hub', slug: 'field-notes', title: 'Field notes', view: 'tiles' });
+    await page.locator('[data-dialog-open="section-settings-field-notes"]').click();
+    await page.locator('#section-settings-field-notes').getByRole('button', { name: 'Move left' }).click();
+    await expect.poll(() => ids().indexOf('field-notes')).toBe(count - 1);
+
+    // the published page, dragged from Leadership into Field notes: it moves, and no redirect is written
+    const grip = page.locator(`[data-board-grip="${ARTICLE}"]`);
+    const target = page.locator('[data-board-column="field-notes"] [data-board-list]');
+    await target.scrollIntoViewIfNeeded();
+    await grip.scrollIntoViewIfNeeded();
+    const from = (await grip.boundingBox())!;
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    const to = (await target.boundingBox())!;
+    await page.mouse.move(to.x + to.width / 2, to.y + 10, { steps: 12 });
+    await expect(page.locator('[data-board-column="field-notes"]')).toHaveAttribute('data-drop-target', '');
+    await page.mouse.up();
+    await expect.poll(() => pagesOf('field-notes')).toEqual([ARTICLE]);
+    expect(pagesOf('leadership')).toEqual([]);
+    expect(redirects()).toBe(before);
+    expect((await page.request.get(`/field-notes/${ARTICLE}/`)).status()).toBe(200);
+    expect((await page.request.get(`/leadership/${ARTICLE}/`)).status()).toBe(404);
+
+    // back to Leadership with Move (a click on the handle), then off and on with the keys
+    await expect(page.locator(`[data-board-grip="${ARTICLE}"]`)).toBeFocused({ timeout: 15_000 });
+    await page.locator(`[data-board-grip="${ARTICLE}"]`).click();
+    await page.locator('#board-move').getByRole('button', { name: 'Leadership' }).click();
+    await expect.poll(() => pagesOf('leadership')).toEqual([ARTICLE]);
+    await expect(page.locator(`[data-board-grip="${ARTICLE}"]`)).toBeFocused({ timeout: 15_000 });
+    await page.keyboard.press('Alt+ArrowLeft');
+    await expect.poll(() => pagesOf(ids()[ids().indexOf('leadership') - 1])).toEqual([ARTICLE]);
+
+    // Find narrows every column
+    await page.getByLabel('Find a page').fill('proud');
+    await expect(page.locator('[data-board-card]:not([hidden])')).toHaveCount(1);
+    await page.getByLabel('Find a page').fill('nothing like it');
+    await expect(page.locator('[data-board-card]:not([hidden])')).toHaveCount(0);
   });
 
   test('navigation: a section in and out from Sections and from Navigation; a link added, renamed, moved and removed; the header follows', async ({ page }) => {
@@ -501,7 +550,7 @@ test.describe('editor', () => {
 
     // from Sections: Contact's switch off takes it out of the navigation, and nothing else changes
     await page.goto('/_edit/sections/');
-    await page.locator('[role="treeitem"][data-node="contact"] .name').click();
+    await page.locator('[data-dialog-open="section-settings-contact"]').click();
     const form = page.locator('[data-sections-hub="contact"]');
     await form.getByRole('switch', { name: 'In the navigation' }).uncheck();
     await form.getByRole('button', { name: 'Save the section' }).click();

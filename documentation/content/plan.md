@@ -54,7 +54,7 @@ Follows decisions O1 and O2; needs O5 and O7 (§7).
 1. **The tree and routes:** the site structure becomes the [IA](ia.md#2-the-site-structure) at the root (hubs for home, work, expertise and leadership; item nodes for about, contact, the résumé and not-found), the route table, and `src/pages/[...path].astro` with a template per item type and one for hubs. The current per-page routes and the `classic` hub are deleted.
 2. **The rules** in `src/site/content/rules/`: current item, breadcrumbs, local navigation, previous and next, card metadata. Each has unit tests against fixtures.
 3. **Menus** from the site structure: the header, the phone menu, the footer.
-4. **Redirects and the routes lock (V9):** `/classic/` redirects to `/`, and each `/classic/<id>/` to its place's full page (O1). `routes.lock.json` is written and checked from now on.
+4. **Redirects:** `/classic/` redirects to `/`, and each `/classic/<id>/` to its place's full page (O1). The routes lock (V9) is retired ([sections spec D11](../sections/spec.md#9-decisions)): a moved page isn't redirected.
 5. **The planet structure** is re-pointed as [structures §7](ia.md#7-from-todays-site) proposes: each place gets its entries and its full page on the new site. The game's fast travel and dialogs read the planet structure; every link out uses the route table.
 6. **Outputs:** `sitemap.xml`, the 404 page, and each page's canonical and social-card tags from `seo` and `site`.
 
@@ -97,7 +97,7 @@ Each phase is done when every row for it is true and evidenced (a test name, a c
 | 4 | 0 | `/play` gets its places from the planet structure through the repository; fast travel and dialogs are unchanged | The planet's E2E |
 | 5 | 1 | Every page renders from the route table, which comes from the site structure; there are no per-page content routes | Route table test; E2E "content" group |
 | 6 | 1 | The current item, breadcrumbs, local navigation and previous/next follow the IA rules | Unit tests on the rules; E2E |
-| 7 | 1 | The old URLs redirect; the routes lock is enforced | E2E on redirects; a check that fails on a removed path |
+| 7 | 1 | The old URLs redirect (the routes lock is retired: [sections spec D11](../sections/spec.md#9-decisions)) | E2E on redirects |
 | 8 | 1 | The channels are independent: rearranging the planet structure changes no item and no site path, and the reverse; every place and entry has a page on the site (V12, V13) | Unit tests that change one structure and compare the other's output; `content:check`; the planet's E2E |
 | 9 | 2 | Three case studies, four practice areas, Leadership, About, Contact and the résumé are published and pass V1 to V11 | `content:check`; E2E; the governance review recorded in each item's `reviewedAt` |
 | 10 | 2 | Every image has alt text and credit; video has captions and a poster; budgets hold | `content:check` |

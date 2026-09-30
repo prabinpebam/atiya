@@ -164,10 +164,6 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         if (!routes.some((r) => r.node.id === e.node)) add(STRUCTURE_FILE, `node "${e.node}" isn't in the site's tree`, at);
       } else if (e.href.startsWith('/') && !isSitePath(e.href, routes)) add(STRUCTURE_FILE, `${e.href} isn't a page of this site`, at);
     });
-    // redirects (V19): from an address nothing else has, to a page that's built
-    const taken = new Set(routes.map((r) => r.path));
-    const published = new Set(routes.filter((r) => r.published).map((r) => r.path));
-    const froms = new Set<string>();
     // the planet (V13 to V16): each building once; a page in one building at most, and on the site
     if (planet) {
       const PLANET = 'content/structures/planet.json';
@@ -187,11 +183,17 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         });
       });
     }
-    redirects.forEach((r, i) => {
-      if (taken.has(r.from)) add('content/redirects.json', `${r.from} is a page of the site; only an address that's gone can redirect`, `${i}.from`);
-      if (froms.has(r.from)) add('content/redirects.json', `${r.from} redirects twice`, `${i}.from`);
+    // redirects (V19): only ones from an address nothing else has, to a page that's built, are kept. The
+    // site keeps no promise about old addresses (a page that moves simply leaves its old one), so one that
+    // no longer fits is skipped with a warning and never blocks a change (documentation/sections/spec.md §7.2)
+    const taken = new Set(routes.map((r) => r.path));
+    const published = new Set(routes.filter((r) => r.published).map((r) => r.path));
+    const froms = new Set<string>();
+    redirects = redirects.filter((r) => {
+      const why = taken.has(r.from) ? 'its address is a page of the site' : froms.has(r.from) ? 'another redirect has its address' : !published.has(r.to.split('#')[0]) ? `${r.to} isn't a published page` : null;
       froms.add(r.from);
-      if (!published.has(r.to.split('#')[0])) add('content/redirects.json', `${r.to} isn't a published page`, `${i}.to`);
+      if (why) warnings.push(`redirect ${r.from} → ${r.to} is skipped: ${why}`);
+      return !why;
     });
   }
 

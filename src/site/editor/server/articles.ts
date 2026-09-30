@@ -1,7 +1,8 @@
 /**
  * Articles, as edit mode changes them (documentation/editor/spec.md §3.5, §4, §9). The server owns what
- * must stay true: new IDs and slugs, the dates, the section an article is placed in, and the locks on a
- * published article. Every change is one store transaction.
+ * must stay true: new IDs and slugs, the dates, and the section and building a page is placed in. A page's
+ * address can change at any time (another section, another slug): the old one simply goes, with no redirect
+ * (documentation/sections/spec.md §7.2). Every change is one store transaction.
  */
 import { PLACE_IDS, article as articleSchema, type Article, type PlaceId, type PlanetStructure, type SiteStructure } from '../../content/schema';
 import { placeOfPage, putIn, takeOff } from '../model/planet';
@@ -45,11 +46,7 @@ export async function saveArticle(req: SaveArticle): Promise<Result & { article?
   if (!current) return refuse(key, "doesn't exist");
   let next: Article = { ...req.article, id: req.id };
   const was = current.value;
-  const published = isPublished(was);
 
-  // a published article's address and status are fixed until the site has redirects
-  if (published && next.slug !== was.slug) return refuse(key, "is published: its address can't change until the site has redirects", 'slug');
-  if (published && !isPublished(next)) return refuse(key, "is published: it can't be unpublished until the site has redirects", 'status');
   if (next.kind === 'talk' && was.kind !== 'talk') return refuse(key, "can't become a talk until the content model holds a talk's event, date and recording", 'kind');
 
   // the dates the server keeps true (a date set by hand in the same change wins)
@@ -64,7 +61,6 @@ export async function saveArticle(req: SaveArticle): Promise<Result & { article?
     const ref = { type: 'article', id: req.id };
     const now = sectionOf(s.value, ref);
     if (now !== req.section) {
-      if (published) return refuse(key, "is published: its section can't change until the site has redirects", 'section');
       const moved = req.section === null ? unplace(s.value, ref) : place(s.value, req.section, ref, unique(req.id, nodeIds(unplace(s.value, ref))));
       changes.push({ key: STRUCTURE, bytes: jsonBytes(moved) });
       ifMatch[STRUCTURE] = req.ifMatch[STRUCTURE] ?? s.version;
@@ -154,7 +150,7 @@ export async function deleteArticle(id: string, withMedia: boolean, ifMatch: Rec
   const cur = readDoc<Article>(key);
   const s = readDoc<SiteStructure>(STRUCTURE);
   if (!cur || !s) return refuse(key, "doesn't exist");
-  if (isPublished(cur.value)) return refuse(key, "is published: it can't be deleted until the site has redirects", 'status');
+  if (isPublished(cur.value)) return refuse(key, 'is published: unpublish it (set its status back to Draft) before deleting it', 'status');
   const changes: Change[] = [{ key, bytes: null }];
   const match: Record<string, string | null> = { [key]: ifMatch[key] ?? cur.version };
   if (sectionOf(s.value, { type: 'article', id })) {

@@ -101,7 +101,7 @@ Later phases move these words into `content/` (the sections' and places' summari
 | Field | What it's for | Notes |
 |---|---|---|
 | `id` | Stable identity | Never changes; unique among all nodes (V21) |
-| `slug` | Its address segment (`work` gives `/work/`) | Fixed once it holds a published page (as today) |
+| `slug` | Its address segment (`work` gives `/work/`) | Can change at any time. Its pages' addresses change with it, and the old ones simply go (D11) |
 | `title` | The section page's heading, and its default label | |
 | `navLabel` | A shorter label for the navigation | Optional, 24 characters at most |
 | `summary` | The section page's standfirst, and the line under it on the home page | 160 characters at most. While a section is empty, it says what's coming |
@@ -111,7 +111,7 @@ Later phases move these words into `content/` (the sections' and places' summari
 
 **`template` goes.** It named page layouts (`workIndex`, `leadershipOverview` and so on) that never existed, and `view` is what a section actually varies. Its consumers change with it:
 - `[...path].astro` and `Page.astro` recognise home by being the root (a route with no parent), not by its template;
-- edit mode's API (`where`) and its Sections tree do the same;
+- edit mode's API (`where`) and its Sections screen do the same;
 - the hub form's Template field becomes View.
 
 ### 3.3 Pages: one resource, several kinds (U7)
@@ -402,12 +402,18 @@ A `ready` from a building other than the open one is ignored, because it belongs
 
 ### 7.2 Sections
 
-The Sections screen ([edit mode §5](../editor/spec.md#5-sections-the-site-structure)) keeps its tree, reordering and placing. A section's settings change:
-- **View** (List, Tiles, Bento) replaces Template.
-- **In the navigation** is a switch that adds the section to the top navigation (at the end) or removes it. It edits the same `menus.primary` as the Navigation screen.
-- **New section** asks for the title, the view, and whether it goes in the navigation (on by default). It's always a section under home.
+The Sections screen ([edit mode §5](../editor/spec.md#5-sections-the-site-structure)) and the Planet screen (§7.4) are **one board**, `SectionBoard`. The only difference is that the site's sections are the owner's and the planet's buildings are the game's:
+- **A column per section**, in order, with its name, its address, a count and a settings button. Its pages are cards: a handle, the title (a link to the page's editor), Published or Draft, and its address. The last column holds the pages that aren't in one ("Not on the site").
+- **Many pages.** The columns wrap onto as many rows as they need, so every section is in view at once. A long column scrolls on its own within the screen, and **Find a page** narrows every column at once.
+- **Moving a page.** Drag its handle to another place in its column or to another column (the target column is outlined and a line marks the place; near an edge, the screen and the column scroll along). Alt+Up and Alt+Down move it within its column, Alt+Left and Alt+Right to the column beside. A click on the handle opens **Move**, with Move up, Move down and a button per column: the touch and keyboard route to everything a drag does.
+- **Published pages move freely** (D11). A page's address follows its section, so a move changes it, and the old address simply goes, with no redirect. Its slug and status can change at any time too. Only Delete asks for a draft (unpublish first).
+- **A section's settings** open from its column, in a dialog:
+  - **View** (List, Tiles, Bento) replaces Template.
+  - **In the navigation** is a switch that adds the section to the top navigation (at the end) or removes it. It edits the same `menus.primary` as the Navigation screen.
+  - **Move left** and **Move right** reorder the sections.
+- **New section** asks for the title, the view, and whether it goes in the navigation (on by default). It's always a section under home, added last. **Home page** opens home's own settings.
 
-Every operation on the structure keeps its other fields (`menus`) as they are, and moving a page keeps its node (V21).
+Every operation on the structure keeps its other fields (`menus`) as they are, and moving a page keeps its node (V21). A refusal (V13, for instance) shows above the board, naming the page and the rule.
 
 ### 7.3 Navigation (new screen, U5)
 
@@ -425,12 +431,10 @@ Every operation on the structure keeps its other fields (`menus`) as they are, a
 
 ### 7.4 Planet (new screen, U12)
 
-`/_edit/planet/` shows the seven buildings, separate from the site's sections:
-- **Each building** is a card with its name, kicker, summary, view and "On the site" (the `site` section, or Home).
-- **Its pages** are listed in order, with Move up, Move down and "Take off the planet", plus "Add page" (from the pages not on the planet).
-- **Buildings can't be added, removed or reordered here.** The screen says so: they're the game's.
-- **Pages not on the planet** are listed with "Put in…" (a building), like the Sections screen's "Not on the site yet".
-- **The rules** (V13, V15) are checked on save. A refusal says why, naming the page and the building.
+`/_edit/planet/` is the same board as Sections (§7.2), over the seven buildings, separate from the site's sections:
+- **A column per building**, with its name, kicker and settings (kicker, summary, view and "On the site": the `site` section, or Home). Its pages are cards, moved by dragging, by the keys or with Move, exactly as in Sections. The last column holds the pages that aren't in a building ("Not on the planet").
+- **Buildings can't be added, removed or reordered here.** The screen says so: they're the game's. So there's no New section and no Move left or right.
+- **The rules** (V13, V15) are checked on save. A refusal says why, naming the page and the building. A page that isn't on the site can't go in a building: place it in Sections first.
 
 ### 7.5 A page's settings
 
@@ -446,7 +450,8 @@ A page's place on the site and on the planet are two files. So the server change
 
 Saving a page's settings, taking it off the site, putting it on the planet, and deleting it all go through it:
 - deleting a page takes it off the planet and out of the navigation in the same write;
-- taking it off the site while it's on the planet is refused, and says why.
+- taking it off the site while it's on the planet is refused, and says why;
+- moving it, published or not, just moves it: nothing is written for the address it leaves (D11).
 
 ## 8. Rules
 
@@ -461,7 +466,7 @@ New or changed rules, checked by the content loader. So the build, the unit test
 | V16 | A place's `site` names a section that exists |
 | V17 | Every navigation entry points at a node that exists, or is a valid link; at most eight entries; labels at most 24 characters |
 | V18 | A section's `view`, and a place's, is `list`, `tiles` or `bento` |
-| V19 | A redirect's source is free (not a built page), its target is a built page, and both go through the base path |
+| V19 | A redirect's source is free (not a built page), its target is a built page, and both go through the base path. A redirect that no longer fits (a page now lives at its source, or its target has gone) is left out of the build with a warning, not an error, since moves write none (D11) |
 | V20 | No placeholder markers in visitor-facing copy |
 | V21 | Every node ID is unique across the site structure, and a moved page keeps its node |
 | V22 | The site is three levels: home, sections, pages |
@@ -480,6 +485,7 @@ New or changed rules, checked by the content loader. So the build, the unit test
 | D8 | Moves in the frame replace, not push | Back closes the overlay, as for every other overlay |
 | D9 | The navigation is `menus.primary` in the site structure | One file validates nodes and menu entries together, and the IA's spec already placed menus there |
 | D10 | Exactly three levels (V22) | The owner's model; a top-level page reaches the top through the navigation |
+| D11 | Moving a page, published or not, just moves it: the old address goes, with no redirect | The owner's call: a personal site under construction, where keeping edit mode simple matters more than old links |
 
 ## 10. Critique and v2
 
@@ -542,3 +548,7 @@ Filled in as each phase lands.
   - **A page's settings:** "On the planet" (None or a building), saved with the page by `saveArticle` in the same transaction as its section, with the planet's version in `ifMatch`.
   - **The rules in the editor:** taking a page on the planet off the site is refused with V13's reason; deleting a page takes it off the planet in the same write (S4).
   - **Tests:** unit (the page's building saved, moved, taken off, refused off the site, and a delete; `editorServer.test.ts`); E2E "editor": a page taken off one building and put in another from the list, a building's words, "On the planet" in the page's settings, a draft on the planet refused off the site, a delete taking it off, and axe on the new screen.
+- **One board (30 September 2026):** Sections and Planet became the same screen (§7.2, §7.4), and published pages move freely (D11).
+  - **The board** (`SectionBoard.astro`, `scripts/board.ts`): wrapping columns, cards with a handle, pointer drag with a ghost, a drop line and edge scrolling, Alt+arrows, the Move dialog and Find. It sends `board:move` (the page, where it was, where it goes); `scripts/sections.ts` turns that into `place` or `unplace`, `scripts/planet.ts` into `putIn` or `takeOff` (both now take a position). Settings are dialogs: `SectionForms.astro` (each section, home and New section) and `PlaceForms.astro` (each building). `StructureTree.astro` and `PlanetEditor.astro` are gone.
+  - **No redirects on moves:** the store no longer refuses a move, a rename, taking a page off the site or unpublishing because a page is published; `content/redirects.json` keeps only the classic site's addresses, and stale entries are skipped with a warning (V19). The page's settings no longer lock its slug, status or section.
+  - **Tests:** unit (a published page moves freely, and nothing is written for its old address; a stale redirect is a warning); E2E "editor": the Sections board (a new section moved left, a published page dragged with the mouse to another section, back with Move, on with Alt+Left, the old address a 404, no redirect written, Find), the Planet board (Move to and from a building, a building's settings, a draft refused off the site from the board), and axe on both.

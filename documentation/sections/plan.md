@@ -206,9 +206,20 @@ How the [spec](spec.md) is built: six phases, in the order the owner asked for t
   - deleting a mapped draft takes it off the planet;
   - axe in both modes.
 
+### S7: one board for Sections and Planet (the owner's follow-up)
+
+The owner asked for the two screens to be one pattern, for published pages to move freely, for many pages per section, and for drag and drop between sections.
+1. **The board** (`SectionBoard.astro`, `scripts/board.ts`): a column per section or building, cards with a handle, pointer drag, Alt+arrows, a Move dialog and Find ([spec §7.2](spec.md#72-sections)). It emits `board:move`; each screen's script writes its own structure.
+2. **Settings in dialogs:** each section's (with Move left and right), home's and New section (`SectionForms.astro`); each building's (`PlaceForms.astro`). The tree and the planet's cards go.
+3. **Moves without redirects** (D11): the store stops refusing changes to published pages, the page's settings unlock its slug, status and section, and stale redirects become warnings.
+
+**Tests:**
+- unit: a published page moves freely and no redirect is written; a stale redirect is a warning; `place` and `putIn` at a position;
+- E2E "editor": the Sections board (a new section moved left; a published page dragged with the mouse, moved back with Move and on with the keys; its old address a 404; Find), the Planet board, and axe on both.
+
 ## 2. Definition of Done
 
-Each phase is done when every row for it is true and evidenced. **All rows were met on 30 September 2026**; the evidence is the test or check named, and what each phase built is in the [spec's "As built"](spec.md#11-as-built).
+Each phase is done when every row for it is true and evidenced. **All rows were met on 30 September 2026** (S7's the same day); the evidence is the test or check named, and what each phase built is in the [spec's "As built"](spec.md#11-as-built).
 
 | # | Phase | Criterion | Evidence |
 |---|---|---|---|
@@ -230,6 +241,8 @@ Each phase is done when every row for it is true and evidenced. **All rows were 
 | 16 | S6 | Pages are mapped to buildings, reordered and taken off in edit mode, separately from the site; the rules refuse with reasons | E2E "editor": "planet: pages put in buildings…" |
 | 17 | All | Every new screen and view passes axe in light and dark, and the design-system tests pass | E2E axe tests (site, editor, planet); `siteDesignSystem.test.ts` |
 | 18 | All | The spec's "As built" and the related docs match the build: the content model, structures, edit mode, the game UI design system and AGENTS.md | The docs changes in each phase's commit |
+| 19 | S7 | Sections and Planet are the same board; a page moves by drag, keys or Move, within a section or to another, and a section of many pages stays usable | E2E "editor": "sections: a board of sections and pages…", "planet: pages put in buildings…"; screenshots with 21 pages in a column |
+| 20 | S7 | A published page moves, is renamed or unpublished like a draft, and nothing is redirected | `editorServer.test.ts`: "a published page moves freely"; `content.test.ts` (V19 warnings); E2E "editor": the old address is a 404 and `redirects.json` is unchanged |
 
 ## 3. Validation per phase
 
@@ -243,6 +256,7 @@ Following the tiers in [AGENTS.md](https://github.com/prabinpebam/atiya/blob/mai
 | S4 | Unit (all: the world module is shared), E2E "planet" (the landmark tests), and `verify:prod` |
 | S5 | Unit, E2E "planet" and "capability gate", `verify:prod`, and a build at `/atiya` |
 | S6 | Unit (editor model), and E2E "editor" |
+| S7 | Unit (all), `astro check`, and E2E "editor" |
 | End | The full `npm test`, `npm run check`, `npm run verify:prod`, and every E2E group this work touched |
 
 ## 4. Risks

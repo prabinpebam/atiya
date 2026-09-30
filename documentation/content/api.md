@@ -104,8 +104,8 @@ When content or media is published, unpublished or changed, the backend sends a 
 | Event | Sent when | Result |
 |---|---|---|
 | `content.published` | A resource becomes `published`, or a published one changes | Rebuild |
-| `content.unpublished` | A published resource is archived or withdrawn | Rebuild; the routes lock requires a redirect |
-| `structure.updated` | A channel's structure (`site` or `planet`) changes | Rebuild; a moved site node needs a redirect (the routes lock) |
+| `content.unpublished` | A published resource is archived or withdrawn | Rebuild |
+| `structure.updated` | A channel's structure (`site` or `planet`) changes | Rebuild |
 | `media.updated` | A media file or its metadata changes | Rebuild |
 
 - **Payload:** `{ "event": "content.published", "type": "caseStudy", "id": "…", "at": "…" }`.
@@ -131,8 +131,7 @@ content/
 ├── vocabularies/{name}.json                   GET /v1/vocabularies/{name}
 ├── people/{id}.json                           GET /v1/people/{id}
 ├── redirects.json                             GET /v1/redirects
-├── media/{id}.json + media/{id}.{ext}         GET /v1/media/{id} and its master (see media)
-└── routes.lock.json                           written by the build; not an endpoint
+└── media/{id}.json + media/{id}.{ext}         GET /v1/media/{id} and its master (see media)
 ```
 
 - **Lists** (`GET /v1/case-studies`) are the folder. The `files` adapter reads every file in it and applies the same filter, sort and paging functions the mock server uses (`src/site/content/query.ts`), so the semantics can't drift.

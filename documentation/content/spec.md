@@ -248,7 +248,7 @@ GitHub Pages serves static files, so content can only change with a rebuild. Tha
 | Level | What it proves | Where |
 |---|---|---|
 | Schema | Every file in `content/` matches its schema | `npm run content:check` (also in `npm test`) |
-| Integrity | References resolve; slugs are unique; menus, redirects and the routes lock are consistent | `content:check` |
+| Integrity | References resolve; slugs are unique; menus and redirects are consistent | `content:check` |
 | IA rules | The IA's constraints: required case-study fields, practice-area limits, card metadata limits, breadcrumb and current-location rules | Unit tests on the pure rules in `src/site/content/rules/` |
 | Contract | The `files` and `api` adapters return identical data for every resource | Contract test against the mock server (phase 3) |
 | Rendering | Every route renders, the right menu item is current, redirects work, 404 is served, media has alt text | E2E, a new "content" group |

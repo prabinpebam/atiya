@@ -8,14 +8,14 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 >   - **Articles and pages:** create, duplicate, delete and change their status.
 >   - **Their blocks:** on a canvas that is the real page.
 >   - **Their settings:** in an inspector beside the canvas.
->   - **The site's sections:** its tree of hubs and what each one places.
+>   - **The site's sections and the planet's buildings:** one board each, a column per section (or building) with its pages as cards you drag between them.
 >   - **Everything else:** a media library with uploads, alt text and focus points; the site settings and the owner's profile.
 > - **How it feels:**
 >   - **Text:** click a paragraph, heading, quote, the title or the standfirst and type. Enter makes a new paragraph.
 >   - **Blocks:** a "+" between blocks adds one from a palette of the content model's blocks. A toolbar on the selected block moves, duplicates or deletes it.
 >   - **Order and look:** an outline beside the canvas reorders blocks by drag or keyboard. A block's look is limited to the choices the design system offers (its width, a gallery's layout), so no edit can break the design.
 > - **Saving:** every change is written as soon as it's made, after the same contract check the build runs, as one transaction: a change the contract refuses, or one that conflicts with an edit made elsewhere, never reaches a file. Undo and redo cover the whole document, and git is the version history.
-> - **Published addresses are fixed** until the site has redirects: a published page's slug and section can't change, and it can't be unpublished or deleted.
+> - **Pages move freely:** a page's slug, section and status can change at any time, published or not. Its address follows, and the old one simply goes, with no redirect (the owner's call). Only a draft can be deleted.
 > - **Publishing:** the Publish screen lists what changed in `content/`, checks it all, commits just those files and pushes. Discard puts a file back as it was last published.
 > - **Built from the design system:** the editor's screens are Astro pages made of the site's own tokens, fundamentals and compounds, with two new generic compounds (Dialog, Tabs). Client scripts only coordinate; the page and every form are rendered by the server.
 
@@ -231,17 +231,17 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 
 **Page:**
 - **Title and address:** the title, the menu label, and the slug with the address it makes.
-  - A published page's slug is fixed until the site has redirects (content plan phase 1): changing it would break every link to it (V9).
+  - Changing a published page's slug changes its address, and the old one simply goes (no redirect: [sections spec D11](../sections/spec.md#9-decisions)).
 - **Summary:** at most 160 characters, with a counter. It is the standfirst, the card text and the meta description.
 - **Kind, status and visibility:**
   - kind: page or note (a talk needs its event, date and recording, which the contract doesn't hold yet; an existing talk shows its kind read-only);
-  - status: the lifecycle up to Published ([model §7](../content/model.md#7-lifecycle-and-visibility)); once published, the status is fixed, like the address;
+  - status: the lifecycle up to Published ([model §7](../content/model.md#7-lifecycle-and-visibility)); a published page can go back to Draft, which takes it off the site until it's published again;
   - visibility: public, public with details removed, or summary only.
-- **Where it appears:** the section (hub) that places it, or "Not on the site yet". This edits the site structure. It's fixed once the article is published.
+- **Where it appears:** the section (hub) that places it, or "Not on the site yet". This edits the site structure, and can change at any time: the page's address follows its section.
 - **Lead picture:** a media field, which can be removed; its caption (left empty to use the picture's own), and whether to show it.
 - **Search and sharing:** the SEO title, the description and the image, and whether to keep the page out of search.
 - **Dates:** published, updated and last reviewed. The server keeps "Updated" and "Published" true (§9); a date set by hand in the same change wins.
-- **Delete:** a draft can be deleted, and with it, if you ask, the pictures in its own folder that nothing else uses. A published article can't be deleted until the site has redirects.
+- **Delete:** a draft can be deleted, and with it, if you ask, the pictures in its own folder that nothing else uses. A published article goes back to Draft first, then can be deleted.
 
 ## 4. Articles, and the dashboard
 
@@ -257,13 +257,14 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 
 ## 5. Sections: the site structure
 
-The site structure's tree ([structures §2](../content/ia.md#2-the-site-structure)), as a tree view.
+The site structure ([structures §2](../content/ia.md#2-the-site-structure)) as a board: a column per section, and the pages in each as cards ([sections spec §7.2](../sections/spec.md#72-sections)). The Planet screen is the same board over the game's seven buildings ([§7.4](../sections/spec.md#74-planet-new-screen-u12)).
 
-- **A section** (a hub under the home page) shows its title and address, and its pages, in order. Its settings are its title, its menu label, its summary, its slug and its view (List, Tiles or Bento: how it lists its pages, [sections spec §3.4](../sections/spec.md#34-the-section-view-u6)). A switch, In the navigation, adds it to the top navigation or takes it out (the same menu the Navigation screen edits). New section adds a section under the home page, with its summary, its view and the switch (on). The site is three levels, so there are no sections inside sections and no pages directly under the home page (V22).
-- **An article's node** can be reordered (drag, or Move up and Move down). A draft's node can also be moved to another hub or removed from the site (the article stays in `content/`, listed under "Not on the site yet" with Place under…).
-- **The home hub** has its title, its menu label and its summary: the home page's name and the line under it ([sections spec §3.5](../sections/spec.md#35-the-home-page-decision-o5)).
+- **A section's column** shows its title, its address, how many pages it holds and a settings button; its pages follow, in order, each with a handle, its title (a link to its editor), Published or Draft, and its address. The last column, "Not on the site", holds the pages that aren't in a section.
+- **Moving a page:** drag its handle within its column or to another; Alt+Up and Alt+Down move it within its column, Alt+Left and Alt+Right to the column beside; a click on the handle opens Move, with a button for every place it can go. A published page moves like any other: its address follows its section, and the old one simply goes (no redirect).
+- **Many pages:** the columns wrap onto as many rows as they need, a long column scrolls on its own, and Find a page narrows every column at once.
+- **A section's settings** (a dialog from its column) are its title, its menu label, its summary, its slug and its view (List, Tiles or Bento: how it lists its pages, [sections spec §3.4](../sections/spec.md#34-the-section-view-u6)), a switch, In the navigation, that adds it to the top navigation or takes it out (the same menu the Navigation screen edits), and Move left and Move right. New section adds a section at the end, with its summary, its view and the switch (on). The site is three levels, so there are no sections inside sections and no pages directly under the home page (V22).
+- **The home hub** (Home page) has its title, its menu label and its summary: the home page's name and the line under it ([sections spec §3.5](../sections/spec.md#35-the-home-page-decision-o5)).
 - **Drafts can be placed.** A node may place a draft: its route is resolved and checked like any other (so two drafts can't claim one address), and the build leaves it out until it's published. So an article's section is chosen when it's created, and publishing it is only a status change (§9).
-- **Published addresses are fixed.** A node that places a published article, and every hub above one, keeps its slug and place until the site has redirects; the screen says why.
 
 ## 6. Media
 
@@ -375,7 +376,7 @@ All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's vers
 |---|---|
 | `integrations/editor.mjs` | The dev-only integration (§8.1, §8.4) |
 | `src/site/editor/pages/` | The routes: the screens, the canvas and the API endpoint |
-| `src/site/editor/components/` | The editor's parts (the outline, the inspector's fields, the media grid, the canvas frame, the tree): built from the site's fundamentals, compounds and tier 0 only. A part never imports another part; the editor's layout and pages compose them |
+| `src/site/editor/components/` | The editor's parts (the outline, the inspector's fields, the media grid, the canvas frame, the section board): built from the site's fundamentals, compounds and tier 0 only. A part never imports another part; the editor's layout and pages compose them |
 | `src/site/editor/EditorLayout.astro` | The editor's frame: side navigation, top bar, live status |
 | `src/site/editor/model/` | Pure and shared by the browser and the server: document operations (insert, move, duplicate, delete, split, merge, update), text to Markdown, IDs and slugs, the guard, the change list's names, the reference graph, the save queue |
 | `src/site/editor/server/` | Node only: the store, uploads (sharp), git |
@@ -392,7 +393,7 @@ All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's vers
 | A text block is one paragraph or one list (no blank line in its Markdown) | Every block renders one element, so the canvas and the editor agree on what a block is |
 | `updatedAt` is set to today (the owner's local date) when an article's title, summary, lead picture or blocks change, unless the same change sets it | The "Updated" date stays true without anyone remembering it |
 | Publishing an article with no `publishedAt` sets it to today | The same |
-| A published article's slug, node, status and existence are fixed until redirects exist (V9) | No published link breaks |
+| A published article's slug, section and status can change like a draft's; the address it leaves isn't redirected. Only a draft can be deleted | The owner's call ([sections spec D11](../sections/spec.md#9-decisions)): simple moves matter more than old links on a site under construction |
 | A new ID and slug come from the title: lowercase, hyphenated, unique among articles and among the section's children | IDs never change after that ([model §1](../content/model.md#1-conventions)) |
 | The Markdown subset is parsed to an inline tree and written back by one serializer, with backslash escapes (`\*`, `\_`, `` \` ``, `\[`, `\]`, `\\`) and double backticks for code that holds a backtick | What's typed on the page renders as typed; the site renders the same tree |
 
@@ -453,7 +454,7 @@ A second, independent review of that v2 then found these, all now in the spec:
 ## 12. Accessibility
 
 - Every action has a keyboard path (§3.2, §3.3); drag always has a button and key alternative (WCAG 2.5.7).
-- The screens use the design system's accessible parts: labelled fields with hints and errors, the APG tabs, the native modal dialog, and a tree for the sections (arrow keys to move, Enter to open).
+- The screens use the design system's accessible parts: labelled fields with hints and errors, the APG tabs, the native modal dialog, and the boards' handles (a button each: Alt+arrows move the page, Enter or a click opens Move).
 - The save status and every error are announced in a live region; a refused value is named with its field.
 - Focus is never lost: after a structural change the selected block keeps focus; after a dialog closes, focus returns to what opened it.
 - The editor passes axe in light and dark, like the site.
@@ -466,7 +467,7 @@ Built to this spec (the evidence for each point of the Definition of Done is in 
 - **One theme for all of edit mode.** The top bar's theme switch (on every screen) is the site header's: it sets `site.theme`, and the whole of edit mode changes with it, not only the canvas. Every page of the site follows a theme chosen on another (the `storage` event, `followTheme` in `scripts/theme.ts`), so the canvas, and any other open tab, change at once. It replaces v2's canvas-only "Dark page" toggle, at the owner's request.
 - **Screens that change in place.** A screen re-renders the regions a change affects by fetching itself and swapping them (`swapRegions` in `scripts/client.ts`), and the counts of changes to publish (the top bar's and the navigation's) come along every time. What left the page stops listening (the swap signals `astro:after-swap`, which `each` aborts on).
 - **Media:** the library is a grid grouped by folder beside a details pane that stays in view (the layout's `aside` slot, scrolling on its own when taller than the screen). The focus point is set by a click on the picture, or by the arrow keys (5% a step; Home for the centre). The address keeps the open picture (`?id=`), so Back works. Uploads in the library go to `shared`; in the picker, to the article's own folder (or `site`, `people/<id>` from the settings).
-- **Sections** is a tree (APG) beside the selected section's settings; New section adds a hub under any other; reordering has buttons and Alt+Up and Alt+Down; an unplaced article is placed from "Not on the site yet".
+- **Sections and Planet** are one board (`SectionBoard.astro`, `scripts/board.ts`): wrapping columns, a card per page with a drag handle, Alt+arrows, a Move dialog and Find, with each section's (or building's) settings in a dialog. It replaced v2's tree beside a settings pane, which didn't scale to many pages per section and couldn't move a page between sections in one gesture. Published pages move like drafts, and nothing is redirected ([sections spec D11](../sections/spec.md#9-decisions)).
 - **Settings** has two forms, each saving its own file: the site (name, description, positioning, contact email, social image) and the owner's profile (name, role, bio, portrait, links as rows you add and remove).
 - **Publish** lists the changes as resources: a picture's master and sidecar are one row, discarded together in one transaction, so the check sees the result as a whole (discarding a picture an article still uses is refused, with the reason). The message offered names what changed ("Content: Do what makes you proud, 2 pictures, the site settings"). After a publish the screen shows the commit and a link to the deploy on GitHub Actions (made from the remote's address); after a failed push, why, with Push again.
 - **The reference graph** (`model/references.ts`) is one function over the content index: articles in any state (lead pictures, blocks, video posters, social images), people's portraits and the site's social image. Used in and Delete read it, and the content check now also refuses a site settings file whose social image doesn't exist.

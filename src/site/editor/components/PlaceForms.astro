@@ -1,0 +1,93 @@
+---
+/**
+ * The Planet screen's settings (documentation/sections/spec.md §7.4): a dialog for each of the seven
+ * buildings, opened from its column on the board: its name, what it holds, its summary, how its list reads
+ * and its section on the site. The buildings themselves are the game's: they can't be added, removed or
+ * moved here, so there's no New section and no Move left or right.
+ * @tier editor
+ * @a11y Each dialog is a form named after its building; a refusal shows in it, as an alert.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import type { SelectOption } from '../../components/fundamentals/Select.astro';
+import type { PlanetStructure } from '../../content/schema';
+
+export interface PlaceSettings {
+  id: string;
+  title: string;
+  kicker: string;
+  summary: string;
+  view: string;
+  site: string;
+}
+
+interface Props {
+  /** The seven buildings, in the world's order. */
+  places: PlaceSettings[];
+  /** The site's sections, for "On the site". */
+  sections: SelectOption[];
+  /** The planet structure and its version, for the screen's script. */
+  planet: PlanetStructure;
+  version: string;
+}
+
+const { places, sections, planet, version } = Astro.props;
+const VIEWS: SelectOption[] = [
+  { value: 'list', label: 'List', description: 'Rows of titles, words first' },
+  { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
+  { value: 'bento', label: 'Bento', description: 'A lead, then halves and thirds' },
+];
+const onSite: SelectOption[] = [{ value: '', label: 'Home', description: "The home page's list of sections" }, ...sections];
+const state = JSON.stringify({ planet, version }).replace(/</g, '\\u003c');
+---
+
+<div data-editor-planet>
+  {
+    places.map((p) => (
+      <Dialog id={`place-settings-${p.id}`} title={`${p.title} settings`} size="md">
+        <form class="form" data-planet-place={p.id} novalidate aria-label={`${p.title} settings`}>
+          <TextField label="Name" name="title" value={p.title} required hint="On its card, in fast travel and over its list." />
+          <TextField label="What it holds" name="kicker" value={p.kicker} required hint="Over its name on its card." />
+          <TextField label="Summary" name="summary" value={p.summary} multiline rows={2} required hint="Under its name: what it holds (at most 160 characters)." />
+          <Select label="View" name="view" value={p.view} options={VIEWS} hint="How its list reads." />
+          <Select label="On the site" name="site" value={p.site} options={onSite} hint="Where Open classic page leads." />
+          <p class="issue" role="alert" data-editor-form-issue hidden />
+          <div class="actions">
+            <Button variant="primary" type="submit">
+              Save the building
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    ))
+  }
+  <script is:inline type="application/json" data-editor-planet-state set:html={state} />
+</div>
+
+<style>
+  .form {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: end;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initPlanet } from '../scripts/planet';
+
+  each<HTMLElement>('[data-editor-planet]', (root, signal) => initPlanet(root, signal));
+</script>

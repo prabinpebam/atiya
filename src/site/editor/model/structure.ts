@@ -100,11 +100,19 @@ export function unplace(structure: SiteStructure, item: ItemRef): SiteStructure 
   return out;
 }
 
-/** Places an item at the end of a hub: a page already placed moves there with its node (V21); a new one gets a node with `nodeId`. */
-export function place(structure: SiteStructure, hubId: string, item: ItemRef, nodeId: string): SiteStructure {
+/**
+ * Places an item in a hub, at `index` among its children (the end if left out): a page already placed moves
+ * there with its node (V21); a new one gets a node with `nodeId`.
+ */
+export function place(structure: SiteStructure, hubId: string, item: ItemRef, nodeId: string, index?: number): SiteStructure {
   const node: ItemNode = nodeOf(structure, item) ?? { id: nodeId, kind: 'item', item: { type: 'article', id: item.id } };
   const without = detach(structure, item);
-  return mapHubs(without, (h) => (h.id === hubId ? { ...h, children: [...(h.children ?? []), clone(node)] } : h));
+  return mapHubs(without, (h) => {
+    if (h.id !== hubId) return h;
+    const children = [...(h.children ?? [])];
+    children.splice(index === undefined ? children.length : Math.max(0, Math.min(index, children.length)), 0, clone(node));
+    return { ...h, children };
+  });
 }
 
 /** Moves a hub's child from one position to another. */

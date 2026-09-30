@@ -91,6 +91,27 @@ describe("a page's building", () => {
   });
 });
 
+describe('a published page moves freely: its old address simply goes (documentation/sections/spec.md §7.2)', () => {
+  const structure = (section: string) => ({ home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', children: section === 's' ? [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] : [] }, { id: 't', kind: 'hub', slug: 't', title: 'T', children: section === 't' ? [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] : [] }] } });
+  const save = (over: { section?: string | null; status?: string }) => {
+    const a = readDoc<Record<string, unknown>>('/content/articles/a.json')!;
+    const s = readDoc('/content/structures/site.json')!;
+    const { status, ...rest } = over;
+    return saveArticle({ id: 'a', article: { ...(a.value as object), ...(status ? { status } : {}) } as never, ifMatch: { '/content/articles/a.json': a.version, '/content/structures/site.json': s.version }, ...rest });
+  };
+  const site = () => readFileSync(join(content, 'structures', 'site.json'), 'utf8');
+
+  it('to another section, off the site and back to a draft, with no redirect written', async () => {
+    put('/content/structures/site.json', structure('s'));
+    put('/content/articles/a.json', article({ status: 'published', publishedAt: '2026-09-30' }));
+    expect(await save({ section: 't' })).toMatchObject({ ok: true });
+    expect(JSON.parse(site()).home.children[1].children).toEqual([{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }]);
+    expect(await save({ section: null })).toMatchObject({ ok: true });
+    expect(await save({ status: 'draft' })).toMatchObject({ ok: true });
+    expect(existsSync(join(content, 'redirects.json'))).toBe(false);
+  });
+});
+
 // ---------- media ----------
 describe('uploads', () => {
   it('make a WebP master within the budgets, without metadata, named from the file, with its sidecar', async () => {

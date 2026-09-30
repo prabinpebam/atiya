@@ -355,12 +355,14 @@ describe('the navigation and the redirects', () => {
     expect(problems(docs({ primary: [{ label: 'Planet', href: '/play/' }, { label: 'Mail', href: 'mailto:a@b.c' }] }))).toBe('');
   });
 
-  it('sends an old address to a built page, never from a page that exists (V19)', () => {
+  it('keeps a redirect from an old address to a built page; one that no longer fits is skipped with a warning, never refused (V19)', () => {
     const ok = loadContent(docs(undefined, [{ from: '/classic/', to: '/#sections' }, { from: '/classic/x/', to: '/work/' }]), new Set());
     expect(ok.redirects).toHaveLength(2);
-    expect(problems(docs(undefined, [{ from: '/work/', to: '/about/' }]))).toMatch(/\/work\/ is a page of the site/);
-    expect(problems(docs(undefined, [{ from: '/old/', to: '/nowhere/' }]))).toMatch(/\/nowhere\/ isn't a published page/);
-    expect(problems(docs(undefined, [{ from: '/old/', to: '/work/' }, { from: '/old/', to: '/about/' }]))).toMatch(/redirects twice/);
+    const stale = loadContent(docs(undefined, [{ from: '/work/', to: '/about/' }, { from: '/old/', to: '/nowhere/' }, { from: '/x/', to: '/work/' }, { from: '/x/', to: '/about/' }]), new Set());
+    expect(stale.redirects).toEqual([{ from: '/x/', to: '/work/' }]);
+    expect(stale.warnings.join('\n')).toMatch(/\/work\/ → \/about\/ is skipped: its address is a page of the site/);
+    expect(stale.warnings.join('\n')).toMatch(/\/nowhere\/ isn't a published page/);
+    expect(stale.warnings.join('\n')).toMatch(/another redirect has its address/);
   });
 
   it('"Explore in 3D" goes to a page, open in its building; to the building that points to a section; else the plaza', () => {

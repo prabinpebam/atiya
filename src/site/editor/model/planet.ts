@@ -17,11 +17,11 @@ export function takeOff(planet: PlanetStructure, pageId: string): PlanetStructur
   return next;
 }
 
-/** Puts a page in a building, at the end (moving it if it was in another: a page is in one building at most, V15). */
-export function putIn(planet: PlanetStructure, placeId: PlaceId, pageId: string): PlanetStructure {
+/** Puts a page in a building, at `index` (the end if left out), moving it if it was anywhere else: a page is in one building at most (V15). */
+export function putIn(planet: PlanetStructure, placeId: PlaceId, pageId: string, index?: number): PlanetStructure {
   const next = takeOff(planet, pageId);
   const place = next.places.find((p) => p.id === placeId);
-  if (place) place.pages.push({ type: 'article', id: pageId });
+  if (place) place.pages.splice(index === undefined ? place.pages.length : Math.max(0, Math.min(index, place.pages.length)), 0, { type: 'article', id: pageId });
   return next;
 }
 
