@@ -248,7 +248,7 @@
       "title": "Sections, pages and the planet",
       "order": 20.89,
       "icon": "view_quilt",
-      "status": "draft",
+      "status": "stable",
       "updated": "2026-09-30",
       "group": "Content"
     },
@@ -257,7 +257,7 @@
       "title": "Sections: plan and DoD",
       "order": 20.895,
       "icon": "checklist",
-      "status": "draft",
+      "status": "stable",
       "updated": "2026-09-30",
       "group": "Content"
     },

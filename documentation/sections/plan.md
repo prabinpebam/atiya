@@ -3,6 +3,7 @@
 How the [spec](spec.md) is built: six phases, in the order the owner asked for them, except where one depends on another. Each phase leaves the site and the planet working and deployable, and ends with its tests passing and a local commit. This is v2, re-phased after the review ([spec §10](spec.md#10-critique-and-v2)).
 
 > **TL;DR.**
+> - **Status:** all six phases are built and their Definition of Done is met (30 September 2026, §2).
 > - **S1: words (done).** Every placeholder is rewritten for a site under construction, and a test keeps placeholder markers out.
 > - **S2: sections, pages and the navigation.**
 >   - Three levels.
@@ -207,26 +208,28 @@ How the [spec](spec.md) is built: six phases, in the order the owner asked for t
 
 ## 2. Definition of Done
 
+Each phase is done when every row for it is true and evidenced. **All rows were met on 30 September 2026**; the evidence is the test or check named, and what each phase built is in the [spec's "As built"](spec.md#11-as-built).
+
 | # | Phase | Criterion | Evidence |
 |---|---|---|---|
-| 1 | S1 | No visitor-facing copy says "placeholder", "lorem", "TBD", "TODO", "FIXME" or "POC" | `tests/unit/copy.test.ts` |
-| 2 | S1 | Every landmark and every line about the work says what's there and what's coming, and invents nothing | The diff, read against [spec §2](spec.md#2-words-for-a-site-under-construction-u1) |
-| 3 | S2 | The site is home, sections and pages, and nothing else is accepted | Unit (V21, V22) |
-| 4 | S2 | A section lists its pages as a list, tiles or a bento box, and shows an empty state when empty | E2E "content"; screenshots of each view |
-| 5 | S2 | Article, Page and Gallery open as the spec says | E2E "content" |
-| 6 | S2 | The header and phone menu show `menus.primary`, with the current entry, on every page of the site; `classic.ts` is gone | E2E "site design system" |
-| 7 | S2 | The home page lists the sections, and `/classic/…` redirects, at the root and at `/atiya` | E2E "landing & classic"; a base-path build |
-| 8 | S3 | Sections, their views and the navigation (sections, pages and links) are set in edit mode, the site follows, and no operation loses the navigation | E2E "editor"; unit |
-| 9 | S4 | The planet's words and pages come from `content/structures/planet.json`; the buildings' world is code; V13 to V16 hold | Unit; the landmark collection removed |
-| 10 | S4 | A page's places on the site and the planet change in one transaction | Unit (the page service) |
-| 11 | S5 | E on a building opens its list over the planet, from the site's own pages, with white smoke in light mode and black in dark | E2E "planet"; screenshots in both modes |
-| 12 | S5 | You can move through every page of a building, and never to another building's | E2E "planet" |
-| 13 | S5 | Space closes the overlay (after a lightbox), focus returns, and Back, Forward and Close agree with the history | E2E "planet" |
-| 14 | S5 | Deep links and the switches between the site and the planet keep the page | E2E "planet" |
-| 15 | S5 | The game's critical JS stays within 450 KB gz, and gated-out devices fetch no game chunk | `verify:prod`; E2E "capability gate" |
-| 16 | S6 | Pages are mapped to buildings, reordered and taken off in edit mode, separately from the site; the rules refuse with reasons | E2E "editor" |
-| 17 | All | Every new screen and view passes axe in light and dark, and the design-system tests pass | E2E; `siteDesignSystem.test.ts` |
-| 18 | All | The spec's "As built" and the related docs match the build: the content model, structures, edit mode, the game UI design system and AGENTS.md | The docs diff |
+| 1 | S1 | No visitor-facing copy says "placeholder", "lorem", "TBD", "TODO", "FIXME" or "POC" | `copy.test.ts` |
+| 2 | S1 | Every landmark and every line about the work says what's there and what's coming, and invents nothing | The S1 diff (commit "Copy: the site is under construction"); Prabin's pointers test in `landmarks.test.ts` |
+| 3 | S2 | The site is home, sections and pages, and nothing else is accepted | `content.test.ts`: "is three levels…", "a section keeps its view…" |
+| 4 | S2 | A section lists its pages as a list, tiles or a bento box, and shows an empty state when empty | E2E "content": "each section lists its pages in its view…"; screenshots of bento, the empty state and the row variant |
+| 5 | S2 | Article, Page and Gallery open as the spec says | `content.test.ts`: "a page opens as its kind reads"; `opening.ts` |
+| 6 | S2 | The header and phone menu show `menus.primary`, with the current entry, on every page of the site; `classic.ts` is gone | E2E "content": "the navigation is the site structure's…"; E2E "site on a phone" |
+| 7 | S2 | The home page lists the sections, and `/classic/…` redirects, at the root and at `/atiya` | E2E "landing & classic"; a `BASE_PATH=/atiya` build (`/atiya/work/`, `/atiya/#sections`) |
+| 8 | S3 | Sections, their views and the navigation (sections, pages and links) are set in edit mode, the site follows, and no operation loses the navigation | E2E "editor": "navigation: a section in and out…"; `editorModel.test.ts`: "keeps the navigation through every operation" |
+| 9 | S4 | The planet's words and pages come from `content/structures/planet.json`; the buildings' world is code; V13 to V16 hold | `landmarks.test.ts`, `content.test.ts` "the planet structure"; `src/content/landmarks/` removed |
+| 10 | S4 | A page's places on the site and the planet change in one transaction | `editorServer.test.ts`: "a page's building" |
+| 11 | S5 | E on a building opens its list over the planet, from the site's own pages, with white smoke in light mode and black in dark | E2E "planet": "proximity preview…", "a link to another building… dark smoke"; screenshots in both modes |
+| 12 | S5 | You can move through every page of a building, and never to another building's | E2E "planet": "reading on the planet…", "a link to another building…"; `frameLinks.test.ts` |
+| 13 | S5 | Space closes the overlay (after a lightbox), focus returns, and Back, Forward and Close agree with the history | E2E "planet": "reading on the planet…", "preview-card Open returns focus…" |
+| 14 | S5 | Deep links and the switches between the site and the planet keep the page | E2E "planet": "the site's Explore in 3D opens its page…", "context-preserving switch…" |
+| 15 | S5 | The game's critical JS stays within 450 KB gz, and gated-out devices fetch no game chunk | `verify:prod`: 449.5 KB; E2E "capability gate" |
+| 16 | S6 | Pages are mapped to buildings, reordered and taken off in edit mode, separately from the site; the rules refuse with reasons | E2E "editor": "planet: pages put in buildings…" |
+| 17 | All | Every new screen and view passes axe in light and dark, and the design-system tests pass | E2E axe tests (site, editor, planet); `siteDesignSystem.test.ts` |
+| 18 | All | The spec's "As built" and the related docs match the build: the content model, structures, edit mode, the game UI design system and AGENTS.md | The docs changes in each phase's commit |
 
 ## 3. Validation per phase
 
