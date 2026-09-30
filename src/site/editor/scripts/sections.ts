@@ -5,7 +5,7 @@
  * published page, and the screen says why.
  */
 import { api, announce, describeIssue } from './client';
-import { addHub, nodeIds, place, reorder, unplace, updateHub } from '../model/structure';
+import { addHub, nodeIds, place, reorder, setInMenu, unplace, updateHub } from '../model/structure';
 import { slugify, unique } from '../model/ids';
 import type { SiteStructure } from '../../content/schema';
 
@@ -118,7 +118,11 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
         if (slug !== undefined && !form.querySelector<HTMLInputElement>('input[name="slug"]')?.disabled) fields.slug = slug;
         const view = get('view');
         if (view === 'list' || view === 'tiles' || view === 'bento') fields.view = view;
-        void put(updateHub(state.structure, form.dataset.sectionsHub, fields), form.dataset.sectionsHub, form);
+        let next = updateHub(state.structure, form.dataset.sectionsHub, fields);
+        // the section's entry in the top navigation (the same menu the Navigation screen edits)
+        const nav = form.querySelector<HTMLInputElement>('[data-sections-in-nav] input');
+        if (nav) next = setInMenu(next, form.dataset.sectionsHub, nav.checked);
+        void put(next, form.dataset.sectionsHub, form);
       } else if (form.hasAttribute('data-sections-new')) {
         e.preventDefault();
         const d = new FormData(form);
@@ -129,7 +133,9 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
         const v = String(d.get('view') ?? 'tiles');
         const view = v === 'list' || v === 'bento' ? v : 'tiles';
         // a section is always directly under the home page (three levels: V22)
-        void put(addHub(state.structure, state.structure.home.id, { id, kind: 'hub', slug: slugify(title), title, ...(summary ? { summary } : {}), view, children: [] }), id, form);
+        const added = addHub(state.structure, state.structure.home.id, { id, kind: 'hub', slug: slugify(title), title, ...(summary ? { summary } : {}), view, children: [] });
+        const nav = form.querySelector<HTMLInputElement>('[data-sections-in-nav] input');
+        void put(nav?.checked ? setInMenu(added, id, true) : added, id, form);
       }
     },
     { signal },

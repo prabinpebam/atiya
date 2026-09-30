@@ -515,3 +515,9 @@ Filled in as each phase lands.
   - **The site:** `navigation.ts` (`siteNav`, `exploreHref`) on every page; `classic.ts` and the classic pages are gone. The home page is the home hub's, with the sections below the opening. The footer's "Classic site" became "Home", and the design library's header action "Visit the site".
   - **Until S4:** "Explore in 3D" finds a section's building through its old classic address in `content/redirects.json`, and the game's building links reach their sections through those redirects. S4 replaces both with the planet structure.
   - **Edit mode:** the Sections screen's View (for Template), New section always under home with its view, the home hub's summary, and Gallery among the kinds. Structure operations keep `menus`; a move keeps its node; taking a page off the site takes its navigation entry too.
+- **S3 (30 September 2026):** edit mode for the site.
+  - **Pages:** the screen once called "Articles and pages", with Gallery among the kinds and filters.
+  - **Sections:** each section's settings, and New section, have "In the navigation".
+  - **Navigation** (`/_edit/navigation/`, `NavigationEditor.astro`, `scripts/navigation.ts`): an inert preview of the real header; the entries with their kind, address, "Hidden until published", their own label (saved when it changes; empty goes back to the node's own), Move up, Move down and Remove; Add section, Add page and Add link. The focus lands where the change left it after each save.
+  - **The model:** `menuOf`, `inMenu`, `setInMenu`, `addLink`, `moveEntry`, `relabelEntry`, `removeEntry` and `MENU_MAX` in `model/structure.ts`, unit-tested.
+  - **A dev server started before S3 needs a restart** to serve the new screen: edit mode's routes are registered when it starts.

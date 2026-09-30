@@ -4,6 +4,7 @@ import EditorLayout from '../EditorLayout.astro';
 import StructureTree, { type TreeItem } from '../components/StructureTree.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import { load, sectionOptions } from '../server/screens';
+import { inMenu } from '../model/structure';
 import { readDoc } from '../server/store';
 import { STRUCTURE } from '../server/articles';
 import { isPublished } from '../../content/load';
@@ -21,7 +22,7 @@ if (loaded.ok && structure) {
   const hasPublished = (h: HubNode): boolean => (h.children ?? []).some((c) => (c.kind === 'hub' ? hasPublished(c) : isPublished(index.articles.get(c.item.id) ?? { status: 'draft', visibility: 'public' })));
   const visit = (n: SiteNode, depth: number, parent: HubNode | null, position: number, siblings: number) => {
     if (n.kind === 'hub') {
-      items.push({ node: n.id, kind: 'hub', title: n.title, path: pathOf(n), depth, parent: parent?.id ?? null, position, siblings, hub: { title: n.title, navLabel: n.navLabel, summary: n.summary, slug: n.slug, view: n.view ?? 'tiles', locked: hasPublished(n), home: depth === 0 } });
+      items.push({ node: n.id, kind: 'hub', title: n.title, path: pathOf(n), depth, parent: parent?.id ?? null, position, siblings, hub: { title: n.title, navLabel: n.navLabel, summary: n.summary, slug: n.slug, view: n.view ?? 'tiles', locked: hasPublished(n), home: depth === 0, inNav: inMenu(structure.value, n.id) } });
       (n.children ?? []).forEach((c, i, all) => visit(c, depth + 1, n, i, all.length));
     } else {
       const a = index.articles.get(n.item.id);

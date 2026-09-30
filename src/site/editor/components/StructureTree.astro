@@ -19,6 +19,7 @@ import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import { withBase } from '../../design/meta';
@@ -39,7 +40,7 @@ export interface TreeItem {
   article?: string;
   published?: boolean;
   /** For a hub: its own fields, and whether a published page is under it (then its slug is fixed). */
-  hub?: { title: string; navLabel?: string; summary?: string; slug: string; view: string; locked: boolean; home: boolean };
+  hub?: { title: string; navLabel?: string; summary?: string; slug: string; view: string; locked: boolean; home: boolean; inNav: boolean };
 }
 
 interface Props {
@@ -92,6 +93,7 @@ const VIEWS: SelectOption[] = [
         <TextField label="Title" name="title" required hint="Its heading, and its address made from it." />
         <TextField label="Summary" name="summary" multiline rows={2} optional />
         <Select label="View" name="view" value="tiles" options={VIEWS} />
+        <Switch label="In the navigation" name="inNav" checked data-sections-in-nav="" />
         <p class="issue" role="alert" data-editor-form-issue hidden></p>
         <div class="actions">
           <Button variant="primary" type="submit" icon="plus">Add the section</Button>
@@ -116,6 +118,7 @@ const VIEWS: SelectOption[] = [
             <TextField label="Summary" name="summary" value={it.hub!.summary ?? ''} multiline rows={2} optional hint={it.hub!.home ? 'The line under the name on the home page (at most 160 characters).' : 'The standfirst under its title (at most 160 characters).'} />
             {!it.hub!.home && <TextField label="Slug" name="slug" value={it.hub!.slug} required disabled={it.hub!.locked} hint={it.hub!.locked ? 'Fixed: a published page is under it, and its address would change.' : `Its address: ${it.path}`} />}
             {!it.hub!.home && <Select label="View" name="view" value={it.hub!.view} options={VIEWS} hint="How it lists its pages." />}
+            {!it.hub!.home && <Switch label="In the navigation" name="inNav" checked={it.hub!.inNav} data-sections-in-nav="" />}
             <p class="issue" role="alert" data-editor-form-issue hidden></p>
             <div class="actions">
               <Button variant="primary" type="submit">Save the section</Button>

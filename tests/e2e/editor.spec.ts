@@ -441,6 +441,58 @@ test.describe('editor', () => {
     await expect(page.locator('[data-sections-hub="leadership"] input[name="slug"]')).toBeDisabled();
   });
 
+  test('navigation: a section in and out from Sections and from Navigation; a link added, renamed, moved and removed; the header follows', async ({ page }) => {
+    const menu = () => (readJson(join(FIXTURE, 'content/structures/site.json')).menus?.primary ?? []) as { node?: string; label?: string; href?: string }[];
+    const nodes = () => menu().map((e) => e.node ?? e.label);
+    const count = menu().length;
+    expect(nodes()).toContain('contact');
+
+    // from Sections: Contact's switch off takes it out of the navigation, and nothing else changes
+    await page.goto('/_edit/sections/');
+    await page.locator('[role="treeitem"][data-node="contact"] .name').click();
+    const form = page.locator('[data-sections-hub="contact"]');
+    await form.getByRole('switch', { name: 'In the navigation' }).uncheck();
+    await form.getByRole('button', { name: 'Save the section' }).click();
+    await expect.poll(nodes).not.toContain('contact');
+    expect(menu()).toHaveLength(count - 1);
+
+    // from Navigation: back in, at the end
+    await page.goto('/_edit/navigation/');
+    await expect(page.locator('[data-nav-entry]')).toHaveCount(count - 1);
+    const add = page.locator('[data-nav-add="section"]');
+    await add.getByRole('combobox', { name: 'Section' }).click();
+    await page.getByRole('option', { name: /^Contact/ }).click();
+    await add.getByRole('button', { name: 'Add section' }).click();
+    await expect.poll(() => nodes().at(-1)).toBe('contact');
+
+    // a custom link: added at the end, renamed, moved up one, then removed
+    const link = page.locator('[data-nav-add="link"]');
+    await link.getByLabel('Link label').fill('GitHub');
+    await link.getByLabel('Address').fill('https://github.com/prabinpebam');
+    await link.getByRole('button', { name: 'Add link' }).click();
+    await expect.poll(() => menu().at(-1)).toEqual({ label: 'GitHub', href: 'https://github.com/prabinpebam' });
+    expect(menu()).toHaveLength(count + 1);
+    const last = count;
+    const label = page.locator(`[data-nav-label="${last}"] input`);
+    await label.fill('Code');
+    await label.press('Enter');
+    await expect.poll(() => menu().at(-1)?.label).toBe('Code');
+    await page.locator(`[data-nav-move="up"][data-index="${last}"]`).click();
+    await expect.poll(() => menu().at(-2)?.label).toBe('Code');
+    await expect(page.locator(`[data-nav-move="up"][data-index="${last - 1}"]`)).toBeFocused();
+
+    // the site's header follows, on its pages
+    await page.goto('/');
+    const header = page.getByRole('navigation', { name: 'Sections' });
+    await expect(header.getByRole('link', { name: 'Code' })).toHaveAttribute('href', 'https://github.com/prabinpebam');
+    await expect(header.getByRole('link').filter({ hasNotText: 'Explore in 3D' }).last()).toHaveText('Contact');
+
+    await page.goto('/_edit/navigation/');
+    await page.getByRole('button', { name: 'Remove Code from the navigation' }).click();
+    await expect.poll(() => menu().some((e) => e.label === 'Code')).toBe(false);
+    expect(menu()).toHaveLength(count);
+  });
+
   test('publish: commits content/ only, pushes it to the remote, and discard puts a change back', async ({ page }) => {
     // two changes: one to publish, one to discard
     const site = readJson(join(FIXTURE, 'content/site.json'));
@@ -513,7 +565,7 @@ test.describe('editor', () => {
   });
 
   test('every screen passes axe, in light and in dark', async ({ page }) => {
-    const screens = ['/_edit/', '/_edit/articles/', `/_edit/articles/${ARTICLE}/`, '/_edit/sections/', `/_edit/media/?id=articles/${ARTICLE}/tshirt`, '/_edit/settings/', '/_edit/publish/'];
+    const screens = ['/_edit/', '/_edit/articles/', `/_edit/articles/${ARTICLE}/`, '/_edit/sections/', '/_edit/navigation/', `/_edit/media/?id=articles/${ARTICLE}/tshirt`, '/_edit/settings/', '/_edit/publish/'];
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
       for (const path of screens) {

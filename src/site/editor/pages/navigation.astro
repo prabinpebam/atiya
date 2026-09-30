@@ -1,0 +1,43 @@
+---
+/** Edit mode's navigation: the site's top navigation (documentation/sections/spec.md §7.3). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import NavigationEditor, { type NavEntryView } from '../components/NavigationEditor.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load } from '../server/screens';
+import { readDoc } from '../server/store';
+import { STRUCTURE } from '../server/articles';
+import { MENU_MAX, inMenu, menuOf } from '../model/structure';
+import { siteNav } from '../../content/navigation';
+import type { SiteStructure } from '../../content/schema';
+
+export const prerender = false;
+
+const loaded = load();
+const doc = readDoc<SiteStructure>(STRUCTURE);
+let view: { entries: NavEntryView[]; preview: ReturnType<typeof siteNav>; sections: { value: string; label: string; description: string }[]; pages: { value: string; label: string; description: string }[] } | null = null;
+if (loaded.ok && doc) {
+  const routes = loaded.index.routes;
+  const s = doc.value;
+  const entries = menuOf(s).map((e, index): NavEntryView => {
+    if ('href' in e) return { index, kind: 'link', label: e.label, own: e.label, target: e.href, hidden: false };
+    const r = routes.find((x) => x.node.id === e.node);
+    return { index, kind: r?.node.kind === 'hub' ? 'section' : 'page', label: r?.label ?? e.node, own: e.label, target: r?.path ?? '', hidden: !r?.published };
+  });
+  view = {
+    entries,
+    preview: siteNav(s, routes.filter((r) => r.published)),
+    sections: routes.filter((r) => r.node.kind === 'hub' && r.path !== '/' && !inMenu(s, r.node.id)).map((r) => ({ value: r.node.id, label: r.title, description: r.path })),
+    pages: routes.filter((r) => r.node.kind === 'item' && !inMenu(s, r.node.id)).map((r) => ({ value: r.node.id, label: r.title, description: r.published ? r.path : `${r.path} (a draft: hidden until published)` })),
+  };
+}
+---
+
+<EditorLayout title="Navigation" screen="navigation" heading="Navigation" intro="The site's top navigation: the sections, pages and links it shows, in order. A section can also go in or out from its settings in Sections.">
+  {
+    view && doc ? (
+      <NavigationEditor entries={view.entries} preview={view.preview} sections={view.sections} pages={view.pages} max={MENU_MAX} structure={doc.value} version={doc.version} />
+    ) : (
+      <ContentIssues issues={loaded.ok ? [{ file: 'content/structures/site.json', message: 'missing' }] : loaded.issues} />
+    )
+  }
+</EditorLayout>

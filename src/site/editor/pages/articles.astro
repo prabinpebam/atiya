@@ -1,5 +1,5 @@
 ---
-/** Edit mode's articles and pages (documentation/editor/spec.md §4). Dev only: injected by integrations/editor.mjs. */
+/** Edit mode's pages: articles, pages and galleries (documentation/editor/spec.md §4). Dev only: injected by integrations/editor.mjs. */
 import EditorLayout from '../EditorLayout.astro';
 import ArticleTable from '../components/ArticleTable.astro';
 import ArticleForm from '../components/ArticleForm.astro';
@@ -15,7 +15,7 @@ const wants = Astro.url.searchParams.get('new');
 const home = loaded.ok ? loaded.index.structure.home.id : '';
 ---
 
-<EditorLayout title="Articles and pages" screen="articles" heading="Articles and pages" intro="Everything you've written, newest first. A page is an article that sits on its own (About, Contact).">
+<EditorLayout title="Pages" screen="articles" heading="Pages" intro="Everything on the site with its own address, newest first: articles, pages (About, Contact) and galleries.">
   <Fragment slot="actions">
     <Button variant="secondary" icon="page" data-dialog-open="new-page">New page</Button>
     <Button variant="primary" icon="plus" data-dialog-open="new-article">New article</Button>

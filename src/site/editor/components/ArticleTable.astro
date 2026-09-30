@@ -55,7 +55,7 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
   </div>
   <Text variant="small" tone="muted" as="p" id="articles-count">{`${rows.length} ${rows.length === 1 ? 'article' : 'articles'}`}</Text>
   <table class="table" aria-describedby="articles-count">
-    <caption class="sr-only">Articles and pages</caption>
+    <caption class="sr-only">Pages</caption>
     <thead>
       <tr>
         <th scope="col">Title</th>

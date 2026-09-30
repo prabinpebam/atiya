@@ -4,7 +4,7 @@
  * doesn't change (the navigation, `menus`: documentation/sections/spec.md §7.2). A page that moves keeps its
  * node (its ID, address and label: V21), so the navigation's entry for it still points at it.
  */
-import type { HubNode, ItemNode, SiteNode, SiteStructure } from '../../content/schema';
+import type { HubNode, ItemNode, MenuEntry, SiteNode, SiteStructure } from '../../content/schema';
 
 type ItemRef = { type: string; id: string };
 
@@ -137,4 +137,52 @@ export function addHub(structure: SiteStructure, parentId: string, hub: HubNode)
 export function childSlugs(structure: SiteStructure, hubId: string, itemSlug: (item: ItemRef) => string | undefined): Set<string> {
   const hub = findHub(structure, hubId);
   return new Set((hub?.children ?? []).map((c) => (c.kind === 'hub' ? c.slug : (c.slug ?? itemSlug(c.item) ?? ''))));
+}
+
+// ---------- the navigation (documentation/sections/spec.md §4, §7.3) ----------
+
+/** The navigation's entries, in order. */
+export const menuOf = (structure: SiteStructure): MenuEntry[] => structure.menus?.primary ?? [];
+
+/** At most this many entries fit the header's row (V17). */
+export const MENU_MAX = 8;
+
+const withMenu = (structure: SiteStructure, primary: MenuEntry[]): SiteStructure => ({ ...clone(structure), menus: { ...(structure.menus ?? {}), primary } });
+
+/** Whether a node (a section or a page) has an entry in the navigation. */
+export const inMenu = (structure: SiteStructure, nodeId: string): boolean => menuOf(structure).some((e) => 'node' in e && e.node === nodeId);
+
+/** Puts a node in the navigation (at the end) or takes it out; nothing changes if it's already so. */
+export function setInMenu(structure: SiteStructure, nodeId: string, on: boolean): SiteStructure {
+  const menu = menuOf(structure);
+  if (on === inMenu(structure, nodeId)) return structure;
+  return withMenu(structure, on ? [...menu, { node: nodeId }] : menu.filter((e) => !('node' in e) || e.node !== nodeId));
+}
+
+/** Adds a custom link at the end. */
+export const addLink = (structure: SiteStructure, label: string, href: string): SiteStructure => withMenu(structure, [...menuOf(structure), { label, href }]);
+
+/** Takes an entry out. */
+export const removeEntry = (structure: SiteStructure, index: number): SiteStructure => withMenu(structure, menuOf(structure).filter((_, i) => i !== index));
+
+/** Moves an entry one place up (-1) or down (1); nothing moves past either end. */
+export function moveEntry(structure: SiteStructure, index: number, by: -1 | 1): SiteStructure {
+  const menu = [...menuOf(structure)];
+  const to = index + by;
+  if (index < 0 || index >= menu.length || to < 0 || to >= menu.length) return structure;
+  [menu[index], menu[to]] = [menu[to], menu[index]];
+  return withMenu(structure, menu);
+}
+
+/** Gives an entry its own label; for a section or a page, an empty one goes back to the node's own. A link keeps a label always. */
+export function relabelEntry(structure: SiteStructure, index: number, label: string): SiteStructure {
+  const text = label.trim();
+  return withMenu(
+    structure,
+    menuOf(structure).map((e, i) => {
+      if (i !== index) return e;
+      if ('href' in e) return text ? { ...e, label: text } : e;
+      return text ? { node: e.node, label: text } : { node: e.node };
+    }),
+  );
 }

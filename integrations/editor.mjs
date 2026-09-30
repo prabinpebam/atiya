@@ -24,6 +24,7 @@ const ROUTES = [
   ['/_edit/articles/[id]', 'article.astro'],
   ['/_edit/canvas/articles/[id]', 'canvas.astro'],
   ['/_edit/sections', 'sections.astro'],
+  ['/_edit/navigation', 'navigation.astro'],
   ['/_edit/media', 'media.astro'],
   ['/_edit/settings', 'settings.astro'],
   ['/_edit/publish', 'publish.astro'],

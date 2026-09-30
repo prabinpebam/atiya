@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import * as ops from '../../src/site/editor/model/ops';
 import * as paste from '../../src/site/editor/model/paste';
 import { inlineOf, markdownOf, plainOf, type MiniNode } from '../../src/site/editor/model/dom';
-import { addHub, nodeOf, childSlugs, findHub, hubs, nodeIds, place, reorder, sectionOf, unplace, updateHub } from '../../src/site/editor/model/structure';
+import { addHub, addLink, inMenu, menuOf, moveEntry, nodeOf, childSlugs, findHub, hubs, nodeIds, place, relabelEntry, removeEntry, reorder, sectionOf, setInMenu, unplace, updateHub } from '../../src/site/editor/model/structure';
 import { slugify, today, unique } from '../../src/site/editor/model/ids';
 import { actionsUrl, groupChanges, resourceName, resourceOf, suggestMessage, type Titles } from '../../src/site/editor/model/names';
 import { ownerLabel, ownerOf, references } from '../../src/site/editor/model/references';
@@ -421,6 +421,36 @@ describe('the site structure', () => {
     expect(moved.menus?.primary).toEqual(STRUCTURE.menus?.primary);
     const off = unplace(STRUCTURE, { type: 'article', id: 'b' });
     expect(off.menus?.primary).toEqual([{ node: 'lead' }, { label: 'GitHub', href: 'https://github.com/x' }]);
+  });
+});
+
+describe('the navigation, as edit mode changes it (documentation/sections/spec.md §7.3)', () => {
+  it('puts a node in (at the end) and takes it out; a second time changes nothing', () => {
+    expect(inMenu(STRUCTURE, 'notes')).toBe(false);
+    const on = setInMenu(STRUCTURE, 'notes', true);
+    expect(menuOf(on).at(-1)).toEqual({ node: 'notes' });
+    expect(setInMenu(on, 'notes', true)).toBe(on);
+    expect(menuOf(setInMenu(on, 'notes', false))).toEqual(menuOf(STRUCTURE));
+    expect(setInMenu(STRUCTURE, 'notes', false)).toBe(STRUCTURE);
+    // a structure without a menu gets one
+    const bare: SiteStructure = { home: STRUCTURE.home };
+    expect(menuOf(setInMenu(bare, 'lead', true))).toEqual([{ node: 'lead' }]);
+  });
+
+  it('adds a link, moves an entry within the ends, relabels (an empty label goes back to the node’s own; a link keeps one) and removes', () => {
+    const linked = addLink(STRUCTURE, 'Mail', 'mailto:a@b.c');
+    expect(menuOf(linked).at(-1)).toEqual({ label: 'Mail', href: 'mailto:a@b.c' });
+    expect(menuOf(moveEntry(STRUCTURE, 1, -1)).map((e) => ('node' in e ? e.node : e.label))).toEqual(['b', 'lead', 'GitHub']);
+    expect(moveEntry(STRUCTURE, 0, -1)).toBe(STRUCTURE);
+    expect(moveEntry(STRUCTURE, 2, 1)).toBe(STRUCTURE);
+    const named = relabelEntry(STRUCTURE, 0, ' Leading ');
+    expect(menuOf(named)[0]).toEqual({ node: 'lead', label: 'Leading' });
+    expect(menuOf(relabelEntry(named, 0, ''))[0]).toEqual({ node: 'lead' });
+    expect(menuOf(relabelEntry(STRUCTURE, 2, ''))[2]).toEqual({ label: 'GitHub', href: 'https://github.com/x' });
+    expect(menuOf(relabelEntry(STRUCTURE, 2, 'Code'))[2]).toEqual({ label: 'Code', href: 'https://github.com/x' });
+    expect(menuOf(removeEntry(STRUCTURE, 1))).toEqual([{ node: 'lead' }, { label: 'GitHub', href: 'https://github.com/x' }]);
+    // the tree is untouched by all of it
+    expect(removeEntry(STRUCTURE, 1).home).toEqual(STRUCTURE.home);
   });
 });
 

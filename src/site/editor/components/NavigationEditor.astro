@@ -1,0 +1,253 @@
+---
+/**
+ * Edit mode's Navigation screen (documentation/sections/spec.md §7.3): the site's top navigation as it
+ * will show, a preview of the real header, then its entries in order (each with its own label, what it
+ * points to, whether it shows yet, and Move up, Move down and Remove), and the ways to add a section, a
+ * page or a link. Every change is one save of the site structure's `menus.primary`.
+ * @tier editor
+ * @a11y The preview is inert (a picture of the header, not a second navigation); the entries are an ordered list, each with named buttons.
+ * @a11y An entry's label is a named field that saves when it changes; its hint says what an empty one means.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import SiteHeader, { type NavItem } from '../../components/compounds/SiteHeader.astro';
+import type { SelectOption } from '../../components/fundamentals/Select.astro';
+import type { SiteStructure } from '../../content/schema';
+
+export interface NavEntryView {
+  /** Its place in the menu. */
+  index: number;
+  kind: 'section' | 'page' | 'link';
+  /** The label it shows. */
+  label: string;
+  /** Its own label, when it has one (a link always does). */
+  own?: string;
+  /** Where it goes: a path on the site, or a link's address. */
+  target: string;
+  /** A draft page's entry: kept, but not shown until the page is published. */
+  hidden: boolean;
+}
+
+interface Props {
+  /** The entries, in order. */
+  entries: NavEntryView[];
+  /** The header's navigation as it will render (the built entries). */
+  preview: NavItem[];
+  /** Sections not in the navigation yet. */
+  sections: SelectOption[];
+  /** Pages on the site not in the navigation yet. */
+  pages: SelectOption[];
+  /** The most entries the header holds. */
+  max: number;
+  /** The site structure and its version, for the screen's script. */
+  structure: SiteStructure;
+  version: string;
+}
+
+const { entries, preview, sections, pages, max, structure, version } = Astro.props;
+const full = entries.length >= max;
+const KIND = { section: 'Section', page: 'Page', link: 'Link' } as const;
+const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
+---
+
+<div class="navigation" data-editor-navigation>
+  <section class="card preview-card" aria-labelledby="nav-preview-title">
+    <div class="head">
+      <Heading level={2} size="h4" id="nav-preview-title">Preview</Heading>
+      <Text variant="small" tone="muted">The header on every page of the site, at desktop width. Under 56 rem it folds into a menu.</Text>
+    </div>
+    <div class="preview" inert>
+      <SiteHeader nav={preview} action={{ label: 'Explore in 3D', href: '#', icon: 'planet' }} navLabel="Sections (preview)" />
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="nav-entries-title">
+    <div class="head">
+      <Heading level={2} size="h4" id="nav-entries-title">In the navigation</Heading>
+      <Text variant="small" tone="muted">{`${entries.length} of ${max} entries, in the order they show.`}</Text>
+    </div>
+    {
+      entries.length === 0 ? (
+        <Text tone="muted">The navigation is empty: add a section, a page or a link below.</Text>
+      ) : (
+        <ol class="entries">
+          {entries.map((e) => (
+            <li class="entry" data-nav-entry={String(e.index)}>
+              <div class="what">
+                <Tag size="sm">{KIND[e.kind]}</Tag>
+                <Text as="span" variant="small" tone="muted">
+                  {e.target}
+                </Text>
+                {e.hidden && (
+                  <Tag size="sm" tone="neutral">
+                    Hidden until published
+                  </Tag>
+                )}
+              </div>
+              <div class="fields">
+                <TextField
+                  label={`Label for ${e.label}`}
+                  name="label"
+                  value={e.own ?? ''}
+                  placeholder={e.kind === 'link' ? undefined : e.label}
+                  hint={e.kind === 'link' ? 'At most 24 characters.' : `Left empty, it shows "${e.label}". At most 24 characters.`}
+                  data-nav-label={String(e.index)}
+                />
+                <span class="moves">
+                  <IconButton label={`Move ${e.label} up`} icon="arrow-up" size="sm" tooltip="none" disabled={e.index === 0} data-nav-move="up" data-index={String(e.index)} />
+                  <IconButton label={`Move ${e.label} down`} icon="arrow-down" size="sm" tooltip="none" disabled={e.index === entries.length - 1} data-nav-move="down" data-index={String(e.index)} />
+                  <IconButton label={`Remove ${e.label} from the navigation`} icon="delete" size="sm" tooltip="none" data-nav-remove={String(e.index)} />
+                </span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+  </section>
+
+  <section class="card" aria-labelledby="nav-add-title">
+    <div class="head">
+      <Heading level={2} size="h4" id="nav-add-title">Add to the navigation</Heading>
+      {full && <Text variant="small" tone="muted">{`The navigation is full (${max} entries): remove one to add another.`}</Text>}
+    </div>
+    <form class="add" data-nav-add="section" novalidate>
+      {
+        sections.length ? (
+          <>
+            <Select label="Section" name="node" options={sections} />
+            <Button variant="secondary" type="submit" icon="plus" disabled={full}>Add section</Button>
+          </>
+        ) : (
+          <Text variant="small" tone="muted">Every section is in the navigation.</Text>
+        )
+      }
+    </form>
+    <form class="add" data-nav-add="page" novalidate>
+      {
+        pages.length ? (
+          <>
+            <Select label="Page" name="node" options={pages} />
+            <Button variant="secondary" type="submit" icon="plus" disabled={full}>Add page</Button>
+          </>
+        ) : (
+          <Text variant="small" tone="muted">Every page on the site is in the navigation.</Text>
+        )
+      }
+    </form>
+    <form class="add link" data-nav-add="link" novalidate>
+      <TextField label="Link label" name="label" hint="At most 24 characters." />
+      <TextField label="Address" name="href" hint="An https, http or mailto address, or a path on this site (/play/)." />
+      <Button variant="secondary" type="submit" icon="plus" disabled={full}>Add link</Button>
+    </form>
+    <p class="issue" role="alert" data-editor-form-issue hidden></p>
+  </section>
+  <script is:inline type="application/json" data-editor-navigation-state set:html={state} />
+</div>
+
+<style>
+  .navigation {
+    display: grid;
+    gap: var(--space-8);
+    align-content: start;
+  }
+
+  .card {
+    display: grid;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  /* the header as it shows on the site: on the page's own paper, clipped to its box */
+  .preview {
+    overflow: hidden;
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  .entries {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .entry {
+    display: grid;
+    gap: var(--space-2);
+    padding-block-start: var(--space-4);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .what {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-3);
+  }
+
+  .moves {
+    display: flex;
+    gap: var(--space-1);
+    padding-block-start: var(--space-6);
+  }
+
+  .add {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--space-3);
+  }
+
+  .add.link {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  @media (max-width: 40rem) {
+    .add,
+    .add.link,
+    .fields {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .moves {
+      padding-block-start: 0;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initNavigation } from '../scripts/navigation';
+
+  each<HTMLElement>('[data-editor-navigation]', (root, signal) => initNavigation(root, signal));
+</script>

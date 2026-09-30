@@ -115,7 +115,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 **Not in this version**
 - Designing: new layouts, colours, fonts or free positioning. Those belong to the design system and its code.
 - The planet's structure (`structures/planet`) and the classic pages (`src/content/landmarks/`), until the content platform's phase 0 moves them into `content/` ([plan](../content/plan.md)). The home page's hub is still `src/pages/index.astro`.
-- Menus: the header's navigation is the site structure's `menus.primary` ([sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)). Its Navigation screen comes in that plan's phase S3.
+- Menus beyond the header's navigation: the footer's links and the header's action stay in code. The navigation itself is `menus.primary`, edited on the Navigation screen ([sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)).
 - Several people at once, roles and permissions, scheduled publishing and comments: there is one owner, and git is the history.
 - Video files: videos are YouTube or Vimeo embeds with a local poster ([media §4](../content/media.md#4-formats-and-budgets)).
 
@@ -124,9 +124,10 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 | Screen | Path | What it's for |
 |---|---|---|
 | Dashboard | `/_edit/` | What's in draft, what changed since the last publish, what needs attention (missing alt text, unplaced articles), and the quick actions |
-| Articles | `/_edit/articles/` | Every article and page, with its kind, section, status and last update; search and filters; new, duplicate and delete |
+| Pages | `/_edit/articles/` | Every page of every kind (Article, Page, Gallery), with its kind, section, status and last update; search and filters; new, duplicate and delete |
 | Article editor | `/_edit/articles/<id>/` | The canvas, the outline and the inspector (§3) |
-| Sections | `/_edit/sections/` | The site structure: hubs, what each places and in what order; articles not yet on the site (§5) |
+| Sections | `/_edit/sections/` | The site structure: sections, what each holds and in what order, each one's view and whether it's in the navigation; pages not yet on the site (§5) |
+| Navigation | `/_edit/navigation/` | The top navigation: a preview of the header, its entries in order (sections, pages, custom links), their labels, and adding, moving and removing them ([sections spec §7.3](../sections/spec.md#73-navigation-new-screen-u5)) |
 | Media | `/_edit/media/` | The media library: upload, alt text, captions, credits, focus points, where each picture is used (§6) |
 | Settings | `/_edit/settings/` | The site settings and the owner's profile |
 | Publish | `/_edit/publish/` | What changed in `content/`, the contract check, discard, and publish (§7) |
@@ -257,7 +258,7 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 
 The site structure's tree ([structures §2](../content/ia.md#2-the-site-structure)), as a tree view.
 
-- **A section** (a hub under the home page) shows its title and address, and its pages, in order. Its settings are its title, its menu label, its summary, its slug and its view (List, Tiles or Bento: how it lists its pages, [sections spec §3.4](../sections/spec.md#34-the-section-view-u6)). New section adds a section under the home page, with its summary and view. The site is three levels, so there are no sections inside sections and no pages directly under the home page (V22).
+- **A section** (a hub under the home page) shows its title and address, and its pages, in order. Its settings are its title, its menu label, its summary, its slug and its view (List, Tiles or Bento: how it lists its pages, [sections spec §3.4](../sections/spec.md#34-the-section-view-u6)). A switch, In the navigation, adds it to the top navigation or takes it out (the same menu the Navigation screen edits). New section adds a section under the home page, with its summary, its view and the switch (on). The site is three levels, so there are no sections inside sections and no pages directly under the home page (V22).
 - **An article's node** can be reordered (drag, or Move up and Move down). A draft's node can also be moved to another hub or removed from the site (the article stays in `content/`, listed under "Not on the site yet" with Place under…).
 - **The home hub** has its title, its menu label and its summary: the home page's name and the line under it ([sections spec §3.5](../sections/spec.md#35-the-home-page-decision-o5)).
 - **Drafts can be placed.** A node may place a draft: its route is resolved and checked like any other (so two drafts can't claim one address), and the build leaves it out until it's published. So an article's section is chosen when it's created, and publishing it is only a status change (§9).
