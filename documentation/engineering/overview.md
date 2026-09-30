@@ -40,6 +40,7 @@ The site and the planet share this layout today. [Separating the site and the pl
 | `tests/unit/`, `tests/e2e/` | The Vitest and Playwright suites |
 | `documentation/` | This docs site: every spec, plan and Definition of Done |
 | `integrations/docs-site.mjs` | Publishes `documentation/` at `<base>/docs/` |
+| `integrations/dev-isolation.mjs` | Each command's own Vite and Astro caches, so a build or check never rewrites a running dev server's bundles ([why](app-separation.md#1-why-site-work-breaks-the-planet)) |
 | `integrations/editor.mjs` | [Edit mode](../editor/spec.md): its routes, guard and Edit button in `npm run dev` only; the content folder's path for every command |
 
 ## Commands

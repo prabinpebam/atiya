@@ -64,7 +64,6 @@ export default function editor() {
           vite: {
             define: { __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot) },
             ...(process.env.SITE_STRICT_PORT ? { server: { strictPort: true } } : {}),
-            ...(process.env.SITE_VITE_CACHE ? { cacheDir: process.env.SITE_VITE_CACHE } : {}),
           },
         });
         editing = command === 'dev' && process.env.SITE_EDITOR !== 'off';

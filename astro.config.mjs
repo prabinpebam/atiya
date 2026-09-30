@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import docsSite from './integrations/docs-site.mjs';
 import editor from './integrations/editor.mjs';
+import devIsolation from './integrations/dev-isolation.mjs';
 
 // GitHub Pages serves this repository as a project site, https://<user>.github.io/<repo>/, so the
 // deploy workflow (.github/workflows/deploy.yml) builds with SITE_URL and BASE_PATH set. Locally, in
@@ -33,8 +34,9 @@ function stripShaderComments() {
 export default defineConfig({
   site,
   base,
-  // the documentation site (documentation/, Slate) is published beside the game at <base>/docs/
-  integrations: [react(), docsSite(), editor()],
+  // the documentation site (documentation/, Slate) is published beside the game at <base>/docs/;
+  // devIsolation: a running dev server's caches are its own, never rewritten by a build or a check (app-separation.md §1)
+  integrations: [devIsolation(), react(), docsSite(), editor()],
   devToolbar: { enabled: false },
   vite: {
     plugins: [stripShaderComments()],
