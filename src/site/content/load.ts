@@ -4,7 +4,7 @@
  * them all. Pure: the files and the list of media masters come in as arguments, so tests can feed it.
  */
 import type { z } from 'astro/zod';
-import { article, imageMedia, person, redirects as redirectList, siteSettings, siteStructure, type Article, type ImageMedia, type Person, type Redirect, type SiteSettings, type SiteStructure } from './schema';
+import { PLACE_IDS, article, imageMedia, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, type Article, type ImageMedia, type Person, type PlanetStructure, type Redirect, type SiteSettings, type SiteStructure } from './schema';
 import { buildRoutes, canonicalPaths, type Route } from './routes';
 
 export interface MediaRecord extends ImageMedia {
@@ -26,6 +26,8 @@ export interface ContentIndex {
   canonical: Map<string, string>;
   /** Old addresses sent on to new ones (V19): built as redirect pages. */
   redirects: Redirect[];
+  /** The planet's buildings and what each holds (documentation/sections/spec.md §5), if the file is there. */
+  planet: PlanetStructure | null;
   /** Reported, not failed: a published item the site doesn't place (it has no page). */
   warnings: string[];
 }
@@ -86,6 +88,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   let site: SiteSettings | undefined;
   let structure: SiteStructure | undefined;
   let redirects: Redirect[] = [];
+  let planet: PlanetStructure | null = null;
   const articles = new Map<string, Article>();
   const people = new Map<string, Person>();
   const media = new Map<string, MediaRecord>();
@@ -96,6 +99,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     if (file === '/content/site.json') site = parse(siteSettings, file, data);
     else if (file === '/content/structures/site.json') structure = parse(siteStructure, file, data);
     else if (file === '/content/redirects.json') redirects = parse(redirectList, file, data) ?? [];
+    else if (file === '/content/structures/planet.json') planet = parse(planetStructure, file, data) ?? null;
     else if (/^\/content\/articles\/[^/]+\.json$/.test(file)) {
       const a = parse(article, file, data);
       if (a && a.id !== name) add(file, `id "${a.id}" must match the file name`, 'id');
@@ -164,6 +168,25 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     const taken = new Set(routes.map((r) => r.path));
     const published = new Set(routes.filter((r) => r.published).map((r) => r.path));
     const froms = new Set<string>();
+    // the planet (V13 to V16): each building once; a page in one building at most, and on the site
+    if (planet) {
+      const PLANET = 'content/structures/planet.json';
+      for (const pid of PLACE_IDS) {
+        const n = planet.places.filter((p) => p.id === pid).length;
+        if (n !== 1) add(PLANET, n ? `the ${pid} is listed ${n} times; each building is listed once (V14)` : `the ${pid} is missing; every building is listed once (V14)`, 'places');
+      }
+      const where = new Map<string, string>();
+      planet.places.forEach((p, i) => {
+        if (p.site && !routes.some((r) => r.node.id === p.site && r.node.kind === 'hub' && r.path !== '/')) add(PLANET, `"${p.site}" isn't a section of the site (V16)`, `places.${i}.site`);
+        p.pages.forEach((ref, j) => {
+          const at = `places.${i}.pages.${j}`;
+          if (!articles.has(ref.id)) return add(PLANET, `page "${ref.id}" doesn't exist`, at);
+          if (where.has(ref.id)) add(PLANET, `page "${ref.id}" is in the ${where.get(ref.id)} and the ${p.id}; a page is in one building at most (V15)`, at);
+          where.set(ref.id, p.id);
+          if (!routes.some((r) => r.node.kind === 'item' && r.node.item.id === ref.id)) add(PLANET, `page "${ref.id}" isn't on the site; a page on the planet needs its page on the site (V13)`, at);
+        });
+      });
+    }
     redirects.forEach((r, i) => {
       if (taken.has(r.from)) add('content/redirects.json', `${r.from} is a page of the site; only an address that's gone can redirect`, `${i}.from`);
       if (froms.has(r.from)) add('content/redirects.json', `${r.from} redirects twice`, `${i}.from`);
@@ -173,7 +196,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   }
 
   if (issues.length) throw new ContentError(issues);
-  return { site: site!, structure: structure!, articles, people, media, routes, canonical: canonicalPaths(routes), redirects, warnings };
+  return { site: site!, structure: structure!, articles, people, media, routes, canonical: canonicalPaths(routes), redirects, planet, warnings };
 }
 
 /** A path on this site a link may go to: a page of the tree, or one of the code's own (the planet, the docs, the design library). */

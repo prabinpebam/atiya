@@ -3,7 +3,8 @@
  * must stay true: new IDs and slugs, the dates, the section an article is placed in, and the locks on a
  * published article. Every change is one store transaction.
  */
-import { article as articleSchema, type Article, type SiteStructure } from '../../content/schema';
+import { article as articleSchema, type Article, type PlanetStructure, type SiteStructure } from '../../content/schema';
+import { placeOfPage, takeOff } from '../model/planet';
 import { isPublished } from '../../content/load';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { slugify, today, unique } from '../model/ids';
@@ -12,6 +13,7 @@ import { isMeaningful } from '../model/ops';
 import { readSnapshot } from '../../content/source';
 
 export const STRUCTURE = '/content/structures/site.json';
+export const PLANET = '/content/structures/planet.json';
 export const articleKey = (id: string) => `/content/articles/${id}.json`;
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -144,6 +146,12 @@ export async function deleteArticle(id: string, withMedia: boolean, ifMatch: Rec
   if (sectionOf(s.value, { type: 'article', id })) {
     changes.push({ key: STRUCTURE, bytes: jsonBytes(unplace(s.value, { type: 'article', id })) });
     match[STRUCTURE] = ifMatch[STRUCTURE] ?? s.version;
+  }
+  // off the planet too, in the same transaction (a page on the planet needs its page on the site: V13)
+  const planet = readDoc<PlanetStructure>(PLANET);
+  if (planet && placeOfPage(planet.value, id)) {
+    changes.push({ key: PLANET, bytes: jsonBytes(takeOff(planet.value, id)) });
+    match[PLANET] = ifMatch[PLANET] ?? planet.version;
   }
   if (withMedia) {
     const snap = readSnapshot();

@@ -5,7 +5,7 @@
  */
 import { withBase } from '../design/meta';
 import type { Route } from './routes';
-import type { Redirect, SiteStructure } from './schema';
+import type { PlanetStructure, SiteStructure } from './schema';
 
 export interface NavLink {
   label: string;
@@ -31,22 +31,22 @@ export function siteNav(structure: SiteStructure, routes: Route[], current?: Rou
 }
 
 /**
- * Where "Explore in 3D" goes from a page of the site: to the building its section came from (the one whose
- * old classic address redirects to it), else the plaza. The planet structure's own links replace this
- * (documentation/sections/plan.md, S4).
+ * Where "Explore in 3D" goes from a page of the site (documentation/sections/spec.md §6.6): a page that's
+ * on the planet, to its building; a section, to the building that points to it (its `site`); anything
+ * else, the plaza.
  */
-export function exploreHref(route?: Route, redirects: Redirect[] = []): string {
-  const section = route && (route.ancestors.length > 1 ? route.ancestors[1].path : route.ancestors.length === 1 ? route.path : undefined);
-  const from = section && redirects.find((r) => r.to === section)?.from;
-  const building = from && /^\/classic\/([a-z0-9-]+)\/$/.exec(from)?.[1];
-  return withBase(building ? `/play/?at=${building}` : '/play/');
+export function exploreHref(route?: Route, planet?: PlanetStructure | null): string {
+  const places = planet?.places ?? [];
+  const node = route?.node;
+  const place = !node ? undefined : node.kind === 'item' ? places.find((p) => p.pages.some((r) => r.id === node.item.id)) : places.find((p) => p.site === node.id);
+  return withBase(place ? `/play/?at=${place.id}` : '/play/');
 }
 
 /** The header's action: into the planet, from this page. */
-export function exploreAction(route?: Route, redirects: Redirect[] = []) {
+export function exploreAction(route?: Route, planet?: PlanetStructure | null) {
   return {
     label: 'Explore in 3D',
-    href: exploreHref(route, redirects),
+    href: exploreHref(route, planet),
     icon: 'planet' as const,
     data: { 'data-site-mode': 'play' } as Record<`data-${string}`, string>,
   };

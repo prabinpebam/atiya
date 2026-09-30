@@ -22,9 +22,9 @@ export function buildPlaySearch(at: string | null, open = false): string {
   return open ? `?at=${encodeURIComponent(at)}&open=1` : `?at=${encodeURIComponent(at)}`;
 }
 
-export function classicHrefFor(id: string | null): string {
-  // a building's classic page is its old address, which redirects to its section; the site's is its home page's list of sections
-  return withBase(id ? `/classic/${id}/` : '/#sections');
+/** The site's list of sections (a building's own page on the site is its `siteHref`, from the planet structure). */
+export function classicHrefFor(): string {
+  return withBase('/#sections');
 }
 
 export function playHrefFor(id: string | null): string {

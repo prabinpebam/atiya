@@ -22,8 +22,8 @@ The site and the planet share this layout today. [Separating the site and the pl
 
 | Path | What lives there |
 |---|---|
-| `src/pages/` | `index.astro` (landing), `classic/` (plain pages per landmark), `design/` (the design library), `play.astro` (the game page) |
-| `src/content/landmarks/` | The landmark content (Markdown with frontmatter), shared by the classic pages and the game |
+| `src/pages/` | `index.astro` (the home page), `[...path].astro` (every section, page and redirect of the site structure), `design/` (the design library), `play.astro` (the game page) |
+| `content/` | The site's content as data: pages, the site structure (sections and navigation), the planet structure (what each building holds), media ([content spec](../content/spec.md)) |
 | `src/game/platform/` | `gate.ts` (the capability gate: no React or three), `base.ts` (`withBase`), prefs |
 | `src/game/controller.ts` | The game controller: input, simulation step, targets, talk, travel, settings |
 | `src/game/math/`, `src/game/systems/` | Pure simulation: planet rotation, collision, proximity, targets, actions, seating, ready cues |

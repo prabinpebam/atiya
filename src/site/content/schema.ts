@@ -184,6 +184,27 @@ export const siteStructure = z.strictObject({
   menus: z.strictObject({ primary: z.array(menuEntry).max(8, 'the navigation holds at most eight entries') }).optional(),
 });
 
+/**
+ * The planet's buildings: the game's own sections, fixed by its world (src/game/world/places.ts, kept in
+ * step by a unit test), so the content layer never imports the game (documentation/sections/spec.md §5).
+ */
+export const PLACE_IDS = ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office'] as const;
+export type PlaceId = (typeof PLACE_IDS)[number];
+
+/** A building's words and what it holds: which pages, in what order, listed how, and its section on the site. */
+const place = z.strictObject({
+  id: z.enum(PLACE_IDS),
+  title: z.string().min(1).max(40),
+  kicker: z.string().min(1).max(60),
+  summary: z.string().min(1).max(160),
+  view: z.enum(SECTION_VIEWS).optional(),
+  site: id.optional(),
+  pages: z.array(pageRef),
+});
+
+/** The planet structure (spec §5.2): each of the seven buildings once (V14). */
+export const planetStructure = z.strictObject({ places: z.array(place) });
+
 /** A page's old address sent on to its new one (spec §3.5, V19): both paths on this site. */
 export const redirects = z.array(
   z.strictObject({
@@ -199,3 +220,5 @@ export type Person = z.infer<typeof person>;
 export type SiteSettings = z.infer<typeof siteSettings>;
 export type SiteStructure = z.infer<typeof siteStructure>;
 export type Redirect = z.infer<typeof redirects>[number];
+export type PlanetStructure = z.infer<typeof planetStructure>;
+export type Place = PlanetStructure['places'][number];

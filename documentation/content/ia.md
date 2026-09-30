@@ -173,6 +173,8 @@ The IA's navigation rules are behaviour, so they're pure functions in `src/site/
 
 One resource, `structures/planet`, holds the places in their fast-travel order.
 
+> **As built (30 September 2026).** The buildings are fixed by the game, so their world (`lat`, `lon`, facing, footprint, approach, variant, accent, order) is code, `src/game/world/places.ts`. The content is `content/structures/planet.json`: each of the seven places once, with `title`, `kicker`, `summary`, `view`, `site` (its section on the site) and `pages` (page references, in order). A page is in one building at most, and must be on the site. There's no `dialog` or `entries` query: opening a building lists its pages ([sections spec §5](../sections/spec.md#5-the-planet-a-parallel-structure-u8u11)).
+
 | Field | Type | Notes |
 |---|---|---|
 | `id` | string | The landmark (`workshop`); matches a building the game knows |

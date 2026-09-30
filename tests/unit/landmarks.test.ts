@@ -1,38 +1,39 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { CONFIG } from '../../src/game/config';
 import { UP, arcDistance } from '../../src/game/math/sphere';
 import { arrivalOrientation, landmarkGeometry, segmentClearance, validateLandmarks } from '../../src/game/math/landmarks';
 import { PlanetSim } from '../../src/game/systems/movement';
 import { generateProps } from '../../src/game/world/layout';
+import { PLACES } from '../../src/game/world/places';
+import { LINES } from '../../src/game/world/home/family';
+import { welcomeLines } from '../../src/game/world/home/welcome';
+import { PLACE_IDS } from '../../src/site/content/schema';
+import { content, placePages } from '../../src/site/content/repository';
 import { FIXTURE_LANDMARKS } from './fixtures';
 
-const CONTENT_DIR = join(process.cwd(), 'src', 'content', 'landmarks');
-
-function frontmatterNumber(src: string, key: string): number {
-  const m = src.match(new RegExp(`^${key}:\\s*(-?[\\d.]+)`, 'm'));
-  if (!m) throw new Error(`missing ${key}`);
-  return Number(m[1]);
-}
-
-describe('landmark content', () => {
-  it('fixture mirrors the content collection placement data', () => {
-    const files = readdirSync(CONTENT_DIR).filter((f) => f.endsWith('.md'));
-    expect(files.length).toBe(FIXTURE_LANDMARKS.length);
-    for (const f of files) {
-      const id = f.replace(/\.md$/, '');
-      const src = readFileSync(join(CONTENT_DIR, f), 'utf8');
-      const fx = FIXTURE_LANDMARKS.find((l) => l.id === id);
-      expect(fx, id).toBeDefined();
-      expect(frontmatterNumber(src, 'lat')).toBe(fx!.lat);
-      expect(frontmatterNumber(src, 'lon')).toBe(fx!.lon);
-      expect(frontmatterNumber(src, 'footprintU')).toBe(fx!.footprintU);
-      expect(frontmatterNumber(src, 'approachDistanceU')).toBe(fx!.approachDistanceU);
-      expect(frontmatterNumber(src, 'order')).toBe(fx!.order);
-    }
+describe('the buildings (documentation/sections/spec.md §5)', () => {
+  it("the world's seven buildings are the content contract's seven places, in fast-travel order", () => {
+    expect(PLACES.map((p) => p.id)).toEqual([...PLACE_IDS]);
+    expect(PLACES.map((p) => p.order)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(FIXTURE_LANDMARKS.map((l) => l.id)).toEqual(PLACES.map((p) => p.id));
   });
 
+  it('the planet structure gives each building its words once, and a section of the site', () => {
+    const planet = content().planet!;
+    expect(planet.places.map((p) => p.id).sort()).toEqual([...PLACE_IDS].sort());
+    for (const p of planet.places) expect(p.site, p.id).toBeTruthy();
+  });
+
+  it("Prabin points only at buildings that hold something: every building his lines say has something of his holds a published page", () => {
+    const planet = content().planet!;
+    const lines = [...welcomeLines(null, false), ...welcomeLines(null, true), ...Object.values(LINES.prabin.greet).flat(), ...LINES.prabin.pool, ...Object.values(LINES.prabin.doing).flat()];
+    const claims = lines.flatMap((l) => planet.places.filter((p) => new RegExp(`The ${p.title} (has|holds) my`).test(l)).map((p) => ({ line: l, place: p.id })));
+    expect(claims.length).toBeGreaterThan(0);
+    for (const c of claims) expect(placePages(c.place).length, `${c.place}: "${c.line}"`).toBeGreaterThan(0);
+  });
+});
+
+describe('landmark content', () => {
   it('passes cross-entry validation', () => {
     expect(validateLandmarks(FIXTURE_LANDMARKS)).toEqual([]);
   });

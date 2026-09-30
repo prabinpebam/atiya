@@ -125,7 +125,7 @@ The planet's browser code is the only part of the repository that imports packag
 | 7 | One production build and budget report (`verify:prod`) | Checks | Site pages are built and measured with the game's chunks |
 | 8 | Folders that look shared but belong to one app | Layout | `src/pages/` (both apps' routes), `src/layouts/BaseLayout.astro` (the game's), `src/styles/` and `src/design/` (the game's; the site's live in `src/site/`), `public/` (mostly the game's; the landing uses `public/poster/`) |
 | 9 | `withBase` lives in the game (`src/game/platform/base.ts`) | Code | The site imports a game module ([meta.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/design/meta.ts)); the only import that crosses |
-| 10 | `src/content/landmarks/*.md` | Data | One file holds the site's copy and the planet's world placement; `play.astro` validates it with the game's rules and `tests/unit/fixtures.ts` mirrors it, so a copy edit runs the game's checks |
+| 10 | `src/content/landmarks/*.md` | Data | One file held the site's copy and the planet's world placement. **Resolved (30 September 2026):** the world is `src/game/world/places.ts` and the words and pages are `content/structures/planet.json`; `play.astro` joins them ([sections spec §5](../sections/spec.md#5-the-planet-a-parallel-structure-u8u11)) |
 | 11 | Links: `/classic/…` from the game, `/play/?at=…` from the site; the `site.mode` memory | Seam | Real connections, but spread across eight files (the `site.mode` key is spelled out in three), and not tested across the join |
 | 12 | One AGENTS.md | Process | Every task loads both apps' rules; most of it is the planet's |
 

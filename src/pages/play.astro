@@ -1,6 +1,5 @@
 ---
 import { withBase } from '../game/platform/base';
-import { getCollection } from 'astro:content';
 import { faCaretDown, faXmark } from '@fortawesome/free-solid-svg-icons';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { validateLandmarks } from '../game/math/landmarks';
@@ -9,10 +8,28 @@ import { TOUCH_COPY } from '../game/input/touchCopy';
 import { tierTextures } from '../game/world/textures';
 import { TEXTURES } from '../game/world/textureManifest';
 import { CHARACTERS } from '../game/player/characters';
+import { PLACES } from '../game/world/places';
+import { getPlanet, getRoutes, placePages } from '../site/content/repository';
 import type { LandmarkData } from '../game/types';
 
-const entries = await getCollection('landmarks');
-const landmarks: LandmarkData[] = entries.map((e) => ({ id: e.id, ...e.data }));
+// the buildings: the world's (fixed, in code) joined with what the planet structure says each holds
+// (content/structures/planet.json: documentation/sections/spec.md §5)
+const planet = getPlanet();
+if (!planet) throw new Error('content/structures/planet.json is missing: the planet needs its buildings’ words and pages');
+const routes = getRoutes();
+const landmarks: LandmarkData[] = PLACES.map((world) => {
+  const place = planet.places.find((p) => p.id === world.id);
+  if (!place) throw new Error(`content/structures/planet.json has no ${world.id}`);
+  const site = place.site ? routes.find((r) => r.node.id === place.site)?.path : undefined;
+  return {
+    ...world,
+    title: place.title,
+    kicker: place.kicker,
+    summary: place.summary,
+    pages: placePages(world.id).map(({ article, route }) => ({ id: article.id, title: article.title, href: withBase(route.path) })),
+    siteHref: withBase(site ?? '/#sections'),
+  };
+});
 const errors = validateLandmarks(landmarks);
 if (errors.length) {
   throw new Error(`Invalid landmark content:\n- ${errors.join('\n- ')}`);

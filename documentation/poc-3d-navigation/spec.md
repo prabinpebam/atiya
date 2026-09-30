@@ -700,6 +700,8 @@ if (|vel| > EPS) heading = dampAngle(heading, atan2(vel.x, vel.z), TURN_T, dt); 
 
 ### 5.6 Content model (single source of truth)
 
+> **As built since 30 September 2026:** the landmark files are gone. A building's world is `src/game/world/places.ts`, and its words and pages are `content/structures/planet.json` ([sections spec §5](../sections/spec.md#5-the-planet-a-parallel-structure-u8u11)). This section records the POC's original design.
+
 `src/content/landmarks/<id>.md` via Astro content collections (Zod schema). The entry `id` comes from the filename.
 
 ```ts

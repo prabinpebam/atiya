@@ -265,7 +265,7 @@ One résumé, as structured data, so it renders as an HTML page and can feed oth
 |---|---|---|
 | **Site structure** (one) | `home` (the tree: the home hub, its sections, their pages), `menus` (as built, `primary`: sections, pages and custom links) | The site's IA: pages, URLs, the navigation ([structures §2](ia.md#2-the-site-structure), [sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)) |
 | **Redirects** (one) | `[{ from, to }]`, both paths on the site | An address that moved, built as a static redirect page (V19) |
-| **Planet structure** (one) | `places[]`: `{ id, order, label, kicker, summary ≤ 140, dialog: { intro, highlights ≤ 5 }, entries, fullPage, world }` | The planet's navigation ([structures §5](ia.md#5-the-planet-structure)); `world` is engineering-owned and validated by the game's rules |
+| **Planet structure** (one) | `places[]`: `{ id, title, kicker, summary ≤ 160, view?, site?, pages }`, each of the seven buildings once | The planet's navigation ([structures §5](ia.md#5-the-planet-structure), [sections spec §5](../sections/spec.md#5-the-planet-a-parallel-structure-u8u11)); the buildings' world is the game's code (`world/places.ts`) |
 | **Site settings** (one) | `name`, `positioning`, `description`, `owner` (person), `socialImage` (media), `profiles` (`{ label, href, kind }[]`), `contactEmail`, `disclaimer`, `locale` | Everything the site says about itself |
 | **Person** | `id`, `name`, `role`, `bio` (Markdown), `avatar` (media), `links` | The owner, collaborators and testimonial givers (with permission) |
 | **Vocabulary** | `id`, `label`, `description?`, `order` per term | `contributions`, `outcomeTypes`, `engagementTypes`, `tools`, `topics` |

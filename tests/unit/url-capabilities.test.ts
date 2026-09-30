@@ -18,8 +18,7 @@ describe('url state', () => {
     expect(buildPlaySearch('workshop')).toBe('?at=workshop');
     expect(buildPlaySearch('workshop', true)).toBe('?at=workshop&open=1');
     expect(buildPlaySearch(null)).toBe('');
-    expect(classicHrefFor('workshop')).toBe('/classic/workshop/');
-    expect(classicHrefFor(null)).toBe('/#sections');
+    expect(classicHrefFor()).toBe('/#sections');
     expect(playHrefFor('library')).toBe('/play/?at=library');
   });
 });

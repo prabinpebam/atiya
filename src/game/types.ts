@@ -1,21 +1,19 @@
-/** Serializable landmark data (content-collection frontmatter + id). Shared by game and classic pages. */
-export interface LandmarkData {
-  id: string;
+import type { PlaceWorld } from './world/places';
+
+/**
+ * A building as the game has it (documentation/sections/spec.md §5.4): its world (world/places.ts) and
+ * what the planet structure says of it (content/structures/planet.json), joined by the /play page.
+ */
+export interface LandmarkData extends PlaceWorld {
+  /** Its name, on its card, in fast travel and at the head of its list. */
   title: string;
+  /** What it holds, over its name. */
   kicker: string;
   summary: string;
-  order: number;
-  lat: number;
-  lon: number;
-  modelYawDeg: number;
-  footprintU: number;
-  approachDistanceU: number;
-  variant: string;
-  accent: string;
-  dialog: {
-    intro: string;
-    highlights: string[];
-  };
+  /** Its published pages, in its order: each one's ID, title and address on the site. */
+  pages: { id: string; title: string; href: string }[];
+  /** Where "Open classic page" leads: its section of the site, or the home page's list of sections. */
+  siteHref: string;
 }
 
 export interface MoveIntent {

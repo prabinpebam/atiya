@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from 'zustand';
 import type { GameController } from '../controller';
 import type { LandmarkData } from '../types';
-import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
@@ -10,7 +9,11 @@ import { spaceBack } from '../input/keyboard';
 
 const toClassic = () => prefs.setMode('classic');
 
-/** A landmark's dialog: loaded on demand (the first time one opens, or soon after the game starts), like the menu. */
+/**
+ * A building's dialog: its words, then its published pages (documentation/sections/spec.md §5.4), each a
+ * link to its page on the site, or a line saying it's still being fitted out. Loaded on demand (the first
+ * time one opens, or soon after the game starts), like the menu.
+ */
 export default function LandmarkDialog({ controller }: { controller: GameController }) {
   const openId = useStore(controller.store, (s) => s.openId);
   const ref = useRef<HTMLDialogElement>(null);
@@ -51,17 +54,23 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
         <article className="dialog-body">
           <p className="kicker">{shown.kicker}</p>
           <h2 id="landmark-dialog-title">{shown.title}</h2>
-          <p>{shown.dialog.intro}</p>
-          {shown.dialog.highlights.length > 0 && (
+          <p>{shown.summary}</p>
+          {shown.pages.length > 0 ? (
             <ul>
-              {shown.dialog.highlights.map((h) => (
-                <li key={h}>{h}</li>
+              {shown.pages.map((p) => (
+                <li key={p.id}>
+                  <a href={p.href} onClick={toClassic}>
+                    {p.title}
+                  </a>
+                </li>
               ))}
             </ul>
+          ) : (
+            <p>It’s still being fitted out: its pages are on their way.</p>
           )}
           <div className="actions">
-            <a className="btn primary" href={classicHrefFor(shown.id)} onClick={toClassic}>
-              Classic page <Icon icon={faArrowUpRightFromSquare} />
+            <a className="btn primary" href={shown.siteHref} onClick={toClassic}>
+              Open classic page <Icon icon={faArrowUpRightFromSquare} />
             </a>
             <button className="btn" type="button" onClick={() => controller.requestCloseLandmark()}>
               Close <kbd>Space</kbd>

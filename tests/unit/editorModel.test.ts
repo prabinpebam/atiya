@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import * as ops from '../../src/site/editor/model/ops';
 import * as paste from '../../src/site/editor/model/paste';
+import * as planet from '../../src/site/editor/model/planet';
 import { inlineOf, markdownOf, plainOf, type MiniNode } from '../../src/site/editor/model/dom';
 import { addHub, addLink, inMenu, menuOf, moveEntry, nodeOf, childSlugs, findHub, hubs, nodeIds, place, relabelEntry, removeEntry, reorder, sectionOf, setInMenu, unplace, updateHub } from '../../src/site/editor/model/structure';
 import { slugify, today, unique } from '../../src/site/editor/model/ids';
@@ -13,7 +14,7 @@ import { actionsUrl, groupChanges, resourceName, resourceOf, suggestMessage, typ
 import { ownerLabel, ownerOf, references } from '../../src/site/editor/model/references';
 import { SaveQueue, type Outcome } from '../../src/site/editor/model/queue';
 import { parseInline, parseMarkdown, runs } from '../../src/site/content/markdown';
-import type { Article, Block, SiteStructure } from '../../src/site/content/schema';
+import type { Article, Block, PlanetStructure, SiteStructure } from '../../src/site/content/schema';
 import { block } from '../../src/site/content/schema';
 
 // ---------- document operations ----------
@@ -451,6 +452,35 @@ describe('the navigation, as edit mode changes it (documentation/sections/spec.m
     expect(menuOf(removeEntry(STRUCTURE, 1))).toEqual([{ node: 'lead' }, { label: 'GitHub', href: 'https://github.com/x' }]);
     // the tree is untouched by all of it
     expect(removeEntry(STRUCTURE, 1).home).toEqual(STRUCTURE.home);
+  });
+});
+
+describe('the planet, as edit mode changes it (documentation/sections/spec.md §7.4)', () => {
+  const PLANET: PlanetStructure = {
+    places: [
+      { id: 'workshop', title: 'Workshop', kicker: 'K', summary: 'S', site: 'work', pages: [{ type: 'article', id: 'a' }, { type: 'article', id: 'b' }] },
+      { id: 'library', title: 'Library', kicker: 'K', summary: 'S', pages: [] },
+    ],
+  };
+
+  it('finds a page, puts it in a building (moving it from another: one at most), and takes it off', () => {
+    const before = JSON.stringify(PLANET);
+    expect(planet.placeOfPage(PLANET, 'b')).toBe('workshop');
+    expect(planet.placeOfPage(PLANET, 'z')).toBeUndefined();
+    const moved = planet.putIn(PLANET, 'library', 'b');
+    expect(moved.places.map((p) => p.pages.map((r) => r.id))).toEqual([['a'], ['b']]);
+    expect(planet.putIn(PLANET, 'library', 'c').places[1].pages).toEqual([{ type: 'article', id: 'c' }]);
+    expect(planet.takeOff(PLANET, 'a').places[0].pages.map((r) => r.id)).toEqual(['b']);
+    expect(JSON.stringify(PLANET)).toBe(before);
+  });
+
+  it("moves a page within its building's ends, and changes a building's words (an empty site goes back to none)", () => {
+    expect(planet.movePage(PLANET, 'workshop', 1, -1).places[0].pages.map((r) => r.id)).toEqual(['b', 'a']);
+    expect(planet.movePage(PLANET, 'workshop', 0, -1)).toBe(PLANET);
+    expect(planet.movePage(PLANET, 'workshop', 1, 1)).toBe(PLANET);
+    const edited = planet.updatePlace(PLANET, 'workshop', { kicker: 'Case studies', view: 'list', site: '' });
+    expect(edited.places[0]).toMatchObject({ kicker: 'Case studies', view: 'list' });
+    expect(edited.places[0]).not.toHaveProperty('site');
   });
 });
 

@@ -6,6 +6,7 @@
 import { generation, readSnapshot } from './source';
 import { loadContent, type ContentIndex, type MediaRecord } from './load';
 import type { Route } from './routes';
+import type { Article, PlaceId } from './schema';
 
 let cached: { generation: number; index: ContentIndex } | undefined;
 
@@ -26,6 +27,21 @@ export const getSite = () => content().site;
 export const getStructure = () => content().structure;
 /** Old addresses and where they now lead. */
 export const getRedirects = () => content().redirects;
+/** The planet's buildings and what each holds (null without content/structures/planet.json). */
+export const getPlanet = () => content().planet;
+
+/** The building a page is in on the planet, if it's on it. */
+export const placeOf = (pageId: string): PlaceId | undefined => content().planet?.places.find((p) => p.pages.some((r) => r.id === pageId))?.id;
+
+/** A building's published pages, in its order, each with its page on the site. */
+export function placePages(placeId: string): { article: Article; route: Route }[] {
+  const place = content().planet?.places.find((p) => p.id === placeId);
+  return (place?.pages ?? []).flatMap((ref) => {
+    const article = getArticle(ref.id);
+    const route = getPlacement('article', ref.id);
+    return article && route?.published ? [{ article, route }] : [];
+  });
+}
 export const getArticle = (id: string) => content().articles.get(id);
 export const getPerson = (id: string) => content().people.get(id);
 /** The routes the site builds: hubs and published items. */

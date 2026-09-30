@@ -2481,6 +2481,8 @@ test.describe('planet', () => {
     const card = page.getByTestId('preview-card');
     await expect(card).toBeVisible();
     await expect(card.getByRole('heading', { name: 'Workshop' })).toBeVisible();
+    await expect(card.getByRole('link', { name: /Open classic page/ })).toHaveAttribute('href', '/work/');
+    await expect(card.getByText('still being fitted out')).toBeVisible();
     await expect(page.getByTestId('live-region')).toContainText('Near Workshop');
 
     await page.locator('.game-region').focus();
@@ -2488,7 +2490,9 @@ test.describe('planet', () => {
     const dialog = page.getByTestId('landmark-dialog');
     await expect(dialog).toBeVisible();
     await expect(page).toHaveURL(/\?at=workshop&open=1$/);
-    await expect(dialog.getByRole('link', { name: /Classic page/ })).toHaveAttribute('href', '/classic/workshop/');
+    // the building's words and pages come from the planet structure; the Workshop has none yet
+    await expect(dialog.getByRole('link', { name: /Open classic page/ })).toHaveAttribute('href', '/work/');
+    await expect(dialog.getByText('still being fitted out')).toBeVisible();
     await noSeriousViolations(page);
 
     // Space closes it, through history like Esc and Close
@@ -2533,14 +2537,16 @@ test.describe('planet', () => {
 
   test('deep link opens the dialog; Back closes it without leaving the site', async ({ page }) => {
     await page.goto('/');
-    await openPlanet(page, '/play/?at=library&open=1');
+    await openPlanet(page, '/play/?at=lighthouse&open=1');
     const dialog = page.getByTestId('landmark-dialog');
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('heading', { name: 'Library' })).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Lighthouse' })).toBeVisible();
+    // the Lighthouse holds the first story: a link to its page on the site
+    await expect(dialog.getByRole('link', { name: 'Do what makes you proud' })).toHaveAttribute('href', '/leadership/do-what-makes-you-proud/');
     await page.goBack();
     await expect(dialog).toBeHidden();
-    await expect(page).toHaveURL(/\/play\/\?at=library$/);
-    expect((await state(page)).nearby).toBe('library');
+    await expect(page).toHaveURL(/\/play\/\?at=lighthouse$/);
+    expect((await state(page)).nearby).toBe('lighthouse');
   });
 
   test('invalid deep link falls back to the Plaza with a status message', async ({ page }) => {
@@ -2555,7 +2561,7 @@ test.describe('planet', () => {
     await page.evaluate(() => (window as any).__game.teleport('workshop'));
     await expect(page.getByTestId('preview-card')).toBeVisible();
     await page.locator('.play-header').getByRole('link', { name: 'Classic site' }).click();
-    // the building's old classic address, which goes on to the section it became
+    // the building's section on the site (its `site` in the planet structure)
     await expect(page).toHaveURL(/\/work\/$/);
     await page.getByRole('link', { name: 'Explore in 3D' }).click();
     await openPlanet(page, page.url());

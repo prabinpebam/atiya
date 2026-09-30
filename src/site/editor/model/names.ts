@@ -22,6 +22,8 @@ export function resourceName(key: string, titles: Titles): { kind: string; name:
   if ((m = /^\/content\/people\/([^/]+)\.json$/.exec(key))) return { kind: 'Person', name: titles.person(m[1]) ?? m[1] };
   if ((m = MEDIA.exec(key)) || (m = /^\/content\/media\/(.+)$/.exec(key))) return { kind: 'Media', name: m[1] };
   if (key === '/content/structures/site.json') return { kind: 'Sections', name: 'The site structure' };
+  if (key === '/content/structures/planet.json') return { kind: 'Planet', name: 'The planet' };
+  if (key === '/content/redirects.json') return { kind: 'Redirects', name: 'The redirects' };
   if (key === '/content/site.json') return { kind: 'Settings', name: 'The site settings' };
   return { kind: 'File', name: key.replace(/^\/content\//, '') };
 }
@@ -48,7 +50,7 @@ export function groupChanges(files: { key: string; status: Status }[], titles: T
       if (hit.status !== f.status) hit.status = 'changed';
     } else by.set(resource, { resource, ...resourceName(f.key, titles), status: f.status, keys: [f.key] });
   }
-  const RANK: Record<string, number> = { Article: 0, Media: 1, Sections: 2, Settings: 3, Person: 4 };
+  const RANK: Record<string, number> = { Article: 0, Media: 1, Sections: 2, Planet: 3, Settings: 4, Person: 5 };
   return [...by.values()].sort((a, b) => (RANK[a.kind] ?? 9) - (RANK[b.kind] ?? 9) || a.name.localeCompare(b.name));
 }
 
@@ -61,7 +63,7 @@ export function suggestMessage(changes: { key: string }[], titles: Titles): stri
     const r = resourceName(c.key, titles);
     if (r.kind === 'Article') articles.add(r.name);
     else if (r.kind === 'Media') pictures.add(r.name);
-    else rest.add(r.kind === 'Sections' ? 'the sections' : r.kind === 'Settings' ? 'the site settings' : r.kind === 'Person' ? `${r.name}'s profile` : r.name);
+    else rest.add(r.kind === 'Sections' ? 'the sections' : r.kind === 'Planet' ? 'the planet' : r.kind === 'Settings' ? 'the site settings' : r.kind === 'Person' ? `${r.name}'s profile` : r.name);
   }
   const parts = [...articles];
   if (pictures.size) parts.push(`${pictures.size} picture${pictures.size === 1 ? '' : 's'}`);

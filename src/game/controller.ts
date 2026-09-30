@@ -1746,9 +1746,11 @@ export class GameController {
 
   // ---------- classic mode ----------
 
+  /** The site's page for where the visitor is: the open or nearby building's section, else the site's list of sections. */
   classicHref(): string {
     const { openId, nearbyId } = this.store.getState();
-    return classicHrefFor(openId ?? nearbyId);
+    const id = openId ?? nearbyId;
+    return (id && this.dataById.get(id)?.siteHref) || classicHrefFor();
   }
 
   private syncClassicLinks(): void {

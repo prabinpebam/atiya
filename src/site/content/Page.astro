@@ -9,7 +9,7 @@
 import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Blocks from './Blocks.astro';
-import { getArticle, getPerson, getRedirects, getRoutes, getSite, getStructure } from './repository';
+import { getArticle, getPerson, getPlanet, getRoutes, getSite, getStructure } from './repository';
 import { picture } from './pictures';
 import { pageMeasure } from './reading';
 import { exploreAction, siteNav } from './navigation';
@@ -30,7 +30,7 @@ interface Props {
 const { route, editable = false } = Astro.props;
 const site = getSite();
 const nav = siteNav(getStructure(), getRoutes(), route);
-const action = exploreAction(route, getRedirects());
+const action = exploreAction(route, getPlanet());
 const node = route?.node;
 const article = Astro.props.article ?? (node?.kind === 'item' && node.item.type === 'article' ? getArticle(node.item.id) : undefined);
 const title = route?.title ?? article?.title ?? site.name;

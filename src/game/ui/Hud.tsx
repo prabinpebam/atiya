@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect, useRef, useState, type KeyboardEvent, type P
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { GameController } from '../controller';
-import { classicHrefFor } from '../platform/url';
 import { prefs } from '../platform/prefs';
 import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
 import { ViewControls } from './ViewControls';
@@ -45,12 +44,13 @@ function PreviewCard({ controller }: { controller: GameController }) {
       <p className="kicker">{d.kicker}</p>
       <h2 id="preview-title">{d.title}</h2>
       <p>{d.summary}</p>
+      {d.pages.length === 0 && <p>It’s still being fitted out: its pages are on their way.</p>}
       <div className="actions">
         <button className="btn primary" type="button" onClick={(e) => controller.openLandmark(d.id, { invoker: e.currentTarget })}>
           Open <kbd>E</kbd>
         </button>
-        <a className="btn" href={classicHrefFor(d.id)} onClick={toClassic}>
-          Classic page <Icon icon={faArrowUpRightFromSquare} />
+        <a className="btn" href={d.siteHref} onClick={toClassic}>
+          Open classic page <Icon icon={faArrowUpRightFromSquare} />
         </a>
       </div>
     </section>
