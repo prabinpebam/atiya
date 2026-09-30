@@ -217,6 +217,33 @@
       "group": "Content"
     },
     {
+      "path": "editor/spec.md",
+      "title": "Edit mode: a local CMS",
+      "order": 20.86,
+      "icon": "edit_note",
+      "status": "draft",
+      "updated": "2026-09-30",
+      "group": "Content"
+    },
+    {
+      "path": "editor/plan.md",
+      "title": "Edit mode: plan and DoD",
+      "order": 20.87,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-09-30",
+      "group": "Content"
+    },
+    {
+      "path": "editor/research.md",
+      "title": "Edit mode: research",
+      "order": 20.88,
+      "icon": "travel_explore",
+      "status": "draft",
+      "updated": "2026-09-30",
+      "group": "Content"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 21,

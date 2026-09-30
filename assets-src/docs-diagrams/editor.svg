@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470">
+<title>Edit mode: from the local editor to GitHub Pages</title>
+<desc>On the owner's machine, the browser opens edit mode at localhost. Its pages and its canvas (the real page, rendered by the dev server) call the editor API, which exists only in the dev server and only answers loopback requests from its own origin. Every write is checked against the content contract before it reaches the files in content/. Publishing commits the content folder and pushes it; GitHub Actions builds the static site, which has no editor in it, and deploys it to GitHub Pages.</desc>
+<g id="browser">
+<rect class="src" x="40" y="40" width="250" height="150" rx="18" />
+<text class="name" x="60" y="72">Edit mode</text>
+<text class="note" x="60" y="94">the browser, at localhost</text>
+<text class="line" x="60" y="132">Screens and inspector</text>
+<text class="line" x="60" y="162">Canvas: the real page</text>
+</g>
+<g id="api">
+<rect class="gate" x="370" y="40" width="250" height="150" rx="18" />
+<text class="name" x="390" y="72">Editor API</text>
+<text class="note" x="390" y="94">dev server only, loopback only</text>
+<text class="line" x="390" y="132">Checks the contract</text>
+<text class="line" x="390" y="162">Writes atomically</text>
+</g>
+<g id="files">
+<rect class="docs" x="700" y="40" width="260" height="150" rx="18" />
+<text class="name" x="720" y="72">content/</text>
+<text class="note" x="720" y="94">JSON and media masters</text>
+<text class="line" x="720" y="132">Articles, sections, media</text>
+<text class="line" x="720" y="162">Site settings, people</text>
+</g>
+<g id="publish">
+<rect class="box" x="700" y="270" width="260" height="70" rx="16" />
+<text class="name" x="720" y="300">Publish</text>
+<text class="note" x="720" y="322">git commit content/, then push</text>
+</g>
+<g id="build">
+<rect class="box" x="370" y="270" width="250" height="70" rx="16" />
+<text class="name" x="390" y="300">GitHub Actions</text>
+<text class="note" x="390" y="322">astro build: no editor in it</text>
+</g>
+<g id="pages">
+<rect class="out" x="40" y="270" width="250" height="70" rx="16" />
+<text class="out-name" x="60" y="300">GitHub Pages</text>
+<text class="out-note" x="60" y="322">the static site</text>
+</g>
+<text class="label" x="300" y="104">API calls</text>
+<text class="label" x="630" y="104">valid writes</text>
+<text class="label" x="840" y="236">when ready</text>
+<text class="label" x="640" y="296">push</text>
+<text class="label" x="300" y="296">deploy</text>
+<text class="label" x="60" y="410">A write the contract refuses never reaches a file. Nothing on this side of the build exists in production.</text>
+<path class="arrow" d="M290 115 H367" />
+<path class="arrow" d="M620 115 H697" />
+<path class="arrow" d="M830 190 V267" />
+<path class="arrow" d="M700 305 H623" />
+<path class="arrow" d="M370 305 H293" />
+</svg>

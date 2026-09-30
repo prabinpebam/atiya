@@ -1,0 +1,451 @@
+# Edit mode: a local CMS for the site
+
+A content editor that runs only on your machine, inside the Astro dev server, and edits the site the way Squarespace, Webflow and Framer do: on the page itself, with a settings panel beside it. Everything it saves goes into the JSON files in `content/`. Publishing commits them and pushes, and GitHub Pages builds the site as it does today, with no editor and no backend. This page is the spec (v2: the first sketch, critiqued twice, in §11). The build order and Definition of Done are in the [plan](plan.md), and the investigation behind it is in the [research](research.md).
+
+> **TL;DR.**
+> - **Where:** `http://localhost:4321/_edit/`, only while `npm run dev` runs. An Astro integration injects the editor's routes for the `dev` command alone, so a build has no trace of it. It answers only loopback requests from its own origin, and no other site can frame it.
+> - **What you can edit:**
+>   - **Articles and pages:** create, duplicate, delete and change their status.
+>   - **Their blocks:** on a canvas that is the real page.
+>   - **Their settings:** in an inspector beside the canvas.
+>   - **The site's sections:** its tree of hubs and what each one places.
+>   - **Everything else:** a media library with uploads, alt text and focus points; the site settings and the owner's profile.
+> - **How it feels:**
+>   - **Text:** click a paragraph, heading, quote, the title or the standfirst and type. Enter makes a new paragraph.
+>   - **Blocks:** a "+" between blocks adds one from a palette of the content model's blocks. A toolbar on the selected block moves, duplicates or deletes it.
+>   - **Order and look:** an outline beside the canvas reorders blocks by drag or keyboard. A block's look is limited to the choices the design system offers (its width, a gallery's layout), so no edit can break the design.
+> - **Saving:** every change is written as soon as it's made, after the same contract check the build runs, as one transaction: a change the contract refuses, or one that conflicts with an edit made elsewhere, never reaches a file. Undo and redo cover the whole document, and git is the version history.
+> - **Published addresses are fixed** until the site has redirects: a published page's slug and section can't change, and it can't be unpublished or deleted.
+> - **Publishing:** the Publish screen lists what changed in `content/`, checks it all, commits just those files and pushes. Discard puts a file back as it was last published.
+> - **Built from the design system:** the editor's screens are Astro pages made of the site's own tokens, fundamentals and compounds, with two new generic compounds (Dialog, Tabs). Client scripts only coordinate; the page and every form are rendered by the server.
+
+<figure class="slate-figure" data-diagram="editor">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470" role="img" aria-labelledby="ed-arch__title ed-arch__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
+<title id="ed-arch__title">Edit mode: from the local editor to GitHub Pages</title>
+<desc id="ed-arch__desc">On the owner's machine, the browser opens edit mode at localhost. Its pages and its canvas (the real page, rendered by the dev server) call the editor API, which exists only in the dev server and only answers loopback requests from its own origin. Every write is checked against the content contract before it reaches the files in content/. Publishing commits the content folder and pushes it; GitHub Actions builds the static site, which has no editor in it, and deploys it to GitHub Pages.</desc>
+<g id="ed-arch__browser" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
+<rect id="ed-arch__body-1" x="40" y="40" width="250" height="150" rx="18" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
+<text x="60" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-arch__body-1" data-slate-fit-padding="16">Edit mode</text>
+<text x="60" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ed-arch__body-1" data-slate-fit-padding="16">the browser, at localhost</text>
+<text x="60" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-arch__body-1" data-slate-fit-padding="16">Screens and inspector</text>
+<text x="60" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-arch__body-1" data-slate-fit-padding="16">Canvas: the real page</text>
+</g>
+<g id="ed-arch__api" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
+<rect id="ed-arch__body-2" x="370" y="40" width="250" height="150" rx="18" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
+<text x="390" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-arch__body-2" data-slate-fit-padding="16">Editor API</text>
+<text x="390" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="ed-arch__body-2" data-slate-fit-padding="16">dev server only, loopback only</text>
+<text x="390" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-arch__body-2" data-slate-fit-padding="16">Checks the contract</text>
+<text x="390" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-arch__body-2" data-slate-fit-padding="16">Writes atomically</text>
+</g>
+<g id="ed-arch__files" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
+<rect id="ed-arch__body-3" x="700" y="40" width="260" height="150" rx="18" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
+<text x="720" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-arch__body-3" data-slate-fit-padding="16">content/</text>
+<text x="720" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="ed-arch__body-3" data-slate-fit-padding="16">JSON and media masters</text>
+<text x="720" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-arch__body-3" data-slate-fit-padding="16">Articles, sections, media</text>
+<text x="720" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-arch__body-3" data-slate-fit-padding="16">Site settings, people</text>
+</g>
+<g id="ed-arch__publish" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
+<rect id="ed-arch__body-4" x="700" y="270" width="260" height="70" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="720" y="300" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-arch__body-4" data-slate-fit-padding="16">Publish</text>
+<text x="720" y="322" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ed-arch__body-4" data-slate-fit-padding="16">git commit content/, then push</text>
+</g>
+<g id="ed-arch__build" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
+<rect id="ed-arch__body-5" x="370" y="270" width="250" height="70" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="390" y="300" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-arch__body-5" data-slate-fit-padding="16">GitHub Actions</text>
+<text x="390" y="322" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ed-arch__body-5" data-slate-fit-padding="16">astro build: no editor in it</text>
+</g>
+<g id="ed-arch__pages" data-slate-svg-step="6" data-slate-svg-effect="fade-rise">
+<rect id="ed-arch__body-6" x="40" y="270" width="250" height="70" rx="16" fill="var(--color-brand-bg)" />
+<text x="60" y="300" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="17" font-weight="600" data-slate-fit-target="ed-arch__body-6" data-slate-fit-padding="16">GitHub Pages</text>
+<text x="60" y="322" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="13" data-slate-fit-target="ed-arch__body-6" data-slate-fit-padding="16">the static site</text>
+</g>
+<text x="300" y="104" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">API calls</text>
+<text x="630" y="104" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">valid writes</text>
+<text x="840" y="236" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">when ready</text>
+<text x="640" y="296" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">push</text>
+<text x="300" y="296" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">deploy</text>
+<text x="60" y="410" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">A write the contract refuses never reaches a file. Nothing on this side of the build exists in production.</text>
+<g id="ed-arch__flow-1" data-slate-svg-step="7" data-slate-svg-effect="draw">
+<path d="M290 115 L360 115" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="369,115 360,120 360,110" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="ed-arch__flow-2" data-slate-svg-step="8" data-slate-svg-effect="draw">
+<path d="M620 115 L690 115" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="699,115 690,120 690,110" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="ed-arch__flow-3" data-slate-svg-step="9" data-slate-svg-effect="draw">
+<path d="M830 190 L830 260" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="830,269 835,260 825,260" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="ed-arch__flow-4" data-slate-svg-step="10" data-slate-svg-effect="draw">
+<path d="M700 305 L630 305" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="621,305 630,310 630,300" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="ed-arch__flow-5" data-slate-svg-step="11" data-slate-svg-effect="draw">
+<path d="M370 305 L300 305" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="291,305 300,310 300,300" fill="var(--color-neutral-fg-2)" />
+</g>
+</svg>
+<figcaption>Edit mode lives on the left, inside the dev server: its API checks every write against the content contract before it reaches content/. Publishing is a git commit and push; the build that GitHub Actions runs has no editor in it.</figcaption>
+</figure>
+
+<details class="slate-figure-data">
+<summary>The parts, as a table</summary>
+
+| Part | Where it runs | What it does |
+|---|---|---|
+| Edit mode | The browser, at `localhost` | Screens, the canvas (the real page), the inspector |
+| Editor API | The Astro dev server, only for `astro dev` | Checks the contract; writes `content/` atomically |
+| `content/` | The repository | The mock API: articles, the site structure, media, settings, people |
+| Publish | The dev server, calling git | Commits `content/` only, then pushes |
+| GitHub Actions and Pages | GitHub | Builds the static site (no editor) and serves it |
+
+</details>
+
+## 1. Goals and boundaries
+
+**Goals**
+- **G1: edit on the page.** Text is edited where it's read; blocks are added, moved and removed on the page; every other setting is one click away in the inspector. What you see is the page as it renders, at desktop, tablet or phone width, in light or dark.
+- **G2: the content is the files.** Every edit lands in the JSON the site is built from ([content model](../content/model.md)). There is no database, no editor-only copy and no export step.
+- **G3: never break the site.** Every write passes the same contract and references check as the build. The editor only offers what the content model allows, so a block's look comes from the design system and a page can't be designed into something it isn't.
+- **G4: local only.** Nothing of the editor ships. It exists only in the dev server, answers only its own origin on the loopback address, and the production build proves its absence.
+- **G5: publish without a backend.** Publishing is a git commit and push of `content/`; GitHub Actions and Pages do the rest, as today.
+- **G6: one design system.** The editor is built from the site's tokens, fundamentals and compounds, held to the same rules and tests. What it needs that the design system lacks is added to the design system, with stories.
+
+**Not in this version**
+- Designing: new layouts, colours, fonts or free positioning. Those belong to the design system and its code.
+- The planet's structure (`structures/planet`) and the classic pages (`src/content/landmarks/`), until the content platform's phase 0 moves them into `content/` ([plan](../content/plan.md)). The home page's hub is still `src/pages/index.astro`.
+- Menus: the header still lists the classic sections. Menus become editable when the site renders them from the site structure (content plan phase 1).
+- Several people at once, roles and permissions, scheduled publishing and comments: there is one owner, and git is the history.
+- Video files: videos are YouTube or Vimeo embeds with a local poster ([media §4](../content/media.md#4-formats-and-budgets)).
+
+## 2. The screens
+
+| Screen | Path | What it's for |
+|---|---|---|
+| Dashboard | `/_edit/` | What's in draft, what changed since the last publish, what needs attention (missing alt text, unplaced articles), and the quick actions |
+| Articles | `/_edit/articles/` | Every article and page, with its kind, section, status and last update; search and filters; new, duplicate and delete |
+| Article editor | `/_edit/articles/<id>/` | The canvas, the outline and the inspector (§3) |
+| Sections | `/_edit/sections/` | The site structure: hubs, what each places and in what order; articles not yet on the site (§5) |
+| Media | `/_edit/media/` | The media library: upload, alt text, captions, credits, focus points, where each picture is used (§6) |
+| Settings | `/_edit/settings/` | The site settings and the owner's profile |
+| Publish | `/_edit/publish/` | What changed in `content/`, the contract check, discard, and publish (§7) |
+
+Every screen shares one frame: a side navigation to the screens, and a top bar with the screen's title, the save status and the number of unpublished changes (linking to Publish). To the content model a page is an article whose `kind` is `page` (About, Contact; [model §3](../content/model.md#3-content-item-types)), so pages are listed with the rest and filtered by kind.
+
+## 3. The article editor
+
+```text
++----------------------------------------------------------------------------------------+
+| < Articles | Do what makes you proud [Published] Saved | Undo Redo | Desktop Tablet Phone |
+|            |                                           | Light/Dark | Preview | Publish   |
++---------------+-----------------------------------------------------+------------------+
+| Outline       |                                                     | [Block] [Page]   |
+|   Facts       |      the canvas: the article as it renders          |                  |
+|   Heading 2   |      at the chosen width                            |  the selected    |
+|   Paragraph   |                                                     |  block's         |
+|   Gallery     |      click to select, type to edit,                 |  settings, or    |
+|   ...         |      "+" between blocks to add one                  |  the page's      |
+| + Add block   |                                                     |                  |
++---------------+-----------------------------------------------------+------------------+
+```
+
+### 3.1 The canvas
+
+- **It's the real page.** The canvas is an iframe showing `/_edit/canvas/articles/<id>/`, which renders the article with the same layout, components and pictures as its public route. It renders drafts too. Its DOM is the production DOM: nothing wraps a block, so every spacing rule applies as it will on the site. Before each block the canvas route writes an HTML comment (`<!--editor-block:3-->`), which no selector sees, and the canvas finds each block's elements between two of them. Every block renders exactly one element: a text block is one paragraph or one list (§9).
+- **Selecting.** Hovering a block outlines it and names its kind; clicking selects it (a firm outline, its toolbar, its settings in the inspector, its row in the outline). The title and the standfirst select as the page's own fields. Links, the lightbox, carousels and the video facade are inert while editing; the Preview toggle in the top bar turns the overlays off and the page back on.
+- **The block toolbar** sits on the selected block's top edge: Move up, Move down, Duplicate, Delete. Each is an icon button with its name as a tooltip.
+- **Adding.** Between any two blocks, and after the last, a "+" appears on hover or focus. It opens the block palette (§3.4) for that position.
+- **Width and theme.** The top bar switches the canvas between desktop, tablet and phone widths, and between light and dark, without changing the site's saved theme.
+
+### 3.2 Editing text on the page
+
+Paragraphs (text blocks), headings, quotes, the title and the standfirst are edited in place.
+
+| Key | While editing text |
+|---|---|
+| Ctrl or Cmd + B, I | Bold, italic |
+| Ctrl or Cmd + K | Link: a small dialog for the address (https, http, mailto) or another article (a `ref:` link) |
+| Enter | In a paragraph or heading: a new paragraph (a new text block) after it, split at the caret. In a list: a new item |
+| Shift + Enter | A line break (the poem) |
+| Backspace at the start | Joins the paragraph to the one before it |
+| Escape | Stops editing; the block stays selected |
+
+- **A format bar** appears over a text selection with Bold, Italic, Code and Link, for the mouse. Inline code has no shortcut: the browsers keep Ctrl+E and Ctrl+Shift+C for themselves.
+- **Paste and drop are plain text.** Formatting and pictures from elsewhere never come in (the canvas handles `beforeinput`); a blank line in what's pasted starts a new paragraph.
+- **What's stored** is the Markdown subset ([model §6](../content/model.md#6-blocks)). One parser turns it into an inline tree (text, bold, italic, code, link, line break), which renders it on the site; the canvas turns the edited text back into the same tree, and one serializer writes it as Markdown, escaping everything else, so what you type is what renders. Bold and italic may nest; code holds plain text only; links hold text, bold and italic, and never another link.
+- **Typing in another script** (an input method) is never interrupted: no shortcut, save or split runs while a composition is open, and the text saves when it ends.
+- **The drop cap** is turned off while its paragraph is being edited, because its enlarged first letter moves the caret.
+- **Saving** happens 800 ms after typing stops, on leaving the block, and on Ctrl or Cmd + S. Saves go through one queue per document, so two never race; text saves don't reload the canvas, so the caret stays put.
+- **New paragraphs and headings** are pending until they have words: an empty one is never written, and it disappears if you leave it empty.
+
+### 3.3 Working with blocks
+
+| Key | With a block selected (not editing) |
+|---|---|
+| Up, Down | Select the block before or after |
+| Enter | Edit its text, or open its settings if it has none |
+| Alt + Up, Alt + Down | Move it up or down |
+| Ctrl or Cmd + Shift + D | Duplicate it (Ctrl+D is the browser's bookmark) |
+| Delete or Backspace | Delete it (Undo brings it back) |
+| Ctrl or Cmd + Z, Shift + Ctrl or Cmd + Z | Undo, redo (the document's history) |
+
+- **The outline** lists every block (its kind's icon, and its first words or its picture's alt text). Clicking a row selects the block and scrolls the canvas to it. Rows can be dragged to reorder; every drag has a keyboard and button alternative (Move up, Move down), as WCAG 2.5.7 asks.
+- **Undo and redo** step through whole-document snapshots, one step per change: a block added, moved, deleted or reconfigured, a setting changed, or one editing session of one block's text (from entering it to leaving it). The history lasts for the browser session. While you're typing, Ctrl+Z is the browser's own undo within that text; the top bar's Undo first ends the editing session, then steps back. Picture details (alt text, caption, focus) belong to the picture, not the article, and aren't in the article's history: the media screen says so.
+
+### 3.4 The block palette
+
+A dialog listing the content model's blocks, in two groups, each with its icon and one line on what it's for. A block that needs something before it can exist asks for it first, so no block is ever saved incomplete.
+
+| Group | Block | What happens when chosen |
+|---|---|---|
+| Text | Paragraph, Heading | An empty one appears in place, ready to type (pending until it has words) |
+| Text | Quote | Asks for the quote (and, optionally, who said it and the style: block or pull) |
+| Text | Facts | Asks for one to six label and value pairs |
+| Text | Divider | Inserted at once |
+| Media | Picture | Opens the media picker (choose or upload), then the width |
+| Media | Gallery, Carousel | The media picker in multiple mode (two or more); a carousel also asks for its label |
+| Media | Video | Asks for the YouTube or Vimeo address, the title and the poster (the media picker) |
+
+### 3.5 The inspector
+
+Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and **Page** (the article's). A change is saved when it's committed (on change, or on leaving a text field), after the contract check. A value the contract refuses stays in the field with the reason under it, and nothing is written.
+
+| Block | Its settings |
+|---|---|
+| Paragraph | None: its words are edited on the page. Convert to a heading or a quote |
+| Heading | Level (2, 3 or 4); anchor (optional; made from its words if left empty) |
+| Picture | The picture (media field: thumbnail, Replace, and its alt text); width (content, popout, wide, full); caption and credit (each left empty to use the picture's own); open in the lightbox |
+| Gallery | Its pictures (add, remove, reorder); layout (grid, mosaic, row); fit (cover, or contain for artwork); width; caption; open in the lightbox |
+| Carousel | Its pictures; label; peek; pager (dots, filmstrip, wrapping filmstrip); arrows; open in the lightbox |
+| Video | Address (YouTube or Vimeo; the provider and ID are taken from it); title; poster (media field); length (minutes and seconds); caption; credit; width |
+| Quote | Style (block or pull); who said it. Its words are edited on the page |
+| Facts | Its pairs: add, remove, reorder (one to six) |
+| Divider | None |
+
+**Page:**
+- **Title and address:** the title, the menu label, and the slug with the address it makes.
+  - A published page's slug is fixed until the site has redirects (content plan phase 1): changing it would break every link to it (V9).
+- **Summary:** at most 160 characters, with a counter. It is the standfirst, the card text and the meta description.
+- **Kind, status and visibility:**
+  - kind: page or note (a talk needs its event, date and recording, which the contract doesn't hold yet; an existing talk shows its kind read-only);
+  - status: the lifecycle up to Published ([model §7](../content/model.md#7-lifecycle-and-visibility)); once published, the status is fixed, like the address;
+  - visibility: public, public with details removed, or summary only.
+- **Where it appears:** the section (hub) that places it, or "Not on the site yet". This edits the site structure. It's fixed once the article is published.
+- **Lead picture:** a media field, which can be removed.
+- **Search and sharing:** the SEO title, the description and the image, and whether to keep the page out of search.
+- **Dates:** published, updated and last reviewed. The server keeps "Updated" and "Published" true (§9); a date set by hand in the same change wins.
+- **Delete:** a draft can be deleted, and with it, if you ask, the pictures in its own folder that nothing else uses. A published article can't be deleted until the site has redirects.
+
+## 4. Articles, and the dashboard
+
+- **The list** shows each article's title, kind, section, status and last update, newest first. It can be searched by title and filtered by status and kind. Each row opens the editor, and has View on the site (when published), Duplicate and Delete.
+- **New article** and **New page** ask for the title, the summary and the section. The server creates a valid draft (`status: draft`, today's `updatedAt`, an empty body) with an ID and slug made from the title (lowercase, hyphenated, unique among articles and among the section's children), places it, and the editor opens it. A page is an article of kind `page`, placed under the home hub by default.
+- **Duplicate** copies an article as a new draft ("… (copy)") in the same section, sharing its pictures.
+- **The dashboard** shows:
+  - the counts by status;
+  - the five most recently updated articles;
+  - the unpublished changes (linking to Publish);
+  - what needs attention: the content check's warnings, and pictures without alt text;
+  - the quick actions: New article, New page, Upload pictures.
+
+## 5. Sections: the site structure
+
+The site structure's tree ([structures §2](../content/ia.md#2-the-site-structure)), as a tree view.
+
+- **A hub** shows its title and address, and what it places, in order. Its settings are its title, its menu label, its summary, its slug and its template. New section adds a hub under the home page.
+- **An article's node** can be reordered (drag, or Move up and Move down). A draft's node can also be moved to another hub or removed from the site (the article stays in `content/`, listed under "Not on the site yet" with Place under…).
+- **The home hub** has only its title and menu label here, until the landing moves into content.
+- **Drafts can be placed.** A node may place a draft: its route is resolved and checked like any other (so two drafts can't claim one address), and the build leaves it out until it's published. So an article's section is chosen when it's created, and publishing it is only a status change (§9).
+- **Published addresses are fixed.** A node that places a published article, and every hub above one, keeps its slug and place until the site has redirects; the screen says why.
+
+## 6. Media
+
+- **The library** is a grid of every master under `content/media/`, grouped by owner (an article, a person, `shared`, the site), searchable by alt text and ID, with a warning on any picture without alt text. Selecting one opens its details (they save to the picture, so they aren't part of an article's undo):
+  - the picture, with its **focus point**: click where the crop must keep, stored as `focus` ([media §3](../content/media.md#3-the-metadata-sidecar));
+  - alt text (required unless marked decorative; at most 250 characters; never "image of"), caption, credit, licence and source;
+  - **Used in**: every document that refers to it, linking to the editor;
+  - Delete, only when nothing refers to it: no article in any state (its hero, blocks or social image), no person and not the site settings.
+- **Uploading** takes drag and drop or a file picker, one or many files, into an owner's folder (the article being edited, or `shared`). Each file asks for its alt text (or to be marked decorative) before it's saved. The editor then makes the master:
+  - WebP (lossless if the source had transparency);
+  - at most 2560 px on the long side and 1.5 MB (the budgets in [media §4](../content/media.md#4-formats-and-budgets));
+  - metadata stripped (no location);
+  - named from the file name (lowercase, hyphenated, unique in the folder);
+  - with its JSON sidecar beside it, both written in one transaction.
+- **Media IDs never change.** There's no rename; replacing a picture keeps its ID and writes a new master.
+- **The media picker** (in the article editor and the settings) is the same library in a dialog, with upload, in single or multiple mode.
+
+## 7. Publishing
+
+- **The Publish screen** lists every file in `content/` that differs from the last commit, as git sees it: added, changed or deleted. Each is named as its resource ("Article: Do what makes you proud", "Media: articles/…/tshirt"), with Discard, which puts it back as last committed and deletes a new file.
+- **The check** runs the whole content contract, as the build does. Publish is enabled only when it passes and there's something to publish.
+- **Publish** asks for a message (a sentence made from the changes is offered). Holding the writer lock (§8.3), so nothing can change underneath it, it:
+  1. reads the content once and checks it;
+  2. stages it: `git add -A -- content`;
+  3. confirms that what's staged is exactly what it checked (the staged blobs' hashes against the files');
+  4. commits it: `git commit -m <message> -- content`, which commits `content/` only, whatever else is staged;
+  5. pushes it: `git push`.
+
+  It refuses on a detached HEAD or a branch without an upstream, and never forces. The result shows the commit and a link to the deploy on GitHub Actions.
+- **A failed push** leaves the commit local. The screen tracks commits not yet pushed separately from uncommitted changes, says why the push failed (for example, "the remote has newer commits: pull, then push again"), and offers Push again without a new commit.
+- **git never waits for you.** It runs as a child process with its arguments as a list (never through a shell), in the repository that holds `content/`, with prompts off (`GIT_TERMINAL_PROMPT=0`, the credential manager non-interactive, SSH in batch mode) and a time limit, after which it's stopped and the reason shown.
+- **Discard** restores a tracked file in the index and the working tree (`git restore --source=HEAD --staged --worktree`) and deletes an untracked one.
+- **Line endings:** `.gitattributes` keeps content JSON at LF (`content/**/*.json text eol=lf`), so the files the editor writes, the ones git checks out and the ones publish compares are the same bytes.
+
+## 8. Architecture
+
+### 8.1 Dev only, by construction
+
+`integrations/editor.mjs` is an Astro integration:
+- **`astro:config:setup`:** for every command, it defines the content folder's absolute path from Astro's root (a Vite `define`, so nothing depends on the working directory). `CONTENT_ROOT` may replace it only in dev; a build with it set fails, so a build always reads and imports the same `content/`. When the command is `dev` (and `SITE_EDITOR` isn't `off`), it also injects the editor's routes: the screens, the canvas and `/_edit/api/[...path]`. For any other command it injects nothing, so `astro build` never sees the editor.
+- **`astro:server:setup`:** watches `content/` (§8.4).
+- **`astro:server:start`:** prints the editor's address.
+
+Every editor route is on demand (`prerender = false`), which the dev server serves without an adapter; a build would need one, and never gets the chance.
+
+### 8.2 The request guard
+
+Every editor route and API call passes one guard (pure, unit-tested):
+- **The client** is on the loopback address (127.0.0.0/8, ::1, ::ffff:127.x).
+- **The `Host` header** names `localhost`, `127.0.0.1` or `[::1]`. That stops DNS rebinding, alongside Vite's own `allowedHosts` check, which in Vite 8 runs before any integration's routes.
+- **No framing:** every editor response carries `Content-Security-Policy: frame-ancestors 'self'` and `X-Frame-Options: SAMEORIGIN`, so a page elsewhere can't frame the editor and trick a click into a write (the canvas is framed by the editor itself, on the same origin).
+- **A request that writes** must also meet all of these:
+  - it carries `X-Editor: 1`, which a cross-origin page can't send without a CORS preflight (Vite's CORS allows some loopback origins, but only sets headers: the next check is what refuses them);
+  - its `Origin` is exactly the editor's origin (scheme, host and port); a write without one is refused;
+  - `Sec-Fetch-Site`, when present, is `same-origin`;
+  - the body is JSON (or multipart for uploads, at most 20 MB).
+
+Anything else gets 403, with no detail. Paths come from IDs checked against the content model's patterns, and every resolved path is checked to be inside the content folder.
+
+### 8.3 Reading and writing content
+
+- **Reading:** the files adapter reads `content/` from disk into a snapshot (the documents, the masters and a digest). A process-wide content generation says when to read again: the store advances it the moment a transaction commits, and the integration advances it when anything else changes a file in `content/`. The repository compares the generation before every read, so a page rendered after a save always sees it. A build reads once. The adapter no longer uses `import.meta.glob` for JSON (§11, C1).
+- **Pictures:** in dev, a master's size and format are read with sharp and handed to `astro:assets` as the same metadata an import would give, so new uploads need no restart. The build still imports the masters, so they're emitted and hashed as today.
+- **Writing is a transaction.** The store takes a change set (resource paths to their new bytes, or to deletion) and the versions it was made from, and holds one writer lock (for publishing too) while it:
+  1. checks every version against the file on disk; any mismatch is a 409, and nothing is written;
+  2. applies the set to the snapshot and runs the full content check (`loadContent`: schema, references, routes); a failure is a 422 with each issue's path and message, and nothing is written;
+  3. writes every file to a temporary file beside it, flushed to disk;
+  4. renames them into place in an order that keeps every step valid (a master before its sidecar; an article before the node that places it; a node removed before its article), retrying the brief `EPERM` and `EBUSY` errors Windows raises while an indexer or antivirus holds a file;
+  5. if a step still fails, puts back the bytes it replaced and removes what it added;
+  6. advances the generation, and answers with the new version of every file it touched.
+  
+  JSON is written with two-space indent, LF line endings, a final newline, UTF-8. Every path is resolved inside the content folder (after following links) and matched against the content model's patterns before anything is read or written.
+- **Versions everywhere.** Every document is served with its version (a hash of its bytes). Every write names the version of every file it may touch (an article, the structure, a sidecar), so an edit made by hand in VS Code is never silently overwritten: the editor shows the conflict and offers to reload.
+- **The server owns what must stay true:** IDs and slugs for new articles, status changes, and the dates (§9). The client never sends a date it didn't mean to set.
+
+### 8.4 No reload storms
+
+- **The problem:** the dev server reloads every open tab when a server-only module changes. If the content JSON were modules, every save would reload the editor it came from.
+- **The fix:** content is read from disk, not imported (§8.3), so a save touches no module. The integration watches `content/` itself:
+  - **on any change** it sends Astro's own `astro:content-changed` event to the `ssr` and `prerender` environments, which clears the route cache, so a new or newly published article's route exists at once, without a restart;
+  - **on a change the editor didn't make** (the store records each file it writes with its hash; the watcher ignores temporary files and a change whose path and hash match a record), it advances the generation and sends a custom `site:content-changed` event to the browser. A public page reloads on it, so editing JSON by hand still refreshes the site as today. An editor screen doesn't: if it holds unsaved input it shows the conflict, and otherwise it refreshes its data in place.
+- **Canvas refreshes:** the editor refreshes the canvas itself, only after changes that re-render it (a block moved, added or reconfigured), keeping its scroll position and selection. Text saves don't refresh it.
+
+### 8.5 The API
+
+All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's version) and answers `{ ok, versions, issues }`: 200, 409 (a conflict) or 422 (the contract's issues).
+
+| Method and path | Does |
+|---|---|
+| `PUT articles/{id}` | Saves an article (the whole document), and its node when its section changes |
+| `POST articles` | Creates and places an article: `{ title, summary, kind, section }` → `{ id }` |
+| `POST articles/{id}/duplicate` | Copies it as a draft |
+| `DELETE articles/{id}` | Deletes a draft and its node (and, with `?media=1`, the pictures in its folder that nothing else uses) |
+| `PUT structure` | Saves the site structure |
+| `PUT site`, `PUT people/{id}` | Saves the settings or a person |
+| `POST media` | Uploads (multipart: `file`, `alt`, `caption`, `owner`) → `{ id, picture }` |
+| `PUT media/{id}`, `DELETE media/{id}` | Saves a sidecar; deletes an unused master and its sidecar |
+| `GET media` | The library, with thumbnails (for the picker after an upload) |
+| `GET changes` | What differs from the last commit in `content/` |
+| `POST discard` | Puts one file back as committed: `{ path }` |
+| `POST publish` | Checks, commits `content/` and pushes: `{ message }` |
+| `POST push` | Pushes commits not yet pushed |
+
+### 8.6 The editor's code
+
+| Folder | Holds |
+|---|---|
+| `integrations/editor.mjs` | The dev-only integration (§8.1, §8.4) |
+| `src/site/editor/pages/` | The routes: the screens, the canvas and the API endpoint |
+| `src/site/editor/components/` | The editor's parts (the outline, the inspector's fields, the media grid, the canvas frame, the tree): built from the site's fundamentals, compounds and tier 0 only. A part never imports another part; the editor's layout and pages compose them |
+| `src/site/editor/EditorLayout.astro` | The editor's frame: side navigation, top bar, live status |
+| `src/site/editor/model/` | Pure and shared by the browser and the server: document operations (insert, move, duplicate, delete, split, merge, update), text to Markdown, IDs and slugs, the guard, the change list's names |
+| `src/site/editor/server/` | Node only: the store, uploads (sharp), git |
+| `src/site/editor/scripts/` | The browser's controllers: the editor, the canvas, the screens |
+
+- **One owner of the document.** The article editor's controller holds the article, applies each operation with the shared document operations, saves it through the API and tells the canvas what changed (by `postMessage`, same origin only). The canvas only reports what the reader did (selected, typed, asked to add or move) and redraws when told.
+- **Forms are rendered by the server** with the design system's fields, one form per block and one for the page, so the inspector needs no client-side templating. The page re-renders its outline and inspector after structural changes by fetching itself and swapping those regions.
+
+## 9. Content rules the editor adds or changes
+
+| Rule | Why |
+|---|---|
+| A site-structure node may place a draft: its route is resolved and checked with the rest, and only published items are built (the loader no longer fails on it) | An article's section is chosen when it's created; publishing is a status change; two drafts can't claim one address |
+| A text block is one paragraph or one list (no blank line in its Markdown) | Every block renders one element, so the canvas and the editor agree on what a block is |
+| `updatedAt` is set to today (the owner's local date) when an article's title, summary, lead picture or blocks change, unless the same change sets it | The "Updated" date stays true without anyone remembering it |
+| Publishing an article with no `publishedAt` sets it to today | The same |
+| A published article's slug, node, status and existence are fixed until redirects exist (V9) | No published link breaks |
+| A new ID and slug come from the title: lowercase, hyphenated, unique among articles and among the section's children | IDs never change after that ([model §1](../content/model.md#1-conventions)) |
+| The Markdown subset is parsed to an inline tree and written back by one serializer, with backslash escapes (`\*`, `\_`, `` \` ``, `\[`, `\]`, `\\`) and double backticks for code that holds a backtick | What's typed on the page renders as typed; the site renders the same tree |
+
+## 10. The design system in the editor
+
+- **Tokens only.** The editor's styles read the site's tokens: its colour roles, type, space, radii, motion and layers. Its own dimensions are component tokens under `c.editor` in `tokens.json` (the panel widths, the canvas widths per device, the selection outline). The token build writes them to their own stylesheet, `editor-tokens.css`, which only the editor's layout imports, so they never reach a production page. The design-system unit test covers `src/site/editor/` like the rest of the site: no raw values, hover inside `@media (hover: hover)`, scripts through `page.ts`, `withBase` for every URL.
+- **Components:** the editor uses the site's fundamentals and compounds (Button, IconButton, TextField, Select, Switch, Checkbox, ChoiceGroup, Tag, Text, Heading, Icon, Image, Spinner, Progress, ScrollArea, SideNav, Breadcrumbs). Two generic compounds are added to the design system, with stories, because the site will use them too:
+  - **Dialog:** a native modal `<dialog>` with a title, a body, actions and a close button; focus goes in and comes back; Escape closes it.
+  - **Tabs:** the APG tabs pattern (automatic activation, arrow keys, Home and End).
+- **Tiers:** the editor adds one tier on top of the site's: its parts are made of fundamentals, compounds and tier 0 (never a site layout, another part, or the game); its layout and pages compose parts; its pages carry no styles. The design library doesn't list the parts (it lists only the site's tiers). A unit test enforces all of it.
+- **What ships:** the generic Dialog and Tabs ship with the design system (the design library shows them). Nothing else of the editor does: no route, script, stylesheet, token or marker. The production check searches `dist/` for the editor's sentinels (`/_edit`, `editor-block`, `--c-editor`, `data-editor`).
+- **Icons** come from the site's Duotone set, imported one by one (the editor's: edit, drag handle, duplicate, delete, undo, redo, the device widths, upload, publish, the block kinds, bold, italic, code).
+
+## 11. The critique, and what changed from v1
+
+v1 was the first sketch: a React editor over the same files, content imported through `import.meta.glob`, blocks marked on the canvas by wrapping elements, and page forms posted and re-rendered. Reviewing it against the stack and the goals changed it as follows.
+
+| # | v1 | The problem | v2 |
+|---|---|---|---|
+| C1 | Content JSON imported through `import.meta.glob` (as the first article did) | The dev server reloads every open tab when a server-only module changes: every save would reload the editor, mid-typing (verified in Astro 7's `hmr-reload` plugin) | Content read from disk; the integration clears the route cache and reloads only on external edits (§8.4) |
+| C2 | A React single-page editor | It would duplicate the design system in React components that drift from the Astro ones | Server-rendered Astro screens from the design system's own components; thin client controllers (§8.6) |
+| C3 | Wrapping each block in an editor element on the canvas | Prose's spacing and breakout rules select direct children: a wrapper changes the layout, so the canvas would lie | A marker-free canvas with a block map (§3.1) |
+| C4 | Inspector forms posted to the page and re-rendered | Re-rendering while you tab to the next field races your typing | Client-side document operations, shared with the server; the API validates; regions re-render only after structural changes (§8.6) |
+| C5 | New blocks saved empty, filled in later | The contract (rightly) refuses a figure without a picture or an empty paragraph, so the build would break | Blocks that need something ask first; paragraphs and headings are pending until they have words (§3.4) |
+| C6 | Drafts not placed in the structure until published | An article's section would have nowhere to live while it's a draft | A node may place a draft; the build skips it (§9) |
+| C7 | Uploaded pictures imported through `import.meta.glob` | Adding a file re-evaluates the glob and reloads every tab; a restart was needed for new images | In dev, the metadata comes from sharp; the build still imports (§8.3) |
+| C8 | The API trusted anything reaching the dev server | A dev server can be reached by other pages (CSRF) or other hosts (DNS rebinding, `--host`) | The loopback, Host, Origin and header guard, on every route (§8.2) |
+| C9 | Publish ran `git commit -a` | It would sweep code changes into a content publish | Pathspec-limited commit of `content/`, after the contract check; no force; refuses without an upstream (§7) |
+| C10 | Editor tests against the real `content/` | Tests would rewrite the site's content and push it | `CONTENT_ROOT` points the source and the store at a fixture copy in a throwaway git repository with its own remote; the editor's E2E runs on its own dev server and Vite cache ([plan §4](plan.md#4-tests)) |
+| C11 | Last write wins | Editing the JSON by hand while the editor is open would be silently overwritten | Versions and 409 on conflict (§8.3) |
+| C12 | A slug change or a move applied silently | It breaks links until redirects exist | Published addresses fixed until redirects exist (§3.5, §5, §9) |
+
+A second, independent review of that v2 then found these, all now in the spec:
+
+| # | Found | Now |
+|---|---|---|
+| R1 | A hostile page could frame the editor and trick a click into a write | `frame-ancestors 'self'` and `X-Frame-Options` on every editor response (§8.2) |
+| R2 | Polling modification times leaves a stale window after a save, and the repository's own cache ignores the route cache | A content generation advanced on commit (§8.3) |
+| R3 | Skipping drafts would hide a route collision and leave the canvas without its section | Every node resolved and checked; only published ones built (§5, §9) |
+| R4 | A full reload on external edits could wipe unsaved editor input; time-window self-detection races | A custom event; editors show the conflict; self-writes matched by path and hash (§8.4) |
+| R5 | Reading from the working directory is brittle, and `CONTENT_ROOT` in a build would mix two trees | The root from Astro's config; `CONTENT_ROOT` dev and test only (§8.1) |
+| R6 | A text block can render several paragraphs, so "a block" and "a paragraph" disagreed; hand-kept counts drift | One paragraph or list per text block; comment markers on the canvas (§3.1, §9) |
+| R7 | A regex renderer can't round-trip nested marks | One inline tree, one parser, one serializer; compared by meaning (§3.2, §9) |
+| R8 | Overlapping saves, input methods, drops and the drop cap | One save queue; composition-safe; `beforeinput`; drop cap off while editing (§3.2) |
+| R9 | Native and document undo can't be handed over reliably; Ctrl+E and Ctrl+D are the browser's | Document undo outside text editing; history steps defined by change, not by save; other keys (§3.3) |
+| R10 | Renaming files one by one isn't a transaction | A writer lock, version checks, ordered renames with Windows retries, rollback (§8.3) |
+| R11 | Only article saves carried versions; who owns the dates was unclear | Versions for every touched file; the server owns IDs, statuses and dates (§8.3, §9) |
+| R12 | A published slug change or deletion contradicts V9 while redirects don't exist | Published addresses fixed (§9) |
+| R13 | "Unused" media wasn't defined, and an upload's two files weren't one write | One reference graph over every resource and state; master and sidecar in one transaction; decorative offered (§6) |
+| R14 | git can prompt and hang the server; a failed push vanished from the change list | No prompts, a time limit, commits not pushed tracked, Push again (§7) |
+| R15 | Publish could commit files changed after the check | Under the writer lock, the staged hashes checked against the checked files; LF by `.gitattributes` (§7) |
+| R16 | The article editor needed the media picker, planned for a later phase | The picker for existing media moves into the article editor's phase ([plan](plan.md)) |
+| R17 | Playwright starts its servers before global setup, so the fixture wouldn't exist | A wrapper that builds the fixture, then starts the editor's dev server ([plan §4](plan.md#4-tests)) |
+| R18 | The editor's components didn't fit the tested tiers | An explicit editor tier, tested (§10) |
+| R19 | `c.editor` tokens in the global stylesheet would ship | Their own stylesheet, imported only by the editor (§10) |
+| R20 | Kind `talk` and visibility weren't really editable | Visibility, menu label and review date in the Page tab; `talk` read-only until its contract exists (§3.5) |
+
+## 12. Accessibility
+
+- Every action has a keyboard path (§3.2, §3.3); drag always has a button and key alternative (WCAG 2.5.7).
+- The screens use the design system's accessible parts: labelled fields with hints and errors, the APG tabs, the native modal dialog, and a tree for the sections (arrow keys to move, Enter to open).
+- The save status and every error are announced in a live region; a refused value is named with its field.
+- Focus is never lost: after a structural change the selected block keeps focus; after a dialog closes, focus returns to what opened it.
+- The editor passes axe in light and dark, like the site.

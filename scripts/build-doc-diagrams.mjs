@@ -21,6 +21,7 @@ const DIAGRAMS = [
   { name: 'structures', page: 'documentation/content/ia.md', prefix: 'cp-structures' },
   { name: 'media', page: 'documentation/content/media.md', prefix: 'cp-media' },
   { name: 'separation', page: 'documentation/engineering/app-separation.md', prefix: 'eng-sep' },
+  { name: 'editor', page: 'documentation/editor/spec.md', prefix: 'ed-arch' },
 ];
 
 const V = (n) => `var(--color-${n})`;
