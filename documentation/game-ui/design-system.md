@@ -194,6 +194,14 @@ The owner's rule for the whole game: one key does and one key goes back, and <kb
 - <kbd>Space</kbd> goes back: it stands you up from a bench, gets you off the swing, ends a conversation, stops an action, and closes a dialog (a landmark's card, Chopper's card, the menu) or a panel (the backpack, the chest, the crafting table, the palette). It's the `back` action (`input/keyboard.ts`); in a screen, `spaceBack(e)` closes it unless the focus is on a control whose own key <kbd>Space</kbd> is (a text field, a checkbox, a radio button, a slider). On a backpack slot <kbd>Space</kbd> stays the slot's right-click, so there <kbd>E</kbd> or <kbd>I</kbd> closes, as in Minecraft. With nothing to go back from (walking about on the planet), <kbd>Space</kbd> jumps, as it does in nearly every game ([rest.md](../poc-3d-navigation/rest.md)): going back always wins, so a press never both closes something and jumps.
 - <kbd>Esc</kbd> still works everywhere it did (it closes, and opens the menu when nothing is open), because people reach for it, but the prompts, buttons and copy show <kbd>Space</kbd>.
 - The key a surface's way out uses is on its button: "Stand up <kbd>Space</kbd>", the talk box's close, the dialogs' Close.
+- **The reading overlay keeps the rule.** A building opens its list and pages as the site's own pages, framed over the planet ([sections spec §6](../sections/spec.md#6-reading-on-the-planet-u13u15)). In the frame, <kbd>Space</kbd> closes it, back to the planet, like every other overlay; <kbd>Esc</kbd> does too, unlabelled. A picture's lightbox inside the page takes the key first, and a field or a switch keeps its own. The arrows, <kbd>Page Up</kbd> and <kbd>Page Down</kbd>, the wheel and a swipe scroll the page. The frame's own Close shows <kbd>Space</kbd>.
+
+### 6.8 The reading overlay
+
+- **What it is:** a full-window, modal `dialog` (`ui/Dialogs.tsx`, the lazily loaded chunk the landmark dialog was) holding a transparent `iframe` of `/play/<building>/` or `/play/<building>/<page>/`. Those pages are the site's, in the site's design system, over the site's smoke (paper-white in light mode, black in dark). The game adds only a status while the frame loads and a card with Try again, Open classic page and Close if it doesn't answer within 10 s.
+- **The colour scheme is the site's,** not the wood's. The iframe's `color-scheme` is set from `site.theme` before it loads: a framed page's `prefers-color-scheme` follows it, and a frame whose scheme differs from the page's gets an opaque backdrop.
+- **Messages:** `planet:ready` and `planet:close` from the frame, `planet:focus` to it, on the same origin only, and only from the open building's frame.
+- **History:** the frame's moves replace its location, and the game keeps the address (`?at=…&open=1&page=…`) and its history marker current, so Back closes the overlay and Forward reopens it at the same page.
 
 ## 7. Copy
 

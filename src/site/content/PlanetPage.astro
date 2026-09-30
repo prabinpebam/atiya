@@ -1,0 +1,70 @@
+---
+/**
+ * A building's list, or one of its pages, read on the planet (documentation/sections/spec.md §6.1): the
+ * site's own layouts, opening and blocks in the planet's frame, so a page reads the same in both places.
+ * The list is the building's published pages in its view (or its empty state); a page has Previous and
+ * Next through the building's pages, in its order, and nothing that leads to another building (§6.4).
+ */
+import ArticleLayout from '../layouts/ArticleLayout.astro';
+import IndexLayout from '../layouts/IndexLayout.astro';
+import Blocks from './Blocks.astro';
+import { getPlanet, getRoutes, getSite, placePages } from './repository';
+import { picture } from './pictures';
+import { pageMeasure } from './reading';
+import { openingOf } from './opening';
+import { withBase } from '../design/meta';
+import type { Place } from './schema';
+import type { PlanetFrame } from '../components/compounds/PlaceBar.astro';
+
+interface Props {
+  /** The building. */
+  place: Place;
+  /** One of its pages; left out, its list. */
+  pageId?: string;
+}
+
+const { place, pageId } = Astro.props;
+const site = getSite();
+const pages = placePages(place.id);
+const listHref = withBase(`/play/${place.id}/`);
+const pageHref = (id: string) => withBase(`/play/${place.id}/${id}/`);
+const sectionPath = place.site ? getRoutes().find((r) => r.node.id === place.site)?.path : undefined;
+// every page on the planet, by its address on the site: the frame's script sends each link where it belongs
+const map: PlanetFrame['map'] = Object.fromEntries(
+  (getPlanet()?.places ?? []).flatMap((p) => placePages(p.id).map(({ article, route }) => [withBase(route.path), { place: p.id, title: p.title, href: withBase(`/play/${p.id}/${article.id}/`) }])),
+);
+const i = pageId ? pages.findIndex((p) => p.article.id === pageId) : -1;
+const current = i >= 0 ? pages[i] : undefined;
+const frame: PlanetFrame = current
+  ? { place: { id: place.id, title: place.title }, page: { id: current.article.id, index: i, count: pages.length }, contentsHref: listHref, siteHref: withBase(current.route.path), map, canonical: current.route.path }
+  : { place: { id: place.id, title: place.title }, siteHref: withBase(sectionPath ?? '/#sections'), map, canonical: sectionPath ?? '/' };
+const header = current && (await openingOf(current.article, { label: place.title, href: listHref }));
+const link = (k: number) => (pages[k] ? { href: pageHref(pages[k].article.id), title: pages[k].article.title } : undefined);
+const stories = current
+  ? []
+  : await Promise.all(
+      pages.map(async ({ article: a }) => {
+        const p = a.hero && (await picture(a.hero.media, 'card'));
+        return { href: pageHref(a.id), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height } };
+      }),
+    );
+---
+
+{
+  current && header ? (
+    <ArticleLayout title={`${current.article.title} — ${place.title}`} description={current.article.summary} header={header} prev={link(i - 1)} next={link(i + 1)} frame={frame}>
+      <Blocks blocks={current.article.body} />
+    </ArticleLayout>
+  ) : (
+    <IndexLayout
+      title={`${place.title} — ${site.name}`}
+      description={place.summary}
+      heading={place.title}
+      standfirst={place.summary}
+      stories={stories}
+      view={place.view}
+      empty="Nothing here yet. This building is still being fitted out."
+      frame={frame}
+    />
+  )
+}

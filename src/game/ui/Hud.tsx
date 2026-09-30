@@ -37,6 +37,15 @@ function PreviewCard({ controller }: { controller: GameController }) {
   // it owns the focus lane only when nothing ranks above it (a conversation, a seat, a target: lanes.ts);
   // under a modal it stays mounted but hidden, so its Open button can take the focus back on close
   const shown = useStore(controller.store, (s) => (focusLane(s) === 'preview' ? 'shown' : overlayOpen(s) && laneBeneath(s) === 'preview' ? 'hidden' : null));
+  // near a building, its list is fetched ahead, so Open shows it at once (documentation/sections/spec.md §6.7)
+  useEffect(() => {
+    if (!nearbyId || document.querySelector(`link[data-prefetch="${nearbyId}"]`)) return;
+    const l = document.createElement('link');
+    l.rel = 'prefetch';
+    l.href = withBase(`/play/${nearbyId}/`);
+    l.dataset.prefetch = nearbyId;
+    document.head.append(l);
+  }, [nearbyId]);
   if (!nearbyId || !shown) return null;
   const d = controller.dataById.get(nearbyId)!;
   return (

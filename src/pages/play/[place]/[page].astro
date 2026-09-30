@@ -1,0 +1,16 @@
+---
+/**
+ * One of a building's pages, read on the planet (documentation/sections/spec.md §6.1): the site's page,
+ * in the planet's frame. Published pages only; opened on its own, it goes into the game.
+ */
+import PlanetPage from '../../../site/content/PlanetPage.astro';
+import { getPlanet, placePages } from '../../../site/content/repository';
+
+export function getStaticPaths() {
+  return (getPlanet()?.places ?? []).flatMap((place) => placePages(place.id).map(({ article }) => ({ params: { place: place.id, page: article.id }, props: { place, pageId: article.id } })));
+}
+
+const { place, pageId } = Astro.props;
+---
+
+<PlanetPage place={place} pageId={pageId} />

@@ -1,0 +1,16 @@
+---
+/**
+ * A building's list, read on the planet (documentation/sections/spec.md §6.1): the page the game's
+ * reading overlay frames when a building opens. Opened on its own, it goes into the game.
+ */
+import PlanetPage from '../../../site/content/PlanetPage.astro';
+import { getPlanet } from '../../../site/content/repository';
+
+export function getStaticPaths() {
+  return (getPlanet()?.places ?? []).map((place) => ({ params: { place: place.id }, props: { place } }));
+}
+
+const { place } = Astro.props;
+---
+
+<PlanetPage place={place} />

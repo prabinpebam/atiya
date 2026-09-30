@@ -1,0 +1,152 @@
+---
+/**
+ * The planet's frame around a page of the site (documentation/sections/spec.md §6.2): the building
+ * you're reading in, the way back to its contents, the way out to the site, and Close. It stands where
+ * the site's header would, over the smoke, so a page read on the planet keeps its own look and loses only
+ * the site's navigation: a building's pages lead only to each other (§6.4). It also holds what the frame's
+ * script needs: where each page on the planet is, and a note for a link to another building.
+ * @tier compound
+ * @a11y A banner named after the building; its buttons are named ("Show contents", "Open classic page", "Close"), and Close shows its key.
+ * @a11y The note for a link to another building is a status message, read when it shows.
+ * @key Space: closes the reading and goes back to the planet (a picture's lightbox, or a field, takes it first)
+ * @key Esc: the same as Space
+ */
+import Button from '../fundamentals/Button.astro';
+import Text from '../fundamentals/Text.astro';
+
+export interface PlanetFrame {
+  /** The building: its ID and its name. */
+  place: { id: string; title: string };
+  /** On one of its pages: the page's ID, and where it is in the building's order. */
+  page?: { id: string; index: number; count: number };
+  /** The building's contents, on a page ("Show contents"). */
+  contentsHref?: string;
+  /** "Open classic page": this page's address on the site, or the building's section. */
+  siteHref: string;
+  /** Every page on the planet, by its address on the site: which building it's in, and its address there. */
+  map: Record<string, { place: string; title: string; href: string }>;
+  /** The page's own address on the site (its canonical link): a path, the base path is added. */
+  canonical: string;
+}
+
+interface Props {
+  /** Where this page is read, and where its links lead. */
+  frame: PlanetFrame;
+}
+
+const { frame } = Astro.props;
+const map = JSON.stringify(frame.map).replace(/</g, '\\u003c');
+---
+
+<header
+  class="place-bar"
+  aria-label={frame.place.title}
+  data-place-bar
+  data-place={frame.place.id}
+  data-place-title={frame.place.title}
+  data-page={frame.page?.id ?? ''}
+  data-index={frame.page ? String(frame.page.index) : ''}
+  data-count={frame.page ? String(frame.page.count) : ''}
+>
+  <p class="where">
+    <Text as="span" variant="label" tone="muted">On the planet</Text>
+    <span class="name">{frame.place.title}</span>
+  </p>
+  <div class="actions">
+    {
+      frame.contentsHref && (
+        <Button variant="secondary" size="sm" href={frame.contentsHref} icon="arrow-left" data-frame-contents="">
+          Show contents
+        </Button>
+      )
+    }
+    <Button variant="quiet" size="sm" href={frame.siteHref} iconEnd="external" data-frame-top="">Open classic page</Button>
+    <span class="close">
+      <Button variant="primary" size="sm" icon="close" data-frame-close="">Close</Button>
+      <kbd aria-hidden="true">Space</kbd>
+    </span>
+  </div>
+  <p class="note" role="status" data-frame-note hidden></p>
+  <script is:inline type="application/json" data-frame-map set:html={map} />
+</header>
+
+<style>
+  .place-bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--layer-sticky);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3) var(--space-6);
+    padding: var(--space-3) var(--space-gutter);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    background: var(--color-scrim);
+    backdrop-filter: blur(var(--space-2));
+  }
+
+  .where {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .name {
+    font-family: var(--font-display);
+    font-size: var(--text-h4);
+    line-height: var(--leading-tight);
+    color: var(--color-text);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .close {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  kbd {
+    padding: var(--space-0-5) var(--space-2);
+    border: var(--border-hairline) solid var(--color-rule-strong);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* the note for a link to another building: over the page, above the fold's foot */
+  .note {
+    position: fixed;
+    inset-inline: var(--space-gutter);
+    inset-block-end: var(--space-6);
+    z-index: var(--layer-sticky);
+    max-width: var(--size-measure-narrow);
+    margin: 0 auto;
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-lg);
+    color: var(--color-text);
+    font-size: var(--text-md);
+  }
+
+  @media (max-width: 40rem) {
+    kbd {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initFrame } from '../../scripts/planetFrame';
+
+  each<HTMLElement>('[data-place-bar]', (bar, signal) => initFrame(bar, signal));
+</script>

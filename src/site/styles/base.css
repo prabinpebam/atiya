@@ -22,6 +22,23 @@ html {
   hanging-punctuation: first;
 }
 
+/* a page read on the planet, in its frame over the game (documentation/sections/spec.md §6.2): the smoke
+   instead of the paper, fixed to the window, so the planet shows faintly through (the lightbox's scrim) */
+html[data-frame='planet'] {
+  background:
+    radial-gradient(circle at 18% 24%, var(--color-smoke), transparent 36%),
+    radial-gradient(circle at 82% 18%, var(--color-smoke-faint), transparent 34%),
+    radial-gradient(circle at 48% 86%, var(--color-smoke), transparent 40%),
+    var(--color-scrim);
+  background-attachment: fixed;
+}
+
+/* a heading that takes the focus when a page opens in the planet's frame is where reading starts, not a
+   control: no ring (as for main, which a skip link focuses) */
+h1[tabindex='-1']:focus {
+  outline: none;
+}
+
 /* a column at least as tall as the viewport: the layout's content block grows (flex: 1 0 auto), so the
    footer rests on the bottom edge when a page is short and follows the content when it's long */
 body {

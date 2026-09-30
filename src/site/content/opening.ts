@@ -1,0 +1,39 @@
+/**
+ * A page's opening, as its kind reads (documentation/sections/spec.md §3.3): an article carries its
+ * topic (its section, or the building it's read in on the planet), its byline, its date and its reading
+ * time; a page opens with its words only; a gallery counts its pictures. The site's Page and the planet's
+ * frame both open a page with it, so a page reads the same in both (§6.1).
+ */
+import { getPerson, getSite } from './repository';
+import { picture } from './pictures';
+import { pageMeasure } from './reading';
+import type { Article } from './schema';
+
+export interface Opening {
+  title: string;
+  standfirst?: string;
+  topic?: { label: string; href?: string };
+  author?: { name: string; avatar?: string };
+  date?: string;
+  readingTime?: string;
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string };
+}
+
+/** @param topic where the page sits: its section on the site, or its building on the planet */
+export async function openingOf(article: Article, topic?: { label: string; href: string }): Promise<Opening> {
+  const owner = getPerson(getSite().owner)!;
+  const hero = article.hero && (await picture(article.hero.media, 'wide'));
+  const avatar = owner.avatar ? await picture(owner.avatar, 'card') : undefined;
+  const lead = hero && (article.hero?.showCaption === false ? { ...hero, caption: undefined, credit: undefined } : { ...hero, caption: article.hero?.caption ?? hero.caption, credit: article.hero?.credit ?? hero.credit });
+  const story = article.kind === 'note' || article.kind === 'talk';
+  return {
+    title: article.title,
+    standfirst: article.summary,
+    // an article carries its topic, byline and date; a page and a gallery open with their words only
+    topic: story ? topic : undefined,
+    author: story ? { name: owner.name, avatar: avatar?.thumb } : undefined,
+    date: story ? article.publishedAt : undefined,
+    readingTime: pageMeasure(article),
+    picture: lead,
+  };
+}

@@ -32,13 +32,17 @@ export function siteNav(structure: SiteStructure, routes: Route[], current?: Rou
 
 /**
  * Where "Explore in 3D" goes from a page of the site (documentation/sections/spec.md §6.6): a page that's
- * on the planet, to its building; a section, to the building that points to it (its `site`); anything
- * else, the plaza.
+ * on the planet, to its building, open at that page; a section, to the building that points to it (its
+ * `site`); anything else, the plaza.
  */
 export function exploreHref(route?: Route, planet?: PlanetStructure | null): string {
   const places = planet?.places ?? [];
   const node = route?.node;
-  const place = !node ? undefined : node.kind === 'item' ? places.find((p) => p.pages.some((r) => r.id === node.item.id)) : places.find((p) => p.site === node.id);
+  if (node?.kind === 'item') {
+    const place = places.find((p) => p.pages.some((r) => r.id === node.item.id));
+    if (place) return withBase(`/play/?at=${place.id}&open=1&page=${node.item.id}`);
+  }
+  const place = node?.kind === 'hub' ? places.find((p) => p.site === node.id) : undefined;
   return withBase(place ? `/play/?at=${place.id}` : '/play/');
 }
 

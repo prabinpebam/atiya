@@ -2,7 +2,8 @@
 /**
  * A page: an article, a case study, a custom page or a gallery. The opening spread, then the text
  * in a comfortable column with a drop cap, figures, galleries, videos and quotes stepping out of it,
- * then the way on to the next story. Pictures open in the lightbox. Defined once; every long read uses it.
+ * then the way on to the next story. Pictures open in the lightbox. Defined once; every long read uses it,
+ * on the site and on the planet, where the building's frame replaces the site's chrome (documentation/sections/spec.md §6.1).
  * @tier layout
  * @a11y One h1 (the title) and one main landmark with id="main"; the article is an <article>; breadcrumbs above, "More stories" after.
  */
@@ -14,6 +15,7 @@ import ArticleHeader from '../components/compounds/ArticleHeader.astro';
 import NextPrev from '../components/compounds/NextPrev.astro';
 import ArticleMinimap from '../components/compounds/ArticleMinimap.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
+import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
 import Prose from '../components/fundamentals/Prose.astro';
 import type { IconName } from '../design/icons';
 
@@ -45,17 +47,19 @@ interface Props {
   prev?: { href: string; title: string };
   /** The story after this one. */
   next?: { href: string; title: string };
+  /** Read on the planet: the building's frame (its bar, over the smoke) replaces the site's header, footer and breadcrumbs. */
+  frame?: PlanetFrame;
 }
 
-const { title, description, nav, action, crumbs, header, dropcap = true, prev, next } = Astro.props;
+const { title, description, nav, action, crumbs, header, dropcap = true, prev, next, frame } = Astro.props;
 ---
 
-<PageShell title={title} description={description} preload={['display', 'display-italic', 'text', 'ui']}>
-  <SiteHeader nav={nav} action={action} />
+<PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} preload={['display', 'display-italic', 'text', 'ui']}>
+  {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} />}
   <main id="main" class="page" tabindex="-1">
     <article class="article" data-minimap-source>
       {
-        crumbs && (
+        crumbs && !frame && (
           <div class="crumbs">
             <Breadcrumbs trail={crumbs.trail} current={crumbs.current} />
           </div>
@@ -78,7 +82,7 @@ const { title, description, nav, action, crumbs, header, dropcap = true, prev, n
     <ArticleMinimap />
     <Lightbox />
   </main>
-  <SiteFooter />
+  {!frame && <SiteFooter />}
   <slot name="page-end" />
 </PageShell>
 

@@ -3,7 +3,8 @@
  * An index: a section's front page, with its title set large, a standfirst, and its pages below in the
  * section's view: a list (rows, words first), tiles (an even grid of cards) or a bento box (the lead
  * across the page, then rows of halves and thirds), with the whitespace a magazine's section opener has.
- * An empty section says so. Defined once; every section uses it (documentation/sections/spec.md §3.4).
+ * An empty section says so. Defined once; every section uses it (documentation/sections/spec.md §3.4),
+ * and so does a building's list on the planet, in the planet's frame (§6.1).
  * @tier layout
  * @a11y One h1, the page's title; the list's headings are h2. A main landmark with id="main".
  */
@@ -12,6 +13,7 @@ import SiteHeader, { type NavItem } from '../components/compounds/SiteHeader.ast
 import SiteFooter from '../components/compounds/SiteFooter.astro';
 import Breadcrumbs from '../components/compounds/Breadcrumbs.astro';
 import StoryCard from '../components/compounds/StoryCard.astro';
+import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
 import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
 import type { IconName } from '../design/icons';
@@ -40,17 +42,19 @@ interface Props {
   empty?: string;
   /** For an address that moved: the page sends the reader on to this path at once (and says so, with a link). */
   redirect?: string;
+  /** Read on the planet: the building's frame (its bar, over the smoke) replaces the site's header, footer and breadcrumbs. */
+  frame?: PlanetFrame;
 }
 
-const { title, description, heading, standfirst, nav, action, crumbs, stories = [], view = 'tiles', empty, redirect } = Astro.props;
+const { title, description, heading, standfirst, nav, action, crumbs, stories = [], view = 'tiles', empty, redirect, frame } = Astro.props;
 ---
 
-<PageShell title={title} description={description} redirect={redirect} preload={['display', 'display-italic', 'text', 'ui']}>
-  <SiteHeader nav={nav} action={action} />
+<PageShell title={title} description={description} redirect={redirect} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} preload={['display', 'display-italic', 'text', 'ui']}>
+  {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} />}
   <main id="main" class="index" tabindex="-1">
     <header class="intro">
-      {crumbs && <Breadcrumbs trail={crumbs.trail} current={crumbs.current} />}
-      <Heading level={1} size="display">{heading}</Heading>
+      {crumbs && !frame && <Breadcrumbs trail={crumbs.trail} current={crumbs.current} />}
+      <Heading level={1} size="display" id={frame ? 'frame-heading' : undefined}>{heading}</Heading>
       {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
     </header>
     <div class="list" data-view={view}>
@@ -90,7 +94,7 @@ const { title, description, heading, standfirst, nav, action, crumbs, stories = 
       <slot />
     </div>
   </main>
-  <SiteFooter />
+  {!frame && <SiteFooter />}
 </PageShell>
 
 <style>

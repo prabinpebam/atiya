@@ -386,6 +386,9 @@ export class GameController {
   private readonly buffer = new InteractBuffer();
   private invoker: HTMLElement | null = null;
   private pendingOpen: string | null = null;
+  private pendingPage: string | null = null;
+  /** The page being read in the open building's overlay (null: its list). */
+  openPage: string | null = null;
   /** A notice from the URL (an unknown place), shown once the planet is live. */
   private pendingNotice: string | null = null;
   private toastTimer: number | undefined;
@@ -533,7 +536,7 @@ export class GameController {
       this.pendingOpen = null;
       this.store.setState({ phase: 'playing' });
       this.welcomeFromPage(false);
-      this.openLandmark(id, { push: false });
+      this.openLandmark(id, { push: false, page: this.pendingPage });
       return;
     }
     this.start();
@@ -1566,16 +1569,19 @@ export class GameController {
 
   // ---------- landmarks / dialog / history ----------
 
-  openLandmark(id: string, opts: { push?: boolean; invoker?: HTMLElement | null } = {}): void {
+  openLandmark(id: string, opts: { push?: boolean; invoker?: HTMLElement | null; page?: string | null } = {}): void {
     if (!this.geoById.has(id)) return;
     const s = this.store.getState();
     if (s.openId === id) return;
-    this.invoker = opts.invoker ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    this.openPage = opts.page ?? null;
+    // (opened from the address, nothing has the focus: the body isn't somewhere to come back to)
+    const active = document.activeElement;
+    this.invoker = opts.invoker ?? (active instanceof HTMLElement && active !== document.body ? active : null);
     this.keyboard.clear();
     this.buffer.clear();
     this.sim.cancelAutoWalk();
     this.sim.vel.set(0, 0, 0);
-    if (opts.push !== false) history.pushState({ gameOpen: id }, '', PLAY_PATH + buildPlaySearch(id, true));
+    if (opts.push !== false) history.pushState({ gameOpen: id }, '', PLAY_PATH + buildPlaySearch(id, true, this.openPage));
     this.sound.open();
     this.store.setState({ openId: id, menuOpen: false });
   }
@@ -1592,8 +1598,22 @@ export class GameController {
     this.closeLandmarkLocal();
   }
 
+  /**
+   * The reading overlay moved (documentation/sections/spec.md §6.3): the address follows the page being
+   * read, keeping the history marker, so Close still goes back through history and the address reopens it.
+   */
+  readingAt(place: string, page: string | null, said: string): void {
+    if (this.store.getState().openId !== place) return;
+    this.openPage = page;
+    const st = history.state as { gameOpen?: string } | null;
+    history.replaceState(st?.gameOpen === place ? { ...st, page } : st, '', PLAY_PATH + buildPlaySearch(place, true, page));
+    this.syncClassicLinks();
+    this.announce(said);
+  }
+
   private closeLandmarkLocal(): void {
     if (!this.store.getState().openId) return;
+    this.openPage = null;
     this.store.setState({ openId: null });
     const target = this.invoker;
     this.invoker = null;
@@ -1607,7 +1627,7 @@ export class GameController {
     const url = parsePlayUrl(location.search);
     const { openId } = this.store.getState();
     if (url.open && url.at && this.geoById.has(url.at)) {
-      if (openId !== url.at) this.openLandmark(url.at, { push: false });
+      if (openId !== url.at) this.openLandmark(url.at, { push: false, page: url.page });
     } else if (openId) {
       this.closeLandmarkLocal();
     }
@@ -1626,8 +1646,9 @@ export class GameController {
     this.sim.setOrientation(arrivalOrientation(g));
     if (url.open) {
       history.replaceState(null, '', PLAY_PATH + buildPlaySearch(g.id));
-      history.pushState({ gameOpen: g.id }, '', PLAY_PATH + buildPlaySearch(g.id, true));
+      history.pushState({ gameOpen: g.id }, '', PLAY_PATH + buildPlaySearch(g.id, true, url.page));
       this.pendingOpen = g.id;
+      this.pendingPage = url.page;
     }
   }
 
@@ -1749,8 +1770,9 @@ export class GameController {
   /** The site's page for where the visitor is: the open or nearby building's section, else the site's list of sections. */
   classicHref(): string {
     const { openId, nearbyId } = this.store.getState();
-    const id = openId ?? nearbyId;
-    return (id && this.dataById.get(id)?.siteHref) || classicHrefFor();
+    const d = this.dataById.get(openId ?? nearbyId ?? '');
+    // the page being read, else the building's section, else the site's list of sections
+    return (openId && d?.pages.find((p) => p.id === this.openPage)?.href) || d?.siteHref || classicHrefFor();
   }
 
   private syncClassicLinks(): void {

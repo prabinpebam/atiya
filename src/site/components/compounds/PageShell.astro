@@ -44,6 +44,8 @@ interface Props {
   canonical?: string;
   /** Send the reader on to this address at once (a page that moved): a path on the site, the base path is added. */
   redirect?: string;
+  /** Where the page is shown: on the site (its paper), or in the planet's frame over the game (the smoke instead, and kept out of search results). */
+  frame?: 'site' | 'planet';
 }
 
 const {
@@ -57,19 +59,20 @@ const {
   liveContent = true,
   canonical,
   redirect,
+  frame = 'site',
 } = Astro.props;
 // social previews need an absolute URL: `site` is set when deploying
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-frame={frame === 'planet' ? 'planet' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    {(noindex || redirect) && <meta name="robots" content="noindex" />}
+    {(noindex || redirect || frame === 'planet') && <meta name="robots" content="noindex" />}
     {redirect && <meta http-equiv="refresh" content={`0; url=${withBase(redirect)}`} />}
     {(canonical ?? redirect) && <link rel="canonical" href={new URL(withBase(canonical ?? redirect!), Astro.site ?? Astro.url).href} />}
     <meta name="color-scheme" content="light dark" />

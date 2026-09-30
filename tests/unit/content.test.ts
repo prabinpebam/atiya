@@ -363,12 +363,12 @@ describe('the navigation and the redirects', () => {
     expect(problems(docs(undefined, [{ from: '/old/', to: '/work/' }, { from: '/old/', to: '/about/' }]))).toMatch(/redirects twice/);
   });
 
-  it('"Explore in 3D" goes to the building a page is in, or the one that points to a section; else the plaza', () => {
+  it('"Explore in 3D" goes to a page, open in its building; to the building that points to a section; else the plaza', () => {
     const c = loadContent(docs(undefined), new Set());
     const at = (path: string) => c.routes.find((r) => r.path === path);
     const planet = { places: [{ id: 'workshop' as const, title: 'Workshop', kicker: 'K', summary: 'S', site: 'work', pages: [{ type: 'article' as const, id: 'b' }] }] };
     expect(exploreHref(at('/work/'), planet)).toBe('/play/?at=workshop');
-    expect(exploreHref(at('/about/b/'), planet)).toBe('/play/?at=workshop');
+    expect(exploreHref(at('/about/b/'), planet)).toBe('/play/?at=workshop&open=1&page=b');
     expect(exploreHref(at('/work/a/'), planet)).toBe('/play/');
     expect(exploreHref(at('/about/'), planet)).toBe('/play/');
     expect(exploreHref(at('/'), planet)).toBe('/play/');

@@ -67,7 +67,13 @@ function staticClosure(entry) {
 
 const landing = eagerScripts('index.html');
 const gate = eagerScripts(join('play', 'index.html'));
-const game = js.filter((f) => !gate.includes(f) && !landing.includes(f));
+// the site's other pages (sections, pages, the design library, and the pages the planet frames over the
+// game: documentation/sections/spec.md §6.7) load their own scripts: the site's, not the game's, unless the
+// game reaches them too
+const pages = (dir) => readdirSync(join(DIST, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? pages(join(dir, e.name)) : e.name.endsWith('.html') ? [join(dir, e.name)] : []));
+const reached = staticClosure(js.filter((f) => /^game-mount\./.test(f)));
+const siteOnly = [...new Set(pages('').filter((p) => p !== 'index.html' && p !== join('play', 'index.html')).flatMap(eagerScripts))].filter((f) => !reached.includes(f) && !gate.includes(f) && !landing.includes(f));
+const game = js.filter((f) => !gate.includes(f) && !landing.includes(f) && !siteOnly.includes(f));
 // the game the gate loads to become playable, and what it fetches later on demand
 const initial = staticClosure(game.filter((f) => /^game-mount\./.test(f))).filter((f) => game.includes(f));
 const deferred = game.filter((f) => !initial.includes(f));
@@ -87,6 +93,7 @@ const deferredKB = sum(deferred);
 const gateKB = sum(gate);
 const landingGameJs = landing.filter((f) => /game|three|fiber|drei/i.test(f) || sizes[f] > 20);
 console.log(`landing eager JS: ${sum(landing).toFixed(1)} KB gz (${landing.length} files)`);
+console.log(`site pages' JS:   ${sum(siteOnly).toFixed(1)} KB gz (${siteOnly.length} files; the site's own, and the planet's framed pages', not the game's)`);
 console.log(`/play gate JS:    ${gateKB.toFixed(1)} KB gz (budget ${GATE_BUDGET_KB} KB)`);
 console.log(`game JS (lazy):   ${gameKB.toFixed(1)} KB gz (budget ${GAME_BUDGET_KB} KB)`);
 console.log(`  later chunks:   ${deferredKB.toFixed(1)} KB gz in all; the largest ${Math.max(...deferred.map((f) => sizes[f])).toFixed(1)} KB (budget ${CHUNK_BUDGET_KB} KB each)`);

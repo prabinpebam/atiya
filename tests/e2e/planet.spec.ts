@@ -2490,9 +2490,11 @@ test.describe('planet', () => {
     const dialog = page.getByTestId('landmark-dialog');
     await expect(dialog).toBeVisible();
     await expect(page).toHaveURL(/\?at=workshop&open=1$/);
-    // the building's words and pages come from the planet structure; the Workshop has none yet
-    await expect(dialog.getByRole('link', { name: /Open classic page/ })).toHaveAttribute('href', '/work/');
-    await expect(dialog.getByText('still being fitted out')).toBeVisible();
+    // its list is the site's own page, framed over the planet; the Workshop holds nothing yet
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    await expect(frame.getByRole('heading', { level: 1, name: 'Workshop' })).toBeFocused();
+    await expect(frame.getByText('Nothing here yet. This building is still being fitted out.')).toBeVisible();
+    await expect(frame.getByRole('link', { name: 'Open classic page' })).toHaveAttribute('href', '/work/');
     await noSeriousViolations(page);
 
     // Space closes it, through history like Esc and Close
@@ -2530,7 +2532,7 @@ test.describe('planet', () => {
     const open = page.getByTestId('preview-card').getByRole('button', { name: /Open/ });
     await open.click();
     await expect(page.getByTestId('landmark-dialog')).toBeVisible();
-    await page.getByTestId('landmark-dialog').getByRole('button', { name: 'Close' }).click();
+    await page.frameLocator('[data-testid="reading-frame"]').getByRole('button', { name: 'Close' }).click();
     await expect(page.getByTestId('landmark-dialog')).toBeHidden();
     await expect(open).toBeFocused();
   });
@@ -2540,13 +2542,101 @@ test.describe('planet', () => {
     await openPlanet(page, '/play/?at=lighthouse&open=1');
     const dialog = page.getByTestId('landmark-dialog');
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('heading', { name: 'Lighthouse' })).toBeVisible();
-    // the Lighthouse holds the first story: a link to its page on the site
-    await expect(dialog.getByRole('link', { name: 'Do what makes you proud' })).toHaveAttribute('href', '/leadership/do-what-makes-you-proud/');
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    await expect(frame.getByRole('heading', { level: 1, name: 'Lighthouse' })).toBeVisible();
+    // the Lighthouse holds the first story: a card that opens it in the frame
+    await expect(frame.getByRole('link', { name: 'Do what makes you proud' })).toHaveAttribute('href', '/play/lighthouse/do-what-makes-you-proud/');
     await page.goBack();
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(/\/play\/\?at=lighthouse$/);
     expect((await state(page)).nearby).toBe('lighthouse');
+  });
+
+  test("reading on the planet: a building's page opens in the frame, stays in the building, and Back closes it; Forward opens it again", async ({ page }) => {
+    await page.goto('/');
+    await openPlanet(page, '/play/?at=lighthouse&open=1');
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    await frame.getByRole('link', { name: 'Do what makes you proud' }).click();
+    await expect(frame.getByRole('heading', { level: 1, name: 'Do what makes you proud' })).toBeFocused();
+    await expect(page).toHaveURL(/\?at=lighthouse&open=1&page=do-what-makes-you-proud$/);
+    await expect(page.getByTestId('reading-frame')).toHaveAttribute('title', /^Do what makes you proud/);
+    await expect(page.getByTestId('live-region')).toContainText('Page 1 of 1 in the Lighthouse');
+    // the site's page, without the site's navigation: the building's bar instead
+    await expect(frame.getByRole('navigation', { name: 'Sections' })).toHaveCount(0);
+    const out = frame.getByRole('link', { name: 'Open classic page' });
+    await expect(out).toHaveAttribute('href', '/leadership/do-what-makes-you-proud/');
+    await expect(out).toHaveAttribute('target', '_top');
+    await expect(page.locator('.play-header').getByRole('link', { name: 'Classic site' })).toHaveAttribute('href', '/leadership/do-what-makes-you-proud/');
+    // back to the contents, in the frame (no history entry)
+    await frame.getByRole('link', { name: 'Show contents' }).click();
+    await expect(frame.getByRole('heading', { level: 1, name: 'Lighthouse' })).toBeVisible();
+    await expect(page).toHaveURL(/\?at=lighthouse&open=1$/);
+    await frame.getByRole('link', { name: 'Do what makes you proud' }).click();
+    await expect(frame.getByRole('heading', { level: 1, name: 'Do what makes you proud' })).toBeVisible();
+    // Back closes the overlay, whatever was read in it; Forward opens it again, at the same page
+    await page.goBack();
+    await expect(page.getByTestId('landmark-dialog')).toBeHidden();
+    await expect(page).toHaveURL(/\/play\/\?at=lighthouse$/);
+    await page.goForward();
+    await expect(frame.getByRole('heading', { level: 1, name: 'Do what makes you proud' })).toBeVisible();
+    // Esc (like Space) closes it, a picture's lightbox first
+    await frame.locator('a[data-lightbox]').first().click();
+    await expect(frame.locator('dialog[open]')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(frame.locator('dialog[open]')).toHaveCount(0);
+    await expect(page.getByTestId('landmark-dialog')).toBeVisible();
+    await page.keyboard.press('Space');
+    await expect(page.getByTestId('landmark-dialog')).toBeHidden();
+    await expect(page.locator('.game-region')).toBeFocused();
+  });
+
+  test('a link to another building says where it is and stays put; in dark mode the smoke is dark and passes axe', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('site.theme', 'dark'));
+    await openPlanet(page, '/play/?at=workshop&open=1');
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    await expect(frame.getByRole('heading', { level: 1, name: 'Workshop' })).toBeVisible();
+    await expect(page.getByTestId('reading-frame')).toHaveAttribute('data-scheme', 'dark');
+    const doc = page.frames().find((f) => /\/play\/workshop\/$/.test(f.url()))!;
+    expect(await doc.evaluate(() => getComputedStyle(document.documentElement).backgroundColor)).toMatch(/^rgba\(16, 14, 12, 0\.9\)$/);
+    await noSeriousViolations(page);
+    // a page in the Lighthouse, linked from the Workshop: a note, not a visit
+    await doc.evaluate(() => {
+      const a = document.createElement('a');
+      a.href = '/leadership/do-what-makes-you-proud/';
+      a.textContent = 'The first story';
+      document.querySelector('main')!.append(a);
+    });
+    await frame.getByRole('link', { name: 'The first story' }).click();
+    await expect(frame.getByRole('status')).toContainText('That’s in the Lighthouse. Walk there to read it.');
+    await expect(frame.getByRole('status').getByRole('link', { name: 'Open classic page' })).toHaveAttribute('target', '_top');
+    expect(doc.url()).toMatch(/\/play\/workshop\/$/);
+  });
+
+  test("the site's Explore in 3D opens its page in its building; a page that isn't in the building opens its list and says so", async ({ page }) => {
+    await page.goto('/leadership/do-what-makes-you-proud/');
+    const explore = page.getByRole('banner').getByRole('link', { name: 'Explore in 3D' }).first();
+    await expect(explore).toHaveAttribute('href', '/play/?at=lighthouse&open=1&page=do-what-makes-you-proud');
+    await openPlanet(page, (await explore.getAttribute('href'))!);
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    await expect(frame.getByRole('heading', { level: 1, name: 'Do what makes you proud' })).toBeVisible();
+    expect((await state(page)).nearby).toBe('lighthouse');
+    await openPlanet(page, '/play/?at=workshop&open=1&page=do-what-makes-you-proud');
+    await expect(frame.getByRole('heading', { level: 1, name: 'Workshop' })).toBeVisible();
+    await expect(page.getByTestId('live-region')).toContainText('That page isn’t in the Workshop');
+    // a framed page opened on its own goes into the game, at the same place
+    await page.goto('/play/lighthouse/do-what-makes-you-proud/');
+    await expect(page).toHaveURL(/\/play\/\?at=lighthouse&open=1&page=do-what-makes-you-proud$/);
+  });
+
+  test("a frame that doesn't answer shows a way out: try again, the classic page, or close", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.route('**/play/library/', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>x</title>' }));
+    await openPlanet(page, '/play/?at=library&open=1');
+    const failed = page.getByTestId('landmark-dialog').getByRole('alert');
+    await expect(failed).toContainText('The Library didn’t open.', { timeout: 15_000 });
+    await expect(failed.getByRole('link', { name: /Open classic page/ })).toHaveAttribute('href', '/writing/');
+    await failed.getByRole('button', { name: /Close/ }).click();
+    await expect(page.getByTestId('landmark-dialog')).toBeHidden();
   });
 
   test('invalid deep link falls back to the Plaza with a status message', async ({ page }) => {
