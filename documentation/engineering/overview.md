@@ -44,7 +44,7 @@ The site and the planet share this layout today. [Separating the site and the pl
 
 | Command | Does |
 |---|---|
-| `npm run dev` | The dev server (the docs are at `/docs/`) |
+| `npm run dev` | The dev server at `http://localhost:4321/` (the docs are at `/docs/`). Use `localhost`, not `127.0.0.1`: YouTube won't play an embedded video on a page served from an IP address |
 | `npm test` | The unit tests |
 | `npm run check` | Type checks (`astro check`) |
 | `npm run e2e` | Playwright and axe, against a `--mode test` build |

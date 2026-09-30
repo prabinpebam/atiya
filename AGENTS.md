@@ -121,6 +121,7 @@ The site's content, IA and navigation are data (spec: [documentation/content/spe
 
 ### Commands
 
+- `npm run dev` serves the site at `http://localhost:4321/`. Open it at `localhost`, never `127.0.0.1` (don't pass `--host 127.0.0.1`): YouTube refuses to play the articles' embedded videos on a page served from an IP address ("This video is unavailable"), while `localhost` and the live site play them.
 - `npm run check` (types), `npm test` (Vitest unit), `npm run e2e` (Playwright + axe; builds the test bundle), `npm run verify:prod` (production build + bundle budgets + no test hook; the tiers of progressive-loading.md §5.6: the game's critical JS ≤ 450 KB gz, each chunk it fetches later ≤ 150 KB gz, and ≤ 1.6 MB downloaded before the planet is live). Which of these to run for a change: see **Validation** below; don't run them all by default.
 - `tests/unit/fixtures.ts` must mirror the landmark frontmatter; a test enforces this.
 - **Base path (GitHub Pages):** the site is deployed at `https://prabinpebam.github.io/atiya/` by `.github/workflows/deploy.yml`, built with `BASE_PATH=/atiya`. Never hard-code a root-relative URL (`/play/`, `/textures/…`): wrap it in `withBase()` from `src/game/platform/base.ts` (in `.astro` pages too), and use `import.meta.env.BASE_URL` in inline page scripts. The generated manifests keep root-relative URLs; their consumers add the base. Check a change that adds URLs with a base build (`$env:BASE_PATH='/atiya'; npm run build; npx astro preview`).
