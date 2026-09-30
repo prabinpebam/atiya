@@ -274,6 +274,36 @@ test.describe('editor', () => {
     expect(await figures().count()).toBeGreaterThan(0);
   });
 
+  test('a dropdown in a dialog opens over it, never clipped: every option can be clicked where it shows', async ({ page }) => {
+    await openArticle(page);
+    await page.locator('[data-editor-outline] [data-editor-add-at]').click();
+    await page.locator('#editor-palette [data-editor-add="quote"]').click();
+    const dialog = page.locator('#editor-insert-quote');
+    const style = dialog.getByRole('combobox', { name: 'Style' });
+    await style.click();
+    const options = dialog.getByRole('option');
+    await expect(options.last()).toBeVisible();
+    // nothing in the dialog scrolls to make room, and the whole list shows, its bottom edge included
+    const layout = await dialog.evaluate((d) => {
+      const list = d.querySelector('[role="listbox"]')!;
+      const r = list.getBoundingClientRect();
+      const at = document.elementFromPoint(r.left + 12, r.bottom - 3);
+      return { scrolled: [...d.querySelectorAll('*')].filter((e) => e !== list && e.scrollTop > 0).length, bottomShows: !!at && list.contains(at) };
+    });
+    expect(layout).toEqual({ scrolled: 0, bottomShows: true });
+    for (const o of await options.all()) {
+      const hit = await o.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return !!at && el.contains(at);
+      });
+      expect(hit).toBe(true);
+    }
+    await options.last().click();
+    await expect(style).toContainText('In the column');
+    await expect(style).toHaveAttribute('aria-expanded', 'false');
+  });
+
   test("the page's settings save; a value the contract refuses says why and isn't written", async ({ page }) => {
     await openArticle(page);
     await page.getByRole('tab', { name: 'Page' }).click();

@@ -2,7 +2,8 @@
 /**
  * A dropdown to pick one option from a short list, with its own list (not the browser's): rounded,
  * with icons, descriptions and a check on the chosen one. For two or three always-visible choices, use
- * radio buttons instead.
+ * radio buttons instead. The list opens in the browser's top layer (the Popover API), placed against its
+ * button (above it when there's no room below), so no dialog or scrolling panel around it can clip it.
  * @tier fundamental
  * @a11y The WAI-ARIA select-only combobox: a combobox that owns a listbox; the active option is
  * announced through aria-activedescendant while focus stays on the combobox.
@@ -103,7 +104,7 @@ const chosenIcon = iconOf(chosen?.icon);
         )
       }
     </div>
-    <div class="list" role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`} tabindex="-1" data-list data-scrollbar>
+    <div class="list" role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`} tabindex="-1" popover="manual" data-list data-scrollbar>
       {
         options.map((o, i) => {
           const oi = iconOf(o.icon);
@@ -302,6 +303,31 @@ const chosenIcon = iconOf(chosen?.icon);
     transform-origin: bottom center;
   }
 
+  /* in the top layer (the Popover API), so no dialog or scrolling panel clips it: placed against its
+     button by the script, below it or, without the room, above it */
+  @supports selector(:popover-open) {
+    .list[popover] {
+      position: fixed;
+      inset: auto;
+      inset-block-start: calc(var(--list-top) + var(--space-2));
+      inset-inline-start: var(--list-left);
+      margin: 0;
+      min-width: var(--list-width);
+      max-height: min(var(--c-listbox-max-height), var(--list-room));
+    }
+
+    .select[data-placement='top'] .list[popover] {
+      inset-block-start: calc(var(--list-top) - var(--space-2));
+      inset-block-end: auto;
+    }
+
+    /* the script works out the left edge for either alignment (the in-place rules above set it to auto) */
+    .select[data-align='end'] .list[popover] {
+      inset-inline-start: var(--list-left);
+      inset-inline-end: auto;
+    }
+  }
+
   .select[data-open] .list {
     visibility: visible;
     opacity: 1;
@@ -418,20 +444,52 @@ const chosenIcon = iconOf(chosen?.icon);
       } else combo.removeAttribute('aria-activedescendant');
     }
 
-    function place() {
-      root.removeAttribute('data-placement');
+    // the list opens in the top layer where the browser has one (the Popover API): no dialog or scrolling
+    // panel around the select can clip it; elsewhere it opens in place
+    const layered = typeof list.showPopover === 'function' && list.hasAttribute('popover') && CSS.supports('selector(:popover-open)');
+    const MARGIN = 16;
+
+    /** Places the open list against its button: below it, or above when there's more room there; in the window. */
+    function position() {
       const r = combo.getBoundingClientRect();
-      const h = list.scrollHeight;
       const below = innerHeight - r.bottom;
-      if (below < h + 16 && r.top > below) root.dataset.placement = 'top';
+      const above = r.top;
+      const up = below < list.scrollHeight + MARGIN && above > below;
+      if (up) root.dataset.placement = 'top';
+      else root.removeAttribute('data-placement');
+      if (!layered) return;
+      list.style.setProperty('--list-width', `${r.width}px`);
+      list.style.setProperty('--list-room', `${Math.max(0, (up ? above : below) - MARGIN * 2)}px`);
+      const w = list.offsetWidth;
+      const left = root.dataset.align === 'end' ? r.right - w : r.left;
+      list.style.setProperty('--list-left', `${Math.max(MARGIN / 2, Math.min(left, innerWidth - w - MARGIN / 2))}px`);
+      list.style.setProperty('--list-top', `${up ? r.top - list.offsetHeight : r.bottom}px`);
+    }
+
+    function place() {
+      // shown again on each opening, so it's over whatever opened since (a modal dialog, the header)
+      if (layered) {
+        if (list.matches(':popover-open')) list.hidePopover();
+        list.showPopover();
+      }
+      position();
+    }
+
+    if (layered) {
+      document.addEventListener('scroll', () => open && position(), { capture: true, passive: true, signal });
+      addEventListener('resize', () => open && position(), { signal });
+      // once it has faded out, it leaves the top layer
+      list.addEventListener('transitionend', () => !open && list.matches(':popover-open') && list.hidePopover(), { signal });
+      signal.addEventListener('abort', () => list.matches(':popover-open') && list.hidePopover());
     }
 
     function setOpen(o: boolean) {
       if (combo.getAttribute('aria-disabled') === 'true') return;
       open = o;
       combo.setAttribute('aria-expanded', String(o));
-      root.toggleAttribute('data-open', o);
+      // placed (and, in the top layer, shown) before it's marked open, so it fades in from its closed look
       if (o) place();
+      root.toggleAttribute('data-open', o);
       setActive(o ? active : -1);
       if (!o) active = options.findIndex((x) => x.getAttribute('aria-selected') === 'true');
     }

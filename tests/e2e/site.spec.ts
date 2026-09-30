@@ -30,6 +30,10 @@ test.describe('site design system', () => {
     await combo.focus();
     await page.keyboard.press('Enter');
     await expect(combo).toHaveAttribute('aria-expanded', 'true');
+    // it opens under its button, their right edges lined up (the list is in the top layer, placed by the script)
+    const [button, list] = await Promise.all([combo.boundingBox(), page.locator('header [data-theme-switch] [role="listbox"]').first().boundingBox()]);
+    expect(Math.abs(button!.x + button!.width - (list!.x + list!.width))).toBeLessThan(2);
+    expect(list!.y).toBeGreaterThanOrEqual(button!.y + button!.height);
     await page.keyboard.press('End');
     await page.keyboard.press('Enter');
     await expect(combo).toHaveAttribute('aria-expanded', 'false');

@@ -54,8 +54,10 @@ function attach(scroller: HTMLElement, signal: AbortSignal): void {
   attached.add(scroller);
   signal.addEventListener('abort', () => attached.delete(scroller));
   const page = scroller === document.documentElement;
-  const host = (): HTMLElement => (page ? document.body : scroller.parentElement!);
-  if (!page) {
+  // a list in the top layer (a select's, opened over a dialog) keeps its handles inside it, on its own layer
+  const inside = !page && scroller.hasAttribute('popover');
+  const host = (): HTMLElement => (page ? document.body : inside ? scroller : scroller.parentElement!);
+  if (!page && !inside) {
     scroller.toggleAttribute('data-scrollbar', true);
     if (getComputedStyle(host()).position === 'static') host().style.position = 'relative';
   }
@@ -72,6 +74,7 @@ function attach(scroller: HTMLElement, signal: AbortSignal): void {
   const thumbs: Record<Axis, HTMLElement> = { y: make('y'), x: make('x') };
   const mount = () => {
     if (page) document.body.append(thumbs.y, thumbs.x);
+    else if (inside) scroller.append(thumbs.y, thumbs.x);
     else scroller.after(thumbs.y, thumbs.x);
   };
   mount();
@@ -104,7 +107,7 @@ function attach(scroller: HTMLElement, signal: AbortSignal): void {
     axes = { x: shown && (page || scrolls(cs.overflowX)), y: shown && (page || scrolls(cs.overflowY)) };
     // a scroller on its own layer (a popup list) takes its handles with it: same layer, later in the DOM
     if (!page) for (const t of Object.values(thumbs)) t.style.zIndex = cs.zIndex === 'auto' ? '' : cs.zIndex;
-    if (page) box = { top: 0, left: 0, width: scroller.clientWidth, height: scroller.clientHeight };
+    if (page || inside) box = { top: 0, left: 0, width: scroller.clientWidth, height: scroller.clientHeight };
     else if (shown) {
       // offsets ignore transforms (a list scaling open); rects are the fallback
       const h = host();
@@ -130,6 +133,9 @@ function attach(scroller: HTMLElement, signal: AbortSignal): void {
     const { inset, min, room } = k;
     const top = page ? scrollY : scroller.scrollTop;
     const left = page ? scrollX : Math.abs(scroller.scrollLeft);
+    // handles inside their scroller move with its content: they're shifted back by the scroll
+    const shiftY = inside ? scroller.scrollTop : 0;
+    const shiftX = inside ? scroller.scrollLeft : 0;
     const bothY = axes.x && scroller.scrollWidth - scroller.clientWidth >= 1;
     const bothX = axes.y && scroller.scrollHeight - scroller.clientHeight >= 1;
     const trackY = box.height - 2 * inset - (bothY ? room : 0);
@@ -143,13 +149,13 @@ function attach(scroller: HTMLElement, signal: AbortSignal): void {
     thumbs.x.hidden = !gx;
     if (gy) {
       const s = thumbs.y.style;
-      s.top = `${box.top + inset + gy.offset}px`;
+      s.top = `${box.top + shiftY + inset + gy.offset}px`;
       s.height = `${gy.size}px`;
       s.setProperty('--sb-edge', `${box.left + box.width}px`);
     }
     if (gx) {
       const s = thumbs.x.style;
-      s.left = `${box.left + inset + gx.offset}px`;
+      s.left = `${box.left + shiftX + inset + gx.offset}px`;
       s.width = `${gx.size}px`;
       s.setProperty('--sb-edge', `${box.top + box.height}px`);
     }
@@ -176,7 +182,7 @@ function attach(scroller: HTMLElement, signal: AbortSignal): void {
     ro.observe(page ? document.body : scroller);
     if (!page) {
       ro.observe(host());
-      for (const child of scroller.children) ro.observe(child);
+      for (const child of scroller.children) if (!child.classList.contains('sb-thumb')) ro.observe(child);
     }
   };
   watch();
