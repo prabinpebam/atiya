@@ -1,0 +1,288 @@
+---
+/**
+ * The site structure as a tree (documentation/editor/spec.md §5): each hub with what it places, in
+ * order; a hub's settings beside it; the articles not yet on the site, to place. Moves go through the
+ * store, which keeps a published page's address fixed until the site has redirects.
+ * @tier editor
+ * @a11y The APG tree pattern: one tab stop, arrow keys move between items, Enter opens a hub's settings.
+ * @a11y Reordering has buttons (Move up, Move down) and keys (Alt+Up, Alt+Down); moves are announced.
+ * @key Up / Down: the previous / next item
+ * @key Home / End: the first / last item
+ * @key Enter: a hub's settings, or an article in the editor
+ * @key Alt + Up / Alt + Down: reorder within its section
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import { withBase } from '../../design/meta';
+import type { SelectOption } from '../../components/fundamentals/Select.astro';
+
+export interface TreeItem {
+  /** The node's id. */
+  node: string;
+  kind: 'hub' | 'item';
+  title: string;
+  path: string;
+  depth: number;
+  /** The hub it's in, and its position there. */
+  parent: string | null;
+  position: number;
+  siblings: number;
+  /** For an article: its id, and whether it's published (then its place is fixed). */
+  article?: string;
+  published?: boolean;
+  /** For a hub: its own fields, and whether a published page is under it (then its slug is fixed). */
+  hub?: { title: string; navLabel?: string; summary?: string; slug: string; template: string; locked: boolean; home: boolean };
+}
+
+interface Props {
+  /** The tree, flattened in reading order. */
+  items: TreeItem[];
+  /** The articles no node places. */
+  unplaced: { id: string; title: string }[];
+  /** The hubs, for "Place under" and "Move to". */
+  sections: SelectOption[];
+}
+
+const { items, unplaced, sections } = Astro.props;
+const TEMPLATES: SelectOption[] = [
+  { value: 'notesIndex', label: 'An index of stories' },
+  { value: 'workIndex', label: 'Work' },
+  { value: 'expertiseOverview', label: 'Expertise' },
+  { value: 'leadershipOverview', label: 'Leadership' },
+];
+---
+
+<div class="sections" data-editor-sections>
+  <section class="tree-wrap" aria-labelledby="tree-title">
+    <Heading level={2} size="h4" id="tree-title">The site</Heading>
+    <ul class="tree" role="tree" aria-labelledby="tree-title">
+      {
+        items.map((it, n) => (
+          <li class="item" role="treeitem" aria-level={it.depth + 1} aria-setsize={it.siblings} aria-posinset={it.position + 1} tabindex={n === 0 ? 0 : -1} data-node={it.node} data-kind={it.kind} data-parent={it.parent ?? ''} data-position={it.position} data-href={it.article ? withBase(`/_edit/articles/${it.article}/`) : undefined}>
+            <span class="line">
+              <Icon name={it.kind === 'hub' ? 'folder' : 'article'} />
+              <span class="name">{it.title}</span>
+              <Text as="span" variant="small" tone="muted">{it.path}</Text>
+              {it.kind === 'item' && <Tag size="sm" tone={it.published ? 'positive' : 'neutral'}>{it.published ? 'Published' : 'Draft'}</Tag>}
+            </span>
+            {it.parent && (
+              <span class="moves">
+                <IconButton label={`Move ${it.title} up`} icon="arrow-up" size="sm" tooltip="none" disabled={it.position === 0} data-sections-move="up" data-node={it.node} />
+                <IconButton label={`Move ${it.title} down`} icon="arrow-down" size="sm" tooltip="none" disabled={it.position === it.siblings - 1} data-sections-move="down" data-node={it.node} />
+                {it.kind === 'item' && !it.published && <IconButton label={`Take ${it.title} off the site`} icon="close" size="sm" tooltip="none" data-sections-unplace={it.article} />}
+              </span>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+    <div class="foot">
+      <Button variant="secondary" icon="plus" data-dialog-open="new-section">New section</Button>
+    </div>
+    <Dialog id="new-section" title="New section" size="sm">
+      <form class="form" data-sections-new novalidate>
+        <TextField label="Title" name="title" required hint="Its heading, and its address made from it." />
+        <Select label="Under" name="parent" value={items[0]?.node} options={sections} />
+        <TextField label="Summary" name="summary" multiline rows={2} optional />
+        <p class="issue" role="alert" data-editor-form-issue hidden></p>
+        <div class="actions">
+          <Button variant="primary" type="submit" icon="plus">Add the section</Button>
+        </div>
+      </form>
+    </Dialog>
+  </section>
+
+  <section class="side" aria-labelledby="side-title">
+    <Heading level={2} size="h4" id="side-title">Settings</Heading>
+    <div data-sections-hint>
+      <Text variant="ui" tone="muted">Choose a section in the tree to change its name, address or summary. Articles open in the editor.</Text>
+    </div>
+    {
+      items
+        .filter((it) => it.hub)
+        .map((it) => (
+          <form class="form" data-sections-hub={it.node} hidden novalidate aria-label={`${it.title} settings`}>
+            <Heading level={3} size="ui">{it.title}</Heading>
+            <TextField label="Title" name="title" value={it.hub!.title} required />
+            <TextField label="Menu label" name="navLabel" value={it.hub!.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs." />
+            {!it.hub!.home && <TextField label="Summary" name="summary" value={it.hub!.summary ?? ''} multiline rows={2} optional hint="The standfirst under its title (at most 160 characters)." />}
+            {!it.hub!.home && <TextField label="Slug" name="slug" value={it.hub!.slug} required disabled={it.hub!.locked} hint={it.hub!.locked ? 'Fixed: a published page is under it, and its address would change.' : `Its address: ${it.path}`} />}
+            {!it.hub!.home && <Select label="Template" name="template" value={it.hub!.template} options={TEMPLATES} />}
+            <p class="issue" role="alert" data-editor-form-issue hidden></p>
+            <div class="actions">
+              <Button variant="primary" type="submit">Save the section</Button>
+            </div>
+          </form>
+        ))
+    }
+    {
+      unplaced.length > 0 && (
+        <div class="unplaced">
+          <Heading level={3} size="ui">Not on the site yet</Heading>
+          <ul class="list">
+            {unplaced.map((a) => (
+              <li>
+                <Link href={withBase(`/_edit/articles/${a.id}/`)} variant="quiet">{a.title}</Link>
+                <Select label={`Place ${a.title} under`} hideLabel size="sm" placeholder="Place under…" options={sections} data-sections-place={a.id} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+  </section>
+</div>
+
+<style>
+  .sections {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .tree-wrap,
+  .side {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .tree {
+    display: grid;
+    gap: var(--space-0-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    min-block-size: var(--size-touch);
+    padding-inline: calc(var(--space-6) * (var(--depth, 1) - 1)) var(--space-1);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+  }
+
+  .item[aria-level='1'] {
+    --depth: 1;
+  }
+
+  .item[aria-level='2'] {
+    --depth: 2;
+  }
+
+  .item[aria-level='3'] {
+    --depth: 3;
+  }
+
+  .item[aria-level='4'] {
+    --depth: 4;
+  }
+
+  @media (hover: hover) {
+    .item:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .item:active {
+    background: var(--color-bg-hover);
+  }
+
+  .item[aria-selected='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .item:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: calc(var(--border-focus) * -1);
+  }
+
+  .line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    min-inline-size: 0;
+    padding-inline-start: var(--space-2);
+  }
+
+  .name {
+    font-weight: var(--weight-semibold);
+  }
+
+  .moves {
+    display: flex;
+  }
+
+  .form,
+  .unplaced {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .form[hidden],
+  [data-sections-hint][hidden] {
+    display: none;
+  }
+
+  .foot {
+    display: flex;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: end;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  @media (max-width: 56rem) {
+    .sections {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initSections } from '../scripts/sections';
+
+  each<HTMLElement>('[data-editor-sections]', (root, signal) => initSections(root, signal));
+</script>

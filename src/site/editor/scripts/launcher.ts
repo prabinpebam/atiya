@@ -38,7 +38,7 @@ export const LAUNCHER_CSS = `
 .launch:focus-visible { outline: var(--border-focus) solid var(--color-focus); outline-offset: var(--border-focus-offset); }
 .icon { inline-size: var(--size-icon); block-size: var(--size-icon); }
 .icon-primary { fill: currentColor; }
-.icon-secondary { fill: currentColor; opacity: 0.45; }
+.icon-secondary { fill: currentColor; opacity: var(--c-icon-tonal-opacity); }
 `;
 
 const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');

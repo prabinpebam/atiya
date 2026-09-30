@@ -1,0 +1,50 @@
+---
+/** Edit mode's Publish screen (documentation/editor/spec.md §7). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import ChangeList, { type ChangeRow } from '../components/ChangeList.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load } from '../server/screens';
+import { changes, git, remoteUrl, repo } from '../server/git';
+import { actionsUrl, groupChanges, suggestMessage, type Titles } from '../model/names';
+import { readDoc } from '../server/store';
+import type { Article, Person } from '../../content/schema';
+
+export const prerender = false;
+
+const loaded = load();
+const state = await changes();
+// names from the files as they are (a file with a problem still gets its title, when it has one)
+const titles: Titles = {
+  article: (id) => readDoc<Article>(`/content/articles/${id}.json`)?.value.title,
+  person: (id) => readDoc<Person>(`/content/people/${id}.json`)?.value.name,
+};
+const rows: ChangeRow[] = groupChanges(state.files, titles).map((c) => {
+  const id = c.resource.replace(/^\/content\/(articles|media|people)\//, '').replace(/\.json$/, '');
+  const href =
+    c.status === 'deleted' ? undefined
+    : c.kind === 'Article' ? `articles/${id}/`
+    : c.kind === 'Media' ? `media/?id=${id}`
+    : c.kind === 'Sections' ? 'sections/'
+    : c.kind === 'Settings' || c.kind === 'Person' ? 'settings/'
+    : undefined;
+  return { ...c, href };
+});
+const blocked = !(await repo())
+  ? "content/ isn't in a git repository, so there's nowhere to publish it."
+  : !state.branch
+    ? "git isn't on a branch (a detached HEAD): check out a branch, then publish."
+    : !state.upstream
+      ? `The branch ${state.branch} has no upstream to push to: set one (git push -u), then publish.`
+      : !loaded.ok
+        ? 'The content has problems (listed below): fix them, then publish.'
+        : null;
+const head = (await git(['rev-parse', '--short', 'HEAD'])).stdout.trim();
+const asked = Astro.url.searchParams.get('published') ?? (Astro.url.searchParams.get('pushed') ? head : null);
+const published = asked && asked === head && state.ahead === 0 ? head : null;
+const remote = await remoteUrl(state.upstream);
+---
+
+<EditorLayout title="Publish" screen="publish" heading="Publish" intro={state.branch ? `What changed in content/ since the last publish, on ${state.branch}.` : 'What changed in content/ since the last publish.'}>
+  <ChangeList changes={rows} ahead={state.ahead} blocked={blocked} message={suggestMessage(state.files, titles)} actions={remote ? actionsUrl(remote) : null} published={published} />
+  <div data-region="publish-issues">{!loaded.ok && <ContentIssues issues={loaded.issues} />}</div>
+</EditorLayout>

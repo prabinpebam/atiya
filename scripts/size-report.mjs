@@ -5,7 +5,7 @@
 // player's character) ≤ 1.6 MB. The chunks' sum used to share one rising waiver (40 → 122 KB, the
 // history below); the tiers replace it: what's summoned is bounded by frame rate and memory, not bytes.
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const DIST = 'dist';
@@ -103,6 +103,21 @@ if (process.argv.includes('--prod')) {
     failed = true;
   } else {
     console.log('✓ no test hook in production build');
+  }
+  // edit mode is dev only (documentation/editor/spec.md §8.1): no route, script, style, token or marker of
+  // it may reach a build. The published docs (dist/docs/) describe it, so they're the one place it's named.
+  const SENTINELS = ['/_edit', 'editor-block', '--c-editor', 'data-editor'];
+  const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
+  const built = walk(DIST).filter((p) => !p.startsWith(join(DIST, 'docs') + sep) && /\.(html|js|mjs|css|json|xml|txt|webmanifest)$/.test(p));
+  const editorLeaks = built.flatMap((p) => {
+    const text = readFileSync(p, 'utf8');
+    return SENTINELS.filter((t) => text.includes(t)).map((t) => `${relative(DIST, p)} (${t})`);
+  });
+  if (editorLeaks.length) {
+    console.error(`✗ edit mode found in the production build: ${editorLeaks.slice(0, 20).join(', ')}`);
+    failed = true;
+  } else {
+    console.log(`✓ no edit mode in the production build (${built.length} files searched)`);
   }
 }
 if (landingGameJs.length) {

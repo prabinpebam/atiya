@@ -31,7 +31,8 @@ The site and the planet share this layout today. [Separating the site and the pl
 | `src/game/inventory/`, `src/game/audio/`, `src/game/player/` | Backpack rules and items, the sound engine, the player characters |
 | `src/game/ui/` | The DOM HUD, dialogs, menus and the priority arbiter (`lanes.ts`) |
 | `src/design/tokens.json` | The game's design tokens: the source of truth for every game UI value |
-| `src/site/` | The website's own design system ([site design system](../site-ui/design-system.md)): DTCG tokens and foundations (`design/`, `scripts/`, `styles/`), fundamentals and compounds (`components/`), `layouts/`, stories and the design library (`stories/`, `library/`) |
+| `src/site/` | The website's own design system ([site design system](../site-ui/design-system.md)): DTCG tokens and foundations (`design/`, `scripts/`, `styles/`), fundamentals and compounds (`components/`), `layouts/`, stories and the design library (`stories/`, `library/`); the content layer (`content/`: contract, loader, repository, routes, pictures, the page); [edit mode](../editor/spec.md) (`editor/`, dev only) |
+| `content/` | The site's content as data: articles, the site structure, people, settings, media masters with their sidecars ([content spec](../content/spec.md)) |
 | `src/styles/` | The game's styles: `tokens.css` (generated), `base`, `components`, `hud`, `panels`, `cursors` |
 | `scripts/` | Asset and token builders (textures, audio, music, icons, characters, portraits, tokens), the bundle-size report and the performance audit |
 | `assets-src/` | Asset sources: texture prompts, the icon style set, character skins, `CREDITS.md` |
@@ -39,16 +40,17 @@ The site and the planet share this layout today. [Separating the site and the pl
 | `tests/unit/`, `tests/e2e/` | The Vitest and Playwright suites |
 | `documentation/` | This docs site: every spec, plan and Definition of Done |
 | `integrations/docs-site.mjs` | Publishes `documentation/` at `<base>/docs/` |
+| `integrations/editor.mjs` | [Edit mode](../editor/spec.md): its routes, guard and Edit button in `npm run dev` only; the content folder's path for every command |
 
 ## Commands
 
 | Command | Does |
 |---|---|
-| `npm run dev` | The dev server at `http://localhost:4321/` (the docs are at `/docs/`). Use `localhost`, not `127.0.0.1`: YouTube won't play an embedded video on a page served from an IP address |
+| `npm run dev` | The dev server at `http://localhost:4321/` (the docs are at `/docs/`, [edit mode](../editor/spec.md) at `/_edit/`). Use `localhost`, not `127.0.0.1`: YouTube won't play an embedded video on a page served from an IP address |
 | `npm test` | The unit tests |
 | `npm run check` | Type checks (`astro check`) |
-| `npm run e2e` | Playwright and axe, against a `--mode test` build |
-| `npm run verify:prod` | Production build, bundle budgets (the game's initial JS at most 450 KB gzip; on-demand chunks within theirs), and a check that no test hook ships |
+| `npm run e2e` | Playwright and axe, against a `--mode test` build; edit mode's group runs on its own fixture server (`npx playwright test --project=editor`) |
+| `npm run verify:prod` | Production build, bundle budgets (the game's initial JS at most 450 KB gzip; on-demand chunks within theirs), and a check that no test hook and nothing of edit mode ships |
 | `npm run perf:audit` | Real-GPU load and frame measurements (see [the performance audit](../poc-3d-navigation/performance-audit.md)) |
 | `node scripts/build-tokens.mjs` | Regenerates the game's `tokens.css` and [the token reference](../game-ui/tokens.md) |
 | `node scripts/build-site-tokens.mjs` | Regenerates the site's `src/site/styles/tokens.css` and [its token reference](../site-ui/tokens.md) from the DTCG resolver |

@@ -117,7 +117,10 @@ export const ALL: APIRoute = async ({ request, params, url }) => {
 
     // ---------- publishing ----------
     if (method === 'GET' && path === 'changes') return json({ ok: true, ...(await changes()) });
-    if (method === 'POST' && path === 'discard') return result(await discard((await body<{ key: string }>(request)).key));
+    if (method === 'POST' && path === 'discard') {
+      const b = await body<{ keys?: string[] }>(request);
+      return result(await discard(Array.isArray(b.keys) ? b.keys.map(String) : []));
+    }
     if (method === 'POST' && path === 'publish') {
       const r = await publish((await body<{ message: string }>(request)).message ?? '');
       return json(r, r.ok ? 200 : 422);

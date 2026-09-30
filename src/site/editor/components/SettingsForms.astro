@@ -1,0 +1,256 @@
+---
+/**
+ * Edit mode's settings (documentation/editor/spec.md §2): the site's own settings (its name, description,
+ * positioning, contact address and the picture it's shared with) and its owner's profile (name, role,
+ * bio, portrait and links). Each form saves its own file (content/site.json, content/people/<id>.json)
+ * with Save, and the store checks it against the content contract first.
+ * @tier editor
+ * @a11y Pictures are chosen with a button that opens the media picker; the chosen one is named by its alt text.
+ * @a11y Links are rows of two named fields, each with its own Remove button; Add a link puts the focus in the new row.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import type { Person, SiteSettings } from '../../content/schema';
+
+export interface SettingsThumb {
+  thumb: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+interface Props {
+  /** The site settings as on disk, and their version. */
+  site: SiteSettings;
+  siteVersion: string;
+  /** The owner's profile as on disk, and its version. */
+  person: Person;
+  personVersion: string;
+  /** Thumbnails of the pictures the forms show (the social image, the portrait). */
+  thumbs: Record<string, SettingsThumb>;
+}
+
+const { site, siteVersion, person, personVersion, thumbs } = Astro.props;
+const pictures = [
+  { form: 'site', name: 'socialImage', label: 'Social image', owner: 'site', hint: 'Shown when a page without its own picture is shared: 1200 \u00d7 630 works best.', value: site.socialImage },
+  { form: 'person', name: 'avatar', label: 'Portrait', owner: `people/${person.id}`, hint: 'A square picture works best.', value: person.avatar },
+];
+const pictureOf = (form: string) => pictures.filter((p) => p.form === form);
+const state = JSON.stringify({ site, siteVersion, person, personVersion }).replace(/</g, '\\u003c');
+---
+
+<div class="settings" data-region="settings" data-editor-settings>
+  <form class="card" data-settings-form="site" novalidate aria-labelledby="settings-site-title">
+    <div class="head">
+      <Heading level={2} size="h4" id="settings-site-title">The site</Heading>
+      <Text variant="small" tone="muted">content/site.json</Text>
+    </div>
+    <TextField label="Name" name="name" value={site.name} required hint="In every page's title and the header." />
+    <TextField label="Description" name="description" value={site.description} multiline rows={2} required hint="The home page's search description: 160 characters at most." />
+    <TextField label="Positioning" name="positioning" value={site.positioning ?? ''} multiline rows={2} optional hint="One line on what the site is about." />
+    <TextField label="Contact email" name="contactEmail" type="email" value={site.contactEmail ?? ''} optional />
+    {
+      pictureOf('site').map((p) => (
+        <div class="picture" data-settings-picture={p.name} data-owner={p.owner}>
+          <span class="label">{p.label}</span>
+          <div class="picture-row">
+            <div class="preview" data-settings-preview>
+              {p.value && thumbs[p.value] && <Image src={thumbs[p.value].thumb} alt="" width={thumbs[p.value].width} height={thumbs[p.value].height} ratio="1/1" fit="cover" />}
+            </div>
+            <div class="picture-words">
+              <div data-settings-alt><Text variant="small" tone="muted">{p.value ? thumbs[p.value]?.alt || p.value : 'None'}</Text></div>
+              <div class="row">
+                <Button variant="secondary" size="sm" icon="image" data-settings-pick={p.name}>{p.value ? 'Replace' : 'Choose'}</Button>
+                <Button variant="quiet" size="sm" disabled={!p.value} data-settings-clear={p.name}>Remove</Button>
+              </div>
+            </div>
+          </div>
+          <Text variant="small" tone="muted">{p.hint}</Text>
+          <input type="hidden" name={p.name} value={p.value ?? ''} />
+        </div>
+      ))
+    }
+    <Text variant="small" tone="muted">{`The owner is ${person.name} (content/people/${person.id}.json), whose profile is below.`}</Text>
+    <p class="issue" role="alert" data-editor-form-issue hidden />
+    <div class="actions">
+      <Button variant="primary" type="submit">Save the site settings</Button>
+    </div>
+  </form>
+
+  <form class="card" data-settings-form="person" novalidate aria-labelledby="settings-person-title">
+    <div class="head">
+      <Heading level={2} size="h4" id="settings-person-title">Your profile</Heading>
+      <Text variant="small" tone="muted">{`content/people/${person.id}.json`}</Text>
+    </div>
+    <TextField label="Name" name="name" value={person.name} required />
+    <TextField label="Role" name="role" value={person.role ?? ''} optional hint="Principal Design Manager, and so on." />
+    <TextField label="Bio" name="bio" value={person.bio ?? ''} multiline rows={4} optional />
+    {
+      pictureOf('person').map((p) => (
+        <div class="picture" data-settings-picture={p.name} data-owner={p.owner}>
+          <span class="label">{p.label}</span>
+          <div class="picture-row">
+            <div class="preview" data-settings-preview>
+              {p.value && thumbs[p.value] && <Image src={thumbs[p.value].thumb} alt="" width={thumbs[p.value].width} height={thumbs[p.value].height} ratio="1/1" fit="cover" />}
+            </div>
+            <div class="picture-words">
+              <div data-settings-alt><Text variant="small" tone="muted">{p.value ? thumbs[p.value]?.alt || p.value : 'None'}</Text></div>
+              <div class="row">
+                <Button variant="secondary" size="sm" icon="image" data-settings-pick={p.name}>{p.value ? 'Replace' : 'Choose'}</Button>
+                <Button variant="quiet" size="sm" disabled={!p.value} data-settings-clear={p.name}>Remove</Button>
+              </div>
+            </div>
+          </div>
+          <Text variant="small" tone="muted">{p.hint}</Text>
+          <input type="hidden" name={p.name} value={p.value ?? ''} />
+        </div>
+      ))
+    }
+    <fieldset class="links">
+      <legend class="label">Links</legend>
+      <ul class="link-list" data-settings-links>
+        {
+          (person.links ?? []).map((l) => (
+            <li class="link-row" data-settings-link>
+              <TextField label="Label" name="link-label" value={l.label} />
+              <TextField label="Address" name="link-href" type="url" value={l.href} />
+              <IconButton label={`Remove the ${l.label} link`} icon="delete" size="sm" data-settings-remove-link="" />
+            </li>
+          ))
+        }
+      </ul>
+      <template data-settings-link-template>
+        <li class="link-row" data-settings-link>
+          <TextField label="Label" name="link-label" id="settings-new-label" />
+          <TextField label="Address" name="link-href" type="url" id="settings-new-href" />
+          <IconButton label="Remove this link" icon="delete" size="sm" data-settings-remove-link="" />
+        </li>
+      </template>
+      <div class="foot">
+        <Button variant="secondary" size="sm" icon="plus" data-settings-add-link="">Add a link</Button>
+      </div>
+    </fieldset>
+    <p class="issue" role="alert" data-editor-form-issue hidden />
+    <div class="actions">
+      <Button variant="primary" type="submit">Save your profile</Button>
+    </div>
+  </form>
+  <script is:inline type="application/json" data-settings-state set:html={state} />
+</div>
+
+<style>
+  .settings {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--size-measure-narrow)), 1fr));
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .card {
+    display: grid;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .label {
+    padding: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .picture {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .picture-row {
+    display: grid;
+    grid-template-columns: var(--size-avatar-lg) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .preview {
+    overflow: hidden;
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-sunk);
+  }
+
+  .picture-words {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .row,
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .links {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  /* a legend isn't a grid item: its space below is its own */
+  .links > legend {
+    margin-block-end: var(--space-3);
+  }
+
+  .link-list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .link-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+    align-items: end;
+    gap: var(--space-2);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: end;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  @media (max-width: 40rem) {
+    .link-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initSettings } from '../scripts/settings';
+
+  each<HTMLElement>('[data-editor-settings]', (root, signal) => initSettings(root, signal));
+</script>

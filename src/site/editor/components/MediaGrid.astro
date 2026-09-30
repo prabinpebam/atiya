@@ -2,9 +2,12 @@
 /**
  * The media library's grid (documentation/editor/spec.md §6): every picture as a thumbnail with its alt
  * text, searchable, and an upload form that asks for the alt text (or decorative) before a picture is
- * saved. In the picker it chooses one picture, or several; in the library it opens a picture's details.
+ * saved. Grouped by folder (an article's own, a person's, shared). In the picker it chooses one picture,
+ * or several; in the library it opens a picture's details.
  * @tier editor
- * @a11y Each picture is a button named by its alt text (or its ID); chosen ones are aria-pressed.
+ * @a11y Each picture is a button named by its alt text (or its ID); in the picker chosen ones are
+ * aria-pressed, in the library the open one is aria-current.
+ * @a11y Search hides the pictures (and the folders) that don't match, and says how many are left.
  * @a11y A picture without alt text says so in words, not only with its warning icon.
  */
 import TextField from '../../components/fundamentals/TextField.astro';
@@ -14,9 +17,13 @@ import Button from '../../components/fundamentals/Button.astro';
 import Image from '../../components/fundamentals/Image.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
 
 export interface MediaCard {
   id: string;
+  /** Its folder (articles/<id>, people/<id>, shared, site), and the folder in words. */
+  owner: string;
+  ownerLabel: string;
   thumb: string;
   src: string;
   alt: string;
@@ -32,9 +39,14 @@ interface Props {
   mode: 'pick' | 'library';
   /** The folder an upload goes to (an article's own, or shared). */
   owner: string;
+  /** In the library: the picture whose details are open. */
+  selected?: string;
 }
 
-const { media, mode, owner } = Astro.props;
+const { media, mode, owner, selected } = Astro.props;
+const missing = media.filter((m) => !m.alt && !m.decorative).length;
+const total = `${media.length} ${media.length === 1 ? 'picture' : 'pictures'}${missing ? `, ${missing} without alt text` : ''}`;
+const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, label: media.find((m) => m.owner === o)!.ownerLabel, items: media.filter((m) => m.owner === o) }));
 ---
 
 <div class="media-grid" data-region="media-grid" data-editor-media-grid data-mode={mode} data-owner={owner}>
@@ -51,12 +63,16 @@ const { media, mode, owner } = Astro.props;
       </div>
     </form>
   </details>
-  <TextField label="Search pictures" type="search" icon="search" data-editor-media-search="" />
-  <ul class="grid" aria-label="Pictures">
-    {
-      media.map((m) => (
+  <TextField label="Search pictures" type="search" icon="search" hint="By alt text or name." data-editor-media-search="" />
+  <p class="count" aria-live="polite" data-editor-media-found data-total={total}>{total}</p>
+  {
+    groups.map((g) => (
+      <section class="group" data-media-group aria-label={g.label}>
+        <Heading level={3} size="ui">{g.label}</Heading>
+        <ul class="grid">
+          {g.items.map((m) => (
         <li data-media-card={m.id} data-find={`${m.id} ${m.alt}`.toLowerCase()}>
-          <button class="card" type="button" aria-pressed="false" data-editor-media={m.id} aria-label={m.alt || m.id}>
+          <button class="card" type="button" aria-pressed={mode === 'pick' ? 'false' : undefined} aria-current={mode === 'library' && m.id === selected ? 'true' : undefined} data-editor-media={m.id} aria-label={m.alt || m.id}>
             <Image src={m.thumb} alt="" width={m.width} height={m.height} ratio="4/3" fit="contain" radius="default" />
             <span class="id">{m.id.split('/').pop()}</span>
             {!m.alt && !m.decorative && (
@@ -67,9 +83,11 @@ const { media, mode, owner } = Astro.props;
             )}
           </button>
         </li>
-      ))
-    }
-  </ul>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
   {mode === 'pick' && (
     <div class="pick-actions">
       <Text as="span" variant="small" tone="muted" data-editor-media-count>Nothing chosen</Text>
@@ -121,6 +139,22 @@ const { media, mode, owner } = Astro.props;
     font-weight: var(--weight-medium);
   }
 
+  .group {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .group[hidden],
+  .count:empty {
+    display: none;
+  }
+
+  .count {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
@@ -159,7 +193,8 @@ const { media, mode, owner } = Astro.props;
     border-color: var(--color-border-strong);
   }
 
-  .card[aria-pressed='true'] {
+  .card[aria-pressed='true'],
+  .card[aria-current='true'] {
     border-color: var(--color-accent);
     background: var(--color-accent-soft);
   }
@@ -181,12 +216,21 @@ const { media, mode, owner } = Astro.props;
 <script>
   import { each } from '../../scripts/page';
   import { api, describeIssue } from '../scripts/client';
+  import { initMediaLibrary } from '../scripts/media';
 
-  each<HTMLElement>('[data-editor-media-grid]', (root) => {
+  each<HTMLElement>('[data-editor-media-grid]', (root, signal) => {
+    if (root.dataset.mode === 'library') initMediaLibrary(root, signal);
     const search = root.querySelector<HTMLInputElement>('[data-editor-media-search] input');
+    const found = root.querySelector<HTMLElement>('[data-editor-media-found]');
     search?.addEventListener('input', () => {
       const q = search.value.trim().toLowerCase();
-      root.querySelectorAll<HTMLElement>('[data-media-card]').forEach((li) => (li.hidden = !!q && !li.dataset.find!.includes(q)));
+      let shown = 0;
+      root.querySelectorAll<HTMLElement>('[data-media-card]').forEach((li) => {
+        li.hidden = !!q && !li.dataset.find!.includes(q);
+        if (!li.hidden) shown++;
+      });
+      root.querySelectorAll<HTMLElement>('[data-media-group]').forEach((g) => (g.hidden = !g.querySelector('[data-media-card]:not([hidden])')));
+      if (found) found.textContent = q ? (shown ? `${shown} ${shown === 1 ? 'picture' : 'pictures'} found` : 'No picture matches.') : (found.dataset.total ?? '');
     });
     const form = root.querySelector<HTMLFormElement>('[data-editor-upload]');
     form?.addEventListener('submit', async (e) => {

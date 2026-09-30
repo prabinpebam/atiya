@@ -1,0 +1,227 @@
+---
+/**
+ * A picture's details in the media library (documentation/editor/spec.md §6): the picture with its focus
+ * point (click where a crop must keep), its alt text, caption, credit, licence and source, where it's
+ * used, Replace and Delete. The details save to the picture's sidecar, so they aren't part of any
+ * article's undo. Delete is offered only when nothing refers to it.
+ * @tier editor
+ * @a11y The focus point is set with a button over the picture (a click places it; the arrow keys move it by 5%, Home puts it back in the centre), and the point is read out in words.
+ * @a11y A picture that can't be deleted says why, next to the disabled button.
+ * @key Arrow keys (on the picture): move the focus point by 5%
+ * @key Home (on the picture): the centre
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import FileField from '../../components/fundamentals/FileField.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import { withBase } from '../../design/meta';
+import type { ImageMedia } from '../../content/schema';
+
+export interface PictureDetails {
+  id: string;
+  src: string;
+  srcset: string;
+  width: number;
+  height: number;
+  /** The sidecar as it is on disk, and its version (for the save's If-Match). */
+  sidecar: ImageMedia;
+  version: string;
+}
+
+interface Props {
+  /** The open picture, or none (the pane then says how to open one). */
+  picture: PictureDetails | null;
+  /** What refers to it: a label and the edit-mode screen to change it (from /_edit/). */
+  usedIn: { label: string; href: string }[];
+}
+
+const { picture, usedIn } = Astro.props;
+const sc = picture?.sidecar;
+const [fx, fy] = (sc?.focus ?? '50% 50%').split(' ').map((v) => parseInt(v, 10));
+const name = picture?.id.split('/').pop();
+const state = picture ? JSON.stringify({ id: picture.id, version: picture.version, sidecar: sc }).replace(/</g, '\\u003c') : '';
+---
+
+<div class="details" data-region="media-details" data-editor-media-details={picture?.id ?? ''}>
+  {
+    picture && sc ? (
+      <>
+        <form class="form" data-editor-media-form novalidate aria-labelledby="media-details-title">
+          <div class="head">
+            <Heading level={2} size="h4" id="media-details-title">{name}</Heading>
+            <Text variant="small" tone="muted">{`${picture.id} \u00b7 ${picture.width} \u00d7 ${picture.height}`}</Text>
+          </div>
+          <div class="focus" style={`--focus-x: ${fx}%; --focus-y: ${fy}%`} data-editor-focus>
+            <Image src={picture.src} srcset={picture.srcset} sizes="(max-width: 56rem) 100vw, 40vw" alt={sc.alt ?? ''} width={picture.width} height={picture.height} radius="default" />
+            <button class="hit" type="button" data-editor-focus-set aria-label="Focus point: where a crop must keep. Click the picture to set it." aria-describedby="media-focus-value" />
+            <span class="marker" aria-hidden="true" />
+          </div>
+          <div class="focus-row">
+            <Text as="span" variant="small" tone="muted" id="media-focus-value">
+              {sc.focus ? `Focus at ${fx}% across, ${fy}% down` : 'Focus in the centre'}
+            </Text>
+            <Button variant="quiet" size="sm" icon="focus" data-editor-focus-clear="">Use the centre</Button>
+          </div>
+          <input type="hidden" name="focus" value={sc.focus ?? ''} />
+          <TextField label="Alt text" name="alt" value={sc.alt ?? ''} multiline rows={3} hint={'What it shows, for someone who can\u2019t see it: 250 characters at most, and never \u201cimage of\u201d.'} />
+          <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" checked={!!sc.decorative} />
+          <TextField label="Caption" name="caption" value={sc.caption ?? ''} multiline rows={2} optional />
+          <TextField label="Credit" name="credit" value={sc.credit ?? ''} optional hint="Who made it, as it should be shown." />
+          <TextField label="Licence" name="licence.name" value={sc.licence?.name ?? ''} optional hint="CC BY 4.0, All rights reserved, and so on." />
+          <TextField label="Licence address" name="licence.url" type="url" value={sc.licence?.url ?? ''} optional />
+          <TextField label="Source" name="source" type="url" value={sc.source ?? ''} optional hint="Where it came from, if someone else made it." />
+          <p class="issue" role="alert" data-editor-form-issue hidden />
+          <div class="actions">
+            <Button variant="primary" type="submit">Save the details</Button>
+          </div>
+        </form>
+
+        <section class="part" aria-labelledby="media-used-title">
+          <Heading level={3} size="ui" id="media-used-title">Used in</Heading>
+          {usedIn.length ? (
+            <ul class="list">
+              {usedIn.map((r) => (
+                <li>
+                  <Link href={withBase(`/_edit/${r.href}`)} variant="standalone">{r.label}</Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Text variant="ui" tone="muted">Nothing uses it yet.</Text>
+          )}
+        </section>
+
+        <form class="part" data-editor-media-replace novalidate aria-labelledby="media-replace-title">
+          <Heading level={3} size="ui" id="media-replace-title">Replace the picture</Heading>
+          <FileField label="New picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif" hint="It keeps its name and details, so every page that uses it shows the new one." />
+          <p class="issue" role="alert" data-editor-form-issue hidden />
+          <div class="actions">
+            <Button variant="secondary" type="submit" icon="upload">Replace it</Button>
+          </div>
+        </form>
+
+        <section class="part" aria-labelledby="media-delete-title">
+          <Heading level={3} size="ui" id="media-delete-title">Delete</Heading>
+          {usedIn.length ? (
+            <Text variant="small" tone="muted">It can't be deleted while something uses it. Take it out of what's listed under Used in first.</Text>
+          ) : (
+            <Text variant="small" tone="muted">Deletes the picture and its details from content/. Publishing then removes it from the site.</Text>
+          )}
+          <div class="actions">
+            <Button variant="secondary" icon="delete" disabled={usedIn.length > 0} data-dialog-open="delete-media">Delete the picture</Button>
+          </div>
+          <Dialog id="delete-media" title="Delete this picture?" size="sm">
+            <Text variant="ui">{`${name} and its details will be deleted from content/. If it's on the site already, Discard on the Publish screen brings it back until you publish.`}</Text>
+            <Fragment slot="actions">
+              <Button variant="quiet" data-dialog-close="">Keep it</Button>
+              <Button variant="primary" icon="delete" data-editor-media-delete="">Delete it</Button>
+            </Fragment>
+          </Dialog>
+        </section>
+        <script is:inline type="application/json" data-editor-media-state set:html={state} />
+      </>
+    ) : (
+      <Text variant="ui" tone="muted">Choose a picture to see its details: its alt text, caption, credit and focus point, and where it's used.</Text>
+    )
+  }
+</div>
+
+<style>
+  .details {
+    display: grid;
+    gap: var(--space-6);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .form,
+  .part {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .part {
+    padding-block-start: var(--space-5);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .focus {
+    position: relative;
+  }
+
+  .hit {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    cursor: crosshair;
+  }
+
+  .hit:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus);
+  }
+
+  .marker {
+    position: absolute;
+    inset-inline-start: var(--focus-x);
+    inset-block-start: var(--focus-y);
+    inline-size: var(--size-icon-lg);
+    block-size: var(--size-icon-lg);
+    border: var(--border-strong) solid var(--color-bg);
+    border-radius: var(--radius-round);
+    background: var(--color-accent);
+    box-shadow: var(--shadow-sm);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .focus-row,
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .actions {
+    justify-content: end;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  .list {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initMediaDetails } from '../scripts/media';
+
+  each<HTMLElement>('[data-editor-media-details]', (root, signal) => initMediaDetails(root, signal));
+</script>

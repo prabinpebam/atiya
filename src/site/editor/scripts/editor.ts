@@ -5,8 +5,9 @@
  * fetching the page and swapping those regions) and the canvas (by reloading it) after changes that
  * re-render them, and talks to the canvas by postMessage (same origin only).
  */
-import { api, announce, describeIssue, type Issue } from './client';
+import { api, announce, describeIssue, swapRegions, type Issue } from './client';
 import * as ops from '../model/ops';
+import { SaveQueue } from '../model/queue';
 import { plainText } from '../../content/markdown';
 import type { Article, Block } from '../../content/schema';
 
@@ -57,20 +58,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   updateUndo();
 
   // ---------- saving: one queue, never two at once ----------
-  let inFlight = false;
-  let queued: { section?: string | null; refresh: Refresh } | null = null;
-  let conflict = false;
+  type Job = { section?: string | null; refresh: Refresh };
   const afterReady: (() => void)[] = [];
-
-  const save = async (opts: { section?: string | null; refresh?: Refresh } = {}) => {
-    if (conflict) return;
-    const refresh = { ...(queued?.refresh ?? {}), ...(opts.refresh ?? {}) };
-    queued = { ...(queued ?? {}), ...(opts.section !== undefined ? { section: opts.section } : {}), refresh };
-    if (inFlight) return;
-    inFlight = true;
-    while (queued && !conflict) {
-      const job = queued;
-      queued = null;
+  const queue = new SaveQueue<Job>(
+    (waiting, request) => ({ ...(waiting ?? {}), ...(request.section !== undefined ? { section: request.section } : {}), refresh: { ...(waiting?.refresh ?? {}), ...request.refresh } }),
+    async (job, more) => {
       announce('Saving\u2026');
       const r = await api<{ article: Article }>('PUT', `articles/${state.id}`, {
         article: doc,
@@ -82,39 +74,35 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         if (r.data.versions?.[STRUCTURE]) state.structureVersion = r.data.versions[STRUCTURE];
         if (job.section !== undefined) state.section = job.section ?? '';
         const server = r.data.article;
-        doc = queued ? { ...doc, updatedAt: server.updatedAt, ...(server.publishedAt ? { publishedAt: server.publishedAt } : {}) } : server;
+        // edits made while this save was in flight are newer than the server's copy: keep them
+        doc = more() ? { ...doc, updatedAt: server.updatedAt, ...(server.publishedAt ? { publishedAt: server.publishedAt } : {}) } : server;
         saved = structuredClone(server);
         clearIssues();
         announce('Saved');
         await refreshAll(job.refresh);
-      } else if (r.status === 409) {
-        conflict = true;
+        return 'ok';
+      }
+      if (r.status === 409) {
         announce('This article changed elsewhere', 'negative');
         dialog('editor-conflict')?.showModal();
-      } else {
-        doc = structuredClone(saved);
-        showIssues(r.data.issues ?? []);
-        announce(`Not saved: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`, 'negative');
+        return 'stop';
       }
-    }
-    inFlight = false;
-  };
+      doc = structuredClone(saved);
+      showIssues(r.data.issues ?? []);
+      announce(`Not saved: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`, 'negative');
+      return 'failed';
+    },
+  );
+  const save = (opts: { section?: string | null; refresh?: Refresh } = {}) => queue.push({ ...(opts.section !== undefined ? { section: opts.section } : {}), refresh: opts.refresh ?? {} });
 
   // ---------- refreshing the outline, the inspector and the canvas ----------
   const reloadCanvas = () => frame.contentWindow?.location.reload();
   const swap = async (names: string[]) => {
-    const html = await (await fetch(location.href, { headers: { 'X-Editor': '1' } })).text();
-    const next = new DOMParser().parseFromString(html, 'text/html');
     const active = document.activeElement as HTMLElement | null;
     const focusKey = active?.id || (active?.dataset.editorSelect !== undefined ? `select:${active.dataset.editorSelect}` : '');
     const tab = root.querySelector<HTMLElement>('#inspector-tabs [role="tab"][aria-selected="true"]')?.dataset.tab;
     const scroll = root.querySelector<HTMLElement>('[data-editor-inspector]')?.scrollTop ?? 0;
-    for (const name of names) {
-      const old = document.querySelector(`[data-region="${name}"]`);
-      const fresh = next.querySelector(`[data-region="${name}"]`);
-      if (old && fresh) old.replaceWith(document.importNode(fresh, true));
-    }
-    document.dispatchEvent(new Event('astro:page-load'));
+    await swapRegions(names);
     Object.assign(state, { media: readState().media });
     if (tab) root.querySelector('#inspector-tabs')?.dispatchEvent(new CustomEvent('tabs:select', { detail: { tab } }));
     const ins = root.querySelector<HTMLElement>('[data-editor-inspector]');
@@ -639,7 +627,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     'beforeunload',
     (e) => {
       toCanvas({ type: 'flush' });
-      if (inFlight || queued) e.preventDefault();
+      if (queue.pending) e.preventDefault();
     },
     { signal },
   );

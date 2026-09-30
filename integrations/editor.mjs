@@ -70,7 +70,7 @@ export default function editor() {
         editing = command === 'dev' && process.env.SITE_EDITOR !== 'off';
         if (!editing) return;
         for (const [pattern, file] of ROUTES) {
-          if (existsSync(join(root, 'src/site/editor/pages', file))) injectRoute({ pattern, entrypoint: `./src/site/editor/pages/${file}` });
+          injectRoute({ pattern, entrypoint: `./src/site/editor/pages/${file}` });
         }
         addMiddleware({ entrypoint: join(root, 'src/site/editor/server/middleware.ts'), order: 'pre' });
         // the way in: a button on every page the dev server serves (never in a build)

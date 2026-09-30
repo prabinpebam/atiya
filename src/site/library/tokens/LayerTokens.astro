@@ -1,7 +1,8 @@
 ---
 /**
  * The rest: the z-index layers stacked in order, the breakpoints, opacity, and every component token
- * grouped by its component, with what it resolves to in each mode. Library-only.
+ * grouped by its component, with what it resolves to in each mode. Library-only. Edit mode's own tokens
+ * (c.editor) aren't here: edit mode is dev only, so nothing of it reaches a build (documentation/editor/spec.md §10).
  */
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
@@ -13,7 +14,7 @@ const m = siteTokens();
 const layers = m.tokens.filter((t) => t.path[0] === 'layer');
 const bps = m.tokens.filter((t) => t.path[0] === 'breakpoint' || t.path[0] === 'opacity');
 const comps = new Map<string, typeof m.tokens>();
-for (const t of m.tokens.filter((x) => x.path[0] === 'c')) {
+for (const t of m.tokens.filter((x) => x.path[0] === 'c' && x.path[1] !== 'editor')) {
   if (!comps.has(t.path[1])) comps.set(t.path[1], []);
   comps.get(t.path[1])!.push(t);
 }

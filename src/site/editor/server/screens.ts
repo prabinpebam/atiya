@@ -4,8 +4,12 @@
  */
 import { content } from '../../content/repository';
 import { ContentError, isPublished, type ContentIndex, type Issue } from '../../content/load';
+import { picture } from '../../content/pictures';
 import type { Article } from '../../content/schema';
 import { hubs } from '../model/structure';
+import { ownerLabel, ownerOf } from '../model/references';
+
+export { references, type Reference } from '../model/references';
 
 export type Loaded = { ok: true; index: ContentIndex } | { ok: false; issues: Issue[] };
 
@@ -52,6 +56,31 @@ export function articleRows(index: ContentIndex): ArticleRow[] {
 /** The sections an article can go in, for a select: every hub, indented by depth. */
 export function sectionOptions(index: ContentIndex) {
   return hubs(index.structure).map((h) => ({ value: h.id, label: `${'\u2003'.repeat(h.depth)}${h.title}`, description: h.path }));
+}
+
+export interface LibraryPicture {
+  id: string;
+  owner: string;
+  ownerLabel: string;
+  thumb: string;
+  src: string;
+  alt: string;
+  decorative: boolean;
+  width: number;
+  height: number;
+}
+
+/** Every picture, for the library and the picker: grouped by folder (the article being edited first, when there is one). */
+export async function mediaCards(index: ContentIndex, first?: string): Promise<LibraryPicture[]> {
+  const cards = await Promise.all(
+    [...index.media.values()].map(async (m) => {
+      const p = await picture(m.id, 'card');
+      const owner = ownerOf(m.id);
+      return { id: m.id, owner, ownerLabel: ownerLabel(index, owner), thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height };
+    }),
+  );
+  const rank = (c: LibraryPicture) => (c.owner === first ? 0 : 1);
+  return cards.sort((a, b) => rank(a) - rank(b) || a.ownerLabel.localeCompare(b.ownerLabel) || a.id.localeCompare(b.id));
 }
 
 export const STATUS_LABEL: Record<Article['status'], string> = {

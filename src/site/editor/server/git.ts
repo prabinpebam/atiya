@@ -6,7 +6,6 @@
  * commit local, reported as not pushed, with Push again.
  */
 import { execFile } from 'node:child_process';
-import { relative } from 'node:path';
 import { contentRoot, readSnapshot } from '../../content/source';
 import { ContentError, loadContent, type Issue } from '../../content/load';
 import { commit, readFile, versionOf, withWriterLock, type Result } from './store';
@@ -39,10 +38,11 @@ export function git(args: string[], opts: { cwd?: string; timeout?: number; inpu
 
 /** The repository holding the content folder, and the folder's path inside it (with forward slashes). */
 export async function repo(): Promise<{ top: string; path: string } | null> {
-  const r = await git(['rev-parse', '--show-toplevel']);
+  const r = await git(['rev-parse', '--show-toplevel', '--show-prefix']);
   if (r.code) return null;
-  const top = r.stdout.trim();
-  return { top, path: relative(top, contentRoot()).split(/[\\/]/).join('/') || '.' };
+  // git's own prefix, not a path computed here: Windows short names (PRABIN~2) and junctions name one folder two ways
+  const [top, prefix = ''] = r.stdout.split('\n').map((l) => l.trim());
+  return { top, path: prefix.replace(/\/$/, '') || '.' };
 }
 
 export interface ChangedFile {
@@ -82,18 +82,35 @@ export async function changes(): Promise<Changes> {
   return { files: files.sort((a, b) => a.key.localeCompare(b.key)), branch, upstream, ahead };
 }
 
-/** Puts one file back as last committed (a file new since then is deleted), through the store, so the result is checked. */
-export async function discard(key: string): Promise<Result> {
+/**
+ * Puts files back as last committed (a file new since then is deleted), all in one store transaction, so
+ * the result is checked as a whole: a picture's master and sidecar go back together.
+ */
+export async function discard(keys: string[]): Promise<Result> {
   const where = await repo();
-  if (!where) return { ok: false, status: 422, issues: [{ file: key.replace(/^\//, ''), message: 'the content folder is not in a git repository' }] };
-  if (!/^\/content\/[a-z0-9/._-]+$/.test(key) || key.includes('..')) return { ok: false, status: 422, issues: [{ file: key.replace(/^\//, ''), message: 'not a content file' }] };
-  const rel = key.slice('/content/'.length);
-  const repoPath = where.path === '.' ? rel : `${where.path}/${rel}`;
+  const file = keys[0]?.replace(/^\//, '') ?? 'content';
+  if (!where) return { ok: false, status: 422, issues: [{ file, message: 'the content folder is not in a git repository' }] };
+  if (!keys.length) return { ok: false, status: 422, issues: [{ file, message: 'nothing to discard' }] };
+  const bad = keys.find((k) => !/^\/content\/[a-z0-9/._-]+$/.test(k) || k.includes('..'));
+  if (bad) return { ok: false, status: 422, issues: [{ file: bad.replace(/^\//, ''), message: 'not a content file' }] };
+  const repoPath = (key: string) => {
+    const rel = key.slice('/content/'.length);
+    return where.path === '.' ? rel : `${where.path}/${rel}`;
+  };
   // the committed bytes, read as bytes (never decoded as text), or null if the file is new
-  const committed = await showBinary(where.top, repoPath);
-  const r = await commit({ changes: [{ key, bytes: committed }], ifMatch: { [key]: versionOf(readFile(key)) } });
-  if (r.ok) await git(['restore', '--staged', '--', repoPath], { cwd: where.top });
+  const changes = await Promise.all(keys.map(async (key) => ({ key, bytes: await showBinary(where.top, repoPath(key)) })));
+  const r = await commit({ changes, ifMatch: Object.fromEntries(keys.map((k) => [k, versionOf(readFile(k))])) });
+  // unstaged one at a time: a new file that was never staged doesn't match, and would fail the others
+  if (r.ok) for (const k of keys) await git(['restore', '--staged', '--', repoPath(k)], { cwd: where.top });
   return r;
+}
+
+/** The address of the remote the branch pushes to (for the link to its deploy), or null. */
+export async function remoteUrl(upstream: string | null): Promise<string | null> {
+  const where = await repo();
+  if (!where || !upstream) return null;
+  const r = await git(['remote', 'get-url', upstream.split('/')[0]], { cwd: where.top });
+  return r.code ? null : r.stdout.trim();
 }
 
 function showBinary(cwd: string, path: string): Promise<Buffer | null> {

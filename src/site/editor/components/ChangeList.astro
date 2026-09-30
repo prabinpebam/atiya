@@ -1,0 +1,219 @@
+---
+/**
+ * The Publish screen's changes (documentation/editor/spec.md §7): every resource in content/ that differs
+ * from the last commit, as git sees it, named in words, each with Discard; commits not pushed yet, with
+ * Push again; the last publish's result, with a link to its deploy; and the publish form, enabled only
+ * when there's something to publish, the content passes its check and git has a branch to push to.
+ * @tier editor
+ * @a11y Discard asks first (a dialog naming what goes back); every result is also announced in the top bar's status.
+ * @a11y When Publish is disabled, the reason is in words beside it.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import { withBase } from '../../design/meta';
+import type { IconName } from '../../design/icons';
+
+export interface ChangeRow {
+  resource: string;
+  kind: string;
+  name: string;
+  status: 'added' | 'changed' | 'deleted';
+  keys: string[];
+  /** Where to change it in edit mode (from /_edit/), when it still exists. */
+  href?: string;
+}
+
+interface Props {
+  /** The changed resources. */
+  changes: ChangeRow[];
+  /** Commits on this branch the remote doesn't have (a push that failed). */
+  ahead: number;
+  /** Why publishing can't happen now (no branch, no upstream, the content's problems), or null. */
+  blocked: string | null;
+  /** The message offered, made from the changes. */
+  message: string;
+  /** The GitHub Actions page, where the deploy can be followed. */
+  actions: string | null;
+  /** The commit just published (from the address), when it's the branch's last. */
+  published: string | null;
+}
+
+const { changes, ahead, blocked, message, actions, published } = Astro.props;
+const ICON: Record<string, IconName> = { Article: 'article', Media: 'image', Sections: 'sections', Settings: 'settings', Person: 'user' };
+const STATUS = { added: { label: 'New', tone: 'positive' }, changed: { label: 'Changed', tone: 'accent' }, deleted: { label: 'Deleted', tone: 'negative' } } as const;
+const reason = blocked ?? (changes.length ? null : 'Nothing to publish: content/ is as it was last published.');
+---
+
+<div class="publish" data-region="publish" data-editor-publish>
+  {
+    published && (
+      <section class="panel" data-tone="positive" aria-labelledby="publish-done-title">
+        <Heading level={2} size="ui" id="publish-done-title">Published</Heading>
+        <Text variant="ui">{`Commit ${published} is pushed. GitHub Actions builds the site and deploys it in a few minutes.`}</Text>
+        {actions && (
+          <Link href={actions} variant="standalone" external>
+            Follow the deploy
+          </Link>
+        )}
+      </section>
+    )
+  }
+  {
+    ahead > 0 && (
+      <section class="panel" data-tone="negative" aria-labelledby="publish-ahead-title">
+        <Heading level={2} size="ui" id="publish-ahead-title">{`${ahead} ${ahead === 1 ? 'commit' : 'commits'} not on GitHub yet`}</Heading>
+        <Text variant="ui">A publish was committed here, but its push failed, so the site hasn't changed. Push again once the reason below is fixed.</Text>
+        <p class="issue" role="alert" data-publish-push-issue hidden />
+        <div class="actions">
+          <Button variant="primary" icon="publish" data-publish-push="">Push again</Button>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="panel" aria-labelledby="publish-changes-title">
+    <Heading level={2} size="h4" id="publish-changes-title">{changes.length ? `${changes.length} ${changes.length === 1 ? 'change' : 'changes'} to publish` : 'Changes to publish'}</Heading>
+    {
+      changes.length ? (
+        <ul class="list">
+          {changes.map((c) => (
+            <li class="row">
+              <Icon name={ICON[c.kind] ?? 'page'} />
+              <span class="what">
+                <Text as="span" variant="small" tone="muted">
+                  {c.kind}
+                </Text>
+                {c.href ? (
+                  <Link href={withBase(`/_edit/${c.href}`)} variant="quiet">
+                    {c.name}
+                  </Link>
+                ) : (
+                  <Text as="span" variant="ui">
+                    {c.name}
+                  </Text>
+                )}
+              </span>
+              <Tag size="sm" tone={STATUS[c.status].tone}>
+                {STATUS[c.status].label}
+              </Tag>
+              <Button variant="quiet" size="sm" icon="restore" data-publish-discard={JSON.stringify(c.keys)} data-name={`${c.kind}: ${c.name}`} data-status={c.status}>
+                Discard
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Text variant="ui" tone="muted">Nothing has changed in content/ since the last publish.</Text>
+      )
+    }
+  </section>
+
+  <form class="panel" data-publish-form novalidate aria-labelledby="publish-form-title">
+    <Heading level={2} size="h4" id="publish-form-title">Publish</Heading>
+    <Text variant="ui" tone="muted">Commits content/ (and nothing else) with this message, then pushes it to GitHub, which deploys the site.</Text>
+    <TextField label="Message" name="message" value={message} required disabled={!!reason} />
+    {reason && <Text variant="small" tone={blocked ? 'negative' : 'muted'}>{reason}</Text>}
+    <p class="issue" role="alert" data-editor-form-issue hidden />
+    <div class="actions">
+      <Button variant="primary" type="submit" icon="publish" disabled={!!reason}>Publish</Button>
+    </div>
+  </form>
+
+  <Dialog id="publish-discard" title="Discard this change?" size="sm">
+    <Text variant="ui">
+      <strong data-publish-discard-name></strong> <span data-publish-discard-what></span>
+    </Text>
+    <Fragment slot="actions">
+      <Button variant="quiet" data-dialog-close="">Keep it</Button>
+      <Button variant="primary" icon="restore" data-publish-discard-confirm="">Discard it</Button>
+    </Fragment>
+  </Dialog>
+</div>
+
+<style>
+  .publish {
+    display: grid;
+    gap: var(--space-6);
+    max-inline-size: var(--size-measure);
+  }
+
+  .panel {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  /* a result or a warning: the panel's own surface (so its text keeps its contrast), marked on its edge */
+  .panel[data-tone] {
+    border-inline-start-width: var(--border-strong);
+  }
+
+  .panel[data-tone='positive'] {
+    border-inline-start-color: var(--color-positive);
+  }
+
+  .panel[data-tone='negative'] {
+    border-inline-start-color: var(--color-negative);
+  }
+
+  .list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--space-3);
+    min-block-size: var(--size-touch);
+    padding-block: var(--space-2);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .row:last-child {
+    border-block-end: 0;
+  }
+
+  .what {
+    display: grid;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: end;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  @media (max-width: 40rem) {
+    .row {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initPublish } from '../scripts/publish';
+
+  each<HTMLElement>('[data-editor-publish]', (root, signal) => initPublish(root, signal));
+</script>

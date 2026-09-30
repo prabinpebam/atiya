@@ -97,7 +97,8 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
           aria-required={required ? 'true' : undefined}
           aria-describedby={described}
           aria-invalid={error ? 'true' : undefined}
-          data-has-icon={leading ? '' : undefined}>{value}</textarea>
+          data-has-icon={leading ? '' : undefined}
+          data-scrollbar>{value}</textarea>
       ) : (
         <input
           class="input"

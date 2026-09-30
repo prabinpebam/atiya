@@ -3,7 +3,7 @@
 A content editor that runs only on your machine, inside the Astro dev server, and edits the site the way Squarespace, Webflow and Framer do: on the page itself, with a settings panel beside it. Everything it saves goes into the JSON files in `content/`. Publishing commits them and pushes, and GitHub Pages builds the site as it does today, with no editor and no backend. This page is the spec (v2: the first sketch, critiqued twice, in §11). The build order and Definition of Done are in the [plan](plan.md), and the investigation behind it is in the [research](research.md).
 
 > **TL;DR.**
-> - **Where:** `http://localhost:4321/_edit/`, only while `npm run dev` runs. An Astro integration injects the editor's routes for the `dev` command alone, so a build has no trace of it. It answers only loopback requests from its own origin, and no other site can frame it.
+> - **Where:** `http://localhost:4321/_edit/`, only while `npm run dev` runs, or the **Edit this page** button in the corner of every page the dev server shows (Edit this section on a section's page). An Astro integration injects the editor's routes and that button for the `dev` command alone, so a build has no trace of it. It answers only loopback requests from its own origin, and no other site can frame it.
 > - **What you can edit:**
 >   - **Articles and pages:** create, duplicate, delete and change their status.
 >   - **Their blocks:** on a canvas that is the real page.
@@ -353,11 +353,13 @@ All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's vers
 | `DELETE articles/{id}` | Deletes a draft and its node (and, with `?media=1`, the pictures in its folder that nothing else uses) |
 | `PUT structure` | Saves the site structure |
 | `PUT site`, `PUT people/{id}` | Saves the settings or a person |
-| `POST media` | Uploads (multipart: `file`, `alt`, `caption`, `owner`) → `{ id, picture }` |
+| `POST media` | Uploads (multipart: `file`, `alt` or `decorative`, `caption`, `owner`) → `{ id }` |
+| `POST media/{id}/replace` | Writes a new master for a picture, keeping its ID and sidecar (multipart: `file`) |
 | `PUT media/{id}`, `DELETE media/{id}` | Saves a sidecar; deletes an unused master and its sidecar |
 | `GET media` | The library, with thumbnails (for the picker after an upload) |
+| `GET doc?key=`, `GET where?path=` | A document and its version; where the site's Edit button leads from a page |
 | `GET changes` | What differs from the last commit in `content/` |
-| `POST discard` | Puts one file back as committed: `{ path }` |
+| `POST discard` | Puts a resource's files back as committed, in one transaction: `{ keys }` |
 | `POST publish` | Checks, commits `content/` and pushes: `{ message }` |
 | `POST push` | Pushes commits not yet pushed |
 
@@ -369,9 +371,9 @@ All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's vers
 | `src/site/editor/pages/` | The routes: the screens, the canvas and the API endpoint |
 | `src/site/editor/components/` | The editor's parts (the outline, the inspector's fields, the media grid, the canvas frame, the tree): built from the site's fundamentals, compounds and tier 0 only. A part never imports another part; the editor's layout and pages compose them |
 | `src/site/editor/EditorLayout.astro` | The editor's frame: side navigation, top bar, live status |
-| `src/site/editor/model/` | Pure and shared by the browser and the server: document operations (insert, move, duplicate, delete, split, merge, update), text to Markdown, IDs and slugs, the guard, the change list's names |
+| `src/site/editor/model/` | Pure and shared by the browser and the server: document operations (insert, move, duplicate, delete, split, merge, update), text to Markdown, IDs and slugs, the guard, the change list's names, the reference graph, the save queue |
 | `src/site/editor/server/` | Node only: the store, uploads (sharp), git |
-| `src/site/editor/scripts/` | The browser's controllers: the editor, the canvas, the screens |
+| `src/site/editor/scripts/` | The browser's controllers: the editor, the canvas, the screens, and the site's Edit button (the launcher, in a shadow root so it touches nothing of the page) |
 
 - **One owner of the document.** The article editor's controller holds the article, applies each operation with the shared document operations, saves it through the API and tells the canvas what changed (by `postMessage`, same origin only). The canvas only reports what the reader did (selected, typed, asked to add or move) and redraws when told.
 - **Forms are rendered by the server** with the design system's fields, one form per block and one for the page, so the inspector needs no client-side templating. The page re-renders its outline and inspector after structural changes by fetching itself and swapping those regions.
@@ -449,3 +451,19 @@ A second, independent review of that v2 then found these, all now in the spec:
 - The save status and every error are announced in a live region; a refused value is named with its field.
 - Focus is never lost: after a structural change the selected block keeps focus; after a dialog closes, focus returns to what opened it.
 - The editor passes axe in light and dark, like the site.
+
+## 13. As built
+
+Built to this spec (the evidence for each point of the Definition of Done is in the [plan, §6](plan.md#6-status)). What the build added or settled:
+
+- **The way in.** Every page the dev server shows has a button in its lower corner: Edit this page on an article, Edit this section on a section, Edit mode anywhere else (`scripts/launcher.ts`, injected with `injectScript` in dev only; it asks the API where a page leads). It sits in a shadow root with token-only styles, so it can't change the page it's on, and hides in the canvas and on the planet.
+- **Screens that change in place.** A screen re-renders the regions a change affects by fetching itself and swapping them (`swapRegions` in `scripts/client.ts`), and the counts of changes to publish (the top bar's and the navigation's) come along every time. What left the page stops listening (the swap signals `astro:after-swap`, which `each` aborts on).
+- **Media:** the library is a grid grouped by folder beside a details pane that stays in view (the layout's `aside` slot, scrolling on its own when taller than the screen). The focus point is set by a click on the picture, or by the arrow keys (5% a step; Home for the centre). The address keeps the open picture (`?id=`), so Back works. Uploads in the library go to `shared`; in the picker, to the article's own folder (or `site`, `people/<id>` from the settings).
+- **Sections** is a tree (APG) beside the selected section's settings; New section adds a hub under any other; reordering has buttons and Alt+Up and Alt+Down; an unplaced article is placed from "Not on the site yet".
+- **Settings** has two forms, each saving its own file: the site (name, description, positioning, contact email, social image) and the owner's profile (name, role, bio, portrait, links as rows you add and remove).
+- **Publish** lists the changes as resources: a picture's master and sidecar are one row, discarded together in one transaction, so the check sees the result as a whole (discarding a picture an article still uses is refused, with the reason). The message offered names what changed ("Content: Do what makes you proud, 2 pictures, the site settings"). After a publish the screen shows the commit and a link to the deploy on GitHub Actions (made from the remote's address); after a failed push, why, with Push again.
+- **The reference graph** (`model/references.ts`) is one function over the content index: articles in any state (lead pictures, blocks, video posters, social images), people's portraits and the site's social image. Used in and Delete read it, and the content check now also refuses a site settings file whose social image doesn't exist.
+- **The save queue** is `model/queue.ts`, unit-tested: one save at a time, requests made meanwhile folded into the next, a conflict stops it for good, and a save that throws (the network) leaves it free for the next.
+- **Windows:** git is asked for the content folder's place in the repository (`rev-parse --show-prefix`) rather than a path computed from two spellings of one folder (short names like `PRABIN~2`, junctions); pictures are read with sharp from their bytes, never their path, because sharp keeps files it opened by path open and Windows then refuses to replace or delete them.
+- **The design library** shows every component token except `c.editor`: edit mode is dev only, and the production check searches `dist/` (except the published docs) for its sentinels.
+- **Tests:** the unit tests are `editor.test.ts` (the guard, the store), `editorModel.test.ts` (document operations, the DOM to Markdown, the structure, IDs, the names, the reference graph, the queue) and `editorServer.test.ts` (uploads through sharp, details, Replace, Delete, git against a temporary repository and bare remote, the integration). The E2E group is the Playwright project `editor` (`npx playwright test --project=editor`), on the fixture server (`scripts/editor-test-server.mjs`, port 4330), reset between tests.

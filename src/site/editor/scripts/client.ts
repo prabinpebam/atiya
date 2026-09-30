@@ -22,9 +22,10 @@ export async function api<T = Record<string, unknown>>(method: string, path: str
   const headers: Record<string, string> = { 'X-Editor': '1' };
   let payload: BodyInit | undefined;
   if (body instanceof FormData) payload = body;
-  else if (body !== undefined) {
+  else if (body !== undefined || method === 'POST' || method === 'PUT') {
+    // the guard takes a POST or PUT only with a JSON (or multipart) body: an action with nothing to send sends {}
     headers['Content-Type'] = 'application/json';
-    payload = JSON.stringify(body);
+    payload = JSON.stringify(body ?? {});
   }
   const res = await fetch(`${BASE}/_edit/api/${path}`, { method, headers, body: payload, credentials: 'same-origin' });
   let data: Reply<T>['data'];
@@ -43,6 +44,30 @@ export function announce(text: string, tone: 'default' | 'negative' = 'default')
   el.textContent = text;
   if (tone === 'negative') el.dataset.tone = 'negative';
   else delete el.dataset.tone;
+}
+
+/**
+ * Renders a screen again on the server and swaps in its named regions (`data-region`), so a change shows
+ * without a reload: the rest of the page keeps its state, scroll and focus. The components in the new
+ * regions are set up again (astro:page-load, which `each` listens for), and a region that scrolls keeps
+ * its place. The counts of changes to publish (the top bar's, the navigation's) always come along.
+ */
+export async function swapRegions(names: string[], url = location.href): Promise<Document> {
+  const html = await (await fetch(url, { headers: { 'X-Editor': '1' } })).text();
+  const next = new DOMParser().parseFromString(html, 'text/html');
+  for (const name of new Set([...names, 'editor-pending', 'editor-nav'])) {
+    const old = document.querySelector(`[data-region="${name}"]`);
+    const fresh = next.querySelector(`[data-region="${name}"]`);
+    if (!old || !fresh) continue;
+    const top = old.scrollTop;
+    const el = document.importNode(fresh, true) as HTMLElement;
+    old.replaceWith(el);
+    if (top) el.scrollTop = top;
+  }
+  // as after a page swap: what left the page stops listening (each's signals), then the new regions are set up
+  document.dispatchEvent(new Event('astro:after-swap'));
+  document.dispatchEvent(new Event('astro:page-load'));
+  return next;
 }
 
 /** An issue in words, for the status and field messages. */

@@ -133,6 +133,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     }
   }
   for (const p of people.values()) if (p.avatar) needMedia(`content/people/${p.id}.json`, p.avatar);
+  if (site?.socialImage) needMedia('content/site.json', site.socialImage);
   if (site && !people.has(site.owner)) add('content/site.json', `owner "${site.owner}" isn't in content/people/`, 'owner');
 
   let routes: Route[] = [];

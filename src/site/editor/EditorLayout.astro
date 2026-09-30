@@ -2,7 +2,8 @@
 /**
  * Edit mode's frame (documentation/editor/spec.md §2): the side navigation to its screens, and a top bar
  * with the screen's title, the save status (a live region), the screen's own tools, the number of
- * unpublished changes and Publish. The article editor turns the navigation off for its studio. Built
+ * unpublished changes and Publish. The article editor turns the navigation off for its studio; a screen
+ * with a detail pane (Media) puts it in the aside slot, beside its content and in view as it scrolls. Built
  * from the site's compounds and fundamentals; only the editor imports it (and editor-tokens.css).
  * @tier editor
  * @a11y One main landmark (id="main"); the navigation is named "Edit mode"; the save status is announced (role="status").
@@ -27,9 +28,12 @@ interface Props {
   heading?: string;
   /** One line under the heading. */
   intro?: string;
+  /** The aside slot's name (a landmark), when a screen has one. */
+  asideLabel?: string;
 }
 
-const { title, screen, nav = true, heading, intro } = Astro.props;
+const { title, screen, nav = true, heading, intro, asideLabel } = Astro.props;
+const aside = Astro.slots.has('aside');
 const git = await changes();
 const pending = git.files.length;
 const to = (p: string) => withBase(`/_edit/${p}`);
@@ -60,18 +64,20 @@ const groups = [
       <div class="title"><slot name="title" /></div>
       <p class="status" role="status" aria-live="polite" data-editor-status></p>
       <div class="tools"><slot name="tools" /></div>
-      {
-        pending > 0 && (
-          <Text as="span" variant="small" tone="muted">
-            {`${pending} ${pending === 1 ? 'change' : 'changes'} to publish`}
-          </Text>
-        )
-      }
-      <Button href={to('publish/')} variant={pending ? 'primary' : 'secondary'} size="sm" icon="publish">Publish</Button>
+      <div class="pending" data-region="editor-pending">
+        {
+          pending > 0 && (
+            <Text as="span" variant="small" tone="muted">
+              {`${pending} ${pending === 1 ? 'change' : 'changes'} to publish`}
+            </Text>
+          )
+        }
+        <Button href={to('publish/')} variant={pending ? 'primary' : 'secondary'} size="sm" icon="publish">Publish</Button>
+      </div>
     </header>
     {
       nav && (
-        <aside class="nav" data-scrollbar>
+        <aside class="nav" data-scrollbar data-region="editor-nav">
           <SideNav label="Edit mode" groups={groups} />
         </aside>
       )
@@ -89,7 +95,18 @@ const groups = [
                 <slot name="actions" />
               </div>
             </header>
-            <slot />
+            {aside ? (
+              <div class="split">
+                <div class="split-main">
+                  <slot />
+                </div>
+                <aside class="split-aside" aria-label={asideLabel} data-scrollbar>
+                  <slot name="aside" />
+                </aside>
+              </div>
+            ) : (
+              <slot />
+            )}
           </div>
         ) : (
           <slot />
@@ -160,6 +177,13 @@ const groups = [
     gap: var(--space-1);
   }
 
+  .pending {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
   .nav {
     overflow: auto;
     scrollbar-width: none;
@@ -204,6 +228,26 @@ const groups = [
     gap: var(--space-3);
   }
 
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .split-main {
+    min-inline-size: 0;
+  }
+
+  /* in view as the screen scrolls, and scrolling on its own when it's taller than the screen */
+  .split-aside {
+    position: sticky;
+    inset-block-start: var(--space-4);
+    max-block-size: calc(100dvh - var(--c-editor-topbar) - var(--space-8));
+    overflow: auto;
+    scrollbar-width: none;
+  }
+
   @media (max-width: 56rem) {
     .editor {
       grid-template-columns: minmax(0, 1fr);
@@ -222,6 +266,16 @@ const groups = [
 
     .screen {
       padding: var(--space-5);
+    }
+
+    .split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .split-aside {
+      position: static;
+      max-block-size: none;
+      overflow: visible;
     }
   }
 </style>

@@ -10,7 +10,7 @@
  */
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { getMedia } from './repository';
 import { fileOf } from './source';
@@ -30,7 +30,9 @@ async function metadata(master: string): Promise<ImageMetadata> {
   const hit = devMeta.get(abs);
   if (hit && hit.mtime === mtime) return hit.meta;
   const { default: sharp } = await import('sharp');
-  const m = await sharp(abs).metadata();
+  // from the bytes, not the path: sharp keeps files it opened by path open, and Windows then refuses to
+  // replace or delete them (the editor's Replace and Delete)
+  const m = await sharp(readFileSync(abs)).metadata();
   const format = FORMAT[m.format ?? ''] ?? m.format ?? 'webp';
   const url = pathToFileURL(abs);
   url.searchParams.append('origWidth', String(m.width));

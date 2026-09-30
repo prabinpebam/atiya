@@ -500,3 +500,50 @@ describe('fonts: the site serves its own cut, light enough for a phone', () => {
     for (const [token, family] of [['p.font.fraunces', "'Fraunces'"], ['p.font.newsreader', "'Newsreader'"], ['p.font.figtree', "'Figtree'"]]) expect(String(model.byPath.get(token)!.value).startsWith(family), token).toBe(true);
   });
 });
+
+// ---------- edit mode: the editor tier (documentation/editor/spec.md §10) ----------
+describe('edit mode: parts made only from the design system, pages that compose them, nothing reaching the site', () => {
+  const EDITOR = join(ROOT, 'src/site/editor');
+  const parts = walk(join(EDITOR, 'components'), /\.astro$/).map((file) => ({ file, name: file.split(sep).pop()!, src: read(file) }));
+  const specs = (src: string) => [...importsOf(frontmatter(src)).map((x) => x.spec), ...scriptImports(src)];
+
+  it('found the parts', () => expect(parts.length).toBeGreaterThanOrEqual(15));
+
+  it.each(parts.map((p) => [p.name, p] as const))('part %s uses fundamentals, compounds, tier 0 and the editor model only (never another part, a layout or a server module that writes)', (_, p) => {
+    const ok = (i: string) =>
+      /^\.\.\/\.\.\/components\/(fundamentals|compounds)\/[A-Z]\w*\.astro$/.test(i) ||
+      /^\.\.\/\.\.\/(design|scripts|styles)\/[\w./-]+$/.test(i) ||
+      /^\.\.\/\.\.\/content\/(schema|load)$/.test(i) ||
+      /^\.\.\/(model|scripts)\/[\w-]+$/.test(i) ||
+      // labels and row types only: reading and writing content is the pages' job
+      i === '../server/screens';
+    expect(specs(p.src).filter((i) => !ok(i))).toEqual([]);
+  });
+
+  it.each(parts.map((p) => [p.name, p] as const))('part %s documents itself (a summary, @tier editor, @a11y)', (_, p) => {
+    const doc = docComment(p.src);
+    expect(doc, p.name).toBeTruthy();
+    expect(p.src).toMatch(/@tier editor/);
+    expect(p.src).toMatch(/@a11y /);
+  });
+
+  it('the pages compose the layout and parts, and carry no styles', () => {
+    const pages = walk(join(EDITOR, 'pages'), /\.astro$/);
+    expect(pages.length).toBeGreaterThanOrEqual(8);
+    expect(pages.filter((f) => /<style/.test(read(f))).map(rel)).toEqual([]);
+  });
+
+  it('nothing outside the editor imports it: the site reaches edit mode only through the dev integration', () => {
+    const outside = [...walk(join(ROOT, 'src'), /\.(astro|ts|tsx|mjs)$/)].filter((f) => !f.startsWith(EDITOR + sep));
+    expect(outside.filter((f) => /from ['"][^'"]*\/editor\/|import ['"][^'"]*\/editor\//.test(read(f))).map(rel)).toEqual([]);
+  });
+
+  it("the launcher's shadow styles read tokens only, and its hover has a touch twin", async () => {
+    const { LAUNCHER_CSS } = await import('../../src/site/editor/scripts/launcher');
+    const values = [...LAUNCHER_CSS.matchAll(/:\s*([^;{}]+);/g)].map((m) => m[1].replace(/var\(--[\w-]+\)/g, '').replace(/calc\(|\)/g, ''));
+    expect(values.filter((v) => /\d|#/.test(v))).toEqual([]);
+    for (const m of LAUNCHER_CSS.matchAll(/var\((--[\w-]+)\)/g)) expect(TOKENS_CSS.includes(`${m[1]}:`), m[1]).toBe(true);
+    expect(LAUNCHER_CSS).toMatch(/@media \(hover: hover\)/);
+    expect(LAUNCHER_CSS).toMatch(/\.launch:active/);
+  });
+});

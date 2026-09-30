@@ -1,0 +1,49 @@
+---
+/** Edit mode's sections: the site structure (documentation/editor/spec.md §5). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import StructureTree, { type TreeItem } from '../components/StructureTree.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load, sectionOptions } from '../server/screens';
+import { readDoc } from '../server/store';
+import { STRUCTURE } from '../server/articles';
+import { isPublished } from '../../content/load';
+import type { HubNode, SiteNode, SiteStructure } from '../../content/schema';
+
+export const prerender = false;
+
+const loaded = load();
+const structure = readDoc<SiteStructure>(STRUCTURE);
+const items: TreeItem[] = [];
+let unplaced: { id: string; title: string }[] = [];
+if (loaded.ok && structure) {
+  const index = loaded.index;
+  const pathOf = (n: SiteNode) => index.routes.find((r) => r.node.id === n.id)?.path ?? '';
+  const hasPublished = (h: HubNode): boolean => (h.children ?? []).some((c) => (c.kind === 'hub' ? hasPublished(c) : isPublished(index.articles.get(c.item.id) ?? { status: 'draft', visibility: 'public' })));
+  const visit = (n: SiteNode, depth: number, parent: HubNode | null, position: number, siblings: number) => {
+    if (n.kind === 'hub') {
+      items.push({ node: n.id, kind: 'hub', title: n.title, path: pathOf(n), depth, parent: parent?.id ?? null, position, siblings, hub: { title: n.title, navLabel: n.navLabel, summary: n.summary, slug: n.slug, template: n.template, locked: hasPublished(n), home: depth === 0 } });
+      (n.children ?? []).forEach((c, i, all) => visit(c, depth + 1, n, i, all.length));
+    } else {
+      const a = index.articles.get(n.item.id);
+      items.push({ node: n.id, kind: 'item', title: a?.title ?? n.item.id, path: pathOf(n), depth, parent: parent?.id ?? null, position, siblings, article: n.item.id, published: !!a && isPublished(a) });
+    }
+  };
+  visit(structure.value.home, 0, null, 0, 1);
+  const placed = new Set(items.filter((i) => i.article).map((i) => i.article));
+  unplaced = [...index.articles.values()].filter((a) => !placed.has(a.id)).map((a) => ({ id: a.id, title: a.title }));
+}
+const json = JSON.stringify({ structure: structure?.value, version: structure?.version }).replace(/</g, '\\u003c');
+---
+
+<EditorLayout title="Sections" screen="sections" heading="Sections" intro="The site's structure: its sections, what each one holds and in what order. A published page keeps its place until the site has redirects.">
+  {
+    loaded.ok ? (
+      <>
+        <StructureTree items={items} unplaced={unplaced} sections={sectionOptions(loaded.index)} />
+        <script is:inline type="application/json" data-editor-sections-state set:html={json} />
+      </>
+    ) : (
+      <ContentIssues issues={loaded.issues} />
+    )
+  }
+</EditorLayout>

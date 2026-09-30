@@ -16,12 +16,11 @@ import Button from '../../components/fundamentals/Button.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
-import { load, sectionOptions, STATUS_LABEL } from '../server/screens';
+import { load, mediaCards, sectionOptions, STATUS_LABEL } from '../server/screens';
 import { readDoc } from '../server/store';
 import { STRUCTURE, articleKey } from '../server/articles';
 import { isPublished } from '../../content/load';
 import { getPlacement } from '../../content/repository';
-import { picture } from '../../content/pictures';
 import { sectionOf } from '../model/structure';
 import { excerptOf, kindOf } from '../model/ops';
 import { withBase } from '../../design/meta';
@@ -41,17 +40,8 @@ const section = structure ? (sectionOf(structure.value, { type: 'article', id })
 const route = loaded.ok ? getPlacement('article', id) : undefined;
 
 const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', facts: 'facts' };
-let cards: MediaCard[] = [];
-const thumbs: Record<string, Thumb> = {};
-if (loaded.ok) {
-  cards = await Promise.all(
-    [...loaded.index.media.values()].map(async (m) => {
-      const p = await picture(m.id, 'card');
-      thumbs[m.id] = { thumb: p.thumb, alt: p.alt, width: p.width, height: p.height };
-      return { id: m.id, thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height };
-    }),
-  );
-}
+const cards: MediaCard[] = loaded.ok ? await mediaCards(loaded.index, `articles/${id}`) : [];
+const thumbs: Record<string, Thumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height }]));
 const blocks = article.body.map((b) => ({ kind: kindOf(b), excerpt: excerptOf(b, (m) => thumbs[m]?.alt), icon: ICON[b.type] }));
 const links = loaded.ok ? [...loaded.index.articles.values()].filter((a) => loaded.index.canonical.has(`article/${a.id}`)).map((a) => ({ value: `ref:article/${a.id}`, label: a.title })) : [];
 const publicPath = route?.published ? withBase(route.path) : null;

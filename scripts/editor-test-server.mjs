@@ -40,6 +40,18 @@ export function prepare() {
   git(FIXTURE, 'push', '-q', '-u', 'origin', 'main');
 }
 
+/**
+ * Puts the fixture back as prepared, between tests that change it: the working tree and the branch at the
+ * first commit, nothing untracked, and the remote's branch back there too (a test reset may force; publish never does).
+ */
+export function reset() {
+  const first = git(FIXTURE, 'rev-list', '--max-parents=0', 'HEAD').trim();
+  git(FIXTURE, 'reset', '-q', '--hard', first);
+  git(FIXTURE, 'clean', '-q', '-fdx');
+  git(FIXTURE, 'push', '-q', '--force', 'origin', `${first}:main`);
+  git(FIXTURE, 'fetch', '-q', 'origin');
+}
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
   prepare();

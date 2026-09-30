@@ -1,0 +1,30 @@
+---
+/** Edit mode's media library (documentation/editor/spec.md §6). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import MediaGrid from '../components/MediaGrid.astro';
+import MediaDetails, { type PictureDetails } from '../components/MediaDetails.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load, mediaCards, references } from '../server/screens';
+import { readDoc } from '../server/store';
+import { picture } from '../../content/pictures';
+import type { ImageMedia } from '../../content/schema';
+
+export const prerender = false;
+
+const loaded = load();
+const wanted = Astro.url.searchParams.get('id');
+let details: PictureDetails | null = null;
+let usedIn: { label: string; href: string }[] = [];
+const cards = loaded.ok ? await mediaCards(loaded.index) : [];
+if (loaded.ok && wanted && loaded.index.media.has(wanted)) {
+  const sidecar = readDoc<ImageMedia>(`/content/media/${wanted}.json`);
+  const p = await picture(wanted, 'popout');
+  if (sidecar) details = { id: wanted, src: p.src, srcset: p.srcset, width: p.width, height: p.height, sidecar: sidecar.value, version: sidecar.version };
+  usedIn = references(loaded.index).get(wanted) ?? [];
+}
+---
+
+<EditorLayout title="Media" screen="media" heading="Media" intro="Every picture in content/media/, by folder. Choose one for its details; an upload here goes to the shared folder." asideLabel="Picture details">
+  {loaded.ok ? <MediaGrid mode="library" media={cards} owner="shared" selected={details?.id} /> : <ContentIssues issues={loaded.issues} />}
+  {loaded.ok && <MediaDetails slot="aside" picture={details} usedIn={usedIn} />}
+</EditorLayout>

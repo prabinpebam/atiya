@@ -1,0 +1,34 @@
+---
+/** Edit mode's settings: the site's and its owner's (documentation/editor/spec.md §2). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import SettingsForms, { type SettingsThumb } from '../components/SettingsForms.astro';
+import MediaGrid from '../components/MediaGrid.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import { load, mediaCards } from '../server/screens';
+import { readDoc } from '../server/store';
+import type { Person, SiteSettings } from '../../content/schema';
+
+export const prerender = false;
+
+const loaded = load();
+const site = readDoc<SiteSettings>('/content/site.json');
+const person = site ? readDoc<Person>(`/content/people/${site.value.owner}.json`) : null;
+const cards = loaded.ok ? await mediaCards(loaded.index, 'site') : [];
+const thumbs: Record<string, SettingsThumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height }]));
+---
+
+<EditorLayout title="Settings" screen="settings" heading="Settings" intro="The site's own settings and your profile. Each saves to its own file in content/.">
+  {
+    loaded.ok && site && person ? (
+      <>
+        <SettingsForms site={site.value} siteVersion={site.version} person={person.value} personVersion={person.version} thumbs={thumbs} />
+        <Dialog id="settings-picker" title="Choose a picture" size="lg">
+          <MediaGrid mode="pick" media={cards} owner="site" />
+        </Dialog>
+      </>
+    ) : (
+      <ContentIssues issues={loaded.ok ? [{ file: 'content/site.json', message: "the site settings or their owner's profile can't be read" }] : loaded.issues} />
+    )
+  }
+</EditorLayout>

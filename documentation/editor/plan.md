@@ -148,3 +148,29 @@ E0 comes first: every screen stands on the source, the guard, the store and the 
 | A push fails (credentials, a remote ahead) | Publish stops half way | The commit stays local, shown as not pushed, with Push again; nothing is forced; git never prompts |
 | Windows locks a file mid-write | A failed save | Retries on `EPERM` and `EBUSY`, then rollback (DoD 4) |
 | Large uploads | A slow editor | At most 20 MB; sharp resizes on upload; the master is at most 2560 px |
+
+## 6. Status
+
+All five phases are built, and every point of the Definition of Done is met. The unit tests are `tests/unit/editor.test.ts`, `editorModel.test.ts` and `editorServer.test.ts`; the E2E group is the Playwright project `editor` (`npx playwright test --project=editor`, `tests/e2e/editor.spec.ts`). What the build added or settled is in the [spec, §13](spec.md#13-as-built).
+
+| # | Met by |
+|---|---|
+| 1 | `npm run verify:prod` searches `dist/` for `/_edit`, `editor-block`, `--c-editor` and `data-editor` (none found; the design library no longer lists `c.editor`); "the dev integration" unit tests: nothing injected for a build or a preview, `CONTENT_ROOT` refused in a build |
+| 2 | The Markdown unit tests (the old renderer's output, byte for byte; a 50,000-tree fuzz); the site's E2E groups (site design system, site on a phone, article minimap, content, landing and classic) |
+| 3 | The guard's unit tests; E2E "the guard": a foreign `Origin`, a missing header or `Origin` and a cross-site request get 403, and every screen carries `frame-ancestors 'self'` and `X-Frame-Options` |
+| 4 | The store's unit tests: the contract's refusal names the field and writes nothing, a stale version gets 409, the second rename failing leaves every file as it was, `EBUSY` retried |
+| 5 | E2E "text typed on the page…" (the site shows the save, an open page on the site isn't reloaded by it, a hand edit reloads it) and "a change made elsewhere…" (the open editor stops saving and shows the conflict; nothing is written over the hand edit) |
+| 6 | Dialog and Tabs with stories in the design library; `siteDesignSystem.test.ts` "edit mode" (parts made only of fundamentals, compounds, tier 0 and the editor model; documented; pages without styles; nothing outside the editor imports it; the launcher's styles are tokens only) |
+| 7 | E2E "the canvas is the public page": the same elements in the same order, apart from the overlay |
+| 8 | The parser, serializer and DOM unit tests (marks in marks, links keep their written target, breaks, lists, compared by meaning); E2E typing with bold saves `**boldly**` and renders it on the site |
+| 9 | E2E "blocks": added from the palette, moved with the outline's button, duplicated and deleted from the canvas toolbar |
+| 10 | E2E "blocks" (undo brings a deletion back, saved); the save queue's unit tests (one save at a time, requests folded, a conflict stops it) |
+| 11 | E2E "the page's settings…": a summary over 160 characters is refused with its reason and not written; a valid one saves |
+| 12 | E2E "a new draft…": rendered on the canvas, 404 on the site; published, 200 at once without a restart; its slug then fixed |
+| 13 | "uploads" unit tests (a 3200 px JPEG with EXIF becomes a 2560 px WebP under 1.5 MB without metadata; transparency kept; names never overwritten); E2E "media": an upload opens at once in the library |
+| 14 | The reference graph's unit tests; "a picture's details" unit tests (a used picture, the site's social image included, can't be deleted); E2E "media" (details save; Delete disabled on a used picture, with Used in) |
+| 15 | E2E "a new draft…" (New article, the same form as New page) and "duplicate…" (a draft copy in the same section, without its publication date; Delete removes the draft and its node; a published article offers no Delete) |
+| 16 | E2E "sections" (a new section, reordered with Alt+Up, saved; a published section's slug is fixed); `structure` unit tests |
+| 17 | "publishing with git" unit tests (only `content/` committed, staged code left staged, the remote gets it, a rejected push leaves the commit with the reason and Push again works after a pull, discard restores and deletes a new picture's two files together, git never prompts); E2E "publish" (discard, then publish to the fixture's remote) and "a push the remote refuses…" (the commit kept, the reason shown, Push again once the branch is up to date) |
+| 18 | `siteDesignSystem.test.ts` (tokens only, tiers, hover, scripts through `page.ts`); E2E "every screen passes axe, in light and in dark" |
+| 19 | `npm run verify:prod` (every budget held); the site's E2E groups |
