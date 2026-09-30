@@ -5,6 +5,7 @@
  * and saves it; this only reports (select, text, split, merge, insert, move…) and redraws when told.
  */
 import { turnShortcut, type TextKind } from '../model/ops';
+import { pasteKind, wordsOfPaste } from '../model/paste';
 import { markdownOf, plainOf } from '../model/dom';
 import { serializeInline } from '../../content/markdown';
 
@@ -16,6 +17,7 @@ type Out =
   | { type: 'text'; index: number; value: string; session: number; final: boolean }
   | { type: 'field'; field: Field; value: string; session: number; final: boolean }
   | { type: 'split'; index: number; parts: string[] }
+  | { type: 'paste'; index: number; pending: boolean; before: string; after: string; text: string }
   | { type: 'merge'; index: number }
   | { type: 'insert'; index: number }
   | { type: 'op'; index: number; op: 'up' | 'down' | 'duplicate' | 'delete' }
@@ -367,17 +369,28 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (type === 'insertFromPaste' || type === 'insertFromDrop' || type === 'insertFromYank') {
       e.preventDefault();
       const text = e.dataTransfer?.getData('text/plain') ?? '';
-      if (!text) return;
-      const paras = text.replace(/\r\n?/g, '\n').split(/\n[ \t]*\n/).filter((p) => p.trim());
-      if (paras.length > 1 && rich && index !== null && index >= 0 && el.nodeName === 'P') {
+      const kind = pasteKind(text);
+      if (kind === 'nothing') return;
+      // Markdown (headings, lists, quotes, marks, several paragraphs) in a paragraph arrives as its blocks
+      const pending = el.hasAttribute('data-editor-pending');
+      if (kind === 'blocks' && rich && el.nodeName === 'P' && (pending || (index !== null && index >= 0))) {
         const h = halves(el);
         if (!h) return;
-        const plain = (s: string) => serializeInline([{ t: 'text', v: s.replace(/\s*\n\s*/g, ' ') }]);
-        const parts = [markdownOf(h[0]) + plain(paras[0]), ...paras.slice(1, -1).map(plain), plain(paras[paras.length - 1]) + markdownOf(h[1])];
         dirty = null;
-        post({ type: 'split', index, parts });
+        clearTimeout(timer);
+        const at = pending ? Number(el.dataset.editorPending) : index!;
+        if (pending) {
+          el.removeAttribute('data-editor-pending');
+          el.remove();
+          redraw();
+        }
+        post({ type: 'paste', index: at, pending, before: markdownOf(h[0]), after: markdownOf(h[1]), text });
         return;
       }
+      const paras = (kind === 'blocks' ? wordsOfPaste(text) : text)
+        .replace(/\r\n?/g, '\n')
+        .split(/\n[ \t]*\n/)
+        .filter((p) => p.trim());
       insertPlain(paras.join('\n'), rich);
       return;
     }

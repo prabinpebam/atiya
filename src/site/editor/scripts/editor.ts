@@ -7,6 +7,7 @@
  */
 import { api, announce, describeIssue, swapRegions, type Issue } from './client';
 import * as ops from '../model/ops';
+import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
 import { plainText } from '../../content/markdown';
 import type { Article, Block } from '../../content/schema';
@@ -403,6 +404,16 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         change(body(ops.split(doc.body, i, parts)), ALL, { select: i + 1 });
         const endOfBlock = !String(parts[parts.length - 1] ?? '').trim();
         afterReady.push(() => (endOfBlock ? toCanvas({ type: 'pending', index: i + 1, kind: 'text' }) : toCanvas({ type: 'focus', index: i + parts.length - 1, at: 'start' })));
+        break;
+      }
+      case 'paste': {
+        const { blocks, pictures } = paste.blocksFromMarkdown(String(m.text ?? ''));
+        if (!blocks.length) break;
+        const r = paste.pasteAt(doc.body, m.index as number, { replace: !m.pending, before: String(m.before ?? ''), after: String(m.after ?? '') }, blocks);
+        change(body(r.body), ALL, { select: r.focus });
+        afterReady.push(() => toCanvas({ type: 'focus', index: r.focus, at: r.caret }));
+        const left = pictures ? ` Left out ${pictures === 1 ? 'a picture' : `${pictures} pictures`}: add pictures from the media library.` : '';
+        announce(`Pasted ${blocks.length === 1 ? 'a block' : `${blocks.length} blocks`}.${left}`);
         break;
       }
       case 'merge': {

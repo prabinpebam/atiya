@@ -256,6 +256,42 @@ test.describe('editor', () => {
     expect(original.type).toBe('text');
   });
 
+  test('pasted Markdown becomes its blocks, and its label and text pairs, selected, turn into tiles', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string; level?: number; text?: string }[];
+    const count = blocks().length;
+    const p = blocks().findIndex((b) => b.type === 'text');
+    const words = frame(page).locator('[data-editor-editable="rich"]').first();
+    await words.click();
+    await page.keyboard.press('Control+End');
+    await page.evaluate((md) => navigator.clipboard.writeText(md), '### **Constraint**\n\nA team spread over two\ncities.\n\n### Outcome\n\nA **shared** standard.');
+    await page.keyboard.press('Control+V');
+    await expect.poll(() => blocks().length).toBe(count + 4);
+    expect(blocks()[p].type).toBe('text');
+    expect(blocks().slice(p + 1, p + 5)).toEqual([
+      { type: 'heading', level: 3, text: 'Constraint' },
+      { type: 'text', markdown: 'A team spread over two cities.' },
+      { type: 'heading', level: 3, text: 'Outcome' },
+      { type: 'text', markdown: 'A **shared** standard.' },
+    ]);
+
+    await page.locator(`[data-editor-select="${p + 1}"]`).click();
+    await page.locator(`[data-editor-select="${p + 4}"]`).click({ modifiers: ['Shift'] });
+    await page.locator('[data-editor-group="turn"]').click();
+    await page.locator('#editor-turn [data-editor-turn-to="tiles"]').click();
+    await expect.poll(() => blocks()[p + 1]).toEqual({
+      type: 'tiles',
+      items: [
+        { label: 'Constraint', text: 'A team spread over two cities.' },
+        { label: 'Outcome', text: 'A **shared** standard.' },
+      ],
+    });
+    const grid = frame(page).locator('[data-tiles]', { hasText: 'Constraint' });
+    await expect(grid.locator('dt')).toHaveText(['Constraint', 'Outcome']);
+    await expect(grid.locator('dd strong')).toHaveText('shared');
+  });
+
   test("a picture's caption can be hidden completely, credit and all, and shown again", async ({ page }) => {
     await openArticle(page);
     const blocks = () => readJson(articleFile()).body as { type: string; showCaption?: boolean }[];

@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import * as ops from '../../src/site/editor/model/ops';
+import * as paste from '../../src/site/editor/model/paste';
 import { inlineOf, markdownOf, plainOf, type MiniNode } from '../../src/site/editor/model/dom';
 import { addHub, childSlugs, findHub, hubs, nodeIds, place, reorder, sectionOf, unplace, updateHub } from '../../src/site/editor/model/structure';
 import { slugify, today, unique } from '../../src/site/editor/model/ids';
@@ -13,6 +14,7 @@ import { ownerLabel, ownerOf, references } from '../../src/site/editor/model/ref
 import { SaveQueue, type Outcome } from '../../src/site/editor/model/queue';
 import { parseInline, parseMarkdown, runs } from '../../src/site/content/markdown';
 import type { Article, Block, SiteStructure } from '../../src/site/content/schema';
+import { block } from '../../src/site/content/schema';
 
 // ---------- document operations ----------
 const t = (markdown: string): Block => ({ type: 'text', markdown });
@@ -192,6 +194,103 @@ describe('turning text into another kind, any time', () => {
     expect(key('Digit2', { alt: true, shift: true })).toBeNull();
     expect(ops.turnShortcut({ ctrlKey: false, metaKey: false, altKey: true, shiftKey: false, code: 'Digit2' })).toBeNull();
     expect(key('KeyB', { shift: true })).toBeNull();
+  });
+});
+
+// ---------- pasting Markdown ----------
+describe('pasted Markdown arrives as the blocks it describes', () => {
+  const md = (s: string) => paste.blocksFromMarkdown(s).blocks;
+  const story = `## A rebrand designed to move the team, not simply rename it.
+
+The Windows Design team in India needed more than a visual refresh. I wanted
+the identity to help people reconnect with why they design.
+
+### **Challenge**
+
+Re-energize the team and make purpose feel personal, practical, and visible.
+
+### **Intent**
+
+Shift the conversation from completing tasks to owning meaningful outcomes.
+
+### **My role**
+
+Identity concept, narrative framing, visual direction, and team activation.
+
+### **Core idea**
+
+**Do what makes you proud.** A standard chosen from within.
+`;
+
+  it('makes headings (their words only), and joins a hard-wrapped paragraph into one', () => {
+    const b = md(story);
+    expect(b.map((x) => (x.type === 'heading' ? `h${x.level}` : x.type))).toEqual(['h2', 'text', 'h3', 'text', 'h3', 'text', 'h3', 'text', 'h3', 'text']);
+    expect(b[0]).toEqual(h('A rebrand designed to move the team, not simply rename it.'));
+    expect(b[1]).toEqual(t('The Windows Design team in India needed more than a visual refresh. I wanted the identity to help people reconnect with why they design.'));
+    expect(b[2]).toEqual(h('Challenge', 3));
+    expect(b[9]).toEqual(t('**Do what makes you proud.** A standard chosen from within.'));
+  });
+
+  it('and those label and text pairs, selected, turn into tiles', () => {
+    const r = ops.asTiles(md(story).slice(2));
+    expect(r.ok && r.block).toEqual({
+      type: 'tiles',
+      items: [
+        { label: 'Challenge', text: 'Re-energize the team and make purpose feel personal, practical, and visible.' },
+        { label: 'Intent', text: 'Shift the conversation from completing tasks to owning meaningful outcomes.' },
+        { label: 'My role', text: 'Identity concept, narrative framing, visual direction, and team activation.' },
+        { label: 'Core idea', text: '**Do what makes you proud.** A standard chosen from within.' },
+      ],
+    });
+  });
+
+  it('maps heading levels onto the page: # and ## a heading 2, ### a 3, #### and beyond a 4; underlined lines too', () => {
+    expect(md('# One\n## Two\n### Three\n#### Four\n###### Six\n#hashtag')).toEqual([h('One'), h('Two'), h('Three', 3), { type: 'heading', level: 4, text: 'Four' }, { type: 'heading', level: 4, text: 'Six' }, t('#hashtag')]);
+    expect(md('Title\n=====\n\nSubtitle\n---\n## Closed ##')).toEqual([h('Title'), h('Subtitle'), h('Closed')]);
+  });
+
+  it('keeps hard breaks, marks and safe links; a link the site cannot follow keeps its words; pictures are left out', () => {
+    expect(md('one\\\ntwo  \nthree\nfour')).toEqual([t('one\\\ntwo\\\nthree four')]);
+    expect(md('*so* **very** `code` [site](https://example.com) and [here](./local) or [top](#top)')).toEqual([t('_so_ **very** `code` [site](https://example.com) and here or top')]);
+    expect(paste.blocksFromMarkdown('Look:\n\n![A cat](cat.png)\n\nNice.')).toEqual({ blocks: [t('Look:'), t('Nice.')], pictures: 1 });
+  });
+
+  it('makes lists, quotes (a last line with a dash is the source), dividers and code', () => {
+    expect(md('- one\n* two\n  still two\n+ three\n\n1. first\n2) second\n\nThe year was\n1990. A good year')).toEqual([t('- one\n- two still two\n- three'), t('1. first\n2. second'), t('The year was 1990. A good year')]);
+    expect(md('Intro\n- a\n- b')).toEqual([t('Intro'), t('- a\n- b')]);
+    expect(md('> Be better\n> than yesterday.\n> — A wise person\n\n> Just words')).toEqual([
+      { type: 'quote', variant: 'block', text: 'Be better than yesterday.', cite: 'A wise person' },
+      { type: 'quote', variant: 'block', text: 'Just words' },
+    ]);
+    expect(md('---\nA\n\n***\n\n- - -\n\nB\n___')).toEqual([t('A'), { type: 'divider' }, t('B')]);
+    expect(md('```js\nconst a = 1;\n\n# not a heading\n```')).toEqual([t('`const a = 1;`\\\n`# not a heading`')]);
+  });
+
+  it('every block it makes is one the contract accepts', () => {
+    for (const b of md(`${story}\n> q\n\n- a\n\n1. b\n\n---\n\n\`\`\`\nx\n\`\`\``)) expect(block.safeParse(b).success, JSON.stringify(b)).toBe(true);
+  });
+
+  it('knows what the canvas keeps in place: plain words typed in, nothing for pictures, blocks for anything more', () => {
+    expect(paste.pasteKind('just words\non two lines')).toBe('words');
+    expect(paste.pasteKind('  \n ')).toBe('nothing');
+    expect(paste.pasteKind('![x](y.png)')).toBe('nothing');
+    expect(paste.pasteKind('some **bold**')).toBe('blocks');
+    expect(paste.pasteKind('one\n\ntwo')).toBe('blocks');
+    expect(paste.pasteKind('### Label')).toBe('blocks');
+    expect(paste.wordsOfPaste('### **Challenge**\n\nSome *words*')).toBe('Challenge\n\nSome words');
+  });
+
+  it('places the blocks at the caret: the words before join the first paragraph and the words after the last', () => {
+    const body = [t('Start'), t('Before after'), t('End')];
+    const r = paste.pasteAt(body, 1, { replace: true, before: 'Before ', after: ' after' }, md('**one**\n\n## Two\n\nthree '));
+    expect(r.body).toEqual([t('Start'), t('Before **one**'), h('Two'), t('three after'), t('End')]);
+    expect(r).toMatchObject({ focus: 3, caret: 'three'.length });
+    // a heading at either edge: the words round it stay paragraphs of their own
+    expect(paste.pasteAt(body, 1, { replace: true, before: 'Before ', after: 'after' }, [h('Only')]).body).toEqual([t('Start'), t('Before'), h('Only'), t('after'), t('End')]);
+    // one paragraph: all three join
+    expect(paste.pasteAt(body, 1, { replace: true, before: 'a ', after: ' c' }, [t('**b**')])).toEqual({ body: [t('Start'), t('a **b** c'), t('End')], focus: 1, caret: 3 });
+    // a new paragraph that isn't in the article yet: the blocks go in, nothing is replaced
+    expect(paste.pasteAt(body, 1, { replace: false, before: '', after: '' }, [h('New'), t('x')])).toEqual({ body: [t('Start'), h('New'), t('x'), t('Before after'), t('End')], focus: 2, caret: 'end' });
   });
 });
 
