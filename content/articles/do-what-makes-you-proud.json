@@ -11,7 +11,8 @@
   "updatedAt": "2026-09-30",
   "locale": "en",
   "hero": {
-    "media": "articles/do-what-makes-you-proud/mark-sculpted-clay"
+    "media": "articles/do-what-makes-you-proud/mark-sculpted-clay",
+    "showCaption": false
   },
   "body": [
     {
@@ -85,28 +86,6 @@
       "markdown": "I called the mindset **excited accountability**. First, be interested: aligned with the work and passionate about it. Then, be accountable: want to impress through the quality of the outcome. Neither works for long without the other."
     },
     {
-      "type": "gallery",
-      "layout": "mosaic",
-      "fit": "contain",
-      "width": "wide",
-      "lightbox": true,
-      "caption": "The WD mark, explored in different materials and finishes.",
-      "items": [
-        {
-          "media": "articles/do-what-makes-you-proud/mark-finishes"
-        },
-        {
-          "media": "articles/do-what-makes-you-proud/mark-pale-stone"
-        },
-        {
-          "media": "articles/do-what-makes-you-proud/mark-sculpted-clay"
-        },
-        {
-          "media": "articles/do-what-makes-you-proud/mark-clay-to-stone"
-        }
-      ]
-    },
-    {
       "type": "heading",
       "level": 2,
       "text": "Accountability should energize, not pressure."
@@ -159,6 +138,28 @@
     {
       "type": "text",
       "markdown": "That’s why the slogan carries weight. It isn’t motivational decoration. It sums up how we wanted to work: personal aspiration, disciplined craft, accountability for outcomes, and the courage to aim higher."
+    },
+    {
+      "type": "gallery",
+      "layout": "mosaic",
+      "fit": "contain",
+      "width": "wide",
+      "lightbox": true,
+      "caption": "The WD mark, explored in different materials and finishes.",
+      "items": [
+        {
+          "media": "articles/do-what-makes-you-proud/mark-finishes"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/mark-pale-stone"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/mark-sculpted-clay"
+        },
+        {
+          "media": "articles/do-what-makes-you-proud/mark-clay-to-stone"
+        }
+      ]
     },
     {
       "type": "figure",
