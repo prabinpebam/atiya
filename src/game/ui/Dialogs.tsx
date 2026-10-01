@@ -118,7 +118,7 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
         controller.requestCloseLandmark();
       }}
     >
-      {src && <iframe key={`${src}#${tries}`} ref={frame} className="reading-frame" src={src} title={shown?.title ?? 'Reading'} data-scheme={scheme} data-testid="reading-frame" />}
+      {src && <iframe key={`${src}#${tries}`} ref={frame} className="reading-frame" src={src} title={shown?.title ?? 'Reading'} data-scheme={scheme} data-ready={state === 'ready' ? '' : undefined} data-testid="reading-frame" />}
       {state === 'slow' && shown && (
         <p className="card reading-status" role="status">
           Opening the {shown.title}…

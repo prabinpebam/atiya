@@ -175,6 +175,19 @@ kbd {
   border: 0;
   background: transparent;
   color-scheme: light;
+  /* shown once its page says it's ready, faded in: never a blank or half-drawn frame over the planet */
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.reading-frame[data-ready] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-frame {
+    transition: none;
+  }
 }
 
 .reading-frame[data-scheme='dark'] {

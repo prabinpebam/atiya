@@ -36,7 +36,7 @@ interface Props {
   noindex?: boolean;
   /** The faces the page's first screen is set in, fetched before anything else (the rest load when used). */
   preload?: PreloadFace[];
-  /** Change pages without a reload (Astro's client-side router), so what the layout keeps across pages (a side nav) stays put. */
+  /** Change pages without a reload (Astro's client-side router), so what the layout keeps across pages (a side nav) stays put. Always on in the planet's frame, so its pages change without a blank frame. */
   router?: boolean;
   /** In dev, reload when the content changes (a save in edit mode, or a file changed by hand), once the changes settle (off for a screen that brings changes in itself). */
   liveContent?: boolean;
@@ -88,7 +88,7 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
-    {router && <ClientRouter />}
+    {(router || frame === 'planet') && <ClientRouter />}
     <script is:inline>
       // the saved theme, before the first paint (scripts/theme.ts owns the rules)
       var siteTheme = '';

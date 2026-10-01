@@ -81,7 +81,24 @@ export function initFrame(bar: HTMLElement, signal: AbortSignal) {
   // "Open classic page" leaves the game for the site
   bar.querySelectorAll<HTMLAnchorElement>('[data-frame-top]').forEach((a) => (a.target = '_top'));
 
-  // where a link leads: within the building (replacing this page), a note for another building, a new tab for the rest
+  // where a link leads: within the building (changing the page in place, so the history doesn't grow), a
+  // note for another building, a new tab for the rest. The page doesn't reload: the site's router swaps it
+  // (PageShell's `router`, on in the frame), so a move inside the building is seamless, with no blank
+  // frame between pages. Each link is sorted as it's clicked (capture, before the router hears it): one
+  // that stays is the router's, replacing this page; any other the router leaves to the handler below.
+  const sorted = (a: HTMLAnchorElement) => sortLink(a.href, { origin: location.origin, base, here, current: location.pathname + location.search, map });
+  window.addEventListener(
+    'click',
+    (e) => {
+      const a = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a[href]');
+      if (!a || a.target === '_top' || a.target === '_blank' || a.hasAttribute('download')) return;
+      if (sorted(a).kind === 'stay') {
+        a.dataset.astroHistory = 'replace';
+        delete a.dataset.astroReload;
+      } else a.dataset.astroReload = '';
+    },
+    { signal, capture: true },
+  );
   const note = bar.querySelector<HTMLElement>('[data-frame-note]');
   let hide = 0;
   const say = (title: string, siteHref: string) => {
@@ -95,16 +112,17 @@ export function initFrame(bar: HTMLElement, signal: AbortSignal) {
     clearTimeout(hide);
     hide = window.setTimeout(() => (note.hidden = true), 8000);
   };
-  // on the window, so a component's own handler (the lightbox, the video) has its say first
+  // on the window, so a component's own handler (the lightbox, the video) and the router have their say first
   window.addEventListener(
     'click',
     (e) => {
       const a = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a[href]');
       if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       if (a.target === '_top' || a.target === '_blank' || a.hasAttribute('download') || a.closest('[data-frame-note]')) return;
-      const move = sortLink(a.href, { origin: location.origin, base, here, current: location.pathname + location.search, map });
+      const move = sorted(a);
       if (move.kind === 'anchor') return;
       e.preventDefault();
+      // (the router changes a page that stays; this is the way when it can't)
       if (move.kind === 'stay') location.replace(move.href);
       else if (move.kind === 'elsewhere') say(move.title, move.siteHref);
       else window.open(move.href, '_blank', 'noopener');

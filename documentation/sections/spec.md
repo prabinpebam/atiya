@@ -313,7 +313,8 @@ Opening a building shows two kinds of page, both rendered by the site's own `Pag
 
 - **From the list,** each page opens in the frame.
 - **On a page,** the end of the article has "Previous" and "Next" through the building's pages, in the building's order, and "Show contents" back to the list. The place bar has "Show contents" too.
-- **Moving within the frame adds no history entries.** The frame replaces its location on each move, so the browser's Back does what it does for every overlay: close it.
+- **Moving within the frame adds no history entries, and never blanks it.** A move is a swap, not a reload: the frame's pages carry the site's router (Astro's `ClientRouter`), which fetches the next page and swaps it in place with a crossfade, replacing the frame's history entry. So the browser's Back does what it does for every overlay (close it), and nothing between two pages shows the planet bare. (A browser the router can't serve replaces the frame's location instead.)
+- **The overlay shows the frame once its page is ready:** the frame stays hidden until its first `planet:ready` (§6.9), then fades in, so opening a building never shows a half-drawn page.
 - **The game keeps the address current** (`?at=<place>&open=1&page=<id>`) with `replaceState`, keeping its history marker, `{ gameOpen: place, page }`. So Close still goes back through history, and the address can be shared or reloaded and opens the same page.
 - **Back, then Forward** reopens the building at the page the address names.
 - **Focus** goes to the frame's heading when it opens and after each move. When the overlay closes, focus returns to whatever opened it: the card's Open button, or the planet.
@@ -554,6 +555,7 @@ Filled in as each phase lands.
   - **The size report** sets the site pages' scripts apart from the game's (`site pages' JS`).
   - **Checked at `/atiya`:** the redirects, the frame's links and map, the deep links from the site and the game's data all keep the base path.
   - **Tests:** unit (`frameLinks.test.ts`, the address's `page`, "Explore in 3D" opening the page); E2E "planet": the list over the planet, a page in the frame with its focus and announcement, Show contents, Back closing and Forward reopening, a lightbox taking Esc first, Space closing with the focus returning, a link to another building's page, dark smoke and axe in dark, the site's Explore in 3D, a wrong page, a framed page alone, a frame that fails.
+  - **Later (1 October 2026):** moves in the frame flickered (each was a reload, which blanked the frame over the planet). The frame's pages now carry the site's router, so a move swaps the page in place, and the overlay shows the frame only once it's ready. The E2E "reading on the planet" test checks the frame keeps its document across moves.
 - **S6 (30 September 2026):** edit mode for the planet.
   - **Planet** (`/_edit/planet/`, `PlanetEditor.astro`, `scripts/planet.ts`): a card per building with its name, what it holds, its summary, its view and "On the site" (Save the building), its pages with Move up, Move down and "Take off the planet", and Add page (the pages on the site that aren't in a building); then the pages not on the planet, each with "Put in…" (a page that isn't on the site says to place it in Sections first). Each change is one save of `structures/planet.json` through `PUT planet`, checked by the loader (V13 to V16).
   - **A page's settings:** "On the planet" (None or a building), saved with the page by `saveArticle` in the same transaction as its section, with the planet's version in `ifMatch`.

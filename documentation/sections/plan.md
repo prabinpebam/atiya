@@ -147,7 +147,7 @@ How the [spec](spec.md) is built: six phases, in the order the owner asked for t
    - `ArticleLayout` and `IndexLayout` take `frame`: the place bar replaces the header, the footer and the breadcrumbs;
    - each with its story.
 3. **The frame's script** (`src/site/scripts/planetFrame.ts`):
-   - moves within the building with `location.replace`;
+   - moves within the building in place (the site's router swaps the page, replacing its history entry; `location.replace` as the fallback);
    - sorts the links (this building, another building, the site only, elsewhere) and shows the "walk there" note;
    - Space and Esc post `planet:close`, unless the lightbox, a field or a key's default takes them first;
    - each load posts `planet:ready`;

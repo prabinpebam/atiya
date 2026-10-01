@@ -2556,8 +2556,14 @@ test.describe('planet', () => {
     await page.goto('/');
     await openPlanet(page, '/play/?at=lighthouse&open=1');
     const frame = page.frameLocator('[data-testid="reading-frame"]');
+    // the frame's page changes in place (the router swaps it): never a reload, so never a blank frame
+    await expect(frame.getByRole('link', { name: 'Do what makes you proud' })).toBeVisible();
+    const doc = () => page.frames().find((f) => /\/play\/lighthouse\//.test(f.url()))!;
+    await doc().evaluate(() => ((window as unknown as { __kept: number }).__kept = 1));
+    await expect(page.getByTestId('reading-frame')).toHaveAttribute('data-ready', '');
     await frame.getByRole('link', { name: 'Do what makes you proud' }).click();
     await expect(frame.getByRole('heading', { level: 1, name: 'Do what makes you proud' })).toBeFocused();
+    expect(await doc().evaluate(() => (window as unknown as { __kept?: number }).__kept)).toBe(1);
     await expect(page).toHaveURL(/\?at=lighthouse&open=1&page=do-what-makes-you-proud$/);
     await expect(page.getByTestId('reading-frame')).toHaveAttribute('title', /^Do what makes you proud/);
     await expect(page.getByTestId('live-region')).toContainText('Page 1 of 1 in the Lighthouse');
@@ -2571,6 +2577,7 @@ test.describe('planet', () => {
     await frame.getByRole('link', { name: 'Show contents' }).click();
     await expect(frame.getByRole('heading', { level: 1, name: 'Lighthouse' })).toBeVisible();
     await expect(page).toHaveURL(/\?at=lighthouse&open=1$/);
+    expect(await doc().evaluate(() => (window as unknown as { __kept?: number }).__kept)).toBe(1);
     await frame.getByRole('link', { name: 'Do what makes you proud' }).click();
     await expect(frame.getByRole('heading', { level: 1, name: 'Do what makes you proud' })).toBeVisible();
     // Back closes the overlay, whatever was read in it; Forward opens it again, at the same page
