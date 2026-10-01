@@ -69,10 +69,13 @@ const year = new Date().getFullYear();
     letter-spacing: var(--tracking-heading);
   }
 
+  /* each link as wide as its words, an even gap between them, wrapping onto more lines when narrow */
   ul {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-    gap: var(--space-1) var(--space-6);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    align-items: center;
+    gap: var(--space-1) var(--space-8);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -106,6 +109,12 @@ const year = new Date().getFullYear();
   @media (max-width: 40rem) {
     .inner {
       grid-template-columns: 1fr;
+    }
+
+    /* under the name, on a phone: the links start where it does */
+    ul {
+      justify-content: start;
+      column-gap: var(--space-6);
     }
   }
 </style>
