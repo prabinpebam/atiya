@@ -39,7 +39,12 @@
       "summary": "Essays and notes on design leadership, craft and building thoughtful products.",
       "view": "list",
       "site": "writing",
-      "pages": []
+      "pages": [
+        {
+          "type": "article",
+          "id": "the-best-learning-loop-will-win"
+        }
+      ]
     },
     {
       "id": "amphitheater",
