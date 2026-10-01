@@ -24,8 +24,8 @@ interface Props {
   webm?: string;
   /** The provider video id when kind is youtube or vimeo. */
   id?: string;
-  /** The local poster image. */
-  poster: string;
+  /** The local poster image (a video file's own frame, or an embed's picture). */
+  poster?: string;
   /** Responsive sources for the poster. */
   posterSrcset?: string;
   /** The poster's dark mode version, shown on an embed's poster when the page is dark. */
@@ -44,7 +44,7 @@ interface Props {
   credit?: string;
   /** Where the article layout may place it. */
   width?: 'content' | 'popout' | 'wide' | 'full';
-  /** Crop to a shape. */
+  /** Crop to a shape. Left out, an embed is 16:9 and a video file keeps its own shape. */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
   /** Starts a local file silent. */
   muted?: boolean;
@@ -70,11 +70,12 @@ const {
   caption,
   credit,
   width: breakout = 'wide',
-  ratio = '16/9',
+  ratio: shape,
   muted = false,
   loop = false,
   duration,
 } = Astro.props;
+const ratio = shape ?? (kind === 'file' ? undefined : '16/9');
 const play = svgOf('play');
 // 140 → "2:20" on the poster, and "2 minutes 20 seconds" in the link's name
 const mins = duration ? Math.floor(duration / 60) : 0;
@@ -95,11 +96,11 @@ const embedSrc =
 <figure class="video-embed" data-kind={kind} data-breakout={breakout}>
   {
     kind === 'file' ? (
-      src && <Video src={src} webm={webm} poster={poster} width={mediaWidth} height={mediaHeight} captions={captions} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} muted={muted} loop={loop} />
+      (src || webm) && <Video src={src} webm={webm} label={title} poster={poster} width={mediaWidth} height={mediaHeight} captions={captions} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} muted={muted} loop={loop} />
     ) : (
       <div class="embed-box" data-ratio={ratio}>
         <a class="facade" href={pageHref} aria-label={`Play video: ${title}${spoken ? ` (${spoken})` : ''}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
-          <Image src={poster} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} dark={posterDark} />
+          <Image src={poster ?? ''} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} dark={posterDark} />
           <span class="play-mark" aria-hidden="true">
             <svg class="play-icon" viewBox={play.viewBox} focusable="false" data-icon={play.name}><Fragment set:html={play.body} /></svg>
           </span>
@@ -112,7 +113,7 @@ const embedSrc =
       </div>
     )
   }
-  {caption && <Caption credit={credit}>{caption}</Caption>}
+  {(caption || credit) && <Caption credit={credit}>{caption}</Caption>}
 </figure>
 
 <style>

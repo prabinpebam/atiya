@@ -170,7 +170,7 @@ content/media/
 | Photo, painting, render | JPEG (quality 85 or more), WebP or AVIF | 2560 px on the long side, 1.5 MB | The build makes the smaller sizes |
 | Screenshot, UI, diagram with text | PNG or WebP (lossless) | 2560 px, 2 MB | Redraw sensitive diagrams schematically ([confidential work](../ia-navigation/06-content-inventory-and-mapping.md)); don't blur |
 | Vector diagram | SVG | 200 KB | Sanitised: no scripts, handlers or external references |
-| Video | MP4 (H.264, AAC) | 1080p, 20 MB, 90 s | With a poster and captions; longer videos go to YouTube or Vimeo as an `embed` |
+| Video | MP4 (H.264, AAC) or WebM, kept as uploaded | Under 100 MB (GitHub's limit for a file) | With a poster (a frame from it) and a caption; long videos are better on YouTube or Vimeo as an `embed` ([§12](#12-video-files)) |
 | Audio | MP3 | 10 MB | With a transcript |
 | Document | PDF | 2 MB | The résumé; tagged and accessible |
 
@@ -195,7 +195,7 @@ content/media/
 - **Caching:** Astro keeps generated images in `node_modules/.astro/assets`, and CI caches that folder between runs, so an unchanged master isn't processed again.
 - **Crops and focus:** the lead picture's slot crops to its ratio around `focus` (CSS `object-position`, as the `Image` fundamental does); cards never crop ([§9](#9-shapes-thumbnails-and-crops)).
 
-**Other files.** A PDF is published at `dist/media/<id>.pdf` as it is ([§11](#11-files-to-download)). Videos, their captions and posters will follow the same way when the site has a local video.
+**Other files.** A PDF is published at `dist/media/<id>.pdf` as it is ([§11](#11-files-to-download)), and a video file at `dist/media/<id>.<mp4|webm>`, its poster made into sizes like any picture ([§12](#12-video-files)).
 
 ## 6. With a backend
 
@@ -268,4 +268,20 @@ A PDF (the résumé's) is a media item of `kind: "document"`: the file and its s
 - **Where it's published:** at `<base>/media/<id>.pdf` (the résumé: `/media/people/prabin/prabin-pebam-resume.pdf`), so the file keeps its own name when it's saved. The `content-files` integration ([`integrations/content-files.mjs`](https://github.com/prabinpebam/atiya/blob/main/integrations/content-files.mjs)) serves public documents from the dev server and copies them into `dist/media/` at build; nothing else of `content/` is published as a file.
 - **How a page links to it:** a Markdown link with the `ref:` scheme, `[Download the résumé (PDF)](ref:media/people/prabin/prabin-pebam-resume)`, resolved with the base path ([model §5](model.md#5-references-and-targets)). The content check refuses a link to a document that doesn't exist or isn't public, and a sidecar whose file is missing or doesn't share its name.
 - **Budget:** a PDF of at most 2 MB ([§4](#4-formats-and-budgets)); the check holds it.
-- **Edit mode** doesn't manage documents yet: the library lists pictures only. A document is added by putting its file and sidecar in its owner's folder.
+- **Edit mode** doesn't manage documents yet: the library lists pictures and videos only. A document is added by putting its file and sidecar in its owner's folder.
+
+## 12. Video files
+
+A video can be the site's own file, not only a YouTube or Vimeo embed. It's a media item of `kind: "video"`: the file, its poster and its sidecar side by side.
+
+```json
+{ "kind": "video", "file": "product-demo.mp4", "title": "The product demo", "width": 1920, "height": 1080, "duration": 83.4, "poster": { "file": "product-demo.poster.webp" }, "caption": "Shot in Hyderabad.", "visibility": "public" }
+```
+
+- **Formats:** MP4 (H.264) or WebM, kept as uploaded (no re-encoding, no loss). A MOV is saved as an MP4 by copying its streams into the new container with ffmpeg, and an MP4 gets its index moved to the front of the file (`+faststart`), so it starts playing before it's all downloaded. Without ffmpeg an MP4 is kept as it is and a MOV is refused with what to do.
+- **Under 100 MB.** GitHub refuses a file of 100 MiB or more in a push, and the content is published by pushing it, so edit mode refuses a video of 100,000,000 bytes or more, before it's uploaded and again on the server, and says how to make it smaller. Past 50 MB it uploads with a note that GitHub warns about files that big. The content check holds the limit on what's in `content/` (`tests/unit/content.test.ts`). Long or heavy videos are better on YouTube or Vimeo as an `embed`.
+- **Its poster** is a frame from it, a second in (a tenth of the way into a short one, whose first frame is often black), taken by the browser when it's chosen. It's a second master beside it, `<name>.poster.webp`, made into sizes like any picture, and named in the sidecar, as a picture's dark version is ([§10](#10-dark-mode-versions)). The content check refuses a poster the sidecar doesn't name, and one that's missing.
+- **Its words:** a `title` (required: it names the player for a screen reader, and the video in the library), a `caption` and a `credit` (shown centred under it, as under a picture), a licence and a source. Its size and length are measured when it's uploaded, so the page keeps its shape before it loads.
+- **Where it's published:** at `<base>/media/<id>.<mp4|webm>`. The `content-files` integration serves public videos from the dev server, with byte ranges so a reader can seek, and copies them into `dist/media/` at build.
+- **How a page shows it:** a `video` block with `media` (its ID) instead of `embed` ([model §6](model.md#6-blocks)). The block's own `title`, `caption` and `credit` override the video's. The `VideoEmbed` compound draws it with the `Video` fundamental: the browser's own controls, its poster, never autoplaying, in its own shape, with the caption centred under it.
+- **In edit mode** it's uploaded from the same form as a picture (the picker or the library), chosen for a Video block from the palette, and listed in the library with its poster, its length and a Video tag. Its details (the player, the title and the words) save to its sidecar, and Delete removes the video, its poster and its sidecar once nothing uses it ([editor spec §6](../editor/spec.md#6-media)).

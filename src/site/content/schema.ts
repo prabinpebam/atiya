@@ -51,6 +51,29 @@ export const documentMedia = z.strictObject({
 
 const mediaUse = z.strictObject({ media: mediaId, caption: z.string().optional() });
 
+/**
+ * A video file (documentation/content/media.md §12): an MP4 (H.264) or WebM master beside its sidecar,
+ * published at `<base>/media/<id>.<mp4|webm>` and shown by a video block with `media`. Its poster, a frame
+ * from it, is a second master beside it (`<name>.poster.webp`), as a picture's dark version is.
+ */
+export const videoMedia = z.strictObject({
+  kind: z.literal('video'),
+  file: z.string().regex(/^[a-z0-9-]+\.(mp4|webm)$/),
+  /** What it is, in words: the player's name for a screen reader, and its name in the library. */
+  title: z.string().min(1).max(250),
+  /** Its own size (px), so the page keeps its shape before it loads. */
+  width: z.int().min(1),
+  height: z.int().min(1),
+  /** Its length in seconds. */
+  duration: z.number().positive().optional(),
+  poster: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.poster\.(webp|jpg|jpeg|png|avif)$/) }).optional(),
+  caption: z.string().optional(),
+  credit: z.string().optional(),
+  licence: z.strictObject({ name: z.string(), url: z.url().optional(), owner: z.string().optional() }).optional(),
+  source: z.url().optional(),
+  visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
+});
+
 export const block = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('text'),
@@ -65,9 +88,14 @@ export const block = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('carousel'), items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional() }),
   z.strictObject({
     type: z.literal('video'),
-    embed: z.strictObject({ provider: z.enum(['youtube', 'vimeo']), id: z.string().regex(/^[\w-]+$/) }),
-    title: z.string().min(1),
-    poster: mediaId,
+    /** An uploaded video file (a `video` media ID), or else `embed`: exactly one (the loader checks). */
+    media: mediaId.optional(),
+    /** A YouTube or Vimeo video, which needs its `title` and a `poster` picture. */
+    embed: z.strictObject({ provider: z.enum(['youtube', 'vimeo']), id: z.string().regex(/^[\w-]+$/) }).optional(),
+    /** The player's name; for a video file, left out, the file's own title. */
+    title: z.string().min(1).optional(),
+    /** A picture shown before an embed plays; a video file has its own frame. */
+    poster: mediaId.optional(),
     duration: z.number().int().positive().optional(),
     caption: z.string().optional(),
     credit: z.string().optional(),
@@ -240,6 +268,7 @@ export const redirects = z.array(
 
 export type ImageMedia = z.infer<typeof imageMedia>;
 export type DocumentMedia = z.infer<typeof documentMedia>;
+export type VideoMedia = z.infer<typeof videoMedia>;
 export type Block = z.infer<typeof block>;
 export type Article = z.infer<typeof article>;
 export type Person = z.infer<typeof person>;

@@ -9,6 +9,7 @@ import { api, announce, describeIssue, onContentChange, saveStatus, swapRegions,
 import * as ops from '../model/ops';
 import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
+import { isVideoFile } from '../model/upload';
 import { openCrop } from './crop';
 import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
@@ -29,7 +30,7 @@ interface State {
   media: Record<string, { alt: string; thumb: string }>;
 }
 type Refresh = { canvas?: boolean; outline?: boolean; inspector?: boolean };
-type Pick = { mode: 'single' | 'multiple'; min: number; title: string; onChoose: (ids: string[]) => void };
+type Pick = { mode: 'single' | 'multiple'; min: number; title: string; onChoose: (ids: string[]) => void; /** What it takes: pictures (the default) or videos. */ kind?: 'image' | 'video' };
 const STRUCTURE = '/content/structures/site.json';
 const PLANET = '/content/structures/planet.json';
 const ALL: Refresh = { canvas: true, outline: true, inspector: true };
@@ -481,10 +482,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         break;
       }
       case 'paste-picture': {
-        // a picture pasted on the page: the picker, with it in the upload form; uploaded, it's a figure there
+        // a picture (or a video file) pasted on the page: the picker, with it in the upload form; uploaded,
+        // it's a figure (or a video) there
         const at = m.index as number;
         if (!(m.file instanceof File)) break;
-        openPicker({ mode: 'single', min: 1, title: 'Add the pasted picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
+        if (isVideoFile(m.file)) openPicker({ mode: 'single', min: 1, kind: 'video', title: 'Add the pasted video', onChoose: (ids) => insertBlock(at, { type: 'video', media: ids[0], width: 'wide' }) });
+        else openPicker({ mode: 'single', min: 1, title: 'Add the pasted picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
         dialog('editor-picker')?.querySelector('[data-editor-media-grid]')?.dispatchEvent(new CustomEvent('media:file', { detail: { file: m.file } }));
         break;
       }
@@ -566,8 +569,14 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const title = d.querySelector(`#editor-picker-title`);
     if (title) title.textContent = p.title;
     d.querySelectorAll('[data-editor-media]').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    pickKind();
     syncPicker();
     d.showModal();
+  };
+  /** The picker's grid shows only what it takes (and keeps doing so when the grid is drawn again). */
+  const pickKind = () => {
+    const grid = dialog('editor-picker')?.querySelector<HTMLElement>('[data-editor-media-grid]');
+    if (grid) grid.dataset.pickKind = pick?.kind ?? 'image';
   };
   const syncPicker = () => {
     const d = dialog('editor-picker');
@@ -622,10 +631,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (d.editorPick) {
       const path = d.editorPick;
       const multiple = d.pickMode === 'multiple';
+      const kind = d.pickKind === 'video' ? 'video' : 'image';
       return openPicker({
         mode: multiple ? 'multiple' : 'single',
         min: 1,
-        title: multiple ? 'Add pictures' : 'Choose a picture',
+        kind,
+        title: multiple ? 'Add pictures' : kind === 'video' ? 'Choose a video' : 'Choose a picture',
         onChoose: (ids) => {
           if (multiple) {
             const list = (ops.getPath(doc, path) as { media: string }[]) ?? [];
@@ -706,7 +717,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const at = insertAt;
     if (type === 'text' || type === 'heading') return toCanvas({ type: 'pending', index: at, kind: type });
     if (type === 'divider') return insertBlock(at, { type: 'divider' });
-    if (type === 'quote' || type === 'facts' || type === 'tiles' || type === 'video') return dialog(`editor-insert-${type}`)?.showModal();
+    if (type === 'quote' || type === 'facts' || type === 'tiles') return dialog(`editor-insert-${type}`)?.showModal();
+    // a YouTube or Vimeo video: its address and title, then its poster
+    if (type === 'embed') return dialog('editor-insert-video')?.showModal();
+    // a video file: one from the library, or one uploaded there and then
+    if (type === 'video')
+      return openPicker({ mode: 'single', min: 1, kind: 'video', title: 'Choose or upload a video', onChoose: (ids) => insertBlock(at, { type: 'video', media: ids[0], width: 'wide' }) });
     if (type === 'figure')
       return openPicker({ mode: 'single', min: 1, title: 'Choose a picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
     if (type === 'gallery')
@@ -795,11 +811,14 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     }
   });
 
-  // a picture uploaded from the picker is chosen at once
+  // a picture (or video) uploaded from the picker is chosen at once, when it's the kind the picker takes
   on(root, 'media:uploaded' as keyof DocumentEventMap, async (e) => {
     const id = (e as CustomEvent<{ id: string }>).detail.id;
     await swap(['media-grid', 'state']);
+    pickKind();
     announce('Uploaded');
+    const kind = root.querySelector<HTMLElement>(`[data-media-card="${CSS.escape(id)}"]`)?.dataset.mediaKind ?? 'image';
+    if (pick && kind !== (pick.kind ?? 'image')) return announce(kind === 'video' ? 'Uploaded the video: it’s in the library, but this takes a picture.' : 'Uploaded the picture: it’s in the library, but this takes a video.');
     if (pick?.mode === 'single') choose([id]);
     else if (pick) {
       chosen.add(id);

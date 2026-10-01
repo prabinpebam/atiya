@@ -117,7 +117,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 - Adding, removing or moving the planet's buildings: they're the game's ([sections spec §5.1](../sections/spec.md#51-buildings-are-fixed-whats-in-them-is-content)). What each holds is edited on the Planet screen.
 - Menus beyond the header's navigation: the footer's links and the header's action stay in code. The navigation itself is `menus.primary`, edited on the Navigation screen ([sections spec §4](../sections/spec.md#4-the-top-navigation-u2-u4-u5)).
 - Several people at once, roles and permissions, scheduled publishing and comments: there is one owner, and git is the history.
-- Video files: videos are YouTube or Vimeo embeds with a local poster ([media §4](../content/media.md#4-formats-and-budgets)).
+- Video hosting: a video file is the site's own (under 100 MB, [media §12](../content/media.md#12-video-files)); a long one is better as a YouTube or Vimeo embed. Captions files (WebVTT) aren't uploaded yet.
 
 ## 2. The screens
 
@@ -236,7 +236,8 @@ A dialog listing the content model's blocks, in two groups, each with its icon a
 | Text | Divider | Inserted at once |
 | Media | Picture | Opens the media picker (choose or upload), then the width |
 | Media | Gallery, Carousel | The media picker in multiple mode (two or more); a carousel also asks for its label |
-| Media | Video | Asks for the YouTube or Vimeo address, the title and the poster (the media picker) |
+| Media | Video | The media picker for videos: choose one, or upload one there and then (under 100 MB) |
+| Media | YouTube or Vimeo | Asks for the address, the title and the poster (the media picker) |
 
 ### 3.5 The inspector
 
@@ -249,7 +250,7 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 | Picture | The picture (media field: thumbnail, Replace, and its alt text); width (content, popout, wide, full); show the caption and credit (off: nothing under the picture, nor in the lightbox); caption and credit (each left empty to use the picture's own); open in the lightbox |
 | Gallery | Its pictures (add, remove, reorder); layout (grid, mosaic, row); fit (cover, or contain for artwork); width; show the captions (off: no caption for the set, none for its pictures in the lightbox); caption; open in the lightbox |
 | Carousel | Its pictures; label; peek; pager (dots, filmstrip, wrapping filmstrip); arrows; show the captions (off: none under any slide, nor in the lightbox); open in the lightbox |
-| Video | Address (YouTube or Vimeo; the provider and ID are taken from it); title; poster (media field); length (minutes and seconds); show the caption and credit; caption; credit; width |
+| Video | A video file: the video (thumbnail, its title, Replace from the videos); title (left empty, the video's own); show the caption and credit; caption and credit (each left empty to use the video's own); width. An embed: address (YouTube or Vimeo; the provider and ID are taken from it); title; poster (media field); length (minutes and seconds); show the caption and credit; caption; credit; width |
 | Quote | Style (block or pull); who said it. Its words are edited on the page |
 | Facts | Its pairs: add, remove, reorder (one to six) |
 | Divider | None |
@@ -308,8 +309,9 @@ The site structure ([structures §2](../content/ia.md#2-the-site-structure)) in 
   - named from the file name (lowercase, hyphenated, unique in the folder; a pasted screenshot, often just "image.png", is `pasted-picture-<date>`);
   - with its JSON sidecar beside it, both written in one transaction.
 - **A picture pasted in the canvas** (a screenshot, a copied image, with no text beside it) opens the picker with it in the upload form, previewed; uploaded, it becomes a figure after the block being edited (or in place of a new, empty paragraph). The rules (formats, what a paste holds, the names, the preview's line) are pure, in `model/upload.ts`, and unit-tested.
+- **Videos** ([media §12](../content/media.md#12-video-files)) are uploaded from the same form: an MP4, WebM or MOV under 100 MB, GitHub's limit for a file. A bigger one is refused at once, before anything is sent (and again on the server), with how to make it smaller; one past 50 MB uploads with GitHub's warning. The chosen video plays in the form, with its size, format, length and weight; one this browser can't play is refused, since a reader's browser couldn't play it either. The form asks for its **title** (not alt text), and takes a frame from it as its poster. The server keeps the file as it is (a MOV becomes an MP4, its streams copied by ffmpeg; an MP4 gets its index at the front), and writes it, its poster and its sidecar in one transaction. In the library a video is a card with its poster, a Video tag and its length; its details are the video itself, its title, caption, credit, licence and source, Used in, and Delete (the video, its poster and its sidecar). The picker shows only what its field or block takes: pictures, or videos. A video file pasted in the canvas becomes a video block the same way a picture becomes a figure.
 - **Media IDs never change.** There's no rename; replacing a picture keeps its ID and writes a new master.
-- **The media picker** (in the article editor and the settings) is the same library in a dialog, with upload, in single or multiple mode.
+- **The media picker** (in the article editor and the settings) is the same library in a dialog, with upload, in single or multiple mode, for pictures or for videos.
 
 ### 6.1 The crop
 

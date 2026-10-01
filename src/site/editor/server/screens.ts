@@ -4,7 +4,7 @@
  */
 import { content } from '../../content/repository';
 import { ContentError, isPublished, type ContentIndex, type Issue } from '../../content/load';
-import { picture } from '../../content/pictures';
+import { picture, video } from '../../content/pictures';
 import type { Article } from '../../content/schema';
 import { hubs } from '../model/structure';
 import { ownerLabel, ownerOf, references } from '../model/references';
@@ -101,10 +101,14 @@ export function sectionOptions(index: ContentIndex) {
 
 export interface LibraryPicture {
   id: string;
+  /** A picture, or a video file (media.md §12). */
+  kind: 'image' | 'video';
   owner: string;
   ownerLabel: string;
+  /** Its thumbnail (a video's poster frame); empty for a video without one. */
   thumb: string;
   src: string;
+  /** A picture's alt text; a video's title. */
   alt: string;
   decorative: boolean;
   width: number;
@@ -113,18 +117,28 @@ export interface LibraryPicture {
   used: boolean;
   /** It has a dark mode version. */
   dark?: boolean;
+  /** A video's length (s). */
+  duration?: number;
 }
 
-/** Every picture, for the library and the picker: grouped by folder (the article being edited first, when there is one). */
+/** Every picture and video, for the library and the picker: grouped by folder (the article being edited first, when there is one). */
 export async function mediaCards(index: ContentIndex, first?: string): Promise<LibraryPicture[]> {
   const refs = references(index);
-  const cards = await Promise.all(
-    [...index.media.values()].map(async (m) => {
+  const pictures = await Promise.all(
+    [...index.media.values()].map(async (m): Promise<LibraryPicture> => {
       const p = await picture(m.id, 'card');
       const owner = ownerOf(m.id);
-      return { id: m.id, owner, ownerLabel: ownerLabel(index, owner), thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height, used: refs.has(m.id), ...(m.darkMaster ? { dark: true } : {}) };
+      return { id: m.id, kind: 'image', owner, ownerLabel: ownerLabel(index, owner), thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height, used: refs.has(m.id), ...(m.darkMaster ? { dark: true } : {}) };
     }),
   );
+  const videos = await Promise.all(
+    [...index.videos.values()].map(async (v): Promise<LibraryPicture> => {
+      const f = await video(v.id, 'card');
+      const owner = ownerOf(v.id);
+      return { id: v.id, kind: 'video', owner, ownerLabel: ownerLabel(index, owner), thumb: f.poster?.thumb ?? '', src: f.src, alt: v.title, decorative: false, width: v.width, height: v.height, used: refs.has(v.id), ...(v.duration ? { duration: v.duration } : {}) };
+    }),
+  );
+  const cards = [...pictures, ...videos];
   const rank = (c: LibraryPicture) => (c.owner === first ? 0 : 1);
   return cards.sort((a, b) => rank(a) - rank(b) || a.ownerLabel.localeCompare(b.ownerLabel) || a.id.localeCompare(b.id));
 }

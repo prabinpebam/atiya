@@ -17,7 +17,7 @@ import Divider from '../components/fundamentals/Divider.astro';
 import { withBase } from '../design/meta';
 import { renderInlineMarkdown, renderMarkdown } from './markdown';
 import { headingId } from './load';
-import { picture, type Picture } from './pictures';
+import { picture, video, type Picture, type VideoFile } from './pictures';
 import { canonicalPath, documentHref } from './repository';
 import type { Block } from './schema';
 
@@ -52,7 +52,7 @@ const resolveRef = (ref: string) => {
 type View =
   | { b: Extract<Block, { type: 'figure' }>; p: Picture }
   | { b: Extract<Block, { type: 'gallery' | 'carousel' }>; ps: Picture[] }
-  | { b: Extract<Block, { type: 'video' }>; p: Picture }
+  | { b: Extract<Block, { type: 'video' }>; p?: Picture; v?: VideoFile }
   | { b: Extract<Block, { type: 'heading' }>; id: string }
   | { b: Exclude<Block, { type: 'figure' | 'gallery' | 'carousel' | 'video' | 'heading' }> };
 
@@ -66,7 +66,8 @@ const views: View[] = await Promise.all(
       case 'carousel':
         return { b, ps: await Promise.all(b.items.map((i) => picture(i.media, 'wide'))) };
       case 'video':
-        return { b, p: await picture(b.poster, b.width ?? 'wide') };
+        // a video file, with its own frame for a poster; or an embed, with its poster picture
+        return b.media ? { b, v: await video(b.media, b.width ?? 'wide') } : { b, p: await picture(b.poster!, b.width ?? 'wide') };
       case 'heading':
         return { b, id: b.id ?? headingId(b.text) };
       default:
@@ -81,8 +82,9 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
   views.map((v, i) => [
     <Fragment set:html={mark(i)} />,
     (() => {
-    if ('p' in v && v.b.type === 'figure') {
-      const { b, p } = v;
+    if ('p' in v && v.p && v.b.type === 'figure') {
+      const { b } = v;
+      const p = v.p;
       return (
         <Figure
           src={p.src}
@@ -112,13 +114,30 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
       const items = ps.map((p, n) => ({ ...p, caption: b.showCaption === false ? '' : (b.items[n].caption ?? p.caption ?? '') }));
       return <Carousel items={items} label={b.label} peek={b.peek} pager={b.pager} arrows={b.arrows} sizes={SIZES.wide} lightbox={b.lightbox ? `${lightbox}-carousel-${i}` : undefined} />;
     }
-    if ('p' in v && v.b.type === 'video') {
+    if (v.b.type === 'video' && 'v' in v && v.v) {
+      const { b, v: f } = v;
+      return (
+        <VideoEmbed
+          kind="file"
+          src={f.type === 'video/mp4' ? f.src : undefined}
+          webm={f.type === 'video/webm' ? f.src : undefined}
+          title={b.title ?? f.title}
+          poster={f.poster?.src}
+          mediaWidth={f.width}
+          mediaHeight={f.height}
+          caption={b.showCaption === false ? undefined : (b.caption ?? f.caption)}
+          credit={b.showCaption === false ? undefined : (b.credit ?? f.credit)}
+          width={b.width ?? 'wide'}
+        />
+      );
+    }
+    if ('p' in v && v.p && v.b.type === 'video') {
       const { b, p } = v;
       return (
         <VideoEmbed
-          kind={b.embed.provider}
-          id={b.embed.id}
-          title={b.title}
+          kind={b.embed!.provider}
+          id={b.embed!.id}
+          title={b.title ?? ''}
           poster={p.src}
           posterSrcset={p.srcset}
           posterDark={p.dark}

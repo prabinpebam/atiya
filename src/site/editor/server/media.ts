@@ -9,11 +9,12 @@
  * copy, never in place (§6.1); a picture is deleted only when nothing refers to it (the content check
  * refuses a deletion that would leave a reference).
  */
-import { imageMedia, type ImageMedia } from '../../content/schema';
+import { imageMedia, videoMedia, type ImageMedia, type VideoMedia } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { readSnapshot } from '../../content/source';
 import { slugify, unique } from '../model/ids';
 import { ratioLabel, type Rect } from '../model/crop';
+import { videoSizeIssue } from '../model/upload';
 
 export const MAX_BYTES = 1.5 * 1024 * 1024;
 export const MAX_SIDE = 2560;
@@ -112,16 +113,145 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
   return r.ok ? { ...r, id: `${u.owner}/${name}` } : r;
 }
 
-export async function saveSidecar(id: string, sidecar: ImageMedia, ifMatch: Record<string, string | null>): Promise<Result> {
+export async function saveSidecar(id: string, sidecar: ImageMedia | VideoMedia, ifMatch: Record<string, string | null>): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = `/content/media/${id}.json`;
-  const current = readDoc<ImageMedia>(key);
+  const current = readDoc<ImageMedia | VideoMedia>(key);
   if (!current) return refuse(key.slice(1), "doesn't exist");
+  if (current.value.kind === 'video') {
+    // a video's file, size, length and poster are its upload's: the details form changes only its words
+    const v = current.value;
+    const s = sidecar as Partial<VideoMedia>;
+    const next: VideoMedia = {
+      kind: 'video',
+      file: v.file,
+      title: (s.title ?? v.title).trim(),
+      width: v.width,
+      height: v.height,
+      ...(v.duration ? { duration: v.duration } : {}),
+      ...(v.poster ? { poster: v.poster } : {}),
+      ...(s.caption?.trim() ? { caption: s.caption.trim() } : {}),
+      ...(s.credit?.trim() ? { credit: s.credit.trim() } : {}),
+      ...(s.licence?.name ? { licence: s.licence } : {}),
+      ...(s.source ? { source: s.source } : {}),
+      visibility: s.visibility ?? v.visibility,
+    };
+    return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
+  }
+  const image = current.value as ImageMedia;
   // the master's file name is fixed (replacing a picture keeps its id and file), and its dark version is
   // set only by setDark and removeDark: the details form never changes either
-  const { dark: _ignored, ...rest } = sidecar;
-  const next: ImageMedia = { ...rest, kind: 'image', file: current.value.file, ...(current.value.dark ? { dark: current.value.dark } : {}) };
+  const { dark: _ignored, ...rest } = sidecar as ImageMedia;
+  const next: ImageMedia = { ...rest, kind: 'image', file: image.file, ...(image.dark ? { dark: image.dark } : {}) };
   return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
+}
+
+// ---------- videos (documentation/content/media.md §12) ----------
+
+export interface VideoUpload {
+  file: { name: string; bytes: Buffer };
+  owner: string;
+  title: string;
+  caption?: string;
+  /** What the browser read of it: its size (px) and length (s). */
+  width: number;
+  height: number;
+  duration?: number;
+  /** A frame from it, taken by the browser. */
+  poster?: Buffer;
+}
+
+/** ffmpeg on the PATH (the owner's machine has it), or null: it's only needed for a MOV, and to make an MP4 start sooner. */
+async function ffmpeg(): Promise<string | null> {
+  const { execFileSync } = await import('node:child_process');
+  try {
+    execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' });
+    return 'ffmpeg';
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * An MP4 or MOV rewritten as an MP4 with its index at the front (`+faststart`), so it plays before it's all
+ * downloaded: the streams copied as they are (no re-encoding, no loss, the same size), or null when ffmpeg
+ * isn't there or can't.
+ */
+async function remux(bytes: Buffer, ext: string): Promise<Buffer | null> {
+  const bin = await ffmpeg();
+  if (!bin) return null;
+  const { mkdtempSync, readFileSync, rmSync, writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const { execFile } = await import('node:child_process');
+  const dir = mkdtempSync(join(tmpdir(), 'video-'));
+  try {
+    const src = join(dir, `in.${ext}`);
+    const out = join(dir, 'out.mp4');
+    writeFileSync(src, bytes);
+    await new Promise<void>((resolve, reject) => execFile(bin, ['-y', '-v', 'error', '-i', src, '-map', '0', '-c', 'copy', '-movflags', '+faststart', out], { timeout: 120_000 }, (e) => (e ? reject(e) : resolve())));
+    return readFileSync(out);
+  } catch {
+    return null;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+export async function uploadVideo(u: VideoUpload): Promise<Result & { id?: string }> {
+  if (!OWNER.test(u.owner)) return refuse('content/media', `"${u.owner}" isn't a media folder (shared, site, articles/<id> or people/<id>)`, 'owner');
+  const tooBig = videoSizeIssue(u.file.bytes.length);
+  if (tooBig) return refuse('content/media', tooBig, 'file');
+  const ext = /\.([a-z0-9]+)$/i.exec(u.file.name)?.[1]?.toLowerCase() ?? '';
+  if (!['mp4', 'm4v', 'webm', 'mov'].includes(ext)) return refuse('content/media', `${u.file.name} is a video the site can't show: save it as an MP4 (H.264) or a WebM`, 'file');
+  if (!(u.width >= 1 && u.height >= 1)) return refuse('content/media', "its size wasn't read: choose it again", 'file');
+  let bytes = u.file.bytes;
+  let out: 'mp4' | 'webm' = ext === 'webm' ? 'webm' : 'mp4';
+  if (ext !== 'webm') {
+    const fast = await remux(bytes, ext);
+    // a MOV can only be shown as an MP4; an MP4 that can't be rewritten is kept as it is
+    if (fast) bytes = fast;
+    else if (ext === 'mov') return refuse('content/media', "a MOV is saved as an MP4, which needs ffmpeg: install it, or save the video as an MP4 (H.264), then choose it again", 'file');
+    out = 'mp4';
+  }
+  const again = videoSizeIssue(bytes.length);
+  if (again) return refuse('content/media', again, 'file');
+  const snap = readSnapshot();
+  const folder = `/content/media/${u.owner}/`;
+  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark|\.poster)?\.\w+$/, '')));
+  const name = unique(slugify(u.file.name.replace(/\.[^.]+$/, '')) || 'video', taken);
+  let poster: Awaited<ReturnType<typeof toMaster>> | null = null;
+  if (u.poster?.length) {
+    try {
+      poster = await toMaster(u.poster);
+    } catch {
+      poster = null;
+    }
+  }
+  const sidecar: VideoMedia = {
+    kind: 'video',
+    file: `${name}.${out}`,
+    title: u.title.trim(),
+    width: Math.round(u.width),
+    height: Math.round(u.height),
+    ...(u.duration && u.duration > 0 ? { duration: Math.round(u.duration * 100) / 100 } : {}),
+    ...(poster ? { poster: { file: `${name}.poster.webp` } } : {}),
+    ...(u.caption?.trim() ? { caption: u.caption.trim() } : {}),
+    visibility: 'public',
+  };
+  const parsed = videoMedia.safeParse(sidecar);
+  if (!parsed.success) return { ok: false, status: 422, issues: parsed.error.issues.map((i) => ({ file: `content/media/${u.owner}/${name}.json`, path: i.path.join('.'), message: i.message })) };
+  const videoKey = `${folder}${sidecar.file}`;
+  const sidecarKey = `${folder}${name}.json`;
+  const changes: Change[] = [{ key: videoKey, bytes }, { key: sidecarKey, bytes: jsonBytes(sidecar) }];
+  const ifMatch: Record<string, string | null> = { [videoKey]: null, [sidecarKey]: null };
+  if (poster) {
+    const posterKey = `${folder}${name}.poster.webp`;
+    changes.push({ key: posterKey, bytes: poster.bytes });
+    ifMatch[posterKey] = null;
+  }
+  const r = await commit({ changes, ifMatch });
+  return r.ok ? { ...r, id: `${u.owner}/${name}` } : r;
 }
 
 /** Replaces a picture's master, keeping its id and its sidecar (its dark version stays as it is). */
@@ -307,19 +437,19 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   return res.ok ? { ...res, id: newId, width: master.width, height: master.height } : res;
 }
 
-/** Deletes a picture: its sidecar, its master and its dark version. The content check refuses it while anything refers to it. */
+/** Deletes a picture (its sidecar, master and dark version) or a video (its sidecar, file and poster). The content check refuses it while anything refers to it. */
 export async function deleteMedia(id: string): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = `/content/media/${id}.json`;
-  const sc = readDoc<ImageMedia>(key);
+  const sc = readDoc<ImageMedia | VideoMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
   const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);
-  const darkKey = darkKeyOf(id, sc.value);
+  const extraKey = sc.value.kind === 'video' ? (sc.value.poster ? key.replace(/[^/]+\.json$/, sc.value.poster.file) : null) : darkKeyOf(id, sc.value);
   const changes: Change[] = [
     { key, bytes: null },
     { key: masterKey, bytes: null },
-    ...(darkKey ? [{ key: darkKey, bytes: null }] : []),
+    ...(extraKey ? [{ key: extraKey, bytes: null }] : []),
   ];
-  const ifMatch: Record<string, string | null> = { [key]: sc.version, [masterKey]: versionOf(readFile(masterKey)), ...(darkKey ? { [darkKey]: versionOf(readFile(darkKey)) } : {}) };
+  const ifMatch: Record<string, string | null> = { [key]: sc.version, [masterKey]: versionOf(readFile(masterKey)), ...(extraKey ? { [extraKey]: versionOf(readFile(extraKey)) } : {}) };
   return commit({ changes, ifMatch });
 }

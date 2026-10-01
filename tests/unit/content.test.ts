@@ -15,6 +15,7 @@ import { pageMeasure, pictureCount, readingMinutes } from '../../src/site/conten
 import { article, block, siteStructure, type Article, type SiteStructure } from '../../src/site/content/schema';
 import { exploreHref, siteNav } from '../../src/site/content/navigation';
 import { renderInlineMarkdown } from '../../src/site/content/markdown';
+import { MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 
 const ROOT = join(__dirname, '../..');
 const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => (statSync(join(dir, n)).isDirectory() ? walk(join(dir, n)) : [join(dir, n)]));
@@ -224,6 +225,35 @@ describe('the loader checks what it is given', () => {
     expect(problems({ ...base, '/content/media/articles/a/pic.json': { ...pic, dark: { file: 'pic-dark.webp' } } }, both).join('\n')).toMatch(/dark\.file/);
   });
 
+  it('a video file (media.md §12): its sidecar names it and its poster; a video block shows it, or embeds one with its title and poster', () => {
+    const article = base['/content/articles/a.json'];
+    const clip = { '/content/media/articles/a/clip.json': { kind: 'video', file: 'clip.webm', title: 'A walk through', width: 1280, height: 720, duration: 12.5, poster: { file: 'clip.poster.webp' }, caption: 'The demo.', visibility: 'public' } };
+    const files = new Set([...masters, '/content/media/articles/a/clip.webm', '/content/media/articles/a/clip.poster.webp']);
+    const showing = { ...article, body: [{ type: 'video', media: 'articles/a/clip' }] };
+    const c = loadContent({ ...base, ...clip, '/content/articles/a.json': showing }, files);
+    expect(c.videos.get('articles/a/clip')).toMatchObject({ title: 'A walk through', master: '/content/media/articles/a/clip.webm', posterMaster: '/content/media/articles/a/clip.poster.webp' });
+    expect(c.media.has('articles/a/clip')).toBe(false);
+    // its files: the video and the poster it names, nothing else
+    expect(problems({ ...base, ...clip }, masters).join('\n')).toMatch(/clip\.json: its video content\/media\/articles\/a\/clip\.webm is missing/);
+    expect(problems({ ...base, ...clip }, new Set([...masters, '/content/media/articles/a/clip.webm'])).join('\n')).toMatch(/poster\.file: its poster .* is missing/);
+    expect(problems(base, new Set([...masters, '/content/media/articles/a/clip.poster.webp'])).join('\n')).toMatch(/clip\.poster\.webp: a master without its sidecar/);
+    const noPoster = { '/content/media/articles/a/clip.json': { ...clip['/content/media/articles/a/clip.json'], poster: undefined } };
+    expect(problems({ ...base, ...noPoster }, files).join('\n')).toMatch(/clip\.poster\.webp: a poster its video doesn't name/);
+    expect(problems({ ...base, '/content/media/articles/a/clip.json': { ...clip['/content/media/articles/a/clip.json'], file: 'clip.mov' } }, files).join('\n')).toMatch(/file/);
+    // the block: a video file or an embed, not both nor neither; an embed with its title and poster; the file has to exist
+    const embed = { provider: 'youtube', id: 'abc123' };
+    const block = (b: object) => ({ ...base, ...clip, '/content/articles/a.json': { ...article, body: [{ type: 'video', ...b }] } });
+    expect(problems(block({ media: 'articles/a/clip', embed, title: 'T', poster: 'articles/a/pic' }), files).join('\n')).toMatch(/one of the two/);
+    expect(problems(block({}), files).join('\n')).toMatch(/one of the two/);
+    expect(problems(block({ embed, poster: 'articles/a/pic' }), files).join('\n')).toMatch(/body\.0\.title: an embedded video needs its title/);
+    expect(problems(block({ embed, title: 'T' }), files).join('\n')).toMatch(/body\.0\.poster: an embedded video needs a poster/);
+    expect(problems(block({ embed, title: 'T', poster: 'articles/a/pic' }), files)).toEqual([]);
+    expect(problems(block({ media: 'articles/a/nope' }), files).join('\n')).toMatch(/the video "articles\/a\/nope" doesn't exist/);
+    // a picture isn't a video, nor a video a picture
+    expect(problems(block({ media: 'articles/a/pic' }), files).join('\n')).toMatch(/the video "articles\/a\/pic" doesn't exist/);
+    expect(problems({ ...base, ...clip, '/content/articles/a.json': { ...article, body: [{ type: 'figure', media: 'articles/a/clip' }] } }, files).join('\n')).toMatch(/media "articles\/a\/clip" doesn't exist/);
+  });
+
   it('a draft can be placed: its address is resolved and checked, but only published items are built', () => {
     const article = base['/content/articles/a.json'];
     const c = loadContent({ ...base, '/content/articles/a.json': { ...article, status: 'draft' } }, masters);
@@ -274,6 +304,11 @@ describe('the content in content/', () => {
     const pdfs = walk(join(ROOT, 'content/media')).filter((f) => f.endsWith('.pdf'));
     const over = pdfs.filter((f) => statSync(f).size > 2 * 1024 * 1024 || readFileSync(f).subarray(0, 5).toString('latin1') !== '%PDF-').map(key);
     expect(over).toEqual([]);
+  });
+
+  it('every video is under 100 MB, so GitHub takes it (media.md §12)', () => {
+    const videos = walk(join(ROOT, 'content/media')).filter((f) => /\.(mp4|webm)$/.test(f));
+    expect(videos.filter((f) => statSync(f).size >= MAX_VIDEO_BYTES).map(key)).toEqual([]);
   });
 
   it('the article reads in a few minutes, from its words', () => {

@@ -832,6 +832,58 @@ test.describe('editor', () => {
     expect(blocks()[p + 1]).toMatchObject({ type: 'figure', media: expect.stringMatching(new RegExp(`^articles/${ARTICLE}/pasted-picture-\\d{4}-\\d{2}-\\d{2}(-\\d+)?$`)) });
   });
 
+  test('a video file: uploaded from the palette (under 100 MB, its poster taken from it), shown on the page with its caption centred under it, playable with seeking, and listed in Media', async ({ page }) => {
+    test.setTimeout(120_000);
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; media?: string; width?: string }[];
+    const count = blocks().length;
+    await page.locator('[data-editor-outline] [data-editor-add-at]').click();
+    await page.locator('#editor-palette [data-editor-add="video"]').click();
+    const picker = page.locator('#editor-picker');
+    await expect(picker).toBeVisible();
+    // the picker shows videos only: no picture is offered for a video block
+    await expect(picker.locator('[data-media-kind="image"]').first()).toBeHidden();
+    await picker.locator('summary', { hasText: 'Upload a picture or a video' }).click();
+    await picker.locator('[data-editor-upload] input[type="file"]').setInputFiles(join(process.cwd(), 'tests/e2e/fixtures/clip.webm'));
+    await expect(picker.locator('[data-upload-facts]')).toHaveText(/^320 × 180 px, WebM, 0:02, \d+(\.\d)? MB\.$/);
+    await expect(picker.locator('[data-upload-video]')).toBeVisible();
+    // a video asks for its title, not alt text
+    await expect(picker.getByLabel('Alt text')).toBeHidden();
+    await picker.getByRole('button', { name: 'Upload it' }).click();
+    await expect(picker.locator('[data-editor-form-issue]')).toHaveText(/Give the video a title/);
+    await picker.getByLabel('Title').fill('A test pattern');
+    await picker.getByLabel('Caption').fill('Two seconds of colour bars.');
+    await picker.getByRole('button', { name: 'Upload it' }).click();
+    await expect.poll(() => blocks().length, { timeout: 30_000 }).toBe(count + 1);
+    const id = `articles/${ARTICLE}/clip`;
+    expect(blocks().at(-1)).toEqual({ type: 'video', media: id, width: 'wide' });
+    const sidecar = readJson(join(FIXTURE, `content/media/${id}.json`));
+    expect(sidecar).toMatchObject({ kind: 'video', file: 'clip.webm', title: 'A test pattern', width: 320, height: 180, poster: { file: 'clip.poster.webp' }, caption: 'Two seconds of colour bars.' });
+    expect(sidecar.duration).toBeCloseTo(2, 0);
+
+    // on the page (the canvas is the page): a player named by its title, its poster, its caption centred under it
+    const player = frame(page).locator('video[aria-label="A test pattern"]');
+    await expect(player).toBeVisible({ timeout: 20_000 });
+    await expect(player).toHaveAttribute('poster', /.+/);
+    const src = await player.locator('source').getAttribute('src');
+    expect(src).toMatch(new RegExp(`/media/${id}\\.webm$`));
+    const caption = player.locator('xpath=ancestor::figure[1]').locator('figcaption');
+    await expect(caption).toHaveText('Two seconds of colour bars.');
+    expect(await caption.evaluate((el) => getComputedStyle(el).textAlign)).toBe('center');
+    // it plays: the file is served, with ranges (seeking)
+    expect(await player.evaluate((v: HTMLVideoElement) => new Promise((ok) => (v.readyState >= 1 ? ok(v.videoWidth) : v.addEventListener('loadedmetadata', () => ok(v.videoWidth)))))).toBe(320);
+    const part = await page.request.get(src!, { headers: { Range: 'bytes=0-99' } });
+    expect(part.status()).toBe(206);
+    expect((await part.body()).length).toBe(100);
+
+    // in Media: a video card, its details (the player, its title) and where it's used
+    await page.goto(`/_edit/media/?id=${id}`);
+    await expect(page.getByRole('button', { name: 'Video: A test pattern' })).toBeVisible();
+    await expect(page.locator('[data-editor-media-details] video')).toBeVisible();
+    await expect(page.locator('[data-editor-media-details]').getByLabel('Title')).toHaveValue('A test pattern');
+    await expect(page.getByRole('button', { name: 'Delete the video' })).toBeDisabled();
+  });
+
   test("a picture's dark version: added in Media, shown on the site in dark mode (the lightbox too) and not in light, and removed", async ({ page, context }) => {
     const blocks = readJson(articleFile()).body as { type: string; media?: string; lightbox?: boolean }[];
     const fig = blocks.find((b) => b.type === 'figure' && b.lightbox)!;

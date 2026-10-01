@@ -4,7 +4,8 @@
  * point (click where a crop must keep), its alt text, caption, credit, licence and source, where it's
  * used, Crop (a cropped copy, or a copy cut again from its original; with the copies cut from it, or the
  * picture it was cut from), its dark mode version (added, replaced or removed; shown beside the picture,
- * each on a page of its own mode), Replace and Delete. The details save to the picture's sidecar, so they
+ * each on a page of its own mode), Replace and Delete. A video file's details are the video itself
+ * (playable), its title, caption, credit, licence and source, where it's used, and Delete. The details save to the sidecar, so they
  * aren't part of any article's undo. Delete is offered only when nothing refers to it.
  * @tier editor
  * @a11y The focus point is set with a button over the picture (a click places it; the arrow keys move it by 5%, Home puts it back in the centre), and the point is read out in words.
@@ -22,8 +23,10 @@ import Button from '../../components/fundamentals/Button.astro';
 import Image from '../../components/fundamentals/Image.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
+import Video from '../../components/fundamentals/Video.astro';
 import { withBase } from '../../design/meta';
-import type { ImageMedia } from '../../content/schema';
+import type { ImageMedia, VideoMedia } from '../../content/schema';
+import { clock, megabytes } from '../model/upload';
 
 export interface PictureDetails {
   id: string;
@@ -38,9 +41,23 @@ export interface PictureDetails {
   dark?: { src: string; srcset: string; width: number; height: number };
 }
 
+/** A video file's details (media.md §12): where it plays from, its poster, and its sidecar. */
+export interface VideoDetails {
+  id: string;
+  src: string;
+  type: 'video/mp4' | 'video/webm';
+  poster?: string;
+  /** Its size on disk (bytes). */
+  bytes: number;
+  sidecar: VideoMedia;
+  version: string;
+}
+
 interface Props {
   /** The open picture, or none (the pane then says how to open one). */
   picture: PictureDetails | null;
+  /** The open video file, instead of a picture. */
+  video?: VideoDetails | null;
   /** What refers to it: a label and the edit-mode screen to change it (from /_edit/). */
   usedIn: { label: string; href: string }[];
   /** The cropped copies cut from it, by media ID. */
@@ -49,17 +66,74 @@ interface Props {
   original?: { id: string; exists: boolean };
 }
 
-const { picture, usedIn, copies = [], original } = Astro.props;
+const { picture, video, usedIn, copies = [], original } = Astro.props;
 const media = (id: string) => withBase(`/_edit/media/?id=${id}`);
 const sc = picture?.sidecar;
 const [fx, fy] = (sc?.focus ?? '50% 50%').split(' ').map((v) => parseInt(v, 10));
-const name = picture?.id.split('/').pop();
-const state = picture ? JSON.stringify({ id: picture.id, version: picture.version, sidecar: sc }).replace(/</g, '\\u003c') : '';
+const name = (picture ?? video)?.id.split('/').pop();
+const state = picture ? JSON.stringify({ id: picture.id, version: picture.version, sidecar: sc }).replace(/</g, '\\u003c') : video ? JSON.stringify({ id: video.id, version: video.version, sidecar: video.sidecar }).replace(/</g, '\\u003c') : '';
+const vs = video?.sidecar;
+const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(vs.duration) : '', megabytes(video!.bytes), vs.file.endsWith('.webm') ? 'WebM' : 'MP4'].filter(Boolean).join(' \u00b7 ') : '';
 ---
 
-<div class="details" data-region="media-details" data-editor-media-details={picture?.id ?? ''}>
+<div class="details" data-region="media-details" data-editor-media-details={(picture ?? video)?.id ?? ''}>
   {
-    picture && sc ? (
+    video && vs ? (
+      <>
+        <form class="form" data-editor-media-form novalidate aria-labelledby="media-details-title">
+          <div class="head">
+            <Heading level={2} size="h4" id="media-details-title">{name}</Heading>
+            <Text variant="small" tone="muted">{`${video.id} \u00b7 ${videoFacts}`}</Text>
+          </div>
+          <Video src={video.type === 'video/mp4' ? video.src : undefined} webm={video.type === 'video/webm' ? video.src : undefined} label={vs.title} poster={video.poster} width={vs.width} height={vs.height} />
+          <TextField label="Title" name="title" value={vs.title} hint="What the video is, in a few words: it names the player for someone who can't see it (250 characters at most)." />
+          <TextField label="Caption" name="caption" value={vs.caption ?? ''} multiline rows={2} optional hint="Shown centred under the video, unless a page gives its own." />
+          <TextField label="Credit" name="credit" value={vs.credit ?? ''} optional hint="Who made it, as it should be shown." />
+          <TextField label="Licence" name="licence.name" value={vs.licence?.name ?? ''} optional hint="CC BY 4.0, All rights reserved, and so on." />
+          <TextField label="Licence address" name="licence.url" type="url" value={vs.licence?.url ?? ''} optional />
+          <TextField label="Source" name="source" type="url" value={vs.source ?? ''} optional hint="Where it came from, if someone else made it." />
+          <p class="issue" role="alert" data-editor-form-issue hidden />
+          <div class="actions">
+            <Button variant="primary" type="submit">Save the details</Button>
+          </div>
+        </form>
+
+        <section class="part" aria-labelledby="media-used-title">
+          <Heading level={3} size="ui" id="media-used-title">Used in</Heading>
+          {usedIn.length ? (
+            <ul class="list">
+              {usedIn.map((r) => (
+                <li>
+                  <Link href={withBase(`/_edit/${r.href}`)} variant="standalone">{r.label}</Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Text variant="ui" tone="muted">Nothing uses it yet.</Text>
+          )}
+        </section>
+
+        <section class="part" aria-labelledby="media-delete-title">
+          <Heading level={3} size="ui" id="media-delete-title">Delete</Heading>
+          {usedIn.length ? (
+            <Text variant="small" tone="muted">It can't be deleted while something uses it. Take it out of what's listed under Used in first.</Text>
+          ) : (
+            <Text variant="small" tone="muted">Deletes the video, its poster and its details from content/. Publishing then removes it from the site.</Text>
+          )}
+          <div class="actions">
+            <Button variant="secondary" icon="delete" disabled={usedIn.length > 0} data-dialog-open="delete-media">Delete the video</Button>
+          </div>
+          <Dialog id="delete-media" title="Delete this video?" size="sm">
+            <Text variant="ui">{`${name}, its poster and its details will be deleted from content/. If it's on the site already, Discard on the Publish screen brings it back until you publish.`}</Text>
+            <Fragment slot="actions">
+              <Button variant="quiet" data-dialog-close="">Keep it</Button>
+              <Button variant="primary" icon="delete" data-editor-media-delete="">Delete it</Button>
+            </Fragment>
+          </Dialog>
+        </section>
+        <script is:inline type="application/json" data-editor-media-state set:html={state} />
+      </>
+    ) : picture && sc ? (
       <>
         <form class="form" data-editor-media-form novalidate aria-labelledby="media-details-title">
           <div class="head">
@@ -195,7 +269,7 @@ const state = picture ? JSON.stringify({ id: picture.id, version: picture.versio
         <script is:inline type="application/json" data-editor-media-state set:html={state} />
       </>
     ) : (
-      <Text variant="ui" tone="muted">Choose a picture to see its details: its alt text, caption, credit and focus point, and where it's used.</Text>
+      <Text variant="ui" tone="muted">Choose a picture or a video to see its details: a picture's alt text, caption, credit and focus point, a video's title and caption, and where each is used.</Text>
     )
   }
 </div>

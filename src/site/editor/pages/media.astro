@@ -2,23 +2,33 @@
 /** Edit mode's media library (documentation/editor/spec.md §6). Dev only: injected by integrations/editor.mjs. */
 import EditorLayout from '../EditorLayout.astro';
 import MediaGrid from '../components/MediaGrid.astro';
-import MediaDetails, { type PictureDetails } from '../components/MediaDetails.astro';
+import MediaDetails, { type PictureDetails, type VideoDetails } from '../components/MediaDetails.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import CropDialog from '../components/CropDialog.astro';
 import { load, mediaCards, references } from '../server/screens';
 import { readDoc } from '../server/store';
-import { picture } from '../../content/pictures';
-import type { ImageMedia } from '../../content/schema';
+import { picture, video as videoFile } from '../../content/pictures';
+import { fileOf } from '../../content/source';
+import { statSync } from 'node:fs';
+import type { ImageMedia, VideoMedia } from '../../content/schema';
 
 export const prerender = false;
 
 const loaded = load();
 const wanted = Astro.url.searchParams.get('id');
 let details: PictureDetails | null = null;
+let video: VideoDetails | null = null;
 let usedIn: { label: string; href: string }[] = [];
 let copies: string[] = [];
 let original: { id: string; exists: boolean } | undefined;
 const cards = loaded.ok ? await mediaCards(loaded.index) : [];
+if (loaded.ok && wanted && loaded.index.videos.has(wanted)) {
+  const sidecar = readDoc<VideoMedia>(`/content/media/${wanted}.json`);
+  const f = await videoFile(wanted, 'popout');
+  const rec = loaded.index.videos.get(wanted)!;
+  if (sidecar) video = { id: wanted, src: f.src, type: f.type, ...(f.poster ? { poster: f.poster.src } : {}), bytes: statSync(fileOf(rec.master)).size, sidecar: sidecar.value, version: sidecar.version };
+  usedIn = references(loaded.index).get(wanted) ?? [];
+}
 if (loaded.ok && wanted && loaded.index.media.has(wanted)) {
   const sidecar = readDoc<ImageMedia>(`/content/media/${wanted}.json`);
   const p = await picture(wanted, 'popout');
@@ -30,8 +40,8 @@ if (loaded.ok && wanted && loaded.index.media.has(wanted)) {
 }
 ---
 
-<EditorLayout title="Media" screen="media" heading="Media" intro="Every picture in content/media/, by folder. Choose one for its details; an upload here goes to the shared folder." asideLabel="Picture details">
-  {loaded.ok ? <MediaGrid mode="library" media={cards} owner="shared" selected={details?.id} /> : <ContentIssues issues={loaded.issues} />}
-  {loaded.ok && <MediaDetails slot="aside" picture={details} usedIn={usedIn} copies={copies} original={original} />}
+<EditorLayout title="Media" screen="media" heading="Media" intro="Every picture and video in content/media/, by folder. Choose one for its details; an upload here goes to the shared folder." asideLabel="Details">
+  {loaded.ok ? <MediaGrid mode="library" media={cards} owner="shared" selected={(details ?? video)?.id} /> : <ContentIssues issues={loaded.issues} />}
+  {loaded.ok && <MediaDetails slot="aside" picture={details} video={video} usedIn={usedIn} copies={copies} original={original} />}
   {loaded.ok && <CropDialog />}
 </EditorLayout>

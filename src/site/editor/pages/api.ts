@@ -4,10 +4,11 @@
  * { ok, versions } or { ok: false, issues } with 409 (a conflict) or 422 (the contract's refusal).
  */
 import type { APIRoute } from 'astro';
-import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure } from '../../content/schema';
+import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, VideoMedia } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { createArticle, deleteArticle, duplicateArticle, followOnPlanet, pagesOf, saveArticle, PLANET, STRUCTURE } from '../server/articles';
-import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload } from '../server/media';
+import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
+import { isVideoFile } from '../model/upload';
 import { changes, discard, publish, push } from '../server/git';
 import { content } from '../../content/repository';
 import { picture } from '../../content/pictures';
@@ -102,7 +103,23 @@ const handle: APIRoute = async ({ request, params, url }) => {
       if (method === 'POST' && !id) {
         const form = await request.formData();
         const file = form.get('file');
-        if (!(file instanceof File)) return json({ ok: false, issues: [{ file: 'content/media', path: 'file', message: 'choose a picture to upload' }] }, 422);
+        if (!(file instanceof File)) return json({ ok: false, issues: [{ file: 'content/media', path: 'file', message: 'choose a picture or a video to upload' }] }, 422);
+        // a video file (media.md §12): kept as it is, with the poster frame the browser took
+        if (isVideoFile(file)) {
+          const poster = form.get('poster');
+          return result(
+            await uploadVideo({
+              file: { name: file.name, bytes: Buffer.from(await file.arrayBuffer()) },
+              owner: String(form.get('owner') ?? 'shared'),
+              title: String(form.get('title') ?? ''),
+              caption: String(form.get('caption') ?? ''),
+              width: Number(form.get('width')),
+              height: Number(form.get('height')),
+              duration: Number(form.get('duration')) || undefined,
+              ...(poster instanceof File && poster.size ? { poster: Buffer.from(await poster.arrayBuffer()) } : {}),
+            }),
+          );
+        }
         const crop = parseUploadCrop(form.get('crop'));
         const r = await upload({
           file: { name: file.name, bytes: Buffer.from(await file.arrayBuffer()) },
@@ -142,7 +159,7 @@ const handle: APIRoute = async ({ request, params, url }) => {
       }
       if (method === 'DELETE' && id.endsWith('/dark')) return result(await removeDark(id.replace(/\/dark$/, '')));
       if (method === 'PUT' && id) {
-        const b = await body<{ sidecar: ImageMedia; ifMatch: Record<string, string | null> }>(request);
+        const b = await body<{ sidecar: ImageMedia | VideoMedia; ifMatch: Record<string, string | null> }>(request);
         return result(await saveSidecar(id, b.sidecar, b.ifMatch ?? {}));
       }
       if (method === 'DELETE' && id) return result(await deleteMedia(id));

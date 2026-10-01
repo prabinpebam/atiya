@@ -14,7 +14,9 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
 import { createArticle, deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
-import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload } from '../../src/site/editor/server/media';
+import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
+import { MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
+import { byteRange } from '../../integrations/content-files.mjs';
 import { changes, discard, publish, push } from '../../src/site/editor/server/git';
 import editor from '../../integrations/editor.mjs';
 
@@ -260,6 +262,49 @@ describe('the crop: a copy, never the original (documentation/editor/spec.md §6
     const key = '/content/articles/a.json';
     expect(await saveArticle({ id: 'a', article: article({ thumbnail: id }) as never, ifMatch: { [key]: readDoc(key)!.version } })).toMatchObject({ ok: true });
     expect(await saveArticle({ id: 'a', article: article({ thumbnail: 'articles/a/gone' }) as never, ifMatch: { [key]: readDoc(key)!.version } })).toMatchObject({ ok: false, status: 422 });
+  });
+});
+
+describe('video files (documentation/content/media.md §12)', () => {
+  const article = (over: Record<string, unknown> = {}) => ({ id: 'a', type: 'article', kind: 'note', slug: 'a', title: 'A', summary: 'S', status: 'draft', visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [], ...over });
+  const webm = Buffer.from('1a45dfa3', 'hex');
+
+  it('a WebM is kept as it is, with its poster (a frame the browser took) as a WebP and its sidecar, in one write', async () => {
+    const r = await uploadVideo({ file: { name: 'Product Demo.webm', bytes: webm }, owner: 'articles/a', title: 'The product demo', caption: 'Shot in Hyderabad.', width: 1280, height: 720, duration: 12.345, poster: await png(1280, 720) });
+    expect(r).toMatchObject({ ok: true, id: 'articles/a/product-demo' });
+    expect(readFileSync(join(content, 'media/articles/a/product-demo.webm'))).toEqual(webm);
+    expect((await sharp(readFileSync(join(content, 'media/articles/a/product-demo.poster.webp'))).metadata()).format).toBe('webp');
+    expect(JSON.parse(readFileSync(join(content, 'media/articles/a/product-demo.json'), 'utf8'))).toEqual({ kind: 'video', file: 'product-demo.webm', title: 'The product demo', width: 1280, height: 720, duration: 12.35, poster: { file: 'product-demo.poster.webp' }, caption: 'Shot in Hyderabad.', visibility: 'public' });
+    // a video block shows it, and while it does it can't be deleted; its details save, its files and size kept
+    put('/content/articles/a.json', article({ body: [{ type: 'video', media: 'articles/a/product-demo' }] }));
+    const v = readDoc<Record<string, unknown>>('/content/media/articles/a/product-demo.json')!;
+    expect(await saveSidecar('articles/a/product-demo', { ...(v.value as object), title: 'The demo', width: 1, file: 'evil.webm', caption: '' } as never, { '/content/media/articles/a/product-demo.json': v.version })).toMatchObject({ ok: true });
+    expect(JSON.parse(readFileSync(join(content, 'media/articles/a/product-demo.json'), 'utf8'))).toMatchObject({ title: 'The demo', width: 1280, file: 'product-demo.webm' });
+    expect(JSON.parse(readFileSync(join(content, 'media/articles/a/product-demo.json'), 'utf8')).caption).toBeUndefined();
+    expect(await deleteMedia('articles/a/product-demo')).toMatchObject({ ok: false });
+    put('/content/articles/a.json', article());
+    expect(await deleteMedia('articles/a/product-demo')).toMatchObject({ ok: true });
+    for (const f of ['product-demo.webm', 'product-demo.poster.webp', 'product-demo.json']) expect(existsSync(join(content, 'media/articles/a', f))).toBe(false);
+  });
+
+  it('refuses a video of 100 MB or more before anything is written, and what the site can\u2019t show', async () => {
+    const big = Buffer.alloc(MAX_VIDEO_BYTES);
+    const r = await uploadVideo({ file: { name: 'long.webm', bytes: big }, owner: 'shared', title: 'Long', width: 640, height: 360 });
+    expect(r).toMatchObject({ ok: false, status: 422 });
+    expect(JSON.stringify(r)).toMatch(/under 100 MB, GitHub's limit/);
+    expect(existsSync(join(content, 'media/shared'))).toBe(false);
+    expect(await uploadVideo({ file: { name: 'clip.mkv', bytes: webm }, owner: 'shared', title: 'C', width: 640, height: 360 })).toMatchObject({ ok: false });
+    expect(await uploadVideo({ file: { name: 'clip.webm', bytes: webm }, owner: 'shared', title: '', width: 640, height: 360 })).toMatchObject({ ok: false });
+    expect(await uploadVideo({ file: { name: 'clip.webm', bytes: webm }, owner: 'shared', title: 'C', width: 0, height: 0 })).toMatchObject({ ok: false });
+  });
+
+  it('serves a byte range, as a video seeking asks for', () => {
+    expect(byteRange(undefined, 1000)).toBeNull();
+    expect(byteRange('bytes=0-', 1000)).toEqual({ start: 0, end: 999 });
+    expect(byteRange('bytes=100-199', 1000)).toEqual({ start: 100, end: 199 });
+    expect(byteRange('bytes=-200', 1000)).toEqual({ start: 800, end: 999 });
+    expect(byteRange('bytes=900-5000', 1000)).toEqual({ start: 900, end: 999 });
+    expect(byteRange('bytes=1000-', 1000)).toBe(false);
   });
 });
 

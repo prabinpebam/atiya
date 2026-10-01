@@ -19,10 +19,12 @@ export interface VideoCaptions {
 }
 
 interface Props {
-  /** The MP4 file. */
-  src: string;
-  /** An optional WebM source, listed before the MP4 when present. */
+  /** The MP4 file (H.264). One of src and webm is needed. */
+  src?: string;
+  /** A WebM source, listed before the MP4 when present. */
   webm?: string;
+  /** The video's name for assistive technology (its title). */
+  label?: string;
   /** The local poster shown before playback. */
   poster?: string;
   /** The video’s own size, for its aspect ratio. */
@@ -44,12 +46,13 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { src, webm, poster, width, height, captions, ratio, radius = 'default', muted = false, loop = false, id, ...rest } = Astro.props;
+const { src, webm, label, poster, width, height, captions, ratio, radius = 'default', muted = false, loop = false, id, ...rest } = Astro.props;
 ---
 
 <video
   class="video"
   id={id}
+  aria-label={label}
   controls
   playsinline
   preload="metadata"
@@ -63,9 +66,9 @@ const { src, webm, poster, width, height, captions, ratio, radius = 'default', m
   {...rest}
 >
   {webm && <source src={webm} type="video/webm" />}
-  <source src={src} type="video/mp4" />
+  {src && <source src={src} type="video/mp4" />}
   {captions && <track kind="captions" src={captions.src} label={captions.label} srclang={captions.srclang} default />}
-  <a class="fallback" href={src}>Download video</a>
+  <a class="fallback" href={src ?? webm}>Download video</a>
 </video>
 
 <style>

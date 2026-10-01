@@ -4,7 +4,7 @@
  * them all. Pure: the files and the list of media masters come in as arguments, so tests can feed it.
  */
 import type { z } from 'astro/zod';
-import { PLACE_IDS, article, documentMedia, imageMedia, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, type Article, type DocumentMedia, type ImageMedia, type Person, type PlanetStructure, type Redirect, type SiteSettings, type SiteStructure } from './schema';
+import { PLACE_IDS, article, documentMedia, imageMedia, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, videoMedia, type Article, type DocumentMedia, type ImageMedia, type Person, type PlanetStructure, type Redirect, type SiteSettings, type SiteStructure, type VideoMedia } from './schema';
 import { buildRoutes, canonicalPaths, type Route } from './routes';
 
 export interface MediaRecord extends ImageMedia {
@@ -22,6 +22,13 @@ export interface DocumentRecord extends DocumentMedia {
   master: string;
 }
 
+/** A video file, with its ID, its master's path and its poster's. */
+export interface VideoRecord extends VideoMedia {
+  id: string;
+  master: string;
+  posterMaster?: string;
+}
+
 export interface ContentIndex {
   site: SiteSettings;
   structure: SiteStructure;
@@ -30,6 +37,8 @@ export interface ContentIndex {
   media: Map<string, MediaRecord>;
   /** Files to download (PDFs), by media ID: linked with `ref:media/<id>`. */
   documents: Map<string, DocumentRecord>;
+  /** Video files, by media ID: shown by a video block's `media`. */
+  videos: Map<string, VideoRecord>;
   /** Every node's route, drafts included (their `published` is false); only published ones are built. */
   routes: Route[];
   /** Canonical paths of published items, keyed `type/id`. */
@@ -65,7 +74,7 @@ const PUBLISHED = new Set(['published', 'stale']);
 const PUBLIC = new Set(['public', 'publicRedacted', 'summaryOnly']);
 export const isPublished = (a: { status: string; visibility: string }) => PUBLISHED.has(a.status) && PUBLIC.has(a.visibility);
 
-/** Every media ID a document uses. */
+/** Every picture's media ID a document uses (a video file's isn't: see videosUsed). */
 export function mediaUsed(a: Article): string[] {
   const ids = a.hero ? [a.hero.media] : [];
   if (a.thumbnail) ids.push(a.thumbnail);
@@ -73,11 +82,14 @@ export function mediaUsed(a: Article): string[] {
   for (const b of a.body) {
     if (b.type === 'figure') ids.push(b.media);
     else if (b.type === 'gallery' || b.type === 'carousel') ids.push(...b.items.map((i) => i.media));
-    else if (b.type === 'video') ids.push(b.poster);
+    else if (b.type === 'video' && b.poster) ids.push(b.poster);
   }
   if (a.seo?.image) ids.push(a.seo.image);
   return ids;
 }
+
+/** Every video file's media ID a document uses. */
+export const videosUsed = (a: Article): string[] => a.body.flatMap((b) => (b.type === 'video' && b.media ? [b.media] : []));
 
 /**
  * @param docs the JSON files under content/, keyed by their path from the project root (/content/…)
@@ -105,6 +117,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   const people = new Map<string, Person>();
   const media = new Map<string, MediaRecord>();
   const documents = new Map<string, DocumentRecord>();
+  const videos = new Map<string, VideoRecord>();
 
   for (const [file, data] of Object.entries(docs).sort(([a], [b]) => a.localeCompare(b))) {
     const name = file.split('/').pop()!.replace(/\.json$/, '');
@@ -132,6 +145,20 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         else documents.set(m[1], { ...d, id: m[1], master });
         continue;
       }
+      // a video file (media.md §12), with its poster beside it
+      if ((data as { kind?: unknown } | null)?.kind === 'video') {
+        const v = parse(videoMedia, file, data);
+        if (!v) continue;
+        const dir = file.slice(0, file.lastIndexOf('/') + 1);
+        const master = dir + v.file;
+        const posterMaster = v.poster ? dir + v.poster.file : undefined;
+        if (v.file.replace(/\.\w+$/, '') !== name) add(file, `the video "${v.file}" must share the sidecar's name`, 'file');
+        else if (!masters.has(master)) add(file, `its video ${master.slice(1)} is missing`);
+        else if (v.poster && v.poster.file.replace(/\.poster\.\w+$/, '') !== name) add(file, `the poster "${v.poster.file}" must share the sidecar's name (${name}.poster.webp)`, 'poster.file');
+        else if (posterMaster && !masters.has(posterMaster)) add(file, `its poster ${posterMaster.slice(1)} is missing`, 'poster.file');
+        else videos.set(m[1], { ...v, id: m[1], master, ...(posterMaster ? { posterMaster } : {}) });
+        continue;
+      }
       const s = parse(imageMedia, file, data);
       if (!s) continue;
       const dir = file.slice(0, file.lastIndexOf('/') + 1);
@@ -146,9 +173,11 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   }
   for (const master of masters) {
     const dark = /\.dark\.\w+$/.test(master);
-    const sidecar = master.replace(dark ? /\.dark\.\w+$/ : /\.\w+$/, '.json');
+    const poster = /\.poster\.\w+$/.test(master);
+    const sidecar = master.replace(dark ? /\.dark\.\w+$/ : poster ? /\.poster\.\w+$/ : /\.\w+$/, '.json');
     if (!(sidecar in docs)) add(master, `a master without its sidecar (${sidecar.split('/').pop()})`);
     else if (dark && (docs[sidecar] as { dark?: { file?: string } } | null)?.dark?.file !== master.split('/').pop()) add(master, `a dark version its picture doesn't name (add it as "dark" in ${sidecar.split('/').pop()}, or delete it)`);
+    else if (poster && (docs[sidecar] as { poster?: { file?: string } } | null)?.poster?.file !== master.split('/').pop()) add(master, `a poster its video doesn't name (add it as "poster" in ${sidecar.split('/').pop()}, or delete it)`);
   }
   if (!site) add('content/site.json', 'missing');
   if (!structure) add('content/structures/site.json', 'missing');
@@ -161,6 +190,20 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   };
   for (const a of articles.values()) {
     for (const id of mediaUsed(a)) needMedia(`content/articles/${a.id}.json`, id);
+    // a video block: a video file, or an embed with its title and poster (media.md §12)
+    a.body.forEach((b, i) => {
+      if (b.type !== 'video') return;
+      const at = `body.${i}`;
+      const file = `content/articles/${a.id}.json`;
+      if (!!b.media === !!b.embed) return add(file, 'a video is a video file (media) or an embed, one of the two', at);
+      if (b.embed && !b.title) add(file, 'an embedded video needs its title', `${at}.title`);
+      if (b.embed && !b.poster) add(file, 'an embedded video needs a poster picture', `${at}.poster`);
+      if (b.media) {
+        const v = videos.get(b.media);
+        if (!v) add(file, `the video "${b.media}" doesn't exist`, `${at}.media`);
+        else if (!PUBLIC.has(v.visibility)) add(file, `the video "${b.media}" isn't public`, `${at}.media`);
+      }
+    });
     // a link to a file to download (ref:media/<id>) needs the file, public
     for (const [, id] of JSON.stringify(a.body).matchAll(/\]\(ref:media\/([a-z0-9/-]+)\)/g)) {
       const doc = documents.get(id);
@@ -232,7 +275,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   }
 
   if (issues.length) throw new ContentError(issues);
-  return { site: site!, structure: structure!, articles, people, media, documents, routes, canonical: canonicalPaths(routes), redirects, planet, warnings };
+  return { site: site!, structure: structure!, articles, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, warnings };
 }
 
 /** A path on this site a link may go to: a page of the tree, or one of the code's own (the planet, the docs, the design library). */

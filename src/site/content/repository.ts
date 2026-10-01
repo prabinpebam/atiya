@@ -4,7 +4,7 @@
  * save in the editor, or a file changed by hand, in dev); a build reads it once.
  */
 import { generation, readSnapshot } from './source';
-import { loadContent, type ContentIndex, type MediaRecord } from './load';
+import { loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
 import { withBase } from '../design/meta';
 import type { Route } from './routes';
 import type { Article, PlaceId } from './schema';
@@ -71,4 +71,19 @@ export function documentHref(id: string): string | undefined {
   const d = content().documents.get(id);
   if (!d || !['public', 'publicRedacted', 'summaryOnly'].includes(d.visibility)) return undefined;
   return withBase(`/media/${id}.pdf`);
+}
+
+export function getVideo(id: string): VideoRecord {
+  const v = content().videos.get(id);
+  if (!v) throw new Error(`unknown video "${id}"`);
+  return v;
+}
+
+/**
+ * Where a video file is published (with the base): `<base>/media/<id>.<mp4|webm>`, which the content-files
+ * integration serves in dev (with ranges, so it seeks) and copies there at build.
+ */
+export function videoHref(id: string): string {
+  const v = getVideo(id);
+  return withBase(`/media/${id}.${v.file.split('.').pop()}`);
 }

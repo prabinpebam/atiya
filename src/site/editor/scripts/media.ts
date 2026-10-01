@@ -6,7 +6,7 @@
  */
 import { api, announce, describeIssue, saveStatus, swapRegions } from './client';
 import { openCrop } from './crop';
-import type { ImageMedia } from '../../content/schema';
+import type { ImageMedia, VideoMedia } from '../../content/schema';
 
 const sidecarKey = (id: string) => `/content/media/${id}.json`;
 const nameOf = (id: string) => id.split('/').pop() ?? id;
@@ -48,11 +48,14 @@ export function initMediaLibrary(root: HTMLElement, signal: AbortSignal) {
   window.addEventListener('popstate', () => void swapRegions(['media-details', 'media-grid']), { signal });
 }
 
-/** A picture's details: the focus point, the fields, Replace and Delete. */
+/** A picture's details: the focus point, the fields, Replace and Delete; a video's: its fields and Delete. */
 export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
   const stateEl = root.querySelector('[data-editor-media-state]');
   if (!stateEl) return;
-  const state = JSON.parse(stateEl.textContent ?? '{}') as { id: string; version: string; sidecar: ImageMedia };
+  const parsed = JSON.parse(stateEl.textContent ?? '{}') as { id: string; version: string; sidecar: ImageMedia | VideoMedia };
+  wireDelete(root, parsed.id, signal);
+  if (parsed.sidecar.kind === 'video') return initVideoDetails(root, parsed as { id: string; version: string; sidecar: VideoMedia }, signal);
+  const state = parsed as { id: string; version: string; sidecar: ImageMedia };
   const form = root.querySelector<HTMLFormElement>('[data-editor-media-form]')!;
   const box = root.querySelector<HTMLElement>('[data-editor-focus]')!;
   const hit = root.querySelector<HTMLButtonElement>('[data-editor-focus-set]')!;
@@ -211,17 +214,61 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
     },
     { signal },
   );
+}
 
-  // ---------- delete ----------
+/** Delete (a picture or a video), once nothing uses it. */
+function wireDelete(root: HTMLElement, id: string, signal: AbortSignal) {
   root.querySelector('[data-editor-media-delete]')?.addEventListener(
     'click',
     async () => {
       saveStatus.saving();
-      const r = await api('DELETE', `media/${state.id}`);
+      const r = await api('DELETE', `media/${id}`);
       (root.querySelector('#delete-media') as HTMLDialogElement | null)?.close();
       if (!r.ok) return saveStatus.failed(`Not deleted: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'something still uses it'}`);
       await show(null, false).then(() => history.replaceState(null, '', urlFor(null)));
-      saveStatus.saved(`Deleted ${nameOf(state.id)}`);
+      saveStatus.saved(`Deleted ${nameOf(id)}`);
+    },
+    { signal },
+  );
+}
+
+/** A video's details: its title, caption, credit, licence and source, saved to its sidecar. */
+function initVideoDetails(root: HTMLElement, state: { id: string; version: string; sidecar: VideoMedia }, signal: AbortSignal) {
+  const form = root.querySelector<HTMLFormElement>('[data-editor-media-form]');
+  if (!form) return;
+  const say = (text: string) => {
+    const p = form.querySelector<HTMLElement>('[data-editor-form-issue]')!;
+    p.textContent = text;
+    p.hidden = !text;
+  };
+  form.addEventListener(
+    'submit',
+    async (e) => {
+      e.preventDefault();
+      const d = new FormData(form);
+      const text = (k: string) => String(d.get(k) ?? '').trim();
+      const title = text('title');
+      if (!title) return say('Give the video a title: what it is, in a few words.');
+      if (title.length > 250) return say(`The title is ${title.length} characters: keep it to 250.`);
+      const next: VideoMedia = { ...state.sidecar, title };
+      for (const k of ['caption', 'credit', 'source'] as const) {
+        if (text(k)) next[k] = text(k);
+        else delete next[k];
+      }
+      const licence = { ...state.sidecar.licence, name: text('licence.name'), url: text('licence.url') || undefined };
+      if (licence.name) next.licence = JSON.parse(JSON.stringify(licence));
+      else if (licence.url) return say('Name the licence, or leave its address empty.');
+      else delete next.licence;
+      say('');
+      saveStatus.saving();
+      const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [sidecarKey(state.id)]: state.version } });
+      if (!r.ok) {
+        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The details weren't saved.";
+        saveStatus.failed(`Not saved: ${why}`);
+        return say(r.status === 409 ? 'Its details changed elsewhere since you opened it. Open it again to see them.' : why);
+      }
+      await swapRegions(['media-details', 'media-grid']);
+      saveStatus.saved(`Saved the details of ${nameOf(state.id)}: every page that shows it has them now`);
     },
     { signal },
   );

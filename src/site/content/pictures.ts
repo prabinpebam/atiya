@@ -12,7 +12,7 @@ import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { readFileSync, statSync } from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { getMedia } from './repository';
+import { getMedia, getVideo, videoHref } from './repository';
 import { fileOf } from './source';
 
 const devMeta = new Map<string, { mtime: number; meta: ImageMetadata }>();
@@ -113,5 +113,35 @@ export async function picture(id: string, slot: Slot): Promise<Picture> {
     caption: m.caption,
     credit: m.credit,
     ...(dark ? { dark } : {}),
+  };
+}
+
+/** A video file as the page shows it (media.md §12): its address and type, its size, its words and its poster at the slot's widths. */
+export interface VideoFile {
+  src: string;
+  type: 'video/mp4' | 'video/webm';
+  width: number;
+  height: number;
+  title: string;
+  duration?: number;
+  caption?: string;
+  credit?: string;
+  /** Its poster (a frame from it), if it has one. */
+  poster?: { src: string; srcset: string; width: number; height: number; thumb: string };
+}
+
+export async function video(id: string, slot: Slot): Promise<VideoFile> {
+  const v = getVideo(id);
+  const poster = v.posterMaster ? await sized(v.posterMaster, slot) : undefined;
+  return {
+    src: videoHref(id),
+    type: v.file.endsWith('.webm') ? 'video/webm' : 'video/mp4',
+    width: v.width,
+    height: v.height,
+    title: v.title,
+    ...(v.duration ? { duration: v.duration } : {}),
+    ...(v.caption ? { caption: v.caption } : {}),
+    ...(v.credit ? { credit: v.credit } : {}),
+    ...(poster ? { poster: { src: poster.src, srcset: poster.srcset, width: poster.width, height: poster.height, thumb: poster.thumb } } : {}),
   };
 }

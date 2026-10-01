@@ -302,7 +302,7 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | `figure` | `media`, `caption?`, `credit?`, `width` (`content`, `popout`, `wide`, `full`), `lightbox?` | `Figure` |
 | `gallery` | `gallery` (a gallery ID) or `items` (media refs); `layout?`, `fit?` (`cover`, or `contain` for marks and artwork that mustn't be cropped), `caption?`, `width?`, `lightbox?` | `Gallery` |
 | `carousel` | `gallery` (a gallery ID) or `items` (`{ media, caption? }[]`); `label`, `peek?`, `pager?`, `arrows?` | `Carousel` |
-| `video` | `media` (a video asset) or `embed` (`{ provider: youtube or vimeo, id }`); `title` (the player's name); `poster` (an image media ID: the site's own thumbnail, shown until the reader presses Play); `duration?` (seconds, shown on the poster); `caption?`, `credit?`, `width?` | `VideoEmbed` |
+| `video` | `media` (a video file, [media §12](media.md#12-video-files)) or `embed` (`{ provider: youtube or vimeo, id }`), exactly one; `title` (the player's name: an embed needs it, a video file has its own); `poster` (an embed's picture, an image media ID: the site's own thumbnail, shown until the reader presses Play; a video file has its own frame); `duration?` (seconds, shown on an embed's poster); `caption?`, `credit?` (a video file's own when left out), `width?` | `VideoEmbed` |
 | `quote` | `text`, `cite?` (text or person), `variant` (`block`, `pull`) | `Quote` |
 | `divider` | none | `Divider` |
 | `collection` | `source` (a query: `type`, `filter`, `sort`, `limit`), `presentation` (`cards` or `list`), `heading?` | `StoryCard` grid or `ContentsList` |

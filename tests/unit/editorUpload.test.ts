@@ -4,7 +4,7 @@
  * the preview's line.
  */
 import { describe, expect, it } from 'vitest';
-import { describePicture, formatLabel, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pngName, typeOf } from '../../src/site/editor/model/upload';
+import { clock, describePicture, describeVideo, formatLabel, isVideoFile, MAX_VIDEO_BYTES, mayHaveAlpha, megabytes, needsConversion, pastedName, pictureOfPaste, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../../src/site/editor/model/upload';
 
 describe('the upload form', () => {
   it('knows a file by its type, or by its extension when the system gives none', () => {
@@ -42,5 +42,42 @@ describe('the upload form', () => {
     expect(describePicture({ width: 1200, height: 800, type: 'image/png', alpha: true })).toBe('1200 × 800 px, PNG, transparent.');
     expect(describePicture({ width: 1200, height: 800, type: 'image/jpeg', alpha: false, crop: { width: 600, height: 400 } })).toBe('1200 × 800 px, JPEG. Cropped to 600 × 400 px.');
     expect(describePicture({ width: 16, height: 16, type: 'image/x-icon', alpha: true, converted: true })).toBe('16 × 16 px, ICO, transparent. Uploads as a PNG.');
+  });
+});
+
+describe('a video in the upload form (documentation/content/media.md §12)', () => {
+  const file = (name: string, type = '') => ({ name, type });
+
+  it('takes MP4, WebM and MOV (by type or extension), and knows other videos for what they are', () => {
+    expect(videoTypeOf(file('demo.mp4', 'video/mp4'))).toBe('video/mp4');
+    expect(videoTypeOf(file('demo.m4v'))).toBe('video/mp4');
+    expect(videoTypeOf(file('demo.m4v', 'video/x-m4v'))).toBe('video/mp4');
+    expect(videoTypeOf(file('demo.webm'))).toBe('video/webm');
+    expect(videoTypeOf(file('IMG_0001.MOV', 'video/quicktime'))).toBe('video/quicktime');
+    expect(videoTypeOf(file('demo.mkv', 'video/x-matroska'))).toBe('');
+    expect(videoTypeOf(file('demo.avi'))).toBe('');
+    expect([isVideoFile(file('demo.mkv')), isVideoFile(file('clip', 'video/ogg')), isVideoFile(file('pic.png', 'image/png'))]).toEqual([true, true, false]);
+    // a copied video file is a paste the form takes, as a picture is; text still wins
+    expect(pictureOfPaste([file('demo.mp4', 'video/mp4')], '')).toMatchObject({ name: 'demo.mp4' });
+    expect(pictureOfPaste([file('demo.mp4', 'video/mp4')], 'words')).toBeNull();
+  });
+
+  it('refuses a video of 100 MB or more (GitHub refuses the file in a push), and says how to make it smaller', () => {
+    expect(MAX_VIDEO_BYTES).toBe(100_000_000);
+    expect(MAX_VIDEO_BYTES).toBeLessThan(100 * 1024 * 1024);
+    expect(videoSizeIssue(MAX_VIDEO_BYTES - 1)).toBeNull();
+    expect(videoSizeIssue(MAX_VIDEO_BYTES)).toMatch(/^It's 100 MB: a video must be under 100 MB, GitHub's limit for a file\. Make it shorter or smaller/);
+    expect(videoSizeIssue(250_000_000)).toMatch(/^It's 250 MB/);
+  });
+
+  it('describes it in the preview: its size, format, length and weight, and warns past 50 MB', () => {
+    expect(describeVideo({ width: 1920, height: 1080, type: 'video/mp4', duration: 83.4, bytes: 34_200_000 })).toBe('1920 × 1080 px, MP4, 1:23, 34 MB.');
+    expect(describeVideo({ width: 1280, height: 720, type: 'video/webm', duration: 9.6, bytes: 2_400_000 })).toBe('1280 × 720 px, WebM, 0:10, 2.4 MB.');
+    expect(describeVideo({ width: 1080, height: 1920, type: 'video/quicktime', duration: 30, bytes: 60_000_000 })).toBe('1080 × 1920 px, MOV, 0:30, 60 MB. Saved as an MP4. Over 50 MB: GitHub takes it, but warns about files this big.');
+    expect([clock(0), clock(59.6), clock(3725), megabytes(999_999)]).toEqual(['0:00', '1:00', '1:02:05', '1.0 MB']);
+  });
+
+  it('takes its poster a second in, or a tenth of a short one', () => {
+    expect([posterTime(60), posterTime(5), posterTime(0), posterTime(Number.NaN)]).toEqual([1, 0.5, 0, 0]);
   });
 });

@@ -4,7 +4,7 @@
  * words. Pure: built from the content index, so the Media screen's Used in and its Delete rule, and the
  * unit tests, read the same graph.
  */
-import { mediaUsed, type ContentIndex } from '../../content/load';
+import { mediaUsed, videosUsed, type ContentIndex } from '../../content/load';
 
 export interface Reference {
   /** What refers to it, in words ("Article: …", "Person: …", "Site settings"). */
@@ -21,7 +21,10 @@ export function references(index: Pick<ContentIndex, 'articles' | 'people' | 'si
     if (!list.some((x) => x.href === r.href)) list.push(r);
     refs.set(mediaId, list);
   };
-  for (const a of index.articles.values()) for (const m of mediaUsed(a)) add(m, { label: `Article: ${a.title}`, href: `articles/${a.id}/` });
+  for (const a of index.articles.values()) {
+    for (const m of mediaUsed(a)) add(m, { label: `Article: ${a.title}`, href: `articles/${a.id}/` });
+    for (const m of videosUsed(a)) add(m, { label: `Article: ${a.title}`, href: `articles/${a.id}/` });
+  }
   for (const p of index.people.values()) if (p.avatar) add(p.avatar, { label: `Person: ${p.name}`, href: 'settings/' });
   if (index.site.socialImage) add(index.site.socialImage, { label: 'Site settings', href: 'settings/' });
   return refs;

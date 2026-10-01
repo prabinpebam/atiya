@@ -139,7 +139,7 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
     case 'carousel':
       return `${b.items.length} pictures`;
     case 'video':
-      return cut(b.title);
+      return cut(b.title ?? (b.media ? (alt(b.media) ?? b.media.split('/').pop()!) : ''));
     case 'tiles':
       return cut(b.items.map((t) => t.label).join(', '));
     case 'facts':

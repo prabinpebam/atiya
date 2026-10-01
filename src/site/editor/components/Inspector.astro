@@ -58,7 +58,7 @@ const WIDTHS: SelectOption[] = [
 ];
 const id = (i: number | string, f: string) => `f-${i}-${f.replace(/\W+/g, '-')}`;
 const duration = (s?: number) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '');
-const videoUrl = (b: Extract<Block, { type: 'video' }>) => (b.embed.provider === 'youtube' ? `https://youtu.be/${b.embed.id}` : `https://vimeo.com/${b.embed.id}`);
+const videoUrl = (b: Extract<Block, { type: 'video' }>) => (!b.embed ? '' : b.embed.provider === 'youtube' ? `https://youtu.be/${b.embed.id}` : `https://vimeo.com/${b.embed.id}`);
 const thumbOf = (m?: string) => (m ? media[m] : undefined);
 // the lead picture, and what cards show (the thumbnail, or else the lead picture)
 const lead = thumbOf(article.hero?.media);
@@ -119,7 +119,7 @@ const STATUS: SelectOption[] = [
               </>
             )}
 
-            {(b.type === 'figure' || b.type === 'video') && (
+            {(b.type === 'figure' || (b.type === 'video' && !b.media)) && (
               <div class="media-field">
                 <span class="field-label">{b.type === 'video' ? 'Poster' : 'Picture'}</span>
                 <div class="media-row">
@@ -133,6 +133,21 @@ const STATUS: SelectOption[] = [
                     <div class="row">
                       <Button variant="secondary" size="sm" icon="image" data-editor-pick={b.type === 'video' ? `body.${i}.poster` : `body.${i}.media`} data-pick-mode="single">Replace</Button>
                       <Button variant="secondary" size="sm" icon="crop" data-editor-crop={b.type === 'video' ? `body.${i}.poster` : `body.${i}.media`}>Crop</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {b.type === 'video' && b.media && (
+              <div class="media-field">
+                <span class="field-label">Video</span>
+                <div class="media-row">
+                  {thumbOf(b.media) ? <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" fit="contain" /> : <span />}
+                  <div class="media-words">
+                    <Text variant="small" tone="muted">{thumbOf(b.media)?.alt || b.media.split('/').pop()}</Text>
+                    <div class="row">
+                      <Button variant="secondary" size="sm" icon="video" data-editor-pick={`body.${i}.media`} data-pick-mode="single" data-pick-kind="video">Replace</Button>
                     </div>
                   </div>
                 </div>
@@ -193,11 +208,15 @@ const STATUS: SelectOption[] = [
 
             {b.type === 'video' && (
               <>
-                <TextField label="Address" type="url" name={`body.${i}.embed`} id={id(i, 'embed')} value={videoUrl(b)} data-type="video-url" hint="A YouTube or Vimeo link." />
-                <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title} required hint="Names the player." />
-                <TextField label="Length" name={`body.${i}.duration`} id={id(i, 'duration')} value={duration(b.duration)} data-type="duration" optional hint="Minutes and seconds (2:20), shown on the poster." />
+                {b.embed && <TextField label="Address" type="url" name={`body.${i}.embed`} id={id(i, 'embed')} value={videoUrl(b)} data-type="video-url" hint="A YouTube or Vimeo link." />}
+                {b.embed ? (
+                  <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} required hint="Names the player." />
+                ) : (
+                  <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} optional hint="Names the player. Left empty, the video's own title does." />
+                )}
+                {b.embed && <TextField label="Length" name={`body.${i}.duration`} id={id(i, 'duration')} value={duration(b.duration)} data-type="duration" optional hint="Minutes and seconds (2:20), shown on the poster." />}
                 <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
-                <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional />
+                <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint={b.media ? "Left empty, the video's own caption shows." : undefined} />
                 <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
                 <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
               </>
