@@ -121,6 +121,10 @@ describe('a rich copy arrives as the closest blocks and marks', () => {
     expect(paste('<p><a href="javascript:alert(1)">bad</a> <a href="/relative">rel</a> <a href="mailto:a@b.c">mail</a></p>')?.blocks).toEqual([{ type: 'text', markdown: 'bad rel [mail](mailto:a@b.c)' }]);
   });
 
+  it('keeps a link to the site’s own page copied from the canvas (its written ref:), never a ref: from elsewhere', () => {
+    expect(paste('<p>Get <a href="/media/people/prabin/cv.pdf" data-md-href="ref:media/people/prabin/cv">the PDF</a> or <a href="ref:articles/x">this</a></p>')?.blocks).toEqual([{ type: 'text', markdown: 'Get [the PDF](ref:media/people/prabin/cv) or this' }]);
+  });
+
   it('keeps line breaks inside a paragraph, and drops the empty ones', () => {
     expect(paste('<p>One<br>Two<br></p><p>&nbsp;</p><div><br></div>')?.blocks).toEqual([{ type: 'text', markdown: 'One\\\nTwo' }]);
   });
@@ -131,6 +135,13 @@ describe('a rich copy arrives as the closest blocks and marks', () => {
     expect(paste('<pre>only code</pre>')).toBeNull();
     expect(paste('')).toBeNull();
     expect(paste('<img src="a.png">')).toBeNull();
+  });
+
+  it('keeps the links and marks of prose that keeps its white space (chats, mail), its lines as line breaks', () => {
+    const chat = '<div style="white-space: pre-wrap; font-family: Segoe UI, sans-serif;">See <a href="https://designup.io/">DesignUp</a> and <b>more</b>\nnext line</div>';
+    expect(paste(chat)?.blocks).toEqual([{ type: 'text', markdown: 'See [DesignUp](https://designup.io/) and **more**\\\nnext line' }]);
+    // a font stack that only falls back to a monospaced font isn't code
+    expect(paste('<p style="font-family: Inter, monospace">A <a href="https://x.dev/">link</a></p>')?.blocks).toEqual([{ type: 'text', markdown: 'A [link](https://x.dev/)' }]);
   });
 
   it('decides what a paste is, and gives its words and lines', () => {

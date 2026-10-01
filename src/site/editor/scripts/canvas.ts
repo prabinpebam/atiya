@@ -339,6 +339,15 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     b.append(after.cloneContents());
     return [a, b];
   };
+  /** One side of the caret as Markdown, keeping a space at the caret (markdownOf trims a block's edges). */
+  const seam = (half: HTMLElement, side: 'start' | 'end') => {
+    const md = markdownOf(half);
+    const words = half.textContent ?? '';
+    if (!md.trim()) return md;
+    if (side === 'end' && /\s$/.test(words)) return `${md} `;
+    if (side === 'start' && /^\s/.test(words)) return ` ${md}`;
+    return md;
+  };
   const atStart = (el: HTMLElement) => {
     const r = caretRange();
     if (!r || !r.collapsed) return false;
@@ -363,7 +372,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       else if (n.t === 'br') f.append(document.createElement('br'));
       else if (n.t === 'code') f.append(Object.assign(document.createElement('code'), { textContent: n.v }));
       else if (n.t === 'link') {
-        if (!/^(https?:\/\/|mailto:)/i.test(n.href)) {
+        if (!/^(https?:\/\/|mailto:|ref:)/i.test(n.href)) {
           f.append(fragmentOf(n.c));
           continue;
         }
@@ -460,7 +469,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
           el.remove();
           redraw();
         }
-        post({ type: 'paste', index: at, pending, before: markdownOf(h[0]), after: markdownOf(h[1]), blocks: pasted.blocks, pictures: pasted.pictures });
+        post({ type: 'paste', index: at, pending, before: seam(h[0], 'end'), after: seam(h[1], 'start'), blocks: pasted.blocks, pictures: pasted.pictures });
         return;
       }
       // in a list, each pasted line is an item, its marks kept

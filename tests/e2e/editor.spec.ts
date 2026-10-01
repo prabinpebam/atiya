@@ -415,6 +415,15 @@ test.describe('editor', () => {
     await copy('<p>Third, <em>slanted</em></p><p><strong>Fourth</strong></p>', 'Third, slanted\n\nFourth');
     await page.keyboard.press('Control+V');
     await expect.poll(() => blocks()[p + 3]?.markdown, { timeout: 15_000 }).toBe('- First **item**\n- Second itemThird, _slanted_\n- **Fourth**');
+
+    // prose that keeps its white space (a chat's, a mail's) keeps its links, after the space before the caret
+    await frame(page).locator('p', { hasText: 'Bold and italic' }).click();
+    await page.keyboard.press('End');
+    await page.keyboard.type(' see');
+    await page.keyboard.press('Space');
+    await copy('<div style="white-space: pre-wrap; font-family: Segoe UI, sans-serif;">the <a href="https://designup.io/">DesignUp</a> site\nand <b>more</b></div>', 'the DesignUp site\nand more');
+    await page.keyboard.press('Control+V');
+    await expect.poll(() => blocks()[p + 2]?.markdown, { timeout: 15_000 }).toBe('**Bold** and _italic_ with [a link](https://example.com/) see the [DesignUp](https://designup.io/) site\\\nand **more**');
   });
 
   test('text pastes into every kind of text block, headings and quotes as well as paragraphs', async ({ page, context }) => {

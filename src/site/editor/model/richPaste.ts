@@ -26,7 +26,12 @@ interface Style {
   strong: boolean;
   em: boolean;
   code: boolean;
+  /** In a pre element: a code block's words. */
   pre: boolean;
+  /** White space kept (pre, pre-wrap, pre-line): its line ends are line breaks. */
+  lines: boolean;
+  /** A monospaced font somewhere in the font stack. */
+  mono: boolean;
 }
 
 const kids = (n: MiniNode) => Array.from(n.childNodes);
@@ -51,13 +56,16 @@ function within(n: MiniNode, st: Style): Style {
   if (tag === 'b' || tag === 'strong') next.strong = true;
   if (tag === 'i' || tag === 'em' || tag === 'cite' || tag === 'dfn' || tag === 'var') next.em = true;
   if (tag === 'code' || tag === 'kbd' || tag === 'samp' || tag === 'tt') next.code = true;
-  if (tag === 'pre') next.pre = true;
+  if (tag === 'pre') next.pre = next.lines = true;
   const w = s['font-weight'];
   if (w) next.strong = w === 'bold' || w === 'bolder' || (/^\d+$/.test(w) && Number(w) >= 600);
   const fs = s['font-style'];
   if (fs) next.em = fs === 'italic' || fs === 'oblique';
-  if (s['font-family'] && MONO.test(s['font-family'])) next.code = true;
-  if (s['white-space'] && /^pre/.test(s['white-space'])) next.pre = true;
+  // the font asked for, not a fallback at the end of its list ("Inter, monospace")
+  if (s['font-family'] && MONO.test(s['font-family'].split(',')[0])) next.code = true;
+  if (s['font-family']) next.mono = MONO.test(s['font-family']);
+  const ws = s['white-space'] ?? s['white-space-collapse'];
+  if (ws) next.lines = /^(pre|break-spaces|preserve)/.test(ws);
   return next;
 }
 
@@ -83,13 +91,16 @@ function inline(n: MiniNode, st: Style, out: { pictures: number }, inLink = fals
   const res: Inline[] = [];
   for (const c of kids(n)) {
     if (c.nodeType === TEXT) {
-      const raw = (c.textContent ?? '').replace(/\u00a0/g, ' ');
-      const v = st.pre ? raw : raw.replace(/[ \t\r\n]+/g, ' ');
-      if (!v) continue;
-      let node: Inline = st.code ? { t: 'code', v: v.replace(/\s+/g, ' ') } : { t: 'text', v };
-      if (st.em) node = { t: 'em', c: [node] };
-      if (st.strong) node = { t: 'strong', c: [node] };
-      res.push(node);
+      const raw = (c.textContent ?? '').replace(/\u00a0/g, ' ').replace(/\r\n?/g, '\n');
+      // kept white space: each line end a line break; otherwise runs of white space are one space
+      (st.lines ? raw.split('\n') : [raw.replace(/[ \t\n]+/g, ' ')]).forEach((v, k) => {
+        if (k) res.push({ t: 'br' });
+        if (!v) return;
+        let node: Inline = st.code ? { t: 'code', v: v.replace(/\s+/g, ' ') } : { t: 'text', v: v.replace(/\t/g, ' ') };
+        if (st.em) node = { t: 'em', c: [node] };
+        if (st.strong) node = { t: 'strong', c: [node] };
+        res.push(node);
+      });
       continue;
     }
     if (c.nodeType !== ELEMENT) continue;
@@ -107,9 +118,11 @@ function inline(n: MiniNode, st: Style, out: { pictures: number }, inLink = fals
     if (BLOCK.has(tag) && res.length) res.push({ t: 'br' });
     const inner = within(c, st);
     if (tag === 'a' && !inLink) {
-      const href = attr(c, 'data-md-href') ?? attr(c, 'href') ?? '';
+      // a link copied from the canvas carries what was written: a site page's ref: is kept too
+      const written = attr(c, 'data-md-href');
+      const href = written ?? attr(c, 'href') ?? '';
       const words = inline(c, inner, out, true);
-      if (SAFE_HREF.test(href)) res.push({ t: 'link', href, c: words });
+      if (SAFE_HREF.test(href) || (written && /^ref:[\w-]+\/[\w./-]+$/.test(written))) res.push({ t: 'link', href, c: words });
       else res.push(...words);
       continue;
     }
@@ -143,7 +156,8 @@ function allCode(n: MiniNode, st: Style): { code: number; all: number } {
     if (c.nodeType === TEXT) {
       const len = (c.textContent ?? '').replace(/\s+/g, '').length;
       all += len;
-      if (st.code || st.pre) code += len;
+      // a code editor's copy: monospaced, or a monospaced stack keeping its white space (prose that keeps it, a chat's, isn't)
+      if (st.code || st.pre || (st.mono && st.lines)) code += len;
     } else if (c.nodeType === ELEMENT && !SKIP.has(tagOf(c))) {
       const r = allCode(c, within(c, st));
       code += r.code;
@@ -158,7 +172,7 @@ function allCode(n: MiniNode, st: Style): { code: number; all: number } {
  * it, or a copy from a code editor.
  */
 export function blocksFromHtml(root: MiniNode): Pasted | null {
-  const base: Style = { strong: false, em: false, code: false, pre: false };
+  const base: Style = { strong: false, em: false, code: false, pre: false, lines: false, mono: false };
   const size = allCode(root, base);
   if (!size.all || size.code === size.all) return null;
   const counts = { pictures: 0 };
