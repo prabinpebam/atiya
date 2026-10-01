@@ -7,15 +7,15 @@ import { sample } from '../design/samples';
 const p = sample('lighthouse-dusk');
 ---
 
-<Example title="Under a picture" layout="stack" description="What it shows, then who made it.">
+<Example title="Under a picture" layout="stack" description="What it shows, then who made it, centred under it, as every media caption is.">
   <figure class="demo-figure">
     <Image src={p.src} srcset={p.srcset} sizes="40rem" alt={p.alt} width={p.width} height={p.height} />
     <Caption credit="Concept art, painted with GPT Image">The lighthouse at dusk, its beam sweeping the sky.</Caption>
   </figure>
 </Example>
 
-<Example title="Centred" layout="stack">
-  <Caption as="p" align="center">The plaza, where every path on the planet begins.</Caption>
+<Example title="With the text" layout="stack" description="Set at the start, for a caption that isn't under media.">
+  <Caption as="p" align="start">The plaza, where every path on the planet begins.</Caption>
 </Example>
 
 <style>

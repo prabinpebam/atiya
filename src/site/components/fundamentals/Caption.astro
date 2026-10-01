@@ -1,7 +1,8 @@
 ---
 /**
- * A caption: what a picture shows and, if it matters, who made it. Small, in the interface face, set
- * off from the text it follows. Figures, galleries, carousels and the lightbox all caption with it.
+ * A caption: what a picture or a video shows and, if it matters, who made it. Small, in the interface
+ * face, set off from the text it follows, and centred under its media. Figures, galleries, carousels,
+ * videos, the lead picture and the lightbox all caption with it.
  * @tier fundamental
  * @a11y A figcaption names its figure; the credit is part of the caption, not an image's alt text.
  */
@@ -12,13 +13,13 @@ interface Props {
   credit?: string;
   /** on-image: white on the photograph's shade (a caption laid over a picture). */
   tone?: 'default' | 'on-image';
-  /** start, or centred under a centred picture. */
+  /** center (every media caption): centred under its picture or video; start: a caption set with the text, not under media. */
   align?: 'start' | 'center';
   /** The element’s id (for aria-describedby). */
   id?: string;
 }
 
-const { as = 'figcaption', credit, tone = 'default', align = 'start', id } = Astro.props;
+const { as = 'figcaption', credit, tone = 'default', align = 'center', id } = Astro.props;
 const Tag = as;
 ---
 
