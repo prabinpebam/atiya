@@ -33,6 +33,15 @@
       ]
     },
     {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Hand crafted",
+          "value": "The images use in this project were created by me personally using C4D, octane render and After Effects, way before gen AI."
+        }
+      ]
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "A rebrand designed to move the team, not simply rename it."
