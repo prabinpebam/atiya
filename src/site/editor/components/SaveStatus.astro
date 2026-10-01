@@ -1,0 +1,115 @@
+---
+/**
+ * The top bar's save status (documentation/editor/spec.md §2.1): what's become of the screen's changes,
+ * always in view. A mark and a line: a pencil for unsaved changes, a spinner while saving, a check and
+ * how long ago once saved, a warning when a save was refused or the dev server isn't answering. A
+ * moment's note (Moved, Uploaded, Updated from another tab) has the line for a few seconds while the
+ * mark keeps the save state. The screens' scripts drive it through `saveStatus` and `announce`
+ * (scripts/client.ts).
+ * @tier editor
+ * @a11y The line is a polite live region (role="status"): a save, a refusal and a note are each heard once; the marks are hidden, the words say it all.
+ * @a11y The time saved is a <time> with the exact time as its title.
+ */
+import Icon from '../../components/fundamentals/Icon.astro';
+import Spinner from '../../components/fundamentals/Spinner.astro';
+---
+
+<div class="save" data-editor-save data-state="idle">
+  <span class="mark" aria-hidden="true">
+    <span class="for" data-for="saving"><Spinner size="sm" label="Saving" /></span>
+    <span class="for" data-for="saved idle"><Icon name="success" /></span>
+    <span class="for" data-for="dirty"><Icon name="edit" /></span>
+    <span class="for" data-for="failed offline"><Icon name="error" tone="tonal" /></span>
+  </span>
+  <p class="line"><span class="text" role="status" aria-live="polite" data-editor-status></span> <time class="time" data-editor-save-time hidden></time></p>
+</div>
+
+<style>
+  .save {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-inline-size: 0;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    transition:
+      background-color var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+
+  .mark {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+  }
+
+  .for {
+    display: none;
+    grid-area: 1 / 1;
+  }
+
+  /* each state shows its own mark */
+  .save[data-state='saving'] [data-for~='saving'],
+  .save[data-state='saved'] [data-for~='saved'],
+  .save[data-state='idle'] [data-for~='idle'],
+  .save[data-state='dirty'] [data-for~='dirty'],
+  .save[data-state='failed'] [data-for~='failed'],
+  .save[data-state='offline'] [data-for~='offline'] {
+    display: inline-grid;
+  }
+
+  .line {
+    overflow: hidden;
+    margin: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .text {
+    font-weight: var(--weight-medium);
+  }
+
+  .save[data-state='dirty'] {
+    background: var(--color-bg-sunk);
+    color: var(--color-text);
+  }
+
+  .save[data-state='saved'] .text {
+    color: var(--color-positive);
+  }
+
+  .save[data-state='saved'] .mark {
+    color: var(--color-positive);
+    animation: settle var(--duration-slow) var(--ease-spring);
+  }
+
+  .save[data-state='failed'],
+  .save[data-state='offline'] {
+    background: var(--color-negative-soft);
+    color: var(--color-negative);
+  }
+
+  .save[data-state='failed'] .text,
+  .save[data-state='offline'] .text {
+    font-weight: var(--weight-semibold);
+  }
+
+  /* a note (Moved, Uploaded, Updated from another tab) has the line; the mark keeps the save state */
+  .save[data-note] .text {
+    color: var(--color-text);
+  }
+
+  @keyframes settle {
+    from {
+      transform: scale(0.6);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .save[data-state='saved'] .mark {
+      animation: none;
+    }
+  }
+</style>

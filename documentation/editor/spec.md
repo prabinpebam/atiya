@@ -14,7 +14,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 >   - **Text:** click a paragraph, heading, quote, the title or the standfirst and type. Enter makes a new paragraph.
 >   - **Blocks:** a "+" between blocks adds one from a palette of the content model's blocks. A toolbar on the selected block moves, duplicates or deletes it.
 >   - **Order and look:** an outline beside the canvas reorders blocks by drag or keyboard. A block's look is limited to the choices the design system offers (its width, a gallery's layout), so no edit can break the design.
-> - **Saving:** every change is written as soon as it's made, after the same contract check the build runs, as one transaction: a change the contract refuses, or one that conflicts with an edit made elsewhere, never reaches a file. Undo and redo cover the whole document, and git is the version history.
+> - **Saving:** every change is written as soon as it's made, after the same contract check the build runs, as one transaction: a change the contract refuses, or one that conflicts with an edit made elsewhere, never reaches a file. The top bar always says whether it's saved, and every open tab shows a change the moment it's saved (§2.1). Undo and redo cover the whole document, and git is the version history.
 > - **Pages move freely:** a page's slug, section and status can change at any time, published or not. Its address follows, and the old one simply goes, with no redirect (the owner's call). Only a draft can be deleted.
 > - **Publishing:** the Publish screen lists what changed in `content/`, checks it all, commits just those files and pushes. Discard puts a file back as it was last published.
 > - **Built from the design system:** the editor's screens are Astro pages made of the site's own tokens, fundamentals and compounds, with two new generic compounds (Dialog, Tabs). Client scripts only coordinate; the page and every form are rendered by the server.
@@ -134,6 +134,27 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 | Publish | `/_edit/publish/` | What changed in `content/`, the contract check, discard, and publish (§7) |
 
 Every screen shares one frame: a side navigation to the screens, and a top bar with the screen's title, the save status and the number of unpublished changes (linking to Publish). To the content model a page is an article whose `kind` is `page` (About, Contact; [model §3](../content/model.md#3-content-item-types)), so pages are listed with the rest and filtered by kind.
+
+### 2.1 Saved, and live
+
+Edit mode always says what's become of a change, and every open page shows a change the moment it's saved.
+- **The save status** (`components/SaveStatus.astro`, driven by `saveStatus` in `scripts/client.ts`, words in the pure `model/status.ts`) is in the top bar of every screen, in one of these states:
+
+  | State | Mark | Line |
+  |---|---|---|
+  | Nothing changed since the screen opened | check | All changes saved |
+  | Typed in and not saved yet (the article's text before it's sent, a form before its Save) | pencil, on a tinted pill | Unsaved changes |
+  | A save under way | spinner | Saving… |
+  | Saved | check, in green | Saved, or what was saved ("Saved the details of lettering"), and how long ago ("just now", "3 min ago", then the time) |
+  | Refused | warning, on a red pill | Not saved, and why |
+  | The dev server isn't answering (its socket dropped) | warning, on a red pill | Offline: nothing saves |
+
+  A moment's note (Moved, Uploaded, Updated from another tab) has the line for a few seconds (a problem for longer) while the mark keeps the save state. A screen that reloads after its save (Sections, Navigation, Planet) carries the saved state to the page it loads. Leaving a screen with unsaved changes, or while a save is under way, asks first (not the editor's own reload after a save). The line is a live region.
+- **Every change reaches every open page** (§8.4): the server pushes each change, with the editor tab that made it, to every page the dev server shows.
+  - A **page of the site** reloads once the changes settle (typing saves about once a second), so an open article shows a caption saved in Media at once.
+  - The **article editor** takes in a change to its own article from another tab or from disk at once (the outline, the inspector, the canvas and the versions it saves against) when nothing here is unsaved; with unsaved typing, it stops its saves and shows the conflict (§8.3), so nothing is lost or written over. Anything else it shows (a picture's caption, the sections, a page it links to) comes in once the typing stops.
+  - **Every other screen** draws itself again (its `screen` region). With unsaved input, a text field in use or a dialog open, it keeps what's being typed, says it's behind, and catches up once that's saved, put away or left.
+  - A tab's own saves come back to it as its own (the `X-Editor-Tab` header), and a page drawn after a change (one that reloaded after its save) knows it has it already (the content generation), so neither is told twice.
 
 ## 3. The article editor
 
@@ -359,8 +380,9 @@ Anything else gets 403, with no detail. Paths come from IDs checked against the 
 - **The problem:** the dev server reloads every open tab when a server-only module changes. If the content JSON were modules, every save would reload the editor it came from.
 - **The fix:** content is read from disk, not imported (§8.3), so a save touches no module. The integration watches `content/` itself:
   - **on any change** it sends Astro's own `astro:content-changed` event to the `ssr` and `prerender` environments, which clears the route cache, so a new or newly published article's route exists at once, without a restart;
-  - **on a change the editor didn't make** (the store records each file it writes with its hash; the watcher ignores temporary files and a change whose path and hash match a record), it advances the generation and sends a custom `site:content-changed` event to the browser. A public page reloads on it, so editing JSON by hand still refreshes the site as today. An editor screen doesn't: if it holds unsaved input it shows the conflict, and otherwise it refreshes its data in place.
-- **Canvas refreshes:** the editor refreshes the canvas itself, only after changes that re-render it (a block moved, added or reconfigured), keeping its scroll position and selection. Text saves don't refresh it.
+  - **and it pushes the change to every open page** as a custom `site:content-changed` event on the dev server's socket, with the files, the editor tab that made it (`origin`: the store reads it from the request's `X-Editor-Tab` header, through `asTab` in `server/store.ts`; null for a change made by hand) and the content generation it brought the content to. The store tells it of its own writes (it records the hash of each file it writes); the watcher tells it of everything else and advances the generation, ignoring temporary files and a change whose bytes the pages already know (the store's write, or a change already announced: Windows reports one write as several events, and a second report used to look like an edit made elsewhere). What each page does with it is §2.1: a public page reloads once the changes settle; an editor screen brings the change in live, keeps unsaved input, and ignores its own saves and changes it already shows.
+  - **Pictures' masters aren't watched** (the dev server's `server.watch.ignored`): a new master (an upload, a crop) made the dev server reload every open page, losing unsaved typing in other tabs. The store tells the pages of the masters it writes, and what a page shows of a picture comes from its sidecar.
+- **Canvas refreshes:** the editor refreshes the canvas itself, only after changes that re-render it (a block moved, added or reconfigured, or a change made elsewhere), keeping its scroll position and selection. Text saves don't refresh it.
 
 ### 8.5 The API
 
@@ -490,4 +512,4 @@ Built to this spec (the evidence for each point of the Definition of Done is in 
 - **Pasting Markdown** (§3.2) replaced v2's "paste is plain text, a blank line splits": Markdown written elsewhere (the owner drafts in Markdown) arrived with its `###` and `**` as literal characters. The canvas decides only what a paste is (`pasteKind`: nothing, plain words, or blocks) and hands blocks to the editor with the words either side of the caret; the editor makes and places them (`blocksFromMarkdown`, `pasteAt` in `model/paste.ts`), one step in the history. A paste into a new, still-empty paragraph works the same way.
 - **Windows:** git is asked for the content folder's place in the repository (`rev-parse --show-prefix`) rather than a path computed from two spellings of one folder (short names like `PRABIN~2`, junctions); pictures are read with sharp from their bytes, never their path, because sharp keeps files it opened by path open and Windows then refuses to replace or delete them.
 - **The design library** shows every component token except `c.editor`: edit mode is dev only, and the production check searches `dist/` (except the published docs) for its sentinels.
-- **Tests:** the unit tests are `editor.test.ts` (the guard, the store), `editorModel.test.ts` (document operations, pasted Markdown, the DOM to Markdown, the structure, IDs, the names, the reference graph, the queue) and `editorServer.test.ts` (uploads through sharp, a crop chosen before an upload, SVG, GIF and TIFF, details, Replace, Delete, git against a temporary repository and bare remote, the integration), and `editorUpload.test.ts` (the upload form's rules: formats, pastes, names, the preview's line). The E2E group is the Playwright project `editor` (`npx playwright test --project=editor`), on the fixture server (`scripts/editor-test-server.mjs`, port 4330), reset between tests.
+- **Tests:** the unit tests are `editor.test.ts` (the guard, the store), `editorModel.test.ts` (document operations, pasted Markdown, the DOM to Markdown, the structure, IDs, the names, the reference graph, the queue) and `editorServer.test.ts` (uploads through sharp, a crop chosen before an upload, SVG, GIF and TIFF, details, Replace, Delete, git against a temporary repository and bare remote, the integration), and `editorUpload.test.ts` (the upload form's rules: formats, pastes, names, the preview's line), and `editorStatus.test.ts` (the save status's words); `editor.test.ts` also holds that a write is pushed with the tab that made it. The E2E group is the Playwright project `editor` (`npx playwright test --project=editor`), on the fixture server (`scripts/editor-test-server.mjs`, port 4330), reset between tests.

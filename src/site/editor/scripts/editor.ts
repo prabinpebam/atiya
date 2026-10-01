@@ -5,7 +5,7 @@
  * fetching the page and swapping those regions) and the canvas (by reloading it) after changes that
  * re-render them, and talks to the canvas by postMessage (same origin only).
  */
-import { api, announce, describeIssue, swapRegions, type Issue } from './client';
+import { api, announce, describeIssue, onContentChange, saveStatus, swapRegions, type Issue } from './client';
 import * as ops from '../model/ops';
 import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
@@ -78,7 +78,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       refresh: { ...(waiting?.refresh ?? {}), ...request.refresh },
     }),
     async (job, more) => {
-      announce('Saving\u2026');
+      saveStatus.saving();
       const r = await api<{ article: Article }>('PUT', `articles/${state.id}`, {
         article: doc,
         ...(job.section !== undefined ? { section: job.section } : {}),
@@ -96,18 +96,19 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         doc = more() ? { ...doc, updatedAt: server.updatedAt, ...(server.publishedAt ? { publishedAt: server.publishedAt } : {}) } : server;
         saved = structuredClone(server);
         clearIssues();
-        announce('Saved');
+        if (more()) saveStatus.saving();
+        else saveStatus.saved();
         await refreshAll(job.refresh);
         return 'ok';
       }
       if (r.status === 409) {
-        announce('This article changed elsewhere', 'negative');
+        saveStatus.failed('Not saved: this article changed in another tab or on disk');
         dialog('editor-conflict')?.showModal();
         return 'stop';
       }
       doc = structuredClone(saved);
       showIssues(r.data.issues ?? []);
-      announce(`Not saved: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`, 'negative');
+      saveStatus.failed(`Not saved: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`);
       return 'failed';
     },
   );
@@ -137,6 +138,49 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (names.length) await swap(names);
     if (r.canvas) reloadCanvas();
   };
+
+  // ---------- changes made elsewhere: another tab, another screen, a file changed by hand ----------
+  // This article, changed elsewhere, comes in at once when nothing here is unsaved (and stops everything
+  // with the conflict dialog when something is). Anything else it shows (a picture's caption, a page it
+  // links to, the sections) comes in once the typing stops, so the caret is never pulled away.
+  let typingAt = 0;
+  const typing = () => Date.now() - typingAt < 1500;
+  const unsaved = () => queue.pending || typing() || JSON.stringify(doc) !== JSON.stringify(saved);
+  let heard = new Set<string>();
+  let fromTab = false;
+  let soon = 0;
+  const bringIn = async () => {
+    const files = heard;
+    const where = fromTab ? 'in another tab' : 'on disk';
+    if (files.has(state.key) && unsaved()) {
+      heard = new Set();
+      saveStatus.failed(`Not saved: this article changed ${where}`);
+      dialog('editor-conflict')?.showModal();
+      return;
+    }
+    if (queue.pending || typing() || document.querySelector('dialog[open]')) {
+      soon = window.setTimeout(() => void bringIn(), 600);
+      return;
+    }
+    heard = new Set();
+    fromTab = false;
+    await swap(['outline', 'inspector', 'state']);
+    const fresh = readState();
+    if (files.has(state.key)) {
+      doc = fresh.article;
+      saved = structuredClone(fresh.article);
+      state.version = fresh.version;
+    }
+    Object.assign(state, { structureVersion: fresh.structureVersion, planetVersion: fresh.planetVersion, section: fresh.section, place: fresh.place, published: fresh.published, publicPath: fresh.publicPath });
+    reloadCanvas();
+    announce(files.has(state.key) ? `Updated with changes made ${where}` : `Updated with a change made ${where}`);
+  };
+  onContentChange(({ files, origin }) => {
+    files.forEach((f) => heard.add(f));
+    if (origin) fromTab = true;
+    clearTimeout(soon);
+    soon = window.setTimeout(() => void bringIn(), 250);
+  }, signal);
 
   // ---------- selection ----------
   const showBlock = (i: number | null) => {
@@ -376,6 +420,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         afterReady.splice(0).forEach((fn) => fn());
         break;
       }
+      case 'typing':
+        typingAt = Date.now();
+        saveStatus.dirty();
+        break;
       case 'select':
         if (m.field) {
           setSelected(null);

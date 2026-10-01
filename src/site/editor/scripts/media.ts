@@ -4,7 +4,7 @@
  * Replace and Delete. Each saves to the picture at once, in one store transaction, and the grid and the
  * details are rendered again from the server.
  */
-import { api, announce, describeIssue, swapRegions } from './client';
+import { api, announce, describeIssue, saveStatus, swapRegions } from './client';
 import { openCrop } from './crop';
 import type { ImageMedia } from '../../content/schema';
 
@@ -128,15 +128,15 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       else if (licence.url) return say(form, 'Name the licence, or leave its address empty.');
       else delete next.licence;
       say(form, '');
-      announce('Saving\u2026');
+      saveStatus.saving();
       const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [sidecarKey(state.id)]: state.version } });
       if (!r.ok) {
         const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The details weren't saved.";
-        announce(`Not saved: ${why}`, 'negative');
+        saveStatus.failed(`Not saved: ${why}`);
         return say(form, r.status === 409 ? 'Its details changed elsewhere since you opened it. Open it again to see them.' : why);
       }
       await swapRegions(['media-details', 'media-grid']);
-      announce('Saved');
+      saveStatus.saved(`Saved the details of ${nameOf(state.id)}: every page that shows it has them now`);
     },
     { signal },
   );
@@ -162,15 +162,15 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const file = d.get('file');
       if (!(file instanceof File) || !file.size) return say(replace, 'Choose the new picture.');
       say(replace, '');
-      announce('Replacing\u2026');
+      saveStatus.saving();
       const r = await api('POST', `media/${state.id}/replace`, d);
       if (!r.ok) {
         const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "It wasn't replaced.";
-        announce(`Not replaced: ${why}`, 'negative');
+        saveStatus.failed(`Not replaced: ${why}`);
         return say(replace, why);
       }
       await swapRegions(['media-details', 'media-grid']);
-      announce('Replaced');
+      saveStatus.saved(`Replaced ${nameOf(state.id)}`);
     },
     { signal },
   );
@@ -179,12 +179,12 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
   root.querySelector('[data-editor-media-delete]')?.addEventListener(
     'click',
     async () => {
-      announce('Deleting\u2026');
+      saveStatus.saving();
       const r = await api('DELETE', `media/${state.id}`);
       (root.querySelector('#delete-media') as HTMLDialogElement | null)?.close();
-      if (!r.ok) return announce(`Not deleted: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'something still uses it'}`, 'negative');
+      if (!r.ok) return saveStatus.failed(`Not deleted: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'something still uses it'}`);
       await show(null, false).then(() => history.replaceState(null, '', urlFor(null)));
-      announce(`Deleted ${nameOf(state.id)}`);
+      saveStatus.saved(`Deleted ${nameOf(state.id)}`);
     },
     { signal },
   );

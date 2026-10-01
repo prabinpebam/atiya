@@ -8,8 +8,10 @@
  *   build with it set fails, so a build always reads and imports the same content.
  * - In dev, it watches the content folder. Content is read from disk, not imported, so a change reloads
  *   nothing by itself: on every change this clears Astro's route cache (so a new or newly published
- *   page has its route at once); on a change the editor didn't make, it also moves the content
- *   generation on and tells open pages, which reload (an editor screen with unsaved input doesn't).
+ *   page has its route at once) and tells every open page, with the editor tab that made it (none for a
+ *   change made by hand): site pages reload, and edit mode's screens bring the change in live (one with
+ *   unsaved input keeps it and says so). A change the editor didn't make also moves the content
+ *   generation on (the store does that for its own).
  * - In dev, unless SITE_EDITOR=off, it injects the editor's routes (all on demand, under /_edit/) and
  *   the middleware that guards them.
  */
@@ -41,7 +43,7 @@ const writeKey = (/** @type {string} */ file) => (process.platform === 'win32' ?
 
 /**
  * The content state shared with the dev server's modules (source.ts reads it): one process, one object.
- * @returns {{ generation: number, writes: Map<string, string>, notify?: (files: string[], fromEditor: boolean) => void }}
+ * @returns {{ generation: number, writes: Map<string, string>, notify?: (files: string[], fromEditor: boolean, origin?: string | null) => void }}
  */
 function contentState() {
   const g = /** @type {any} */ (globalThis);
@@ -65,7 +67,13 @@ export default function editor() {
         updateConfig({
           vite: {
             define: { __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot) },
-            ...(process.env.SITE_STRICT_PORT ? { server: { strictPort: true } } : {}),
+            server: {
+              ...(process.env.SITE_STRICT_PORT ? { strictPort: true } : {}),
+              // a picture's master (an upload, a crop) is never a module, but a new one made the dev server
+              // reload every open page, losing unsaved typing in other tabs; the store tells the pages itself,
+              // and the sidecar beside each master is what they show (documentation/editor/spec.md §8.4)
+              ...(command === 'dev' ? { watch: { ignored: [/[\\/]content[\\/]media[\\/].+\.(?:webp|jpe?g|png|avif|gif)$/i] } } : {}),
+            },
           },
         });
         editing = command === 'dev' && process.env.SITE_EDITOR !== 'off';
@@ -81,10 +89,13 @@ export default function editor() {
 
       'astro:server:setup': ({ server }) => {
         const state = contentState();
-        state.notify = (files, fromEditor) => {
+        state.notify = (files, fromEditor, origin = null) => {
           // Astro's own signal that content changed: it clears the route cache (getStaticPaths)
           for (const name of ['ssr', 'prerender']) server.environments[name]?.hot.send('astro:content-changed', {});
-          if (!fromEditor) server.environments.client.hot.send('site:content-changed', { files });
+          // every open page hears every change: a site page reloads, an editor screen brings in what
+          // another tab (or a hand edit) changed, and the tab that made it (origin) knows it's its own;
+          // the generation lets a page drawn after the change (a screen that reloaded) know it has it
+          server.environments.client.hot.send('site:content-changed', { files, fromEditor, origin, generation: state.generation });
         };
         server.watcher.add(contentRoot);
         server.watcher.on('all', (event, file) => {
@@ -93,11 +104,10 @@ export default function editor() {
           if (rel.startsWith('..') || isAbsolute(rel)) return;
           const hash = event === 'unlink' || !existsSync(file) ? 'deleted' : sha1(file);
           const key = '/content/' + rel.split(/[\\/]/).join('/');
-          if (state.writes.get(writeKey(file)) === hash) {
-            // the editor's own write: its store has already moved the generation on and told the server
-            state.writes.delete(writeKey(file));
-            return;
-          }
+          // the bytes the open pages already know of: the editor's own write (its store told them), or a
+          // change already announced (Windows reports one write as several events): nothing to tell
+          if (state.writes.get(writeKey(file)) === hash) return;
+          state.writes.set(writeKey(file), hash);
           state.generation++;
           state.notify?.([key], false);
         });

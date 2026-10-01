@@ -20,6 +20,8 @@ import '../styles/editor-tokens.css';
 import { withBase } from '../design/meta';
 import { THEME_OPTIONS } from '../scripts/theme';
 import { changes } from './server/git';
+import { generation } from '../content/source';
+import SaveStatus from './components/SaveStatus.astro';
 
 interface Props {
   /** The document title: the screen's name. */
@@ -64,11 +66,11 @@ const groups = [
 ---
 
 <PageShell title={`${title} · Edit mode`} noindex preload={['ui']} liveContent={false}>
-  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined}>
+  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined} data-generation={generation()}>
     <header class="top">
       <a class="brand" href={to('')}>Edit mode</a>
       <div class="title"><slot name="title" /></div>
-      <p class="status" role="status" aria-live="polite" data-editor-status></p>
+      <div class="status"><SaveStatus /></div>
       <div class="tools"><slot name="tools" /></div>
       <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" />
       <div class="pending" data-region="editor-pending">
@@ -92,7 +94,7 @@ const groups = [
     <main id="main" class="main" tabindex="-1" data-scrollbar>
       {
         heading ? (
-          <div class="screen">
+          <div class="screen" data-region="screen">
             <header class="screen-head">
               <div class="screen-words">
                 <Heading level={1} size="h2">{heading}</Heading>
@@ -167,15 +169,9 @@ const groups = [
   }
 
   .status {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    white-space: nowrap;
-  }
-
-  .status[data-tone='negative'] {
-    color: var(--color-negative);
-    font-weight: var(--weight-semibold);
+    display: flex;
+    flex: 0 1 auto;
+    min-inline-size: 0;
   }
 
   .tools {
@@ -290,6 +286,10 @@ const groups = [
 <script>
   import { each } from '../scripts/page';
   import { bindThemeSwitch } from '../scripts/theme';
+  import { initLive } from './scripts/live';
+
+  // what changes elsewhere (another tab, a file changed by hand) comes in live; unsaved input stays
+  each<HTMLElement>('[data-editor-app]', (app, signal) => initLive(app, signal));
 
   // the colour theme, for the whole of edit mode: the canvas (a page of the site) follows it on its own
   each<HTMLElement>('[data-editor-theme-switch]', (sw, signal) => {

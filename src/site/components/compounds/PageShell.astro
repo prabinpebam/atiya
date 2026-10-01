@@ -38,7 +38,7 @@ interface Props {
   preload?: PreloadFace[];
   /** Change pages without a reload (Astro's client-side router), so what the layout keeps across pages (a side nav) stays put. */
   router?: boolean;
-  /** In dev, reload when a content file changes on disk (off for a screen that holds unsaved edits of its own). */
+  /** In dev, reload when the content changes (a save in edit mode, or a file changed by hand), once the changes settle (off for a screen that brings changes in itself). */
   liveContent?: boolean;
   /** The page's canonical address, when it isn't this one (a page shown elsewhere, a redirect): a path on the site, the base path is added. */
   canonical?: string;
@@ -124,11 +124,15 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
   overlayPage();
   each<HTMLElement>('[data-scrollbar]', overlay);
 
-  // dev only: content is read from disk, so a content file changed by hand reloads nothing by itself
-  // (documentation/editor/spec.md §8.4); a page shown in a frame, or one that opts out, stays put
+  // dev only: content is read from disk, so a change (a save in edit mode, or a file changed by hand)
+  // reloads nothing by itself (documentation/editor/spec.md §8.4): this page reloads once the changes
+  // settle (typing in edit mode saves every second or so). A page in a frame, or one that opts out, stays put
   if (import.meta.hot) {
+    let settle = 0;
     import.meta.hot.on('site:content-changed', () => {
-      if (!window.frameElement && document.body.dataset.liveContent !== 'off') location.reload();
+      if (window.frameElement || document.body.dataset.liveContent === 'off') return;
+      clearTimeout(settle);
+      settle = window.setTimeout(() => location.reload(), 600);
     });
   }
 </script>

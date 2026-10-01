@@ -5,7 +5,7 @@
  * published or not: its old address simply goes (§7.2 of the sections spec). A page on the planet taken
  * off the site is refused (V13), and the screen says why.
  */
-import { api, announce, describeIssue } from './client';
+import { api, describeIssue, saveStatus } from './client';
 import { addHub, nodeIds, placeAll, reorder, setInMenu, unplace, updateHub } from '../model/structure';
 import { slugify, unique } from '../model/ids';
 import type { ManagerMove, ManagerReorder } from './manager';
@@ -13,7 +13,6 @@ import type { SiteStructure } from '../../content/schema';
 
 const STRUCTURE = '/content/structures/site.json';
 const FOCUS = 'editor.sections.focus';
-const NOTICE = 'editor.sections.notice';
 
 export function initSections(root: HTMLElement, signal: AbortSignal) {
   const state = JSON.parse(root.querySelector('[data-editor-sections-state]')?.textContent ?? '{}') as { structure: SiteStructure; version: string };
@@ -33,17 +32,17 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
    * selector) and `notice` announced; a refusal says why, in the form or over the list.
    */
   const put = async (next: SiteStructure, o: { focus?: string; form?: Element | null; notice?: string; go?: URL } = {}) => {
-    announce('Saving\u2026');
+    saveStatus.saving();
     const r = await api('PUT', 'structure', { structure: next, ifMatch: { [STRUCTURE]: state.version } });
     if (r.ok) {
       if (o.focus) sessionStorage.setItem(FOCUS, o.focus);
-      if (o.notice) sessionStorage.setItem(NOTICE, o.notice);
+      saveStatus.carry(o.notice ?? 'Saved');
       if (o.go) location.assign(o.go);
       else location.reload();
       return;
     }
     const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
-    announce(`Not saved: ${why}`, 'negative');
+    saveStatus.failed(`Not saved: ${why}`);
     say(o.form ?? null, why);
   };
 
@@ -125,11 +124,8 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
     }
   });
 
-  // back where the last change left off
+  // back where the last change left off (the status says what it was)
   const last = sessionStorage.getItem(FOCUS);
-  const notice = sessionStorage.getItem(NOTICE);
   sessionStorage.removeItem(FOCUS);
-  sessionStorage.removeItem(NOTICE);
   if (last) document.querySelector<HTMLElement>(last)?.focus();
-  if (notice) announce(notice);
 }

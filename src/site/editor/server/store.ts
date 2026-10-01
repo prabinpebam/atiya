@@ -10,8 +10,15 @@
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmdirSync, unlinkSync, writeFileSync, writeSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, isAbsolute } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { contentRoot, contentState, fileOf, readSnapshot, writeKey, MASTER_FILE, type Snapshot } from '../../content/source';
 import { ContentError, describe, loadContent, type Issue } from '../../content/load';
+
+/** The editor tab a request came from (its X-Editor-Tab header): the API runs each request inside it. */
+const tabs = new AsyncLocalStorage<string | null>();
+
+/** Runs `fn` as a request from an editor tab, so what it writes is told to the other tabs as that tab's. */
+export const asTab = <T>(tab: string | null, fn: () => T): T => tabs.run(tab, fn);
 
 /** One file's new bytes, or null to delete it. */
 export interface Change {
@@ -100,7 +107,9 @@ function check(snap: Pick<Snapshot, 'docs' | 'masters' | 'errors'>): { issues: I
 
 export function commit(tx: Transaction, opts: StoreOptions = {}): Promise<Result> {
   const state = contentState() as ReturnType<typeof contentState> & { lock?: Promise<unknown> };
-  const run = () => apply(tx, opts);
+  // read now, in the request's own context: the lock's chain runs it later
+  const origin = tabs.getStore() ?? null;
+  const run = () => apply(tx, opts, origin);
   const result = (state.lock ?? Promise.resolve()).then(run, run);
   state.lock = result.catch(() => undefined);
   return result;
@@ -114,7 +123,7 @@ export function withWriterLock<T>(fn: () => Promise<T>): Promise<T> {
   return result;
 }
 
-async function apply(tx: Transaction, opts: StoreOptions): Promise<Result> {
+async function apply(tx: Transaction, opts: StoreOptions, origin: string | null = null): Promise<Result> {
   const root = opts.root ?? contentRoot();
   const rename = opts.rename ?? renameSync;
   const unlink = opts.unlink ?? unlinkSync;
@@ -210,9 +219,9 @@ async function apply(tx: Transaction, opts: StoreOptions): Promise<Result> {
   }
   for (const t of ordered) if (!t.bytes) removeEmptyFolders(dirname(t.abs!), root);
 
-  // 6. tell the dev server, and whoever reads next
+  // 6. tell the dev server, every open page (with the tab that made the change), and whoever reads next
   state.generation++;
-  state.notify?.(ordered.map((t) => t.key), true);
+  state.notify?.(ordered.map((t) => t.key), true, origin);
   return { ok: true, versions: Object.fromEntries(targets.map((t) => [t.key, versionOf(t.bytes)])) };
 }
 

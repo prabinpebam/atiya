@@ -19,7 +19,7 @@ const ARTICLE = 'do-what-makes-you-proud';
 const articleFile = (id = ARTICLE) => join(FIXTURE, 'content/articles', `${id}.json`);
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
 const status = (page: Page) => page.locator('[data-editor-status]');
-const saved = (page: Page) => expect(status(page)).toHaveText('Saved', { timeout: 15_000 });
+const saved = (page: Page) => expect(status(page)).toHaveText(/^Saved\b/, { timeout: 15_000 });
 const outlineRows = (page: Page) => page.locator('[data-editor-outline] [data-row]');
 const frame = (page: Page) => page.frameLocator('[data-editor-frame]');
 const git = (...args: string[]) => execFileSync('git', args, { cwd: FIXTURE, encoding: 'utf8' }).trim();
@@ -109,18 +109,108 @@ test.describe('editor', () => {
     expect(a).toBe(b);
   });
 
-  test('a change made elsewhere to an open article stops its saves and says so, and nothing is written over it', async ({ page }) => {
+  test('a change made elsewhere to an open article comes in at once; with unsaved typing, it stops the saves and says so, and nothing is written over it', async ({ page }) => {
     await openArticle(page);
-    const doc = readJson(articleFile());
-    writeFileSync(articleFile(), `${JSON.stringify({ ...doc, title: 'Changed elsewhere' }, null, 2)}\n`);
+    const save = page.locator('[data-editor-save]');
+    // nothing unsaved here: the change on disk comes in, canvas and all
+    writeFileSync(articleFile(), `${JSON.stringify({ ...readJson(articleFile()), title: 'Changed on disk' }, null, 2)}\n`);
+    await expect(frame(page).locator('h1')).toHaveText('Changed on disk', { timeout: 15_000 });
+    await expect(status(page)).toHaveText('Updated with changes made on disk');
+    await expect(page.locator('#editor-conflict')).toBeHidden();
+
+    // typing here, not saved yet, when the file changes again: the saves stop
     await frame(page).locator('[data-editor-editable="rich"]').first().click();
     await page.keyboard.press('Control+End');
     await page.keyboard.type(' Typed after.');
+    await expect(save).toHaveAttribute('data-state', 'dirty');
+    writeFileSync(articleFile(), `${JSON.stringify({ ...readJson(articleFile()), title: 'Changed elsewhere' }, null, 2)}\n`);
     await expect(page.locator('#editor-conflict')).toBeVisible({ timeout: 15_000 });
-    await expect(status(page)).toHaveText('This article changed elsewhere');
+    await expect(status(page)).toHaveText(/^Not saved: this article changed/);
+    await expect(save).toHaveAttribute('data-state', 'failed');
+    await page.waitForTimeout(1500);
     const now = readJson(articleFile());
     expect(now.title).toBe('Changed elsewhere');
     expect(JSON.stringify(now)).not.toContain('Typed after.');
+  });
+
+  test('the save status: all saved on opening, unsaved while typing, then saved and how long ago', async ({ page }) => {
+    await openArticle(page);
+    const save = page.locator('[data-editor-save]');
+    await expect(save).toHaveAttribute('data-state', 'idle');
+    await expect(status(page)).toHaveText('All changes saved');
+    await frame(page).locator('[data-editor-editable="rich"]').first().click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.type(' Saved as I type.');
+    await expect(save).toHaveAttribute('data-state', 'dirty');
+    await expect(status(page)).toHaveText('Unsaved changes');
+    await expect(save).toHaveAttribute('data-state', 'saved', { timeout: 15_000 });
+    await expect(status(page)).toHaveText('Saved');
+    await expect(save.locator('time')).toHaveText('just now');
+    expect(JSON.stringify(readJson(articleFile()))).toContain('Saved as I type.');
+  });
+
+  test("a picture's caption saved in Media shows at once in the open article, in edit mode and on the site", async ({ page, context }) => {
+    const blocks = readJson(articleFile()).body as { type: string; media?: string; caption?: string; showCaption?: boolean }[];
+    const fig = blocks.find((b) => b.type === 'figure' && !b.caption && b.showCaption !== false)!;
+    await openArticle(page);
+    const site = await context.newPage();
+    await site.goto(`/leadership/${ARTICLE}/`);
+    const media = await context.newPage();
+    await media.goto(`/_edit/media/?id=${fig.media}`);
+    const form = media.locator('[data-editor-media-form]');
+    await form.getByLabel('Caption').fill('A caption from the media library.');
+    await expect(media.locator('[data-editor-save]')).toHaveAttribute('data-state', 'dirty');
+    await expect(status(media)).toHaveText(/^Unsaved changes/);
+    await form.getByRole('button', { name: 'Save the details' }).click();
+    await expect(status(media)).toHaveText(/^Saved the details of /, { timeout: 15_000 });
+    await expect(media.locator('[data-editor-save] time')).toHaveText('just now');
+    await expect(frame(page).locator('figcaption', { hasText: 'A caption from the media library.' })).toBeVisible({ timeout: 15_000 });
+    await expect(status(page)).toHaveText('Updated with a change made in another tab');
+    await expect(site.locator('figcaption', { hasText: 'A caption from the media library.' })).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('the same article in two tabs: what one saves shows in the other at once, which then saves after it without a conflict', async ({ page, context }) => {
+    const other = await context.newPage();
+    await openArticle(page);
+    await openArticle(other);
+    const words = (p: Page, n: number) => frame(p).locator('[data-editor-editable="rich"]').nth(n);
+    await words(page, 0).click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.type(' Written in the first tab.');
+    await saved(page);
+    await expect(frame(other).locator('[data-editor-editable="rich"]', { hasText: 'Written in the first tab.' })).toBeVisible({ timeout: 15_000 });
+    await expect(status(other)).toHaveText('Updated with changes made in another tab');
+    await words(other, 1).click();
+    await other.keyboard.press('Control+End');
+    await other.keyboard.type(' Written in the second tab.');
+    await saved(other);
+    await expect(other.locator('#editor-conflict')).toBeHidden();
+    const text = JSON.stringify(readJson(articleFile()));
+    expect(text).toContain('Written in the first tab.');
+    expect(text).toContain('Written in the second tab.');
+    await expect(frame(page).locator('[data-editor-editable="rich"]', { hasText: 'Written in the second tab.' })).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('another screen shows a change made elsewhere at once, and keeps what is being typed in it until that is saved', async ({ page, context }) => {
+    const id = `articles/${ARTICLE}/tshirt`;
+    await page.goto(`/_edit/media/?id=${id}`);
+    const other = await context.newPage();
+    await other.goto(`/_edit/media/?id=${id}`);
+    const caption = (p: Page) => p.locator('[data-editor-media-form]').getByLabel('Caption');
+    const saveIn = async (p: Page, text: string) => {
+      await caption(p).fill(text);
+      await p.locator('[data-editor-media-form]').getByRole('button', { name: 'Save the details' }).click();
+      await saved(p);
+    };
+    // nothing typed in the other tab: it shows the change
+    await saveIn(page, 'First caption.');
+    await expect(caption(other)).toHaveValue('First caption.', { timeout: 15_000 });
+    await expect(status(other)).toHaveText('Updated with a change made elsewhere');
+    // something typed there and not saved: it's kept, and the screen says it's behind
+    await caption(other).fill('Typed, not saved.');
+    await saveIn(page, 'Second caption.');
+    await expect(status(other)).toHaveText(/^Changed elsewhere\. Your unsaved changes here are kept/, { timeout: 15_000 });
+    await expect(caption(other)).toHaveValue('Typed, not saved.');
   });
 
   test('blocks: add from the palette, move, duplicate and delete, and undo brings a deletion back', async ({ page }) => {
@@ -686,7 +776,7 @@ test.describe('editor', () => {
     await picker.getByLabel('Alt text').fill('A yellow square');
     await picker.getByRole('button', { name: 'Upload it' }).click();
     await expect.poll(() => blocks().length, { timeout: 30_000 }).toBe(count + 1);
-    expect(blocks()[p + 1]).toMatchObject({ type: 'figure', media: expect.stringMatching(new RegExp(`^articles/${ARTICLE}/pasted-picture-\\d{4}-\\d{2}-\\d{2}$`)) });
+    expect(blocks()[p + 1]).toMatchObject({ type: 'figure', media: expect.stringMatching(new RegExp(`^articles/${ARTICLE}/pasted-picture-\\d{4}-\\d{2}-\\d{2}(-\\d+)?$`)) });
   });
 
   test('sections: the sections beside the chosen one\'s pages and settings; a new section moved up; a published page dragged onto another section, back with Move, its old address simply gone; the keys; a selection moved together; Find and Show', async ({ page }) => {

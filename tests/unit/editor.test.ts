@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync, existsSync
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { guard, FRAME_HEADERS } from '../../src/site/editor/model/guard';
-import { commit, jsonBytes, pathOf, readDoc, versionOf } from '../../src/site/editor/server/store';
+import { asTab, commit, jsonBytes, pathOf, readDoc, versionOf } from '../../src/site/editor/server/store';
 import { contentState } from '../../src/site/content/source';
 
 const req = (o: { method?: string; ip?: string; headers?: Record<string, string> }) => {
@@ -155,5 +155,22 @@ describe('the store', () => {
     const next = jsonBytes(article({ title: 'Recorded' }));
     await commit({ changes: [{ key, bytes: next }], ifMatch: { [key]: version(key) } }, { root });
     expect([...contentState().writes.values()]).toContain(versionOf(next));
+  });
+
+  it('tells every open page what it wrote, and which editor tab wrote it (none outside a request)', async () => {
+    const heard: { files: string[]; fromEditor: boolean; origin?: string | null }[] = [];
+    const state = contentState();
+    const was = state.notify;
+    state.notify = (files, fromEditor, origin) => void heard.push({ files, fromEditor, origin });
+    try {
+      await asTab('tab-1234-abcd', () => commit({ changes: [{ key, bytes: jsonBytes(article({ title: 'From a tab' })) }], ifMatch: { [key]: version(key) } }, { root }));
+      await commit({ changes: [{ key, bytes: jsonBytes(article({ title: 'From no tab' })) }], ifMatch: { [key]: version(key) } }, { root });
+    } finally {
+      state.notify = was;
+    }
+    expect(heard).toEqual([
+      { files: [key], fromEditor: true, origin: 'tab-1234-abcd' },
+      { files: [key], fromEditor: true, origin: null },
+    ]);
   });
 });

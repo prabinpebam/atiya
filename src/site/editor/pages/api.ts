@@ -5,7 +5,7 @@
  */
 import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure } from '../../content/schema';
-import { commit, jsonBytes, readDoc, type Result } from '../server/store';
+import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, replaceMaster, saveSidecar, upload } from '../server/media';
 import { changes, discard, publish, push } from '../server/git';
@@ -22,7 +22,7 @@ async function body<T>(request: Request): Promise<T> {
   return (await request.json()) as T;
 }
 
-export const ALL: APIRoute = async ({ request, params, url }) => {
+const handle: APIRoute = async ({ request, params, url }) => {
   const path = (params.path ?? '').replace(/\/$/, '');
   const method = request.method.toUpperCase();
   const parts = path.split('/');
@@ -154,3 +154,12 @@ export const ALL: APIRoute = async ({ request, params, url }) => {
     return json({ ok: false, issues: [{ file: '', message: (e as Error).message }] }, 500);
   }
 };
+
+/** The editor tab a request says it's from, if it's one (an id the client made up: letters, digits and dashes). */
+const tabOf = (request: Request) => {
+  const tab = request.headers.get('X-Editor-Tab') ?? '';
+  return /^[a-z0-9-]{8,64}$/i.test(tab) ? tab : null;
+};
+
+// every request runs as its tab: what it writes reaches every other open page as that tab's change
+export const ALL: APIRoute = (ctx) => asTab(tabOf(ctx.request), () => handle(ctx));

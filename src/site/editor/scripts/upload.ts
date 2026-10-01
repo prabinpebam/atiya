@@ -5,7 +5,7 @@
  * file, at full quality); a format the server can't read is turned into a PNG here first (transparency
  * kept). A picture can also be handed to it (the canvas's paste) with a `media:file` event on the grid.
  */
-import { announce, api, describeIssue } from './client';
+import { announce, api, describeIssue, saveStatus } from './client';
 import { canCrop, openCrop } from './crop';
 import { describePicture, formatLabel, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pngName, typeOf } from '../model/upload';
 import type { Rect } from '../model/crop';
@@ -216,10 +216,16 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
       if (chosen.rect) data.set('crop', JSON.stringify({ ...chosen.rect, of: { width: chosen.width, height: chosen.height } }));
       say('');
       if (submit) submit.disabled = true;
-      announce('Uploading\u2026');
+      saveStatus.saving();
       const r = await api<{ id: string }>('POST', 'media', data);
       if (submit) submit.disabled = false;
-      if (!r.ok) return say((r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't upload it.");
+      if (!r.ok) {
+        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't upload it.";
+        saveStatus.failed(`Not uploaded: ${why}`);
+        return say(why);
+      }
+      delete form.dataset.unsaved;
+      saveStatus.saved(`Uploaded ${chosen.file.name}`);
       root.dispatchEvent(new CustomEvent('media:uploaded', { bubbles: true, detail: { id: r.data.id } }));
     },
     { signal },

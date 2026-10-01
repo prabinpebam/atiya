@@ -4,14 +4,13 @@
  * transaction (PUT planet, with its version), checked against the content contract: a page on the planet
  * must be on the site (V13), in one building at most (V15). A refusal says why, over the list or in the form.
  */
-import { api, announce, describeIssue } from './client';
+import { api, describeIssue, saveStatus } from './client';
 import { putAllIn, takeOff, updatePlace } from '../model/planet';
 import type { ManagerMove } from './manager';
 import type { PlaceId, PlanetStructure } from '../../content/schema';
 
 const PLANET = '/content/structures/planet.json';
 const FOCUS = 'editor.planet.focus';
-const NOTICE = 'editor.planet.notice';
 
 export function initPlanet(root: HTMLElement, signal: AbortSignal) {
   const state = JSON.parse(root.querySelector('[data-editor-planet-state]')?.textContent ?? '{}') as { planet: PlanetStructure; version: string };
@@ -28,16 +27,16 @@ export function initPlanet(root: HTMLElement, signal: AbortSignal) {
 
   /** Saves the planet; on success the screen reloads, with the focus on `focus` (a selector) and `notice` announced. */
   const put = async (next: PlanetStructure, o: { focus?: string; form?: Element | null; notice?: string } = {}) => {
-    announce('Saving\u2026');
+    saveStatus.saving();
     const r = await api('PUT', 'planet', { planet: next, ifMatch: { [PLANET]: state.version } });
     if (r.ok) {
       if (o.focus) sessionStorage.setItem(FOCUS, o.focus);
-      if (o.notice) sessionStorage.setItem(NOTICE, o.notice);
+      saveStatus.carry(o.notice ?? 'Saved');
       location.reload();
       return;
     }
     const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
-    announce(`Not saved: ${why}`, 'negative');
+    saveStatus.failed(`Not saved: ${why}`);
     say(o.form ?? null, why);
   };
 
@@ -71,11 +70,8 @@ export function initPlanet(root: HTMLElement, signal: AbortSignal) {
     });
   });
 
-  // back where the last change left off
+  // back where the last change left off (the status says what it was)
   const last = sessionStorage.getItem(FOCUS);
-  const notice = sessionStorage.getItem(NOTICE);
   sessionStorage.removeItem(FOCUS);
-  sessionStorage.removeItem(NOTICE);
   if (last) document.querySelector<HTMLElement>(last)?.focus();
-  if (notice) announce(notice);
 }

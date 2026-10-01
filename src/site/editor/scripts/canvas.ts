@@ -20,6 +20,7 @@ type Out =
   | { type: 'split'; index: number; parts: string[] }
   | { type: 'paste'; index: number; pending: boolean; before: string; after: string; text: string }
   | { type: 'paste-picture'; index: number; file: File }
+  | { type: 'typing' }
   | { type: 'merge'; index: number }
   | { type: 'insert'; index: number }
   | { type: 'op'; index: number; op: 'up' | 'down' | 'duplicate' | 'delete' }
@@ -267,12 +268,18 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     else if (index !== null && index >= 0) post({ type: 'text', index, value: valueOf(el, index), session, final });
     if (final) dirty = null;
   };
+  let typedAt = 0;
   const markDirty = () => {
     const c = current();
     if (!c) return;
     dirty = c;
     clearTimeout(timer);
     timer = window.setTimeout(() => send(false), 800);
+    // the editor's status says "Unsaved changes" from the first key, not once the words are sent
+    if (Date.now() - typedAt > 700) {
+      typedAt = Date.now();
+      post({ type: 'typing' });
+    }
     requestAnimationFrame(redraw);
   };
 

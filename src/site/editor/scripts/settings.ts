@@ -4,7 +4,7 @@
  * goes to the field's own folder: site/ for the social image, people/<id>/ for the portrait); links added
  * and removed as rows.
  */
-import { api, announce, describeIssue, swapRegions } from './client';
+import { api, describeIssue, saveStatus, swapRegions } from './client';
 import type { Person, SiteSettings } from '../../content/schema';
 
 interface State {
@@ -42,10 +42,16 @@ export function initSettings(root: HTMLElement, signal: AbortSignal) {
     const pick = el.querySelector('[data-settings-pick] span:last-child');
     if (pick) pick.textContent = id ? 'Replace' : 'Choose';
   };
+  /** A change in a form that isn't saved until its Save is pressed: the status says so. */
+  const pending = (el: Element | null, text: string) => {
+    const form = el?.closest('form');
+    if (form) form.dataset.unsaved = '';
+    saveStatus.dirty(text);
+  };
   const choose = (id: string) => {
     if (!field) return;
     setPicture(field, id, document.querySelector<HTMLElement>(`#settings-picker [data-editor-media="${CSS.escape(id)}"]`));
-    announce('Chosen: save to keep it');
+    pending(field, 'Picture chosen: save to keep it');
     picker?.close();
     field.querySelector<HTMLElement>('[data-settings-pick]')?.focus();
     field = null;
@@ -70,7 +76,7 @@ export function initSettings(root: HTMLElement, signal: AbortSignal) {
       if (clear) {
         const el = clear.closest<HTMLElement>('[data-settings-picture]');
         if (el) setPicture(el, '');
-        announce('Removed: save to keep it');
+        pending(el, 'Picture removed: save to keep it');
         return;
       }
       if (t.closest('[data-settings-add-link]')) {
@@ -90,9 +96,9 @@ export function initSettings(root: HTMLElement, signal: AbortSignal) {
       if (remove) {
         const row = remove.closest('[data-settings-link]');
         const next = (row?.nextElementSibling ?? row?.previousElementSibling)?.querySelector<HTMLInputElement>('input');
+        pending(row, 'Link removed: save to keep it');
         row?.remove();
         (next ?? root.querySelector<HTMLElement>('[data-settings-add-link]'))?.focus();
-        announce('Link removed: save to keep it');
       }
     },
     { signal },
@@ -124,15 +130,15 @@ export function initSettings(root: HTMLElement, signal: AbortSignal) {
   // ---------- saving ----------
   const save = async (form: HTMLFormElement, path: string, body: Record<string, unknown>, what: string) => {
     say(form, '');
-    announce('Saving\u2026');
+    saveStatus.saving();
     const r = await api('PUT', path, body);
     if (!r.ok) {
       const why = (r.data.issues ?? []).map(describeIssue).join(' ') || `${what} weren't saved.`;
-      announce(`Not saved: ${why}`, 'negative');
+      saveStatus.failed(`Not saved: ${why}`);
       return say(form, r.status === 409 ? 'This file changed elsewhere since you opened it. Reload the page to see it, then make your change again.' : why);
     }
     await swapRegions(['settings']);
-    announce('Saved');
+    saveStatus.saved(`Saved ${what.toLowerCase()}`);
   };
 
   root.addEventListener(

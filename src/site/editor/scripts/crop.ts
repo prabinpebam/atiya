@@ -5,7 +5,7 @@
  * elsewhere on the picture (the box centres there), the arrow keys, + and −, Home, Shape and Size. Save asks
  * the server to cut (never the original) and hands the picture that now shows the crop to the screen.
  */
-import { api, announce, describeIssue } from './client';
+import { api, announce, describeIssue, saveStatus } from './client';
 import { centreOn, largest, move, ratioLabel, ratioOfShape, resize, resizeTo, sizeOf, whole, withRatio, type Bounds, type Handle, type Rect } from '../model/crop';
 import { specTip, type PictureSpec } from '../../design/pictures';
 
@@ -243,15 +243,15 @@ export function initCrop(root: HTMLElement, signal: AbortSignal) {
     }
     save.disabled = true;
     say('');
-    announce('Cropping\u2026');
+    saveStatus.saving();
     const res = await api<{ id: string; width: number; height: number }>('POST', `media/${r.id}/crop`, { rect: whole(rect, b), copy: !!r.copy });
     save.disabled = false;
     if (!res.ok) {
       const why = (res.data.issues ?? []).map(describeIssue).join(' ') || "The crop wasn't saved.";
-      announce(`Not saved: ${why}`, 'negative');
+      saveStatus.failed(`Not saved: ${why}`);
       return say(why);
     }
-    announce(`Cropped to ${res.data.width} × ${res.data.height}`);
+    saveStatus.saved(`Cropped to ${res.data.width} × ${res.data.height}`);
     dialog.close();
     r.onSaved(res.data.id);
   });

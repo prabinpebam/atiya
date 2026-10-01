@@ -75,10 +75,17 @@ export function readSnapshot(root = contentRoot()): Snapshot {
 /** Shared by the dev server's modules and the editor integration (one process), so both see one generation. */
 export interface ContentState {
   generation: number;
-  /** Files the editor's store wrote, with their bytes' hash, so the watcher can tell its own writes from others. */
+  /**
+   * The hash of the bytes the open pages know each file by: the store records what it writes (and tells
+   * the pages itself), the watcher what it announces, so a write reported twice is told once.
+   */
   writes: Map<string, string>;
-  /** Set by the dev integration: tells the dev server what changed (the route cache; open pages if not the editor). */
-  notify?: (files: string[], fromEditor: boolean) => void;
+  /**
+   * Set by the dev integration: tells the dev server what changed (the route cache) and every open page,
+   * with the editor tab that made the change (`origin`, null for a change made outside the editor), so
+   * that tab can tell its own save from someone else's.
+   */
+  notify?: (files: string[], fromEditor: boolean, origin?: string | null) => void;
 }
 
 export function contentState(): ContentState {
