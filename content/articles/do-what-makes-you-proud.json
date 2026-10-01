@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-09-29",
-  "updatedAt": "2026-09-30",
+  "updatedAt": "2026-10-01",
   "locale": "en",
   "hero": {
     "media": "articles/do-what-makes-you-proud/mark-sculpted-clay",
@@ -67,14 +67,26 @@
       ]
     },
     {
+      "type": "figure",
+      "media": "articles/do-what-makes-you-proud/slide-swan-sage",
+      "width": "content",
+      "lightbox": true,
+      "showCaption": false
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Be ambitious"
+    },
+    {
+      "type": "text",
+      "markdown": "Your ambitions and aspirations are where you start. We want different things: mastery, connection, recognition, growth, influence, or the chance to make something bigger than ourselves. That diversity is not a problem to solve. It is the source of energy that you need to convert to learning, growth and impact."
+    },
+    {
       "type": "quote",
       "text": "Be better than yesterday.",
       "variant": "pull",
       "cite": "A wise person"
-    },
-    {
-      "type": "text",
-      "markdown": "This was the mantra the whole narrative kept returning to. It doesn’t mean better than a peer, and it isn’t an external bar. Everyone can reach it, and no one is ever finished with it."
     },
     {
       "type": "heading",
@@ -83,12 +95,12 @@
     },
     {
       "type": "text",
-      "markdown": "I called the mindset **excited accountability**. First, be interested: aligned with the work and passionate about it. Then, be accountable: want to impress through the quality of the outcome. Neither works for long without the other."
+      "markdown": "I called the mindset **excited accountability**. First, **be interested**: aligned with the work and be passionate about it. Then, **be accountable**: want to impress through the quality of the outcome. Neither works for long without the other."
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Accountability should energize, not pressure."
+      "text": "Accountability should energize, not create pressure."
     },
     {
       "type": "text",
@@ -97,7 +109,7 @@
     {
       "type": "heading",
       "level": 2,
-      "text": "Ambition is a loop, not a push."
+      "text": "Learning should be a loop, not a onetime activity."
     },
     {
       "type": "text",
@@ -105,7 +117,7 @@
     },
     {
       "type": "text",
-      "markdown": "Inspiration feeds interest. Interest makes accountability feel chosen rather than imposed. Accountability speeds up learning. Better work earns recognition and self-respect. That raises your aspiration, and the loop starts again at a higher level."
+      "markdown": "Inspiration feeds interest. Interest makes accountability feel chosen rather than imposed. Accountability gives you learning with purpose. Better work earns recognition and self-respect. That raises your aspiration, and the loop starts again at a higher level."
     },
     {
       "type": "heading",
@@ -114,12 +126,12 @@
     },
     {
       "type": "text",
-      "markdown": "We’re not here to make a manager say yes or to win leadership approval. We’re here to do our best work, become thought leaders in our areas, and hold ourselves to a world-class benchmark. Approval matters, but it can’t be the highest standard."
+      "markdown": "We’re not here to make a manager say yes or to win leadership approval. We’re here to do our best work, become leaders in our areas, and hold ourselves to a world-class benchmark. Approval matters, but that should not be what drives you."
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "“Do it for yourself.” Own the outcome, not merely the task."
+      "text": "Own the outcome, not the task."
     },
     {
       "type": "text",
@@ -138,28 +150,6 @@
     {
       "type": "text",
       "markdown": "That’s why the slogan carries weight. It isn’t motivational decoration. It sums up how we wanted to work: personal aspiration, disciplined craft, accountability for outcomes, and the courage to aim higher."
-    },
-    {
-      "type": "gallery",
-      "layout": "mosaic",
-      "fit": "contain",
-      "width": "wide",
-      "lightbox": true,
-      "caption": "The WD mark, explored in different materials and finishes.",
-      "items": [
-        {
-          "media": "articles/do-what-makes-you-proud/mark-finishes"
-        },
-        {
-          "media": "articles/do-what-makes-you-proud/mark-pale-stone"
-        },
-        {
-          "media": "articles/do-what-makes-you-proud/mark-sculpted-clay"
-        },
-        {
-          "media": "articles/do-what-makes-you-proud/mark-clay-to-stone"
-        }
-      ]
     },
     {
       "type": "figure",
@@ -227,12 +217,6 @@
           "media": "articles/do-what-makes-you-proud/slide-swan-sage"
         }
       ]
-    },
-    {
-      "type": "figure",
-      "media": "articles/do-what-makes-you-proud/slide-templates",
-      "width": "wide",
-      "lightbox": true
     },
     {
       "type": "heading",
