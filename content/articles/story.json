@@ -8,9 +8,9 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-02",
   "locale": "en",
-  "thumbnail": "articles/story/editor",
+  "thumbnail": "articles/story/pasted-picture-2026-10-02-2",
   "body": [
     {
       "type": "text",
@@ -22,7 +22,7 @@
     },
     {
       "type": "figure",
-      "media": "articles/story/editor",
+      "media": "articles/story/pasted-picture-2026-10-02",
       "width": "popout",
       "lightbox": true
     },

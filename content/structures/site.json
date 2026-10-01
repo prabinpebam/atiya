@@ -13,7 +13,7 @@
         "slug": "work",
         "title": "Work",
         "summary": "Case studies of products I’ve led: the problem, the bets, how the team shipped and what changed.",
-        "view": "tiles",
+        "view": "list",
         "children": []
       },
       {
@@ -40,7 +40,7 @@
         "slug": "leadership",
         "title": "Leadership",
         "summary": "How teams, culture and design influence are built. The first story is up, and more are on their way.",
-        "view": "bento",
+        "view": "list",
         "children": [
           {
             "id": "do-what-makes-you-proud",
@@ -85,7 +85,7 @@
         "slug": "side-projects",
         "title": "Side projects",
         "summary": "Prototypes, tools and experiments I build on the side, including this little planet.",
-        "view": "tiles",
+        "view": "features",
         "children": [
           {
             "id": "atiya",

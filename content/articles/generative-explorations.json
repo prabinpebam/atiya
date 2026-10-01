@@ -8,9 +8,9 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-02",
   "locale": "en",
-  "thumbnail": "articles/generative-explorations/mesh-gradient",
+  "thumbnail": "articles/generative-explorations/pasted-picture-2026-10-02",
   "body": [
     {
       "type": "text",
@@ -32,7 +32,7 @@
     {
       "type": "figure",
       "media": "articles/generative-explorations/mesh-gradient",
-      "width": "wide",
+      "width": "popout",
       "lightbox": true
     },
     {
@@ -51,7 +51,7 @@
     {
       "type": "figure",
       "media": "articles/generative-explorations/noise-animation",
-      "width": "wide",
+      "width": "popout",
       "lightbox": true
     },
     {
@@ -69,8 +69,8 @@
     },
     {
       "type": "figure",
-      "media": "articles/generative-explorations/stipple-art",
-      "width": "wide",
+      "media": "articles/generative-explorations/pasted-picture-2026-10-02",
+      "width": "popout",
       "lightbox": true
     },
     {
@@ -88,8 +88,8 @@
     },
     {
       "type": "figure",
-      "media": "articles/generative-explorations/guilloche",
-      "width": "wide",
+      "media": "articles/generative-explorations/pasted-picture-2026-10-02-2",
+      "width": "popout",
       "lightbox": true
     },
     {
@@ -107,8 +107,14 @@
     },
     {
       "type": "figure",
-      "media": "articles/generative-explorations/string-art",
+      "media": "articles/generative-explorations/pasted-picture-2026-10-02-3",
       "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "figure",
+      "media": "articles/generative-explorations/pasted-picture-2026-10-02-4",
+      "width": "popout",
       "lightbox": true
     },
     {
