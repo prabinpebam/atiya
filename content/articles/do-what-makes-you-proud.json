@@ -222,7 +222,14 @@
         {
           "media": "articles/do-what-makes-you-proud/slide-swan-sage"
         }
-      ]
+      ],
+      "arrows": false
+    },
+    {
+      "type": "figure",
+      "media": "articles/do-what-makes-you-proud/pasted-picture-2026-10-01-2-crop",
+      "width": "content",
+      "lightbox": true
     },
     {
       "type": "heading",
@@ -243,23 +250,23 @@
     },
     {
       "type": "text",
-      "markdown": "**In the Loom of Destiny**\\\nWe are the weavers of our own tapestry,\\\nThreads spun from choices, both bold and wary.\\\nEach decision, a shuttle across time,\\\nStitching our essence, a rhythm sublime."
+      "markdown": "_**In the Loom of Destiny**\\\n We are the weavers of our own tapestry,\\\n Threads spun from choices, both bold and wary.\\\n Each decision, a shuttle across time,\\\n Stitching our essence, a rhythm sublime._"
     },
     {
       "type": "text",
-      "markdown": "**The Whisper of Small Choices**\\\nListen closely to the rustle of leaves,\\\nFor in the flutter of mundane moments, we believe.\\\nThe morning brew—black or with cream?\\\nThe path to work—left or right, it seems.\\\nThese whispers of small choices, soft and fleet,\\\nShape the contours of our life’s heartbeat."
+      "markdown": "_**The Whisper of Small Choices**\\\n Listen closely to the rustle of leaves,\\\n For in the flutter of mundane moments, we believe.\\\n The morning brew—black or with cream?\\\n The path to work—left or right, it seems.\\\n These whispers of small choices, soft and fleet,\\\n Shape the contours of our life’s heartbeat._"
     },
     {
       "type": "text",
-      "markdown": "**The Grand Crossroads Beckon**\\\nYet, behold the grand crossroads, wide and vast,\\\nWhere destiny unfurls its sail, taut and fast.\\\nTo leap or linger, to risk or retreat,\\\nHere, our souls dance on the edge of fate.\\\nThe career switch, the leap of faith,\\\nThe moonlit kiss, the uncharted wraith.\\\nThese monumental choices, etched in stardust,\\\nDefine the constellations of our wanderlust."
+      "markdown": "_**The Grand Crossroads Beckon**\\\n Yet, behold the grand crossroads, wide and vast,\\\n Where destiny unfurls its sail, taut and fast.\\\n To leap or linger, to risk or retreat,\\\n Here, our souls dance on the edge of fate.\\\n The career switch, the leap of faith,\\\n The moonlit kiss, the uncharted wraith.\\\n These monumental choices, etched in stardust,\\\n Define the constellations of our wanderlust._"
     },
     {
       "type": "text",
-      "markdown": "**The Symphony of Regrets and Triumphs**\\\nAnd what of the roads not taken?\\\nThey echo in the chambers of our hearts, unshaken.\\\nRegrets, like minor chords, hum their refrain,\\\nYet they harmonize with triumphs, easing our pain.\\\nFor we are not mere sum of our grand deeds,\\\nBut the symphony of every choice, every seed."
+      "markdown": "_**The Symphony of Regrets and Triumphs**\\\n And what of the roads not taken?\\\n They echo in the chambers of our hearts, unshaken.\\\n Regrets, like minor chords, hum their refrain,\\\n Yet they harmonize with triumphs, easing our pain.\\\n For we are not mere sum of our grand deeds,\\\n But the symphony of every choice, every seed._"
     },
     {
       "type": "text",
-      "markdown": "**Navigating to the Best You**\\\nSo, my fellow travelers, as we gather here,\\\nLet us honor the mosaic of our yesteryears.\\\nEmbrace the tiny stitches, the cosmic leaps,\\\nFor within them lies the map to our soul’s keeps.\\\nCareer decisions—the compass of our flight,\\\nGuiding us toward the brightest starlight.\\\nLet’s set sail, charting our course anew,\\\nNavigating to the best version of me and you."
+      "markdown": "_**Navigating to the Best You**\\\n So, my fellow travelers, as we gather here,\\\n Let us honor the mosaic of our yesteryears.\\\n Embrace the tiny stitches, the cosmic leaps,\\\n For within them lies the map to our soul’s keeps.\\\n Career decisions—the compass of our flight,\\\n Guiding us toward the brightest starlight.\\\n Let’s set sail, charting our course anew,\\\n Navigating to the best version of me and you._"
     },
     {
       "type": "carousel",
