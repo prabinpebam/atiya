@@ -1,0 +1,237 @@
+{
+  "id": "the-best-learning-loop-will-win",
+  "type": "article",
+  "kind": "note",
+  "slug": "the-best-learning-loop-will-win",
+  "title": "The best AI model won't win. The best learning loop will.",
+  "summary": "Why AI products have to be discovered by users rather than designed by product teams, and how to build the flywheel that does it.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "hero": {
+    "media": "articles/the-best-learning-loop-will-win/the-sketchbook"
+  },
+  "body": [
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "AI can do almost anything, yet most AI features still feel like fluff."
+    },
+    {
+      "type": "text",
+      "markdown": "Frontier models are remarkably capable at individual tasks. Yet the common verdict from users is that AI \"can kinda do a bit, but it all feels like fluff and can't really be depended on.\""
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "It isn't a model problem. It's a product development problem."
+    },
+    {
+      "type": "text",
+      "markdown": "Features launch to fanfare and meet indifference. Tools demo beautifully and fail in practice. The gap isn't in what the models can do; it's in how products get built around them."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "No one knows exactly how AI can be valuable to them. Everyone is discovering it."
+    },
+    {
+      "type": "text",
+      "markdown": "A product team can try to work it out, but conventional product cycles reach product-market fit far slower than the AI landscape moves. The solution space is too vast, and the right patterns too emergent, for anyone to plan their way there."
+    },
+    {
+      "type": "text",
+      "markdown": "Scenarios range from the granular (\"remove the background from this image\") to the ambitious (\"plan my complete trip to Japan\"). Small ones are reliable but add little value; big ones are valuable but fall apart. The real work is mapping what AI can reliably do at every level, then stitching that into a complete outcome, not a demo that falls apart at step six. And the map keeps moving: what the model couldn't do three months ago, it can do today."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Eight steps that each work 80% of the time make a feature that mostly fails."
+    },
+    {
+      "type": "text",
+      "markdown": "AI is probabilistic. Chain eight steps at 80% reliability and the whole workflow succeeds about 17% of the time. Users don't distinguish between \"the AI did seven of eight steps perfectly\" and \"the AI failed.\""
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-chain",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "Better models help, but the problem is mathematical. Even at 95% per step, eight steps succeed only about 66% of the time. So start with what's reliable (granular assistance, single tasks with review) and only promise end-to-end automation when the odds justify it. In between, design for the **Assisted Middle**: AI takes the reliable steps, the person takes the rest, and the handoffs feel natural. Knowing which scenario sits where is the hard part, and only real usage can tell you."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "So stop guessing. Let users discover the value, and instrument everything."
+    },
+    {
+      "type": "text",
+      "markdown": "Product-market fit for AI has to play out bottom-up, with real users doing real work. The product team's job shifts from designing scenarios to watching which ones emerge, survive, and repeat."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Claude Code's best use cases weren't planned. Its users found them."
+    },
+    {
+      "type": "text",
+      "markdown": "In late 2024, Anthropic engineer Boris Cherny built a terminal tool that gave Claude access to the file system and command line. There was, in his words, \"no master plan\" ([Latent.Space](https://www.latent.space/p/claude-code)). Internal usage went \"vertical\". It reached the general public in May 2025, and by February 2026 Anthropic put its run-rate revenue at [over $2.5 billion](https://www.anthropic.com/news/anthropic-raises-30-billion-series-g-funding-380-billion-post-money-valuation)."
+    },
+    {
+      "type": "text",
+      "markdown": "Its design was minimal, \"Do the simple thing first,\" so every model improvement made it better. The surprise was what people did with it beyond coding:"
+    },
+    {
+      "type": "text",
+      "markdown": "- Finance staff piped CSVs into it for analysis (`cat data.csv | claude`).\n- A designer, explicitly not a coder, began landing production pull requests.\n- Support teams fed it bug reports and got tested fixes within minutes.\n- [Ramp](https://claude.com/customers/ramp)'s ML team turned notebook code into production pipelines, saving \"1–2 days of routine work per model.\""
+    },
+    {
+      "type": "text",
+      "markdown": "None of these were planned features. Cat Wu, the product's PM, named the metric that mattered: \"the number of features you wouldn't have otherwise built.\""
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Then Anthropic paved the paths its users had already walked."
+    },
+    {
+      "type": "text",
+      "markdown": "In January 2026, Anthropic launched [Claude Cowork](https://claude.com/product/cowork), \"Claude Code for the rest of your work.\" It took the scenarios technical users had already proven (file organization, spreadsheets, reports, data analysis) and packaged them in a desktop app with a sandbox and an approval-based workflow. It was generally available on macOS and Windows by April."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "That's the flywheel: technical users discover, mainstream users adopt, demand drives capability."
+    },
+    {
+      "type": "text",
+      "markdown": "Give power users a raw tool and watch which scenarios emerge. Productize the proven ones for everyone else. Feed back what mainstream users want, and where they hit capability gaps, into models and agents. Then go round again."
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-flywheel",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "Early on, measure the *diversity* of scenarios discovered, not adoption."
+    },
+    {
+      "type": "text",
+      "markdown": "By September 2026, the last stage had started to turn. Users \"told us the frustrating part was deciding where a task belonged,\" Anthropic wrote, so it [merged Cowork into the main Claude app](https://claude.com/blog/cowork-is-now-claude). Claude \"can now figure out what a task needs,\" so users no longer have to."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The flywheel is really a trust-building machine."
+    },
+    {
+      "type": "text",
+      "markdown": "Trust in AI has two parts: that it's safe, and that it will reliably deliver a good outcome. Each turn of the flywheel adds scenarios technical users have already proven, so mainstream users inherit trust instead of being the guinea pigs."
+    },
+    {
+      "type": "text",
+      "markdown": "That's why trust in a vendor isn't enough. \"I trust this company with my data\" is different from \"I trust this AI feature to work.\" Ship scenarios where trust hasn't been earned, and users learn to distrust AI features altogether."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The open-source community is already running this loop, in public."
+    },
+    {
+      "type": "text",
+      "markdown": "[OpenClaw](https://github.com/openclaw/openclaw), an open-source personal AI assistant started by Peter Steinberger, has passed 390,000 GitHub stars. It lives in the chat apps people already use and ships the patterns agents are converging on: identity as markdown (`SOUL.md`), a community skill marketplace, proactive check-ins, and scheduled background tasks."
+    },
+    {
+      "type": "text",
+      "markdown": "One user put it bluntly: \"A megacorp like Anthropic or OpenAI could not build this. Literally impossible with how corpo works.\" The speed comes from the operating model: visible code, shared ownership, and anyone can open a PR. That model outlasted its founder. Steinberger [joined OpenAI](https://www.cnbc.com/2026/02/15/openclaw-creator-peter-steinberger-joining-openai-altman-says.html) in February 2026, the project moved to an independent foundation, and its stars have kept climbing."
+    },
+    {
+      "type": "text",
+      "markdown": "The patterns are hardening into standards. `SKILL.md`-based [Agent Skills](https://agentskills.io) now work across many agent tools. The people who took part early shaped how agents work."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "MCP cannot generate novelty; it can only encode it."
+    },
+    {
+      "type": "text",
+      "markdown": "Treating raw CLI agents and the [Model Context Protocol](https://modelcontextprotocol.io/) as rivals is a category error. They're phases, not peers. CLI is how capabilities are born. MCP is how they become infrastructure."
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/prototype-to-production",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "tiles",
+      "items": [
+        {
+          "label": "CLI",
+          "text": "**Role:** Discovery\\\n**Time to first value:** Minutes\\\n**Risk sits with:** The user, at the edge\\\n**Innovation rate:** High"
+        },
+        {
+          "label": "MCP",
+          "text": "**Role:** Formalization\\\n**Time to first value:** Weeks\\\n**Risk sits with:** The platform, at the center\\\n**Innovation rate:** Low"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "markdown": "MCP has itself become infrastructure: in December 2025 it moved, with `AGENTS.md`, to the Linux Foundation's [Agentic AI Foundation](https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation). CLI isn't a preference. It's an **innovation surface**. Learn where people walk before deciding where to pave."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "You don't need to ship a raw AI product to the world. Start inside your own walls."
+    },
+    {
+      "type": "text",
+      "markdown": "Shipping an experimental AI tool publicly carries real reputational risk. But any sizeable organization already has technical and non-technical people doing real work, and that's enough to run the whole flywheel internally."
+    },
+    {
+      "type": "text",
+      "markdown": "Build an **internal playground**: not a sandbox for tweaking model parameters, but a living discovery environment that tests which scenarios deliver value, whether the model meets expectations in them, and whether people keep using them. With AI-assisted development, it takes days to build, not months."
+    },
+    {
+      "type": "text",
+      "markdown": "- **Keep it thin** and composable, so it rides every model improvement.\n- **Instrument everything:** what people attempt, finish, repeat, and abandon.\n- **Run it as innersource:** visible code, open PRs, and a small core team owning direction.\n- **Widen the circle:** technical users first, then finance, HR, marketing, and operations."
+    },
+    {
+      "type": "text",
+      "markdown": "When a scenario proves itself, fast-track it into the mainstream product, stabilized through MCP."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "You can copy features. You can't copy a flywheel."
+    },
+    {
+      "type": "text",
+      "markdown": "Fast following works for features, not for learning systems. By the time you've copied what a flywheel discovered, it has moved on to the next cycle. Distribution doesn't save you either: it buys time, and the flywheel is how you use it."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The best model won't win. The best learning loop will."
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-multiplier",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "The race to define how the world adopts AI won't be won by the company with the best model, the largest user base, or the deepest pockets. It will be won by whoever builds the tightest loop between user discovery, product development, and capability evolution. Models, distribution, and trust are assets. The flywheel is the multiplier."
+    }
+  ]
+}

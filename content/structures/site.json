@@ -50,7 +50,16 @@
         "title": "Writing",
         "summary": "Essays and notes on design leadership, craft and building thoughtful products.",
         "view": "list",
-        "children": []
+        "children": [
+          {
+            "id": "the-best-learning-loop-will-win",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "the-best-learning-loop-will-win"
+            }
+          }
+        ]
       },
       {
         "id": "talks",
