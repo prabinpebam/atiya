@@ -1,7 +1,9 @@
 /**
- * Media, as edit mode changes it (documentation/editor/spec.md §6): uploads become WebP masters within
- * the budgets (at most 2560 px on the long side and 1.5 MB, metadata stripped), each with its JSON
- * sidecar, in one store transaction; a sidecar's details save to the picture; a picture is cropped into a
+ * Media, as edit mode changes it (documentation/editor/spec.md §6): uploads (any format sharp reads: JPEG,
+ * PNG, WebP, AVIF, GIF, TIFF, SVG; the browser turns others into PNG first) become WebP masters within
+ * the budgets (at most 2560 px on the long side and 1.5 MB, metadata stripped, transparency kept), each
+ * with its JSON sidecar, in one store transaction, cut first to a crop chosen before the upload, if any;
+ * a sidecar's details save to the picture; a picture is cropped into a
  * copy, never in place (§6.1); a picture is deleted only when nothing refers to it (the content check
  * refuses a deletion that would leave a reference).
  */
@@ -19,10 +21,18 @@ const MEDIA_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
 
 const refuse = (file: string, message: string, path?: string): Result => ({ ok: false, status: 422, issues: [{ file, message, ...(path ? { path } : {}) }] });
 
+/** What sharp reads a picture with: an SVG is drawn at the size a master can be, not at its nominal 72 dpi. */
+async function readOptions(input: Buffer): Promise<{ failOn: 'error'; density?: number; animated: false }> {
+  const { default: sharp } = await import('sharp');
+  const meta = await sharp(input, { failOn: 'error' }).metadata();
+  if (meta.format !== 'svg' || !meta.width || !meta.height) return { failOn: 'error', animated: false };
+  return { failOn: 'error', animated: false, density: Math.min(100000, Math.max(72, Math.round((72 * MAX_SIDE) / Math.max(meta.width, meta.height)))) };
+}
+
 /** A master in WebP within the budgets: lossless when the source has transparency (if it fits), stripped of metadata. */
 export async function toMaster(input: Buffer): Promise<{ bytes: Buffer; width: number; height: number }> {
   const { default: sharp } = await import('sharp');
-  const base = sharp(input, { failOn: 'error' }).rotate().resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
+  const base = sharp(input, await readOptions(input)).rotate().resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
   const meta = await base.clone().metadata();
   const alpha = !!meta.hasAlpha;
   let bytes = alpha ? await base.clone().webp({ lossless: true }).toBuffer() : Buffer.alloc(0);
@@ -40,6 +50,36 @@ export interface Upload {
   alt?: string;
   decorative?: boolean;
   caption?: string;
+  /** A crop chosen before the upload, in the pixels of the picture as the browser showed it (`of`), upright. */
+  crop?: Rect & { of: { width: number; height: number } };
+}
+
+/** The picture upright, cut to a crop given in another size of it (the browser's), as a lossless PNG. */
+export async function cutUpload(input: Buffer, crop: NonNullable<Upload['crop']>): Promise<Buffer> {
+  const { default: sharp } = await import('sharp');
+  const upright = await sharp(input, await readOptions(input)).rotate().png().toBuffer({ resolveWithObject: true });
+  const { width, height } = upright.info;
+  const kx = width / crop.of.width;
+  const ky = height / crop.of.height;
+  if (![kx, ky, crop.x, crop.y, crop.width, crop.height].every(Number.isFinite) || kx <= 0 || ky <= 0) throw new Error('the crop is not a rectangle in the picture');
+  const left = Math.min(width - 1, Math.max(0, Math.round(crop.x * kx)));
+  const top = Math.min(height - 1, Math.max(0, Math.round(crop.y * ky)));
+  const w = Math.min(width - left, Math.max(1, Math.round(crop.width * kx)));
+  const h = Math.min(height - top, Math.max(1, Math.round(crop.height * ky)));
+  return sharp(upright.data).extract({ left, top, width: w, height: h }).png().toBuffer();
+}
+
+/** The upload form's crop field (JSON), or null when it's empty or not a crop. */
+export function parseUploadCrop(v: unknown): Upload['crop'] | null {
+  if (typeof v !== 'string' || !v.trim()) return null;
+  try {
+    const c = JSON.parse(v) as Upload['crop'];
+    const nums = c && [c.x, c.y, c.width, c.height, c.of?.width, c.of?.height];
+    if (!nums || !nums.every((n) => typeof n === 'number' && Number.isFinite(n) && n >= 0) || !c!.width || !c!.height || !c!.of.width || !c!.of.height) return null;
+    return { x: c!.x, y: c!.y, width: c!.width, height: c!.height, of: { width: c!.of.width, height: c!.of.height } };
+  } catch {
+    return null;
+  }
 }
 
 export async function upload(u: Upload): Promise<Result & { id?: string }> {
@@ -48,10 +88,10 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
   const snap = readSnapshot();
   const folder = `/content/media/${u.owner}/`;
   const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/\.\w+$/, '')));
-  const name = unique(slugify(u.file.name.replace(/\.[^.]+$/, '')), taken);
+  const name = unique(slugify(u.file.name.replace(/\.[^.]+$/, '')) || 'picture', taken);
   let master: Awaited<ReturnType<typeof toMaster>>;
   try {
-    master = await toMaster(u.file.bytes);
+    master = await toMaster(u.crop ? await cutUpload(u.file.bytes, u.crop) : u.file.bytes);
   } catch (e) {
     return refuse('content/media', `couldn't be read as a picture: ${(e as Error).message}`, 'file');
   }

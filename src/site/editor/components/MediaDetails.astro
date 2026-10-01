@@ -133,7 +133,7 @@ const state = picture ? JSON.stringify({ id: picture.id, version: picture.versio
 
         <form class="part" data-editor-media-replace novalidate aria-labelledby="media-replace-title">
           <Heading level={3} size="ui" id="media-replace-title">Replace the picture</Heading>
-          <FileField label="New picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif" hint="It keeps its name and details, so every page that uses it shows the new one." />
+          <FileField label="New picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="It keeps its name and details, so every page that uses it shows the new one." />
           <p class="issue" role="alert" data-editor-form-issue hidden />
           <div class="actions">
             <Button variant="secondary" type="submit" icon="upload">Replace it</Button>

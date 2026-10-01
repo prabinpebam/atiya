@@ -7,7 +7,7 @@ import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure } from '../../content/schema';
 import { commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
-import { cropMedia, cropSource, deleteMedia, replaceMaster, saveSidecar, upload } from '../server/media';
+import { cropMedia, cropSource, deleteMedia, parseUploadCrop, replaceMaster, saveSidecar, upload } from '../server/media';
 import { changes, discard, publish, push } from '../server/git';
 import { content } from '../../content/repository';
 import { picture } from '../../content/pictures';
@@ -98,12 +98,14 @@ export const ALL: APIRoute = async ({ request, params, url }) => {
         const form = await request.formData();
         const file = form.get('file');
         if (!(file instanceof File)) return json({ ok: false, issues: [{ file: 'content/media', path: 'file', message: 'choose a picture to upload' }] }, 422);
+        const crop = parseUploadCrop(form.get('crop'));
         const r = await upload({
           file: { name: file.name, bytes: Buffer.from(await file.arrayBuffer()) },
           owner: String(form.get('owner') ?? 'shared'),
           alt: String(form.get('alt') ?? ''),
           decorative: form.get('decorative') === 'on' || form.get('decorative') === 'true',
           caption: String(form.get('caption') ?? ''),
+          ...(crop ? { crop } : {}),
         });
         return result(r);
       }

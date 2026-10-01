@@ -2,7 +2,9 @@
 /**
  * The media library's grid (documentation/editor/spec.md §6): every picture as a thumbnail with its alt
  * text, searchable, and an upload form that asks for the alt text (or decorative) before a picture is
- * saved. Grouped by folder (an article's own, a person's, shared). In the picker it chooses one picture,
+ * saved. A picture chosen, dropped or pasted (Ctrl+V while the form shows) is previewed at once, on a
+ * checkerboard so its transparency shows, with its size and format, and can be cropped before it's
+ * uploaded. Any picture the browser or the server can read is taken. Grouped by folder (an article's own, a person's, shared). In the picker it chooses one picture,
  * or several; in the library it opens a picture's details, and marks the pictures nothing uses (a
  * replaced lead picture, an upload not placed yet): they're allowed, and Delete is offered for them.
  * @tier editor
@@ -10,6 +12,8 @@
  * aria-pressed, in the library the open one is aria-current.
  * @a11y Search hides the pictures (and the folders) that don't match, and says how many are left.
  * @a11y A picture without alt text says so in words, not only with its warning icon.
+ * @a11y The preview's size, format and crop are a polite live region; cropping has the crop dialog's keyboard way.
+ * @key Ctrl+V: puts a copied picture in the upload form
  */
 import TextField from '../../components/fundamentals/TextField.astro';
 import FileField from '../../components/fundamentals/FileField.astro';
@@ -58,7 +62,19 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
   <details class="upload" open={media.length === 0 ? true : undefined}>
     <summary><Icon name="upload" /><span>Upload a picture</span></summary>
     <form class="upload-form" data-editor-upload novalidate>
-      <FileField label="Picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif" hint="Up to 20 MB. Saved as WebP, at most 2560 px and 1.5 MB, without its location data." />
+      <FileField label="Picture" name="file" accept="image/*" hint="Choose, drop or paste (Ctrl+V) any picture up to 20 MB: JPEG, PNG, WebP, AVIF, GIF, SVG and more. Saved as WebP, at most 2560 px and 1.5 MB, with its transparency and without its location data." />
+      <div class="preview" data-upload-preview hidden>
+        <div class="stage" data-upload-stage>
+          <div class="view" data-upload-view>
+            <img class="pic" data-upload-img alt="" draggable="false" />
+          </div>
+        </div>
+        <p class="facts" data-upload-facts aria-live="polite"></p>
+        <div class="preview-actions">
+          <span data-upload-crop-wrap hidden><Button variant="secondary" size="sm" icon="crop" data-upload-crop="">Crop it</Button></span>
+          <span data-upload-uncrop-wrap hidden><Button variant="quiet" size="sm" icon="restore" data-upload-uncrop="">Undo the crop</Button></span>
+        </div>
+      </div>
       <TextField label="Alt text" name="alt" multiline rows={2} hint="What it shows, for someone who can't see it (250 characters at most). Leave it empty only if it's decorative." />
       <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" />
       <TextField label="Caption" name="caption" optional />
@@ -128,6 +144,54 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     display: grid;
     gap: var(--space-4);
     padding: var(--space-2) var(--space-4) var(--space-4);
+  }
+
+  /* the picture about to be uploaded, as it will be (its crop), on a checkerboard so transparency shows */
+  .preview {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .preview[hidden],
+  .stage[hidden],
+  .preview-actions > [hidden] {
+    display: none;
+  }
+
+  .stage {
+    display: grid;
+    place-items: center;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: repeating-conic-gradient(var(--color-bg-sunk) 0 25%, var(--color-bg) 0 50%) 0 0 / var(--space-4) var(--space-4);
+  }
+
+  .view {
+    position: relative;
+    overflow: hidden;
+    inline-size: min(100%, calc(var(--c-editor-upload-preview) * var(--ratio, 1)));
+    aspect-ratio: var(--ratio, 1);
+  }
+
+  .pic {
+    position: absolute;
+    inset-inline-start: var(--il, 0);
+    inset-block-start: var(--it, 0);
+    inline-size: var(--iw, 100%);
+    max-inline-size: none;
+    block-size: auto;
+  }
+
+  .facts {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .preview-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
 
   .actions,
@@ -221,11 +285,12 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
 
 <script>
   import { each } from '../../scripts/page';
-  import { api, describeIssue } from '../scripts/client';
   import { initMediaLibrary } from '../scripts/media';
+  import { initUpload } from '../scripts/upload';
 
   each<HTMLElement>('[data-editor-media-grid]', (root, signal) => {
     if (root.dataset.mode === 'library') initMediaLibrary(root, signal);
+    initUpload(root, signal);
     const search = root.querySelector<HTMLInputElement>('[data-editor-media-search] input');
     const found = root.querySelector<HTMLElement>('[data-editor-media-found]');
     search?.addEventListener('input', () => {
@@ -237,32 +302,6 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
       });
       root.querySelectorAll<HTMLElement>('[data-media-group]').forEach((g) => (g.hidden = !g.querySelector('[data-media-card]:not([hidden])')));
       if (found) found.textContent = q ? (shown ? `${shown} ${shown === 1 ? 'picture' : 'pictures'} found` : 'No picture matches.') : (found.dataset.total ?? '');
-    });
-    const form = root.querySelector<HTMLFormElement>('[data-editor-upload]');
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const issue = form.querySelector<HTMLElement>('[data-editor-form-issue]')!;
-      const data = new FormData(form);
-      const file = data.get('file');
-      if (!(file instanceof File) || !file.size) {
-        issue.textContent = 'Choose a picture to upload.';
-        issue.hidden = false;
-        return;
-      }
-      if (!data.get('decorative') && !String(data.get('alt') ?? '').trim()) {
-        issue.textContent = "Say what the picture shows (its alt text), or mark it decorative.";
-        issue.hidden = false;
-        return;
-      }
-      data.set('owner', root.dataset.owner ?? 'shared');
-      issue.hidden = true;
-      const r = await api<{ id: string }>('POST', 'media', data);
-      if (!r.ok) {
-        issue.textContent = (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't upload it.";
-        issue.hidden = false;
-        return;
-      }
-      root.dispatchEvent(new CustomEvent('media:uploaded', { bubbles: true, detail: { id: r.data.id } }));
     });
   });
 </script>

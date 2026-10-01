@@ -6,6 +6,7 @@
  */
 import { turnShortcut, type TextKind } from '../model/ops';
 import { pasteKind, wordsOfPaste } from '../model/paste';
+import { pictureOfPaste } from '../model/upload';
 import { markdownOf, plainOf } from '../model/dom';
 import { serializeInline } from '../../content/markdown';
 
@@ -18,6 +19,7 @@ type Out =
   | { type: 'field'; field: Field; value: string; session: number; final: boolean }
   | { type: 'split'; index: number; parts: string[] }
   | { type: 'paste'; index: number; pending: boolean; before: string; after: string; text: string }
+  | { type: 'paste-picture'; index: number; file: File }
   | { type: 'merge'; index: number }
   | { type: 'insert'; index: number }
   | { type: 'op'; index: number; op: 'up' | 'down' | 'duplicate' | 'delete' }
@@ -147,19 +149,21 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     hoverLabel.textContent = kinds[i]?.kind ?? '';
   };
 
-  // the "+" between blocks, near the pointer's boundary
+  // the "+" in the space between two blocks (and above the first, below the last), never over a block
   let insertAt = -1;
-  const showInsert = (y: number) => {
+  const REACH = 24;
+  const showInsert = (x: number, y: number, over: number) => {
     insertAt = -1;
-    if (!prose || preview) return (insert.hidden = true);
-    const EDGE = 14;
-    for (let i = 0; i <= blocks.length; i++) {
-      const top = i < blocks.length ? blocks[i].getBoundingClientRect().top : blocks[blocks.length - 1]?.getBoundingClientRect().bottom;
-      if (top !== undefined && Math.abs(y - top) < EDGE) {
-        insertAt = i;
-        const p = prose.getBoundingClientRect();
+    const p = prose?.getBoundingClientRect();
+    const rects = blocks.flatMap((b, i) => (b ? [{ i, r: b.getBoundingClientRect() }] : []));
+    if (!p || preview || over >= 0 || !rects.length || x < p.left || x > p.right) return (insert.hidden = true);
+    for (let k = 0; k <= rects.length; k++) {
+      const top = k > 0 ? rects[k - 1].r.bottom : rects[0].r.top - REACH;
+      const bottom = k < rects.length ? rects[k].r.top : rects[rects.length - 1].r.bottom + REACH;
+      if (y >= top && y <= bottom) {
+        insertAt = k < rects.length ? rects[k].i : rects[rects.length - 1].i + 1;
         insert.style.setProperty('--x', `${p.left + scrollX + p.width / 2}px`);
-        insert.style.setProperty('--y', `${top + scrollY}px`);
+        insert.style.setProperty('--y', `${(top + bottom) / 2 + scrollY}px`);
         break;
       }
     }
@@ -170,8 +174,9 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (preview) return;
     const t = e.target as Element;
     if (chrome.contains(t)) return;
-    hover(indexOf(t));
-    showInsert(e.clientY);
+    const over = indexOf(t);
+    hover(over);
+    showInsert(e.clientX, e.clientY, over);
   });
   addEventListener('scroll', () => requestAnimationFrame(redraw), { signal, passive: true });
   addEventListener('resize', () => requestAnimationFrame(redraw), { signal });
@@ -368,7 +373,8 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     }
     if (type === 'insertFromPaste' || type === 'insertFromDrop' || type === 'insertFromYank') {
       e.preventDefault();
-      const text = e.dataTransfer?.getData('text/plain') ?? '';
+      // a plaintext-only block (heading, quote, caption…) gets the text in data, with no dataTransfer
+      const text = e.dataTransfer?.getData('text/plain') || e.data || '';
       const kind = pasteKind(text);
       if (kind === 'nothing') return;
       // Markdown (headings, lists, quotes, marks, several paragraphs) in a paragraph arrives as its blocks
@@ -398,6 +404,31 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (!ALLOWED_INPUT.has(type)) e.preventDefault();
     if (type === 'insertLineBreak' && !rich) e.preventDefault();
   });
+
+  // a picture pasted (a screenshot, a copied image) becomes a figure after the block, once it's uploaded
+  on(
+    'paste',
+    (e) => {
+      if (preview) return;
+      const data = e.clipboardData;
+      const file = data ? pictureOfPaste([...data.files], data.getData('text/plain')) : null;
+      if (!file) return;
+      const c = current();
+      let at: number;
+      if (c?.el.hasAttribute('data-editor-pending')) {
+        at = Number(c.el.dataset.editorPending);
+        c.el.removeAttribute('data-editor-pending');
+        c.el.remove();
+        redraw();
+      } else if (c?.field) at = 0;
+      else if (c && c.index !== null && c.index >= 0) at = c.index + 1;
+      else if (selected !== null) at = selected + 1;
+      else at = blocks.length;
+      e.preventDefault();
+      post({ type: 'paste-picture', index: at, file });
+    },
+    true,
+  );
 
   // ---------- the format bar ----------
   let savedRange: Range | null = null;

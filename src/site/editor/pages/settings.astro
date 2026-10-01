@@ -3,6 +3,7 @@
 import EditorLayout from '../EditorLayout.astro';
 import SettingsForms, { type SettingsThumb } from '../components/SettingsForms.astro';
 import MediaGrid from '../components/MediaGrid.astro';
+import CropDialog from '../components/CropDialog.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import { load, mediaCards } from '../server/screens';
@@ -26,6 +27,7 @@ const thumbs: Record<string, SettingsThumb> = Object.fromEntries(cards.map((c) =
         <Dialog id="settings-picker" title="Choose a picture" size="lg">
           <MediaGrid mode="pick" media={cards} owner="site" />
         </Dialog>
+        <CropDialog />
       </>
     ) : (
       <ContentIssues issues={loaded.ok ? [{ file: 'content/site.json', message: "the site settings or their owner's profile can't be read" }] : loaded.issues} />

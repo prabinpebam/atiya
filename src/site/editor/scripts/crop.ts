@@ -20,10 +20,23 @@ export interface CropRequest {
   onSaved: (id: string) => void;
 }
 
-let opener: ((r: CropRequest) => void) | null = null;
+/** A picture not uploaded yet (the upload form's): the crop is only chosen here, and goes with the upload. */
+export interface LocalCropRequest {
+  /** The chosen file, shown (an object URL), and its size as the browser shows it. */
+  local: { src: string; width: number; height: number };
+  /** The crop chosen before, to start from. */
+  rect?: Rect | null;
+  /** Called with the crop, in the picture's pixels as shown. */
+  onCrop: (rect: Rect) => void;
+}
 
-/** Opens the screen's crop dialog on a picture. */
-export const openCrop = (r: CropRequest) => opener?.(r);
+let opener: ((r: CropRequest | LocalCropRequest) => void) | null = null;
+
+/** Opens the screen's crop dialog on a picture, or on a file about to be uploaded. */
+export const openCrop = (r: CropRequest | LocalCropRequest) => opener?.(r);
+
+/** Whether the screen has a crop dialog. */
+export const canCrop = () => opener !== null;
 
 interface Source {
   id: string;
@@ -50,7 +63,7 @@ export function initCrop(root: HTMLElement, signal: AbortSignal) {
   if (!dialog || !frame || !img || !box || !shapeSelect || !sizeInput || !readout || !save) return;
   const on = (el: EventTarget, type: string, fn: (e: Event) => void) => el.addEventListener(type, fn, { signal });
 
-  let req: CropRequest | null = null;
+  let req: CropRequest | LocalCropRequest | null = null;
   let b: Bounds = { width: 1, height: 1 };
   let rect: Rect = { x: 0, y: 0, width: 1, height: 1 };
   let shape = 'free';
@@ -74,7 +87,7 @@ export function initCrop(root: HTMLElement, signal: AbortSignal) {
     const w = whole(rect, b);
     readout.textContent = `${w.width} × ${w.height} px (${ratioLabel(w.width, w.height)}), from ${b.width} × ${b.height}`;
     if (warn) {
-      const use = req?.use;
+      const use = req && 'id' in req ? req.use : undefined;
       const small = !!use && w.width < use.width;
       warn.hidden = !small;
       warn.textContent = small ? `It may look soft: the ${use!.label.toLowerCase()} shows up to ${use!.width} px wide. A larger original helps.` : '';
@@ -99,6 +112,22 @@ export function initCrop(root: HTMLElement, signal: AbortSignal) {
     req = r;
     say('');
     save.disabled = true;
+    if ('local' in r) {
+      b = { width: r.local.width, height: r.local.height };
+      img.removeAttribute('srcset');
+      img.removeAttribute('sizes');
+      img.src = r.local.src;
+      if (tip) tip.hidden = true;
+      if (note) note.textContent = 'The crop is cut when the picture is uploaded. The file on your computer stays as it is.';
+      first = 'free';
+      setShape('free', false);
+      rect = r.rect ? withRatio(r.rect, b) : largest(b, ratio());
+      render();
+      if (!dialog.open) dialog.showModal();
+      save.disabled = false;
+      requestAnimationFrame(() => box.focus({ preventScroll: true }));
+      return;
+    }
     const got = await api<{ source: Source; rect: Rect | null; isCopy: boolean }>('GET', `media/${r.id}/crop`);
     if (!got.ok) {
       announce(`Can't crop it: ${(got.data.issues ?? []).map(describeIssue).join(' ') || 'the picture wasn\u2019t found.'}`, 'negative');
@@ -206,6 +235,12 @@ export function initCrop(root: HTMLElement, signal: AbortSignal) {
   on(save, 'click', async () => {
     if (!req) return;
     const r = req;
+    if ('local' in r) {
+      const cut = whole(rect, b);
+      announce(`The crop is ${cut.width} × ${cut.height}`);
+      dialog.close();
+      return r.onCrop(cut);
+    }
     save.disabled = true;
     say('');
     announce('Cropping\u2026');

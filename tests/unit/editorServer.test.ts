@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
 import { deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
-import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, replaceMaster, saveSidecar, upload } from '../../src/site/editor/server/media';
+import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, parseUploadCrop, replaceMaster, saveSidecar, upload } from '../../src/site/editor/server/media';
 import { changes, discard, publish, push } from '../../src/site/editor/server/git';
 import editor from '../../integrations/editor.mjs';
 
@@ -143,6 +143,31 @@ describe('uploads', () => {
     expect(await upload({ file: { name: 'x.png', bytes: Buffer.from('not a picture') }, owner: 'shared', alt: 'x' })).toMatchObject({ ok: false, status: 422 });
     expect(existsSync(join(content, 'media/shared/x.webp'))).toBe(false);
     expect(existsSync(join(content, 'media/shared/x.json'))).toBe(false);
+  });
+
+  it('cut a crop chosen before the upload, scaled from the size the browser showed, keeping transparency', async () => {
+    // a 1000 × 500 transparent picture, cropped in a 500 × 250 view of it to its right half
+    const r = await upload({ file: { name: 'wide.png', bytes: await png(1000, 500, true) }, owner: 'shared', alt: 'Wide', crop: { x: 250, y: 0, width: 250, height: 250, of: { width: 500, height: 250 } } });
+    expect(r).toMatchObject({ ok: true, id: 'shared/wide' });
+    const meta = await sharp(readFileSync(join(content, 'media/shared/wide.webp'))).metadata();
+    expect([meta.width, meta.height, meta.hasAlpha]).toEqual([500, 500, true]);
+  });
+
+  it('take SVG (drawn at the size a master can be), GIF and TIFF', async () => {
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 64 32"><circle cx="16" cy="16" r="12" fill="#c33"/></svg>');
+    expect(await upload({ file: { name: 'mark.svg', bytes: svg }, owner: 'shared', alt: 'A red dot' })).toMatchObject({ ok: true, id: 'shared/mark' });
+    const drawn = await sharp(readFileSync(join(content, 'media/shared/mark.webp'))).metadata();
+    expect([drawn.width, drawn.hasAlpha]).toEqual([MAX_SIDE, true]);
+    const gif = await sharp(await png(40, 30)).gif().toBuffer();
+    const tiff = await sharp(await png(40, 30)).tiff().toBuffer();
+    expect(await upload({ file: { name: 'anim.gif', bytes: gif }, owner: 'shared', alt: 'G' })).toMatchObject({ ok: true });
+    expect(await upload({ file: { name: 'scan.tiff', bytes: tiff }, owner: 'shared', alt: 'T' })).toMatchObject({ ok: true });
+    expect((await sharp(readFileSync(join(content, 'media/shared/scan.webp'))).metadata()).width).toBe(40);
+  });
+
+  it("read the form's crop only when it's a rectangle in a size", () => {
+    expect(parseUploadCrop(JSON.stringify({ x: 1, y: 2, width: 3, height: 4, of: { width: 10, height: 10 } }))).toEqual({ x: 1, y: 2, width: 3, height: 4, of: { width: 10, height: 10 } });
+    for (const bad of [null, '', 'nope', JSON.stringify({ x: 1, y: 2, width: 0, height: 4, of: { width: 10, height: 10 } }), JSON.stringify({ x: -1, y: 0, width: 3, height: 4, of: { width: 10, height: 10 } }), JSON.stringify({ x: 0, y: 0, width: 3, height: 4 })]) expect(parseUploadCrop(bad)).toBeNull();
   });
 });
 

@@ -57,7 +57,7 @@ test.describe('editor', () => {
 
   test('the way in: a page on the site offers "Edit this page", which opens its article', async ({ page }) => {
     await page.goto(`/leadership/${ARTICLE}/`);
-    const launch = page.getByRole('link', { name: 'Edit this page' });
+    const launch = page.getByRole('banner').getByRole('link', { name: 'Edit this page' });
     await expect(launch).toBeVisible();
     await launch.click();
     await expect(page).toHaveURL(new RegExp(`/_edit/articles/${ARTICLE}/$`));
@@ -296,10 +296,32 @@ test.describe('editor', () => {
     await expect(grid.locator('dd strong')).toHaveText('shared');
   });
 
+  test('text pastes into every kind of text block, headings and quotes as well as paragraphs', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; text?: string }[];
+    // the first heading and quote in the fixture, whatever they say
+    const h = blocks().findIndex((b) => b.type === 'heading');
+    const q = blocks().findIndex((b) => b.type === 'quote');
+    const was = { h: blocks()[h].text!, q: blocks()[q].text! };
+    const exactly = (s: string) => new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+    const pasteAtEnd = async (text: string, words: string) => {
+      await frame(page).locator('[data-editor-editable="plain"]', { hasText: exactly(text) }).click();
+      await page.keyboard.press('Control+End');
+      await page.evaluate((w) => navigator.clipboard.writeText(w), words);
+      await page.keyboard.press('Control+V');
+    };
+    await pasteAtEnd(was.h, ' today');
+    await expect.poll(() => blocks()[h].text, { timeout: 15_000 }).toBe(`${was.h} today`);
+    await pasteAtEnd(was.q, ' Every day.');
+    await expect.poll(() => blocks()[q].text, { timeout: 15_000 }).toBe(`${was.q} Every day.`);
+  });
+
   test("a picture's caption can be hidden completely, credit and all, and shown again", async ({ page }) => {
     await openArticle(page);
     const blocks = () => readJson(articleFile()).body as { type: string; showCaption?: boolean }[];
-    const i = blocks().findIndex((b) => b.type === 'figure');
+    // the first figure whose caption shows (the fixture is the owner's content, as it is)
+    const i = blocks().findIndex((b) => b.type === 'figure' && b.showCaption !== false);
     await page.locator(`[data-editor-select="${i}"]`).click();
     const figures = () => frame(page).locator('article figure').filter({ has: frame(page).locator('img') });
     const toggle = page.locator(`[data-block-form="${i}"]`).getByLabel('Show the caption and credit');
@@ -574,6 +596,97 @@ test.describe('editor', () => {
     await page.goto(`/_edit/media/?id=articles/${ARTICLE}/tshirt`);
     await expect(page.locator('[data-editor-media-details]').getByRole('link', { name: /Article: Do what makes you proud/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete the picture' })).toBeDisabled();
+  });
+
+  test('the "+" shows in the space between blocks, never over a block, and adds a block there', async ({ page }) => {
+    await openArticle(page);
+    const canvas = page.frame({ url: /\/_edit\/canvas\// })!;
+    const plus = frame(page).locator('[data-chrome-insert]');
+    const at = await canvas.evaluate(() => {
+      const a = document.querySelector<HTMLElement>('[data-editor-editable="rich"]')!;
+      a.scrollIntoView({ block: 'center' });
+      const b = a.nextElementSibling!.getBoundingClientRect();
+      const r = a.getBoundingClientRect();
+      return { x: r.left + r.width / 2, inside: r.top + r.height / 2, topOfNext: b.top + 4, gap: (r.bottom + b.top) / 2 };
+    });
+    const box = (await page.locator('[data-editor-frame]').boundingBox())!;
+    const to = (y: number) => page.mouse.move(box.x + at.x, box.y + y, { steps: 3 });
+    await to(at.inside);
+    await expect(plus).toBeHidden();
+    await to(at.topOfNext);
+    await expect(plus).toBeHidden();
+    await to(at.gap);
+    await expect(plus).toBeVisible();
+    await plus.getByRole('button').click();
+    await expect(page.locator('#editor-palette')).toBeVisible();
+  });
+
+  test('upload: a picture shows at once (its transparency too), can be cropped before it uploads, and a pasted one fills the form', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.goto('/_edit/media/');
+    await page.getByText('Upload a picture').click();
+    const form = page.locator('[data-editor-upload]');
+    const facts = form.locator('[data-upload-facts]');
+    const clear = await sharp({ create: { width: 800, height: 400, channels: 4, background: { r: 200, g: 40, b: 40, alpha: 0.4 } } }).png().toBuffer();
+    await form.locator('input[type="file"]').setInputFiles({ name: 'Clear Mark.png', mimeType: 'image/png', buffer: clear });
+    await expect(facts).toHaveText('800 × 400 px, PNG, transparent.');
+    await expect(form.locator('[data-upload-img]')).toBeVisible();
+
+    await form.getByRole('button', { name: 'Crop it' }).click();
+    const dialog = page.locator('#crop');
+    const readout = dialog.locator('[data-crop-readout]');
+    await expect(readout).toHaveText('800 × 400 px (2:1), from 800 × 400');
+    await expect(dialog.locator('[data-crop-note]')).toContainText('cut when the picture is uploaded');
+    await page.keyboard.press('-');
+    await page.keyboard.press('-');
+    const [w, h] = /^(\d+) × (\d+) px/.exec((await readout.textContent()) ?? '')!.slice(1).map(Number);
+    expect(w).toBeLessThan(800);
+    await dialog.getByRole('button', { name: 'Save the crop' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(facts).toHaveText(`800 × 400 px, PNG, transparent. Cropped to ${w} × ${h} px.`);
+    await form.getByLabel('Alt text').fill('A clear red mark');
+    await form.getByRole('button', { name: 'Upload it' }).click();
+    await expect(page).toHaveURL(/\?id=shared\/clear-mark$/, { timeout: 30_000 });
+    const meta = await sharp(readFileSync(join(FIXTURE, 'content/media/shared/clear-mark.webp'))).metadata();
+    expect([meta.width, meta.height, meta.hasAlpha]).toEqual([w, h, true]);
+
+    // a copied picture, pasted on the page, goes in the form, previewed
+    await page.getByText('Upload a picture').click();
+    const shot = await sharp({ create: { width: 320, height: 200, channels: 3, background: { r: 20, g: 90, b: 160 } } }).png().toBuffer();
+    await page.evaluate(async (b64) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': new Blob([bytes], { type: 'image/png' }) })]);
+    }, shot.toString('base64'));
+    await page.locator('h1').first().click();
+    await page.keyboard.press('Control+V');
+    await expect(form.locator('[data-upload-facts]')).toHaveText('320 × 200 px, PNG.');
+    await expect(form.getByLabel('Alt text')).toBeFocused();
+    await expect(form.locator('[data-file-chosen]')).toHaveText(/^pasted-picture-\d{4}-\d{2}-\d{2}\.png$/);
+  });
+
+  test('a picture pasted in the article opens the picker with it ready, and becomes a figure after the block', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; media?: string }[];
+    const count = blocks().length;
+    const p = blocks().findIndex((b) => b.type === 'text');
+    const shot = await sharp({ create: { width: 640, height: 360, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: { create: { width: 200, height: 200, channels: 4, background: { r: 240, g: 180, b: 20, alpha: 1 } } }, left: 220, top: 80 }])
+      .png()
+      .toBuffer();
+    await page.evaluate(async (b64) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': new Blob([bytes], { type: 'image/png' }) })]);
+    }, shot.toString('base64'));
+    await frame(page).locator('[data-editor-editable="rich"]').first().click();
+    await page.keyboard.press('Control+V');
+    const picker = page.locator('#editor-picker');
+    await expect(picker).toBeVisible();
+    await expect(picker.locator('[data-upload-facts]')).toHaveText('640 × 360 px, PNG, transparent.');
+    await picker.getByLabel('Alt text').fill('A yellow square');
+    await picker.getByRole('button', { name: 'Upload it' }).click();
+    await expect.poll(() => blocks().length, { timeout: 30_000 }).toBe(count + 1);
+    expect(blocks()[p + 1]).toMatchObject({ type: 'figure', media: expect.stringMatching(new RegExp(`^articles/${ARTICLE}/pasted-picture-\\d{4}-\\d{2}-\\d{2}$`)) });
   });
 
   test('sections: the sections beside the chosen one\'s pages and settings; a new section moved up; a published page dragged onto another section, back with Move, its old address simply gone; the keys; a selection moved together; Find and Show', async ({ page }) => {

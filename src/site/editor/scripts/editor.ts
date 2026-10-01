@@ -430,6 +430,14 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         announce(`Pasted ${blocks.length === 1 ? 'a block' : `${blocks.length} blocks`}.${left}`);
         break;
       }
+      case 'paste-picture': {
+        // a picture pasted on the page: the picker, with it in the upload form; uploaded, it's a figure there
+        const at = m.index as number;
+        if (!(m.file instanceof File)) break;
+        openPicker({ mode: 'single', min: 1, title: 'Add the pasted picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
+        dialog('editor-picker')?.querySelector('[data-editor-media-grid]')?.dispatchEvent(new CustomEvent('media:file', { detail: { file: m.file } }));
+        break;
+      }
       case 'merge': {
         const i = m.index as number;
         const prev = doc.body[i - 1];

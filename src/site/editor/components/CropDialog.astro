@@ -114,10 +114,11 @@ const SHAPES: SelectOption[] = [
     background: var(--color-bg-sunk);
   }
 
-  /* exactly the picture's box: the crop's place is in percentages of it */
+  /* exactly the picture's box: the crop's place is in percentages of it; a checkerboard shows transparency */
   .frame {
     position: relative;
     inline-size: fit-content;
+    background: repeating-conic-gradient(var(--color-bg-sunk) 0 25%, var(--color-bg) 0 50%) 0 0 / var(--space-4) var(--space-4);
     cursor: crosshair;
     touch-action: none;
     user-select: none;
