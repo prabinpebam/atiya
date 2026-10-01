@@ -1,8 +1,9 @@
 ---
 /**
  * An index: a section's front page, with its title set large, a standfirst, and its pages below in the
- * section's view: a list (rows, words first), tiles (an even grid of cards) or a bento box (the lead
- * across the page, then rows of halves and thirds), with the whitespace a magazine's section opener has.
+ * section's view: a list (rows, words first), tiles (an even grid of cards), a bento box (the lead
+ * across the page, then rows of halves and thirds) or features (every page a lead, its picture beside
+ * its words, one after another), with the whitespace a magazine's section opener has.
  * An empty section says so. Defined once; every section uses it (documentation/sections/spec.md §3.4),
  * and so does a building's list on the planet, in the planet's frame (§6.1).
  * @tier layout
@@ -36,8 +37,8 @@ interface Props {
   crumbs?: { trail: { label: string; href: string }[]; current: string };
   /** The pages in it, in order. */
   stories?: Omit<ComponentProps<typeof StoryCard>, 'variant'>[];
-  /** How they're laid out: list (rows), tiles (an even grid) or bento (a lead, then halves and thirds). */
-  view?: 'list' | 'tiles' | 'bento';
+  /** How they're laid out: list (rows), tiles (an even grid), bento (a lead, then halves and thirds) or features (every page a lead). */
+  view?: 'list' | 'tiles' | 'bento' | 'features';
   /** What an empty section says, in place of its pages. */
   empty?: string;
   /** For an address that moved: the page sends the reader on to this path at once (and says so, with a link). */
@@ -60,7 +61,13 @@ const { title, description, heading, standfirst, nav, action, crumbs, stories = 
     <div class="list" data-view={view}>
       {
         stories.length > 0 ? (
-          view === 'list' ? (
+          view === 'features' ? (
+            <div class="features">
+              {stories.map((s) => (
+                <StoryCard {...s} variant="feature" />
+              ))}
+            </div>
+          ) : view === 'list' ? (
             <div class="rows">
               {stories.map((s) => (
                 <StoryCard {...s} variant="row" />
@@ -127,6 +134,12 @@ const { title, description, heading, standfirst, nav, action, crumbs, stories = 
     display: grid;
     gap: var(--space-8);
     max-width: var(--size-popout);
+  }
+
+  /* every page a lead, one after another, with a magazine spread's room between them */
+  .features {
+    display: grid;
+    gap: var(--space-section);
   }
 
   /* the lead across the page, then rows of two halves and rows of three thirds (six columns) */

@@ -952,7 +952,7 @@ test.describe('editor', () => {
     await page.locator('#new-section').getByRole('button', { name: 'Add the section' }).click();
     await expect(page).toHaveURL(/[?&]section=field-notes$/);
     expect(ids().at(-1)).toBe('field-notes');
-    expect(structure().home.children.at(-1)).toMatchObject({ id: 'field-notes', kind: 'hub', slug: 'field-notes', title: 'Field notes', view: 'tiles' });
+    expect(structure().home.children.at(-1)).toMatchObject({ id: 'field-notes', kind: 'hub', slug: 'field-notes', title: 'Field notes', view: 'features' });
     await expect(section('field-notes')).toHaveAttribute('aria-current', 'true');
     await page.getByRole('tab', { name: 'Settings' }).click();
     await expect(page).toHaveURL(/tab=settings/);

@@ -28,6 +28,7 @@ export const VIEW_OPTIONS = [
   { value: 'list', label: 'List', description: 'Rows of titles, words first' },
   { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
   { value: 'bento', label: 'Bento', description: 'A lead, then halves and thirds' },
+  { value: 'features', label: 'Features', description: 'Every page a lead: picture beside its words' },
 ];
 
 const KIND_LABEL: Record<Article['kind'], string> = { note: 'Article', page: 'Page', gallery: 'Gallery', talk: 'Talk' };

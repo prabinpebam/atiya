@@ -180,7 +180,7 @@ export const siteSettings = z.strictObject({
 const pageRef = z.strictObject({ type: z.literal('article'), id });
 
 /** How a section (or a building on the planet) lists its pages. */
-export const SECTION_VIEWS = ['list', 'tiles', 'bento'] as const;
+export const SECTION_VIEWS = ['list', 'tiles', 'bento', 'features'] as const;
 export type SectionView = (typeof SECTION_VIEWS)[number];
 
 /** A navigation label: short enough for the header's row (V17). */

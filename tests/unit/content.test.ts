@@ -151,6 +151,7 @@ describe('routes from the site structure', () => {
   it('a section keeps its view, and a hub or a structure that names another item type is refused', () => {
     const ok = siteStructure.safeParse(tree([section('s', [], { view: 'list' })]));
     expect(ok.success).toBe(true);
+    for (const view of ['tiles', 'bento', 'features']) expect(siteStructure.safeParse(tree([section('s', [], { view })])).success, view).toBe(true);
     expect(siteStructure.safeParse(tree([section('s', [], { view: 'carousel' })])).success).toBe(false);
     expect(siteStructure.safeParse(tree([section('s', [], { template: 'workIndex' })])).success).toBe(false);
     expect(siteStructure.safeParse(tree([section('s', [{ id: 'n', kind: 'item', item: { type: 'caseStudy', id: 'a' } }])])).success).toBe(false);

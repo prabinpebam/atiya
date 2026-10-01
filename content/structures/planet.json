@@ -5,7 +5,7 @@
       "title": "Workshop",
       "kicker": "Selected case studies",
       "summary": "Case studies of products I’ve led: the problem, the bets, how the team shipped and what changed.",
-      "view": "tiles",
+      "view": "features",
       "site": "work",
       "pages": []
     },
@@ -14,7 +14,7 @@
       "title": "Town Hall",
       "kicker": "About me · How I lead",
       "summary": "Who I am, and how I lead and grow design teams.",
-      "view": "list",
+      "view": "features",
       "site": "about",
       "pages": [
         {
@@ -28,7 +28,7 @@
       "title": "Lighthouse",
       "kicker": "Vision & design leadership",
       "summary": "How I lead design teams, and the culture we build together.",
-      "view": "bento",
+      "view": "features",
       "site": "leadership",
       "pages": [
         {
@@ -42,7 +42,7 @@
       "title": "Library",
       "kicker": "Writing",
       "summary": "Essays and notes on design leadership, craft and building thoughtful products.",
-      "view": "list",
+      "view": "features",
       "site": "writing",
       "pages": [
         {
@@ -56,7 +56,7 @@
       "title": "Amphitheater",
       "kicker": "Talks & podcasts",
       "summary": "Talks and conversations on design and leadership, with their recordings and slides.",
-      "view": "list",
+      "view": "features",
       "site": "talks",
       "pages": []
     },
@@ -65,7 +65,7 @@
       "title": "Greenhouse",
       "kicker": "Side projects & experiments",
       "summary": "Prototypes, tools and experiments I build on the side, including this little planet.",
-      "view": "tiles",
+      "view": "features",
       "site": "side-projects",
       "pages": [
         {
@@ -111,7 +111,7 @@
       "title": "Post Office",
       "kicker": "Contact · résumé",
       "summary": "Ways to get in touch, and my résumé.",
-      "view": "list",
+      "view": "features",
       "site": "contact",
       "pages": [
         {

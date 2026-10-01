@@ -7,7 +7,7 @@ How the [spec](spec.md) is built: six phases, in the order the owner asked for t
 > - **S1: words (done).** Every placeholder is rewritten for a site under construction, and a test keeps placeholder markers out.
 > - **S2: sections, pages and the navigation.**
 >   - Three levels.
->   - Section views: list, tiles and bento.
+>   - Section views: list, tiles, bento and features.
 >   - Page kinds: Article, Page and Gallery.
 >   - The first seven sections.
 >   - The home page listing them.

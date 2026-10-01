@@ -21,7 +21,7 @@ import { VIEW_OPTIONS as VIEWS } from '../server/screens';
   <form class="form" data-sections-new novalidate>
     <TextField label="Title" name="title" required hint="Its heading, and its address made from it." />
     <TextField label="Summary" name="summary" multiline rows={2} optional />
-    <Select label="View" name="view" value="tiles" options={VIEWS} />
+    <Select label="View" name="view" value="features" options={VIEWS} />
     <Switch label="In the navigation" name="inNav" checked data-sections-in-nav="" />
     <Text variant="small" tone="muted">It goes after the other sections, under the home page.</Text>
     <p class="issue" role="alert" data-editor-form-issue hidden></p>

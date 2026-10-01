@@ -63,7 +63,7 @@ export function initPlanet(root: HTMLElement, signal: AbortSignal) {
     if (!title || !kicker || !summary) return say(form, 'A building needs its name, what it holds and a summary.');
     if (summary.length > 160) return say(form, 'The summary is at most 160 characters.');
     const view = get('view');
-    void put(updatePlace(state.planet, place, { title, kicker, summary, ...(view === 'list' || view === 'tiles' || view === 'bento' ? { view } : {}), site: get('site') }), {
+    void put(updatePlace(state.planet, place, { title, kicker, summary, ...(view === 'features' || view === 'list' || view === 'tiles' || view === 'bento' ? { view } : {}), site: get('site') }), {
       focus: `[data-planet-place="${place}"] button[type="submit"]`,
       form,
       notice: `Saved ${title}`,

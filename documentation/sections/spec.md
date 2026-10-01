@@ -4,7 +4,7 @@ How the site is organised into sections and pages, how its top navigation is set
 
 > **TL;DR.**
 > - **Honest words first.** Every placeholder a visitor could see, on the site or on the planet, now says what's there, what's coming and that the site is under construction. Nothing is invented and no date is promised (§2, done).
-> - **Sections hold pages.** The site is exactly three levels: home, then sections, then pages. A section is a page of its own that lists its pages as a list, tiles or a bento box. A page is anything with its own address: an article, a custom page or a gallery (§3).
+> - **Sections hold pages.** The site is exactly three levels: home, then sections, then pages. A section is a page of its own that lists its pages as a list, tiles, a bento box or features. A page is anything with its own address: an article, a custom page or a gallery (§3).
 > - **The top navigation is data.** It lists the sections you choose, and any pages or custom links you add, in your order. It's never hardcoded (§4).
 > - **The planet is a parallel universe.** Its seven buildings are fixed by the game, and each is a section of its own. You map pages to them, or leave a page off the planet; the site's sections aren't affected (§5).
 > - **Reading on the planet uses the site's own pages.** Opening a building shows its list, and each of its pages, rendered by the same Astro layouts in a planet frame, over the game behind a white smoke in light mode and a black one in dark. You can move freely through that building's pages, but the only way to another building's is to walk there (§6).
@@ -105,7 +105,7 @@ Later phases move these words into `content/` (the sections' and places' summari
 | `title` | The section page's heading, and its default label | |
 | `navLabel` | A shorter label for the navigation | Optional, 24 characters at most |
 | `summary` | The section page's standfirst, and the line under it on the home page | 160 characters at most. While a section is empty, it says what's coming |
-| `view` | How its pages are listed: `list`, `tiles` or `bento` | Default `tiles` (§3.4) |
+| `view` | How its pages are listed: `list`, `tiles`, `bento` or `features` | Default `tiles` (§3.4) |
 | `sequence` | Its pages have an order that means something, so each page links to the previous and next | Optional, as today |
 | `children` | Its pages, in order | Item nodes only |
 
@@ -139,14 +139,15 @@ A section's page is its heading, its standfirst and its pages, in its `view`:
 | **List** | A contents page: one row per page, with its title set large, its one-line summary, its meta, and a small picture at the end of the row | Many pages, words first (writing, talks) |
 | **Tiles** | An even grid of cards: picture, title, summary, meta | A set of equals (case studies) |
 | **Bento** | A mosaic: the first page across the whole width (its picture beside its words), then a row of two halves and a row of three thirds, in turn | A few pages with a clear lead (leadership) |
+| **Features** | Every page a lead, one after another: its picture beside its words, its title set large, with a magazine spread's room between them | A handful of pages that each deserve a spread (side projects) |
 
-- **All three are the layout's, from the same card.** `IndexLayout` takes `view` and arranges `StoryCard`s:
+- **All four are the layout's, from the same card.** `IndexLayout` takes `view` and arranges `StoryCard`s:
   - `row`, a new variant, for the list;
   - `standard` for tiles, and for bento's single cells;
-  - `feature` for bento's lead.
+  - `feature` for bento's lead, and for every page in features.
   No section can be styled beyond its view.
 - **The meta line** follows the page's kind: an Article's reading time, a Page's nothing, a Gallery's number of pictures.
-- **On a phone** every view is a single column. The list keeps its small pictures; tiles and bento stack.
+- **On a phone** every view is a single column. The list keeps its small pictures; tiles, bento and features stack (a feature's picture goes above its words).
 - **Empty.** A section with no published pages shows its summary and an empty state: "Nothing here yet. This section is being written." Its address works, and it stays in the navigation if the owner put it there.
 - **Drafts** show in edit mode's canvas only, never on the site (as today).
 
@@ -275,7 +276,7 @@ The planet has seven buildings, and each is one of the game's sections. Their sh
 | `title` | string | The building's name on its card, in fast travel and at the head of its list |
 | `kicker` | string | What it holds, over the name |
 | `summary` | string, ≤ 160 | Under the name on the card and on its list. While it holds nothing, it says what's coming |
-| `view` | `list`, `tiles` or `bento` | Its list's view (§3.4), independent of any site section's |
+| `view` | `list`, `tiles`, `bento` or `features` | Its list's view (§3.4), independent of any site section's |
 | `site` | a section's node ID, optional | Where "Open classic page" leads from its card and its list. Left out, it leads home |
 | `pages` | page references, in order | What it holds (U10) |
 
@@ -502,7 +503,7 @@ New or changed rules, checked by the content loader. So the build, the unit test
 | V15 | A page is in at most one building |
 | V16 | A place's `site` names a section that exists |
 | V17 | Every navigation entry points at a node that exists, or is a valid link; at most eight entries; labels at most 24 characters |
-| V18 | A section's `view`, and a place's, is `list`, `tiles` or `bento` |
+| V18 | A section's `view`, and a place's, is `list`, `tiles`, `bento` or `features` |
 | V19 | A redirect's source is free (not a built page), its target is a built page, and both go through the base path. A redirect that no longer fits (a page now lives at its source, or its target has gone) is left out of the build with a warning, not an error, since moves write none (D11) |
 | V20 | No placeholder markers in visitor-facing copy |
 | V21 | Every node ID is unique across the site structure, and a moved page keeps its node |
@@ -598,3 +599,4 @@ Filled in as each phase lands.
   - **The design system:** `RelatedStories` (compound) and `BackToTop` (fundamental), with their stories; `ArticleLayout`'s `related` prop places them after Previous and Next, in a column as wide as a popout picture.
   - **The pages:** `relatedOf` (`opening.ts`) ranks every published story for the site's `Page.astro`, and the building's pages for `PlanetPage.astro`.
   - **Checked in a browser:** on Liquid Glass Pro, a visit to the first suggestion (Cloner Pro) dropped it from the three shown on the next visit; with most stories read, the unread one came first and the rest were marked "Read" (dark mode, 390 px wide, no sideways scroll); Back to top scrolled to 0 with the focus on the main region.
+- **The features view (1 October 2026):** a fourth section view (§3.4), every page a eature card one after another; Side projects uses it, and New section starts on it. In the contract (SECTION_VIEWS, so V18 takes it for sections and buildings), IndexLayout, and the editor's view options.
