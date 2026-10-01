@@ -2,10 +2,10 @@
 /**
  * A page: an article, a case study, a custom page or a gallery. The opening spread, then the text
  * in a comfortable column with a drop cap, figures, galleries, videos and quotes stepping out of it,
- * then the way on to the next story. Pictures open in the lightbox. Defined once; every long read uses it,
+ * then the way on: the next story, related stories to read next (the ones not read yet first) and back to the top. Pictures open in the lightbox. Defined once; every long read uses it,
  * on the site and on the planet, where the building's frame replaces the site's chrome (documentation/sections/spec.md §6.1).
  * @tier layout
- * @a11y One h1 (the title) and one main landmark with id="main"; the article is an <article>; breadcrumbs above, "More stories" after.
+ * @a11y One h1 (the title) and one main landmark with id="main"; the article is an <article>; breadcrumbs above, "More stories" and "Keep exploring" after, and Back to top, which moves the focus to the top.
  */
 import PageShell from '../components/compounds/PageShell.astro';
 import SiteHeader, { type NavItem } from '../components/compounds/SiteHeader.astro';
@@ -16,7 +16,9 @@ import NextPrev from '../components/compounds/NextPrev.astro';
 import ArticleMinimap from '../components/compounds/ArticleMinimap.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
 import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
+import RelatedStories, { type RelatedStory } from '../components/compounds/RelatedStories.astro';
 import Prose from '../components/fundamentals/Prose.astro';
+import BackToTop from '../components/fundamentals/BackToTop.astro';
 import type { IconName } from '../design/icons';
 
 interface Props {
@@ -50,9 +52,11 @@ interface Props {
   next?: { href: string; title: string };
   /** Read on the planet: the building's frame (its bar, over the smoke) replaces the site's header, footer and breadcrumbs. */
   frame?: PlanetFrame;
+  /** The story being read, and the related stories to suggest after it, best first (the reader's browser shows the ones not read yet first). */
+  related?: { current: string; stories: RelatedStory[] };
 }
 
-const { title, description, nav, action, crumbs, header, dropcap = true, prev, next, frame } = Astro.props;
+const { title, description, nav, action, crumbs, header, dropcap = true, prev, next, frame, related } = Astro.props;
 ---
 
 <PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} preload={['display', 'display-italic', 'text', 'ui']}>
@@ -80,6 +84,12 @@ const { title, description, nav, action, crumbs, header, dropcap = true, prev, n
         </div>
       )
     }
+    <div class="end">
+      {related && <RelatedStories current={related.current} stories={related.stories} />}
+      <p class="top">
+        <BackToTop />
+      </p>
+    </div>
     <ArticleMinimap />
     <Lightbox />
   </main>
@@ -110,5 +120,19 @@ const { title, description, nav, action, crumbs, header, dropcap = true, prev, n
 
   .more {
     margin-block-start: var(--space-section);
+  }
+
+  /* the way on: related stories, then back to the top, as wide as the stepping-out figures */
+  .end {
+    display: grid;
+    gap: var(--space-8);
+    width: min(var(--size-popout), 100% - 2 * var(--space-gutter));
+    margin: var(--space-section) auto var(--space-10);
+  }
+
+  .top {
+    display: flex;
+    justify-content: center;
+    margin: 0;
   }
 </style>

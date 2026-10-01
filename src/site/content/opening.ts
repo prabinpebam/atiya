@@ -7,6 +7,7 @@
 import { getPerson, getSite } from './repository';
 import { picture } from './pictures';
 import { pageMeasure } from './reading';
+import { rankRelated } from '../scripts/related';
 import type { Article } from './schema';
 
 /** A picture's dark mode version, as the components take it. */
@@ -35,6 +36,26 @@ export interface Opening {
 
 /** A story (an article, a talk) opens with a byline and a drop cap; a page and a gallery with their words only. */
 export const storyKind = (a: Pick<Article, 'kind'>) => a.kind === 'note' || a.kind === 'talk';
+
+/**
+ * The related stories to suggest at the end of a page (documentation/sections/spec.md §3.7): the other
+ * stories in `pool` (on the site, every published one; on the planet, the building's), ranked (related.ts)
+ * and made into cards, best first. The reader's browser picks the ones it hasn't read yet.
+ */
+export async function relatedOf(article: Article, section: string | undefined, pool: { article: Article; href: string; section?: string }[]) {
+  const ranked = rankRelated(
+    { id: article.id, kind: article.kind, topics: article.topics, section, publishedAt: article.publishedAt, related: article.related?.map((r) => r.id) },
+    pool.map((p) => ({ id: p.article.id, kind: p.article.kind, topics: p.article.topics, section: p.section, publishedAt: p.article.publishedAt })),
+  );
+  const stories = await Promise.all(
+    ranked.map(async (id) => {
+      const p = pool.find((x) => x.article.id === id)!;
+      const picture = await cardPicture(p.article);
+      return { id, href: p.href, title: p.article.title, dek: p.article.summary, meta: pageMeasure(p.article), ...(picture ? { picture } : {}) };
+    }),
+  );
+  return { current: article.id, stories };
+}
 
 /** @param topic where the page sits: its section on the site, or its building on the planet */
 export async function openingOf(article: Article, topic?: { label: string; href: string }): Promise<Opening> {

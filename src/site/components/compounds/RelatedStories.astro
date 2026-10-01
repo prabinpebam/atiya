@@ -1,0 +1,213 @@
+---
+/**
+ * The way on at the end of a story: a few related stories to read next, the ones this reader hasn't read
+ * yet first (documentation/sections/spec.md §3.7). The page hands in its candidates, best first (ranked
+ * once, at build time: the author's picks, shared topics, the same section, the newest); the browser
+ * shows the best few not read yet, then the ones read longest ago, marked Read, and remembers this page
+ * as read (on this browser only). Without the script, the best few show.
+ * @tier compound
+ * @a11y A region named by its heading; each card is one link, on its title (a stretched link), so a screen reader hears the title.
+ * @a11y A story already read says so in words (a Read tag), not by its look alone.
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Image from '../fundamentals/Image.astro';
+import Tag from '../fundamentals/Tag.astro';
+import { PICTURE_SPECS } from '../../design/pictures';
+import { RELATED_SHOWN } from '../../scripts/related';
+
+export interface RelatedStory {
+  /** Its ID (what this browser remembers it by). */
+  id: string;
+  /** Its address. */
+  href: string;
+  title: string;
+  /** One line on what it's about. */
+  dek?: string;
+  /** How long it takes to read. */
+  meta?: string;
+  /** Its card picture, shown whole in a 3:2 frame, and its dark mode version. */
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; dark?: { src: string; srcset?: string; width: number; height: number } };
+}
+
+interface Props {
+  /** The story being read (remembered as read). */
+  current: string;
+  /** The candidates, best first. */
+  stories: RelatedStory[];
+  /** The heading. */
+  heading?: string;
+  /** How many show. */
+  shown?: number;
+}
+
+const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = Astro.props;
+---
+
+{
+  stories.length > 0 && (
+    <section class="related" aria-labelledby="related-title" data-related={current} data-related-shown={String(shown)}>
+      <Heading level={2} size="h3" id="related-title">{heading}</Heading>
+      <ul class="list" role="list">
+        {stories.map((s, i) => (
+          <li class="item" data-related-item={s.id} hidden={i >= shown}>
+            <article class="card">
+              {s.picture && (
+                <div class="picture">
+                  <Image src={s.picture.src} srcset={s.picture.srcset} sizes="(max-width: 40rem) 92vw, (max-width: 72rem) 46vw, 24rem" alt={s.picture.alt} width={s.picture.width} height={s.picture.height} ratio={PICTURE_SPECS.thumbnail.ratio} fit="contain" dark={s.picture.dark} />
+                </div>
+              )}
+              <div class="words">
+                <Heading level={3} size="h4">
+                  <a class="title" href={s.href}>{s.title}</a>
+                </Heading>
+                {s.dek && <Text variant="small" tone="muted">{s.dek}</Text>}
+                <span class="meta">
+                  {s.meta && <Text as="span" variant="meta">{s.meta}</Text>}
+                  <span class="read" data-related-read hidden>
+                    <Tag size="sm">Read</Tag>
+                  </span>
+                </span>
+              </div>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .related {
+    display: grid;
+    gap: var(--space-6);
+    padding-block-start: var(--space-8);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item[hidden],
+  .read[hidden] {
+    display: none;
+  }
+
+  .card {
+    position: relative;
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+  }
+
+  .picture {
+    overflow: hidden;
+    border-radius: var(--c-image-radius);
+  }
+
+  .words {
+    display: grid;
+    gap: var(--space-2);
+    align-content: start;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .title {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  /* the whole card follows the title's link */
+  .title::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  @media (hover: hover) {
+    .card:hover .title {
+      text-decoration: underline;
+      text-decoration-thickness: var(--border-strong);
+      text-decoration-color: var(--color-highlight);
+      text-underline-offset: 0.12em;
+    }
+  }
+
+  .card:has(.title:active) .title {
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-strong);
+    text-decoration-color: var(--color-highlight);
+    text-underline-offset: 0.12em;
+  }
+
+  .title:focus-visible {
+    outline: none;
+  }
+
+  .title:focus-visible::after {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+    border-radius: var(--c-image-radius);
+  }
+
+  @media (max-width: 56rem) {
+    .list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .list {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { parseVisits, pickToShow, recordVisit, VISITS_KEY } from '../../scripts/related';
+
+  each<HTMLElement>('[data-related]', (root) => {
+    let visits = {};
+    try {
+      visits = parseVisits(localStorage.getItem(VISITS_KEY));
+    } catch {
+      // storage refused (a private window, a policy): the best few show, as without the script
+    }
+    const list = root.querySelector('.list');
+    const items = [...root.querySelectorAll<HTMLElement>('[data-related-item]')];
+    const ranked = items.map((li) => li.dataset.relatedItem!);
+    const show = pickToShow(ranked, visits, Number(root.dataset.relatedShown) || 3);
+    // the ones shown first, in their order; the rest after them, hidden
+    for (const id of show) {
+      const li = items.find((x) => x.dataset.relatedItem === id)!;
+      li.hidden = false;
+      li.querySelector<HTMLElement>('[data-related-read]')!.hidden = !(visits as Record<string, number>)[id];
+      list?.append(li);
+    }
+    for (const li of items) if (!show.includes(li.dataset.relatedItem!)) {
+      li.hidden = true;
+      list?.append(li);
+    }
+    // this page is read now: on the site, or on the planet (the edit mode's canvas, a frame of its own, isn't reading)
+    if (window.top === window || document.documentElement.dataset.frame === 'planet') {
+      try {
+        localStorage.setItem(VISITS_KEY, JSON.stringify(recordVisit(visits, root.dataset.related!, Date.now())));
+      } catch {
+        // nothing to remember it in
+      }
+    }
+  });
+</script>

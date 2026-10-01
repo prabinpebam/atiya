@@ -183,6 +183,23 @@ Today's seven topics become the site's first sections, in the planet's order. Ea
 
 The owner can rename, hide or delete any of them in edit mode. They're sections, not code.
 
+### 3.7 The end of a page: what to read next, and back to top
+
+Every story (a page of kind `note`, `talk` or `gallery`) ends, after Previous and Next, with **Keep exploring**: three other stories to read next, then **Back to top**. A plain `page` (the résumé) is never suggested, but it ends the same way.
+
+- **Ranked at build time** (`rankRelated` in `src/site/scripts/related.ts`, pure and unit-tested). The candidates are the other published stories, best first:
+  1. the ones the page names in its `related` field, in that order;
+  2. then by the topics they share, each weighted by how rare it is (a topic on every page says little: `3 × log(1 + N / pages with it)`);
+  3. then +2 for the same section;
+  4. then the newest, then the ID.
+
+  The page carries the best eight (`RELATED_CANDIDATES`), three of them shown.
+- **What hasn't been read comes first** (`pickToShow`). The browser keeps the stories read on this device in `localStorage['site.visited']` (an ID and when it was last opened, at most 200; nothing leaves the device). The page's script shows the best three not read yet, in rank order; when fewer than three are left unread, it fills in with read ones, the longest ago first, each marked "Read". Without the script (or storage), the best three show as ranked.
+- **A visit counts** when a story is opened on its own or in a planet frame; edit mode's canvas doesn't count.
+- **On the planet** (§6.3), the suggestions come only from the same building, so every card opens in the frame; their addresses are the frame's (`/play/<building>/<page>/`).
+- **Back to top** (`BackToTop`) scrolls to the top (at once under reduced motion) and moves the focus to the page's main region, so the next Tab starts from the top.
+- **Made of the design system:** `RelatedStories` (a compound: its own cards from Heading, Text, Image and Tag, since a compound can't use `StoryCard`) and `BackToTop` (a fundamental), placed by `ArticleLayout` from its `related` prop; `relatedOf` in `opening.ts` builds the cards for the site (`Page.astro`) and the planet (`PlanetPage.astro`).
+
 ## 4. The top navigation (U2, U4, U5)
 
 ### 4.1 The data
@@ -312,7 +329,7 @@ Opening a building shows two kinds of page, both rendered by the site's own `Pag
 ### 6.3 Moving through a building (U14)
 
 - **From the list,** each page opens in the frame.
-- **On a page,** the end of the article has "Previous" and "Next" through the building's pages, in the building's order, and "Show contents" back to the list. The place bar has "Show contents" too.
+- **On a page,** the end of the article has "Previous" and "Next" through the building's pages, in the building's order, and "Show contents" back to the list. The place bar has "Show contents" too. Below them, Keep exploring suggests other pages in the same building, unread first, and Back to top (§3.7).
 - **Moving within the frame adds no history entries, and never blanks it.** A move is a swap, not a reload: the frame's pages carry the site's router (Astro's `ClientRouter`), which fetches the next page and swaps it in place with a crossfade, replacing the frame's history entry. So the browser's Back does what it does for every overlay (close it), and nothing between two pages shows the planet bare. (A browser the router can't serve replaces the frame's location instead.)
 - **The overlay shows the frame once its page is ready:** the frame stays hidden until its first `planet:ready` (§6.9), then fades in, so opening a building never shows a half-drawn page.
 - **The game keeps the address current** (`?at=<place>&open=1&page=<id>`) with `replaceState`, keeping its history marker, `{ gameOpen: place, page }`. So Close still goes back through history, and the address can be shared or reloaded and opens the same page.
@@ -576,3 +593,8 @@ Filled in as each phase lands.
   - **`SectionManager.astro` and `scripts/manager.ts`:** the list of sections (links; the choice and the tab in the address), the Tabs compound, each section's list of pages (a handle, a checkbox labelled with its title, its status, Edit), Find, Show, the selection, pointer drag (within the list, or onto a section; one page or the selection; a ghost with the count; edge scrolling; Esc cancels), Alt+Up and Alt+Down, and Move. It sends `manager:move` ({ pages, from, to, index }) and `manager:reorder` ({ section, by }); `scripts/sections.ts` turns a move into `placeAll` or `unplace`, `scripts/planet.ts` into `putAllIn` or `takeOff` (new: several pages placed together, each keeping its node). After a save the screen reloads with the focus where the change landed, and announces it.
   - **Settings in the tab:** `SectionForms.astro` and `PlaceForms.astro` render each form, the chosen one shown; `NewSection.astro` is the New section button and its dialog, under the list. `SectionBoard.astro` and `board.ts` are gone; the `c.editor.board-column` token became `c.editor.section-list`.
   - **Tests:** unit (`placeAll` and `putAllIn`: several pages, their order, their nodes, a place among those that stay; a published page moves freely, and nothing is written for its old address; a stale redirect is a warning); E2E "editor": the Sections screen (a new section opened, moved up in its settings and down with the keys; a published page dragged onto another section, its old address a 404 and no redirect written; back with Move; a page moved with Alt+Up and dragged within the list; Find and Show; two pages selected and moved with Move selected; a selection dragged onto a section), the Planet screen (Move to and from a building, a building's settings, a draft refused off the site), and axe on both.
+- **Keep exploring and Back to top (1 October 2026):** the end of every story (§3.7).
+  - **The rules** are pure in `src/site/scripts/related.ts` (`rankRelated`, `pickToShow`, `recordVisit`, `parseVisits`), unit-tested in `tests/unit/related.test.ts`, including the real content (the two liquid glass stories are in each other's top two).
+  - **The design system:** `RelatedStories` (compound) and `BackToTop` (fundamental), with their stories; `ArticleLayout`'s `related` prop places them after Previous and Next, in a column as wide as a popout picture.
+  - **The pages:** `relatedOf` (`opening.ts`) ranks every published story for the site's `Page.astro`, and the building's pages for `PlanetPage.astro`.
+  - **Checked in a browser:** on Liquid Glass Pro, a visit to the first suggestion (Cloner Pro) dropped it from the three shown on the next visit; with most stories read, the unread one came first and the rest were marked "Read" (dark mode, 390 px wide, no sideways scroll); Back to top scrolled to 0 with the focus on the main region.

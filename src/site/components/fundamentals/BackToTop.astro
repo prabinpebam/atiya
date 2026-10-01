@@ -1,0 +1,86 @@
+---
+/**
+ * Back to the top of the page, at the end of a long read: the page scrolls up (at once with reduced
+ * motion) and the focus goes to the top of the main content, so the keyboard starts there too. Without
+ * the script it's a plain link to the main content.
+ * @tier fundamental
+ * @a11y A link whose words say where it goes; the focus moves to the target, not only the view.
+ * @key Enter: back to the top
+ */
+import { svgOf } from '../../design/icons';
+
+interface Props {
+  /** Where the top is: the main content's id (it takes the focus). */
+  target?: string;
+  /** Its words. */
+  label?: string;
+}
+
+const { target = 'main', label = 'Back to top' } = Astro.props;
+const up = svgOf('arrow-up');
+---
+
+<a class="back-to-top" href={`#${target}`} data-back-to-top={target}
+  ><svg class="icon" viewBox={up.viewBox} aria-hidden="true" focusable="false" data-icon={up.name}><Fragment set:html={up.body} /></svg>{label}</a
+>
+
+<style>
+  .back-to-top {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--size-touch);
+    padding-inline: var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-round);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+    transition:
+      background-color var(--duration-instant) var(--ease-standard),
+      border-color var(--duration-instant) var(--ease-standard);
+  }
+
+  .icon {
+    width: var(--text-sm);
+    height: var(--text-sm);
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+
+  @media (hover: hover) {
+    .back-to-top:hover {
+      border-color: var(--color-border-strong);
+      background: var(--color-bg-hover);
+    }
+
+    .back-to-top:hover .icon {
+      transform: translateY(calc(var(--space-1) * -1));
+    }
+  }
+
+  .back-to-top:active {
+    border-color: var(--color-border-strong);
+    background: var(--color-bg-hover);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  each<HTMLAnchorElement>('[data-back-to-top]', (link, signal) => {
+    link.addEventListener(
+      'click',
+      (e) => {
+        const top = document.getElementById(link.dataset.backToTop!);
+        if (!top) return;
+        e.preventDefault();
+        const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
+        top.focus({ preventScroll: true });
+      },
+      { signal },
+    );
+  });
+</script>

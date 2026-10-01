@@ -404,6 +404,39 @@ test.describe('site design system', () => {
     await expect.poll(() => new URL(page.url()).pathname).toBe('/');
     expect(await page.evaluate(() => (window as unknown as { kept?: number }).kept)).toBeUndefined();
   });
+
+  test('the end of a story: three unread stories to read next, read ones last and marked, and back to top', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const shown = () =>
+      page.locator('[data-related-item]:not([hidden])').evaluateAll((els) => els.map((el) => ({ id: (el as HTMLElement).dataset.relatedItem!, read: !(el.querySelector('[data-related-read]') as HTMLElement).hidden })));
+    await page.goto('/side-projects/liquid-glass-pro/');
+    const region = page.getByRole('region', { name: 'Keep exploring' });
+    await expect(region).toBeVisible();
+    const first = await shown();
+    expect(first).toHaveLength(3);
+    expect(first.every((s) => !s.read)).toBe(true);
+
+    // reading the first suggestion takes it out of the three, and remembers both pages
+    await region.getByRole('link', { name: /./ }).first().click();
+    await expect(page).toHaveURL(new RegExp(`/${first[0].id}/$`));
+    await page.goBack();
+    await expect.poll(async () => (await shown()).map((s) => s.id)).not.toContain(first[0].id);
+    expect(Object.keys(JSON.parse((await page.evaluate(() => localStorage.getItem('site.visited'))) ?? '{}'))).toEqual(expect.arrayContaining(['liquid-glass-pro', first[0].id]));
+
+    // with every candidate read, the longest ago come back, marked Read
+    const all = await page.locator('[data-related-item]').evaluateAll((els) => els.map((el) => (el as HTMLElement).dataset.relatedItem!));
+    await page.evaluate((ids) => localStorage.setItem('site.visited', JSON.stringify(Object.fromEntries(ids.map((id, i) => [id, Date.now() - i * 1000])))), all);
+    await page.reload();
+    const again = await shown();
+    expect(again.map((s) => s.id)).toEqual(all.slice(-3).reverse());
+    expect(again.every((s) => s.read)).toBe(true);
+    await expect(region.getByText('Read', { exact: true }).first()).toBeVisible();
+
+    // back to top: the top of the page, and the focus on the main region
+    await page.getByRole('link', { name: 'Back to top' }).click();
+    await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+    await expect(page.locator('#main')).toBeFocused();
+  });
 });
 
 /** The classic site on a phone (documentation/site-ui/mobile-audit.md). */

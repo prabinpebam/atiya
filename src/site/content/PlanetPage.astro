@@ -10,7 +10,7 @@ import IndexLayout from '../layouts/IndexLayout.astro';
 import Blocks from './Blocks.astro';
 import { getPlanet, getRoutes, getSite, placePages } from './repository';
 import { pageMeasure } from './reading';
-import { cardPicture, openingOf, storyKind } from './opening';
+import { cardPicture, openingOf, relatedOf, storyKind } from './opening';
 import { withBase } from '../design/meta';
 import type { Place } from './schema';
 import type { PlanetFrame } from '../components/compounds/PlaceBar.astro';
@@ -38,6 +38,8 @@ const frame: PlanetFrame = current
   ? { place: { id: place.id, title: place.title }, page: { id: current.article.id, index: i, count: pages.length }, contentsHref: listHref, siteHref: withBase(current.route.path), map, canonical: current.route.path }
   : { place: { id: place.id, title: place.title }, siteHref: withBase(sectionPath ?? '/#sections'), map, canonical: sectionPath ?? '/' };
 const header = current && (await openingOf(current.article, { label: place.title, href: listHref }));
+// what to read next, from this building (a page read on the planet stays in its building: §6.4)
+const related = current && (await relatedOf(current.article, place.id, pages.map((p) => ({ article: p.article, href: pageHref(p.article.id), section: place.id }))));
 const link = (k: number) => (pages[k] ? { href: pageHref(pages[k].article.id), title: pages[k].article.title } : undefined);
 const stories = current
   ? []
@@ -50,7 +52,7 @@ const stories = current
 
 {
   current && header ? (
-    <ArticleLayout title={`${current.article.title} — ${place.title}`} description={current.article.summary} header={header} dropcap={storyKind(current.article)} prev={link(i - 1)} next={link(i + 1)} frame={frame}>
+    <ArticleLayout title={`${current.article.title} — ${place.title}`} description={current.article.summary} header={header} dropcap={storyKind(current.article)} prev={link(i - 1)} next={link(i + 1)} frame={frame} related={related}>
       <Blocks blocks={current.article.body} />
     </ArticleLayout>
   ) : (

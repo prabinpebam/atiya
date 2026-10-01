@@ -11,7 +11,7 @@ import IndexLayout from '../layouts/IndexLayout.astro';
 import Blocks from './Blocks.astro';
 import { getArticle, getPlanet, getRoutes, getSite, getStructure } from './repository';
 import { pageMeasure } from './reading';
-import { cardPicture, openingOf, storyKind } from './opening';
+import { cardPicture, openingOf, relatedOf, storyKind } from './opening';
 import { exploreAction, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import type { Route } from './routes';
@@ -39,10 +39,16 @@ const docTitle = `${title} — ${site.name}`;
 const crumbs = route && route.ancestors.length > 1 ? { trail: route.ancestors.map((c) => ({ label: c.label, href: withBase(c.path) })), current: route.title } : undefined;
 
 let header: ComponentProps<typeof ArticleLayout>['header'] | undefined;
+let related: ComponentProps<typeof ArticleLayout>['related'];
 if (article) {
   // its section (a page's parent is always one: V22)
   const section = route && route.ancestors.length > 1 ? route.ancestors.at(-1) : undefined;
   header = await openingOf(article, section && { label: section.label, href: withBase(section.path) });
+  // what to read next: every other published story on the site (§3.7)
+  const pool = getRoutes()
+    .filter((r) => r.node.kind === 'item' && r.node.item.type === 'article')
+    .map((r) => ({ article: getArticle((r.node as { item: { id: string } }).item.id)!, href: withBase(r.path), section: r.parent?.id }));
+  related = await relatedOf(article, route?.parent?.id, pool);
 }
 
 // a hub lists what it places (published), as story cards
@@ -61,7 +67,7 @@ const stories =
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} action={action} crumbs={crumbs} header={header} dropcap={storyKind(article)}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} action={action} crumbs={crumbs} header={header} dropcap={storyKind(article)} related={related}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>

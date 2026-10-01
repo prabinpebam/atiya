@@ -97,8 +97,8 @@ The design library is the full, live version (examples, props, keys, tokens, use
 
 | Tier | Components |
 |---|---|
-| **Fundamentals** | **Type:** Heading, Text, Link, Caption, Prose, Quote, Tag, Divider. **Media:** Icon, Image, Video, Avatar. **Actions:** Button, IconButton. **Form controls:** Select (the custom dropdown), Checkbox, Radio, Switch, TextField, Slider. **Feedback:** Progress, Spinner, Skeleton. **Scrolling:** ScrollArea (the custom scrollbar) |
-| **Compounds** | **Page frame:** PageShell, SiteHeader, SiteFooter, SideNav, Breadcrumbs, NextPrev. **Openings:** Hero, ArticleHeader, Facts. **Indexes:** StoryCard, ContentsList. **Media:** Figure, Gallery, Lightbox, Carousel, VideoEmbed. **Wayfinding:** ArticleMinimap ([the minimap](minimap.md)). **Forms:** ChoiceGroup |
+| **Fundamentals** | **Type:** Heading, Text, Link, Caption, Prose, Quote, Tag, Divider. **Media:** Icon, Image, Video, Avatar. **Actions:** Button, IconButton, BackToTop. **Form controls:** Select (the custom dropdown), Checkbox, Radio, Switch, TextField, Slider. **Feedback:** Progress, Spinner, Skeleton. **Scrolling:** ScrollArea (the custom scrollbar) |
+| **Compounds** | **Page frame:** PageShell, SiteHeader, SiteFooter, SideNav, Breadcrumbs, NextPrev. **Openings:** Hero, ArticleHeader, Facts. **Indexes:** StoryCard, ContentsList. **Media:** Figure, Gallery, Lightbox, Carousel, VideoEmbed. **Wayfinding:** ArticleMinimap ([the minimap](minimap.md)), RelatedStories ([what to read next](../sections/spec.md)). **Forms:** ChoiceGroup |
 | **Layouts** | **LandingLayout** (the front page), **IndexLayout** (a section's front page), **ArticleLayout** (a long read: case studies, notes, the classic sections), **LibraryLayout** (the design library) |
 
 ![A layout's page in the library: the real article page framed at desktop width, with phone and tablet switches and its source below.](assets/library-layout-page.jpg)

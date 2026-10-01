@@ -1,0 +1,17 @@
+---
+import Example from '../library/Example.astro';
+import RelatedStories from '../components/compounds/RelatedStories.astro';
+import { sample } from '../design/samples';
+import { withBase } from '../design/meta';
+
+const stories = [
+  { id: 'story-sample-bridge', href: withBase('/side-projects/'), title: 'Painting with generated textures', dek: 'A frozen style set keeps every surface in one hand.', meta: '6 min read', picture: sample('bridge') },
+  { id: 'story-sample-pond', href: withBase('/writing/'), title: 'A pond that reads as one body of water', dek: 'One level, one shader, and a lobed shore.', meta: '4 min read', picture: sample('pond') },
+  { id: 'story-sample-waterfall', href: withBase('/leadership/'), title: 'Wind that everything shares', dek: 'Grass, trees and flags sway to the same gusts.', meta: '5 min read', picture: sample('waterfall') },
+  { id: 'story-sample-workshop', href: withBase('/work/'), title: 'Building a planet you can walk around', dek: 'Why the classic site stayed one tap away.', meta: '12 min read', picture: sample('workshop') },
+];
+---
+
+<Example title="Keep exploring" layout="block" description="The end of a story: the best three this reader hasn't read yet. A story already read comes last, marked Read; this page counts as read once it's open.">
+  <RelatedStories current="story-sample-current" stories={stories} />
+</Example>
