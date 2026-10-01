@@ -386,6 +386,37 @@ test.describe('editor', () => {
     await expect(grid.locator('dd strong')).toHaveText('shared');
   });
 
+  test('a rich copy keeps its formatting: bold, italic, links, headings and lists, in a paragraph and in a list', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string; level?: number; text?: string }[];
+    const count = blocks().length;
+    const p = blocks().findIndex((b) => b.type === 'text' && !/^(-|\d+\.) /.test(b.markdown ?? ''));
+    const copy = (html: string, text: string) =>
+      page.evaluate(([h, t]) => navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([h], { type: 'text/html' }), 'text/plain': new Blob([t], { type: 'text/plain' }) })]), [html, text]);
+    await frame(page).locator(`[data-editor-editable="rich"]`).nth(blocks().slice(0, p).filter((b) => b.type === 'text').length).click();
+    await page.keyboard.press('Control+End');
+    // as Google Docs copies it: the marks in styles, inside a bold that isn't bold
+    await copy(
+      '<meta charset="utf-8"><b style="font-weight:normal;" id="docs-internal-guid-x"><h2 dir="ltr"><span>Pasted heading</span></h2><p dir="ltr"><span style="font-weight:700">Bold</span><span style="font-weight:400"> and </span><span style="font-style:italic">italic</span><span> with </span><a href="https://example.com/"><span>a link</span></a></p><ul><li><p><span>First </span><span style="font-weight:700">item</span></p></li><li><p><span>Second item</span></p></li></ul></b>',
+      'Pasted heading\nBold and italic with a link\nFirst item\nSecond item',
+    );
+    await page.keyboard.press('Control+V');
+    await expect.poll(() => blocks().length).toBe(count + 3);
+    expect(blocks().slice(p + 1, p + 4)).toEqual([
+      { type: 'heading', level: 2, text: 'Pasted heading' },
+      { type: 'text', markdown: '**Bold** and _italic_ with [a link](https://example.com/)' },
+      { type: 'text', markdown: '- First **item**\n- Second item' },
+    ]);
+
+    // in a list, each pasted line is an item, its marks kept
+    await frame(page).locator('li', { hasText: 'Second item' }).click();
+    await page.keyboard.press('End');
+    await copy('<p>Third, <em>slanted</em></p><p><strong>Fourth</strong></p>', 'Third, slanted\n\nFourth');
+    await page.keyboard.press('Control+V');
+    await expect.poll(() => blocks()[p + 3]?.markdown, { timeout: 15_000 }).toBe('- First **item**\n- Second itemThird, _slanted_\n- **Fourth**');
+  });
+
   test('text pastes into every kind of text block, headings and quotes as well as paragraphs', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await openArticle(page);

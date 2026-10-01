@@ -469,7 +469,9 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         break;
       }
       case 'paste': {
-        const { blocks, pictures } = paste.blocksFromMarkdown(String(m.text ?? ''));
+        // the canvas made the blocks (from the copy's HTML, or its plain text read as Markdown)
+        const blocks = Array.isArray(m.blocks) ? (m.blocks as Block[]) : paste.blocksFromMarkdown(String(m.text ?? '')).blocks;
+        const pictures = Number(m.pictures) || 0;
         if (!blocks.length) break;
         const r = paste.pasteAt(doc.body, m.index as number, { replace: !m.pending, before: String(m.before ?? ''), after: String(m.after ?? '') }, blocks);
         change(body(r.body), ALL, { select: r.focus });

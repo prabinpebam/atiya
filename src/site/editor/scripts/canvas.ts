@@ -5,10 +5,12 @@
  * and saves it; this only reports (select, text, split, merge, insert, move…) and redraws when told.
  */
 import { turnShortcut, type TextKind } from '../model/ops';
-import { pasteKind, wordsOfPaste } from '../model/paste';
+import { blocksFromMarkdown, kindOf, linesOf, wordsOf } from '../model/paste';
+import { blocksFromHtml } from '../model/richPaste';
 import { pictureOfPaste } from '../model/upload';
 import { markdownOf, plainOf } from '../model/dom';
-import { serializeInline } from '../../content/markdown';
+import { serializeInline, type Inline } from '../../content/markdown';
+import type { Block } from '../../content/schema';
 
 type Kind = { kind: string; type: string };
 type Field = 'title' | 'summary';
@@ -18,7 +20,7 @@ type Out =
   | { type: 'text'; index: number; value: string; session: number; final: boolean }
   | { type: 'field'; field: Field; value: string; session: number; final: boolean }
   | { type: 'split'; index: number; parts: string[] }
-  | { type: 'paste'; index: number; pending: boolean; before: string; after: string; text: string }
+  | { type: 'paste'; index: number; pending: boolean; before: string; after: string; blocks: Block[]; pictures: number }
   | { type: 'paste-picture'; index: number; file: File }
   | { type: 'typing' }
   | { type: 'merge'; index: number }
@@ -353,6 +355,60 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       if (line) document.execCommand('insertText', false, line);
     });
   };
+  /** Marked words as the canvas's own elements (the ones markdownOf reads back). */
+  const fragmentOf = (nodes: Inline[]): DocumentFragment => {
+    const f = document.createDocumentFragment();
+    for (const n of nodes) {
+      if (n.t === 'text') f.append(n.v);
+      else if (n.t === 'br') f.append(document.createElement('br'));
+      else if (n.t === 'code') f.append(Object.assign(document.createElement('code'), { textContent: n.v }));
+      else if (n.t === 'link') {
+        if (!/^(https?:\/\/|mailto:)/i.test(n.href)) {
+          f.append(fragmentOf(n.c));
+          continue;
+        }
+        const a = document.createElement('a');
+        a.href = n.href;
+        a.dataset.mdHref = n.href;
+        a.append(fragmentOf(n.c));
+        f.append(a);
+      } else {
+        const m = document.createElement(n.t);
+        m.append(fragmentOf(n.c));
+        f.append(m);
+      }
+    }
+    return f;
+  };
+  /** Lines pasted in a list as its items: the first joins the words before the caret, the last those after it. */
+  const pasteItems = (list: HTMLElement, lines: Inline[][]): boolean => {
+    const r = caretRange();
+    const at = r && (r.startContainer.nodeType === Node.ELEMENT_NODE ? (r.startContainer as Element) : r.startContainer.parentElement);
+    const li = at?.closest('li');
+    if (!r || !li || !list.contains(li) || !lines.length) return false;
+    r.deleteContents();
+    const tail = document.createRange();
+    tail.setStart(r.startContainer, r.startOffset);
+    tail.setEnd(li, li.childNodes.length);
+    const after = tail.extractContents();
+    let item: HTMLElement = li;
+    lines.forEach((line, k) => {
+      if (k) {
+        const next = document.createElement('li');
+        item.after(next);
+        item = next;
+      }
+      item.append(fragmentOf(line));
+    });
+    const caret = document.createRange();
+    caret.selectNodeContents(item);
+    caret.collapse(false);
+    item.append(after);
+    const s = getSelection()!;
+    s.removeAllRanges();
+    s.addRange(caret);
+    return true;
+  };
 
   on('beforeinput', (e) => {
     const c = current();
@@ -386,9 +442,12 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       e.preventDefault();
       // a plaintext-only block (heading, quote, caption…) gets the text in data, with no dataTransfer
       const text = e.dataTransfer?.getData('text/plain') || e.data || '';
-      const kind = pasteKind(text);
+      // a rich copy (a web page, Word, Docs, a chat) keeps its structure and marks; Markdown arrives as plain text
+      const html = rich ? (e.dataTransfer?.getData('text/html') ?? '') : '';
+      const pasted = (html && blocksFromHtml(new DOMParser().parseFromString(html, 'text/html').body)) || blocksFromMarkdown(text);
+      const kind = kindOf(pasted.blocks);
       if (kind === 'nothing') return;
-      // Markdown (headings, lists, quotes, marks, several paragraphs) in a paragraph arrives as its blocks
+      // blocks (headings, lists, quotes, marks, several paragraphs) in a paragraph arrive as blocks
       const pending = el.hasAttribute('data-editor-pending');
       if (kind === 'blocks' && rich && el.nodeName === 'P' && (pending || (index !== null && index >= 0))) {
         const h = halves(el);
@@ -401,10 +460,15 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
           el.remove();
           redraw();
         }
-        post({ type: 'paste', index: at, pending, before: markdownOf(h[0]), after: markdownOf(h[1]), text });
+        post({ type: 'paste', index: at, pending, before: markdownOf(h[0]), after: markdownOf(h[1]), blocks: pasted.blocks, pictures: pasted.pictures });
         return;
       }
-      const paras = (kind === 'blocks' ? wordsOfPaste(text) : text)
+      // in a list, each pasted line is an item, its marks kept
+      if (kind === 'blocks' && rich && (el.nodeName === 'UL' || el.nodeName === 'OL') && pasteItems(el, linesOf(pasted.blocks))) {
+        markDirty();
+        return;
+      }
+      const paras = (kind === 'blocks' ? wordsOf(pasted.blocks) : text || wordsOf(pasted.blocks))
         .replace(/\r\n?/g, '\n')
         .split(/\n[ \t]*\n/)
         .filter((p) => p.trim());

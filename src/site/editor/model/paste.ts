@@ -195,18 +195,37 @@ const alone = (md: string): Block => ({ type: 'text', markdown: serializeBlocks(
  * words that the canvas types in place; or `blocks`, anything more, which a paragraph takes as blocks.
  */
 export function pasteKind(text: string): 'nothing' | 'words' | 'blocks' {
-  const { blocks } = blocksFromMarkdown(text);
+  return kindOf(blocksFromMarkdown(text).blocks);
+}
+
+/** What pasted blocks are (as pasteKind says), whether they came as Markdown or from a rich copy. */
+export function kindOf(blocks: Block[]): 'nothing' | 'words' | 'blocks' {
   if (!blocks.length) return 'nothing';
   if (blocks.length > 1 || !isParagraph(blocks[0])) return 'blocks';
   return inlineOf(blocks[0].markdown).every((n) => n.t === 'text' || n.t === 'br') ? 'words' : 'blocks';
 }
 
 /** A paste's words without their marks, a paragraph each block: for a heading, a quote or a caption. */
-export const wordsOfPaste = (text: string): string =>
-  blocksFromMarkdown(text)
-    .blocks.map((b) => (b.type === 'text' ? plainText(b.markdown) : b.type === 'heading' || b.type === 'quote' ? b.text : ''))
+export const wordsOfPaste = (text: string): string => wordsOf(blocksFromMarkdown(text).blocks);
+
+/** Pasted blocks' words without their marks, a paragraph each. */
+export const wordsOf = (blocks: Block[]): string =>
+  blocks
+    .map((b) => (b.type === 'text' ? plainText(b.markdown) : b.type === 'heading' || b.type === 'quote' ? b.text : ''))
     .filter((w) => w.trim())
     .join('\n\n');
+
+/**
+ * Pasted blocks as lines of marked words, for a place that holds only words and their marks (a list's
+ * item): each paragraph, each list item, each heading and quote's words a line, its bold, italic, code and
+ * links kept.
+ */
+export const linesOf = (blocks: Block[]): Inline[][] =>
+  blocks.flatMap((b): Inline[][] => {
+    if (b.type === 'text') return parseMarkdown(b.markdown).flatMap((m) => (m.t === 'p' ? [m.c] : m.items));
+    if (b.type === 'heading' || b.type === 'quote') return [[{ t: 'text', v: b.text }]];
+    return [];
+  });
 
 /**
  * Pasted blocks placed at the caret in a paragraph: what was before the caret joins the first pasted
