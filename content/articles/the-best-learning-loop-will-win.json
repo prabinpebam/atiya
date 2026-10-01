@@ -232,6 +232,9 @@
     {
       "type": "text",
       "markdown": "The race to define how the world adopts AI won't be won by the company with the best model, the largest user base, or the deepest pockets. It will be won by whoever builds the tightest loop between user discovery, product development, and capability evolution. Models, distribution, and trust are assets. The flywheel is the multiplier."
+    },
+    {
+      "type": "divider"
     }
   ]
 }
