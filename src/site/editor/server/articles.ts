@@ -5,7 +5,7 @@
  * (documentation/sections/spec.md §7.2). Every change is one store transaction.
  */
 import { PLACE_IDS, article as articleSchema, type Article, type PlaceId, type PlanetStructure, type SiteStructure } from '../../content/schema';
-import { placeOfPage, putIn, takeOff } from '../model/planet';
+import { followSections, placeOfPage, putIn, takeOff } from '../model/planet';
 import { isPublished } from '../../content/load';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { slugify, today, unique } from '../model/ids';
@@ -17,6 +17,33 @@ export const STRUCTURE = '/content/structures/site.json';
 export const PLANET = '/content/structures/planet.json';
 export const articleKey = (id: string) => `/content/articles/${id}.json`;
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/**
+ * The planet's part in a change to the site's structure: pages placed in a section, or moved to another,
+ * follow it to its building (followSections), written in the same transaction. Adds nothing when no
+ * building changes. `ids` are the pages to look at (all of them, for a whole new structure).
+ */
+export function followOnPlanet(before: SiteStructure, after: SiteStructure, ids: Iterable<string>, changes: Change[], ifMatch: Record<string, string | null>): void {
+  const planet = readDoc<PlanetStructure>(PLANET);
+  if (!planet) return;
+  const moves = [...ids].map((id) => ({ id, from: sectionOf(before, { type: 'article', id }), to: sectionOf(after, { type: 'article', id }) }));
+  const next = followSections(planet.value, moves);
+  if (next === planet.value) return;
+  changes.push({ key: PLANET, bytes: jsonBytes(next) });
+  // computed from the planet as it is now, so it's checked against that version
+  ifMatch[PLANET] = planet.version;
+}
+
+/** Every page a site structure places. */
+export function pagesOf(structure: SiteStructure): string[] {
+  const out: string[] = [];
+  const visit = (n: { kind: string; item?: { type: string; id: string }; children?: unknown[] }) => {
+    if (n.kind === 'item' && n.item?.type === 'article') out.push(n.item.id);
+    for (const c of (n.children ?? []) as (typeof n)[]) visit(c);
+  };
+  visit(structure.home as Parameters<typeof visit>[0]);
+  return out;
+}
 
 const refuse = (file: string, message: string, path?: string): Result => ({ ok: false, status: 422, issues: [{ file: file.replace(/^\//, ''), message, ...(path ? { path } : {}) }] });
 
@@ -64,6 +91,8 @@ export async function saveArticle(req: SaveArticle): Promise<Result & { article?
       const moved = req.section === null ? unplace(s.value, ref) : place(s.value, req.section, ref, unique(req.id, nodeIds(unplace(s.value, ref))));
       changes.push({ key: STRUCTURE, bytes: jsonBytes(moved) });
       ifMatch[STRUCTURE] = req.ifMatch[STRUCTURE] ?? s.version;
+      // its building follows, unless this change chooses one
+      if (req.place === undefined) followOnPlanet(s.value, moved, [req.id], changes, ifMatch);
     }
   }
   // on the planet: one transaction with the article and its section, so V13 (a page on the planet is on the
@@ -116,8 +145,10 @@ export async function createArticle(req: CreateArticle): Promise<Result & { id?:
   const changes: Change[] = [{ key: articleKey(id), bytes: jsonBytes(doc) }];
   const ifMatch: Record<string, string | null> = { [articleKey(id)]: null };
   if (req.section) {
-    changes.push({ key: STRUCTURE, bytes: jsonBytes(place(s.value, req.section, { type: 'article', id }, unique(id, nodeIds(s.value)))) });
+    const placed = place(s.value, req.section, { type: 'article', id }, unique(id, nodeIds(s.value)));
+    changes.push({ key: STRUCTURE, bytes: jsonBytes(placed) });
     ifMatch[STRUCTURE] = s.version;
+    followOnPlanet(s.value, placed, [id], changes, ifMatch);
   }
   const r = await commit({ changes, ifMatch });
   return r.ok ? { ...r, id } : r;
@@ -136,8 +167,10 @@ export async function duplicateArticle(id: string): Promise<Result & { id?: stri
   const changes: Change[] = [{ key: articleKey(copyId), bytes: jsonBytes(doc) }];
   const ifMatch: Record<string, string | null> = { [articleKey(copyId)]: null };
   if (section) {
-    changes.push({ key: STRUCTURE, bytes: jsonBytes(place(s.value, section, { type: 'article', id: copyId }, unique(copyId, nodeIds(s.value)))) });
+    const placed = place(s.value, section, { type: 'article', id: copyId }, unique(copyId, nodeIds(s.value)));
+    changes.push({ key: STRUCTURE, bytes: jsonBytes(placed) });
     ifMatch[STRUCTURE] = s.version;
+    followOnPlanet(s.value, placed, [copyId], changes, ifMatch);
   }
   const r = await commit({ changes, ifMatch });
   return r.ok ? { ...r, id: copyId } : r;

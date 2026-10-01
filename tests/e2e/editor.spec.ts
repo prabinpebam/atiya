@@ -599,7 +599,9 @@ test.describe('editor', () => {
     await page.goto('/_edit/articles/');
     await page.locator(`[data-editor-duplicate="${ARTICLE}"]`).click();
     await expect(page).toHaveURL(new RegExp(`/_edit/articles/${copy}/$`));
-    await page.goto('/_edit/planet/?building=_off');
+    // a copy goes where its section's pages go: the Lighthouse shows Leadership
+    expect(pagesOf('lighthouse')).toEqual([ARTICLE, copy]);
+    await page.goto('/_edit/planet/?building=lighthouse');
     const libraryBefore = pagesOf('library');
     await move(copy, 'Library');
     await expect.poll(() => pagesOf('library')).toEqual([...libraryBefore, copy]);
@@ -919,6 +921,9 @@ test.describe('editor', () => {
     expect((await page.request.get(`/field-notes/${ARTICLE}/`)).status()).toBe(200);
     expect((await page.request.get(`/leadership/${ARTICLE}/`)).status()).toBe(404);
     await expect(section('field-notes')).toBeFocused({ timeout: 15_000 });
+    // on the planet it follows: Field notes has no building, so it leaves the Lighthouse
+    const lighthouse = () => (readJson(join(FIXTURE, 'content/structures/planet.json')).places as { id: string; pages: { id: string }[] }[]).find((p) => p.id === 'lighthouse')!.pages.map((r) => r.id);
+    expect(lighthouse()).not.toContain(ARTICLE);
 
     // back to Leadership with Move: the handle's click, in Field notes
     await section('field-notes').click();
@@ -926,6 +931,8 @@ test.describe('editor', () => {
     await grip(ARTICLE).click();
     await moveTo('Leadership');
     await expect.poll(() => pagesOf('leadership')).toEqual([ARTICLE]);
+    // and back into the Lighthouse, which shows Leadership
+    expect(lighthouse()).toContain(ARTICLE);
 
     // two copies (drafts, in Leadership too): the keys move one; the two, selected, move together
     for (let i = 0; i < 2; i++) {

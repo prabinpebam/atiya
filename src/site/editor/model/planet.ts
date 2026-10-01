@@ -41,6 +41,36 @@ export function movePage(planet: PlanetStructure, placeId: PlaceId, index: numbe
   return next;
 }
 
+/** The building that shows a section on the planet (the first whose `site` it is), if any. */
+export const placeOfSection = (planet: PlanetStructure, section: string): PlaceId | undefined => planet.places.find((p) => p.site === section)?.id;
+
+/** A page's section before and after a change to the site (null: not on the site). */
+export interface SectionMove {
+  id: string;
+  from: string | null;
+  to: string | null;
+}
+
+/**
+ * Pages follow their section onto the planet (documentation/sections/spec.md §7.6). A page placed in a
+ * section, or moved to another, goes to the end of the building that shows its new section, when it's in
+ * no building or in the one that showed its old section; with no building for its new section, it leaves
+ * the old one. A page put in another building by hand stays there, and one taken off the site keeps its
+ * building (V13 refuses that, saying why).
+ */
+export function followSections(planet: PlanetStructure, moves: SectionMove[]): PlanetStructure {
+  let next = planet;
+  for (const m of moves) {
+    if (m.from === m.to || m.to === null) continue;
+    const now = placeOfPage(next, m.id);
+    if (now && now !== (m.from === null ? undefined : placeOfSection(next, m.from))) continue;
+    const target = placeOfSection(next, m.to);
+    if (target === now) continue;
+    next = target ? putIn(next, target, m.id) : takeOff(next, m.id);
+  }
+  return next;
+}
+
 /** Changes a building's own words, its view or its section on the site (an empty section goes back to none). */
 export function updatePlace(planet: PlanetStructure, placeId: PlaceId, fields: Partial<Pick<PlanetStructure['places'][number], 'title' | 'kicker' | 'summary' | 'view' | 'site'>>): PlanetStructure {
   const next = clone(planet);

@@ -6,7 +6,7 @@
 import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
-import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
+import { createArticle, deleteArticle, duplicateArticle, followOnPlanet, pagesOf, saveArticle, PLANET, STRUCTURE } from '../server/articles';
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload } from '../server/media';
 import { changes, discard, publish, push } from '../server/git';
 import { content } from '../../content/repository';
@@ -63,7 +63,12 @@ const handle: APIRoute = async ({ request, params, url }) => {
     // ---------- the site structure, the settings, people ----------
     if (method === 'PUT' && path === 'structure') {
       const b = await body<{ structure: SiteStructure; ifMatch: Record<string, string | null> }>(request);
-      return result(await commit({ changes: [{ key: STRUCTURE, bytes: jsonBytes(b.structure) }], ifMatch: { [STRUCTURE]: b.ifMatch?.[STRUCTURE] ?? null } }));
+      const changes = [{ key: STRUCTURE, bytes: jsonBytes(b.structure) }];
+      const ifMatch: Record<string, string | null> = { [STRUCTURE]: b.ifMatch?.[STRUCTURE] ?? null };
+      // pages moved to another section follow it to its building, in the same transaction
+      const was = readDoc<SiteStructure>(STRUCTURE);
+      if (was) followOnPlanet(was.value, b.structure, new Set([...pagesOf(was.value), ...pagesOf(b.structure)]), changes, ifMatch);
+      return result(await commit({ changes, ifMatch }));
     }
     // the planet structure: what each building holds (documentation/sections/spec.md §7.4); the loader checks V13 to V16
     if (method === 'PUT' && path === 'planet') {

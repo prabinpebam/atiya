@@ -123,7 +123,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const tab = root.querySelector<HTMLElement>('#inspector-tabs [role="tab"][aria-selected="true"]')?.dataset.tab;
     const scroll = root.querySelector<HTMLElement>('[data-editor-inspector]')?.scrollTop ?? 0;
     await swapRegions(names);
-    Object.assign(state, { media: readState().media });
+    Object.assign(state, { media: readState().media, ...(names.includes('state') ? { place: readState().place } : {}) });
     if (tab) root.querySelector('#inspector-tabs')?.dispatchEvent(new CustomEvent('tabs:select', { detail: { tab } }));
     const ins = root.querySelector<HTMLElement>('[data-editor-inspector]');
     if (ins) ins.scrollTop = scroll;

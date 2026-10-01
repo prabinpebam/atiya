@@ -71,7 +71,12 @@
       "summary": "Ways to get in touch, and my résumé.",
       "view": "list",
       "site": "contact",
-      "pages": []
+      "pages": [
+        {
+          "type": "article",
+          "id": "resume"
+        }
+      ]
     }
   ]
 }

@@ -506,6 +506,23 @@ describe('the planet, as edit mode changes it (documentation/sections/spec.md §
     expect(edited.places[0]).toMatchObject({ kicker: 'Case studies', view: 'list' });
     expect(edited.places[0]).not.toHaveProperty('site');
   });
+
+  it('takes a page placed in a section, or moved to another, to the building that shows it (sections spec §7.6)', () => {
+    const three: PlanetStructure = { places: [...PLANET.places.map((p) => (p.id === 'library' ? { ...p, site: 'writing' } : p)), { id: 'post-office', title: 'Post Office', kicker: 'K', summary: 'S', site: 'contact', pages: [] }] };
+    const ids = (p: PlanetStructure) => p.places.map((x) => x.pages.map((r) => r.id));
+    // a new page in a section with a building goes to its end; in one without, nowhere
+    expect(ids(planet.followSections(three, [{ id: 'cv', from: null, to: 'contact' }]))).toEqual([['a', 'b'], [], ['cv']]);
+    expect(planet.followSections(three, [{ id: 'n', from: null, to: 'talks' }])).toBe(three);
+    // a page moved from the Workshop's section to Writing's moves to the Library; to a section with no building, off the planet
+    expect(ids(planet.followSections(three, [{ id: 'a', from: 'work', to: 'writing' }]))).toEqual([['b'], ['a'], []]);
+    expect(ids(planet.followSections(three, [{ id: 'a', from: 'work', to: 'talks' }]))).toEqual([['b'], [], []]);
+    // a page put in another building by hand stays; so does one taken off the site (V13 says why); nothing moved, nothing changes
+    expect(planet.followSections(three, [{ id: 'a', from: 'about', to: 'writing' }])).toBe(three);
+    expect(planet.followSections(three, [{ id: 'a', from: 'work', to: null }])).toBe(three);
+    expect(planet.followSections(three, [{ id: 'a', from: 'work', to: 'work' }])).toBe(three);
+    expect(planet.placeOfSection(three, 'contact')).toBe('post-office');
+    expect(planet.placeOfSection(three, 'talks')).toBeUndefined();
+  });
 });
 
 // ---------- IDs and slugs ----------

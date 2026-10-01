@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
-import { deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
+import { createArticle, deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
 import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload } from '../../src/site/editor/server/media';
 import { changes, discard, publish, push } from '../../src/site/editor/server/git';
 import editor from '../../integrations/editor.mjs';
@@ -88,6 +88,20 @@ describe("a page's building", () => {
     expect(pagesOf('greenhouse')).toEqual(['a']);
     expect(await deleteArticle('a', false, {})).toMatchObject({ ok: true });
     expect(pagesOf('greenhouse')).toEqual([]);
+  });
+
+  it('follows its section to the building that shows it: a new page, and a page moved to another section', async () => {
+    put('/content/structures/planet.json', { places: PLACES.map((id) => ({ id, title: id, kicker: 'K', summary: 'S', ...(id === 'workshop' ? { site: 's' } : id === 'library' ? { site: 't' } : {}), pages: [] })) });
+    put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] }, { id: 't', kind: 'hub', slug: 't', title: 'T', children: [] }] } });
+    expect(await createArticle({ title: 'New one', summary: 'S', kind: 'note', section: 't' })).toMatchObject({ ok: true, id: 'new-one' });
+    expect(pagesOf('library')).toEqual(['new-one']);
+    expect(await save({ section: 't' })).toMatchObject({ ok: true });
+    expect(pagesOf('library')).toEqual(['new-one', 'a']);
+    expect(await save({ section: 's' })).toMatchObject({ ok: true });
+    expect([pagesOf('workshop'), pagesOf('library')]).toEqual([['a'], ['new-one']]);
+    // a building chosen in the same change wins
+    expect(await save({ section: 't', place: 'greenhouse' })).toMatchObject({ ok: true });
+    expect([pagesOf('workshop'), pagesOf('library'), pagesOf('greenhouse')]).toEqual([[], ['new-one'], ['a']]);
   });
 });
 

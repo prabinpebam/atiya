@@ -465,6 +465,14 @@ Saving a page's settings, taking it off the site, putting it on the planet, and 
 - taking it off the site while it's on the planet is refused, and says why;
 - moving it, published or not, just moves it: nothing is written for the address it leaves (D11).
 
+**A page follows its section onto the planet.** A building shows a section (its `site`, §5.2), so a page placed in a section, or moved to another, goes to the building that shows its new section, in the same transaction:
+- a new page (or a copy) made in a section goes to the end of that section's building;
+- a page moved to another section (in its settings, or on the Sections screen) moves from the building that showed its old section to the one that shows its new section, at the end; with no building for its new section, it leaves the planet;
+- a page put in another building by hand stays where it is, and a building chosen in the same change wins;
+- taking a page off the site doesn't take it off the planet: that's still refused (V13), and says why.
+
+A building can still hold pages from other sections, and a page can still be taken off the planet on the Planet screen: the rule only decides what happens when a page's section changes. It's pure, in `model/planet.ts` (`followSections`), and unit-tested.
+
 ## 8. Rules
 
 New or changed rules, checked by the content loader. So the build, the unit tests and every write edit mode makes all check them:
@@ -545,7 +553,7 @@ Filled in as each phase lands.
   - **The content:** `content/structures/planet.json`, each building with its words (what it holds, as the sections' summaries do: the status is the game's to show), its view, its section on the site, and the Lighthouse holding the first story.
   - **The game:** `/play` joins the two into `LandmarkData` (the world, the words, the published pages with their site addresses, and `siteHref`). The card and the dialog link to the building's section ("Open classic page"). While a building holds nothing, the card and the dialog say it's still being fitted out. Until S5, the dialog lists the pages as links to their site pages. The planet's "Classic site" follows the building. Game JS: 449.2 KB gz (+0.1).
   - **The site:** "Explore in 3D" goes to a page's building, or to the building that points to a section, from the planet structure (S2's interim use of the redirects is gone).
-  - **Edit mode:** deleting a page takes it off the planet in the same transaction. Taking a page off the site while it's on the planet is refused by the loader's V13, with the page named. The Publish screen names the file "The planet". The pure planet operations are `model/planet.ts` (`placeOfPage`, `putIn`, `takeOff`, `movePage`, `updatePlace`).
+  - **Edit mode:** deleting a page takes it off the planet in the same transaction. Taking a page off the site while it's on the planet is refused by the loader's V13, with the page named. The Publish screen names the file "The planet". The pure planet operations are `model/planet.ts` (`placeOfPage`, `putIn`, `takeOff`, `movePage`, `updatePlace`, and `placeOfSection` and `followSections` for pages following their section, §7.6). The server applies the follow rule on every write that changes the site structure (`followOnPlanet` in `server/articles.ts`: a new page, a copy, a page's section in its settings, and `PUT structure` from the Sections screen), against the planet's current version. Before this, a new page reached no building until it was put in one by hand (the résumé, in Contact, wasn't in the Post Office until then).
   - **Tests:** the game's IDs against the contract's; each building once with a section; Prabin names only buildings that hold a published page; V13 to V16; the planet operations; E2E, the card and the dialog from the planet structure.
 - **S5 (30 September 2026):** reading on the planet.
   - **The routes:** `src/pages/play/[place]/index.astro` and `[page].astro`, rendered by `PlanetPage.astro` (the building's list in its view, or one of its pages with Previous and Next through the building), from the same layouts, opening (`opening.ts`, shared with the site's `Page`) and blocks as the site.
