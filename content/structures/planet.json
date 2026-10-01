@@ -16,7 +16,12 @@
       "summary": "Who I am, and how I lead and grow design teams.",
       "view": "list",
       "site": "about",
-      "pages": []
+      "pages": [
+        {
+          "type": "article",
+          "id": "my-journey-with-designup"
+        }
+      ]
     },
     {
       "id": "lighthouse",

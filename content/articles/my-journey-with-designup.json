@@ -1,0 +1,156 @@
+{
+  "id": "my-journey-with-designup",
+  "type": "article",
+  "kind": "note",
+  "slug": "my-journey-with-designup",
+  "title": "My journey with DesignUp",
+  "summary": "How four years of volunteering at DesignUp, from photos to motion design and 3D, shaped me as a person and as a Designer.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "topics": [
+    "designup",
+    "community",
+    "motion-design",
+    "photography",
+    "career"
+  ],
+  "body": [
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Event",
+          "value": "DesignUp, Bengaluru and Singapore"
+        },
+        {
+          "label": "Years",
+          "value": "2016 to 2019"
+        },
+        {
+          "label": "Role",
+          "value": "Volunteer: photos, video, motion graphics and 3D"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "markdown": "Some of the best things in my life happened because I was lucky enough to be in the right room, with the right people, at the right time. DesignUp was one of them. This is the story of how it shaped me, as a person and as a Designer, and a chance to share the work I was fortunate to create along the way."
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "How it started"
+    },
+    {
+      "type": "text",
+      "markdown": "Back in 2015, I was leading the Design team at Belong. Through work, I was introduced to Jay Dutta, and JD soon became someone I'd go to for all sorts of guidance: managing a team, hiring, and much more. JD used to give talks and organise small Design events in Bengaluru. I was curious and ambitious, so I'd attend as many as I could and help out wherever I could."
+    },
+    {
+      "type": "text",
+      "markdown": "In 2016, when JD first shared his plan for DesignUp, I was more than excited to be part of it. Little did I know how much it was going to change me, both as a person and as a Designer."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "2016: a basic DSLR and a 50mm lens"
+    },
+    {
+      "type": "text",
+      "markdown": "All I had was a basic DSLR, a Canon 1000D, and my job was to take photographs at the event. I was counting heavily on my 50mm f/1.8 prime lens to do the heavy lifting. I took photos, made a video for the event too, and I was super stoked with the result. It was at DesignUp 2016 that I saw Ranganath Krishnamani's work, which left me fascinated, inspired and wanting to do more."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "2017: my dream camera"
+    },
+    {
+      "type": "text",
+      "markdown": "By DesignUp 2017, I had skilledUp, and I convinced JD for the budget to rent a Panasonic GH5, my dream video camera at the time. Here are the videos and photos I covered at the event. That year, I was introduced to Lucky's work. All the speaker intro animations were made by Lucky, and I was so inspired and motivated that I knew this was what I wanted to chase next."
+    },
+    {
+      "type": "video",
+      "embed": {
+        "provider": "youtube",
+        "id": "yiPUZtXp09Y"
+      },
+      "title": "DesignUp 2017 recap",
+      "poster": "articles/my-journey-with-designup/designup-2017-poster",
+      "caption": "The DesignUp 2017 recap."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "2018: 70 hours in After Effects"
+    },
+    {
+      "type": "text",
+      "markdown": "Then came DesignUp 2018, and I signed up to do the motion graphics for the event without ever having used After Effects. \"Excited accountability\" is what I call it. I was excited, and driven by the desire to impress. What followed was the most intense month of learning and creating in my life, with more than 70 hours in After Effects. Here's what came out of it."
+    },
+    {
+      "type": "text",
+      "markdown": "That year, JD also approved the budget to rent two cameras, multiple lenses and a gimbal, and I had a field day with the new toys. Looking back, I'm grateful he kept trusting me with a little more every year. Here's what I made with them."
+    },
+    {
+      "type": "video",
+      "embed": {
+        "provider": "youtube",
+        "id": "f-fSpQO3jdo"
+      },
+      "title": "Wrap-up of DesignUp 2018",
+      "poster": "articles/my-journey-with-designup/designup-2018-poster",
+      "caption": "The wrap-up of DesignUp 2018."
+    },
+    {
+      "type": "video",
+      "embed": {
+        "provider": "youtube",
+        "id": "hX_geJrppRg"
+      },
+      "title": "DesignUp: three years in recap",
+      "poster": "articles/my-journey-with-designup/designup-recap-poster",
+      "caption": "Three years of DesignUp, in recap."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "2018: DesignUp goes to Singapore"
+    },
+    {
+      "type": "text",
+      "markdown": "2018 was also the year DesignUp went international, and I was lucky enough to go along to Singapore."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "2019: into 3D"
+    },
+    {
+      "type": "text",
+      "markdown": "Then it was time for DesignUp 2019, which meant a new challenge and another stepUp. This time, my fascination was 3D: mograph, textures, materials and simulations. I took on the task, and here's what came out of it."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What I came back with"
+    },
+    {
+      "type": "text",
+      "markdown": "By now, I had met so many leaders and great Designers. Year after year, I had been lucky to be surrounded by some of the best people in the industry. When you are constantly in the company of brilliant people, you can't help but grow. And it happened at a key moment in my career, when I was still growing, still being moulded, and still defining the kind of professional I wanted to be."
+    },
+    {
+      "type": "quote",
+      "text": "I went to DesignUp to help. I came back with far more than I could ever give.",
+      "variant": "pull"
+    },
+    {
+      "type": "text",
+      "markdown": "Volunteering for DesignUp was one of the best things that happened in my career. Thank you, JD, for letting me be a part of it."
+    }
+  ]
+}

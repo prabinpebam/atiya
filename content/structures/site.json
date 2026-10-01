@@ -23,7 +23,16 @@
         "title": "About",
         "summary": "Who I am, and how I lead and grow design teams.",
         "view": "list",
-        "children": []
+        "children": [
+          {
+            "id": "my-journey-with-designup",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "my-journey-with-designup"
+            }
+          }
+        ]
       },
       {
         "id": "leadership",
