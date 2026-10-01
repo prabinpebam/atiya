@@ -1,0 +1,134 @@
+{
+  "id": "resume",
+  "type": "article",
+  "kind": "page",
+  "slug": "resume",
+  "title": "Résumé",
+  "summary": "Design leader · Product strategy · AI transformation",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "portrait": "people/prabin/photo-4x5",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Hyderabad · [prabinpebam@gmail.com](mailto:prabinpebam@gmail.com) · +91 961 161 4593"
+    },
+    {
+      "type": "text",
+      "markdown": "[LinkedIn](https://linkedin.com/in/prabinpebam) · [GitHub](https://github.com/prabinpebam/)"
+    },
+    {
+      "type": "text",
+      "markdown": "**[Download the résumé (PDF)](ref:media/people/prabin/prabin-pebam-resume)**"
+    },
+    {
+      "type": "text",
+      "markdown": "Design leader, strategist, and maker with 18 years of experience spanning physical product design, UX, product strategy, design organizations, and emerging technology. I work across strategy and execution—going deep into complex problems, building expertise, and connecting that expertise to broader product and organizational outcomes."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Professional experience"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Principal Design Manager · Microsoft"
+    },
+    {
+      "type": "text",
+      "markdown": "**July 2019–Present**"
+    },
+    {
+      "type": "text",
+      "markdown": "- Lead design across Windows and Microsoft consumer experiences, managing teams of **5–9 designers** across product, design, and organizational initiatives.\n- Built and transitioned the India-based design capability for **Microsoft Family Safety** from an augmentation model to complete design ownership across web, iOS, and Android.\n- Defined the strategy for **Family Safety** and its evolution into the broader **Microsoft Family** product direction, while leading the design team responsible for execution.\n- Defined product strategy for **Windows cross-device experiences**, including sharing across Windows, Android, iOS, and third-party platforms.\n- Shaped the strategy for Windows continuity experiences including **Windows Resume** and **Live Notifications**, connecting experiences across devices and contexts.\n- Defined the strategy for **People in Windows** and led the team through execution.\n- Led the effort for improving **Craft in Windows**, defining new approach and driving leadership alignment.\n- Partnered with M365 Copilot team to define deep integration of Copilot on Windows.\n- Defined agentic personalization of Windows where the entire Windows theme is customized using agentic workflows.\n- Built deep hands-on expertise across generative AI, agentic harnesses, graphs and loops, and skills, then translated that expertise into an **AI transformation program for Design**.\n- **Figma is no longer how Designers hand off specifications.** Led the shift toward coded prototyping, where working prototypes become the primary Design-to-Engineering handoff artifact and Designers iterate directly in code rather than translating designs into implementation specifications.\n- Established the foundations for Designers to **work directly in production codebases using agentic coding**, including workflows and guardrails that enable Designers to safely contribute to production software.\n- Drove AI adoption across the immediate team and broader Microsoft Design organization through learning programs, workshops, hands-on demonstrations, recorded tutorials, whitepapers, and leadership engagement.\n- Scaled adoption by developing **AI champions and evangelists** within teams, creating a cascading model through which each champion could enable their immediate organization; extended the effort beyond India to the Windows Design team in Seattle.\n- Shifted the conversation around AI from **adoption and usage toward throughput, quality, and organizational impact**, changing how Design evaluates the value of AI-enabled ways of working.\n- Led learning initiatives across Windows Design and Microsoft Design in India, helping Designers develop new capabilities and adapt their role as technology and product development evolve."
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Head of Design · Belong"
+    },
+    {
+      "type": "text",
+      "markdown": "**July 2015–2019**"
+    },
+    {
+      "type": "text",
+      "markdown": "- Built the **Belong Design organization from scratch**, establishing hiring, interviewing, evaluation, onboarding, and individual success frameworks.\n- Established the Belong Design Community and a **Task Relevant Maturity framework** to create a structured approach to designer development and career growth.\n- Reported directly to the CEO and represented Design and user perspectives in **business-level decisions** as a member of the Core Leadership Team.\n- Extended Design's influence beyond Product and Engineering into **pricing, sales, organizational structure, governance, and broader business decisions**.\n- Built the **Belong Design System from scratch**, establishing guidelines, pattern libraries, adoption practices, and a model for continuous improvement across the product family.\n- Established the design and product-development operating system spanning collaboration, version control, developer handoff, product analytics, onboarding, contextual help, and knowledge-base experiences."
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Core founding team member · DesignUp"
+    },
+    {
+      "type": "text",
+      "markdown": "**2016–Present**"
+    },
+    {
+      "type": "text",
+      "markdown": "- Core founding contributor to **DesignUp**, a community and conference for product creators, designers, makers, and technology leaders across India and Southeast Asia.\n- Built and operated the creative and technical production for DesignUp events, spanning photography, video, motion, websites, registration, event technology, and vendor coordination across multiple cities and countries."
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "UX Designer · Projectplace"
+    },
+    {
+      "type": "text",
+      "markdown": "**March 2013–June 2015**"
+    },
+    {
+      "type": "text",
+      "markdown": "- Designed core collaboration and communication experiences for the Projectplace project-management platform, including conversation, commenting, notifications, settings, access control, and email communications.\n- Established product-wide email guidelines and templates for communicating with users."
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Designer · TVS Motor"
+    },
+    {
+      "type": "text",
+      "markdown": "**August 2008–March 2013**"
+    },
+    {
+      "type": "text",
+      "markdown": "- Designed vehicle graphics, speedometers, and dashboards for production and concept motorcycles, including electric-hybrid vehicles.\n- Trained in professional **Class-A surfacing** and independently built a presentation-management system for large-scale motorcycle design reviews."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Education"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Indian Institute of Science (IISc)"
+    },
+    {
+      "type": "text",
+      "markdown": "**Master of Design, Product Design · 2006–2008**"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "North Eastern Regional Institute of Science and Technology (NERIST)"
+    },
+    {
+      "type": "text",
+      "markdown": "**B.Tech., Mechanical Engineering · 2002–2006**"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Additional"
+    },
+    {
+      "type": "text",
+      "markdown": "**DesignUp** — Core founding team member and community contributor"
+    }
+  ]
+}

@@ -86,7 +86,16 @@
         "title": "Contact",
         "summary": "Ways to get in touch, and my résumé.",
         "view": "list",
-        "children": []
+        "children": [
+          {
+            "id": "resume",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "resume"
+            }
+          }
+        ]
       }
     ]
   },

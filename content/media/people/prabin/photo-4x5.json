@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "photo-4x5.webp",
+  "alt": "Prabin Pebam, smiling, leaning against a white wall with a camera in his hands.",
+  "crop": {
+    "from": "people/prabin/photo",
+    "x": 40,
+    "y": 170,
+    "width": 640,
+    "height": 800
+  },
+  "visibility": "public"
+}
