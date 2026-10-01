@@ -120,10 +120,12 @@ Every page is the same resource, `content/articles/<id>.json` with its blocks, a
 
 | Kind | Stored as | For | Its opening |
 |---|---|---|---|
-| **Article** | `note` | Stories, case studies, essays | Topic (its section), title, standfirst, byline with the avatar, date, reading time; the minimap on long ones |
-| **Page** | `page` | About, Contact, Now, a résumé | Title and standfirst only: no byline, date or reading time |
+| **Article** | `note` | Stories, case studies, essays | Topic (its section), title, standfirst, byline with the avatar, date, reading time; a drop cap; the minimap on long ones |
+| **Page** | `page` | About, Contact, Now, a résumé | Title and standfirst only: no byline, date, reading time or drop cap |
 | **Gallery** | `gallery` (new) | A set of pictures with a few words | Title, standfirst, and the number of pictures instead of the reading time. The body is usually galleries and carousels |
 | Talk | `talk` | Reserved until the model holds an event, a date and a recording | Refused by edit mode, as today |
+
+- **A portrait.** Any page can have a `portrait` (a media ID): the person it's about, shown whole at 4:5 beside the title (above it on a phone), around the picture's focus point. The résumé (`/contact/resume/`) has one. Edit mode sets it in the page's settings, beside the lead picture and the thumbnail.
 
 - **One kind of reference.** A structure refers to a page as `{ "type": "article", "id": … }`. The content model's other item types (`caseStudy`, `gallery` as a resource, and so on) have no repository or renderer, so structures refuse them until one exists. A "gallery" here is always a page of kind Gallery.
 - **A new kind of page later** (a résumé with its own layout, say) is a new `kind` and an opening, not a new resource or route.

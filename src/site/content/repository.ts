@@ -5,6 +5,7 @@
  */
 import { generation, readSnapshot } from './source';
 import { loadContent, type ContentIndex, type MediaRecord } from './load';
+import { withBase } from '../design/meta';
 import type { Route } from './routes';
 import type { Article, PlaceId } from './schema';
 
@@ -60,4 +61,14 @@ export function getMedia(id: string): MediaRecord {
 /** An item's canonical path (without the base), for `ref:` links and cards: published items only. */
 export function canonicalPath(type: string, id: string): string | undefined {
   return content().canonical.get(`${type}/${id}`);
+}
+
+/**
+ * Where a file to download is published (with the base): `<base>/media/<id>.pdf`, which the content-files
+ * integration serves in dev and copies there at build. Public files only.
+ */
+export function documentHref(id: string): string | undefined {
+  const d = content().documents.get(id);
+  if (!d || !['public', 'publicRedacted', 'summaryOnly'].includes(d.visibility)) return undefined;
+  return withBase(`/media/${id}.pdf`);
 }

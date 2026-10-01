@@ -560,8 +560,9 @@ test.describe('editor', () => {
     await page.locator(`[data-editor-duplicate="${ARTICLE}"]`).click();
     await expect(page).toHaveURL(new RegExp(`/_edit/articles/${copy}/$`));
     await page.goto('/_edit/planet/?building=_off');
+    const libraryBefore = pagesOf('library');
     await move(copy, 'Library');
-    await expect.poll(() => pagesOf('library')).toEqual([copy]);
+    await expect.poll(() => pagesOf('library')).toEqual([...libraryBefore, copy]);
     await page.goto('/_edit/sections/?section=leadership');
     await move(copy, 'Not on the site');
     await expect(page.locator('[data-manager-issue]')).toContainText("isn't on the site; a page on the planet needs its page on the site");
@@ -570,7 +571,7 @@ test.describe('editor', () => {
     await page.locator(`[data-editor-delete="${copy}"]`).click();
     await page.locator('#delete-article').getByRole('button', { name: 'Delete the draft' }).click();
     await expect(page).toHaveURL(/\/_edit\/articles\/$/);
-    await expect.poll(() => pagesOf('library')).toEqual([]);
+    await expect.poll(() => pagesOf('library')).toEqual(libraryBefore);
   });
 
   test("crop: a picture's tip and note; the lead picture cropped to 21:9 into a copy (the original kept), a 3:2 thumbnail cut from it, the copy cut again in place; the library's crop; a card shows its thumbnail whole", async ({ page }) => {
@@ -924,18 +925,18 @@ test.describe('editor', () => {
     await expect(panel.locator('[data-manager-count]')).toHaveText('2 selected');
     await panel.getByRole('button', { name: 'Move selected' }).click();
     await expect(page.locator('[data-manager-move-name]')).toHaveText('2 pages, in Leadership');
-    await moveTo('Writing');
-    await expect.poll(() => pagesOf('writing')).toEqual([one, two]);
+    await moveTo('Side projects');
+    await expect.poll(() => pagesOf('side-projects')).toEqual([one, two]);
     expect(pagesOf('leadership')).toEqual([ARTICLE]);
 
     // a selection dragged onto a section goes with it: all of it, in its order
-    await page.goto('/_edit/sections/?section=writing');
-    const writing = page.locator('[data-manager-pages="writing"]');
-    await writing.getByText('Select all').click();
-    await expect(writing.locator('[data-manager-count]')).toHaveText('2 selected');
+    await page.goto('/_edit/sections/?section=side-projects');
+    const sideProjects = page.locator('[data-manager-pages="side-projects"]');
+    await sideProjects.getByText('Select all').click();
+    await expect(sideProjects.locator('[data-manager-count]')).toHaveText('2 selected');
     await drag(two, section('talks'));
     await expect.poll(() => pagesOf('talks')).toEqual([one, two]);
-    expect(pagesOf('writing')).toEqual([]);
+    expect(pagesOf('side-projects')).toEqual([]);
   });
 
   test('navigation: a section in and out from Sections and from Navigation; a link added, renamed, moved and removed; the header follows', async ({ page }) => {

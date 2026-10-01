@@ -195,7 +195,7 @@ content/media/
 - **Caching:** Astro keeps generated images in `node_modules/.astro/assets`, and CI caches that folder between runs, so an unchanged master isn't processed again.
 - **Crops and focus:** the lead picture's slot crops to its ratio around `focus` (CSS `object-position`, as the `Image` fundamental does); cards never crop ([§9](#9-shapes-thumbnails-and-crops)).
 
-**Other files.** A small build integration copies videos, their posters (which also go through the image pipeline), caption files and PDFs to `dist/media/<id>.<ext>`, after checking their budgets.
+**Other files.** A PDF is published at `dist/media/<id>.pdf` as it is ([§11](#11-files-to-download)). Videos, their captions and posters will follow the same way when the site has a local video.
 
 ## 6. With a backend
 
@@ -256,3 +256,16 @@ A picture made for a light page can glare on a dark one, or vanish into it (a di
 - **The same shape:** a dark version should match its picture's shape, or a page shifts when the theme changes. Edit mode says so when they differ; the page still lays out without a jump, since the dark source carries its own size.
 - **It follows the picture:** a crop cuts it from the same place (scaled, if its size differs), Replace keeps it, and Delete deletes it. It's within the same budgets as every master ([§4](#4-formats-and-budgets)), transparency kept.
 - **In edit mode** it's added, replaced and removed from the picture's details in Media ([its spec, §6.2](../editor/spec.md#62-dark-mode-versions)), and the library marks the pictures that have one.
+
+## 11. Files to download
+
+A PDF (the résumé's) is a media item of `kind: "document"`: the file and its sidecar side by side, as a picture's are.
+
+```json
+{ "kind": "document", "file": "prabin-pebam-resume.pdf", "title": "Prabin Pebam's résumé", "visibility": "public" }
+```
+
+- **Where it's published:** at `<base>/media/<id>.pdf` (the résumé: `/media/people/prabin/prabin-pebam-resume.pdf`), so the file keeps its own name when it's saved. The `content-files` integration ([`integrations/content-files.mjs`](https://github.com/prabinpebam/atiya/blob/main/integrations/content-files.mjs)) serves public documents from the dev server and copies them into `dist/media/` at build; nothing else of `content/` is published as a file.
+- **How a page links to it:** a Markdown link with the `ref:` scheme, `[Download the résumé (PDF)](ref:media/people/prabin/prabin-pebam-resume)`, resolved with the base path ([model §5](model.md#5-references-and-targets)). The content check refuses a link to a document that doesn't exist or isn't public, and a sidecar whose file is missing or doesn't share its name.
+- **Budget:** a PDF of at most 2 MB ([§4](#4-formats-and-budgets)); the check holds it.
+- **Edit mode** doesn't manage documents yet: the library lists pictures only. A document is added by putting its file and sidecar in its owner's folder.

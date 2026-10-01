@@ -198,6 +198,20 @@ describe('the loader checks what it is given', () => {
     expect(problems({ ...base, '/content/articles/a.json': { ...article, summary: 'x'.repeat(161) } }).join('\n')).toMatch(/summary/);
   });
 
+  it('a file to download (a PDF): its sidecar names it; a link to it (ref:media/<id>) needs it, public; a page can have a portrait', () => {
+    const article = base['/content/articles/a.json'];
+    const doc = { '/content/media/articles/a/cv.json': { kind: 'document', file: 'cv.pdf', title: 'The CV', visibility: 'public' } };
+    const withDoc = new Set([...masters, '/content/media/articles/a/cv.pdf']);
+    const linking = { ...article, portrait: 'articles/a/pic', body: [{ type: 'text', markdown: 'Read [the CV](ref:media/articles/a/cv).' }] };
+    const c = loadContent({ ...base, ...doc, '/content/articles/a.json': linking }, withDoc);
+    expect(c.documents.get('articles/a/cv')).toMatchObject({ title: 'The CV', master: '/content/media/articles/a/cv.pdf' });
+    expect(c.media.has('articles/a/cv')).toBe(false);
+    expect(problems({ ...base, ...doc }, masters).join('\n')).toMatch(/cv\.json: its file content\/media\/articles\/a\/cv\.pdf is missing/);
+    expect(problems({ ...base, '/content/articles/a.json': linking }, masters).join('\n')).toMatch(/the file to download "media\/articles\/a\/cv" doesn't exist/);
+    expect(problems({ ...base, ...doc, '/content/media/articles/a/cv.json': { ...doc['/content/media/articles/a/cv.json'], visibility: 'notPublishable' }, '/content/articles/a.json': linking }, withDoc).join('\n')).toMatch(/isn't public/);
+    expect(problems({ ...base, '/content/articles/a.json': { ...article, portrait: 'articles/a/nope' } }).join('\n')).toMatch(/media "articles\/a\/nope" doesn't exist/);
+  });
+
   it("a picture's dark version: named by its sidecar, beside its master, and nowhere else", () => {
     const pic = base['/content/media/articles/a/pic.json'];
     const withDark = { ...base, '/content/media/articles/a/pic.json': { ...pic, dark: { file: 'pic.dark.webp' } } };
@@ -253,6 +267,12 @@ describe('the content in content/', () => {
       if (statSync(f).size > 1.5 * 1024 * 1024) over.push(`${key(f)}: ${(statSync(f).size / 1048576).toFixed(2)} MB`);
       if (m.exif && /GPS/i.test(m.exif.toString('latin1'))) over.push(`${key(f)}: has GPS data`);
     }
+    expect(over).toEqual([]);
+  });
+
+  it('every file to download is within its budget: a PDF of at most 2 MB', () => {
+    const pdfs = walk(join(ROOT, 'content/media')).filter((f) => f.endsWith('.pdf'));
+    const over = pdfs.filter((f) => statSync(f).size > 2 * 1024 * 1024 || readFileSync(f).subarray(0, 5).toString('latin1') !== '%PDF-').map(key);
     expect(over).toEqual([]);
   });
 

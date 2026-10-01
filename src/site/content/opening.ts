@@ -29,15 +29,21 @@ export interface Opening {
   date?: string;
   readingTime?: string;
   picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
+  /** The person the page is about, whole, beside the title. */
+  portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
 }
+
+/** A story (an article, a talk) opens with a byline and a drop cap; a page and a gallery with their words only. */
+export const storyKind = (a: Pick<Article, 'kind'>) => a.kind === 'note' || a.kind === 'talk';
 
 /** @param topic where the page sits: its section on the site, or its building on the planet */
 export async function openingOf(article: Article, topic?: { label: string; href: string }): Promise<Opening> {
   const owner = getPerson(getSite().owner)!;
   const hero = article.hero && (await picture(article.hero.media, 'wide'));
   const avatar = owner.avatar ? await picture(owner.avatar, 'card') : undefined;
+  const portrait = article.portrait ? await picture(article.portrait, 'card') : undefined;
   const lead = hero && (article.hero?.showCaption === false ? { ...hero, caption: undefined, credit: undefined } : { ...hero, caption: article.hero?.caption ?? hero.caption, credit: article.hero?.credit ?? hero.credit });
-  const story = article.kind === 'note' || article.kind === 'talk';
+  const story = storyKind(article);
   return {
     title: article.title,
     standfirst: article.summary,
@@ -47,5 +53,6 @@ export async function openingOf(article: Article, topic?: { label: string; href:
     date: story ? article.publishedAt : undefined,
     readingTime: pageMeasure(article),
     picture: lead ? { ...lead, dark: darkOf(lead) } : undefined,
+    ...(portrait ? { portrait: { src: portrait.src, srcset: portrait.srcset, alt: portrait.alt, width: portrait.width, height: portrait.height, focus: portrait.focus, dark: darkOf(portrait) } } : {}),
   };
 }

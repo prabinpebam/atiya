@@ -165,6 +165,7 @@ Every content item has these fields. There's deliberately no `parent`, `order` o
 | `locale` | string | yes | `en` |
 | `hero` | media ref | no | The lead picture, with an optional `caption` and `credit` override |
 | `thumbnail` | media ID | no | The picture on its cards, shown whole in a 3:2 frame; the lead picture when left out ([media §9](media.md#9-shapes-thumbnails-and-crops)) |
+| `portrait` | media ID | no | The person a page is about (a résumé, About), shown at 4:5 beside its title ([sections §3.3](../sections/spec.md#33-pages-one-resource-several-kinds-u7)) |
 | `body` | block[] | yes | The content (§6); may be empty for a gallery or the résumé |
 | `related` | item ref[] | no | Two or three, chosen editorially |
 | `seo` | object | no | `title`, `description`, `image` (media), `noindex` |

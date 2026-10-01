@@ -4,7 +4,7 @@
  * them all. Pure: the files and the list of media masters come in as arguments, so tests can feed it.
  */
 import type { z } from 'astro/zod';
-import { PLACE_IDS, article, imageMedia, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, type Article, type ImageMedia, type Person, type PlanetStructure, type Redirect, type SiteSettings, type SiteStructure } from './schema';
+import { PLACE_IDS, article, documentMedia, imageMedia, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, type Article, type DocumentMedia, type ImageMedia, type Person, type PlanetStructure, type Redirect, type SiteSettings, type SiteStructure } from './schema';
 import { buildRoutes, canonicalPaths, type Route } from './routes';
 
 export interface MediaRecord extends ImageMedia {
@@ -16,12 +16,20 @@ export interface MediaRecord extends ImageMedia {
   darkMaster?: string;
 }
 
+/** A file to download (a PDF), with its ID and its master's path. */
+export interface DocumentRecord extends DocumentMedia {
+  id: string;
+  master: string;
+}
+
 export interface ContentIndex {
   site: SiteSettings;
   structure: SiteStructure;
   articles: Map<string, Article>;
   people: Map<string, Person>;
   media: Map<string, MediaRecord>;
+  /** Files to download (PDFs), by media ID: linked with `ref:media/<id>`. */
+  documents: Map<string, DocumentRecord>;
   /** Every node's route, drafts included (their `published` is false); only published ones are built. */
   routes: Route[];
   /** Canonical paths of published items, keyed `type/id`. */
@@ -61,6 +69,7 @@ export const isPublished = (a: { status: string; visibility: string }) => PUBLIS
 export function mediaUsed(a: Article): string[] {
   const ids = a.hero ? [a.hero.media] : [];
   if (a.thumbnail) ids.push(a.thumbnail);
+  if (a.portrait) ids.push(a.portrait);
   for (const b of a.body) {
     if (b.type === 'figure') ids.push(b.media);
     else if (b.type === 'gallery' || b.type === 'carousel') ids.push(...b.items.map((i) => i.media));
@@ -95,6 +104,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   const articles = new Map<string, Article>();
   const people = new Map<string, Person>();
   const media = new Map<string, MediaRecord>();
+  const documents = new Map<string, DocumentRecord>();
 
   for (const [file, data] of Object.entries(docs).sort(([a], [b]) => a.localeCompare(b))) {
     const name = file.split('/').pop()!.replace(/\.json$/, '');
@@ -112,6 +122,16 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       if (p && p.id !== name) add(file, `id "${p.id}" must match the file name`, 'id');
       else if (p) people.set(p.id, p);
     } else if ((m = /^\/content\/media\/(.+)\.json$/.exec(file))) {
+      // a file to download (a PDF), or a picture
+      if ((data as { kind?: unknown } | null)?.kind === 'document') {
+        const d = parse(documentMedia, file, data);
+        if (!d) continue;
+        const master = file.slice(0, file.lastIndexOf('/') + 1) + d.file;
+        if (d.file.replace(/\.pdf$/, '') !== name) add(file, `the file "${d.file}" must share the sidecar's name`, 'file');
+        else if (!masters.has(master)) add(file, `its file ${master.slice(1)} is missing`);
+        else documents.set(m[1], { ...d, id: m[1], master });
+        continue;
+      }
       const s = parse(imageMedia, file, data);
       if (!s) continue;
       const dir = file.slice(0, file.lastIndexOf('/') + 1);
@@ -141,6 +161,12 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   };
   for (const a of articles.values()) {
     for (const id of mediaUsed(a)) needMedia(`content/articles/${a.id}.json`, id);
+    // a link to a file to download (ref:media/<id>) needs the file, public
+    for (const [, id] of JSON.stringify(a.body).matchAll(/\]\(ref:media\/([a-z0-9/-]+)\)/g)) {
+      const doc = documents.get(id);
+      if (!doc) add(`content/articles/${a.id}.json`, `the file to download "media/${id}" doesn't exist`);
+      else if (!PUBLIC.has(doc.visibility)) add(`content/articles/${a.id}.json`, `the file to download "media/${id}" isn't public`);
+    }
     const ids = new Set<string>();
     for (const b of a.body) if (b.type === 'heading') {
       const hid = b.id ?? headingId(b.text);
@@ -206,7 +232,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   }
 
   if (issues.length) throw new ContentError(issues);
-  return { site: site!, structure: structure!, articles, people, media, routes, canonical: canonicalPaths(routes), redirects, planet, warnings };
+  return { site: site!, structure: structure!, articles, people, media, documents, routes, canonical: canonicalPaths(routes), redirects, planet, warnings };
 }
 
 /** A path on this site a link may go to: a page of the tree, or one of the code's own (the planet, the docs, the design library). */

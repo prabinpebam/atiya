@@ -63,6 +63,7 @@ const thumbOf = (m?: string) => (m ? media[m] : undefined);
 // the lead picture, and what cards show (the thumbnail, or else the lead picture)
 const lead = thumbOf(article.hero?.media);
 const card = thumbOf(article.thumbnail ?? article.hero?.media);
+const face = thumbOf(article.portrait);
 const STATUS: SelectOption[] = [
   { value: 'draft', label: 'Draft', description: 'Not on the site' },
   { value: 'factReview', label: 'Fact review', description: 'Not on the site' },
@@ -293,6 +294,21 @@ const STATUS: SelectOption[] = [
         </div>
         <Text variant="small" tone="muted">{`${specTip(PICTURE_SPECS.thumbnail)} Left empty, the lead picture is used.`}</Text>
         {card && <Text variant="small">{pictureNote(PICTURE_SPECS.thumbnail, card.width, card.height)}</Text>}
+      </div>
+
+      <div class="media-field" data-editor-picture="portrait">
+        <span class="field-label">Portrait</span>
+        <div class="media-row">
+          {face ? <Image src={face.thumb} alt="" width={face.width} height={face.height} ratio="4/5" fit="cover" /> : <span />}
+          <div class="media-words">
+            <Text variant="small" tone="muted">{article.portrait ? face?.alt || 'No alt text' : 'None'}</Text>
+            <div class="row">
+              <Button variant="secondary" size="sm" icon="image" data-editor-pick="portrait" data-pick-mode="single">{article.portrait ? 'Replace' : 'Choose'}</Button>
+              {article.portrait && <Button variant="quiet" size="sm" data-editor-clear="portrait">Remove</Button>}
+            </div>
+          </div>
+        </div>
+        <Text variant="small" tone="muted">The person the page is about (a résumé, About), beside the title at 4:5 around the picture's focus point.</Text>
       </div>
 
       <Heading level={3} size="ui">Search and sharing</Heading>

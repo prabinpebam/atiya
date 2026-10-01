@@ -10,7 +10,7 @@ import IndexLayout from '../layouts/IndexLayout.astro';
 import Blocks from './Blocks.astro';
 import { getPlanet, getRoutes, getSite, placePages } from './repository';
 import { pageMeasure } from './reading';
-import { cardPicture, openingOf } from './opening';
+import { cardPicture, openingOf, storyKind } from './opening';
 import { withBase } from '../design/meta';
 import type { Place } from './schema';
 import type { PlanetFrame } from '../components/compounds/PlaceBar.astro';
@@ -50,7 +50,7 @@ const stories = current
 
 {
   current && header ? (
-    <ArticleLayout title={`${current.article.title} — ${place.title}`} description={current.article.summary} header={header} prev={link(i - 1)} next={link(i + 1)} frame={frame}>
+    <ArticleLayout title={`${current.article.title} — ${place.title}`} description={current.article.summary} header={header} dropcap={storyKind(current.article)} prev={link(i - 1)} next={link(i + 1)} frame={frame}>
       <Blocks blocks={current.article.body} />
     </ArticleLayout>
   ) : (

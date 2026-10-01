@@ -1,7 +1,8 @@
 ---
 /**
  * An article's opening spread: its topic, the title set large, the standfirst in soft italic, the
- * byline with the date and reading time, and the lead picture, wide, with its caption.
+ * byline with the date and reading time, and the lead picture, wide, with its caption. A page about a
+ * person (a résumé, About) can show their portrait beside the title.
  * @tier compound
  * @a11y The title is the page's h1; the date is a real <time>; the byline's picture is decorative (the name is written beside it).
  */
@@ -30,36 +31,47 @@ interface Props {
   picture?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; caption?: string; credit?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
   /** How wide the lead picture runs: wide, or full bleed. */
   pictureWidth?: 'wide' | 'full';
+  /** The person the page is about (a résumé, About): shown whole, 4:5, beside the title (above it on a phone), and its dark mode version if it has one. */
+  portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
   /** The title's level: 1 on a page, 2 when shown inside another page (the library). */
   level?: 1 | 2;
 }
 
-const { title, standfirst, topic, author, date, readingTime, picture, pictureWidth = 'wide', level = 1 } = Astro.props;
+const { title, standfirst, topic, author, date, readingTime, picture, pictureWidth = 'wide', portrait, level = 1 } = Astro.props;
 const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : null;
 ---
 
 <header class="article-header">
-  <div class="words">
-    {topic && <p class="topic"><Tag tone="accent" href={topic.href}>{topic.label}</Tag></p>}
-    <Heading level={level} size="h1">{title}</Heading>
-    {standfirst && <Text variant="standfirst">{standfirst}</Text>}
+  <div class="words" data-portrait={portrait ? '' : undefined}>
+    <div class="text">
+      {topic && <p class="topic"><Tag tone="accent" href={topic.href}>{topic.label}</Tag></p>}
+      <Heading level={level} size="h1">{title}</Heading>
+      {standfirst && <Text variant="standfirst">{standfirst}</Text>}
+      {
+        (author || shown || readingTime) && (
+          <div class="byline">
+            {author && <Avatar name={author.name} src={author.avatar} srcDark={author.avatarDark} size="sm" decorative />}
+            <p class="meta">
+              {author && <span class="name">{author.name}</span>}
+              {shown && (
+                <Text as="time" variant="meta" datetime={date}>
+                  {shown}
+                </Text>
+              )}
+              {readingTime && (
+                <Text as="span" variant="meta">
+                  {readingTime}
+                </Text>
+              )}
+            </p>
+          </div>
+        )
+      }
+    </div>
     {
-      (author || shown || readingTime) && (
-        <div class="byline">
-          {author && <Avatar name={author.name} src={author.avatar} srcDark={author.avatarDark} size="sm" decorative />}
-          <p class="meta">
-            {author && <span class="name">{author.name}</span>}
-            {shown && (
-              <Text as="time" variant="meta" datetime={date}>
-                {shown}
-              </Text>
-            )}
-            {readingTime && (
-              <Text as="span" variant="meta">
-                {readingTime}
-              </Text>
-            )}
-          </p>
+      portrait && (
+        <div class="portrait">
+          <Image src={portrait.src} srcset={portrait.srcset} sizes="(max-width: 40rem) 8rem, 13rem" alt={portrait.alt} width={portrait.width} height={portrait.height} ratio="4/5" focus={portrait.focus} radius="feature" priority dark={portrait.dark} />
         </div>
       )
     }
@@ -95,10 +107,33 @@ const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
 
   .words {
     display: grid;
-    gap: var(--space-5);
     /* starts where the reading column starts, and may run wider to the right */
     width: min(var(--size-popout), 100% - max(var(--space-gutter), (100% - var(--size-measure)) / 2) - var(--space-gutter));
     margin-inline-start: max(var(--space-gutter), (100% - var(--size-measure)) / 2);
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-5);
+    min-width: 0;
+  }
+
+  /* the person the page is about, beside the words, their bottoms aligned */
+  .words[data-portrait] {
+    grid-template-columns: minmax(0, 1fr) var(--c-image-portrait);
+    align-items: end;
+    gap: var(--space-6) var(--space-8);
+  }
+
+  @media (max-width: 40rem) {
+    .words[data-portrait] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .portrait {
+      order: -1;
+      width: var(--c-image-portrait-sm);
+    }
   }
 
   .topic {

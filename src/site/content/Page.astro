@@ -11,7 +11,7 @@ import IndexLayout from '../layouts/IndexLayout.astro';
 import Blocks from './Blocks.astro';
 import { getArticle, getPlanet, getRoutes, getSite, getStructure } from './repository';
 import { pageMeasure } from './reading';
-import { cardPicture, openingOf } from './opening';
+import { cardPicture, openingOf, storyKind } from './opening';
 import { exploreAction, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import type { Route } from './routes';
@@ -61,7 +61,7 @@ const stories =
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} action={action} crumbs={crumbs} header={header}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} action={action} crumbs={crumbs} header={header} dropcap={storyKind(article)}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>

@@ -4,6 +4,7 @@ import react from '@astrojs/react';
 import docsSite from './integrations/docs-site.mjs';
 import editor from './integrations/editor.mjs';
 import devIsolation from './integrations/dev-isolation.mjs';
+import contentFiles from './integrations/content-files.mjs';
 
 // GitHub Pages serves this repository as a project site, https://<user>.github.io/<repo>/, so the
 // deploy workflow (.github/workflows/deploy.yml) builds with SITE_URL and BASE_PATH set. Locally, in
@@ -35,8 +36,9 @@ export default defineConfig({
   site,
   base,
   // the documentation site (documentation/, Slate) is published beside the game at <base>/docs/;
+  // contentFiles: the content's files to download (the résumé's PDF) at <base>/media/<id>.pdf;
   // devIsolation: a running dev server's caches are its own, never rewritten by a build or a check (app-separation.md §1)
-  integrations: [devIsolation(), react(), docsSite(), editor()],
+  integrations: [devIsolation(), react(), docsSite(), contentFiles(), editor()],
   devToolbar: { enabled: false },
   vite: {
     plugins: [stripShaderComments()],

@@ -18,7 +18,7 @@ import { withBase } from '../design/meta';
 import { renderInlineMarkdown, renderMarkdown } from './markdown';
 import { headingId } from './load';
 import { picture, type Picture } from './pictures';
-import { canonicalPath } from './repository';
+import { canonicalPath, documentHref } from './repository';
 import type { Block } from './schema';
 
 interface Props {
@@ -42,6 +42,8 @@ const SIZES = {
 } as const;
 
 const resolveRef = (ref: string) => {
+  // a file to download: ref:media/<id> (documentation/content/media.md §11)
+  if (ref.startsWith('media/')) return documentHref(ref.slice('media/'.length));
   const [type, id] = ref.split('/');
   const path = canonicalPath(type, id);
   return path && withBase(path);

@@ -36,6 +36,19 @@ export const imageMedia = z
   .refine((m) => m.alt || m.decorative, { message: 'an image needs alt text unless it is decorative', path: ['alt'] })
   .refine((m) => !/^(image|picture|photo) of\b/i.test(m.alt ?? ''), { message: 'alt text never starts with "image of"', path: ['alt'] });
 
+/**
+ * A file to download (documentation/content/media.md §11): a PDF master beside its sidecar, published at
+ * `<base>/media/<id>.pdf` and linked from Markdown with `ref:media/<id>`. The résumé's PDF is one.
+ */
+export const documentMedia = z.strictObject({
+  kind: z.literal('document'),
+  file: z.string().regex(/^[a-z0-9-]+\.pdf$/),
+  /** What it is, in words: a link to it can say so ("Prabin Pebam's résumé"). */
+  title: z.string().min(1),
+  caption: z.string().optional(),
+  visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
+});
+
 const mediaUse = z.strictObject({ media: mediaId, caption: z.string().optional() });
 
 export const block = z.discriminatedUnion('type', [
@@ -105,6 +118,8 @@ export const article = z.strictObject({
   hero: z.strictObject({ media: mediaId, caption: z.string().optional(), credit: z.string().optional(), showCaption: z.boolean().optional() }).optional(),
   /** The picture on its cards (shown whole); the lead picture when left out. */
   thumbnail: mediaId.optional(),
+  /** A picture of the person the page is about (a résumé, About), shown whole beside its title. */
+  portrait: mediaId.optional(),
   body: z.array(block),
   related: z.array(itemRef).max(3).optional(),
   topics: z.array(id).optional(),
@@ -224,6 +239,7 @@ export const redirects = z.array(
 );
 
 export type ImageMedia = z.infer<typeof imageMedia>;
+export type DocumentMedia = z.infer<typeof documentMedia>;
 export type Block = z.infer<typeof block>;
 export type Article = z.infer<typeof article>;
 export type Person = z.infer<typeof person>;

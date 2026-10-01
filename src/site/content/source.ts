@@ -26,7 +26,7 @@ export interface Snapshot {
   digest: string;
 }
 
-export const MASTER_FILE = /\.(webp|jpe?g|png|avif)$/i;
+export const MASTER_FILE = /\.(webp|jpe?g|png|avif|pdf)$/i;
 /** The editor's temporary files and anything hidden: never content. */
 export const IGNORED_FILE = /^\.|\.tmp$/;
 

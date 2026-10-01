@@ -263,6 +263,8 @@
   --c-image-radius: var(--radius-lg);
   --c-image-radius-feature: var(--radius-xl);
   --c-image-placeholder: var(--color-bg-sunk);
+  --c-image-portrait: 13rem;
+  --c-image-portrait-sm: 8rem;
   --c-quote-rule: var(--color-highlight);
   --c-quote-mark: var(--color-highlight);
   --c-dropcap-color: var(--color-accent);

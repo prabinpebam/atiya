@@ -8,7 +8,7 @@ export interface Titles {
   person(id: string): string | undefined;
 }
 
-const MEDIA = /^\/content\/media\/(.+?)(?:\.dark)?\.(json|webp|jpe?g|png|avif)$/;
+const MEDIA = /^\/content\/media\/(.+?)(?:\.dark)?\.(json|webp|jpe?g|png|avif|pdf)$/;
 
 /** The resource a file belongs to: a picture's master, dark version and sidecar share one (/content/media/<id>); any other file is its own. */
 export const resourceOf = (key: string) => {

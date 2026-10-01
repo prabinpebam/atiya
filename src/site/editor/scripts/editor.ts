@@ -660,6 +660,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       const { thumbnail: _t, ...rest } = doc;
       return change(rest as Article, ALL);
     }
+    if (d.editorClear === 'portrait') {
+      const { portrait: _p, ...rest } = doc;
+      return change(rest as Article, ALL);
+    }
     if (d.editorItems) {
       const b = doc.body[i] as Extract<Block, { type: 'gallery' | 'carousel' }>;
       const n = Number(d.item);
