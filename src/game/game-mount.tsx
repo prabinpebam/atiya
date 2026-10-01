@@ -85,6 +85,8 @@ export async function mountGame(container: HTMLElement, landmarks: LandmarkData[
     // (when the browser is idle, or after a few seconds on a page that never is)
     const idle = (window as unknown as { requestIdleCallback?: (f: () => void, o: { timeout: number }) => void }).requestIdleCallback ?? ((f: () => void) => window.setTimeout(f, 200));
     idle(() => void preloadTextures(3), { timeout: 3000 });
+    // full planet, its header button with it, once the planet is whole (it rides in the nature chunk)
+    void natureChunk.then((nature) => nature?.attachOverview(controller));
   });
   controller.touch = touch?.attachTouch(controller) ?? null;
   controller.chopperView = chopper?.Chopper ?? null;

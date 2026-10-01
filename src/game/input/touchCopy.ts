@@ -6,6 +6,7 @@ export const TOUCH_COPY = {
   hint: [
     'Drag anywhere to walk; push to the edge to run. Tap a place to go there, and tap a prompt to use it.',
     'Turn and tilt the view with a second finger, or from the menu.',
+    'Tap the planet button in the header to see the whole planet, and drag to turn it.',
   ],
 } as const;
 

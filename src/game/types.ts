@@ -23,3 +23,20 @@ export interface MoveIntent {
   y: number;
   run: boolean;
 }
+
+/**
+ * Full planet: the whole planet in view, to turn and look at, with no character to move. Its own chunk
+ * (camera/overview.ts), attached when the planet is complete; the controller only hands it what it asks for.
+ */
+export interface OverviewMode {
+  /** On, or still easing back to the character's view: the character's controls are off. */
+  readonly on: boolean;
+  /** A key on the planet: true when the mode took it (a key it doesn't take goes on as usual). */
+  key(action: import('./input/keyboard').GameAction, down: boolean, code: string): boolean;
+  /** A drag on the planet (px): true when the mode took it. */
+  drag(dx: number, dy: number): boolean;
+  /** The menu's View buttons: a step round (turn) or up and down (tilt); true when the mode took it. */
+  nudge(turn: number, tilt: number): boolean;
+  /** Each frame, after the camera rig: eases the camera, the world's turn and the focus. */
+  frame(camera: import('three').Camera, dt: number): void;
+}

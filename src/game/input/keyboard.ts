@@ -21,6 +21,7 @@ export type GameAction =
   | 'whistle'
   | 'sit'
   | 'lie'
+  | 'overview'
   | 'slot1'
   | 'slot2'
   | 'slot3'
@@ -72,6 +73,8 @@ export const KEY_BINDINGS: Record<string, GameAction> = {
   // rest anywhere: sit on the grass (X, as World of Warcraft's sit) or lie back on it (Z, as the prone key in shooters)
   KeyX: 'sit',
   KeyZ: 'lie',
+  // the whole planet, to turn and look at (camera/overview.ts)
+  KeyP: 'overview',
   Digit1: 'slot1',
   Digit2: 'slot2',
   Digit3: 'slot3',

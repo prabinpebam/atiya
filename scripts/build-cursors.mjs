@@ -61,8 +61,8 @@ const CURSORS = [
   { name: 'walk', hot: 'tip', svg: () => arrow(21) + ring(23.5, 26.4), selectors: ['.play .game-region[data-cursor="walk"]'], fallback: 'pointer' },
   // a disabled control
   { name: 'not-allowed', hot: 'tip', svg: () => arrow(21) + shape(faBan, 18, 17.5, 12.5, { fill: RED, ink: CREAM, outline: 1.1 }).svg, selectors: ['.play :disabled', '.play [aria-disabled="true"]'], fallback: 'not-allowed' },
-  // something you can turn by dragging (Chopper on his card), and while you drag (the planet, Chopper)
-  { name: 'grab', hot: 'centre', svg: () => shape(faHand, 4, 4, 24).svg, selectors: ['.play .chopper-stage'], fallback: 'grab' },
+  // something you can turn by dragging (Chopper on his card, the planet in full planet), and while you drag (the planet, Chopper)
+  { name: 'grab', hot: 'centre', svg: () => shape(faHand, 4, 4, 24).svg, selectors: ['.play .chopper-stage', '.play.overview .game-region:not([data-hover]):not(.dragging)', '.play.overview .game-region[data-cursor="walk"]:not([data-hover]):not(.dragging)'], fallback: 'grab' },
   { name: 'grabbing', hot: 'centre', svg: () => shape(faHandBackFist, 8, 5.5, 21).svg, selectors: ['.play .game-region.dragging', '.play .game-region.dragging[data-hover]', '.play .chopper-stage:active'], fallback: 'grabbing' },
   // the clock: drag it sideways to set the time
   { name: 'ew-resize', hot: 'centre', svg: () => shape(faArrowsLeftRight, 2.5, 5, 22).svg, selectors: ['.play .time-badge'], fallback: 'ew-resize' },

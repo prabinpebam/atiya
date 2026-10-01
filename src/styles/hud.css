@@ -458,6 +458,15 @@ body.play {
   width: min(340px, calc(100vw - var(--space-8)));
 }
 
+/* full planet (camera/overview.ts): no character to steer, so nothing that steers or uses it shows */
+.play.overview .lane,
+.play.overview .aside,
+.play.overview .view-controls,
+.play.overview .hotbar-wrap,
+.play.overview .character-picker {
+  display: none;
+}
+
 /* beside the scene, not over it: the ghost and the character stay in view */
 .site-card {
   padding: var(--space-3-5) var(--space-4);

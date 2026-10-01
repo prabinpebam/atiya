@@ -19,6 +19,8 @@ export interface GameTestHook {
   start(): void;
   pause(): void;
   resume(): void;
+  /** Full planet (camera/overview.ts): attached yet, on, the camera's distance from the planet's centre, the fog's range and the tilt-shift's focus area. */
+  overview(): { attached: boolean; on: boolean; camDist: number; fog: [number, number] | null; focusArea: number | null; turned: number };
   advance(frames: number, dt?: number): void;
   autoWalkTo(id: string): void;
   distanceTo(id: string): number;
@@ -224,6 +226,19 @@ export function installTestHook(c: GameController): void {
     },
     resume: () => {
       c.paused = false;
+    },
+    overview: () => {
+      const fog = c.gfx?.scene.fog as { near: number; far: number } | null | undefined;
+      const q = c.world?.quaternion;
+      return {
+        attached: Boolean(c.overview),
+        on: Boolean(c.overview?.on),
+        camDist: c.camera?.position.length() ?? 0,
+        fog: fog ? [fog.near, fog.far] : null,
+        focusArea: c.tiltShift?.focusArea ?? null,
+        // how far the world is turned from the character's view (rad)
+        turned: q ? 2 * Math.acos(Math.min(1, Math.abs(q.w))) : 0,
+      };
     },
     advance: (frames, dt = 1 / 60) => {
       for (let i = 0; i < frames; i++) c.step(dt);

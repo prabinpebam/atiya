@@ -67,6 +67,20 @@ export const SUNSET = 19;
 /** The sun and moon travel on a plane behind the planet (camera frame), behind the clouds. */
 export const SKY_Z = -50;
 
+/** The fog's range (u from the camera) in the character's view. */
+export const FOG = { near: 20, far: 34 } as const;
+
+/**
+ * How far the fog's range stretches for a camera `dist` from the planet's centre, when the character's
+ * view (at its tilt) is `rest` from it: by the distance to the planet's horizon, so a camera pulled back
+ * (a fast travel's fly-over, full planet) sees the planet as clearly as the character's view does. 1 in
+ * the character's view.
+ */
+export function fogScale(dist: number, rest: number, radius: number): number {
+  const horizon = (d: number) => Math.sqrt(Math.max(d * d - radius * radius, 1));
+  return horizon(dist) / horizon(rest);
+}
+
 /** Position on the sky plane for a body at `arc` (0 rise … 1 set): rises bottom-left, sets bottom-right. */
 export function skyPosition(arc: number, out = new Vector3()): Vector3 {
   const a = arc * Math.PI;

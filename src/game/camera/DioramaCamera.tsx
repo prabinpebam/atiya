@@ -21,7 +21,7 @@ export function DioramaCamera({ controller }: { controller: GameController }) {
     controller.camera = camera;
   }, [camera, controller]);
 
-  useFrame(() => {
+  useFrame((_, dt) => {
     const t = controller.sim.travelState;
     const w = t && t.mode === 'flyover' ? Math.sin(Math.PI * t.progress) : 0;
     const base = controller.view.pitch;
@@ -32,6 +32,8 @@ export function DioramaCamera({ controller }: { controller: GameController }) {
     const y = R + controller.lift + 0.5 * controller.sim.hover;
     camera.position.set(0, y + Math.sin(pitch) * dist, Math.cos(pitch) * dist);
     camera.lookAt(0, y + C.lookUp, -C.lookAhead * (1 - w));
+    // full planet eases from this rig to the whole planet (camera/overview.ts)
+    controller.overview?.frame(camera, dt);
   });
 
   return null;

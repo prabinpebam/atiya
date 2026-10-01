@@ -20,9 +20,10 @@ import {
   Vector3,
 } from 'three';
 import { CONFIG } from '../config';
+import { DEG } from '../math/sphere';
 import type { GameController } from '../controller';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
-import { DAY_HOURS, SKY_Z, advanceHours, localHours, sampleSky, sceneExposure, skyPosition, wrapHours, type SkyState } from './timeOfDay';
+import { DAY_HOURS, FOG, SKY_Z, advanceHours, fogScale, localHours, sampleSky, sceneExposure, skyPosition, wrapHours, type SkyState } from './timeOfDay';
 import { mulberry32 } from './layout';
 import { applyTimeOfDay } from './materials';
 import { cloudMaterialMade } from './Sky';
@@ -189,7 +190,7 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     canvas.height = 256;
     const texture = new CanvasTexture(canvas);
     texture.colorSpace = SRGBColorSpace;
-    return { canvas, ctx: canvas.getContext('2d')!, texture, fog: new Fog('#d6eeff', 20, 34) };
+    return { canvas, ctx: canvas.getContext('2d')!, texture, fog: new Fog('#d6eeff', FOG.near, FOG.far) };
   }, []);
 
   const stars = useMemo(() => {
@@ -344,6 +345,11 @@ export function DayNight({ controller, shadowSize }: { controller: GameControlle
     stars.mat.uniforms.uPixelRatio.value = gl.getPixelRatio();
     // sun and moon face the camera (no foreshortening under the tilted view)
     for (const m of [sun.disc, sun.halo, moon.disc, moon.halo]) m.quaternion.copy(camera.quaternion);
+    // the fog stretches as the camera pulls back (a fly-over, full planet), so the planet stays as clear
+    const p = controller.view.pitch * DEG;
+    const k = fogScale(camera.position.length(), Math.hypot(R + controller.lift + Math.sin(p) * CONFIG.camera.distance, Math.cos(p) * CONFIG.camera.distance), R);
+    sky.fog.near = FOG.near * k;
+    sky.fog.far = FOG.far * k;
     // sampling is cheap, but skip it (and the sky texture upload) when the clock barely moved
     if (last.current.s && Math.abs(h - last.current.h) < 0.004) return;
     const s = sampleSky(h);

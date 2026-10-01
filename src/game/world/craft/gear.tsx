@@ -153,9 +153,11 @@ export function attachGear(controller: GameController): GearAttachment {
       swing = Math.sin(t * 5.2) * Math.min(1, controller.sim.speed / 2) * 0.22;
       lantern.rotation.set(swing, 0, swing * 0.5);
     }
-    // the lamp at the lantern's middle, in the planet's own frame
+    // the lamp at the lantern's middle, in the planet's own frame (the world turns too in full planet)
     lantern.updateMatrixWorld(true);
-    lamp.pos.set(0, LAMP_Y, 0).applyMatrix4(lantern.matrixWorld).applyQuaternion(_q.copy(controller.sim.planetQ).invert());
+    _q.copy(controller.sim.planetQ);
+    if (controller.world) _q.premultiply(controller.world.quaternion);
+    lamp.pos.set(0, LAMP_Y, 0).applyMatrix4(lantern.matrixWorld).applyQuaternion(_q.invert());
   };
   return {
     held,

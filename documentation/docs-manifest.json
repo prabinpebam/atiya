@@ -406,6 +406,15 @@
       "group": "Features"
     },
     {
+      "path": "poc-3d-navigation/full-planet.md",
+      "title": "Full planet, and the fog on a fast travel",
+      "order": 33.9,
+      "icon": "public",
+      "status": "done",
+      "updated": "2026-10-01",
+      "group": "Features"
+    },
+    {
       "path": "poc-3d-navigation/chopper.md",
       "title": "Chopper",
       "order": 34,

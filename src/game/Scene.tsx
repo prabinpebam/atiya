@@ -209,6 +209,7 @@ function PostFX({ controller }: { controller: GameController }) {
   }, [controller, full]);
   const tiltRef = useCallback(
     (e: TiltShiftEffect | null) => {
+      controller.tiltShift = e;
       if (e) controller.grading.tiltBlend = Object.keys(BlendFunction).find((k) => BlendFunction[k as keyof typeof BlendFunction] === e.blendMode.blendFunction) ?? '';
     },
     [controller],
@@ -340,6 +341,8 @@ export function Scene({ controller }: { controller: GameController }) {
       <Summoned controller={controller} id="clouds">
         <Clouds controller={controller} />
       </Summoned>
+      {/* the planet and the character turn as one in full planet (camera/overview.ts); still otherwise */}
+      <group ref={(g) => void (controller.world = g)} name="world">
       <group ref={planet} name="planet-root">
         <Planet controller={controller} />
         <Summoned controller={controller} id="grass">
@@ -379,6 +382,7 @@ export function Scene({ controller }: { controller: GameController }) {
         <Slot controller={controller} view="cuesView" />
       </group>
       <Player controller={controller} />
+      </group>
       <PostFX controller={controller} />
     </>
   );

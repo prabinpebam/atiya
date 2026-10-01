@@ -129,6 +129,9 @@ function HowToPlay({ controller }: { controller: GameController }) {
             <li>
               <Keys k="H" />: back to the plaza, facing north.
             </li>
+            <li>
+              <Keys k="P" />, or the planet button in the header: see the whole planet, and drag or use the arrow keys to turn it. <Keys k="P" /> or <Keys k="Space" /> goes back.
+            </li>
           </ul>
         )}
       </section>

@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import { Quaternion, Vector3, type Camera, type Object3D, type Scene, type WebGLRenderer } from 'three';
 import { CONFIG } from './config';
-import type { LandmarkData, MoveIntent } from './types';
+import type { LandmarkData, MoveIntent, OverviewMode } from './types';
 import { arrivalOrientation, landmarkGeometry, type LandmarkGeometry } from './math/landmarks';
 import { DEG, UP, arcDistance, clamp, damp, dampAngle, moveAlong, tangentToward, wrapAngle, type Obstacle } from './math/sphere';
 import { northScreenAngle } from './math/compass';
@@ -379,6 +379,12 @@ export class GameController {
   readonly view = { pitch: CONFIG.camera.pitchDeg as number, targetPitch: CONFIG.camera.pitchDeg as number, yawPending: 0 };
   /** True once the current pointer gesture became a view drag (so its click doesn't walk). */
   viewDragged = false;
+  /** Full planet (camera/overview.ts, its own chunk); null until it's attached. */
+  overview: OverviewMode | null = null;
+  /** What turns as one in full planet: the planet and the character (set by the scene). */
+  world: Object3D | null = null;
+  /** The tilt-shift, whose focus full planet widens (set by the post-processing). */
+  tiltShift: { focusArea: number } | null = null;
   /** Where the last click or tap on the ground walks to (planet-local, at the ground's radius): the marker it leaves (cues.tsx). */
   walkMark: Vector3 | null = null;
   private drag: { id: number; x: number; y: number; lastX: number; lastY: number; active: boolean } | null = null;
@@ -675,7 +681,7 @@ export class GameController {
     const s = this.store.getState();
     const playing = s.phase === 'playing' && !s.openId && !s.menuOpen && !s.invScreen && !s.craftScreen && !s.chopperOpen && !s.talk;
     const seat = this.seatMotion;
-    const intent: MoveIntent = playing && !seat.stage && !this.action.busy && !this.rest.kind ? this.keyboard.intent() : NO_INTENT;
+    const intent: MoveIntent = playing && !seat.stage && !this.action.busy && !this.rest.kind && !this.overview?.on ? this.keyboard.intent() : NO_INTENT;
     this.updateView(delta, playing, selectReducedMotion(s));
     const dt = Math.min(Math.max(delta, 0), CONFIG.maxDt);
     // wading: slower in deeper water (the sim eases toward the new speed)
@@ -783,14 +789,14 @@ export class GameController {
 
   /** Button step: +1 turns the scene counter-clockwise, −1 clockwise. */
   rotateViewStep(dir: 1 | -1): void {
-    if (!this.canStepView()) return;
+    if (!this.canStepView() || this.overview?.nudge(dir, 0)) return;
     this.view.yawPending += dir * CONFIG.camera.rotateStepDeg * DEG;
     this.requestFrame?.();
   }
 
   /** Button step: +1 tilts toward a top-down view, −1 toward a side view. */
   tiltViewStep(dir: 1 | -1): void {
-    if (!this.canStepView()) return;
+    if (!this.canStepView() || this.overview?.nudge(0, dir)) return;
     this.view.targetPitch = clampPitch(this.view.targetPitch + dir * CONFIG.camera.tiltStepDeg);
     this.requestFrame?.();
   }
@@ -819,6 +825,7 @@ export class GameController {
   }
 
   dragView(dx: number, dy: number): void {
+    if (this.overview?.drag(dx, dy)) return;
     const C = CONFIG.camera;
     this.view.yawPending = 0;
     this.sim.rotateView(dx * C.dragYawPerPx);
@@ -829,7 +836,8 @@ export class GameController {
   onRegionPointerDown = (e: { clientX: number; clientY: number; pointerId: number; button: number; pointerType?: string }): void => {
     this.focusRegion();
     this.viewDragged = false;
-    if (this.touch?.down(e)) return;
+    // (in full planet a finger turns the planet, like the mouse: there's no character to steer)
+    if (!this.overview?.on && this.touch?.down(e)) return;
     if (e.button !== 0 && e.button !== 2) return;
     this.endDrag();
     this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, lastX: e.clientX, lastY: e.clientY, active: false };
@@ -904,6 +912,8 @@ export class GameController {
     }
     // Prabin's welcome doesn't hold you: a step ends it and walks (progressive-loading.md §5.4)
     if (s.talk) this.endTalk();
+    // full planet takes the keys it uses (turning, going back) and the ones that would move the character
+    if (this.overview?.key(action, true, e.code)) return;
     if (action === 'back') {
       // Space goes back: off the bench or the swing, up off the grass, or out of an action (Escape does
       // too); with nothing to go back from, it jumps
@@ -977,6 +987,7 @@ export class GameController {
   onKeyUp = (e: KeyEventLike): void => {
     const action = KeyboardInput.actionFor(e.code);
     if (action) this.keyboard.up(action);
+    if (action) this.overview?.key(action, false, e.code);
   };
 
   onBlur = (): void => {
@@ -1332,7 +1343,7 @@ export class GameController {
     // (a click on the planet ends Prabin's welcome and walks, as a step does)
     if (this.store.getState().talk?.welcome) this.endTalk();
     const s = this.store.getState();
-    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel) return;
+    if (s.phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel || this.overview?.on) return;
     if (this.seatMotion.stage || this.rest.kind) {
       this.standUp();
       return;

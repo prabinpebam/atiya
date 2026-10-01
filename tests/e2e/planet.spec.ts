@@ -467,6 +467,55 @@ test.describe('day–night', () => {
 });
 
 test.describe('view controls', () => {
+  test('full planet: the header button shows the whole planet, clear and in focus, to turn without moving the character; Space goes back, and a fast travel keeps the planet out of the fog', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startPlanet(page);
+    const overview = () => page.evaluate(() => (window as any).__game.overview() as { attached: boolean; on: boolean; camDist: number; fog: [number, number]; focusArea: number; turned: number });
+    await expect.poll(async () => (await overview()).attached, { timeout: 30_000 }).toBe(true);
+    const rest = await overview();
+    expect(rest.on).toBe(false);
+    const button = page.getByRole('button', { name: 'View whole planet' });
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    await button.click();
+    await expect(button).toHaveAttribute('aria-pressed', 'true');
+    // the camera pulls back until the planet fits; the fog follows it out and the tilt-shift widens to the whole planet
+    await expect.poll(async () => (await overview()).camDist, { timeout: 15_000 }).toBeGreaterThan(50);
+    const o = await overview();
+    expect(o.fog[0]).toBeGreaterThan(o.camDist - 10);
+    expect(o.focusArea).toBeGreaterThan(1);
+    // nothing to steer: the hotbar and the compass go, and a walking key turns the planet instead of walking
+    await expect(page.getByTestId('hotbar')).toBeHidden();
+    await expect(page.getByTestId('view-controls')).toBeHidden();
+    await page.locator('.game-region').focus();
+    await page.keyboard.down('ArrowLeft');
+    await page.waitForTimeout(600);
+    await page.keyboard.up('ArrowLeft');
+    expect((await overview()).turned).toBeGreaterThan(0.2);
+    expect((await state(page)).atSpawn).toBe(true);
+    // a drag turns it too, and never walks
+    await page.mouse.move(640, 400);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(640 + i * 20, 400);
+    await page.mouse.up();
+    expect((await state(page)).autoWalk).toBe(false);
+    // Space goes back: the camera returns and the world turns back with it
+    await page.keyboard.press('Space');
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    await expect.poll(async () => (await overview()).turned, { timeout: 15_000 }).toBeCloseTo(0, 3);
+    const back = await overview();
+    expect(back.on).toBe(false);
+    expect(back.camDist).toBeCloseTo(rest.camDist, 1);
+    expect(back.fog).toEqual(rest.fog);
+    expect(back.focusArea).toBeCloseTo(rest.focusArea, 5);
+    await expect(page.getByTestId('hotbar')).toBeVisible();
+
+    // a fast travel's fly-over pulls back too: the fog goes out with it
+    await page.evaluate(() => (window as any).__game.travelTo('lighthouse'));
+    let widest = 0;
+    for (let i = 0; i < 40 && widest <= rest.fog[1]; i++) widest = Math.max(widest, (await overview()).fog[1]);
+    expect(widest).toBeGreaterThan(rest.fog[1] * 1.15);
+  });
+
   test("compass shows north and stands alone; the menu's View buttons turn the view; the compass faces north again", async ({ page }) => {
     await startPlanet(page);
     expect((await state(page)).north).toBeCloseTo(0, 3);

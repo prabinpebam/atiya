@@ -10,3 +10,5 @@ export { grassView, prepareGrass } from './grass';
 export { SummonFx } from './summonFx';
 // and what E would use, marked in the world (the rings and sparkles: design-system.md §6.5)
 export { ActivationCues } from './cues';
+// full planet (camera/overview.ts): here rather than a chunk of its own, for the same reason
+export { attachOverview } from '../camera/overview';
