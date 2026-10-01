@@ -1,0 +1,138 @@
+{
+  "id": "atiya",
+  "type": "article",
+  "kind": "note",
+  "slug": "atiya",
+  "title": "Atiya: a personal site on a little planet",
+  "summary": "A static portfolio on GitHub Pages with a walkable little planet, classic pages, and a local editor that publishes without a backend.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "hero": {
+    "media": "articles/atiya/planet-plaza"
+  },
+  "thumbnail": "articles/atiya/whole-planet",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "I needed a personal site, and I wanted to do something different. I love the free hosting from GitHub Pages, but I also wanted the day-to-day editing flow to feel local, fast and mine. The trick was to keep the whole thing static in production, then build a clever local editing and publishing loop so I could completely bypass the need for a backend."
+    },
+    {
+      "type": "figure",
+      "media": "articles/atiya/home-page",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "A site with two front doors"
+    },
+    {
+      "type": "text",
+      "markdown": "Atiya is still a normal portfolio. The classic site is there for anyone who wants regular pages, fast reading and predictable navigation. But the other entrance is a cozy 3D little planet. You can walk around with a character, approach a building, preview that part of the portfolio and open the same content from there."
+    },
+    {
+      "type": "text",
+      "markdown": "That balance matters to me. The planet gives the site a personality, but the classic site is always one step away. The playful version should never trap someone inside a canvas or make the content harder to reach."
+    },
+    {
+      "type": "figure",
+      "media": "articles/atiya/article-page",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The planet is navigation"
+    },
+    {
+      "type": "text",
+      "markdown": "The game mode is built with three.js and React Three Fiber, but I try to treat the 3D part as navigation rather than decoration. Each landmark maps to a section of the site. When you get close, the page preview appears in the DOM, with real buttons and links. Opening a place shows the page over the planet, and the classic route is still available."
+    },
+    {
+      "type": "figure",
+      "media": "articles/atiya/whole-planet",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "Under the hood, the movement model rotates the planet under a fixed player and camera, and the heavier 3D bundle is loaded only after a capability gate. That keeps the landing page and the classic path light, while the planet can still be rich when the device can handle it."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "A local CMS without a hosted CMS"
+    },
+    {
+      "type": "text",
+      "markdown": "The part I am proudest of is the publishing loop. Content lives as JSON in `content/`, shaped like a mock API. In development, a local edit mode lets me edit pages, blocks, settings and media in the browser. Saves go back to the content files after the same contract checks the build uses."
+    },
+    {
+      "type": "text",
+      "markdown": "When I am ready to publish, the local editor commits the content changes and pushes them. GitHub Pages then builds the static Astro site through the repository workflow. The production site has no editor, no hosted CMS and no backend to operate. The repo is both the source of truth and the publishing pipe."
+    },
+    {
+      "type": "figure",
+      "media": "articles/atiya/edit-mode",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Type",
+          "value": "Personal portfolio"
+        },
+        {
+          "label": "Built with",
+          "value": "Astro, React, three.js and React Three Fiber"
+        },
+        {
+          "label": "Hosting",
+          "value": "GitHub Pages"
+        },
+        {
+          "label": "Content",
+          "value": "JSON mock API in content/"
+        },
+        {
+          "label": "Editing",
+          "value": "Local dev-only browser editor"
+        },
+        {
+          "label": "Language",
+          "value": "TypeScript"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Why build it this way"
+    },
+    {
+      "type": "text",
+      "markdown": "A personal site is partly a calling card and partly a playground. This one lets me keep the calling card practical: static hosting, accessible pages, normal URLs and source-controlled content. It also gives me room to experiment with interaction design, game-like navigation, local-first tooling and a content system that can grow later without changing how the site is authored today."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Try it"
+    },
+    {
+      "type": "text",
+      "markdown": "The live site is at [prabinpebam.github.io/atiya](https://prabinpebam.github.io/atiya/), with the classic site and the planet side by side. The source is on [GitHub](https://github.com/prabinpebam/atiya), and the project docs are published at [prabinpebam.github.io/atiya/docs](https://prabinpebam.github.io/atiya/docs/)."
+    }
+  ],
+  "topics": [
+    "side-project",
+    "web",
+    "personal-site"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "kind": "image",
+  "file": "docs-page.webp",
+  "alt": "A Slate documentation page for the site design system, showing breadcrumbs, status metadata, a table of contents, and long-form content in the reader.",
+  "caption": "Slate keeps long reference pages readable with route state, navigation, search, and a generated table of contents.",
+  "visibility": "public"
+}

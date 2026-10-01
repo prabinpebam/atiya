@@ -1,0 +1,7 @@
+{
+  "kind": "image",
+  "file": "fill-inspector.webp",
+  "alt": "The Story fill inspector showing stacked fills, a colour picker, stroke controls, effects and export controls in a dark property panel.",
+  "caption": "The inspector treats fills, strokes and effects as layered, editable systems.",
+  "visibility": "public"
+}

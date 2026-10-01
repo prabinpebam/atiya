@@ -1,0 +1,175 @@
+{
+  "id": "cloner-pro",
+  "type": "article",
+  "kind": "note",
+  "slug": "cloner-pro",
+  "title": "Cloner Pro: bringing Cinema 4D's Cloner into Figma",
+  "summary": "A Figma plugin that brings Cinema 4D-style cloning into 2D design, built with AI assistance and used by 3,530 people.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "hero": {
+    "media": "articles/cloner-pro/brush-stroke-field"
+  },
+  "thumbnail": "articles/cloner-pro/quarter-circle-patterns",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "I was fascinated by the Cloner tool in Cinema 4D. It was so simple and very powerful. I wanted it in all the tools I used. So I created Cloner Pro for Figma."
+    },
+    {
+      "type": "text",
+      "markdown": "The idea was to bring a procedural 3D workflow into a 2D design tool: select an object, clone it across a field, and then let a luma map or randomness change the result. Instead of hand-placing hundreds of elements, I wanted to sketch with systems."
+    },
+    {
+      "type": "gallery",
+      "items": [
+        {
+          "media": "articles/cloner-pro/quarter-circle-patterns"
+        },
+        {
+          "media": "articles/cloner-pro/icon-field"
+        }
+      ],
+      "layout": "grid",
+      "fit": "contain",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What it makes possible"
+    },
+    {
+      "type": "text",
+      "markdown": "Cloner Pro generates organic arrays from one or more selected Figma objects. You can control the count and spacing on each axis, choose whether the source objects iterate or are picked randomly, and then affect colour, scale, position and rotation."
+    },
+    {
+      "type": "tiles",
+      "width": "wide",
+      "items": [
+        {
+          "label": "Array control",
+          "text": "Clone one or many objects into a 2D array, with independent counts and spacing on X and Y."
+        },
+        {
+          "label": "Luma-driven variation",
+          "text": "Use generated Perlin noise or your own image as the map that drives scale, position, rotation and colour."
+        },
+        {
+          "label": "Randomness with intent",
+          "text": "Switch from luma to random values for effects, or pick randomly among selected sources."
+        },
+        {
+          "label": "Animation-friendly names",
+          "text": "Generated layers keep systematic names, so the results can work with Smart Animate."
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "media": "articles/cloner-pro/generated-noise-array",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "figure",
+      "media": "articles/cloner-pro/plugin-panel-in-figma",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "There are limits by design. It is not a live procedural object after generation, not every Figma object type is supported, and the public page asks people to stay below 100 by 100 clones, or 10,000 objects. But inside that boundary, the workflow is fast: choose a source, tune the luma map, generate a field."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Building it with AI"
+    },
+    {
+      "type": "text",
+      "markdown": "The other side of the project was personal. As I wrote on Medium, \"I'm not a developer and I don't code.\" I understood coding fundamentals and had built my own site years earlier, but about a week before publishing that post I had no idea how to make a Figma plugin."
+    },
+    {
+      "type": "text",
+      "markdown": "So I built it by asking Bing Search and ChatGPT very practical questions: how to create a Figma plugin, how to generate random Perlin noise in a HTML canvas with JavaScript, and how to work around the things the Figma API would not let me do directly."
+    },
+    {
+      "type": "text",
+      "markdown": "AI did not make the whole thing effortless. It sometimes refused mid-answer, and it confidently hallucinated an invalid way to add a custom plugin icon, which cost me an hour. But it filled the gaps at both ends: enough product direction for me to keep going, and enough implementation detail for me to make the plugin real."
+    },
+    {
+      "type": "figure",
+      "media": "articles/cloner-pro/luma-control-panel",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "How it landed"
+    },
+    {
+      "type": "text",
+      "markdown": "Cloner Pro was published on Figma Community in May 2023 with the tagline \"Clone objects in organic patterns with random noise.\" Version 5 added Grid and Honeycomb arrays, improved colour handling for groups and frames, and refined the interface."
+    },
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Users, October 2026",
+          "value": "3,530"
+        },
+        {
+          "label": "Likes",
+          "value": "50"
+        },
+        {
+          "label": "Installs",
+          "value": "342"
+        },
+        {
+          "label": "Views",
+          "value": "2,971"
+        },
+        {
+          "label": "Comments",
+          "value": "2"
+        },
+        {
+          "label": "License",
+          "value": "Community Free Resource License"
+        }
+      ]
+    },
+    {
+      "type": "quote",
+      "text": "Best free pattern generator for Figma I've seen so far! Thanks a lot!",
+      "cite": "Alex (@AlexV), on Figma Community",
+      "variant": "block"
+    },
+    {
+      "type": "text",
+      "markdown": "Another community comment, from Denis Čumak, called it \"very fun to play with.\" That is exactly the kind of reaction I hoped for: a small tool that makes pattern generation feel playful inside the design canvas."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Try it"
+    },
+    {
+      "type": "text",
+      "markdown": "You can try [Cloner Pro on Figma Community](https://www.figma.com/community/plugin/1244544179043723171/cloner-pro), or read the story of how I made it in [I used AI to create a Figma plugin!](https://medium.com/design-bootcamp/i-used-ai-to-create-a-figma-plugin-520e952fbff7)."
+    }
+  ],
+  "topics": [
+    "side-project",
+    "figma-plugin",
+    "ai",
+    "generative-art"
+  ]
+}

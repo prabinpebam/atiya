@@ -1,0 +1,129 @@
+{
+  "id": "liquid-glass-pro",
+  "type": "article",
+  "kind": "note",
+  "slug": "liquid-glass-pro",
+  "title": "Liquid Glass Pro: liquid glass in Figma, before Figma had it",
+  "summary": "A Figma plugin for making Apple-inspired Liquid Glass effects before Figma had official support for them.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "thumbnail": "articles/liquid-glass-pro/liquid-glass-examples",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "I wanted Liquid Glass in Figma, so I created this before Liquid Glass was officially introduced in Figma. Apple's 2025 design material had a very particular appeal: not just blur, not just transparency, but a surface that bends what is underneath it. I wanted to use that feeling while designing, not wait for it to arrive as a built-in control."
+    },
+    {
+      "type": "text",
+      "markdown": "Liquid Glass Pro is the Figma plugin I made for that gap. It turns a shape into a structured glass element, captures the artwork beneath it, and renders the refraction with WebGL so the preview responds while I tune the effect."
+    },
+    {
+      "type": "figure",
+      "media": "articles/liquid-glass-pro/liquid-glass-examples",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Type",
+          "value": "Figma plugin"
+        },
+        {
+          "label": "Built with",
+          "value": "TypeScript and WebGL"
+        },
+        {
+          "label": "Published",
+          "value": "28 June 2025"
+        },
+        {
+          "label": "Users",
+          "value": "1,185 (October 2026)"
+        },
+        {
+          "label": "Likes",
+          "value": "29 (October 2026)"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The useful part is the refraction"
+    },
+    {
+      "type": "text",
+      "markdown": "A flat translucent panel is easy to fake. The hard part is making the glass feel like it has a physical edge. In Liquid Glass Pro, the refraction tab controls edge thickness, distortion strength, chromatic aberration and frost blur. The effects tab then handles the finishing touches: inner shadows, edge highlights, reflections and tint overlays with more than 20 blend modes."
+    },
+    {
+      "type": "text",
+      "markdown": "The plugin can create a new glass element or apply the effect to an existing rectangle, ellipse or complex vector. It keeps the original content in its own layer structure, stores parameters in layer names, and can update multiple glass elements at once."
+    },
+    {
+      "type": "gallery",
+      "items": [
+        {
+          "media": "articles/liquid-glass-pro/liquid-glass-controls-wide"
+        },
+        {
+          "media": "articles/liquid-glass-pro/liquid-glass-controls"
+        }
+      ],
+      "layout": "row",
+      "fit": "contain",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What a user question clarified"
+    },
+    {
+      "type": "quote",
+      "text": "Hi, great PlugIn, it's very useful.",
+      "cite": "Ed Rea-Allison (@edreaallison), on Figma Community",
+      "variant": "block"
+    },
+    {
+      "type": "text",
+      "markdown": "Ed Rea-Allison asked why the effect stops working when the glass is used as the background of a component. My reply was a useful reminder of what the plugin is actually doing: the distortion applies to what sits under the glass element. The layer order matters because the plugin captures that underlying artwork, bends it through the shader, then layers the tint, highlights and content back on top."
+    },
+    {
+      "type": "text",
+      "markdown": "That is why the effect looks convincing on busy artwork, text and UI, but needs the right structure. It is not a generic background blur. It is a glass layer that depends on what is physically beneath it in the design."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "A small tool for a specific moment"
+    },
+    {
+      "type": "text",
+      "markdown": "As of October 2026, the plugin had 1,185 users, 205 installs, 1,368 views and 29 likes on Figma Community. Those are modest numbers, but they are exactly the kind of signal I value from side projects: people find the tool because they have the same itch, try it in real design files, and then tell me where the mental model needs to be clearer."
+    },
+    {
+      "type": "text",
+      "markdown": "I also made a sibling experiment for code, [Liquid glass for the web](ref:article/liquid-glass-for-web), because the same material behaves differently when it has to live in a browser instead of inside Figma."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Try it"
+    },
+    {
+      "type": "text",
+      "markdown": "Liquid Glass Pro is available on [Figma Community](https://www.figma.com/community/plugin/1520830114693375150/liquid-glass-pro), and the source is on [GitHub](https://github.com/prabinpebam/figma-liquid-glass)."
+    }
+  ],
+  "topics": [
+    "side-project",
+    "figma-plugin",
+    "liquid-glass"
+  ]
+}

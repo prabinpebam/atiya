@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "noise-animation.webp",
+  "alt": "An animated noise canvas with white stippled Perlin patterns on black, beside controls for animation speed, noise layers and ripple effects.",
+  "caption": "Noise Animation combines layered Perlin noise, stippling, displacement and ripples.",
+  "focus": "38% 50%",
+  "visibility": "public"
+}

@@ -1,0 +1,7 @@
+{
+  "kind": "image",
+  "file": "edit-mode.webp",
+  "alt": "Edit mode on an article: the outline of blocks on the left, the page itself in the middle with a paragraph selected and its toolbar, and the block's settings on the right.",
+  "caption": "Edit mode, on the local dev server: the page itself is the editor, and Publish pushes the changes.",
+  "visibility": "public"
+}

@@ -1,0 +1,124 @@
+{
+  "id": "generative-explorations",
+  "type": "article",
+  "kind": "note",
+  "slug": "generative-explorations",
+  "title": "Generative explorations: pictures made with code",
+  "summary": "Five small browser tools for generating mesh gradients, animated noise, stipple drawings, guilloche patterns and string art.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "thumbnail": "articles/generative-explorations/mesh-gradient",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "These five browser tools are a set of small experiments in making pictures with code. I grouped them here because they all do a similar thing from different directions: start with a visual rule, expose a few controls, and let the canvas turn it into an image."
+    },
+    {
+      "type": "text",
+      "markdown": "They are deliberately lightweight. Each one runs as a self-contained web page, uses HTML canvas for drawing, and keeps the interface close to the output so the result can be tuned directly."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Mesh gradient generator"
+    },
+    {
+      "type": "text",
+      "markdown": "Mesh Gradient Generator makes soft, customizable mesh gradients for design work. It has controls for canvas size, cell count, blur, colour harmonies, colour themes, distortion effects, cell animation, hue animation and PNG export."
+    },
+    {
+      "type": "figure",
+      "media": "articles/generative-explorations/mesh-gradient",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "The tool builds the gradient from Voronoi cells using `d3-delaunay`, then blends and distorts them on an HTML canvas. Try the [live demo](https://prabinpebam.github.io/mesh-gradient-generator/) or see the [repo](https://github.com/prabinpebam/mesh-gradient-generator)."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Noise animation"
+    },
+    {
+      "type": "text",
+      "markdown": "Noise Animation makes an animated black-and-white noise field with real-time controls. The page includes sliders and toggles for animation speed, resolution, two Perlin noise layers, stippling, displacement and ripples."
+    },
+    {
+      "type": "figure",
+      "media": "articles/generative-explorations/noise-animation",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "It combines a Perlin noise library with canvas rendering, a stipple layer and mouse-driven ripple origins. Try the [live demo](https://prabinpebam.github.io/noise-animation/) or see the [repo](https://github.com/prabinpebam/noise-animation)."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Stipple art"
+    },
+    {
+      "type": "text",
+      "markdown": "Stipple Art turns an uploaded image into dots. The controls let the image be regenerated with a seed, stipple count, iteration count, dot sizing, colourization, animation and SVG export."
+    },
+    {
+      "type": "figure",
+      "media": "articles/generative-explorations/stipple-art",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "The README describes it as a weighted Voronoi stippling algorithm: points are seeded by image brightness, then refined with Monte Carlo sampling and Lloyd relaxation through D3's Voronoi tools. Try the [live demo](https://prabinpebam.github.io/stipple-art/) or see the [repo](https://github.com/prabinpebam/stipple-art)."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Guilloche"
+    },
+    {
+      "type": "text",
+      "markdown": "Guilloche generates intricate looping line patterns in the browser. The controls expose the fixed circle radius, rolling circle radius, pen distance, curve count, rotation, line thickness, colour gradient, displacement and animation."
+    },
+    {
+      "type": "figure",
+      "media": "articles/generative-explorations/guilloche",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "The drawing comes from spirograph-style equations: epicycloid, hypotrochoid or epitrochoid curves, with polar displacement and gradient colouring layered on top. Try the [live demo](https://prabinpebam.github.io/guilloche/) or see the [repo](https://github.com/prabinpebam/guilloche)."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "String art"
+    },
+    {
+      "type": "text",
+      "markdown": "String Art converts an uploaded image into chords drawn between pins on a circle. It can switch between light and dark modes, change the number of pins and chords, adjust line weight, download the chord steps and export SVG."
+    },
+    {
+      "type": "figure",
+      "media": "articles/generative-explorations/string-art",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "The generator crops the image to a square, converts it to grayscale, then greedily chooses the chord that reduces the current image error the most. Try the [live demo](https://prabinpebam.github.io/string-art/) or see the [repo](https://github.com/prabinpebam/string-art)."
+    }
+  ],
+  "topics": [
+    "side-project",
+    "generative-art",
+    "web"
+  ]
+}

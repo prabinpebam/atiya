@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "string-art.webp",
+  "alt": "An abstract source image translated into hundreds of black chords between pins on a circle, with controls for pins, chords and line weight.",
+  "caption": "String Art approximates an image by choosing chords between pins around a circle.",
+  "focus": "38% 50%",
+  "visibility": "public"
+}

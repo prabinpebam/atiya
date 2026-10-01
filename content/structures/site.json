@@ -77,7 +77,80 @@
         "title": "Side projects",
         "summary": "Prototypes, tools and experiments I build on the side, including this little planet.",
         "view": "tiles",
-        "children": []
+        "children": [
+          {
+            "id": "atiya",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "atiya"
+            }
+          },
+          {
+            "id": "watai",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "watai"
+            }
+          },
+          {
+            "id": "story",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "story"
+            }
+          },
+          {
+            "id": "slate",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "slate"
+            }
+          },
+          {
+            "id": "cloner-pro",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "cloner-pro"
+            }
+          },
+          {
+            "id": "khonjel",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "khonjel"
+            }
+          },
+          {
+            "id": "liquid-glass-for-web",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "liquid-glass-for-web"
+            }
+          },
+          {
+            "id": "liquid-glass-pro",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "liquid-glass-pro"
+            }
+          },
+          {
+            "id": "generative-explorations",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "generative-explorations"
+            }
+          }
+        ]
       },
       {
         "id": "contact",

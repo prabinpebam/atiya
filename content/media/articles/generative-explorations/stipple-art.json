@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "stipple-art.webp",
+  "alt": "An abstract temporary drawing converted into white stipple dots on a dark canvas, with controls for stipple count, iterations and sampling.",
+  "caption": "Stipple Art turns an uploaded image into a field of weighted Voronoi dots.",
+  "focus": "35% 50%",
+  "visibility": "public"
+}

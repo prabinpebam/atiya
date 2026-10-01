@@ -1,0 +1,7 @@
+{
+  "kind": "image",
+  "file": "material-options.webp",
+  "alt": "The material options lab showing Clear, Optic, Soft Frost, Satin, Deep Frost and Milk Glass presets with sliders",
+  "caption": "The material lab makes refraction, chromatic aberration, tint, shadow and caustic glow tunable.",
+  "visibility": "public"
+}

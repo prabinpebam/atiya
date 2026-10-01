@@ -848,11 +848,11 @@ test.describe('editor', () => {
     await expect(picker.locator('[data-upload-facts]')).toHaveText(/^320 × 180 px, WebM, 0:02, \d+(\.\d)? MB\.$/);
     await expect(picker.locator('[data-upload-video]')).toBeVisible();
     // a video asks for its title, not alt text
-    await expect(picker.getByLabel('Alt text')).toBeHidden();
+    await expect(picker.locator('[data-editor-upload] [name="alt"]')).toBeHidden();
     await picker.getByRole('button', { name: 'Upload it' }).click();
     await expect(picker.locator('[data-editor-form-issue]')).toHaveText(/Give the video a title/);
-    await picker.getByLabel('Title').fill('A test pattern');
-    await picker.getByLabel('Caption').fill('Two seconds of colour bars.');
+    await picker.locator('[data-editor-upload] [name="title"]').fill('A test pattern');
+    await picker.locator('[data-editor-upload] [name="caption"]').fill('Two seconds of colour bars.');
     await picker.getByRole('button', { name: 'Upload it' }).click();
     await expect.poll(() => blocks().length, { timeout: 30_000 }).toBe(count + 1);
     const id = `articles/${ARTICLE}/clip`;
@@ -1024,18 +1024,19 @@ test.describe('editor', () => {
     await expect(panel.locator('[data-manager-count]')).toHaveText('2 selected');
     await panel.getByRole('button', { name: 'Move selected' }).click();
     await expect(page.locator('[data-manager-move-name]')).toHaveText('2 pages, in Leadership');
+    const sideBefore = pagesOf('side-projects');
     await moveTo('Side projects');
-    await expect.poll(() => pagesOf('side-projects')).toEqual([one, two]);
+    await expect.poll(() => pagesOf('side-projects')).toEqual([...sideBefore, one, two]);
     expect(pagesOf('leadership')).toEqual([ARTICLE]);
 
     // a selection dragged onto a section goes with it: all of it, in its order
     await page.goto('/_edit/sections/?section=side-projects');
     const sideProjects = page.locator('[data-manager-pages="side-projects"]');
-    await sideProjects.getByText('Select all').click();
+    for (const id of [one, two]) await sideProjects.locator(`[data-manager-pick="${id}"]`).click();
     await expect(sideProjects.locator('[data-manager-count]')).toHaveText('2 selected');
     await drag(two, section('talks'));
     await expect.poll(() => pagesOf('talks')).toEqual([one, two]);
-    expect(pagesOf('side-projects')).toEqual([]);
+    expect(pagesOf('side-projects')).toEqual(sideBefore);
   });
 
   test('navigation: a section in and out from Sections and from Navigation; a link added, renamed, moved and removed; the header follows', async ({ page }) => {

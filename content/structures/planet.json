@@ -62,7 +62,44 @@
       "summary": "Prototypes, tools and experiments I build on the side, including this little planet.",
       "view": "tiles",
       "site": "side-projects",
-      "pages": []
+      "pages": [
+        {
+          "type": "article",
+          "id": "atiya"
+        },
+        {
+          "type": "article",
+          "id": "watai"
+        },
+        {
+          "type": "article",
+          "id": "story"
+        },
+        {
+          "type": "article",
+          "id": "slate"
+        },
+        {
+          "type": "article",
+          "id": "cloner-pro"
+        },
+        {
+          "type": "article",
+          "id": "khonjel"
+        },
+        {
+          "type": "article",
+          "id": "liquid-glass-for-web"
+        },
+        {
+          "type": "article",
+          "id": "liquid-glass-pro"
+        },
+        {
+          "type": "article",
+          "id": "generative-explorations"
+        }
+      ]
     },
     {
       "id": "post-office",

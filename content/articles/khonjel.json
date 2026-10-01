@@ -1,0 +1,122 @@
+{
+  "id": "khonjel",
+  "type": "article",
+  "kind": "note",
+  "slug": "khonjel",
+  "title": "Khonjel: voice AI that stays local",
+  "summary": "A local-first desktop voice app for dictation, cleanup and notes, built around on-device speech and language models.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "thumbnail": "articles/khonjel/khonjel-icon",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "I was inspired by Whisper AI, but I wanted to use my own local models. In Khonjel, that means Whisper-family speech-to-text through `whisper.cpp`, with the rest of the voice workflow designed around the same principle: it should run on my machine first, and only leave it when I deliberately connect something else."
+    },
+    {
+      "type": "text",
+      "markdown": "Khonjel is Manipuri for _voice_. The app started from a simple daily irritation: I wanted to speak anywhere, have the computer capture the thought, clean it up, and put the finished text exactly where I was already working. Not in a separate note I had to copy from. Not behind an account. Not dependent on a cloud service just to turn speech into text."
+    },
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Type",
+          "value": "Local-first desktop voice productivity app"
+        },
+        {
+          "label": "Platform",
+          "value": "Windows 10/11 x64"
+        },
+        {
+          "label": "Built with",
+          "value": "Electron, React, TypeScript, Vite and Tailwind CSS"
+        },
+        {
+          "label": "Local engines",
+          "value": "whisper.cpp, llama.cpp and sherpa-onnx"
+        },
+        {
+          "label": "License",
+          "value": "MIT"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Dictation where the text belongs"
+    },
+    {
+      "type": "text",
+      "markdown": "The core flow is intentionally direct: press the global hotkey, speak, watch the floating bar stream partial text, then let Khonjel transcribe, clean up and inject the result at the cursor. The floating bar is built as a non-focusable window, so the app I was typing in keeps focus while Khonjel does the voice work in the background."
+    },
+    {
+      "type": "text",
+      "markdown": "The README describes it as capture to `whisper.cpp`, cleanup through `llama.cpp`, then paste. That chain is the product idea in miniature. Speech-to-text is only half of dictation; the other half is making the text usable enough to land in an email, document, chat or note without a second cleanup pass."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Local first, not local only"
+    },
+    {
+      "type": "text",
+      "markdown": "The privacy model is the part I cared about most. Khonjel is offline by default, collects no telemetry, and stores transcripts, notes, history and dictionary entries locally. The privacy policy says microphone audio is processed in memory and temporary files are deleted after transcription; recordings are not retained."
+    },
+    {
+      "type": "text",
+      "markdown": "At the same time, I did not want privacy to become a dead end for people who already have approved infrastructure. The app can use local models by default, self-hosted or OpenAI-compatible endpoints, and optional cloud or enterprise providers. API keys live in the operating system keychain, not in plaintext, and cloud routing is opt-in."
+    },
+    {
+      "type": "tiles",
+      "width": "wide",
+      "items": [
+        {
+          "label": "On-device speech",
+          "text": "Local transcription runs through `whisper.cpp`, with NVIDIA Parakeet available through `sherpa-onnx`."
+        },
+        {
+          "label": "On-device cleanup",
+          "text": "Language cleanup and chat can run through `llama.cpp`, with a deterministic fallback when local models are not ready."
+        },
+        {
+          "label": "Optional providers",
+          "text": "The same model picker can point to self-hosted, OpenAI-compatible, cloud or enterprise endpoints when I choose to connect them."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "A product shell around the models"
+    },
+    {
+      "type": "text",
+      "markdown": "I did not want this to be only a model launcher. The app has daily surfaces around the voice workflow: Home for history and stats, Chat, Notes, Upload for existing audio files, Dictionary for custom terms, Transforms for hotkey-bound rewrites and Insights. The control panel loads the core daily views first and code-splits the less frequent ones after the shell is interactive."
+    },
+    {
+      "type": "text",
+      "markdown": "The engineering shape mirrors that product goal. The React renderer talks to service ports, and one typed IPC seam connects it to the Electron backend. Requests cross a single allow-listed channel, are validated with zod, and the packaged renderer gets a strict Content Security Policy. The result is still a side project, but the architecture treats voice data, model setup and OS text injection as things that deserve production-level boundaries."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Try it"
+    },
+    {
+      "type": "text",
+      "markdown": "Khonjel is open source on [GitHub](https://github.com/prabinpebam/khonjel) and released under the MIT License. The README links a Windows installer and portable build from the [latest release](https://github.com/prabinpebam/khonjel/releases/latest). There is no separate live site listed for the repository, so the repo and releases are the best places to start."
+    }
+  ],
+  "topics": [
+    "side-project",
+    "ai",
+    "privacy",
+    "voice",
+    "desktop-app"
+  ]
+}

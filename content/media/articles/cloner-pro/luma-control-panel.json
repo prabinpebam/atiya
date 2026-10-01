@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "luma-control-panel.webp",
+  "alt": "The Cloner Pro panel with x and y counts, spacing, clone mode, colour, scale, position, rotation and Perlin noise parameters.",
+  "caption": "The controls mirror the Cinema 4D-style idea: clone first, then drive variation with effectors.",
+  "focus": "50% 35%",
+  "visibility": "public"
+}

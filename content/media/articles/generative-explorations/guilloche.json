@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "guilloche.webp",
+  "alt": "A pale, looping guilloche rosette drawn on a canvas with controls for circle radii, pen distance, rotation, line thickness and colours.",
+  "caption": "Guilloche draws mathematically derived curves that can be tuned and exported.",
+  "focus": "40% 43%",
+  "visibility": "public"
+}

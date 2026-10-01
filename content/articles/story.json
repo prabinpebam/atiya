@@ -1,0 +1,146 @@
+{
+  "id": "story",
+  "type": "article",
+  "kind": "note",
+  "slug": "story",
+  "title": "Story: the presentation tool I wanted between Figma and PowerPoint",
+  "summary": "I needed the best of Figma and PPT, so I built Story: a browser-based presentation design environment with one source for design and delivery.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "thumbnail": "articles/story/editor",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "I needed the best of Figma and PPT, so I created **Story**. Figma has the canvas, precision and reusable design-system thinking I want when I am shaping ideas visually. PowerPoint has the slide structure, presenter workflow and output muscle that real presentations still depend on. I did not want to keep choosing which half of the job mattered more."
+    },
+    {
+      "type": "text",
+      "markdown": "Story is my attempt to make those two instincts live in one browser-based environment: a place where the authored deck remains the source of truth from design, through rehearsal, to delivery and export."
+    },
+    {
+      "type": "figure",
+      "media": "articles/story/editor",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Type",
+          "value": "Browser-based presentation design environment"
+        },
+        {
+          "label": "Built with",
+          "value": "Vanilla JavaScript, Vite, Vitest and CSS Modules"
+        },
+        {
+          "label": "Core idea",
+          "value": "Figma-class design capability plus PowerPoint-class presentation capability"
+        },
+        {
+          "label": "Status",
+          "value": "Useful foundation; not the full product goal yet"
+        },
+        {
+          "label": "Source",
+          "value": "GitHub repo, with its documentation on GitHub Pages"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The gap I wanted to close"
+    },
+    {
+      "type": "text",
+      "markdown": "Design tools are excellent at craft: direct manipulation, precise objects, styles, variables, components and collaborative editing. Presentation tools are excellent at the ceremony of a talk: slides, masters, layouts, notes, transitions, presenter view, export and printing. The trouble starts when a high-stakes story needs both."
+    },
+    {
+      "type": "text",
+      "markdown": "The Story specification says parity with Figma and PowerPoint is the adoption floor, not the reason to choose it. The reason is the governed bridge: one living presentation system that can produce audience editions, deterministic live runs and professional outputs without duplicate-deck drift or silent fidelity loss."
+    },
+    {
+      "type": "figure",
+      "media": "articles/story/fill-inspector",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "A design editor that knows it has to present"
+    },
+    {
+      "type": "text",
+      "markdown": "I started from the parts of authoring that make a tool feel serious: a visual editor, slide management, master slides and layouts, a rich property inspector, layers, presentation mode, speaker notes, presenter workflows and cloud storage foundations. The README describes those as Story's current foundations, not as a finished claim."
+    },
+    {
+      "type": "gallery",
+      "items": [
+        {
+          "media": "articles/story/stroke-settings"
+        },
+        {
+          "media": "articles/story/brush-stroke"
+        },
+        {
+          "media": "articles/story/effects-panel"
+        }
+      ],
+      "layout": "grid",
+      "fit": "contain",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "That is why even a small inspector detail matters. Fills, strokes and effects are not just formatting rows; they are layered systems that need to survive editing, reuse and output. A presentation tool can hide that complexity. A presentation design environment has to make it understandable."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The product promise is one source"
+    },
+    {
+      "type": "text",
+      "markdown": "The direction of Story is intentionally bigger than drawing better slides. The product spec frames it as a professional environment where teams design with Figma-class control, author and deliver with PowerPoint-class completeness, and maintain the result as one governed narrative system."
+    },
+    {
+      "type": "text",
+      "markdown": "That means the same document model should feed the editor, thumbnails, presentation runtime, presenter view, export, print and collaboration. If a feature exists in only one surface, or silently degrades somewhere else, it is not really complete."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Where it stands"
+    },
+    {
+      "type": "text",
+      "markdown": "The repo is honest about its current state. The capability audit calls Story a capable design-first slide editor, with strong foundations in direct manipulation, shape primitives, booleans and masks, layered styling, master/layout inheritance, transitions, notes and baseline presentation runtime."
+    },
+    {
+      "type": "text",
+      "markdown": "It is also honest about what remains: shared document architecture, deeper Figma-class layout and components, PowerPoint-class charts and recording, PPTX interoperability, autosave, recovery, multiplayer collaboration, accessibility and performance gates. I like that discipline. It keeps the project from mistaking a control for a product."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Try it"
+    },
+    {
+      "type": "text",
+      "markdown": "You can see the code on [GitHub](https://github.com/prabinpebam/story) and read its documentation at [prabinpebam.github.io/story](https://prabinpebam.github.io/story/). Story is still a side project, but it is the kind I enjoy most: a product question made concrete enough to touch, test and keep refining."
+    }
+  ],
+  "topics": [
+    "side-project",
+    "tools",
+    "presentations",
+    "design-tools"
+  ]
+}

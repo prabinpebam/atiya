@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "plugin-panel-in-figma.webp",
+  "alt": "Cloner Pro's Figma plugin panel open on a dark Figma canvas, showing array, colour, scale, position, rotation and luma map controls.",
+  "caption": "The plugin kept the workflow inside Figma: select objects, tune the array, preview the luma map, then generate.",
+  "focus": "68% 50%",
+  "visibility": "public"
+}

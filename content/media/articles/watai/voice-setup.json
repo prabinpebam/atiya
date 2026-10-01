@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "voice-setup.webp",
+  "alt": "Watai voice setup screen with a microphone icon, Skip button, and Allow microphone button",
+  "caption": "Voice stays optional in the onboarding flow.",
+  "focus": "50% 52%",
+  "visibility": "public"
+}

@@ -1,0 +1,135 @@
+{
+  "id": "watai",
+  "type": "article",
+  "kind": "note",
+  "slug": "watai",
+  "title": "Watai: a private AI assistant of my own",
+  "summary": "A private, Azure-backed personal AI assistant I built so my data and credentials stay under my control.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "thumbnail": "articles/watai/watai-icon",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "I wanted my own personal AI solution where my data remains private. That was the starting point for Watai: a ChatGPT-style web app powered by my own Azure OpenAI endpoint, with the assistant experience I wanted without handing the whole workflow to someone else's consumer product."
+    },
+    {
+      "type": "text",
+      "markdown": "The project is a React and Vite progressive web app with an Azure Functions backend. The frontend is published through GitHub Pages, while the backend owns the durable work: generation runs, encrypted credentials, sync, assets, and memory. The goal is simple from the user's side: sign in, configure an Azure OpenAI endpoint once, and use a private AI workspace across devices."
+    },
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Type",
+          "value": "Personal AI assistant"
+        },
+        {
+          "label": "Built with",
+          "value": "React, Vite, Azure Functions, Cosmos DB, Blob Storage, Key Vault"
+        },
+        {
+          "label": "Language",
+          "value": "TypeScript"
+        },
+        {
+          "label": "Repo created",
+          "value": "23 June 2026"
+        },
+        {
+          "label": "Status",
+          "value": "Public repo and live GitHub Pages frontend"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Private by design"
+    },
+    {
+      "type": "text",
+      "markdown": "The privacy decision shaped the product more than any individual feature. Watai uses the user's own Azure OpenAI configuration. In the current server-authoritative direction, credentials are stored encrypted on the server, never returned to the client, and decrypted only inside the backend work that needs them."
+    },
+    {
+      "type": "figure",
+      "media": "articles/watai/connect-endpoint",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "That also changes what reliability can mean. A browser tab is a fragile place to run long AI work, especially on a phone. The Watai backend owns the generation path so a run can continue after the browser closes, then persist the result back into the thread. The client becomes a renderer and control surface rather than the thing keeping the work alive."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The assistant I wanted to use"
+    },
+    {
+      "type": "text",
+      "markdown": "Watai started with the core AI surfaces I expect from a modern assistant: chat, speech, image generation, thread history, markdown rendering, files, artifacts, settings, and sync. The repository also carries specs for a broader agentic direction: web search, file search, code interpreter, image generation tools, speech and transcription, deep research, and reusable agent skills."
+    },
+    {
+      "type": "tiles",
+      "width": "wide",
+      "items": [
+        {
+          "label": "Server-run chat",
+          "text": "Prompts create backend-owned runs, so responses can stream, sync, and finish independently of the tab."
+        },
+        {
+          "label": "Image studio",
+          "text": "Image generation is treated as a durable studio workflow, with server jobs, status cards, metadata, and a browsable gallery direction."
+        },
+        {
+          "label": "Memory",
+          "text": "The memory specs define a governed context layer: inspectable records, source-linked retrieval, background extraction, and user controls."
+        },
+        {
+          "label": "Agent skills",
+          "text": "The skills direction explores account-scoped skill packages that can mount instructions, references, scripts, and assets into code interpreter runs."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Trust has to be visible"
+    },
+    {
+      "type": "text",
+      "markdown": "A private AI tool is not only about where the key lives. It also has to show what is configured, what is stored, what memory influenced a response, and how to correct or delete it. The memory work in Watai is deliberately governed: extraction is background work, retrieval is bounded, and the user-facing direction includes inspection, suppression, deletion, export, and source disclosure."
+    },
+    {
+      "type": "figure",
+      "media": "articles/watai/voice-setup",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "I also wanted the interface to feel calm. The onboarding is intentionally direct: connect the endpoint, choose the models, and opt into voice only if it is useful. The product can be technically ambitious underneath, but the setup should still feel like a personal tool, not an admin console."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "See the code"
+    },
+    {
+      "type": "text",
+      "markdown": "Watai is public on GitHub at [github.com/prabinpebam/watai](https://github.com/prabinpebam/watai), and the live frontend is published at [prabinpebam.github.io/watai](https://prabinpebam.github.io/watai/)."
+    }
+  ],
+  "topics": [
+    "side-project",
+    "ai",
+    "privacy",
+    "azure",
+    "pwa",
+    "tools"
+  ]
+}

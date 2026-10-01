@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "generated-noise-array.webp",
+  "alt": "A 30 by 30 field of turquoise rectangles in Figma, varying in scale, colour and rotation to form an organic wave pattern.",
+  "caption": "A default 30 by 30 run turns one rectangle into a luma-driven field.",
+  "focus": "50% 48%",
+  "visibility": "public"
+}

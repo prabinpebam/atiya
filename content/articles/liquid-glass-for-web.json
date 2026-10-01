@@ -1,0 +1,139 @@
+{
+  "id": "liquid-glass-for-web",
+  "type": "article",
+  "kind": "note",
+  "slug": "liquid-glass-for-web",
+  "title": "Liquid glass for the web",
+  "summary": "A web experiment that turns Apple's 2025 Liquid Glass idea into a reusable SVG-filter engine, wrappers and a live design library.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-01",
+  "updatedAt": "2026-10-01",
+  "locale": "en",
+  "thumbnail": "articles/liquid-glass-for-web/design-library-overview",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Liquid glass is cool, and I wanted it for web. When Apple introduced Liquid Glass in 2025, the part that stayed with me was not just the surface treatment; it was the sense that the interface material was alive, bending the world behind it instead of sitting as a flat translucent layer."
+    },
+    {
+      "type": "text",
+      "markdown": "I had already been exploring the same effect for designers with [Liquid Glass Pro](ref:article/liquid-glass-pro). This side project asks the companion question: what would it take to make the effect feel reusable on the web, inside normal DOM interfaces, across plain JavaScript, React and custom elements?"
+    },
+    {
+      "type": "figure",
+      "media": "articles/liquid-glass-for-web/design-library-overview",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "A material, not a screenshot"
+    },
+    {
+      "type": "text",
+      "markdown": "The repo is a monorepo for a reusable liquid-glass library. The core package is framework-agnostic TypeScript. It has thin React bindings, a `<liquid-glass>` custom element, a token-driven UI package, a small vanilla example and a hosted design library that runs from GitHub Pages."
+    },
+    {
+      "type": "text",
+      "markdown": "The goal is not to paint a glossy card. The goal is to build one canonical mechanism that components can share: generate the material, attach it to a surface, then let buttons, inputs, toggles, search boxes and panels compose on top of it."
+    },
+    {
+      "type": "facts",
+      "items": [
+        {
+          "label": "Type",
+          "value": "Open-source web library and design library"
+        },
+        {
+          "label": "Built with",
+          "value": "TypeScript, SVG filters and CSS backdrop-filter"
+        },
+        {
+          "label": "Packages",
+          "value": "Core, React, custom element and UI"
+        },
+        {
+          "label": "Started",
+          "value": "June 2026"
+        },
+        {
+          "label": "Status",
+          "value": "Early 0.1.0 work, with core refraction math implemented"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The engine underneath"
+    },
+    {
+      "type": "text",
+      "markdown": "The core pipeline starts with a surface profile, uses Snell's law to build a displacement field, rasterizes that into a displacement map and optional specular rim-light map, then applies the result through an SVG filter. The live docs version ports that runtime into buildless JavaScript so the design library can demonstrate the real effect, not static mockups."
+    },
+    {
+      "type": "tiles",
+      "width": "wide",
+      "items": [
+        {
+          "label": "Refraction",
+          "text": "SVG displacement maps bend the pixels behind the glass surface."
+        },
+        {
+          "label": "Rim light",
+          "text": "A generated specular map gives the edge its glass-like highlight."
+        },
+        {
+          "label": "Material presets",
+          "text": "Named looks such as Clear, Optic, Soft Frost, Satin, Deep Frost and Milk Glass share the same engine."
+        },
+        {
+          "label": "Wrappers",
+          "text": "The same core API is exposed through vanilla JavaScript, React and a custom element."
+        }
+      ]
+    },
+    {
+      "type": "figure",
+      "media": "articles/liquid-glass-for-web/material-options",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Designing around browser reality"
+    },
+    {
+      "type": "text",
+      "markdown": "The repo is honest about the browser constraint: SVG filters as `backdrop-filter` are currently a Chromium path. The library also supports `filter: url(#id)` for distorting an element's own content and a blur fallback when true backdrop refraction is not available."
+    },
+    {
+      "type": "text",
+      "markdown": "That limitation shaped the design library. Every glassy part is a surface with content layered on top, and the material values come from tokens. If the refraction path changes, the component model can stay stable. If a designer wants softer frost, stronger chromatic aberration or a different tint, that should be a token change rather than a rewrite."
+    },
+    {
+      "type": "figure",
+      "media": "articles/liquid-glass-for-web/component-catalog",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Try it"
+    },
+    {
+      "type": "text",
+      "markdown": "The project is still early, but the live design library is already useful for feeling the material over real components: [open the demo](https://prabinpebam.github.io/liquid-glass-for-web/). The code is on GitHub at [prabinpebam/liquid-glass-for-web](https://github.com/prabinpebam/liquid-glass-for-web), including the docs, package scaffold, example and compatibility notes."
+    }
+  ],
+  "topics": [
+    "side-project",
+    "web",
+    "liquid-glass",
+    "design-system"
+  ]
+}

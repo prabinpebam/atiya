@@ -1,0 +1,7 @@
+{
+  "kind": "image",
+  "file": "docs-search.webp",
+  "alt": "The Slate reader with the search box open for the word tokens, showing matched documents and highlighted terms above the docs overview.",
+  "caption": "Search is built into the static reader, so published docs stay easy to traverse.",
+  "visibility": "public"
+}
