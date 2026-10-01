@@ -167,14 +167,19 @@ export async function deleteArticle(id: string, withMedia: boolean, ifMatch: Rec
     const snap = readSnapshot();
     const others = JSON.stringify(Object.entries(snap.docs).filter(([k]) => k !== key));
     const folder = `/content/media/articles/${id}/`;
+    const seen = new Set<string>();
     for (const master of snap.masters) {
       if (!master.startsWith(folder)) continue;
-      const mediaId = master.slice('/content/media/'.length).replace(/\.\w+$/, '');
+      // a picture's master and its dark version are one picture: deleted together, with their sidecar
+      const mediaId = master.slice('/content/media/'.length).replace(/(?:\.dark)?\.\w+$/, '');
       if (others.includes(`"${mediaId}"`)) continue;
-      const sidecar = master.replace(/\.\w+$/, '.json');
-      const sc = readDoc(sidecar);
-      changes.push({ key: sidecar, bytes: null }, { key: master, bytes: null });
-      match[sidecar] = sc?.version ?? null;
+      const sidecar = `/content/media/${mediaId}.json`;
+      if (!seen.has(sidecar)) {
+        seen.add(sidecar);
+        changes.push({ key: sidecar, bytes: null });
+        match[sidecar] = readDoc(sidecar)?.version ?? null;
+      }
+      changes.push({ key: master, bytes: null });
       match[master] = versionOf(readFile(master));
     }
   }

@@ -28,6 +28,8 @@ interface Props {
   poster: string;
   /** Responsive sources for the poster. */
   posterSrcset?: string;
+  /** The poster's dark mode version, shown on an embed's poster when the page is dark. */
+  posterDark?: { src: string; srcset?: string; width: number; height: number };
   /** What the poster shows when it is not inside the labelled play link. */
   posterAlt?: string;
   /** The media’s own width. */
@@ -60,6 +62,7 @@ const {
   id,
   poster,
   posterSrcset,
+  posterDark,
   posterAlt = '',
   mediaWidth,
   mediaHeight,
@@ -96,7 +99,7 @@ const embedSrc =
     ) : (
       <div class="embed-box" data-ratio={ratio}>
         <a class="facade" href={pageHref} aria-label={`Play video: ${title}${spoken ? ` (${spoken})` : ''}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
-          <Image src={poster} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} />
+          <Image src={poster} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} dark={posterDark} />
           <span class="play-mark" aria-hidden="true">
             <svg class="play-icon" viewBox={play.viewBox} focusable="false" data-icon={play.name}><Fragment set:html={play.body} /></svg>
           </span>

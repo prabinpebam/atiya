@@ -5,6 +5,7 @@ Where the pictures, videos and files the content uses live in the repository, wh
 > **TL;DR.**
 > - **Where:** every content asset lives under `content/media/`, in a folder named after what owns it: a content item (`articles/<id>/`, `case-studies/<id>/`, `galleries/<id>/`), a structure's node or place (`structures/site/<node>/`, `structures/planet/<place>/`), a person, the site, or `shared/`.
 > - **Master and sidecar:** each asset is a master file plus a JSON sidecar with the same name, holding alt text, caption, credit, licence and focus point. The asset's ID is its path without the extension.
+> - **Dark mode versions:** a picture can have a second master for dark pages (`cover.dark.webp`, named in its sidecar). The site shows it whenever the page is dark; without one, the same picture shows in both modes.
 > - **Generated at build:** masters are committed; the sizes a page needs are generated at build by Astro's image pipeline and are never committed. Video, captions and PDFs are copied as they are.
 > - **Budgets:** photos at most 2560 px and 1.5 MB, video at most 20 MB and 90 seconds (longer goes to YouTube or Vimeo), no Git LFS. The check enforces them.
 > - **With a backend,** the same IDs resolve through the backend's media service instead. Only the media resolver's strategy changes.
@@ -154,6 +155,7 @@ content/media/
 | `source` | all | no | Where a third-party asset came from (URL) |
 | `focus` | image | no | The point to keep in a crop, as CSS `object-position` (default `50% 50%`) |
 | `crop` | image | no | A cropped copy's record: `from` (the original's ID) and `x`, `y`, `width`, `height` in the original's pixels. Cropping the copy again starts from there ([§9](#9-shapes-thumbnails-and-crops)) |
+| `dark` | image | no | Its dark mode version: `{ "file": "cover.dark.webp" }`, a second master beside it, shown instead when the page is dark ([§10](#10-dark-mode-versions)). Left out, the same picture shows in both modes |
 | `poster` | video | yes | A media ID (an image with alt text) |
 | `captions` | video | yes | `[{ "file": "walkthrough.en.vtt", "srclang": "en", "label": "English", "default": true }]` |
 | `transcript` | video, audio | when speech carries meaning | Markdown |
@@ -242,3 +244,15 @@ A picture is shown in one of two ways, and never cropped blindly:
 - cropping a cropped copy cuts again from its original (so it can grow back) and updates the copy, everywhere it's used;
 - a use can ask for another copy of a copy (the thumbnail cut from the lead picture's copy is a second copy of the original);
 - a copy is a picture like any other: its own master within the budgets, its own sidecar. If its original is deleted, it stays, and cropping it again starts from itself.
+
+## 10. Dark mode versions
+
+A picture made for a light page can glare on a dark one, or vanish into it (a diagram with dark lines, a logo, a screenshot). So a picture can have a **dark mode version**: the same picture, in colours for a dark page.
+
+- **It's part of the picture,** not a picture of its own: a second master beside it, `<name>.dark.webp`, named in the sidecar as `"dark": { "file": "<name>.dark.webp" }`. It has the same ID, so every use of the picture gets it, and it shares the picture's alt text, caption, credit, licence and focus point. The content check refuses a dark master the sidecar doesn't name, a named one that's missing, and one that doesn't share the picture's name.
+- **The site shows it whenever the page is dark:** the reader's chosen theme (the header's switch), or their system's when they haven't chosen. Without one, the same picture shows in both modes.
+  - The `Image` fundamental draws it as a `<picture>` whose dark `<source>` answers to the system's `prefers-color-scheme`. Pictures are the one thing that follows a chosen theme by script, since an `<img>` can't take its picture from a colour role: the page's head points each dark source at a chosen theme as the page is read (so the first picture fetched is the right one), and `followThemeInPictures` (`src/site/scripts/theme.ts`) keeps them on it as the theme changes.
+  - Figures, galleries, carousels (their filmstrips too), lead pictures, cards, a video's poster, the hero and avatars all pass it on. The lightbox opens the dark version while the page is dark, and changes with the theme while it's open. The social card (`og:image`) stays the light picture.
+- **The same shape:** a dark version should match its picture's shape, or a page shifts when the theme changes. Edit mode says so when they differ; the page still lays out without a jump, since the dark source carries its own size.
+- **It follows the picture:** a crop cuts it from the same place (scaled, if its size differs), Replace keeps it, and Delete deletes it. It's within the same budgets as every master ([§4](#4-formats-and-budgets)), transparency kept.
+- **In edit mode** it's added, replaced and removed from the picture's details in Media ([its spec, §6.2](../editor/spec.md#62-dark-mode-versions)), and the library marks the pictures that have one.

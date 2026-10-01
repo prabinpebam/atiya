@@ -218,11 +218,15 @@ const { id = 'site-lightbox' } = Astro.props;
 <script>
   import { each } from '../../scripts/page';
   import { counter, swipe, wrap } from '../../scripts/media';
+  import { pageIsDark } from '../../scripts/theme';
 
   interface LightboxItem {
     link: HTMLAnchorElement;
     href: string;
     thumb: string;
+    /** Its dark mode version's full size and thumbnail, if it has one. */
+    hrefDark?: string;
+    thumbDark?: string;
     caption: string;
     alt: string;
   }
@@ -233,10 +237,15 @@ const { id = 'site-lightbox' } = Astro.props;
       link,
       href: link.href,
       thumb: link.dataset.thumb || img?.currentSrc || img?.src || link.href,
+      hrefDark: link.dataset.fullDark,
+      thumbDark: link.dataset.thumbDark,
       caption: link.dataset.caption || '',
       alt: link.dataset.alt || img?.alt || '',
     };
   };
+  // a picture's dark version shows in the lightbox, as on the page, while the page is dark
+  const fullOf = (item: LightboxItem) => (item.hrefDark && pageIsDark() ? item.hrefDark : item.href);
+  const thumbOf = (item: LightboxItem) => (item.thumbDark && pageIsDark() ? item.thumbDark : item.thumb);
 
   each<HTMLDialogElement>('[data-lightbox-dialog]', (dialog, signal) => {
     if (dialog.dataset.ready !== undefined) return;
@@ -261,10 +270,10 @@ const { id = 'site-lightbox' } = Astro.props;
 
     const preload = (i: number) => {
       if (items.length < 2) return;
-      const src = items[wrap(i, items.length)]?.href;
-      if (!src) return;
+      const item = items[wrap(i, items.length)];
+      if (!item) return;
       const img = new Image();
-      img.src = src;
+      img.src = fullOf(item);
     };
 
     const paintStrip = () => {
@@ -276,7 +285,7 @@ const { id = 'site-lightbox' } = Astro.props;
         button.setAttribute('aria-label', item.alt ? `Show picture ${i + 1}: ${item.alt}` : `Show picture ${i + 1}`);
         if (i === index) button.setAttribute('aria-current', 'true');
         const img = document.createElement('img');
-        img.src = item.thumb;
+        img.src = thumbOf(item);
         img.alt = '';
         button.append(img);
         button.addEventListener('click', () => render(i));
@@ -290,7 +299,7 @@ const { id = 'site-lightbox' } = Astro.props;
       index = wrap(nextIndex, items.length);
       const item = items[index];
       const apply = () => {
-        image.src = item.href;
+        image.src = fullOf(item);
         image.alt = item.alt;
         count.textContent = counter(index, items.length);
         caption.textContent = item.caption;
@@ -329,6 +338,14 @@ const { id = 'site-lightbox' } = Astro.props;
     }, { signal });
 
     close.addEventListener('click', () => dialog.close());
+    // the theme changing while it's open (the switch, another tab, the system): the picture follows
+    const retheme = () => {
+      if (dialog.open && items.length) render(index, true);
+    };
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme, { signal });
+    const themeWatch = new MutationObserver(retheme);
+    themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    signal.addEventListener('abort', () => themeWatch.disconnect());
     prev.addEventListener('click', () => render(index - 1));
     next.addEventListener('click', () => render(index + 1));
     dialog.addEventListener('click', (event) => {

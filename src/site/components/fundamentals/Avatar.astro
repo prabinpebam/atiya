@@ -9,13 +9,15 @@ interface Props {
   name: string;
   /** The picture (square; it’s cropped round). */
   src?: string;
+  /** Its dark mode version, shown when the page is dark. */
+  srcDark?: string;
   /** sm 40 px, md 56 px, lg 96 px. */
   size?: 'sm' | 'md' | 'lg';
   /** The name is written next to it: hide the picture from assistive tech. */
   decorative?: boolean;
 }
 
-const { name, src, size = 'md', decorative = false } = Astro.props;
+const { name, src, srcDark, size = 'md', decorative = false } = Astro.props;
 const initials = name
   .split(/\s+/)
   .filter(Boolean)
@@ -25,7 +27,12 @@ const initials = name
 ---
 
 {
-  src ? (
+  src && srcDark ? (
+    <picture class="themed">
+      <source srcset={srcDark} media="(prefers-color-scheme: dark)" data-dark="" />
+      <img class="avatar" data-size={size} src={src} alt={decorative ? '' : name} width="192" height="192" loading="lazy" decoding="async" />
+    </picture>
+  ) : src ? (
     <img class="avatar" data-size={size} src={src} alt={decorative ? '' : name} width="192" height="192" loading="lazy" decoding="async" />
   ) : (
     <span class="avatar initials" data-size={size} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : name} aria-hidden={decorative ? 'true' : undefined}>
@@ -35,6 +42,11 @@ const initials = name
 }
 
 <style>
+  /* the wrapper of a picture with a dark version takes no box */
+  .themed {
+    display: contents;
+  }
+
   .avatar {
     flex: none;
     display: inline-grid;

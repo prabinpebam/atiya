@@ -152,6 +152,43 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
     { signal },
   );
 
+  // ---------- its dark mode version: added or replaced, or removed ----------
+  const darkForm = root.querySelector<HTMLFormElement>('[data-editor-media-dark]');
+  darkForm?.addEventListener(
+    'submit',
+    async (e) => {
+      e.preventDefault();
+      const d = new FormData(darkForm);
+      const file = d.get('file');
+      if (!(file instanceof File) || !file.size) return say(darkForm, 'Choose the dark version.');
+      say(darkForm, '');
+      saveStatus.saving();
+      const r = await api<{ width: number; height: number; lightWidth: number; lightHeight: number }>('POST', `media/${state.id}/dark`, d);
+      if (!r.ok) {
+        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The dark version wasn't saved.";
+        saveStatus.failed(`Not saved: ${why}`);
+        return say(darkForm, why);
+      }
+      delete darkForm.dataset.unsaved;
+      await swapRegions(['media-details', 'media-grid']);
+      const { width, height, lightWidth, lightHeight } = r.data;
+      const differs = lightWidth && lightHeight && Math.abs(width / height / (lightWidth / lightHeight) - 1) > 0.01;
+      saveStatus.saved(`Saved the dark version of ${nameOf(state.id)}${differs ? ': its shape differs from the picture\u2019s' : ''}`);
+    },
+    { signal },
+  );
+  root.querySelector('[data-editor-media-dark-remove]')?.addEventListener(
+    'click',
+    async () => {
+      saveStatus.saving();
+      const r = await api('DELETE', `media/${state.id}/dark`);
+      if (!r.ok) return saveStatus.failed(`Not removed: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'the change was refused'}`);
+      await swapRegions(['media-details', 'media-grid']);
+      saveStatus.saved(`Removed the dark version of ${nameOf(state.id)}: the picture shows in both modes`);
+    },
+    { signal },
+  );
+
   // ---------- replace ----------
   const replace = root.querySelector<HTMLFormElement>('[data-editor-media-replace]');
   replace?.addEventListener(

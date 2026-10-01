@@ -16,6 +16,8 @@ export interface HeroPicture {
   alt: string;
   width: number;
   height: number;
+  /** Its dark mode version, shown when the page is dark. */
+  dark?: { src: string; srcset?: string; width: number; height: number };
 }
 
 interface Props {
@@ -67,6 +69,7 @@ const titleId = `hero-${Math.random().toString(36).slice(2, 8)}`;
           ratio={layout === 'split' ? '4/3' : '21/9'}
           radius="feature"
           priority
+          dark={picture.dark}
         />
       </div>
     )

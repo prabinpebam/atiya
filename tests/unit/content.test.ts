@@ -198,6 +198,18 @@ describe('the loader checks what it is given', () => {
     expect(problems({ ...base, '/content/articles/a.json': { ...article, summary: 'x'.repeat(161) } }).join('\n')).toMatch(/summary/);
   });
 
+  it("a picture's dark version: named by its sidecar, beside its master, and nowhere else", () => {
+    const pic = base['/content/media/articles/a/pic.json'];
+    const withDark = { ...base, '/content/media/articles/a/pic.json': { ...pic, dark: { file: 'pic.dark.webp' } } };
+    const both = new Set([...masters, '/content/media/articles/a/pic.dark.webp']);
+    expect(loadContent(withDark, both).media.get('articles/a/pic')?.darkMaster).toBe('/content/media/articles/a/pic.dark.webp');
+    expect(loadContent(base, masters).media.get('articles/a/pic')?.darkMaster).toBeUndefined();
+    expect(problems(withDark, masters).join('\n')).toMatch(/pic\.json: dark\.file: its dark version content\/media\/articles\/a\/pic\.dark\.webp is missing/);
+    expect(problems(base, both).join('\n')).toMatch(/pic\.dark\.webp: a dark version its picture doesn't name/);
+    expect(problems({ ...base, '/content/media/articles/a/pic.json': { ...pic, dark: { file: 'other.dark.webp' } } }, new Set([...masters, '/content/media/articles/a/other.dark.webp'])).join('\n')).toMatch(/must share the sidecar's name/);
+    expect(problems({ ...base, '/content/media/articles/a/pic.json': { ...pic, dark: { file: 'pic-dark.webp' } } }, both).join('\n')).toMatch(/dark\.file/);
+  });
+
   it('a draft can be placed: its address is resolved and checked, but only published items are built', () => {
     const article = base['/content/articles/a.json'];
     const c = loadContent({ ...base, '/content/articles/a.json': { ...article, status: 'draft' } }, masters);

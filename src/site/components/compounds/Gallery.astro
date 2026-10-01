@@ -31,6 +31,8 @@ export interface GalleryItem {
   thumb?: string;
   /** Which part stays in a crop. */
   focus?: string;
+  /** Its dark mode version, shown when the page is dark. */
+  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string };
 }
 
 interface Props {
@@ -63,7 +65,7 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
         const thumb = item.thumb ?? item.src;
         const itemCaption = item.caption ?? '';
         return (
-          <a class="card" href={full} data-lightbox={lightbox} data-caption={itemCaption} data-thumb={thumb} data-alt={item.alt}>
+          <a class="card" href={full} data-lightbox={lightbox} data-caption={itemCaption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined}>
             <span class="image-shell">
               <Image
                 src={item.src}
@@ -77,6 +79,7 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
                 focus={item.focus}
                 radius={width === 'full' ? 'none' : 'default'}
                 fill
+                dark={item.dark}
               />
             </span>
           </a>

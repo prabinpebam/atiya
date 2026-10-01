@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
 import { deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
-import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, parseUploadCrop, replaceMaster, saveSidecar, upload } from '../../src/site/editor/server/media';
+import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload } from '../../src/site/editor/server/media';
 import { changes, discard, publish, push } from '../../src/site/editor/server/git';
 import editor from '../../integrations/editor.mjs';
 
@@ -202,6 +202,35 @@ describe('the crop: a copy, never the original (documentation/editor/spec.md §6
     const other = await cropMedia(small.id, { x: 224, y: 0, width: 576, height: 576 }, { copy: true });
     expect(other).toMatchObject({ ok: true, id: 'articles/a/mark-1x1' });
     expect(readDoc('/content/media/articles/a/mark-1x1.json')?.value).toMatchObject({ crop: { from: id } });
+  });
+
+  it("a picture's dark version: added beside it, kept by its details' save, carried into a crop, removed, and deleted with it", async () => {
+    const { id } = await add();
+    const sidecar = () => readDoc<Record<string, unknown>>(`/content/media/${id}.json`)!;
+    // a dark version of another size (its crops scale to it), transparency kept
+    const r = await setDark(id, await png(512, 288, true));
+    expect(r).toMatchObject({ ok: true, width: 512, height: 288, lightWidth: 1024, lightHeight: 576 });
+    expect(sidecar().value).toMatchObject({ dark: { file: 'mark.dark.webp' } });
+    expect(await size('mark.dark.webp')).toEqual([512, 288, true]);
+    // the details form can't change it
+    expect(await saveSidecar(id, { kind: 'image', file: 'mark.webp', alt: 'The mark, again', visibility: 'public' }, { [`/content/media/${id}.json`]: sidecar().version })).toMatchObject({ ok: true });
+    expect(sidecar().value).toMatchObject({ alt: 'The mark, again', dark: { file: 'mark.dark.webp' } });
+    // a crop cuts it too, from the same place in its own pixels
+    const copy = (await cropMedia(id, { x: 0, y: 0, width: 512, height: 576 })) as { id: string };
+    expect(readDoc(`/content/media/${copy.id}.json`)?.value).toMatchObject({ dark: { file: `${copy.id.split('/').pop()}.dark.webp` } });
+    expect(await size(`${copy.id.split('/').pop()}.dark.webp`)).toEqual([256, 288, true]);
+    // replacing it keeps one file; removing it takes it off the picture
+    expect(await setDark(id, await png(1024, 576))).toMatchObject({ ok: true });
+    expect(await size('mark.dark.webp')).toEqual([1024, 576, false]);
+    expect(await removeDark(id)).toMatchObject({ ok: true });
+    expect(sidecar().value).not.toHaveProperty('dark');
+    expect(existsSync(join(content, 'media/articles/a/mark.dark.webp'))).toBe(false);
+    expect(await removeDark(id)).toMatchObject({ ok: false, status: 422 });
+    // deleting a picture deletes its dark version with it
+    await setDark(copy.id, await png(512, 576));
+    expect(await deleteMedia(copy.id)).toMatchObject({ ok: true });
+    expect(existsSync(join(content, `media/${copy.id}.dark.webp`))).toBe(false);
+    expect(existsSync(join(content, `media/${copy.id}.webp`))).toBe(false);
   });
 
   it('refuses a rectangle outside the picture or in part pixels, and writes nothing', async () => {

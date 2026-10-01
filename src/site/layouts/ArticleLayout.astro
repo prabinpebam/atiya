@@ -35,10 +35,10 @@ interface Props {
     title: string;
     standfirst?: string;
     topic?: { label: string; href?: string };
-    author?: { name: string; avatar?: string };
+    author?: { name: string; avatar?: string; avatarDark?: string };
     date?: string;
     readingTime?: string;
-    picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string };
+    picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
     pictureWidth?: 'wide' | 'full';
   };
   /** A drop cap on the opening paragraph. */

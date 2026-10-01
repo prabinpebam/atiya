@@ -26,8 +26,8 @@ interface Props {
   topic?: string;
   /** When, or how long it takes to read. */
   meta?: string;
-  /** The story’s picture, shown whole in a 3:2 frame (never cropped). */
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number };
+  /** The story’s picture, shown whole in a 3:2 frame (never cropped), and its dark mode version if it has one. */
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; dark?: { src: string; srcset?: string; width: number; height: number } };
   /** standard: picture above; feature: picture beside, larger type; row: words first, a small picture at the end (a list); compact: no picture. */
   variant?: 'standard' | 'feature' | 'row' | 'compact';
   /** The title’s heading level: h2 on an index, h3 under a section heading. */
@@ -51,6 +51,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
             height={picture.height}
             ratio={PICTURE_SPECS.thumbnail.ratio}
             fit="contain"
+            dark={picture.dark}
           />
         </div>
       </div>

@@ -12,6 +12,8 @@ export interface MediaRecord extends ImageMedia {
   id: string;
   /** The master's path from the project root (/content/media/…). */
   master: string;
+  /** Its dark mode version's master (/content/media/….dark.webp), if it has one. */
+  darkMaster?: string;
 }
 
 export interface ContentIndex {
@@ -114,14 +116,19 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       if (!s) continue;
       const dir = file.slice(0, file.lastIndexOf('/') + 1);
       const master = dir + s.file;
+      const darkMaster = s.dark ? dir + s.dark.file : undefined;
       if (s.file.replace(/\.\w+$/, '') !== name) add(file, `the master "${s.file}" must share the sidecar's name`, 'file');
       else if (!masters.has(master)) add(file, `its master ${master.slice(1)} is missing`);
-      else media.set(m[1], { ...s, id: m[1], master });
+      else if (s.dark && s.dark.file.replace(/\.dark\.\w+$/, '') !== name) add(file, `the dark version "${s.dark.file}" must share the sidecar's name (${name}.dark.webp)`, 'dark.file');
+      else if (darkMaster && !masters.has(darkMaster)) add(file, `its dark version ${darkMaster.slice(1)} is missing`, 'dark.file');
+      else media.set(m[1], { ...s, id: m[1], master, ...(darkMaster ? { darkMaster } : {}) });
     } else add(file, 'not a resource the content model knows');
   }
   for (const master of masters) {
-    const sidecar = master.replace(/\.\w+$/, '.json');
+    const dark = /\.dark\.\w+$/.test(master);
+    const sidecar = master.replace(dark ? /\.dark\.\w+$/ : /\.\w+$/, '.json');
     if (!(sidecar in docs)) add(master, `a master without its sidecar (${sidecar.split('/').pop()})`);
+    else if (dark && (docs[sidecar] as { dark?: { file?: string } } | null)?.dark?.file !== master.split('/').pop()) add(master, `a dark version its picture doesn't name (add it as "dark" in ${sidecar.split('/').pop()}, or delete it)`);
   }
   if (!site) add('content/site.json', 'missing');
   if (!structure) add('content/structures/site.json', 'missing');

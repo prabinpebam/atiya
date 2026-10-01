@@ -38,6 +38,8 @@ export interface MediaCard {
   height: number;
   /** Something refers to it; the library marks the ones nothing uses. */
   used?: boolean;
+  /** It has a dark mode version. */
+  dark?: boolean;
 }
 
 interface Props {
@@ -97,6 +99,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
             <Image src={m.thumb} alt="" width={m.width} height={m.height} ratio="4/3" fit="contain" radius="default" />
             <span class="id">{m.id.split('/').pop()}</span>
             {mode === 'library' && m.used === false && <Tag size="sm">Not used</Tag>}
+            {m.dark && <Tag size="sm">Dark version</Tag>}
             {!m.alt && !m.decorative && (
               <span class="missing">
                 <Icon name="error" tone="tonal" />

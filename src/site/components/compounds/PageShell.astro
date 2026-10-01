@@ -91,10 +91,28 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
     {router && <ClientRouter />}
     <script is:inline>
       // the saved theme, before the first paint (scripts/theme.ts owns the rules)
+      var siteTheme = '';
       try {
-        var t = localStorage.getItem('site.theme');
-        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        siteTheme = localStorage.getItem('site.theme') || '';
+        if (siteTheme === 'light' || siteTheme === 'dark') document.documentElement.dataset.theme = siteTheme;
       } catch (e) {}
+      // a picture's dark version follows a chosen theme, not only the system's: each dark source is
+      // pointed at it as the page is read, before its picture is chosen (theme.ts darkSourceMedia keeps it after)
+      var darkMedia = siteTheme === 'dark' ? 'all' : siteTheme === 'light' ? 'not all' : '';
+      if (darkMedia && window.MutationObserver) {
+        var darkSources = new MutationObserver(function (records) {
+          for (var i = 0; i < records.length; i++) {
+            for (var j = 0; j < records[i].addedNodes.length; j++) {
+              var n = records[i].addedNodes[j];
+              if (n.nodeName === 'SOURCE' && n.hasAttribute('data-dark')) n.media = darkMedia;
+            }
+          }
+        });
+        darkSources.observe(document.documentElement, { childList: true, subtree: true });
+        document.addEventListener('DOMContentLoaded', function () {
+          darkSources.disconnect();
+        });
+      }
       // a page swapped in without a reload keeps the theme chosen on this one
       if (!window.siteThemeSwap) {
         window.siteThemeSwap = true;
@@ -115,10 +133,12 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
 <script>
   import { each } from '../../scripts/page';
   import { overlay, overlayPage } from '../../scripts/scrollbars';
-  import { followTheme } from '../../scripts/theme';
+  import { followTheme, followThemeInPictures } from '../../scripts/theme';
 
   // a theme chosen on another page of the site (another tab, or edit mode around its canvas) applies here too
   followTheme(document.documentElement);
+  // pictures with a dark version show it with the page's theme, whichever way it was chosen
+  followThemeInPictures(document.documentElement);
 
   // the frosted overlay handles: the page's own, and every region that opts in
   overlayPage();

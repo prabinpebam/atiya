@@ -3,11 +3,13 @@
  * A picture's details in the media library (documentation/editor/spec.md §6): the picture with its focus
  * point (click where a crop must keep), its alt text, caption, credit, licence and source, where it's
  * used, Crop (a cropped copy, or a copy cut again from its original; with the copies cut from it, or the
- * picture it was cut from), Replace and Delete. The details save to the picture's sidecar, so they
+ * picture it was cut from), its dark mode version (added, replaced or removed; shown beside the picture,
+ * each on a page of its own mode), Replace and Delete. The details save to the picture's sidecar, so they
  * aren't part of any article's undo. Delete is offered only when nothing refers to it.
  * @tier editor
  * @a11y The focus point is set with a button over the picture (a click places it; the arrow keys move it by 5%, Home puts it back in the centre), and the point is read out in words.
  * @a11y A picture that can't be deleted says why, next to the disabled button.
+ * @a11y The dark mode version's previews are named Light and Dark in words; a shape that differs is said in words.
  * @key Arrow keys (on the picture): move the focus point by 5%
  * @key Home (on the picture): the centre
  */
@@ -32,6 +34,8 @@ export interface PictureDetails {
   /** The sidecar as it is on disk, and its version (for the save's If-Match). */
   sidecar: ImageMedia;
   version: string;
+  /** Its dark mode version, if it has one. */
+  dark?: { src: string; srcset: string; width: number; height: number };
 }
 
 interface Props {
@@ -130,6 +134,36 @@ const state = picture ? JSON.stringify({ id: picture.id, version: picture.versio
             <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>
           </div>
         </section>
+
+        <form class="part" data-editor-media-dark novalidate aria-labelledby="media-dark-title">
+          <Heading level={3} size="ui" id="media-dark-title">Dark mode version</Heading>
+          {picture.dark ? (
+            <>
+              <div class="pair">
+                <figure class="side" data-scheme="light">
+                  <Image src={picture.src} alt="" width={picture.width} height={picture.height} ratio="4/3" fit="contain" radius="default" />
+                  <figcaption>Light</figcaption>
+                </figure>
+                <figure class="side" data-scheme="dark">
+                  <Image src={picture.dark.src} alt="" width={picture.dark.width} height={picture.dark.height} ratio="4/3" fit="contain" radius="default" />
+                  <figcaption>Dark</figcaption>
+                </figure>
+              </div>
+              <Text variant="small" tone="muted">{`Shown instead of the picture when the page is dark (${picture.dark.width} \u00d7 ${picture.dark.height}). Its alt text, caption, credit and focus point are the picture's, and its crops cut it too.`}</Text>
+              {Math.abs(picture.dark.width / picture.dark.height / (picture.width / picture.height) - 1) > 0.01 && (
+                <Text variant="small" tone="negative">{`Its shape differs from the picture's (${picture.width} \u00d7 ${picture.height}), so a page shifts when the theme changes. Use a dark version of the same shape.`}</Text>
+              )}
+            </>
+          ) : (
+            <Text variant="small" tone="muted">None: the same picture shows in light and dark mode. Add one when a picture needs other colours on a dark page (a diagram, a logo, a screenshot).</Text>
+          )}
+          <FileField label={picture.dark ? 'New dark version' : 'Dark version'} name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="The same picture, in colours for a dark page, and of the same shape. Saved as WebP within the budgets, with its transparency." />
+          <p class="issue" role="alert" data-editor-form-issue hidden />
+          <div class="actions">
+            {picture.dark && <Button variant="quiet" icon="delete" data-editor-media-dark-remove="">Remove it</Button>}
+            <Button variant="secondary" type="submit" icon="upload">{picture.dark ? 'Replace it' : 'Add it'}</Button>
+          </div>
+        </form>
 
         <form class="part" data-editor-media-replace novalidate aria-labelledby="media-replace-title">
           <Heading level={3} size="ui" id="media-replace-title">Replace the picture</Heading>
@@ -251,6 +285,34 @@ const state = picture ? JSON.stringify({ id: picture.id, version: picture.versio
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  /* the two versions side by side, each on a page of its own mode */
+  .pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .side {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: var(--space-3);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    text-align: center;
+  }
+
+  .side[data-scheme='light'] {
+    color-scheme: light;
+  }
+
+  .side[data-scheme='dark'] {
+    color-scheme: dark;
   }
 </style>
 

@@ -789,6 +789,44 @@ test.describe('editor', () => {
     expect(blocks()[p + 1]).toMatchObject({ type: 'figure', media: expect.stringMatching(new RegExp(`^articles/${ARTICLE}/pasted-picture-\\d{4}-\\d{2}-\\d{2}(-\\d+)?$`)) });
   });
 
+  test("a picture's dark version: added in Media, shown on the site in dark mode (the lightbox too) and not in light, and removed", async ({ page, context }) => {
+    const blocks = readJson(articleFile()).body as { type: string; media?: string; lightbox?: boolean }[];
+    const fig = blocks.find((b) => b.type === 'figure' && b.lightbox)!;
+    const sidecarFile = join(FIXTURE, `content/media/${fig.media}.json`);
+    await page.goto(`/_edit/media/?id=${fig.media}`);
+    const form = page.locator('[data-editor-media-dark]');
+    await expect(form).toContainText('None: the same picture shows in light and dark mode');
+    const { width, height } = (await sharp(readFileSync(join(FIXTURE, `content/media/${fig.media}.webp`))).metadata()) as { width: number; height: number };
+    const night = await sharp({ create: { width, height, channels: 3, background: { r: 12, g: 16, b: 40 } } }).png().toBuffer();
+    await form.locator('input[type="file"]').setInputFiles({ name: 'night.png', mimeType: 'image/png', buffer: night });
+    await form.getByRole('button', { name: 'Add it' }).click();
+    await expect(status(page)).toHaveText(/^Saved the dark version of /, { timeout: 30_000 });
+    const name = fig.media!.split('/').pop();
+    expect(readJson(sidecarFile).dark).toEqual({ file: `${name}.dark.webp` });
+    await expect(page.locator('[data-editor-media-dark] figure[data-scheme="dark"]')).toBeVisible();
+    await expect(page.locator(`[data-editor-media="${fig.media}"]`)).toContainText('Dark version');
+
+    // on the site: the dark version in dark mode, the picture in light mode, and the lightbox follows
+    const site = await context.newPage();
+    await site.addInitScript(() => localStorage.setItem('site.theme', 'dark'));
+    await site.goto(`/leadership/${ARTICLE}/`);
+    const img = site.locator(`a[data-full-dark*="${name}.dark"] img`).first();
+    await img.scrollIntoViewIfNeeded();
+    const shown = () => img.evaluate((i: HTMLImageElement) => decodeURIComponent(i.currentSrc));
+    await expect.poll(shown, { timeout: 15_000 }).toContain(`${name}.dark.webp`);
+    await img.click();
+    await expect.poll(() => site.locator('[data-lightbox-image]').evaluate((i: HTMLImageElement) => decodeURIComponent(i.src))).toContain(`${name}.dark.webp`);
+    await site.keyboard.press('Escape');
+    await site.evaluate(() => (document.documentElement.dataset.theme = 'light'));
+    await expect.poll(shown, { timeout: 15_000 }).not.toContain('.dark.webp');
+
+    // removed: the same picture in both modes
+    await page.getByRole('button', { name: 'Remove it' }).click();
+    await expect(status(page)).toHaveText(/^Removed the dark version of /, { timeout: 15_000 });
+    expect(readJson(sidecarFile)).not.toHaveProperty('dark');
+    await expect(form).toContainText('None: the same picture shows in light and dark mode');
+  });
+
   test('sections: the sections beside the chosen one\'s pages and settings; a new section moved up; a published page dragged onto another section, back with Move, its old address simply gone; the keys; a selection moved together; Find and Show', async ({ page }) => {
     const structure = () => readJson(join(FIXTURE, 'content/structures/site.json'));
     const ids = () => structure().home.children.map((c: { id: string }) => c.id) as string[];

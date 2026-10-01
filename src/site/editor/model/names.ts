@@ -1,16 +1,16 @@
 /**
  * What a changed content file is, in words (documentation/editor/spec.md §7): "Article: Do what makes you
- * proud", "Media: articles/x/cover", "Sections". A picture's master and its sidecar are one resource
- * (they're added, discarded and published together). Pure, for the Publish screen and its tests.
+ * proud", "Media: articles/x/cover", "Sections". A picture's master, its dark version and its sidecar are
+ * one resource (they're added, discarded and published together). Pure, for the Publish screen and its tests.
  */
 export interface Titles {
   article(id: string): string | undefined;
   person(id: string): string | undefined;
 }
 
-const MEDIA = /^\/content\/media\/(.+)\.(json|webp|jpe?g|png|avif)$/;
+const MEDIA = /^\/content\/media\/(.+?)(?:\.dark)?\.(json|webp|jpe?g|png|avif)$/;
 
-/** The resource a file belongs to: a picture's master and sidecar share one (/content/media/<id>); any other file is its own. */
+/** The resource a file belongs to: a picture's master, dark version and sidecar share one (/content/media/<id>); any other file is its own. */
 export const resourceOf = (key: string) => {
   const m = MEDIA.exec(key);
   return m ? `/content/media/${m[1]}` : key;

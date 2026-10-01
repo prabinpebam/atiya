@@ -295,6 +295,7 @@ The site structure ([structures §2](../content/ia.md#2-the-site-structure)) in 
   - alt text (required unless marked decorative; at most 250 characters; never "image of"), caption, credit, licence and source;
   - **Used in**: every document that refers to it, linking to the editor;
   - **Crop**: Crop the picture (§6.1); a cropped copy links to its original, and an original lists its copies;
+  - **Dark mode version**: add, replace or remove it (§6.2);
   - Delete, only when nothing refers to it: no article in any state (its hero, thumbnail, blocks or social image), no person and not the site settings.
 - **Uploading** takes drag and drop, a file picker or a paste (Ctrl+V while the form shows, in the library or the picker), into an owner's folder (the article being edited, or `shared`). The chosen picture shows at once, as it will be uploaded: on a checkerboard so its transparency shows, with its size, its format and whether it's transparent. **Crop it** opens the crop dialog (§6.1) on the file itself; the crop goes with the upload (in the pixels the browser showed, which the server scales to the file's own) and is cut from the full-quality file before the master is made, and Undo the crop takes it back. It takes any picture: the server reads JPEG, PNG, WebP, AVIF, GIF (its first frame), TIFF and SVG (drawn at the master's full size); anything else the browser can decode (BMP, ICO…) is drawn into a PNG there first, its transparency kept, and a format neither can read (HEIC in Chrome) is refused with what to do. Each file asks for its alt text (or to be marked decorative) before it's saved. The editor then makes the master:
   - WebP (lossless if the source had transparency);
@@ -315,7 +316,14 @@ The crop follows the pattern of the established editors (Photos, WordPress's ima
 - **The readout** gives the size it makes ("1024 × 439 px (21:9), from 1024 × 576"), a polite live region; a warning says when that's narrower than its use shows.
 - **Keys** (on the crop area, which has the focus when it opens): the arrows move it by 1% of the picture (10% with Shift), + and − resize it, Home centres it. Shape, Size and a click to centre are the single-pointer ways (WCAG 2.5.7).
 - **Save the crop** never changes an original ([media §9](../content/media.md#9-shapes-thumbnails-and-crops)): an original is cut into a copy beside it, which the field then uses (or the library opens); a cropped copy is cut again from its original and updated where it's used. The dialog says which before you save.
-- **Built as:** `CropDialog.astro` and `scripts/crop.ts` (one dialog per screen, opened with `openCrop`), the geometry pure in `model/crop.ts` (unit-tested), and `GET`/`POST media/<id>/crop` (`cropSource`, `cropMedia` in `server/media.ts`), which cut with sharp and encode the copy as every master is.
+- **Built as:** `CropDialog.astro` and `scripts/crop.ts` (one dialog per screen, opened with `openCrop`), the geometry pure in `model/crop.ts` (unit-tested), and `GET`/`POST media/<id>/crop` (`cropSource`, `cropMedia` in `server/media.ts`), which cut with sharp and encode the copy as every master is. A picture's dark mode version (§6.2) is cut with it, from the same place.
+
+### 6.2 Dark mode versions
+
+A picture can have a dark mode version, shown on the site instead of it whenever the page is dark ([media §10](../content/media.md#10-dark-mode-versions)).
+- **In the picture's details** (Media), under Dark mode version: with none, it says the same picture shows in both modes, and **Add it** takes a file (chosen or dropped; any format an upload takes). With one, the two show side by side, each on a page of its own mode (Light, Dark), with its size; **Replace it** and **Remove it** change it. A dark version of another shape is saved, with a warning in words that a page shifts when the theme changes.
+- **The library** tags the pictures that have one ("Dark version").
+- **Kept with the picture:** it's a second master, `<name>.dark.webp`, made like every master (WebP within the budgets, transparency kept) and named in the sidecar's `dark`, written with it in one transaction (`setDark`, `removeDark` in `server/media.ts`; `POST` and `DELETE media/<id>/dark`). Saving the details never changes it; a crop cuts it too (§6.1); Replace keeps it; Delete deletes it; deleting a draft with its own pictures deletes their dark versions with them; Publish and Discard treat it as part of the picture.
 
 ## 7. Publishing
 
@@ -398,7 +406,8 @@ All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's vers
 | `PUT site`, `PUT people/{id}` | Saves the settings or a person |
 | `POST media` | Uploads (multipart: `file`, `alt` or `decorative`, `caption`, `owner`, and `crop`: a JSON rectangle with the size it's in, `{ x, y, width, height, of: { width, height } }`) → `{ id }` |
 | `POST media/{id}/replace` | Writes a new master for a picture, keeping its ID and sidecar (multipart: `file`) |
-| `PUT media/{id}`, `DELETE media/{id}` | Saves a sidecar; deletes an unused master and its sidecar |
+| `POST media/{id}/dark`, `DELETE media/{id}/dark` | Adds or replaces a picture's dark mode version (multipart: `file`, and an optional `crop` as for an upload) → both sizes; removes it |
+| `PUT media/{id}`, `DELETE media/{id}` | Saves a sidecar (never its `dark`); deletes an unused master, its dark version and its sidecar |
 | `GET media` | The library, with thumbnails (for the picker after an upload) |
 | `GET doc?key=`, `GET where?path=` | A document and its version; where the site's Edit button leads from a page |
 | `GET changes` | What differs from the last commit in `content/` |

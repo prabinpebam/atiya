@@ -28,7 +28,7 @@ The rules for the website's pages: the landing, the classic site and the design 
 - **Modes:**
   - A colour role that differs between the contexts is emitted as `light-dark()`.
   - The page follows the system unless `<html data-theme="light|dark">` says otherwise. The header's theme switch (and edit mode's, the same control) sets it, `localStorage['site.theme']` keeps it, and PageShell applies it before the first paint. Every other open page of the site follows a change at once (the `storage` event, `followTheme` in `scripts/theme.ts`).
-  - Any subtree can switch with `color-scheme` (`data-scheme="dark"`). Never branch on the theme in CSS or script.
+  - Any subtree can switch with `color-scheme` (`data-scheme="dark"`). Never branch on the theme in CSS or script, with one exception: a picture's dark mode version ([media §10](../content/media.md#10-dark-mode-versions)). An `<img>` can't take its picture from a colour role, so `Image` draws a `<picture>` whose dark `<source data-dark>` answers to `prefers-color-scheme`, and the page's head and `followThemeInPictures` (`scripts/theme.ts`) point it at a chosen theme. Nothing else reads the theme.
 - **Fluid sizes:** type and whitespace grow between a 360 px and a 1280 px viewport, emitted as `clamp()`. A fluid token's maximum is at most 2.5 times its minimum (WCAG 1.4.4; tested).
 - **Breakpoints:** `@media` can't read a variable, so width queries use exactly the breakpoint tokens: 40 rem, 56 rem, 72 rem (tested).
 

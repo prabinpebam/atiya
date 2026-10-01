@@ -1,7 +1,7 @@
 /** The site's pure behaviour modules: the select's keyboard, the theme, the media helpers, typography, tokens. */
 import { describe, expect, it } from 'vitest';
 import { keyAction, matchIndex, printable } from '../../src/site/scripts/listbox';
-import { applyTheme, parseTheme, readTheme, resolveTheme, themeFromStorage, THEME_KEY, THEME_OPTIONS } from '../../src/site/scripts/theme';
+import { applyTheme, darkSourceMedia, parseTheme, readTheme, resolveTheme, syncDarkSources, themeFromStorage, THEME_KEY, THEME_OPTIONS } from '../../src/site/scripts/theme';
 import { clampIndex, counter, nearest, reveal, swipe, wrap } from '../../src/site/scripts/media';
 import { dragTo, thumbGeometry } from '../../src/site/scripts/scrollbars';
 import { accessibleName, currentIndex, readingLine, JUMP_RATIO, edgeSpeed, isMeaningfulImage, jumpTarget, kindText, repeatsTitle, signature, tidy, waveAt, WAVE } from '../../src/site/scripts/minimap';
@@ -82,6 +82,18 @@ describe('the theme', () => {
     expect(root.dataset.theme).toBeUndefined();
     expect(store.has(THEME_KEY)).toBe(false);
     expect(readTheme({ getItem: () => { throw new Error('private mode'); } })).toBe('system');
+  });
+
+  it("points a picture's dark version at the chosen theme: always in dark, never in light, the system's otherwise", () => {
+    expect(darkSourceMedia('dark')).toBe('all');
+    expect(darkSourceMedia('light')).toBe('not all');
+    expect(darkSourceMedia('system')).toBe('(prefers-color-scheme: dark)');
+    const sources = [{ media: '(prefers-color-scheme: dark)' }, { media: '(prefers-color-scheme: dark)' }];
+    const root = { querySelectorAll: (sel: string) => (sel === 'source[data-dark]' ? sources : []) } as unknown as ParentNode;
+    syncDarkSources(root, 'dark');
+    expect(sources.map((s) => s.media)).toEqual(['all', 'all']);
+    syncDarkSources(root, 'light');
+    expect(sources.map((s) => s.media)).toEqual(['not all', 'not all']);
   });
 
   it("follows a choice made on another page of the site (another tab, edit mode around its canvas), and nothing else it stores", () => {

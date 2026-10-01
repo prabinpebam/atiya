@@ -96,6 +96,7 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
           full={p.full}
           thumb={p.thumb}
           lightbox={b.lightbox ? lightbox : undefined}
+          dark={p.dark}
         />
       );
     }
@@ -118,6 +119,7 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
           title={b.title}
           poster={p.src}
           posterSrcset={p.srcset}
+          posterDark={p.dark}
           posterAlt={p.alt}
           mediaWidth={p.width}
           mediaHeight={p.height}

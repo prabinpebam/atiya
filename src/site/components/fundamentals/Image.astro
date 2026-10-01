@@ -4,9 +4,12 @@
  * text and square at full bleed. It has no background colour of its own, so a transparent picture sits
  * straight on the page. Pictures carry this site, so every
  * one is given the space and the care of a printed plate.
+ * A picture can have a dark mode version: it shows instead when the page is dark (the reader's theme,
+ * or their system's), through a <picture> whose dark source scripts/theme.ts points at the theme.
  * @tier fundamental
  * @a11y alt is required: what the picture shows and why it's there; an empty alt only for decoration.
  * @a11y Width and height are required, so the page doesn't shift as it loads (CLS).
+ * @a11y A dark version is the same picture in other colours: the alt text covers both.
  */
 interface Props {
   /** The picture (the size a middle-sized screen needs). */
@@ -33,30 +36,62 @@ interface Props {
   priority?: boolean;
   /** Fill the container's height too (a gallery cell, a carousel slide). */
   fill?: boolean;
+  /** Its dark mode version (its own src, srcset and size), shown when the page is dark. Without one, the picture shows in both modes. */
+  dark?: { src: string; srcset?: string; width: number; height: number };
 }
 
-const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', focus, radius = 'default', priority = false, fill = false } = Astro.props;
+const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', focus, radius = 'default', priority = false, fill = false, dark } = Astro.props;
 ---
 
-<img
-  class="image"
-  src={src}
-  srcset={srcset}
-  sizes={sizes}
-  alt={alt}
-  width={width}
-  height={height}
-  loading={priority ? 'eager' : 'lazy'}
-  decoding="async"
-  fetchpriority={priority ? 'high' : undefined}
-  data-ratio={ratio}
-  data-fit={fit}
-  data-radius={radius}
-  data-fill={fill ? '' : undefined}
-  style={focus ? `--focus: ${focus}` : undefined}
-/>
+{
+  dark ? (
+    <picture class="themed">
+      <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? sizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />
+      <img
+        class="image"
+        src={src}
+        srcset={srcset}
+        sizes={sizes}
+        alt={alt}
+        width={width}
+        height={height}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
+        fetchpriority={priority ? 'high' : undefined}
+        data-ratio={ratio}
+        data-fit={fit}
+        data-radius={radius}
+        data-fill={fill ? '' : undefined}
+        style={focus ? `--focus: ${focus}` : undefined}
+      />
+    </picture>
+  ) : (
+    <img
+      class="image"
+      src={src}
+      srcset={srcset}
+      sizes={sizes}
+      alt={alt}
+      width={width}
+      height={height}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding="async"
+      fetchpriority={priority ? 'high' : undefined}
+      data-ratio={ratio}
+      data-fit={fit}
+      data-radius={radius}
+      data-fill={fill ? '' : undefined}
+      style={focus ? `--focus: ${focus}` : undefined}
+    />
+  )
+}
 
 <style>
+  /* the wrapper of a picture with a dark version takes no box: the img lays out as it would alone */
+  .themed {
+    display: contents;
+  }
+
   .image {
     display: block;
     width: 100%;

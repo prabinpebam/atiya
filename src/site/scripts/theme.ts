@@ -96,3 +96,29 @@ export function followTheme(root: HTMLElement, target: Pick<Window, 'addEventLis
     document.dispatchEvent(new Event(THEME_EVENT));
   });
 }
+
+/**
+ * The media query a picture's dark source (`source[data-dark]`, Image's dark version) answers to: the
+ * system's preference, or always (a dark theme chosen) or never (a light one). Pictures are the one thing
+ * that follows the chosen theme by script, since an <img> can't take its picture from a colour role.
+ */
+export const darkSourceMedia = (t: Theme): string => (t === 'dark' ? 'all' : t === 'light' ? 'not all' : '(prefers-color-scheme: dark)');
+
+/** Points every picture's dark source under `root` at a theme (the browser then shows the right version). */
+export function syncDarkSources(root: ParentNode, t: Theme): void {
+  const media = darkSourceMedia(t);
+  root.querySelectorAll<HTMLSourceElement>('source[data-dark]').forEach((s) => {
+    if (s.media !== media) s.media = media;
+  });
+}
+
+/** Keeps pictures' dark versions on the page's theme as it changes (a switch, another tab) and on every page swapped in. */
+export function followThemeInPictures(html: HTMLElement): void {
+  const sync = () => syncDarkSources(document, parseTheme(html.dataset.theme));
+  new MutationObserver(sync).observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+  sync();
+  document.addEventListener('astro:page-load', sync);
+}
+
+/** Whether the page shows dark now: its chosen theme, or the system's. */
+export const pageIsDark = (html: HTMLElement = document.documentElement): boolean => resolveTheme(parseTheme(html.dataset.theme), matchMedia('(prefers-color-scheme: dark)').matches) === 'dark';

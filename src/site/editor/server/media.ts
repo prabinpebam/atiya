@@ -3,12 +3,14 @@
  * PNG, WebP, AVIF, GIF, TIFF, SVG; the browser turns others into PNG first) become WebP masters within
  * the budgets (at most 2560 px on the long side and 1.5 MB, metadata stripped, transparency kept), each
  * with its JSON sidecar, in one store transaction, cut first to a crop chosen before the upload, if any;
- * a sidecar's details save to the picture; a picture is cropped into a
+ * a sidecar's details save to the picture; a picture can have a dark mode version (a second master,
+ * `<name>.dark.webp`, named in its sidecar), which its crops, its deletion and its replacement carry along;
+ * a picture is cropped into a
  * copy, never in place (§6.1); a picture is deleted only when nothing refers to it (the content check
  * refuses a deletion that would leave a reference).
  */
 import { imageMedia, type ImageMedia } from '../../content/schema';
-import { commit, jsonBytes, readDoc, readFile, versionOf, type Result } from './store';
+import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { readSnapshot } from '../../content/source';
 import { slugify, unique } from '../model/ids';
 import { ratioLabel, type Rect } from '../model/crop';
@@ -87,7 +89,7 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
   if (u.file.bytes.length > MAX_UPLOAD) return refuse('content/media', 'is larger than 20 MB', 'file');
   const snap = readSnapshot();
   const folder = `/content/media/${u.owner}/`;
-  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/\.\w+$/, '')));
+  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark)?\.\w+$/, '')));
   const name = unique(slugify(u.file.name.replace(/\.[^.]+$/, '')) || 'picture', taken);
   let master: Awaited<ReturnType<typeof toMaster>>;
   try {
@@ -115,12 +117,14 @@ export async function saveSidecar(id: string, sidecar: ImageMedia, ifMatch: Reco
   const key = `/content/media/${id}.json`;
   const current = readDoc<ImageMedia>(key);
   if (!current) return refuse(key.slice(1), "doesn't exist");
-  // the master's file name is fixed: replacing a picture keeps its id and file
-  const next = { ...sidecar, kind: 'image' as const, file: current.value.file };
+  // the master's file name is fixed (replacing a picture keeps its id and file), and its dark version is
+  // set only by setDark and removeDark: the details form never changes either
+  const { dark: _ignored, ...rest } = sidecar;
+  const next: ImageMedia = { ...rest, kind: 'image', file: current.value.file, ...(current.value.dark ? { dark: current.value.dark } : {}) };
   return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
 }
 
-/** Replaces a picture's master, keeping its id and its sidecar. */
+/** Replaces a picture's master, keeping its id and its sidecar (its dark version stays as it is). */
 export async function replaceMaster(id: string, bytes: Buffer): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = `/content/media/${id}.json`;
@@ -134,6 +138,63 @@ export async function replaceMaster(id: string, bytes: Buffer): Promise<Result> 
 
 const sidecarKey = (id: string) => `/content/media/${id}.json`;
 const masterKeyOf = (id: string, sc: ImageMedia) => `/content/media/${id.slice(0, id.lastIndexOf('/'))}/${sc.file}`;
+const darkKeyOf = (id: string, sc: ImageMedia) => (sc.dark ? `/content/media/${id.slice(0, id.lastIndexOf('/'))}/${sc.dark.file}` : null);
+/** Where a picture's dark version goes: beside its master, `<name>.dark.webp`. */
+const darkFileOf = (id: string) => `${id.slice(id.lastIndexOf('/') + 1)}.dark.webp`;
+
+/**
+ * Adds a picture's dark mode version, or replaces it (documentation/editor/spec.md §6.2): a master like
+ * every other (WebP, within the budgets, transparency kept), beside the picture as `<name>.dark.webp`,
+ * named in its sidecar, in one transaction. Answers both sizes, so the editor can say when the two
+ * shapes differ (a page shifts when the theme changes).
+ */
+export async function setDark(id: string, bytes: Buffer, crop?: Upload['crop']): Promise<Result & { width?: number; height?: number; lightWidth?: number; lightHeight?: number }> {
+  if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
+  const key = sidecarKey(id);
+  const sc = readDoc<ImageMedia>(key);
+  if (!sc) return refuse(key.slice(1), "doesn't exist");
+  let master: Awaited<ReturnType<typeof toMaster>>;
+  try {
+    master = await toMaster(crop ? await cutUpload(bytes, crop) : bytes);
+  } catch (e) {
+    return refuse(key.slice(1), `couldn't be read as a picture: ${(e as Error).message}`, 'file');
+  }
+  const darkKey = `/content/media/${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
+  const oldKey = darkKeyOf(id, sc.value);
+  const changes: Change[] = [
+    { key: darkKey, bytes: master.bytes },
+    { key, bytes: jsonBytes({ ...sc.value, dark: { file: darkFileOf(id) } }) },
+  ];
+  const ifMatch: Record<string, string | null> = { [darkKey]: versionOf(readFile(darkKey)), [key]: sc.version };
+  // a dark version kept in another format before: this one replaces it
+  if (oldKey && oldKey !== darkKey) {
+    changes.push({ key: oldKey, bytes: null });
+    ifMatch[oldKey] = versionOf(readFile(oldKey));
+  }
+  const res = await commit({ changes, ifMatch });
+  if (!res.ok) return res;
+  const { default: sharp } = await import('sharp');
+  const light = await sharp(readFile(masterKeyOf(id, sc.value))!).metadata();
+  return { ...res, width: master.width, height: master.height, lightWidth: light.width, lightHeight: light.height };
+}
+
+/** Removes a picture's dark mode version: the same picture shows in both modes again. */
+export async function removeDark(id: string): Promise<Result> {
+  if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
+  const key = sidecarKey(id);
+  const sc = readDoc<ImageMedia>(key);
+  if (!sc) return refuse(key.slice(1), "doesn't exist");
+  const darkKey = darkKeyOf(id, sc.value);
+  if (!darkKey) return refuse(key.slice(1), 'has no dark version', 'dark');
+  const { dark: _d, ...rest } = sc.value;
+  return commit({
+    changes: [
+      { key, bytes: jsonBytes(rest) },
+      { key: darkKey, bytes: null },
+    ],
+    ifMatch: { [key]: sc.version, [darkKey]: versionOf(readFile(darkKey)) },
+  });
+}
 
 /**
  * Where a picture is cropped from: a cropped copy's original while it's still there (so a copy can grow
@@ -182,46 +243,83 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
     return refuse(`content/media/${id}.json`, (e as Error).message, 'crop');
   }
   const crop = { from: src.id, ...r };
+  // its dark version, if the source has one: cut from the same place (in its own pixels, if its size differs)
+  let darkMaster: Awaited<ReturnType<typeof toMaster>> | null = null;
+  const srcDark = darkKeyOf(src.id, src.sidecar);
+  const darkBytes = srcDark ? readFile(srcDark) : null;
+  if (darkBytes) {
+    const dm = await sharp(darkBytes).metadata();
+    const kx = (dm.width ?? src.width) / src.width;
+    const ky = (dm.height ?? src.height) / src.height;
+    const left = Math.min((dm.width ?? 1) - 1, Math.round(r.x * kx));
+    const top = Math.min((dm.height ?? 1) - 1, Math.round(r.y * ky));
+    const width = Math.max(1, Math.min((dm.width ?? 1) - left, Math.round(r.width * kx)));
+    const height = Math.max(1, Math.min((dm.height ?? 1) - top, Math.round(r.height * ky)));
+    try {
+      darkMaster = await toMaster(await sharp(darkBytes).extract({ left, top, width, height }).png().toBuffer());
+    } catch (e) {
+      return refuse(`content/media/${id}.json`, `its dark version: ${(e as Error).message}`, 'crop');
+    }
+  }
   const current = readDoc<ImageMedia>(sidecarKey(id))!;
   if (current.value.crop && !opts.copy) {
-    // a copy, cut again: its master and its record change; its name and details stay
-    const { focus: _f, ...rest } = current.value;
+    // a copy, cut again: its master (and its dark version, which follows its original's) and its record change; its name and details stay
+    const { focus: _f, dark: _d, ...rest } = current.value;
     const masterKey = masterKeyOf(id, current.value);
-    const res = await commit({
-      changes: [
-        { key: masterKey, bytes: master.bytes },
-        { key: sidecarKey(id), bytes: jsonBytes({ ...rest, crop }) },
-      ],
-      ifMatch: { [masterKey]: versionOf(readFile(masterKey)), [sidecarKey(id)]: current.version },
-    });
+    const darkKey = `/content/media/${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
+    const oldDark = darkKeyOf(id, current.value);
+    const changes: Change[] = [
+      { key: masterKey, bytes: master.bytes },
+      { key: sidecarKey(id), bytes: jsonBytes({ ...rest, crop, ...(darkMaster ? { dark: { file: darkFileOf(id) } } : {}) }) },
+    ];
+    const ifMatch: Record<string, string | null> = { [masterKey]: versionOf(readFile(masterKey)), [sidecarKey(id)]: current.version };
+    if (darkMaster) {
+      changes.push({ key: darkKey, bytes: darkMaster.bytes });
+      ifMatch[darkKey] = versionOf(readFile(darkKey));
+    }
+    if (oldDark && (!darkMaster || oldDark !== darkKey)) {
+      changes.push({ key: oldDark, bytes: null });
+      ifMatch[oldDark] = versionOf(readFile(oldDark));
+    }
+    const res = await commit({ changes, ifMatch });
     return res.ok ? { ...res, id, width: master.width, height: master.height } : res;
   }
   // a new copy, beside its original, named after its shape
   const owner = src.id.slice(0, src.id.lastIndexOf('/'));
   const folder = `/content/media/${owner}/`;
   const snap = readSnapshot();
-  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/\.\w+$/, '')));
+  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark)?\.\w+$/, '')));
   const shape = ratioLabel(r.width, r.height);
   const name = unique(`${src.id.slice(owner.length + 1)}-${/^\d+:\d+$/.test(shape) ? shape.replace(':', 'x') : 'crop'}`, taken);
-  const { file: _file, focus: _focus, crop: _crop, ...details } = src.sidecar;
-  const sidecar: ImageMedia = { ...details, kind: 'image', file: `${name}.webp`, crop };
+  const { file: _file, focus: _focus, crop: _crop, dark: _dark, ...details } = src.sidecar;
   const newId = `${owner}/${name}`;
-  const res = await commit({
-    changes: [
-      { key: `${folder}${name}.webp`, bytes: master.bytes },
-      { key: sidecarKey(newId), bytes: jsonBytes(sidecar) },
-    ],
-    ifMatch: { [`${folder}${name}.webp`]: null, [sidecarKey(newId)]: null },
-  });
+  const sidecar: ImageMedia = { ...details, kind: 'image', file: `${name}.webp`, crop, ...(darkMaster ? { dark: { file: darkFileOf(newId) } } : {}) };
+  const changes: Change[] = [
+    { key: `${folder}${name}.webp`, bytes: master.bytes },
+    { key: sidecarKey(newId), bytes: jsonBytes(sidecar) },
+  ];
+  const ifMatch: Record<string, string | null> = { [`${folder}${name}.webp`]: null, [sidecarKey(newId)]: null };
+  if (darkMaster) {
+    changes.push({ key: `${folder}${darkFileOf(newId)}`, bytes: darkMaster.bytes });
+    ifMatch[`${folder}${darkFileOf(newId)}`] = null;
+  }
+  const res = await commit({ changes, ifMatch });
   return res.ok ? { ...res, id: newId, width: master.width, height: master.height } : res;
 }
 
-/** Deletes a picture: its sidecar and its master. The content check refuses it while anything refers to it. */
+/** Deletes a picture: its sidecar, its master and its dark version. The content check refuses it while anything refers to it. */
 export async function deleteMedia(id: string): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = `/content/media/${id}.json`;
   const sc = readDoc<ImageMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
   const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);
-  return commit({ changes: [{ key, bytes: null }, { key: masterKey, bytes: null }], ifMatch: { [key]: sc.version, [masterKey]: versionOf(readFile(masterKey)) } });
+  const darkKey = darkKeyOf(id, sc.value);
+  const changes: Change[] = [
+    { key, bytes: null },
+    { key: masterKey, bytes: null },
+    ...(darkKey ? [{ key: darkKey, bytes: null }] : []),
+  ];
+  const ifMatch: Record<string, string | null> = { [key]: sc.version, [masterKey]: versionOf(readFile(masterKey)), ...(darkKey ? { [darkKey]: versionOf(readFile(darkKey)) } : {}) };
+  return commit({ changes, ifMatch });
 }

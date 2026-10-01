@@ -28,6 +28,10 @@ const night = sample('plaza-night');
   </div>
 </Example>
 
+<Example title="With a dark mode version" layout="stack" description="The plaza by day in light mode, at night in dark mode: switch the theme to see it change. Without a dark version, the same picture shows in both.">
+  <Image src={plaza.src} srcset={plaza.srcset} sizes="(max-width: 56rem) 92vw, 60rem" alt="The plaza: by day in light mode, at night in dark mode." width={plaza.width} height={plaza.height} dark={{ src: night.src, srcset: night.srcset, width: night.width, height: night.height }} />
+</Example>
+
 <style>
   .demo-grid {
     display: grid;

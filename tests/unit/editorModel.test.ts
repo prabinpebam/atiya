@@ -541,6 +541,8 @@ describe('changes, named as resources', () => {
 
   it("groups a picture's master and sidecar into one resource, which is new only when both are", () => {
     expect(resourceOf('/content/media/shared/x.webp')).toBe(resourceOf('/content/media/shared/x.json'));
+    // a picture's dark version is part of the picture
+    expect(resourceOf('/content/media/shared/x.dark.webp')).toBe(resourceOf('/content/media/shared/x.json'));
     const grouped = groupChanges(
       [
         { key: '/content/site.json', status: 'changed' },

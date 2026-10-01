@@ -41,6 +41,8 @@ interface Props {
   priority?: boolean;
   /** The lightbox group name. */
   lightbox?: string;
+  /** Its dark mode version (its own sizes, full size and thumbnail), shown when the page is dark. */
+  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string };
 }
 
 const {
@@ -59,6 +61,7 @@ const {
   focus,
   priority = false,
   lightbox,
+  dark,
 } = Astro.props;
 const radius = width === 'full' ? 'none' : 'default';
 const href = full ?? src;
@@ -68,11 +71,11 @@ const lightboxThumb = thumb ?? src;
 <figure class="figure" data-breakout={width}>
   {
     lightbox ? (
-      <a class="media-link" href={href} data-lightbox={lightbox} data-caption={caption} data-thumb={lightboxThumb} data-alt={alt}>
-        <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} focus={focus} radius={radius} priority={priority} />
+      <a class="media-link" href={href} data-lightbox={lightbox} data-caption={caption} data-thumb={lightboxThumb} data-alt={alt} data-full-dark={dark ? (dark.full ?? dark.src) : undefined} data-thumb-dark={dark ? (dark.thumb ?? dark.src) : undefined}>
+        <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} focus={focus} radius={radius} priority={priority} dark={dark} />
       </a>
     ) : (
-      <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} focus={focus} radius={radius} priority={priority} />
+      <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} focus={focus} radius={radius} priority={priority} dark={dark} />
     )
   }
   {(caption || credit) && <Caption credit={credit}>{caption}</Caption>}

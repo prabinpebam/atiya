@@ -39,6 +39,8 @@ export interface CarouselItem {
   thumb?: string;
   /** Which part stays in a crop. */
   focus?: string;
+  /** Its dark mode version, shown when the page is dark. */
+  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string };
 }
 
 interface Props {
@@ -96,13 +98,14 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
               focus={item.focus}
               radius={width === 'full' ? 'none' : 'feature'}
               fill
+              dark={item.dark}
             />
           );
           return (
             <div class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
               <figure class="slide-body">
                 {lightbox ? (
-                  <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt}>
+                  <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined}>
                     {picture}
                   </a>
                 ) : (
@@ -144,7 +147,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
       <div class="strip" role="group" aria-label="Choose slide" data-wrap={pager === 'filmstrip-wrap' ? '' : undefined} data-carousel-strip data-scrollbar>
         {items.map((item, index) => (
           <button class="thumb" type="button" aria-label={`Show slide ${index + 1}: ${item.alt}`} aria-current={index === 0 ? 'true' : undefined} data-carousel-dot={String(index)}>
-            <Image src={item.thumb ?? item.src} alt="" width={item.width} height={item.height} ratio="3/2" focus={item.focus} radius="none" />
+            <Image src={item.thumb ?? item.src} alt="" width={item.width} height={item.height} ratio="3/2" focus={item.focus} radius="none" dark={item.dark && { src: item.dark.thumb ?? item.dark.src, width: item.dark.width, height: item.dark.height }} />
           </button>
         ))}
       </div>

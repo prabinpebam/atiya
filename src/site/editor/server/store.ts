@@ -45,8 +45,8 @@ export interface StoreOptions {
 export const versionOf = (bytes: Buffer | null): string | null => (bytes ? createHash('sha1').update(bytes).digest('hex') : null);
 export const jsonBytes = (value: unknown): Buffer => Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8');
 
-/** A resource path the content model allows: lowercase kebab-case folders and names, known extensions. */
-const KEY = /^\/content\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*\.(?:json|webp|jpe?g|png|avif)$/;
+/** A resource path the content model allows: lowercase kebab-case folders and names, known extensions (a picture's dark version: `<name>.dark.<ext>`). */
+const KEY = /^\/content\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*(?:\.json|(?:\.dark)?\.(?:webp|jpe?g|png|avif))$/;
 
 /** The absolute path of a key, or null when the key isn't one the content model allows or leaves the folder. */
 export function pathOf(key: string, root = contentRoot()): string | null {

@@ -59,6 +59,16 @@ const WIDTHS: Record<Slot, number[]> = {
 const FULL = 2560;
 const THUMB = 240;
 
+/** A picture's dark mode version, at the same widths: shown instead when the page is dark. */
+export interface DarkPicture {
+  src: string;
+  srcset: string;
+  width: number;
+  height: number;
+  full: string;
+  thumb: string;
+}
+
 export interface Picture {
   src: string;
   srcset: string;
@@ -70,13 +80,15 @@ export interface Picture {
   focus?: string;
   caption?: string;
   credit?: string;
+  /** Its dark mode version, if it has one (documentation/content/media.md §10). */
+  dark?: DarkPicture;
 }
 
 const webp = async (src: ImageMetadata, width: number) => (await getImage({ src, width, format: 'webp', quality: 80 })).src;
 
-export async function picture(id: string, slot: Slot): Promise<Picture> {
-  const m = getMedia(id);
-  const meta = await metadata(m.master);
+/** One master at a slot's widths: what the page needs to show it. */
+async function sized(master: string, slot: Slot) {
+  const meta = await metadata(master);
   const wanted = WIDTHS[slot];
   const widths = [...new Set([...wanted.filter((w) => w < meta.width), Math.min(meta.width, Math.max(...wanted))])].sort((a, b) => a - b);
   const urls = await Promise.all(widths.map((w) => webp(meta, w)));
@@ -84,13 +96,22 @@ export async function picture(id: string, slot: Slot): Promise<Picture> {
   return {
     src: urls[Math.min(1, urls.length - 1)],
     srcset: widths.map((w, i) => `${urls[i]} ${w}w`).join(', '),
-    alt: m.decorative ? '' : (m.alt ?? ''),
     width: meta.width,
     height: meta.height,
     full,
     thumb,
+  };
+}
+
+export async function picture(id: string, slot: Slot): Promise<Picture> {
+  const m = getMedia(id);
+  const [light, dark] = await Promise.all([sized(m.master, slot), m.darkMaster ? sized(m.darkMaster, slot) : undefined]);
+  return {
+    ...light,
+    alt: m.decorative ? '' : (m.alt ?? ''),
     focus: m.focus,
     caption: m.caption,
     credit: m.credit,
+    ...(dark ? { dark } : {}),
   };
 }

@@ -25,6 +25,12 @@ export const imageMedia = z
     focus: z.string().regex(/^\d{1,3}% \d{1,3}%$/).optional(),
     /** A cropped copy: the picture it was cut from, and where (in that picture's pixels). Cropping it again starts from there. */
     crop: z.strictObject({ from: mediaId, x: z.int().min(0), y: z.int().min(0), width: z.int().min(1), height: z.int().min(1) }).optional(),
+    /**
+     * Its dark mode version: a second master beside it (`<name>.dark.webp`), shown instead when the page is
+     * dark (the reader's theme, or their system's). Its words (alt, caption, credit) and focus are the
+     * picture's. Without one, the same picture shows in both modes.
+     */
+    dark: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.dark\.(webp|jpg|jpeg|png|avif)$/) }).optional(),
     visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
   })
   .refine((m) => m.alt || m.decorative, { message: 'an image needs alt text unless it is decorative', path: ['alt'] })

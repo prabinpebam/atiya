@@ -9,22 +9,26 @@ import { picture } from './pictures';
 import { pageMeasure } from './reading';
 import type { Article } from './schema';
 
+/** A picture's dark mode version, as the components take it. */
+const darkOf = (p: { dark?: { src: string; srcset: string; width: number; height: number; thumb: string } }) => (p.dark ? { src: p.dark.src, srcset: p.dark.srcset, width: p.dark.width, height: p.dark.height } : undefined);
+
 /** A page's picture on cards: its thumbnail, or else its lead picture. Cards show it whole (documentation/content/media.md §9). */
 export async function cardPicture(a: Article) {
   const id = a.thumbnail ?? a.hero?.media;
   if (!id) return undefined;
   const p = await picture(id, 'card');
-  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height };
+  const dark = darkOf(p);
+  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, ...(dark ? { dark } : {}) };
 }
 
 export interface Opening {
   title: string;
   standfirst?: string;
   topic?: { label: string; href?: string };
-  author?: { name: string; avatar?: string };
+  author?: { name: string; avatar?: string; avatarDark?: string };
   date?: string;
   readingTime?: string;
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string };
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
 }
 
 /** @param topic where the page sits: its section on the site, or its building on the planet */
@@ -39,9 +43,9 @@ export async function openingOf(article: Article, topic?: { label: string; href:
     standfirst: article.summary,
     // an article carries its topic, byline and date; a page and a gallery open with their words only
     topic: story ? topic : undefined,
-    author: story ? { name: owner.name, avatar: avatar?.thumb } : undefined,
+    author: story ? { name: owner.name, avatar: avatar?.thumb, ...(avatar?.dark ? { avatarDark: avatar.dark.thumb } : {}) } : undefined,
     date: story ? article.publishedAt : undefined,
     readingTime: pageMeasure(article),
-    picture: lead,
+    picture: lead ? { ...lead, dark: darkOf(lead) } : undefined,
   };
 }

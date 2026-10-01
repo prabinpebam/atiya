@@ -7,7 +7,7 @@ import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
-import { cropMedia, cropSource, deleteMedia, parseUploadCrop, replaceMaster, saveSidecar, upload } from '../server/media';
+import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload } from '../server/media';
 import { changes, discard, publish, push } from '../server/git';
 import { content } from '../../content/repository';
 import { picture } from '../../content/pictures';
@@ -127,6 +127,15 @@ const handle: APIRoute = async ({ request, params, url }) => {
         if (!(file instanceof File)) return json({ ok: false, issues: [{ file: 'content/media', path: 'file', message: 'choose a picture' }] }, 422);
         return result(await replaceMaster(id.replace(/\/replace$/, ''), Buffer.from(await file.arrayBuffer())));
       }
+      // a picture's dark mode version: added or replaced (multipart: file, and a crop chosen first), or removed
+      if (method === 'POST' && id.endsWith('/dark')) {
+        const form = await request.formData();
+        const file = form.get('file');
+        if (!(file instanceof File)) return json({ ok: false, issues: [{ file: 'content/media', path: 'file', message: 'choose the dark version' }] }, 422);
+        const crop = parseUploadCrop(form.get('crop'));
+        return result(await setDark(id.replace(/\/dark$/, ''), Buffer.from(await file.arrayBuffer()), crop ?? undefined));
+      }
+      if (method === 'DELETE' && id.endsWith('/dark')) return result(await removeDark(id.replace(/\/dark$/, '')));
       if (method === 'PUT' && id) {
         const b = await body<{ sidecar: ImageMedia; ifMatch: Record<string, string | null> }>(request);
         return result(await saveSidecar(id, b.sidecar, b.ifMatch ?? {}));
