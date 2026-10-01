@@ -3,8 +3,9 @@
  * The canvas's overlay (documentation/editor/spec.md §3.1, §3.2): drawn over the real page in edit
  * mode's canvas, never inside it, so the page lays out as it will on the site. A box on the block under
  * the pointer (named by its kind), a firm one on the selected block with its toolbar (move, duplicate,
- * add below, delete), a "+" in the space between two blocks while the pointer is there (never over a
- * block), and a format bar over a text selection.
+ * add below, delete), a "+" on a line across the column in the space between two blocks while the
+ * pointer is there (never over a block), showing exactly where a new block goes, and a format bar over a
+ * text selection.
  * @tier editor
  * @a11y The block toolbar and the format bar are named toolbars of named icon buttons; every action also has a key (§3.2, §3.3).
  * @key Enter: edit the selected block's text
@@ -43,6 +44,7 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     <IconButton label="Delete" icon="delete" size="sm" variant="secondary" tooltip="top" data-chrome-op="delete" />
   </div>
   <div class="insert" data-chrome-insert hidden>
+    <span class="insert-line" aria-hidden="true"></span>
     <IconButton label="Add a block here" icon="plus" size="sm" variant="primary" tooltip="none" data-chrome-insert-button="" />
   </div>
   <div class="format" role="toolbar" aria-label="Text" data-chrome-format hidden>
@@ -126,11 +128,43 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     transform: translate(-50%, calc(-100% - var(--space-2)));
   }
 
+  /* the "+" in the space between two blocks, on a line across the column: where the new block goes */
   .insert {
     position: absolute;
     inset-inline-start: var(--x, 0);
     inset-block-start: var(--y, 0);
-    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    inline-size: var(--w, 0);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .insert > :global(*) {
+    grid-area: 1 / 1;
+  }
+
+  .insert :global([data-chrome-insert-button]) {
+    pointer-events: auto;
+  }
+
+  .insert-line {
+    inline-size: 100%;
+    border-block-start: var(--border-strong) solid var(--color-accent);
+    border-radius: var(--radius-pill);
+    animation: insert-line var(--duration-fast) var(--ease-standard);
+  }
+
+  @keyframes insert-line {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .insert-line {
+      animation: none;
+    }
   }
 
   .box[hidden],

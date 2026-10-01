@@ -163,7 +163,11 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       const bottom = k < rects.length ? rects[k].r.top : rects[rects.length - 1].r.bottom + REACH;
       if (y >= top && y <= bottom) {
         insertAt = k < rects.length ? rects[k].i : rects[rects.length - 1].i + 1;
-        insert.style.setProperty('--x', `${p.left + scrollX + p.width / 2}px`);
+        // a line as wide as the blocks either side (the narrower: the text column beside a wide picture)
+        // shows where the block goes; the "+" is in its middle
+        const n = [k > 0 ? rects[k - 1].r : null, k < rects.length ? rects[k].r : null].filter((r): r is DOMRect => !!r).sort((u, v) => u.width - v.width)[0];
+        insert.style.setProperty('--x', `${n.left + scrollX}px`);
+        insert.style.setProperty('--w', `${n.width}px`);
         insert.style.setProperty('--y', `${(top + bottom) / 2 + scrollY}px`);
         break;
       }
