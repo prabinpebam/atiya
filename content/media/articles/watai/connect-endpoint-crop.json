@@ -1,0 +1,14 @@
+{
+  "kind": "image",
+  "alt": "Watai endpoint setup screen with fields for an Azure OpenAI resource name or base URL and an API key",
+  "caption": "The setup starts with the user's own Azure OpenAI endpoint and key.",
+  "visibility": "public",
+  "file": "connect-endpoint-crop.webp",
+  "crop": {
+    "from": "articles/watai/connect-endpoint",
+    "x": 255,
+    "y": 278,
+    "width": 723,
+    "height": 731
+  }
+}

@@ -40,7 +40,7 @@
         "slug": "leadership",
         "title": "Leadership",
         "summary": "How teams, culture and design influence are built. The first story is up, and more are on their way.",
-        "view": "list",
+        "view": "features",
         "children": [
           {
             "id": "do-what-makes-you-proud",
@@ -58,7 +58,7 @@
         "slug": "writing",
         "title": "Writing",
         "summary": "Essays and notes on design leadership, craft and building thoughtful products.",
-        "view": "list",
+        "view": "features",
         "children": [
           {
             "id": "the-best-learning-loop-will-win",

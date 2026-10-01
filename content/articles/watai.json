@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-02",
   "locale": "en",
   "thumbnail": "articles/watai/pasted-picture-2026-10-02",
   "body": [
@@ -46,6 +46,12 @@
       ]
     },
     {
+      "type": "figure",
+      "media": "articles/watai/pasted-picture-2026-10-02-2",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "Private by design"
@@ -56,8 +62,14 @@
     },
     {
       "type": "figure",
-      "media": "articles/watai/connect-endpoint",
+      "media": "articles/watai/connect-endpoint-crop",
       "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "figure",
+      "media": "articles/watai/pasted-picture-2026-10-02-3",
+      "width": "popout",
       "lightbox": true
     },
     {
@@ -106,7 +118,7 @@
     },
     {
       "type": "figure",
-      "media": "articles/watai/voice-setup",
+      "media": "articles/watai/voice-setup-4x3",
       "width": "content",
       "lightbox": true
     },
