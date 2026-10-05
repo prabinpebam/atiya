@@ -38,13 +38,15 @@ interface Props {
   blocked: string | null;
   /** The message offered, made from the changes. */
   message: string;
+  /** What happens to the message when private pages changed too (documentation/access/spec.md §8.3), or null. */
+  privateNote?: string | null;
   /** The GitHub Actions page, where the deploy can be followed. */
   actions: string | null;
   /** The commit just published (from the address), when it's the branch's last. */
   published: string | null;
 }
 
-const { changes, ahead, blocked, message, actions, published } = Astro.props;
+const { changes, ahead, blocked, message, privateNote, actions, published } = Astro.props;
 const ICON: Record<string, IconName> = { Article: 'article', Media: 'image', Sections: 'sections', Settings: 'settings', Person: 'user' };
 const STATUS = { added: { label: 'New', tone: 'positive' }, changed: { label: 'Changed', tone: 'accent' }, deleted: { label: 'Deleted', tone: 'negative' } } as const;
 const reason = blocked ?? (changes.length ? null : 'Nothing to publish: content/ is as it was last published.');
@@ -116,8 +118,9 @@ const reason = blocked ?? (changes.length ? null : 'Nothing to publish: content/
 
   <form class="panel" data-publish-form novalidate aria-labelledby="publish-form-title">
     <Heading level={2} size="h4" id="publish-form-title">Publish</Heading>
-    <Text variant="ui" tone="muted">Commits content/ (and nothing else) with this message, then pushes it to GitHub, which deploys the site.</Text>
+    <Text variant="ui" tone="muted">Commits content/ and private-pages/ (and nothing else), private pages first, then pushes them to GitHub, which deploys the site.</Text>
     <TextField label="Message" name="message" value={message} required disabled={!!reason} />
+    {privateNote && <Text variant="small" tone="muted">{privateNote}</Text>}
     {reason && <Text variant="small" tone={blocked ? 'negative' : 'muted'}>{reason}</Text>}
     <p class="issue" role="alert" data-editor-form-issue hidden />
     <div class="actions">

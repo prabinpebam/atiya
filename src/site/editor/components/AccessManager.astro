@@ -1,0 +1,292 @@
+---
+/**
+ * The Access screen's part (documentation/access/spec.md §4, §8): the access codes and magic links (who each
+ * is for, why, what it opens, when it was made and when it ends, its state, its message to copy again,
+ * Extend, Change what it opens and Withdraw now), a form to make a new one, and every page's access: each section's open and
+ * locked pages in their order (Move up, Move down; Lock, Open, Make private), and the private pages with
+ * their addresses (Change address, Share).
+ * @tier editor
+ * @a11y Headings for each part, a table with a header row for the grants, labelled fields, and the result announced.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
+import { longDate, type AccessView } from '../model/access';
+
+interface Props {
+  /** The grants, the sections' pages and the private pages. */
+  view: AccessView;
+  /** A grant's timeline in PostHog, from its ID, when the project is set (spec §8.1). */
+  posthogPerson?: (id: string) => string;
+}
+
+const { view, posthogPerson } = Astro.props;
+const STATE = { active: { label: 'Active', tone: 'positive' }, expiring: { label: 'Ends soon', tone: 'highlight' }, expired: { label: 'Expired', tone: 'neutral' }, withdrawn: { label: 'Withdrawn', tone: 'negative' } } as const;
+const lockedPages = view.sections.flatMap((s) => s.pages.filter((p) => p.access === 'locked').map((p) => ({ value: p.id, label: `${p.title} (${s.title})` })));
+const privatePages = view.private.map((p) => ({ value: p.id, label: `${p.title} (private)` }));
+const sectionsWithLocked = view.sections.filter((s) => s.pages.some((p) => p.access === 'locked'));
+const in30 = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+---
+
+<div class="access" data-editor-access>
+  <section class="panel" aria-labelledby="access-grants" data-region="access-grants">
+    <Heading level={2} size="h4" id="access-grants">Access codes and links</Heading>
+    {
+      view.grants.length ? (
+        <div class="table" data-scrollbar>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">For</th>
+                <th scope="col">Kind</th>
+                <th scope="col">Opens</th>
+                <th scope="col">Made</th>
+                <th scope="col">Ends</th>
+                <th scope="col">State</th>
+                <th scope="col">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {view.grants.map((g) => (
+                <tr data-grant={g.id}>
+                  <td class="who">
+                    <Text as="span" variant="label">{g.recipient.name}</Text>
+                    <Text as="span" variant="small" tone="muted">{[g.recipient.role, g.recipient.organisation].filter(Boolean).join(', ')}</Text>
+                    {g.purpose && <Text as="span" variant="small" tone="muted">{g.purpose}</Text>}
+                  </td>
+                  <td>{g.kind === 'code' ? 'Access code' : 'Magic link'}</td>
+                  <td>{g.opens.join('; ')}</td>
+                  <td>{longDate(g.createdAt)}</td>
+                  <td>{g.expiresAt ? longDate(g.expiresAt) : 'Never'}</td>
+                  <td>
+                    <Tag size="sm" tone={STATE[g.state].tone}>{STATE[g.state].label}</Tag>
+                  </td>
+                  <td class="row-actions">
+                    <Button variant="quiet" size="sm" icon="copy" data-access-copy={g.id}>Copy message</Button>
+                    {g.state !== 'withdrawn' && (
+                      <Fragment>
+                        <TextField label="Ends on" type="date" name={`expires-${g.id}`} id={`expires-${g.id}`} value={g.expiresAt?.slice(0, 10) ?? ''} data-access-expires={g.id} />
+                        <Button variant="secondary" size="sm" data-access-extend={g.id}>Set end date</Button>
+                        <Button variant="quiet" size="sm" icon="delete" data-access-withdraw={g.id}>Withdraw now</Button>
+                        <details class="scope">
+                          <summary>Change what it opens</summary>
+                          <form data-access-scope={g.id} novalidate>
+                            {sectionsWithLocked.length > 0 && <ChoiceGroup legend="Every locked page in a section" name="sections" type="checkbox" value={g.scope.sections ?? []} options={sectionsWithLocked.map((s) => ({ value: s.id, label: s.title }))} />}
+                            {lockedPages.length + privatePages.length > 0 && <ChoiceGroup legend="Single pages" name="pages" type="checkbox" value={g.scope.pages ?? []} options={[...lockedPages, ...(g.kind === 'link' ? privatePages : [])]} />}
+                            <Button variant="secondary" size="sm" type="submit">Save what it opens</Button>
+                          </form>
+                        </details>
+                      </Fragment>
+                    )}
+                    {posthogPerson && <Link href={posthogPerson(g.id)} external>Who looked</Link>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <Text variant="ui" tone="muted">No access codes or links yet. Make one below.</Text>
+      )
+    }
+  </section>
+
+  <form class="panel" data-access-new novalidate aria-labelledby="access-new">
+    <Heading level={2} size="h4" id="access-new">Share with someone</Heading>
+    <Text variant="ui" tone="muted">One code or link per person: you can see when it's opened, end it, or withdraw it without touching anyone else's.</Text>
+    <ChoiceGroup legend="Kind" name="kind" value="code" orientation="horizontal" options={[{ value: 'code', label: 'Access code', hint: 'Typed on the Sign in page; opens locked pages.' }, { value: 'link', label: 'Magic link', hint: 'Opens a private page (or locked ones) from the link alone.' }]} />
+    <div class="fields">
+      <TextField label="Their name" name="name" required />
+      <TextField label="Organisation" name="organisation" optional />
+      <TextField label="Role" name="role" optional />
+      <TextField label="Email" type="email" name="email" optional />
+    </div>
+    <TextField label="Why you're sharing it" name="purpose" optional hint="For your own record; never published." />
+    {sectionsWithLocked.length > 0 && <ChoiceGroup legend="Every locked page in a section" name="sections" type="checkbox" hint="Now and later: new locked pages there are opened too." options={sectionsWithLocked.map((s) => ({ value: s.id, label: s.title }))} />}
+    {lockedPages.length + privatePages.length > 0 && <ChoiceGroup legend="Single pages" name="pages" type="checkbox" hint="A private page opens from a magic link only." options={[...lockedPages, ...privatePages]} />}
+    <TextField label="Ends on" type="date" name="expires" value={in30} hint="The last day it works. Clear it for no end." />
+    <TextField label="Notes" name="notes" optional multiline rows={2} />
+    <p class="issue" role="alert" data-editor-form-issue hidden></p>
+    <div class="actions">
+      <Button variant="primary" type="submit" icon="key">Make it</Button>
+    </div>
+    <div class="result" data-access-result hidden>
+      <TextField label="Message to send" name="message" multiline rows={4} hint="Copy it now: it's also kept, so you can copy it again later." data-access-message="" />
+      <div class="actions">
+        <Button variant="secondary" icon="copy" data-access-copy-new="">Copy message</Button>
+      </div>
+    </div>
+  </form>
+
+  <section class="panel" aria-labelledby="access-pages" data-region="access-pages">
+    <Heading level={2} size="h4" id="access-pages">Pages</Heading>
+    <Text variant="ui" tone="muted">Locked pages are listed in their section only for readers whose access covers them; private pages open only from a magic link. Order a section's open and locked pages together here.</Text>
+    {
+      view.sections.filter((s) => s.pages.length).map((s) => (
+        <div class="section" data-access-section={s.id}>
+          <Heading level={3} size="ui">{s.title}</Heading>
+          <ol class="pages">
+            {s.pages.map((p, i) => (
+              <li data-access-page={p.id} data-access-node={p.node} data-access={p.access}>
+                <Text as="span" variant="ui">{p.title}</Text>
+                {p.access === 'locked' && <Tag size="sm" tone="highlight" icon="lock">Locked</Tag>}
+                {!p.published && <Tag size="sm">Draft</Tag>}
+                <span class="page-actions">
+                  <Button variant="quiet" size="sm" icon="arrow-up" data-access-move="-1" disabled={i === 0}>Move up</Button>
+                  <Button variant="quiet" size="sm" icon="arrow-down" data-access-move="1" disabled={i === s.pages.length - 1}>Move down</Button>
+                  {p.access === 'open' ? <Button variant="quiet" size="sm" icon="lock" data-access-set="locked">Lock</Button> : <Button variant="quiet" size="sm" data-access-set="open">Open</Button>}
+                  <Button variant="quiet" size="sm" data-access-set="private">Make private</Button>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))
+    }
+    <div class="section">
+      <Heading level={3} size="ui">Private pages</Heading>
+      {
+        view.private.length ? (
+          <ul class="pages">
+            {view.private.map((p) => (
+              <li data-access-page={p.id} data-access="private">
+                <Text as="span" variant="ui">{p.title}</Text>
+                <code class="address">{p.path}</code>
+                <span class="page-actions">
+                  <Button variant="quiet" size="sm" data-access-address="">Change address</Button>
+                  <Button variant="quiet" size="sm" data-access-share={p.id}>Share</Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Text variant="ui" tone="muted">No private pages. Make a page private from its section above.</Text>
+        )
+      }
+    </div>
+  </section>
+</div>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAccess } from '../scripts/access';
+
+  each<HTMLElement>('[data-editor-access]', (root, signal) => initAccess(root, signal));
+</script>
+
+<style>
+  .access {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .panel {
+    display: grid;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg);
+  }
+
+  .table {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+  }
+
+  th,
+  td {
+    padding: var(--space-3);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  .who {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .row-actions,
+  .page-actions,
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--size-measure-narrow)), 1fr));
+    gap: var(--space-4);
+  }
+
+  .section {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .pages {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pages li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+  }
+
+  .page-actions {
+    margin-inline-start: auto;
+  }
+
+  .address {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .result {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+  }
+
+  .scope summary {
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--color-accent);
+  }
+
+  .scope form {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-start: var(--space-3);
+  }
+</style>

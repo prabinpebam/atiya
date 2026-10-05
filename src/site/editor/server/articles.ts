@@ -11,11 +11,16 @@ import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Resu
 import { slugify, today, unique } from '../model/ids';
 import { childSlugs, nodeIds, place, sectionOf, unplace } from '../model/structure';
 import { isMeaningful } from '../model/ops';
-import { readSnapshot } from '../../content/source';
+import { readSnapshot, fileOf } from '../../content/source';
+import { existsSync } from 'node:fs';
+import { unplaceProtected } from '../model/access';
+import type { Overlay } from '../../content/schema';
 
 export const STRUCTURE = '/content/structures/site.json';
 export const PLANET = '/content/structures/planet.json';
-export const articleKey = (id: string) => `/content/articles/${id}.json`;
+export const OVERLAY = '/private/structures/overlay.json';
+/** An article's file: in private-pages/ when it's locked or private (documentation/access/spec.md §3), else in content/. */
+export const articleKey = (id: string) => (existsSync(fileOf(`/private/articles/${id}.json`)) ? `/private/articles/${id}.json` : `/content/articles/${id}.json`);
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /**
@@ -51,7 +56,7 @@ function articles(): Map<string, Article> {
   const snap = readSnapshot();
   const out = new Map<string, Article>();
   for (const [key, value] of Object.entries(snap.docs)) {
-    const m = /^\/content\/articles\/([^/]+)\.json$/.exec(key);
+    const m = /^\/(?:content|private)\/articles\/([^/]+)\.json$/.exec(key);
     if (m) out.set(m[1], value as Article);
   }
   return out;
@@ -190,6 +195,12 @@ export async function deleteArticle(id: string, withMedia: boolean, ifMatch: Rec
     changes.push({ key: STRUCTURE, bytes: jsonBytes(unplace(s.value, { type: 'article', id })) });
     match[STRUCTURE] = ifMatch[STRUCTURE] ?? s.version;
   }
+  // a locked or private page: off the private overlay too
+  const overlay = key.startsWith('/private/') ? readDoc<Overlay>(OVERLAY) : null;
+  if (overlay) {
+    changes.push({ key: OVERLAY, bytes: jsonBytes(unplaceProtected(overlay.value, id)) });
+    match[OVERLAY] = ifMatch[OVERLAY] ?? overlay.version;
+  }
   // off the planet too, in the same transaction (a page on the planet needs its page on the site: V13)
   const planet = readDoc<PlanetStructure>(PLANET);
   if (planet && placeOfPage(planet.value, id)) {
@@ -199,14 +210,15 @@ export async function deleteArticle(id: string, withMedia: boolean, ifMatch: Rec
   if (withMedia) {
     const snap = readSnapshot();
     const others = JSON.stringify(Object.entries(snap.docs).filter(([k]) => k !== key));
-    const folder = `/content/media/articles/${id}/`;
+    const prefix = key.startsWith('/private/') ? '/private/media/' : '/content/media/';
+    const folder = `${prefix}articles/${id}/`;
     const seen = new Set<string>();
     for (const master of snap.masters) {
       if (!master.startsWith(folder)) continue;
       // a picture's master and its dark version are one picture: deleted together, with their sidecar
-      const mediaId = master.slice('/content/media/'.length).replace(/(?:\.dark)?\.\w+$/, '');
+      const mediaId = master.slice(prefix.length).replace(/(?:\.dark)?\.\w+$/, '');
       if (others.includes(`"${mediaId}"`)) continue;
-      const sidecar = `/content/media/${mediaId}.json`;
+      const sidecar = `${prefix}${mediaId}.json`;
       if (!seen.has(sidecar)) {
         seen.add(sidecar);
         changes.push({ key: sidecar, bytes: null });

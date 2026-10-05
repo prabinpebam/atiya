@@ -11,4 +11,6 @@ assets-src/audio/.cache/
 # edit mode's test fixture: a throwaway repository of the content, and its remote (scripts/editor-test-server.mjs)
 .editor-test/
 .editor-test-remote.git/
+.editor-test-private.git/
+.editor-test-private-seed/
 

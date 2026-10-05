@@ -1,0 +1,30 @@
+---
+/** Edit mode's Access screen (documentation/access/spec.md §8.1, §8.2). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import AccessManager from '../components/AccessManager.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load } from '../server/screens';
+import { accessView } from '../server/access';
+import { hasPrivate, privateRoot } from '../../content/source';
+
+export const prerender = false;
+
+const loaded = load();
+const ready = hasPrivate(privateRoot());
+// a grant's timeline in PostHog (spec §8.1), when the project is known: only its ID goes there
+const host = process.env.PUBLIC_POSTHOG_HOST?.replace(/\/$/, '').replace('://us.i.', '://us.').replace('://eu.i.', '://eu.');
+const project = process.env.POSTHOG_PROJECT_ID;
+const posthogPerson = host && project ? (id: string) => `${host}/project/${project}/person/${id}` : undefined;
+---
+
+<EditorLayout title="Access" screen="access" heading="Access" intro="Who can see your locked and private pages: an access code or a magic link per person, and each page's access. Saved in private-pages/, never in the public repository.">
+  {
+    !loaded.ok ? (
+      <ContentIssues issues={loaded.issues} />
+    ) : ready ? (
+      <AccessManager view={accessView()} posthogPerson={posthogPerson} />
+    ) : (
+      <ContentIssues issues={[{ file: 'private-pages', message: 'the private pages folder is missing: run scripts/setup-private-pages.ps1 (documentation/access/plan.md, A0)' }]} />
+    )
+  }
+</EditorLayout>

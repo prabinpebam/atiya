@@ -15,16 +15,17 @@ const loaded = load();
 const state = await changes();
 // names from the files as they are (a file with a problem still gets its title, when it has one)
 const titles: Titles = {
-  article: (id) => readDoc<Article>(`/content/articles/${id}.json`)?.value.title,
+  article: (id) => (readDoc<Article>(`/content/articles/${id}.json`) ?? readDoc<Article>(`/private/articles/${id}.json`))?.value.title,
   person: (id) => readDoc<Person>(`/content/people/${id}.json`)?.value.name,
 };
 const rows: ChangeRow[] = groupChanges(state.files, titles).map((c) => {
-  const id = c.resource.replace(/^\/content\/(articles|media|people)\//, '').replace(/\.json$/, '');
+  const id = c.resource.replace(/^\/(content|private)\/(articles|media|people)\//, '').replace(/\.json$/, '');
   const href =
     c.status === 'deleted' ? undefined
-    : c.kind === 'Article' ? `articles/${id}/`
+    : c.kind === 'Article' || c.kind === 'Private page' ? `articles/${id}/`
     : c.kind === 'Media' ? `media/?id=${id}`
     : c.kind === 'Sections' ? 'sections/'
+    : c.kind === 'Access' || c.kind === 'Private places' ? 'access/'
     : c.kind === 'Settings' || c.kind === 'Person' ? 'settings/'
     : undefined;
   return { ...c, href };
@@ -40,11 +41,19 @@ const blocked = !(await repo())
         : null;
 const head = (await git(['rev-parse', '--short', 'HEAD'])).stdout.trim();
 const asked = Astro.url.searchParams.get('published') ?? (Astro.url.searchParams.get('pushed') ? head : null);
-const published = asked && asked === head && state.ahead === 0 ? head : null;
+const ahead = state.ahead + (state.private?.ahead ?? 0);
+const published = asked && asked === head && ahead === 0 ? head : null;
+// your message goes on the public commit only when nothing private changed (documentation/access/spec.md §8.3)
+const anyPrivate = state.files.some((f) => f.key.startsWith('/private/'));
+const privateNote = anyPrivate
+  ? state.files.some((f) => f.key.startsWith('/content/'))
+    ? 'Private pages changed too: this message goes on the private commit only. The public commit gets one made from the public changes.'
+    : 'Only private pages changed: this message goes on the private commit only. The public commit is "Private pages: update".'
+  : null;
 const remote = await remoteUrl(state.upstream);
 ---
 
-<EditorLayout title="Publish" screen="publish" heading="Publish" intro={state.branch ? `What changed in content/ since the last publish, on ${state.branch}.` : 'What changed in content/ since the last publish.'}>
-  <ChangeList changes={rows} ahead={state.ahead} blocked={blocked} message={suggestMessage(state.files, titles)} actions={remote ? actionsUrl(remote) : null} published={published} />
+<EditorLayout title="Publish" screen="publish" heading="Publish" intro={state.branch ? `What changed in content/ and private-pages/ since the last publish, on ${state.branch}.` : 'What changed in content/ and private-pages/ since the last publish.'}>
+  <ChangeList changes={rows} ahead={ahead} blocked={blocked} message={suggestMessage(state.files, titles)} privateNote={privateNote} actions={remote ? actionsUrl(remote) : null} published={published} />
   <div data-region="publish-issues">{!loaded.ok && <ContentIssues issues={loaded.issues} />}</div>
 </EditorLayout>

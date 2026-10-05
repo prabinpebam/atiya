@@ -8,19 +8,24 @@ export interface Titles {
   person(id: string): string | undefined;
 }
 
-const MEDIA = /^\/content\/media\/(.+?)(?:\.dark|\.poster)?\.(json|webp|jpe?g|png|avif|pdf|mp4|webm)$/;
+const MEDIA = /^\/(content|private)\/media\/(.+?)(?:\.dark|\.poster)?\.(json|webp|jpe?g|png|avif|pdf|mp4|webm)$/;
 
 /** The resource a file belongs to: a picture's master, dark version and sidecar share one (/content/media/<id>); any other file is its own. */
 export const resourceOf = (key: string) => {
   const m = MEDIA.exec(key);
-  return m ? `/content/media/${m[1]}` : key;
+  return m ? `/${m[1]}/media/${m[2]}` : key;
 };
 
 export function resourceName(key: string, titles: Titles): { kind: string; name: string } {
   let m: RegExpExecArray | null;
   if ((m = /^\/content\/articles\/([^/]+)\.json$/.exec(key))) return { kind: 'Article', name: titles.article(m[1]) ?? m[1] };
   if ((m = /^\/content\/people\/([^/]+)\.json$/.exec(key))) return { kind: 'Person', name: titles.person(m[1]) ?? m[1] };
-  if ((m = MEDIA.exec(key)) || (m = /^\/content\/media\/(.+)$/.exec(key))) return { kind: 'Media', name: m[1] };
+  if ((m = /^\/private\/articles\/([^/]+)\.json$/.exec(key))) return { kind: 'Private page', name: titles.article(m[1]) ?? m[1] };
+  if ((m = MEDIA.exec(key))) return { kind: m[1] === 'private' ? 'Private media' : 'Media', name: m[2] };
+  if ((m = /^\/content\/media\/(.+)$/.exec(key))) return { kind: 'Media', name: m[1] };
+  if (key === '/private/access.json') return { kind: 'Access', name: 'The access codes and links' };
+  if (key === '/private/access-message.json') return { kind: 'Access', name: 'The share message' };
+  if (key === '/private/structures/overlay.json') return { kind: 'Private places', name: 'Locked and private pages' };
   if (key === '/content/structures/site.json') return { kind: 'Sections', name: 'The site structure' };
   if (key === '/content/structures/planet.json') return { kind: 'Planet', name: 'The planet' };
   if (key === '/content/redirects.json') return { kind: 'Redirects', name: 'The redirects' };
@@ -50,12 +55,14 @@ export function groupChanges(files: { key: string; status: Status }[], titles: T
       if (hit.status !== f.status) hit.status = 'changed';
     } else by.set(resource, { resource, ...resourceName(f.key, titles), status: f.status, keys: [f.key] });
   }
-  const RANK: Record<string, number> = { Article: 0, Media: 1, Sections: 2, Planet: 3, Settings: 4, Person: 5 };
+  const RANK: Record<string, number> = { Article: 0, 'Private page': 1, Media: 2, 'Private media': 3, Sections: 4, 'Private places': 5, Access: 6, Planet: 7, Settings: 8, Person: 9 };
   return [...by.values()].sort((a, b) => (RANK[a.kind] ?? 9) - (RANK[b.kind] ?? 9) || a.name.localeCompare(b.name));
 }
 
 /** A commit message made from the changes, naming what changed: "Content: Do what makes you proud, 2 pictures, the sections". */
-export function suggestMessage(changes: { key: string }[], titles: Titles): string {
+export function suggestMessage(all: { key: string }[], titles: Titles): string {
+  // made from public changes only: a private page's name never goes in public history (documentation/access/spec.md §8.3)
+  const changes = all.filter((c) => !c.key.startsWith('/private/'));
   const articles = new Set<string>();
   const pictures = new Set<string>();
   const rest = new Set<string>();

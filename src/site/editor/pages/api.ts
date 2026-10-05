@@ -10,6 +10,7 @@ import { createArticle, deleteArticle, duplicateArticle, followOnPlanet, pagesOf
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { changes, discard, publish, push } from '../server/git';
+import { accessView, changeAddress, createGrant, extendGrant, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, withdrawGrant, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
 import { picture } from '../../content/pictures';
 
@@ -55,10 +56,32 @@ const handle: APIRoute = async ({ request, params, url }) => {
         return result(await saveArticle({ id, article: b.article, section: b.section, place: b.place, ifMatch: b.ifMatch ?? {} }));
       }
       if (method === 'POST' && id && parts[2] === 'duplicate') return result(await duplicateArticle(id));
+      // its access (documentation/access/spec.md §8.2): open, locked or private, and a protected page's address
+      if (method === 'PUT' && id && parts[2] === 'access') {
+        const b = await body<{ access: PageAccess; section?: string }>(request);
+        if (!['open', 'locked', 'private'].includes(b.access)) return json({ ok: false, issues: [{ file: 'private/structures/overlay.json', message: 'open, locked or private' }] }, 422);
+        return result(await setPageAccess(id, b.access, b.section));
+      }
+      if (method === 'POST' && id && parts[2] === 'address') return result(await changeAddress(id));
       if (method === 'DELETE' && id) {
         const b = request.headers.get('content-type')?.includes('json') ? await body<{ ifMatch?: Record<string, string | null> }>(request) : {};
         return result(await deleteArticle(id, url.searchParams.get('media') === '1', b.ifMatch ?? {}));
       }
+    }
+
+    // ---------- access: grants, and a section's open and locked pages in order (documentation/access/spec.md §8) ----------
+    if (parts[0] === 'access') {
+      if (method === 'POST' && parts[1] === 'grants' && !parts[2]) return result(await createGrant(await body<NewGrant>(request)));
+      const gid = parts[2];
+      if (parts[1] === 'grants' && gid && !/^g[a-z2-7]{8}$/.test(gid)) return json({ ok: false }, 404);
+      if (method === 'POST' && parts[1] === 'grants' && parts[3] === 'extend') return result(await extendGrant(gid, (await body<{ expires: string | null }>(request)).expires));
+      if (method === 'POST' && parts[1] === 'grants' && parts[3] === 'scope') return result(await rescopeGrant(gid, (await body<{ scope: { sections?: string[]; pages?: string[] } }>(request)).scope));
+      if (method === 'POST' && parts[1] === 'grants' && parts[3] === 'withdraw') return result(await withdrawGrant(gid));
+      if (method === 'GET' && parts[1] === 'grants' && parts[3] === 'message') {
+        const g = accessView().grants.find((x) => x.id === gid);
+        return g ? json({ ok: true, ...shareMessage(g) }) : json({ ok: false }, 404);
+      }
+      if (method === 'PUT' && parts[1] === 'sections' && parts[2] && ID.test(parts[2])) return result(await setSectionOrder(parts[2], (await body<{ order: string[] }>(request)).order));
     }
 
     // ---------- the site structure, the settings, people ----------
@@ -172,7 +195,11 @@ const handle: APIRoute = async ({ request, params, url }) => {
       return result(await discard(Array.isArray(b.keys) ? b.keys.map(String) : []));
     }
     if (method === 'POST' && path === 'publish') {
-      const r = await publish((await body<{ message: string }>(request)).message ?? '');
+      const titles = {
+        article: (id: string) => (readDoc<Article>(`/content/articles/${id}.json`) ?? readDoc<Article>(`/private/articles/${id}.json`))?.value.title,
+        person: (id: string) => readDoc<Person>(`/content/people/${id}.json`)?.value.name,
+      };
+      const r = await publish((await body<{ message: string }>(request)).message ?? '', titles);
       return json(r, r.ok ? 200 : 422);
     }
     if (method === 'POST' && path === 'push') {

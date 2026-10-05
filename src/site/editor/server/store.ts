@@ -11,8 +11,10 @@ import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, rea
 import { basename, dirname, join, relative, resolve, isAbsolute } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { contentRoot, contentState, fileOf, readSnapshot, writeKey, MASTER_FILE, type Snapshot } from '../../content/source';
+import { contentRoot, contentState, fileOf, privateRoot, readSnapshot, writeKey, MASTER_FILE, type Snapshot } from '../../content/source';
 import { ContentError, describe, loadContent, type Issue } from '../../content/load';
+import { checkTransitions } from '../../access/grants';
+import type { Grant } from '../../access/types';
 
 /** The editor tab a request came from (its X-Editor-Tab header): the API runs each request inside it. */
 const tabs = new AsyncLocalStorage<string | null>();
@@ -36,6 +38,8 @@ export type Result = { ok: true; versions: Record<string, string | null> } | { o
 
 export interface StoreOptions {
   root?: string;
+  /** The private folder (private-pages/); its files are keyed /private/… */
+  privateRoot?: string;
   /** For the tests: stands in for renaming a temporary file into place. */
   rename?: (from: string, to: string) => void;
   /** For the tests: stands in for deleting a file. */
@@ -45,34 +49,35 @@ export interface StoreOptions {
 export const versionOf = (bytes: Buffer | null): string | null => (bytes ? createHash('sha1').update(bytes).digest('hex') : null);
 export const jsonBytes = (value: unknown): Buffer => Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8');
 
-/** A resource path the content model allows: lowercase kebab-case folders and names, known extensions (a picture's dark version: `<name>.dark.<ext>`). */
-const KEY = /^\/content\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*(?:\.json|\.pdf|\.mp4|\.webm|(?:\.dark|\.poster)?\.(?:webp|jpe?g|png|avif))$/;
+/** A resource path the content model allows: lowercase kebab-case folders and names, known extensions (a picture's dark version: `<name>.dark.<ext>`), in content/ or private-pages/. */
+const KEY = /^\/(?:content|private)\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*(?:\.json|\.pdf|\.mp4|\.webm|(?:\.dark|\.poster)?\.(?:webp|jpe?g|png|avif))$/;
 
-/** The absolute path of a key, or null when the key isn't one the content model allows or leaves the folder. */
-export function pathOf(key: string, root = contentRoot()): string | null {
+/** The absolute path of a key, or null when the key isn't one the content model allows or leaves its folder. */
+export function pathOf(key: string, root = contentRoot(), priv = privateRoot()): string | null {
   if (!KEY.test(key)) return null;
-  const abs = resolve(fileOf(key, root));
-  const rel = relative(resolve(root), abs);
+  const abs = resolve(fileOf(key, root, priv));
+  const top = resolve(key.startsWith('/private/') ? priv : root);
+  const rel = relative(top, abs);
   if (!rel || rel.startsWith('..') || isAbsolute(rel)) return null;
   return abs;
 }
 
-export function readFile(key: string, root = contentRoot()): Buffer | null {
-  const abs = pathOf(key, root);
+export function readFile(key: string, root = contentRoot(), priv = privateRoot()): Buffer | null {
+  const abs = pathOf(key, root, priv);
   return abs && existsSync(abs) ? readFileSync(abs) : null;
 }
 
 /** A JSON document and its version. */
-export function readDoc<T = unknown>(key: string, root = contentRoot()): { value: T; version: string } | null {
-  const bytes = readFile(key, root);
+export function readDoc<T = unknown>(key: string, root = contentRoot(), priv = privateRoot()): { value: T; version: string } | null {
+  const bytes = readFile(key, root, priv);
   return bytes ? { value: JSON.parse(bytes.toString('utf8')) as T, version: versionOf(bytes)! } : null;
 }
 
 /** Writes first (masters, then sidecars, then documents, then the structures), then deletions (documents, then masters). */
 function rank(c: Change): number {
   const master = MASTER_FILE.test(c.key);
-  const media = c.key.startsWith('/content/media/');
-  const structure = c.key.startsWith('/content/structures/');
+  const media = /^\/(content|private)\/media\//.test(c.key);
+  const structure = /^\/(content|private)\/structures\//.test(c.key);
   if (c.bytes) return master ? 0 : media ? 1 : structure ? 3 : 2;
   return master ? 7 : media ? 6 : structure ? 4 : 5;
 }
@@ -125,25 +130,41 @@ export function withWriterLock<T>(fn: () => Promise<T>): Promise<T> {
 
 async function apply(tx: Transaction, opts: StoreOptions, origin: string | null = null): Promise<Result> {
   const root = opts.root ?? contentRoot();
+  const priv = opts.privateRoot ?? privateRoot();
   const rename = opts.rename ?? renameSync;
   const unlink = opts.unlink ?? unlinkSync;
   const issues: Issue[] = [];
 
   // 1. every path allowed, every change versioned, every version current
-  const targets = tx.changes.map((c) => ({ ...c, abs: pathOf(c.key, root) }));
+  const targets = tx.changes.map((c) => ({ ...c, abs: pathOf(c.key, root, priv) }));
   for (const t of targets) {
     if (!t.abs) issues.push({ file: t.key.replace(/^\//, ''), message: 'not a path the content model allows' });
     else if (!(t.key in tx.ifMatch)) issues.push({ file: t.key.replace(/^\//, ''), message: 'changed without saying which version it started from' });
   }
   if (issues.length) return { ok: false, status: 422, issues };
   for (const [key, expected] of Object.entries(tx.ifMatch)) {
-    const current = versionOf(readFile(key, root));
+    const current = versionOf(readFile(key, root, priv));
     if (current !== expected) issues.push({ file: key.replace(/^\//, ''), message: 'changed since it was opened (edited elsewhere?)' });
   }
   if (issues.length) return { ok: false, status: 409, issues };
 
+  // the grants' history only moves forward (documentation/access/spec.md §4.1): none deleted, no ID or name
+  // reused, a withdrawn grant left as it is; checked against the file as it was
+  const access = targets.find((t) => t.key === '/private/access.json');
+  if (access) {
+    const before = (readDoc<{ grants: Grant[] }>(access.key, root, priv)?.value.grants ?? []) as Grant[];
+    let after: Grant[] = [];
+    try {
+      after = access.bytes ? ((JSON.parse(access.bytes.toString('utf8')) as { grants?: Grant[] }).grants ?? []) : [];
+    } catch {
+      // not JSON: the content check below says so
+    }
+    for (const message of checkTransitions(before, after)) issues.push({ file: 'private/access.json', message });
+    if (issues.length) return { ok: false, status: 422, issues };
+  }
+
   // 2. the whole content check, on the snapshot as it would be; only new issues refuse the change
-  const snap = readSnapshot(root);
+  const snap = readSnapshot(root, priv);
   const was = check(snap);
   const before = new Set(was.issues.map(describe));
   const docs = { ...snap.docs };
@@ -217,7 +238,7 @@ async function apply(tx: Transaction, opts: StoreOptions, origin: string | null 
     for (const tmp of temps.values()) if (existsSync(tmp)) unlinkSync(tmp);
     return { ok: false, status: 422, issues: [{ file: 'content', message: `couldn't save, nothing was changed: ${(e as Error).message}` }] };
   }
-  for (const t of ordered) if (!t.bytes) removeEmptyFolders(dirname(t.abs!), root);
+  for (const t of ordered) if (!t.bytes) removeEmptyFolders(dirname(t.abs!), t.key.startsWith('/private/') ? priv : root);
 
   // 6. tell the dev server, every open page (with the tab that made the change), and whoever reads next
   state.generation++;

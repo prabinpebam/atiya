@@ -27,7 +27,7 @@ interface Props {
   /** The document title: the screen's name. */
   title: string;
   /** Which screen, for the navigation's current item. */
-  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'media' | 'settings' | 'publish';
+  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'media' | 'access' | 'settings' | 'publish';
   /** Show the side navigation (the article editor hides it for its studio). */
   nav?: boolean;
   /** The screen's h1, over its content; left out, the content fills the screen (the studio). */
@@ -41,7 +41,8 @@ interface Props {
 const { title, screen, nav = true, heading, intro, asideLabel } = Astro.props;
 const aside = Astro.slots.has('aside');
 const git = await changes();
-const pending = git.files.length;
+// files changed in either folder, and commits not pushed from either repository (documentation/access/spec.md §8.3)
+const pending = git.files.length + git.ahead + (git.private?.ahead ?? 0);
 const to = (p: string) => withBase(`/_edit/${p}`);
 const groups = [
   {
@@ -53,6 +54,7 @@ const groups = [
       { label: 'Navigation', href: to('navigation/'), current: screen === 'navigation' },
       { label: 'Planet', href: to('planet/'), current: screen === 'planet' },
       { label: 'Media', href: to('media/'), current: screen === 'media' },
+      { label: 'Access', href: to('access/'), current: screen === 'access' },
     ],
   },
   {

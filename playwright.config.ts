@@ -25,7 +25,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /editor\.spec\.ts$/,
+      testIgnore: /editor(-access)?\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
         // Set PW_CHANNEL=msedge to use the locally installed Edge instead of Playwright's Chromium.
@@ -40,7 +40,7 @@ export default defineConfig({
     {
       // edit mode: its screens and API against the fixture (it writes, commits and pushes there, never to content/)
       name: 'editor',
-      testMatch: /editor\.spec\.ts$/,
+      testMatch: /editor(-access)?\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'], channel: process.env.PW_CHANNEL || undefined, baseURL: `http://localhost:${EDITOR_PORT}`, viewport: { width: 1440, height: 900 } },
     },
   ],
