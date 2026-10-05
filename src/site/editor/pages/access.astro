@@ -12,7 +12,7 @@ export const prerender = false;
 const loaded = load();
 const ready = hasPrivate(privateRoot());
 // a grant's timeline in PostHog (spec §8.1), when the project is known: only its ID goes there
-const host = process.env.PUBLIC_POSTHOG_HOST?.replace(/\/$/, '').replace('://us.i.', '://us.').replace('://eu.i.', '://eu.');
+const host = (process.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com').replace(/\/$/, '').replace('://us.i.', '://us.').replace('://eu.i.', '://eu.');
 const project = process.env.POSTHOG_PROJECT_ID;
 const posthogPerson = host && project ? (id: string) => `${host}/project/${project}/person/${id}` : undefined;
 ---

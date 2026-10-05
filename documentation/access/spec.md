@@ -774,7 +774,7 @@ The editor's full E2E project passes test by test; run whole and serially, one t
 
 ### 15.4 Yours
 
-- **A PostHog project** (US region, "Discard client IP data" off), then the Actions variables `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`; for "Who looked", `POSTHOG_PROJECT_ID` in your environment for edit mode.
+- **A PostHog project** (US region, "Discard client IP data" off), then the Actions variables `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`; for "Who looked", `POSTHOG_PROJECT_ID` in your environment for edit mode (the host defaults to US). *Done 5 October 2026: project 646382, US Cloud, both variables set; check the IP setting once in the project's settings.*
 - **Pushing `main`**, which starts the deploys and the nightly run (the workflow ran green on the branch `access-ci`).
 - **The first real locked page and grant,** made in edit mode and published.
 - **One real phone, and Safari and Firefox, by hand** before sharing the first code (benchmark, "What isn't measured").
