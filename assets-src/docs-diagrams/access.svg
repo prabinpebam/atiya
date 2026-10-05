@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580">
 <title>Protected content: from two repositories to a sealed site</title>
-<desc>On the owner's machine, edit mode writes open content to content/, in the public repository, and locked and private content, with the access grants, to content-private/, in a private repository. GitHub Actions checks out both, builds every page, seals the locked and private ones, checks that no plaintext is left, and uploads the sealed site to GitHub Pages. A visitor's browser fetches the sealed pages and the keyring their access code or magic link opens, and decrypts them in the page. Visits, clicks and unlocks go to PostHog, keyed by the grant, never with the code or the content.</desc>
+<desc>On the owner's machine, edit mode writes open content to content/, in the public repository, and locked and private content, with the access grants, to private-pages/, a private repository kept inside the project as a git submodule. GitHub Actions checks out both, builds every page, seals the locked and private ones, checks that no plaintext is left, and uploads the sealed site to GitHub Pages. A visitor's browser fetches the sealed pages and the keyring their access code or magic link opens, and decrypts them in the page. Visits, clicks and unlocks go to PostHog, keyed by the grant, never with the code or the content.</desc>
 <g id="edit">
 <rect class="src" x="40" y="40" width="220" height="120" rx="18" />
 <text class="name" x="60" y="72">Edit mode</text>
@@ -13,12 +13,12 @@
 <text class="name" x="350" y="72">content/</text>
 <text class="note" x="350" y="94">the public repository</text>
 <text class="line" x="350" y="126">Open pages and sections</text>
-<text class="line" x="350" y="148">Locked sections' titles</text>
+<text class="line" x="350" y="148">Sections and navigation</text>
 </g>
 <g id="private">
 <rect class="gate" x="330" y="200" width="260" height="120" rx="18" />
-<text class="name" x="350" y="232">content-private/</text>
-<text class="note" x="350" y="254">a private repository</text>
+<text class="name" x="350" y="232">private-pages/</text>
+<text class="note" x="350" y="254">a private repo, as a submodule</text>
 <text class="line" x="350" y="286">Locked and private pages</text>
 <text class="line" x="350" y="308">Grants: who, when, until</text>
 </g>
