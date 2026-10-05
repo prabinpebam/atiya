@@ -167,7 +167,9 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
   const lockedIn = overlay.sections.find((x) => x.pages.some((p) => p.item.id === id));
   const isPrivate = overlay.private.some((p) => p.item.id === id);
   const from: PageAccess = lockedIn ? 'locked' : isPrivate ? 'private' : 'open';
-  if (from === to) return { ok: true, versions: {} };
+  // a locked page moved to another section stays locked, at the end of its new section
+  const moving = from === 'locked' && to === 'locked' && !!section && section !== lockedIn!.section;
+  if (from === to && !moving) return { ok: true, versions: {} };
   const ref = { type: 'article' as const, id };
   const node = (lockedIn?.pages ?? overlay.private).find((p) => p.item.id === id);
   const nodeId = node?.id ?? id;
@@ -205,7 +207,7 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
     nextOverlay = placePrivate(overlay, { id: nodeId, token: node!.token, item: ref });
   } else {
     if (!section) return refuse(OVERLAY, 'a locked page is in a section: choose one', 'section');
-    const order = [...sectionOrder(structure, overlay, section).map((p) => p.id), nodeId];
+    const order = [...sectionOrder(structure, overlay, section).map((p) => p.id).filter((x) => x !== nodeId), nodeId];
     nextOverlay = placeLocked(overlay, section, { id: nodeId, token: node!.token, item: ref }, order);
   }
   if (structure !== s.value) {

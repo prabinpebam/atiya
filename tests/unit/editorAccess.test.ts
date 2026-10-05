@@ -162,4 +162,30 @@ describe('the operations, on a copy of both folders', () => {
     expect((await access.changeAddress('fx-private-two')).ok).toBe(true);
     expect(access.accessView().private.find((p) => p.id === 'fx-private-two')!.path).not.toBe(was);
   });
+
+  it('a new page can be locked or private from the start: written straight into private-pages/, never content/', async () => {
+    const articles = await import('../../src/site/editor/server/articles');
+    const locked = await articles.createArticle({ title: 'A locked case study', summary: 'For invited readers.', kind: 'note', section: 'work', access: 'locked' });
+    expect(locked.ok).toBe(true);
+    expect(existsSync(join(dir, 'private/articles', `${locked.id}.json`))).toBe(true);
+    expect(existsSync(join(dir, 'content/articles', `${locked.id}.json`))).toBe(false);
+    expect(access.accessView().sections.find((s) => s.id === 'work')!.pages.find((p) => p.id === locked.id)?.access).toBe('locked');
+    const priv = await articles.createArticle({ title: 'A private note', summary: 'From a link.', kind: 'note', section: null, access: 'private' });
+    expect(priv.ok).toBe(true);
+    expect(access.accessView().private.some((p) => p.id === priv.id)).toBe(true);
+    expect(existsSync(join(dir, 'content/articles', `${priv.id}.json`))).toBe(false);
+    // a locked page needs its section
+    expect((await articles.createArticle({ title: 'No section', summary: 'x', kind: 'note', section: null, access: 'locked' })).ok).toBe(false);
+    // a copy keeps its access, and stays out of content/
+    const copy = await articles.duplicateArticle(locked.id!);
+    expect(copy.ok).toBe(true);
+    expect(existsSync(join(dir, 'content/articles', `${copy.id}.json`))).toBe(false);
+    expect(access.accessView().sections.find((s) => s.id === 'work')!.pages.find((p) => p.id === copy.id)?.access).toBe('locked');
+    // a locked page moves to another section and stays locked; a private one becomes public in a section
+    expect((await access.setPageAccess(locked.id!, 'locked', 'side-projects')).ok).toBe(true);
+    expect(access.accessView().sections.find((s) => s.id === 'side-projects')!.pages.find((p) => p.id === locked.id)?.access).toBe('locked');
+    expect(access.accessView().sections.find((s) => s.id === 'work')!.pages.some((p) => p.id === locked.id)).toBe(false);
+    expect((await access.setPageAccess(priv.id!, 'open', 'writing')).ok).toBe(true);
+    expect(existsSync(join(dir, 'content/articles', `${priv.id}.json`))).toBe(true);
+  });
 });

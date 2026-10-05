@@ -37,8 +37,13 @@ interface Props {
   media: Record<string, Thumb>;
   /** The sections it can go in. */
   sections: SelectOption[];
-  /** The section it's in ('' for none). */
+  /** The section it's in ('' for none); a locked page's, from the private overlay. */
   section: string;
+  /**
+   * Who can see it (documentation/access/spec.md §8.2): open, locked or private. Left out when
+   * private-pages/ isn't set up, so the choice isn't offered.
+   */
+  access?: 'open' | 'locked' | 'private';
   /** The planet's buildings it can go in. */
   places: SelectOption[];
   /** The building it's in on the planet ('' for none). */
@@ -49,7 +54,18 @@ interface Props {
   path: string | null;
 }
 
-const { article, media, sections, section, places, place, published, path } = Astro.props;
+const { article, media, sections, section, access, places, place, published, path } = Astro.props;
+const protectedPage = access === 'locked' || access === 'private';
+const ACCESS: SelectOption[] = [
+  { value: 'open', label: 'Everyone', description: 'Public, in its section' },
+  { value: 'locked', label: 'Signed-in readers', description: 'Listed in its section only for access that covers it' },
+  { value: 'private', label: 'Only with a magic link', description: 'In no section; opens from a link you send' },
+];
+const SECTION_HINT = {
+  open: 'Where it sits on the site, and so its address. Moved, its old address simply goes.',
+  locked: 'The section it’s listed in for signed-in readers. Its address is a code, so it doesn’t change.',
+  private: 'A private page is in no section. Choose one here before making it open or locked.',
+};
 const WIDTHS: SelectOption[] = [
   { value: 'content', label: 'In the column', description: 'As wide as the text' },
   { value: 'popout', label: 'Stepping out', description: 'A little wider than the text' },
@@ -276,8 +292,9 @@ const STATUS: SelectOption[] = [
       <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : [{ value: 'note', label: 'Article', description: 'A story, a note or an essay' }, { value: 'page', label: 'Page', description: 'About, Contact and the like' }, { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' }]} />
       <Select label="Status" name="status" id="page-status" value={article.status} options={STATUS} hint="Published pages go on the site when you publish; back to Draft takes one off." />
       <Select label="Visibility" name="visibility" id="page-visibility" value={article.visibility} options={[{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }]} />
-      <Select label="Section" name="__section" id="page-section" value={section} options={[{ value: '', label: 'Not on the site yet' }, ...sections]} hint="Where it sits on the site, and so its address. Moved, its old address simply goes." />
-      <Select label="On the planet" name="__place" id="page-place" value={place} options={[{ value: '', label: 'Not on the planet', description: 'Only on the site' }, ...places]} hint="The building it's read in on the planet. It needs its page on the site too." />
+      {access && <Select label="Who can see it" name="__access" id="page-access" value={access} options={ACCESS} hint="Locked and private pages are kept in private-pages/ and published encrypted: never in the public repository. Opening one makes it public." />}
+      <Select label="Section" name="__section" id="page-section" value={access === 'private' ? '' : section} options={[{ value: '', label: access === 'private' ? 'No section' : 'Not on the site yet' }, ...sections]} hint={SECTION_HINT[access ?? 'open']} />
+      <Select label="On the planet" name="__place" id="page-place" value={place} disabled={protectedPage} options={[{ value: '', label: 'Not on the planet', description: 'Only on the site' }, ...places]} hint={protectedPage ? 'Locked and private pages aren’t on the planet: it has no way to sign in.' : "The building it's read in on the planet. It needs its page on the site too."} />
 
       <div class="media-field" data-editor-picture="lead">
         <span class="field-label">Lead picture</span>

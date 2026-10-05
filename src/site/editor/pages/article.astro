@@ -20,14 +20,15 @@ import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import { load, mediaCards, sectionOptions, STATUS_LABEL } from '../server/screens';
 import { readDoc } from '../server/store';
-import { PLANET, STRUCTURE, articleKey } from '../server/articles';
+import { OVERLAY, PLANET, STRUCTURE, articleKey } from '../server/articles';
+import { hasPrivate, privateRoot } from '../../content/source';
 import { isPublished } from '../../content/load';
 import { getPlacement } from '../../content/repository';
 import { sectionOf } from '../model/structure';
 import { placeOfPage } from '../model/planet';
 import { excerptOf, kindOf } from '../model/ops';
 import { withBase } from '../../design/meta';
-import type { Article, Block, PlanetStructure, SiteStructure } from '../../content/schema';
+import type { Article, Block, Overlay, PlanetStructure, SiteStructure } from '../../content/schema';
 import type { IconName } from '../../design/icons';
 
 export const prerender = false;
@@ -39,7 +40,12 @@ if (!doc) return new Response('No such article.', { status: 404 });
 const structure = readDoc<SiteStructure>(STRUCTURE);
 const article = doc.value;
 const published = isPublished(article);
-const section = structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '';
+// who can see it (documentation/access/spec.md §8.2): a locked page's section is in the private overlay
+const overlay = readDoc<Overlay>(OVERLAY)?.value;
+const lockedIn = overlay?.sections.find((s) => s.pages.some((p) => p.item.id === id))?.section;
+const access: 'open' | 'locked' | 'private' = lockedIn ? 'locked' : overlay?.private.some((p) => p.item.id === id) ? 'private' : 'open';
+const protectable = hasPrivate(privateRoot());
+const section = lockedIn ?? (structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '');
 const planet = readDoc<PlanetStructure>(PLANET);
 const place = planet ? (placeOfPage(planet.value, id) ?? '') : '';
 const places = (planet?.value.places ?? []).map((p) => ({ value: p.id, label: p.title, description: p.kicker }));
@@ -57,6 +63,7 @@ const state = {
   version: doc.version,
   structureVersion: structure?.version ?? null,
   section,
+  access,
   planetVersion: planet?.version ?? null,
   place,
   published,
@@ -73,6 +80,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     <Link href={withBase('/_edit/articles/')} variant="quiet">Pages</Link>
     <Text as="span" variant="ui"><strong>{article.title}</strong></Text>
     <Tag size="sm" tone={published ? 'positive' : 'neutral'}>{STATUS_LABEL[article.status]}</Tag>
+    {access !== 'open' && <Tag size="sm" tone="highlight">{access === 'locked' ? 'Locked' : 'Private'}</Tag>}
   </Fragment>
   <Fragment slot="tools">
     <IconButton label="Undo" icon="undo" size="sm" data-editor-undo="" />
@@ -88,7 +96,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
       <Studio>
         <Outline slot="outline" blocks={blocks} />
         <CanvasFrame slot="canvas" src={state.canvas} />
-        <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} places={places} place={place} published={published} path={route?.path ?? null} />
+        <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} places={places} place={place} published={published} path={route?.path ?? null} />
         <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
         <Dialog id="editor-palette" title="Add a block" size="lg">
           <BlockPalette />

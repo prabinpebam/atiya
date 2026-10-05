@@ -73,6 +73,8 @@ export interface ArticleRow {
   section: { id: string; title: string } | null;
   /** Its path on the site (published), or null. */
   path: string | null;
+  /** Who can see it: open, locked or private (documentation/access/spec.md §8.2). */
+  access: 'open' | 'locked' | 'private';
 }
 
 export function articleRows(index: ContentIndex): ArticleRow[] {
@@ -88,6 +90,7 @@ export function articleRows(index: ContentIndex): ArticleRow[] {
         updatedAt: a.updatedAt,
         section: route?.parent ? { id: route.parent.id, title: route.parent.title } : null,
         path: route?.published ? route.path : null,
+        access: route?.access ?? 'open',
       };
     })
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.title.localeCompare(b.title));

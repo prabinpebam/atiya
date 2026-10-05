@@ -143,7 +143,7 @@ Each phase is done when every row for it is true and evidenced. A row marked *yo
 | 23 | A7 | *Yours (needs row 2):* visits, clicks and sign-ins by grant reach PostHog with IP addresses | PostHog, after a deploy |
 | 24 | All | The repository's checks pass, the spec's "As built" and AGENTS.md are up to date | QB11, QB12 |
 
-**Status, 6 October 2026.** Rows 1 and 3 to 22 and 24 are met; their evidence is in the [spec's "As built"](spec.md#15-as-built) (§15.3), and where the build differs from the spec it says so there (§15.2: page access on the Access screen; no grant filters or history; Withdraw now waits for Publish). Rows 2 and 23 are yours: the PostHog project and its variables, then a deploy from `main`.
+**Status, 6 October 2026.** Rows 1 and 3 to 22 and 24 are met; their evidence is in the [spec's "As built"](spec.md#15-as-built) (§15.3), and where the build differs from the spec it says so there (§15.2: no grant filters or history; Withdraw now waits for Publish). Rows 2 and 23 are yours: the PostHog project and its variables, then a deploy from `main`.
 
 ## 3. Validation per phase
 

@@ -21,6 +21,8 @@ interface State {
   version: string;
   structureVersion: string | null;
   section: string;
+  /** Who can see it: open, locked or private (documentation/access/spec.md §8.2). */
+  access: 'open' | 'locked' | 'private';
   planetVersion: string | null;
   place: string;
   published: boolean;
@@ -527,6 +529,44 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     }
   });
 
+  // ---------- who can see it (documentation/access/spec.md §8.2) ----------
+  // The page's file and the media only it uses move between content/ and private-pages/ in one
+  // transaction, so what's unsaved here is saved first, and the editor reloads on the page's new file.
+  const ACCESS_ASK: Record<NonNullable<State['access']>, string> = {
+    open: 'Make this page public? It moves back to content/, and once you publish, it and its pictures are on the site for everyone and in the public repository’s history.',
+    locked: 'Lock this page? It moves to private-pages/ and is listed in its section only for readers whose access covers it. If it was published openly before, that earlier version stays in the public repository’s history.',
+    private: 'Make this page private? It leaves its section and opens only from a magic link you send. If it was published openly before, that earlier version stays in the public repository’s history.',
+  };
+  const moveProtected = async (to: NonNullable<State['access']>, section: string | undefined, what: string) => {
+    await save();
+    if (queue.pending || JSON.stringify(doc) !== JSON.stringify(saved)) return;
+    saveStatus.saving();
+    const r = await api('PUT', `articles/${state.id}/access`, { access: to, ...(section ? { section } : {}) });
+    if (!r.ok) {
+      showIssues((r.data.issues ?? []).map((i) => ({ ...i, path: i.path === 'section' ? '__section' : '__access' })));
+      saveStatus.failed(`Not changed: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`);
+      await swap(['inspector']);
+      return;
+    }
+    saveStatus.carry(what);
+    location.reload();
+  };
+  const setAccess = async (to: State['access'], field: HTMLInputElement) => {
+    if (!to || to === state.access) return;
+    const section = root.querySelector<HTMLInputElement>('[data-editor-inspector] [name="__section"]')?.value || undefined;
+    if (to !== 'private' && !section) {
+      showIssues([{ file: state.key, path: '__section', message: to === 'locked' ? 'a locked page is listed in a section: choose one first' : 'a public page is in a section: choose one first' }]);
+      field.value = state.access ?? 'open';
+      await swap(['inspector']);
+      return;
+    }
+    if (!confirm(ACCESS_ASK[to])) {
+      await swap(['inspector']);
+      return;
+    }
+    await moveProtected(to, section, to === 'open' ? 'Made public' : to === 'locked' ? 'Locked' : 'Made private');
+  };
+
   // ---------- the inspector's fields ----------
   on(root, 'change', (e) => {
     const t = e.target as HTMLInputElement;
@@ -545,6 +585,15 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       if (!v) return bad('Use a YouTube or Vimeo link (https://youtu.be/…, https://vimeo.com/…).');
       value = v;
     } else value = t.value.trim() === '' ? undefined : t.value;
+    if (t.name === '__access') return void setAccess(String(value ?? 'open') as State['access'], t);
+    if (t.name === '__section' && state.access === 'private') return; // kept for a later Open or Lock
+    if (t.name === '__section' && state.access === 'locked') {
+      if (!value) {
+        showIssues([{ file: state.key, path: '__section', message: 'a locked page is listed in a section: choose one, or make it private' }]);
+        return;
+      }
+      return void moveProtected('locked', String(value), 'Moved to another section');
+    }
     if (t.name === '__section') return change(doc, ALL, { section: (value as string | undefined) ?? null });
     if (t.name === '__place') return change(doc, { inspector: true }, { place: (value as string | undefined) ?? null });
     const renders = t.name.startsWith('body.') || t.name.startsWith('hero.') || ['title', 'summary', 'publishedAt', 'kind'].includes(t.name);

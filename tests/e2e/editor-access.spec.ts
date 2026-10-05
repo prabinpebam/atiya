@@ -116,6 +116,51 @@ test.describe('editor: access', () => {
     expect(remoteLog(REMOTE)).not.toMatch(/Ana/);
   });
 
+  test('a new article is locked from the start, then made public and private again from its own settings', async ({ page }) => {
+    confirmAll(page);
+    await page.goto('/_edit/articles/');
+    await page.locator('[data-dialog-open="new-article"]').click();
+    const dialog = page.locator('#new-article');
+    await dialog.getByLabel('Title').fill('A locked case study');
+    await dialog.getByLabel('Summary').fill('For invited readers only.');
+    await dialog.getByRole('combobox', { name: 'Section' }).click();
+    await dialog.getByRole('option', { name: /^Work/ }).click();
+    await dialog.getByRole('combobox', { name: 'Who can see it' }).click();
+    await dialog.getByRole('option', { name: /^Signed-in readers/ }).click();
+    await dialog.getByRole('button', { name: 'Create the draft' }).click();
+    await expect(page).toHaveURL(/\/_edit\/articles\/a-locked-case-study\/$/);
+    const ready = () => expect(page.frameLocator('[data-editor-frame]').locator('h1')).toHaveText('A locked case study', { timeout: 30_000 });
+    await ready();
+    const file = 'articles/a-locked-case-study.json';
+    expect(existsSync(join(PRIVATE, file))).toBe(true);
+    expect(existsSync(join(FIXTURE, 'content', file))).toBe(false);
+    const tag = (name: string) => page.locator('header').getByText(name, { exact: true });
+    await expect(tag('Locked')).toBeVisible();
+
+    // public, from the page's settings: the file moves to content/, in Work
+    await page.getByRole('tab', { name: 'Page' }).click();
+    await page.getByRole('combobox', { name: 'Who can see it' }).click();
+    await page.getByRole('option', { name: /^Everyone/ }).click();
+    await expect(tag('Locked')).toHaveCount(0, { timeout: 15_000 });
+    await ready();
+    expect(existsSync(join(FIXTURE, 'content', file))).toBe(true);
+    expect(existsSync(join(PRIVATE, file))).toBe(false);
+    await page.getByRole('tab', { name: 'Page' }).click();
+    await expect(page.getByRole('combobox', { name: 'Who can see it' })).toContainText('Everyone');
+    await expect(page.getByRole('combobox', { name: 'Section' })).toContainText('Work');
+
+    // private: back into private-pages/, out of its section
+    await page.getByRole('combobox', { name: 'Who can see it' }).click();
+    await page.getByRole('option', { name: /^Only with a magic link/ }).click();
+    await expect(tag('Private')).toBeVisible({ timeout: 15_000 });
+    expect(existsSync(join(PRIVATE, file))).toBe(true);
+    expect(existsSync(join(FIXTURE, 'content', file))).toBe(false);
+    const overlay = JSON.parse(readFileSync(join(PRIVATE, 'structures/overlay.json'), 'utf8')) as { private: { item: { id: string } }[] };
+    expect(overlay.private.some((p) => p.item.id === 'a-locked-case-study')).toBe(true);
+    await page.goto('/_edit/articles/');
+    await expect(page.locator('tr', { hasText: 'A locked case study' })).toContainText('Private');
+  });
+
   for (const scheme of ['light', 'dark'] as const) {
     test(`the Access screen has no serious axe findings, ${scheme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });

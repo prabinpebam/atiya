@@ -7,12 +7,14 @@ import ContentIssues from '../components/ContentIssues.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import { articleRows, load, sectionOptions } from '../server/screens';
+import { hasPrivate, privateRoot } from '../../content/source';
 
 export const prerender = false;
 
 const loaded = load();
 const wants = Astro.url.searchParams.get('new');
 const home = loaded.ok ? loaded.index.structure.home.id : '';
+const protectable = hasPrivate(privateRoot());
 ---
 
 <EditorLayout title="Pages" screen="articles" heading="Pages" intro="Everything on the site with its own address, newest first: articles, pages (About, Contact) and galleries.">
@@ -25,10 +27,10 @@ const home = loaded.ok ? loaded.index.structure.home.id : '';
       <>
         <ArticleTable rows={articleRows(loaded.index)} />
         <Dialog id="new-article" title="New article" size="md">
-          <ArticleForm mode="new" kind="note" sections={sectionOptions(loaded.index)} />
+          <ArticleForm mode="new" kind="note" sections={sectionOptions(loaded.index)} protectable={protectable} />
         </Dialog>
         <Dialog id="new-page" title="New page" size="md">
-          <ArticleForm mode="new" kind="page" section={home} sections={sectionOptions(loaded.index)} />
+          <ArticleForm mode="new" kind="page" section={home} sections={sectionOptions(loaded.index)} protectable={protectable} />
         </Dialog>
         <Dialog id="delete-article" title="Delete this draft?" size="sm">
           <ArticleForm mode="delete" />

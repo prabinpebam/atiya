@@ -11,9 +11,10 @@ import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Resu
 import { slugify, today, unique } from '../model/ids';
 import { childSlugs, nodeIds, place, sectionOf, unplace } from '../model/structure';
 import { isMeaningful } from '../model/ops';
-import { readSnapshot, fileOf } from '../../content/source';
+import { readSnapshot, fileOf, hasPrivate, privateRoot } from '../../content/source';
 import { existsSync } from 'node:fs';
-import { unplaceProtected } from '../model/access';
+import { placeLocked, placePrivate, sectionOrder, unplaceProtected } from '../model/access';
+import { token } from '../../access/crypto';
 import type { Overlay } from '../../content/schema';
 
 export const STRUCTURE = '/content/structures/site.json';
@@ -121,11 +122,20 @@ export interface CreateArticle {
   summary: string;
   kind: 'page' | 'note' | 'gallery';
   section: string | null;
+  /**
+   * Who can see it (documentation/access/spec.md §8.2): open (the default), locked (in its section, for
+   * signed-in readers whose access covers it) or private (in no section, from a magic link). A protected
+   * page is written straight into private-pages/, so it's never in content/, not even for a moment.
+   */
+  access?: 'open' | 'locked' | 'private';
 }
 
 export async function createArticle(req: CreateArticle): Promise<Result & { id?: string }> {
   const s = readDoc<SiteStructure>(STRUCTURE);
   if (!s) return refuse(STRUCTURE, 'missing');
+  const access = req.access ?? 'open';
+  if (access !== 'open' && !hasPrivate(privateRoot())) return refuse(OVERLAY, "private-pages/ isn't set up: run scripts/setup-private-pages.ps1 first", 'access');
+  if (access === 'locked' && !req.section) return refuse(articleKey('new'), 'a locked page is listed in a section: choose one', 'section');
   const all = articles();
   const title = req.title.trim();
   if (!title) return refuse(articleKey('new'), 'needs a title', 'title');
@@ -147,6 +157,22 @@ export async function createArticle(req: CreateArticle): Promise<Result & { id?:
   };
   const parsed = articleSchema.safeParse(doc);
   if (!parsed.success) return { ok: false, status: 422, issues: parsed.error.issues.map((i) => ({ file: 'content/articles/new.json', path: i.path.join('.'), message: i.message })) };
+  if (access !== 'open') {
+    const key = `/private/articles/${id}.json`;
+    const o = readDoc<Overlay>(OVERLAY);
+    const overlay = o?.value ?? { sections: [], private: [] };
+    const taken = new Set([...nodeIds(s.value), ...overlay.sections.flatMap((x) => x.pages.map((p) => p.id)), ...overlay.private.map((p) => p.id)]);
+    const node = { id: unique(id, taken), token: token(), item: { type: 'article' as const, id } };
+    const next = access === 'locked' ? placeLocked(overlay, req.section!, node, [...sectionOrder(s.value, overlay, req.section!).map((p) => p.id), node.id]) : placePrivate(overlay, node);
+    const r = await commit({
+      changes: [
+        { key, bytes: jsonBytes(doc) },
+        { key: OVERLAY, bytes: jsonBytes(next) },
+      ],
+      ifMatch: { [key]: null, [OVERLAY]: o?.version ?? null },
+    });
+    return r.ok ? { ...r, id } : r;
+  }
   const changes: Change[] = [{ key: articleKey(id), bytes: jsonBytes(doc) }];
   const ifMatch: Record<string, string | null> = { [articleKey(id)]: null };
   if (req.section) {
@@ -169,6 +195,25 @@ export async function duplicateArticle(id: string): Promise<Result & { id?: stri
   const copyId = unique(`${id}-copy`, new Set([...all.keys(), ...siblings]));
   const { publishedAt: _p, reviewedAt: _r, ...rest } = src.value;
   const doc: Article = { ...rest, id: copyId, slug: copyId, title: `${src.value.title} (copy)`, status: 'draft', updatedAt: today() };
+  // a locked or private page's copy is locked or private too, and never touches content/
+  const srcKey = articleKey(id);
+  if (srcKey.startsWith('/private/')) {
+    const key = `/private/articles/${copyId}.json`;
+    const o = readDoc<Overlay>(OVERLAY);
+    const overlay = o?.value ?? { sections: [], private: [] };
+    const lockedIn = overlay.sections.find((x) => x.pages.some((p) => p.item.id === id))?.section;
+    const taken = new Set([...nodeIds(s.value), ...overlay.sections.flatMap((x) => x.pages.map((p) => p.id)), ...overlay.private.map((p) => p.id)]);
+    const node = { id: unique(copyId, taken), token: token(), item: { type: 'article' as const, id: copyId } };
+    const next = lockedIn ? placeLocked(overlay, lockedIn, node, [...sectionOrder(s.value, overlay, lockedIn).map((p) => p.id), node.id]) : placePrivate(overlay, node);
+    const r = await commit({
+      changes: [
+        { key, bytes: jsonBytes(doc) },
+        { key: OVERLAY, bytes: jsonBytes(next) },
+      ],
+      ifMatch: { [key]: null, [OVERLAY]: o?.version ?? null },
+    });
+    return r.ok ? { ...r, id: copyId } : r;
+  }
   const changes: Change[] = [{ key: articleKey(copyId), bytes: jsonBytes(doc) }];
   const ifMatch: Record<string, string | null> = { [articleKey(copyId)]: null };
   if (section) {
