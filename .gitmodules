@@ -1,0 +1,4 @@
+[submodule "private-pages"]
+	path = private-pages
+	url = https://github.com/prabinpebam/atiya-private.git
+	branch = main
