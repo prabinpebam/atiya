@@ -37,16 +37,21 @@ const seed = () => {
 };
 const png = (w: number, h: number, alpha = false) => sharp({ create: { width: w, height: h, channels: alpha ? 4 : 3, background: alpha ? { r: 10, g: 120, b: 200, alpha: 0.5 } : { r: 200, g: 120, b: 60 } } }).png().toBuffer();
 const saved = process.env.CONTENT_ROOT;
+const savedPrivate = process.env.PRIVATE_ROOT;
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'editor-server-'));
   content = join(dir, 'content');
   process.env.CONTENT_ROOT = content;
+  // its own private folder, absent: these tests are about the public content alone
+  process.env.PRIVATE_ROOT = join(dir, 'private-pages');
   seed();
 });
 afterEach(() => {
   if (saved === undefined) delete process.env.CONTENT_ROOT;
   else process.env.CONTENT_ROOT = saved;
+  if (savedPrivate === undefined) delete process.env.PRIVATE_ROOT;
+  else process.env.PRIVATE_ROOT = savedPrivate;
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -470,24 +475,29 @@ describe('the dev integration', () => {
     });
     return calls;
   };
-  const env = { CONTENT_ROOT: process.env.CONTENT_ROOT, SITE_EDITOR: process.env.SITE_EDITOR };
+  const env = { CONTENT_ROOT: process.env.CONTENT_ROOT, PRIVATE_ROOT: process.env.PRIVATE_ROOT, SITE_EDITOR: process.env.SITE_EDITOR };
   beforeAll(() => {
     delete process.env.SITE_EDITOR;
   });
   afterAll(() => Object.assign(process.env, env));
 
-  it('injects nothing for a build or a preview, and still points the build at the real content/', () => {
+  it('injects nothing for a build or a preview, and still points the build at the real content/ and private-pages/', () => {
     delete process.env.CONTENT_ROOT;
+    delete process.env.PRIVATE_ROOT;
     for (const command of ['build', 'preview'] as const) {
       const c = setup(command);
       expect(c).toMatchObject({ routes: [], scripts: 0, middleware: 0 });
-      expect(c.define).toEqual({ __SITE_CONTENT_ROOT__: JSON.stringify(join(ROOT, 'content')) });
+      expect(c.define).toEqual({ __SITE_CONTENT_ROOT__: JSON.stringify(join(ROOT, 'content')), __SITE_PRIVATE_ROOT__: JSON.stringify(join(ROOT, 'private-pages')) });
     }
   });
 
-  it('refuses CONTENT_ROOT in a build, so a build always reads the real content', () => {
+  it('refuses CONTENT_ROOT or PRIVATE_ROOT in a build, so a build always reads the real folders', () => {
     process.env.CONTENT_ROOT = join(tmpdir(), 'elsewhere');
     expect(() => setup('build')).toThrow(/CONTENT_ROOT/);
+    delete process.env.CONTENT_ROOT;
+    process.env.PRIVATE_ROOT = join(tmpdir(), 'elsewhere');
+    expect(() => setup('build')).toThrow(/PRIVATE_ROOT/);
+    delete process.env.PRIVATE_ROOT;
   });
 
   it('injects the screens, the API, the guard and the launcher in dev, unless SITE_EDITOR is off', () => {

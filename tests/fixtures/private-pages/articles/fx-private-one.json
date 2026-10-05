@@ -1,0 +1,24 @@
+{
+  "id": "fx-private-one",
+  "type": "article",
+  "kind": "note",
+  "slug": "fx-private-one",
+  "title": "Fixture private one: velvet compass memo",
+  "summary": "Fixture summary: the velvet compass memo, shared by magic link only.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-05",
+  "updatedAt": "2026-10-05",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Fixture paragraph private one: the velvet compass memo points north toward a small, careful launch."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Fixture heading private one: north by north"
+    }
+  ]
+}

@@ -86,6 +86,13 @@ export interface Picture {
 
 const webp = async (src: ImageMetadata, width: number) => (await getImage({ src, width, format: 'webp', quality: 80 })).src;
 
+/** In a build, every file made from a private master goes in the provenance record, for the sealer (documentation/access/spec.md §6.2). */
+async function record(master: string, urls: string[]) {
+  if (!import.meta.env.PROD || !master.startsWith('/private/')) return;
+  const { recordProvenance } = await import('./provenance');
+  for (const url of new Set(urls)) recordProvenance({ kind: 'asset', url, master });
+}
+
 /** One master at a slot's widths: what the page needs to show it. */
 async function sized(master: string, slot: Slot) {
   const meta = await metadata(master);
@@ -93,6 +100,7 @@ async function sized(master: string, slot: Slot) {
   const widths = [...new Set([...wanted.filter((w) => w < meta.width), Math.min(meta.width, Math.max(...wanted))])].sort((a, b) => a - b);
   const urls = await Promise.all(widths.map((w) => webp(meta, w)));
   const [full, thumb] = await Promise.all([webp(meta, Math.min(meta.width, FULL)), webp(meta, Math.min(meta.width, THUMB))]);
+  await record(master, [...urls, full, thumb]);
   return {
     src: urls[Math.min(1, urls.length - 1)],
     srcset: widths.map((w, i) => `${urls[i]} ${w}w`).join(', '),

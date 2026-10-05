@@ -19,6 +19,9 @@ import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.ast
 import RelatedStories, { type RelatedStory } from '../components/compounds/RelatedStories.astro';
 import Prose from '../components/fundamentals/Prose.astro';
 import BackToTop from '../components/fundamentals/BackToTop.astro';
+import Text from '../components/fundamentals/Text.astro';
+import AccessBar from '../components/compounds/AccessBar.astro';
+import UnlockPanel from '../components/compounds/UnlockPanel.astro';
 import type { IconName } from '../design/icons';
 
 interface Props {
@@ -54,14 +57,40 @@ interface Props {
   frame?: PlanetFrame;
   /** The story being read, and the related stories to suggest after it, best first (the reader's browser shows the ones not read yet first). */
   related?: { current: string; stories: RelatedStory[] };
+  /**
+   * A locked or private page (documentation/access/spec.md §5.4): a build seals the page between comment
+   * markers the sealer replaces, and shows the sign-in panel (locked) or the private note in its place; the
+   * dev server shows it open, with a ribbon saying who can see it.
+   */
+  sealed?: { access: 'locked' | 'private'; id: string; contact: string };
 }
 
-const { title, description, nav, action, crumbs, header, dropcap = true, prev, next, frame, related } = Astro.props;
+const { title, description, nav, action, crumbs, header, dropcap = true, prev, next, frame, related, sealed } = Astro.props;
+const sealing = !!sealed && import.meta.env.PROD;
 ---
 
-<PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} preload={['display', 'display-italic', 'text', 'ui']}>
+<PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} sealed={sealed?.access} preload={['display', 'display-italic', 'text', 'ui']}>
   {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} />}
+  {!frame && <AccessBar />}
   <main id="main" class="page" tabindex="-1">
+    {
+      sealed && !sealing && (
+        <p class="ribbon">
+          <Text as="span" variant="ui">
+            {sealed.access === 'locked' ? 'Locked: listed and opened only for signed-in readers whose access covers it.' : 'Private: opens only from its magic link.'}
+          </Text>
+        </p>
+      )
+    }
+    {
+      sealing && (
+        <div class="gate" data-access-gate={sealed!.access}>
+          <UnlockPanel kind={sealed!.access === 'locked' ? 'sign-in' : 'private'} contact={sealed!.contact} />
+        </div>
+      )
+    }
+    {sealing && <Fragment set:html={`<!--sealed:main:${sealed!.id}-->`} />}
+    {sealed && <span hidden data-page-title>{title}</span>}
     <article class="article" data-minimap-source>
       {
         crumbs && !frame && (
@@ -92,6 +121,7 @@ const { title, description, nav, action, crumbs, header, dropcap = true, prev, n
     </div>
     <ArticleMinimap />
     <Lightbox />
+    {sealing && <Fragment set:html="<!--/sealed:main-->" />}
   </main>
   {!frame && <SiteFooter />}
   <slot name="page-end" />
@@ -101,6 +131,24 @@ const { title, description, nav, action, crumbs, header, dropcap = true, prev, n
   .page {
     flex: 1 0 auto;
     outline: none;
+  }
+
+  /* edit mode's dev server: who can see this page */
+  .ribbon {
+    margin: 0;
+    padding: var(--space-2) var(--space-gutter);
+    background: var(--color-accent-soft);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  /* a sealed page's sign-in panel (or private note), where the page will be once it's open */
+  .gate {
+    width: min(var(--size-popout), 100% - 2 * var(--space-gutter));
+    margin: var(--space-section) auto;
+  }
+
+  .gate[hidden] {
+    display: none;
   }
 
   /* the crumbs and the way on line up with the reading column's start */

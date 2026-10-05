@@ -1,0 +1,51 @@
+---
+/**
+ * The signed-in state, under the header on every page while a reader is signed in (documentation/access/
+ * spec.md §7.3): that shared pages are listed for them, until when, and Sign out. Hidden until the sign-in
+ * runtime (scripts/sealed.ts) finds a key on this device; Sign out forgets it here and in every other tab.
+ * @tier compound
+ * @a11y A region named "Access"; its words say the state, so it isn't carried by colour or the icon.
+ */
+import Text from '../fundamentals/Text.astro';
+import Button from '../fundamentals/Button.astro';
+import Icon from '../fundamentals/Icon.astro';
+
+interface Props {
+  /** Shown from the start, with an end date (the design library); on the site the runtime shows it. */
+  shown?: { until?: string };
+}
+
+const { shown } = Astro.props;
+---
+
+<div class="bar" role="region" aria-label="Access" data-access-bar hidden={!shown}>
+  <div class="inner">
+    <Icon name="key" size="inherit" />
+    <Text as="span" variant="ui">
+      Signed in. Work shared with you is listed for you<span data-access-until>{shown?.until ? `, until ${shown.until}` : ''}</span>.
+    </Text>
+    <Button type="button" variant="quiet" data-access-sign-out="">Sign out</Button>
+  </div>
+</div>
+
+<style>
+  .bar {
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    background: var(--color-accent-soft);
+    color: var(--color-text);
+  }
+
+  .bar[hidden] {
+    display: none;
+  }
+
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    max-width: var(--size-max);
+    margin-inline: auto;
+    padding: var(--space-2) var(--space-gutter);
+  }
+</style>

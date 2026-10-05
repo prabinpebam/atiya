@@ -1,0 +1,32 @@
+{
+  "id": "fx-locked-beta",
+  "type": "article",
+  "kind": "note",
+  "slug": "fx-locked-beta",
+  "title": "Fixture locked beta: tidepool kiosk prototype",
+  "summary": "Fixture summary: a tidepool kiosk prototype tested with visiting families.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-05",
+  "updatedAt": "2026-10-05",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Fixture paragraph beta one: the tidepool kiosk prototype ran on a single tablet by the aquarium door."
+    },
+    {
+      "type": "video",
+      "media": "articles/fx-locked-beta/tidepool"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Fixture heading beta: what the families did"
+    },
+    {
+      "type": "text",
+      "markdown": "Fixture paragraph beta two: children pressed every glowing shell twice before reading anything."
+    }
+  ]
+}

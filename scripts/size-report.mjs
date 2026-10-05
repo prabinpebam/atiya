@@ -131,6 +131,28 @@ if (landingGameJs.length) {
   console.error(`✗ landing page loads 3D JS: ${landingGameJs.join(', ')}`);
   failed = true;
 }
+// signing in (documentation/access/benchmark.md QB7): the runtime and its crypto load only where they're
+// needed, as their own chunk, at most 12 KB gz; no page loads them up front
+const SIGN_IN_BUDGET_KB = 12;
+const runtime = js.filter((f) => readFileSync(join(ASSETS, f), 'utf8').includes('site.access.reloaded'));
+if (runtime.length) {
+  const eagerEverywhere = new Set(pages('').flatMap(eagerScripts));
+  const shared = new Set([...eagerEverywhere]);
+  const runtimeKB = sum(staticClosure(runtime).filter((f) => !shared.has(f)));
+  console.log(`sign-in runtime:  ${runtimeKB.toFixed(1)} KB gz, loaded on demand (budget ${SIGN_IN_BUDGET_KB} KB)`);
+  const eagerRuntime = runtime.filter((f) => eagerEverywhere.has(f));
+  if (eagerRuntime.length) {
+    console.error(`✗ a page loads the sign-in runtime up front: ${eagerRuntime.join(', ')}`);
+    failed = true;
+  }
+  if (runtimeKB > SIGN_IN_BUDGET_KB) {
+    console.error(`✗ the sign-in runtime is over budget`);
+    failed = true;
+  }
+} else {
+  console.error('✗ the sign-in runtime is missing from the build');
+  failed = true;
+}
 if (gateKB > GATE_BUDGET_KB) {
   console.error(`✗ gate JS over budget`);
   failed = true;

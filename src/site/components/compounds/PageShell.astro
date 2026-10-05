@@ -46,6 +46,12 @@ interface Props {
   redirect?: string;
   /** Where the page is shown: on the site (its paper), or in the planet's frame over the game (the smoke instead, and kept out of search results). */
   frame?: 'site' | 'planet';
+  /**
+   * A locked or private page (documentation/access/spec.md §5.4): a build gives it a neutral head ("Locked
+   * page" or "Private page", no description or social card, kept out of search, no referrer to other sites),
+   * since its real title is sealed with it.
+   */
+  sealed?: 'locked' | 'private';
 }
 
 const {
@@ -60,19 +66,23 @@ const {
   canonical,
   redirect,
   frame = 'site',
+  sealed,
 } = Astro.props;
 // social previews need an absolute URL: `site` is set when deploying
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
+// a build never names a protected page in its head; the dev server shows its real title
+const neutral = sealed && import.meta.env.PROD ? (sealed === 'locked' ? 'Locked page' : 'Private page') : undefined;
 ---
 
 <!doctype html>
-<html lang="en" data-frame={frame === 'planet' ? 'planet' : undefined}>
+<html lang="en" data-frame={frame === 'planet' ? 'planet' : undefined} data-access={sealed}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    {(noindex || redirect || frame === 'planet') && <meta name="robots" content="noindex" />}
+    <title>{neutral ?? title}</title>
+    {!neutral && <meta name="description" content={description} />}
+    {sealed ? <meta name="robots" content="noindex, nofollow" /> : (noindex || redirect || frame === 'planet') && <meta name="robots" content="noindex" />}
+    {sealed && <meta name="referrer" content="same-origin" />}
     {redirect && <meta http-equiv="refresh" content={`0; url=${withBase(redirect)}`} />}
     {(canonical ?? redirect) && <link rel="canonical" href={new URL(withBase(canonical ?? redirect!), Astro.site ?? Astro.url).href} />}
     <meta name="color-scheme" content="light dark" />
@@ -80,16 +90,27 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
     <meta name="theme-color" content={THEME_COLOR.dark} media="(prefers-color-scheme: dark)" />
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
     {preload.map((face) => <link rel="preload" href={FONT_URL[face]} as="font" type="font/woff2" crossorigin />)}
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImage} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={imageAlt} />
-    <meta name="twitter:card" content="summary_large_image" />
+    {
+      !neutral && (
+        <Fragment>
+          <meta property="og:type" content="website" />
+          <meta property="og:title" content={title} />
+          <meta property="og:description" content={description} />
+          <meta property="og:image" content={ogImage} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:image:alt" content={imageAlt} />
+          <meta name="twitter:card" content="summary_large_image" />
+        </Fragment>
+      )
+    }
     {(router || frame === 'planet') && <ClientRouter />}
     <script is:inline>
+      // signed in on this device (documentation/access/spec.md §7.3): marked before the first paint, so a
+      // section's sign-in line and a locked page's panel don't flash while the key is tried (scripts/sealed.ts)
+      try {
+        if (sessionStorage.getItem('site.access') || localStorage.getItem('site.access')) document.documentElement.dataset.signedIn = '';
+      } catch (e) {}
       // the saved theme, before the first paint (scripts/theme.ts owns the rules)
       var siteTheme = '';
       try {
@@ -132,6 +153,7 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
 
 <script>
   import { each } from '../../scripts/page';
+  import { startAccess } from '../../scripts/access';
   import { overlay, overlayPage } from '../../scripts/scrollbars';
   import { followTheme, followThemeInPictures } from '../../scripts/theme';
 
@@ -142,6 +164,8 @@ const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
 
   // the frosted overlay handles: the page's own, and every region that opts in
   overlayPage();
+  // signing in, only where a page needs it (documentation/access/spec.md §7)
+  startAccess();
   each<HTMLElement>('[data-scrollbar]', overlay);
 
   // dev only: content is read from disk, so a change (a save in edit mode, or a file changed by hand)

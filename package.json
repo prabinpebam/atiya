@@ -19,7 +19,9 @@
     "build:character": "node scripts/build-character.mjs",
     "build:portraits": "node scripts/render-portraits.mjs",
     "build:npc-portraits": "node scripts/render-npc-portraits.mjs",
-    "verify:prod": "astro build && node scripts/size-report.mjs --prod",
+    "verify:prod": "astro build && node scripts/verify-sealed.mjs && node scripts/size-report.mjs --prod",
+    "verify:sealed": "node scripts/verify-sealed.mjs",
+    "preview:protected": "astro build && node scripts/verify-sealed.mjs && astro preview --port 4331",
     "perf:audit": "node scripts/perf-audit.mjs"
   },
   "dependencies": {

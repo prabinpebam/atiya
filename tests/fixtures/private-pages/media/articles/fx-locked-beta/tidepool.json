@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "file": "tidepool.mp4",
+  "title": "Fixture video: the tidepool kiosk walkthrough",
+  "width": 320,
+  "height": 180,
+  "duration": 2,
+  "poster": {
+    "file": "tidepool.poster.webp"
+  },
+  "visibility": "public"
+}

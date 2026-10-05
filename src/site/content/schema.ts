@@ -171,6 +171,8 @@ export const siteSettings = z.strictObject({
   positioning: z.string().optional(),
   socialImage: mediaId.optional(),
   contactEmail: z.email().optional(),
+  /** The page "Get in touch" goes to (a node of the site structure): where a reader asks for access. */
+  contactPage: id.optional(),
 });
 
 /**
@@ -266,6 +268,51 @@ export const redirects = z.array(
   }),
 );
 
+/** A protected page's address in place of its slug: opaque, so it never hints at the title (documentation/access/spec.md §2, V24). */
+export const accessToken = z.string().regex(/^[a-z2-7]{10}$/, 'a token: 10 characters from a–z and 2–7');
+/** A locked or private page's node: its ID, its token and the page it places. */
+const protectedNode = z.strictObject({ id, token: accessToken, item: pageRef });
+
+/**
+ * The private overlay (private-pages/structures/overlay.json; documentation/access/spec.md §2, §3): the
+ * locked pages each open section holds, the section's full order (open and locked pages together), and the
+ * private pages, which are in no section.
+ */
+export const overlay = z.strictObject({
+  sections: z
+    .array(
+      z.strictObject({
+        /** The open section the locked pages are in. */
+        section: id,
+        pages: z.array(protectedNode),
+        /** The section's full order, by node ID; pages it leaves out follow, open ones first. */
+        order: z.array(id).optional(),
+      }),
+    )
+    .default([]),
+  private: z.array(protectedNode).default([]),
+});
+
+const dateTime = z.string().refine((s) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(s) && !Number.isNaN(Date.parse(s)), 'a date and time with its time zone (ISO 8601)');
+/** A grant: one credential for one recipient (documentation/access/spec.md §4.1). Mirrors src/site/access/types.ts. */
+export const grant = z.strictObject({
+  id: z.string().regex(/^g[a-z2-7]{8}$/, 'g and 8 characters from a–z and 2–7'),
+  kind: z.enum(['code', 'link']),
+  /** A code's first word: its name, not secret. */
+  name: z.string().regex(/^[a-z]+$/, 'one lowercase word').optional(),
+  recipient: z.strictObject({ name: z.string().min(1), organisation: z.string().optional(), role: z.string().optional(), email: z.email().optional() }),
+  purpose: z.string(),
+  scope: z.strictObject({ sections: z.array(id).optional(), pages: z.array(id).optional() }),
+  createdAt: dateTime,
+  expiresAt: dateTime.optional(),
+  revokedAt: dateTime.optional(),
+  secret: z.strictObject({ words: z.string().optional(), key: z.string().optional(), salt: z.string() }),
+  notes: z.string().optional(),
+});
+export const accessFile = z.strictObject({ grants: z.array(grant) });
+/** The message edit mode offers to copy with a new grant: {name}, {code}, {link} and {expires} are filled in. */
+export const accessMessage = z.strictObject({ code: z.string().min(1), link: z.string().min(1) });
+
 export type ImageMedia = z.infer<typeof imageMedia>;
 export type DocumentMedia = z.infer<typeof documentMedia>;
 export type VideoMedia = z.infer<typeof videoMedia>;
@@ -276,4 +323,7 @@ export type SiteSettings = z.infer<typeof siteSettings>;
 export type SiteStructure = z.infer<typeof siteStructure>;
 export type Redirect = z.infer<typeof redirects>[number];
 export type PlanetStructure = z.infer<typeof planetStructure>;
+export type Overlay = z.infer<typeof overlay>;
+export type GrantRecord = z.infer<typeof grant>;
+export type AccessMessage = z.infer<typeof accessMessage>;
 export type Place = PlanetStructure['places'][number];

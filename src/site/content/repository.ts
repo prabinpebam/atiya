@@ -45,8 +45,16 @@ export function placePages(placeId: string): { article: Article; route: Route }[
 }
 export const getArticle = (id: string) => content().articles.get(id);
 export const getPerson = (id: string) => content().people.get(id);
-/** The routes the site builds: hubs and published items. */
+/** The routes the site builds: hubs and published items, locked and private ones included (they're built sealed). */
 export const getRoutes = (): Route[] => content().routes.filter((r) => r.published);
+/** The routes anyone may be shown a link to: everything built but locked and private pages (V25, V32). */
+export const getOpenRoutes = (): Route[] => getRoutes().filter((r) => r.access === 'open');
+/** A page's access: open, locked or private (documentation/access/spec.md §2). */
+export const getAccess = (articleId: string) => content().access.get(articleId) ?? 'open';
+/** The grants (private-pages/access.json), the overlay and the message offered with a new grant. */
+export const getGrants = () => content().grants;
+export const getOverlay = () => content().overlay;
+export const getAccessMessage = () => content().accessMessage;
 export const getRoute = (path: string): Route | undefined => getRoutes().find((r) => r.path === path);
 /** Where an item is placed, published or not (the editor's canvas previews a draft in its section). */
 export const getPlacement = (type: string, id: string): Route | undefined =>

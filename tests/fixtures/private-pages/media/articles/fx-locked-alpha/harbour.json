@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "file": "harbour.webp",
+  "alt": "Fixture picture: a harbour lantern glowing over still water at dusk.",
+  "caption": "Fixture caption: the harbour lantern at its brightest.",
+  "visibility": "public",
+  "dark": {
+    "file": "harbour.dark.webp"
+  }
+}

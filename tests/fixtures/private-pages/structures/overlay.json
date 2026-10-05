@@ -1,0 +1,72 @@
+{
+  "sections": [
+    {
+      "section": "side-projects",
+      "order": [
+        "atiya",
+        "fx-locked-alpha",
+        "watai",
+        "fx-locked-beta",
+        "story",
+        "fx-locked-gamma"
+      ],
+      "pages": [
+        {
+          "id": "fx-locked-alpha",
+          "token": "alphaaaaa2",
+          "item": {
+            "type": "article",
+            "id": "fx-locked-alpha"
+          }
+        },
+        {
+          "id": "fx-locked-beta",
+          "token": "betabbbbb3",
+          "item": {
+            "type": "article",
+            "id": "fx-locked-beta"
+          }
+        },
+        {
+          "id": "fx-locked-gamma",
+          "token": "gammaccc44",
+          "item": {
+            "type": "article",
+            "id": "fx-locked-gamma"
+          }
+        }
+      ]
+    },
+    {
+      "section": "work",
+      "pages": [
+        {
+          "id": "fx-locked-delta",
+          "token": "deltaddd55",
+          "item": {
+            "type": "article",
+            "id": "fx-locked-delta"
+          }
+        }
+      ]
+    }
+  ],
+  "private": [
+    {
+      "id": "fx-private-one",
+      "token": "privone222",
+      "item": {
+        "type": "article",
+        "id": "fx-private-one"
+      }
+    },
+    {
+      "id": "fx-private-two",
+      "token": "privtwo333",
+      "item": {
+        "type": "article",
+        "id": "fx-private-two"
+      }
+    }
+  ]
+}

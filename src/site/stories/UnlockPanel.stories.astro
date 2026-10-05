@@ -1,0 +1,13 @@
+---
+import Example from '../library/Example.astro';
+import UnlockPanel from '../components/compounds/UnlockPanel.astro';
+import { withBase } from '../design/meta';
+---
+
+<Example title="Sign in" layout="block" description="The Sign in page and a locked page opened while signed out: the access code, Show code, Remember on this device, and how to ask for one.">
+  <UnlockPanel contact={withBase('/contact/')} />
+</Example>
+
+<Example title="A private page" layout="block" description="A private page opens only from its magic link: without it, a short note and how to ask for a new one.">
+  <UnlockPanel kind="private" id="private" contact={withBase('/contact/')} />
+</Example>

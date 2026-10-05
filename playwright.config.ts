@@ -49,7 +49,7 @@ export default defineConfig({
       ? [
           {
             // Test build: includes the window.__game hook (never present in production builds).
-            command: `npm run build:test && npx astro preview --port ${PORT}`,
+            command: `npm run build:test && node scripts/verify-sealed.mjs && npx astro preview --port ${PORT}`,
             url: `http://localhost:${PORT}/`,
             timeout: 240_000,
             reuseExistingServer: !process.env.CI,

@@ -9,6 +9,7 @@ import PageShell from '../components/compounds/PageShell.astro';
 import SiteHeader from '../components/compounds/SiteHeader.astro';
 import Hero, { type HeroPicture } from '../components/compounds/Hero.astro';
 import SiteFooter from '../components/compounds/SiteFooter.astro';
+import AccessBar from '../components/compounds/AccessBar.astro';
 import type { NavItem } from '../components/compounds/SiteHeader.astro';
 
 interface Props {
@@ -29,6 +30,7 @@ const { title, description, hero, nav, afterId } = Astro.props;
 
 <PageShell title={title} description={description} preload={['display', 'display-italic', 'ui']}>
   <SiteHeader nav={nav} />
+  <AccessBar />
   <main id="main" class="landing" tabindex="-1">
     <Hero {...hero}>
       <slot />

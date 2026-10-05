@@ -14,7 +14,7 @@ const owner = getPerson(site.owner);
 const home = getRoute('/')!;
 const routes = getRoutes();
 const sections = routes.filter((r) => r.parent === home.node);
-const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === r.node).length;
+const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === r.node && p.access === 'open').length;
 ---
 
 <LandingLayout

@@ -1,0 +1,108 @@
+{
+  "grants": [
+    {
+      "id": "gfixall22",
+      "kind": "code",
+      "name": "harbor",
+      "recipient": {
+        "name": "Fixture Reader All",
+        "organisation": "Fixture Org Alpha"
+      },
+      "purpose": "Fixture purpose: every locked page",
+      "scope": {
+        "sections": [
+          "side-projects",
+          "work"
+        ]
+      },
+      "createdAt": "2026-10-01T09:00:00+05:30",
+      "expiresAt": "2099-01-01T00:00:00+05:30",
+      "secret": {
+        "words": "maple-river-cloud-seven",
+        "salt": "o7LSFLK7FFqKIXPCC1r1sQ"
+      }
+    },
+    {
+      "id": "gfixone22",
+      "kind": "code",
+      "name": "lantern",
+      "recipient": {
+        "name": "Fixture Reader One",
+        "organisation": "Fixture Org Beta"
+      },
+      "purpose": "Fixture purpose: one locked page",
+      "scope": {
+        "pages": [
+          "fx-locked-alpha"
+        ]
+      },
+      "createdAt": "2026-10-01T09:00:00+05:30",
+      "expiresAt": "2099-01-01T00:00:00+05:30",
+      "secret": {
+        "words": "pebble-orbit-fern-quiet",
+        "salt": "ZG_qab7mTbTjZeccsBcW9A"
+      }
+    },
+    {
+      "id": "gfixlink2",
+      "kind": "link",
+      "recipient": {
+        "name": "Fixture Reader Link",
+        "organisation": "Fixture Org Gamma"
+      },
+      "purpose": "Fixture purpose: one private page",
+      "scope": {
+        "pages": [
+          "fx-private-one"
+        ]
+      },
+      "createdAt": "2026-10-01T09:00:00+05:30",
+      "expiresAt": "2099-01-01T00:00:00+05:30",
+      "secret": {
+        "key": "-VXTjrb3cgEjd1QAwprAGBah6_nfgwxoDIhzEDq_4VI",
+        "salt": "I4Ac4NMm1DoAl57BIMCbnw"
+      }
+    },
+    {
+      "id": "gfixexp22",
+      "kind": "code",
+      "name": "meadow",
+      "recipient": {
+        "name": "Fixture Reader Expired"
+      },
+      "purpose": "Fixture purpose: expired",
+      "scope": {
+        "sections": [
+          "side-projects"
+        ]
+      },
+      "createdAt": "2026-10-01T09:00:00+05:30",
+      "expiresAt": "2026-10-02T00:00:00+05:30",
+      "secret": {
+        "words": "violet-anchor-silk-drum",
+        "salt": "XYVNXsazhI3yo-z_BTCNWQ"
+      }
+    },
+    {
+      "id": "gfixrev22",
+      "kind": "code",
+      "name": "cobalt",
+      "recipient": {
+        "name": "Fixture Reader Withdrawn"
+      },
+      "purpose": "Fixture purpose: withdrawn",
+      "scope": {
+        "sections": [
+          "side-projects"
+        ]
+      },
+      "createdAt": "2026-10-01T09:00:00+05:30",
+      "expiresAt": "2099-01-01T00:00:00+05:30",
+      "revokedAt": "2026-10-03T10:00:00+05:30",
+      "secret": {
+        "words": "ember-gravel-tulip-oak",
+        "salt": "mAyzf-sIJjgOFo49jtMLpg"
+      }
+    }
+  ]
+}

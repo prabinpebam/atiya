@@ -1,0 +1,28 @@
+{
+  "id": "fx-locked-delta",
+  "type": "article",
+  "kind": "note",
+  "slug": "fx-locked-delta",
+  "title": "Fixture locked delta: copper bridge case study",
+  "summary": "Fixture summary: the copper bridge case study and its patient rebuild.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-05",
+  "updatedAt": "2026-10-05",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Fixture paragraph delta one: the copper bridge case study started with a rusted railing and a sketch."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Fixture heading delta: the patient rebuild"
+    },
+    {
+      "type": "text",
+      "markdown": "Fixture paragraph delta two: the bridge reopened on a rainy Tuesday morning."
+    }
+  ]
+}

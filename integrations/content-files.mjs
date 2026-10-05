@@ -9,44 +9,51 @@
 import { copyFileSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { privateRootFor } from './roots.mjs';
+import { recordProvenance } from '../src/site/content/provenance.ts';
 
 const PUBLIC = new Set(['public', 'publicRedacted', 'summaryOnly']);
 /** What each kind of sidecar publishes, by the file's extension. */
 const KINDS = /** @type {const} */ ({ document: ['pdf'], video: ['mp4', 'webm'] });
 const TYPE = /** @type {Record<string, string>} */ ({ pdf: 'application/pdf', mp4: 'video/mp4', webm: 'video/webm' });
 
-/** The published file for a media ID and extension, if it's a public document or video: its absolute path. */
-function publishedFile(/** @type {string} */ mediaRoot, /** @type {string} */ id, /** @type {string} */ ext) {
+/** The published file for a media ID and extension, if it's a public document or video in one of the media folders: its absolute path and whether it's private. */
+function publishedFile(/** @type {{ root: string; private: boolean }[]} */ mediaRoots, /** @type {string} */ id, /** @type {string} */ ext) {
   if (!/^[a-z0-9-]+(\/[a-z0-9-]+)+$/.test(id)) return null;
-  const sidecar = normalize(join(mediaRoot, `${id}.json`));
-  if (!sidecar.startsWith(mediaRoot + sep) || !existsSync(sidecar)) return null;
-  try {
-    const s = JSON.parse(readFileSync(sidecar, 'utf8'));
-    const exts = /** @type {readonly string[] | undefined} */ (KINDS[/** @type {keyof typeof KINDS} */ (s?.kind)]);
-    if (!exts?.includes(ext) || !PUBLIC.has(s.visibility) || s.file !== `${id.split('/').pop()}.${ext}`) return null;
-    const file = join(dirname(sidecar), s.file);
-    return existsSync(file) ? file : null;
-  } catch {
-    return null;
+  for (const m of mediaRoots) {
+    const sidecar = normalize(join(m.root, `${id}.json`));
+    if (!sidecar.startsWith(m.root + sep) || !existsSync(sidecar)) continue;
+    try {
+      const s = JSON.parse(readFileSync(sidecar, 'utf8'));
+      const exts = /** @type {readonly string[] | undefined} */ (KINDS[/** @type {keyof typeof KINDS} */ (s?.kind)]);
+      if (!exts?.includes(ext) || !PUBLIC.has(s.visibility) || s.file !== `${id.split('/').pop()}.${ext}`) continue;
+      const file = join(dirname(sidecar), s.file);
+      if (existsSync(file)) return { file, private: m.private };
+    } catch {
+      continue;
+    }
   }
+  return null;
 }
 
-/** Every public document and video under the media folder: its media ID and extension. */
-function published(/** @type {string} */ mediaRoot) {
+/** Every public document and video under the media folders: its media ID and extension. */
+function published(/** @type {{ root: string; private: boolean }[]} */ mediaRoots) {
   /** @type {{ id: string; ext: string }[]} */
   const out = [];
-  const walk = (/** @type {string} */ dir) => {
-    if (!existsSync(dir)) return;
-    for (const e of readdirSync(dir)) {
-      const p = join(dir, e);
-      if (statSync(p).isDirectory()) walk(p);
-      else if (e.endsWith('.json')) {
-        const id = relative(mediaRoot, p).split(sep).join('/').replace(/\.json$/, '');
-        for (const ext of Object.values(KINDS).flat()) if (publishedFile(mediaRoot, id, ext)) out.push({ id, ext });
+  for (const { root } of mediaRoots) {
+    const walk = (/** @type {string} */ dir) => {
+      if (!existsSync(dir)) return;
+      for (const e of readdirSync(dir)) {
+        const p = join(dir, e);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (e.endsWith('.json')) {
+          const id = relative(root, p).split(sep).join('/').replace(/\.json$/, '');
+          for (const ext of Object.values(KINDS).flat()) if (publishedFile([{ root, private: false }], id, ext)) out.push({ id, ext });
+        }
       }
-    }
-  };
-  walk(mediaRoot);
+    };
+    walk(root);
+  }
   return out;
 }
 
@@ -67,7 +74,8 @@ export function byteRange(/** @type {string | undefined} */ header, /** @type {n
 
 /** @returns {import('astro').AstroIntegration} */
 export default function contentFiles() {
-  let mediaRoot = '';
+  /** @type {{ root: string; private: boolean }[]} */
+  let mediaRoots = [];
   let base = '/';
   return {
     name: 'content-files',
@@ -77,7 +85,11 @@ export default function contentFiles() {
         // as the editor integration: CONTENT_ROOT is another content folder, in dev only
         const override = process.env.CONTENT_ROOT;
         const content = override && command === 'dev' ? (isAbsolute(override) ? override : resolve(root, override)) : join(root, 'content');
-        mediaRoot = join(content, 'media');
+        // a private video is copied into the build only to be sealed (documentation/access/spec.md §6.2)
+        mediaRoots = [
+          { root: join(content, 'media'), private: false },
+          { root: join(privateRootFor(root, command), 'media'), private: true },
+        ];
         base = config.base.replace(/\/$/, '');
       },
       'astro:server:setup': ({ server }) => {
@@ -86,8 +98,9 @@ export default function contentFiles() {
           const at = url.startsWith(`${base}/media/`) ? base.length : url.startsWith('/media/') ? 0 : -1;
           const ext = /\.(pdf|mp4|webm)$/.exec(url)?.[1];
           if (at < 0 || !ext) return next();
-          const file = publishedFile(mediaRoot, url.slice(at + '/media/'.length, -(ext.length + 1)), ext);
-          if (!file) return next();
+          const found = publishedFile(mediaRoots, url.slice(at + '/media/'.length, -(ext.length + 1)), ext);
+          if (!found) return next();
+          const file = found.file;
           const size = statSync(file).size;
           res.setHeader('Content-Type', TYPE[ext]);
           res.setHeader('Accept-Ranges', 'bytes');
@@ -109,11 +122,13 @@ export default function contentFiles() {
       },
       'astro:build:done': ({ dir, logger }) => {
         const out = fileURLToPath(dir);
-        const files = published(mediaRoot);
+        const files = published(mediaRoots);
         for (const { id, ext } of files) {
+          const found = /** @type {{ file: string; private: boolean }} */ (publishedFile(mediaRoots, id, ext));
           const target = join(out, 'media', `${id}.${ext}`);
           mkdirSync(dirname(target), { recursive: true });
-          copyFileSync(/** @type {string} */ (publishedFile(mediaRoot, id, ext)), target);
+          copyFileSync(found.file, target);
+          if (found.private) recordProvenance({ kind: 'asset', url: `${base}/media/${id}.${ext}`, master: `/private/media/${id}.${ext}` });
         }
         if (files.length) logger.info(`copied ${files.length} file${files.length === 1 ? '' : 's'} (to download and videos) into media/`);
       },

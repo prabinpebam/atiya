@@ -19,6 +19,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { privateRootFor } from './roots.mjs';
 
 const ROUTES = [
   ['/_edit', 'dashboard.astro'],
@@ -54,6 +55,8 @@ function contentState() {
 export default function editor() {
   /** @type {string} */
   let contentRoot = '';
+  /** @type {string} */
+  let privateRoot = '';
   /** @type {boolean} */
   let editing = false;
   return {
@@ -64,15 +67,18 @@ export default function editor() {
         const override = process.env.CONTENT_ROOT;
         if (override && command === 'build') throw new Error('CONTENT_ROOT is only for the editor in dev and its tests: unset it to build, so the build reads the real content.');
         contentRoot = override && command === 'dev' ? (isAbsolute(override) ? override : resolve(root, override)) : join(root, 'content');
+        privateRoot = privateRootFor(root, command);
         updateConfig({
           vite: {
-            define: { __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot) },
+            define: { __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot), __SITE_PRIVATE_ROOT__: JSON.stringify(privateRoot) },
+            // the private masters a build imports (masters.ts globs through this alias)
+            resolve: { alias: { '@private-pages': privateRoot } },
             server: {
               ...(process.env.SITE_STRICT_PORT ? { strictPort: true } : {}),
               // a picture's master (an upload, a crop) is never a module, but a new one made the dev server
               // reload every open page, losing unsaved typing in other tabs; the store tells the pages itself,
               // and the sidecar beside each master is what they show (documentation/editor/spec.md §8.4)
-              ...(command === 'dev' ? { watch: { ignored: [/[\\/]content[\\/]media[\\/].+\.(?:webp|jpe?g|png|avif|gif|pdf|mp4|webm)$/i] } } : {}),
+              ...(command === 'dev' ? { watch: { ignored: [/[\\/](content|private-pages)[\\/]media[\\/].+\.(?:webp|jpe?g|png|avif|gif|pdf|mp4|webm)$/i] } } : {}),
             },
           },
         });
@@ -98,12 +104,19 @@ export default function editor() {
           server.environments.client.hot.send('site:content-changed', { files, fromEditor, origin, generation: state.generation });
         };
         server.watcher.add(contentRoot);
+        if (existsSync(privateRoot)) server.watcher.add(privateRoot);
         server.watcher.on('all', (event, file) => {
           if (!['add', 'change', 'unlink'].includes(event) || ignored(file)) return;
-          const rel = relative(contentRoot, file);
-          if (rel.startsWith('..') || isAbsolute(rel)) return;
+          // a file in either folder: /content/… or /private/… (src/site/content/source.ts)
+          const [dir, prefix] = [[contentRoot, '/content/'], [privateRoot, '/private/']].find(([d]) => {
+            const r = relative(d, file);
+            return !!r && !r.startsWith('..') && !isAbsolute(r);
+          }) ?? [];
+          if (!dir || !prefix) return;
+          const rel = relative(dir, file);
+          if (rel.split(/[\\/]/)[0] === '.git') return;
           const hash = event === 'unlink' || !existsSync(file) ? 'deleted' : sha1(file);
-          const key = '/content/' + rel.split(/[\\/]/).join('/');
+          const key = prefix + rel.split(/[\\/]/).join('/');
           // the bytes the open pages already know of: the editor's own write (its store told them), or a
           // change already announced (Windows reports one write as several events): nothing to tell
           if (state.writes.get(writeKey(file)) === hash) return;

@@ -1,0 +1,4 @@
+{
+  "code": "Hi {name}, here is access to work of mine that is not public. Open {link} and sign in with this access code: {code}. It works until {expires}.",
+  "link": "Hi {name}, here is a page I would like to share with you: {link} It works until {expires}."
+}

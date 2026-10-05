@@ -17,8 +17,15 @@ import StoryCard from '../components/compounds/StoryCard.astro';
 import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
 import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
+import Link from '../components/fundamentals/Link.astro';
+import AccessBar from '../components/compounds/AccessBar.astro';
 import type { IconName } from '../design/icons';
 import type { ComponentProps } from 'astro/types';
+
+type Story = Omit<ComponentProps<typeof StoryCard>, 'variant'> & {
+  /** The node it places: open cards name it, so a locked card can be placed after the one it follows. */
+  node?: string;
+};
 
 interface Props {
   /** The document title. */
@@ -36,7 +43,15 @@ interface Props {
   /** For an index below the top level. */
   crumbs?: { trail: { label: string; href: string }[]; current: string };
   /** The pages in it, in order. */
-  stories?: Omit<ComponentProps<typeof StoryCard>, 'variant'>[];
+  stories?: Story[];
+  /**
+   * Its locked pages (documentation/access/spec.md §2.1), each with the open page it follows (null: the
+   * start). A build seals each card and holds it after the list until a signed-in reader's grant opens it;
+   * the dev server shows them in their places, marked Locked.
+   */
+  locked?: { id: string; after: string | null; story: Story }[];
+  /** Where to sign in to see the locked pages (the Sign in page, with the way back). */
+  signIn?: string;
   /** How they're laid out: list (rows), tiles (an even grid), bento (a lead, then halves and thirds) or features (every page a lead). */
   view?: 'list' | 'tiles' | 'bento' | 'features';
   /** What an empty section says, in place of its pages. */
@@ -45,13 +60,31 @@ interface Props {
   redirect?: string;
   /** Read on the planet: the building's frame (its bar, over the smoke) replaces the site's header, footer and breadcrumbs. */
   frame?: PlanetFrame;
+  /** Keep the page out of search results (the Sign in page). */
+  noindex?: boolean;
 }
 
-const { title, description, heading, standfirst, nav, action, crumbs, stories = [], view = 'tiles', empty, redirect, frame } = Astro.props;
+const { title, description, heading, standfirst, nav, action, crumbs, stories = [], locked = [], signIn, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
+const sealing = import.meta.env.PROD;
+// in dev every page shows in its place, the locked ones marked; a build lists the open ones and seals the rest
+const shown: (Story & { lockedTag?: boolean })[] = sealing
+  ? stories
+  : (() => {
+      const all: (Story & { lockedTag?: boolean })[] = [...stories];
+      for (const l of locked) {
+        const at = l.after === null ? 0 : all.findIndex((s) => s.node === l.after) + 1;
+        all.splice(at > 0 || l.after === null ? at : all.length, 0, { ...l.story, node: l.id, lockedTag: true });
+      }
+      return all;
+    })();
+const sealed = sealing ? locked : [];
+const variantOf = (i: number) => (view === 'features' ? 'feature' : view === 'list' ? 'row' : view === 'bento' && i === 0 ? 'feature' : undefined);
+const open = (mark: string) => `<!--sealed:card:${mark}-->`;
 ---
 
-<PageShell title={title} description={description} redirect={redirect} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} preload={['display', 'display-italic', 'text', 'ui']}>
+<PageShell title={title} description={description} redirect={redirect} noindex={noindex} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} preload={['display', 'display-italic', 'text', 'ui']}>
   {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} />}
+  {!frame && <AccessBar />}
   <main id="main" class="index" tabindex="-1">
     <header class="intro">
       {crumbs && !frame && <Breadcrumbs trail={crumbs.trail} current={crumbs.current} />}
@@ -60,42 +93,60 @@ const { title, description, heading, standfirst, nav, action, crumbs, stories = 
     </header>
     <div class="list" data-view={view}>
       {
-        stories.length > 0 ? (
-          view === 'features' ? (
-            <div class="features">
-              {stories.map((s) => (
-                <StoryCard {...s} variant="feature" />
-              ))}
-            </div>
-          ) : view === 'list' ? (
-            <div class="rows">
-              {stories.map((s) => (
-                <StoryCard {...s} variant="row" />
-              ))}
-            </div>
-          ) : view === 'bento' ? (
-            <div class="bento">
-              {stories.map((s, i) => (
-                <div class="cell">
-                  <StoryCard {...s} variant={i === 0 ? 'feature' : undefined} />
+        shown.length > 0 || sealed.length > 0 ? (
+          <div class={view === 'features' ? 'features' : view === 'list' ? 'rows' : view === 'bento' ? 'bento' : 'grid'} data-cards>
+            {shown.map((s, i) =>
+              view === 'bento' ? (
+                <div class="cell" data-node={s.node}>
+                  <StoryCard {...s} variant={variantOf(i)} shared={s.lockedTag ? 'locked' : undefined} />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div class="grid">
-              {stories.map((s) => (
-                <StoryCard {...s} />
-              ))}
-            </div>
-          )
-        ) : (
-          empty && (
-            <div class="empty">
-              <Text variant="lead" tone="muted">
-                {empty}
-              </Text>
-            </div>
-          )
+              ) : (
+                <div class="item" data-node={s.node}>
+                  <StoryCard {...s} variant={variantOf(i)} shared={s.lockedTag ? 'locked' : undefined} />
+                </div>
+              ),
+            )}
+          </div>
+        ) : null
+      }
+      {
+        shown.length === 0 && empty && (
+          <div class="empty" data-cards-empty>
+            <Text variant="lead" tone="muted">
+              {empty}
+            </Text>
+          </div>
+        )
+      }
+      {
+        sealed.length > 0 && (
+          <div hidden data-sealed-cards>
+            {sealed.map((l) => (
+              <Fragment>
+                <Fragment set:html={open(`${l.id}:${l.after ?? ''}`)} />
+                {view === 'bento' ? (
+                  <div class="cell" data-node={l.id}>
+                    <StoryCard {...l.story} variant={undefined} shared="shared" />
+                  </div>
+                ) : (
+                  <div class="item" data-node={l.id}>
+                    <StoryCard {...l.story} variant={variantOf(1)} shared="shared" />
+                  </div>
+                )}
+                <Fragment set:html="<!--/sealed:card-->" />
+              </Fragment>
+            ))}
+          </div>
+        )
+      }
+      {
+        locked.length > 0 && signIn && !frame && (
+          <div class="sign-in" data-sign-in-line>
+            <Text variant="body" tone="muted">
+              More work is shared with invited readers. <Link href={signIn}>Sign in to see it</Link>.
+            </Text>
+            <p class="status" role="status" aria-live="polite" data-sign-in-status />
+          </div>
         )
       }
       <slot />
@@ -128,6 +179,28 @@ const { title, description, heading, standfirst, nav, action, crumbs, stories = 
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-index-card-min)), 1fr));
     gap: var(--space-16) var(--space-8);
+  }
+
+  /* a card's wrapper names its page and takes no room: the card is the list's item */
+  .item {
+    display: contents;
+  }
+
+  .sign-in {
+    display: grid;
+    gap: var(--space-2);
+    max-width: var(--size-popout);
+  }
+
+  .status {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+
+  .status:empty {
+    display: none;
   }
 
   .rows {

@@ -1,0 +1,19 @@
+{
+  "id": "fx-private-two",
+  "type": "article",
+  "kind": "note",
+  "slug": "fx-private-two",
+  "title": "Fixture private two: amber signal letter",
+  "summary": "Fixture summary: the amber signal letter for a single reader.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-05",
+  "updatedAt": "2026-10-05",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Fixture paragraph private two: the amber signal letter blinks twice and then waits."
+    }
+  ]
+}
