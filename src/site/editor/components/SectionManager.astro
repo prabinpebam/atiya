@@ -34,6 +34,8 @@ export interface ManagedPage extends ListedPage {
   note?: string;
   /** Whether it can be moved or selected (a page that isn't on the site can't go in a building). */
   movable: boolean;
+  /** A private page (documentation/access/spec.md §2): tagged, and moved with the private overlay. */
+  private?: boolean;
 }
 
 export interface ManagedSection {
@@ -151,14 +153,21 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
                   </div>
                   <ol class="rows" data-manager-list={s.id} hidden={s.pages.length === 0}>
                     {s.pages.map((p) => (
-                      <li class="row" data-manager-row={p.id} data-name={p.title} data-title={p.title.toLowerCase()} data-published={p.published ? '' : undefined}>
+                      <li class="row" data-manager-row={p.id} data-name={p.title} data-title={p.title.toLowerCase()} data-published={p.published ? '' : undefined} data-private={p.private ? '' : undefined}>
                         <IconButton label={`Move ${p.title}`} icon="drag" size="sm" tooltip="none" disabled={!p.movable} data-manager-grip={p.id} />
                         <span class="pick">
                           <Checkbox label={p.title} hint={[p.kind, p.note].filter(Boolean).join(' · ')} disabled={!p.movable} data-manager-pick={p.id} />
                         </span>
-                        <Tag size="sm" tone={p.tone}>
-                          {p.status}
-                        </Tag>
+                        <span class="tags">
+                          <Tag size="sm" tone={p.tone}>
+                            {p.status}
+                          </Tag>
+                          {p.private && (
+                            <Tag size="sm" tone="highlight" icon="key">
+                              Private
+                            </Tag>
+                          )}
+                        </span>
                         <Button variant="quiet" size="sm" icon="edit" href={p.href} aria-describedby={`page-title-${p.id}`}>
                           Edit
                         </Button>
@@ -414,6 +423,13 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
 
   .row:first-child {
     border-block-start: 0;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: var(--space-1);
   }
 
   .row[data-picked] {

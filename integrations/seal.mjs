@@ -1,7 +1,7 @@
 // @ts-check
 /**
- * The sealer (documentation/access/spec.md §5, §6.2): the last step of a build. It seals every locked and
- * private page, every locked card in a section's list and every file made from a private master, deletes
+ * The sealer (documentation/access/spec.md §5, §6.2): the last step of a build. It seals every private
+ * page, every private card in a section's list and every file made from a private master, deletes
  * the readable copies, and writes a keyring for each grant that still works, all under one build ID. Its
  * log says only how many it sealed: a build's log is public.
  *
@@ -58,7 +58,7 @@ async function replaceAsync(/** @type {string} */ text, /** @type {RegExp} */ re
  */
 export async function sealSite({ dist, base, privateRoot, now = new Date(), log = () => {}, provenance, summaryFile = SEALED_SUMMARY }) {
   const prov = provenance ?? readProvenance();
-  const pages = /** @type {{ kind: 'page'; route: string; access: 'locked' | 'private'; id: string }[]} */ (prov.filter((e) => e.kind === 'page'));
+  const pages = /** @type {{ kind: 'page'; route: string; access: 'private'; id: string }[]} */ (prov.filter((e) => e.kind === 'page'));
   const assets = new Map(/** @type {{ kind: 'asset'; url: string; master: string }[]} */ (prov.filter((e) => e.kind === 'asset')).map((a) => [a.url, a.master]));
   const build = buildId();
   /** @type {Map<string, { kid: string; key: Uint8Array }>} */
@@ -155,10 +155,9 @@ export async function sealSite({ dist, base, privateRoot, now = new Date(), log 
   const accessFile = join(privateRoot, 'access.json');
   const overlayFile = join(privateRoot, 'structures', 'overlay.json');
   const grants = existsSync(accessFile) ? JSON.parse(readFileSync(accessFile, 'utf8')).grants ?? [] : [];
-  const overlay = existsSync(overlayFile) ? JSON.parse(readFileSync(overlayFile, 'utf8')) : { sections: [], private: [] };
+  const overlay = existsSync(overlayFile) ? JSON.parse(readFileSync(overlayFile, 'utf8')) : { sections: [] };
   const protectedPages = [
-    ...(overlay.sections ?? []).flatMap((/** @type {any} */ s) => s.pages.map((/** @type {any} */ p) => ({ id: p.item.id, section: s.section, access: /** @type {const} */ ('locked') }))),
-    ...(overlay.private ?? []).map((/** @type {any} */ p) => ({ id: p.item.id, access: /** @type {const} */ ('private') })),
+    ...(overlay.sections ?? []).flatMap((/** @type {any} */ s) => s.pages.map((/** @type {any} */ p) => ({ id: p.item.id, section: s.section, access: /** @type {const} */ ('private') }))),
   ];
   const built = new Set(pages.map((p) => p.id));
   let keyrings = 0;

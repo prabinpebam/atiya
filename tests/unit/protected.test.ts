@@ -55,10 +55,10 @@ describe('the private folder, as a submodule', () => {
 describe('one source, two origins', () => {
   it('keys private files /private/…, and leaves out the private repository README', () => {
     const s = snap();
-    expect(s.docs['/private/articles/fx-locked-alpha.json']).toBeTruthy();
+    expect(s.docs['/private/articles/fx-private-alpha.json']).toBeTruthy();
     expect(s.docs['/private/structures/overlay.json']).toBeTruthy();
-    expect(s.masters.has('/private/media/articles/fx-locked-alpha/harbour.webp')).toBe(true);
-    expect(s.masters.has('/private/media/articles/fx-locked-beta/tidepool.mp4')).toBe(true);
+    expect(s.masters.has('/private/media/articles/fx-private-alpha/harbour.webp')).toBe(true);
+    expect(s.masters.has('/private/media/articles/fx-private-beta/tidepool.mp4')).toBe(true);
     expect(s.errors.filter((e) => e.startsWith('private/'))).toEqual([]);
   });
 
@@ -80,30 +80,31 @@ describe('one source, two origins', () => {
   it('every private media record knows its origin', () => {
     const s = snap();
     const index = loadContent(s.docs, s.masters, s.errors);
-    expect(index.media.get('articles/fx-locked-alpha/harbour')?.origin).toBe('private');
-    expect(index.media.get('articles/fx-locked-alpha/harbour')?.darkMaster).toBe('/private/media/articles/fx-locked-alpha/harbour.dark.webp');
-    expect(index.videos.get('articles/fx-locked-beta/tidepool')?.origin).toBe('private');
+    expect(index.media.get('articles/fx-private-alpha/harbour')?.origin).toBe('private');
+    expect(index.media.get('articles/fx-private-alpha/harbour')?.darkMaster).toBe('/private/media/articles/fx-private-alpha/harbour.dark.webp');
+    expect(index.videos.get('articles/fx-private-beta/tidepool')?.origin).toBe('private');
     expect([...index.media.values()].filter((m) => m.origin === 'public').length).toBeGreaterThan(0);
   });
 });
 
-describe('locked and private pages in the route table', () => {
+describe('private pages in the route table', () => {
   const s = snap();
   const index = loadContent(s.docs, s.masters, s.errors);
   const route = (id: string) => index.routes.find((r) => r.node.kind === 'item' && r.node.item.id === id)!;
 
-  it('a locked page sits at its token in its open section; a private page at /p/<token>/', () => {
-    expect(route('fx-locked-alpha')).toMatchObject({ path: '/side-projects/alphaaaaa2/', access: 'locked', published: true });
-    expect(route('fx-locked-delta')).toMatchObject({ path: '/work/deltaddd55/', access: 'locked' });
-    expect(route('fx-private-one')).toMatchObject({ path: '/p/privone222/', access: 'private' });
-    expect(route('fx-private-one').parent).toBeUndefined();
+  it('a private page sits at its token in its open section, whichever way it is shared', () => {
+    expect(route('fx-private-alpha')).toMatchObject({ path: '/side-projects/alphaaaaa2/', access: 'private', published: true });
+    expect(route('fx-private-delta')).toMatchObject({ path: '/work/deltaddd55/', access: 'private' });
+    expect(route('fx-private-one')).toMatchObject({ path: '/writing/privone222/', access: 'private' });
+    expect(route('fx-private-one').parent?.id).toBe('writing');
     expect(index.access.get('fx-private-two')).toBe('private');
     expect(index.access.get('atiya')).toBe('open');
+    expect(new Set(index.routes.map((r) => r.access))).toEqual(new Set(['open', 'private']));
   });
 
-  it("a section's order is the overlay's: locked pages between open ones, then the rest", () => {
+  it("a section's order is the overlay's: private pages between open ones, then the rest", () => {
     const kids = index.routes.filter((r) => r.parent?.id === 'side-projects').map((r) => r.node.id);
-    expect(kids.slice(0, 6)).toEqual(['atiya', 'fx-locked-alpha', 'watai', 'fx-locked-beta', 'story', 'fx-locked-gamma']);
+    expect(kids.slice(0, 6)).toEqual(['atiya', 'fx-private-alpha', 'watai', 'fx-private-beta', 'story', 'fx-private-gamma']);
     expect(kids).toContain('khonjel');
   });
 
@@ -111,11 +112,11 @@ describe('locked and private pages in the route table', () => {
     const before = JSON.stringify(index.structure);
     const merged = withOverlay(index.structure, index.overlay);
     expect(JSON.stringify(index.structure)).toBe(before);
-    expect(merged.locked.has('fx-locked-alpha')).toBe(true);
+    expect(merged.private.has('fx-private-alpha')).toBe(true);
   });
 
   it('the code reserves the addresses it owns', () => {
-    for (const p of ['p', 'sign-in', '_sealed', '_access']) expect(RESERVED).toContain(p);
+    for (const p of ['sign-in', '_sealed', '_access']) expect(RESERVED).toContain(p);
   });
 
   it('loads the grants and the share message', () => {
@@ -128,19 +129,19 @@ describe('the rules (V23 to V32)', () => {
   it('V23: the public structure never places a private page, and the overlay never a public one', () => {
     expect(
       problems((d) => {
-        d['/content/structures/site.json'].home.children.find((c: any) => c.id === 'writing').children.push({ id: 'fx-locked-gamma', kind: 'item', item: { type: 'article', id: 'fx-locked-gamma' } });
+        d['/content/structures/site.json'].home.children.find((c: any) => c.id === 'writing').children.push({ id: 'fx-private-gamma', kind: 'item', item: { type: 'article', id: 'fx-private-gamma' } });
       }),
-    ).toMatch(/places "fx-locked-gamma", which is in private-pages\/.*V23/);
+    ).toMatch(/places "fx-private-gamma", which is in private-pages\/.*V23/);
     expect(
       problems((d) => {
-        d['/private/structures/overlay.json'].private.push({ id: 'khonjel-locked', token: 'khonjelaaa', item: { type: 'article', id: 'khonjel' } });
+        d['/private/structures/overlay.json'].sections[2].pages.push({ id: 'khonjel-private', token: 'khonjelaaa', item: { type: 'article', id: 'khonjel' } });
       }),
-    ).toMatch(/"khonjel" is in content\/: a locked or private page lives in private-pages\/ \(V23\)/);
+    ).toMatch(/"khonjel" is in content\/: a private page lives in private-pages\/ \(V23\)/);
   });
 
   it('V24: tokens, article IDs and media IDs are unique across both folders; a token has its form', () => {
-    expect(problems((d) => (d['/private/structures/overlay.json'].private[1].token = 'privone222'))).toMatch(/token "privone222" is also .*V24/);
-    expect(problems((d) => (d['/private/structures/overlay.json'].private[1].token = 'Bad-Token!'))).toMatch(/a token: 10 characters/);
+    expect(problems((d) => (d['/private/structures/overlay.json'].sections[2].pages[1].token = 'privone222'))).toMatch(/token "privone222" is also .*V24/);
+    expect(problems((d) => (d['/private/structures/overlay.json'].sections[2].pages[1].token = 'Bad-Token!'))).toMatch(/a token: 10 characters/);
     expect(
       problems((d) => {
         d['/private/articles/khonjel.json'] = { ...d['/content/articles/khonjel.json'] };
@@ -148,26 +149,27 @@ describe('the rules (V23 to V32)', () => {
     ).toMatch(/article "khonjel" is in both content\/ and private-pages\/.*V24/);
   });
 
-  it('V25: an open page never shows private media, links to a protected page, or names one in related or the navigation', () => {
-    expect(problems((d) => (d['/content/articles/khonjel.json'].thumbnail = 'articles/fx-locked-alpha/harbour'))).toMatch(/media "articles\/fx-locked-alpha\/harbour" is private.*V25/);
-    expect(problems((d) => d['/content/articles/khonjel.json'].body.push({ type: 'video', media: 'articles/fx-locked-beta/tidepool' }))).toMatch(/the video .* is private.*V25/);
-    expect(problems((d) => d['/content/articles/khonjel.json'].body.push({ type: 'text', markdown: 'See [it](ref:article/fx-locked-alpha).' }))).toMatch(/links to "fx-locked-alpha".*V25/);
-    expect(problems((d) => (d['/content/articles/khonjel.json'].related = [{ type: 'article', id: 'fx-locked-beta' }]))).toMatch(/related names "fx-locked-beta".*V25/);
-    expect(problems((d) => d['/content/structures/site.json'].menus.primary.push({ node: 'fx-locked-alpha' }))).toMatch(/node "fx-locked-alpha" is a locked or private page.*V25/);
+  it('V25: an open page never shows private media, links to a private page, or names one in related or the navigation', () => {
+    expect(problems((d) => (d['/content/articles/khonjel.json'].thumbnail = 'articles/fx-private-alpha/harbour'))).toMatch(/media "articles\/fx-private-alpha\/harbour" is private.*V25/);
+    expect(problems((d) => d['/content/articles/khonjel.json'].body.push({ type: 'video', media: 'articles/fx-private-beta/tidepool' }))).toMatch(/the video .* is private.*V25/);
+    expect(problems((d) => d['/content/articles/khonjel.json'].body.push({ type: 'text', markdown: 'See [it](ref:article/fx-private-alpha).' }))).toMatch(/links to "fx-private-alpha".*V25/);
+    expect(problems((d) => (d['/content/articles/khonjel.json'].related = [{ type: 'article', id: 'fx-private-beta' }]))).toMatch(/related names "fx-private-beta".*V25/);
+    expect(problems((d) => d['/content/structures/site.json'].menus.primary.push({ node: 'fx-private-alpha' }))).toMatch(/node "fx-private-alpha" is a private page.*V25/);
   });
 
-  it('V25: a redirect never leads to a protected page (skipped, with a warning)', () => {
-    expect(warnings((d) => d['/content/redirects.json'].push({ from: '/gone-alpha/', to: '/side-projects/alphaaaaa2/' }))).toMatch(/is a locked or private page \(V25\)/);
+  it('V25: a redirect never leads to a private page (skipped, with a warning)', () => {
+    expect(warnings((d) => d['/content/redirects.json'].push({ from: '/gone-alpha/', to: '/side-projects/alphaaaaa2/' }))).toMatch(/is a private page \(V25\)/);
   });
 
-  it("V26: a grant's scope names what exists, and a code never opens a private page", () => {
+  it("V26: a grant's scope names what exists; a code and a link open any private page", () => {
     expect(problems((d) => (d['/private/access.json'].grants[0].scope.sections = ['nowhere']))).toMatch(/"nowhere" isn't a section of the site \(V26\)/);
-    expect(problems((d) => (d['/private/access.json'].grants[1].scope.pages = ['khonjel']))).toMatch(/"khonjel" isn't a locked or private page \(V26\)/);
-    expect(problems((d) => (d['/private/access.json'].grants[1].scope.pages = ['fx-private-one']))).toMatch(/private page: it opens from a magic link only.*V26/);
+    expect(problems((d) => (d['/private/access.json'].grants[1].scope.pages = ['khonjel']))).toMatch(/"khonjel" isn't a private page \(V26\)/);
+    expect(problems((d) => (d['/private/access.json'].grants[1].scope.pages = ['fx-private-one']))).toBe('');
+    expect(problems((d) => (d['/private/access.json'].grants[2].scope = { pages: ['fx-private-alpha'], sections: ['work'] }))).toBe('');
   });
 
-  it('V28: a locked or private page is never on the planet', () => {
-    expect(problems((d) => d['/content/structures/planet.json'].places[0].pages.push({ type: 'article', id: 'fx-locked-alpha' }))).toMatch(/"fx-locked-alpha" is locked or private: it can't be on the planet \(V28\)/);
+  it('V28: a private page is never on the planet', () => {
+    expect(problems((d) => d['/content/structures/planet.json'].places[0].pages.push({ type: 'article', id: 'fx-private-alpha' }))).toMatch(/"fx-private-alpha" is private: it can't be on the planet \(V28\)/);
   });
 
   it('V29: grant IDs are never reused; code names are unique among codes that work', () => {
@@ -190,28 +192,28 @@ describe('the rules (V23 to V32)', () => {
     expect(warnings((d) => d['/private/structures/overlay.json'].sections[0].order.push('khonjel-nope'))).toMatch(/names "khonjel-nope", which isn't a page of it: skipped/);
   });
 
-  it('V32: a protected page lists open pages only in related', () => {
-    expect(problems((d) => (d['/private/articles/fx-locked-gamma.json'].related = [{ type: 'article', id: 'fx-locked-alpha' }]))).toMatch(/another protected page: a protected page lists open pages only \(V32\)/);
-    expect(problems((d) => (d['/private/articles/fx-locked-gamma.json'].related = [{ type: 'article', id: 'khonjel' }]))).toBe('');
+  it('V32: a private page lists open pages only in related', () => {
+    expect(problems((d) => (d['/private/articles/fx-private-gamma.json'].related = [{ type: 'article', id: 'fx-private-alpha' }]))).toMatch(/another private page: a private page lists open pages only \(V32\)/);
+    expect(problems((d) => (d['/private/articles/fx-private-gamma.json'].related = [{ type: 'article', id: 'khonjel' }]))).toBe('');
   });
 
-  it('the eligibility table: a protected draft, or one not for publishing, is not built', () => {
+  it('the eligibility table: a private draft, or one not for publishing, is not built', () => {
     const s = snap();
     const docs = clone(s.docs);
-    (docs['/private/articles/fx-locked-gamma.json'] as Article).status = 'draft';
+    (docs['/private/articles/fx-private-gamma.json'] as Article).status = 'draft';
     (docs['/private/articles/fx-private-two.json'] as Article).visibility = 'privateDiscussionOnly';
     const index = loadContent(docs, s.masters, s.errors);
     const built = index.routes.filter((r) => r.published).map((r) => r.node.id);
-    expect(built).not.toContain('fx-locked-gamma');
+    expect(built).not.toContain('fx-private-gamma');
     expect(built).not.toContain('fx-private-two');
-    expect(built).toContain('fx-locked-alpha');
+    expect(built).toContain('fx-private-alpha');
   });
 
   it('a private file to download is refused (v1: pictures and videos only)', () => {
     expect(
       problems((d, m) => {
-        d['/private/media/articles/fx-locked-alpha/brief.json'] = { kind: 'document', file: 'brief.pdf', title: 'Brief', visibility: 'public' };
-        m.add('/private/media/articles/fx-locked-alpha/brief.pdf');
+        d['/private/media/articles/fx-private-alpha/brief.json'] = { kind: 'document', file: 'brief.pdf', title: 'Brief', visibility: 'public' };
+        m.add('/private/media/articles/fx-private-alpha/brief.pdf');
       }),
     ).toMatch(/a file to download can't be private yet/);
   });

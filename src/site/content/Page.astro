@@ -38,10 +38,10 @@ const title = route?.title ?? article?.title ?? site.name;
 const docTitle = `${title} — ${site.name}`;
 // the trail from the home page to the hub above (the IA shows it from the second level down)
 const crumbs = route && route.ancestors.length > 1 ? { trail: route.ancestors.map((c) => ({ label: c.label, href: withBase(c.path) })), current: route.title } : undefined;
-// where "Get in touch" goes, and where to sign in to see a section's locked pages (documentation/access/spec.md §2.3)
+// where "Get in touch" goes, and where to sign in to see a section's private pages (documentation/access/spec.md §2.3)
 const contact = withBase(getOpenRoutes().find((r) => r.node.id === site.contactPage)?.path ?? '/');
 const signInHref = (from: string) => withBase(`/sign-in/?return=${encodeURIComponent(withBase(from))}`);
-// a locked or private page: sealed in a build, open with its ribbon in dev; the build's sealer finds it in the provenance record
+// a private page: sealed in a build, open with its ribbon in dev; the build's sealer finds it in the provenance record
 const access = route?.access ?? 'open';
 const sealed = article && route && access !== 'open' && !editable ? { access, id: article.id, contact } : undefined;
 if (sealed && import.meta.env.PROD) {
@@ -55,23 +55,23 @@ if (article) {
   // its section (a page's parent is always one: V22)
   const section = route && route.ancestors.length > 1 ? route.ancestors.at(-1) : undefined;
   header = await openingOf(article, section && { label: section.label, href: withBase(section.path) });
-  // what to read next: every other published open story on the site (§3.7); a protected page never names another (V32)
+  // what to read next: every other published open story on the site (§3.7); a private page never names another (V32)
   const pool = getOpenRoutes()
     .filter((r) => r.node.kind === 'item' && r.node.item.type === 'article')
     .map((r) => ({ article: getArticle((r.node as { item: { id: string } }).item.id)!, href: withBase(r.path), section: r.parent?.id }));
   related = await relatedOf(article, route?.parent?.id, pool);
 }
 
-// a hub lists what it places (published): its open pages as story cards, its locked ones sealed (§2.1)
+// a hub lists what it places (published): its open pages as story cards, its private ones sealed (§2.1)
 const story = async (r: Route) => {
   const a = getArticle((r.node as { item: { id: string } }).item.id)!;
   return { node: r.node.id, href: withBase(r.path), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: await cardPicture(a) };
 };
 const children = node?.kind === 'hub' ? getRoutes().filter((r) => r.parent === node && r.node.kind === 'item' && r.node.item.type === 'article') : [];
 const stories = await Promise.all(children.filter((r) => r.access === 'open').map(story));
-const locked = await Promise.all(
+const privatePages = await Promise.all(
   children.flatMap((r, i) => {
-    if (r.access !== 'locked') return [];
+    if (r.access !== 'private') return [];
     // the open page it follows in the section's order (null: the start)
     const before = children.slice(0, i).reverse().find((c) => c.access === 'open');
     return [story(r).then((s) => ({ id: r.node.id, after: before?.node.id ?? null, story: s }))];
@@ -97,8 +97,8 @@ const locked = await Promise.all(
         action={action}
         crumbs={crumbs}
         stories={stories}
-        locked={locked}
-        signIn={locked.length ? signInHref(route!.path) : undefined}
+        privatePages={privatePages}
+        signIn={privatePages.length ? signInHref(route!.path) : undefined}
         view={node.view}
         empty="Nothing here yet. This section is being written."
       />

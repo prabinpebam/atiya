@@ -270,21 +270,20 @@ export const redirects = z.array(
   }),
 );
 
-/** A protected page's address in place of its slug: opaque, so it never hints at the title (documentation/access/spec.md §2, V24). */
+/** A private page's address in place of its slug: opaque, so it never hints at the title (documentation/access/spec.md §2, V24). */
 export const accessToken = z.string().regex(/^[a-z2-7]{10}$/, 'a token: 10 characters from a–z and 2–7');
-/** A locked or private page's node: its ID, its token and the page it places. */
+/** A private page's node: its ID, its token and the page it places. */
 const protectedNode = z.strictObject({ id, token: accessToken, item: pageRef });
 
 /**
  * The private overlay (private-pages/structures/overlay.json; documentation/access/spec.md §2, §3): the
- * locked pages each open section holds, the section's full order (open and locked pages together), and the
- * private pages, which are in no section.
+ * private pages each open section holds, and the section's full order (open and private pages together).
  */
 export const overlay = z.strictObject({
   sections: z
     .array(
       z.strictObject({
-        /** The open section the locked pages are in. */
+        /** The open section the private pages are in. */
         section: id,
         pages: z.array(protectedNode),
         /** The section's full order, by node ID; pages it leaves out follow, open ones first. */
@@ -292,7 +291,6 @@ export const overlay = z.strictObject({
       }),
     )
     .default([]),
-  private: z.array(protectedNode).default([]),
 });
 
 const dateTime = z.string().refine((s) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(s) && !Number.isNaN(Date.parse(s)), 'a date and time with its time zone (ISO 8601)');

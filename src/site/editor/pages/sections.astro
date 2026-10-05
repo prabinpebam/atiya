@@ -7,9 +7,10 @@ import NewSection from '../components/NewSection.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import { listedPage, load } from '../server/screens';
 import { readDoc } from '../server/store';
-import { STRUCTURE } from '../server/articles';
+import { OVERLAY, STRUCTURE } from '../server/articles';
 import { inMenu } from '../model/structure';
-import type { HubNode, SiteStructure } from '../../content/schema';
+import { sectionOrder } from '../model/access';
+import type { HubNode, Overlay, SiteStructure } from '../../content/schema';
 
 export const prerender = false;
 
@@ -25,6 +26,13 @@ if (loaded.ok && doc) {
   const pathOf = (id: string) => index.routes.find((r) => r.node.id === id)?.path ?? '';
   const hubs = (s.home.children ?? []).filter((c): c is HubNode => c.kind === 'hub');
   const placed = new Set<string>();
+  // a section's open and private pages together, in its full order (documentation/access/spec.md §8.2)
+  const overlay = readDoc<Overlay>(OVERLAY)?.value ?? null;
+  const itemOf = (h: HubNode, node: string) => {
+    const open = (h.children ?? []).find((c) => c.id === node);
+    if (open?.kind === 'item') return open.item.id;
+    return overlay?.sections.find((x) => x.section === h.id)?.pages.find((p) => p.id === node)?.item.id;
+  };
   sections = [
     { id: s.home.id, title: 'Home page', meta: '/', icon: 'home', settings: true, about: 'The home page lists the sections, in their order here. It holds no pages of its own.' },
     ...hubs.map(
@@ -34,10 +42,11 @@ if (loaded.ok && doc) {
         meta: pathOf(h.id),
         icon: 'folder',
         settings: true,
-        pages: (h.children ?? []).flatMap((c) => {
-          if (c.kind !== 'item') return [];
-          placed.add(c.item.id);
-          return [{ ...listedPage(index, c.item.id), note: pathOf(c.id), movable: true }];
+        pages: sectionOrder(s, overlay, h.id).flatMap((p) => {
+          const item = itemOf(h, p.id);
+          if (!item) return [];
+          placed.add(item);
+          return [{ ...listedPage(index, item), note: pathOf(p.id), movable: true, private: p.access === 'private' }];
         }),
       }),
     ),
@@ -47,7 +56,7 @@ if (loaded.ok && doc) {
       meta: 'Pages without a section',
       settings: false,
       about: 'These pages have no section, so no address. Move one into a section to give it one.',
-      pages: [...index.articles.values()].filter((a) => !placed.has(a.id)).map((a) => ({ ...listedPage(index, a.id), note: 'No address yet', movable: true })),
+      pages: [...index.articles.values()].filter((a) => !placed.has(a.id)).map((a) => ({ ...listedPage(index, a.id), note: 'No address yet', movable: true, private: index.origins.get(a.id) === 'private' })),
     },
   ];
   settings = [
@@ -63,7 +72,7 @@ if (loaded.ok && doc) {
   title="Sections"
   screen="sections"
   heading="Sections"
-  intro="The site's sections and their pages. Choose a section to see its pages and its settings. To move a page to another section, drag it onto that section in the list, or use Move. A page that moves gets its new address; the old one simply goes."
+  intro="The site's sections and their pages, open and private together. Choose a section to see its pages and its settings. To move a page to another section, drag it onto that section in the list, or use Move. A page that moves gets its new address; the old one simply goes (a private page's address is a code, so it stays)."
 >
   {
     loaded.ok && doc ? (

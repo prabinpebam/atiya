@@ -47,11 +47,11 @@ interface Props {
   /** Where the page is shown: on the site (its paper), or in the planet's frame over the game (the smoke instead, and kept out of search results). */
   frame?: 'site' | 'planet';
   /**
-   * A locked or private page (documentation/access/spec.md §5.4): a build gives it a neutral head ("Locked
-   * page" or "Private page", no description or social card, kept out of search, no referrer to other sites),
-   * since its real title is sealed with it.
+   * A private page (documentation/access/spec.md §5.4): a build gives it a neutral head ("Private page", no
+   * description or social card, kept out of search, no referrer to other sites), since its real title is
+   * sealed with it.
    */
-  sealed?: 'locked' | 'private';
+  sealed?: 'private';
 }
 
 const {
@@ -71,7 +71,7 @@ const {
 // social previews need an absolute URL: `site` is set when deploying
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
 // a build never names a protected page in its head; the dev server shows its real title
-const neutral = sealed && import.meta.env.PROD ? (sealed === 'locked' ? 'Locked page' : 'Private page') : undefined;
+const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
 ---
 
 <!doctype html>
@@ -107,7 +107,7 @@ const neutral = sealed && import.meta.env.PROD ? (sealed === 'locked' ? 'Locked 
     {(router || frame === 'planet') && <ClientRouter />}
     <script is:inline>
       // signed in on this device (documentation/access/spec.md §7.3): marked before the first paint, so a
-      // section's sign-in line and a locked page's panel don't flash while the key is tried (scripts/sealed.ts)
+      // section's sign-in line and a private page's panel don't flash while the key is tried (scripts/sealed.ts)
       try {
         if (sessionStorage.getItem('site.access') || localStorage.getItem('site.access')) document.documentElement.dataset.signedIn = '';
       } catch (e) {}

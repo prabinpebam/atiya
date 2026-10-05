@@ -82,8 +82,7 @@ describe('the messages (QB9)', () => {
   it("the bar's end date, and where Sign out goes", () => {
     expect(untilWords('2026-11-05T00:00:00Z')).toBe(', until 5 November 2026');
     expect(untilWords()).toBe('');
-    expect(afterSignOut('locked', '/atiya/work/deltaddd55/', '/atiya/')).toBe('/atiya/work/');
-    expect(afterSignOut('private', '/atiya/p/privone222/', '/atiya/')).toBe('/atiya/');
-    expect(afterSignOut(undefined, '/atiya/work/', '/atiya/')).toBe('/atiya/work/');
+    expect(afterSignOut('private', '/atiya/work/deltaddd55/')).toBe('/atiya/work/');
+    expect(afterSignOut(undefined, '/atiya/work/')).toBe('/atiya/work/');
   });
 });

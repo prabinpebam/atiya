@@ -32,8 +32,8 @@ interface Props {
   variant?: 'standard' | 'feature' | 'row' | 'compact';
   /** The title’s heading level: h2 on an index, h3 under a section heading. */
   headingLevel?: 2 | 3;
-  /** A page shared only with signed-in readers: its card says so ("Shared with you"; "Locked" in edit mode), with a key. */
-  shared?: 'shared' | 'locked';
+  /** A private page, shown only to readers its access covers: its card says so ("Shared with you"; "Private" in dev and edit mode), with a key. */
+  shared?: 'shared' | 'private';
 }
 
 const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' : 'compact', headingLevel = 2, shared } = Astro.props;
@@ -62,7 +62,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
   <div class="words">
     {(topic || shared) && (
       <p class="topic">
-        {shared && <Tag size="sm" tone="highlight" icon="key">{shared === 'locked' ? 'Locked' : 'Shared with you'}</Tag>}
+        {shared && <Tag size="sm" tone="highlight" icon="key">{shared === 'private' ? 'Private' : 'Shared with you'}</Tag>}
         {topic && <Tag size="sm">{topic}</Tag>}
       </p>
     )}

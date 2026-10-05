@@ -245,8 +245,8 @@ async function openCards(keys: KeyringBody['keys'], grant: string) {
   }
 }
 
-/** A locked or private page the grant covers, swapped in where its sealed template was. */
-async function openPage(keys: KeyringBody['keys'], grant: string): Promise<boolean> {
+/** A private page the grant covers, swapped in where its sealed template was. */
+async function openPage(keys: KeyringBody['keys'], grant: string, via: Session['via']): Promise<boolean> {
   const tpl = document.querySelector<HTMLTemplateElement>('template[data-sealed="main"]');
   if (!tpl) return false;
   const gate = document.querySelector<HTMLElement>('[data-access-gate]');
@@ -255,7 +255,7 @@ async function openPage(keys: KeyringBody['keys'], grant: string): Promise<boole
   if (!p) {
     gate?.removeAttribute('hidden');
     if (gate) gate.dataset.shown = '';
-    say(gate?.dataset.accessGate === 'private' ? 'link-not-cover' : 'not-shared', gate);
+    say(via === 'link' ? 'link-not-cover' : 'not-shared', gate);
     return false;
   }
   tpl.insertAdjacentHTML('afterend', p.html);
@@ -297,7 +297,7 @@ async function apply(s: Session, where: Element | null): Promise<boolean> {
   showBar(s);
   document.querySelector<HTMLElement>('[data-sign-in-line]')?.setAttribute('hidden', '');
   await openCards(r.body.keys, s.grant);
-  await openPage(r.body.keys, s.grant);
+  await openPage(r.body.keys, s.grant, s.via);
   return true;
 }
 
@@ -387,7 +387,7 @@ function signOut(broadcast: boolean) {
   blobs.clear();
   if (s) tell('access_signed_out', { grant: s.grant });
   if (broadcast) channel?.postMessage('signed-out');
-  location.replace(afterSignOut(html.dataset.access, location.pathname, base) + location.search);
+  location.replace(afterSignOut(html.dataset.access, location.pathname) + location.search);
 }
 
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel(STORE) : null;

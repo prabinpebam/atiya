@@ -12,7 +12,7 @@ export type ProvenanceEntry =
   /** A file in the build made from a private master: its URL path (with the base), and the master. */
   | { kind: 'asset'; url: string; master: string }
   /** A protected page: its route (without the base) and its access. */
-  | { kind: 'page'; route: string; access: 'locked' | 'private'; id: string };
+  | { kind: 'page'; route: string; access: 'private'; id: string };
 
 export const PROVENANCE_FILE = join(process.cwd(), 'node_modules', '.cache', 'site-protected', 'provenance.jsonl');
 

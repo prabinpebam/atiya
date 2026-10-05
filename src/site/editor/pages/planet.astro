@@ -22,6 +22,8 @@ if (loaded.ok && doc) {
   const onSite = (id: string) => index.routes.find((r) => r.node.kind === 'item' && r.node.item.id === id);
   const row = (id: string) => {
     const route = onSite(id);
+    // a private page is never on the planet: it has no way to sign in (V28)
+    if (index.origins.get(id) === 'private') return { ...listedPage(index, id), note: 'Private: not on the planet', movable: false, private: true };
     return { ...listedPage(index, id), note: route ? route.path : 'Not on the site yet: place it in Sections first', movable: !!route };
   };
   const mapped = new Set(doc.value.places.flatMap((p) => p.pages.map((r) => r.id)));

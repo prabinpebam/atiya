@@ -26,7 +26,7 @@ export type Queued =
 /** What this page is, as `before_send` needs it. */
 export interface PageFacts {
   mode: PageMode;
-  /** `<html data-access>`: locked or private, on a protected page. */
+  /** `<html data-access>`: private, on a private page. */
   access?: string;
   /** The Sign in page (or a page whose only protected part is a sign-in panel). */
   signIn: boolean;

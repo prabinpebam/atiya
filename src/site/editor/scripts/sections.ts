@@ -3,7 +3,9 @@
  * section, at their place, or off the site), each section's settings, its place among the sections, and a
  * new section. Each change is one store transaction (PUT structure, with its version). Any page can move,
  * published or not: its old address simply goes (§7.2 of the sections spec). A page on the planet taken
- * off the site is refused (V13), and the screen says why.
+ * off the site is refused (V13), and the screen says why. A section lists its private pages among its open
+ * ones (documentation/access/spec.md §8.2): a move that involves one is made by the server, which writes the
+ * public structure and the private overlay together; a private page can't be taken off the site.
  */
 import { api, describeIssue, saveStatus } from './client';
 import { addHub, nodeIds, placeAll, reorder, setInMenu, unplace, updateHub } from '../model/structure';
@@ -47,8 +49,29 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
   };
 
   // ---------- pages moved in the list ----------
+  const isPrivate = (page: string) => !!root.querySelector(`[data-manager-row="${page}"][data-private]`);
+  const holdsPrivate = (section: string) => !!root.querySelector(`[data-manager-list="${section}"] [data-private]`);
   on('manager:move', (e) => {
     const m = (e as CustomEvent<ManagerMove>).detail;
+    const what = m.pages.length === 1 ? nameOf(m.pages[0]) : `${m.pages.length} pages`;
+    const moved = m.to === m.from ? `Moved ${what}` : m.to === '_off' ? `Took ${what} off the site` : `Moved ${what} to ${titleOf(m.to)}`;
+    const focus = m.to === m.from ? `[data-manager-grip="${m.pages[0]}"]` : `[data-manager-section="${m.to}"]`;
+    if (m.pages.some(isPrivate) || holdsPrivate(m.to) || holdsPrivate(m.from)) {
+      void (async () => {
+        saveStatus.saving();
+        const r = await api('POST', 'access/moves', { pages: m.pages, to: m.to, ...(m.index === undefined ? {} : { index: m.index }) });
+        if (r.ok) {
+          sessionStorage.setItem(FOCUS, focus);
+          saveStatus.carry(moved);
+          location.reload();
+          return;
+        }
+        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
+        saveStatus.failed(`Not saved: ${why}`);
+        say(null, why);
+      })();
+      return;
+    }
     const items = m.pages.map((id) => ({ type: 'article' as const, id }));
     let next: SiteStructure;
     if (m.to === '_off') next = items.reduce((s, item) => unplace(s, item), state.structure);
@@ -65,9 +88,7 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
         m.index,
       );
     }
-    const what = m.pages.length === 1 ? nameOf(m.pages[0]) : `${m.pages.length} pages`;
-    const moved = m.to === m.from ? `Moved ${what}` : m.to === '_off' ? `Took ${what} off the site` : `Moved ${what} to ${titleOf(m.to)}`;
-    void put(next, { focus: m.to === m.from ? `[data-manager-grip="${m.pages[0]}"]` : `[data-manager-section="${m.to}"]`, notice: moved });
+    void put(next, { focus, notice: moved });
   });
 
   // ---------- a section's place among the sections (the keys on its link, or its settings' buttons) ----------

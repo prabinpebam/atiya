@@ -1,7 +1,7 @@
 ---
 /**
  * The form that creates an article or a page (documentation/editor/spec.md §4): its title, its summary,
- * where it goes and who can see it (open, locked or private: documentation/access/spec.md §8.2). The server
+ * where it goes and who can see it (everyone, or private: documentation/access/spec.md §8.2). The server
  * makes a valid draft from it (with an ID and slug from the title), in content/ or private-pages/, places
  * it and the editor opens it. Shown in a Dialog the page composes; also the delete confirmation's body.
  * @tier editor
@@ -47,7 +47,7 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
           { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' },
         ]}
       />
-      <Select label="Section" name="section" value={section} options={[{ value: '', label: 'Not on the site yet', description: 'Place it later from Sections' }, ...sections]} hint="Where it sits on the site, and so its address. A private page is in none." />
+      <Select label="Section" name="section" value={section} options={[{ value: '', label: 'Not on the site yet', description: 'Place it later from Sections' }, ...sections]} hint="Where it sits on the site, and so its address. A private page needs one too." />
       {
         protectable && (
           <Select
@@ -56,10 +56,9 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
             value="open"
             options={[
               { value: 'open', label: 'Everyone', description: 'Public, in its section' },
-              { value: 'locked', label: 'Signed-in readers', description: 'Listed in its section only for access that covers it' },
-              { value: 'private', label: 'Only with a magic link', description: 'In no section; opens from a link you send' },
+              { value: 'private', label: 'Private', description: 'Only for readers you share it with' },
             ]}
-            hint="Locked and private pages are kept in private-pages/ and published encrypted, never in the public repository. You can change this later in the page's settings."
+            hint="A private page is kept in private-pages/ and published encrypted, never in the public repository. Share it with an access code or a magic link from its settings. You can change this later there too."
           />
         )
       }
@@ -127,9 +126,9 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
       e.preventDefault();
       const data = new FormData(form);
       const access = String(data.get('access') ?? 'open');
-      const body = { title: String(data.get('title') ?? ''), summary: String(data.get('summary') ?? ''), kind: String(data.get('kind') ?? 'note'), section: access === 'private' ? null : String(data.get('section') ?? '') || null, access };
+      const body = { title: String(data.get('title') ?? ''), summary: String(data.get('summary') ?? ''), kind: String(data.get('kind') ?? 'note'), section: String(data.get('section') ?? '') || null, access };
       if (!body.title.trim() || !body.summary.trim()) return show(form, 'A title and a summary are both needed.');
-      if (access === 'locked' && !body.section) return show(form, 'A locked page is listed in a section: choose one.');
+      if (access === 'private' && !body.section) return show(form, 'A private page is in a section, like any page: choose one.');
       show(form, '');
       const r = await api<{ id: string }>('POST', 'articles', body);
       if (r.ok) location.assign(editorUrl(`articles/${r.data.id}/`));

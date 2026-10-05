@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * The leak check (documentation/access/spec.md §6.3): after the sealer, nothing readable from a locked or
- * private page may be left anywhere in the build. Three layers:
+ * The leak check (documentation/access/spec.md §6.3): after the sealer, nothing readable from a private page
+ * may be left anywhere in the build. Three layers:
  *
  *   1. provenance: every file made from a private master is gone, every protected page is sealed;
  *   2. structure: no seal marker left, every sealed shell neutral and kept out of search, no open page
@@ -95,7 +95,7 @@ export function protectedTerms(privateRoot) {
   const overlayFile = join(privateRoot, 'structures', 'overlay.json');
   if (existsSync(overlayFile)) {
     const o = json(overlayFile);
-    for (const p of [...(o.sections ?? []).flatMap((/** @type {any} */ s) => s.pages), ...(o.private ?? [])]) add('a token', p.token), add('an ID or slug', p.id, 4);
+    for (const p of [...(o.sections ?? []).flatMap((/** @type {any} */ s) => s.pages)]) add('a token', p.token), add('an ID or slug', p.id, 4);
   }
   const accessFile = join(privateRoot, 'access.json');
   if (existsSync(accessFile)) {
@@ -142,7 +142,7 @@ export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = r
   const overlayFile = privateRoot && join(privateRoot, 'structures', 'overlay.json');
   if (overlayFile && existsSync(overlayFile)) {
     const o = JSON.parse(readFileSync(overlayFile, 'utf8'));
-    for (const p of [...(o.sections ?? []).flatMap((/** @type {any} */ s) => s.pages), ...(o.private ?? [])]) tokens.push(p.token);
+    for (const p of [...(o.sections ?? []).flatMap((/** @type {any} */ s) => s.pages)]) tokens.push(p.token);
   }
 
   // 1. provenance
@@ -166,7 +166,7 @@ export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = r
     if (/<\/head>/i.test(text) && build !== summary.build) report("a page doesn't carry this build's ID", rel(f));
     if (pageRoutes.has(route)) {
       const title = /<title>([^<]*)<\/title>/.exec(text)?.[1];
-      if (title !== 'Locked page' && title !== 'Private page') report('a sealed page has a real title', rel(f));
+      if (title !== 'Private page') report('a sealed page has a real title', rel(f));
       if (!/<meta name="robots" content="noindex, nofollow">/.test(text)) report('a sealed page is not kept out of search', rel(f));
       if (/<meta name="description"/.test(text) || /property="og:/.test(text)) report('a sealed page has a description or social card', rel(f));
     } else {
@@ -211,5 +211,5 @@ if (isMain) {
     for (const f of findings) console.error(`- ${f.category}: ${f.file}${f.count > 1 ? ` (${f.count})` : ''}`);
     process.exit(1);
   }
-  console.log('The leak check passed: nothing readable from a locked or private page is in the build.');
+  console.log('The leak check passed: nothing readable from a private page is in the build.');
 }

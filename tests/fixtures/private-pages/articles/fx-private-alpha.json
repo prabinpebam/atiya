@@ -1,9 +1,9 @@
 {
-  "id": "fx-locked-alpha",
+  "id": "fx-private-alpha",
   "type": "article",
   "kind": "note",
-  "slug": "fx-locked-alpha",
-  "title": "Fixture locked alpha: the harbour lantern study",
+  "slug": "fx-private-alpha",
+  "title": "Fixture private alpha: the harbour lantern study",
   "summary": "Fixture summary: how the harbour lantern study found its quiet evening light.",
   "status": "published",
   "visibility": "public",
@@ -11,7 +11,7 @@
   "updatedAt": "2026-10-05",
   "locale": "en",
   "hero": {
-    "media": "articles/fx-locked-alpha/harbour"
+    "media": "articles/fx-private-alpha/harbour"
   },
   "body": [
     {
@@ -25,7 +25,7 @@
     },
     {
       "type": "figure",
-      "media": "articles/fx-locked-alpha/harbour",
+      "media": "articles/fx-private-alpha/harbour",
       "caption": "Fixture figure caption: the lantern over the harbour.",
       "lightbox": true
     },
@@ -44,7 +44,7 @@
     },
     {
       "type": "text",
-      "markdown": "Fixture paragraph alpha two, with a link to [the other locked page](ref:article/fx-locked-gamma)."
+      "markdown": "Fixture paragraph alpha two, with a link to [the other private page](ref:article/fx-private-gamma)."
     }
   ]
 }

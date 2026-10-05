@@ -124,14 +124,16 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 | Screen | Path | What it's for |
 |---|---|---|
 | Dashboard | `/_edit/` | What's in draft, what changed since the last publish, what needs attention (missing alt text, unplaced articles), and the quick actions |
-| Pages | `/_edit/articles/` | Every page of every kind (Article, Page, Gallery), with its kind, section, status and last update; search and filters; new, duplicate and delete |
+| Pages | `/_edit/articles/` | Every page of every kind (Article, Page, Gallery), open and private together, with its kind, section, status and last update; search and filters (status, kind, who can see it); new, duplicate and delete |
 | Article editor | `/_edit/articles/<id>/` | The canvas, the outline and the inspector (§3) |
 | Sections | `/_edit/sections/` | The site structure: sections, what each holds and in what order, each one's view and whether it's in the navigation; pages not yet on the site (§5) |
 | Planet | `/_edit/planet/` | The planet's seven buildings: each one's words, view and section on the site, its pages in order, and the pages not on the planet ([sections spec §7.4](../sections/spec.md#74-planet-new-screen-u12)) |
 | Navigation | `/_edit/navigation/` | The top navigation: a preview of the header, its entries in order (sections, pages, custom links), their labels, and adding, moving and removing them ([sections spec §7.3](../sections/spec.md#73-navigation-new-screen-u5)) |
 | Media | `/_edit/media/` | The media library: upload, alt text, captions, credits, focus points, where each picture is used (§6) |
-| Settings | `/_edit/settings/` | The site settings and the owner's profile |
+| Settings | `/_edit/settings/` | The site settings, the owner's profile, and every access code and magic link that opens private pages ([access spec §8.1](../access/spec.md#81-sharing-access-codes-and-magic-links)) |
 | Publish | `/_edit/publish/` | What changed in `content/`, the contract check, discard, and publish (§7) |
+
+A private page ([access spec §2](../access/spec.md#2-private-pages)) is a page like any other: it's listed, filtered, moved and edited on these screens, tagged Private, and there's no screen of its own.
 
 Every screen shares one frame: a side navigation to the screens, and a top bar with the screen's title, the save status and the number of unpublished changes (linking to Publish). To the content model a page is an article whose `kind` is `page` (About, Contact; [model §3](../content/model.md#3-content-item-types)), so pages are listed with the rest and filtered by kind.
 
@@ -272,8 +274,8 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 
 ## 4. Articles, and the dashboard
 
-- **The list** shows each article's title, kind, section, status and last update, newest first. It can be searched by title and filtered by status and kind. Each row opens the editor, and has View on the site (when published), Duplicate and Delete.
-- **New article** and **New page** ask for the title, the summary and the section. The server creates a valid draft (`status: draft`, today's `updatedAt`, an empty body) with an ID and slug made from the title (lowercase, hyphenated, unique among articles and among the section's children), places it, and the editor opens it. A page is an article of kind `page`, placed under the home hub by default.
+- **The list** shows each article's title, kind, section, status (a private page tagged Private) and last update, newest first. It can be searched by title and filtered by status, kind and who can see it (Everyone, Private). Each row opens the editor, and has View on the site (when published), Duplicate and Delete.
+- **New article** and **New page** ask for the title, the summary, the section and, when `private-pages/` is set up, who can see it (Everyone or Private; a private page is written straight into `private-pages/`). The server creates a valid draft (`status: draft`, today's `updatedAt`, an empty body) with an ID and slug made from the title (lowercase, hyphenated, unique among articles and among the section's children), places it, and the editor opens it. A page is an article of kind `page`, placed under the home hub by default.
 - **Duplicate** copies an article as a new draft ("… (copy)") in the same section, sharing its pictures.
 - **The dashboard** shows:
   - the counts by status;
@@ -287,7 +289,7 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 The site structure ([structures §2](../content/ia.md#2-the-site-structure)) in two columns: the sections listed on the left, and the chosen one on the right, with its **Pages** and its **Settings** as two tabs ([sections spec §7.2](../sections/spec.md#72-sections)). The Planet screen is the same pattern over the game's seven buildings ([§7.4](../sections/spec.md#74-planet-new-screen-u12)).
 
 - **The list of sections:** the home page, each section with its address and how many pages it holds, and "Not on the site" (the pages that aren't in a section). It stays in view as the screen scrolls, and the address keeps the chosen section and tab.
-- **Pages:** a row per page, in order: a handle, a checkbox labelled with its title (its kind and address under it), its status and Edit. Find a page and Show (every status, published, not published) narrow the list; the checkboxes and Select all make a selection that moves together.
+- **Pages:** a row per page, in order, open and private together: a handle, a checkbox labelled with its title (its kind and address under it), its status (and Private) and Edit. A move that involves a private page writes the public structure and the private overlay together, and a private page can't be taken off the site ([access spec §8.2](../access/spec.md#82-sections-and-pages)). Find a page and Show (every status, published, not published) narrow the list; the checkboxes and Select all make a selection that moves together.
 - **Moving pages:** drag a handle to another place in the list, or onto a section in the list of sections; Alt+Up and Alt+Down move a page within its section; a click on the handle (or Move selected) opens Move, with Move up, Move down and a button for every section. A published page moves like any other: its address follows its section, and the old one simply goes (no redirect).
 - **Settings:** a section's title, its menu label, its summary, its slug and its view (List, Tiles or Bento: how it lists its pages, [sections spec §3.4](../sections/spec.md#34-the-section-view-u6)), a switch, In the navigation, that adds it to the top navigation or takes it out (the same menu the Navigation screen edits), and Move up and Move down (Alt+Up and Alt+Down on the section in the list do the same). New section, under the list, adds a section at the end, with its summary, its view and the switch (on), and opens it. The site is three levels, so there are no sections inside sections and no pages directly under the home page (V22).
 - **The home hub** (Home page) has its title, its menu label and its summary: the home page's name and the line under it ([sections spec §3.5](../sections/spec.md#35-the-home-page-decision-o5)).
@@ -295,7 +297,7 @@ The site structure ([structures §2](../content/ia.md#2-the-site-structure)) in 
 
 ## 6. Media
 
-- **The library** is a grid of every master under `content/media/`, grouped by owner (an article, a person, `shared`, the site), searchable by alt text and ID, with a warning on any picture without alt text. Selecting one opens its details (they save to the picture, so they aren't part of an article's undo):
+- **The library** is a grid of every master under `content/media/` and, tagged Private, `private-pages/media/` (a private page's own), grouped by owner (an article, a person, `shared`, the site), searchable by alt text and ID and filtered by who can see it, with a warning on any picture without alt text. Every change to a picture or video is made where it lives, and an upload to a private page's folder goes into `private-pages/media/`. Selecting one opens its details (they save to the picture, so they aren't part of an article's undo):
   - the picture, with its **focus point**: click where the crop must keep, stored as `focus` ([media §3](../content/media.md#3-the-metadata-sidecar));
   - alt text (required unless marked decorative; at most 250 characters; never "image of"), caption, credit, licence and source;
   - **Used in**: every document that refers to it, linking to the editor;

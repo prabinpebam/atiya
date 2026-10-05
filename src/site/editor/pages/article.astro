@@ -11,6 +11,7 @@ import InsertForms from '../components/InsertForms.astro';
 import TurnInto from '../components/TurnInto.astro';
 import ArticleForm from '../components/ArticleForm.astro';
 import ContentIssues from '../components/ContentIssues.astro';
+import SharingPanel from '../components/SharingPanel.astro';
 import CropDialog from '../components/CropDialog.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
@@ -21,6 +22,8 @@ import Text from '../../components/fundamentals/Text.astro';
 import { load, mediaCards, sectionOptions, STATUS_LABEL } from '../server/screens';
 import { readDoc } from '../server/store';
 import { OVERLAY, PLANET, STRUCTURE, articleKey } from '../server/articles';
+import { posthogPerson, sharingView } from '../server/access';
+import { privateNode } from '../model/access';
 import { hasPrivate, privateRoot } from '../../content/source';
 import { isPublished } from '../../content/load';
 import { getPlacement } from '../../content/repository';
@@ -40,12 +43,13 @@ if (!doc) return new Response('No such article.', { status: 404 });
 const structure = readDoc<SiteStructure>(STRUCTURE);
 const article = doc.value;
 const published = isPublished(article);
-// who can see it (documentation/access/spec.md §8.2): a locked page's section is in the private overlay
-const overlay = readDoc<Overlay>(OVERLAY)?.value;
-const lockedIn = overlay?.sections.find((s) => s.pages.some((p) => p.item.id === id))?.section;
-const access: 'open' | 'locked' | 'private' = lockedIn ? 'locked' : overlay?.private.some((p) => p.item.id === id) ? 'private' : 'open';
+// who can see it (documentation/access/spec.md §8.2): a private page's section is in the private overlay
+const privateIn = privateNode(readDoc<Overlay>(OVERLAY)?.value, id)?.section;
+const access: 'open' | 'private' = privateIn ? 'private' : 'open';
 const protectable = hasPrivate(privateRoot());
-const section = lockedIn ?? (structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '');
+const section = privateIn ?? (structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '');
+// who it's shared with, for its Share dialog
+const sharing = access === 'private' && loaded.ok ? sharingView(id) : null;
 const planet = readDoc<PlanetStructure>(PLANET);
 const place = planet ? (placeOfPage(planet.value, id) ?? '') : '';
 const places = (planet?.value.places ?? []).map((p) => ({ value: p.id, label: p.title, description: p.kicker }));
@@ -80,7 +84,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     <Link href={withBase('/_edit/articles/')} variant="quiet">Pages</Link>
     <Text as="span" variant="ui"><strong>{article.title}</strong></Text>
     <Tag size="sm" tone={published ? 'positive' : 'neutral'}>{STATUS_LABEL[article.status]}</Tag>
-    {access !== 'open' && <Tag size="sm" tone="highlight">{access === 'locked' ? 'Locked' : 'Private'}</Tag>}
+    {access === 'private' && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
   </Fragment>
   <Fragment slot="tools">
     <IconButton label="Undo" icon="undo" size="sm" data-editor-undo="" />
@@ -135,6 +139,11 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         <Dialog id="delete-article" title="Delete this draft?" size="sm">
           <ArticleForm mode="delete" article={id} />
         </Dialog>
+        {sharing && (
+          <Dialog id="share-page" title={`Share ${article.title}`} size="lg">
+            <SharingPanel view={sharing} posthogPerson={posthogPerson()} page={id} />
+          </Dialog>
+        )}
       </Studio>
     ) : (
       <ContentIssues issues={loaded.issues} />

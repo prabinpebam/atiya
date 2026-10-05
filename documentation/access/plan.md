@@ -1,6 +1,6 @@
 # Protected content: plan and Definition of Done
 
-How locked pages, private pages, signing in, grants and telemetry ([spec](spec.md)) get built: a setup done once, then seven phases, each leaving the site working and deployable, held to the [quality benchmark](benchmark.md). Nothing protected goes live until the leak check guards the deploy (A5) and edit mode can make grants (A6). This is v2, revised after the critique in [spec §14](spec.md#14-the-critique-and-what-changed).
+How private pages, signing in, grants and telemetry ([spec](spec.md)) get built: a setup done once, then seven phases, each leaving the site working and deployable, held to the [quality benchmark](benchmark.md). Nothing protected goes live until the leak check guards the deploy (A5) and edit mode can make grants (A6). This is v2, revised after the critique in [spec §14](spec.md#14-the-critique-and-what-changed).
 
 > **TL;DR.**
 > - **A0: setup.** The private repository as a submodule, its deploy key, and (yours) a PostHog project.
@@ -9,9 +9,9 @@ How locked pages, private pages, signing in, grants and telemetry ([spec](spec.m
 > - **A3: sealing the build.** Seal markers in the layouts, the provenance record, the sealer, build-scoped keyrings and the three-layer leak check.
 > - **A4: signing in.** The Sign in page, the access bar, the shared cards, the runtime (regions, pictures, videos, the lightbox) and sign-out that leaves nothing behind.
 > - **A5: deploying.** The workflow fetches the submodule with the deploy key, builds quietly, seals, checks, deploys from `main` only, and runs nightly.
-> - **A6: edit mode.** The Access screen, a page's access, ordering locked pages among open ones, uploads, and the existing Publish for both repositories.
+> - **A6: edit mode.** Private pages and their media listed with the rest (Pages, Sections, Media), a page's access and its Share dialog, sharing in Settings, uploads, and the existing Publish for both repositories. There's no Access screen (spec D21).
 > - **A7: telemetry.** PostHog with an allowlist on protected pages, identity by grant, opt-outs and the Privacy page.
-> - **After A7, yours:** the first real locked page and its first grant, made in edit mode and published (§4).
+> - **After A7, yours:** the first real private page and its first grant, made in edit mode and published (§4).
 > - **Status:** A0 to A7 are built and their Definition of Done rows met, except the two that need your PostHog project and a deploy from `main` (§2).
 
 ## 1. Phases
@@ -31,15 +31,15 @@ How locked pages, private pages, signing in, grants and telemetry ([spec](spec.m
 
 1. **The submodule's guard:** a unit test that `private-pages` is a submodule entry (mode 160000) in the public repository's index, and that no file under it is tracked there.
 2. **The source** (`source.ts`): reads both folders; keys `/content/…` and `/private/…`; `fileOf` and `rootOf` by key; one digest. In a test build and the unit tests, the private folder is `tests/fixtures/private-pages/`; otherwise `private-pages/` when it exists.
-3. **The contract** (`schema.ts`): the overlay (locked page nodes in open sections, each section's full order, private pages, tokens); the grant record (`access.json`) and the share message (`access-message.json`).
+3. **The contract** (`schema.ts`): the overlay (private page nodes in open sections, each section's full order, tokens); the grant record (`access.json`) and the share message (`access-message.json`).
 4. **The loader** (`load.ts`): private articles and media; the overlay merged into the route table; V23 to V26, V28, V29, V30 (the snapshot part), V31 and V32; the eligibility table (spec §10).
-5. **Routes:** locked pages at `/<section>/<token>/`, private pages at `/p/<token>/`; `p`, `sign-in`, `_sealed` and `_access` reserved; each route knows its access (`open`, `locked`, `private`).
+5. **Routes:** private pages at `/<section>/<token>/`; `sign-in`, `_sealed` and `_access` reserved; each route knows its access (`open` or `private`). (Built first with a second kind, link-only pages at `/p/<token>/`; folded into one kind, spec D21.)
 6. **Every reader of the content root:** picture metadata in dev (`pictures.ts`), the masters a build imports (`masters.ts` globs both), the files the content-files integration serves and copies, and the editor integration's watcher.
-7. **The repository's lists:** a section lists its open pages, plus its locked ones marked for sealing; every other list (related, next and previous, the home page, the navigation, redirects, the planet) is open pages only, for every page (V32).
-8. **In dev,** protected pages render open with a ribbon, and sections list their locked pages with a lock tag.
-9. **Fixtures:** a Work-like section with two open pages and three locked ones between them (one with a picture and its dark version, one with a small video and its poster), a second section with one locked page, two private pages, and grants: all of the Work section (a code), one page (a code), a private page (a link), an expired one and a withdrawn one. All made up.
+7. **The repository's lists:** a section lists its open pages, plus its private ones marked for sealing; every other list (related, next and previous, the home page, the navigation, redirects, the planet) is open pages only, for every page (V32).
+8. **In dev,** protected pages render open with a ribbon, and sections list their private pages tagged Private.
+9. **Fixtures:** a Work-like section with two open pages and three private ones between them (one with a picture and its dark version, one with a small video and its poster), a second section with one private page, a third with two private pages shared by link, and grants: all of two sections (a code), one page (a code), one page (a link), an expired one and a withdrawn one. All made up.
 
-**Tests (unit):** the submodule rule; the two-origin source; V23 to V32 each with a failing fixture; opaque and reserved routes; a public-only build's routes and lists unchanged; a section's order with locked pages between open ones; no list but a section's holds a protected page.
+**Tests (unit):** the submodule rule; the two-origin source; V23 to V32 each with a failing fixture; opaque and reserved routes; a public-only build's routes and lists unchanged; a section's order with private pages between open ones; no list but a section's holds a protected page.
 
 ### A2: the crypto core
 
@@ -54,7 +54,7 @@ In `src/site/access/`, pure, with no DOM and no Node-only API:
 
 ### A3: sealing the build
 
-1. **Seal markers in the layouts** (spec §5.4): `ArticleLayout` and `PageShell` take `sealed`; the regions in comment pairs; the neutral head; `IndexLayout` holds a section's locked cards in a hidden holder after the list, each marked with its page.
+1. **Seal markers in the layouts** (spec §5.4): `ArticleLayout` and `PageShell` take `sealed`; the regions in comment pairs; the neutral head; `IndexLayout` holds a section's private cards in a hidden holder after the list, each marked with its page.
 2. **The provenance record** (spec §6.2): written by `pictures.ts`, the content-files integration and the protected routes, emptied at the start of a build.
 3. **`integrations/seal.mjs`**, last in `astro:build:done`: the build ID, the keys, the sealed regions and cards, the sealed private-origin files under `_sealed/<build>/`, the deletions, the keyrings under `_access/<build>/`; a log of counts only. It loads the crypto through a Node entry built from `src/site/access/` (one implementation).
 4. **`scripts/verify-sealed.mjs`** and `npm run verify:sealed` (spec §6.3), in `verify:prod` and run on the E2E build.
@@ -70,7 +70,7 @@ In `src/site/access/`, pure, with no DOM and no Node-only API:
    - the code or the link (the fragment read and removed);
    - the keyring: build-scoped, the header checks, one reload on a missing or stale one, the expiry;
    - on a section, cards decrypted and placed after the open page each follows, the sign-in line removed;
-   - on a locked or private page, regions swapped in, the real title, `astro:page-load`, focus on the heading;
+   - on a private page, regions swapped in, the real title, `astro:page-load`, focus on the heading;
    - pictures and dark versions near the viewport at the width they need, the lightbox's full size, videos and posters;
    - staying signed in, Remember on this device, sign-out across tabs and the back-forward cache;
    - every message in spec §7.2, in the live region too;
@@ -92,15 +92,15 @@ In `src/site/access/`, pure, with no DOM and no Node-only API:
 ### A6: edit mode
 
 1. **Two origins in the store:** `/private/…` keys resolved to `private-pages/`; one transaction across both folders; the grant transitions refused (spec §4.1).
-2. **The Access screen** (`/_edit/access/`): the list and its filters; New access code and New magic link with the message to copy; a grant's page with Extend, Change scope, Withdraw now, Copy message again, its history and its PostHog link; pure operations in `model/access.ts`.
-3. **A page's access** (Open, Locked or Private) in the inspector: locking or opening moves the page and the media only it uses between the folders, keeping its place, with the history warning; a private page's address, Change address and Share.
-4. **The Sections screen** lists locked pages among open ones, with a lock tag, and its reorder writes both orders.
-5. **Uploads** for a protected page go into `private-pages/media/`.
+2. **Sharing, with no screen of its own** (spec §8.1, D21): Settings lists every grant and shares any private pages; a private page's Share dialog lists the grants that open it and shares it; each grant has Copy message, Set end date, Change what it opens, Withdraw now and its PostHog link; pure operations in `model/access.ts`. (Built first as an Access screen at `/_edit/access/`, folded in the same day.)
+3. **A page's access** (Everyone or Private) in the inspector and the New article dialog: the change moves the page and the media only it uses between the folders, keeping its place, with the history warning; a private page's address, Change address and Share.
+4. **Listed with the rest:** the Pages list and the Media library tag private pages and media and filter by them; the Sections screen lists private pages among open ones, and a move that involves one writes both orders in one transaction.
+5. **Uploads** for a private page go into `private-pages/media/`, and every media change is made where the file lives.
 6. **The existing Publish** (spec §8.3): the badge and the change list cover both folders; the message rules (yours only when nothing private changed); the private commit pushed first, then the public one with the pointer; Push again for whichever is behind; the refusals in words.
 7. **The editor's test server** gives its throwaway repository a fixture `private-pages` submodule, with a bare remote for each.
 8. **The editor spec's** publishing section ([§7](../editor/spec.md#7-publishing)) updated to match.
 
-**Tests:** unit for the access operations, the transitions, the moves and the two-folder transaction; E2E "editor": QB10 (make a code and a link; withdraw; lock and open a page; publish a locked page's edit with the top bar's Publish: private commit, then the pointer with the generated message; a failed private push recovered), axe on the Access screen in both modes.
+**Tests:** unit for the access operations, the transitions, the moves and the two-folder transaction; E2E "editor": QB10 (make a code and a link; withdraw; make a page private and public again; share a page from its settings; private pages listed in Pages, Sections and Media; publish a private page's edit with the top bar's Publish: private commit, then the pointer with the generated message; a failed private push recovered), axe on Settings and the Share dialog in both modes.
 
 ### A7: telemetry
 
@@ -136,7 +136,7 @@ Each phase is done when every row for it is true and evidenced. A row marked *yo
 | 16 | A5 | The workflow fetches the submodule, builds quietly, seals, checks before upload, deploys from `main` only, and runs nightly with its guard | The branch run; `activity-guard` unit test |
 | 17 | A5 | The base build keeps every sealed address under `/atiya` | The base build |
 | 18 | A6 | Grants are made, extended, rescoped and withdrawn in edit mode, recording who, why, when and until; the transitions are enforced | E2E "editor"; `editorAccess.test.ts` |
-| 19 | A6 | Pages are locked, opened and made private in edit mode, keeping their place; locked pages are ordered among open ones | E2E "editor" |
+| 19 | A6 | Pages are made private and public in edit mode, keeping their place; private pages and media are listed, filtered and ordered with the rest; there's no Access screen | E2E "editor" |
 | 20 | A6 | The existing Publish publishes both repositories, private first, and never puts your words in public history when anything private changed | QB10 |
 | 21 | A7 | Telemetry sends nothing secret, only the allowlist on protected pages, and nothing at all when opted out | QB6 |
 | 22 | A7 | The Privacy page says what's collected, and the footer links to it | The page |
@@ -164,4 +164,4 @@ As [AGENTS.md](https://github.com/prabinpebam/atiya/blob/main/AGENTS.md) sets ou
 
 - **A0 → A1 → A2 → A3 → A4 → A5 → A6 → A7.** A2 can run beside A1. A7's anonymous part needs only A0; its access events need A4.
 - **Nothing protected is published before A6**, so the first real grant is made in edit mode, never by hand.
-- **Then, yours:** write the first locked page in edit mode, make its first grant, Publish, and check the live site: signed out, Work shows only its open work; your code shows the locked page. Try it once on a real phone and in Safari (the [benchmark's](benchmark.md#what-isnt-measured-here-and-why) manual checks).
+- **Then, yours:** write the first private page in edit mode, make its first grant, Publish, and check the live site: signed out, Work shows only its open work; your code shows the private page. Try it once on a real phone and in Safari (the [benchmark's](benchmark.md#what-isnt-measured-here-and-why) manual checks).

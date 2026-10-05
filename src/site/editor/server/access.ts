@@ -1,19 +1,20 @@
 /**
  * Edit mode's access operations (documentation/access/spec.md §4, §8): grants made, extended, rescoped and
- * withdrawn; a page made open, locked or private (its file and the media only it uses moved between
- * content/ and private-pages/, its place kept); a private page's address changed; a section's open and
- * locked pages put in order. Each is one store transaction, checked whole; the grants' history is enforced
- * by the store (no grant deleted, no ID or name reused, a withdrawn grant left as it is).
+ * withdrawn; a page made open or private (its file and the media only it uses moved between content/ and
+ * private-pages/, its place kept); a private page's address changed; pages moved between and within
+ * sections, open and private together. Each is one store transaction, checked whole; the grants' history is
+ * enforced by the store (no grant deleted, no ID or name reused, a withdrawn grant left as it is).
  */
 import { type AccessMessage, type Article, type Overlay, type PlanetStructure, type SiteNode, type SiteStructure } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
-import { articleKey, OVERLAY, PLANET, STRUCTURE } from './articles';
+import { articleKey, followOnPlanet, OVERLAY, PLANET, STRUCTURE } from './articles';
 import { generateCode } from '../../access/codes';
 import { b64, grantId, randomBytes, token } from '../../access/crypto';
 import { grantState, isValid } from '../../access/grants';
 import type { Grant } from '../../access/types';
-import { endOfDay, fillMessage, insertAfter, localIso, longDate, magicLink, openBefore, placeLocked, placePrivate, reorderSection, sectionOrder, takenNames, unplaceProtected, type AccessView } from '../model/access';
-import { sectionOf, unplace } from '../model/structure';
+import { endOfDay, fillMessage, insertAfter, localIso, longDate, magicLink, movePages, openBefore, placePrivate, privateNode, reorderSection, sectionOrder, takenNames, unplacePrivate, type PageAccess, type SharingView } from '../model/access';
+import { nodeIds, sectionOf, unplace } from '../model/structure';
+import { unique } from '../model/ids';
 import { placeOfPage, takeOff } from '../model/planet';
 import { mediaUsed, videosUsed } from '../../content/load';
 import { readSnapshot } from '../../content/source';
@@ -21,7 +22,7 @@ import { content } from '../../content/repository';
 
 export const ACCESS = '/private/access.json';
 export const MESSAGE = '/private/access-message.json';
-const EMPTY_OVERLAY: Overlay = { sections: [], private: [] };
+const EMPTY_OVERLAY: Overlay = { sections: [] };
 
 const refuse = (file: string, message: string, path?: string): Result => ({ ok: false, status: 422, issues: [{ file: file.replace(/^\//, ''), message, ...(path ? { path } : {}) }] });
 const grantsDoc = () => readDoc<{ grants: Grant[] }>(ACCESS);
@@ -148,13 +149,12 @@ function move(keys: string[], to: 'content' | 'private', changes: Change[], ifMa
   }
 }
 
-export type PageAccess = 'open' | 'locked' | 'private';
+export type { PageAccess };
 
 /**
- * Makes a page open, locked or private (spec §8.2), in one transaction: its file and the media only it uses
- * move folders; a locked page keeps its place in its section's order, an opened one goes back after the
- * open page it followed; a protected page leaves the planet. `section` is needed when a private page goes
- * into a section.
+ * Makes a page open or private (spec §8.2), in one transaction: its file and the media only it uses move
+ * folders; it keeps its place in its section's order (a private page is always in a section: `section` is
+ * the one to use when it has none yet, or to move a private page to); a private page leaves the planet.
  */
 export async function setPageAccess(id: string, to: PageAccess, section?: string): Promise<Result> {
   const key = articleKey(id);
@@ -164,15 +164,12 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
   if (!s) return refuse(STRUCTURE, 'missing');
   const o = overlayDoc();
   const overlay = o?.value ?? EMPTY_OVERLAY;
-  const lockedIn = overlay.sections.find((x) => x.pages.some((p) => p.item.id === id));
-  const isPrivate = overlay.private.some((p) => p.item.id === id);
-  const from: PageAccess = lockedIn ? 'locked' : isPrivate ? 'private' : 'open';
-  // a locked page moved to another section stays locked, at the end of its new section
-  const moving = from === 'locked' && to === 'locked' && !!section && section !== lockedIn!.section;
+  const priv = privateNode(overlay, id);
+  const from: PageAccess = priv ? 'private' : 'open';
+  // a private page moved to another section stays private, at the end of its new section
+  const moving = from === 'private' && to === 'private' && !!section && section !== priv!.section;
   if (from === to && !moving) return { ok: true, versions: {} };
   const ref = { type: 'article' as const, id };
-  const node = (lockedIn?.pages ?? overlay.private).find((p) => p.item.id === id);
-  const nodeId = node?.id ?? id;
   const changes: Change[] = [];
   const ifMatch: Record<string, string | null> = {};
   let structure = s.value;
@@ -180,35 +177,39 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
 
   if (from === 'open') {
     const where = sectionOf(structure, ref) ?? section;
-    if (to === 'locked' && !where) return refuse(STRUCTURE, 'a locked page is in a section: put it in one first', 'section');
-    const order = where ? sectionOrder(structure, overlay, where).map((p) => p.id) : [];
+    if (!where) return refuse(STRUCTURE, 'a private page is in a section, like any page: put it in one first', 'section');
+    const order = sectionOrder(structure, overlay, where).map((p) => p.id);
     const publicNode = findNode(structure, id);
+    const nodeId = publicNode?.id ?? id;
     structure = unplace(structure, ref);
-    const protectedNode = { id: publicNode?.id ?? id, token: token(), item: ref };
-    nextOverlay = to === 'locked' ? placeLocked(overlay, where!, protectedNode, order) : placePrivate(overlay, protectedNode);
+    nextOverlay = placePrivate(overlay, where, { id: nodeId, token: token(), item: ref }, order.includes(nodeId) ? order : [...order, nodeId]);
     move([key, ...mediaFiles(art.value, 'content', true)], 'private', changes, ifMatch);
-    // off the planet: it has no unlock flow (V28)
+    // off the planet: it has no way to sign in (V28)
     const planet = readDoc<PlanetStructure>(PLANET);
     if (planet && placeOfPage(planet.value, id)) {
       changes.push({ key: PLANET, bytes: jsonBytes(takeOff(planet.value, id)) });
       ifMatch[PLANET] = planet.version;
     }
   } else if (to === 'open') {
-    const where = lockedIn?.section ?? section;
-    if (!where) return refuse(OVERLAY, 'an open page is in a section: choose one', 'section');
+    const where = priv!.section;
+    const nodeId = priv!.node.id;
     const fullOrder = sectionOrder(structure, overlay, where).map((p) => p.id);
-    const after = lockedIn ? openBefore(sectionOrder(structure, overlay, where), nodeId) : lastChild(structure, where);
+    const after = openBefore(sectionOrder(structure, overlay, where), nodeId);
     structure = insertAfter(structure, where, { id: nodeId, kind: 'item', item: ref } as SiteNode, after);
     // it keeps its place in the section's full order, now as an open page
-    nextOverlay = unplaceProtected(overlay, id);
+    nextOverlay = unplacePrivate(overlay, id);
     nextOverlay = { ...nextOverlay, sections: nextOverlay.sections.map((x) => (x.section === where ? { ...x, order: fullOrder } : x)) };
     move([key, ...mediaFiles(art.value, 'private', false)], 'content', changes, ifMatch);
-  } else if (to === 'private') {
-    nextOverlay = placePrivate(overlay, { id: nodeId, token: node!.token, item: ref });
+    // grants that named it alone no longer can (V26): it's open to everyone now
+    const g = grantsDoc();
+    if (g && g.value.grants.some((x) => x.scope.pages?.includes(id))) {
+      const grants = g.value.grants.map((x) => (x.scope.pages?.includes(id) && !x.revokedAt ? { ...x, scope: { ...x.scope, pages: x.scope.pages.filter((p) => p !== id) } } : x));
+      changes.push({ key: ACCESS, bytes: jsonBytes({ grants }) });
+      ifMatch[ACCESS] = g.version;
+    }
   } else {
-    if (!section) return refuse(OVERLAY, 'a locked page is in a section: choose one', 'section');
-    const order = [...sectionOrder(structure, overlay, section).map((p) => p.id).filter((x) => x !== nodeId), nodeId];
-    nextOverlay = placeLocked(overlay, section, { id: nodeId, token: node!.token, item: ref }, order);
+    const order = [...sectionOrder(structure, overlay, section!).map((p) => p.id).filter((x) => x !== priv!.node.id), priv!.node.id];
+    nextOverlay = placePrivate(overlay, section!, priv!.node, order);
   }
   if (structure !== s.value) {
     changes.push({ key: STRUCTURE, bytes: jsonBytes(structure) });
@@ -223,22 +224,43 @@ function findNode(structure: SiteStructure, id: string): SiteNode | undefined {
   for (const c of structure.home.children ?? []) if (c.kind === 'hub') for (const k of c.children ?? []) if (k.kind === 'item' && k.item.id === id) return k;
   return undefined;
 }
-const lastChild = (structure: SiteStructure, section: string) => {
-  const hub = (structure.home.children ?? []).find((c) => c.kind === 'hub' && c.id === section);
-  return (hub?.kind === 'hub' ? hub.children?.at(-1)?.id : undefined) ?? null;
-};
 
-/** A protected page's new address: a new token, so every link to the old one stops working (spec §2.2). */
+/** A private page's new address: a new token, so every link to the old one stops working (spec §2.2). */
 export async function changeAddress(id: string): Promise<Result> {
   const o = overlayDoc();
-  if (!o) return refuse(OVERLAY, 'missing');
-  const renew = <T extends { item: { id: string }; token: string }>(p: T) => (p.item.id === id ? { ...p, token: token() } : p);
-  const next: Overlay = { ...o.value, sections: o.value.sections.map((s) => ({ ...s, pages: s.pages.map(renew) })), private: o.value.private.map(renew) };
-  if (JSON.stringify(next) === JSON.stringify(o.value)) return refuse(OVERLAY, `"${id}" isn't a locked or private page`);
+  if (!o || !privateNode(o.value, id)) return refuse(OVERLAY, `"${id}" isn't a private page`);
+  const next: Overlay = { ...o.value, sections: o.value.sections.map((s) => ({ ...s, pages: s.pages.map((p) => (p.item.id === id ? { ...p, token: token() } : p)) })) };
   return commit({ changes: [{ key: OVERLAY, bytes: jsonBytes(next) }], ifMatch: { [OVERLAY]: o.version } });
 }
 
-/** A section's open and locked pages in a new order: the overlay keeps it whole, the public structure its open pages (V31). */
+/**
+ * Pages moved in the Sections screen with private pages among them (spec §8.2): open and private together,
+ * into `to` at `index` among the pages that stay (`_off`: off the site, open pages only). One transaction:
+ * the public structure and the overlay.
+ */
+export async function moveSectionPages(pages: string[], to: string, index?: number): Promise<Result> {
+  const s = readDoc<SiteStructure>(STRUCTURE);
+  if (!s) return refuse(STRUCTURE, 'missing');
+  const o = overlayDoc();
+  const taken = new Set([...nodeIds(s.value), ...(o?.value.sections ?? []).flatMap((x) => x.pages.map((p) => p.id))]);
+  const r = movePages(s.value, o?.value ?? EMPTY_OVERLAY, pages, to, index, (id) => {
+    const n = unique(id, taken);
+    taken.add(n);
+    return n;
+  });
+  if (typeof r === 'string') return refuse(OVERLAY, r, 'pages');
+  const changes: Change[] = [{ key: STRUCTURE, bytes: jsonBytes(r.structure) }];
+  const ifMatch: Record<string, string | null> = { [STRUCTURE]: s.version };
+  // open pages moved to another section follow it to its building, as a move in the public structure does
+  followOnPlanet(s.value, r.structure, pages, changes, ifMatch);
+  if (o || r.overlay.sections.length) {
+    changes.push({ key: OVERLAY, bytes: jsonBytes(r.overlay) });
+    ifMatch[OVERLAY] = o?.version ?? null;
+  }
+  return commit({ changes, ifMatch });
+}
+
+/** A section's open and private pages in a new order: the overlay keeps it whole, the public structure its open pages (V31). */
 export async function setSectionOrder(section: string, order: string[]): Promise<Result> {
   const s = readDoc<SiteStructure>(STRUCTURE);
   const o = overlayDoc();
@@ -255,38 +277,44 @@ export async function setSectionOrder(section: string, order: string[]): Promise
   return commit({ changes, ifMatch });
 }
 
-export type { AccessView };
+export type { SharingView };
 
-/** What the Access screen shows. */
-export function accessView(): AccessView {
+/** Whether private-pages/ holds the sharing files yet (the first grant writes them). */
+export const sharingReady = () => !!readDoc(ACCESS) || !!overlayDoc();
+
+/** What the sharing panel shows: every grant (or, for one page, the ones that open it), and what a grant can open. */
+export function sharingView(page?: string): SharingView {
   const index = content();
-  const s = readDoc<SiteStructure>(STRUCTURE)?.value ?? index.structure;
   const o = overlayDoc()?.value ?? null;
+  const s = readDoc<SiteStructure>(STRUCTURE)?.value ?? index.structure;
   const title = (id: string) => index.articles.get(id)?.title ?? id;
-  const published = (id: string) => index.routes.some((r) => r.node.kind === 'item' && r.node.item.id === id && r.published);
-  const sections = (s.home.children ?? []).filter((c) => c.kind === 'hub').map((h) => {
-    const ids = sectionOrder(s, o, h.id);
-    const itemOf = (nodeId: string) => {
-      const pub = h.kind === 'hub' ? (h.children ?? []).find((k) => k.id === nodeId) : undefined;
-      const loc = o?.sections.find((x) => x.section === h.id)?.pages.find((p) => p.id === nodeId);
-      return pub?.kind === 'item' ? pub.item.id : (loc?.item.id ?? nodeId);
-    };
-    return { id: h.id, title: h.kind === 'hub' ? h.title : h.id, pages: ids.map((p) => ({ id: itemOf(p.id), node: p.id, title: title(itemOf(p.id)), access: p.access, published: published(itemOf(p.id)) })) };
-  });
-  const placed = new Set([...sections.flatMap((x) => x.pages.map((p) => p.id)), ...(o?.private ?? []).map((p) => p.item.id)]);
+  const sectionTitle = (id: string) => {
+    const h = (s.home.children ?? []).find((c) => c.id === id);
+    return h?.kind === 'hub' ? h.title : id;
+  };
+  const pages = (o?.sections ?? []).flatMap((x) => x.pages.map((p) => ({ id: p.item.id, title: title(p.item.id), section: x.section })));
+  const sectionOfPage = new Map(pages.map((p) => [p.id, p.section]));
+  const opens = (g: Grant) => (page ? (g.scope.pages ?? []).includes(page) || (g.scope.sections ?? []).includes(sectionOfPage.get(page) ?? '') : true);
   const now = new Date();
   return {
-    ready: !!readDoc(ACCESS) || !!o,
-    grants: (readDoc<{ grants: Grant[] }>(ACCESS)?.value.grants ?? []).map((g) => ({ ...g, state: grantState(g, now), opens: opensTitles(g, title) })).reverse(),
-    sections,
-    private: (o?.private ?? []).map((p) => ({ id: p.item.id, title: title(p.item.id), path: `/p/${p.token}/`, published: published(p.item.id) })),
-    unplaced: [...index.articles.keys()].filter((id) => !placed.has(id)).map((id) => ({ id, title: title(id) })),
+    grants: (grantsDoc()?.value.grants ?? [])
+      .filter(opens)
+      .map((g) => ({ ...g, state: grantState(g, now), opens: opensTitles(g, title, sectionTitle) }))
+      .reverse(),
+    pages: pages.map((p) => ({ ...p, section: sectionTitle(p.section) })),
+    sections: [...new Set(pages.map((p) => p.section))].map((id) => ({ id, title: sectionTitle(id) })),
   };
 }
 
-function opensTitles(g: Grant, title: (id: string) => string): string[] {
-  const out = (g.scope.sections ?? []).map((s) => `Every locked page in ${s}`);
+/** A grant's timeline in PostHog (spec §8.1), when the project is known: only its ID goes there. */
+export function posthogPerson(): ((id: string) => string) | undefined {
+  const host = (process.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com').replace(/\/$/, '').replace('://us.i.', '://us.').replace('://eu.i.', '://eu.');
+  const project = process.env.POSTHOG_PROJECT_ID;
+  return host && project ? (id: string) => `${host}/project/${project}/person/${id}` : undefined;
+}
+
+function opensTitles(g: Grant, title: (id: string) => string, sectionTitle: (id: string) => string): string[] {
+  const out = (g.scope.sections ?? []).map((s) => `Every private page in ${sectionTitle(s)}`);
   for (const id of g.scope.pages ?? []) out.push(title(id));
   return out;
 }
-

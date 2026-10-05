@@ -255,19 +255,19 @@ describe('grants', () => {
     expect(isValid(grant({ expiresAt: '2026-10-07T09:29:00+05:30' }), new Date('2026-10-05T09:30:00+05:30'))).toBe(true);
   });
 
-  it('maps lookup IDs and covered page scopes without letting codes cover private pages', () => {
+  it('maps lookup IDs and covered page scopes: a code and a link open the same private pages', () => {
     const pages = [
-      { id: 'work-a', section: 'work', access: 'locked' as const },
-      { id: 'work-private', section: 'work', access: 'private' as const },
-      { id: 'page-private', section: 'other', access: 'private' as const },
-      { id: 'page-locked', section: 'other', access: 'locked' as const },
+      { id: 'work-a', section: 'work', access: 'private' as const },
+      { id: 'work-b', section: 'work', access: 'private' as const },
+      { id: 'other-a', section: 'other', access: 'private' as const },
+      { id: 'other-b', section: 'other', access: 'private' as const },
     ];
-    const code = grant({ scope: { sections: ['work'], pages: ['page-private', 'page-locked', 'missing'] } });
+    const code = grant({ scope: { sections: ['work'], pages: ['other-b', 'missing'] } });
     const link = grant({ kind: 'link', name: undefined, secret: { key: keyText(1), salt: saltText(1) }, scope: code.scope });
     expect(lookupOf(code)).toBe('c/harbor');
     expect(lookupOf(link)).toBe('l/gaaaaaaaa');
-    expect(covers(code, pages)).toEqual(['work-a', 'page-locked']);
-    expect(covers(link, pages)).toEqual(['work-a', 'page-private', 'page-locked']);
+    expect(covers(code, pages)).toEqual(['work-a', 'work-b', 'other-b']);
+    expect(covers(link, pages)).toEqual(covers(code, pages));
   });
 
   it('checks transition safety while allowing notes on withdrawn grants to change', () => {

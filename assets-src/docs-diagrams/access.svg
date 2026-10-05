@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580">
 <title>Protected content: from two repositories to a sealed site</title>
-<desc>On the owner's machine, edit mode writes open content to content/, in the public repository, and locked and private content, with the access grants, to private-pages/, a private repository kept inside the project as a git submodule. GitHub Actions checks out both, builds every page, seals the locked and private ones, checks that no plaintext is left, and uploads the sealed site to GitHub Pages. A visitor's browser fetches the sealed pages and the keyring their access code or magic link opens, and decrypts them in the page. Visits, clicks and unlocks go to PostHog, keyed by the grant, never with the code or the content.</desc>
+<desc>On the owner's machine, edit mode writes open content to content/, in the public repository, and private content, with the access grants, to private-pages/, a private repository kept inside the project as a git submodule. GitHub Actions checks out both, builds every page, seals the private ones, checks that no plaintext is left, and uploads the sealed site to GitHub Pages. A visitor's browser fetches the sealed pages and the keyring their access code or magic link opens, and decrypts them in the page. Visits, clicks and unlocks go to PostHog, keyed by the grant, never with the code or the content.</desc>
 <g id="edit">
 <rect class="src" x="40" y="40" width="220" height="120" rx="18" />
 <text class="name" x="60" y="72">Edit mode</text>
@@ -19,7 +19,7 @@
 <rect class="gate" x="330" y="200" width="260" height="120" rx="18" />
 <text class="name" x="350" y="232">private-pages/</text>
 <text class="note" x="350" y="254">a private repo, as a submodule</text>
-<text class="line" x="350" y="286">Locked and private pages</text>
+<text class="line" x="350" y="286">Private pages</text>
 <text class="line" x="350" y="308">Grants: who, when, until</text>
 </g>
 <g id="build">
@@ -28,7 +28,7 @@
 <text class="note" x="680" y="94">on a push, Deploy now, and nightly</text>
 <text class="line" x="680" y="132">1. Check out both repositories</text>
 <text class="line" x="680" y="162">2. Build every page, quietly</text>
-<text class="line" x="680" y="192">3. Seal locked and private pages</text>
+<text class="line" x="680" y="192">3. Seal private pages</text>
 <text class="line" x="680" y="222">4. Fresh keys, valid grants only</text>
 <text class="line" x="680" y="252">5. Fail on any plaintext left</text>
 <text class="line" x="680" y="282">6. Upload the sealed site</text>

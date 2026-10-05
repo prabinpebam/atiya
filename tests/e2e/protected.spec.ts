@@ -1,8 +1,8 @@
 /**
- * Locked and private pages in the browser (documentation/access/spec.md §2, §5, §7; benchmark QB3 to QB9):
- * on the test build, sealed from the made-up fixtures (tests/fixtures/private-pages), whose codes are
- * known here. Signed out, nothing protected is readable; a grant sees exactly its scope; a magic link
- * opens its page and leaves no secret behind; pictures, the lightbox and videos work once open; sign-out
+ * Private pages in the browser (documentation/access/spec.md §2, §5, §7; benchmark QB3 to QB9): on the
+ * test build, sealed from the made-up fixtures (tests/fixtures/private-pages), whose codes are known here.
+ * Signed out, nothing private is readable; a grant sees exactly its scope, whether it's an access code or a
+ * magic link; a magic link opens its page, lists it in its section and leaves no secret behind; pictures, the lightbox and videos work once open; sign-out
  * leaves nothing in any tab; every failure has its message; and it's accessible and fast enough.
  */
 import { expect, test, type Page, type Response } from '@playwright/test';
@@ -18,9 +18,9 @@ const code = (id: string) => {
 };
 const ALL = code('gfixall22');
 const ONE = code('gfixone22');
-const LINK = `/p/privone222/#a=gfixlink2.${grants.find((g) => g.id === 'gfixlink2')!.secret.key}`;
+const LINK = `/writing/privone222/#a=gfixlink2.${grants.find((g) => g.id === 'gfixlink2')!.secret.key}`;
 const title = (id: string) => (JSON.parse(readFileSync(join(FIX, 'articles', `${id}.json`), 'utf8')) as { title: string }).title;
-const TITLES = ['fx-locked-alpha', 'fx-locked-beta', 'fx-locked-gamma', 'fx-locked-delta', 'fx-private-one', 'fx-private-two'].map((id) => [id, title(id)] as const);
+const TITLES = ['fx-private-alpha', 'fx-private-beta', 'fx-private-gamma', 'fx-private-delta', 'fx-private-one', 'fx-private-two'].map((id) => [id, title(id)] as const);
 const SECTION = '/side-projects/';
 const ALPHA = '/side-projects/alphaaaaa2/';
 const BETA = '/side-projects/betabbbbb3/';
@@ -53,19 +53,20 @@ test.describe('protected content', () => {
     await expect(page.locator('[data-sign-in-line]')).toBeVisible();
     await expect(page.locator('template[data-sealed="card"]')).toHaveCount(3);
     expect(await titlesIn(page)).toEqual([]);
-    // a section with only locked pages: its empty state, and the sign-in line
+    // a section with only private pages: its empty state, and the sign-in line
     await page.goto('/work/');
     await expect(page.locator('[data-cards-empty]')).toBeVisible();
     await expect(page.locator('[data-sign-in-line]')).toBeVisible();
-    // a locked page's shell: neutral, kept out of search, the sign-in panel in place of the page
+    // a private page's shell: neutral, kept out of search, the sign-in panel in place of the page
     await page.goto(ALPHA);
-    await expect(page).toHaveTitle('Locked page');
+    await expect(page).toHaveTitle('Private page');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
     await expect(page.locator('[data-access-gate] [data-unlock-form]')).toBeVisible();
     expect(await titlesIn(page)).toEqual([]);
-    await page.goto('/p/privtwo333/');
+    // one shared only by magic link has the same shell: there's one kind of private page
+    await page.goto('/writing/privtwo333/');
     await expect(page).toHaveTitle('Private page');
-    await expect(page.locator('[data-unlock-panel="private"]')).toBeVisible();
+    await expect(page.locator('[data-access-gate] [data-unlock-form]')).toBeVisible();
     expect(await titlesIn(page)).toEqual([]);
     for (const [id, t] of TITLES) expect(bodies.some((b) => b.includes(t)), `${id}'s title in a response`).toBe(false);
   });
@@ -75,55 +76,58 @@ test.describe('protected content', () => {
     await signIn(page, ALL.replace(/-/g, ' ').toUpperCase());
     await page.waitForURL(`**${SECTION}`);
     await expect(page.locator('[data-shared]')).toHaveCount(3);
-    expect((await cards(page)).slice(0, 6)).toEqual(['atiya', 'fx-locked-alpha', 'watai', 'fx-locked-beta', 'story', 'fx-locked-gamma']);
+    expect((await cards(page)).slice(0, 6)).toEqual(['atiya', 'fx-private-alpha', 'watai', 'fx-private-beta', 'story', 'fx-private-gamma']);
     await expect(page.locator('[data-shared]').first()).toContainText('Shared with you');
     await expect(page.locator('[data-access-bar]')).toBeVisible();
     await expect(page.locator('[data-access-bar]')).toContainText('until 1 January 2099');
     await expect(page.locator('[data-sign-in-line]')).toBeHidden();
-    // the other section's locked page, the same sign-in
+    // the other section's private page, the same sign-in
     await page.goto('/work/');
     await expect(page.locator('[data-shared]')).toHaveCount(1);
     await expect(page.locator('[data-cards-empty]')).toBeHidden();
     // moving between pages needs no code: the page opens at once
     await page.goto(BETA);
-    await expect(page.locator('h1')).toHaveText(title('fx-locked-beta'));
-    await expect(page).toHaveTitle(new RegExp(title('fx-locked-beta')));
+    await expect(page.locator('h1')).toHaveText(title('fx-private-beta'));
+    await expect(page).toHaveTitle(new RegExp(title('fx-private-beta')));
   });
 
-  test('a grant sees its scope and nothing else: one page, no private ones (QB3)', async ({ page }) => {
+  test('a grant sees its scope and nothing else: one page (QB3)', async ({ page }) => {
     await page.goto(ALPHA);
     await signIn(page, ONE);
-    await expect(page.locator('h1')).toHaveText(title('fx-locked-alpha'));
-    expect(await titlesIn(page)).toEqual(['fx-locked-alpha']);
+    await expect(page.locator('h1')).toHaveText(title('fx-private-alpha'));
+    expect(await titlesIn(page)).toEqual(['fx-private-alpha']);
     await page.goto(SECTION);
     await expect(page.locator('[data-shared]')).toHaveCount(1);
-    expect((await cards(page)).filter((n) => n?.startsWith('fx-'))).toEqual(['fx-locked-alpha']);
-    expect(await titlesIn(page)).toEqual(['fx-locked-alpha']);
+    expect((await cards(page)).filter((n) => n?.startsWith('fx-'))).toEqual(['fx-private-alpha']);
+    expect(await titlesIn(page)).toEqual(['fx-private-alpha']);
     await page.goto(BETA);
     await expect(page.locator('[data-access-gate] [data-unlock-status]')).toHaveText("This page isn't shared with your access. Get in touch if you'd like to see it.");
     expect(await titlesIn(page)).toEqual([]);
-    // a code never opens a private page
-    await page.goto('/p/privone222/');
-    await expect(page.locator('[data-unlock-status]')).toHaveText("Your link doesn't open this page.");
+    // a page outside its scope stays sealed, however else it's shared
+    await page.goto('/writing/privone222/');
+    await expect(page.locator('[data-access-gate] [data-unlock-status]')).toHaveText("This page isn't shared with your access. Get in touch if you'd like to see it.");
     expect(await titlesIn(page)).toEqual([]);
   });
 
-  test('a magic link opens its private page, takes its secret out of the address bar, and opens nothing else (QB3)', async ({ page }) => {
+  test('a magic link opens its private page, takes its secret out of the address bar, lists it in its section, and opens nothing else (QB3)', async ({ page }) => {
     await page.goto(LINK);
     await expect(page.locator('h1')).toHaveText(title('fx-private-one'));
     expect(new URL(page.url()).hash).toBe('');
     expect(await page.evaluate(() => sessionStorage.getItem('site.access'))).not.toMatch(/gfixlink2\.[\w-]{43}/);
     expect(await titlesIn(page)).toEqual(['fx-private-one']);
-    await page.goto('/p/privtwo333/');
-    await expect(page.locator('[data-unlock-status]')).toHaveText("Your link doesn't open this page.");
+    await page.goto('/writing/privtwo333/');
+    await expect(page.locator('[data-access-gate] [data-unlock-status]')).toHaveText("Your link doesn't open this page.");
+    await page.goto('/writing/');
+    expect((await cards(page)).filter((n) => n?.startsWith('fx-'))).toEqual(['fx-private-one']);
+    await expect(page.locator('[data-shared]')).toHaveCount(1);
     await page.goto(SECTION);
     await expect(page.locator('[data-shared]')).toHaveCount(0);
   });
 
-  test('a locked page opened directly: signing in there opens it in place, with its pictures, the lightbox and its video (QB7a)', async ({ page }) => {
+  test('a private page opened directly: signing in there opens it in place, with its pictures, the lightbox and its video (QB7a)', async ({ page }) => {
     await page.goto(ALPHA);
     await signIn(page, ALL);
-    await expect(page.locator('h1')).toHaveText(title('fx-locked-alpha'));
+    await expect(page.locator('h1')).toHaveText(title('fx-private-alpha'));
     await expect(page.locator('h1')).toBeFocused();
     await expect(page.locator('[data-access-gate]')).toBeHidden();
     // the time it took: deriving the key and opening the keyring, then swapping the page in
@@ -164,7 +168,7 @@ test.describe('protected content', () => {
     await page.goto(SECTION);
     await page.goto(ALPHA);
     await signIn(page, ALL, true);
-    await expect(page.locator('h1')).toHaveText(title('fx-locked-alpha'));
+    await expect(page.locator('h1')).toHaveText(title('fx-private-alpha'));
     expect(await page.evaluate(() => !!localStorage.getItem('site.access'))).toBe(true);
     const other = await context.newPage();
     await other.goto(SECTION);
@@ -210,7 +214,7 @@ test.describe('protected content', () => {
   test('a page from another deploy reloads once, then says the access no longer works, never "wrong code" (QB4)', async ({ page }) => {
     await page.goto(ALPHA);
     await signIn(page, ALL);
-    await expect(page.locator('h1')).toHaveText(title('fx-locked-alpha'));
+    await expect(page.locator('h1')).toHaveText(title('fx-private-alpha'));
     let asked = 0;
     await page.route('**/_access/**', (r) => {
       asked++;
@@ -243,16 +247,16 @@ test.describe('protected content', () => {
   });
 
   for (const scheme of ['light', 'dark'] as const) {
-    test(`no serious axe findings on the Sign in page, a signed-in section, a locked page and a private note, ${scheme} (QB8)`, async ({ page }) => {
+    test(`no serious axe findings on the Sign in page, a signed-in section and a private page, ${scheme} (QB8)`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto('/sign-in/');
       await noSeriousViolations(page);
-      await page.goto('/p/privtwo333/');
+      await page.goto('/writing/privtwo333/');
       await noSeriousViolations(page);
       await page.goto(ALPHA);
       await noSeriousViolations(page);
       await signIn(page, ALL);
-      await expect(page.locator('h1')).toHaveText(title('fx-locked-alpha'));
+      await expect(page.locator('h1')).toHaveText(title('fx-private-alpha'));
       await noSeriousViolations(page);
       await page.goto(SECTION);
       await expect(page.locator('[data-shared]')).toHaveCount(3);
@@ -345,10 +349,10 @@ test.describe('protected content: telemetry (QB6)', () => {
     await expect.poll(() => t.events(), { timeout: 15_000 }).toEqual(expect.arrayContaining(['access_signed_in', '$identify', 'access_opened']));
     expect(t.sent.find((e) => e.event === 'access_signed_in')?.properties).toMatchObject({ grant: 'gfixall22', via: 'code', distinct_id: 'gfixall22' });
     expect(t.sent.find((e) => e.event === 'access_opened')?.properties).toMatchObject({ grant: 'gfixall22', place: SECTION, cards: 3 });
-    // a locked page: a neutral page view, and a followed link as its kind only
+    // a private page: a neutral page view, and a followed link as its kind only
     await page.goto(ALPHA);
-    await expect(page.locator('h1')).toHaveText(title('fx-locked-alpha'));
-    await expect.poll(() => t.sent.some((e) => e.event === '$pageview' && e.properties.$title === 'Locked page'), { timeout: 15_000 }).toBe(true);
+    await expect(page.locator('h1')).toHaveText(title('fx-private-alpha'));
+    await expect.poll(() => t.sent.some((e) => e.event === '$pageview' && e.properties.$title === 'Private page'), { timeout: 15_000 }).toBe(true);
     await page.locator('main a[href*="/side-projects/"]').first().click();
     await expect.poll(() => t.sent.find((e) => e.event === 'access_link')?.properties.kind, { timeout: 15_000 }).toBe('internal');
     // sign out: the next page's events are anonymous again

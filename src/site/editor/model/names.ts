@@ -23,9 +23,9 @@ export function resourceName(key: string, titles: Titles): { kind: string; name:
   if ((m = /^\/private\/articles\/([^/]+)\.json$/.exec(key))) return { kind: 'Private page', name: titles.article(m[1]) ?? m[1] };
   if ((m = MEDIA.exec(key))) return { kind: m[1] === 'private' ? 'Private media' : 'Media', name: m[2] };
   if ((m = /^\/content\/media\/(.+)$/.exec(key))) return { kind: 'Media', name: m[1] };
-  if (key === '/private/access.json') return { kind: 'Access', name: 'The access codes and links' };
-  if (key === '/private/access-message.json') return { kind: 'Access', name: 'The share message' };
-  if (key === '/private/structures/overlay.json') return { kind: 'Private places', name: 'Locked and private pages' };
+  if (key === '/private/access.json') return { kind: 'Sharing', name: 'The access codes and magic links' };
+  if (key === '/private/access-message.json') return { kind: 'Sharing', name: 'The share message' };
+  if (key === '/private/structures/overlay.json') return { kind: 'Private places', name: 'Where private pages are listed' };
   if (key === '/content/structures/site.json') return { kind: 'Sections', name: 'The site structure' };
   if (key === '/content/structures/planet.json') return { kind: 'Planet', name: 'The planet' };
   if (key === '/content/redirects.json') return { kind: 'Redirects', name: 'The redirects' };
@@ -55,7 +55,7 @@ export function groupChanges(files: { key: string; status: Status }[], titles: T
       if (hit.status !== f.status) hit.status = 'changed';
     } else by.set(resource, { resource, ...resourceName(f.key, titles), status: f.status, keys: [f.key] });
   }
-  const RANK: Record<string, number> = { Article: 0, 'Private page': 1, Media: 2, 'Private media': 3, Sections: 4, 'Private places': 5, Access: 6, Planet: 7, Settings: 8, Person: 9 };
+  const RANK: Record<string, number> = { Article: 0, 'Private page': 1, Media: 2, 'Private media': 3, Sections: 4, 'Private places': 5, Sharing: 6, Planet: 7, Settings: 8, Person: 9 };
   return [...by.values()].sort((a, b) => (RANK[a.kind] ?? 9) - (RANK[b.kind] ?? 9) || a.name.localeCompare(b.name));
 }
 

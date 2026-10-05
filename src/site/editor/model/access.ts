@@ -1,58 +1,68 @@
 /**
  * Edit mode's access model (documentation/access/spec.md §4, §8), pure so it's unit-tested: placing and
- * unplacing protected pages in the private overlay, a section's full order split into the overlay's and the
- * public structure's, a grant's new record, its share message and its magic link.
+ * unplacing private pages in the private overlay (a private page is always in a section), pages moved in the
+ * Sections screen with open and private ones together, a section's full order split into the overlay's and
+ * the public structure's, a grant's new record, its share message and its magic link.
  */
 import type { HubNode, Overlay, SiteNode, SiteStructure } from '../../content/schema';
 import type { Grant } from '../../access/types';
 import type { grantState } from '../../access/grants';
+import { nodeOf, placeAll, unplace } from './structure';
 
-/** What the Access screen shows (made by the server's `accessView`). */
-export interface AccessView {
-  grants: (Grant & { state: ReturnType<typeof grantState>; opens: string[] })[];
-  sections: { id: string; title: string; pages: { id: string; node: string; title: string; access: 'open' | 'locked'; published: boolean }[] }[];
-  private: { id: string; title: string; path: string; published: boolean }[];
-  /** Pages in no section and not private: they can be made private, or put in a section first. */
-  unplaced: { id: string; title: string }[];
-  ready: boolean;
+/** A page's access: open to everyone, or private (in private-pages/, opened by an access code or a magic link). */
+export type PageAccess = 'open' | 'private';
+
+/** A grant as edit mode lists it: its state, and what it opens in words. */
+export type ListedGrant = Grant & { state: ReturnType<typeof grantState>; opens: string[] };
+
+/** What the sharing panel shows (made by the server's `sharingView`). */
+export interface SharingView {
+  /** Every grant, newest first; on a page's Share dialog, only the ones that open it. */
+  grants: ListedGrant[];
+  /** The private pages a grant can open, each with its section's title. */
+  pages: { id: string; title: string; section: string }[];
+  /** The sections that hold private pages: a grant can open every private page in one, now and later. */
+  sections: { id: string; title: string }[];
 }
 
-type ProtectedNode = Overlay['private'][number];
+type PrivateNode = Overlay['sections'][number]['pages'][number];
 
-/** The overlay without the page: off its section's locked pages and order, and off the private pages. */
-export function unplaceProtected(overlay: Overlay, id: string): Overlay {
+/** The overlay without the page: off its section's private pages and order. */
+export function unplacePrivate(overlay: Overlay, id: string): Overlay {
   return {
     ...overlay,
     sections: overlay.sections
       .map((s) => ({ ...s, pages: s.pages.filter((p) => p.item.id !== id), ...(s.order ? { order: s.order.filter((o) => o !== id) } : {}) }))
       .filter((s) => s.pages.length > 0),
-    private: overlay.private.filter((p) => p.item.id !== id),
   };
 }
 
-/** The overlay with a locked page in a section, after `after` in its order (the start when null). */
-export function placeLocked(overlay: Overlay, section: string, node: ProtectedNode, order: string[]): Overlay {
-  const o = unplaceProtected(overlay, node.item.id);
+/** The overlay with a private page in a section, the section's full order set to `order`. */
+export function placePrivate(overlay: Overlay, section: string, node: PrivateNode, order: string[]): Overlay {
+  const o = unplacePrivate(overlay, node.item.id);
   const existing = o.sections.find((s) => s.section === section);
   const sections = existing ? o.sections.map((s) => (s.section === section ? { ...s, pages: [...s.pages, node], order } : s)) : [...o.sections, { section, pages: [node], order }];
   return { ...o, sections };
 }
 
-/** The overlay with a private page (in no section). */
-export const placePrivate = (overlay: Overlay, node: ProtectedNode): Overlay => {
-  const o = unplaceProtected(overlay, node.item.id);
-  return { ...o, private: [...o.private, node] };
-};
+/** A private page's node and section, if it's private. */
+export function privateNode(overlay: Overlay | null | undefined, id: string): { section: string; node: PrivateNode } | undefined {
+  for (const s of overlay?.sections ?? []) {
+    const node = s.pages.find((p) => p.item.id === id);
+    if (node) return { section: s.section, node };
+  }
+  return undefined;
+}
 
-/** A section's pages, open and locked, in its full order (the overlay's order, then the rest). */
-export function sectionOrder(structure: SiteStructure, overlay: Overlay | null, section: string): { id: string; access: 'open' | 'locked' }[] {
+/** A section's pages, open and private, in its full order (the overlay's order, then the rest). */
+export function sectionOrder(structure: SiteStructure, overlay: Overlay | null, section: string): { id: string; access: PageAccess }[] {
   const hub = (structure.home.children ?? []).find((c): c is HubNode => c.kind === 'hub' && c.id === section);
   const open = (hub?.children ?? []).filter((c) => c.kind === 'item').map((c) => c.id);
   const entry = overlay?.sections.find((s) => s.section === section);
-  const locked = entry?.pages.map((p) => p.id) ?? [];
-  const all = [...open, ...locked];
+  const priv = entry?.pages.map((p) => p.id) ?? [];
+  const all = [...open, ...priv];
   const first = (entry?.order ?? []).filter((id) => all.includes(id));
-  return [...new Set([...first, ...all])].map((id) => ({ id, access: locked.includes(id) ? 'locked' : 'open' }));
+  return [...new Set([...first, ...all])].map((id) => ({ id, access: priv.includes(id) ? 'private' : 'open' }));
 }
 
 /** A new full order for a section, split: the overlay keeps the whole order, the public structure its open pages in that order. */
@@ -68,12 +78,46 @@ export function reorderSection(structure: SiteStructure, overlay: Overlay, secti
   return { structure: { ...structure, home: { ...structure.home, children } }, overlay: { ...overlay, sections } };
 }
 
-/** The open page a locked one follows in a full order (null: the start), to put it back there when it opens. */
-export function openBefore(order: { id: string; access: 'open' | 'locked' }[], id: string): string | null {
+/**
+ * Pages moved in the Sections screen, open and private together (documentation/access/spec.md §8.2): into
+ * section `to`, in the order given, at `index` among the pages that stay there (the end if left out). Open
+ * pages move in the public structure with their nodes (V21), private ones in the overlay with their tokens;
+ * the section's full order goes in the overlay, and the moved pages leave every other section's order. `_off`
+ * takes pages off the site, which a private page can't leave: the reason is returned instead.
+ */
+export function movePages(structure: SiteStructure, overlay: Overlay, pages: string[], to: string, index: number | undefined, newNodeId: (id: string) => string): { structure: SiteStructure; overlay: Overlay } | string {
+  const ref = (id: string) => ({ type: 'article' as const, id });
+  const priv = new Map(pages.flatMap((id) => {
+    const p = privateNode(overlay, id);
+    return p ? [[id, p] as const] : [];
+  }));
+  const nodeIdOf = (id: string) => priv.get(id)?.node.id ?? nodeOf(structure, ref(id))?.id ?? newNodeId(id);
+  const moved = pages.map(nodeIdOf);
+  const leaveOrders = (o: Overlay): Overlay => ({ ...o, sections: o.sections.map((s) => (s.order && s.section !== to ? { ...s, order: s.order.filter((n) => !moved.includes(n)) } : s)) });
+  if (to === '_off') {
+    if (priv.size) return 'a private page is always in a section: make it public first to take it off the site';
+    return { structure: pages.reduce((s, id) => unplace(s, ref(id)), structure), overlay: leaveOrders(overlay) };
+  }
+  const stay = sectionOrder(structure, overlay, to)
+    .map((p) => p.id)
+    .filter((n) => !moved.includes(n));
+  const at = index === undefined ? stay.length : Math.max(0, Math.min(index, stay.length));
+  const order = [...stay.slice(0, at), ...moved, ...stay.slice(at)];
+  const open = pages.filter((id) => !priv.has(id));
+  let s = open.length ? placeAll(structure, to, open.map((id) => ({ item: ref(id), nodeId: nodeIdOf(id) }))) : structure;
+  let o = leaveOrders(overlay);
+  for (const [, p] of priv) o = placePrivate(o, to, p.node, order);
+  const r = reorderSection(s, o, to, order);
+  s = r.structure;
+  o = r.overlay;
+  return { structure: s, overlay: o };
+}
+
+/** The open page a private one follows in a full order (null: the start), to put it back there when it opens. */
+export function openBefore(order: { id: string; access: PageAccess }[], id: string): string | null {
   const i = order.findIndex((p) => p.id === id);
   return order.slice(0, Math.max(0, i)).reverse().find((p) => p.access === 'open')?.id ?? null;
 }
-
 /** A section's public children with a page put back after `after` (the start when null). */
 export function insertAfter(structure: SiteStructure, section: string, node: SiteNode, after: string | null): SiteStructure {
   const children = (structure.home.children ?? []).map((c) => {

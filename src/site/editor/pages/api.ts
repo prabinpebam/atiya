@@ -10,7 +10,7 @@ import { createArticle, deleteArticle, duplicateArticle, followOnPlanet, pagesOf
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { changes, discard, publish, push } from '../server/git';
-import { accessView, changeAddress, createGrant, extendGrant, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, withdrawGrant, type NewGrant, type PageAccess } from '../server/access';
+import { changeAddress, createGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, withdrawGrant, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
 import { picture } from '../../content/pictures';
 
@@ -56,10 +56,10 @@ const handle: APIRoute = async ({ request, params, url }) => {
         return result(await saveArticle({ id, article: b.article, section: b.section, place: b.place, ifMatch: b.ifMatch ?? {} }));
       }
       if (method === 'POST' && id && parts[2] === 'duplicate') return result(await duplicateArticle(id));
-      // its access (documentation/access/spec.md §8.2): open, locked or private, and a protected page's address
+      // its access (documentation/access/spec.md §8.2): open or private, and a private page's address
       if (method === 'PUT' && id && parts[2] === 'access') {
         const b = await body<{ access: PageAccess; section?: string }>(request);
-        if (!['open', 'locked', 'private'].includes(b.access)) return json({ ok: false, issues: [{ file: 'private/structures/overlay.json', message: 'open, locked or private' }] }, 422);
+        if (!['open', 'private'].includes(b.access)) return json({ ok: false, issues: [{ file: 'private/structures/overlay.json', message: 'open or private' }] }, 422);
         return result(await setPageAccess(id, b.access, b.section));
       }
       if (method === 'POST' && id && parts[2] === 'address') return result(await changeAddress(id));
@@ -69,7 +69,7 @@ const handle: APIRoute = async ({ request, params, url }) => {
       }
     }
 
-    // ---------- access: grants, and a section's open and locked pages in order (documentation/access/spec.md §8) ----------
+    // ---------- access: grants, and a section's open and private pages moved and ordered (documentation/access/spec.md §8) ----------
     if (parts[0] === 'access') {
       if (method === 'POST' && parts[1] === 'grants' && !parts[2]) return result(await createGrant(await body<NewGrant>(request)));
       const gid = parts[2];
@@ -78,10 +78,15 @@ const handle: APIRoute = async ({ request, params, url }) => {
       if (method === 'POST' && parts[1] === 'grants' && parts[3] === 'scope') return result(await rescopeGrant(gid, (await body<{ scope: { sections?: string[]; pages?: string[] } }>(request)).scope));
       if (method === 'POST' && parts[1] === 'grants' && parts[3] === 'withdraw') return result(await withdrawGrant(gid));
       if (method === 'GET' && parts[1] === 'grants' && parts[3] === 'message') {
-        const g = accessView().grants.find((x) => x.id === gid);
+        const g = sharingView().grants.find((x) => x.id === gid);
         return g ? json({ ok: true, ...shareMessage(g) }) : json({ ok: false }, 404);
       }
       if (method === 'PUT' && parts[1] === 'sections' && parts[2] && ID.test(parts[2])) return result(await setSectionOrder(parts[2], (await body<{ order: string[] }>(request)).order));
+      if (method === 'POST' && parts[1] === 'moves' && !parts[2]) {
+        const b = await body<{ pages: string[]; to: string; index?: number }>(request);
+        if (!Array.isArray(b.pages) || !b.pages.every((p) => ID.test(p)) || (b.to !== '_off' && !ID.test(b.to))) return json({ ok: false }, 422);
+        return result(await moveSectionPages(b.pages, b.to, b.index));
+      }
     }
 
     // ---------- the site structure, the settings, people ----------

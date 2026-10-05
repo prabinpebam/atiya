@@ -73,8 +73,8 @@ export interface ArticleRow {
   section: { id: string; title: string } | null;
   /** Its path on the site (published), or null. */
   path: string | null;
-  /** Who can see it: open, locked or private (documentation/access/spec.md §8.2). */
-  access: 'open' | 'locked' | 'private';
+  /** Who can see it: open, or private (documentation/access/spec.md §8.2). */
+  access: 'open' | 'private';
 }
 
 export function articleRows(index: ContentIndex): ArticleRow[] {
@@ -90,7 +90,7 @@ export function articleRows(index: ContentIndex): ArticleRow[] {
         updatedAt: a.updatedAt,
         section: route?.parent ? { id: route.parent.id, title: route.parent.title } : null,
         path: route?.published ? route.path : null,
-        access: route?.access ?? 'open',
+        access: index.origins.get(a.id) === 'private' ? ('private' as const) : ('open' as const),
       };
     })
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.title.localeCompare(b.title));
@@ -123,6 +123,8 @@ export interface LibraryPicture {
   dark?: boolean;
   /** A video's length (s). */
   duration?: number;
+  /** A private page's: kept in private-pages/ (documentation/access/spec.md §8.2). */
+  private?: boolean;
 }
 
 /** Every picture and video, for the library and the picker: grouped by folder (the article being edited first, when there is one). */
@@ -132,14 +134,14 @@ export async function mediaCards(index: ContentIndex, first?: string): Promise<L
     [...index.media.values()].map(async (m): Promise<LibraryPicture> => {
       const p = await picture(m.id, 'card');
       const owner = ownerOf(m.id);
-      return { id: m.id, kind: 'image', owner, ownerLabel: ownerLabel(index, owner), thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height, used: refs.has(m.id), ...(m.darkMaster ? { dark: true } : {}) };
+      return { id: m.id, kind: 'image', owner, ownerLabel: ownerLabel(index, owner), thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height, used: refs.has(m.id), ...(m.darkMaster ? { dark: true } : {}), ...(m.origin === 'private' ? { private: true } : {}) };
     }),
   );
   const videos = await Promise.all(
     [...index.videos.values()].map(async (v): Promise<LibraryPicture> => {
       const f = await video(v.id, 'card');
       const owner = ownerOf(v.id);
-      return { id: v.id, kind: 'video', owner, ownerLabel: ownerLabel(index, owner), thumb: f.poster?.thumb ?? '', src: f.src, alt: v.title, decorative: false, width: v.width, height: v.height, used: refs.has(v.id), ...(v.duration ? { duration: v.duration } : {}) };
+      return { id: v.id, kind: 'video', owner, ownerLabel: ownerLabel(index, owner), thumb: f.poster?.thumb ?? '', src: f.src, alt: v.title, decorative: false, width: v.width, height: v.height, used: refs.has(v.id), ...(v.duration ? { duration: v.duration } : {}), ...(v.origin === 'private' ? { private: true } : {}) };
     }),
   );
   const cards = [...pictures, ...videos];

@@ -1,7 +1,7 @@
 import { b64 } from './crypto.ts';
 import type { Grant, GrantState } from './types.ts';
 
-type PageAccess = { id: string; section?: string; access: 'locked' | 'private' };
+type PageAccess = { id: string; section?: string; access: 'private' };
 
 function time(text: string | undefined): number | null {
   if (!text) return null;
@@ -37,9 +37,8 @@ export function covers(g: Grant, pages: PageAccess[]): string[] {
   const sectionScope = new Set(g.scope.sections ?? []);
   const out: string[] = [];
   for (const page of pages) {
-    if (g.kind === 'code' && page.access === 'private') continue;
     const byPage = pageScope.has(page.id);
-    const bySection = page.access === 'locked' && page.section !== undefined && sectionScope.has(page.section);
+    const bySection = page.section !== undefined && sectionScope.has(page.section);
     if (byPage || bySection) out.push(page.id);
   }
   return out;

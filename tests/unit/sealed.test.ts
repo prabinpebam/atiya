@@ -1,6 +1,6 @@
 /**
  * Sealing the build and the leak check (documentation/access/spec.md §5, §6; benchmark QB1, QB1a, QB1b):
- * the sealer, run on a small built site made here, seals a locked page, its card and its picture, removes
+ * the sealer, run on a small built site made here, seals a private page, its card and its picture, removes
  * every readable copy and writes keyrings only for grants that still work; what it sealed opens with the
  * fixtures' codes; and the leak check passes on it, then catches every kind of leak planted in a copy, without
  * ever printing the protected words.
@@ -20,7 +20,7 @@ const grants = JSON.parse(readFileSync(join(FIXTURES, 'access.json'), 'utf8')).g
 const grant = (id: string) => grants.find((g) => g.id === id)!;
 
 const ASSET = '/_astro/harbour.abc123.webp';
-const TITLE = 'Fixture locked alpha: the harbour lantern study';
+const TITLE = 'Fixture private alpha: the harbour lantern study';
 const page = (title: string, body: string, head = '') => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>${head}</head><body>${body}</body></html>`;
 
 let root: string;
@@ -29,26 +29,26 @@ let summaryFile: string;
 let sealed: Awaited<ReturnType<typeof sealSite>>;
 const logs: string[] = [];
 const provenance = [
-  { kind: 'page' as const, route: '/side-projects/alphaaaaa2/', access: 'locked' as const, id: 'fx-locked-alpha' },
-  { kind: 'asset' as const, url: ASSET, master: '/private/media/articles/fx-locked-alpha/harbour.webp' },
+  { kind: 'page' as const, route: '/side-projects/alphaaaaa2/', access: 'private' as const, id: 'fx-private-alpha' },
+  { kind: 'asset' as const, url: ASSET, master: '/private/media/articles/fx-private-alpha/harbour.webp' },
 ];
 
-/** A small built site: an open home page, a section with a locked card, the locked page, its picture, and an emitted copy of a private master. */
+/** A small built site: an open home page, a section with a private card, the private page, its picture, and an emitted copy of a private master. */
 function build(dir: string) {
   mkdirSync(join(dir, '_astro'), { recursive: true });
   mkdirSync(join(dir, 'side-projects', 'alphaaaaa2'), { recursive: true });
   writeFileSync(join(dir, 'index.html'), page('Home — Site', '<a href="/side-projects/">Side projects</a>'));
   writeFileSync(
     join(dir, 'side-projects', 'index.html'),
-    page('Side projects — Site', `<div data-cards><div class="item" data-node="atiya">An open card</div></div><div hidden data-sealed-cards><!--sealed:card:fx-locked-alpha:atiya--><div class="item" data-node="fx-locked-alpha"><img src="${ASSET}" alt="x"><a href="/side-projects/alphaaaaa2/">${TITLE}</a></div><!--/sealed:card--></div>`),
+    page('Side projects — Site', `<div data-cards><div class="item" data-node="atiya">An open card</div></div><div hidden data-sealed-cards><!--sealed:card:fx-private-alpha:atiya--><div class="item" data-node="fx-private-alpha"><img src="${ASSET}" alt="x"><a href="/side-projects/alphaaaaa2/">${TITLE}</a></div><!--/sealed:card--></div>`),
   );
   writeFileSync(
     join(dir, 'side-projects', 'alphaaaaa2', 'index.html'),
-    page('Locked page', `<main id="main"><div data-access-gate="locked">Sign in</div><!--sealed:main:fx-locked-alpha--><span hidden data-page-title>${TITLE}</span><h1>${TITLE}</h1><a href="${ASSET}" data-lightbox="g"><img src="${ASSET}" srcset="${ASSET} 480w" alt="Fixture picture: a harbour lantern glowing over still water at dusk."></a><!--/sealed:main--></main>`, '<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="same-origin">'),
+    page('Private page', `<main id="main"><div data-access-gate="private">Sign in</div><!--sealed:main:fx-private-alpha--><span hidden data-page-title>${TITLE}</span><h1>${TITLE}</h1><a href="${ASSET}" data-lightbox="g"><img src="${ASSET}" srcset="${ASSET} 480w" alt="Fixture picture: a harbour lantern glowing over still water at dusk."></a><!--/sealed:main--></main>`, '<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="same-origin">'),
   );
   writeFileSync(join(dir, ASSET), Buffer.from('a picture size made from the private master'));
   // an emitted copy of a private master itself, which no page names
-  cpSync(join(FIXTURES, 'media/articles/fx-locked-alpha/harbour.webp'), join(dir, '_astro', 'harbour.original.webp'));
+  cpSync(join(FIXTURES, 'media/articles/fx-private-alpha/harbour.webp'), join(dir, '_astro', 'harbour.original.webp'));
 }
 
 beforeAll(async () => {
@@ -68,7 +68,7 @@ describe('the sealer', () => {
     expect(shell).toContain(`<meta name="site-build" content="${sealed.build}">`);
     const section = readFileSync(join(dist, 'side-projects/index.html'), 'utf8');
     expect(section).toMatch(/<template data-sealed="card" data-kid="[\w-]+">/);
-    expect(section).not.toMatch(/Fixture|alphaaaaa2|fx-locked/);
+    expect(section).not.toMatch(/Fixture|alphaaaaa2|fx-private/);
     expect(existsSync(join(dist, ASSET))).toBe(false);
     expect(existsSync(join(dist, '_astro/harbour.original.webp'))).toBe(false);
     expect(readdirSync(join(dist, '_sealed', sealed.build))).toHaveLength(1);
@@ -136,20 +136,20 @@ describe('the leak check', () => {
   const master = (rel: string) => readFileSync(join(FIXTURES, 'media/articles', rel));
 
   const LEAKS: [string, (dir: string) => void, RegExp, object[]?][] = [
-    ['a short title', (d) => append(d, 'index.html', '<p>Fixture locked gamma: quiet orchard notes</p>'), /protected words: a title/],
+    ['a short title', (d) => append(d, 'index.html', '<p>Fixture private gamma: quiet orchard notes</p>'), /protected words: a title/],
     ['a heading in a script', (d) => append(d, '_astro/app.js', 'const h = "Fixture heading beta: what the families did";'), /protected words: a heading/],
     ['an attribute', (d) => append(d, 'index.html', '<img alt="Fixture picture: a harbour lantern glowing over still water at dusk.">'), /protected words: an alt text/],
-    ['an HTML-encoded title', (d) => append(d, 'index.html', 'Fixture&#32;locked&#32;delta:&#x20;copper bridge case study'), /protected words: a title/],
+    ['an HTML-encoded title', (d) => append(d, 'index.html', 'Fixture&#32;private&#32;delta:&#x20;copper bridge case study'), /protected words: a title/],
     ['a sentence in JSON', (d) => append(d, 'data.json', '{"t":"the velvet compass memo points north toward a small\\u002c careful launch"}'), /protected words: a sentence/],
     ['a picture size', (d) => writeFileSync(join(d, ASSET), 'back again'), /a file made from a private master is still readable/],
-    ['a dark version', (d) => writeFileSync(join(d, '_astro/dark.webp'), master('fx-locked-alpha/harbour.dark.webp')), /a private master is readable/],
-    ['a poster', (d) => writeFileSync(join(d, '_astro/poster.webp'), master('fx-locked-beta/tidepool.poster.webp')), /a private master is readable/],
-    ['a video', (d) => (mkdirSync(join(d, 'media'), { recursive: true }), writeFileSync(join(d, 'media/clip.mp4'), master('fx-locked-beta/tidepool.mp4'))), /a private master is readable/],
+    ['a dark version', (d) => writeFileSync(join(d, '_astro/dark.webp'), master('fx-private-alpha/harbour.dark.webp')), /a private master is readable/],
+    ['a poster', (d) => writeFileSync(join(d, '_astro/poster.webp'), master('fx-private-beta/tidepool.poster.webp')), /a private master is readable/],
+    ['a video', (d) => (mkdirSync(join(d, 'media'), { recursive: true }), writeFileSync(join(d, 'media/clip.mp4'), master('fx-private-beta/tidepool.mp4'))), /a private master is readable/],
     ['an orphan private file', (d) => writeFileSync(join(d, '_astro/orphan.webp'), 'made from a private master, named by no page'), /a file made from a private master is still readable/, [{ kind: 'asset', url: '/_astro/orphan.webp', master: '/private/media/x.webp' }]],
     ['an open page linking to a token', (d) => append(d, 'index.html', '<a href="/side-projects/alphaaaaa2/">a way in</a>'), /an open page links to a protected page/],
     ['a shell without noindex', (d) => writeFileSync(join(d, 'side-projects/alphaaaaa2/index.html'), readFileSync(join(d, 'side-projects/alphaaaaa2/index.html'), 'utf8').replace(/<meta name="robots"[^>]*>/, '')), /not kept out of search/],
     ['a seal marker', (d) => append(d, 'index.html', '<!--sealed:main:x-->'), /a seal marker was left/],
-    ['a real title on a shell', (d) => writeFileSync(join(d, 'side-projects/alphaaaaa2/index.html'), readFileSync(join(d, 'side-projects/alphaaaaa2/index.html'), 'utf8').replace('<title>Locked page</title>', '<title>Work</title>')), /a sealed page has a real title/],
+    ['a real title on a shell', (d) => writeFileSync(join(d, 'side-projects/alphaaaaa2/index.html'), readFileSync(join(d, 'side-projects/alphaaaaa2/index.html'), 'utf8').replace('<title>Private page</title>', '<title>Work</title>')), /a sealed page has a real title/],
     ['a grant recipient', (d) => append(d, 'index.html', 'Fixture Reader Withdrawn'), /protected words: a recipient/],
     ['a token in a script', (d) => append(d, '_astro/app.js', 'go("deltaddd55")'), /protected words: a token/],
   ];

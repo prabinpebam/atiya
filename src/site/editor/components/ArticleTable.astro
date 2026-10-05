@@ -1,8 +1,8 @@
 ---
 /**
- * Every article and page, as a table: its title (the way into the editor), kind, section, status and
- * last update, newest first, with a search and filters, View on the site when it's published, Duplicate,
- * and Delete for a draft.
+ * Every article and page, open and private together, as a table: its title (the way into the editor), kind,
+ * section, status (a private page tagged Private) and last update, newest first, with a search and filters
+ * (status, kind, who can see it), View on the site when it's published, Duplicate, and Delete for a draft.
  * @tier editor
  * @a11y A table with a caption and column headers; each row's actions are named with the article's title.
  * @a11y The search and filters update the rows in place and say how many show (a live region).
@@ -52,6 +52,17 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
       ]}
       data-editor-filter="kind"
     />
+    <Select
+      label="Who can see it"
+      size="md"
+      value="all"
+      options={[
+        { value: 'all', label: 'Everyone and private' },
+        { value: 'open', label: 'Everyone' },
+        { value: 'private', label: 'Private' },
+      ]}
+      data-editor-filter="access"
+    />
   </div>
   <Text variant="small" tone="muted" as="p" id="articles-count">{`${rows.length} ${rows.length === 1 ? 'article' : 'articles'}`}</Text>
   <table class="table" aria-describedby="articles-count">
@@ -69,18 +80,18 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
     <tbody>
       {
         rows.map((r) => (
-          <tr data-row data-title={r.title.toLowerCase()} data-status={r.published ? 'published' : r.status === 'draft' ? 'draft' : 'other'} data-kind={r.kind}>
+          <tr data-row data-title={r.title.toLowerCase()} data-status={r.published ? 'published' : r.status === 'draft' ? 'draft' : 'other'} data-kind={r.kind} data-access={r.access}>
             <th scope="row">
               <Link href={withBase(`/_edit/articles/${r.id}/`)} variant="quiet">
                 {r.title}
               </Link>
             </th>
             <td>{r.kind === 'page' ? 'Page' : r.kind === 'gallery' ? 'Gallery' : r.kind === 'talk' ? 'Talk' : 'Article'}</td>
-            <td>{r.access === 'private' ? <Text as="span" variant="small" tone="muted">From a magic link</Text> : r.section?.title ?? <Text as="span" variant="small" tone="muted">Not on the site</Text>}</td>
+            <td>{r.section?.title ?? <Text as="span" variant="small" tone="muted">Not on the site</Text>}</td>
             <td>
               <span class="tags">
                 <Tag tone={tone(r)} size="sm">{STATUS_LABEL[r.status]}</Tag>
-                {r.access !== 'open' && <Tag tone="highlight" size="sm">{r.access === 'locked' ? 'Locked' : 'Private'}</Tag>}
+                {r.access === 'private' && <Tag tone="highlight" size="sm" icon="key">Private</Tag>}
               </span>
             </td>
             <td>
@@ -117,7 +128,7 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
 
   .filters {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
     gap: var(--space-4);
     align-items: end;
   }
@@ -180,12 +191,12 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
     const rows = [...root.querySelectorAll<HTMLTableRowElement>('[data-row]')];
     const count = root.querySelector<HTMLElement>('#articles-count')!;
     const search = root.querySelector<HTMLInputElement>('[data-editor-search] input')!;
-    const filters: Record<string, string> = { status: 'all', kind: 'all' };
+    const filters: Record<string, string> = { status: 'all', kind: 'all', access: 'all' };
     const apply = () => {
       const q = search.value.trim().toLowerCase();
       let shown = 0;
       for (const r of rows) {
-        const hide = (q && !r.dataset.title!.includes(q)) || (filters.status !== 'all' && r.dataset.status !== filters.status) || (filters.kind !== 'all' && r.dataset.kind !== filters.kind);
+        const hide = (q && !r.dataset.title!.includes(q)) || (filters.status !== 'all' && r.dataset.status !== filters.status) || (filters.kind !== 'all' && r.dataset.kind !== filters.kind) || (filters.access !== 'all' && r.dataset.access !== filters.access);
         r.hidden = !!hide;
         if (!hide) shown++;
       }

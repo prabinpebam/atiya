@@ -289,7 +289,7 @@ mark {
 }
 
 /* signed in on this device (scripts/sealed.ts; documentation/access/spec.md §7.1): while the key is tried,
- * a section's sign-in line and a locked page's sign-in panel don't flash. A gate shown on purpose (a page
+ * a section's sign-in line and a private page's sign-in panel don't flash. A gate shown on purpose (a page
  * the grant doesn't cover) stays. */
 html[data-signed-in] [data-sign-in-line],
 html[data-signed-in] [data-access-gate]:not([data-shown]) {

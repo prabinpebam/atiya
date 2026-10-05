@@ -8,7 +8,7 @@
         "name": "Fixture Reader All",
         "organisation": "Fixture Org Alpha"
       },
-      "purpose": "Fixture purpose: every locked page",
+      "purpose": "Fixture purpose: every private page in two sections",
       "scope": {
         "sections": [
           "side-projects",
@@ -30,10 +30,10 @@
         "name": "Fixture Reader One",
         "organisation": "Fixture Org Beta"
       },
-      "purpose": "Fixture purpose: one locked page",
+      "purpose": "Fixture purpose: one private page, by code",
       "scope": {
         "pages": [
-          "fx-locked-alpha"
+          "fx-private-alpha"
         ]
       },
       "createdAt": "2026-10-01T09:00:00+05:30",
@@ -50,7 +50,7 @@
         "name": "Fixture Reader Link",
         "organisation": "Fixture Org Gamma"
       },
-      "purpose": "Fixture purpose: one private page",
+      "purpose": "Fixture purpose: one private page, by link",
       "scope": {
         "pages": [
           "fx-private-one"

@@ -24,6 +24,7 @@ import Image from '../../components/fundamentals/Image.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import Video from '../../components/fundamentals/Video.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
 import { withBase } from '../../design/meta';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
 import { clock, megabytes } from '../model/upload';
@@ -34,8 +35,9 @@ export interface PictureDetails {
   srcset: string;
   width: number;
   height: number;
-  /** The sidecar as it is on disk, and its version (for the save's If-Match). */
+  /** The sidecar as it is on disk, its key (/content/media/… or /private/media/…) and its version (for the save's If-Match). */
   sidecar: ImageMedia;
+  key: string;
   version: string;
   /** Its dark mode version, if it has one. */
   dark?: { src: string; srcset: string; width: number; height: number };
@@ -50,6 +52,8 @@ export interface VideoDetails {
   /** Its size on disk (bytes). */
   bytes: number;
   sidecar: VideoMedia;
+  /** Its sidecar's key (/content/media/… or /private/media/…). */
+  key: string;
   version: string;
 }
 
@@ -71,7 +75,9 @@ const media = (id: string) => withBase(`/_edit/media/?id=${id}`);
 const sc = picture?.sidecar;
 const [fx, fy] = (sc?.focus ?? '50% 50%').split(' ').map((v) => parseInt(v, 10));
 const name = (picture ?? video)?.id.split('/').pop();
-const state = picture ? JSON.stringify({ id: picture.id, version: picture.version, sidecar: sc }).replace(/</g, '\\u003c') : video ? JSON.stringify({ id: video.id, version: video.version, sidecar: video.sidecar }).replace(/</g, '\\u003c') : '';
+const state = picture ? JSON.stringify({ id: picture.id, key: picture.key, version: picture.version, sidecar: sc }).replace(/</g, '\\u003c') : video ? JSON.stringify({ id: video.id, key: video.key, version: video.version, sidecar: video.sidecar }).replace(/</g, '\\u003c') : '';
+// private media live in private-pages/ with their page, and are published encrypted (documentation/access/spec.md §8.2)
+const isPrivate = (picture ?? video)?.key.startsWith('/private/');
 const vs = video?.sidecar;
 const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(vs.duration) : '', megabytes(video!.bytes), vs.file.endsWith('.webm') ? 'WebM' : 'MP4'].filter(Boolean).join(' \u00b7 ') : '';
 ---
@@ -84,6 +90,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           <div class="head">
             <Heading level={2} size="h4" id="media-details-title">{name}</Heading>
             <Text variant="small" tone="muted">{`${video.id} \u00b7 ${videoFacts}`}</Text>
+            {isPrivate && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
           </div>
           <Video src={video.type === 'video/mp4' ? video.src : undefined} webm={video.type === 'video/webm' ? video.src : undefined} label={vs.title} poster={video.poster} width={vs.width} height={vs.height} />
           <TextField label="Title" name="title" value={vs.title} hint="What the video is, in a few words: it names the player for someone who can't see it (250 characters at most)." />
@@ -139,6 +146,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           <div class="head">
             <Heading level={2} size="h4" id="media-details-title">{name}</Heading>
             <Text variant="small" tone="muted">{`${picture.id} \u00b7 ${picture.width} \u00d7 ${picture.height}`}</Text>
+            {isPrivate && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
           </div>
           <div class="focus" style={`--focus-x: ${fx}%; --focus-y: ${fy}%`} data-editor-focus>
             <Image src={picture.src} srcset={picture.srcset} sizes="(max-width: 56rem) 100vw, 40vw" alt={sc.alt ?? ''} width={picture.width} height={picture.height} radius="default" />
@@ -297,6 +305,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
 
   .head {
     display: grid;
+    justify-items: start;
     gap: var(--space-1);
   }
 

@@ -7,11 +7,14 @@
  * `<name>.dark.webp`, named in its sidecar), which its crops, its deletion and its replacement carry along;
  * a picture is cropped into a
  * copy, never in place (§6.1); a picture is deleted only when nothing refers to it (the content check
- * refuses a deletion that would leave a reference).
+ * refuses a deletion that would leave a reference). A private page's media live in private-pages/ with it
+ * (documentation/access/spec.md §8.2): an upload to its folder goes there, and every other change is made
+ * where the picture or video already is.
  */
 import { imageMedia, videoMedia, type ImageMedia, type VideoMedia } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
-import { readSnapshot } from '../../content/source';
+import { fileOf, readSnapshot } from '../../content/source';
+import { existsSync } from 'node:fs';
 import { slugify, unique } from '../model/ids';
 import { ratioLabel, type Rect } from '../model/crop';
 import { videoSizeIssue } from '../model/upload';
@@ -21,6 +24,14 @@ export const MAX_SIDE = 2560;
 export const MAX_UPLOAD = 20 * 1024 * 1024;
 const OWNER = /^(shared|site|articles\/[a-z0-9]+(?:-[a-z0-9]+)*|people\/[a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const MEDIA_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
+
+/** Where a picture's or video's files are: private-pages/ for a private page's media, else content/. */
+const baseOf = (id: string) => (existsSync(fileOf(`/private/media/${id}.json`)) ? '/private/media/' : '/content/media/');
+/** The folder an upload goes to: a private page's own folder is in private-pages/. */
+function folderOf(owner: string): string {
+  const page = /^articles\/(.+)$/.exec(owner)?.[1];
+  return `${page && existsSync(fileOf(`/private/articles/${page}.json`)) ? '/private/media/' : '/content/media/'}${owner}/`;
+}
 
 const refuse = (file: string, message: string, path?: string): Result => ({ ok: false, status: 422, issues: [{ file, message, ...(path ? { path } : {}) }] });
 
@@ -89,7 +100,7 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
   if (!OWNER.test(u.owner)) return refuse('content/media', `"${u.owner}" isn't a media folder (shared, site, articles/<id> or people/<id>)`, 'owner');
   if (u.file.bytes.length > MAX_UPLOAD) return refuse('content/media', 'is larger than 20 MB', 'file');
   const snap = readSnapshot();
-  const folder = `/content/media/${u.owner}/`;
+  const folder = folderOf(u.owner);
   const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark)?\.\w+$/, '')));
   const name = unique(slugify(u.file.name.replace(/\.[^.]+$/, '')) || 'picture', taken);
   let master: Awaited<ReturnType<typeof toMaster>>;
@@ -115,7 +126,7 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
 
 export async function saveSidecar(id: string, sidecar: ImageMedia | VideoMedia, ifMatch: Record<string, string | null>): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
-  const key = `/content/media/${id}.json`;
+  const key = `${baseOf(id)}${id}.json`;
   const current = readDoc<ImageMedia | VideoMedia>(key);
   if (!current) return refuse(key.slice(1), "doesn't exist");
   if (current.value.kind === 'video') {
@@ -217,7 +228,7 @@ export async function uploadVideo(u: VideoUpload): Promise<Result & { id?: strin
   const again = videoSizeIssue(bytes.length);
   if (again) return refuse('content/media', again, 'file');
   const snap = readSnapshot();
-  const folder = `/content/media/${u.owner}/`;
+  const folder = folderOf(u.owner);
   const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark|\.poster)?\.\w+$/, '')));
   const name = unique(slugify(u.file.name.replace(/\.[^.]+$/, '')) || 'video', taken);
   let poster: Awaited<ReturnType<typeof toMaster>> | null = null;
@@ -257,7 +268,7 @@ export async function uploadVideo(u: VideoUpload): Promise<Result & { id?: strin
 /** Replaces a picture's master, keeping its id and its sidecar (its dark version stays as it is). */
 export async function replaceMaster(id: string, bytes: Buffer): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
-  const key = `/content/media/${id}.json`;
+  const key = `${baseOf(id)}${id}.json`;
   const sc = readDoc<ImageMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
   const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);
@@ -266,9 +277,9 @@ export async function replaceMaster(id: string, bytes: Buffer): Promise<Result> 
   return commit({ changes: [{ key: masterKey, bytes: master.bytes }], ifMatch: { [masterKey]: versionOf(readFile(masterKey)) } });
 }
 
-const sidecarKey = (id: string) => `/content/media/${id}.json`;
-const masterKeyOf = (id: string, sc: ImageMedia) => `/content/media/${id.slice(0, id.lastIndexOf('/'))}/${sc.file}`;
-const darkKeyOf = (id: string, sc: ImageMedia) => (sc.dark ? `/content/media/${id.slice(0, id.lastIndexOf('/'))}/${sc.dark.file}` : null);
+const sidecarKey = (id: string) => `${baseOf(id)}${id}.json`;
+const masterKeyOf = (id: string, sc: ImageMedia) => `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${sc.file}`;
+const darkKeyOf = (id: string, sc: ImageMedia) => (sc.dark ? `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${sc.dark.file}` : null);
 /** Where a picture's dark version goes: beside its master, `<name>.dark.webp`. */
 const darkFileOf = (id: string) => `${id.slice(id.lastIndexOf('/') + 1)}.dark.webp`;
 
@@ -289,7 +300,7 @@ export async function setDark(id: string, bytes: Buffer, crop?: Upload['crop']):
   } catch (e) {
     return refuse(key.slice(1), `couldn't be read as a picture: ${(e as Error).message}`, 'file');
   }
-  const darkKey = `/content/media/${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
+  const darkKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
   const oldKey = darkKeyOf(id, sc.value);
   const changes: Change[] = [
     { key: darkKey, bytes: master.bytes },
@@ -396,7 +407,7 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
     // a copy, cut again: its master (and its dark version, which follows its original's) and its record change; its name and details stay
     const { focus: _f, dark: _d, ...rest } = current.value;
     const masterKey = masterKeyOf(id, current.value);
-    const darkKey = `/content/media/${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
+    const darkKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
     const oldDark = darkKeyOf(id, current.value);
     const changes: Change[] = [
       { key: masterKey, bytes: master.bytes },
@@ -416,7 +427,7 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   }
   // a new copy, beside its original, named after its shape
   const owner = src.id.slice(0, src.id.lastIndexOf('/'));
-  const folder = `/content/media/${owner}/`;
+  const folder = `${baseOf(src.id)}${owner}/`;
   const snap = readSnapshot();
   const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark)?\.\w+$/, '')));
   const shape = ratioLabel(r.width, r.height);
@@ -426,9 +437,9 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   const sidecar: ImageMedia = { ...details, kind: 'image', file: `${name}.webp`, crop, ...(darkMaster ? { dark: { file: darkFileOf(newId) } } : {}) };
   const changes: Change[] = [
     { key: `${folder}${name}.webp`, bytes: master.bytes },
-    { key: sidecarKey(newId), bytes: jsonBytes(sidecar) },
+    { key: `${folder}${name}.json`, bytes: jsonBytes(sidecar) },
   ];
-  const ifMatch: Record<string, string | null> = { [`${folder}${name}.webp`]: null, [sidecarKey(newId)]: null };
+  const ifMatch: Record<string, string | null> = { [`${folder}${name}.webp`]: null, [`${folder}${name}.json`]: null };
   if (darkMaster) {
     changes.push({ key: `${folder}${darkFileOf(newId)}`, bytes: darkMaster.bytes });
     ifMatch[`${folder}${darkFileOf(newId)}`] = null;
@@ -440,7 +451,7 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
 /** Deletes a picture (its sidecar, master and dark version) or a video (its sidecar, file and poster). The content check refuses it while anything refers to it. */
 export async function deleteMedia(id: string): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
-  const key = `/content/media/${id}.json`;
+  const key = `${baseOf(id)}${id}.json`;
   const sc = readDoc<ImageMedia | VideoMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
   const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);

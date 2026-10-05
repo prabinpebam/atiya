@@ -23,7 +23,7 @@ import type { IconName } from '../design/icons';
 import type { ComponentProps } from 'astro/types';
 
 type Story = Omit<ComponentProps<typeof StoryCard>, 'variant'> & {
-  /** The node it places: open cards name it, so a locked card can be placed after the one it follows. */
+  /** The node it places: open cards name it, so a private card can be placed after the one it follows. */
   node?: string;
 };
 
@@ -47,12 +47,12 @@ interface Props {
   /** The pages in it, in order. */
   stories?: Story[];
   /**
-   * Its locked pages (documentation/access/spec.md §2.1), each with the open page it follows (null: the
+   * Its private pages (documentation/access/spec.md §2.1), each with the open page it follows (null: the
    * start). A build seals each card and holds it after the list until a signed-in reader's grant opens it;
-   * the dev server shows them in their places, marked Locked.
+   * the dev server shows them in their places, marked Private.
    */
-  locked?: { id: string; after: string | null; story: Story }[];
-  /** Where to sign in to see the locked pages (the Sign in page, with the way back). */
+  privatePages?: { id: string; after: string | null; story: Story }[];
+  /** Where to sign in to see the private pages (the Sign in page, with the way back). */
   signIn?: string;
   /** How they're laid out: list (rows), tiles (an even grid), bento (a lead, then halves and thirds) or features (every page a lead). */
   view?: 'list' | 'tiles' | 'bento' | 'features';
@@ -66,20 +66,20 @@ interface Props {
   noindex?: boolean;
 }
 
-const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], locked = [], signIn, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
+const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
 const sealing = import.meta.env.PROD;
-// in dev every page shows in its place, the locked ones marked; a build lists the open ones and seals the rest
-const shown: (Story & { lockedTag?: boolean })[] = sealing
+// in dev every page shows in its place, the private ones marked; a build lists the open ones and seals the rest
+const shown: (Story & { privateTag?: boolean })[] = sealing
   ? stories
   : (() => {
-      const all: (Story & { lockedTag?: boolean })[] = [...stories];
-      for (const l of locked) {
+      const all: (Story & { privateTag?: boolean })[] = [...stories];
+      for (const l of privatePages) {
         const at = l.after === null ? 0 : all.findIndex((s) => s.node === l.after) + 1;
-        all.splice(at > 0 || l.after === null ? at : all.length, 0, { ...l.story, node: l.id, lockedTag: true });
+        all.splice(at > 0 || l.after === null ? at : all.length, 0, { ...l.story, node: l.id, privateTag: true });
       }
       return all;
     })();
-const sealed = sealing ? locked : [];
+const sealed = sealing ? privatePages : [];
 const variantOf = (i: number) => (view === 'features' ? 'feature' : view === 'list' ? 'row' : view === 'bento' && i === 0 ? 'feature' : undefined);
 const open = (mark: string) => `<!--sealed:card:${mark}-->`;
 ---
@@ -100,11 +100,11 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
             {shown.map((s, i) =>
               view === 'bento' ? (
                 <div class="cell" data-node={s.node}>
-                  <StoryCard {...s} variant={variantOf(i)} shared={s.lockedTag ? 'locked' : undefined} />
+                  <StoryCard {...s} variant={variantOf(i)} shared={s.privateTag ? 'private' : undefined} />
                 </div>
               ) : (
                 <div class="item" data-node={s.node}>
-                  <StoryCard {...s} variant={variantOf(i)} shared={s.lockedTag ? 'locked' : undefined} />
+                  <StoryCard {...s} variant={variantOf(i)} shared={s.privateTag ? 'private' : undefined} />
                 </div>
               ),
             )}
@@ -142,7 +142,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
         )
       }
       {
-        locked.length > 0 && signIn && !frame && (
+        privatePages.length > 0 && signIn && !frame && (
           <div class="sign-in" data-sign-in-line>
             <Text variant="body" tone="muted">
               More work is shared with invited readers. <Link href={signIn}>Sign in to see it</Link>.

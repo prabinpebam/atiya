@@ -17,7 +17,7 @@ const home = loaded.ok ? loaded.index.structure.home.id : '';
 const protectable = hasPrivate(privateRoot());
 ---
 
-<EditorLayout title="Pages" screen="articles" heading="Pages" intro="Everything on the site with its own address, newest first: articles, pages (About, Contact) and galleries.">
+<EditorLayout title="Pages" screen="articles" heading="Pages" intro="Everything on the site with its own address, newest first: articles, pages (About, Contact) and galleries, open and private together. A private page opens only for the readers you share it with.">
   <Fragment slot="actions">
     <Button variant="secondary" icon="page" data-dialog-open="new-page">New page</Button>
     <Button variant="primary" icon="plus" data-dialog-open="new-article">New article</Button>

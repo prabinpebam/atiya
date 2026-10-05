@@ -1,9 +1,9 @@
 ---
 /**
  * Signing in to see work shared with invited readers (documentation/access/spec.md §7.1): the access
- * code, Sign in, Remember on this device, and how to ask for access. On a private page, a short note
- * instead (it opens only from its magic link). The sign-in runtime (scripts/sealed.ts) gives the form
- * its behaviour; without JavaScript the panel says it needs it.
+ * code, Sign in, Remember on this device, and how to ask for access, on the Sign in page and on a private
+ * page opened without access (a magic link signs its reader in before the panel is needed). The sign-in
+ * runtime (scripts/sealed.ts) gives the form its behaviour; without JavaScript the panel says it needs it.
  * @tier compound
  * @a11y A labelled form: one field with its label and hint, the result in a polite live region tied to the field (aria-describedby), and focus back on the field when a code doesn't work.
  * @a11y Show code toggles the field between hidden and plain text and says which (aria-pressed).
@@ -17,11 +17,9 @@ import Button from '../fundamentals/Button.astro';
 import Link from '../fundamentals/Link.astro';
 
 interface Props {
-  /** sign-in: the form (the Sign in page, a locked page); private: the note a private page shows without its link. */
-  kind?: 'sign-in' | 'private';
   /** Where getting in touch goes (the contact page). */
   contact: string;
-  /** The heading's level: h1 on the Sign in page, h2 on a locked page. */
+  /** The heading's level: h1 on the Sign in page, h2 on a private page. */
   headingLevel?: 1 | 2;
   /** The page to go back to after signing in (a path on this site); left out, the page reloads in place. */
   returnTo?: string;
@@ -29,48 +27,32 @@ interface Props {
   id?: string;
 }
 
-const { kind = 'sign-in', contact, headingLevel = 2, returnTo, id = 'access' } = Astro.props;
+const { contact, headingLevel = 2, returnTo, id = 'access' } = Astro.props;
 ---
 
-<section class="unlock" data-unlock-panel={kind} data-return={returnTo} aria-labelledby={`${id}-heading`}>
-  {
-    kind === 'private' ? (
-      <Fragment>
-        <Heading level={headingLevel} size="h3" id={`${id}-heading`}>
-          This page is private
-        </Heading>
-        <Text variant="body" tone="muted">
-          It opens from the link you were sent. Open that link again, or <Link href={contact}>get in touch</Link> for a new one.
-        </Text>
-        <p class="status" role="status" aria-live="polite" data-unlock-status />
-      </Fragment>
-    ) : (
-      <Fragment>
-        <Heading level={headingLevel} size="h3" id={`${id}-heading`}>
-          Sign in to see shared work
-        </Heading>
-        <Text variant="body" tone="muted">
-          Some work is shared only with invited readers. Sign in with the access code you were sent.
-        </Text>
-        <form class="form" data-unlock-form novalidate>
-          <TextField label="Access code" type="password" name="code" id={`${id}-code`} autocomplete="current-password" hint="Five words, as you were sent them." data-unlock-code="" />
-          <div class="actions">
-            <Button type="submit" variant="primary" data-unlock-submit="">
-              Sign in
-            </Button>
-            <Button type="button" variant="quiet" aria-controls={`${id}-code`} aria-pressed="false" data-unlock-show="">
-              Show code
-            </Button>
-          </div>
-          <Checkbox label="Remember on this device" name="remember" id={`${id}-remember`} hint="Leave it off on a shared computer." data-unlock-remember="" />
-          <p class="status" id={`${id}-status`} role="status" aria-live="polite" data-unlock-status />
-        </form>
-        <Text variant="small" tone="muted">
-          No code? <Link href={contact}>Get in touch</Link> to ask for one.
-        </Text>
-      </Fragment>
-    )
-  }
+<section class="unlock" data-unlock-panel="sign-in" data-return={returnTo} aria-labelledby={`${id}-heading`}>
+  <Heading level={headingLevel} size="h3" id={`${id}-heading`}>
+    Sign in to see shared work
+  </Heading>
+  <Text variant="body" tone="muted">
+    Some work is shared only with invited readers. Sign in with the access code you were sent.
+  </Text>
+  <form class="form" data-unlock-form novalidate>
+    <TextField label="Access code" type="password" name="code" id={`${id}-code`} autocomplete="current-password" hint="Five words, as you were sent them." data-unlock-code="" />
+    <div class="actions">
+      <Button type="submit" variant="primary" data-unlock-submit="">
+        Sign in
+      </Button>
+      <Button type="button" variant="quiet" aria-controls={`${id}-code`} aria-pressed="false" data-unlock-show="">
+        Show code
+      </Button>
+    </div>
+    <Checkbox label="Remember on this device" name="remember" id={`${id}-remember`} hint="Leave it off on a shared computer." data-unlock-remember="" />
+    <p class="status" id={`${id}-status`} role="status" aria-live="polite" data-unlock-status />
+  </form>
+  <Text variant="small" tone="muted">
+    No code? <Link href={contact}>Get in touch</Link> to ask for one.
+  </Text>
   <noscript>
     <Text variant="body">This page is shared with invited readers and needs JavaScript to open.</Text>
   </noscript>

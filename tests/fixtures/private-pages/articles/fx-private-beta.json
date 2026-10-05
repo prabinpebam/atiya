@@ -1,9 +1,9 @@
 {
-  "id": "fx-locked-beta",
+  "id": "fx-private-beta",
   "type": "article",
   "kind": "note",
-  "slug": "fx-locked-beta",
-  "title": "Fixture locked beta: tidepool kiosk prototype",
+  "slug": "fx-private-beta",
+  "title": "Fixture private beta: tidepool kiosk prototype",
   "summary": "Fixture summary: a tidepool kiosk prototype tested with visiting families.",
   "status": "published",
   "visibility": "public",
@@ -17,7 +17,7 @@
     },
     {
       "type": "video",
-      "media": "articles/fx-locked-beta/tidepool"
+      "media": "articles/fx-private-beta/tidepool"
     },
     {
       "type": "heading",

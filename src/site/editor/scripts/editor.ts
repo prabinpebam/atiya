@@ -21,8 +21,8 @@ interface State {
   version: string;
   structureVersion: string | null;
   section: string;
-  /** Who can see it: open, locked or private (documentation/access/spec.md §8.2). */
-  access: 'open' | 'locked' | 'private';
+  /** Who can see it: open, or private (documentation/access/spec.md §8.2). */
+  access: 'open' | 'private';
   planetVersion: string | null;
   place: string;
   published: boolean;
@@ -534,8 +534,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   // transaction, so what's unsaved here is saved first, and the editor reloads on the page's new file.
   const ACCESS_ASK: Record<NonNullable<State['access']>, string> = {
     open: 'Make this page public? It moves back to content/, and once you publish, it and its pictures are on the site for everyone and in the public repository’s history.',
-    locked: 'Lock this page? It moves to private-pages/ and is listed in its section only for readers whose access covers it. If it was published openly before, that earlier version stays in the public repository’s history.',
-    private: 'Make this page private? It leaves its section and opens only from a magic link you send. If it was published openly before, that earlier version stays in the public repository’s history.',
+    private: 'Make this page private? It moves to private-pages/ and is listed in its section only for readers you share it with, by an access code or a magic link. If it was published openly before, that earlier version stays in the public repository’s history.',
   };
   const moveProtected = async (to: NonNullable<State['access']>, section: string | undefined, what: string) => {
     await save();
@@ -554,8 +553,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   const setAccess = async (to: State['access'], field: HTMLInputElement) => {
     if (!to || to === state.access) return;
     const section = root.querySelector<HTMLInputElement>('[data-editor-inspector] [name="__section"]')?.value || undefined;
-    if (to !== 'private' && !section) {
-      showIssues([{ file: state.key, path: '__section', message: to === 'locked' ? 'a locked page is listed in a section: choose one first' : 'a public page is in a section: choose one first' }]);
+    if (!section) {
+      showIssues([{ file: state.key, path: '__section', message: 'a private page is in a section, like any page: choose one first' }]);
       field.value = state.access ?? 'open';
       await swap(['inspector']);
       return;
@@ -564,8 +563,19 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       await swap(['inspector']);
       return;
     }
-    await moveProtected(to, section, to === 'open' ? 'Made public' : to === 'locked' ? 'Locked' : 'Made private');
+    await moveProtected(to, section, to === 'open' ? 'Made public' : 'Made private');
   };
+  // a private page's new address: every link to the old one, magic links included, stops working
+  on(root, 'click', async (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('[data-editor-address]');
+    if (!b) return;
+    if (!confirm('Change this page’s address? Every link to it stops working, including magic links already sent.')) return;
+    saveStatus.saving();
+    const r = await api('POST', `articles/${state.id}/address`);
+    if (!r.ok) return void saveStatus.failed(`Not changed: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`);
+    saveStatus.carry('Address changed');
+    location.reload();
+  });
 
   // ---------- the inspector's fields ----------
   on(root, 'change', (e) => {
@@ -586,13 +596,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       value = v;
     } else value = t.value.trim() === '' ? undefined : t.value;
     if (t.name === '__access') return void setAccess(String(value ?? 'open') as State['access'], t);
-    if (t.name === '__section' && state.access === 'private') return; // kept for a later Open or Lock
-    if (t.name === '__section' && state.access === 'locked') {
+    if (t.name === '__section' && state.access === 'private') {
       if (!value) {
-        showIssues([{ file: state.key, path: '__section', message: 'a locked page is listed in a section: choose one, or make it private' }]);
+        showIssues([{ file: state.key, path: '__section', message: 'a private page is always in a section: choose one, or make it public first' }]);
         return;
       }
-      return void moveProtected('locked', String(value), 'Moved to another section');
+      return void moveProtected('private', String(value), 'Moved to another section');
     }
     if (t.name === '__section') return change(doc, ALL, { section: (value as string | undefined) ?? null });
     if (t.name === '__place') return change(doc, { inspector: true }, { place: (value as string | undefined) ?? null });

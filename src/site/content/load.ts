@@ -5,7 +5,7 @@
  */
 import type { z } from 'astro/zod';
 import { PLACE_IDS, accessFile, accessMessage, article, documentMedia, imageMedia, overlay as overlaySchema, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, videoMedia, type AccessMessage, type Article, type DocumentMedia, type GrantRecord, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type VideoMedia } from './schema';
-import { buildRoutes, canonicalPaths, privateRoutes, withOverlay, type Access, type Route } from './routes';
+import { buildRoutes, canonicalPaths, withOverlay, type Access, type Route } from './routes';
 import { checkGrant, covers, isValid } from '../access/grants.ts';
 
 /** Where a resource comes from: the public content folder, or private-pages/ (documentation/access/spec.md §3). */
@@ -43,7 +43,7 @@ export interface ContentIndex {
   articles: Map<string, Article>;
   /** Where each article comes from. */
   origins: Map<string, Origin>;
-  /** Each placed article's access (open, locked or private); an unplaced one isn't in it. */
+  /** Each placed article's access (open or private); an unplaced one isn't in it. */
   access: Map<string, Access>;
   people: Map<string, Person>;
   media: Map<string, MediaRecord>;
@@ -51,7 +51,7 @@ export interface ContentIndex {
   documents: Map<string, DocumentRecord>;
   /** Video files, by media ID: shown by a video block's `media`. */
   videos: Map<string, VideoRecord>;
-  /** Every node's route, drafts included (their `published` is false); only published ones are built. Locked and private pages included. */
+  /** Every node's route, drafts included (their `published` is false); only published ones are built. Private pages included. */
   routes: Route[];
   /** Canonical paths of published items, keyed `type/id`. */
   canonical: Map<string, string>;
@@ -59,7 +59,7 @@ export interface ContentIndex {
   redirects: Redirect[];
   /** The planet's buildings and what each holds (documentation/sections/spec.md §5), if the file is there. */
   planet: PlanetStructure | null;
-  /** The private overlay: locked pages in their sections, and private pages (null without private-pages/). */
+  /** The private overlay: private pages in their sections (null without private-pages/). */
   overlay: Overlay | null;
   /** The grants (private-pages/access.json), empty without private-pages/. */
   grants: GrantRecord[];
@@ -257,11 +257,11 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     // a link to another page (ref:article/<id>) from an open page never names a private one (V25)
     if (origin === 'public') {
       for (const [, id] of JSON.stringify(a.body).matchAll(/\]\(ref:article\/([a-z0-9-]+)\)/g)) {
-        if (origins.get(id) === 'private') add(file, `links to "${id}", a locked or private page: an open page can't name one (V25)`);
+        if (origins.get(id) === 'private') add(file, `links to "${id}", a private page: an open page can't name one (V25)`);
       }
     }
     (a.related ?? []).forEach((r, i) => {
-      if (r.type === 'article' && origins.get(r.id) === 'private') add(file, origin === 'public' ? `related names "${r.id}", a locked or private page: an open page can't name one (V25)` : `related names "${r.id}", another protected page: a protected page lists open pages only (V32)`, `related.${i}`);
+      if (r.type === 'article' && origins.get(r.id) === 'private') add(file, origin === 'public' ? `related names "${r.id}", a private page: an open page can't name one (V25)` : `related names "${r.id}", another private page: a private page lists open pages only (V32)`, `related.${i}`);
     });
     const ids = new Set<string>();
     for (const b of a.body) if (b.type === 'heading') {
@@ -286,7 +286,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     // the public structure places public pages only; the overlay, private ones only (V23)
     const visitPublic = (n: SiteNode): void => {
       if (n.kind === 'item') {
-        if (origins.get(n.item.id) === 'private') add('content/structures/site.json', `node ${n.id} places "${n.item.id}", which is in private-pages/: a locked or private page is placed by the overlay, never the public structure (V23)`);
+        if (origins.get(n.item.id) === 'private') add('content/structures/site.json', `node ${n.id} places "${n.item.id}", which is in private-pages/: a private page is placed by the overlay, never the public structure (V23)`);
       } else for (const c of n.children ?? []) visitPublic(c);
     };
     visitPublic(structure.home);
@@ -297,7 +297,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     };
     const needPrivate = (id: string, at: string) => {
       if (!articles.has(id)) return;
-      if (origins.get(id) !== 'private') add(OVERLAY, `"${id}" is in content/: a locked or private page lives in private-pages/ (V23)`, at);
+      if (origins.get(id) !== 'private') add(OVERLAY, `"${id}" is in content/: a private page lives in private-pages/ (V23)`, at);
     };
     overlay?.sections.forEach((s, i) =>
       s.pages.forEach((p, j) => {
@@ -305,24 +305,12 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         needPrivate(p.item.id, `sections.${i}.pages.${j}.item`);
       }),
     );
-    overlay?.private.forEach((p, i) => {
-      claimToken(p.token, p.id, `private.${i}.token`);
-      needPrivate(p.item.id, `private.${i}.item`);
-    });
     const merged = withOverlay(structure, overlay);
     for (const e of merged.errors) add(OVERLAY, e);
     warnings.push(...merged.warnings);
-    const built = buildRoutes(merged.structure, lookup, merged.locked);
-    for (const e of built.errors) add([...merged.locked].some((id) => e.startsWith(`node ${id}:`)) ? OVERLAY : 'content/structures/site.json', e);
-    const home = built.routes.find((r) => r.path === '/');
-    const priv = privateRoutes(overlay?.private ?? [], lookup, { label: home?.label ?? 'Home' });
-    for (const e of priv.errors) add(OVERLAY, e);
-    routes = [...built.routes, ...priv.routes];
-    const nodeIds = new Set(built.routes.map((r) => r.node.id));
-    for (const r of priv.routes) {
-      if (nodeIds.has(r.node.id)) add(OVERLAY, `node ${r.node.id}: another node has this ID; every node's ID is unique (V21)`);
-      nodeIds.add(r.node.id);
-    }
+    const built = buildRoutes(merged.structure, lookup, merged.private);
+    for (const e of built.errors) add([...merged.private].some((id) => e.startsWith(`node ${id}:`)) ? OVERLAY : 'content/structures/site.json', e);
+    routes = built.routes;
     for (const r of routes) if (r.node.kind === 'item') access.set(r.node.item.id, r.access);
     const placed = canonicalPaths(routes);
     for (const a of articles.values()) if (isPublished(a) && !placed.has(`article/${a.id}`)) warnings.push(`article "${a.id}" is published but the site structure doesn't place it, so it has no page (V12)`);
@@ -334,14 +322,14 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       if (!node) continue;
       const r = routes.find((x) => x.node.id === node);
       if (!r) add('content/site.json', `${field} "${node}" isn't a node of the site's tree`, field);
-      else if (r.access !== 'open') add('content/site.json', `${field} "${node}" is a locked or private page (V25)`, field);
+      else if (r.access !== 'open') add('content/site.json', `${field} "${node}" is a private page (V25)`, field);
     }
     (structure.menus?.primary ?? []).forEach((e, i) => {
       const at = `menus.primary.${i}`;
       if ('node' in e) {
         const r = routes.find((x) => x.node.id === e.node);
         if (!r) add(STRUCTURE_FILE, `node "${e.node}" isn't in the site's tree`, at);
-        else if (r.access !== 'open') add(STRUCTURE_FILE, `node "${e.node}" is a locked or private page: the navigation names open ones only (V25)`, at);
+        else if (r.access !== 'open') add(STRUCTURE_FILE, `node "${e.node}" is a private page: the navigation names open ones only (V25)`, at);
       } else if (e.href.startsWith('/') && !isSitePath(e.href, routes.filter((x) => x.access === 'open'))) add(STRUCTURE_FILE, `${e.href} isn't a page of this site`, at);
     });
     // the planet (V13 to V16): each building once; a page in one building at most, and on the site
@@ -359,7 +347,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
           if (!articles.has(ref.id)) return add(PLANET, `page "${ref.id}" doesn't exist`, at);
           if (where.has(ref.id)) add(PLANET, `page "${ref.id}" is in the ${where.get(ref.id)} and the ${p.id}; a page is in one building at most (V15)`, at);
           where.set(ref.id, p.id);
-          if (origins.get(ref.id) === 'private') add(PLANET, `page "${ref.id}" is locked or private: it can't be on the planet (V28)`, at);
+          if (origins.get(ref.id) === 'private') add(PLANET, `page "${ref.id}" is private: it can't be on the planet (V28)`, at);
           else if (!routes.some((r) => r.node.kind === 'item' && r.node.item.id === ref.id)) add(PLANET, `page "${ref.id}" isn't on the site; a page on the planet needs its page on the site (V13)`, at);
         });
       });
@@ -374,16 +362,16 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     const froms = new Set<string>();
     redirects = redirects.filter((r) => {
       const to = r.to.split('#')[0];
-      const why = taken.has(r.from) ? 'its address is a page of the site' : froms.has(r.from) ? 'another redirect has its address' : !published.has(to) ? `${r.to} isn't a published page` : sealed.has(to) ? `${r.to} is a locked or private page (V25)` : null;
+      const why = taken.has(r.from) ? 'its address is a page of the site' : froms.has(r.from) ? 'another redirect has its address' : !published.has(to) ? `${r.to} isn't a published page` : sealed.has(to) ? `${r.to} is a private page (V25)` : null;
       froms.add(r.from);
       if (why) warnings.push(`redirect ${r.from} → ${r.to} is skipped: ${why}`);
       return !why;
     });
 
-    // the grants (V26, V29, V30): each well formed; its scope names what exists; a code never opens a private page
+    // the grants (V26, V29, V30): each well formed; its scope names what exists
     const ACCESS = 'private/access.json';
     const sectionIds = new Set(routes.filter((r) => r.node.kind === 'hub' && r.path !== '/').map((r) => r.node.id));
-    const protectedPages = routes.flatMap((r) => (r.node.kind === 'item' && r.access !== 'open' ? [{ id: r.node.item.id, section: r.parent?.id, access: r.access as 'locked' | 'private' }] : []));
+    const protectedPages = routes.flatMap((r) => (r.node.kind === 'item' && r.access !== 'open' ? [{ id: r.node.item.id, section: r.parent?.id, access: 'private' as const }] : []));
     const now = new Date();
     const grantIds = new Set<string>();
     const names = new Map<string, string>();
@@ -401,8 +389,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       });
       (g.scope.pages ?? []).forEach((pid, j) => {
         const page = protectedPages.find((p) => p.id === pid);
-        if (!page) add(ACCESS, `"${pid}" isn't a locked or private page (V26)`, `${at}.scope.pages.${j}`);
-        else if (page.access === 'private' && g.kind === 'code') add(ACCESS, `"${pid}" is a private page: it opens from a magic link only, never a code (V26)`, `${at}.scope.pages.${j}`);
+        if (!page) add(ACCESS, `"${pid}" isn't a private page (V26)`, `${at}.scope.pages.${j}`);
       });
       if (!covers(g, protectedPages).length && isValid(g, now)) warnings.push(`grant ${g.id} opens no page`);
     });

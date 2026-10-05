@@ -37,13 +37,13 @@ interface Props {
   media: Record<string, Thumb>;
   /** The sections it can go in. */
   sections: SelectOption[];
-  /** The section it's in ('' for none); a locked page's, from the private overlay. */
+  /** The section it's in ('' for none); a private page's, from the private overlay. */
   section: string;
   /**
-   * Who can see it (documentation/access/spec.md §8.2): open, locked or private. Left out when
-   * private-pages/ isn't set up, so the choice isn't offered.
+   * Who can see it (documentation/access/spec.md §8.2): open, or private. Left out when private-pages/
+   * isn't set up, so the choice isn't offered.
    */
-  access?: 'open' | 'locked' | 'private';
+  access?: 'open' | 'private';
   /** The planet's buildings it can go in. */
   places: SelectOption[];
   /** The building it's in on the planet ('' for none). */
@@ -55,16 +55,14 @@ interface Props {
 }
 
 const { article, media, sections, section, access, places, place, published, path } = Astro.props;
-const protectedPage = access === 'locked' || access === 'private';
+const privatePage = access === 'private';
 const ACCESS: SelectOption[] = [
   { value: 'open', label: 'Everyone', description: 'Public, in its section' },
-  { value: 'locked', label: 'Signed-in readers', description: 'Listed in its section only for access that covers it' },
-  { value: 'private', label: 'Only with a magic link', description: 'In no section; opens from a link you send' },
+  { value: 'private', label: 'Private', description: 'Only for readers you share it with' },
 ];
 const SECTION_HINT = {
   open: 'Where it sits on the site, and so its address. Moved, its old address simply goes.',
-  locked: 'The section it’s listed in for signed-in readers. Its address is a code, so it doesn’t change.',
-  private: 'A private page is in no section. Choose one here before making it open or locked.',
+  private: 'The section it’s listed in for the readers you share it with. Its address is a code, so moving it doesn’t change it.',
 };
 const WIDTHS: SelectOption[] = [
   { value: 'content', label: 'In the column', description: 'As wide as the text' },
@@ -287,14 +285,27 @@ const STATUS: SelectOption[] = [
     <form slot="page" class="form panel" data-page-form novalidate aria-label="Page settings">
       <TextField label="Title" name="title" id="page-title" value={article.title} required />
       <TextField label="Menu label" name="navLabel" id="page-navLabel" value={article.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs." />
-      <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
+      <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={privatePage ? 'Kept for when it’s public: a private page’s address is a code.' : path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
       <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 160 characters: the standfirst, the card's line and the search description." data-editor-count="160" />
       <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : [{ value: 'note', label: 'Article', description: 'A story, a note or an essay' }, { value: 'page', label: 'Page', description: 'About, Contact and the like' }, { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' }]} />
       <Select label="Status" name="status" id="page-status" value={article.status} options={STATUS} hint="Published pages go on the site when you publish; back to Draft takes one off." />
       <Select label="Visibility" name="visibility" id="page-visibility" value={article.visibility} options={[{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }]} />
-      {access && <Select label="Who can see it" name="__access" id="page-access" value={access} options={ACCESS} hint="Locked and private pages are kept in private-pages/ and published encrypted: never in the public repository. Opening one makes it public." />}
-      <Select label="Section" name="__section" id="page-section" value={access === 'private' ? '' : section} options={[{ value: '', label: access === 'private' ? 'No section' : 'Not on the site yet' }, ...sections]} hint={SECTION_HINT[access ?? 'open']} />
-      <Select label="On the planet" name="__place" id="page-place" value={place} disabled={protectedPage} options={[{ value: '', label: 'Not on the planet', description: 'Only on the site' }, ...places]} hint={protectedPage ? 'Locked and private pages aren’t on the planet: it has no way to sign in.' : "The building it's read in on the planet. It needs its page on the site too."} />
+      {access && <Select label="Who can see it" name="__access" id="page-access" value={access} options={ACCESS} hint="A private page is kept in private-pages/ and published encrypted: never in the public repository. It opens with an access code or a magic link you share. Making it public moves it back." />}
+      {
+        privatePage && (
+          <div class="private-field">
+            <span class="field-label">Private address</span>
+            <Text variant="small" tone="muted">{path ? <code>{path}</code> : 'Its address once it’s on the site.'}</Text>
+            <div class="row">
+              <Button variant="secondary" size="sm" icon="key" data-dialog-open="share-page">Share</Button>
+              <Button variant="quiet" size="sm" data-editor-address="">Change address</Button>
+            </div>
+            <Text variant="small" tone="muted">Share it with an access code (a password they type) or a magic link (opens it with nothing to type). Changing the address stops every link to it, magic links included.</Text>
+          </div>
+        )
+      }
+      <Select label="Section" name="__section" id="page-section" value={section} options={[{ value: '', label: 'Not on the site yet' }, ...sections]} hint={SECTION_HINT[access ?? 'open']} />
+      <Select label="On the planet" name="__place" id="page-place" value={place} disabled={privatePage} options={[{ value: '', label: 'Not on the planet', description: 'Only on the site' }, ...places]} hint={privatePage ? 'Private pages aren’t on the planet: it has no way to sign in.' : "The building it's read in on the planet. It needs its page on the site too."} />
 
       <div class="media-field" data-editor-picture="lead">
         <span class="field-label">Lead picture</span>
@@ -412,10 +423,16 @@ const STATUS: SelectOption[] = [
   }
 
   .media-field,
+  .private-field,
   .items,
   .facts {
     display: grid;
     gap: var(--space-2);
+  }
+
+  .private-field code {
+    font-family: var(--font-code);
+    overflow-wrap: anywhere;
   }
 
   .media-row {

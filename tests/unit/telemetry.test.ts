@@ -45,7 +45,7 @@ describe('links and videos', () => {
     expect(mediaId('https://site.example/atiya/_sealed/b/x.bin', '/atiya')).toBeNull();
   });
   it('neutral titles', () => {
-    expect([neutralTitle('locked', false), neutralTitle('private', false), neutralTitle(undefined, true)]).toEqual(['Locked page', 'Private page', 'Sign in']);
+    expect([neutralTitle('private', false), neutralTitle(undefined, true), neutralTitle(undefined, false)]).toEqual(['Private page', 'Sign in', 'Page']);
   });
 });
 

@@ -25,6 +25,7 @@ import Text from '../../components/fundamentals/Text.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
+import Select from '../../components/fundamentals/Select.astro';
 
 export interface MediaCard {
   id: string;
@@ -45,6 +46,8 @@ export interface MediaCard {
   dark?: boolean;
   /** A video's length (s). */
   duration?: number;
+  /** A private page's: kept in private-pages/ and published encrypted with it (documentation/access/spec.md §8.2). */
+  private?: boolean;
 }
 
 interface Props {
@@ -65,6 +68,7 @@ const missing = pictures.filter((m) => !m.alt && !m.decorative).length;
 const unused = mode === 'library' ? media.filter((m) => m.used === false).length : 0;
 const total = `${pictures.length} ${pictures.length === 1 ? 'picture' : 'pictures'}${videos ? `, ${videos} ${videos === 1 ? 'video' : 'videos'}` : ''}${missing ? `, ${missing} without alt text` : ''}${unused ? `, ${unused} not used` : ''}`;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+const anyPrivate = media.some((m) => m.private);
 const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, label: media.find((m) => m.owner === o)!.ownerLabel, items: media.filter((m) => m.owner === o) }));
 ---
 
@@ -100,7 +104,24 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
       </div>
     </form>
   </details>
-  <TextField label="Search pictures and videos" type="search" icon="search" hint="By alt text, title or name." data-editor-media-search="" />
+  <div class="finders" data-private-filter={mode === 'library' && anyPrivate ? '' : undefined}>
+    <TextField label="Search pictures and videos" type="search" icon="search" hint="By alt text, title or name." data-editor-media-search="" />
+    {
+      mode === 'library' && anyPrivate && (
+        <Select
+          label="Who can see it"
+          size="md"
+          value="all"
+          options={[
+            { value: 'all', label: 'Everyone and private' },
+            { value: 'open', label: 'Everyone' },
+            { value: 'private', label: 'Private' },
+          ]}
+          data-editor-media-access=""
+        />
+      )
+    }
+  </div>
   <p class="count" aria-live="polite" data-editor-media-found data-total={total}>{total}</p>
   {
     groups.map((g) => (
@@ -108,11 +129,12 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
         <Heading level={3} size="ui">{g.label}</Heading>
         <ul class="grid">
           {g.items.map((m) => (
-        <li data-media-card={m.id} data-media-kind={m.kind ?? 'image'} data-find={`${m.id} ${m.alt}`.toLowerCase()}>
+        <li data-media-card={m.id} data-media-kind={m.kind ?? 'image'} data-find={`${m.id} ${m.alt}`.toLowerCase()} data-private={m.private ? '' : undefined}>
           <button class="card" type="button" aria-pressed={mode === 'pick' ? 'false' : undefined} aria-current={mode === 'library' && m.id === selected ? 'true' : undefined} data-editor-media={m.id} aria-label={m.kind === 'video' ? `Video: ${m.alt || m.id}` : m.alt || m.id}>
             {m.thumb ? <Image src={m.thumb} alt="" width={m.width} height={m.height} ratio="4/3" fit="contain" radius="default" /> : <span class="no-poster"><Icon name="video" size="lg" /></span>}
             <span class="id">{m.id.split('/').pop()}</span>
             {mode === 'library' && m.used === false && <Tag size="sm">Not used</Tag>}
+            {m.private && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
             {m.dark && <Tag size="sm">Dark version</Tag>}
             {m.kind === 'video' && <Tag size="sm">{m.duration ? `Video, ${clock(m.duration)}` : 'Video'}</Tag>}
             {m.kind !== 'video' && !m.alt && !m.decorative && (
@@ -271,6 +293,22 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     display: none;
   }
 
+  .finders {
+    display: grid;
+    gap: var(--space-4);
+    align-items: end;
+  }
+
+  .finders[data-private-filter] {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  @media (max-width: 40rem) {
+    .finders[data-private-filter] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
   .count {
     margin: 0;
     color: var(--color-text-muted);
@@ -345,15 +383,23 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     initUpload(root, signal);
     const search = root.querySelector<HTMLInputElement>('[data-editor-media-search] input');
     const found = root.querySelector<HTMLElement>('[data-editor-media-found]');
-    search?.addEventListener('input', () => {
-      const q = search.value.trim().toLowerCase();
+    // who can see it: everyone's media, private pages' media, or both
+    let access = 'all';
+    const apply = () => {
+      const q = search?.value.trim().toLowerCase() ?? '';
       let shown = 0;
       root.querySelectorAll<HTMLElement>('[data-media-card]').forEach((li) => {
-        li.hidden = !!q && !li.dataset.find!.includes(q);
+        const priv = li.dataset.private !== undefined;
+        li.hidden = (!!q && !li.dataset.find!.includes(q)) || (access === 'private' && !priv) || (access === 'open' && priv);
         if (!li.hidden) shown++;
       });
       root.querySelectorAll<HTMLElement>('[data-media-group]').forEach((g) => (g.hidden = !g.querySelector('[data-media-card]:not([hidden])')));
-      if (found) found.textContent = q ? (shown ? `${shown} found` : 'Nothing matches.') : (found.dataset.total ?? '');
+      if (found) found.textContent = q || access !== 'all' ? (shown ? `${shown} found` : 'Nothing matches.') : (found.dataset.total ?? '');
+    };
+    search?.addEventListener('input', apply);
+    root.querySelector<HTMLElement>('[data-editor-media-access]')?.addEventListener('select-change', (e) => {
+      access = (e as CustomEvent<{ value: string }>).detail.value;
+      apply();
     });
   });
 </script>

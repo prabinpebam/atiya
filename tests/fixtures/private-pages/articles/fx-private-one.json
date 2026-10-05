@@ -4,7 +4,7 @@
   "kind": "note",
   "slug": "fx-private-one",
   "title": "Fixture private one: velvet compass memo",
-  "summary": "Fixture summary: the velvet compass memo, shared by magic link only.",
+  "summary": "Fixture summary: the velvet compass memo, shared by a magic link.",
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-05",

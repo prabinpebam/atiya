@@ -8,7 +8,6 @@ import { api, announce, describeIssue, saveStatus, swapRegions } from './client'
 import { openCrop } from './crop';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
 
-const sidecarKey = (id: string) => `/content/media/${id}.json`;
 const nameOf = (id: string) => id.split('/').pop() ?? id;
 
 // a media ID is [a-z0-9-/] only, so it goes in the address as it is (readable, slashes and all)
@@ -52,10 +51,10 @@ export function initMediaLibrary(root: HTMLElement, signal: AbortSignal) {
 export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
   const stateEl = root.querySelector('[data-editor-media-state]');
   if (!stateEl) return;
-  const parsed = JSON.parse(stateEl.textContent ?? '{}') as { id: string; version: string; sidecar: ImageMedia | VideoMedia };
+  const parsed = JSON.parse(stateEl.textContent ?? '{}') as { id: string; key: string; version: string; sidecar: ImageMedia | VideoMedia };
   wireDelete(root, parsed.id, signal);
-  if (parsed.sidecar.kind === 'video') return initVideoDetails(root, parsed as { id: string; version: string; sidecar: VideoMedia }, signal);
-  const state = parsed as { id: string; version: string; sidecar: ImageMedia };
+  if (parsed.sidecar.kind === 'video') return initVideoDetails(root, parsed as { id: string; key: string; version: string; sidecar: VideoMedia }, signal);
+  const state = parsed as { id: string; key: string; version: string; sidecar: ImageMedia };
   const form = root.querySelector<HTMLFormElement>('[data-editor-media-form]')!;
   const box = root.querySelector<HTMLElement>('[data-editor-focus]')!;
   const hit = root.querySelector<HTMLButtonElement>('[data-editor-focus-set]')!;
@@ -132,7 +131,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       else delete next.licence;
       say(form, '');
       saveStatus.saving();
-      const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [sidecarKey(state.id)]: state.version } });
+      const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [state.key]: state.version } });
       if (!r.ok) {
         const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The details weren't saved.";
         saveStatus.failed(`Not saved: ${why}`);
@@ -233,7 +232,7 @@ function wireDelete(root: HTMLElement, id: string, signal: AbortSignal) {
 }
 
 /** A video's details: its title, caption, credit, licence and source, saved to its sidecar. */
-function initVideoDetails(root: HTMLElement, state: { id: string; version: string; sidecar: VideoMedia }, signal: AbortSignal) {
+function initVideoDetails(root: HTMLElement, state: { id: string; key: string; version: string; sidecar: VideoMedia }, signal: AbortSignal) {
   const form = root.querySelector<HTMLFormElement>('[data-editor-media-form]');
   if (!form) return;
   const say = (text: string) => {
@@ -261,7 +260,7 @@ function initVideoDetails(root: HTMLElement, state: { id: string; version: strin
       else delete next.licence;
       say('');
       saveStatus.saving();
-      const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [sidecarKey(state.id)]: state.version } });
+      const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [state.key]: state.version } });
       if (!r.ok) {
         const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The details weren't saved.";
         saveStatus.failed(`Not saved: ${why}`);

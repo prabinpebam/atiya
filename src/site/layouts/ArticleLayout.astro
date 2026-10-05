@@ -60,11 +60,11 @@ interface Props {
   /** The story being read, and the related stories to suggest after it, best first (the reader's browser shows the ones not read yet first). */
   related?: { current: string; stories: RelatedStory[] };
   /**
-   * A locked or private page (documentation/access/spec.md §5.4): a build seals the page between comment
-   * markers the sealer replaces, and shows the sign-in panel (locked) or the private note in its place; the
-   * dev server shows it open, with a ribbon saying who can see it.
+   * A private page (documentation/access/spec.md §5.4): a build seals the page between comment markers the
+   * sealer replaces, and shows the sign-in panel in its place; the dev server shows it open, with a ribbon
+   * saying who can see it.
    */
-  sealed?: { access: 'locked' | 'private'; id: string; contact: string };
+  sealed?: { access: 'private'; id: string; contact: string };
 }
 
 const { title, description, nav, footer, action, crumbs, header, dropcap = true, prev, next, frame, related, sealed } = Astro.props;
@@ -79,7 +79,7 @@ const sealing = !!sealed && import.meta.env.PROD;
       sealed && !sealing && (
         <p class="ribbon">
           <Text as="span" variant="ui">
-            {sealed.access === 'locked' ? 'Locked: listed and opened only for signed-in readers whose access covers it.' : 'Private: opens only from its magic link.'}
+            Private: listed and opened only for readers whose access code or magic link covers it.
           </Text>
         </p>
       )
@@ -87,7 +87,7 @@ const sealing = !!sealed && import.meta.env.PROD;
     {
       sealing && (
         <div class="gate" data-access-gate={sealed!.access}>
-          <UnlockPanel kind={sealed!.access === 'locked' ? 'sign-in' : 'private'} contact={sealed!.contact} />
+          <UnlockPanel contact={sealed!.contact} />
         </div>
       )
     }

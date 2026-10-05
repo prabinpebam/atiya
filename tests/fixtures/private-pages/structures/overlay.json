@@ -4,35 +4,35 @@
       "section": "side-projects",
       "order": [
         "atiya",
-        "fx-locked-alpha",
+        "fx-private-alpha",
         "watai",
-        "fx-locked-beta",
+        "fx-private-beta",
         "story",
-        "fx-locked-gamma"
+        "fx-private-gamma"
       ],
       "pages": [
         {
-          "id": "fx-locked-alpha",
+          "id": "fx-private-alpha",
           "token": "alphaaaaa2",
           "item": {
             "type": "article",
-            "id": "fx-locked-alpha"
+            "id": "fx-private-alpha"
           }
         },
         {
-          "id": "fx-locked-beta",
+          "id": "fx-private-beta",
           "token": "betabbbbb3",
           "item": {
             "type": "article",
-            "id": "fx-locked-beta"
+            "id": "fx-private-beta"
           }
         },
         {
-          "id": "fx-locked-gamma",
+          "id": "fx-private-gamma",
           "token": "gammaccc44",
           "item": {
             "type": "article",
-            "id": "fx-locked-gamma"
+            "id": "fx-private-gamma"
           }
         }
       ]
@@ -41,32 +41,35 @@
       "section": "work",
       "pages": [
         {
-          "id": "fx-locked-delta",
+          "id": "fx-private-delta",
           "token": "deltaddd55",
           "item": {
             "type": "article",
-            "id": "fx-locked-delta"
+            "id": "fx-private-delta"
           }
         }
       ]
-    }
-  ],
-  "private": [
-    {
-      "id": "fx-private-one",
-      "token": "privone222",
-      "item": {
-        "type": "article",
-        "id": "fx-private-one"
-      }
     },
     {
-      "id": "fx-private-two",
-      "token": "privtwo333",
-      "item": {
-        "type": "article",
-        "id": "fx-private-two"
-      }
+      "section": "writing",
+      "pages": [
+        {
+          "id": "fx-private-one",
+          "token": "privone222",
+          "item": {
+            "type": "article",
+            "id": "fx-private-one"
+          }
+        },
+        {
+          "id": "fx-private-two",
+          "token": "privtwo333",
+          "item": {
+            "type": "article",
+            "id": "fx-private-two"
+          }
+        }
+      ]
     }
   ]
 }

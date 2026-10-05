@@ -1,15 +1,15 @@
-# Protected content: locked pages, private pages and telemetry
+# Protected content: private pages and telemetry
 
 How the site shows some pages only to the people you choose, though it's a static site on GitHub Pages with its code in a public repository. It also covers how each recipient's access is recorded and how visits are measured, all on free tiers. The phases, tests and Definition of Done are in the [plan](plan.md).
 
 > **TL;DR.**
-> - **Two new kinds of page.**
->   - **Locked pages:** pages in an open section, like Work, that are listed and open only for a visitor who has signed in with an access code. Everyone else sees the section's open pages, with no titles or content of the locked ones. No section is locked as a whole.
->   - **Private pages:** not listed anywhere; they open only from a magic link (§2).
-> - **Signing in is site-wide.** One access code (or magic link), typed once per session, shows every locked page it covers, in its place among the open ones (§2.3).
+> - **One new kind of page: private.**
+>   - A private page sits in an open section, like Work, at an opaque address. It's listed and opens only for a visitor whose access covers it. Everyone else sees the section's open pages, with no titles or content of the private ones. No section is private as a whole (§2).
+>   - **An access code and a magic link are two ways to share the same page.** Any private page can be shared either way, or both: a code is a password the reader types, a link opens it with nothing to type (§4).
+> - **Signing in is site-wide.** One access code, typed once per session, or one magic link shows every private page it covers, in its place among the open ones (§2.3).
 > - **One credential per recipient.** Every recruiter or hiring manager gets their own grant: an access code or a magic link. Each records who it's for, why, when it was made, what it opens and when it expires, and can be withdrawn on its own (§4).
 > - **Plaintext never goes public.**
->   - Locked and private content lives in a second, private repository, kept inside the project as a git submodule (`private-pages/`), so you work on both from one VS Code window.
+>   - Private content lives in a second, private repository, kept inside the project as a git submodule (`private-pages/`), so you work on both from one VS Code window.
 >   - GitHub Actions builds it with the site, encrypts it, checks that nothing readable is left, and only then uploads to Pages.
 >   - The public repository, its history, the build log and the Pages artifact never hold it (§3, §6).
 > - **The browser decrypts.**
@@ -24,7 +24,7 @@ How the site shows some pages only to the people you choose, though it's a stati
 <figure class="slate-figure" data-diagram="access">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" role="img" aria-labelledby="ac-arch__title ac-arch__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="ac-arch__title">Protected content: from two repositories to a sealed site</title>
-<desc id="ac-arch__desc">On the owner's machine, edit mode writes open content to content/, in the public repository, and locked and private content, with the access grants, to private-pages/, a private repository kept inside the project as a git submodule. GitHub Actions checks out both, builds every page, seals the locked and private ones, checks that no plaintext is left, and uploads the sealed site to GitHub Pages. A visitor's browser fetches the sealed pages and the keyring their access code or magic link opens, and decrypts them in the page. Visits, clicks and unlocks go to PostHog, keyed by the grant, never with the code or the content.</desc>
+<desc id="ac-arch__desc">On the owner's machine, edit mode writes open content to content/, in the public repository, and private content, with the access grants, to private-pages/, a private repository kept inside the project as a git submodule. GitHub Actions checks out both, builds every page, seals the private ones, checks that no plaintext is left, and uploads the sealed site to GitHub Pages. A visitor's browser fetches the sealed pages and the keyring their access code or magic link opens, and decrypts them in the page. Visits, clicks and unlocks go to PostHog, keyed by the grant, never with the code or the content.</desc>
 <g id="ac-arch__edit" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="ac-arch__body-1" x="40" y="40" width="220" height="120" rx="18" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <text x="60" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ac-arch__body-1" data-slate-fit-padding="16">Edit mode</text>
@@ -43,7 +43,7 @@ How the site shows some pages only to the people you choose, though it's a stati
 <rect id="ac-arch__body-3" x="330" y="200" width="260" height="120" rx="18" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
 <text x="350" y="232" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ac-arch__body-3" data-slate-fit-padding="16">private-pages/</text>
 <text x="350" y="254" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="ac-arch__body-3" data-slate-fit-padding="16">a private repo, as a submodule</text>
-<text x="350" y="286" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-3" data-slate-fit-padding="16">Locked and private pages</text>
+<text x="350" y="286" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-3" data-slate-fit-padding="16">Private pages</text>
 <text x="350" y="308" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-3" data-slate-fit-padding="16">Grants: who, when, until</text>
 </g>
 <g id="ac-arch__build" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
@@ -52,7 +52,7 @@ How the site shows some pages only to the people you choose, though it's a stati
 <text x="680" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ac-arch__body-4" data-slate-fit-padding="16">on a push, Deploy now, and nightly</text>
 <text x="680" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-4" data-slate-fit-padding="16">1. Check out both repositories</text>
 <text x="680" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-4" data-slate-fit-padding="16">2. Build every page, quietly</text>
-<text x="680" y="192" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-4" data-slate-fit-padding="16">3. Seal locked and private pages</text>
+<text x="680" y="192" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-4" data-slate-fit-padding="16">3. Seal private pages</text>
 <text x="680" y="222" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-4" data-slate-fit-padding="16">4. Fresh keys, valid grants only</text>
 <text x="680" y="252" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-4" data-slate-fit-padding="16">5. Fail on any plaintext left</text>
 <text x="680" y="282" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ac-arch__body-4" data-slate-fit-padding="16">6. Upload the sealed site</text>
@@ -112,7 +112,7 @@ How the site shows some pages only to the people you choose, though it's a stati
 <polygon points="261,450 270,455 270,445" fill="var(--color-neutral-fg-2)" />
 </g>
 </svg>
-<figcaption>Open content stays in the public repository and locked and private content in a private one. Actions builds both, seals the protected pages and checks for leaks before anything is uploaded. A grant opens only its own keyring, in the visitor's browser.</figcaption>
+<figcaption>Open content stays in the public repository and private content in a private one. Actions builds both, seals the protected pages and checks for leaks before anything is uploaded. A grant opens only its own keyring, in the visitor's browser.</figcaption>
 </figure>
 
 <details>
@@ -131,7 +131,7 @@ How the site shows some pages only to the people you choose, though it's a stati
 | A9 | A magic link is traceable: when it was made and who it was meant for | §4.4, §9.3 |
 | A10 | Some articles are password-protected: no titles and no content until the right password | §2.1, §5.4 |
 | A11 | Capture all of it in a detailed spec and an implementation plan | This page, the [plan](plan.md) |
-| A12 | Revised: a whole section is never locked. Work is a section; some work is visible to everyone, and some becomes visible and listed only once you're signed in | §2.1, §2.3 |
+| A12 | Revised: a whole section is never private. Work is a section; some work is visible to everyone, and some becomes visible and listed only once you're signed in | §2.1, §2.3 |
 
 </details>
 
@@ -139,7 +139,7 @@ How the site shows some pages only to the people you choose, though it's a stati
 
 **Goals.**
 - **Share selected work only with chosen people**, each with their own credential, without a server, a paid host or a second site.
-- **Keep the site one site.** Locked and private pages use the same layouts, components and edit mode as every other page.
+- **Keep the site one site.** Private pages use the same layouts, components and edit mode as every other page, and edit mode lists them with every other page.
 - **Know who looked.** Every credential says who it's for, and telemetry ties each unlock to its credential.
 - **Fail closed.** If anything in the pipeline can't prove the content is sealed, nothing is deployed.
 
@@ -151,56 +151,57 @@ How the site shows some pages only to the people you choose, though it's a stati
 **What it doesn't protect against (by design):**
 - **A recipient who shares their credential or saves what they saw.** No system can take back what someone has read; withdrawing a grant protects only what's published after it.
 - **Unlimited offline guessing.** Anyone can download a sealed file and try codes forever, with no rate limit. The defence is the code's strength and a slow key derivation (§5.2). Magic links carry a 256-bit random secret and can't be guessed.
-- **Metadata:** that a section holds locked pages, and how many (its page carries one sealed card for each), the sizes of the sealed files and when they change are all visible to anyone who reads the page's source.
+- **Metadata:** that a section holds private pages, and how many (its page carries one sealed card for each), the sizes of the sealed files and when they change are all visible to anyone who reads the page's source.
 - **Copies already made.** A browser's cache, a saved page or an earlier deploy's files someone downloaded keep working with the keys they had. Withdrawal and expiry stop the *current* build from opening (§4.5), nothing more.
 - **A script running on the site itself (XSS).** A signed-in visitor's key is in their browser's storage, and decrypted text is in the page. The site has no user input and escapes everything it renders, so the risk is low, but any same-origin script could read both.
 - **Forged telemetry.** PostHog's project key is public, so anyone can send events under any grant's ID. Telemetry is a guide to who looked, never evidence (§9.3).
 - **Material that must not leave Microsoft or a client.** Encryption on a public host is "not public", not "confidential". Confidential or NDA work needs its owner's approval before it goes here, encrypted or not.
 
-## 2. Two kinds of protected page
+## 2. Private pages
 
-Access belongs to a page, never to a section: every section is open, and any of its pages can be open or locked.
+Access belongs to a page, never to a section: every section is open, and any of its pages can be open or private. There's one kind of access-controlled page, the private page. An access code and a magic link aren't kinds of page: they're two ways of giving someone access (§4), and any private page can be shared either way, or both.
 
-| | Open page | Locked page | Private page |
-|---|---|---|---|
-| Listed in its section | Always | Only for a signed-in visitor whose grant covers it, in its place among the open pages | Never (it's in no section) |
-| Its title is public | Yes | No | No |
-| Address | `/<section>/<slug>/` | `/<section>/<token>/` (opaque) | `/p/<token>/` (opaque) |
-| Opened with | Nothing | Signing in: an access code or a magic link | A magic link only |
-| Search engines | Indexed | `noindex` | `noindex` |
-| On the home page, related stories, the planet | If placed | Never (v1) | Never |
-| Its source lives in | `content/` (public) | `private-pages/`, placed in an open section | `private-pages/` |
+| | Open page | Private page |
+|---|---|---|
+| Listed in its section | Always | Only for a visitor whose access covers it, in its place among the open pages |
+| Its title is public | Yes | No |
+| Address | `/<section>/<slug>/` | `/<section>/<token>/` (opaque) |
+| Opened with | Nothing | An access code typed on the Sign in page, or a magic link |
+| Search engines | Indexed | `noindex` |
+| On the home page, related stories, the planet | If placed | Never (v1) |
+| Its source lives in | `content/` (public) | `private-pages/`, placed in an open section |
 
-### 2.1 Locked pages (A10, A12)
+### 2.1 In their sections (A10, A12)
 
-- **Open and locked work share a section.** Work holds case studies anyone can read and others shared only with invited readers. The section, its title, summary, view and place in the navigation are as public as ever.
-- **A locked page lives in the private repository** (§3). The private overlay structure places it in its section and gives its position in the section's order. Its slug is replaced by an opaque token, so its address never hints at its title.
-- **Signed out**, the section lists its open pages only, exactly as if the locked ones didn't exist, followed by one line: "More work is shared with invited readers. Sign in to see it." (O6). The locked cards are in the page only as sealed blobs (§5.4): no titles, summaries or thumbnails.
-- **Signed in**, the cards the visitor's grant covers are decrypted and take their places among the open ones, in the section's order, each with a small "Shared with you" tag. Cards outside the grant's scope are never decrypted and stay hidden. The sign-in line goes.
-- **A section with only locked pages** shows its empty state and the sign-in line when signed out.
-- **Elsewhere,** even signed in, locked pages aren't on the home page, in an open page's related stories or next and previous, in the navigation or on the planet (v1).
-- **A protected page never names another protected page.** Its own related stories and next and previous list open pages only. So a grant that covers one page learns nothing about its neighbours: no title, no address (§5.4). A link the author writes in a page's text to another protected page is that page's own content, and opens that page's own sign-in or "not shared with you" note.
-- **The order:** the public structure keeps the open pages' order on its own (so a public-only build is unchanged). The overlay holds the section's full order, open and locked node IDs together, and the build uses it when the private folder is present.
+- **Open and private work share a section.** Work holds case studies anyone can read and others shared only with invited readers. The section, its title, summary, view and place in the navigation are as public as ever.
+- **A private page lives in the private repository** (§3). The private overlay structure places it in its section and gives its position in the section's order. Its slug is replaced by an opaque token, so its address never hints at its title.
+- **Signed out**, the section lists its open pages only, exactly as if the private ones didn't exist, followed by one line: "More work is shared with invited readers. Sign in to see it." (O6). The private cards are in the page only as sealed blobs (§5.4): no titles, summaries or thumbnails.
+- **Signed in** (by a code or a link), the cards the visitor's grant covers are decrypted and take their places among the open ones, in the section's order, each with a small "Shared with you" tag. Cards outside the grant's scope are never decrypted and stay hidden. The sign-in line goes.
+- **A section with only private pages** shows its empty state and the sign-in line when signed out.
+- **Elsewhere,** even signed in, private pages aren't on the home page, in an open page's related stories or next and previous, in the navigation or on the planet (v1).
+- **A private page never names another private page.** Its own related stories and next and previous list open pages only. So a grant that covers one page learns nothing about its neighbours: no title, no address (§5.4). A link the author writes in a page's text to another private page is that page's own content, and opens that page's own sign-in or "not shared with you" note.
+- **The order:** the public structure keeps the open pages' order on its own (so a public-only build is unchanged). The overlay holds the section's full order, open and private node IDs together, and the build uses it when the private folder is present.
 
-### 2.2 Private pages (A8)
+### 2.2 Addresses and magic links (A8)
 
-- **A private page is in no section and on no list.** It exists only in the private repository, at `/p/<token>/`, and opens only from a magic link that covers it.
-- **Its token is stable**, so a link keeps working across deploys. **Change address** (edit mode) gives the page a new token, which breaks every link to it at once: a kill switch for that page.
-- **Without a valid link**, the shell says only that the page is private and how to ask for access. It has no title, no description and no hint of its subject.
-- **Links between protected pages are sealed with the page that holds them.** A link to a page the reader's grant doesn't cover opens that page's own "Your link doesn't open this page" note.
+- **A magic link opens its page directly.** It signs its reader in (§2.3) and the page opens; its section then lists the pages the link covers, as a code would. A page shared only by link is, in practice, listed for nobody else.
+- **Its token is stable**, so a link keeps working across deploys. **Change address** (edit mode) gives the page a new token, which breaks every link to it at once: a kill switch for that page. A code still opens it at its new address.
+- **Without access**, the shell shows the sign-in panel (§7.1) and nothing else: no title, no description and no hint of its subject. A reader signed in by a link that doesn't cover it is told "Your link doesn't open this page"; one signed in by a code, "This page isn't shared with your access" (§7.2).
+- **Links between private pages are sealed with the page that holds them.** A link to a page the reader's grant doesn't cover opens that page's own sign-in panel and note.
+- **There's no other kind.** An earlier version of this spec had locked pages (listed, opened by signing in) and link-only private pages at `/p/<token>/`, in no section; the owner folded them into one (D21).
 
 ### 2.3 Signing in
 
 - **"Signed in" means this browser holds a valid grant's key** (§7.3). There are no accounts and no server: signing in is typing an access code once, or opening a magic link, which signs you in the same way.
-- **One sign-in covers the whole site** for the session: every section shows the locked pages the grant covers, and every locked page it covers opens.
+- **One sign-in covers the whole site** for the session: every section shows the private pages the grant covers, and every private page it covers opens.
 - **Where you sign in:** a **Sign in** page (`/sign-in/`), reached from:
-  - the sign-in line under a section that holds locked pages;
+  - the sign-in line under a section that holds private pages;
   - a **Sign in** link in the footer, on every page;
-  - a locked page opened directly while signed out (it shows the same panel in place).
+  - a private page opened directly while signed out (it shows the same panel in place).
 
   After signing in you go back to the page you came from (a same-site path only).
 - **While signed in**, a slim `AccessBar` under the header says so, with **Sign out** (§7.3).
-- **Private pages** are the exception: they open only from their magic link, and signing in with a code never shows them (V26).
+- **A code and a link open the same pages.** What a grant opens is its scope, whichever way it was shared (V26).
 
 ## 3. Where the content lives
 
@@ -228,20 +229,20 @@ personal-site/            the public repository (prabinpebam/atiya)
 - **What the public repository reveals:** the private repository's name and address in `.gitmodules`, and a pointer commit each time private content changes (when, never what). Pointer commits carry a fixed message, "Private pages: update", which edit mode never lets describe the change. The repository itself stays private, so its address opens nothing.
 - **It has the same layout as `content/`:** `articles/`, `media/<owner>/<id>/` and `structures/`.
 - **What it holds:**
-  - the locked pages and the private pages (articles, the same contract as every page);
+  - the private pages (articles, the same contract as every page);
   - their media masters and sidecars;
-  - `structures/overlay.json`: which open section holds each locked page, each section's full order (open and locked pages together), and each protected page's token;
+  - `structures/overlay.json`: which open section holds each private page, each section's full order (open and private pages together), and each private page's token;
   - `access.json`: the grants (§4), with their secrets;
   - `access-message.json`: the words of the message edit mode offers to copy (§8.1).
-- **What stays public:** nothing about a locked page. The public structure doesn't know it exists. Its only public traces are its sealed card in its section's page and the sign-in line (§2.1).
+- **What stays public:** nothing about a private page. The public structure doesn't know it exists. Its only public traces are its sealed card in its section's page and the sign-in line (§2.1).
 - **Loading: one source, two origins.** The content source reads both folders and keys every file by where it comes from: `/content/…` for the public folder and `/private/…` for `private-pages/`. Every reader takes the origin from the key, and nothing else assumes one folder:
   - the loader, which indexes both (a private article at `/private/articles/<id>.json`, a private master at `/private/media/…`);
   - picture metadata in dev and the masters a build imports (`masters.ts` globs both);
   - the video and document files the content-files integration serves and copies (a private one is copied only for sealing, §6.2);
   - the dev watcher, and the editor's store (§8).
 
-  The overlay's nodes join their open sections in the route table, and private pages get `/p/<token>/` routes outside the three levels (like `/play/`). Every ID, media ID and route is unique across both folders.
-- **A public-only build.** Without `private-pages/` (a fork, a clone without access, a clone made without `--recurse-submodules`), the site builds as before: sections list their open pages, with no sign-in line, and there are no locked or private pages. The deploy workflow refuses to run without it (§6.1).
+  The overlay's nodes join their open sections in the route table, each at `/<section>/<token>/`. Every ID, media ID and route is unique across both folders.
+- **A public-only build.** Without `private-pages/` (a fork, a clone without access, a clone made without `--recurse-submodules`), the site builds as before: sections list their open pages, with no sign-in line, and there are no private pages. The deploy workflow refuses to run without it (§6.1).
 - **Tests never read the real private content.** Unit and E2E tests use a fixture private folder (`tests/fixtures/private-pages/`) with made-up pages and grants.
 
 ## 4. Grants: access codes and magic links
@@ -258,7 +259,7 @@ Every grant is a record in `private-pages/access.json`:
 | `kind` | `code` (typed) or `link` (a magic link) |
 | `recipient` | Who it's for: `name`, `organisation`, `role`, optional `email`. Never shown to anyone else |
 | `purpose` | Why it was shared, in your words ("Senior design manager role, first screen") |
-| `scope` | What it opens: every locked page in a section (now and later), and/or single pages (locked or private). A code's scope holds locked pages only (V26) |
+| `scope` | What it opens: every private page in a section (now and later), and/or single private pages. A code and a link open the same pages (V26) |
 | `createdAt` | When it was made, with its time zone |
 | `expiresAt` | When it stops working (optional; edit mode suggests 30 days) |
 | `revokedAt` | When you withdrew it, if you did |
@@ -278,10 +279,10 @@ Every grant is a record in `private-pages/access.json`:
 
 ### 4.3 Magic links (A8)
 
-- **The form:** the page's address and a fragment: `https://prabinpebam.github.io/atiya/p/k3v9q2m7xw/#a=g7k2m9qd4.<secret>`.
+- **The form:** the page's address and a fragment: `https://prabinpebam.github.io/atiya/work/k3v9q2m7xw/#a=g7k2m9qd4.<secret>`.
   - The fragment (after `#`) is **never sent to any server**, GitHub's included, and never logged by it.
   - The secret is 32 random bytes (base64url), so a link can't be guessed.
-  - A link can point at a private page, a locked page or a section; opening it signs the visitor in (§2.3), as a code would.
+  - A link points at a private page, or at a section for a grant that opens a section; opening it signs the visitor in (§2.3), as a code would.
 - **On opening**, the page reads the fragment, removes it from the address bar at once (`history.replaceState`), so it isn't left in a screenshot, a bookmark or a copied address. It then unlocks and keeps the key for the session (§7.3).
 - **A link is a bearer credential:** whoever has it can open it. Telemetry shows if it's opened from more than one device or place (§9.3), which is how a forwarded link shows up.
 
@@ -293,7 +294,7 @@ For every grant you can see:
 - **when it was opened, from where and what was read:** its telemetry, keyed by the grant's `id` (§9.3): every sign-in, every protected page viewed, the device, the IP address and its location. It's a guide, not evidence: anyone can send events under any ID (§1);
 - **its state:** active, expires soon (within 3 days), expired, withdrawn, or waiting for a deploy (§8).
 
-Edit mode's Access screen shows the record, its state and its history, with a link to the grant's timeline in PostHog (§8.1). PostHog only ever knows the grant's `id`; who it is stays in edit mode.
+Edit mode lists every grant in Settings, and a private page's Share dialog the ones that open it, each with its record and its state, with a link to the grant's timeline in PostHog (§8.1). PostHog only ever knows the grant's `id`; who it is stays in edit mode.
 
 ### 4.5 Expiry and withdrawal (A6)
 
@@ -358,8 +359,8 @@ The build renders a protected page with the same layouts and components as any o
 **A protected page's own lists hold open pages only** (§2.1): its related stories and next and previous never name another protected page. So everything sealed with a page's key is about that page, and a grant that opens it learns about nothing else.
 
 **After the build**, the sealer replaces the regions:
-- **the regions themselves** are encrypted with the page key into one payload, and swapped for neutral placeholders. The `<title>` becomes "Locked page" or "Private page", there's no description, and `<meta name="robots" content="noindex, nofollow">` and `<meta name="referrer" content="same-origin">` are added;
-- **a section's locked cards:** each locked page's card is sealed on its own with its page's key, so a grant decrypts only the cards in its scope (§2.1). A sealed card's payload holds the card's HTML and its place: the open page it follows (or the start). The place is inside the payload, so the page's source doesn't say where locked work sits. The cards wait outside the list, in a hidden holder, so the list's layout (which counts its children) is the open pages' until a card is placed;
+- **the regions themselves** are encrypted with the page key into one payload, and swapped for neutral placeholders. The `<title>` becomes "Private page", there's no description, and `<meta name="robots" content="noindex, nofollow">` and `<meta name="referrer" content="same-origin">` are added;
+- **a section's private cards:** each private page's card is sealed on its own with its page's key, so a grant decrypts only the cards in its scope (§2.1). A sealed card's payload holds the card's HTML and its place: the open page it follows (or the start). The place is inside the payload, so the page's source doesn't say where private work sits. The cards wait outside the list, in a hidden holder, so the list's layout (which counts its children) is the open pages' until a card is placed;
 - **the page's scripts and styles stay** in the shell. They show which components exist on the site, not what the page says.
 
 ### 5.5 Pictures and videos (A3)
@@ -400,7 +401,7 @@ Every step stays on Actions' free minutes for public repositories.
 - **What it does:**
   1. reads the grants and the overlay from `private-pages/` (or, in a test build, the fixtures), and the provenance record;
   2. makes the build ID, the page keys and the media keys;
-  3. seals each protected page's regions and each locked card, and every private-origin file a sealed region refers to, rewriting its address inside the sealed HTML (`src`, `srcset`, `href`, `poster` and the lightbox's `data-full…` attributes);
+  3. seals each protected page's regions and each private card, and every private-origin file a sealed region refers to, rewriting its address inside the sealed HTML (`src`, `srcset`, `href`, `poster` and the lightbox's `data-full…` attributes);
   4. deletes every private-origin file from `dist/` once it's sealed, and refuses (fails the build) if one is left that no sealed page refers to;
   5. writes a keyring for each valid grant.
 - **What it never does:** run in dev or in the editor, or print a title, a slug, an ID or a token. Its log says only how many pages, files and keyrings it sealed.
@@ -423,7 +424,7 @@ It runs in the deploy, in `npm run verify:prod`, and on the E2E build, and its o
 
 ### 7.1 Signing in
 
-A compound, `UnlockPanel`, is the form on the Sign in page (`/sign-in/`) and on a locked page opened while signed out. It holds:
+A compound, `UnlockPanel`, is the form on the Sign in page (`/sign-in/`) and on a private page opened while signed out. It holds:
 - a line saying some work is shared with invited readers;
 - the **Access code** field (a password field with Show, so a password manager can keep it);
 - **Sign in** (the primary button);
@@ -434,7 +435,7 @@ On a section, the signed-out state is only the sign-in line under its list (§2.
 
 While a remembered key is tried, the panel and the sign-in line are replaced by a short "Signing in…" status, so there's no flash of the form, and a section's list doesn't reflow twice.
 
-On a private page, the shell shows a short note instead: the page is private, open it with the link you were sent, or get in touch.
+A magic link signs its reader in before the page needs the panel, so the panel shows only to someone without access, however the page was shared.
 
 ### 7.2 Messages
 
@@ -445,8 +446,8 @@ Every message follows the site's copy rules: sentence case, says what happened a
 | Wrong code, or a damaged file | "That access code doesn't work. Check it and try again, or get in touch for a new one." |
 | Expired | "This access expired on 5 November 2026. Get in touch for a new one." |
 | Withdrawn or no longer valid (no keyring) | "This access code no longer works. Get in touch for a new one." (a withdrawal isn't disclosed as such) |
-| Link without access to this page | "Your link doesn't open this page." |
-| Signed in, on a locked page the grant doesn't cover | "This page isn't shared with your access. Get in touch if you'd like to see it." |
+| Signed in by a link, on a private page it doesn't cover | "Your link doesn't open this page." |
+| Signed in by a code, on a private page it doesn't cover | "This page isn't shared with your access. Get in touch if you'd like to see it." |
 | No JavaScript | "This page is shared with invited readers and needs JavaScript to open." (in `<noscript>`) |
 | A browser without Web Crypto (very old ones) | "This browser can't open shared pages. Try a current version of Edge, Chrome, Firefox or Safari." |
 | The page and its keyring are from different deploys, after one reload | "The site was just updated. Reload the page in a minute." |
@@ -462,7 +463,7 @@ Each message goes into the page's live region as well as on the screen.
   - forgets the key in both storages, and tells every other open tab of the site to do the same (a `BroadcastChannel`, with the `storage` event as its fallback);
   - revokes the page's `blob:` URLs, removes the decrypted regions and cards and puts back the neutral title;
   - resets telemetry's identity (§9.3);
-  - and moves on with `location.replace`: from a protected page to its section (or home, for a private one), elsewhere to the same page, so Back doesn't return to the decrypted page.
+  - and moves on with `location.replace`: from a private page to its section, elsewhere to the same page, so Back doesn't return to the decrypted page.
 - **The back and forward cache:** a page shown again from it (`pageshow` with `persisted`) checks whether the visitor is still signed in, and reloads if not.
 - **What's stored:** the grant key and the grant's `id`, `expiresAt` and lookup, never the code or the link's secret. After a deploy the same key opens the new keyring, until the grant expires or is withdrawn.
 - **Signing in is per browser.** Nothing is sent anywhere to check it; telemetry only records that it happened (§9).
@@ -470,7 +471,7 @@ Each message goes into the page's live region as well as on the screen.
 ### 7.4 After signing in
 
 - **On a section,** the covered cards are decrypted and inserted in order, and the live region says how many shared pages were added.
-- **On a locked page,** the sealed regions are decrypted and swapped in. The page sets its real `<title>`, then fires `astro:page-load`, so every component's script sets up the new elements through `each()` exactly as on an open page (the lightbox, the minimap, the gallery, videos). Focus moves to the page's heading, and the live region says the page is open.
+- **On a private page,** the sealed regions are decrypted and swapped in. The page sets its real `<title>`, then fires `astro:page-load`, so every component's script sets up the new elements through `each()` exactly as on an open page (the lightbox, the minimap, the gallery, videos). Focus moves to the page's heading, and the live region says the page is open.
 - The page's own media resolver (§5.5) watches sealed pictures and videos and fills them in as they come into view.
 
 ### 7.5 Accessibility
@@ -483,41 +484,45 @@ Each message goes into the page's live region as well as on the screen.
 
 Everything here is dev-only, like the rest of edit mode ([editor spec](../editor/spec.md)), and reads and writes through the store.
 
-### 8.1 The Access screen
+**No screen of its own.** A private page is a page like any other, so it's listed, filtered and edited where every page is; its media are listed where every picture and video is; and sharing lives on the page it shares, and in Settings. An earlier version had an Access screen (`/_edit/access/`) for grants, page access and order; it was folded into these (D21).
 
-- **The list:** every grant, with its recipient, kind, scope, when it was made, when it expires and its state (active, expires soon, expired, withdrawn, waiting for a deploy). Filters: state, kind, section.
-- **New access code** and **New magic link:**
-  - who it's for, why, and what it opens (single locked pages, or every locked page in a section, now and later; private pages for a link);
+### 8.1 Sharing: access codes and magic links
+
+- **Where:** a private page's settings have **Share**, a dialog listing the grants that open that page (by the page, or by its section) and a form to share it; **Settings** lists every grant, and its form can share any private pages or sections.
+- **The list:** each grant, with its recipient, kind, what it opens, when it was made, when it expires and its state (active, ends soon, expired, withdrawn).
+- **Share with someone:**
+  - how they get in: an **access code** (a password they type on the Sign in page) or a **magic link** (opens it with nothing to type). Either works for any private page;
+  - who it's for, why, and what it opens: on a page's Share dialog, this page or every private page in its section (now and later); in Settings, any private pages and sections;
   - an expiry date (30 days suggested; none allowed).
 
   Edit mode generates the code or link and shows a ready message to copy ("Hi Jane, here's access to my selected work…") with the code or link and its expiry. The words of that message are content (`private-pages/access-message.json`), so you can change them.
-- **A grant's page:**
-  - its record and its history (from the private repository's log);
-  - Copy message again;
-  - Extend;
-  - Change scope;
+- **Each grant's actions,** in its row:
+  - Copy message (again);
+  - Set end date;
+  - Change what it opens;
   - Withdraw now (§4.5);
-  - **Who looked:** a link to the grant's person page in PostHog (its timeline: sign-ins, protected pages viewed, devices, places and IPs), when the PostHog project is set (§9.5). Recipient details never go to PostHog; this screen is where an `id` becomes a name.
+  - **Who looked:** a link to the grant's person page in PostHog (its timeline: sign-ins, private pages viewed, devices, places and IPs), when the PostHog project is set (§9.5). Recipient details never go to PostHog; edit mode is where an `id` becomes a name.
 
 ### 8.2 Sections and pages
 
-- **A page's Settings** get **Access:** Open, Locked or Private.
-  - **Locking an open page** moves it, and the media only it uses, into `private-pages/` in one transaction, keeping its place in its section's order. Media an open page also uses stays public. If the page was ever published openly, edit mode warns first that its earlier text stays readable in the public repository's history, which locking can't undo.
-  - **Opening a locked page** moves it, and its private media, back into `content/`, after a confirmation that it becomes public.
-  - **Making a page private** takes it out of its section.
-- **The Sections screen** lists a section's locked pages among its open ones, each with a lock tag, so you order them together; the order is written to the overlay, and the open pages' order to the public structure too.
-- **The articles list** marks locked and private pages and filters by them. **New private page** creates a page in `private-pages/` with its token.
-- **A private page's Settings:** its address (token), **Change address** (breaks every link to it, with a confirmation) and **Share**, which opens New magic link for that page.
-- **Uploads** for a locked or private page go into `private-pages/media/`.
-- **Locked and private pages can't be put on the planet** (V28); the Planet screen doesn't offer them.
-- **The editor shows protected pages open**, with a ribbon saying who can see them, and lists every section with its locked pages.
+- **A page's settings** get **Who can see it:** Everyone or Private. A private page is in a section, like any page.
+  - **Making a page private** moves it, and the media only it uses, into `private-pages/` in one transaction, keeping its place in its section's order. Media an open page also uses stays public. If the page was ever published openly, edit mode warns first that its earlier text stays readable in the public repository's history, which making it private can't undo.
+  - **Making a private page public** moves it, and its private media, back into `content/`, after a confirmation, in its place. Grants that named it alone stop naming it.
+  - **Its section** moves it between sections; it stays private, at the same address.
+- **The New article and New page dialogs** ask Who can see it too; a private page is written straight into `private-pages/`.
+- **The Pages list** holds every page, open and private, each private one tagged **Private**, with a Who can see it filter.
+- **The Sections screen** lists a section's private pages among its open ones, each tagged Private, so you move and order them together; a move that involves one writes the public structure and the overlay in one transaction. A private page can't be taken off the site.
+- **A private page's settings:** its address (token), **Change address** (breaks every link to it, with a confirmation) and **Share** (§8.1).
+- **Media:** a private page's pictures and videos are in the Media library with everyone's, tagged Private, with a Who can see it filter; their details open and save where they live. An upload to a private page's own folder goes into `private-pages/media/`.
+- **Private pages can't be put on the planet** (V28); the Planet screen lists them, not movable.
+- **The editor shows private pages open**, with a ribbon saying who can see them.
 - **Seeing it as a visitor:** `npm run preview:protected` builds the site with the real private content, sealed exactly as the deploy seals it (checked by the leak check), and serves it on `http://localhost:4331/`, where you can sign in with any active grant. The build stays on your machine.
 
 ### 8.3 Publishing to two repositories
 
-**The same Publish as today.** There's no second publish flow: edit mode's Publish button (in the top bar, with its count of changes) and the Publish screen ([editor spec §7](../editor/spec.md#7-publishing)) cover both folders. Editing a locked or private page, its media, a grant or the overlay is saved through the same store, counted in the same badge, and published by the same button.
+**The same Publish as today.** There's no second publish flow: edit mode's Publish button (in the top bar, with its count of changes) and the Publish screen ([editor spec §7](../editor/spec.md#7-publishing)) cover both folders. Editing a private page, its media, a grant or the overlay is saved through the same store, counted in the same badge, and published by the same button.
 
-- **The Publish screen** lists every change in both folders as one list, each named as its resource as today, with a lock tag on private ones ("Private page: Contoso redesign", "Access: Jane Doe, Contoso"). Discard works on any of them. The content check runs on the merged content of both folders, and Publish is enabled only when it passes.
+- **The Publish screen** lists every change in both folders as one list, each named as its resource as today, with a tag on private ones ("Private page: Contoso redesign", "Sharing: the access codes and magic links"). Discard works on any of them. The content check runs on the merged content of both folders, and Publish is enabled only when it passes.
 - **One message, never in public history when anything private changed.** The form keeps its one message field, and what goes where is fixed by what changed, not by checking your words:
   - **only public changes:** your message, on the public commit, as today;
   - **any private change:** your message goes on the private commit only. The public commit's message is made by edit mode from the public changes alone ("Update the Work section; Private pages: update"), or is the fixed "Private pages: update" when only private files changed. The field says which will happen before you publish;
@@ -559,9 +564,9 @@ Alternatives considered:
 
 | Event | When | Properties |
 |---|---|---|
-| `$pageview` | A protected page or the Sign in page loads | `$current_url` and `$pathname` as the page's route with its token (opaque); `$title` "Locked page", "Private page" or "Sign in"; the referrer's origin only |
+| `$pageview` | A protected page or the Sign in page loads | `$current_url` and `$pathname` as the page's route with its token (opaque); `$title` "Private page" or "Sign in"; the referrer's origin only |
 | `access_signed_in` | A code or link signs the visitor in | `grant` (its `id`), `via` (code or link) |
-| `access_opened` | A locked or private page opens, or a section shows shared cards | `grant`, `place` (the page's token, or the section's path), `cards` (on a section: how many were shown) |
+| `access_opened` | A private page opens, or a section shows shared cards | `grant`, `place` (the page's token, or the section's path), `cards` (on a section: how many were shown) |
 | `access_failed` | A code or link doesn't work | `reason`: wrong, expired, withdrawn, unsupported, offline. Never the code |
 | `access_signed_out` | Sign out | `grant` |
 | `access_link` | A link on a protected page is followed | `kind`: internal, outbound or download; for an outbound link, its domain only |
@@ -576,7 +581,7 @@ Alternatives considered:
 ### 9.3 Who looked (A9)
 
 - **Identity is the grant.** When a visitor signs in, the page calls `identify(<grant id>)`, and every later page does the same while they stay signed in. Everything they do is on the grant's timeline: the pages, the clicks, the device, the IP and the city.
-- **Only the grant's `id` goes to PostHog.** The recipient's name, organisation, role, purpose and notes never do. Edit mode's Access screen joins an `id` to its recipient, and links to its timeline (§8.1).
+- **Only the grant's `id` goes to PostHog.** The recipient's name, organisation, role, purpose and notes never do. Edit mode's sharing list (Settings, and each page's Share dialog) joins an `id` to its recipient, and links to its timeline (§8.1).
 - **Sign out resets it** (`posthog.reset()`), so what a visitor does after signing out, or under a second grant in the same browser, isn't put on the first grant's timeline.
 - **Anonymous visitors** have no profile (`person_profiles: 'identified_only'`). Their events are counted, but no profile is built.
 - **A forwarded link** shows up as one grant opened from several devices, places or IPs. It's a hint, not evidence: the project key is public, so events can be forged (§1).
@@ -608,20 +613,20 @@ New checks, in the loader (`tests/unit/content.test.ts`) and edit mode's check, 
 
 | # | Rule |
 |---|---|
-| V23 | A locked page and a private page live only in `private-pages/`, and the public structure never names them. Every section is open: access is a page's, never a section's |
+| V23 | A private page lives only in `private-pages/`, and the public structure never names them. Every section is open: access is a page's, never a section's |
 | V24 | IDs, media IDs, node IDs, tokens and routes are unique across both folders; tokens are 10 base32 characters |
 | V25 | An open page never refers to a protected page, or to a master in `private-pages/` (blocks, related, thumbnails, the navigation, the home page, redirects) |
-| V26 | A grant's scope names only sections, locked pages and private pages that exist; a code's scope holds no private page |
+| V26 | A grant's scope names only sections and private pages that exist. A code and a link open the same pages |
 | V27 | A sealed video is at most 10 MB; a sealed picture's master follows the media budgets |
-| V28 | A locked or private page isn't on the planet |
+| V28 | A private page isn't on the planet |
 | V29 | Code names are unique among codes that still work; grant IDs are unique and never reused |
 | V30 | A grant expires after it's created; a withdrawal is after its creation. (That a grant is never deleted, its ID never reused and a withdrawn grant never changed again are transition rules: edit mode's store enforces them against the file's previous version, §4.1) |
-| V31 | The overlay's order for a section holds every open page the public structure lists there, in the same relative order, plus its locked pages |
+| V31 | The overlay's order for a section holds every open page the public structure lists there, in the same relative order, plus its private pages |
 | V32 | A protected page's own related stories and next and previous are open pages only (§5.4) |
 
 **Who may be built, sealed or not.** Access doesn't override the editorial rules; it adds to them:
 
-| `status` and `visibility` | Open page | Locked or private page |
+| `status` and `visibility` | Open page | Private page |
 |---|---|---|
 | Published (`published`, `stale`) and `public`, `publicRedacted` or `summaryOnly` | Built | Built and sealed |
 | Anything else (a draft, `privateDiscussionOnly`, `notPublishable`) | Not built | Not built, and not sealed: it never leaves `private-pages/` |
@@ -632,12 +637,12 @@ So V8 ("only published statuses and public visibilities are built") holds as bef
 
 These follow the [site design system](../site-ui/design-system.md): tokens only, sealed fundamentals, a doc comment and a story for every component.
 
-- **`UnlockPanel`** (compound): `TextField`, `Button`, `Checkbox` and `Text`, with its states (ready, signing in, wrong, expired, not shared with you). Used by the Sign in page and a locked page's shell.
+- **`UnlockPanel`** (compound): `TextField`, `Button`, `Checkbox` and `Text`, with its states (ready, signing in, wrong, expired, not shared with you). Used by the Sign in page and a private page's shell.
 - **`AccessBar`** (compound): the signed-in state and Sign out, under the header.
 - **Seal markers are the layouts' own** (comment pairs, §5.4), not a component: a compound may not wrap other compounds.
 - **The layouts:**
-  - `ArticleLayout` takes a `sealed` prop (`'locked' | 'private'`) that marks its regions (§5.4), gives the head neutral values and lists only open pages after it;
-  - `IndexLayout` renders a section's open cards as today, its locked cards sealed in a hidden holder after the list, and the sign-in line;
+  - `ArticleLayout` takes a `sealed` prop (`{ access: 'private', … }`) that marks its regions (§5.4), gives the head neutral values and lists only open pages after it;
+  - `IndexLayout` renders a section's open cards as today, its private cards (`privatePages`) sealed in a hidden holder after the list, and the sign-in line;
   - the Sign in page (`src/pages/sign-in.astro`, no style) is `IndexLayout` with the `UnlockPanel` in its slot.
 - **`StoryCard`** gains `shared`, which shows the "Shared with you" tag (a `Tag`).
 - **The footer** gains its Sign in link.
@@ -675,12 +680,13 @@ These follow the [site design system](../site-ui/design-system.md): tokens only,
 | D5 | Expiry enforced by a nightly deploy | No server; about a day's precision |
 | D6 | Codes: a name and four EFF words; PBKDF2 at 600,000 | Readable, one derivation per try, a fair cost per guess |
 | D7 | Links: a 256-bit secret in the fragment | Unguessable, never sent to a server |
-| D8 | Opaque addresses for locked and private pages | An address never hints at a title |
+| D8 | Opaque addresses for private pages | An address never hints at a title |
 | D9 | Off the planet in v1 | The planet has no unlock flow yet |
 | D10 | Grants' secrets stored in the private repository | So a message can be copied again; anyone who can read that repository can read the content anyway |
 | D11 | PostHog Cloud, free tier, cookieless, identified by grant | The one free service with clicks, IPs and per-person timelines |
-| D12 | Access is a page's, never a section's: open and locked work share a section, and a section lists its locked pages only to a signed-in visitor | The owner's model (A12): Work holds both kinds |
-| D13 | Signing in is site-wide, for the session, from one Sign in page | One code shows every locked page it covers, wherever it is |
+| D12 | Access is a page's, never a section's: open and private work share a section, and a section lists its private pages only to a signed-in visitor | The owner's model (A12): Work holds both kinds |
+| D13 | Signing in is site-wide, for the session, from one Sign in page | One code or link shows every private page it covers, wherever it is |
+| D21 | One kind of access-controlled page, the private page, in a section; a code and a link are two ways to share any of them; edit mode lists private pages and their media with every other page, with no Access screen | The owner's model (5 October 2026): locked and link-only private pages were one idea split in two, and "locked" read as "can't be edited". A separate screen for some pages was IA the site didn't need |
 | D14 | A build ID in every sealed file's path and authenticated data | A cached page never meets another deploy's keyring by accident |
 | D15 | The leak check is provenance first, words second | A word list can't prove a negative; a record of every private-origin file can |
 | D16 | Protected pages list open pages only after them | A page's key opens only what's about that page |
@@ -697,7 +703,7 @@ These follow the [site design system](../site-ui/design-system.md): tokens only,
 | O3 | Session replay on open pages | Off |
 | O4 | A consent prompt as well as the notice | No prompt: notice, no cookies, GPC and DNT respected |
 | O5 | Expiry suggested for new grants | 30 days |
-| O6 | The sign-in line under a section that holds locked pages, when signed out | Yes: "More work is shared with invited readers. Sign in to see it." Without it, the only way in is the footer's link or a magic link |
+| O6 | The sign-in line under a section that holds private pages, when signed out | Yes: "More work is shared with invited readers. Sign in to see it." Without it, the only way in is the footer's link or a magic link |
 | O7 | The private repository's name, and its folder | `atiya-private`, at `private-pages/` |
 | O8 | A Sign in link in the header too | No: the footer and the sign-in line; the header keeps its one action |
 
@@ -738,12 +744,17 @@ Built 5 to 6 October 2026, phase by phase as the [plan](plan.md) sets out, and c
 | A3 | The sealer, after the build: comment markers become `<template data-sealed>`, media move to `<base>/_sealed/<build>/`, keyrings to `<base>/_access/<build>/`; and the leak check | [`integrations/seal.mjs`](https://github.com/prabinpebam/atiya/blob/main/integrations/seal.mjs), [`scripts/verify-sealed.mjs`](https://github.com/prabinpebam/atiya/blob/main/scripts/verify-sealed.mjs) |
 | A4 | The Sign in page, the unlock panel, the access bar, sealed cards in their places, the runtime (sign-in, keyrings, pages, pictures, the lightbox, videos, sign-out in every tab) | `src/pages/sign-in.astro`, `src/site/scripts/sealed.ts`, `UnlockPanel`, `AccessBar` |
 | A5 | The deploy workflow: the submodule through the deploy key, a quiet build, the leak check before upload, a one-day artifact, deploys from `main` only, the nightly run at 18:45 UTC with its activity guard | [`.github/workflows/deploy.yml`](https://github.com/prabinpebam/atiya/blob/main/.github/workflows/deploy.yml) |
-| A6 | Edit mode's Access screen (`/_edit/access/`), the store writing both folders, Publish to both repositories | `src/site/editor/server/access.ts`, `git.ts`, `store.ts`; `AccessManager.astro` |
+| A6 | Edit mode's sharing (Settings, and a private page's Share dialog), page access in a page's settings, the store writing both folders, Publish to both repositories. First built as an Access screen; folded into the pages, sections and media screens the same day (§15.2) | `src/site/editor/server/access.ts`, `git.ts`, `store.ts`; `SharingPanel.astro` |
 | A7 | Telemetry: a 1.1 KB part on every page, PostHog's chunk on idle, the sanitizer; the Privacy page (content, in Contact) and its footer link | `src/site/scripts/telemetry*.ts`; `content/articles/privacy.json` |
 
 ### 15.2 Where the build differs from the sections above
 
-- **Page access lives in three places** (§8.2). The New article and New page dialogs ask "Who can see it" (Everyone, Signed-in readers, Only with a magic link); a protected page is written straight into `private-pages/`. A page's own settings have the same field, so it can be made public, locked or private at any time (saved first, moved in one transaction, then the editor reloads on its new file); a locked page's Section moves it between sections and keeps it locked. The Access screen also has Lock, Open and Make private, a section's order among its open and locked pages, Change address and Share. The Pages list tags locked and private pages. Duplicating a locked or private page makes a locked or private copy, never one in `content/`.
+- **One kind of private page, and no Access screen** (revised 5 October 2026, D21). The first build had locked pages and link-only private pages at `/p/<token>/`, and an Access screen for grants, page access and order. Now:
+  - every private page is in a section at `/<section>/<token>/`, and any grant, code or link, opens whatever its scope names (the `/p/` routes, the overlay's `private` list and the code-can't-open-private rule are gone; `RESERVED` no longer holds `p`);
+  - the New article and New page dialogs and a page's settings ask Who can see it (Everyone, Private); a page's settings show its private address, Change address and Share; a private page's Section moves it and keeps its address; making it public drops it from grants that named it alone; duplicating a private page makes a private copy in the same section, never one in `content/`;
+  - the Pages list, the Sections screen (moves with private pages among them go through the server, `POST access/moves`, which writes the structure and the overlay together) and the Media library list private pages and media with the rest, tagged Private, the Pages list and the Media library with a Who can see it filter; the media server reads and writes each file where it lives, and an upload to a private page's folder goes into `private-pages/media/` (before, it went into `content/media/`);
+  - Settings lists every grant and shares any private pages; a private page's Share dialog lists the grants that open it and shares it (`SharingPanel.astro`, `scripts/sharing.ts`, `sharingView`).
+  - The Publish screen names grants' changes "Sharing" and the overlay "Where private pages are listed".
 - **Not built in edit mode** (§8.1): the grant list's filters and a grant's history from the private repository's log. The list shows every grant with its state.
 - **Withdraw now doesn't publish by itself** (§8.3). It marks the grant withdrawn and says to publish, so it never sweeps other unpublished changes into a deploy.
 - **A refused private push** (§8.3): the public commit is still made but held back, never pushed before the private commit it points at. Push again pushes the private repository, then, if you pulled and rebased it, commits the pointer to its new head ("Private pages: update"), then pushes the public one.
@@ -766,8 +777,8 @@ Built 5 to 6 October 2026, phase by phase as the [plan](plan.md) sets out, and c
 | QB7a | E2E: deriving under 2 s, swapping under 200 ms, a 10 MB video under 1.5 s |
 | QB7b | `verify:prod`: the game's critical JS 449.8 KB, unchanged; the gate 5.8 KB; 1,586 KB before live |
 | QB8, QB9 | E2E "protected content" (axe in both themes, 320 px, 44 px targets, the failure messages); "site on a phone" |
-| QB10 | `tests/unit/editorAccess.test.ts` (13); E2E `editor-access.spec.ts` (5): codes and links made, extended, rescoped and withdrawn; a page locked in its place; Publish private first with a generated public message and the pointer at the private head; a refused private push recovered after a rebase; axe on the Access screen in both themes |
-| QB11 | `npm run check` 0 errors; `npm test` 1,041 passed; the site design system's tests pass |
+| QB10 | `tests/unit/editorAccess.test.ts` (17); E2E `editor-access.spec.ts` (7): no Access screen; codes and links made, extended, rescoped and withdrawn in Settings; private pages listed, filtered, ordered and tagged in Pages, Sections and Media; a page made private in its place from its settings and shared from its Share dialog; Publish private first with a generated public message and the pointer at the private head; a refused private push recovered after a rebase; axe on Settings and the Share dialog in both themes |
+| QB11 | `npm run check` 0 errors; `npm test` 1,046 passed; the site design system's tests pass |
 | QB12 | This section, the plan's Definition of Done, and AGENTS.md's "Protected content" |
 
 The editor's full E2E project passes test by test; run whole and serially, one test in a run of 40 has failed under load (a different one each time, a status text or a navigation aborted by a live reload), and passes on its own.
@@ -776,5 +787,5 @@ The editor's full E2E project passes test by test; run whole and serially, one t
 
 - **A PostHog project** (US region, "Discard client IP data" off), then the Actions variables `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`; for "Who looked", `POSTHOG_PROJECT_ID` in your environment for edit mode (the host defaults to US). *Done 5 October 2026: project 646382, US Cloud, both variables set; check the IP setting once in the project's settings.*
 - **Pushing `main`**, which starts the deploys and the nightly run (the workflow ran green on the branch `access-ci`). *Done 5 October 2026: deployed from `main` (run 37307949622), after the full E2E suite (169 tests) passed.*
-- **The first real locked page and grant,** made in edit mode and published.
+- **The first real private page and grant,** made in edit mode and published.
 - **One real phone, and Safari and Firefox, by hand** before sharing the first code (benchmark, "What isn't measured").

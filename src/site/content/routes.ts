@@ -13,14 +13,14 @@ export interface Crumb {
   path: string;
 }
 
-/** Who can open a page (documentation/access/spec.md §2): everyone, a signed-in visitor its grant covers, or a magic link. */
-export type Access = 'open' | 'locked' | 'private';
+/** Who can open a page (documentation/access/spec.md §2): everyone, or a visitor whose access code or magic link covers it. */
+export type Access = 'open' | 'private';
 
 export interface Route {
   /** The path without the base: `/leadership/do-what-makes-you-proud/`. */
   path: string;
   node: SiteNode;
-  /** The hub above this node (none for the home hub, or a private page). */
+  /** The hub above this node (none for the home hub). */
   parent?: HubNode;
   /** The hubs from the home page down to this node's parent. */
   ancestors: Crumb[];
@@ -30,26 +30,26 @@ export interface Route {
   label: string;
   /** Built and public: a hub, or an item whose content is published. A draft's route exists only for the editor's canvas. */
   published: boolean;
-  /** Open, or sealed for its grants (a locked page in its section, a private page at /p/<token>/). */
+  /** Open, or private: sealed for the grants that cover it, at its token in its section. */
   access: Access;
 }
 
 /** Paths the code owns: a node may not claim them. `classic` stays until the IA replaces it. */
-export const RESERVED = ['play', 'design', 'docs', '_astro', 'media', 'classic', '_edit', 'p', 'sign-in', '_sealed', '_access'];
+export const RESERVED = ['play', 'design', 'docs', '_astro', 'media', 'classic', '_edit', 'sign-in', '_sealed', '_access'];
 
 export type ItemTitle = (type: string, id: string) => { slug: string; title: string; navLabel?: string; published: boolean } | undefined;
 
 /**
- * The site structure with the private overlay's locked pages placed in their open sections (documentation/
- * access/spec.md §2.1): each at its token, in the section's full order (the overlay's `order`, then any page
- * it leaves out: open ones in their order, then locked ones in theirs). The public structure is untouched.
- * Returns the merged structure, the locked nodes' IDs, and what's wrong.
+ * The site structure with the private overlay's pages placed in their open sections (documentation/access/
+ * spec.md §2): each at its token, in the section's full order (the overlay's `order`, then any page it leaves
+ * out: open ones in their order, then private ones in theirs). The public structure is untouched. Returns the
+ * merged structure, the private nodes' IDs, and what's wrong.
  */
-export function withOverlay(structure: SiteStructure, overlay: Overlay | null): { structure: SiteStructure; locked: Set<string>; errors: string[]; warnings: string[] } {
-  const locked = new Set<string>();
+export function withOverlay(structure: SiteStructure, overlay: Overlay | null): { structure: SiteStructure; private: Set<string>; errors: string[]; warnings: string[] } {
+  const sealed = new Set<string>();
   const errors: string[] = [];
   const warnings: string[] = [];
-  if (!overlay?.sections.length) return { structure, locked, errors, warnings };
+  if (!overlay?.sections.length) return { structure, private: sealed, errors, warnings };
   const sections = new Map<string, HubNode>();
   const children = (structure.home.children ?? []).map((c) => {
     if (c.kind !== 'hub') return c;
@@ -61,7 +61,7 @@ export function withOverlay(structure: SiteStructure, overlay: Overlay | null): 
     const hub = sections.get(s.section);
     if (!hub) return void errors.push(`sections.${i}: "${s.section}" isn't a section of the site`);
     const added: ItemNode[] = s.pages.map((p) => ({ id: p.id, kind: 'item', slug: p.token, item: p.item }));
-    for (const n of added) locked.add(n.id);
+    for (const n of added) sealed.add(n.id);
     const all = [...(hub.children ?? []), ...added];
     const byId = new Map(all.map((n) => [n.id, n]));
     const ordered: SiteNode[] = [];
@@ -72,23 +72,10 @@ export function withOverlay(structure: SiteStructure, overlay: Overlay | null): 
     }
     hub.children = [...ordered, ...all.filter((n) => !ordered.includes(n))];
   });
-  return { structure: { ...structure, home: { ...structure.home, children } }, locked, errors, warnings };
+  return { structure: { ...structure, home: { ...structure.home, children } }, private: sealed, errors, warnings };
 }
 
-/** A private page's route: at /p/<token>/, in no section (documentation/access/spec.md §2.2). */
-export function privateRoutes(pages: Overlay['private'], lookup: ItemTitle, home: { label: string }): { routes: Route[]; errors: string[] } {
-  const routes: Route[] = [];
-  const errors: string[] = [];
-  pages.forEach((p, i) => {
-    const item = lookup(p.item.type, p.item.id);
-    if (!item) return void errors.push(`private.${i}: places ${p.item.type} "${p.item.id}", which doesn't exist`);
-    const node: ItemNode = { id: p.id, kind: 'item', slug: p.token, item: p.item };
-    routes.push({ path: `/p/${p.token}/`, node, ancestors: [{ label: home.label, path: '/' }], title: item.title, label: item.navLabel ?? item.title, published: item.published, access: 'private' });
-  });
-  return { routes, errors };
-}
-
-export function buildRoutes(structure: SiteStructure, lookup: ItemTitle, locked: Set<string> = new Set()): { routes: Route[]; errors: string[] } {
+export function buildRoutes(structure: SiteStructure, lookup: ItemTitle, sealed: Set<string> = new Set()): { routes: Route[]; errors: string[] } {
   const routes: Route[] = [];
   const errors: string[] = [];
   const placed = new Map<string, string>();
@@ -127,7 +114,7 @@ export function buildRoutes(structure: SiteStructure, lookup: ItemTitle, locked:
     if (depth === 1 && RESERVED.includes(slug)) errors.push(`node ${node.id}: /${slug}/ is reserved for the code`);
     const path = depth === 0 ? '/' : `${parentPath}${slug}/`;
     if (routes.some((r) => r.path === path)) errors.push(`node ${node.id}: ${path} is already taken`);
-    routes.push({ path, node, parent, ancestors, title, label, published, access: locked.has(node.id) ? 'locked' : 'open' });
+    routes.push({ path, node, parent, ancestors, title, label, published, access: sealed.has(node.id) ? 'private' : 'open' });
     if (node.kind === 'hub') for (const child of node.children ?? []) visit(child, path, node, [...ancestors, { label, path }], depth + 1);
   };
 

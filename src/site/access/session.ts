@@ -107,10 +107,8 @@ export function messageFor(outcome: Outcome, o: { expiresAt?: string; cards?: nu
 /** The AccessBar's "until" words: ", until 5 November 2026", or nothing for a grant without an end. */
 export const untilWords = (expiresAt?: string) => (expiresAt ? `, until ${longDate(expiresAt)}` : '');
 
-/** Where Sign out goes: from a locked page to its section, from a private page home, elsewhere the same page. */
-export function afterSignOut(access: string | undefined, pathname: string, base: string): string {
-  const b = base.replace(/\/$/, '');
-  if (access === 'private') return `${b}/`;
-  if (access === 'locked') return pathname.replace(/[^/]+\/$/, '');
+/** Where Sign out goes: from a private page to its section, elsewhere the same page. */
+export function afterSignOut(access: string | undefined, pathname: string): string {
+  if (access === 'private') return pathname.replace(/[^/]+\/$/, '');
   return pathname;
 }

@@ -34,7 +34,7 @@ export function mediaId(src: string, base: string): string | null {
 
 /** The neutral title an allowlisted page view carries. */
 export function neutralTitle(access: string | undefined, signIn: boolean): string {
-  return access === 'locked' ? 'Locked page' : access === 'private' ? 'Private page' : signIn ? 'Sign in' : 'Page';
+  return access === 'private' ? 'Private page' : signIn ? 'Sign in' : 'Page';
 }
 
 /** An address without its fragment (where a magic link's secret lives). */
