@@ -5,12 +5,21 @@
 # so the workflow publishes dist/ as a Pages artifact (the approach Astro recommends). No build
 # output is committed, and Jekyll never runs (it would drop the `_astro/` folder).
 # In Settings → Pages, "Build and deployment → Source" must be "GitHub Actions".
+#
+# Locked and private pages (documentation/access/spec.md §6.1) come from private-pages/, a private
+# repository kept here as a git submodule. The workflow fetches it at the commit this repository points
+# at, with a read-only deploy key (the PRIVATE_CONTENT_KEY secret); builds quietly, since a build's log
+# can name protected pages and this repository's logs are public; seals and checks the build for leaks
+# before anything is uploaded; and runs every night too, so a grant's expiry date takes effect.
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  # shortly after midnight India time (18:45 UTC): expired grants lose their keyrings
+  schedule:
+    - cron: '45 18 * * *'
 
 permissions:
   contents: read
@@ -28,6 +37,32 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
+
+      # GitHub turns off a public repository's schedules after 60 days without activity: at 50 days the
+      # nightly run fails on purpose, so GitHub emails the owner while there's time (any commit resets it)
+      - name: Check the repository's activity
+        if: github.event_name == 'schedule'
+        run: node scripts/activity-guard.mjs
+
+      - name: Fetch the private pages
+        env:
+          PRIVATE_CONTENT_KEY: ${{ secrets.PRIVATE_CONTENT_KEY }}
+        run: |
+          if [ -z "$PRIVATE_CONTENT_KEY" ]; then
+            echo "The PRIVATE_CONTENT_KEY secret isn't set: the deploy needs private-pages/ (documentation/access/plan.md, A0)."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$PRIVATE_CONTENT_KEY" > ~/.ssh/private_pages
+          chmod 600 ~/.ssh/private_pages
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          git config --global url."git@github.com:prabinpebam/atiya-private".insteadOf "https://github.com/prabinpebam/atiya-private"
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/private_pages -o IdentitiesOnly=yes" git submodule update --init --depth 1 private-pages
+          rm -f ~/.ssh/private_pages
+          if [ ! -f private-pages/access.json ]; then
+            echo "private-pages/ was fetched but holds no access.json: the deploy stops rather than build without it."
+            exit 1
+          fi
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -48,12 +83,24 @@ jobs:
         id: pages
         uses: actions/configure-pages@v6
 
-      # a project site lives under the repository's name, e.g. https://<user>.github.io/atiya/
+      # a project site lives under the repository's name, e.g. https://<user>.github.io/atiya/. The build's
+      # own log stays in the runner (it can name protected pages); only the sealer's counts are printed
       - name: Build
-        run: npm run build
         env:
           SITE_URL: ${{ steps.pages.outputs.origin }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY }}
+          PUBLIC_POSTHOG_HOST: ${{ vars.PUBLIC_POSTHOG_HOST }}
+        run: |
+          if ! npm run build > "$RUNNER_TEMP/build.log" 2>&1; then
+            echo "The build failed. Its log isn't printed here, since it can name protected pages: run npm run build locally to see why."
+            exit 1
+          fi
+          grep -o '\[site-seal\].*' "$RUNNER_TEMP/build.log" || { echo "The sealer didn't run: the build is not sealed."; exit 1; }
+
+      # nothing readable from a locked or private page may be left; findings name a category and a file, never the words
+      - name: Check for leaks
+        run: node scripts/verify-sealed.mjs
 
       - name: Check the bundle budgets
         run: node scripts/size-report.mjs --prod
@@ -62,9 +109,12 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+          retention-days: 1
 
   deploy:
     needs: build
+    # a run on another branch builds, seals and checks, and stops here (that's how the workflow is tested)
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
