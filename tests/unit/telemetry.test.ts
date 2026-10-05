@@ -59,6 +59,15 @@ describe('before_send', () => {
     expect(e.properties!.$current_url).toBe('https://site.example/atiya/p/privone222/');
   });
 
+  it("keeps the event's timestamp a Date on every page (PostHog refuses an event whose timestamp isn't one)", () => {
+    const at = new Date('2026-10-05T08:00:00Z');
+    for (const page of [open, locked]) {
+      const e = sanitize({ event: '$pageview', timestamp: at, uuid: 'u', properties: { ...device, $current_url: 'https://site.example/a#b' } }, page)!;
+      expect(e.timestamp).toBeInstanceOf(Date);
+      expect(JSON.parse(JSON.stringify(e)).timestamp).toBe('2026-10-05T08:00:00.000Z');
+    }
+  });
+
   it('on open pages keeps PostHog\'s own capture', () => {
     const e = sanitize({ event: '$autocapture', properties: { ...device, $el_text: 'Download résumé' } }, open)!;
     expect(e.properties!.$el_text).toBe('Download résumé');

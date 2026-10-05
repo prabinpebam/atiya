@@ -45,11 +45,11 @@ export function withoutFragment(value: string): string {
 
 const URLISH = /^(https?:)?\/\/|^\//;
 
-/** Every address-like string, at any depth, without its fragment (every page). */
+/** Every address-like string, at any depth, without its fragment (every page). Only plain objects and arrays are copied: a `Date` (the event's timestamp) is kept as it is. */
 function stripFragments(v: unknown): unknown {
   if (typeof v === 'string') return URLISH.test(v) && v.includes('#') ? withoutFragment(v) : v;
   if (Array.isArray(v)) return v.map(stripFragments);
-  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, stripFragments(x)]));
+  if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, stripFragments(x)]));
   return v;
 }
 

@@ -329,6 +329,11 @@ test.describe('protected content: telemetry (QB6)', () => {
     // an open page: PostHog's own capture, without the fragment
     await page.goto('/#about-the-fragment');
     await expect.poll(() => t.sent.find((e) => e.event === '$pageview')?.properties.$current_url, { timeout: 15_000 }).toMatch(/\/$/);
+    // what PostHog needs to accept an event: a uuid and a real timestamp
+    for (const e of t.sent as (Sent & { uuid?: string; timestamp?: unknown })[]) {
+      expect(e.uuid, e.event).toBeTruthy();
+      expect(typeof e.timestamp === 'string' && !Number.isNaN(Date.parse(e.timestamp)), `${e.event}'s timestamp`).toBe(true);
+    }
     // signing in: the Sign in page is allowlisted, and the visitor becomes the grant
     await page.goto(`/sign-in/?return=${encodeURIComponent(SECTION)}`);
     await expect.poll(() => t.sent.some((e) => e.event === '$pageview' && e.properties.$title === 'Sign in'), { timeout: 15_000 }).toBe(true);
