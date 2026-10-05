@@ -280,6 +280,15 @@
       "group": "Content"
     },
     {
+      "path": "access/benchmark.md",
+      "title": "Protected content: quality benchmark",
+      "order": 20.898,
+      "icon": "verified",
+      "status": "draft",
+      "updated": "2026-10-05",
+      "group": "Content"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 21,

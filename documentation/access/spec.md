@@ -17,7 +17,8 @@ How the site shows some pages only to the people you choose, though it's a stati
 >   - The pages and their pictures and videos are decrypted in the browser with WebCrypto (AES-256-GCM).
 >   - There's no server and no library to load (§5).
 > - **Expiry and withdrawal work by redeploying.** Every deploy uses fresh keys and leaves out expired or withdrawn grants, and a nightly deploy enforces expiry dates within about a day. Anything a recipient saved while their access worked stays readable to them (§4.5).
-> - **Telemetry is PostHog's free tier.** It records page views, clicks, outbound links, IP addresses and their location, and which grant unlocked what, so you can see "the Contoso recruiter opened Case study X twice". It never sends a code, a link's secret or protected text (§9).
+> - **Telemetry is PostHog's free tier.** It records page views, clicks, outbound links, IP addresses and their location, and which grant signed in and what it opened. PostHog only knows a grant's opaque ID; edit mode turns it into "the Contoso recruiter". On protected pages only an allowlist of events is sent, so no code, link secret, protected title or text ever leaves the browser (§9).
+> - **Held to a benchmark.** The [quality benchmark](benchmark.md) sets the measurable bar (containment, crypto, scope, accessibility, performance, telemetry and publishing safety) that the [plan's](plan.md) Definition of Done is checked against.
 > - **No new hosting cost.** GitHub Pages, Actions on a public repository, a private repository and PostHog's free tier are all free.
 
 <figure class="slate-figure" data-diagram="access">
@@ -151,6 +152,9 @@ How the site shows some pages only to the people you choose, though it's a stati
 - **A recipient who shares their credential or saves what they saw.** No system can take back what someone has read; withdrawing a grant protects only what's published after it.
 - **Unlimited offline guessing.** Anyone can download a sealed file and try codes forever, with no rate limit. The defence is the code's strength and a slow key derivation (§5.2). Magic links carry a 256-bit random secret and can't be guessed.
 - **Metadata:** that a section holds locked pages, and how many (its page carries one sealed card for each), the sizes of the sealed files and when they change are all visible to anyone who reads the page's source.
+- **Copies already made.** A browser's cache, a saved page or an earlier deploy's files someone downloaded keep working with the keys they had. Withdrawal and expiry stop the *current* build from opening (§4.5), nothing more.
+- **A script running on the site itself (XSS).** A signed-in visitor's key is in their browser's storage, and decrypted text is in the page. The site has no user input and escapes everything it renders, so the risk is low, but any same-origin script could read both.
+- **Forged telemetry.** PostHog's project key is public, so anyone can send events under any grant's ID. Telemetry is a guide to who looked, never evidence (§9.3).
 - **Material that must not leave Microsoft or a client.** Encryption on a public host is "not public", not "confidential". Confidential or NDA work needs its owner's approval before it goes here, encrypted or not.
 
 ## 2. Two kinds of protected page
@@ -174,7 +178,8 @@ Access belongs to a page, never to a section: every section is open, and any of 
 - **Signed out**, the section lists its open pages only, exactly as if the locked ones didn't exist, followed by one line: "More work is shared with invited readers. Sign in to see it." (O6). The locked cards are in the page only as sealed blobs (§5.4): no titles, summaries or thumbnails.
 - **Signed in**, the cards the visitor's grant covers are decrypted and take their places among the open ones, in the section's order, each with a small "Shared with you" tag. Cards outside the grant's scope are never decrypted and stay hidden. The sign-in line goes.
 - **A section with only locked pages** shows its empty state and the sign-in line when signed out.
-- **Elsewhere,** even signed in, locked pages aren't on the home page, in an open page's related stories or next and previous, in the navigation or on the planet (v1). Inside a locked page, its own next and previous are sealed and may include locked neighbours.
+- **Elsewhere,** even signed in, locked pages aren't on the home page, in an open page's related stories or next and previous, in the navigation or on the planet (v1).
+- **A protected page never names another protected page.** Its own related stories and next and previous list open pages only. So a grant that covers one page learns nothing about its neighbours: no title, no address (§5.4). A link the author writes in a page's text to another protected page is that page's own content, and opens that page's own sign-in or "not shared with you" note.
 - **The order:** the public structure keeps the open pages' order on its own (so a public-only build is unchanged). The overlay holds the section's full order, open and locked node IDs together, and the build uses it when the private folder is present.
 
 ### 2.2 Private pages (A8)
@@ -182,7 +187,7 @@ Access belongs to a page, never to a section: every section is open, and any of 
 - **A private page is in no section and on no list.** It exists only in the private repository, at `/p/<token>/`, and opens only from a magic link that covers it.
 - **Its token is stable**, so a link keeps working across deploys. **Change address** (edit mode) gives the page a new token, which breaks every link to it at once: a kill switch for that page.
 - **Without a valid link**, the shell says only that the page is private and how to ask for access. It has no title, no description and no hint of its subject.
-- **Links between protected pages are sealed too.** A link to a page the reader's grant doesn't cover opens that page's own "Your link doesn't open this page" note.
+- **Links between protected pages are sealed with the page that holds them.** A link to a page the reader's grant doesn't cover opens that page's own "Your link doesn't open this page" note.
 
 ### 2.3 Signing in
 
@@ -229,7 +234,13 @@ personal-site/            the public repository (prabinpebam/atiya)
   - `access.json`: the grants (§4), with their secrets;
   - `access-message.json`: the words of the message edit mode offers to copy (§8.1).
 - **What stays public:** nothing about a locked page. The public structure doesn't know it exists. Its only public traces are its sealed card in its section's page and the sign-in line (§2.1).
-- **Loading.** The loader reads both folders into one content snapshot. The overlay's nodes join their open sections in the route table, and private pages get `/p/<token>/` routes outside the three levels (like `/play/`). Every ID, media ID and route is unique across both folders.
+- **Loading: one source, two origins.** The content source reads both folders and keys every file by where it comes from: `/content/…` for the public folder and `/private/…` for `private-pages/`. Every reader takes the origin from the key, and nothing else assumes one folder:
+  - the loader, which indexes both (a private article at `/private/articles/<id>.json`, a private master at `/private/media/…`);
+  - picture metadata in dev and the masters a build imports (`masters.ts` globs both);
+  - the video and document files the content-files integration serves and copies (a private one is copied only for sealing, §6.2);
+  - the dev watcher, and the editor's store (§8).
+
+  The overlay's nodes join their open sections in the route table, and private pages get `/p/<token>/` routes outside the three levels (like `/play/`). Every ID, media ID and route is unique across both folders.
 - **A public-only build.** Without `private-pages/` (a fork, a clone without access, a clone made without `--recurse-submodules`), the site builds as before: sections list their open pages, with no sign-in line, and there are no locked or private pages. The deploy workflow refuses to run without it (§6.1).
 - **Tests never read the real private content.** Unit and E2E tests use a fixture private folder (`tests/fixtures/private-pages/`) with made-up pages and grants.
 
@@ -251,10 +262,10 @@ Every grant is a record in `private-pages/access.json`:
 | `createdAt` | When it was made, with its time zone |
 | `expiresAt` | When it stops working (optional; edit mode suggests 30 days) |
 | `revokedAt` | When you withdrew it, if you did |
-| `secret` | A code's words and salt, or a link's key and salt (§5.2). Kept so you can copy the message again |
+| `secret` | A code's four secret words, or a link's 32-byte key, and the grant's salt (§5.2). Kept so you can copy the message again. The salt is published with the grant's keyring (it isn't secret); the words and the key never are |
 | `notes` | Anything else you want to remember. Never published, never sent to telemetry |
 
-**Grants are never deleted**, only expired or withdrawn, so the record stays complete. The private repository's git history is the audit trail: every grant's creation, extension and withdrawal is a commit with its date.
+**Grants are never deleted**, only expired or withdrawn, so the record stays complete. Edit mode's store enforces it: it refuses to delete a grant, reuse an ID or code name, or change a withdrawn grant's scope or secret, comparing each change with the file's previous version. A hand edit to `access.json` bypasses that, which is why grants are made in edit mode. The private repository's git history is the audit trail: every grant's creation, extension and withdrawal is a commit with its date.
 
 ### 4.2 Access codes (A5)
 
@@ -279,19 +290,19 @@ Every grant is a record in `private-pages/access.json`:
 For every grant you can see:
 - **who it was for and why:** `recipient` and `purpose`;
 - **when it was made, changed, extended or withdrawn:** its record, and the private repository's history;
-- **when it was opened, from where and what was read:** its telemetry, keyed by the grant's `id` (§9.3): every unlock, every page viewed, the device, the IP address and its location;
+- **when it was opened, from where and what was read:** its telemetry, keyed by the grant's `id` (§9.3): every sign-in, every protected page viewed, the device, the IP address and its location. It's a guide, not evidence: anyone can send events under any ID (§1);
 - **its state:** active, expires soon (within 3 days), expired, withdrawn, or waiting for a deploy (§8).
 
-Edit mode's Access screen shows all of these together (§8.1).
+Edit mode's Access screen shows the record, its state and its history, with a link to the grant's timeline in PostHog (§8.1). PostHog only ever knows the grant's `id`; who it is stays in edit mode.
 
 ### 4.5 Expiry and withdrawal (A6)
 
 - **Fresh keys every deploy.** Each build makes new random keys for every sealed page, and a keyring only for each grant that is still valid (not expired and not withdrawn). An expired or withdrawn grant simply has no keyring, so it opens nothing on the live site, including pages published later.
-- **A nightly deploy** (a scheduled GitHub Action, shortly after midnight India time) applies expiry dates, so a grant stops working within about a day of its date. GitHub runs scheduled workflows late at busy times, sometimes by an hour or more.
-- **Withdraw now:** edit mode sets `revokedAt` and publishes: the private commit, then the pointer, whose push starts a deploy (§8.3). It takes effect in a few minutes.
+- **A nightly deploy** (a scheduled GitHub Action, shortly after midnight India time) applies expiry dates, so a grant stops opening the current build within 26 hours of its date. GitHub runs scheduled workflows late at busy times, sometimes by an hour or more.
+- **Withdraw now:** edit mode sets `revokedAt` and publishes: the private commit, then the pointer, whose push starts a deploy (§8.3). The current build stops opening for it within about 15 minutes: the deploy takes a few, and GitHub Pages lets browsers keep a page for up to 10.
 - **The page checks too:** a keyring carries its grant's expiry, and the page refuses an expired one with its own message (§7.2), even in the hours before the nightly deploy runs. That check runs in the visitor's browser, so a determined reader could skip it; the deploy is the real enforcement.
-- **What it can't do:** take back what was read or saved while the grant worked (§1).
-- **A GitHub rule to know:** GitHub turns off scheduled workflows in a public repository after 60 days without activity. The nightly workflow warns (an issue on the repository) when the last commit is 50 days old, and any commit resets the clock.
+- **What it can't do:** take back what was read or saved while the grant worked, or a copy of an earlier build's files (§1).
+- **A GitHub rule to know:** GitHub turns off scheduled workflows in a public repository after 60 days without activity. When the last commit is 50 days old, the nightly run fails on purpose with a message saying so (GitHub emails you about a failed run), and any commit resets the clock.
 
 ## 5. Cryptography
 
@@ -307,60 +318,63 @@ Everything uses the Web Crypto API, built into every current browser and into No
 
 ### 5.2 Deriving the grant key
 
-- **A code:** PBKDF2-HMAC-SHA256 over the four secret words, with the grant's own 16-byte salt and 600,000 iterations (OWASP's current recommendation for PBKDF2-SHA256). That takes about half a second on a phone, once per session. Every guess costs an attacker the same 600,000 hashes.
-- **A link:** HKDF-SHA256 over its 32 random bytes, with the grant's salt. No slow derivation is needed, since the input is already random.
-- **The salt is stable** (stored with the grant), so a remembered grant key keeps working across deploys while the keyring it opens changes.
+- **A code:** PBKDF2-HMAC-SHA256 over the four secret words (lowercase, joined by single hyphens), with the grant's own 16-byte salt and 600,000 iterations (OWASP's current recommendation for PBKDF2-SHA256). That takes about half a second on a phone, once per session. Every guess costs an attacker the same 600,000 hashes.
+- **A link:** HKDF-SHA256 over its 32 random bytes, with the grant's salt and the info string `atiya/grant/v1`. No slow derivation is needed, since the input is already random.
+- **The salt is stable and public.** It's stored with the grant and written in clear in the keyring's header (§5.3), because the browser needs it before it can derive anything. A remembered grant key keeps working across deploys while the keyring it opens changes.
 
 ### 5.3 Sealed files
 
-Every sealed file is `ATS1` (4 bytes, the format and version), a 12-byte random IV, then the AES-256-GCM ciphertext and its 16-byte tag. The additional authenticated data binds each file to its purpose and name, so one sealed file can't be swapped for another:
-- **keyring:** `atiya/keyring/v1|<lookup>`, encrypted with the grant key;
-- **page regions:** `atiya/page/v1|<kid>`, encrypted with the page key;
-- **card:** `atiya/card/v1|<kid>`, encrypted with the page key;
-- **media:** `atiya/media/v1|<file name>`, encrypted with the media key.
-
-A wrong key, a changed byte or a swapped file all fail the GCM tag check, and the page reports it as a code that doesn't work, never as a crash.
-
-**A keyring** (decrypted) holds:
-- the format version and the build's time;
-- the grant's `id` and its `expiresAt`;
-- the page keys it covers, by the page's per-build key ID (`kid`, random, never the page's ID).
-
-It holds no recipient name and no notes.
-
-**Where sealed files live** in the build:
-- `<base>/_access/c/<name>.bin` for codes and `<base>/_access/l/<grant id>.bin` for links;
-- `<base>/_sealed/<random>.bin` for media, with names that change every build;
+**Every build has a build ID** (16 random bytes, base64url), written into every protected page (`data-build`) and every sealed file's authenticated data. Sealed files live under it, so a deploy never overwrites a file a cached page still asks for:
+- `<base>/_access/<build>/c/<name>.json` for a code's keyring, and `<base>/_access/<build>/l/<grant id>.json` for a link's;
+- `<base>/_sealed/<build>/<random>.bin` for media;
 - page regions and cards inline in their page's HTML, as base64 in `<template data-sealed>` elements, so a page needs no extra request.
+
+A page whose keyring is missing (an old page cached after a deploy) reloads itself once with the cache bypassed. If the keyring is still missing, the grant has expired or been withdrawn (§7.2).
+
+**A keyring** is a small JSON envelope, with its key derivation in clear and everything else encrypted:
+
+```json
+{ "v": 1, "build": "…", "kdf": "pbkdf2-sha256", "iterations": 600000, "salt": "…", "iv": "…", "data": "…" }
+```
+
+- `kdf` is `pbkdf2-sha256` (a code) or `hkdf-sha256` (a link). The browser accepts only those two, PBKDF2 only at exactly 600,000 iterations, a 16-byte salt, a 12-byte IV and a file under 64 KB. Anything else is refused as a damaged file, never derived (no downgrade, no denial of service by a huge count).
+- The clear header is part of the authenticated data (`atiya/keyring/v1|<lookup>|<build>|<kdf>|<iterations>|<salt>`), so changing any of it fails decryption.
+- **Decrypted**, it holds the grant's `id` and `expiresAt`, and the page keys it covers by their per-build key IDs (`kid`, random, never the page's ID). It holds no recipient name and no notes.
+
+**Every other sealed file** is binary: `ATS1` (4 bytes, the format and version), a 12-byte random IV, then the AES-256-GCM ciphertext and its 16-byte tag. The additional authenticated data binds it to its build, its purpose and its name:
+- **page regions:** `atiya/page/v1|<build>|<kid>`, with the page key;
+- **card:** `atiya/card/v1|<build>|<kid>`, with the page key;
+- **media:** `atiya/media/v1|<build>|<file name>`, with the media key.
+
+A wrong key, a changed byte, a swapped file or a file from another build all fail the GCM tag check. The page reports it as a code that doesn't work (or, for a build mismatch, reloads), never as a crash. IVs are random for every file (96 bits); no key encrypts more than a page's handful of files.
 
 ### 5.4 Sealing a page
 
-The build renders a protected page with the same layouts and components as any other. Its layout marks every part that would say what the page is about as a **sealed region**:
-- `<main>`: the page itself;
-- the breadcrumbs' last crumb;
-- the article minimap (its landmarks are the page's headings);
-- related stories, next and previous;
+The build renders a protected page with the same layouts and components as any other. The layout marks every part that would say what the page is about with a pair of comments (`<!--sealed:main-->` … `<!--/sealed:main-->`), which the layout owns: no component wraps another to do it. The parts:
+- `<main>`: the page itself, its breadcrumbs and its minimap;
 - the `<title>`, the description and every social meta tag;
 - any structured data.
 
+**A protected page's own lists hold open pages only** (§2.1): its related stories and next and previous never name another protected page. So everything sealed with a page's key is about that page, and a grant that opens it learns about nothing else.
+
 **After the build**, the sealer replaces the regions:
-- **the regions themselves** are encrypted with the page key into one payload, and swapped for neutral placeholders. The `<title>` becomes "Locked page" or "Private page", there's no description, `<meta name="robots" content="noindex, nofollow">` and `<meta name="referrer" content="same-origin">` are added;
-- **a section's locked cards:** each locked page's card is sealed on its own with its page's key, so a grant decrypts only the cards in its scope (§2.1). A sealed card carries its position in the section's order, so it lands in its place among the open cards, which stay plain HTML;
+- **the regions themselves** are encrypted with the page key into one payload, and swapped for neutral placeholders. The `<title>` becomes "Locked page" or "Private page", there's no description, and `<meta name="robots" content="noindex, nofollow">` and `<meta name="referrer" content="same-origin">` are added;
+- **a section's locked cards:** each locked page's card is sealed on its own with its page's key, so a grant decrypts only the cards in its scope (§2.1). A sealed card's payload holds the card's HTML and its place: the open page it follows (or the start). The place is inside the payload, so the page's source doesn't say where locked work sits. The cards wait outside the list, in a hidden holder, so the list's layout (which counts its children) is the open pages' until a card is placed;
 - **the page's scripts and styles stay** in the shell. They show which components exist on the site, not what the page says.
 
 ### 5.5 Pictures and videos (A3)
 
-- **Every file a sealed region refers to is sealed**:
+- **Every file made from a private master is sealed:**
   - every size of a picture, its full size for the lightbox and its thumbnail;
   - its dark mode version;
   - a video's file and its poster frame.
 
-  Each file gets its own media key, and the readable file is deleted from the build.
-- **A file used by both an open page and a sealed one** is allowed only if its master is in `content/`, so it's public anyway (V25).
+  Each file gets its own media key, and the readable file is deleted from the build. The build records every file it makes from a private master as it makes it (§6.2), so the sealer knows each one by where it came from, not by guessing from a page.
+- **A public picture on a protected page** (its master in `content/`) stays readable: it's public anyway. A private master on an open page is refused (V25).
 - **Decrypting is lazy:**
   - **Pictures** decrypt when they come near the viewport, at the one width the layout and the screen's pixel density need, and become `blob:` URLs. The lightbox asks for the full size when it opens.
-  - **Videos** decrypt whole when they come near the viewport and play from a `blob:` URL, which seeks normally. That's why a sealed video is capped at **25 MB** (V27): it's held in memory, on phones too.
-- **Memory:** a page's `blob:` URLs are revoked when the page is left.
+  - **Videos** decrypt whole when they come near the viewport and play from a `blob:` URL, which seeks normally. Web Crypto decrypts a file in one piece, so for a moment the browser holds the sealed bytes, the plain bytes and the video's blob: about three times the file. That's why a sealed video is capped at **10 MB** (V27), about 30 MB at its peak.
+- **Memory:** a page's `blob:` URLs are revoked when the page is left, and on sign-out.
 
 ## 6. Building and deploying
 
@@ -374,31 +388,36 @@ The build renders a protected page with the same layouts and components as any o
 4. **The sealer runs inside the build** (`astro:build:done`, §6.2), so `dist/` is never complete and unsealed.
 5. **The leak check** (`npm run verify:sealed`, §6.3) runs before the upload, and fails the deploy on any finding.
 6. **The upload** keeps the artifact for one day (`retention-days: 1`). On a public repository, any signed-in GitHub user can download a workflow's artifacts; the artifact is sealed anyway, and a short life keeps old copies from piling up.
-7. **The bundle budgets** and the rest of today's steps are unchanged.
+7. **The deploy job runs only for `main`.** A run on another branch (Deploy now on a branch) builds, seals and checks, and stops before deploying, which is how the workflow itself is tested.
+8. **The bundle budgets** and the rest of today's steps are unchanged.
 
 Every step stays on Actions' free minutes for public repositories.
 
 ### 6.2 The sealer
 
-- **Where it lives:** an Astro integration, `integrations/seal.mjs`, running last in `astro:build:done`. It uses the same crypto module as the browser (`src/site/access/crypto.ts`).
+- **Where it lives:** an Astro integration, `integrations/seal.mjs`, running last in `astro:build:done` (after the content-files integration has copied the video and document files). The crypto is the same module the browser uses (`src/site/access/crypto.ts`); the integration loads it through a small Node entry built from it, so there is one implementation.
+- **The provenance record.** While the build renders, every place that turns a master into a file in `dist/` (the picture sizes in `pictures.ts`, the video and poster copies in content-files) records the file, its master and the master's origin (public or private) in one provenance file (`node_modules/.cache/site-protected/provenance.jsonl`, emptied when a build starts). Protected pages are recorded there too, with their routes and `kid`s.
 - **What it does:**
-  1. reads the grants and the overlay from `private-pages/`;
-  2. makes the page and media keys;
-  3. seals each protected page's regions and cards, and each file those regions refer to (rewriting their addresses inside the sealed HTML);
-  4. writes a keyring for each valid grant.
-- **What it never does:** run in dev or in the editor, or print a title, a slug or an ID. Its log says only how many pages, files and keyrings it sealed.
-- **Test builds** (`--mode test`) seal the fixture private content with its fixture grants, whose codes the E2E tests know. Production never contains a fixture.
+  1. reads the grants and the overlay from `private-pages/` (or, in a test build, the fixtures), and the provenance record;
+  2. makes the build ID, the page keys and the media keys;
+  3. seals each protected page's regions and each locked card, and every private-origin file a sealed region refers to, rewriting its address inside the sealed HTML (`src`, `srcset`, `href`, `poster` and the lightbox's `data-full…` attributes);
+  4. deletes every private-origin file from `dist/` once it's sealed, and refuses (fails the build) if one is left that no sealed page refers to;
+  5. writes a keyring for each valid grant.
+- **What it never does:** run in dev or in the editor, or print a title, a slug, an ID or a token. Its log says only how many pages, files and keyrings it sealed.
+- **Test builds** (`--mode test`) seal the fixture private content with its fixture grants, whose codes the E2E tests know. A production build never reads the fixtures.
 
 ### 6.3 The leak check
 
-`scripts/verify-sealed.mjs` scans every file in `dist/` after sealing. It fails if any of these is found:
-- **any protected text:** every protected page's title, summary, headings, its paragraphs longer than 40 characters, picture alt texts and captions, its ID and slug, and every grant's name, recipient and purpose;
-- **any protected file's bytes:** a SHA-256 match with any private master, or with any file the sealer was meant to remove;
-- **any readable file** a sealed region referred to;
-- **any open page** that links to a protected page's token;
-- **a sealed shell without** `noindex` and its neutral title.
+`scripts/verify-sealed.mjs` checks `dist/` after sealing, in three layers. A finding prints only its category, the file and a count, never the protected words or bytes it matched (the log is public).
 
-It runs in the deploy, in `npm run verify:prod`, and in the E2E build. It's the gate that makes the pipeline fail closed.
+1. **Provenance (the primary check).** Every entry in the provenance record (§6.2) is accounted for: a private-origin file is gone from `dist/` and its sealed copy is there; a protected page's route has its sealed regions and no readable ones. Anything unaccounted for fails.
+2. **Structure.** No seal comment is left in any file; every protected page's shell has its neutral title, `noindex`, its `data-build` and no description; no open page links to a protected page's token; every `_access` and `_sealed` file belongs to this build.
+3. **Words and bytes (defence in depth).** Every file in `dist/` is decoded (HTML entities, JSON escapes) and its whitespace and case folded, then searched for:
+   - every protected page's title, summary, headings, alt texts, captions, quotes, facts, tile labels, link text and every run of words in its text of 12 characters or more;
+   - its ID, slug and token, and every grant's ID, code name, recipient and purpose;
+   - the SHA-256 of every private master and of every file the sealer removed.
+
+It runs in the deploy, in `npm run verify:prod`, and on the E2E build, and its own unit tests plant every kind of leak (a short title, an attribute, an encoded word, JSON, a picture size, a dark version, a poster, a video, an orphan file) and expect each to fail. It's the gate that makes the pipeline fail closed.
 
 ## 7. What a visitor sees
 
@@ -430,6 +449,8 @@ Every message follows the site's copy rules: sentence case, says what happened a
 | Signed in, on a locked page the grant doesn't cover | "This page isn't shared with your access. Get in touch if you'd like to see it." |
 | No JavaScript | "This page is shared with invited readers and needs JavaScript to open." (in `<noscript>`) |
 | A browser without Web Crypto (very old ones) | "This browser can't open shared pages. Try a current version of Edge, Chrome, Firefox or Safari." |
+| The page and its keyring are from different deploys, after one reload | "The site was just updated. Reload the page in a minute." |
+| Offline, or the keyring can't be fetched | "Couldn't reach the site to sign in. Check your connection and try again." |
 
 Each message goes into the page's live region as well as on the screen.
 
@@ -437,7 +458,12 @@ Each message goes into the page's live region as well as on the screen.
 
 - **By default, for the session:** the grant key is kept in `sessionStorage`, so moving between pages, or coming back in the same tab, needs no code.
 - **Remember on this device** keeps it in `localStorage` until it expires.
-- **Sign out**, in a slim `AccessBar` under the header on every page while signed in, forgets the key on this device and puts every list back to its open pages.
+- **Sign out**, in a slim `AccessBar` under the header on every page while signed in:
+  - forgets the key in both storages, and tells every other open tab of the site to do the same (a `BroadcastChannel`, with the `storage` event as its fallback);
+  - revokes the page's `blob:` URLs, removes the decrypted regions and cards and puts back the neutral title;
+  - resets telemetry's identity (§9.3);
+  - and moves on with `location.replace`: from a protected page to its section (or home, for a private one), elsewhere to the same page, so Back doesn't return to the decrypted page.
+- **The back and forward cache:** a page shown again from it (`pageshow` with `persisted`) checks whether the visitor is still signed in, and reloads if not.
 - **What's stored:** the grant key and the grant's `id`, `expiresAt` and lookup, never the code or the link's secret. After a deploy the same key opens the new keyring, until the grant expires or is withdrawn.
 - **Signing in is per browser.** Nothing is sent anywhere to check it; telemetry only records that it happened (§9).
 
@@ -471,33 +497,42 @@ Everything here is dev-only, like the rest of edit mode ([editor spec](../editor
   - Extend;
   - Change scope;
   - Withdraw now (§4.5);
-  - Open as this grant (a dev preview).
-- **Who looked** (phase A6 in the plan): the grant's recent activity from PostHog (§9.3), read with a personal PostHog API key kept in Windows Credential Manager, never in a file.
+  - **Who looked:** a link to the grant's person page in PostHog (its timeline: sign-ins, protected pages viewed, devices, places and IPs), when the PostHog project is set (§9.5). Recipient details never go to PostHog; this screen is where an `id` becomes a name.
 
 ### 8.2 Sections and pages
 
 - **A page's Settings** get **Access:** Open, Locked or Private.
-  - **Locking an open page** moves it and its media into `private-pages/` in one transaction, keeping its place in its section's order. If it was ever published openly, edit mode warns first that its earlier text stays readable in the public repository's history, which locking can't undo.
-  - **Opening a locked page** moves it back into `content/`, after a confirmation that it becomes public.
+  - **Locking an open page** moves it, and the media only it uses, into `private-pages/` in one transaction, keeping its place in its section's order. Media an open page also uses stays public. If the page was ever published openly, edit mode warns first that its earlier text stays readable in the public repository's history, which locking can't undo.
+  - **Opening a locked page** moves it, and its private media, back into `content/`, after a confirmation that it becomes public.
   - **Making a page private** takes it out of its section.
 - **The Sections screen** lists a section's locked pages among its open ones, each with a lock tag, so you order them together; the order is written to the overlay, and the open pages' order to the public structure too.
 - **The articles list** marks locked and private pages and filters by them. **New private page** creates a page in `private-pages/` with its token.
 - **A private page's Settings:** its address (token), **Change address** (breaks every link to it, with a confirmation) and **Share**, which opens New magic link for that page.
 - **Uploads** for a locked or private page go into `private-pages/media/`.
 - **Locked and private pages can't be put on the planet** (V28); the Planet screen doesn't offer them.
-- **The editor shows protected pages open**, with a ribbon saying who can see them, and lists every section with its locked pages. **Preview as a visitor** shows the site as a signed-out visitor sees it (sections with open pages only, a locked page's sign-in panel), sealed on the fly with a dev-only grant, which it can then sign in with.
+- **The editor shows protected pages open**, with a ribbon saying who can see them, and lists every section with its locked pages.
+- **Seeing it as a visitor:** `npm run preview:protected` builds the site with the real private content, sealed exactly as the deploy seals it (checked by the leak check), and serves it on `http://localhost:4331/`, where you can sign in with any active grant. The build stays on your machine.
 
 ### 8.3 Publishing to two repositories
 
-- **The Publish screen** lists the changes in both folders, grouped as "On the site" (`content/`) and "Private" (`private-pages/`), each with its own commit message.
-- **Publish:**
-  1. commits `private-pages/` (in the submodule, on its `main`) and pushes it;
-  2. then, in one public commit, commits `content/` and the moved `private-pages` pointer, and pushes it, which starts the deploy.
+**The same Publish as today.** There's no second publish flow: edit mode's Publish button (in the top bar, with its count of changes) and the Publish screen ([editor spec §7](../editor/spec.md#7-publishing)) cover both folders. Editing a locked or private page, its media, a grant or the overlay is saved through the same store, counted in the same badge, and published by the same button.
 
-  If only private files changed, the public commit holds only the pointer, with its fixed message ("Private pages: update", §3), so a private change always deploys through an ordinary push; no extra token or `gh` call is needed. Git's `push.recurseSubmodules check` refuses step 2 if step 1 didn't land.
-- **Withdraw now** (§4.5) is a publish like any other: the grant's change in the private repository, then the pointer.
-- **A failed push** in either repository is kept and offered again on its own, as today.
-- **Discard and the content check** cover both folders, and the check runs on the merged content.
+- **The Publish screen** lists every change in both folders as one list, each named as its resource as today, with a lock tag on private ones ("Private page: Contoso redesign", "Access: Jane Doe, Contoso"). Discard works on any of them. The content check runs on the merged content of both folders, and Publish is enabled only when it passes.
+- **One message, never in public history when anything private changed.** The form keeps its one message field, and what goes where is fixed by what changed, not by checking your words:
+  - **only public changes:** your message, on the public commit, as today;
+  - **any private change:** your message goes on the private commit only. The public commit's message is made by edit mode from the public changes alone ("Update the Work section; Private pages: update"), or is the fixed "Private pages: update" when only private files changed. The field says which will happen before you publish;
+  - **the suggested message** is made from the public changes only, never from private ones.
+- **Publish**, holding the writer lock as today:
+  1. reads both folders once and checks them;
+  2. in the submodule, on its `main`: stages its changes (`git add -A`), confirms what's staged is what it checked, commits and pushes;
+  3. in the public repository: stages `content/` and the moved `private-pages` pointer, confirms that nothing else is staged and that the staged blobs are what it checked, commits (`-- content private-pages`) and pushes, which starts the deploy.
+
+  If only private files changed, the public commit holds only the pointer, so a private change always deploys through an ordinary push; no extra token or `gh` call is needed. Git's `push.recurseSubmodules check` refuses step 3 if step 2's push didn't land.
+- **Refusals,** each said in words beside the button, as today: a detached HEAD or a branch without an upstream, in either repository; a submodule that isn't on `main`; a submodule with commits that aren't its pointer's and aren't pushed.
+- **The result** shows both commits, and the link to the deploy on GitHub Actions.
+- **A failed push** in either repository leaves its commit local, and Push again pushes whichever is behind, private first. The top bar's badge counts unpushed commits in both.
+- **Withdraw now** (§4.5) publishes at once: the grant's change in the private repository, then the pointer.
+- **Discard** restores a tracked file in its own repository and deletes an untracked one, as today.
 
 ## 9. Telemetry
 
@@ -513,36 +548,52 @@ Alternatives considered:
 
 ### 9.2 What's recorded
 
+**On open pages** (anything not protected), PostHog's own capture:
+
 | Event | When | Properties |
 |---|---|---|
-| `$pageview`, `$pageleave` | Every page (PostHog's own) | The address without its fragment; the referrer; the device; the IP and its location |
-| `$autocapture` | Clicks on links and buttons, outbound links, the résumé download | The element's role and its link; on sealed pages, no text (§9.4) |
-| `access_signed_in` | A code or link signs the visitor in | `grant` (its `id`), `via` (code or link), `from` (the page's path; a token on protected pages) |
-| `access_opened` | A locked or private page opens, or a section shows shared cards | `grant`, `place` (the page's token, or the section), `cards` (on a section: how many were shown) |
-| `access_failed` | A code or link doesn't work | `reason`: wrong, expired, no keyring. Never the code |
+| `$pageview`, `$pageleave` | Every page | The address without its fragment; the title; the referrer; the device; the IP and its location |
+| `$autocapture` | Clicks on links and buttons, outbound links, the résumé download | The element, its text and its link |
+
+**On protected pages, and the Sign in page, only an allowlist**, sent by the site itself: PostHog's automatic page views and autocapture are off there (they'd send the decrypted title, link text and link addresses), and every event is built from these properties alone:
+
+| Event | When | Properties |
+|---|---|---|
+| `$pageview` | A protected page or the Sign in page loads | `$current_url` and `$pathname` as the page's route with its token (opaque); `$title` "Locked page", "Private page" or "Sign in"; the referrer's origin only |
+| `access_signed_in` | A code or link signs the visitor in | `grant` (its `id`), `via` (code or link) |
+| `access_opened` | A locked or private page opens, or a section shows shared cards | `grant`, `place` (the page's token, or the section's path), `cards` (on a section: how many were shown) |
+| `access_failed` | A code or link doesn't work | `reason`: wrong, expired, withdrawn, unsupported, offline. Never the code |
 | `access_signed_out` | Sign out | `grant` |
-| `video_played` | A video starts | Its media ID (a token on sealed pages) |
+| `access_link` | A link on a protected page is followed | `kind`: internal, outbound or download; for an outbound link, its domain only |
+
+**Everywhere:**
+
+| Event | When | Properties |
+|---|---|---|
+| `video_played` | A video starts | Its media ID on open pages; nothing but `place` on protected ones |
 | `planet_opened` | The planet goes live | None (the game's own events come later) |
 
 ### 9.3 Who looked (A9)
 
 - **Identity is the grant.** When a visitor signs in, the page calls `identify(<grant id>)`, and every later page does the same while they stay signed in. Everything they do is on the grant's timeline: the pages, the clicks, the device, the IP and the city.
-- **Names stay out of the browser.** When edit mode creates or changes a grant, it sends PostHog the grant's person properties (the recipient's name, organisation, role and purpose; never the email or notes) through PostHog's capture API with the public project key. So PostHog shows "Jane Doe, Contoso, recruiter", while the page itself only ever knows the opaque `id`.
+- **Only the grant's `id` goes to PostHog.** The recipient's name, organisation, role, purpose and notes never do. Edit mode's Access screen joins an `id` to its recipient, and links to its timeline (§8.1).
+- **Sign out resets it** (`posthog.reset()`), so what a visitor does after signing out, or under a second grant in the same browser, isn't put on the first grant's timeline.
 - **Anonymous visitors** have no profile (`person_profiles: 'identified_only'`). Their events are counted, but no profile is built.
-- **A forwarded link** shows up as one grant opened from several devices, places or IPs.
+- **A forwarded link** shows up as one grant opened from several devices, places or IPs. It's a hint, not evidence: the project key is public, so events can be forged (§1).
 
 ### 9.4 Never sent
 
-- **No code, no link secret:** URLs are sent without their fragment (`before_send` strips it from every address property), and the fragment is gone from the address bar anyway (§4.3).
-- **No protected text:** session replay is off. Autocapture keeps no element text or attributes inside sealed regions (`before_send` drops them, and sealed regions carry `ph-no-capture`).
-- **No editor or dev traffic:** telemetry loads only in production builds, never in dev, edit mode or test builds.
+- **No code, no link secret:** URLs are sent without their fragment (`before_send` strips it from every address property, on every page), and the fragment is gone from the address bar anyway (§4.3).
+- **No protected text, title or address:** on protected pages, only the allowlist above leaves the browser. `before_send` drops any event that isn't on it, and any property that isn't, as a second line. Session replay is off everywhere.
+- **No editor or dev traffic:** telemetry loads only in production builds, never in dev, edit mode or test builds (the E2E tests point it at a fake host to inspect what would be sent).
 
 ### 9.5 How it's loaded
 
 - `posthog-js`, pinned, in its build that loads no other script (`posthog-js/dist/module.no-external`). Nothing comes from a CDN.
-- A tier-0 site script (`src/site/scripts/telemetry.ts`) imports it on idle after the page loads, so it never delays the first paint or the planet's loading budgets. It's set up without cookies (`persistence: 'sessionStorage'`).
+- A tier-0 site script (`src/site/scripts/telemetry.ts`) imports it on idle after the page loads, so it never delays the first paint or the planet's loading budgets. It's set up without cookies (`persistence: 'sessionStorage'`). The sign-in runtime tells it what happened through DOM events, so neither imports the other.
 - Its project key and host come from Actions variables (`PUBLIC_POSTHOG_KEY`, `PUBLIC_POSTHOG_HOST`). A build without them, a fork for example, has no telemetry. The key is meant to be public.
-- **The planet** (`/play/`) loads the same script from its page, never from the game, which keeps "the game and the site never import each other".
+- **IP addresses:** PostHog records them only if the project's "Discard client IP data" setting is off; A0 checks it, since it's the whole point of A7 for you.
+- **The planet** (`/play/`) loads the same script from its page, after the planet is live, never from the game, which keeps "the game and the site never import each other".
 
 ### 9.6 Opting out, and the privacy notice
 
@@ -561,13 +612,21 @@ New checks, in the loader (`tests/unit/content.test.ts`) and edit mode's check, 
 | V24 | IDs, media IDs, node IDs, tokens and routes are unique across both folders; tokens are 10 base32 characters |
 | V25 | An open page never refers to a protected page, or to a master in `private-pages/` (blocks, related, thumbnails, the navigation, the home page, redirects) |
 | V26 | A grant's scope names only sections, locked pages and private pages that exist; a code's scope holds no private page |
-| V27 | A sealed video is at most 25 MB; a sealed picture's master follows the media budgets |
+| V27 | A sealed video is at most 10 MB; a sealed picture's master follows the media budgets |
 | V28 | A locked or private page isn't on the planet |
 | V29 | Code names are unique among codes that still work; grant IDs are unique and never reused |
-| V30 | A grant expires after it's created, and a withdrawn grant isn't changed again (except its notes) |
+| V30 | A grant expires after it's created; a withdrawal is after its creation. (That a grant is never deleted, its ID never reused and a withdrawn grant never changed again are transition rules: edit mode's store enforces them against the file's previous version, §4.1) |
 | V31 | The overlay's order for a section holds every open page the public structure lists there, in the same relative order, plus its locked pages |
+| V32 | A protected page's own related stories and next and previous are open pages only (§5.4) |
 
-V8 ("only published statuses and public visibilities are built") still holds: a locked or private page is built, and sealed, only when it's published, and `visibility` keeps its editorial meaning.
+**Who may be built, sealed or not.** Access doesn't override the editorial rules; it adds to them:
+
+| `status` and `visibility` | Open page | Locked or private page |
+|---|---|---|
+| Published (`published`, `stale`) and `public`, `publicRedacted` or `summaryOnly` | Built | Built and sealed |
+| Anything else (a draft, `privateDiscussionOnly`, `notPublishable`) | Not built | Not built, and not sealed: it never leaves `private-pages/` |
+
+So V8 ("only published statuses and public visibilities are built") holds as before, and `privateDiscussionOnly` still means "never published", sealed or not.
 
 ## 11. The design system
 
@@ -575,11 +634,12 @@ These follow the [site design system](../site-ui/design-system.md): tokens only,
 
 - **`UnlockPanel`** (compound): `TextField`, `Button`, `Checkbox` and `Text`, with its states (ready, signing in, wrong, expired, not shared with you). Used by the Sign in page and a locked page's shell.
 - **`AccessBar`** (compound): the signed-in state and Sign out, under the header.
-- **`SealedRegion`** (compound): the `<template data-sealed>` wrapper and its placeholder (a `Skeleton`), used by the layouts.
+- **Seal markers are the layouts' own** (comment pairs, §5.4), not a component: a compound may not wrap other compounds.
 - **The layouts:**
-  - `ArticleLayout` takes a `sealed` prop that wraps its regions (§5.4) and gives the head neutral values;
-  - `IndexLayout` renders a section's open cards as today, its locked cards as sealed ones in their places, and the sign-in line;
-  - the Sign in page is a small layout of its own (`src/pages/sign-in.astro` carries no style).
+  - `ArticleLayout` takes a `sealed` prop (`'locked' | 'private'`) that marks its regions (§5.4), gives the head neutral values and lists only open pages after it;
+  - `IndexLayout` renders a section's open cards as today, its locked cards sealed in a hidden holder after the list, and the sign-in line;
+  - the Sign in page (`src/pages/sign-in.astro`, no style) is `IndexLayout` with the `UnlockPanel` in its slot.
+- **`StoryCard`** gains `shared`, which shows the "Shared with you" tag (a `Tag`).
 - **The footer** gains its Sign in link.
 - **Pure logic** in `src/site/access/` (crypto, keyrings, codes, scope, expiry), shared by the sealer and the browser and unit-tested.
 - **Scripts** in `src/site/scripts/`: `sealed.ts` (unlock, regions, the media resolver) and `telemetry.ts`, both set up with `each()` and its signal.
@@ -593,13 +653,16 @@ These follow the [site design system](../site-ui/design-system.md): tokens only,
 | R2 | Plaintext in the build log or the artifact | Medium | A quiet build; seal before upload; the leak check; a one-day artifact |
 | R3 | A weak or shared code | Medium | Generated codes only; PBKDF2 at 600,000; one code per audience; telemetry shows sharing |
 | R4 | Content left readable after expiry | Certain, by nature | Fresh keys every deploy; the nightly deploy; stated plainly here |
-| R5 | A sealed page leaks through another page (a related link, a card, the home page, a redirect) | Medium | V25; the leak check's link rule |
-| R6 | Telemetry carries protected text or a secret | Low | Fragments stripped; no replay; no text in sealed regions; an E2E test inspects every request to PostHog |
-| R7 | Ad blockers hide some visits | High | Accepted: telemetry is a guide, not a ledger. Unlocking works whether PostHog loads or not |
-| R8 | The nightly deploy stops (60-day rule) | Low | A warning issue at 50 days |
+| R5 | A sealed page leaks through another page (a related link, a card, the home page, a redirect) | Medium | V25, V32; the leak check's link rule |
+| R6 | Telemetry carries protected text or a secret | Medium | PostHog's automatic capture off on protected pages; an allowlist of events and properties; fragments stripped everywhere; no replay; an E2E test inspects every request to PostHog |
+| R7 | Ad blockers hide some visits | High | Accepted: telemetry is a guide, not a ledger. Signing in works whether PostHog loads or not |
+| R8 | The nightly deploy stops (60-day rule) | Low | The nightly run fails on purpose at 50 days, and GitHub emails you |
 | R9 | The deploy key leaks | Low | Read-only, one repository; rotate it from the private repository's settings |
 | R10 | The private repository leaks | Low | It holds the plaintext and the grants' secrets; GitHub account security (2FA, passkeys) is the protection |
 | R11 | Employer-confidential material published | Owner's call | §1: not without its owner's approval |
+| R12 | A cached page meets a new deploy's keyrings, and a valid code looks wrong | Medium | Build-scoped paths, the build in every file's authenticated data, one reload, then a message that isn't "wrong code" (§5.3) |
+| R13 | A script on the site reads a signed-in visitor's key or text | Low | No user input, everything escaped; stated in §1 |
+| R14 | A grant learns about pages outside its scope | Medium | Protected pages never name other protected pages (V32); cards sealed per page; an E2E matrix of grants and pages |
 
 ## 13. Decisions
 
@@ -618,13 +681,19 @@ These follow the [site design system](../site-ui/design-system.md): tokens only,
 | D11 | PostHog Cloud, free tier, cookieless, identified by grant | The one free service with clicks, IPs and per-person timelines |
 | D12 | Access is a page's, never a section's: open and locked work share a section, and a section lists its locked pages only to a signed-in visitor | The owner's model (A12): Work holds both kinds |
 | D13 | Signing in is site-wide, for the session, from one Sign in page | One code shows every locked page it covers, wherever it is |
+| D14 | A build ID in every sealed file's path and authenticated data | A cached page never meets another deploy's keyring by accident |
+| D15 | The leak check is provenance first, words second | A word list can't prove a negative; a record of every private-origin file can |
+| D16 | Protected pages list open pages only after them | A page's key opens only what's about that page |
+| D17 | On protected pages, telemetry is an allowlist the site sends, not PostHog's capture | PostHog's own capture would send the decrypted title and links |
+| D18 | A public commit's message is never written by you when anything private changed | No check of your words can promise they hold nothing private |
+| D19 | Only the grant's `id` goes to PostHog | Recipient details stay on your machine; PostHog's key is public anyway |
+| D20 | Seeing the site as a visitor is a real local build (`npm run preview:protected`), not a simulation in dev | The same sealing the deploy uses, and nothing new to maintain |
 
 ### Open, with defaults
 
 | # | Question | Default |
 |---|---|---|
-| O1 | PostHog's region | EU |
-| O2 | Which recipient details go to PostHog | Name, organisation, role and purpose; never email or notes |
+| O1 | PostHog's region | US, with IP capture checked on in the project's settings (an EU project starts with it off) |
 | O3 | Session replay on open pages | Off |
 | O4 | A consent prompt as well as the notice | No prompt: notice, no cookies, GPC and DNT respected |
 | O5 | Expiry suggested for new grants | 30 days |
@@ -632,6 +701,29 @@ These follow the [site design system](../site-ui/design-system.md): tokens only,
 | O7 | The private repository's name, and its folder | `atiya-private`, at `private-pages/` |
 | O8 | A Sign in link in the header too | No: the footer and the sign-in line; the header keeps its one action |
 
-## 14. As built
+O2 (which recipient details go to PostHog) is decided by D19: none.
+
+## 14. The critique, and what changed
+
+An independent review (5 October 2026) of the first version found these; each is fixed above.
+
+| # | Finding | Severity | Fix |
+|---|---|---|---|
+| C1 | The browser couldn't derive a grant key: the salt was only in the private file | High | The keyring's clear header carries the KDF, its parameters and the salt, all authenticated (§5.3) |
+| C2 | A page's key decrypted its related stories and neighbours, outside a single-page grant's scope | High | Protected pages list open pages only (§5.4, V32) |
+| C3 | The leak check was a word list with blind spots (short words, picture sizes, encodings) | High | Provenance first, structure second, normalised words and bytes third; planted-leak tests (§6.3) |
+| C4 | Keyrings at stable addresses meet cached pages from another deploy | High | Build-scoped paths, the build in the authenticated data, one reload (§5.3) |
+| C5 | PostHog's automatic capture sends the decrypted title, link text and addresses | High | Automatic capture off on protected pages; an allowlist; `reset()` on sign-out (§9) |
+| C6 | Phase A1 promised previews the single-folder code couldn't give | High | One source with two origins, wired through every reader in A1 (§3) |
+| C7 | Sign-out left decrypted text, blobs and other tabs | Medium | Sign-out clears every tab, the page and the back-forward cache (§7.3) |
+| C8 | Your message could reach public history with private words in it | Medium | Generated public messages whenever anything private changed (§8.3) |
+| C9 | Access and the editorial `visibility` rules were tangled | Medium | The eligibility table (§10) |
+| C10 | A5 launched with a grant made by hand; A8 was optional but promised; A7's dependencies were wrong | Medium | The plan's phases reordered; "Who looked" is a link to PostHog (§8.1) |
+| C11 | Recipient details sent to PostHog; telemetry presented as evidence; EU projects drop IPs | Medium | Only the grant's `id` (D19); "a hint, not evidence" (§1, §9.3); the region default and the IP setting (O1, §9.5) |
+| C12 | A 25 MB video had no memory budget | Medium | 10 MB, about 30 MB at its peak (§5.5) |
+| C13 | Grant immutability can't be checked from one snapshot | Medium | The store enforces the transitions (§4.1, V30) |
+| C14 | A sealing compound would wrap other compounds | Low | Comment markers owned by the layouts (§11) |
+
+## 15. As built
 
 Nothing is built yet. This section records what's built as the [plan's](plan.md) phases land, with their evidence.
