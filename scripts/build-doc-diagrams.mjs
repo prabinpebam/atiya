@@ -22,6 +22,7 @@ const DIAGRAMS = [
   { name: 'media', page: 'documentation/content/media.md', prefix: 'cp-media' },
   { name: 'separation', page: 'documentation/engineering/app-separation.md', prefix: 'eng-sep' },
   { name: 'editor', page: 'documentation/editor/spec.md', prefix: 'ed-arch' },
+  { name: 'access', page: 'documentation/access/spec.md', prefix: 'ac-arch' },
 ];
 
 const V = (n) => `var(--color-${n})`;

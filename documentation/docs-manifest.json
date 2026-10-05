@@ -262,6 +262,24 @@
       "group": "Content"
     },
     {
+      "path": "access/spec.md",
+      "title": "Protected content and telemetry",
+      "order": 20.896,
+      "icon": "lock",
+      "status": "draft",
+      "updated": "2026-10-05",
+      "group": "Content"
+    },
+    {
+      "path": "access/plan.md",
+      "title": "Protected content: plan and DoD",
+      "order": 20.897,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-10-05",
+      "group": "Content"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 21,

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580">
+<title>Protected content: from two repositories to a sealed site</title>
+<desc>On the owner's machine, edit mode writes open content to content/, in the public repository, and locked and private content, with the access grants, to content-private/, in a private repository. GitHub Actions checks out both, builds every page, seals the locked and private ones, checks that no plaintext is left, and uploads the sealed site to GitHub Pages. A visitor's browser fetches the sealed pages and the keyring their access code or magic link opens, and decrypts them in the page. Visits, clicks and unlocks go to PostHog, keyed by the grant, never with the code or the content.</desc>
+<g id="edit">
+<rect class="src" x="40" y="40" width="220" height="120" rx="18" />
+<text class="name" x="60" y="72">Edit mode</text>
+<text class="note" x="60" y="94">localhost, dev only</text>
+<text class="line" x="60" y="126">Pages and media</text>
+<text class="line" x="60" y="148">Codes and links</text>
+</g>
+<g id="public">
+<rect class="box" x="330" y="40" width="260" height="120" rx="18" />
+<text class="name" x="350" y="72">content/</text>
+<text class="note" x="350" y="94">the public repository</text>
+<text class="line" x="350" y="126">Open pages and sections</text>
+<text class="line" x="350" y="148">Locked sections' titles</text>
+</g>
+<g id="private">
+<rect class="gate" x="330" y="200" width="260" height="120" rx="18" />
+<text class="name" x="350" y="232">content-private/</text>
+<text class="note" x="350" y="254">a private repository</text>
+<text class="line" x="350" y="286">Locked and private pages</text>
+<text class="line" x="350" y="308">Grants: who, when, until</text>
+</g>
+<g id="build">
+<rect class="box" x="660" y="40" width="300" height="280" rx="18" />
+<text class="name" x="680" y="72">GitHub Actions</text>
+<text class="note" x="680" y="94">on a push, Deploy now, and nightly</text>
+<text class="line" x="680" y="132">1. Check out both repositories</text>
+<text class="line" x="680" y="162">2. Build every page, quietly</text>
+<text class="line" x="680" y="192">3. Seal locked and private pages</text>
+<text class="line" x="680" y="222">4. Fresh keys, valid grants only</text>
+<text class="line" x="680" y="252">5. Fail on any plaintext left</text>
+<text class="line" x="680" y="282">6. Upload the sealed site</text>
+</g>
+<g id="pages">
+<rect class="out" x="660" y="400" width="300" height="100" rx="16" />
+<text class="out-name" x="680" y="432">GitHub Pages</text>
+<text class="out-note" x="680" y="454">open pages, sealed pages and media,</text>
+<text class="out-note" x="680" y="476">one keyring per grant</text>
+</g>
+<g id="browser">
+<rect class="src" x="330" y="400" width="260" height="100" rx="16" />
+<text class="name" x="350" y="432">The visitor's browser</text>
+<text class="note" x="350" y="454">a code or a magic link opens</text>
+<text class="note" x="350" y="476">its keyring, then decrypts</text>
+</g>
+<g id="telemetry">
+<rect class="box" x="40" y="400" width="220" height="100" rx="16" />
+<text class="name" x="60" y="432">PostHog</text>
+<text class="note" x="60" y="454">visits, clicks, and</text>
+<text class="note" x="60" y="476">unlocks by grant</text>
+</g>
+<text class="label" x="266" y="92">writes</text>
+<text class="label" x="160" y="252">writes</text>
+<text class="label" x="600" y="92">read</text>
+<text class="label" x="596" y="252">deploy key</text>
+<text class="label" x="820" y="366">deploy</text>
+<text class="label" x="600" y="442">fetch</text>
+<text class="label" x="266" y="442">events</text>
+<text class="label" x="40" y="550">Plaintext never reaches the public repository, the build log or the Pages artifact. Keys are only ever used in the browser.</text>
+<path class="arrow" d="M260 100 H327" />
+<path class="arrow" d="M150 160 V260 H327" />
+<path class="arrow" d="M590 100 H657" />
+<path class="arrow" d="M590 260 H657" />
+<path class="arrow" d="M810 320 V397" />
+<path class="arrow" d="M660 450 H593" />
+<path class="arrow" d="M330 450 H263" />
+</svg>
