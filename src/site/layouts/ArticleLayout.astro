@@ -31,6 +31,8 @@ interface Props {
   description?: string;
   /** The site’s sections, for the header. */
   nav?: NavItem[];
+  /** Links the content adds to the footer (the Privacy page: footerLinks in content/navigation.ts). */
+  footer?: { label: string; href: string }[];
   /** The header's one action. */
   action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
   /** The trail from the top to this page. */
@@ -65,7 +67,7 @@ interface Props {
   sealed?: { access: 'locked' | 'private'; id: string; contact: string };
 }
 
-const { title, description, nav, action, crumbs, header, dropcap = true, prev, next, frame, related, sealed } = Astro.props;
+const { title, description, nav, footer, action, crumbs, header, dropcap = true, prev, next, frame, related, sealed } = Astro.props;
 const sealing = !!sealed && import.meta.env.PROD;
 ---
 
@@ -123,7 +125,7 @@ const sealing = !!sealed && import.meta.env.PROD;
     <Lightbox />
     {sealing && <Fragment set:html="<!--/sealed:main-->" />}
   </main>
-  {!frame && <SiteFooter />}
+  {!frame && <SiteFooter more={footer} />}
   <slot name="page-end" />
 </PageShell>
 

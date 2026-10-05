@@ -176,6 +176,14 @@
               "type": "article",
               "id": "resume"
             }
+          },
+          {
+            "id": "privacy",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "privacy"
+            }
           }
         ]
       }

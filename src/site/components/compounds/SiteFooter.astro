@@ -10,6 +10,8 @@ import { SITE_NAME, withBase } from '../../design/meta';
 interface Props {
   /** Links to show; the defaults are the site's ways around. */
   links?: { label: string; href: string }[];
+  /** Links the content adds after them (the Privacy page). */
+  more?: { label: string; href: string }[];
   /** A line of small print under the colophon. */
   note?: string;
 }
@@ -22,6 +24,7 @@ const {
     { label: 'How this site was built', href: withBase('/docs/') },
     { label: 'Sign in', href: withBase('/sign-in/') },
   ],
+  more = [],
   note = 'Views are my own.',
 } = Astro.props;
 const year = new Date().getFullYear();
@@ -33,7 +36,7 @@ const year = new Date().getFullYear();
     <nav aria-label="Elsewhere on the site">
       <ul>
         {
-          links.map((l) => (
+          [...links, ...more].map((l) => (
             <li>
               <a href={l.href}>{l.label}</a>
             </li>

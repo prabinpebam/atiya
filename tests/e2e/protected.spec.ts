@@ -277,3 +277,125 @@ test.describe('protected content', () => {
     expect(out!.height).toBeGreaterThanOrEqual(44);
   });
 });
+
+/**
+ * Telemetry (documentation/access/spec.md §9; benchmark QB6): the test build sends to a fake host when a
+ * test asks; every request to it is captured and decoded here, and nothing secret may be in any of them.
+ */
+type Sent = { event: string; properties: Record<string, unknown> };
+const HOST = 'https://telemetry.test';
+const ALLOWED: Record<string, string[]> = {
+  $pageview: ['$current_url', '$pathname', '$title', '$referrer', '$referring_domain'],
+  $identify: ['$anon_distinct_id'],
+  access_signed_in: ['grant', 'via'],
+  access_opened: ['grant', 'place', 'cards'],
+  access_failed: ['reason'],
+  access_signed_out: ['grant'],
+  access_link: ['kind', 'domain'],
+  video_played: ['place'],
+};
+
+function decode(body: string): Sent[] {
+  const parse = (s: string): Sent[] => {
+    const v = JSON.parse(s) as Sent | Sent[] | { batch: Sent[] };
+    return Array.isArray(v) ? v : 'batch' in v ? v.batch : [v];
+  };
+  try {
+    return parse(body);
+  } catch {
+    const data = new URLSearchParams(body).get('data');
+    return data ? parse(Buffer.from(data, 'base64').toString('utf8')) : [];
+  }
+}
+
+async function capture(page: Page, init: () => void = () => {}) {
+  const raw: string[] = [];
+  const sent: (Sent & { at: string })[] = [];
+  await page.addInitScript(() => localStorage.setItem('site.test.telemetry', '1'));
+  await page.addInitScript(init);
+  await page.context().route(`${HOST}/**`, async (route) => {
+    const req = route.request();
+    const body = req.postData() ?? '';
+    raw.push(`${req.url()}\n${body}`);
+    if (body) for (const e of decode(body)) sent.push({ ...e, at: new URL(String(e.properties?.$current_url ?? 'https://x/')).pathname });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":1}' });
+  });
+  return { raw, sent, events: () => sent.map((e) => e.event) };
+}
+
+test.describe('protected content: telemetry (QB6)', () => {
+  test('nothing secret leaves the browser, protected pages send only the allowlist, and sign-out resets the identity', async ({ page }) => {
+    const t = await capture(page);
+    // an open page: PostHog's own capture, without the fragment
+    await page.goto('/#about-the-fragment');
+    await expect.poll(() => t.sent.find((e) => e.event === '$pageview')?.properties.$current_url, { timeout: 15_000 }).toMatch(/\/$/);
+    // signing in: the Sign in page is allowlisted, and the visitor becomes the grant
+    await page.goto(`/sign-in/?return=${encodeURIComponent(SECTION)}`);
+    await expect.poll(() => t.sent.some((e) => e.event === '$pageview' && e.properties.$title === 'Sign in'), { timeout: 15_000 }).toBe(true);
+    await signIn(page, 'wrong-words-that-are-not-a-code');
+    await expect.poll(() => t.sent.find((e) => e.event === 'access_failed')?.properties.reason, { timeout: 15_000 }).toBe('wrong');
+    await signIn(page, ALL);
+    await page.waitForURL(`**${SECTION}`);
+    await expect(page.locator('[data-shared]')).toHaveCount(3);
+    await expect.poll(() => t.events(), { timeout: 15_000 }).toEqual(expect.arrayContaining(['access_signed_in', '$identify', 'access_opened']));
+    expect(t.sent.find((e) => e.event === 'access_signed_in')?.properties).toMatchObject({ grant: 'gfixall22', via: 'code', distinct_id: 'gfixall22' });
+    expect(t.sent.find((e) => e.event === 'access_opened')?.properties).toMatchObject({ grant: 'gfixall22', place: SECTION, cards: 3 });
+    // a locked page: a neutral page view, and a followed link as its kind only
+    await page.goto(ALPHA);
+    await expect(page.locator('h1')).toHaveText(title('fx-locked-alpha'));
+    await expect.poll(() => t.sent.some((e) => e.event === '$pageview' && e.properties.$title === 'Locked page'), { timeout: 15_000 }).toBe(true);
+    await page.locator('main a[href*="/side-projects/"]').first().click();
+    await expect.poll(() => t.sent.find((e) => e.event === 'access_link')?.properties.kind, { timeout: 15_000 }).toBe('internal');
+    // sign out: the next page's events are anonymous again
+    await page.goto(SECTION);
+    await expect(page.locator('[data-access-bar]')).toBeVisible();
+    await page.locator('[data-access-sign-out]').click({ force: true });
+    await expect(page.locator('[data-sign-in-line]')).toBeVisible();
+    const before = t.sent.length;
+    await page.goto('/');
+    await expect.poll(() => t.sent.slice(before).find((e) => e.event === '$pageview')?.properties.distinct_id, { timeout: 15_000 }).toBeTruthy();
+    expect(t.sent.slice(before).every((e) => e.properties.distinct_id !== 'gfixall22')).toBe(true);
+
+    // nothing secret, anywhere: no protected title or sentence, no code, no link secret, no fragment, no recipient
+    const all = t.raw.join('\n');
+    for (const [id, words] of TITLES) expect(all.includes(words), `${id}'s title`).toBe(false);
+    expect(all).not.toContain('Fixture paragraph');
+    expect(all).not.toContain('harbor-maple-river');
+    expect(all).not.toContain('wrong-words-that-are-not-a-code');
+    expect(all).not.toMatch(/#|%23/);
+    for (const g of grants) if (g.secret.key) expect(all).not.toContain(g.secret.key);
+    // protected pages and the Sign in page sent only the allowlist
+    const guarded = t.sent.filter((e) => e.at === '/sign-in/' || e.at.startsWith(ALPHA) || e.event.startsWith('access_'));
+    for (const e of guarded) {
+      expect(Object.keys(ALLOWED), e.event).toContain(e.event);
+      const own = Object.keys(e.properties).filter((k) => !k.startsWith('$') && !['token', 'distinct_id'].includes(k));
+      expect(own.filter((k) => !ALLOWED[e.event].includes(k)), e.event).toEqual([]);
+    }
+  });
+
+  test('a magic link sends its grant, never its secret', async ({ page }) => {
+    const t = await capture(page);
+    await page.goto(LINK);
+    await expect(page.locator('h1')).toHaveText(title('fx-private-one'));
+    await expect.poll(() => t.sent.find((e) => e.event === 'access_signed_in')?.properties.via, { timeout: 15_000 }).toBe('link');
+    await expect.poll(() => t.sent.some((e) => e.event === '$pageview' && e.properties.$title === 'Private page'), { timeout: 15_000 }).toBe(true);
+    const all = t.raw.join('\n');
+    expect(all).not.toContain(grants.find((g) => g.id === 'gfixlink2')!.secret.key!);
+    expect(all).not.toContain(title('fx-private-one'));
+    expect(all).not.toMatch(/#|%23/);
+  });
+
+  for (const [name, init, path] of [
+    ['Global Privacy Control', () => Object.defineProperty(navigator, 'globalPrivacyControl', { get: () => true }), '/'],
+    ['Do Not Track', () => Object.defineProperty(navigator, 'doNotTrack', { get: () => '1' }), '/'],
+    ['?telemetry=off, and it stays off on the device', () => {}, '/?telemetry=off'],
+  ] as const) {
+    test(`${name} sends nothing`, async ({ page }) => {
+      const t = await capture(page, init);
+      await page.goto(path);
+      await page.goto(SECTION);
+      await page.waitForTimeout(5000);
+      expect(t.raw).toEqual([]);
+    });
+  }
+});

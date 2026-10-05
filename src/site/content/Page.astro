@@ -12,7 +12,7 @@ import Blocks from './Blocks.astro';
 import { getArticle, getOpenRoutes, getPlanet, getRoutes, getSite, getStructure } from './repository';
 import { pageMeasure } from './reading';
 import { cardPicture, openingOf, relatedOf, storyKind } from './opening';
-import { exploreAction, siteNav } from './navigation';
+import { exploreAction, footerLinks, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import type { Route } from './routes';
 import type { Article } from './schema';
@@ -30,6 +30,7 @@ interface Props {
 const { route, editable = false } = Astro.props;
 const site = getSite();
 const nav = siteNav(getStructure(), getRoutes(), route);
+const footer = footerLinks(getSite(), getRoutes());
 const action = exploreAction(route, getPlanet());
 const node = route?.node;
 const article = Astro.props.article ?? (node?.kind === 'item' && node.item.type === 'article' ? getArticle(node.item.id) : undefined);
@@ -80,7 +81,7 @@ const locked = await Promise.all(
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} action={action} crumbs={crumbs} header={header} dropcap={storyKind(article)} related={related} sealed={sealed}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} footer={footer} action={action} crumbs={crumbs} header={header} dropcap={storyKind(article)} related={related} sealed={sealed}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>
@@ -92,6 +93,7 @@ const locked = await Promise.all(
         heading={node.title}
         standfirst={node.summary}
         nav={nav}
+        footer={footer}
         action={action}
         crumbs={crumbs}
         stories={stories}

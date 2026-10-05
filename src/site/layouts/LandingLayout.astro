@@ -21,11 +21,13 @@ interface Props {
   hero: { title: string; standfirst?: string; kicker?: string; picture?: HeroPicture; layout?: 'split' | 'stacked' | 'type' };
   /** The site’s navigation, for the header. */
   nav?: NavItem[];
+  /** Links the content adds to the footer (the Privacy page: footerLinks in content/navigation.ts). */
+  footer?: { label: string; href: string }[];
   /** The id of what follows the opening, so a link can jump to it (it lands below the header). */
   afterId?: string;
 }
 
-const { title, description, hero, nav, afterId } = Astro.props;
+const { title, description, hero, nav, footer, afterId } = Astro.props;
 ---
 
 <PageShell title={title} description={description} preload={['display', 'display-italic', 'ui']}>
@@ -44,7 +46,7 @@ const { title, description, hero, nav, afterId } = Astro.props;
       )
     }
   </main>
-  <SiteFooter />
+  <SiteFooter more={footer} />
 </PageShell>
 
 <style>

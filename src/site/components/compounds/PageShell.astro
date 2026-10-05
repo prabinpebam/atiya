@@ -154,6 +154,7 @@ const neutral = sealed && import.meta.env.PROD ? (sealed === 'locked' ? 'Locked 
 <script>
   import { each } from '../../scripts/page';
   import { startAccess } from '../../scripts/access';
+  import { startTelemetry } from '../../scripts/telemetry';
   import { overlay, overlayPage } from '../../scripts/scrollbars';
   import { followTheme, followThemeInPictures } from '../../scripts/theme';
 
@@ -164,6 +165,8 @@ const neutral = sealed && import.meta.env.PROD ? (sealed === 'locked' ? 'Locked 
 
   // the frosted overlay handles: the page's own, and every region that opts in
   overlayPage();
+  // telemetry first, so it hears the sign-in runtime from the start (documentation/access/spec.md §9)
+  startTelemetry();
   // signing in, only where a page needs it (documentation/access/spec.md §7)
   startAccess();
   each<HTMLElement>('[data-scrollbar]', overlay);

@@ -12,6 +12,7 @@ How locked pages, private pages, signing in, grants and telemetry ([spec](spec.m
 > - **A6: edit mode.** The Access screen, a page's access, ordering locked pages among open ones, uploads, and the existing Publish for both repositories.
 > - **A7: telemetry.** PostHog with an allowlist on protected pages, identity by grant, opt-outs and the Privacy page.
 > - **After A7, yours:** the first real locked page and its first grant, made in edit mode and published (§4).
+> - **Status:** A0 to A7 are built and their Definition of Done rows met, except the two that need your PostHog project and a deploy from `main` (§2).
 
 ## 1. Phases
 
@@ -141,6 +142,8 @@ Each phase is done when every row for it is true and evidenced. A row marked *yo
 | 22 | A7 | The Privacy page says what's collected, and the footer links to it | The page |
 | 23 | A7 | *Yours (needs row 2):* visits, clicks and sign-ins by grant reach PostHog with IP addresses | PostHog, after a deploy |
 | 24 | All | The repository's checks pass, the spec's "As built" and AGENTS.md are up to date | QB11, QB12 |
+
+**Status, 6 October 2026.** Rows 1 and 3 to 22 and 24 are met; their evidence is in the [spec's "As built"](spec.md#15-as-built) (§15.3), and where the build differs from the spec it says so there (§15.2: page access on the Access screen; no grant filters or history; Withdraw now waits for Publish). Rows 2 and 23 are yours: the PostHog project and its variables, then a deploy from `main`.
 
 ## 3. Validation per phase
 

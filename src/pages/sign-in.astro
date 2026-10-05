@@ -6,13 +6,13 @@
 import IndexLayout from '../site/layouts/IndexLayout.astro';
 import UnlockPanel from '../site/components/compounds/UnlockPanel.astro';
 import { getOpenRoutes, getPlanet, getRoutes, getSite, getStructure } from '../site/content/repository';
-import { exploreAction, siteNav } from '../site/content/navigation';
+import { exploreAction, footerLinks, siteNav } from '../site/content/navigation';
 import { withBase } from '../site/design/meta';
 
 const site = getSite();
 const contact = withBase(getOpenRoutes().find((r) => r.node.id === site.contactPage)?.path ?? '/');
 ---
 
-<IndexLayout title={`Sign in — ${site.name}`} heading="Sign in" standfirst="Some of my work is shared only with invited readers." nav={siteNav(getStructure(), getRoutes())} action={exploreAction(undefined, getPlanet())} noindex>
+<IndexLayout title={`Sign in — ${site.name}`} heading="Sign in" standfirst="Some of my work is shared only with invited readers." nav={siteNav(getStructure(), getRoutes())} footer={footerLinks(site, getRoutes())} action={exploreAction(undefined, getPlanet())} noindex>
   <UnlockPanel contact={contact} headingLevel={2} />
 </IndexLayout>

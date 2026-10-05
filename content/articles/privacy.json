@@ -1,0 +1,55 @@
+{
+  "id": "privacy",
+  "type": "article",
+  "kind": "page",
+  "slug": "privacy",
+  "title": "Privacy",
+  "summary": "What this site records about visits, why, and how to turn it off.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-06",
+  "updatedAt": "2026-10-06",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "This site records a little about each visit, so I can see which of my work people read and whether the pages I share reach the people I share them with. It sets no cookies and shows no ads."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What's recorded"
+    },
+    {
+      "type": "text",
+      "markdown": "- The pages you open, with their address (never the part after a #), their title and the site you came from.\n- The links and buttons you click, and the videos you play.\n- Your device and browser, your IP address, and the city and country it suggests.\n- If you sign in with an access code or a link I sent you, the ID of that code or link (not your name), and which shared pages it opened. On those pages only these events are recorded: never their titles, words or links."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Who processes it, and for how long"
+    },
+    {
+      "type": "text",
+      "markdown": "The records go to [PostHog](https://posthog.com/privacy), an analytics service, which keeps them for up to a year on the plan this site uses. Only I can see them. Nothing is sold or shared with anyone else."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Turning it off"
+    },
+    {
+      "type": "text",
+      "markdown": "- If your browser sends Global Privacy Control or Do Not Track, nothing is recorded.\n- Open any page with `?telemetry=off` at the end of its address, and nothing is recorded on that device until you open one with `?telemetry=on`.\n- Blocking the analytics service in your browser works too: the site works the same without it."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Asking for your data to be deleted"
+    },
+    {
+      "type": "text",
+      "markdown": "Write to me at [prabinpebam@gmail.com](mailto:prabinpebam@gmail.com) with the day you visited, or the code or link you used, and I'll delete what was recorded."
+    }
+  ]
+}

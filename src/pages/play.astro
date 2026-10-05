@@ -124,4 +124,17 @@ const cross = icon(faXmark);
   <script>
     import '../game/platform/gate';
   </script>
+  <!-- telemetry (documentation/access/spec.md §9.5): the site's script, started only once the planet is live (PostHog is fetched after that, on idle) -->
+  <script>
+    import { startTelemetry, track } from '../site/scripts/telemetry';
+
+    const live = () => (startTelemetry(), track('planet_opened'));
+    if (performance.getEntriesByName('game:live', 'mark').length) live();
+    else if ('PerformanceObserver' in window) {
+      const watch = new PerformanceObserver((list) => {
+        if (list.getEntriesByName('game:live').length) (watch.disconnect(), live());
+      });
+      watch.observe({ type: 'mark' });
+    }
+  </script>
 </BaseLayout>

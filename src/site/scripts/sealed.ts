@@ -441,7 +441,10 @@ export function start() {
   void (async () => {
     const link = parseFragment(location.hash);
     const s = (link && (await signInWithLink(link))) || stored();
-    if (s) await apply(s, null);
-    else if (html.dataset.signedIn !== undefined) delete html.dataset.signedIn;
+    if (s) {
+      // telemetry puts what follows on the grant's timeline (it never sees more than the grant's ID)
+      tell('access_session', { grant: s.grant });
+      await apply(s, null);
+    } else if (html.dataset.signedIn !== undefined) delete html.dataset.signedIn;
   })();
 }

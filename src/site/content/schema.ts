@@ -173,6 +173,8 @@ export const siteSettings = z.strictObject({
   contactEmail: z.email().optional(),
   /** The page "Get in touch" goes to (a node of the site structure): where a reader asks for access. */
   contactPage: id.optional(),
+  /** The Privacy page the footer links to (a node of the site structure): what telemetry records (documentation/access/spec.md §9.6). */
+  privacyPage: id.optional(),
 });
 
 /**
@@ -310,8 +312,8 @@ export const grant = z.strictObject({
   notes: z.string().optional(),
 });
 export const accessFile = z.strictObject({ grants: z.array(grant) });
-/** The message edit mode offers to copy with a new grant: {name}, {code}, {link} and {expires} are filled in. */
-export const accessMessage = z.strictObject({ code: z.string().min(1), link: z.string().min(1) });
+/** The message offered with a new grant ({name}, {code}, {link} and {expires} are filled in), and the live site's address a magic link starts with. */
+export const accessMessage = z.strictObject({ site: z.url(), code: z.string().min(1), link: z.string().min(1) });
 
 export type ImageMedia = z.infer<typeof imageMedia>;
 export type DocumentMedia = z.infer<typeof documentMedia>;

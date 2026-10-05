@@ -3,5 +3,6 @@
   "description": "Portfolio of Prabin Pebam, Principal Design Manager.",
   "owner": "prabin",
   "locale": "en",
-  "contactPage": "contact"
+  "contactPage": "contact",
+  "privacyPage": "privacy"
 }

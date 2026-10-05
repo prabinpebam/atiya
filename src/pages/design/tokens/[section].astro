@@ -4,6 +4,8 @@
  * tokens as what they are (a swatch, a size, a curve), read from the resolved token files.
  */
 import LibraryLayout from '../../../site/layouts/LibraryLayout.astro';
+import { getRoutes, getSite } from '../../../site/content/repository';
+import { footerLinks } from '../../../site/content/navigation';
 import Heading from '../../../site/components/fundamentals/Heading.astro';
 import Text from '../../../site/components/fundamentals/Text.astro';
 import Tag from '../../../site/components/fundamentals/Tag.astro';
@@ -27,7 +29,7 @@ const page = TOKEN_PAGES.find((p) => p.slug === section)!;
 const View = { color: ColorTokens, typography: TypeTokens, space: SpaceTokens, shape: ShapeTokens, motion: MotionTokens, layers: LayerTokens, icons: IconTokens }[page.slug];
 ---
 
-<LibraryLayout title={page.label} description={page.summary} nav={libraryNav(`/design/tokens/${page.slug}/`)}>
+<LibraryLayout title={page.label} description={page.summary} nav={libraryNav(`/design/tokens/${page.slug}/`)} footer={footerLinks(getSite(), getRoutes())}>
   <article class="tokens">
     <header class="intro">
       <p class="tier"><Tag tone="accent" href={withBase('/design/#tokens')}>Tokens</Tag></p>

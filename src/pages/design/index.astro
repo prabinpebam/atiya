@@ -3,6 +3,8 @@
  * The design library's front page: what the system is, its four tiers, and a way into each.
  */
 import LibraryLayout from '../../site/layouts/LibraryLayout.astro';
+import { getRoutes, getSite } from '../../site/content/repository';
+import { footerLinks } from '../../site/content/navigation';
 import Heading from '../../site/components/fundamentals/Heading.astro';
 import Text from '../../site/components/fundamentals/Text.astro';
 import Link from '../../site/components/fundamentals/Link.astro';
@@ -24,7 +26,7 @@ const tiers = [
 ];
 ---
 
-<LibraryLayout title="Overview" description="The design system behind Prabin Pebam's site: tokens, fundamentals, compounds and layouts, live." nav={libraryNav('/design/')}>
+<LibraryLayout title="Overview" description="The design system behind Prabin Pebam's site: tokens, fundamentals, compounds and layouts, live." nav={libraryNav('/design/')} footer={footerLinks(getSite(), getRoutes())}>
   <article class="overview">
     <header class="intro">
       <Heading level={1} size="display">Design library</Heading>

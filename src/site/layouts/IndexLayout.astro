@@ -38,6 +38,8 @@ interface Props {
   standfirst?: string;
   /** The site’s sections, for the header. */
   nav?: NavItem[];
+  /** Links the content adds to the footer (the Privacy page: footerLinks in content/navigation.ts). */
+  footer?: { label: string; href: string }[];
   /** The header's one action. */
   action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
   /** For an index below the top level. */
@@ -64,7 +66,7 @@ interface Props {
   noindex?: boolean;
 }
 
-const { title, description, heading, standfirst, nav, action, crumbs, stories = [], locked = [], signIn, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
+const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], locked = [], signIn, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
 const sealing = import.meta.env.PROD;
 // in dev every page shows in its place, the locked ones marked; a build lists the open ones and seals the rest
 const shown: (Story & { lockedTag?: boolean })[] = sealing
@@ -152,7 +154,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
       <slot />
     </div>
   </main>
-  {!frame && <SiteFooter />}
+  {!frame && <SiteFooter more={footer} />}
 </PageShell>
 
 <style>

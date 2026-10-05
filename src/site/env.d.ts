@@ -4,3 +4,9 @@ declare namespace App {
     storyCode?: Record<string, string>;
   }
 }
+
+/** Telemetry's project (documentation/access/spec.md §9.5): Actions variables, public by design; a build without them sends nothing. */
+interface ImportMetaEnv {
+  readonly PUBLIC_POSTHOG_KEY?: string;
+  readonly PUBLIC_POSTHOG_HOST?: string;
+}

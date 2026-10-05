@@ -726,4 +726,55 @@ An independent review (5 October 2026) of the first version found these; each is
 
 ## 15. As built
 
-Nothing is built yet. This section records what's built as the [plan's](plan.md) phases land, with their evidence.
+Built 5 to 6 October 2026, phase by phase as the [plan](plan.md) sets out, and checked against the [benchmark](benchmark.md). What only the owner can do (a PostHog project, pushing `main`, the first real grant) is listed at the end.
+
+### 15.1 What was built, by phase
+
+| Phase | What | Where |
+|---|---|---|
+| A0 | The private repository `prabinpebam/atiya-private`, at `private-pages/` as a submodule on `main`; a read-only deploy key, its secret `PRIVATE_CONTENT_KEY`; `scripts/setup-private-pages.ps1` for a new clone | [setup script](https://github.com/prabinpebam/atiya/blob/main/scripts/setup-private-pages.ps1) |
+| A1 | Two origins read as one: keys `/content/…` and `/private/…`, the overlay merged into the site structure, V23 to V32 and the grants checked by the loader, every reader (routes, masters, pictures, media files) origin-aware, provenance recorded for every private-origin file | `src/site/content/` (`source.ts`, `load.ts`, `routes.ts`, `schema.ts`, `provenance.ts`) |
+| A2 | The crypto core (PBKDF2, HKDF, AES-256-GCM, the keyring envelope), generated codes from the EFF word list, grant states and transitions | `src/site/access/` |
+| A3 | The sealer, after the build: comment markers become `<template data-sealed>`, media move to `<base>/_sealed/<build>/`, keyrings to `<base>/_access/<build>/`; and the leak check | [`integrations/seal.mjs`](https://github.com/prabinpebam/atiya/blob/main/integrations/seal.mjs), [`scripts/verify-sealed.mjs`](https://github.com/prabinpebam/atiya/blob/main/scripts/verify-sealed.mjs) |
+| A4 | The Sign in page, the unlock panel, the access bar, sealed cards in their places, the runtime (sign-in, keyrings, pages, pictures, the lightbox, videos, sign-out in every tab) | `src/pages/sign-in.astro`, `src/site/scripts/sealed.ts`, `UnlockPanel`, `AccessBar` |
+| A5 | The deploy workflow: the submodule through the deploy key, a quiet build, the leak check before upload, a one-day artifact, deploys from `main` only, the nightly run at 18:45 UTC with its activity guard | [`.github/workflows/deploy.yml`](https://github.com/prabinpebam/atiya/blob/main/.github/workflows/deploy.yml) |
+| A6 | Edit mode's Access screen (`/_edit/access/`), the store writing both folders, Publish to both repositories | `src/site/editor/server/access.ts`, `git.ts`, `store.ts`; `AccessManager.astro` |
+| A7 | Telemetry: a 1.1 KB part on every page, PostHog's chunk on idle, the sanitizer; the Privacy page (content, in Contact) and its footer link | `src/site/scripts/telemetry*.ts`; `content/articles/privacy.json` |
+
+### 15.2 Where the build differs from the sections above
+
+- **Page access lives on the Access screen** (§8.2). Lock, Open, Make private, a section's order among its open and locked pages, Change address and Share are on `/_edit/access/`, not in a page's Settings, the Sections screen or the articles list. There's no "New private page" button: make a page, then Make private.
+- **Not built in edit mode** (§8.1): the grant list's filters and a grant's history from the private repository's log. The list shows every grant with its state.
+- **Withdraw now doesn't publish by itself** (§8.3). It marks the grant withdrawn and says to publish, so it never sweeps other unpublished changes into a deploy.
+- **A refused private push** (§8.3): the public commit is still made but held back, never pushed before the private commit it points at. Push again pushes the private repository, then, if you pulled and rebased it, commits the pointer to its new head ("Private pages: update"), then pushes the public one.
+- **An expired or withdrawn code** (§7.2) gets no keyring, so typed, it reads "That code doesn't work"; the distinct expired message shows when a remembered session runs out, and a withdrawn magic link says it was withdrawn.
+- **Telemetry's always-on part** (§9.5) is `scripts/telemetry.ts` (1.1 KB gzip): it queues the runtime's events, links followed on allowlisted pages and videos played, and fetches PostHog's chunk (`telemetryClient.ts`, with the sanitizer `telemetrySanitize.ts`, 98.5 KB gzip) on idle. PostHog's own page views are off everywhere; the site sends them, the router's page swaps too. A page that shows shared cards becomes allowlisted from then on. On `/play/`, the page's script starts it once the planet is live (the `game:live` mark); the game imports nothing of it.
+- **Test builds** send only when a test sets `localStorage['site.test.telemetry'] = '1'`, to the fake host `https://telemetry.test`, unbatched and uncompressed, with PostHog's bot filter off (headless Chromium is a bot to it). Production keeps the filter.
+- **`video_played`** carries `media` (the file's ID) on open pages, `place` on protected ones.
+- **The Privacy page's address** comes from the site settings' `privacyPage` (like `contactPage`, checked by the loader: a node, and open); the layouts take a `footer` prop and the footer adds it after its own links.
+
+### 15.3 Evidence
+
+| Benchmark | Result |
+|---|---|
+| QB1, QB1a, QB1b | `verify:sealed` passes on the test and production builds; `tests/unit/sealed.test.ts` (22 tests) plants the leak kinds and captures the tools' output |
+| QB2, QB2a, QB2b | `tests/unit/access.test.ts` (14): the RFC 7914, RFC 5869 and GCM test-case-16 vectors, the refusals, the round trips and 100,000 IVs |
+| QB3 | E2E "protected content": the scope matrix (every fixture grant) |
+| QB4, QB5 | `tests/unit/accessSession.test.ts` (9); E2E: a stale build reloads once, sign-out in every tab and from Back |
+| QB6 | `tests/unit/telemetry.test.ts` (16); E2E "protected content: telemetry" (5): every request to the fake host decoded, no title, sentence, code, link secret, fragment or recipient; only the allowlist on protected pages and the Sign in page; GPC, DNT and `?telemetry=off` send nothing; after sign-out, events aren't the grant's |
+| QB7 | `verify:prod`: sign-in runtime 6.1 KB, telemetry's always-on part 1.12 KB plus the loader's 0.26 KB (1.38 KB on an open page), PostHog's chunk 98.5 KB on idle |
+| QB7a | E2E: deriving under 2 s, swapping under 200 ms, a 10 MB video under 1.5 s |
+| QB7b | `verify:prod`: the game's critical JS 449.8 KB, unchanged; the gate 5.8 KB; 1,586 KB before live |
+| QB8, QB9 | E2E "protected content" (axe in both themes, 320 px, 44 px targets, the failure messages); "site on a phone" |
+| QB10 | `tests/unit/editorAccess.test.ts` (13); E2E `editor-access.spec.ts` (5): codes and links made, extended, rescoped and withdrawn; a page locked in its place; Publish private first with a generated public message and the pointer at the private head; a refused private push recovered after a rebase; axe on the Access screen in both themes |
+| QB11 | `npm run check` 0 errors; `npm test` 1,041 passed; the site design system's tests pass |
+| QB12 | This section, the plan's Definition of Done, and AGENTS.md's "Protected content" |
+
+The editor's full E2E project passes test by test; run whole and serially, one test in a run of 40 has failed under load (a different one each time, a status text or a navigation aborted by a live reload), and passes on its own.
+
+### 15.4 Yours
+
+- **A PostHog project** (US region, "Discard client IP data" off), then the Actions variables `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`; for "Who looked", `POSTHOG_PROJECT_ID` in your environment for edit mode.
+- **Pushing `main`**, which starts the deploys and the nightly run (the workflow ran green on the branch `access-ci`).
+- **The first real locked page and grant,** made in edit mode and published.
+- **One real phone, and Safari and Firefox, by hand** before sharing the first code (benchmark, "What isn't measured").

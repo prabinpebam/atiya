@@ -72,8 +72,11 @@ const gate = eagerScripts(join('play', 'index.html'));
 // game reaches them too
 const pages = (dir) => readdirSync(join(DIST, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? pages(join(dir, e.name)) : e.name.endsWith('.html') ? [join(dir, e.name)] : []));
 const reached = staticClosure(js.filter((f) => /^game-mount\./.test(f)));
+// telemetry (documentation/access/spec.md §9.5): PostHog's own chunk, fetched on idle by the site and after
+// live by /play, never the game's
+const telemetry = staticClosure(js.filter((f) => /^telemetryClient\./.test(f)));
 const siteOnly = [...new Set(pages('').filter((p) => p !== 'index.html' && p !== join('play', 'index.html')).flatMap(eagerScripts))].filter((f) => !reached.includes(f) && !gate.includes(f) && !landing.includes(f));
-const game = js.filter((f) => !gate.includes(f) && !landing.includes(f) && !siteOnly.includes(f));
+const game = js.filter((f) => !gate.includes(f) && !landing.includes(f) && !siteOnly.includes(f) && !telemetry.includes(f));
 // the game the gate loads to become playable, and what it fetches later on demand
 const initial = staticClosure(game.filter((f) => /^game-mount\./.test(f))).filter((f) => game.includes(f));
 const deferred = game.filter((f) => !initial.includes(f));
@@ -157,6 +160,31 @@ if (gateKB > GATE_BUDGET_KB) {
   console.error(`✗ gate JS over budget`);
   failed = true;
 }
+// telemetry (benchmark QB7): its own chunk, fetched on idle, never up front by any page; the part every
+// page runs is at most 1.2 KB gz (with the sign-in loader, an open page gains at most 1.5 KB)
+const TELEMETRY_BUDGET_KB = 110;
+const SHIM_BUDGET_KB = 1.2;
+const shim = js.filter((f) => /^telemetry\./.test(f));
+const shimKB = sum(shim);
+console.log(`telemetry shim:   ${shimKB.toFixed(2)} KB gz on every page (budget ${SHIM_BUDGET_KB} KB)`);
+if (shimKB > SHIM_BUDGET_KB) {
+  console.error('✗ the telemetry shim is over budget');
+  failed = true;
+}
+if (telemetry.length) {
+  const everywhere = new Set(pages('').flatMap(eagerScripts));
+  const telemetryKB = sum(telemetry.filter((f) => !everywhere.has(f)));
+  console.log(`telemetry:        ${telemetryKB.toFixed(1)} KB gz, fetched on idle (budget ${TELEMETRY_BUDGET_KB} KB)`);
+  const eager = telemetry.filter((f) => /^telemetryClient\./.test(f) && everywhere.has(f));
+  if (eager.length) {
+    console.error(`✗ a page loads telemetry up front: ${eager.join(', ')}`);
+    failed = true;
+  }
+  if (telemetryKB > TELEMETRY_BUDGET_KB) {
+    console.error('✗ telemetry is over budget');
+    failed = true;
+  }
+} else console.log('telemetry:        not in this build');
 if (gameKB > GAME_BUDGET_KB) {
   console.error(`✗ game JS over budget`);
   failed = true;

@@ -5,6 +5,8 @@
  * by. Every fundamental, compound and layout gets one from the registry.
  */
 import LibraryLayout from '../../../site/layouts/LibraryLayout.astro';
+import { getRoutes, getSite } from '../../../site/content/repository';
+import { footerLinks } from '../../../site/content/navigation';
 import Heading from '../../../site/components/fundamentals/Heading.astro';
 import Text from '../../../site/components/fundamentals/Text.astro';
 import Tag from '../../../site/components/fundamentals/Tag.astro';
@@ -37,7 +39,7 @@ const storySource = entry.story?.replace(/^---[\s\S]*?---\s*/, '') ?? '';
 const singular = { fundamental: 'Fundamental', compound: 'Compound', layout: 'Layout' }[entry.tier];
 ---
 
-<LibraryLayout title={entry.name} description={entry.summary} nav={libraryNav(routeOf(entry))}>
+<LibraryLayout title={entry.name} description={entry.summary} nav={libraryNav(routeOf(entry))} footer={footerLinks(getSite(), getRoutes())}>
   <article class="doc">
     <header class="intro">
       <p class="tier"><Tag tone="accent" href={withBase(`/design/#${tier.route}`)}>{singular}</Tag></p>

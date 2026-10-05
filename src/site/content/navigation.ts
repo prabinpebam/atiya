@@ -30,6 +30,12 @@ export function siteNav(structure: SiteStructure, routes: Route[], current?: Rou
   });
 }
 
+/** The footer's links from the content (documentation/access/spec.md §9.6): the Privacy page, under its own title. */
+export function footerLinks(site: { privacyPage?: string } | null | undefined, routes: Route[]): NavLink[] {
+  const r = site?.privacyPage ? routes.find((x) => x.node.id === site.privacyPage && x.access === 'open') : undefined;
+  return r ? [{ label: r.label, href: withBase(r.path) }] : [];
+}
+
 /**
  * Where "Explore in 3D" goes from a page of the site (documentation/sections/spec.md §6.6): a page that's
  * on the planet, to its building, open at that page; a section, to the building that points to it (its

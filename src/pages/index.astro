@@ -5,7 +5,7 @@ import Link from '../site/components/fundamentals/Link.astro';
 import ContentsList from '../site/components/compounds/ContentsList.astro';
 import { withBase } from '../site/design/meta';
 import { getPerson, getRoute, getRoutes, getSite, getStructure } from '../site/content/repository';
-import { siteNav } from '../site/content/navigation';
+import { footerLinks, siteNav } from '../site/content/navigation';
 
 // the home page is the site structure's root (documentation/sections/spec.md §3.5): its words are the
 // home hub's, and below the opening it lists the sections, each with its line and whether it's empty
@@ -21,6 +21,7 @@ const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === 
   title={owner?.role ? `${site.name} — ${owner.role}` : site.name}
   description={site.description}
   nav={siteNav(getStructure(), routes, home)}
+  footer={footerLinks(getSite(), routes)}
   afterId="sections"
   hero={{
     title: home.title,

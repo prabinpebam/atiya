@@ -329,10 +329,12 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
 
     // the navigation (V17): every entry points at a node of the tree, or at a real address; never a protected page (V25)
     const STRUCTURE_FILE = 'content/structures/site.json';
-    if (site?.contactPage) {
-      const r = routes.find((x) => x.node.id === site!.contactPage);
-      if (!r) add('content/site.json', `contactPage "${site.contactPage}" isn't a node of the site's tree`, 'contactPage');
-      else if (r.access !== 'open') add('content/site.json', `contactPage "${site.contactPage}" is a locked or private page (V25)`, 'contactPage');
+    for (const field of ['contactPage', 'privacyPage'] as const) {
+      const node = site?.[field];
+      if (!node) continue;
+      const r = routes.find((x) => x.node.id === node);
+      if (!r) add('content/site.json', `${field} "${node}" isn't a node of the site's tree`, field);
+      else if (r.access !== 'open') add('content/site.json', `${field} "${node}" is a locked or private page (V25)`, field);
     }
     (structure.menus?.primary ?? []).forEach((e, i) => {
       const at = `menus.primary.${i}`;

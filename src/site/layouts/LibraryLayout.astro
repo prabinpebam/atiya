@@ -19,9 +19,11 @@ interface Props {
   description?: string;
   /** The side navigation's groups, with the current page marked. */
   nav: { title: string; items: { label: string; href: string; current?: boolean; note?: string }[] }[];
+  /** Links the content adds to the footer (the Privacy page: footerLinks in content/navigation.ts). */
+  footer?: { label: string; href: string }[];
 }
 
-const { title, description, nav } = Astro.props;
+const { title, description, nav, footer } = Astro.props;
 ---
 
 <PageShell title={`${title} · Design library · Prabin Pebam`} description={description ?? `${title}, in the design library of Prabin Pebam's site.`} preload={['display', 'text', 'ui']} router>
@@ -34,7 +36,7 @@ const { title, description, nav } = Astro.props;
       <slot />
     </main>
   </div>
-  <SiteFooter />
+  <SiteFooter more={footer} />
 </PageShell>
 
 <style>

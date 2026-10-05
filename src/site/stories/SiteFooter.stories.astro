@@ -6,3 +6,7 @@ import SiteFooter from '../components/compounds/SiteFooter.astro';
 <Example title="The site's foot" layout="block" bleed description="Where else to go, the colophon, the small print.">
   <SiteFooter />
 </Example>
+
+<Example title="With the content's links" layout="block" bleed description="The Privacy page, added after the site's own ways around.">
+  <SiteFooter more={[{ label: 'Privacy', href: '#privacy' }]} />
+</Example>
