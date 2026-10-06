@@ -74,6 +74,8 @@ const hasActions = Astro.slots.has('actions');
   }
 
   .dialog[open] {
+    display: flex;
+    flex-direction: column;
     animation: rise var(--duration-base) var(--ease-enter);
   }
 
@@ -84,10 +86,12 @@ const hasActions = Astro.slots.has('actions');
     }
   }
 
+  /* its height is the dialog's (capped by the window), so the body scrolls between the head and the actions */
   .frame {
     display: grid;
+    flex: 1 1 auto;
     grid-template-rows: auto minmax(0, 1fr) auto;
-    max-block-size: inherit;
+    min-block-size: 0;
   }
 
   .head {

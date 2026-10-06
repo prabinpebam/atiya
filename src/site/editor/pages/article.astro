@@ -107,6 +107,16 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         </Dialog>
         <Dialog id="editor-picker" title="Choose a picture" size="lg">
           <MediaGrid mode="pick" media={cards} owner={`articles/${id}`} />
+          <Fragment slot="actions">
+            <span data-editor-media-count>
+              <Text as="span" variant="small" tone="muted">
+                Choose one
+              </Text>
+            </span>
+            <Button variant="primary" icon="check" data-editor-media-use disabled>
+              Use them
+            </Button>
+          </Fragment>
         </Dialog>
         <CropDialog />
         <Dialog id="editor-turn" title="Turn into" size="lg">

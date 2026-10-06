@@ -1,6 +1,7 @@
 ---
 /**
- * The site's masthead: the name, the sections, the colour theme and the way into the planet. It stays
+ * The site's masthead: the name, the sections, Sign in (Sign out while signed in), the colour theme and
+ * the way into the planet. It stays
  * at the top while you read; on a phone (or a phone on its side) it's compact and tucks away as you
  * scroll down, and comes back the moment you scroll up. Under 56 rem the sections fold into a menu,
  * which also carries the way into the planet on a phone.
@@ -8,6 +9,7 @@
  * @a11y A banner landmark with a labelled navigation; the current section is marked aria-current.
  * @a11y The menu button says whether the menu is open (aria-expanded), what it controls, and changes its name and icon to Close menu.
  * @a11y The theme switch is the custom select: Match system, Light or Dark, remembered.
+ * @a11y Sign in and Sign out are named by their words; only the one that applies is shown (a signed-in device says so from the first paint).
  * @a11y A tucked-away header comes back when anything in it takes focus, while the menu or the theme list is open, and never moves with reduced motion.
  * @key Escape: closes the menu
  */
@@ -35,9 +37,12 @@ interface Props {
   section?: { label: string; href: string };
   /** The navigation's accessible name. */
   navLabel?: string;
+  /** Shows Sign in at the top right (on a phone, in the menu), which becomes Sign out while a reader is signed in (documentation/access/spec.md §2.3). */
+  access?: boolean;
 }
 
-const { nav = [], action, homeHref = withBase('/'), section, navLabel = 'Sections' } = Astro.props;
+const { nav = [], action, homeHref = withBase('/'), section, navLabel = 'Sections', access = false } = Astro.props;
+const signInHref = withBase('/sign-in/');
 // unique per header, so a page can show more than one (the design library does)
 const uid = Math.random().toString(36).slice(2, 8);
 const navId = `site-nav-${uid}`;
@@ -83,11 +88,41 @@ const close = svgOf('close');
                 </Button>
               </li>
             )}
+            {access && (
+              <li class="nav-access">
+                <span data-access-control="sign-in">
+                  <Button variant="secondary" href={signInHref} icon="sign-in" block data-access-sign-in="">
+                    Sign in
+                  </Button>
+                </span>
+                <span data-access-control="sign-out">
+                  <Button variant="secondary" icon="sign-out" block data-access-sign-out="">
+                    Sign out
+                  </Button>
+                </span>
+              </li>
+            )}
           </ul>
         </nav>
       )
     }
     <div class="tools">
+      {
+        access && (
+          <span class="access">
+            <span data-access-control="sign-in">
+              <Button variant="quiet" size="sm" href={signInHref} icon="sign-in" data-access-sign-in="">
+                Sign in
+              </Button>
+            </span>
+            <span data-access-control="sign-out">
+              <Button variant="quiet" size="sm" icon="sign-out" data-access-sign-out="">
+                Sign out
+              </Button>
+            </span>
+          </span>
+        )
+      }
       <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id={`site-theme-${uid}`} data-theme-switch="" />
       {
         action && (
@@ -198,7 +233,8 @@ const close = svgOf('close');
     }
   }
 
-  .nav-action {
+  .nav-action,
+  .nav-access {
     display: none;
   }
 
@@ -277,12 +313,14 @@ const close = svgOf('close');
     /* one line for the bar: the action moves into the menu (or to the footer, where there's no menu),
        and a part's own name gives way to the page's heading and side navigation */
     .action,
+    .access,
     .brand .slash,
     .brand .section {
       display: none;
     }
 
-    .nav-action {
+    .nav-action,
+    .nav-access {
       display: block;
       margin-block-start: var(--space-3);
     }
@@ -387,6 +425,12 @@ const close = svgOf('close');
     );
     header.addEventListener('focusin', () => header.removeAttribute('data-tucked'));
     small.addEventListener('change', update, { signal });
+  });
+
+  // Sign in comes back to this page (the Sign in page reads ?return=; documentation/access/spec.md §2.3)
+  each<HTMLAnchorElement>('[data-site-header] a[data-access-sign-in]', (a) => {
+    const here = location.pathname;
+    if (!here.endsWith('/sign-in/')) a.href = `${a.pathname}?return=${encodeURIComponent(here)}`;
   });
 
   // a way into the planet or the classic site remembers which the visitor chose (the landing reads it)

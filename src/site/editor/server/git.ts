@@ -211,25 +211,25 @@ export function publish(message: string, titles: Titles = { article: () => undef
     const where = await repo();
     if (!where) return { ok: false, reason: 'the content folder is not in a git repository' };
     const state = await changes();
-    if (!state.branch) return { ok: false, reason: 'git is not on a branch (a detached HEAD): check out a branch, then publish' };
-    if (!state.upstream) return { ok: false, reason: `the branch ${state.branch} has no upstream to push to: set one (git push -u), then publish` };
+    if (!state.branch) return { ok: false, reason: 'git is not on a branch (a detached HEAD): check out a branch, then save to remote' };
+    if (!state.upstream) return { ok: false, reason: `the branch ${state.branch} has no upstream to push to: set one (git push -u), then save to remote` };
     const priv = state.files.filter((f) => f.key.startsWith('/private/'));
     const pub = state.files.filter((f) => f.key.startsWith('/content/'));
-    if (!state.files.length && !state.pointer?.moved) return { ok: false, reason: 'there is nothing to publish' };
+    if (!state.files.length && !state.pointer?.moved) return { ok: false, reason: 'there is nothing to save' };
     const msg = message.trim();
-    if (!msg) return { ok: false, reason: 'a publish needs a message' };
+    if (!msg) return { ok: false, reason: 'a save needs a message' };
     const privTop = (await privateRepo())?.top;
     if (priv.length || state.pointer?.moved) {
-      if (!privTop || !state.private) return { ok: false, reason: 'private-pages/ is not a git repository: run scripts/setup-private-pages.ps1, then publish' };
-      if (state.private.branch !== 'main') return { ok: false, reason: 'private-pages/ is not on its main branch (a submodule starts on a detached commit): run scripts/setup-private-pages.ps1, then publish' };
-      if (!state.private.upstream) return { ok: false, reason: 'private-pages/ has no upstream to push to: run scripts/setup-private-pages.ps1, then publish' };
+      if (!privTop || !state.private) return { ok: false, reason: 'private-pages/ is not a git repository: run scripts/setup-private-pages.ps1, then save to remote' };
+      if (state.private.branch !== 'main') return { ok: false, reason: 'private-pages/ is not on its main branch (a submodule starts on a detached commit): run scripts/setup-private-pages.ps1, then save to remote' };
+      if (!state.private.upstream) return { ok: false, reason: 'private-pages/ has no upstream to push to: run scripts/setup-private-pages.ps1, then save to remote' };
     }
     // 1. both folders, checked as the build will check them
     const snap = readSnapshot();
     try {
       loadContent(snap.docs, snap.masters, snap.errors);
     } catch (e) {
-      if (e instanceof ContentError) return { ok: false, reason: 'the content has problems: fix them, then publish', issues: e.issues };
+      if (e instanceof ContentError) return { ok: false, reason: 'the content has problems: fix them, then save to remote', issues: e.issues };
       throw e;
     }
     // 2. the private repository first: staged, exactly what was checked, committed on main, pushed
@@ -240,7 +240,7 @@ export function publish(message: string, titles: Titles = { article: () => undef
       const checked = await stagedAsChecked(privTop, ['.']);
       if (!checked.ok) {
         await git(['restore', '--staged', '--', '.'], { cwd: privTop });
-        return { ok: false, reason: `private-pages/${checked.path} changed while publishing: publish again` };
+        return { ok: false, reason: `private-pages/${checked.path} changed while saving: save again` };
       }
       const list = priv.map((f) => `- ${f.status} ${f.key.slice('/private/'.length)}`).join('\n');
       const c = await git(['commit', '-m', msg, '-m', list], { cwd: privTop, timeout: 60_000 });
@@ -260,11 +260,11 @@ export function publish(message: string, titles: Titles = { article: () => undef
     const checked = await stagedAsChecked(where.top, paths);
     if (!checked.ok) {
       await git(['restore', '--staged', '--', ...paths], { cwd: where.top });
-      return { ok: false, reason: `${checked.path} changed while publishing: publish again` };
+      return { ok: false, reason: `${checked.path} changed while saving: save again` };
     }
     if (snap.digest !== readSnapshot().digest) {
       await git(['restore', '--staged', '--', ...paths], { cwd: where.top });
-      return { ok: false, reason: 'the content changed while publishing: publish again' };
+      return { ok: false, reason: 'the content changed while saving: save again' };
     }
     const publicMsg = publicMessage(msg, state.files, titles);
     const c = await git(['commit', '-m', publicMsg, '--', ...paths], { cwd: where.top, timeout: 60_000 });

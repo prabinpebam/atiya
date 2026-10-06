@@ -29,6 +29,6 @@ if (loaded.ok) {
 }
 ---
 
-<EditorLayout title="Dashboard" screen="dashboard" heading="Dashboard" intro="Everything in the site's content, edited here and published with git.">
+<EditorLayout title="Dashboard" screen="dashboard" heading="Dashboard" intro="Everything in the site's content, edited here and saved to remote (GitHub) with git.">
   {props ? <Overview {...props} /> : !loaded.ok && <ContentIssues issues={loaded.issues} />}
 </EditorLayout>

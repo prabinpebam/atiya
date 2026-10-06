@@ -15,6 +15,7 @@ import Button from '../../components/fundamentals/Button.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import { withBase } from '../../design/meta';
 import type { IconName } from '../../design/icons';
@@ -44,19 +45,21 @@ interface Props {
   actions: string | null;
   /** The commit just published (from the address), when it's the branch's last. */
   published: string | null;
+  /** Pages placed on the site that aren't Published yet: each can go on the site with this publish (its Status becomes Published). */
+  drafts?: { id: string; title: string; access: 'open' | 'private'; checked: boolean }[];
 }
 
-const { changes, ahead, blocked, message, privateNote, actions, published } = Astro.props;
+const { changes, ahead, blocked, message, privateNote, actions, published, drafts = [] } = Astro.props;
 const ICON: Record<string, IconName> = { Article: 'article', Media: 'image', Sections: 'sections', Settings: 'settings', Person: 'user' };
 const STATUS = { added: { label: 'New', tone: 'positive' }, changed: { label: 'Changed', tone: 'accent' }, deleted: { label: 'Deleted', tone: 'negative' } } as const;
-const reason = blocked ?? (changes.length ? null : 'Nothing to publish: content/ is as it was last published.');
+const reason = blocked ?? (changes.length || drafts.length ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
 ---
 
 <div class="publish" data-region="publish" data-editor-publish>
   {
     published && (
       <section class="panel" data-tone="positive" aria-labelledby="publish-done-title">
-        <Heading level={2} size="ui" id="publish-done-title">Published</Heading>
+        <Heading level={2} size="ui" id="publish-done-title">Saved to remote</Heading>
         <Text variant="ui">{`Commit ${published} is pushed. GitHub Actions builds the site and deploys it in a few minutes.`}</Text>
         {actions && (
           <Link href={actions} variant="standalone" external>
@@ -70,7 +73,7 @@ const reason = blocked ?? (changes.length ? null : 'Nothing to publish: content/
     ahead > 0 && (
       <section class="panel" data-tone="negative" aria-labelledby="publish-ahead-title">
         <Heading level={2} size="ui" id="publish-ahead-title">{`${ahead} ${ahead === 1 ? 'commit' : 'commits'} not on GitHub yet`}</Heading>
-        <Text variant="ui">A publish was committed here, but its push failed, so the site hasn't changed. Push again once the reason below is fixed.</Text>
+        <Text variant="ui">A save was committed here, but its push failed, so the site hasn't changed. Push again once the reason below is fixed.</Text>
         <p class="issue" role="alert" data-publish-push-issue hidden />
         <div class="actions">
           <Button variant="primary" icon="publish" data-publish-push="">Push again</Button>
@@ -80,7 +83,7 @@ const reason = blocked ?? (changes.length ? null : 'Nothing to publish: content/
   }
 
   <section class="panel" aria-labelledby="publish-changes-title">
-    <Heading level={2} size="h4" id="publish-changes-title">{changes.length ? `${changes.length} ${changes.length === 1 ? 'change' : 'changes'} to publish` : 'Changes to publish'}</Heading>
+    <Heading level={2} size="h4" id="publish-changes-title">{changes.length ? `${changes.length} ${changes.length === 1 ? 'change' : 'changes'} to save` : 'Changes to save'}</Heading>
     {
       changes.length ? (
         <ul class="list">
@@ -111,20 +114,33 @@ const reason = blocked ?? (changes.length ? null : 'Nothing to publish: content/
           ))}
         </ul>
       ) : (
-        <Text variant="ui" tone="muted">Nothing has changed in content/ since the last publish.</Text>
+        <Text variant="ui" tone="muted">Nothing has changed in content/ or private-pages/ since the last save to remote.</Text>
       )
     }
   </section>
 
   <form class="panel" data-publish-form novalidate aria-labelledby="publish-form-title">
-    <Heading level={2} size="h4" id="publish-form-title">Publish</Heading>
+    <Heading level={2} size="h4" id="publish-form-title">Save to remote</Heading>
     <Text variant="ui" tone="muted">Commits content/ and private-pages/ (and nothing else), private pages first, then pushes them to GitHub, which deploys the site.</Text>
     <TextField label="Message" name="message" value={message} required disabled={!!reason} />
     {privateNote && <Text variant="small" tone="muted">{privateNote}</Text>}
+    {
+      drafts.length > 0 && (
+        <fieldset class="drafts" data-publish-drafts>
+          <legend>Publish pages</legend>
+          <Text variant="small" tone="muted">
+            These pages are in a section but still drafts, so readers don't see them. Tick one to publish it: its Status becomes Published, and it goes on the site with this save.
+          </Text>
+          {drafts.map((d) => (
+            <Checkbox name="publish" value={d.id} id={`publish-draft-${d.id}`} checked={d.checked} disabled={!!blocked} label={d.title} hint={d.access === 'private' ? 'Private page: for the readers you share it with' : 'For everyone'} />
+          ))}
+        </fieldset>
+      )
+    }
     {reason && <Text variant="small" tone={blocked ? 'negative' : 'muted'}>{reason}</Text>}
     <p class="issue" role="alert" data-editor-form-issue hidden />
     <div class="actions">
-      <Button variant="primary" type="submit" icon="publish" disabled={!!reason}>Publish</Button>
+      <Button variant="primary" type="submit" icon="upload" disabled={!!reason}>Save to remote</Button>
     </div>
   </form>
 
@@ -198,6 +214,20 @@ const reason = blocked ?? (changes.length ? null : 'Nothing to publish: content/
   .actions {
     display: flex;
     justify-content: end;
+  }
+
+  .drafts {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .drafts legend {
+    padding: 0;
+    margin-block-end: var(--space-1);
+    font-weight: var(--weight-semibold);
   }
 
   .issue {

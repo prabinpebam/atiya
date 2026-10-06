@@ -305,6 +305,16 @@ html[data-signed-in] [data-unlock-panel][data-shared]:not([data-state='sign-in']
   display: grid;
 }
 
+/* the header's Sign in, which is Sign out while signed in (SiteHeader), from the first paint */
+[data-access-control='sign-out'],
+html[data-signed-in] [data-access-control='sign-in'] {
+  display: none;
+}
+
+html[data-signed-in] [data-access-control='sign-out'] {
+  display: contents;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

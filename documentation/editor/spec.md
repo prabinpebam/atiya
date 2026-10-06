@@ -132,7 +132,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 | Media | `/_edit/media/` | The media library: upload, alt text, captions, credits, focus points, where each picture is used (§6) |
 | Settings | `/_edit/settings/` | The site settings and the owner's profile |
 | Access | `/_edit/access/` | Every access code and magic link that opens private pages, grouped by state beside the chosen one's details: made, changed, withdrawn and deleted there ([access spec §8.1](../access/spec.md#81-sharing-the-access-screen)) |
-| Publish | `/_edit/publish/` | What changed in `content/`, the contract check, discard, and publish (§7) |
+| Save to remote | `/_edit/publish/` | What changed in `content/` and `private-pages/`, the contract check, discard, publishing drafts, and saving to remote (§7) |
 
 A private page ([access spec §2](../access/spec.md#2-private-pages)) is a page like any other: it's listed, filtered, moved and edited on these screens, tagged Private, and there's no screen of its own. Who it's shared with (the access codes and magic links) is the Access screen's.
 
@@ -314,7 +314,7 @@ The site structure ([structures §2](../content/ia.md#2-the-site-structure)) in 
 - **A picture pasted in the canvas** (a screenshot, a copied image, with no text beside it) opens the picker with it in the upload form, previewed; uploaded, it becomes a figure after the block being edited (or in place of a new, empty paragraph). The rules (formats, what a paste holds, the names, the preview's line) are pure, in `model/upload.ts`, and unit-tested.
 - **Videos** ([media §12](../content/media.md#12-video-files)) are uploaded from the same form: an MP4, WebM or MOV under 100 MB, GitHub's limit for a file. A bigger one is refused at once, before anything is sent (and again on the server), with how to make it smaller; one past 50 MB uploads with GitHub's warning. The chosen video plays in the form, with its size, format, length and weight; one this browser can't play is refused, since a reader's browser couldn't play it either. The form asks for its **title** (not alt text), and takes a frame from it as its poster. The server keeps the file as it is (a MOV becomes an MP4, its streams copied by ffmpeg; an MP4 gets its index at the front), and writes it, its poster and its sidecar in one transaction. In the library a video is a card with its poster, a Video tag and its length; its details are the video itself, its title, caption, credit, licence and source, Used in, and Delete (the video, its poster and its sidecar). The picker shows only what its field or block takes: pictures, or videos. A video file pasted in the canvas becomes a video block the same way a picture becomes a figure.
 - **Media IDs never change.** There's no rename; replacing a picture keeps its ID and writes a new master.
-- **The media picker** (in the article editor and the settings) is the same library in a dialog, with upload, in single or multiple mode, for pictures or for videos.
+- **The media picker** (in the article editor and the settings) is the same library in a dialog, with upload, in single or multiple mode, for pictures or for videos. The dialog fits the window and its library scrolls inside it. In multiple mode (a gallery, a carousel) the dialog's footer, always in view, says how many are chosen and how many it needs, and holds the button that adds them ("Use 3 pictures"); in single mode a press on a picture adds it.
 
 ### 6.1 The crop
 
@@ -336,9 +336,12 @@ A picture can have a dark mode version, shown on the site instead of it whenever
 
 ## 7. Publishing
 
-- **The Publish screen** lists every file in `content/` that differs from the last commit, as git sees it: added, changed or deleted. Each is named as its resource ("Article: Do what makes you proud", "Media: articles/…/tshirt"), with Discard, which puts it back as last committed and deletes a new file.
-- **The check** runs the whole content contract, as the build does. Publish is enabled only when it passes and there's something to publish.
-- **Publish** asks for a message (a sentence made from the changes is offered). Holding the writer lock (§8.3), so nothing can change underneath it, it:
+**Two words, two actions** (6 October 2026). **Save to remote** sends your changes to GitHub (a commit and a push), which redeploys the site. **Publish** puts a page on the site: its Status becomes Published. A page only reaches readers when both have happened, so the Save to remote screen offers to publish the drafts it would otherwise leave behind. (Until then the screen and its button were called Publish, and a private page saved with it stayed a draft, which read as a failed publish.)
+
+- **The Save to remote screen** (`/_edit/publish/`, "Save to remote" in the top bar and the navigation) lists every file in `content/` that differs from the last commit, as git sees it: added, changed or deleted. Each is named as its resource ("Article: Do what makes you proud", "Media: articles/…/tshirt"), with Discard, which puts it back as last committed and deletes a new file.
+- **Publish pages:** every page placed in a section whose Status isn't Published is listed with a checkbox; a private page changed since the last save is ticked. A ticked page's Status becomes Published (and its published date is set) just before the commit, and the button says **Publish and save to remote**. With nothing else changed, ticking a draft is enough to save.
+- **The check** runs the whole content contract, as the build does. Save to remote is enabled only when it passes and there's something to save.
+- **Save to remote** asks for a message (a sentence made from the changes is offered). Holding the writer lock (§8.3), so nothing can change underneath it, it:
   1. reads the content once and checks it;
   2. stages it: `git add -A -- content`;
   3. confirms that what's staged is exactly what it checked (the staged blobs' hashes against the files');

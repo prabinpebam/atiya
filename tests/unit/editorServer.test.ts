@@ -403,7 +403,7 @@ describe('publishing with git', { timeout: 60_000 }, () => {
 
   it('refuses content with problems (and commits nothing), no message, nothing to publish, and a branch without an upstream', async () => {
     setupRepo();
-    expect(await publish('x')).toMatchObject({ ok: false, reason: expect.stringMatching(/nothing to publish/) });
+    expect(await publish('x')).toMatchObject({ ok: false, reason: expect.stringMatching(/nothing to save/) });
     put('/content/articles/a.json', article({ summary: 'x'.repeat(300) }));
     const bad = await publish('Broken');
     expect(bad).toMatchObject({ ok: false, reason: expect.stringMatching(/problems/) });

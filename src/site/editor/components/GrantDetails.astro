@@ -133,14 +133,14 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
       {mode === 'grant' && g && made && (
         <div class="made" role="status">
           <Icon name="success" />
-          <Text variant="ui">{`${KIND_LABEL[g.kind]} made. Copy the message below and send it to ${first}: it’s kept here, so you can copy it again later. Publish to make it work on the site.`}</Text>
+          <Text variant="ui">{`${KIND_LABEL[g.kind]} made. Copy the message below and send it to ${first}: it’s kept here, so you can copy it again later. Save to remote to make it work on the site.`}</Text>
         </div>
       )}
 
       {mode === 'grant' && g && withdrawn && (
         <div class="notice">
           <Icon name="lock" />
-          <Text variant="ui">{`Withdrawn on ${longDate(g.revokedAt!)}. Once that’s published, it opens nothing. Its record stays here, so you can still see who it was for, until you delete it.`}</Text>
+          <Text variant="ui">{`Withdrawn on ${longDate(g.revokedAt!)}. Once that’s saved to remote, it opens nothing. Its record stays here, so you can still see who it was for, until you delete it.`}</Text>
         </div>
       )}
 
@@ -374,7 +374,7 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
               <div class="stop-words">
                 <Text variant="label">Withdraw now</Text>
                 <Text variant="small" tone="muted">
-                  It stops opening anything once you publish. Its record stays here, so you can still see who it was for and, in Who looked, when it was used.
+                  It stops opening anything once you save to remote. Its record stays here, so you can still see who it was for and, in Who looked, when it was used.
                 </Text>
               </div>
               <Button variant="secondary" size="sm" icon="lock" data-dialog-open="grant-withdraw">
@@ -386,7 +386,7 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
             <div class="stop-words">
               <Text variant="label">Delete</Text>
               <Text variant="small" tone="muted">
-                {withdrawn ? 'Takes its record off this list for good.' : 'Takes it off this list for good, and it stops working once you publish.'} Who looked can no longer name it. The private repository’s history keeps a copy.
+                {withdrawn ? 'Takes its record off this list for good.' : 'Takes it off this list for good, and it stops working once you save to remote.'} Who looked can no longer name it. The private repository’s history keeps a copy.
               </Text>
             </div>
             <Button variant="quiet" size="sm" icon="delete" data-dialog-open="grant-delete">
@@ -394,7 +394,7 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
             </Button>
           </div>
           <Dialog id="grant-withdraw" title="Withdraw this access?" size="sm">
-            <Text variant="ui">{`${g.recipient.name}’s ${KIND_LABEL[g.kind].toLowerCase()} stops opening anything once you publish. A withdrawal can’t be undone: to share with them again, make a new one.`}</Text>
+            <Text variant="ui">{`${g.recipient.name}’s ${KIND_LABEL[g.kind].toLowerCase()} stops opening anything once you save to remote. A withdrawal can’t be undone: to share with them again, make a new one.`}</Text>
             <Fragment slot="actions">
               <Button variant="quiet" data-dialog-close="">
                 Cancel
@@ -406,7 +406,7 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
           </Dialog>
           <Dialog id="grant-delete" title="Delete this access?" size="sm">
             <Text variant="ui">
-              {`${g.recipient.name}’s ${KIND_LABEL[g.kind].toLowerCase()} goes from this list for good.${withdrawn ? '' : ' It stops working once you publish.'} To keep a record of who had access, withdraw it instead.`}
+              {`${g.recipient.name}’s ${KIND_LABEL[g.kind].toLowerCase()} goes from this list for good.${withdrawn ? '' : ' It stops working once you save to remote.'} To keep a record of who had access, withdraw it instead.`}
             </Text>
             <Fragment slot="actions">
               <Button variant="quiet" data-dialog-close="">

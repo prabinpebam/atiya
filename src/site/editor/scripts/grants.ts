@@ -361,13 +361,13 @@ export function initGrantDetails(root: HTMLElement, signal: AbortSignal) {
     if (withdraw) {
       const r = await api('POST', `access/grants/${id}/withdraw`);
       if (!r.ok) return failed(r.data.issues, 'It wasn’t withdrawn: try again.');
-      saveStatus.saved('Withdrawn: publish to make it take effect');
+      saveStatus.saved('Withdrawn: save to remote to make it take effect');
       await redraw(location.href);
       return;
     }
     const r = await api('DELETE', `access/grants/${id}`);
     if (!r.ok) return failed(r.data.issues, 'It wasn’t deleted: try again.');
-    saveStatus.saved(`Deleted ${name}’s access: publish to make it take effect`);
+    saveStatus.saved(`Deleted ${name}’s access: save to remote to make it take effect`);
     // the screen then shows the first one left (or what to do with none)
     const url = urlFor('');
     history.replaceState(history.state, '', url);

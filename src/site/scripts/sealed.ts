@@ -9,7 +9,7 @@ import { each } from './page';
 import { b64, deriveCodeKey, deriveLinkKey, open, utf8 } from '../access/crypto.ts';
 import { KeyringError, cardAad, checkEnvelope, mediaAad, openKeyring, pageAad } from '../access/keyring.ts';
 import { parseCode } from '../access/parse.ts';
-import { afterSignOut, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, readSession, safeReturn, sessionExpired, untilWords, withoutSecret, type Outcome, type Session } from '../access/session.ts';
+import { afterSignOut, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, readSession, safeReturn, sessionExpired, withoutSecret, type Outcome, type Session } from '../access/session.ts';
 import type { KeyringBody } from '../access/types.ts';
 
 const STORE = 'site.access';
@@ -277,14 +277,9 @@ async function openPage(keys: KeyringBody['keys'], grant: string, via: Session['
   return true;
 }
 
-function showBar(s: Session) {
-  // the Sign in page's panel says until when too
-  for (const el of document.querySelectorAll<HTMLElement>('[data-unlock-until]')) el.textContent = untilWords(s.expiresAt);
-  const bar = document.querySelector<HTMLElement>('[data-access-bar]');
-  if (!bar) return;
-  const until = bar.querySelector<HTMLElement>('[data-access-until]');
-  if (until) until.textContent = untilWords(s.expiresAt);
-  bar.hidden = false;
+function showBar() {
+  // the header's Sign in shows as Sign out (base.css, from data-signed-in): nothing else to show
+  html.dataset.signedIn = '';
 }
 
 /** The Sign in page's panel (it has a signed-in state); a private page's own panel has none. */
@@ -304,7 +299,7 @@ async function apply(s: Session, where: Element | null): Promise<boolean> {
     tell('access_failed', { reason: r.outcome });
     return false;
   }
-  showBar(s);
+  showBar();
   panelState('signed-in');
   document.querySelector<HTMLElement>('[data-sign-in-line]')?.setAttribute('hidden', '');
   await openCards(r.body.keys, s.grant);
@@ -463,9 +458,8 @@ export function start() {
     );
     panel.querySelector('[data-unlock-sign-out]')?.addEventListener('click', () => signOut(true), { signal });
   });
-  each<HTMLElement>('[data-access-bar]', (bar, signal) => {
-    bar.querySelector('[data-access-sign-out]')?.addEventListener('click', () => signOut(true), { signal });
-  });
+  // Sign out: the header's (top right, or in the menu on a phone)
+  each<HTMLElement>('[data-access-sign-out]', (b, signal) => b.addEventListener('click', () => signOut(true), { signal }));
 
   void (async () => {
     const link = parseFragment(location.hash);

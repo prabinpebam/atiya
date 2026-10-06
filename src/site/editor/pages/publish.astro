@@ -31,13 +31,13 @@ const rows: ChangeRow[] = groupChanges(state.files, titles).map((c) => {
   return { ...c, href };
 });
 const blocked = !(await repo())
-  ? "content/ isn't in a git repository, so there's nowhere to publish it."
+  ? "content/ isn't in a git repository, so there's nowhere to save it."
   : !state.branch
-    ? "git isn't on a branch (a detached HEAD): check out a branch, then publish."
+    ? "git isn't on a branch (a detached HEAD): check out a branch, then save to remote."
     : !state.upstream
       ? `The branch ${state.branch} has no upstream to push to: set one (git push -u), then publish.`
       : !loaded.ok
-        ? 'The content has problems (listed below): fix them, then publish.'
+        ? 'The content has problems (listed below): fix them, then save to remote.'
         : null;
 const head = (await git(['rev-parse', '--short', 'HEAD'])).stdout.trim();
 const asked = Astro.url.searchParams.get('published') ?? (Astro.url.searchParams.get('pushed') ? head : null);
@@ -51,9 +51,20 @@ const privateNote = anyPrivate
     : 'Only private pages changed: this message goes on the private commit only. The public commit is "Private pages: update".'
   : null;
 const remote = await remoteUrl(state.upstream);
+// pages placed on the site that aren't Published yet: Publish can put them on the site with it (a changed private one is ticked)
+const changed = new Set(state.files.map((f) => f.key));
+const drafts = loaded.ok
+  ? loaded.index.routes.flatMap((r) => {
+      if (r.published || r.node.kind !== 'item') return [];
+      const a = loaded.index.articles.get(r.node.item.id);
+      if (!a) return [];
+      const key = `/${r.access === 'private' ? 'private' : 'content'}/articles/${a.id}.json`;
+      return [{ id: a.id, title: a.title, access: r.access === 'private' ? ('private' as const) : ('open' as const), checked: r.access === 'private' && changed.has(key) }];
+    })
+  : [];
 ---
 
-<EditorLayout title="Publish" screen="publish" heading="Publish" intro={state.branch ? `What changed in content/ and private-pages/ since the last publish, on ${state.branch}.` : 'What changed in content/ and private-pages/ since the last publish.'}>
-  <ChangeList changes={rows} ahead={ahead} blocked={blocked} message={suggestMessage(state.files, titles)} privateNote={privateNote} actions={remote ? actionsUrl(remote) : null} published={published} />
+<EditorLayout title="Save to remote" screen="publish" heading="Save to remote" intro={state.branch ? `What changed in content/ and private-pages/ since the last save to remote, on ${state.branch}.` : 'What changed in content/ and private-pages/ since the last save to remote.'}>
+  <ChangeList changes={rows} ahead={ahead} blocked={blocked} message={suggestMessage(state.files, titles) || (drafts.length ? 'Publish pages' : '')} privateNote={privateNote} actions={remote ? actionsUrl(remote) : null} published={published} drafts={drafts} />
   <div data-region="publish-issues">{!loaded.ok && <ContentIssues issues={loaded.issues} />}</div>
 </EditorLayout>

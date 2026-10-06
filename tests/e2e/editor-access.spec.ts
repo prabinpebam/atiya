@@ -11,7 +11,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FIXTURE, PRIVATE, PRIVATE_REMOTE, REMOTE, reset } from '../../scripts/editor-test-server.mjs';
@@ -170,12 +170,12 @@ test.describe('editor: private pages', () => {
     await expect(page.locator('[data-manager-row="watai"]')).toContainText('Private');
 
     // the top bar's Publish counts the changes in both folders
-    await expect(page.locator('[data-region="editor-pending"]')).toContainText(/changes? to publish/);
+    await expect(page.locator('[data-region="editor-pending"]')).toContainText(/changes? to save/);
     await page.goto('/_edit/publish/');
     await expect(page.getByText(/this message goes on the private commit only/)).toBeVisible();
     await page.getByLabel('Message').fill('Make Watai private for the Contoso panel');
-    await page.getByRole('button', { name: 'Publish', exact: true }).last().click();
-    await expect(page.getByRole('heading', { name: 'Published' })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).last().click();
+    await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
     // the private repository has your words; the public one doesn't, and points at the private commit
     expect(remoteLog(PRIVATE_REMOTE)).toBe('Make Watai private for the Contoso panel');
     const pub = remoteLog(REMOTE);
@@ -203,13 +203,13 @@ test.describe('editor: private pages', () => {
     await expect(detail.locator('[data-grant-text="message"]')).toHaveText(/Hi Ana/);
     await page.goto('/_edit/publish/');
     await page.getByLabel('Message').fill('Access for Ana');
-    await page.getByRole('button', { name: 'Publish', exact: true }).last().click();
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).last().click();
     await expect(page.locator('[data-publish-push-issue]')).toContainText('the private pages: the remote has newer commits', { timeout: 30_000 });
     expect(remoteLog(REMOTE, '%H')).toBe(publicBefore);
 
     execFileSync('git', ['-c', 'user.name=O', '-c', 'user.email=o@localhost', 'pull', '-q', '--rebase'], { cwd: PRIVATE });
     await page.getByRole('button', { name: 'Push again' }).click();
-    await expect(page.getByRole('heading', { name: 'Published' })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
     expect(remoteLog(PRIVATE_REMOTE)).toBe('Access for Ana');
     const pointer = execFileSync('git', [`--git-dir=${REMOTE}`, 'ls-tree', 'main', 'private-pages'], { encoding: 'utf8' }).split(/\s+/)[2];
     expect(pointer).toBe(remoteLog(PRIVATE_REMOTE, '%H'));
@@ -273,6 +273,30 @@ test.describe('editor: private pages', () => {
     await expect(page.locator('tr', { hasText: 'A private case study' })).toContainText('Private');
   });
 
+  test('a private draft is published from the Save to remote screen: ticked, the button says Publish, and its Status becomes Published', async ({ page }) => {
+    const file = join(PRIVATE, 'articles/fx-private-alpha.json');
+    const draft = { ...JSON.parse(readFileSync(file, 'utf8')), status: 'draft' };
+    writeFileSync(file, `${JSON.stringify(draft, null, 2)}\n`);
+    // a draft as it was last saved to remote, and a change to save beside it
+    execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@localhost', 'commit', '-q', '-am', 'a draft'], { cwd: PRIVATE });
+    writeFileSync(file, `${JSON.stringify({ ...draft, summary: `${draft.summary} Now ready.` }, null, 2)}\n`);
+    await page.goto('/_edit/publish/');
+    const drafts = page.locator('[data-publish-drafts]');
+    await expect(drafts.getByText('Publish pages')).toBeVisible();
+    const box = drafts.getByRole('checkbox', { name: /Fixture private alpha/ });
+    // a changed private draft is ticked, and the button says what it does
+    await expect(box).toBeChecked();
+    const submit = page.locator('[data-publish-form] button[type="submit"]');
+    await expect(submit).toHaveText('Publish and save to remote');
+    await drafts.locator('label', { hasText: 'Fixture private alpha' }).click();
+    await expect(submit).toHaveText('Save to remote');
+    await drafts.locator('label', { hasText: 'Fixture private alpha' }).click();
+    await submit.click();
+    await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
+    expect(JSON.parse(readFileSync(file, 'utf8')).status).toBe('published');
+    await expect(page.locator('[data-publish-drafts]')).toHaveCount(0);
+  });
+
   for (const scheme of ['light', 'dark'] as const) {
     test(`the Access screen and a private page's Share dialog have no serious axe findings, ${scheme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
@@ -290,6 +314,8 @@ test.describe('editor: private pages', () => {
       await page.getByRole('tab', { name: 'Page' }).click();
       await page.getByRole('button', { name: 'Share', exact: true }).click();
       await expect(page.locator('#share-page').getByRole('heading', { name: 'Who it’s shared with' })).toBeVisible();
+      // the dialog has finished rising in (axe would read its text half-faded)
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
       expect(await serious()).toEqual([]);
     });
   }

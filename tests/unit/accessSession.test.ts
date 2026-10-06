@@ -4,7 +4,7 @@
  * decrypt, what a signed-in browser keeps, the reload on a missing keyring, and every message.
  */
 import { describe, expect, it } from 'vitest';
-import { afterSignOut, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, readSession, safeReturn, sessionExpired, untilWords, withoutSecret } from '../../src/site/access/session';
+import { afterSignOut, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, readSession, safeReturn, sessionExpired, withoutSecret } from '../../src/site/access/session';
 
 const SECRET = 'A'.repeat(43);
 
@@ -80,8 +80,6 @@ describe('the messages (QB9)', () => {
     for (const o of ['wrong', 'expired', 'withdrawn', 'not-shared', 'offline'] as const) expect(messageFor(o)).not.toMatch(/click here|OK|Submit|password/i);
   });
   it("the bar's end date, and where Sign out goes", () => {
-    expect(untilWords('2026-11-05T00:00:00Z')).toBe(', until 5 November 2026');
-    expect(untilWords()).toBe('');
     expect(afterSignOut('private', '/atiya/work/deltaddd55/')).toBe('/atiya/work/');
     expect(afterSignOut(undefined, '/atiya/work/')).toBe('/atiya/work/');
   });

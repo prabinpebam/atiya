@@ -533,7 +533,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   // The page's file and the media only it uses move between content/ and private-pages/ in one
   // transaction, so what's unsaved here is saved first, and the editor reloads on the page's new file.
   const ACCESS_ASK: Record<NonNullable<State['access']>, string> = {
-    open: 'Make this page public? It moves back to content/, and once you publish, it and its pictures are on the site for everyone and in the public repository’s history.',
+    open: 'Make this page public? It moves back to content/, and once you save to remote, it and its pictures are on the site for everyone and in the public repository’s history.',
     private: 'Make this page private? It moves to private-pages/ and is listed in its section only for readers you share it with, by an access code or a magic link. If it was published openly before, that earlier version stays in the public repository’s history.',
   };
   const moveProtected = async (to: NonNullable<State['access']>, section: string | undefined, what: string) => {
@@ -639,11 +639,16 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   const syncPicker = () => {
     const d = dialog('editor-picker');
     const use = d?.querySelector<HTMLButtonElement>('[data-editor-media-use]');
-    const count = d?.querySelector<HTMLElement>('[data-editor-media-count]');
-    if (count) count.textContent = pick?.mode === 'multiple' ? `${chosen.size} chosen (at least ${pick.min})` : 'Choose one';
+    const count = d?.querySelector<HTMLElement>('[data-editor-media-count]')?.firstElementChild;
+    const several = pick?.mode === 'multiple';
+    const what = pick?.kind === 'video' ? 'video' : 'picture';
+    if (count) count.textContent = several ? (chosen.size >= pick!.min ? `${chosen.size} chosen` : `${chosen.size} chosen: choose at least ${pick!.min}`) : `Choose a ${what} to add it`;
     if (use) {
       use.disabled = !pick || chosen.size < (pick?.min ?? 1);
-      use.hidden = pick?.mode !== 'multiple';
+      use.hidden = !several;
+      // the Button's label span (setting the button's own text would drop its icon)
+      const label = use.querySelector('.label') ?? use;
+      if (several) label.textContent = chosen.size >= (pick?.min ?? 1) ? `Use ${chosen.size} pictures` : 'Use them';
     }
   };
   const choose = (ids: string[]) => {

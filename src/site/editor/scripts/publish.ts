@@ -1,14 +1,14 @@
 /**
- * The Publish screen (documentation/editor/spec.md §7): Discard (after asking), Publish (commit content/
+ * The Save to remote screen (documentation/editor/spec.md §7): Discard (after asking), Save to remote (commit content/
  * and push) and Push again. A publish that committed comes back to the screen with its commit in the
  * address, which shows its result and the link to its deploy; a push that failed says why.
  */
 import { api, announce, describeIssue, swapRegions } from './client';
 
 const WHAT: Record<string, string> = {
-  added: "is new since the last publish, so it's deleted. This can't be undone.",
-  changed: "goes back to how it was last published, and what you changed is lost. This can't be undone.",
-  deleted: 'comes back as it was last published.',
+  added: "is new since the last save to remote, so it's deleted. This can't be undone.",
+  changed: "goes back to how it was last saved to remote, and what you changed is lost. This can't be undone.",
+  deleted: 'comes back as it was last saved to remote.',
 };
 
 type PublishReply = { ok: boolean; commit?: string; pushed?: boolean; pushError?: string; reason?: string; issues?: { file: string; path?: string; message: string }[] };
@@ -67,23 +67,32 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
   );
 
   const form = root.querySelector<HTMLFormElement>('[data-publish-form]');
+  // ticking a draft makes this a publish too: the button says so
+  const label = () => {
+    const words = form?.querySelector('button[type="submit"] .label');
+    if (words) words.textContent = form?.querySelector('input[name="publish"]:checked') ? 'Publish and save to remote' : 'Save to remote';
+  };
+  form?.addEventListener('change', label, { signal });
+  label();
   form?.addEventListener(
     'submit',
     async (e) => {
       e.preventDefault();
       const issue = form.querySelector('[data-editor-form-issue]');
-      const message = String(new FormData(form).get('message') ?? '').trim();
-      if (!message) return say(issue, 'Say what this publish changes: it becomes the commit message.');
+      const f = new FormData(form);
+      const message = String(f.get('message') ?? '').trim();
+      const publish = f.getAll('publish').map(String);
+      if (!message) return say(issue, 'Say what this save changes: it becomes the commit message.');
       say(issue, '');
       const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       if (button) button.disabled = true;
-      announce('Publishing\u2026');
-      const r = await api<PublishReply>('POST', 'publish', { message });
+      announce('Saving to remote\u2026');
+      const r = await api<PublishReply>('POST', 'publish', { message, publish });
       if (button) button.disabled = false;
       if (!r.ok || !r.data.commit) {
-        const why = [r.data.reason, ...(r.data.issues ?? []).map(describeIssue)].filter(Boolean).join(' ') || "It wasn't published.";
+        const why = [r.data.reason, ...(r.data.issues ?? []).map(describeIssue)].filter(Boolean).join(' ') || "It wasn't saved to remote.";
         say(issue, why);
-        return announce(`Not published: ${why}`, 'negative');
+        return announce(`Not saved: ${why}`, 'negative');
       }
       // committed: pushed (the site deploys) or left here with Push again (the screen says why)
       if (!r.data.pushed) sessionStorage.setItem('editor.publish.pushError', r.data.pushError ?? '');

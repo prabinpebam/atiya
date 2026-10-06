@@ -196,11 +196,11 @@ Access belongs to a page, never to a section: every section is open, and any of 
 - **One sign-in covers the whole site** for the session: every section shows the private pages the grant covers, and every private page it covers opens.
 - **Where you sign in:** a **Sign in** page (`/sign-in/`), reached from:
   - the sign-in line under a section that holds private pages;
-  - a **Sign in** link in the footer, on every page;
+  - a **Sign in** link at the top right of the header on every page (on a phone, in the menu), which comes back to the page it was pressed on;
   - a private page opened directly while signed out (it shows the same panel in place).
 
   After signing in you go back to the page you came from (a same-site path only).
-- **While signed in**, a slim `AccessBar` under the header says so, with **Sign out** (§7.3).
+- **While signed in**, the header's Sign in becomes **Sign out**, with its own icon (§7.3). There's no bar and no end date: nothing else on the page changes. (A slim bar under the header said so until 6 October 2026; the owner found it spoiled every page.)
 - **A code and a link open the same pages.** What a grant opens is its scope, whichever way it was shared (V26).
 
 ## 3. Where the content lives
@@ -463,7 +463,7 @@ Each message goes into the page's live region as well as on the screen.
 
 - **By default, for the session:** the grant key is kept in `sessionStorage`, so moving between pages, or coming back in the same tab, needs no code.
 - **Remember on this device** keeps it in `localStorage` until it expires.
-- **Sign out**, in a slim `AccessBar` under the header on every page while signed in:
+- **Sign out**, the header's Sign in while signed in (top right; on a phone, in the menu), from the first paint on a signed-in device:
   - forgets the key in both storages, and tells every other open tab of the site to do the same (a `BroadcastChannel`, with the `storage` event as its fallback);
   - revokes the page's `blob:` URLs, removes the decrypted regions and cards and puts back the neutral title;
   - resets telemetry's identity (§9.3);
@@ -641,14 +641,14 @@ So V8 ("only published statuses and public visibilities are built") holds as bef
 These follow the [site design system](../site-ui/design-system.md): tokens only, sealed fundamentals, a doc comment and a story for every component.
 
 - **`UnlockPanel`** (compound): `TextField`, `Button`, `Checkbox` and `Text`, with its states (ready, signing in, wrong, expired, not shared with you). Used by the Sign in page and a private page's shell.
-- **`AccessBar`** (compound): the signed-in state and Sign out, under the header.
+- **`SiteHeader`** (compound) gains Sign in, which is Sign out while signed in (`access`; the state from `html[data-signed-in]` in `base.css`, so it never flashes).
 - **Seal markers are the layouts' own** (comment pairs, §5.4), not a component: a compound may not wrap other compounds.
 - **The layouts:**
   - `ArticleLayout` takes a `sealed` prop (`{ access: 'private', … }`) that marks its regions (§5.4), gives the head neutral values and lists only open pages after it;
   - `IndexLayout` renders a section's open cards as today, its private cards (`privatePages`) sealed in a hidden holder after the list, and the sign-in line;
   - the Sign in page (`src/pages/sign-in.astro`, no style) is `IndexLayout` with the `UnlockPanel` in its slot.
 - **`StoryCard`** gains `shared`, which shows the "Shared with you" tag (a `Tag`).
-- **The footer** gains its Sign in link.
+- **The footer** no longer carries Sign in: it's in the header.
 - **Pure logic** in `src/site/access/` (crypto, keyrings, codes, scope, expiry), shared by the sealer and the browser and unit-tested.
 - **Scripts** in `src/site/scripts/`: `sealed.ts` (unlock, regions, the media resolver) and `telemetry.ts`, both set up with `each()` and its signal.
 - **The words** of the panel and messages are interface strings in code. The wording of the share message and the Privacy page is content.
@@ -707,9 +707,9 @@ These follow the [site design system](../site-ui/design-system.md): tokens only,
 | O3 | Session replay on open pages | Off |
 | O4 | A consent prompt as well as the notice | No prompt: notice, no cookies, GPC and DNT respected |
 | O5 | Expiry suggested for new grants | 30 days |
-| O6 | The sign-in line under a section that holds private pages, when signed out | Yes: "More work is shared with invited readers. Sign in to see it." Without it, the only way in is the footer's link or a magic link |
+| O6 | The sign-in line under a section that holds private pages, when signed out | Yes: "More work is shared with invited readers. Sign in to see it." Without it, the only way in is the header's Sign in or a magic link |
 | O7 | The private repository's name, and its folder | `atiya-private`, at `private-pages/` |
-| O8 | A Sign in link in the header too | No: the footer and the sign-in line; the header keeps its one action |
+| O8 | A Sign in link in the header too | Yes, since 6 October 2026 (the owner's call): Sign in at the header's top right (Sign out while signed in), and no longer in the footer |
 
 O2 (which recipient details go to PostHog) is decided by D19: none.
 

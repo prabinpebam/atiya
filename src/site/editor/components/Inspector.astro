@@ -83,7 +83,7 @@ const STATUS: SelectOption[] = [
   { value: 'factReview', label: 'Fact review', description: 'Not on the site' },
   { value: 'editorialReview', label: 'Editorial review', description: 'Not on the site' },
   { value: 'approved', label: 'Approved', description: 'Ready: not on the site until published' },
-  { value: 'published', label: 'Published', description: 'On the site once you publish' },
+  { value: 'published', label: 'Published', description: 'On the site once you save to remote' },
   ...(article.status === 'stale' ? [{ value: 'stale', label: 'Due for review', description: 'On the site' }] : []),
   ...(article.status === 'archived' ? [{ value: 'archived', label: 'Archived', description: 'Not on the site' }] : []),
 ];
@@ -288,7 +288,7 @@ const STATUS: SelectOption[] = [
       <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={privatePage ? 'Kept for when it’s public: a private page’s address is a code.' : path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
       <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 160 characters: the standfirst, the card's line and the search description." data-editor-count="160" />
       <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : [{ value: 'note', label: 'Article', description: 'A story, a note or an essay' }, { value: 'page', label: 'Page', description: 'About, Contact and the like' }, { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' }]} />
-      <Select label="Status" name="status" id="page-status" value={article.status} options={STATUS} hint="Published pages go on the site when you publish; back to Draft takes one off." />
+      <Select label="Status" name="status" id="page-status" value={article.status} options={STATUS} hint="A Published page goes on the site when you save to remote; back to Draft takes it off." />
       <Select label="Visibility" name="visibility" id="page-visibility" value={article.visibility} options={[{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }]} />
       {access && <Select label="Who can see it" name="__access" id="page-access" value={access} options={ACCESS} hint="A private page is kept in private-pages/ and published encrypted: never in the public repository. It opens with an access code or a magic link you share. Making it public moves it back." />}
       {

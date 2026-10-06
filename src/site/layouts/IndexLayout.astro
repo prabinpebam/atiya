@@ -18,7 +18,6 @@ import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.ast
 import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Link from '../components/fundamentals/Link.astro';
-import AccessBar from '../components/compounds/AccessBar.astro';
 import type { IconName } from '../design/icons';
 import type { ComponentProps } from 'astro/types';
 
@@ -85,8 +84,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
 ---
 
 <PageShell title={title} description={description} redirect={redirect} noindex={noindex} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} preload={['display', 'display-italic', 'text', 'ui']}>
-  {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} />}
-  {!frame && <AccessBar />}
+  {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} access />}
   <main id="main" class="index" tabindex="-1">
     <header class="intro">
       {crumbs && !frame && <Breadcrumbs trail={crumbs.trail} current={crumbs.current} />}

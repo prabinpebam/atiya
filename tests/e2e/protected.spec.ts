@@ -36,6 +36,8 @@ const titlesIn = async (page: Page) => {
   return TITLES.filter(([, t]) => all.includes(t)).map(([id]) => id);
 };
 const cards = (page: Page) => page.evaluate(() => [...document.querySelectorAll('[data-cards] > [data-node]')].map((e) => e.getAttribute('data-node')));
+/** The header's Sign out (top right; on a phone, in the menu): only the one shown. */
+const headerSignOut = (page: Page) => page.getByRole('banner').getByRole('button', { name: 'Sign out' });
 async function signIn(page: Page, value: string, remember = false) {
   await page.locator('input[name="code"]').fill(value);
   if (remember) await page.locator('input[name="remember"]').check({ force: true });
@@ -78,8 +80,9 @@ test.describe('protected content', () => {
     await expect(page.locator('[data-shared]')).toHaveCount(3);
     expect((await cards(page)).slice(0, 6)).toEqual(['atiya', 'fx-private-alpha', 'watai', 'fx-private-beta', 'story', 'fx-private-gamma']);
     await expect(page.locator('[data-shared]').first()).toContainText('Shared with you');
-    await expect(page.locator('[data-access-bar]')).toBeVisible();
-    await expect(page.locator('[data-access-bar]')).toContainText('until 1 January 2099');
+    // signed in: the header's Sign in is Sign out now, with no bar and no end date
+    await expect(headerSignOut(page)).toBeVisible();
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeHidden();
     await expect(page.locator('[data-sign-in-line]')).toBeHidden();
     // the other section's private page, the same sign-in
     await page.goto('/work/');
@@ -173,7 +176,7 @@ test.describe('protected content', () => {
     const other = await context.newPage();
     await other.goto(SECTION);
     await expect(other.locator('[data-shared]')).toHaveCount(3);
-    await page.locator('[data-access-sign-out]').click({ force: true });
+    await headerSignOut(page).click();
     await page.waitForURL(`**${SECTION}`);
     expect(await page.evaluate(() => [sessionStorage.getItem('site.access'), localStorage.getItem('site.access')])).toEqual([null, null]);
     await expect(page.locator('[data-shared]')).toHaveCount(0);
@@ -264,14 +267,13 @@ test.describe('protected content', () => {
     });
   }
 
-  test('the Sign in page says so once signed in: until when, where shared work is, another code or sign out', async ({ page }) => {
+  test('the Sign in page says so once signed in: where shared work is, another code or sign out', async ({ page }) => {
     await page.goto('/sign-in/');
     await expect(page.locator('[data-unlock-done]')).toBeHidden();
     await signIn(page, ALL);
     const done = page.locator('[data-unlock-done]');
     await expect(done.getByRole('heading', { name: 'You’re signed in' })).toBeVisible();
     await expect(done).toBeFocused();
-    await expect(done).toContainText('until 1 January 2099');
     await expect(page.locator('[data-unlock-form]')).toBeHidden();
     // the sections where shared work is listed (the open sections holding private pages)
     await expect(done.getByRole('navigation', { name: 'Where shared work is listed' }).getByRole('link')).toHaveText(['Work', 'Writing', 'Side projects']);
@@ -288,7 +290,7 @@ test.describe('protected content', () => {
     // sign out: the form, and the bar gone
     await done.getByRole('button', { name: 'Sign out' }).click();
     await expect(page.locator('[data-unlock-form]')).toBeVisible();
-    await expect(page.locator('[data-access-bar]')).toBeHidden();
+    await expect(headerSignOut(page)).toBeHidden();
     expect(await page.evaluate(() => sessionStorage.getItem('site.access'))).toBeNull();
   });
 
@@ -309,9 +311,11 @@ test.describe('protected content', () => {
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
     await page.goto(SECTION);
-    await expect(page.locator('[data-access-bar]')).toBeVisible();
+    // on a phone, Sign out is in the menu
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await expect(headerSignOut(page)).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-    const out = await page.locator('[data-access-sign-out]').boundingBox();
+    const out = await headerSignOut(page).boundingBox();
     expect(out!.height).toBeGreaterThanOrEqual(44);
   });
 });
@@ -391,8 +395,8 @@ test.describe('protected content: telemetry (QB6)', () => {
     await expect.poll(() => t.sent.find((e) => e.event === 'access_link')?.properties.kind, { timeout: 15_000 }).toBe('internal');
     // sign out: the next page's events are anonymous again
     await page.goto(SECTION);
-    await expect(page.locator('[data-access-bar]')).toBeVisible();
-    await page.locator('[data-access-sign-out]').click({ force: true });
+    await expect(headerSignOut(page)).toBeVisible();
+    await headerSignOut(page).click();
     await expect(page.locator('[data-sign-in-line]')).toBeVisible();
     const before = t.sent.length;
     await page.goto('/');

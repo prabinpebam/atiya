@@ -51,7 +51,7 @@ const to = (p: string) => withBase(`/_edit/${p}`);
   </section>
 
   <section class="panel" aria-labelledby="dash-publish">
-    <Heading level={2} size="h4" id="dash-publish">Since the last publish</Heading>
+    <Heading level={2} size="h4" id="dash-publish">Since the last save to remote</Heading>
     {
       pending ? (
         <Text variant="ui">{`${pending} ${pending === 1 ? 'content file has' : 'content files have'} changed and aren't on the site yet.`}</Text>
@@ -59,7 +59,7 @@ const to = (p: string) => withBase(`/_edit/${p}`);
         <Text variant="ui" tone="muted">Nothing's waiting: the site has everything.</Text>
       )
     }
-    <Link href={to('publish/')} variant="standalone">Review and publish</Link>
+    <Link href={to('publish/')} variant="standalone">Review and save to remote</Link>
   </section>
 
   <section class="panel wide" aria-labelledby="dash-recent">

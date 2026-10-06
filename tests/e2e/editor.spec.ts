@@ -1098,19 +1098,19 @@ test.describe('editor', () => {
     const person = readJson(join(FIXTURE, 'content/people/prabin.json'));
     writeFileSync(join(FIXTURE, 'content/people/prabin.json'), `${JSON.stringify({ ...person, role: 'Discarded' }, null, 2)}\n`);
     await page.goto('/_edit/publish/');
-    await expect(page.getByRole('heading', { name: '2 changes to publish' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '2 changes to save' })).toBeVisible();
 
     await page.locator('[data-publish-discard][data-name^="Person"]').click();
     await page.locator('#publish-discard').getByRole('button', { name: 'Discard it' }).click();
-    await expect(page.getByRole('heading', { name: '1 change to publish' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: '1 change to save' })).toBeVisible({ timeout: 15_000 });
     expect(readJson(join(FIXTURE, 'content/people/prabin.json')).role).toBe(person.role);
 
     await expect(page.getByLabel('Message')).toHaveValue('Content: the site settings');
-    await page.getByRole('button', { name: 'Publish', exact: true }).last().click();
-    await expect(page.getByRole('heading', { name: 'Published' })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).last().click();
+    await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
     expect(git('show', '--name-only', '--format=%s', 'HEAD').split('\n')).toEqual(['Content: the site settings', '', 'content/site.json']);
     expect(execFileSync('git', [`--git-dir=${REMOTE}`, 'log', '-1', '--format=%s', 'main'], { encoding: 'utf8' }).trim()).toBe('Content: the site settings');
-    await expect(page.getByRole('button', { name: 'Publish', exact: true }).last()).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Save to remote', exact: true }).last()).toBeDisabled();
   });
 
   test('a push the remote refuses keeps the commit, says why, and Push again sends it once the branch is up to date', async ({ page }) => {
@@ -1124,13 +1124,13 @@ test.describe('editor', () => {
     const site = readJson(join(FIXTURE, 'content/site.json'));
     writeFileSync(join(FIXTURE, 'content/site.json'), `${JSON.stringify({ ...site, positioning: 'Pushed later.' }, null, 2)}\n`);
     await page.goto('/_edit/publish/');
-    await page.getByRole('button', { name: 'Publish', exact: true }).last().click();
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).last().click();
     await expect(page.getByRole('heading', { name: '1 commit not on GitHub yet' })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-publish-push-issue]')).toContainText('newer commits');
 
     git('pull', '-q', '--rebase');
     await page.getByRole('button', { name: 'Push again' }).click();
-    await expect(page.getByRole('heading', { name: 'Published' })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
     expect(execFileSync('git', [`--git-dir=${REMOTE}`, 'log', '-1', '--format=%s', 'main'], { encoding: 'utf8' }).trim()).toBe('Content: the site settings');
   });
 
@@ -1160,6 +1160,34 @@ test.describe('editor', () => {
     await page.getByRole('option', { name: 'Match system' }).click();
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./);
     await expect(site.locator('html')).not.toHaveAttribute('data-theme', /./);
+  });
+
+  test('a gallery from the palette: the picker scrolls inside the window, and its Use button stays in the footer, saying what it adds', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; items?: { media: string }[] }[];
+    const count = blocks().length;
+    await page.locator('[data-editor-outline] [data-editor-add-at]').click();
+    await page.locator('#editor-palette [data-editor-add="gallery"]').click();
+    const picker = page.locator('#editor-picker');
+    await expect(picker).toBeVisible();
+    // the dialog fits the window and its body scrolls; the footer is always in view
+    const box = (await picker.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(720);
+    const use = picker.locator('[data-editor-media-use]');
+    await expect(use).toBeVisible();
+    await expect(use).toBeDisabled();
+    await expect(picker.locator('[data-editor-media-count]')).toHaveText('0 chosen: choose at least 2');
+    const cards = picker.locator('[data-media-kind="image"]:visible [data-editor-media]');
+    await cards.nth(0).click();
+    await cards.nth(1).click();
+    await expect(use).toBeEnabled();
+    await expect(use).toHaveText('Use 2 pictures');
+    await expect(use).toBeInViewport();
+    await use.click();
+    await expect(picker).toBeHidden();
+    await expect.poll(() => blocks().length, { timeout: 30_000 }).toBe(count + 1);
+    expect(blocks().find((b) => b.type === 'gallery')?.items).toHaveLength(2);
   });
 
   test('every screen passes axe, in light and in dark', async ({ page }) => {

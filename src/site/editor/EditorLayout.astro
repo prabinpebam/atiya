@@ -2,7 +2,7 @@
 /**
  * Edit mode's frame (documentation/editor/spec.md §2): the side navigation to its screens, and a top bar
  * with the screen's title, the save status (a live region), the screen's own tools, the number of
- * unpublished changes, the colour theme and Publish. The theme is the site's own choice (light, dark or
+ * changes not saved to remote yet, the colour theme and Save to remote. The theme is the site's own choice (light, dark or
  * the system's): it changes the whole of edit mode, its canvas with it. The article editor turns the
  * navigation off for its studio; a screen
  * with a detail pane (Media) puts it in the aside slot, beside its content and in view as it scrolls. Built
@@ -61,7 +61,7 @@ const groups = [
     items: [
       { label: 'Settings', href: to('settings/'), current: screen === 'settings' },
       { label: 'Access', href: to('access/'), current: screen === 'access' },
-      { label: 'Publish', href: to('publish/'), current: screen === 'publish', note: pending ? `${pending} to publish` : undefined },
+      { label: 'Save to remote', href: to('publish/'), current: screen === 'publish', note: pending ? `${pending} to save` : undefined },
     ],
   },
 ];
@@ -79,11 +79,11 @@ const groups = [
         {
           pending > 0 && (
             <Text as="span" variant="small" tone="muted">
-              {`${pending} ${pending === 1 ? 'change' : 'changes'} to publish`}
+              {`${pending} ${pending === 1 ? 'change' : 'changes'} to save`}
             </Text>
           )
         }
-        <Button href={to('publish/')} variant={pending ? 'primary' : 'secondary'} size="sm" icon="publish">Publish</Button>
+        <Button href={to('publish/')} variant={pending ? 'primary' : 'secondary'} size="sm" icon="upload">Save to remote</Button>
       </div>
     </header>
     {

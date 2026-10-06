@@ -150,12 +150,6 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
       </section>
     ))
   }
-  {mode === 'pick' && (
-    <div class="pick-actions">
-      <Text as="span" variant="small" tone="muted" data-editor-media-count>Nothing chosen</Text>
-      <Button variant="primary" data-editor-media-use disabled>Use it</Button>
-    </div>
-  )}
 </div>
 
 <style>
@@ -268,8 +262,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     gap: var(--space-2);
   }
 
-  .actions,
-  .pick-actions {
+  .actions {
     display: flex;
     justify-content: end;
     align-items: center;

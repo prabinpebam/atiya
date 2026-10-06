@@ -125,13 +125,13 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           {usedIn.length ? (
             <Text variant="small" tone="muted">It can't be deleted while something uses it. Take it out of what's listed under Used in first.</Text>
           ) : (
-            <Text variant="small" tone="muted">Deletes the video, its poster and its details from content/. Publishing then removes it from the site.</Text>
+            <Text variant="small" tone="muted">Deletes the video, its poster and its details from content/. Saving to remote then removes it from the site.</Text>
           )}
           <div class="actions">
             <Button variant="secondary" icon="delete" disabled={usedIn.length > 0} data-dialog-open="delete-media">Delete the video</Button>
           </div>
           <Dialog id="delete-media" title="Delete this video?" size="sm">
-            <Text variant="ui">{`${name}, its poster and its details will be deleted from content/. If it's on the site already, Discard on the Publish screen brings it back until you publish.`}</Text>
+            <Text variant="ui">{`${name}, its poster and its details will be deleted from content/. If it's on the site already, Discard on the Save to remote screen brings it back until you save.`}</Text>
             <Fragment slot="actions">
               <Button variant="quiet" data-dialog-close="">Keep it</Button>
               <Button variant="primary" icon="delete" data-editor-media-delete="">Delete it</Button>
@@ -261,13 +261,13 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           {usedIn.length ? (
             <Text variant="small" tone="muted">It can't be deleted while something uses it. Take it out of what's listed under Used in first.</Text>
           ) : (
-            <Text variant="small" tone="muted">Deletes the picture and its details from content/. Publishing then removes it from the site.</Text>
+            <Text variant="small" tone="muted">Deletes the picture and its details from content/. Saving to remote then removes it from the site.</Text>
           )}
           <div class="actions">
             <Button variant="secondary" icon="delete" disabled={usedIn.length > 0} data-dialog-open="delete-media">Delete the picture</Button>
           </div>
           <Dialog id="delete-media" title="Delete this picture?" size="sm">
-            <Text variant="ui">{`${name} and its details will be deleted from content/. If it's on the site already, Discard on the Publish screen brings it back until you publish.`}</Text>
+            <Text variant="ui">{`${name} and its details will be deleted from content/. If it's on the site already, Discard on the Save to remote screen brings it back until you save.`}</Text>
             <Fragment slot="actions">
               <Button variant="quiet" data-dialog-close="">Keep it</Button>
               <Button variant="primary" icon="delete" data-editor-media-delete="">Delete it</Button>

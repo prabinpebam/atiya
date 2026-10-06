@@ -20,7 +20,6 @@ import RelatedStories, { type RelatedStory } from '../components/compounds/Relat
 import Prose from '../components/fundamentals/Prose.astro';
 import BackToTop from '../components/fundamentals/BackToTop.astro';
 import Text from '../components/fundamentals/Text.astro';
-import AccessBar from '../components/compounds/AccessBar.astro';
 import UnlockPanel from '../components/compounds/UnlockPanel.astro';
 import type { IconName } from '../design/icons';
 
@@ -72,8 +71,7 @@ const sealing = !!sealed && import.meta.env.PROD;
 ---
 
 <PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} sealed={sealed?.access} preload={['display', 'display-italic', 'text', 'ui']}>
-  {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} />}
-  {!frame && <AccessBar />}
+  {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} access />}
   <main id="main" class="page" tabindex="-1">
     {
       sealed && !sealing && (
