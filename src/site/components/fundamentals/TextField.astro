@@ -42,6 +42,10 @@ interface Props {
   multiline?: boolean;
   /** Textarea rows. */
   rows?: number;
+  /** The most characters it takes. */
+  maxlength?: number;
+  /** Also draws its error line, hidden and empty, for a page's script to fill and show (data-field-error, its words in data-field-error-text): the same look as an error given here. The script ties it with aria-describedby while it shows. */
+  liveError?: boolean;
   /** Data attributes pass through to the root element. */
   [data: `data-${string}`]: string | undefined;
 }
@@ -62,11 +66,13 @@ const {
   autocomplete,
   multiline = false,
   rows = 4,
+  maxlength,
+  liveError = false,
   ...rest
 } = Astro.props;
 const described = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
 const leading = icon ? svgOf(icon) : null;
-const errorIcon = error ? svgOf('error') : null;
+const errorIcon = error || liveError ? svgOf('error') : null;
 const note = required ? 'Required' : optional ? 'Optional' : undefined;
 ---
 
@@ -94,6 +100,7 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
           disabled={disabled}
           autocomplete={autocomplete}
           rows={rows}
+          maxlength={maxlength}
           aria-required={required ? 'true' : undefined}
           aria-describedby={described}
           aria-invalid={error ? 'true' : undefined}
@@ -110,6 +117,7 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
           required={required}
           disabled={disabled}
           autocomplete={autocomplete}
+          maxlength={maxlength}
           aria-required={required ? 'true' : undefined}
           aria-describedby={described}
           aria-invalid={error ? 'true' : undefined}
@@ -126,6 +134,16 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
           <Fragment set:html={errorIcon.body} />
         </svg>
         <span>{error}</span>
+      </p>
+    )
+  }
+  {
+    !error && liveError && errorIcon && (
+      <p class="error" id={`${id}-error`} hidden data-field-error>
+        <svg class="error-icon" viewBox={errorIcon.viewBox} aria-hidden="true" focusable="false" data-icon={errorIcon.name} data-icon-tone="tonal">
+          <Fragment set:html={errorIcon.body} />
+        </svg>
+        <span data-field-error-text></span>
       </p>
     )
   }
@@ -241,6 +259,10 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
     gap: var(--space-2);
     color: var(--color-negative);
     font-weight: var(--weight-medium);
+  }
+
+  .error[hidden] {
+    display: none;
   }
 
   .error-icon {

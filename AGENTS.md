@@ -133,6 +133,14 @@ Spec, plan, Definition of Done and quality benchmark: [documentation/access/](./
 - **Telemetry** (PostHog, `posthog-js` pinned, its no-external build): `scripts/telemetry.ts` runs on every page and stays ≤ 1.2 KB gzip (`size-report`); PostHog and the sanitizer (`telemetrySanitize.ts`) are their own chunk, fetched on idle. On protected pages, the Sign in page and any page showing shared cards, only the allowlist leaves the browser; fragments are stripped everywhere. It runs only in production builds with `PUBLIC_POSTHOG_KEY`, never in dev, and respects GPC, DNT and `?telemetry=off`. A new event goes in the allowlist (both `telemetrySanitize.ts` and the E2E's) only if it carries nothing protected. E2E tests turn it on with `localStorage['site.test.telemetry'] = '1'` and read every request to `https://telemetry.test`.
 - **Check with** the E2E groups "protected content" (the scope matrix, telemetry, sign-out, axe), `--project=editor` (`editor-access.spec.ts`) and `npm run verify:prod`; `npm run preview:protected` builds the real private content sealed, on `http://localhost:4331/`, for your eyes only.
 
+### Contact form
+
+Spec, plan and Definition of Done: [documentation/contact/](./documentation/contact/spec.md). The `ContactForm` compound (on the Contact page, through `IndexLayout`'s `lead` slot) posts to the contact service, `contact-api/`: an Azure Functions app in the owner's Visual Studio Enterprise subscription (`rg-atiya-contact`, Central India) that emails him through Azure Communication Services.
+- **The rules live once**, in `contact-api/src/rules.mjs` (pure); the site reaches them through `src/site/scripts/contactRules.ts` (tier 0). Change a limit or a message there, never in two places.
+- **Deploy the service only with** `pwsh -File scripts/deploy-contact-api.ps1` (`-CodeOnly` to publish code); never from the site's workflow. It names the subscription on every call, never prints a secret, and writes the endpoint to `.env` (an address, committed). Secrets live only in the Function app's settings.
+- **Tests never call the real service:** the test build's endpoint is `https://contact.test` (`.env.test`), intercepted by `tests/e2e/contact.spec.ts`. A live check sends the owner a real email: do it only on purpose, and say so.
+- **Nothing typed in the form reaches telemetry** (its wrapper is `ph-no-capture`, and it sends no events); keep it that way.
+
 ### Documentation site (the source of truth)
 
 - `documentation/` is a [Slate](./slate/README.md) host. The package is vendored in `slate/`; the adapter skill is `.github/skills/slate/SKILL.md`.

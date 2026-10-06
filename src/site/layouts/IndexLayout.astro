@@ -4,6 +4,7 @@
  * section's view: a list (rows, words first), tiles (an even grid of cards), a bento box (the lead
  * across the page, then rows of halves and thirds) or features (every page a lead, its picture beside
  * its words, one after another), with the whitespace a magazine's section opener has.
+ * A section can open with something of its own before its pages (the lead slot: the Contact page's form).
  * An empty section says so, only when it has nothing at all: a section whose pages are all shared with
  * invited readers says that instead, with the ways to sign in and to ask for access. Defined once; every section uses it (documentation/sections/spec.md §3.4),
  * and so does a building's list on the planet, in the planet's frame (§6.1).
@@ -54,7 +55,7 @@ interface Props {
   privatePages?: { id: string; after: string | null; story: Story }[];
   /** Where to sign in to see the private pages (the Sign in page, with the way back). */
   signIn?: string;
-  /** Where a reader asks for access to them (the site's contact page). */
+  /** Where a reader asks for access to them (the site's contact page): its form, with the request started for this section. */
   ask?: string;
   /** How they're laid out: list (rows), tiles (an even grid), bento (a lead, then halves and thirds) or features (every page a lead). */
   view?: 'list' | 'tiles' | 'bento' | 'features';
@@ -94,6 +95,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
       <Heading level={1} size="display" id={frame ? 'frame-heading' : undefined}>{heading}</Heading>
       {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
     </header>
+    <slot name="lead" />
     <div class="list" data-view={view}>
       {
         shown.length > 0 || sealed.length > 0 ? (
@@ -165,7 +167,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
                 </Button>
               </div>
               {ask && (
-                <Button href={ask} variant="secondary" icon="mail">
+                <Button href={`${ask}?access=${encodeURIComponent(heading)}#contact-form`} variant="secondary" icon="mail">
                   Ask for access
                 </Button>
               )}
@@ -198,6 +200,13 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
     display: grid;
     gap: var(--space-6);
     max-width: var(--size-popout);
+  }
+
+  /* the pages, then the invited-readers panel: apart by the same gap as the cards' rows */
+  .list {
+    display: grid;
+    align-content: start;
+    gap: var(--space-16);
   }
 
   .grid {

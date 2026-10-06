@@ -14,3 +14,6 @@ assets-src/audio/.cache/
 .editor-test-private.git/
 .editor-test-private-seed/
 
+
+# the contact service's local settings can hold its secrets (documentation/contact/spec.md §4.4)
+contact-api/local.settings.json

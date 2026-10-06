@@ -8,6 +8,7 @@
  */
 import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
+import ContactForm from '../components/compounds/ContactForm.astro';
 import Blocks from './Blocks.astro';
 import { getArticle, getOpenRoutes, getPlanet, getRoutes, getSite, getStructure } from './repository';
 import { pageMeasure } from './reading';
@@ -40,6 +41,10 @@ const docTitle = `${title} — ${site.name}`;
 const crumbs = route && route.ancestors.length > 1 ? { trail: route.ancestors.map((c) => ({ label: c.label, href: withBase(c.path) })), current: route.title } : undefined;
 // where "Get in touch" goes, and where to sign in to see a section's private pages (documentation/access/spec.md §2.3)
 const contact = withBase(getOpenRoutes().find((r) => r.node.id === site.contactPage)?.path ?? '/');
+// the Contact page opens with its form (documentation/contact/spec.md §2.1), which links to the Privacy page
+const isContact = node?.kind === 'hub' && node.id === site.contactPage;
+const privacy = withBase(getOpenRoutes().find((r) => r.node.id === site.privacyPage)?.path ?? '/');
+const contactEndpoint = import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | undefined;
 const signInHref = (from: string) => withBase(`/sign-in/?return=${encodeURIComponent(withBase(from))}`);
 // a private page: sealed in a build, open with its ribbon in dev; the build's sealer finds it in the provenance record
 const access = route?.access ?? 'open';
@@ -102,7 +107,9 @@ const privatePages = await Promise.all(
         ask={privatePages.length ? contact : undefined}
         view={node.view}
         empty="Nothing here yet. This section is being written."
-      />
+      >
+        {isContact && <ContactForm slot="lead" endpoint={contactEndpoint} privacy={privacy} />}
+      </IndexLayout>
     )
   )
 }

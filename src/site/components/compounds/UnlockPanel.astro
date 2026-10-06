@@ -21,7 +21,7 @@ import Button from '../fundamentals/Button.astro';
 import Link from '../fundamentals/Link.astro';
 
 interface Props {
-  /** Where getting in touch goes (the contact page). */
+  /** Where getting in touch goes (the contact page): its form, with an access request started (documentation/contact/spec.md §2.1). */
   contact: string;
   /** The heading's level: h1 on the Sign in page, h2 on a private page. */
   headingLevel?: 1 | 2;
@@ -60,7 +60,7 @@ const { contact, headingLevel = 2, returnTo, id = 'access', shared, signedIn = f
       <p class="status" id={`${id}-status`} role="status" aria-live="polite" data-unlock-status />
     </form>
     <Text variant="small" tone="muted">
-      No code? <Link href={contact}>Get in touch</Link> to ask for one.
+      No code? <Link href={`${contact}?access=#contact-form`}>Get in touch</Link> to ask for one.
     </Text>
     <noscript>
       <Text variant="body">This page is shared with invited readers and needs JavaScript to open.</Text>

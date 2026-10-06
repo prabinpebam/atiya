@@ -20,3 +20,7 @@ import TextField from '../components/fundamentals/TextField.astro';
   <TextField label="Website" type="url" value="classic-site" error="The website address is incomplete. Add https:// and try again." />
   <TextField label="Phone number" type="tel" disabled placeholder="Not needed for this form" />
 </Example>
+
+<Example title="A length limit, and an error a script shows" layout="stack" description="maxlength stops typing at the limit. liveError draws the error line hidden, for the page's script to fill and show (the contact form checks a field as it's left); it looks just like an error given on the page.">
+  <TextField label="Your name" maxlength={100} autocomplete="name" liveError required />
+</Example>

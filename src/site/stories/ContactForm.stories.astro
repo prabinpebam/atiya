@@ -1,0 +1,12 @@
+---
+import Example from '../library/Example.astro';
+import ContactForm from '../components/compounds/ContactForm.astro';
+---
+
+<Example title="The form" layout="block" description="Name, email and a plain-text message. Leave a field you changed, or press Send, to see its error; here the service is a made-up address, so Send says the message didn't send, and keeps what you typed.">
+  <ContactForm endpoint="https://contact.example.invalid" privacy="#" id="story-contact" level={3} />
+</Example>
+
+<Example title="Not set up" layout="block" description="A copy of the site without PUBLIC_CONTACT_ENDPOINT (a fork) says so in place of the form.">
+  <ContactForm id="story-contact-unset" level={3} />
+</Example>

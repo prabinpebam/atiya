@@ -26,7 +26,7 @@ interface Props {
   iconEnd?: IconName;
   /** Can’t be pressed (a link loses its href and says so). */
   disabled?: boolean;
-  /** Busy: a spinner, and it can't be pressed. */
+  /** Busy: a spinner, and it can't be pressed. A script can do the same by setting aria-busy="true" (and disabled). */
   loading?: boolean;
   /** Fills its container's width. */
   block?: boolean;
@@ -68,7 +68,7 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
   aria-busy={loading ? 'true' : undefined}
   {...rest}
 >
-  {loading && <span class="spinner" aria-hidden="true" />}
+  <span class="spinner" aria-hidden="true"></span>
   {
     start && (
       <svg class="icon" viewBox={start.viewBox} aria-hidden="true" focusable="false" data-icon={start.name} data-icon-tone={tonal}>
@@ -211,6 +211,11 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
 
   .end {
     transition: transform var(--duration-fast) var(--ease-spring);
+  }
+
+  /* drawn on every button, shown only while it's busy (the loading prop, or a script's aria-busy) */
+  .button:not([aria-busy='true']) .spinner {
+    display: none;
   }
 
   .spinner {

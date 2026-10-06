@@ -1,0 +1,396 @@
+---
+/**
+ * A message to the site's owner (documentation/contact/spec.md): the visitor's name, their email so he can
+ * reply, and the message in plain text, sent by the contact service (contact-api/) to his inbox. It checks
+ * each field as it's left and all of them on Send, keeps a draft in the tab, solves the service's
+ * proof-of-work challenge while the visitor types, and says what happened: sent (a confirmation in its
+ * place), a field to fix, or why it didn't send, with everything typed kept. Opened with ?access=<section>
+ * (Ask for access), it starts the message for them.
+ * @tier compound
+ * @a11y A labelled section and a form of labelled fields; errors under their fields (aria-invalid, aria-describedby), the first one focused on Send.
+ * @a11y Why it didn't send is an alert; the confirmation is a status that takes the focus.
+ * @a11y The honeypot is hidden from people, assistive tech and the tab order.
+ * @key Tab: moves through the fields and Send
+ * @key Enter: on Send, sends
+ */
+import Heading from '../fundamentals/Heading.astro';
+import TextField from '../fundamentals/TextField.astro';
+import Button from '../fundamentals/Button.astro';
+import Text from '../fundamentals/Text.astro';
+import Link from '../fundamentals/Link.astro';
+import Icon from '../fundamentals/Icon.astro';
+import { LIMITS } from '../../scripts/contactRules';
+
+interface Props {
+  /** The contact service's address (PUBLIC_CONTACT_ENDPOINT). Left out, the form says it isn't set up. */
+  endpoint?: string;
+  /** The Privacy page, linked under Send. */
+  privacy?: string;
+  /** Its section's heading level (2 on a page under its h1). */
+  level?: 2 | 3;
+  /** Its id: the page's anchor to it (#contact-form, which Ask for access links to), and the root of its fields' ids. */
+  id?: string;
+}
+
+const { endpoint, privacy, level = 2, id = 'contact-form' } = Astro.props;
+const service = endpoint?.replace(/\/+$/, '');
+---
+
+<section class="contact ph-no-capture" id={id} aria-labelledby={`${id}-heading`} data-contact-form data-endpoint={service}>
+  <Heading level={level} size="h3" id={`${id}-heading`}>Send a message</Heading>
+  {
+    service ? (
+      <>
+        <div class="body" data-contact-body hidden>
+          <form class="form" novalidate data-contact-fields>
+            <TextField label="Your name" name="name" id={`${id}-name`} autocomplete="name" required maxlength={LIMITS.name} liveError data-contact-field="name" />
+            <TextField label="Your email" name="email" id={`${id}-email`} type="email" autocomplete="email" required maxlength={LIMITS.email} hint="I'll reply to this address." liveError data-contact-field="email" />
+            <TextField label="Message" name="message" id={`${id}-message`} multiline rows={8} required hint={`Plain text. Up to ${LIMITS.messageMax.toLocaleString('en')} characters.`} liveError data-contact-field="message" />
+            <div class="trap" aria-hidden="true">
+              <label for={`${id}-website`}>Leave this empty</label>
+              <input id={`${id}-website`} name="website" type="text" tabindex="-1" autocomplete="off" />
+            </div>
+            <p class="alert" role="alert" data-contact-alert hidden>
+              <Icon name="error" tone="tonal" />
+              <span data-contact-alert-text />
+            </p>
+            <div class="send">
+              <Button type="submit" variant="primary" icon="publish" data-contact-send="">
+                Send message
+              </Button>
+            </div>
+            <Text variant="small" tone="muted">
+              Your message goes straight to my inbox. Nothing is kept on this site.{privacy && ' '}
+              {privacy && <Link href={privacy}>About privacy</Link>}
+            </Text>
+          </form>
+          <div class="sent" role="status" tabindex="-1" data-contact-sent hidden>
+            <span class="sent-mark">
+              <Icon name="success" size="lg" tone="tonal" />
+            </span>
+            <Heading level={level === 2 ? 3 : 4} size="h4">
+              Message sent
+            </Heading>
+            <Text variant="body">
+              <span data-contact-thanks />
+            </Text>
+            <Button variant="secondary" data-contact-again="">
+              Send another message
+            </Button>
+          </div>
+        </div>
+        <noscript>
+          <Text variant="body" tone="muted">
+            The contact form needs JavaScript to send.
+          </Text>
+        </noscript>
+      </>
+    ) : (
+      <Text variant="body" tone="muted">
+        The contact form isn't set up on this copy of the site.
+      </Text>
+    )
+  }
+</section>
+
+<style>
+  .contact {
+    display: grid;
+    gap: var(--space-6);
+    max-width: var(--size-measure);
+    scroll-margin-block-start: var(--space-section);
+  }
+
+  .body[hidden],
+  .form[hidden],
+  .sent[hidden],
+  .alert[hidden] {
+    display: none;
+  }
+
+  .form {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .send {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .alert {
+    display: flex;
+    align-items: start;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--color-negative);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+  }
+
+  /* the honeypot: a real field, out of sight and reach (aria-hidden, no tab stop): only a bot fills it in */
+  .trap {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .sent {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-3);
+    padding: var(--space-8);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    outline: none;
+  }
+
+  .sent-mark {
+    color: var(--color-positive);
+  }
+
+  @media (max-width: 40rem) {
+    .sent {
+      padding: var(--space-6);
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { solve } from '../../scripts/contactWork';
+  import { accessRequest, checkField, cleanFields, errorText, firstName, LIMITS } from '../../scripts/contactRules';
+
+  type Field = 'name' | 'email' | 'message';
+  type Work = { challenge: string; signature: string; nonce: string };
+  const FIELDS: Field[] = ['name', 'email', 'message'];
+  const DRAFT = 'site.contact.draft';
+  const TIMEOUT = 15_000;
+  const FAILED = {
+    network: "Your message didn't send. Check your connection and try again.",
+    rate: "You've sent several messages in a short time. Try again in an hour.",
+    daily: 'The form is resting for today. Try again tomorrow.',
+    server: 'Something went wrong on my side. Try again in a few minutes.',
+  } as const;
+
+  each<HTMLElement>('[data-contact-form]', (root, signal) => {
+    const service = root.dataset.endpoint;
+    const body = root.querySelector<HTMLElement>('[data-contact-body]');
+    const form = root.querySelector<HTMLFormElement>('[data-contact-fields]');
+    const sent = root.querySelector<HTMLElement>('[data-contact-sent]');
+    const alert = root.querySelector<HTMLElement>('[data-contact-alert]');
+    const sendButton = root.querySelector<HTMLButtonElement>('[data-contact-send]');
+    const again = root.querySelector<HTMLButtonElement>('[data-contact-again]');
+    const thanks = root.querySelector<HTMLElement>('[data-contact-thanks]');
+    if (!service || !body || !form || !sent || !alert || !sendButton || !again || !thanks) return;
+    const input = (k: Field) => form.elements.namedItem(k) as HTMLInputElement | HTMLTextAreaElement;
+    const trap = form.elements.namedItem('website') as HTMLInputElement;
+    const hint = root.querySelector<HTMLElement>(`#${CSS.escape(root.id)}-message-hint`);
+    const hintText = hint?.textContent ?? '';
+    const label = sendButton.querySelector('.label') ?? sendButton;
+    const sendText = label.textContent ?? '';
+
+    // the section an access request is about (Ask for access: ?access=<section>; Get in touch: ?access=)
+    const params = new URLSearchParams(location.search);
+    let about: string | null = params.has('access') ? (params.get('access') ?? '').slice(0, LIMITS.about) : null;
+
+    // a draft in this tab, kept as they type; then the access request's start, if the message is empty
+    try {
+      const d = JSON.parse(sessionStorage.getItem(DRAFT) ?? 'null') as Partial<Record<Field | 'about', string>> | null;
+      if (d) {
+        for (const k of FIELDS) if (d[k] && !input(k).value) input(k).value = d[k]!;
+        if (about === null && typeof d.about === 'string') about = d.about;
+      }
+    } catch {
+      // a draft that can't be read is no draft
+    }
+    if (about !== null && !input('message').value) input('message').value = accessRequest(about);
+    const saveDraft = () => {
+      try {
+        sessionStorage.setItem(DRAFT, JSON.stringify({ ...Object.fromEntries(FIELDS.map((k) => [k, input(k).value])), ...(about !== null ? { about } : {}) }));
+      } catch {
+        // storage full or off: the draft just isn't kept
+      }
+    };
+
+    // ---------- field errors ----------
+    const showError = (k: Field, text: string | null) => {
+      const field = root.querySelector<HTMLElement>(`[data-contact-field="${k}"]`);
+      const el = input(k);
+      const err = field?.querySelector<HTMLElement>('[data-field-error]');
+      const words = err?.querySelector<HTMLElement>('[data-field-error-text]');
+      if (!err || !words) return;
+      const ids = new Set((el.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean));
+      if (text) {
+        words.textContent = text;
+        err.hidden = false;
+        el.setAttribute('aria-invalid', 'true');
+        ids.add(err.id);
+      } else {
+        words.textContent = '';
+        err.hidden = true;
+        el.removeAttribute('aria-invalid');
+        ids.delete(err.id);
+      }
+      if (ids.size) el.setAttribute('aria-describedby', [...ids].join(' '));
+      else el.removeAttribute('aria-describedby');
+    };
+    const check = (k: Field, o: { clear?: boolean } = {}) => {
+      const v = cleanFields({ [k]: input(k).value })[k];
+      const p = checkField(k, v);
+      if (p) showError(k, errorText(k, p, v));
+      else if (o.clear !== false) showError(k, null);
+      return !p;
+    };
+    const count = () => {
+      if (!hint) return;
+      const left = LIMITS.messageMax - input('message').value.trim().length;
+      hint.textContent = input('message').value.length > LIMITS.countFrom && left >= 0 ? `${left.toLocaleString('en')} characters left` : hintText;
+    };
+    const changed = new Set<Field>();
+    for (const k of FIELDS) {
+      input(k).addEventListener(
+        'input',
+        () => {
+          changed.add(k);
+          if (input(k).getAttribute('aria-invalid') === 'true') check(k);
+          if (k === 'message') count();
+          saveDraft();
+        },
+        { signal },
+      );
+      // leaving a field can show its error, never take one away: a line going as Send is pressed would move the
+      // button between the press and the release, and the click would be lost (errors go as they're fixed, or on Send)
+      input(k).addEventListener('blur', () => changed.has(k) && check(k, { clear: false }), { signal });
+    }
+    count();
+
+    // ---------- the challenge, solved while they type ----------
+    const shown = performance.now();
+    let work: Promise<Work | null> | null = null;
+    const getWork = () =>
+      (work ??= (async () => {
+        const r = await fetch(`${service}/api/contact/challenge`, { signal: AbortSignal.timeout(TIMEOUT) });
+        if (!r.ok) throw new Error('no challenge');
+        const c = (await r.json()) as { challenge: string; signature: string; difficulty: number };
+        const nonce = await solve(c.challenge, c.difficulty, { signal });
+        return nonce === null ? null : { challenge: c.challenge, signature: c.signature, nonce };
+      })().catch(() => {
+        work = null;
+        return null;
+      }));
+    form.addEventListener('focusin', () => void getWork(), { signal, once: true });
+
+    // ---------- sending ----------
+    let busy = false;
+    const setBusy = (on: boolean) => {
+      busy = on;
+      sendButton.disabled = on;
+      if (on) sendButton.setAttribute('aria-busy', 'true');
+      else sendButton.removeAttribute('aria-busy');
+      label.textContent = on ? 'Sending…' : sendText;
+      for (const k of FIELDS) input(k).readOnly = on;
+    };
+    const say = (text: string | null) => {
+      const words = alert.querySelector<HTMLElement>('[data-contact-alert-text]');
+      if (words) words.textContent = text ?? '';
+      alert.hidden = !text;
+    };
+    const fail = (kind: keyof typeof FAILED) => {
+      setBusy(false);
+      say(FAILED[kind]);
+      // a fresh challenge for the next try
+      work = null;
+      void getWork();
+    };
+    const done = (name: string, email: string) => {
+      setBusy(false);
+      try {
+        sessionStorage.removeItem(DRAFT);
+      } catch {
+        // nothing kept
+      }
+      thanks.textContent = `Thanks, ${firstName(name)}. I'll reply to ${email}.`;
+      form.hidden = true;
+      sent.hidden = false;
+      sent.focus();
+    };
+
+    const post = async (retried: boolean): Promise<void> => {
+      const w = await getWork();
+      // a challenge is used once
+      work = null;
+      if (!w) return fail('network');
+      const fields = cleanFields({ name: input('name').value, email: input('email').value, message: input('message').value });
+      let r: Response;
+      try {
+        r = await fetch(`${service}/api/contact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...fields, website: trap.value, elapsed: Math.round(performance.now() - shown), ...w, ...(about !== null ? { about } : {}) }),
+          signal: AbortSignal.timeout(TIMEOUT),
+        });
+      } catch {
+        return fail('network');
+      }
+      if (r.ok) return done(fields.name, fields.email);
+      const data = (await r.json().catch(() => ({}))) as { error?: string; fields?: Partial<Record<Field, string>> };
+      if (r.status === 403 && data.error === 'challenge' && !retried) return post(true);
+      if (r.status === 400 && data.error === 'invalid' && data.fields) {
+        setBusy(false);
+        const bad = FIELDS.filter((k) => data.fields![k]);
+        for (const k of bad) showError(k, errorText(k, data.fields![k] as Parameters<typeof errorText>[1], fields[k]));
+        if (bad[0]) input(bad[0]).focus();
+        return;
+      }
+      if (r.status === 429) return fail(data.error === 'daily' ? 'daily' : 'rate');
+      return fail('server');
+    };
+
+    form.addEventListener(
+      'submit',
+      async (e) => {
+        e.preventDefault();
+        if (busy) return;
+        say(null);
+        const bad = FIELDS.filter((k) => !check(k));
+        if (bad.length) {
+          input(bad[0]).focus();
+          return;
+        }
+        setBusy(true);
+        // a person who sends at once (a draft they came back to) waits out the service's minimum time on the form
+        const wait = LIMITS.minElapsed + 250 - (performance.now() - shown);
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        await post(false);
+      },
+      { signal },
+    );
+
+    again.addEventListener(
+      'click',
+      () => {
+        form.reset();
+        about = null;
+        for (const k of FIELDS) showError(k, null);
+        changed.clear();
+        count();
+        say(null);
+        sent.hidden = true;
+        form.hidden = false;
+        input('name').focus();
+      },
+      { signal },
+    );
+
+    // the form works: show it (without JavaScript, the noscript line says it can't send)
+    body.hidden = false;
+  });
+</script>

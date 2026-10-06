@@ -56,7 +56,7 @@ test.describe('protected content', () => {
     await expect(invite).toBeVisible();
     await expect(invite.getByRole('heading', { level: 2 })).toHaveText('More work here is shared with invited readers');
     await expect(invite.getByRole('link', { name: 'Sign in' })).toBeVisible();
-    await expect(invite.getByRole('link', { name: 'Ask for access' })).toHaveAttribute('href', /\/contact\/$/);
+    await expect(invite.getByRole('link', { name: 'Ask for access' })).toHaveAttribute('href', /\/contact\/\?access=Side%20projects#contact-form$/);
     await expect(page.locator('template[data-sealed="card"]')).toHaveCount(3);
     expect(await titlesIn(page)).toEqual([]);
     // a section with only private pages isn't "empty": it says its work is shared with invited readers
