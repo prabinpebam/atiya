@@ -1,7 +1,7 @@
 ---
 /**
- * What a block asks for before it exists (documentation/editor/spec.md §3.4): a quote's words, a set of
- * facts, a few tiles, a video's address and title, a carousel's label, and the link form for text. Each is shown in a
+ * What a block asks for before it exists (documentation/editor/spec.md §3.4): a quote's words, a
+ * collection's first items and its layout, a video's address and title, a carousel's label, and the link form for text. Each is shown in a
  * Dialog the article editor composes; the editor makes the block (or the link) from what's entered.
  * @tier editor
  * @a11y Labelled fields with hints; a missing value is named under the form (role="alert"); the submit button says what it adds.
@@ -11,16 +11,17 @@ import Select from '../../components/fundamentals/Select.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
+import { HEADING_CHOICES, LAYOUT_CHOICES } from '../model/collection';
 
 interface Props {
   /** Which form. */
-  kind: 'quote' | 'facts' | 'tiles' | 'video' | 'carousel' | 'link';
+  kind: 'quote' | 'collection' | 'video' | 'carousel' | 'link';
   /** For the link form: the articles a link can go to. */
   articles?: SelectOption[];
 }
 
 const { kind, articles = [] } = Astro.props;
-const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', facts: 'Add the facts', tiles: 'Add the tiles', video: 'Add the video', carousel: 'Add the carousel', link: 'Set the link' };
+const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collection: 'Add the collection', video: 'Add the video', carousel: 'Add the carousel', link: 'Set the link' };
 ---
 
 <form class="form" data-editor-insert-form={kind} novalidate>
@@ -34,27 +35,20 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', facts: '
     )
   }
   {
-    kind === 'facts' && (
+    kind === 'collection' && (
       <>
-        <Text variant="ui" tone="muted">A few short pairs, read before the first paragraph (up to six; more can be added later).</Text>
+        <Text variant="ui" tone="muted">Items of the same shape: each has a heading, a picture, a subtext or its words, any of them. Pictures and more items are added in its settings; its layout can change at any time.</Text>
+        <div class="pair">
+          <Select label="Layout" name="layout" value="tiles" options={LAYOUT_CHOICES} />
+          <Select label="Headings" name="headings" value="label" options={HEADING_CHOICES} />
+        </div>
         {[0, 1, 2].map((n) => (
-          <div class="pair">
-            <TextField label={`Label ${n + 1}`} name={`label${n}`} optional={n > 0} required={n === 0} />
-            <TextField label={`Value ${n + 1}`} name={`value${n}`} optional={n > 0} required={n === 0} />
-          </div>
-        ))}
-      </>
-    )
-  }
-  {
-    kind === 'tiles' && (
-      <>
-        <Text variant="ui" tone="muted">Two to six short statements, each with a label (Challenge, Intent, My role…). More can be added later.</Text>
-        {[0, 1, 2, 3].map((n) => (
-          <div class="tile">
-            <TextField label={`Tile ${n + 1}: label`} name={`label${n}`} optional={n > 1} required={n <= 1} />
-            <TextField label={`Tile ${n + 1}: text`} name={`text${n}`} multiline rows={2} optional={n > 1} required={n <= 1} hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
-          </div>
+          <fieldset class="item">
+            <legend class="legend">{`Item ${n + 1}`}</legend>
+            <TextField label="Heading" name={`heading${n}`} optional />
+            <TextField label="Subtext" name={`subtext${n}`} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
+            <TextField label="Words" name={`text${n}`} multiline rows={2} optional hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
+          </fieldset>
         ))}
       </>
     )
@@ -106,11 +100,20 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', facts: '
     gap: var(--space-3);
   }
 
-  .tile {
+  .item {
     display: grid;
     gap: var(--space-2);
-    padding-block-end: var(--space-3);
+    margin: 0;
+    padding: 0 0 var(--space-3);
+    border: 0;
     border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .legend {
+    padding: 0;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
   }
 
   .actions {

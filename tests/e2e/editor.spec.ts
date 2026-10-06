@@ -240,29 +240,84 @@ test.describe('editor', () => {
     expect(bodyLength()).toBe(count + 2);
   });
 
-  test('tiles: added from the palette with two statements, shown on the page, and a third added in the inspector', async ({ page }) => {
+  test('a collection: added from the palette with two items, shown on the page, then a third item and a picture added in the inspector', async ({ page }) => {
     await openArticle(page);
     const count = await outlineRows(page).count();
     await page.locator('[data-editor-outline] [data-editor-add-at]').click();
-    await page.locator('#editor-palette [data-editor-add="tiles"]').click();
-    const form = page.locator('#editor-insert-tiles');
-    await form.getByLabel('Tile 1: label').fill('Challenge');
-    await form.getByLabel('Tile 1: text').fill('Re-energize the team.');
-    await form.getByLabel('Tile 2: label').fill('Core idea');
-    await form.getByLabel('Tile 2: text').fill('**Do what makes you proud.** A standard chosen from within.');
-    await form.getByRole('button', { name: 'Add the tiles' }).click();
+    await page.locator('#editor-palette [data-editor-add="collection"]').click();
+    const form = page.locator('#editor-insert-collection');
+    const item = (n: number) => form.getByRole('group', { name: `Item ${n}` });
+    await item(1).getByLabel('Heading').fill('Challenge');
+    await item(1).getByLabel('Words').fill('Re-energize the team.');
+    await item(2).getByLabel('Heading').fill('Core idea');
+    await item(2).getByLabel('Words').fill('**Do what makes you proud.** A standard chosen from within.');
+    await form.getByRole('button', { name: 'Add the collection' }).click();
     await expect(outlineRows(page)).toHaveCount(count + 1);
     await saved(page);
-    const last = () => (readJson(articleFile()).body as { type: string; items?: { label: string }[] }[]).at(-1)!;
-    expect(last()).toMatchObject({ type: 'tiles', items: [{ label: 'Challenge' }, { label: 'Core idea' }] });
-    const grid = frame(page).locator('[data-tiles]').last();
-    await expect(grid.locator('dt')).toHaveText(['Challenge', 'Core idea']);
-    await expect(grid.locator('dd strong')).toHaveText('Do what makes you proud.');
+    const last = () => (readJson(articleFile()).body as { type: string; layout?: string; items?: { heading?: string; media?: string }[] }[]).at(-1)!;
+    expect(last()).toMatchObject({ type: 'collection', layout: 'tiles', items: [{ heading: 'Challenge' }, { heading: 'Core idea' }] });
+    const shown = frame(page).locator('[data-collection]').last();
+    await expect(shown.locator('.heading')).toHaveText(['Challenge', 'Core idea']);
+    await expect(shown.locator('.text strong')).toHaveText('Do what makes you proud.');
 
     await page.locator(`[data-editor-select="${count}"]`).click();
-    await page.locator('[data-editor-tiles="add"]').last().click();
-    await saved(page);
+    await page.locator('[data-editor-collection="add"]').last().click();
+    await expect.poll(() => last().items!.length).toBe(3);
+    // a picture for the first item, from the library: shown in the collection on the page
+    await page.locator(`[data-editor-pick="body.${count}.items.0.media"]`).click();
+    await page.locator('#editor-picker [data-editor-media]').first().click();
+    await expect.poll(() => last().items![0].media ?? '').not.toBe('');
+    await expect(frame(page).locator('[data-collection]').last().locator('.item').first().locator('img')).toHaveCount(1);
+    // another layout, the same items: rows, which take no number of columns (that field goes)
+    const settings = page.locator(`[data-block-form="${count}"]`);
+    await expect(settings.getByRole('combobox', { name: 'Columns' })).toHaveCount(1);
+    await settings.getByRole('combobox', { name: 'Layout' }).click();
+    await page.getByRole('option', { name: /^Rows/ }).click();
+    await expect.poll(() => last().layout).toBe('rows');
     expect(last().items).toHaveLength(3);
+    await expect(frame(page).locator('[data-collection]').last()).toHaveAttribute('data-layout', 'rows');
+    await expect(page.locator(`[data-block-form="${count}"]`).getByRole('combobox', { name: 'Columns' })).toHaveCount(0);
+  });
+
+  test('a list: Enter makes a new item, and Enter on an empty last item, or Ctrl + Enter anywhere, starts a paragraph after it', async ({ page }) => {
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string }[];
+    const p = blocks().findIndex((b) => b.type === 'text' && !b.markdown!.includes('\n'));
+    const first = blocks()[p].markdown!;
+    // the paragraph as a bulleted list of one item
+    await page.locator(`[data-editor-select="${p}"]`).focus();
+    await page.keyboard.press('Control+Shift+8');
+    await expect.poll(() => blocks()[p].markdown).toBe(`- ${first}`);
+    const list = frame(page).locator('ul[data-editor-editable="rich"]').first();
+    await list.locator('li').last().click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Control+End');
+    // Enter: a new item
+    await page.keyboard.press('Enter');
+    await expect(list.locator('li')).toHaveCount(2);
+    await page.keyboard.type('A second item');
+    await expect.poll(() => blocks()[p].markdown).toBe(`- ${first}\n- A second item`);
+    // Enter, then Enter on the empty item: the list ends, and a paragraph starts after it
+    await page.keyboard.press('Enter');
+    await expect(list.locator('li')).toHaveCount(3);
+    await page.keyboard.press('Enter');
+    // the page is drawn again with the list ended; the new paragraph waits, focused, for its words
+    await expect(frame(page).locator('[data-editor-pending]')).toBeFocused({ timeout: 15_000 });
+    await page.keyboard.type('After the list.');
+    // a new paragraph is kept once it's left
+    await page.keyboard.press('Escape');
+    await expect.poll(() => blocks()[p + 1]).toEqual({ type: 'text', markdown: 'After the list.' });
+    expect(blocks()[p].markdown).toBe(`- ${first}\n- A second item`);
+    // Ctrl + Enter in the list's first item: a paragraph after the list, which keeps every item
+    await frame(page).locator('ul[data-editor-editable="rich"]').first().locator('li').first().click();
+    await page.keyboard.press('Control+Enter');
+    await expect(frame(page).locator('[data-editor-pending]')).toBeFocused({ timeout: 15_000 });
+    await page.keyboard.type('Between.');
+    // a new paragraph is kept once it's left
+    await page.keyboard.press('Escape');
+    await expect.poll(() => blocks()[p + 1]).toEqual({ type: 'text', markdown: 'Between.' });
+    expect(blocks()[p].markdown).toBe(`- ${first}\n- A second item`);
+    expect(blocks()[p + 2]).toEqual({ type: 'text', markdown: 'After the list.' });
   });
 
   test('the outline: several blocks selected (Shift, Ctrl), moved together by the bar and the keys, deleted together, and undone', async ({ page }) => {
@@ -296,7 +351,7 @@ test.describe('editor', () => {
     await expect(page.locator('[data-editor-multibar]')).toBeHidden();
   });
 
-  test('turn into: a paragraph becomes a list and a heading and back, and tiles become headings and paragraphs and back', async ({ page }) => {
+  test('turn into: a paragraph becomes a list and a heading and back, and a collection becomes headings and paragraphs and back', async ({ page }) => {
     await openArticle(page);
     const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string; level?: number; items?: unknown[] }[];
     const p = blocks().findIndex((b) => b.type === 'text' && !b.markdown!.startsWith('- '));
@@ -334,23 +389,23 @@ test.describe('editor', () => {
     await page.keyboard.press('Control+Alt+0');
     await expect.poll(() => blocks()[p].type).toBe('text');
 
-    // tiles into headings and paragraphs, and those, selected, back into the same tiles
-    const t = blocks().findIndex((b) => b.type === 'tiles');
+    // a collection (as tiles) into headings and paragraphs, and those, selected, back into the same collection
+    const t = blocks().findIndex((b) => b.type === 'collection' && (b as { layout?: string }).layout === 'tiles');
     const tiles = blocks()[t];
     const n = (tiles.items as unknown[]).length;
     await page.locator(`[data-editor-select="${t}"]`).click();
     await page.locator(`[data-block-form="${t}"] [data-editor-turn-open]`).click();
-    await page.locator('#editor-turn [data-editor-turn-to="untile"]').click();
+    await page.locator('#editor-turn [data-editor-turn-to="uncollect"]').click();
     await expect.poll(() => blocks().slice(t, t + 2 * n).map((b) => b.type)).toEqual(Array.from({ length: n }, () => ['heading', 'text']).flat());
     await page.locator(`[data-editor-select="${t}"]`).click();
     await page.locator(`[data-editor-select="${t + 2 * n - 1}"]`).click({ modifiers: ['Shift'] });
     await page.locator('[data-editor-group="turn"]').click();
-    await page.locator('#editor-turn [data-editor-turn-to="tiles"]').click();
+    await page.locator('#editor-turn [data-editor-turn-to="collection"]').click();
     await expect.poll(() => blocks()[t]).toEqual(tiles);
     expect(original.type).toBe('text');
   });
 
-  test('pasted Markdown becomes its blocks, and its label and text pairs, selected, turn into tiles', async ({ page, context }) => {
+  test('pasted Markdown becomes its blocks, and its heading and text pairs, selected, turn into a collection', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await openArticle(page);
     const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string; level?: number; text?: string }[];
@@ -373,17 +428,19 @@ test.describe('editor', () => {
     await page.locator(`[data-editor-select="${p + 1}"]`).click();
     await page.locator(`[data-editor-select="${p + 4}"]`).click({ modifiers: ['Shift'] });
     await page.locator('[data-editor-group="turn"]').click();
-    await page.locator('#editor-turn [data-editor-turn-to="tiles"]').click();
+    await page.locator('#editor-turn [data-editor-turn-to="collection"]').click();
     await expect.poll(() => blocks()[p + 1]).toEqual({
-      type: 'tiles',
+      type: 'collection',
+      layout: 'tiles',
+      width: 'popout',
       items: [
-        { label: 'Constraint', text: 'A team spread over two cities.' },
-        { label: 'Outcome', text: 'A **shared** standard.' },
+        { heading: 'Constraint', text: 'A team spread over two cities.' },
+        { heading: 'Outcome', text: 'A **shared** standard.' },
       ],
     });
-    const grid = frame(page).locator('[data-tiles]', { hasText: 'Constraint' });
-    await expect(grid.locator('dt')).toHaveText(['Constraint', 'Outcome']);
-    await expect(grid.locator('dd strong')).toHaveText('shared');
+    const shown = frame(page).locator('[data-collection]', { hasText: 'Constraint' });
+    await expect(shown.locator('.heading')).toHaveText(['Constraint', 'Outcome']);
+    await expect(shown.locator('.text strong')).toHaveText('shared');
   });
 
   test('a rich copy keeps its formatting: bold, italic, links, headings and lists, in a paragraph and in a list', async ({ page, context }) => {

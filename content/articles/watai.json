@@ -21,27 +21,28 @@
       "markdown": "The project is a React and Vite progressive web app with an Azure Functions backend. The frontend is published through GitHub Pages, while the backend owns the durable work: generation runs, encrypted credentials, sync, assets, and memory. The goal is simple from the user's side: sign in, configure an Azure OpenAI endpoint once, and use a private AI workspace across devices."
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Type",
-          "value": "Personal AI assistant"
+          "heading": "Type",
+          "subtext": "Personal AI assistant"
         },
         {
-          "label": "Built with",
-          "value": "React, Vite, Azure Functions, Cosmos DB, Blob Storage, Key Vault"
+          "heading": "Built with",
+          "subtext": "React, Vite, Azure Functions, Cosmos DB, Blob Storage, Key Vault"
         },
         {
-          "label": "Language",
-          "value": "TypeScript"
+          "heading": "Language",
+          "subtext": "TypeScript"
         },
         {
-          "label": "Repo created",
-          "value": "23 June 2026"
+          "heading": "Repo created",
+          "subtext": "23 June 2026"
         },
         {
-          "label": "Status",
-          "value": "Public repo and live GitHub Pages frontend"
+          "heading": "Status",
+          "subtext": "Public repo and live GitHub Pages frontend"
         }
       ]
     },
@@ -86,26 +87,27 @@
       "markdown": "Watai started with the core AI surfaces I expect from a modern assistant: chat, speech, image generation, thread history, markdown rendering, files, artifacts, settings, and sync. The repository also carries specs for a broader agentic direction: web search, file search, code interpreter, image generation tools, speech and transcription, deep research, and reusable agent skills."
     },
     {
-      "type": "tiles",
-      "width": "wide",
+      "type": "collection",
+      "layout": "tiles",
       "items": [
         {
-          "label": "Server-run chat",
+          "heading": "Server-run chat",
           "text": "Prompts create backend-owned runs, so responses can stream, sync, and finish independently of the tab."
         },
         {
-          "label": "Image studio",
+          "heading": "Image studio",
           "text": "Image generation is treated as a durable studio workflow, with server jobs, status cards, metadata, and a browsable gallery direction."
         },
         {
-          "label": "Memory",
+          "heading": "Memory",
           "text": "The memory specs define a governed context layer: inspectable records, source-linked retrieval, background extraction, and user controls."
         },
         {
-          "label": "Agent skills",
+          "heading": "Agent skills",
           "text": "The skills direction explores account-scoped skill packages that can mount instructions, references, scripts, and assets into code interpreter runs."
         }
-      ]
+      ],
+      "width": "wide"
     },
     {
       "type": "heading",

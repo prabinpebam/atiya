@@ -16,28 +16,30 @@
   },
   "body": [
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Project",
-          "value": "Team rebranding"
+          "heading": "Project",
+          "subtext": "Team rebranding"
         },
         {
-          "label": "Year",
-          "value": "2024"
+          "heading": "Year",
+          "subtext": "2024"
         },
         {
-          "label": "Team",
-          "value": "25 members"
+          "heading": "Team",
+          "subtext": "25 members"
         }
       ]
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Hand crafted",
-          "value": "The images use in this project were created by me personally using C4D, octane render and After Effects, way before gen AI."
+          "heading": "Hand crafted",
+          "subtext": "The images use in this project were created by me personally using C4D, octane render and After Effects, way before gen AI."
         }
       ]
     },
@@ -55,25 +57,27 @@
       "markdown": "My goal was to re-energize the team and make them reflect on their purpose and goal in life. I wanted to instill in them a desire to do great things and be ambitious."
     },
     {
-      "type": "tiles",
+      "type": "collection",
+      "layout": "tiles",
       "items": [
         {
-          "label": "Challenge",
+          "heading": "Challenge",
           "text": "Re-energize the team and make purpose feel personal, practical, and visible."
         },
         {
-          "label": "Intent",
+          "heading": "Intent",
           "text": "Shift the conversation from completing tasks to owning meaningful outcomes."
         },
         {
-          "label": "My role",
+          "heading": "My role",
           "text": "Identity concept, narrative framing, visual direction, and team activation."
         },
         {
-          "label": "Core idea",
+          "heading": "Core idea",
           "text": "**Do what makes you proud.** A standard chosen from within."
         }
-      ]
+      ],
+      "width": "popout"
     },
     {
       "type": "figure",

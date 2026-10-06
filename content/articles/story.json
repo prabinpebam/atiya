@@ -27,27 +27,28 @@
       "lightbox": true
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Type",
-          "value": "Browser-based presentation design environment"
+          "heading": "Type",
+          "subtext": "Browser-based presentation design environment"
         },
         {
-          "label": "Built with",
-          "value": "Vanilla JavaScript, Vite, Vitest and CSS Modules"
+          "heading": "Built with",
+          "subtext": "Vanilla JavaScript, Vite, Vitest and CSS Modules"
         },
         {
-          "label": "Core idea",
-          "value": "Figma-class design capability plus PowerPoint-class presentation capability"
+          "heading": "Core idea",
+          "subtext": "Figma-class design capability plus PowerPoint-class presentation capability"
         },
         {
-          "label": "Status",
-          "value": "Useful foundation; not the full product goal yet"
+          "heading": "Status",
+          "subtext": "Useful foundation; not the full product goal yet"
         },
         {
-          "label": "Source",
-          "value": "GitHub repo, with its documentation on GitHub Pages"
+          "heading": "Source",
+          "subtext": "GitHub repo, with its documentation on GitHub Pages"
         }
       ]
     },

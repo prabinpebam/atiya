@@ -19,19 +19,20 @@
   ],
   "body": [
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Event",
-          "value": "DesignUp, Bengaluru and Singapore"
+          "heading": "Event",
+          "subtext": "DesignUp, Bengaluru and Singapore"
         },
         {
-          "label": "Years",
-          "value": "2016 to 2019"
+          "heading": "Years",
+          "subtext": "2016 to 2019"
         },
         {
-          "label": "Role",
-          "value": "Volunteer: photos, video, motion graphics and 3D"
+          "heading": "Role",
+          "subtext": "Volunteer: photos, video, motion graphics and 3D"
         }
       ]
     },

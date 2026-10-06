@@ -1,0 +1,385 @@
+---
+/**
+ * A collection: items of the same shape (a heading, a picture, a subtext and a few words, each optional),
+ * laid out one of five ways. Any layout shows the same items, so a collection can change layout at any time:
+ * rows (one under another, a picture beside its words), columns (side by side in a row between two
+ * hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph), tiles (an
+ * even grid of cards), masonry (cards in columns, each as tall as it is) or a carousel (cards in a strip
+ * that scrolls sideways, with previous and next buttons). Headings read as small capitals over the words
+ * (labels) or as titles. The pictures take every picture option: a frame shape, how each sits in it,
+ * the colour behind it, rounded corners and a drop shadow.
+ * @tier compound
+ * @a11y A list (role list, not a ul, so the article's list styles stay off it): each item is a list item, read in order whatever the layout (masonry's columns and the carousel's strip included).
+ * @a11y The carousel is a named region (aria-roledescription carousel) whose strip scrolls with the keyboard; its buttons are named and disabled at the ends.
+ * @a11y A picture keeps its own alt text; an item's heading is its first words, not a page heading, so the article's outline stays its own.
+ * @key Tab: into the carousel's strip, then Left / Right scroll it
+ * @key Enter or Space: on Previous or Next, scrolls the carousel by a view
+ */
+import Image from '../fundamentals/Image.astro';
+import IconButton from '../fundamentals/IconButton.astro';
+
+export interface CollectionPicture {
+  /** The displayed image. */
+  src: string;
+  /** Responsive sources for it. */
+  srcset?: string;
+  /** What the picture shows. */
+  alt: string;
+  /** Its own width (px). */
+  width: number;
+  /** Its own height (px). */
+  height: number;
+  /** Which part stays in a crop ("50% 30%"). */
+  focus?: string;
+  /** Its own edge colour (media.md §9.1), for a background behind it. */
+  bg?: string;
+  /** Its dark mode version, shown when the page is dark. */
+  dark?: { src: string; srcset?: string; width: number; height: number; bg?: string };
+}
+
+export interface CollectionItem {
+  /** Its heading: a label or a title, as the collection says. */
+  heading?: string;
+  /** Its picture. */
+  picture?: CollectionPicture;
+  /** A short line under the heading. */
+  subtext?: string;
+  /** Its words as inline HTML (bold, italic, code, links: the content layer renders it from Markdown). */
+  html?: string;
+}
+
+interface Props {
+  /** The items, in reading order. */
+  items: CollectionItem[];
+  /** How they're laid out. */
+  layout?: 'rows' | 'columns' | 'tiles' | 'masonry' | 'carousel';
+  /** Items to a row on a wide screen, for tiles and masonry. Left out: three for three, six or more than four items, otherwise two. */
+  columns?: 2 | 3 | 4;
+  /** How the headings read: small capitals over the words (label) or titles. */
+  headings?: 'label' | 'title';
+  /** Names the carousel for assistive tech. */
+  label?: string;
+  /** Where the article layout places it: in the column (the default), a little wider, or wide. */
+  width?: 'content' | 'popout' | 'wide';
+  /** The pictures' frame shape. Left out, each its own. */
+  ratio?: '1/1' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** How each picture is shown in its frame. Left out, fill in a shape, fit in its own. */
+  display?: 'fill' | 'fit' | 'actual' | 'tile';
+  /** Puts each picture's own edge colour behind it. */
+  background?: boolean;
+  /** Rounded corners on the pictures; false squares them. */
+  rounded?: boolean;
+  /** A drop shadow under each picture, following its shape. */
+  shadow?: boolean;
+}
+
+const { items, layout = 'tiles', headings = 'label', label = 'Carousel', width = 'content', ratio, display, background = false, rounded = true, shadow = false } = Astro.props;
+const columns = Astro.props.columns ?? (items.length % 3 === 0 || items.length > 4 ? 3 : 2);
+const shown = display ?? (ratio ? 'fill' : 'fit');
+// how wide a picture shows, for the browser's pick: the place's width (the size tokens) shared by the columns
+const PLACE = { content: 40, popout: 52, wide: 76 }[width];
+const across = layout === 'tiles' || layout === 'masonry' ? columns : 1;
+const sizes =
+  layout === 'rows' ? '(max-width: 40rem) 92vw, 11rem' : layout === 'carousel' ? '18rem' : layout === 'columns' ? '(max-width: 40rem) 92vw, 20rem' : `(max-width: 40rem) 92vw, ${Math.ceil(PLACE / across)}rem`;
+const carousel = layout === 'carousel';
+// always declared (content too), as a figure does: the article spaces it apart as a block, not as a line of text
+const breakout = width;
+---
+
+{
+  carousel ? (
+    <section class="collection" data-layout="carousel" data-headings={headings} data-breakout={breakout} aria-roledescription="carousel" aria-label={label} data-collection data-collection-carousel>
+      <div class="items" role="list" tabindex="0" data-scrollbar data-collection-track>
+        {items.map((item) => (
+          <div class="item" role="listitem">
+            {item.picture && (
+              <span class="picture">
+                <Image src={item.picture.src} srcset={item.picture.srcset} sizes={sizes} alt={item.picture.alt} width={item.picture.width} height={item.picture.height} ratio={ratio} display={shown} focus={item.picture.focus} rounded={rounded} shadow={shadow} bg={background && item.picture.bg ? { light: item.picture.bg, dark: item.picture.dark?.bg } : undefined} dark={item.picture.dark} />
+              </span>
+            )}
+            {(item.heading || item.subtext || item.html) && (
+              <div class="words">
+                {item.heading && <p class="heading">{item.heading}</p>}
+                {item.subtext && <p class="subtext">{item.subtext}</p>}
+                {item.html && <p class="text" set:html={item.html} />}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div class="controls">
+        <IconButton label="Previous" icon="chevron-left" variant="secondary" disabled data-collection-prev="" />
+        <IconButton label="Next" icon="chevron-right" variant="secondary" disabled={items.length <= 1} data-collection-next="" />
+      </div>
+    </section>
+  ) : (
+    <div class="collection items" role="list" data-layout={layout} data-columns={String(columns)} data-headings={headings} data-breakout={breakout} data-collection>
+      {items.map((item) => (
+        <div class="item" role="listitem" data-picture={item.picture ? '' : undefined}>
+          {item.picture && (
+            <span class="picture">
+              <Image src={item.picture.src} srcset={item.picture.srcset} sizes={sizes} alt={item.picture.alt} width={item.picture.width} height={item.picture.height} ratio={ratio} display={shown} focus={item.picture.focus} rounded={rounded} shadow={shadow} bg={background && item.picture.bg ? { light: item.picture.bg, dark: item.picture.dark?.bg } : undefined} dark={item.picture.dark} />
+            </span>
+          )}
+          {(item.heading || item.subtext || item.html) && (
+            <div class="words">
+              {item.heading && <p class="heading">{item.heading}</p>}
+              {item.subtext && <p class="subtext">{item.subtext}</p>}
+              {item.html && <p class="text" set:html={item.html} />}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+<style>
+  .items {
+    padding: 0;
+    list-style: none;
+  }
+
+  .item,
+  .words {
+    display: grid;
+    align-content: start;
+    min-width: 0;
+  }
+
+  .item {
+    gap: var(--space-3);
+  }
+
+  .words {
+    gap: var(--space-1);
+  }
+
+  .picture {
+    display: block;
+    min-width: 0;
+  }
+
+  .heading,
+  .subtext,
+  .text {
+    margin: 0;
+  }
+
+  /* the heading as a label: small capitals over the words */
+  .heading {
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    line-height: var(--leading-ui);
+    text-transform: uppercase;
+  }
+
+  /* or as a title */
+  [data-headings='title'] .heading {
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: var(--text-h4);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+    text-transform: none;
+  }
+
+  .subtext {
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
+  }
+
+  [data-headings='title'] .subtext {
+    color: var(--color-text-muted);
+  }
+
+  .text {
+    color: var(--color-text);
+    font-family: var(--font-text);
+    font-size: var(--text-md);
+    line-height: var(--leading-snug);
+  }
+
+  /* rows: one under another, a picture beside its words, between hairlines */
+  [data-layout='rows'] {
+    display: grid;
+  }
+
+  [data-layout='rows'] .item {
+    gap: var(--space-5);
+    padding-block: var(--space-5);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  [data-layout='rows'] .item:first-child {
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  [data-layout='rows'] .item[data-picture] {
+    grid-template-columns: var(--c-collection-row-picture) minmax(0, 1fr);
+  }
+
+  /* columns: side by side in a row between two hairlines, wrapping when they don't fit */
+  [data-layout='columns'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-10);
+    padding-block: var(--space-4);
+    border-block: var(--border-hairline) solid var(--color-rule);
+  }
+
+  [data-layout='columns'] .item {
+    flex: 0 1 auto;
+  }
+
+  [data-layout='columns'] .item[data-picture] {
+    flex: 1 1 var(--c-collection-column);
+  }
+
+  /* tiles: an even grid of cards on the page's raised paper */
+  [data-layout='tiles'] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  [data-layout='tiles'][data-columns='3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  [data-layout='tiles'][data-columns='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  [data-layout='tiles'] .item,
+  [data-layout='masonry'] .item,
+  [data-layout='carousel'] .item {
+    padding: var(--space-5) var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  [data-layout='tiles'] .words {
+    gap: var(--space-2);
+  }
+
+  /* masonry: cards in columns, each as tall as it is */
+  [data-layout='masonry'] {
+    columns: 2;
+    column-gap: var(--space-4);
+  }
+
+  [data-layout='masonry'][data-columns='3'] {
+    columns: 3;
+  }
+
+  [data-layout='masonry'][data-columns='4'] {
+    columns: 4;
+  }
+
+  [data-layout='masonry'] .item {
+    margin-block-end: var(--space-4);
+    break-inside: avoid;
+  }
+
+  /* carousel: cards in a strip that scrolls sideways */
+  [data-layout='carousel'] {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  [data-layout='carousel'] .items {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: min(var(--c-collection-slide), 85%);
+    gap: var(--space-4);
+    padding-block-end: var(--space-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--space-0);
+  }
+
+  [data-layout='carousel'] .items:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  [data-layout='carousel'] .item {
+    scroll-snap-align: start;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: end;
+    gap: var(--space-2);
+  }
+
+  @media (max-width: 56rem) {
+    [data-layout='tiles'][data-columns='3'],
+    [data-layout='tiles'][data-columns='4'] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    [data-layout='masonry'][data-columns='3'],
+    [data-layout='masonry'][data-columns='4'] {
+      columns: 2;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    [data-layout='tiles'],
+    [data-layout='tiles'][data-columns='3'],
+    [data-layout='tiles'][data-columns='4'] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    [data-layout='masonry'],
+    [data-layout='masonry'][data-columns='3'],
+    [data-layout='masonry'][data-columns='4'] {
+      columns: 1;
+    }
+
+    [data-layout='rows'] .item[data-picture] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    [data-layout='carousel'] .items {
+      scroll-behavior: smooth;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  // the carousel's Previous and Next scroll its strip by a view, and are disabled at its ends
+  each<HTMLElement>('[data-collection-carousel]', (root, signal) => {
+    const track = root.querySelector<HTMLElement>('[data-collection-track]');
+    const prev = root.querySelector<HTMLButtonElement>('[data-collection-prev]');
+    const next = root.querySelector<HTMLButtonElement>('[data-collection-next]');
+    if (!track || !prev || !next) return;
+    // in a right-to-left page the strip scrolls the other way
+    const sign = () => (getComputedStyle(track).direction === 'rtl' ? -1 : 1);
+    const update = () => {
+      const at = Math.abs(track.scrollLeft);
+      const end = track.scrollWidth - track.clientWidth;
+      prev.disabled = at <= 1;
+      next.disabled = at >= end - 1;
+    };
+    prev.addEventListener('click', () => track.scrollBy({ left: -track.clientWidth * sign() }), { signal });
+    next.addEventListener('click', () => track.scrollBy({ left: track.clientWidth * sign() }), { signal });
+    track.addEventListener('scroll', update, { signal, passive: true });
+    window.addEventListener('resize', update, { signal });
+    update();
+  });
+</script>

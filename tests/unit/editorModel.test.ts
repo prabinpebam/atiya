@@ -15,7 +15,8 @@ import { ownerLabel, ownerOf, references } from '../../src/site/editor/model/ref
 import { SaveQueue, type Outcome } from '../../src/site/editor/model/queue';
 import { parseInline, parseMarkdown, runs } from '../../src/site/content/markdown';
 import type { Article, Block, PlanetStructure, SiteStructure } from '../../src/site/content/schema';
-import { block } from '../../src/site/content/schema';
+import { block, COLLECTION_HEADINGS, COLLECTION_LAYOUTS } from '../../src/site/content/schema';
+import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS } from '../../src/site/editor/model/collection';
 
 // ---------- document operations ----------
 const t = (markdown: string): Block => ({ type: 'text', markdown });
@@ -103,9 +104,9 @@ describe('document operations', () => {
     expect(ops.excerptOf({ type: 'figure', media: 'articles/a/cover', width: 'content' })).toBe('cover');
     expect(ops.excerptOf({ type: 'figure', media: 'articles/a/cover', width: 'content' }, () => 'A cover')).toBe('A cover');
     expect(ops.excerptOf({ type: 'divider' })).toBe('');
-    const tiles: Block = { type: 'tiles', items: [{ label: 'Challenge', text: 'x' }, { label: 'Intent', text: 'y' }] };
-    expect(ops.kindOf(tiles)).toBe('Tiles');
-    expect(ops.excerptOf(tiles)).toBe('Challenge, Intent');
+    const collection: Block = { type: 'collection', layout: 'tiles', items: [{ heading: 'Challenge', text: 'x' }, { subtext: '2024' }, { text: '**Own** it' }, { media: 'articles/a/cover' }] };
+    expect(ops.kindOf(collection)).toBe('Collection');
+    expect(ops.excerptOf(collection)).toBe('Challenge, 2024, Own it, cover');
   });
 
   it('counts only a change of words or blocks as meaningful (it moves Updated on)', () => {
@@ -172,15 +173,29 @@ describe('turning text into another kind, any time', () => {
     expect(ops.joinAsList([h('Intro'), para('a\\\nb'), para('- c')], true)).toEqual({ type: 'text', markdown: '1. Intro\n2. a\n3. b\n4. c' });
   });
 
-  it('makes tiles from label and text pairs, says why not otherwise, and turns tiles back', () => {
+  it('makes a collection (as tiles) from heading and text pairs, says why not otherwise, and turns it back', () => {
     const pairs: Block[] = [h('Challenge', 3), para('Re-energize the team.'), h('Core idea', 3), para('**Do what makes you proud.** A standard.')];
-    const made = ops.asTiles(pairs);
-    expect(made).toEqual({ ok: true, block: { type: 'tiles', items: [{ label: 'Challenge', text: 'Re-energize the team.' }, { label: 'Core idea', text: '**Do what makes you proud.** A standard.' }] } });
-    expect(made.ok && ops.tilesToText(made.block)).toEqual(pairs);
-    expect(ops.asTiles(pairs.slice(0, 3))).toMatchObject({ ok: false });
-    expect(ops.asTiles([h('x'.repeat(41)), para('y'), h('a'), para('b')])).toMatchObject({ ok: false, why: expect.stringMatching(/40 characters/) });
-    expect(ops.asTiles([h('a'), { type: 'divider' }, h('b'), para('c')])).toMatchObject({ ok: false, why: expect.stringMatching(/Only text/) });
-    expect(ops.tilesToText(para('x'))).toBeNull();
+    const made = ops.asCollection(pairs);
+    expect(made).toEqual({ ok: true, block: { type: 'collection', layout: 'tiles', width: 'popout', items: [{ heading: 'Challenge', text: 'Re-energize the team.' }, { heading: 'Core idea', text: '**Do what makes you proud.** A standard.' }] } });
+    expect(made.ok && ops.collectionToText(made.block)).toEqual(pairs);
+    expect(ops.asCollection(pairs.slice(0, 3))).toMatchObject({ ok: false });
+    expect(ops.asCollection(pairs.slice(0, 2))).toMatchObject({ ok: true });
+    expect(ops.asCollection([h('x'.repeat(81)), para('y'), h('a'), para('b')])).toMatchObject({ ok: false, why: expect.stringMatching(/80 characters/) });
+    expect(ops.asCollection([h('a'), { type: 'divider' }, h('b'), para('c')])).toMatchObject({ ok: false, why: expect.stringMatching(/Only text/) });
+    expect(ops.collectionToText(para('x'))).toBeNull();
+    // every part of an item comes back: its picture, its heading, its subtext and its words
+    expect(ops.collectionToText({ type: 'collection', layout: 'rows', items: [{ media: 'articles/a/cover', heading: 'H', subtext: 'S', text: 'T' }] })).toEqual([
+      { type: 'figure', media: 'articles/a/cover', width: 'content' },
+      h('H', 3),
+      para('S'),
+      para('T'),
+    ]);
+  });
+
+  it("offers every layout and heading style the contract has, in its order, and columns only where they're used", () => {
+    expect(LAYOUT_CHOICES.map((c) => c.value)).toEqual([...COLLECTION_LAYOUTS]);
+    expect(HEADING_CHOICES.map((c) => c.value)).toEqual([...COLLECTION_HEADINGS]);
+    expect([...TAKES_COLUMNS].sort()).toEqual(['masonry', 'tiles']);
   });
 
   it('reads the keys by their place: Ctrl or Cmd + Alt + 0, 2, 3, 4; Ctrl or Cmd + Shift + 7, 8, 9', () => {
@@ -232,15 +247,17 @@ Identity concept, narrative framing, visual direction, and team activation.
     expect(b[9]).toEqual(t('**Do what makes you proud.** A standard chosen from within.'));
   });
 
-  it('and those label and text pairs, selected, turn into tiles', () => {
-    const r = ops.asTiles(md(story).slice(2));
+  it('and those heading and text pairs, selected, turn into a collection', () => {
+    const r = ops.asCollection(md(story).slice(2));
     expect(r.ok && r.block).toEqual({
-      type: 'tiles',
+      type: 'collection',
+      layout: 'tiles',
+      width: 'popout',
       items: [
-        { label: 'Challenge', text: 'Re-energize the team and make purpose feel personal, practical, and visible.' },
-        { label: 'Intent', text: 'Shift the conversation from completing tasks to owning meaningful outcomes.' },
-        { label: 'My role', text: 'Identity concept, narrative framing, visual direction, and team activation.' },
-        { label: 'Core idea', text: '**Do what makes you proud.** A standard chosen from within.' },
+        { heading: 'Challenge', text: 'Re-energize the team and make purpose feel personal, practical, and visible.' },
+        { heading: 'Intent', text: 'Shift the conversation from completing tasks to owning meaningful outcomes.' },
+        { heading: 'My role', text: 'Identity concept, narrative framing, visual direction, and team activation.' },
+        { heading: 'Core idea', text: '**Do what makes you proud.** A standard chosen from within.' },
       ],
     });
   });
@@ -337,6 +354,11 @@ describe('the canvas DOM back to the Markdown subset', () => {
   it('turns lists back into lists, one item per li', () => {
     const md = markdownOf(el('ul', [el('li', [text('first')]), text('\n'), el('li', [el('strong', [text('second')])])]));
     expect(parseMarkdown(md)).toEqual([{ t: 'ul', items: [[{ t: 'text', v: 'first' }], [{ t: 'strong', c: [{ t: 'text', v: 'second' }] }]] }]);
+  });
+
+  it('leaves out a list item not written in (a new bullet after Enter)', () => {
+    expect(markdownOf(el('ul', [el('li', [text('first')]), el('li', [el('br')]), el('li', [text('third')])]))).toBe('- first\n- third');
+    expect(markdownOf(el('ol', [el('li', [text('one')]), el('li', [el('br')])]))).toBe('1. one');
   });
 
   it('never nests a link in a link (a pasted one keeps only its text)', () => {

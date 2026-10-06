@@ -334,20 +334,20 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     };
     for (const k of ops.TEXT_KINDS) set(k.value, texts > 0);
     if (one && ops.textKindOf(one)) choice(ops.textKindOf(one)!).setAttribute('aria-current', 'true');
-    const tiles = ops.asTiles(blocks);
+    const collection = ops.asCollection(blocks);
     set('join-bulleted', blocks.length > 1, texts === blocks.length);
     set('join-numbered', blocks.length > 1, texts === blocks.length);
-    set('tiles', blocks.length > 1, tiles.ok);
+    set('collection', blocks.length > 1, collection.ok);
     set('split', !!one && !!ops.splitLines(one));
-    set('untile', one?.type === 'tiles');
+    set('uncollect', one?.type === 'collection');
     d.querySelectorAll<HTMLElement>('[data-turn-group]').forEach((g) => (g.hidden = !g.querySelector('[data-editor-turn-to]:not([hidden])')));
     const why = d.querySelector<HTMLElement>('[data-editor-turn-why]')!;
-    why.textContent = blocks.length > 1 && !tiles.ok ? `Tiles: ${tiles.why}` : blocks.length > 1 && texts < blocks.length ? 'Only text (headings, paragraphs, quotes and lists) becomes a different kind; the rest stays as it is.' : '';
+    why.textContent = blocks.length > 1 && !collection.ok ? `Collection: ${collection.why}` : blocks.length > 1 && texts < blocks.length ? 'Only text (headings, paragraphs, quotes and lists) becomes a different kind; the rest stays as it is.' : '';
     why.hidden = !why.textContent;
     d.showModal();
     d.querySelector<HTMLElement>('[data-editor-turn-to]:not([hidden]):not(:disabled)')?.focus();
   };
-  /** Turns the blocks into another kind: each one (a text kind), several into one (a list, tiles) or one into several. */
+  /** Turns the blocks into another kind: each one (a text kind), several into one (a list, a collection) or one into several. */
   const turnInto = (indices: number[], to: string) => {
     const at = indices.filter((k) => k >= 0 && k < doc.body.length).sort((a, b) => a - b);
     if (!at.length) return;
@@ -366,11 +366,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       change(body(instead([ops.joinAsList(blocks, to === 'join-numbered')])), ALL, { select: at[0] });
       return announce(`Joined ${at.length} blocks into one list`);
     }
-    if (to === 'tiles') {
-      const r = ops.asTiles(blocks);
+    if (to === 'collection') {
+      const r = ops.asCollection(blocks);
       if (!r.ok) return announce(r.why, 'negative');
       change(body(instead([r.block])), ALL, { select: at[0] });
-      return announce(`Made ${at.length / 2} tiles`);
+      return announce(`Made a collection of ${at.length / 2}`);
     }
     if (to === 'split') {
       const parts = ops.splitLines(blocks[0]);
@@ -378,11 +378,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       change(body(instead(parts)), ALL, { select: at[0] });
       return announce(`Split into ${parts.length} paragraphs`);
     }
-    if (to === 'untile') {
-      const parts = ops.tilesToText(blocks[0]);
-      if (!parts) return;
+    if (to === 'uncollect') {
+      const parts = ops.collectionToText(blocks[0]);
+      if (!parts?.length) return;
       change(body(instead(parts)), ALL, { select: at[0] });
-      return announce(`Turned into ${parts.length / 2} headings and paragraphs`);
+      return announce(`Turned into ${parts.length} blocks`);
     }
   };
 
@@ -585,7 +585,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const bad = (msg: string) => showIssues([{ file: state.key, path: t.name, message: msg }]);
     let value: unknown;
     if (t.type === 'checkbox') value = kind === 'bool-default-true' ? (t.checked ? undefined : false) : t.checked ? true : undefined;
-    else if (kind === 'number') value = Number(t.value);
+    else if (kind === 'number') value = t.value === '' ? undefined : Number(t.value);
     else if (kind === 'duration') {
       const d = ops.parseDuration(t.value);
       if (d === null) return bad('Write the length as minutes and seconds (2:20).');
@@ -606,7 +606,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (t.name === '__section') return change(doc, ALL, { section: (value as string | undefined) ?? null });
     if (t.name === '__place') return change(doc, { inspector: true }, { place: (value as string | undefined) ?? null });
     const renders = t.name.startsWith('body.') || t.name.startsWith('hero.') || ['title', 'summary', 'publishedAt', 'kind'].includes(t.name);
-    change(ops.setPath(doc, t.name, value), { canvas: renders, outline: t.name.startsWith('body.') });
+    // a choice that changes which fields there are (a collection's layout) draws the settings again
+    change(ops.setPath(doc, t.name, value), { canvas: renders, outline: t.name.startsWith('body.'), inspector: !!t.closest('[data-refresh]') });
   });
 
   // ---------- clicks ----------
@@ -669,7 +670,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   on(root, 'click', (e) => {
     const t = e.target as Element;
     const el = t.closest<HTMLElement>(
-      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-turn-to], [data-editor-pick], [data-editor-crop], [data-editor-clear], [data-editor-items], [data-editor-facts], [data-editor-tiles], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
+      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-turn-to], [data-editor-pick], [data-editor-crop], [data-editor-clear], [data-editor-items], [data-editor-collection], [data-editor-unset], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
     );
     if (!el) return;
     const d = el.dataset;
@@ -746,16 +747,20 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       const items = d.editorItems === 'remove' ? b.items.filter((_, k) => k !== n) : ops.move(b.items as unknown as Block[], n, d.editorItems === 'up' ? n - 1 : n + 1);
       return change(body(ops.replace(doc.body, i, { ...b, items } as Block)), ALL);
     }
-    if (d.editorFacts) {
-      const b = doc.body[i] as Extract<Block, { type: 'facts' }>;
-      const items = d.editorFacts === 'add' ? [...b.items, { label: 'Label', value: 'Value' }] : b.items.filter((_, k) => k !== Number(d.item));
+    if (d.editorCollection) {
+      // a collection's items: a new one (a heading to start from), or one moved or removed
+      const b = doc.body[i] as Extract<Block, { type: 'collection' }>;
+      const n = Number(d.item);
+      const items =
+        d.editorCollection === 'add'
+          ? [...b.items, { heading: `Item ${b.items.length + 1}` }]
+          : d.editorCollection === 'remove'
+            ? b.items.filter((_, k) => k !== n)
+            : (ops.move(b.items as unknown as Block[], n, d.editorCollection === 'up' ? n - 1 : n + 1) as unknown as typeof b.items);
       return change(body(ops.replace(doc.body, i, { ...b, items })), ALL);
     }
-    if (d.editorTiles) {
-      const b = doc.body[i] as Extract<Block, { type: 'tiles' }>;
-      const items = d.editorTiles === 'add' ? [...b.items, { label: 'Label', text: 'What it says.' }] : b.items.filter((_, k) => k !== Number(d.item));
-      return change(body(ops.replace(doc.body, i, { ...b, items })), ALL);
-    }
+    // an optional field taken off (an item's picture)
+    if (d.editorUnset) return change(ops.setPath(doc, d.editorUnset, undefined), ALL);
     if (d.editorAdd) {
       dialog('editor-palette')?.close();
       return addBlock(d.editorAdd);
@@ -780,7 +785,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const at = insertAt;
     if (type === 'text' || type === 'heading') return toCanvas({ type: 'pending', index: at, kind: type });
     if (type === 'divider') return insertBlock(at, { type: 'divider' });
-    if (type === 'quote' || type === 'facts' || type === 'tiles') return dialog(`editor-insert-${type}`)?.showModal();
+    if (type === 'quote' || type === 'collection') return dialog(`editor-insert-${type}`)?.showModal();
     // a YouTube or Vimeo video: its address and title, then its poster
     if (type === 'embed') return dialog('editor-insert-video')?.showModal();
     // a video file: one from the library, or one uploaded there and then
@@ -826,18 +831,18 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       close();
       return insertBlock(insertAt, { type: 'quote', text: val('text'), variant: (val('variant') || 'pull') as 'pull' | 'block', ...(val('cite') ? { cite: val('cite') } : {}) });
     }
-    if (kind === 'facts') {
-      const items = [0, 1, 2].map((n) => ({ label: val(`label${n}`), value: val(`value${n}`) })).filter((f) => f.label && f.value);
-      if (!items.length) return issue('Give at least one label and its value.');
+    if (kind === 'collection') {
+      const items = [0, 1, 2]
+        .map((n) => ({ heading: val(`heading${n}`), subtext: val(`subtext${n}`), text: val(`text${n}`) }))
+        .map((it) => Object.fromEntries(Object.entries(it).filter(([, v]) => v)) as { heading?: string; subtext?: string; text?: string })
+        .filter((it) => Object.keys(it).length);
+      if (!items.length) return issue('Give at least one item a heading, a subtext or its words.');
+      if (items.some((it) => (it.heading?.length ?? 0) > 80)) return issue('Keep each heading to 80 characters.');
+      if (items.some((it) => (it.subtext?.length ?? 0) > 160)) return issue('Keep each subtext to 160 characters.');
+      const layout = (val('layout') || 'tiles') as Extract<Block, { type: 'collection' }>['layout'];
+      const headings = val('headings') === 'title' ? ({ headings: 'title' } as const) : {};
       close();
-      return insertBlock(insertAt, { type: 'facts', items });
-    }
-    if (kind === 'tiles') {
-      const items = [0, 1, 2, 3].map((n) => ({ label: val(`label${n}`), text: val(`text${n}`) })).filter((t) => t.label && t.text);
-      if (items.length < 2) return issue('Give at least two tiles, each a label and its text.');
-      if (items.some((t) => t.label.length > 40)) return issue('Keep each label to 40 characters.');
-      close();
-      return insertBlock(insertAt, { type: 'tiles', items });
+      return insertBlock(insertAt, { type: 'collection', layout, items, ...headings, ...(layout === 'tiles' || layout === 'masonry' || layout === 'carousel' ? { width: 'popout' as const } : {}) });
     }
     if (kind === 'carousel') {
       if (!val('label')) return issue('Name the carousel.');

@@ -41,27 +41,28 @@
       "markdown": "Slate keeps the boring parts generic. The package owns the reader shell, component vocabulary, runtime synchronization, schemas and validation scripts. The host owns its content, theme, manifest and meaning. That boundary means I can reuse the harness without mixing one project's decisions into another."
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Type",
-          "value": "Project-agnostic documentation system and AI agent skill"
+          "heading": "Type",
+          "subtext": "Project-agnostic documentation system and AI agent skill"
         },
         {
-          "label": "Output",
-          "value": "Static Markdown and HTML documentation sites"
+          "heading": "Output",
+          "subtext": "Static Markdown and HTML documentation sites"
         },
         {
-          "label": "Built with",
-          "value": "JavaScript, static HTML/CSS, React for Canvas, React Flow"
+          "heading": "Built with",
+          "subtext": "JavaScript, static HTML/CSS, React for Canvas, React Flow"
         },
         {
-          "label": "Repository",
-          "value": "JavaScript repo created in July 2026"
+          "heading": "Repository",
+          "subtext": "JavaScript repo created in July 2026"
         },
         {
-          "label": "Used here",
-          "value": "Powers the Atiya documentation published under /docs/"
+          "heading": "Used here",
+          "subtext": "Powers the Atiya documentation published under /docs/"
         }
       ]
     },
@@ -75,26 +76,27 @@
       "markdown": "At its simplest, Slate is a `slate/` folder a host can copy or vendor. The initializer creates the host's docs root, and the runtime tools keep generated shell files in sync so agents do not hand-edit the reader."
     },
     {
-      "type": "tiles",
-      "width": "wide",
+      "type": "collection",
+      "layout": "tiles",
       "items": [
         {
-          "label": "Static reader",
+          "heading": "Static reader",
           "text": "The shell renders Markdown and HTML content through one sanitized pipeline with navigation, search, table of contents, theming and config-driven branding."
         },
         {
-          "label": "Visual-first authoring",
+          "heading": "Visual-first authoring",
           "text": "The skill pushes structured content toward charts, SVG illustrations, figures, cards and comparisons before falling back to prose."
         },
         {
-          "label": "Host boundary",
+          "heading": "Host boundary",
           "text": "Generic runtime files stay in the package; the host keeps its own content, manifest, theme and authority rules."
         },
         {
-          "label": "Canvas view",
+          "heading": "Canvas view",
           "text": "For structured records, Slate Canvas adds a read-only React Flow surface with groups, repeated placements and named perspectives."
         }
-      ]
+      ],
+      "width": "wide"
     },
     {
       "type": "figure",

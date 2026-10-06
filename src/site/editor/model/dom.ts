@@ -54,11 +54,18 @@ function trimEdges(nodes: Inline[]): Inline[] {
   return out;
 }
 
-/** A text block's element (p, ul or ol) back to its Markdown. */
+/** A text block's element (p, ul or ol) back to its Markdown. A list item left empty (a new bullet not written in) is left out. */
 export function markdownOf(el: MiniNode): string {
   const tag = el.nodeName.toLowerCase();
   let block: MdBlock;
-  if (tag === 'ul' || tag === 'ol') block = { t: tag, items: kids(el).filter((c) => c.nodeType === ELEMENT && c.nodeName.toLowerCase() === 'li').map((li) => inlineOf(li)) };
+  if (tag === 'ul' || tag === 'ol')
+    block = {
+      t: tag,
+      items: kids(el)
+        .filter((c) => c.nodeType === ELEMENT && c.nodeName.toLowerCase() === 'li')
+        .map((li) => inlineOf(li))
+        .filter((item) => item.length),
+    };
   else block = { t: 'p', c: inlineOf(el) };
   return serializeBlocks([block]);
 }

@@ -305,15 +305,35 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | `video` | `media` (a video file, [media §12](media.md#12-video-files)) or `embed` (`{ provider: youtube or vimeo, id }`), exactly one; `title` (the player's name: an embed needs it, a video file has its own); `poster` (an embed's picture, an image media ID: the site's own thumbnail, shown until the reader presses Play; a video file has its own frame); `duration?` (seconds, shown on an embed's poster); `caption?`, `credit?` (a video file's own when left out), `width?` | `VideoEmbed` |
 | `quote` | `text`, `cite?` (text or person), `variant` (`block`, `pull`) | `Quote` |
 | `divider` | none | `Divider` |
-| `collection` | `source` (a query: `type`, `filter`, `sort`, `limit`), `presentation` (`cards` or `list`), `heading?` | `StoryCard` grid or `ContentsList` |
+| `listing` | `source` (a query: `type`, `filter`, `sort`, `limit`), `presentation` (`cards` or `list`), `heading?` | New: a `StoryCard` grid or a `ContentsList` |
 | `related` | `items` (item refs), `heading?` | `StoryCard` grid |
 | (pictures) | `showCaption` on `figure`, `gallery`, `carousel`, `video` and an article's `hero` | `false`: no caption and no credit under the picture (or the set, or any slide), and none in the lightbox. Left out: shown (the block's caption, else the picture's own) |
-| `facts` | `items` (`{ label, value }[]`, one to six) | `Facts`: a fact box of label and value pairs (the case study's scan layer uses it too) |
-| `tiles` | `items` (`{ label, text }[]`, two to six; `label` at most 40 characters, `text` one paragraph of the Markdown subset), `width` (`content`, `popout` (the default) or `wide`) | `TileGrid`: short labelled statements as tiles (the challenge, the intent, the role, the core idea), two or three to a row |
+| `collection` | `items` (one to 24, each `{ heading?, media?, subtext?, text? }` with at least one: §6.1), `layout` (`rows`, `columns`, `tiles`, `masonry`, `carousel`), `columns?` (2 to 4, for tiles and masonry), `headings?` (`label` (the default) or `title`), `label?` (a carousel's name), `width?` (`content` (the default), `popout`, `wide`), and the items' pictures' `ratio?`, `display?`, `background?`, `rounded?`, `shadow?` ([media §9.1](media.md#91-how-a-picture-is-shown-fill-fit-actual-size-tile-a-background-corners-a-drop-shadow)) | `Collection` |
 | `metrics` | `items` (`{ value, label, note? }[]`) | New: a metrics list |
 | `callout` | `tone` (`note`, `caution`), `markdown` | New |
 
 Hub pages in the site structure use the same blocks for their sections, plus a `hero` (`title?`, `standfirst?`, `media?`, `actions`: `{ label, target, variant }[]`, rendered by `Hero` with `Button`s).
+
+### 6.1 Collections: one shape of content, any layout
+
+A collection is a set of items of one shape, whatever they're about: a story's facts, its brief, the features of a project, a few places with their pictures. Its content and its layout are separate, so any collection can be shown any way, and changed at any time.
+
+- **An item** has four parts, each optional, and at least one: a `heading` (a word or a few, at most 80 characters), a picture (`media`, an image media ID), a `subtext` (a short line under the heading: a value, a date, a role; at most 160 characters) and its words (`text`, one paragraph of the Markdown subset: bold, italic, code and links).
+- **Its layout** (`layout`) is one of:
+
+  | Layout | What it looks like |
+  |---|---|
+  | `rows` | One under another between hairlines, each picture beside its words (above them on a phone) |
+  | `columns` | Side by side in a row between two hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph (a story's facts) |
+  | `tiles` | An even grid of cards on the raised paper, two to four to a row (`columns`; left out, three for three, six or more than four items, else two), fewer on a tablet, one on a phone |
+  | `masonry` | Cards in columns, each as tall as it is (the pictures keep their own shape, the words their own length) |
+  | `carousel` | Cards in a strip that scrolls sideways, with Previous and Next buttons; `label` names it for assistive tech |
+
+- **Headings** read as small capitals over the words (`label`, the default: the old fact box and tiles) or as titles (`title`).
+- **Pictures** take every picture option, for all the items at once: their frame's shape (`ratio`; left out, each its own), how each is shown in it (`display`), the colour behind it, rounded corners and a drop shadow.
+- **A new layout** is a new value in `COLLECTION_LAYOUTS` ([schema.ts](https://github.com/prabinpebam/atiya/blob/main/src/site/content/schema.ts)) and its styles in the `Collection` compound; nothing in the content changes. Likely next: a compact list, a bento, a timeline.
+
+> **As built (6 October 2026).** The collection replaced the `facts` and `tiles` blocks, which were the same content in two layouts: every fact box became a collection laid out as `columns` (each label its heading, each value its subtext) and every set of tiles one laid out as `tiles` (each label its heading, each statement its words, at the width it had), so the pages look as they did. The query-driven list of items once sketched under the same name is now `listing`, still unbuilt.
 
 **The Markdown subset** in `text`, `pointOfView`, `bio` and the like:
 - **Allowed:** paragraphs, emphasis, strong, inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks.

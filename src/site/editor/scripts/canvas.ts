@@ -135,7 +135,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     toolbar.style.setProperty('--x', `${r.right + scrollX}px`);
     toolbar.style.setProperty('--y', `${r.top + scrollY}px`);
     toolLabel.textContent = selected !== null ? (kinds[selected]?.kind ?? '') : '';
-    if (turnButton) turnButton.hidden = selected === null || !(TEXTY.has(typeOf(selected)) || typeOf(selected) === 'tiles');
+    if (turnButton) turnButton.hidden = selected === null || !(TEXTY.has(typeOf(selected)) || typeOf(selected) === 'collection');
   };
   const select = (i: number | null, field: Field | null = null, tell = true, scroll = false) => {
     selected = i;
@@ -171,6 +171,15 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         insert.style.setProperty('--x', `${n.left + scrollX}px`);
         insert.style.setProperty('--w', `${n.width}px`);
         insert.style.setProperty('--y', `${(top + bottom) / 2 + scrollY}px`);
+        // never under the block toolbar: where it would cover the "+" in the middle, the "+" goes to the line's
+        // start, outside the column when there's room for it there (clear of the words too)
+        const plus = insert.querySelector<HTMLElement>('[data-chrome-insert-button]')?.offsetWidth || 40;
+        const bar = toolbar.hidden ? null : toolbar.getBoundingClientRect();
+        const cx = n.left + n.width / 2;
+        const cy = (top + bottom) / 2;
+        const covered = !!bar && cx + plus / 2 > bar.left && cx - plus / 2 < bar.right && cy + plus / 2 > bar.top && cy - plus / 2 < bar.bottom;
+        if (!covered) delete insert.dataset.side;
+        else insert.dataset.side = n.left >= plus * 1.25 ? 'outside' : 'start';
         break;
       }
     }
@@ -419,6 +428,45 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     return true;
   };
 
+  /**
+   * Enter in a list: a new item after the caret's, taking the words after the caret with it. On an empty
+   * last item, the list ends there: the item goes, and a paragraph starts after the list.
+   */
+  const newItem = (list: HTMLElement, index: number) => {
+    const r = caretRange();
+    const at = r && (r.startContainer.nodeType === Node.ELEMENT_NODE ? (r.startContainer as Element) : r.startContainer.parentElement);
+    const li = at?.closest('li');
+    if (!r || !li || !list.contains(li)) return;
+    if (!li.textContent?.trim() && !li.nextElementSibling && li.previousElementSibling) {
+      li.remove();
+      return paragraphAfter(list, index);
+    }
+    r.deleteContents();
+    const tail = document.createRange();
+    tail.setStart(r.startContainer, r.startOffset);
+    tail.setEnd(li, li.childNodes.length);
+    const next = document.createElement('li');
+    next.append(tail.extractContents());
+    li.after(next);
+    // an empty item needs a line in it to show its bullet and hold the caret
+    for (const item of [li, next]) if (!item.textContent) item.replaceChildren(document.createElement('br'));
+    const caret = document.createRange();
+    caret.setStart(next, 0);
+    caret.collapse(true);
+    const s = getSelection()!;
+    s.removeAllRanges();
+    s.addRange(caret);
+    markDirty();
+  };
+  /** A new paragraph after the block being written in (Ctrl or Cmd + Enter, or Enter on a list's empty last item): the block keeps all its words. */
+  const paragraphAfter = (el: HTMLElement, index: number) => {
+    const t = typeOf(index);
+    if (t !== 'text' && t !== 'heading') return;
+    dirty = null;
+    clearTimeout(timer);
+    post({ type: 'split', index, parts: [t === 'text' ? markdownOf(el) : plainOf(el), ''] });
+  };
+
   on('beforeinput', (e) => {
     const c = current();
     if (!c) return;
@@ -427,10 +475,11 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     const type = e.inputType;
     if (type === 'insertParagraph') {
       e.preventDefault();
-      if (el.closest('li') || index === null || index < 0 || composing) return;
+      if (index === null || index < 0 || composing) return;
+      if (el.nodeName === 'UL' || el.nodeName === 'OL') return newItem(el, index);
+      if (el.closest('li')) return;
       const t = typeOf(index);
       if (t !== 'text' && t !== 'heading') return;
-      if (el.nodeName === 'UL' || el.nodeName === 'OL') return;
       const h = halves(el);
       if (!h) return;
       dirty = null;
@@ -599,6 +648,10 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         } else if (mod && e.key.toLowerCase() === 'k' && editing.el.dataset.editorEditable === 'rich') {
           e.preventDefault();
           formatOp('link');
+        } else if (mod && e.key === 'Enter' && !e.shiftKey && !e.altKey && editing.index !== null && editing.index >= 0 && !composing) {
+          // out of a list (or any paragraph or heading) into a new paragraph after it
+          e.preventDefault();
+          paragraphAfter(editing.el, editing.index);
         } else if (editing.el.dataset.editorEditable === 'plain' && (e.key === 'Enter' || (mod && ['b', 'i', 'u'].includes(e.key.toLowerCase()))) && editing.field) {
           e.preventDefault();
           if (e.key === 'Enter') (document.activeElement as HTMLElement).blur();

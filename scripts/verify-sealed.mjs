@@ -57,8 +57,8 @@ export function fold(/** @type {string} */ text) {
 const plain = (/** @type {string} */ md) => md.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`~#>]/g, '').replace(/\\(.)/g, '$1');
 
 /**
- * Every protected word worth looking for: titles, summaries, headings, captions, alt texts, quotes, facts,
- * tiles, link texts and every sentence-like run of 12 characters or more; IDs, slugs, tokens; grants' IDs,
+ * Every protected word worth looking for: titles, summaries, headings, captions, alt texts, quotes, the
+ * items of collections, link texts and every sentence-like run of 12 characters or more; IDs, slugs, tokens; grants' IDs,
  * recipients and purposes. Each term is folded.
  * @param {string} privateRoot
  */
@@ -89,8 +89,7 @@ export function protectedTerms(privateRoot) {
       }
       if (b.type === 'heading') add('a heading', b.text, 3);
       if (b.type === 'quote') runs('a quote', b.text), add('a quote', b.cite, 6);
-      if (b.type === 'facts') for (const i of b.items) add('a fact', i.value, 6), add('a fact', i.label, 6);
-      if (b.type === 'tiles') for (const i of b.items) add('a tile', i.label, 6), runs('a tile', i.text);
+      if (b.type === 'collection') for (const i of b.items) add('an item', i.heading, 6), add('an item', i.subtext, 6), i.text && runs('an item', i.text);
       for (const k of ['caption', 'credit', 'title']) add('a caption', b[k], 6);
       for (const i of b.items ?? []) for (const k of ['caption', 'alt']) add('a caption', i[k], 6);
     }

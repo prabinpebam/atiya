@@ -21,27 +21,28 @@
       "markdown": "Khonjel is Manipuri for _voice_. The app started from a simple daily irritation: I wanted to speak anywhere, have the computer capture the thought, clean it up, and put the finished text exactly where I was already working. Not in a separate note I had to copy from. Not behind an account. Not dependent on a cloud service just to turn speech into text."
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Type",
-          "value": "Local-first desktop voice productivity app"
+          "heading": "Type",
+          "subtext": "Local-first desktop voice productivity app"
         },
         {
-          "label": "Platform",
-          "value": "Windows 10/11 x64"
+          "heading": "Platform",
+          "subtext": "Windows 10/11 x64"
         },
         {
-          "label": "Built with",
-          "value": "Electron, React, TypeScript, Vite and Tailwind CSS"
+          "heading": "Built with",
+          "subtext": "Electron, React, TypeScript, Vite and Tailwind CSS"
         },
         {
-          "label": "Local engines",
-          "value": "whisper.cpp, llama.cpp and sherpa-onnx"
+          "heading": "Local engines",
+          "subtext": "whisper.cpp, llama.cpp and sherpa-onnx"
         },
         {
-          "label": "License",
-          "value": "MIT"
+          "heading": "License",
+          "subtext": "MIT"
         }
       ]
     },
@@ -72,22 +73,23 @@
       "markdown": "At the same time, I did not want privacy to become a dead end for people who already have approved infrastructure. The app can use local models by default, self-hosted or OpenAI-compatible endpoints, and optional cloud or enterprise providers. API keys live in the operating system keychain, not in plaintext, and cloud routing is opt-in."
     },
     {
-      "type": "tiles",
-      "width": "wide",
+      "type": "collection",
+      "layout": "tiles",
       "items": [
         {
-          "label": "On-device speech",
+          "heading": "On-device speech",
           "text": "Local transcription runs through `whisper.cpp`, with NVIDIA Parakeet available through `sherpa-onnx`."
         },
         {
-          "label": "On-device cleanup",
+          "heading": "On-device cleanup",
           "text": "Language cleanup and chat can run through `llama.cpp`, with a deterministic fallback when local models are not ready."
         },
         {
-          "label": "Optional providers",
+          "heading": "Optional providers",
           "text": "The same model picker can point to self-hosted, OpenAI-compatible, cloud or enterprise endpoints when I choose to connect them."
         }
-      ]
+      ],
+      "width": "wide"
     },
     {
       "type": "heading",

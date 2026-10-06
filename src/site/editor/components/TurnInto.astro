@@ -1,8 +1,8 @@
 ---
 /**
  * The choices for turning blocks into another kind (documentation/editor/spec.md §3.3): any kind of text
- * (a paragraph, a heading, a quote, a list); from several blocks, one list or tiles; from one, several
- * (a list's items as paragraphs, tiles as headings and paragraphs). The article editor shows the choices
+ * (a paragraph, a heading, a quote, a list); from several blocks, one list or a collection; from one, several
+ * (a list's items as paragraphs, a collection's items as headings and paragraphs). The article editor shows the choices
  * that fit what's selected, marks the kind a block already is, and says why a choice can't be used.
  * @tier editor
  * @a11y Every choice is a button named by what it makes, with a line on what it does; the block's own kind is marked current; a choice that can't be used is disabled, its reason in words (a status).
@@ -34,7 +34,7 @@ const GROUPS: { id: string; title: string; choices: { value: string; label: stri
     choices: [
       { value: 'join-bulleted', label: 'One bulleted list', what: "Each block's lines become its items", icon: 'bulleted' },
       { value: 'join-numbered', label: 'One numbered list', what: "Each block's lines become its items, in order", icon: 'numbered' },
-      { value: 'tiles', label: 'Tiles', what: 'Pairs of a label (a heading or a short line), then its words', icon: 'tiles' },
+      { value: 'collection', label: 'Collection', what: 'Pairs of a heading (or a short line), then its words, as tiles', icon: 'collection' },
     ],
   },
   {
@@ -42,7 +42,7 @@ const GROUPS: { id: string; title: string; choices: { value: string; label: stri
     title: 'Several blocks from one',
     choices: [
       { value: 'split', label: 'Separate paragraphs', what: 'One paragraph for each line or item', icon: 'paragraph' },
-      { value: 'untile', label: 'Headings and paragraphs', what: 'A heading and a paragraph for each tile', icon: 'heading' },
+      { value: 'uncollect', label: 'Headings and paragraphs', what: 'A heading and a paragraph for each item, and its picture', icon: 'heading' },
     ],
   },
 ];

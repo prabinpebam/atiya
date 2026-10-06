@@ -25,6 +25,13 @@ const p = sample('waterfall');
   <IconButton label="Next picture" icon="chevron-right" disabled />
 </Example>
 
+<Example title="Square, for a toolbar" description="Square with rounded corners: several side by side take less room than circles (edit mode's block toolbar).">
+  <IconButton label="Move up" icon="arrow-up" size="sm" shape="square" tooltip="top" />
+  <IconButton label="Move down" icon="arrow-down" size="sm" shape="square" tooltip="top" />
+  <IconButton label="Duplicate" icon="duplicate" size="sm" shape="square" tooltip="top" />
+  <IconButton label="Delete" icon="delete" size="sm" shape="square" variant="secondary" tooltip="top" />
+</Example>
+
 <Example title="On a picture" layout="block" description="The overlay variant keeps its own dark surface, so it reads on any picture.">
   <div class="demo-over">
     <Image src={p.src} srcset={p.srcset} sizes="40rem" alt={p.alt} width={p.width} height={p.height} ratio="16/9" />

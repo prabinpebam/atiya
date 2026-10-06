@@ -48,26 +48,27 @@
       "markdown": "Cloner Pro generates organic arrays from one or more selected Figma objects. You can control the count and spacing on each axis, choose whether the source objects iterate or are picked randomly, and then affect colour, scale, position and rotation."
     },
     {
-      "type": "tiles",
-      "width": "wide",
+      "type": "collection",
+      "layout": "tiles",
       "items": [
         {
-          "label": "Array control",
+          "heading": "Array control",
           "text": "Clone one or many objects into a 2D array, with independent counts and spacing on X and Y."
         },
         {
-          "label": "Luma-driven variation",
+          "heading": "Luma-driven variation",
           "text": "Use generated Perlin noise or your own image as the map that drives scale, position, rotation and colour."
         },
         {
-          "label": "Randomness with intent",
+          "heading": "Randomness with intent",
           "text": "Switch from luma to random values for effects, or pick randomly among selected sources."
         },
         {
-          "label": "Animation-friendly names",
+          "heading": "Animation-friendly names",
           "text": "Generated layers keep systematic names, so the results can work with Smart Animate."
         }
-      ]
+      ],
+      "width": "wide"
     },
     {
       "type": "figure",
@@ -118,31 +119,32 @@
       "markdown": "Cloner Pro was published on Figma Community in May 2023 with the tagline \"Clone objects in organic patterns with random noise.\" Version 5 added Grid and Honeycomb arrays, improved colour handling for groups and frames, and refined the interface."
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Users, October 2026",
-          "value": "3,530"
+          "heading": "Users, October 2026",
+          "subtext": "3,530"
         },
         {
-          "label": "Likes",
-          "value": "50"
+          "heading": "Likes",
+          "subtext": "50"
         },
         {
-          "label": "Installs",
-          "value": "342"
+          "heading": "Installs",
+          "subtext": "342"
         },
         {
-          "label": "Views",
-          "value": "2,971"
+          "heading": "Views",
+          "subtext": "2,971"
         },
         {
-          "label": "Comments",
-          "value": "2"
+          "heading": "Comments",
+          "subtext": "2"
         },
         {
-          "label": "License",
-          "value": "Community Free Resource License"
+          "heading": "License",
+          "subtext": "Community Free Resource License"
         }
       ]
     },

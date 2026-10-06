@@ -260,6 +260,9 @@
   --c-scrollbar-blur: 0.5rem;
   --c-scrollbar-saturate: 1.6;
   --c-scrollbar-solid: var(--color-border-strong);
+  --c-collection-column: 13rem;
+  --c-collection-row-picture: 11rem;
+  --c-collection-slide: 18rem;
   --c-image-radius: var(--radius-lg);
   --c-image-radius-feature: var(--radius-xl);
   --c-image-placeholder: var(--color-bg-sunk);

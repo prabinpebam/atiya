@@ -17,10 +17,11 @@ import IconButton from '../../components/fundamentals/IconButton.astro';
 import Image from '../../components/fundamentals/Image.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
-import type { Article, Block } from '../../content/schema';
+import { COLLECTION_MAX, type Article, type Block } from '../../content/schema';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { kindOf } from '../model/ops';
 import { pictureNote } from '../model/crop';
+import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS } from '../model/collection';
 import { PICTURE_SPECS, specTip } from '../../design/pictures';
 
 export interface Thumb {
@@ -263,34 +264,49 @@ const STATUS: SelectOption[] = [
               </>
             )}
 
-            {b.type === 'facts' && (
-              <div class="facts" data-editor-facts-list>
-                {b.items.map((f, n) => (
-                  <div class="fact">
-                    <TextField label={`Label ${n + 1}`} name={`body.${i}.items.${n}.label`} id={id(i, `fl-${n}`)} value={f.label} required />
-                    <TextField label={`Value ${n + 1}`} name={`body.${i}.items.${n}.value`} id={id(i, `fv-${n}`)} value={f.value} required />
-                    <IconButton label={`Remove fact ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 1} data-editor-facts="remove" data-index={String(i)} data-item={String(n)} />
-                  </div>
-                ))}
-                <Button variant="secondary" size="sm" icon="plus" disabled={b.items.length >= 6} data-editor-facts="add" data-index={String(i)}>Add a fact</Button>
-              </div>
-            )}
-
-            {b.type === 'tiles' && (
+            {b.type === 'collection' && (
               <>
-                <div class="tiles" data-editor-tiles-list>
-                  {b.items.map((t, n) => (
-                    <div class="tile">
-                      <TextField label={`Tile ${n + 1}: label`} name={`body.${i}.items.${n}.label`} id={id(i, `tl-${n}`)} value={t.label} required hint={n === 0 ? 'A word or two (40 characters at most).' : undefined} />
-                      <TextField label={`Tile ${n + 1}: text`} name={`body.${i}.items.${n}.text`} id={id(i, `tt-${n}`)} value={t.text} multiline rows={2} required hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
-                      <div class="row">
-                        <IconButton label={`Remove tile ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 2} data-editor-tiles="remove" data-index={String(i)} data-item={String(n)} />
-                      </div>
-                    </div>
-                  ))}
-                  <Button variant="secondary" size="sm" icon="plus" disabled={b.items.length >= 6} data-editor-tiles="add" data-index={String(i)}>Add a tile</Button>
+                <div class="items" data-editor-collection-list>
+                  <span class="field-label">{`Items (${b.items.length})`}</span>
+                  <Text variant="small" tone="muted">Each item has a heading, a picture, a subtext or its words: any of them, and at least one.</Text>
+                  <ol class="entries">
+                    {b.items.map((it, n) => (
+                      <li class="entry">
+                        <span class="field-label">{`Item ${n + 1}`}</span>
+                        <div class="media-row">
+                          {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="4/3" fit="contain" /> : <span class="no-picture"><Text as="span" variant="small" tone="muted">No picture</Text></span>}
+                          <div class="row">
+                            <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.items.${n}.media`} data-pick-mode="single">{it.media ? 'Replace' : 'Add a picture'}</Button>
+                            {it.media && <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.items.${n}.media`}>Crop</Button>}
+                            {it.media && <Button variant="quiet" size="sm" icon="delete" data-editor-unset={`body.${i}.items.${n}.media`}>Remove picture</Button>}
+                          </div>
+                        </div>
+                        <TextField label={`Item ${n + 1}: heading`} name={`body.${i}.items.${n}.heading`} id={id(i, `ch-${n}`)} value={it.heading ?? ''} optional hint={n === 0 ? 'A word or a few (80 characters at most).' : undefined} />
+                        <TextField label={`Item ${n + 1}: subtext`} name={`body.${i}.items.${n}.subtext`} id={id(i, `cs-${n}`)} value={it.subtext ?? ''} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
+                        <TextField label={`Item ${n + 1}: words`} name={`body.${i}.items.${n}.text`} id={id(i, `ct-${n}`)} value={it.text ?? ''} multiline rows={2} optional hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
+                        <span class="item-moves">
+                          <IconButton label={`Move item ${n + 1} up`} icon="arrow-up" size="sm" tooltip="none" disabled={n === 0} data-editor-collection="up" data-index={String(i)} data-item={String(n)} />
+                          <IconButton label={`Move item ${n + 1} down`} icon="arrow-down" size="sm" tooltip="none" disabled={n === b.items.length - 1} data-editor-collection="down" data-index={String(i)} data-item={String(n)} />
+                          <IconButton label={`Remove item ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 1} data-editor-collection="remove" data-index={String(i)} data-item={String(n)} />
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                  <Button variant="secondary" size="sm" icon="plus" disabled={b.items.length >= COLLECTION_MAX} data-editor-collection="add" data-index={String(i)}>Add an item</Button>
                 </div>
-                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'popout'} options={WIDTHS.filter((w) => w.value !== 'full')} />
+                <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout} options={LAYOUT_CHOICES} hint="The same items, laid out another way: change it any time." data-refresh="" />
+                {TAKES_COLUMNS.has(b.layout) && (
+                  <Select label="Columns" name={`body.${i}.columns`} id={id(i, 'columns')} value={b.columns ? String(b.columns) : ''} data-type="number" options={[{ value: '', label: 'By how many there are', description: 'Three for three, six or more than four; else two' }, { value: '2', label: 'Two' }, { value: '3', label: 'Three' }, { value: '4', label: 'Four' }]} hint="On a wide screen; fewer on a tablet, one on a phone." />
+                )}
+                {b.layout === 'carousel' && <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label ?? ''} optional hint="Names the carousel for assistive tech. Left empty, “Carousel”." />}
+                <Select label="Headings" name={`body.${i}.headings`} id={id(i, 'headings')} value={b.headings ?? 'label'} options={HEADING_CHOICES} />
+                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'content'} options={WIDTHS.filter((w) => w.value !== 'full')} />
+                <Heading level={4} size="ui">Pictures</Heading>
+                <Select label="Shape" name={`body.${i}.ratio`} id={id(i, 'ratio')} value={b.ratio ?? ''} options={SHAPES} hint="The frame each picture is shown in." />
+                <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.ratio ? 'fill' : 'fit')} options={DISPLAYS} hint={b.ratio ? 'How each picture sits in its frame.' : 'In its own shape, Fill and Fit look the same.'} />
+                <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+                <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
+                <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
                 <div class="row">
                   <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
                 </div>
@@ -459,8 +475,7 @@ const STATUS: SelectOption[] = [
 
   .media-field,
   .private-field,
-  .items,
-  .facts {
+  .items {
     display: grid;
     gap: var(--space-2);
   }
@@ -503,23 +518,27 @@ const STATUS: SelectOption[] = [
     justify-content: end;
   }
 
-  .tiles {
+  .entries {
     display: grid;
     gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .tile {
+  .entry {
     display: grid;
     gap: var(--space-2);
     padding-block-end: var(--space-3);
     border-block-end: var(--border-hairline) solid var(--color-rule);
   }
 
-  .fact {
+  .no-picture {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-    align-items: end;
-    gap: var(--space-2);
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    border: var(--border-hairline) dashed var(--color-rule);
+    border-radius: var(--radius-md);
   }
 
   .issue {

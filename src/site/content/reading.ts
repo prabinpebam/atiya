@@ -9,8 +9,7 @@ export function wordCount(a: Article): number {
   for (const b of a.body) {
     if (b.type === 'text') texts.push(plainText(b.markdown));
     else if (b.type === 'heading' || b.type === 'quote') texts.push(b.text);
-    else if (b.type === 'facts') texts.push(...b.items.map((i) => `${i.label} ${i.value}`));
-    else if (b.type === 'tiles') texts.push(...b.items.map((i) => `${i.label} ${plainText(i.text)}`));
+    else if (b.type === 'collection') texts.push(...b.items.map((i) => [i.heading, i.subtext, i.text && plainText(i.text)].filter(Boolean).join(' ')));
   }
   return texts.join(' ').split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 }
@@ -23,6 +22,7 @@ export function pictureCount(a: Article): number {
   for (const b of a.body) {
     if (b.type === 'figure') ids.add(b.media);
     else if (b.type === 'gallery' || b.type === 'carousel') for (const i of b.items) ids.add(i.media);
+    else if (b.type === 'collection') for (const i of b.items) if (i.media) ids.add(i.media);
   }
   return ids.size;
 }

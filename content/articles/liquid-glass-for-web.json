@@ -42,27 +42,28 @@
       "markdown": "The goal is not to paint a glossy card. The goal is to build one canonical mechanism that components can share: generate the material, attach it to a surface, then let buttons, inputs, toggles, search boxes and panels compose on top of it."
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Type",
-          "value": "Open-source web library and design library"
+          "heading": "Type",
+          "subtext": "Open-source web library and design library"
         },
         {
-          "label": "Built with",
-          "value": "TypeScript, SVG filters and CSS backdrop-filter"
+          "heading": "Built with",
+          "subtext": "TypeScript, SVG filters and CSS backdrop-filter"
         },
         {
-          "label": "Packages",
-          "value": "Core, React, custom element and UI"
+          "heading": "Packages",
+          "subtext": "Core, React, custom element and UI"
         },
         {
-          "label": "Started",
-          "value": "June 2026"
+          "heading": "Started",
+          "subtext": "June 2026"
         },
         {
-          "label": "Status",
-          "value": "Early 0.1.0 work, with core refraction math implemented"
+          "heading": "Status",
+          "subtext": "Early 0.1.0 work, with core refraction math implemented"
         }
       ]
     },
@@ -76,26 +77,27 @@
       "markdown": "The core pipeline starts with a surface profile, uses Snell's law to build a displacement field, rasterizes that into a displacement map and optional specular rim-light map, then applies the result through an SVG filter. The live docs version ports that runtime into buildless JavaScript so the design library can demonstrate the real effect, not static mockups."
     },
     {
-      "type": "tiles",
-      "width": "wide",
+      "type": "collection",
+      "layout": "tiles",
       "items": [
         {
-          "label": "Refraction",
+          "heading": "Refraction",
           "text": "SVG displacement maps bend the pixels behind the glass surface."
         },
         {
-          "label": "Rim light",
+          "heading": "Rim light",
           "text": "A generated specular map gives the edge its glass-like highlight."
         },
         {
-          "label": "Material presets",
+          "heading": "Material presets",
           "text": "Named looks such as Clear, Optic, Soft Frost, Satin, Deep Frost and Milk Glass share the same engine."
         },
         {
-          "label": "Wrappers",
+          "heading": "Wrappers",
           "text": "The same core API is exposed through vanilla JavaScript, React and a custom element."
         }
-      ]
+      ],
+      "width": "wide"
     },
     {
       "type": "figure",

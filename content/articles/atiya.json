@@ -84,31 +84,32 @@
       "lightbox": true
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Type",
-          "value": "Personal portfolio"
+          "heading": "Type",
+          "subtext": "Personal portfolio"
         },
         {
-          "label": "Built with",
-          "value": "Astro, React, three.js and React Three Fiber"
+          "heading": "Built with",
+          "subtext": "Astro, React, three.js and React Three Fiber"
         },
         {
-          "label": "Hosting",
-          "value": "GitHub Pages"
+          "heading": "Hosting",
+          "subtext": "GitHub Pages"
         },
         {
-          "label": "Content",
-          "value": "JSON mock API in content/"
+          "heading": "Content",
+          "subtext": "JSON mock API in content/"
         },
         {
-          "label": "Editing",
-          "value": "Local dev-only browser editor"
+          "heading": "Editing",
+          "subtext": "Local dev-only browser editor"
         },
         {
-          "label": "Language",
-          "value": "TypeScript"
+          "heading": "Language",
+          "subtext": "TypeScript"
         }
       ]
     },

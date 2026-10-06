@@ -27,27 +27,28 @@
       "lightbox": true
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Type",
-          "value": "Figma plugin"
+          "heading": "Type",
+          "subtext": "Figma plugin"
         },
         {
-          "label": "Built with",
-          "value": "TypeScript and WebGL"
+          "heading": "Built with",
+          "subtext": "TypeScript and WebGL"
         },
         {
-          "label": "Published",
-          "value": "28 June 2025"
+          "heading": "Published",
+          "subtext": "28 June 2025"
         },
         {
-          "label": "Users",
-          "value": "1,185 (October 2026)"
+          "heading": "Users",
+          "subtext": "1,185 (October 2026)"
         },
         {
-          "label": "Likes",
-          "value": "29 (October 2026)"
+          "heading": "Likes",
+          "subtext": "29 (October 2026)"
         }
       ]
     },

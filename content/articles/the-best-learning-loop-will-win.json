@@ -172,17 +172,19 @@
       "lightbox": true
     },
     {
-      "type": "tiles",
+      "type": "collection",
+      "layout": "tiles",
       "items": [
         {
-          "label": "CLI",
+          "heading": "CLI",
           "text": "**Role:** Discovery\\\n**Time to first value:** Minutes\\\n**Risk sits with:** The user, at the edge\\\n**Innovation rate:** High"
         },
         {
-          "label": "MCP",
+          "heading": "MCP",
           "text": "**Role:** Formalization\\\n**Time to first value:** Weeks\\\n**Risk sits with:** The platform, at the center\\\n**Innovation rate:** Low"
         }
-      ]
+      ],
+      "width": "popout"
     },
     {
       "type": "text",

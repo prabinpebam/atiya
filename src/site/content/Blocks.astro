@@ -10,8 +10,7 @@ import Figure from '../components/compounds/Figure.astro';
 import Gallery from '../components/compounds/Gallery.astro';
 import Carousel from '../components/compounds/Carousel.astro';
 import VideoEmbed from '../components/compounds/VideoEmbed.astro';
-import Facts from '../components/compounds/Facts.astro';
-import TileGrid from '../components/compounds/TileGrid.astro';
+import Collection from '../components/compounds/Collection.astro';
 import Quote from '../components/fundamentals/Quote.astro';
 import Divider from '../components/fundamentals/Divider.astro';
 import { withBase } from '../design/meta';
@@ -54,7 +53,8 @@ type View =
   | { b: Extract<Block, { type: 'gallery' | 'carousel' }>; ps: Picture[] }
   | { b: Extract<Block, { type: 'video' }>; p?: Picture; v?: VideoFile }
   | { b: Extract<Block, { type: 'heading' }>; id: string }
-  | { b: Exclude<Block, { type: 'figure' | 'gallery' | 'carousel' | 'video' | 'heading' }> };
+  | { b: Extract<Block, { type: 'collection' }>; pictures: (Picture | undefined)[] }
+  | { b: Exclude<Block, { type: 'figure' | 'gallery' | 'carousel' | 'video' | 'heading' | 'collection' }> };
 
 const views: View[] = await Promise.all(
   blocks.map(async (b): Promise<View> => {
@@ -70,6 +70,8 @@ const views: View[] = await Promise.all(
         return b.media ? { b, v: await video(b.media, b.width ?? 'wide') } : { b, p: await picture(b.poster!, b.width ?? 'wide') };
       case 'heading':
         return { b, id: b.id ?? headingId(b.text) };
+      case 'collection':
+        return { b, pictures: await Promise.all(b.items.map((i) => (i.media ? picture(i.media, 'gallery') : undefined))) };
       default:
         return { b };
     }
@@ -157,6 +159,19 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
         />
       );
     }
+    if ('pictures' in v) {
+      const { b, pictures } = v;
+      const items = b.items.map((it, n) => {
+        const p = pictures[n];
+        return {
+          heading: it.heading,
+          subtext: it.subtext,
+          html: it.text ? renderInlineMarkdown(it.text, { resolveRef, annotate: editable }) : undefined,
+          picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, focus: p.focus, bg: p.bg, dark: p.dark },
+        };
+      });
+      return <Collection items={items} layout={b.layout} columns={b.columns} headings={b.headings} label={b.label} width={b.width} ratio={b.ratio} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} />;
+    }
     if ('id' in v) {
       const H = tag(v.b.level);
       return <H id={v.id}>{v.b.text}</H>;
@@ -171,10 +186,6 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
             {b.text}
           </Quote>
         );
-      case 'facts':
-        return <Facts items={b.items} />;
-      case 'tiles':
-        return <TileGrid items={b.items.map((t) => ({ label: t.label, html: renderInlineMarkdown(t.text, { resolveRef, annotate: editable }) }))} width={b.width} />;
       case 'divider':
         return <Divider />;
       default:

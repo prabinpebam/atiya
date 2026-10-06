@@ -1,0 +1,51 @@
+---
+import Example from '../library/Example.astro';
+import Collection from '../components/compounds/Collection.astro';
+import { SAMPLES } from '../design/samples';
+
+const brief = [
+  { heading: 'Challenge', html: 'Re-energize the team and make purpose feel personal, practical, and visible.' },
+  { heading: 'Intent', html: 'Shift the conversation from completing tasks to owning meaningful outcomes.' },
+  { heading: 'My role', html: 'Identity concept, narrative framing, visual direction, and team activation.' },
+  { heading: 'Core idea', html: '<strong>Do what makes you proud.</strong> A standard chosen from within.' },
+];
+const facts = [
+  { heading: 'Project', subtext: 'Team rebranding' },
+  { heading: 'Year', subtext: '2024' },
+  { heading: 'Team', subtext: '25 members' },
+];
+const places = SAMPLES.slice(0, 6).map((p) => ({
+  heading: p.caption.replace(/[.,].*$/, ''),
+  subtext: 'On the planet',
+  html: p.caption,
+  picture: { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height },
+}));
+---
+
+<Example title="Columns: a story's facts" description="Headings as labels over a subtext, side by side between two hairlines: the scan layer before the first paragraph. They wrap when they don't fit.">
+  <Collection layout="columns" items={facts} />
+</Example>
+
+<Example title="Tiles: a story's brief" description="An even grid of cards, two to a row: a label over a sentence or two. The words can carry bold, italic and links.">
+  <Collection layout="tiles" width="popout" items={brief} />
+</Example>
+
+<Example title="Rows, with pictures and titles" layout="block" description="One under another, each picture beside its words; on a phone the picture goes above them.">
+  <Collection layout="rows" headings="title" ratio="3/2" items={places.slice(0, 3)} />
+</Example>
+
+<Example title="Tiles, with pictures" layout="block" description="The same items as the rows above, as tiles three to a row, each picture in a 3:2 frame with a drop shadow.">
+  <Collection layout="tiles" headings="title" ratio="3/2" shadow width="wide" items={places} />
+</Example>
+
+<Example title="Masonry" layout="block" description="Cards in columns, each as tall as it is: the pictures keep their own shape, and the words their own length.">
+  <Collection layout="masonry" headings="title" width="wide" items={places.map((p, n) => (n % 2 ? { ...p, html: `${p.html} ${p.picture.alt}` } : p))} />
+</Example>
+
+<Example title="Carousel" layout="block" description="Cards in a strip that scrolls sideways; Previous and Next move it by a view and are disabled at its ends.">
+  <Collection layout="carousel" label="Places on the planet" headings="title" ratio="4/3" width="wide" items={places} />
+</Example>
+
+<Example title="Any layout, the same items" description="Without pictures or subtexts, the brief above as rows: a collection can change layout at any time.">
+  <Collection layout="rows" items={brief} />
+</Example>

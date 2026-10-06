@@ -100,6 +100,7 @@ export function mediaUsed(a: Article): string[] {
   for (const b of a.body) {
     if (b.type === 'figure') ids.push(b.media);
     else if (b.type === 'gallery' || b.type === 'carousel') ids.push(...b.items.map((i) => i.media));
+    else if (b.type === 'collection') ids.push(...b.items.flatMap((i) => (i.media ? [i.media] : [])));
     else if (b.type === 'video' && b.poster) ids.push(b.poster);
   }
   if (a.seo?.image) ids.push(a.seo.image);

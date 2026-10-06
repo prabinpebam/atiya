@@ -113,8 +113,7 @@ const KIND_LABEL: Record<Block['type'], string> = {
   video: 'Video',
   quote: 'Quote',
   divider: 'Divider',
-  facts: 'Facts',
-  tiles: 'Tiles',
+  collection: 'Collection',
 };
 
 /** The block's kind as the editor names it ("Heading 2", "Paragraph"). */
@@ -140,10 +139,8 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
       return `${b.items.length} pictures`;
     case 'video':
       return cut(b.title ?? (b.media ? (alt(b.media) ?? b.media.split('/').pop()!) : ''));
-    case 'tiles':
-      return cut(b.items.map((t) => t.label).join(', '));
-    case 'facts':
-      return cut(b.items.map((i) => i.value).join(', '));
+    case 'collection':
+      return cut(b.items.map((i) => i.heading ?? i.subtext ?? (i.text ? plainText(i.text) : i.media ? (alt(i.media) ?? i.media.split('/').pop()!) : '')).join(', '));
     case 'divider':
       return '';
   }
@@ -206,7 +203,7 @@ export const TEXT_KINDS: { value: TextKind; label: string; what: string }[] = [
   { value: 'numbered', label: 'Numbered list', what: 'One item a line, in order' },
 ];
 
-/** The text kind a block is, or null for a block that isn't text (a picture, tiles, a divider). */
+/** The text kind a block is, or null for a block that isn't text (a picture, a collection, a divider). */
 export function textKindOf(b: Block): TextKind | null {
   if (b.type === 'heading') return `heading-${b.level}`;
   if (b.type === 'quote') return b.variant === 'pull' ? 'pull-quote' : 'quote';
@@ -263,28 +260,30 @@ export function splitLines(b: Block): Block[] | null {
 export const joinAsList = (blocks: Block[], ordered: boolean): Block => toTextKind(blocks.flatMap(linesOf), ordered ? 'numbered' : 'bulleted');
 
 /**
- * Label and text pairs as tiles: a heading (or a short line) then its words, two to six times. Returns
- * why not when the blocks aren't such pairs.
+ * Heading and text pairs as a collection, laid out as tiles: a heading (or a short line) then its words,
+ * one to twelve times. Returns why not when the blocks aren't such pairs.
  */
-export function asTiles(blocks: Block[]): { ok: true; block: Block } | { ok: false; why: string } {
-  if (blocks.length % 2 || blocks.length < 4 || blocks.length > 12) return { ok: false, why: 'Tiles come from two to six pairs: a label (a heading or a short line), then its words.' };
-  const items: { label: string; text: string }[] = [];
+export function asCollection(blocks: Block[]): { ok: true; block: Block } | { ok: false; why: string } {
+  if (blocks.length % 2 || blocks.length < 2 || blocks.length > 24) return { ok: false, why: 'A collection comes from pairs: a heading (or a short line), then its words, up to twelve times.' };
+  const items: { heading: string; text: string }[] = [];
   for (let k = 0; k < blocks.length; k += 2) {
-    const [label, text] = [blocks[k], blocks[k + 1]];
-    if (textKindOf(label) === null || textKindOf(text) === null) return { ok: false, why: 'Only text becomes tiles: headings, paragraphs, quotes and lists.' };
-    const name = linesOf(label).map(words).join(' ').replace(/\s+/g, ' ').trim();
-    if (!name || name.length > 40) return { ok: false, why: `A tile's label is at most 40 characters: "${name.slice(0, 40)}…" is longer.` };
-    items.push({ label: name, text: (toTextKind(linesOf(text), 'paragraph') as { markdown: string }).markdown });
+    const [heading, text] = [blocks[k], blocks[k + 1]];
+    if (textKindOf(heading) === null || textKindOf(text) === null) return { ok: false, why: 'Only text becomes a collection: headings, paragraphs, quotes and lists.' };
+    const name = linesOf(heading).map(words).join(' ').replace(/\s+/g, ' ').trim();
+    if (!name || name.length > 80) return { ok: false, why: `An item's heading is at most 80 characters: "${name.slice(0, 80)}…" is longer.` };
+    items.push({ heading: name, text: (toTextKind(linesOf(text), 'paragraph') as { markdown: string }).markdown });
   }
-  return { ok: true, block: { type: 'tiles', items } };
+  return { ok: true, block: { type: 'collection', layout: 'tiles', items, width: 'popout' } };
 }
 
-/** Tiles back as a heading (level 3) and a paragraph for each. */
-export function tilesToText(b: Block): Block[] | null {
-  if (b.type !== 'tiles') return null;
-  return b.items.flatMap((t): Block[] => [
-    { type: 'heading', level: 3, text: t.label },
-    { type: 'text', markdown: t.text },
+/** A collection back as blocks: for each item, its picture, a heading (level 3) and a paragraph for its subtext and its words. */
+export function collectionToText(b: Block): Block[] | null {
+  if (b.type !== 'collection') return null;
+  return b.items.flatMap((i): Block[] => [
+    ...(i.media ? [{ type: 'figure', media: i.media, width: 'content' } as Block] : []),
+    ...(i.heading ? [{ type: 'heading', level: 3, text: i.heading } as Block] : []),
+    ...(i.subtext ? [{ type: 'text', markdown: i.subtext } as Block] : []),
+    ...(i.text ? [{ type: 'text', markdown: i.text } as Block] : []),
   ]);
 }
 

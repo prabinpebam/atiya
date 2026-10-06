@@ -414,7 +414,7 @@ Every step stays on Actions' free minutes for public repositories.
 1. **Provenance (the primary check).** Every entry in the provenance record (§6.2) is accounted for: a private-origin file is gone from `dist/` and its sealed copy is there; a protected page's route has its sealed regions and no readable ones. Anything unaccounted for fails.
 2. **Structure.** No seal comment is left in any file; every protected page's shell has its neutral title, `noindex`, its `data-build` and no description; no open page links to a protected page's token; every `_access` and `_sealed` file belongs to this build.
 3. **Words and bytes (defence in depth).** Every file in `dist/` is decoded (HTML entities, JSON escapes) and its whitespace and case folded, then searched for:
-   - every protected page's title, summary, headings, alt texts, captions, quotes, facts, tile labels, link text and every run of words in its text of 12 characters or more;
+   - every protected page's title, summary, headings, alt texts, captions, quotes, the headings, subtexts and words of collections, link text and every run of words in its text of 12 characters or more;
    - its ID, slug and token, and every grant's ID, code name, recipient and purpose;
    - the SHA-256 of every private master and of every file the sealer removed.
 

@@ -55,7 +55,7 @@ const place = planet ? (placeOfPage(planet.value, id) ?? '') : '';
 const places = (planet?.value.places ?? []).map((p) => ({ value: p.id, label: p.title, description: p.kicker }));
 const route = loaded.ok ? getPlacement('article', id) : undefined;
 
-const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', facts: 'facts', tiles: 'tiles' };
+const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', collection: 'collection' };
 const cards: MediaCard[] = loaded.ok ? await mediaCards(loaded.index, `articles/${id}`) : [];
 const thumbs: Record<string, Thumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height }]));
 const blocks = article.body.map((b) => ({ kind: kindOf(b), excerpt: excerptOf(b, (m) => thumbs[m]?.alt), icon: ICON[b.type] }));
@@ -126,11 +126,8 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         <Dialog id="editor-insert-quote" title="Add a quote">
           <InsertForms kind="quote" />
         </Dialog>
-        <Dialog id="editor-insert-facts" title="Add facts">
-          <InsertForms kind="facts" />
-        </Dialog>
-        <Dialog id="editor-insert-tiles" title="Add tiles">
-          <InsertForms kind="tiles" />
+        <Dialog id="editor-insert-collection" title="Add a collection">
+          <InsertForms kind="collection" />
         </Dialog>
         <Dialog id="editor-insert-video" title="Add a YouTube or Vimeo video">
           <InsertForms kind="video" />

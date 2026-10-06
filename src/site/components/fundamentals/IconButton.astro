@@ -1,7 +1,8 @@
 ---
 /**
- * A round button with only an icon. Its label is its accessible name and shows as a tooltip on hover
- * and keyboard focus, so nobody has to guess what it does.
+ * A button with only an icon: round, or square with rounded corners (several side by side in a toolbar).
+ * Its label is its accessible name and shows as a tooltip on hover and keyboard focus, so nobody has to
+ * guess what it does.
  * @tier fundamental
  * @a11y The label is required: it names the button (aria-label) and is the tooltip's text.
  * @a11y A toggle takes pressed (aria-pressed); a link takes href.
@@ -20,6 +21,8 @@ interface Props {
   variant?: 'quiet' | 'secondary' | 'primary' | 'overlay';
   /** sm 40 px (44 to touch), md 48 px, lg 56 px. */
   size?: 'sm' | 'md' | 'lg';
+  /** round (the default), or square with rounded corners: tighter side by side, as in a toolbar. */
+  shape?: 'round' | 'square';
   /** Makes it a link. */
   href?: string;
   /** A toggle's state. */
@@ -39,7 +42,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, icon, variant = 'quiet', size = 'md', href, pressed, disabled = false, tooltip = 'bottom', type = 'button', ...rest } = Astro.props;
+const { label, icon, variant = 'quiet', size = 'md', shape = 'round', href, pressed, disabled = false, tooltip = 'bottom', type = 'button', ...rest } = Astro.props;
 const isLink = href !== undefined && !disabled;
 const Tag = isLink ? 'a' : 'button';
 const i = svgOf(icon);
@@ -49,6 +52,7 @@ const i = svgOf(icon);
   class="icon-button"
   data-variant={variant}
   data-size={size}
+  data-shape={shape === 'square' ? 'square' : undefined}
   data-tip={tooltip === 'none' ? undefined : tooltip}
   data-label={label}
   aria-label={label}
@@ -92,6 +96,11 @@ const i = svgOf(icon);
     position: absolute;
     inset: calc((var(--c-control-height-sm) - var(--size-touch)) / 2);
     border-radius: var(--radius-round);
+  }
+
+  .icon-button[data-shape='square'],
+  .icon-button[data-shape='square']::before {
+    border-radius: var(--radius-md);
   }
 
   .icon-button[data-size='lg'] {

@@ -727,21 +727,25 @@ test.describe('content', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(doc.title);
     const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' });
     await expect(crumbs.getByRole('link')).toHaveText(['Home', 'Leadership']);
-    // the facts, as description pairs
-    const facts = of('facts')[0];
+    // the facts: a collection laid out as columns, each heading over its subtext
+    const facts = of('collection').find((c) => c.layout === 'columns');
     if (facts) {
-      await expect(page.locator('article dl dt').first()).toHaveText(facts.items[0].label);
-      await expect(page.locator('article dl dd').first()).toHaveText(facts.items[0].value);
+      const first = page.locator('article [data-collection][data-layout="columns"]').first();
+      await expect(first.locator('.heading').first()).toHaveText(facts.items[0].heading!);
+      await expect(first.locator('.subtext').first()).toHaveText(facts.items[0].subtext!);
     }
     // every heading block, with its anchor; the quotes; the text's line breaks
     const headings = of('heading');
     await expect(page.locator('article h2')).toHaveCount(headings.filter((h) => h.level === 2).length);
     for (const h of headings) await expect(page.locator(`[id="${h.id ?? headingId(h.text)}"]`)).toHaveText(h.text);
     for (const q of of('quote')) await expect(page.locator('article blockquote', { hasText: q.text.slice(0, 40) })).toHaveCount(1);
-    // the tiles: a description list of each label and its statement
-    const tileGrids = page.locator('[data-tiles]');
-    await expect(tileGrids).toHaveCount(of('tiles').length);
-    for (const [n, t] of of('tiles').entries()) await expect(tileGrids.nth(n).locator('dt')).toHaveText(t.items.map((i) => i.label));
+    // every collection, in its layout: a list of its items, each heading in order
+    const collections = page.locator('article [data-collection]');
+    await expect(collections).toHaveCount(of('collection').length);
+    for (const [n, c] of of('collection').entries()) {
+      await expect(collections.nth(n)).toHaveAttribute('data-layout', c.layout);
+      await expect(collections.nth(n).locator('.heading')).toHaveText(c.items.flatMap((i) => (i.heading ? [i.heading] : [])));
+    }
     const breaks = of('text').reduce((n, t) => n + (renderMarkdown(t.markdown).match(/<br>/g) ?? []).length, 0);
     expect(await page.locator('article p br, article li br').count()).toBeGreaterThanOrEqual(breaks);
 

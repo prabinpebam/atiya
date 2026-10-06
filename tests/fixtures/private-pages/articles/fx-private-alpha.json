@@ -34,11 +34,12 @@
       "text": "Fixture quote alpha: the light should feel like a held breath."
     },
     {
-      "type": "facts",
+      "type": "collection",
+      "layout": "columns",
       "items": [
         {
-          "label": "Fixture fact label",
-          "value": "Fixture fact value alpha"
+          "heading": "Fixture fact label",
+          "subtext": "Fixture fact value alpha"
         }
       ]
     },

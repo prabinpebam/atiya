@@ -92,6 +92,35 @@ export const videoMedia = z.strictObject({
   visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
 });
 
+const oneParagraph = (what: string) =>
+  z
+    .string()
+    .min(1)
+    .refine((m) => !/\n[ \t]*\n/.test(m.trim()), `${what} is one paragraph`);
+
+/**
+ * How a collection's items are laid out (documentation/content/model.md §6.1). The items are the same
+ * whatever the layout, so a collection can change layout at any time; a new layout is a new value here and
+ * its styles in the Collection compound.
+ */
+export const COLLECTION_LAYOUTS = ['rows', 'columns', 'tiles', 'masonry', 'carousel'] as const;
+export type CollectionLayout = (typeof COLLECTION_LAYOUTS)[number];
+export const COLLECTION_HEADINGS = ['label', 'title'] as const;
+export const COLLECTION_MAX = 24;
+
+/**
+ * One item of a collection: a heading, a picture, a subtext (a short line under the heading) and its
+ * words (one paragraph of Markdown). Each is optional, and an item has at least one.
+ */
+export const collectionItem = z
+  .strictObject({
+    heading: z.string().min(1).max(80).optional(),
+    media: mediaId.optional(),
+    subtext: z.string().min(1).max(160).optional(),
+    text: oneParagraph("an item's text").optional(),
+  })
+  .refine((i) => i.heading || i.media || i.subtext || i.text, 'an item needs at least one of a heading, a picture, a subtext or its words');
+
 export const block = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('text'),
@@ -137,22 +166,25 @@ export const block = z.discriminatedUnion('type', [
   }),
   z.strictObject({ type: z.literal('quote'), text: z.string().min(1), cite: z.string().optional(), variant: z.enum(['block', 'pull']).default('block') }),
   z.strictObject({ type: z.literal('divider') }),
-  z.strictObject({ type: z.literal('facts'), items: z.array(z.strictObject({ label: z.string().min(1), value: z.string().min(1) })).min(1).max(6) }),
   z.strictObject({
-    type: z.literal('tiles'),
-    items: z
-      .array(
-        z.strictObject({
-          label: z.string().min(1).max(40),
-          text: z
-            .string()
-            .min(1)
-            .refine((m) => !/\n[ \t]*\n/.test(m.trim()), "a tile's text is one paragraph"),
-        }),
-      )
-      .min(2)
-      .max(6),
+    type: z.literal('collection'),
+    items: z.array(collectionItem).min(1).max(COLLECTION_MAX),
+    /** How the items are laid out: any layout shows the same items. */
+    layout: z.enum(COLLECTION_LAYOUTS),
+    /** Items to a row on a wide screen, for tiles and masonry; left out, from how many there are. */
+    columns: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
+    /** How the items' headings read: small capitals over the words (labels, the default) or titles. */
+    headings: z.enum(COLLECTION_HEADINGS).optional(),
+    /** Names a carousel for assistive tech; left out, "Carousel". */
+    label: z.string().min(1).optional(),
+    /** Where the article layout places it; left out, in the column. */
     width: z.enum(['content', 'popout', 'wide']).optional(),
+    /** The items' pictures: their frame's shape (left out, each its own), how each sits in it, and the options every picture has. */
+    ratio: z.enum(FIGURE_SHAPES).optional(),
+    display: display.optional(),
+    background: background.optional(),
+    rounded: rounded.optional(),
+    shadow: shadow.optional(),
   }),
 ]);
 

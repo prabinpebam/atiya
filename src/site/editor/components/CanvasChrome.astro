@@ -32,26 +32,27 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
   <script is:inline type="application/json" data-editor-blocks set:html={json}></script>
   <div class="box hover" data-chrome-hover hidden><span class="tag" data-chrome-hover-label></span></div>
   <div class="box selected" data-chrome-selected hidden></div>
-  <div class="toolbar" role="toolbar" aria-label="Block" data-chrome-toolbar hidden>
-    <span class="tag" data-chrome-label></span>
-    <IconButton label="Move up" icon="arrow-up" size="sm" variant="secondary" tooltip="top" data-chrome-op="up" />
-    <IconButton label="Move down" icon="arrow-down" size="sm" variant="secondary" tooltip="top" data-chrome-op="down" />
-    <span class="turn" data-chrome-turn hidden>
-      <IconButton label="Turn into…" icon="convert" size="sm" variant="secondary" tooltip="top" data-chrome-op="turn" />
-    </span>
-    <IconButton label="Duplicate" icon="duplicate" size="sm" variant="secondary" tooltip="top" data-chrome-op="duplicate" />
-    <IconButton label="Add a block below" icon="plus" size="sm" variant="secondary" tooltip="top" data-chrome-op="add" />
-    <IconButton label="Delete" icon="delete" size="sm" variant="secondary" tooltip="top" data-chrome-op="delete" />
-  </div>
+  <!-- before the toolbars, so they're drawn over the "+" line where they meet -->
   <div class="insert" data-chrome-insert hidden>
     <span class="insert-line" aria-hidden="true"></span>
-    <IconButton label="Add a block here" icon="plus" size="sm" variant="primary" tooltip="none" data-chrome-insert-button="" />
+    <IconButton label="Add a block here" icon="plus" size="sm" shape="square" variant="primary" tooltip="none" data-chrome-insert-button="" />
+  </div>
+  <div class="toolbar" role="toolbar" aria-label="Block" data-chrome-toolbar hidden>
+    <span class="tag" data-chrome-label></span>
+    <IconButton label="Move up" icon="arrow-up" size="sm" shape="square" tooltip="top" data-chrome-op="up" />
+    <IconButton label="Move down" icon="arrow-down" size="sm" shape="square" tooltip="top" data-chrome-op="down" />
+    <span class="turn" data-chrome-turn hidden>
+      <IconButton label="Turn into…" icon="convert" size="sm" shape="square" tooltip="top" data-chrome-op="turn" />
+    </span>
+    <IconButton label="Duplicate" icon="duplicate" size="sm" shape="square" tooltip="top" data-chrome-op="duplicate" />
+    <IconButton label="Add a block below" icon="plus" size="sm" shape="square" tooltip="top" data-chrome-op="add" />
+    <IconButton label="Delete" icon="delete" size="sm" shape="square" tooltip="top" data-chrome-op="delete" />
   </div>
   <div class="format" role="toolbar" aria-label="Text" data-chrome-format hidden>
-    <IconButton label="Bold" icon="bold" size="sm" variant="quiet" tooltip="top" data-chrome-format-op="bold" />
-    <IconButton label="Italic" icon="italic" size="sm" variant="quiet" tooltip="top" data-chrome-format-op="italic" />
-    <IconButton label="Code" icon="code" size="sm" variant="quiet" tooltip="top" data-chrome-format-op="code" />
-    <IconButton label="Link" icon="link" size="sm" variant="quiet" tooltip="top" data-chrome-format-op="link" />
+    <IconButton label="Bold" icon="bold" size="sm" shape="square" tooltip="top" data-chrome-format-op="bold" />
+    <IconButton label="Italic" icon="italic" size="sm" shape="square" tooltip="top" data-chrome-format-op="italic" />
+    <IconButton label="Code" icon="code" size="sm" shape="square" tooltip="top" data-chrome-format-op="code" />
+    <IconButton label="Link" icon="link" size="sm" shape="square" tooltip="top" data-chrome-format-op="link" />
   </div>
 </div>
 
@@ -104,8 +105,14 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     color: var(--color-bg);
   }
 
+  /* in the toolbar, the block's kind is as tall as its buttons, with the same corners */
   .toolbar .tag {
     position: static;
+    display: inline-flex;
+    align-items: center;
+    block-size: var(--c-control-height-sm);
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-md);
   }
 
   .toolbar,
@@ -118,7 +125,7 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     gap: var(--space-1);
     padding: var(--space-1);
     border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-lg);
     background: var(--color-bg-raised);
     box-shadow: var(--shadow-md);
     transform: translate(-100%, calc(-100% - var(--space-3)));
@@ -142,6 +149,20 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
 
   .insert > :global(*) {
     grid-area: 1 / 1;
+  }
+
+  /* where the block toolbar would cover the middle of the line, the "+" goes to its start: outside the
+     column when there's room (clear of the words), else just inside it */
+  .insert[data-side] {
+    justify-items: start;
+  }
+
+  .insert[data-side] .insert-line {
+    justify-self: stretch;
+  }
+
+  .insert[data-side='outside'] :global([data-chrome-insert-button]) {
+    margin-inline-start: calc((var(--c-control-height-sm) + var(--space-2)) * -1);
   }
 
   .insert :global([data-chrome-insert-button]) {

@@ -327,18 +327,31 @@ describe('the content in content/', () => {
   });
 });
 
-describe('the tiles block (short labelled statements)', () => {
-  const tile = (label: string, text: string) => ({ label, text });
+describe('the collection block (items of one shape, in any layout)', () => {
   const ok = (b: unknown) => block.safeParse(b).success;
+  const of = (items: unknown[], more: object = {}) => ({ type: 'collection', layout: 'tiles', items, ...more });
 
-  it('takes two to six tiles, each a short label and one paragraph, and a width', () => {
-    expect(ok({ type: 'tiles', items: [tile('Challenge', 'Re-energize the team.'), tile('Intent', 'Own the outcome.')] })).toBe(true);
-    expect(ok({ type: 'tiles', items: [tile('Challenge', 'x'), tile('Intent', 'y')], width: 'wide' })).toBe(true);
-    expect(ok({ type: 'tiles', items: [tile('Only one', 'x')] })).toBe(false);
-    expect(ok({ type: 'tiles', items: Array.from({ length: 7 }, (_, n) => tile(`T${n}`, 'x')) })).toBe(false);
-    expect(ok({ type: 'tiles', items: [tile('x'.repeat(41), 'x'), tile('Intent', 'y')] })).toBe(false);
-    expect(ok({ type: 'tiles', items: [tile('Challenge', 'one\n\ntwo'), tile('Intent', 'y')] })).toBe(false);
-    expect(ok({ type: 'tiles', items: [tile('Challenge', 'x'), tile('Intent', 'y')], width: 'full' })).toBe(false);
+  it('takes items with any of a heading, a picture, a subtext and words, and at least one of them', () => {
+    expect(ok(of([{ heading: 'Challenge', text: 'Re-energize the team.' }]))).toBe(true);
+    expect(ok(of([{ heading: 'Year', subtext: '2024' }, { media: 'articles/a/cover' }, { text: 'Only words.' }]))).toBe(true);
+    expect(ok(of([{}]))).toBe(false);
+    expect(ok(of([]))).toBe(false);
+    expect(ok(of([{ heading: 'x'.repeat(81) }]))).toBe(false);
+    expect(ok(of([{ subtext: 'x'.repeat(161) }]))).toBe(false);
+    expect(ok(of([{ text: 'one\n\ntwo' }]))).toBe(false);
+    expect(ok(of([{ label: 'the old tiles field' }]))).toBe(false);
+    expect(ok(of(Array.from({ length: 25 }, (_, n) => ({ heading: `T${n}` }))))).toBe(false);
+  });
+
+  it('lays them out any of five ways, with the options every picture has', () => {
+    for (const layout of ['rows', 'columns', 'tiles', 'masonry', 'carousel']) expect(ok(of([{ heading: 'a' }], { layout })), layout).toBe(true);
+    expect(ok(of([{ heading: 'a' }], { layout: 'grid' }))).toBe(false);
+    expect(ok({ type: 'collection', items: [{ heading: 'a' }] })).toBe(false);
+    expect(ok(of([{ heading: 'a' }], { columns: 4, headings: 'title', label: 'Places', width: 'wide', ratio: '3/2', display: 'tile', background: true, rounded: false, shadow: true }))).toBe(true);
+    expect(ok(of([{ heading: 'a' }], { columns: 5 }))).toBe(false);
+    expect(ok(of([{ heading: 'a' }], { width: 'full' }))).toBe(false);
+    expect(ok({ type: 'facts', items: [{ label: 'a', value: 'b' }] })).toBe(false);
+    expect(ok({ type: 'tiles', items: [{ label: 'a', text: 'b' }, { label: 'c', text: 'd' }] })).toBe(false);
   });
 
   it("renders a tile's text inline: bold, italic and links, with no paragraph around it", () => {
