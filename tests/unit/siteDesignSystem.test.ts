@@ -545,5 +545,7 @@ describe('edit mode: parts made only from the design system, pages that compose 
     for (const m of LAUNCHER_CSS.matchAll(/var\((--[\w-]+)\)/g)) expect(TOKENS_CSS.includes(`${m[1]}:`), m[1]).toBe(true);
     expect(LAUNCHER_CSS).toMatch(/@media \(hover: hover\)/);
     expect(LAUNCHER_CSS).toMatch(/\.launch:active/);
+    // its light-dark() colours follow the page's theme switch, not the system's
+    expect(LAUNCHER_CSS).toMatch(/:host \{[^}]*all: initial;[^}]*color-scheme: inherit;/);
   });
 });

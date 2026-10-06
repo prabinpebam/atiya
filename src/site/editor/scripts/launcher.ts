@@ -14,7 +14,8 @@
 import { svgOf } from '../../design/icons';
 
 export const LAUNCHER_CSS = `
-:host { all: initial; display: inline-grid; flex: none; }
+/* all: initial would reset color-scheme too, and light-dark() would then follow the system, not the theme switch */
+:host { all: initial; color-scheme: inherit; display: inline-grid; flex: none; }
 :host([data-place='over']) {
   position: absolute;
   margin-inline-start: calc(var(--space-0) - var(--c-control-height-md));
