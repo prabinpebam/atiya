@@ -10,7 +10,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { sealSite } from '../../integrations/seal.mjs';
-import { fold, protectedTerms, verifySealed } from '../../scripts/verify-sealed.mjs';
+import { fold, protectedTerms, publicCorpus, verifySealed, wordsToCheck } from '../../scripts/verify-sealed.mjs';
 import { b64, deriveCodeKey, deriveLinkKey, open, utf8 } from '../../src/site/access/crypto';
 import { cardAad, checkEnvelope, openKeyring, pageAad } from '../../src/site/access/keyring';
 
@@ -164,5 +164,26 @@ describe('the leak check', () => {
 
   it('fails a build the sealer never ran on', () => {
     expect(categories(verifySealed({ dist, summary: null as unknown as object, provenance: [] }))).toMatch(/not sealed/);
+  });
+
+  it('lets off words the public sources already hold (the open site says them anyway), but never a token or a grant ID', () => {
+    const heading = 'Fixture heading beta: what the families did';
+    const plant = (d: string) => (append(d, 'index.html', `<h2>${heading}</h2>`), append(d, '_astro/app.js', 'go("deltaddd55")'));
+    const copy = mkdtempSync(join(root, 'leak-'));
+    cpSync(dist, copy, { recursive: true });
+    plant(copy);
+    const check = (publicText: string) => categories(verifySealed({ dist: copy, summary: { ...sealed.summary, dist: copy }, provenance, publicText }));
+    // private words alone: both found
+    expect(check('')).toMatch(/protected words: a heading/);
+    expect(check('')).toMatch(/protected words: a token/);
+    // the heading in a public source: not a leak; the token still is
+    const open = check(fold(`## ${heading}\nand a token deltaddd55 and a grant gfixall22 in a public file`));
+    expect(open).not.toMatch(/a heading/);
+    expect(open).toMatch(/protected words: a token/);
+    const { kept, public: let_off } = wordsToCheck(protectedTerms(FIXTURES), fold(`${heading} deltaddd55 gfixall22`));
+    expect(let_off.get('a heading')).toBe(1);
+    expect([...kept.keys()]).toEqual(expect.arrayContaining(['deltaddd55', 'gfixall22']));
+    // the real public sources hold none of the fixtures' words, so every planted leak above is still caught
+    expect(wordsToCheck(protectedTerms(FIXTURES), publicCorpus()).public.size).toBe(0);
   });
 });

@@ -8,7 +8,9 @@
  *   2. structure: no seal marker left, every sealed shell neutral and kept out of search, no open page
  *      linking to a protected page, every sealed file from this build;
  *   3. words and bytes: every file, decoded and folded, holds no protected words or IDs, and no file is a
- *      private master or a file the sealer removed.
+ *      private master or a file the sealer removed. Words the public repository's own sources already hold
+ *      (content/, documentation/, src/) aren't counted: the open site says them anyway. Tokens and grant
+ *      IDs always are.
  *
  * A finding names its category, the file and a count, never the protected words or bytes (a build's log is
  * public).
@@ -23,6 +25,11 @@ import { fileURLToPath } from 'node:url';
 const SUMMARY = join(process.cwd(), 'node_modules', '.cache', 'site-protected', 'sealed.json');
 const PROVENANCE = join(process.cwd(), 'node_modules', '.cache', 'site-protected', 'provenance.jsonl');
 const TEXT = /\.(html?|js|mjs|css|json|xml|txt|md|svg|map|webmanifest)$/i;
+/** The public repository's own sources the build's open text comes from: content, the docs, the site's code. */
+const PUBLIC_SOURCES = ['content', 'documentation', 'src'];
+const SOURCE = /\.(json|md|html?|astro|ts|tsx|mjs|js|css|txt)$/i;
+/** Random secrets: never public by chance, so never let off because a public file happens to hold one. */
+const SECRET = new Set(['a token', "a grant's ID"]);
 const MIN_RUN = 12;
 
 /** @param {string} dir @returns {string[]} */
@@ -112,10 +119,41 @@ export function protectedTerms(privateRoot) {
 }
 
 /**
- * @param {{ dist: string; summary?: any; provenance?: any[] }} o
+ * The public repository's own words, folded: every text file of its sources (content/, documentation/,
+ * src/; never private-pages/). Words already there are public whatever a private page says, so the build
+ * repeating them leaks nothing: a private article about a product the open résumé names, or a heading
+ * another open page also uses.
+ */
+export function publicCorpus(root = process.cwd()) {
+  const parts = [];
+  for (const dir of PUBLIC_SOURCES) for (const f of walk(join(root, dir))) if (SOURCE.test(f) && statSync(f).size <= 5 * 1024 * 1024) parts.push(fold(readFileSync(f, 'utf8')));
+  return parts.join('\u0001');
+}
+
+/**
+ * The protected words worth looking for in a build: all but those the public sources already hold (random
+ * secrets, a page's token and a grant's ID, always stay). The ones let off are returned too, so the check can
+ * say how many, by category.
+ * @param {Map<string, string>} terms
+ * @param {string} publicText
+ */
+export function wordsToCheck(terms, publicText) {
+  /** @type {Map<string, string>} */
+  const kept = new Map();
+  /** @type {Map<string, number>} */
+  const public_ = new Map();
+  for (const [term, category] of terms) {
+    if (!SECRET.has(category) && publicText.includes(term)) public_.set(category, (public_.get(category) ?? 0) + 1);
+    else kept.set(term, category);
+  }
+  return { kept, public: public_ };
+}
+
+/**
+ * @param {{ dist: string; summary?: any; provenance?: any[]; publicText?: string }} o
  * @returns {{ category: string; file: string; count: number }[]}
  */
-export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = readLines(PROVENANCE) }) {
+export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = readLines(PROVENANCE), publicText = publicCorpus() }) {
   /** @type {Map<string, { category: string; file: string; count: number }>} */
   const found = new Map();
   /** @type {string[]} */
@@ -178,8 +216,8 @@ export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = r
     if (existsSync(dir)) for (const d of readdirSync(dir)) if (d !== summary.build) report(`a ${top} folder from another build`, `${top}/…`);
   }
 
-  // 3. words and bytes
-  const terms = privateRoot ? protectedTerms(privateRoot) : new Map();
+  // 3. words and bytes (words the public sources already hold aren't a private page's to leak)
+  const terms = privateRoot ? wordsToCheck(protectedTerms(privateRoot), publicText).kept : new Map();
   const masters = new Set();
   if (privateRoot) for (const f of walk(join(privateRoot, 'media'))) if (!f.endsWith('.json')) masters.add(sha256(readFileSync(f)));
   for (const f of files) {
@@ -205,7 +243,14 @@ function readLines(/** @type {string} */ f) {
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
   const dist = join(process.cwd(), process.argv[2] ?? 'dist');
-  const findings = verifySealed({ dist });
+  const publicText = publicCorpus();
+  const findings = verifySealed({ dist, publicText });
+  // how many protected words the public sources already hold, by category (never the words)
+  const privateRoot = readJson(SUMMARY)?.privateRoot;
+  if (privateRoot) {
+    const let_off = wordsToCheck(protectedTerms(privateRoot), publicText).public;
+    if (let_off.size) console.log(`Not counted as leaks, as the public sources already hold them: ${[...let_off].map(([c, n]) => `${n} ${c}`).join(', ')}.`);
+  }
   if (findings.length) {
     console.error(`The leak check found ${findings.length} problem${findings.length === 1 ? '' : 's'} (categories and files only; the words stay out of the log):`);
     for (const f of findings) console.error(`- ${f.category}: ${f.file}${f.count > 1 ? ` (${f.count})` : ''}`);
