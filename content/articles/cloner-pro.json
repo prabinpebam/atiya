@@ -72,18 +72,6 @@
       "width": "wide"
     },
     {
-      "type": "figure",
-      "media": "articles/cloner-pro/generated-noise-array",
-      "width": "popout",
-      "lightbox": true
-    },
-    {
-      "type": "figure",
-      "media": "articles/cloner-pro/plugin-panel-in-figma",
-      "width": "wide",
-      "lightbox": true
-    },
-    {
       "type": "text",
       "markdown": "There are limits by design. It is not a live procedural object after generation, not every Figma object type is supported, and the public page asks people to stay below 100 by 100 clones, or 10,000 objects. But inside that boundary, the workflow is fast: choose a source, tune the luma map, generate a field."
     },
@@ -108,7 +96,10 @@
       "type": "figure",
       "media": "articles/cloner-pro/luma-control-panel",
       "width": "content",
-      "lightbox": true
+      "lightbox": true,
+      "display": "actual",
+      "shadow": true,
+      "background": true
     },
     {
       "type": "heading",
