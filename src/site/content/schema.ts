@@ -11,6 +11,22 @@ const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'lowercase kebab-case');
 export const mediaId = z.string().regex(/^[a-z0-9-]+(\/[a-z0-9-]+)+$/, 'a path under content/media/, without the extension');
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z)?$/, 'an ISO 8601 date');
 const width = z.enum(['content', 'popout', 'wide', 'full']);
+/**
+ * How a picture is shown in the frame it's given (documentation/content/media.md §9.1): fill (fills the frame,
+ * cropped around its focus point), fit (whole, with room round it), actual (its own size, centred, never
+ * enlarged) or tile (repeated at its own size across the frame).
+ */
+export const PICTURE_DISPLAYS = ['fill', 'fit', 'actual', 'tile'] as const;
+export type PictureDisplay = (typeof PICTURE_DISPLAYS)[number];
+const display = z.enum(PICTURE_DISPLAYS);
+/** Behind a picture: a colour taken from its own edges (the space round a fitted or actual-size picture, its transparent parts). Off by default. */
+const background = z.boolean();
+/** Rounded corners (the design's radius). On by default; false squares them. */
+const rounded = z.boolean();
+/** How a page's cards show its picture (documentation/content/media.md §9.1). */
+export const pictureStyle = z.strictObject({ display: display.optional(), background: background.optional(), rounded: rounded.optional() });
+/** A figure's frame: its own shape (left out), or one of these. */
+export const FIGURE_SHAPES = ['1/1', '4/3', '3/2', '16/9', '21/9'] as const;
 
 export const imageMedia = z
   .strictObject({
@@ -83,9 +99,23 @@ export const block = z.discriminatedUnion('type', [
       .refine((m) => !/\n[ \t]*\n/.test(m.trim()), 'a text block is one paragraph or one list: split it into two blocks at the blank line'),
   }),
   z.strictObject({ type: z.literal('heading'), level: z.union([z.literal(2), z.literal(3), z.literal(4)]), text: z.string().min(1), id: id.optional() }),
-  z.strictObject({ type: z.literal('figure'), media: mediaId, caption: z.string().optional(), credit: z.string().optional(), showCaption: z.boolean().optional(), width: width.default('content'), lightbox: z.boolean().optional() }),
-  z.strictObject({ type: z.literal('gallery'), items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), fit: z.enum(['cover', 'contain']).optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
-  z.strictObject({ type: z.literal('carousel'), items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional() }),
+  z.strictObject({
+    type: z.literal('figure'),
+    media: mediaId,
+    caption: z.string().optional(),
+    credit: z.string().optional(),
+    showCaption: z.boolean().optional(),
+    width: width.default('content'),
+    lightbox: z.boolean().optional(),
+    /** Its frame's shape; left out, the picture's own. */
+    ratio: z.enum(FIGURE_SHAPES).optional(),
+    /** How it's shown in its frame; left out, fit (in its own shape, as wide as its place). */
+    display: display.optional(),
+    background: background.optional(),
+    rounded: rounded.optional(),
+  }),
+  z.strictObject({ type: z.literal('gallery'), items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), fit: z.enum(['cover', 'contain']).optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
+  z.strictObject({ type: z.literal('carousel'), items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional() }),
   z.strictObject({
     type: z.literal('video'),
     /** An uploaded video file (a `video` media ID), or else `embed`: exactly one (the loader checks). */
@@ -143,9 +173,11 @@ export const article = z.strictObject({
   updatedAt: isoDate,
   reviewedAt: isoDate.optional(),
   locale: z.literal('en'),
-  hero: z.strictObject({ media: mediaId, caption: z.string().optional(), credit: z.string().optional(), showCaption: z.boolean().optional() }).optional(),
+  hero: z.strictObject({ media: mediaId, caption: z.string().optional(), credit: z.string().optional(), showCaption: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional() }).optional(),
   /** The picture on its cards (shown whole); the lead picture when left out. */
   thumbnail: mediaId.optional(),
+  /** How the picture on its cards is shown in their 3:2 frame: left out, fit (whole), no background, rounded. */
+  thumbnailStyle: pictureStyle.optional(),
   /** A picture of the person the page is about (a résumé, About), shown whole beside its title. */
   portrait: mediaId.optional(),
   body: z.array(block),

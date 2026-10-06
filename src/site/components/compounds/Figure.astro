@@ -35,6 +35,8 @@ interface Props {
   width?: 'content' | 'popout' | 'wide' | 'full';
   /** Crop to a shape. Omit to keep the picture’s own ratio. */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** How it's shown in its frame: fill, fit (the default), actual size or tile. */
+  display?: 'fill' | 'fit' | 'actual' | 'tile';
   /** Which part stays in a crop. */
   focus?: string;
   /** Above the fold: load it first. */
@@ -42,7 +44,13 @@ interface Props {
   /** The lightbox group name. */
   lightbox?: string;
   /** Its dark mode version (its own sizes, full size and thumbnail), shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string };
+  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; bg?: string };
+  /** The picture's own edge colour (media.md §9.1), for a background behind it. */
+  bg?: string;
+  /** Puts that colour behind it (the room round a fitted picture, its transparent parts). */
+  background?: boolean;
+  /** Rounded corners; false squares them. */
+  rounded?: boolean;
 }
 
 const {
@@ -58,11 +66,16 @@ const {
   credit,
   width = 'content',
   ratio,
+  display = ratio ? 'fill' : 'fit',
   focus,
   priority = false,
   lightbox,
   dark,
+  bg,
+  background = false,
+  rounded = true,
 } = Astro.props;
+const behind = background && bg ? { light: bg, dark: dark?.bg } : undefined;
 const radius = width === 'full' ? 'none' : 'default';
 const href = full ?? src;
 const lightboxThumb = thumb ?? src;
@@ -72,10 +85,10 @@ const lightboxThumb = thumb ?? src;
   {
     lightbox ? (
       <a class="media-link" href={href} data-lightbox={lightbox} data-caption={caption} data-thumb={lightboxThumb} data-alt={alt} data-full-dark={dark ? (dark.full ?? dark.src) : undefined} data-thumb-dark={dark ? (dark.thumb ?? dark.src) : undefined}>
-        <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} focus={focus} radius={radius} priority={priority} dark={dark} />
+        <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} display={display} focus={focus} radius={radius} rounded={rounded} bg={behind} priority={priority} dark={dark} />
       </a>
     ) : (
-      <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} focus={focus} radius={radius} priority={priority} dark={dark} />
+      <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} display={display} focus={focus} radius={radius} rounded={rounded} bg={behind} priority={priority} dark={dark} />
     )
   }
   {(caption || credit) && <Caption credit={credit}>{caption}</Caption>}

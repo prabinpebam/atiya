@@ -14,6 +14,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { getMedia, getVideo, videoHref } from './repository';
 import { fileOf } from './source';
+import { edgeAverage } from './edgeColour';
 
 const devMeta = new Map<string, { mtime: number; meta: ImageMetadata }>();
 const FORMAT: Record<string, string> = { jpeg: 'jpg', heif: 'avif' };
@@ -67,6 +68,8 @@ export interface DarkPicture {
   height: number;
   full: string;
   thumb: string;
+  /** The colour of its edges, for a background behind it (media.md §9.1). */
+  bg: string;
 }
 
 export interface Picture {
@@ -80,11 +83,36 @@ export interface Picture {
   focus?: string;
   caption?: string;
   credit?: string;
+  /** The colour of its edges (or, where they're transparent, its dominant colour): the automatic background behind it, when a page asks for one (media.md §9.1). */
+  bg: string;
   /** Its dark mode version, if it has one (documentation/content/media.md §10). */
   dark?: DarkPicture;
 }
 
 const webp = async (src: ImageMetadata, width: number) => (await getImage({ src, width, format: 'webp', quality: 80 })).src;
+
+const edges = new Map<string, { mtime: number; bg: string }>();
+/**
+ * A master's automatic background colour: the average of its opaque edge pixels (so the space round a
+ * fitted picture continues its edges), or its dominant colour where the edges are transparent. Read once
+ * per master (and again when it changes), from its bytes.
+ */
+async function edgeColour(master: string): Promise<string> {
+  const abs = fileOf(master);
+  const mtime = statSync(abs).mtimeMs;
+  const hit = edges.get(abs);
+  if (hit && hit.mtime === mtime) return hit.bg;
+  const { default: sharp } = await import('sharp');
+  const N = 24;
+  const { data } = await sharp(readFileSync(abs)).resize(N, N, { fit: 'fill' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let bg = edgeAverage(data, N);
+  if (!bg) {
+    const { dominant } = await sharp(readFileSync(abs)).stats();
+    bg = `rgb(${dominant.r} ${dominant.g} ${dominant.b})`;
+  }
+  edges.set(abs, { mtime, bg });
+  return bg;
+}
 
 /** In a build, every file made from a private master goes in the provenance record, for the sealer (documentation/access/spec.md §6.2). */
 async function record(master: string, urls: string[]) {
@@ -99,7 +127,7 @@ async function sized(master: string, slot: Slot) {
   const wanted = WIDTHS[slot];
   const widths = [...new Set([...wanted.filter((w) => w < meta.width), Math.min(meta.width, Math.max(...wanted))])].sort((a, b) => a - b);
   const urls = await Promise.all(widths.map((w) => webp(meta, w)));
-  const [full, thumb] = await Promise.all([webp(meta, Math.min(meta.width, FULL)), webp(meta, Math.min(meta.width, THUMB))]);
+  const [full, thumb, bg] = await Promise.all([webp(meta, Math.min(meta.width, FULL)), webp(meta, Math.min(meta.width, THUMB)), edgeColour(master)]);
   await record(master, [...urls, full, thumb]);
   return {
     src: urls[Math.min(1, urls.length - 1)],
@@ -108,6 +136,7 @@ async function sized(master: string, slot: Slot) {
     height: meta.height,
     full,
     thumb,
+    bg,
   };
 }
 

@@ -70,6 +70,21 @@ const WIDTHS: SelectOption[] = [
   { value: 'wide', label: 'Wide', description: 'Across the page' },
   { value: 'full', label: 'Full bleed', description: 'Edge to edge' },
 ];
+// how a picture is shown in its frame (documentation/content/media.md §9.1)
+const DISPLAYS: SelectOption[] = [
+  { value: 'fill', label: 'Fill', description: 'Fills the frame, cropped around its focus point' },
+  { value: 'fit', label: 'Fit', description: 'Whole, with room round it' },
+  { value: 'actual', label: 'Actual size', description: 'Its own size, centred; never enlarged' },
+  { value: 'tile', label: 'Tile', description: 'Repeated at its own size' },
+];
+const SHAPES: SelectOption[] = [
+  { value: '', label: 'Its own shape', description: 'As the picture is' },
+  { value: '1/1', label: 'Square', description: '1:1' },
+  { value: '4/3', label: 'Classic', description: '4:3' },
+  { value: '3/2', label: 'Photo', description: '3:2' },
+  { value: '16/9', label: 'Screen', description: '16:9' },
+  { value: '21/9', label: 'Wide', description: '21:9' },
+];
 const id = (i: number | string, f: string) => `f-${i}-${f.replace(/\W+/g, '-')}`;
 const duration = (s?: number) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '');
 const videoUrl = (b: Extract<Block, { type: 'video' }>) => (!b.embed ? '' : b.embed.provider === 'youtube' ? `https://youtu.be/${b.embed.id}` : `https://vimeo.com/${b.embed.id}`);
@@ -171,6 +186,10 @@ const STATUS: SelectOption[] = [
             {b.type === 'figure' && (
               <>
                 <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width} options={WIDTHS} />
+                <Select label="Shape" name={`body.${i}.ratio`} id={id(i, 'ratio')} value={b.ratio ?? ''} options={SHAPES} hint="The frame it's shown in." />
+                <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fit'} options={DISPLAYS} hint={b.ratio ? undefined : 'In its own shape, Fill and Fit look the same.'} />
+                <Switch label="Colour behind it" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+                <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
                 <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
                 <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint="Left empty, the picture's own caption shows." />
                 <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
@@ -201,7 +220,9 @@ const STATUS: SelectOption[] = [
             {b.type === 'gallery' && (
               <>
                 <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout ?? 'grid'} options={[{ value: 'grid', label: 'Grid', description: 'Equal cells' }, { value: 'mosaic', label: 'Mosaic', description: 'The first picture leads' }, { value: 'row', label: 'Row', description: 'A filmstrip' }]} />
-                <Select label="Fit" name={`body.${i}.fit`} id={id(i, 'fit')} value={b.fit ?? 'cover'} options={[{ value: 'cover', label: 'Fill each cell', description: 'Cropped to the cell' }, { value: 'contain', label: 'Show each whole', description: 'For marks and artwork' }]} />
+                <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.fit === 'contain' ? 'fit' : 'fill')} options={DISPLAYS} hint="How each picture sits in its cell." />
+                <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+                <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
                 <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
                 <Switch label="Show the captions" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
                 <TextField label="Caption for the set" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional />
@@ -214,6 +235,9 @@ const STATUS: SelectOption[] = [
                 <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label} required hint="Names the carousel for assistive tech (\u201cSlide templates\u201d)." />
                 <Switch label="Show the neighbours (peek)" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />
                 <Select label="Pager" name={`body.${i}.pager`} id={id(i, 'pager')} value={b.pager ?? 'dots'} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Filmstrip, wrapping' }]} />
+                <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fill'} options={DISPLAYS} hint="How each picture sits in its 3:2 slide." />
+                <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+                <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
                 <Switch label="Previous and next buttons" name={`body.${i}.arrows`} id={id(i, 'arrows')} checked={b.arrows !== false} data-type="bool-default-true" />
                 <Switch label="Show the captions" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
                 <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
@@ -323,6 +347,9 @@ const STATUS: SelectOption[] = [
         <Text variant="small" tone="muted">{specTip(PICTURE_SPECS.lead)}</Text>
         {lead && <Text variant="small">{pictureNote(PICTURE_SPECS.lead, lead.width, lead.height)}</Text>}
       </div>
+      {article.hero && <Select label="Lead picture shown as" name="hero.display" id="page-hero-display" value={article.hero.display ?? 'fill'} options={DISPLAYS} hint="How it sits in its 21:9 frame." />}
+      {article.hero && <Switch label="Colour behind the lead picture" name="hero.background" id="page-hero-background" checked={!!article.hero.background} data-type="bool" />}
+      {article.hero && <Switch label="Lead picture's rounded corners" name="hero.rounded" id="page-hero-rounded" checked={article.hero.rounded !== false} data-type="bool-default-true" />}
       {article.hero && <Switch label="Show the lead picture's caption" name="hero.showCaption" id="page-hero-showCaption" checked={article.hero.showCaption !== false} data-type="bool-default-true" />}
       {article.hero && <TextField label="Lead picture's caption" name="hero.caption" id="page-hero-caption" value={article.hero.caption ?? ''} optional hint="Left empty, the picture's own caption shows." />}
 
@@ -342,6 +369,9 @@ const STATUS: SelectOption[] = [
         <Text variant="small" tone="muted">{`${specTip(PICTURE_SPECS.thumbnail)} Left empty, the lead picture is used.`}</Text>
         {card && <Text variant="small">{pictureNote(PICTURE_SPECS.thumbnail, card.width, card.height)}</Text>}
       </div>
+      {card && <Select label="Thumbnail shown as" name="thumbnailStyle.display" id="page-thumbnail-display" value={article.thumbnailStyle?.display ?? 'fit'} options={DISPLAYS} hint="How it sits in the cards' 3:2 frame." />}
+      {card && <Switch label="Colour behind the thumbnail" name="thumbnailStyle.background" id="page-thumbnail-background" checked={!!article.thumbnailStyle?.background} data-type="bool" />}
+      {card && <Switch label="Thumbnail's rounded corners" name="thumbnailStyle.rounded" id="page-thumbnail-rounded" checked={article.thumbnailStyle?.rounded !== false} data-type="bool-default-true" />}
 
       <div class="media-field" data-editor-picture="portrait">
         <span class="field-label">Portrait</span>

@@ -27,8 +27,8 @@ interface Props {
   date?: string;
   /** Its measure: "6 min read", or "12 pictures" for a gallery. */
   readingTime?: string;
-  /** The lead picture, with its caption and credit, cropped to 21:9 around its focus point ("50% 30%"), and its dark mode version if it has one. */
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; caption?: string; credit?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
+  /** The lead picture, with its caption and credit, in a 21:9 frame (filling it, cropped around its focus point "50% 30%", unless display says otherwise), and its dark mode version if it has one. */
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; caption?: string; credit?: string; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
   /** How wide the lead picture runs: wide, or full bleed. */
   pictureWidth?: 'wide' | 'full';
   /** The person the page is about (a résumé, About): shown whole, 4:5, beside the title (above it on a phone), and its dark mode version if it has one. */
@@ -87,8 +87,11 @@ const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
           width={picture.width}
           height={picture.height}
           ratio={PICTURE_SPECS.lead.ratio}
+          display={picture.display ?? 'fill'}
           focus={picture.focus}
           radius={pictureWidth === 'full' ? 'none' : 'feature'}
+          rounded={picture.rounded !== false}
+          bg={picture.background && picture.bg ? { light: picture.bg, dark: picture.dark?.bg } : undefined}
           priority
           dark={picture.dark}
         />

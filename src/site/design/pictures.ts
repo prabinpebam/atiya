@@ -9,7 +9,7 @@ export interface PictureSpec {
   label: string;
   /** Its ratio, as the Image fundamental takes it. */
   ratio: '3/2' | '21/9';
-  /** crop: the design crops a picture of another shape to it (around its focus point); whole: shows it whole in a frame of it. */
+  /** crop: by default the design crops a picture of another shape to it (around its focus point); whole: by default it shows it whole in a frame of it. A page can choose otherwise (its display). */
   fit: 'crop' | 'whole';
   /** The widest it's shown (px): a picture at least this wide stays sharp. */
   width: number;
@@ -18,8 +18,8 @@ export interface PictureSpec {
 }
 
 export const PICTURE_SPECS = {
-  lead: { label: 'Lead picture', ratio: '21/9', fit: 'crop', width: 2400, shown: 'across the top of its page, cropped to 21:9 around its focus point' },
-  thumbnail: { label: 'Thumbnail', ratio: '3/2', fit: 'whole', width: 960, shown: 'whole on cards (a section’s list, the home page, the planet), in a 3:2 frame' },
+  lead: { label: 'Lead picture', ratio: '21/9', fit: 'crop', width: 2400, shown: 'across the top of its page in a 21:9 frame, filling it (cropped around its focus point) unless it’s set to fit, actual size or tile' },
+  thumbnail: { label: 'Thumbnail', ratio: '3/2', fit: 'whole', width: 960, shown: 'on cards (a section’s list, the home page, the planet) in a 3:2 frame, whole unless it’s set to fill, actual size or tile' },
 } as const satisfies Record<string, PictureSpec>;
 
 export type PictureUse = keyof typeof PICTURE_SPECS;

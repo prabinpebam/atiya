@@ -32,7 +32,9 @@ export interface GalleryItem {
   /** Which part stays in a crop. */
   focus?: string;
   /** Its dark mode version, shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string };
+  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; bg?: string };
+  /** Its own edge colour (media.md §9.1), for a background behind it. */
+  bg?: string;
 }
 
 interface Props {
@@ -48,16 +50,23 @@ interface Props {
   lightbox?: string;
   /** The image sizes hint. */
   sizes?: string;
-  /** cover: each picture fills its cell (cropped); contain: each shows whole. */
+  /** cover: each picture fills its cell (cropped); contain: each shows whole (display says the same, and wins). */
   fit?: 'cover' | 'contain';
+  /** How each picture is shown in its cell: fill, fit, actual size or tile. Left out, from fit (cover: fill). */
+  display?: 'fill' | 'fit' | 'actual' | 'tile';
+  /** Puts each picture's own edge colour behind it. */
+  background?: boolean;
+  /** Rounded corners on each cell; false squares them. */
+  rounded?: boolean;
 }
 
-const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover' } = Astro.props;
+const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover', display, background = false, rounded = true } = Astro.props;
+const shown = display ?? (fit === 'contain' ? 'fit' : 'fill');
 const columns = items.length > 2 ? '3' : '2';
 const ratio = layout === 'row' ? '4/3' : '1/1';
 ---
 
-<figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width} data-gallery>
+<figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width} data-square={rounded ? undefined : ''} data-gallery>
   <div class="items" data-scrollbar>
     {
       items.map((item) => {
@@ -75,9 +84,11 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
                 width={item.width}
                 height={item.height}
                 ratio={ratio}
-                fit={fit}
+                display={shown}
                 focus={item.focus}
                 radius={width === 'full' ? 'none' : 'default'}
+                rounded={rounded}
+                bg={background && item.bg ? { light: item.bg, dark: item.dark?.bg } : undefined}
                 fill
                 dark={item.dark}
               />
@@ -123,7 +134,8 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
     }
   }
 
-  .gallery[data-breakout='full'] .image-shell {
+  .gallery[data-breakout='full'] .image-shell,
+  .gallery[data-square] .image-shell {
     border-radius: var(--radius-none);
   }
 

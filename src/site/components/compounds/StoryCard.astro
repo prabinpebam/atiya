@@ -4,7 +4,8 @@
  * whole card is one link (to its title), so it's one stop for the keyboard and a big target for a
  * finger. Feature spreads the picture beside the words for the lead story; row sets the words first
  * with a small picture at the end, a line of a section's list; compact leaves the picture out. The
- * picture is shown whole, in a 3:2 frame: a card never crops it (a thumbnail made 3:2 fills the frame).
+ * picture is in a 3:2 frame, shown whole by default (a thumbnail made 3:2 fills the frame); a page can ask
+ * for it filled, at its actual size or tiled.
  * @tier compound
  * @a11y One link per card, on the title; the rest of the card is clickable through it (a stretched link), so a screen reader hears the title, not the whole card.
  * @a11y The heading level is set by the page (h2 on an index, h3 under a section heading).
@@ -26,8 +27,8 @@ interface Props {
   topic?: string;
   /** When, or how long it takes to read. */
   meta?: string;
-  /** The story’s picture, shown whole in a 3:2 frame (never cropped), and its dark mode version if it has one. */
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; dark?: { src: string; srcset?: string; width: number; height: number } };
+  /** The story’s picture in a 3:2 frame, shown whole unless display says otherwise (fill, actual size, tile), and its dark mode version if it has one. */
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
   /** standard: picture above; feature: picture beside, larger type; row: words first, a small picture at the end (a list); compact: no picture. */
   variant?: 'standard' | 'feature' | 'row' | 'compact';
   /** The title’s heading level: h2 on an index, h3 under a section heading. */
@@ -42,7 +43,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
 <article class="card" data-variant={variant}>
   {
     picture && variant !== 'compact' && (
-      <div class="picture">
+      <div class="picture" data-square={picture.rounded === false ? '' : undefined}>
         <div class="zoom">
           <Image
             src={picture.src}
@@ -52,7 +53,9 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
             width={picture.width}
             height={picture.height}
             ratio={PICTURE_SPECS.thumbnail.ratio}
-            fit="contain"
+            display={picture.display ?? 'fit'}
+            rounded={picture.rounded !== false}
+            bg={picture.background && picture.bg ? { light: picture.bg, dark: picture.dark?.bg } : undefined}
             dark={picture.dark}
           />
         </div>
@@ -112,6 +115,10 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
   .picture {
     overflow: hidden;
     border-radius: var(--c-image-radius);
+  }
+
+  .picture[data-square] {
+    border-radius: var(--radius-none);
   }
 
   .zoom {

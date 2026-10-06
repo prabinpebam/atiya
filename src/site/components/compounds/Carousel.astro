@@ -40,7 +40,9 @@ export interface CarouselItem {
   /** Which part stays in a crop. */
   focus?: string;
   /** Its dark mode version, shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string };
+  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; bg?: string };
+  /** Its own edge colour (media.md §9.1), for a background behind it. */
+  bg?: string;
 }
 
 interface Props {
@@ -62,6 +64,12 @@ interface Props {
   arrows?: boolean;
   /** How to pick a slide: dots, or a filmstrip of thumbnails in one row that scrolls sideways or wrapping onto more rows. */
   pager?: 'dots' | 'filmstrip' | 'filmstrip-wrap';
+  /** How each picture is shown in its 3:2 slide: fill (the default, cropped around its focus point), fit, actual size or tile. */
+  display?: 'fill' | 'fit' | 'actual' | 'tile';
+  /** Puts each picture's own edge colour behind it. */
+  background?: boolean;
+  /** Rounded corners on each slide; false squares them. */
+  rounded?: boolean;
 }
 
 const {
@@ -74,6 +82,9 @@ const {
   sizes,
   arrows = true,
   pager = 'dots',
+  display = 'fill',
+  background = false,
+  rounded = true,
 } = Astro.props;
 const total = items.length;
 const status = total > 0 ? `1 of ${total}` : '0 of 0';
@@ -95,8 +106,11 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
               width={item.width}
               height={item.height}
               ratio="3/2"
+              display={display}
               focus={item.focus}
               radius={width === 'full' ? 'none' : 'feature'}
+              rounded={rounded}
+              bg={background && item.bg ? { light: item.bg, dark: item.dark?.bg } : undefined}
               fill
               dark={item.dark}
             />

@@ -20,6 +20,22 @@ const night = sample('plaza-night');
   </div>
 </Example>
 
+<Example title="Fill, fit, actual size and tile" description="The same picture in the same 16:9 frame, shown the four ways a page can choose: filling it (cropped around its focus point), fitting inside it, at its own size (never enlarged), and tiled at its own size.">
+  <div class="demo-grid">
+    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fill" />
+    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" />
+    <Image src={pond.thumb} alt={pond.alt} width={160} height={Math.round((160 * pond.height) / pond.width)} ratio="16/9" display="actual" />
+    <Image src={pond.thumb} alt={pond.alt} width={96} height={Math.round((96 * pond.height) / pond.width)} ratio="16/9" display="tile" />
+  </div>
+</Example>
+
+<Example title="A colour behind it, and square corners" description="Fitted in a 16:9 frame with the picture's own edge colour behind it (worked out from the picture when the site is built; set by hand here), then the same with its corners squared.">
+  <div class="demo-grid">
+    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" bg={{ light: 'rgb(124 170 120)', dark: 'rgb(30 52 44)' }} />
+    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" bg={{ light: 'rgb(124 170 120)', dark: 'rgb(30 52 44)' }} rounded={false} />
+  </div>
+</Example>
+
 <Example title="Radius" description="Default in the text, feature for a lead picture, none at full bleed.">
   <div class="demo-grid">
     <Image src={night.src} srcset={night.srcset} sizes="20rem" alt={night.alt} width={night.width} height={night.height} ratio="4/3" />

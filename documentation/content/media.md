@@ -226,15 +226,15 @@ Content and components don't change between strategies: a block still names an I
 
 ## 9. Shapes, thumbnails and crops
 
-A picture is shown in one of two ways, and never cropped blindly:
+A picture is never cropped blindly. By default it's shown in one of two ways (§9.1 lets a page choose otherwise):
 - **Framed whole.** Cards (a section's list, the home page, the planet's lists) show a page's picture whole, in a 3:2 frame: a picture of another shape sits in it with space around it, and a transparent one sits straight on the page.
 - **Cropped to a shape.** The lead picture runs across the top of its page at 21:9, cropped around its focus point.
 
-**The shapes are in one place,** `src/site/design/pictures.ts` (`PICTURE_SPECS`): each use's ratio, whether the design crops or frames it, and the widest it's shown, so a picture at least that wide stays sharp. The components frame to them, and edit mode shows them as tips.
+**The shapes are in one place,** `src/site/design/pictures.ts` (`PICTURE_SPECS`): each use's ratio, whether the design crops or frames it by default, and the widest it's shown, so a picture at least that wide stays sharp. The components frame to them, and edit mode shows them as tips.
 
-| Use | Field | Shape | Shown | Sharp from |
+| Use | Field | Shape | Shown (by default) | Sharp from |
 |---|---|---|---|---|
-| Lead picture | `hero.media` | 21:9 | Across the top of its page, cropped around its focus point | 2400 × 1029 px |
+| Lead picture | `hero.media` | 21:9 | Across the top of its page, filling it, cropped around its focus point | 2400 × 1029 px |
 | Thumbnail | `thumbnail` (else the lead picture) | 3:2 | Whole on cards | 960 × 640 px |
 
 **A page can have its own thumbnail** (`thumbnail`, a media ID): the picture on its cards. Left out, cards use the lead picture. So one wide lead picture can have a 3:2 thumbnail cut from it.
@@ -244,6 +244,20 @@ A picture is shown in one of two ways, and never cropped blindly:
 - cropping a cropped copy cuts again from its original (so it can grow back) and updates the copy, everywhere it's used;
 - a use can ask for another copy of a copy (the thumbnail cut from the lead picture's copy is a second copy of the original);
 - a copy is a picture like any other: its own master within the budgets, its own sidecar. If its original is deleted, it stays, and cropping it again starts from itself.
+
+### 9.1 How a picture is shown: fill, fit, actual size, tile; a background; corners
+
+Every place a page shows a picture lets it choose how (6 October 2026, the owner's request). Left alone, each looks as it always has.
+
+| Choice | Values | Default |
+|---|---|---|
+| **Shown as** (`display`) | `fill`: fills its frame, cropped around its focus point. `fit`: whole, with room round it. `actual`: its own pixel size, centred, made smaller only to fit, never enlarged. `tile`: repeated at its own size across the frame | Lead picture and carousel: fill. Figure and thumbnail: fit. Gallery: fill (or what its older `fit` says) |
+| **Colour behind it** (`background`) | On: the room round a fitted or actual-size picture, and its transparent parts, take a colour from the picture itself: the average of its opaque edge pixels, or its dominant colour when the edges are transparent. A dark mode version has its own | Off |
+| **Rounded corners** (`rounded`) | Off squares the corners (a full-bleed picture is square anyway) | On |
+
+- **Where:** a figure (`display`, `background`, `rounded`, and its frame's shape, `ratio`: its own, 1:1, 4:3, 3:2, 16:9 or 21:9), a gallery and a carousel (for all their pictures), the lead picture (`hero.display`, `hero.background`, `hero.rounded`) and the thumbnail on cards (`thumbnailStyle`: `display`, `background`, `rounded`).
+- **The colour is worked out when the picture is prepared** (`src/site/content/pictures.ts`, the pure `edgeColour.ts`), once per master, and handed to the page as data; no colour is written in a stylesheet. It follows the theme with the picture's dark mode version.
+- **Tiles** are drawn by the `Image` fundamental's script from the file the browser chose (the dark one in dark mode); until then, and without JavaScript, the picture itself shows, fitted.
 
 ## 10. Dark mode versions
 

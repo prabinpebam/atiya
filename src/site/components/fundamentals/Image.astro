@@ -4,19 +4,29 @@
  * text and square at full bleed. It has no background colour of its own, so a transparent picture sits
  * straight on the page. Pictures carry this site, so every
  * one is given the space and the care of a printed plate.
+ * It's shown one of four ways in its frame (a ratio, or the cell it fills; without one, its own shape as
+ * wide as its place): fill, cropped to the frame around its focus point; fit, whole, with room round it;
+ * actual, at its own size, centred and never enlarged (made smaller only to fit); tile, repeated at its
+ * own size across the frame (the picture itself shows instead until the page's script has drawn the tiles).
  * A picture can have a dark mode version: it shows instead when the page is dark (the reader's theme,
- * or their system's), through a <picture> whose dark source scripts/theme.ts points at the theme.
+ * or their system's), through a <picture> whose dark source scripts/theme.ts points at the theme; tiles
+ * follow it too.
+ * Behind it there can be a colour taken from the picture itself (bg: its edges' colour, and its dark
+ * version's), filling the room round a fitted or actual-size picture and its transparent parts; and its
+ * corners can be squared (rounded false).
  * @tier fundamental
  * @a11y alt is required: what the picture shows and why it's there; an empty alt only for decoration.
  * @a11y Width and height are required, so the page doesn't shift as it loads (CLS).
  * @a11y A dark version is the same picture in other colours: the alt text covers both.
+ * @a11y Tiled, the frame is the image (role="img", named by the alt text), whatever draws it.
  */
+
 interface Props {
   /** The picture (the size a middle-sized screen needs). */
   src: string;
   /** What it shows, for someone who can't see it. "" only for pure decoration. */
   alt: string;
-  /** The picture's own size (px), for its aspect ratio. */
+  /** The picture's own size (px), for its aspect ratio, and its size shown actual or tiled. */
   width: number;
   /** The picture’s own height (px). */
   height: number;
@@ -24,10 +34,12 @@ interface Props {
   srcset?: string;
   /** How wide it shows at each breakpoint, for srcset. */
   sizes?: string;
-  /** Crop to a shape: the picture fills it (fit cover). Omit to keep the picture's own ratio. */
+  /** Its frame's shape. Omit for the picture's own shape (or the cell it fills). */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
-  /** cover fills a crop; contain shows the whole picture inside it. */
+  /** cover fills a crop; contain shows the whole picture inside it (display says the same, and wins). */
   fit?: 'cover' | 'contain';
+  /** How it's shown in its frame: fill, fit, actual (its own size, never enlarged) or tile. Left out, from fit (cover: fill). */
+  display?: 'fill' | 'fit' | 'actual' | 'tile';
   /** Which part stays in a crop ("50% 30%"). */
   focus?: string;
   /** default: softly rounded; feature: rounder, for a lead picture; none: square (full bleed, filmstrips). */
@@ -38,13 +50,51 @@ interface Props {
   fill?: boolean;
   /** Its dark mode version (its own src, srcset and size), shown when the page is dark. Without one, the picture shows in both modes. */
   dark?: { src: string; srcset?: string; width: number; height: number };
+  /** A colour behind it (the picture's own edge colour, and its dark version's), filling the space round it and its transparent parts. Left out, nothing behind it. */
+  bg?: { light: string; dark?: string };
+  /** Rounded corners (the radius above); false squares them. */
+  rounded?: boolean;
 }
 
-const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', focus, radius = 'default', priority = false, fill = false, dark } = Astro.props;
+const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', display, focus, radius: asked = 'default', priority = false, fill = false, dark, bg, rounded = true } = Astro.props;
+const radius = rounded ? asked : 'none';
+const mode = display ?? (fit === 'contain' ? 'fit' : 'fill');
+// actual and tile draw in a frame of their own (the ratio's, the cell's, or else the picture's own shape)
+const framed = mode === 'actual' || mode === 'tile';
+const tile = mode === 'tile';
+// tiles are the picture at its own size: the browser picks the file nearest it
+const shownSizes = tile ? `${width}px` : sizes;
+// the background is data: the picture's own colours, set here and read by the stylesheet
+const bgVars = bg ? [`--picture-bg: ${bg.light}`, `--picture-bg-dark: ${bg.dark ?? bg.light}`] : [];
+const vars = [focus ? `--focus: ${focus}` : '', framed ? `--natural: ${width}px` : '', ...(framed ? [] : bgVars)].filter(Boolean).join('; ') || undefined;
+const frameVars = framed ? [`--own-ratio: ${width} / ${height}`, `--natural: ${width}px`, ...bgVars].join('; ') : undefined;
+const imgAlt = tile ? '' : alt;
 ---
 
 {
-  dark ? (
+  framed ? (
+    <span
+      class="frame"
+      data-mode={mode}
+      data-ratio={ratio}
+      data-radius={radius}
+      data-fill={fill ? '' : undefined}
+      data-tile={tile ? '' : undefined}
+      data-bg={bg ? '' : undefined}
+      role={tile ? 'img' : undefined}
+      aria-label={tile && alt ? alt : undefined}
+      style={frameVars}
+    >
+      {dark ? (
+        <picture class="themed">
+          <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? shownSizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />
+          <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} style={vars} />
+        </picture>
+      ) : (
+        <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} style={vars} />
+      )}
+    </span>
+  ) : dark ? (
     <picture class="themed">
       <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? sizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />
       <img
@@ -59,10 +109,11 @@ const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', focus, rad
         decoding="async"
         fetchpriority={priority ? 'high' : undefined}
         data-ratio={ratio}
-        data-fit={fit}
+        data-fit={mode === 'fit' ? 'contain' : 'cover'}
         data-radius={radius}
         data-fill={fill ? '' : undefined}
-        style={focus ? `--focus: ${focus}` : undefined}
+        data-bg={bg ? '' : undefined}
+        style={vars}
       />
     </picture>
   ) : (
@@ -78,10 +129,11 @@ const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', focus, rad
       decoding="async"
       fetchpriority={priority ? 'high' : undefined}
       data-ratio={ratio}
-      data-fit={fit}
+      data-fit={mode === 'fit' ? 'contain' : 'cover'}
       data-radius={radius}
       data-fill={fill ? '' : undefined}
-      style={focus ? `--focus: ${focus}` : undefined}
+      data-bg={bg ? '' : undefined}
+      style={vars}
     />
   )
 }
@@ -117,31 +169,118 @@ const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', focus, rad
     height: 100%;
   }
 
-  .image[data-ratio='1/1'] {
+  /* a background from the picture's own colours (its dark version's when the page is dark) */
+  .image[data-bg],
+  .frame[data-bg] {
+    background-color: light-dark(var(--picture-bg), var(--picture-bg-dark));
+  }
+
+  .image[data-ratio='1/1'],
+  .frame[data-ratio='1/1'] {
     aspect-ratio: 1 / 1;
   }
 
-  .image[data-ratio='4/5'] {
+  .image[data-ratio='4/5'],
+  .frame[data-ratio='4/5'] {
     aspect-ratio: 4 / 5;
   }
 
-  .image[data-ratio='3/4'] {
+  .image[data-ratio='3/4'],
+  .frame[data-ratio='3/4'] {
     aspect-ratio: 3 / 4;
   }
 
-  .image[data-ratio='4/3'] {
+  .image[data-ratio='4/3'],
+  .frame[data-ratio='4/3'] {
     aspect-ratio: 4 / 3;
   }
 
-  .image[data-ratio='3/2'] {
+  .image[data-ratio='3/2'],
+  .frame[data-ratio='3/2'] {
     aspect-ratio: 3 / 2;
   }
 
-  .image[data-ratio='16/9'] {
+  .image[data-ratio='16/9'],
+  .frame[data-ratio='16/9'] {
     aspect-ratio: 16 / 9;
   }
 
-  .image[data-ratio='21/9'] {
+  .image[data-ratio='21/9'],
+  .frame[data-ratio='21/9'] {
     aspect-ratio: 21 / 9;
   }
+
+  /* actual and tile: a frame of their own, the picture's shape unless a ratio or a cell gives one */
+  .frame {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: var(--own-ratio);
+    overflow: clip;
+    border-radius: var(--c-image-radius);
+  }
+
+  .frame[data-radius='feature'] {
+    border-radius: var(--c-image-radius-feature);
+  }
+
+  .frame[data-radius='none'] {
+    border-radius: var(--radius-none);
+  }
+
+  .frame[data-fill] {
+    height: 100%;
+  }
+
+  /* actual size: its own width (never more than its place), centred; within a frame, never taller than it */
+  .frame[data-mode='actual']:not([data-ratio]):not([data-fill]) {
+    aspect-ratio: auto;
+  }
+
+  .frame[data-mode='actual'] .image {
+    width: min(100%, var(--natural));
+    max-height: 100%;
+    border-radius: var(--radius-none);
+    object-fit: contain;
+  }
+
+  /* tiled: the picture repeated at its own size (the script sets --tile once it has loaded) */
+  .frame[data-mode='tile'][data-tiled] {
+    background-image: var(--tile);
+    background-repeat: repeat;
+    background-position: center;
+    background-size: var(--natural) auto;
+  }
+
+  .frame[data-mode='tile'][data-tiled] .image {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .frame[data-mode='tile'] .image {
+    border-radius: var(--radius-none);
+    object-fit: contain;
+    height: 100%;
+  }
 </style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  // a tiled picture: the frame repeats the file the browser chose (the dark one, when the page is dark;
+  // a change of theme loads the other, and the tiles follow)
+  each<HTMLElement>('[data-tile]', (frame, signal) => {
+    const img = frame.querySelector('img');
+    if (!img) return;
+    const draw = () => {
+      if (!img.currentSrc) return;
+      frame.style.setProperty('--tile', `url("${img.currentSrc}")`);
+      frame.dataset.tiled = '';
+    };
+    img.addEventListener('load', draw, { signal });
+    if (img.complete) draw();
+  });
+</script>
