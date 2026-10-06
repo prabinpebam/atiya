@@ -333,24 +333,19 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         else if (r.access !== 'open') add(STRUCTURE_FILE, `node "${e.node}" is a private page: the navigation names open ones only (V25)`, at);
       } else if (e.href.startsWith('/') && !isSitePath(e.href, routes.filter((x) => x.access === 'open'))) add(STRUCTURE_FILE, `${e.href} isn't a page of this site`, at);
     });
-    // the planet (V13 to V16): each building once; a page in one building at most, and on the site
+    // the planet (V14 to V16): each building once, each showing a section of the site, and a section shown by one
+    // building at most. What a building holds follows its section, so it's on the site by construction (V13, V15)
     if (planet) {
       const PLANET = 'content/structures/planet.json';
       for (const pid of PLACE_IDS) {
         const n = planet.places.filter((p) => p.id === pid).length;
         if (n !== 1) add(PLANET, n ? `the ${pid} is listed ${n} times; each building is listed once (V14)` : `the ${pid} is missing; every building is listed once (V14)`, 'places');
       }
-      const where = new Map<string, string>();
+      const shownBy = new Map<string, string>();
       planet.places.forEach((p, i) => {
-        if (p.site && !routes.some((r) => r.node.id === p.site && r.node.kind === 'hub' && r.path !== '/')) add(PLANET, `"${p.site}" isn't a section of the site (V16)`, `places.${i}.site`);
-        p.pages.forEach((ref, j) => {
-          const at = `places.${i}.pages.${j}`;
-          if (!articles.has(ref.id)) return add(PLANET, `page "${ref.id}" doesn't exist`, at);
-          if (where.has(ref.id)) add(PLANET, `page "${ref.id}" is in the ${where.get(ref.id)} and the ${p.id}; a page is in one building at most (V15)`, at);
-          where.set(ref.id, p.id);
-          if (origins.get(ref.id) === 'private') add(PLANET, `page "${ref.id}" is private: it can't be on the planet (V28)`, at);
-          else if (!routes.some((r) => r.node.kind === 'item' && r.node.item.id === ref.id)) add(PLANET, `page "${ref.id}" isn't on the site; a page on the planet needs its page on the site (V13)`, at);
-        });
+        if (!routes.some((r) => r.node.id === p.site && r.node.kind === 'hub' && r.path !== '/')) add(PLANET, `"${p.site}" isn't a section of the site (V16)`, `places.${i}.site`);
+        else if (shownBy.has(p.site)) add(PLANET, `the ${shownBy.get(p.site)} and the ${p.id} both show "${p.site}"; a section is shown by one building at most (V15)`, `places.${i}.site`);
+        shownBy.set(p.site, p.id);
       });
     }
     // redirects (V19): only ones from an address nothing else has, to a page that's built, are kept. The

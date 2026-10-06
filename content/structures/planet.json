@@ -5,120 +5,49 @@
       "title": "Workshop",
       "kicker": "Selected case studies",
       "summary": "Case studies of products I’ve led: the problem, the bets, how the team shipped and what changed.",
-      "view": "features",
-      "site": "work",
-      "pages": []
+      "site": "work"
     },
     {
       "id": "town-hall",
       "title": "Town Hall",
       "kicker": "About me · How I lead",
       "summary": "Who I am, and how I lead and grow design teams.",
-      "view": "features",
-      "site": "about",
-      "pages": [
-        {
-          "type": "article",
-          "id": "my-journey-with-designup"
-        }
-      ]
+      "site": "about"
     },
     {
       "id": "lighthouse",
       "title": "Lighthouse",
       "kicker": "Vision & design leadership",
       "summary": "How I lead design teams, and the culture we build together.",
-      "view": "features",
-      "site": "leadership",
-      "pages": [
-        {
-          "type": "article",
-          "id": "do-what-makes-you-proud"
-        }
-      ]
+      "site": "leadership"
     },
     {
       "id": "library",
       "title": "Library",
       "kicker": "Writing",
       "summary": "Essays and notes on design leadership, craft and building thoughtful products.",
-      "view": "features",
-      "site": "writing",
-      "pages": [
-        {
-          "type": "article",
-          "id": "the-best-learning-loop-will-win"
-        }
-      ]
+      "site": "writing"
     },
     {
       "id": "amphitheater",
       "title": "Amphitheater",
       "kicker": "Talks & podcasts",
       "summary": "Talks and conversations on design and leadership, with their recordings and slides.",
-      "view": "features",
-      "site": "talks",
-      "pages": []
+      "site": "talks"
     },
     {
       "id": "greenhouse",
       "title": "Greenhouse",
       "kicker": "Side projects & experiments",
       "summary": "Prototypes, tools and experiments I build on the side, including this little planet.",
-      "view": "features",
-      "site": "side-projects",
-      "pages": [
-        {
-          "type": "article",
-          "id": "atiya"
-        },
-        {
-          "type": "article",
-          "id": "watai"
-        },
-        {
-          "type": "article",
-          "id": "story"
-        },
-        {
-          "type": "article",
-          "id": "slate"
-        },
-        {
-          "type": "article",
-          "id": "cloner-pro"
-        },
-        {
-          "type": "article",
-          "id": "khonjel"
-        },
-        {
-          "type": "article",
-          "id": "liquid-glass-for-web"
-        },
-        {
-          "type": "article",
-          "id": "liquid-glass-pro"
-        },
-        {
-          "type": "article",
-          "id": "generative-explorations"
-        }
-      ]
+      "site": "side-projects"
     },
     {
       "id": "post-office",
       "title": "Post Office",
       "kicker": "Contact · résumé",
       "summary": "Ways to get in touch, and my résumé.",
-      "view": "features",
-      "site": "contact",
-      "pages": [
-        {
-          "type": "article",
-          "id": "resume"
-        }
-      ]
+      "site": "contact"
     }
   ]
 }

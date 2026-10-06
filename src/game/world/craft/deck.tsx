@@ -130,6 +130,7 @@ export function attachDeck(controller: GameController, store: CraftStore): DeckA
     saveStage(k);
     apply(k);
     controller.announce(DECK_STAGES[k - 1].built);
+    controller.track('planet_built', { what: `deck-${k}` });
     controller.refreshTarget();
   };
 

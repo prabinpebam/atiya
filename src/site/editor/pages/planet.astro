@@ -1,5 +1,5 @@
 ---
-/** Edit mode's planet: its seven buildings listed beside the chosen one's pages and settings, separate from the site's sections (documentation/sections/spec.md §7.4). Dev only: injected by integrations/editor.mjs. */
+/** Edit mode's planet: its seven buildings listed beside the chosen one's pages and settings; each shows a section of the site, and its pages are that section's (documentation/sections/spec.md §7.4). Dev only: injected by integrations/editor.mjs. */
 import EditorLayout from '../EditorLayout.astro';
 import SectionManager, { type ManagedSection } from '../components/SectionManager.astro';
 import PlaceForms, { type PlaceSettings } from '../components/PlaceForms.astro';
@@ -19,28 +19,28 @@ let places: PlaceSettings[] = [];
 let selected = '';
 if (loaded.ok && doc) {
   const index = loaded.index;
-  const onSite = (id: string) => index.routes.find((r) => r.node.kind === 'item' && r.node.item.id === id);
-  const row = (id: string) => {
-    const route = onSite(id);
-    // a private page is never on the planet: it has no way to sign in (V28)
-    if (index.origins.get(id) === 'private') return { ...listedPage(index, id), note: 'Private: not on the planet', movable: false, private: true };
-    return { ...listedPage(index, id), note: route ? route.path : 'Not on the site yet: place it in Sections first', movable: !!route };
+  // a building shows its section (§5.2): its pages are the section's, moved in Sections, never here
+  const row = (route: (typeof index.routes)[number]) => {
+    const id = route.node.kind === 'item' ? route.node.item.id : route.node.id;
+    const page = listedPage(index, id);
+    if (route.access === 'private') return { ...page, note: 'Private: not on the planet', movable: false, private: true };
+    return { ...page, note: page.published ? route.path : 'Not published: on the planet once it is', movable: false };
   };
-  const mapped = new Set(doc.value.places.flatMap((p) => p.pages.map((r) => r.id)));
-  sections = [
-    ...doc.value.places.map((p): ManagedSection => ({ id: p.id, title: p.title, meta: p.kicker, icon: 'location', settings: true, pages: p.pages.map((r) => row(r.id)) })),
-    {
-      id: '_off',
-      title: 'Not on the planet',
-      meta: 'Only on the site, or not placed yet',
-      settings: false,
-      about: "These pages aren't in a building, so the planet doesn't show them. Move one into a building to put it there.",
-      pages: [...index.articles.values()].filter((a) => !mapped.has(a.id)).map((a) => row(a.id)),
-    },
-  ];
-  places = doc.value.places.map((p) => ({ id: p.id, title: p.title, kicker: p.kicker, summary: p.summary, view: p.view ?? 'tiles', site: p.site ?? '' }));
+  sections = doc.value.places.map((p): ManagedSection => {
+    const section = index.routes.find((r) => r.node.kind === 'hub' && r.node.id === p.site);
+    const pages = section ? index.routes.filter((r) => r.parent === section.node && r.node.kind === 'item' && r.node.item.type === 'article') : [];
+    return {
+      id: p.id,
+      title: p.title,
+      meta: section && section.node.kind === 'hub' ? `${p.kicker} · shows ${section.node.title}` : p.kicker,
+      icon: 'location',
+      settings: true,
+      pages: pages.map(row),
+    };
+  });
+  places = doc.value.places.map((p) => ({ id: p.id, title: p.title, kicker: p.kicker, summary: p.summary, site: p.site }));
   const asked = Astro.url.searchParams.get('building');
-  selected = sections.some((x) => x.id === asked) ? asked! : (doc.value.places[0]?.id ?? '_off');
+  selected = sections.some((x) => x.id === asked) ? asked! : (doc.value.places[0]?.id ?? '');
 }
 ---
 
@@ -48,7 +48,7 @@ if (loaded.ok && doc) {
   title="Planet"
   screen="planet"
   heading="Planet"
-  intro="The planet's seven buildings and their pages, separate from the site's sections. Choose a building to see its pages and its settings. To move a page to another building, drag it onto that building in the list, or use Move. The buildings are the game's: they can't be added or moved here. A page in a building needs its page on the site too."
+  intro="The planet's seven buildings. Each shows a section of the site: its published open pages, in the section's order and view, so the planet and the site always match. Choose a building to see its pages and its settings; move pages in Sections. The buildings are the game's: they can't be added or moved here."
 >
   {
     loaded.ok && doc ? (

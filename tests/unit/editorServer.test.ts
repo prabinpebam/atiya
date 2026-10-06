@@ -55,60 +55,27 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-// ---------- a page's places, on the site and the planet, in one transaction (documentation/sections/spec.md §7.6) ----------
+// ---------- a page's building follows its section (documentation/sections/spec.md §5.2, §7.6) ----------
 describe("a page's building", () => {
   const PLACES = ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office'];
-  const planet = () => JSON.parse(readFileSync(join(content, 'structures', 'planet.json'), 'utf8')) as { places: { id: string; pages: { id: string }[] }[] };
-  const pagesOf = (id: string) => planet().places.find((p) => p.id === id)!.pages.map((r) => r.id);
-  const seedPlanet = () => put('/content/structures/planet.json', { places: PLACES.map((id) => ({ id, title: id, kicker: 'K', summary: 'S', pages: [] })) });
-
-  /** A save of the page as it is, with its version (as the editor sends it), and a change to its places. */
-  const save = (over: { place?: string | null; section?: string | null }) => {
+  const PLANET = join('structures', 'planet.json');
+  const seedPlanet = () => {
+    put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: PLACES.map((id, n) => ({ id: `s${n}`, kind: 'hub', slug: `s${n}`, title: id, children: n === 0 ? [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] : [] })) } });
+    put('/content/structures/planet.json', { places: PLACES.map((id, n) => ({ id, title: id, kicker: 'K', summary: 'S', site: `s${n}` })) });
+  };
+  const save = (over: { section?: string | null }) => {
     const a = readDoc<Record<string, unknown>>('/content/articles/a.json')!;
     return saveArticle({ id: 'a', article: a.value as never, ifMatch: { '/content/articles/a.json': a.version }, ...over });
   };
 
-  it('saves with the page, moves between buildings, and comes off', async () => {
+  it('creating, moving and deleting a page never writes the planet: its building is the one showing its section', async () => {
     seedPlanet();
-    expect(await save({ place: 'workshop' })).toMatchObject({ ok: true });
-    expect(pagesOf('workshop')).toEqual(['a']);
-    expect(await save({ place: 'library' })).toMatchObject({ ok: true });
-    expect([pagesOf('workshop'), pagesOf('library')]).toEqual([[], ['a']]);
-    expect(await save({ place: null })).toMatchObject({ ok: true });
-    expect(pagesOf('library')).toEqual([]);
-  });
-
-  it('refuses a page on the planet without its page on the site (V13), and changes nothing', async () => {
-    seedPlanet();
-    const r = await save({ section: null, place: 'workshop' });
-    expect(r.ok).toBe(false);
-    expect(JSON.stringify(r)).toMatch(/isn't on the site; a page on the planet needs its page on the site/);
-    expect(pagesOf('workshop')).toEqual([]);
-    expect(readFileSync(join(content, 'structures', 'site.json'), 'utf8')).toContain('"id": "a"');
-    // an unknown building is refused before anything is written
-    expect(await save({ place: 'castle' })).toMatchObject({ ok: false });
-  });
-
-  it('deleting a draft takes it off the planet in the same transaction', async () => {
-    seedPlanet();
-    await save({ place: 'greenhouse' });
-    expect(pagesOf('greenhouse')).toEqual(['a']);
+    const before = readFileSync(join(content, PLANET), 'utf8');
+    expect(await createArticle({ title: 'New one', summary: 'S', kind: 'note', section: 's3' })).toMatchObject({ ok: true, id: 'new-one' });
+    expect(await save({ section: 's3' })).toMatchObject({ ok: true });
+    expect(await save({ section: null })).toMatchObject({ ok: true });
     expect(await deleteArticle('a', false, {})).toMatchObject({ ok: true });
-    expect(pagesOf('greenhouse')).toEqual([]);
-  });
-
-  it('follows its section to the building that shows it: a new page, and a page moved to another section', async () => {
-    put('/content/structures/planet.json', { places: PLACES.map((id) => ({ id, title: id, kicker: 'K', summary: 'S', ...(id === 'workshop' ? { site: 's' } : id === 'library' ? { site: 't' } : {}), pages: [] })) });
-    put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] }, { id: 't', kind: 'hub', slug: 't', title: 'T', children: [] }] } });
-    expect(await createArticle({ title: 'New one', summary: 'S', kind: 'note', section: 't' })).toMatchObject({ ok: true, id: 'new-one' });
-    expect(pagesOf('library')).toEqual(['new-one']);
-    expect(await save({ section: 't' })).toMatchObject({ ok: true });
-    expect(pagesOf('library')).toEqual(['new-one', 'a']);
-    expect(await save({ section: 's' })).toMatchObject({ ok: true });
-    expect([pagesOf('workshop'), pagesOf('library')]).toEqual([['a'], ['new-one']]);
-    // a building chosen in the same change wins
-    expect(await save({ section: 't', place: 'greenhouse' })).toMatchObject({ ok: true });
-    expect([pagesOf('workshop'), pagesOf('library'), pagesOf('greenhouse')]).toEqual([[], ['new-one'], ['a']]);
+    expect(readFileSync(join(content, PLANET), 'utf8')).toBe(before);
   });
 });
 

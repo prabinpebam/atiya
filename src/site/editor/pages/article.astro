@@ -51,8 +51,9 @@ const section = privateIn ?? (structure ? (sectionOf(structure.value, { type: 'a
 // who it's shared with, for its Share dialog
 const sharing = access === 'private' && loaded.ok ? sharingView(id) : null;
 const planet = readDoc<PlanetStructure>(PLANET);
-const place = planet ? (placeOfPage(planet.value, id) ?? '') : '';
-const places = (planet?.value.places ?? []).map((p) => ({ value: p.id, label: p.title, description: p.kicker }));
+// its building on the planet: the one showing its section (documentation/sections/spec.md §5.2)
+const placeId = planet && structure && access === 'open' ? placeOfPage(planet.value, structure.value, id) : undefined;
+const place = planet?.value.places.find((p) => p.id === placeId)?.title ?? '';
 const route = loaded.ok ? getPlacement('article', id) : undefined;
 
 const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', collection: 'collection' };
@@ -68,8 +69,6 @@ const state = {
   structureVersion: structure?.version ?? null,
   section,
   access,
-  planetVersion: planet?.version ?? null,
-  place,
   published,
   article,
   canvas: withBase(`/_edit/canvas/articles/${id}/`),
@@ -101,7 +100,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
       <Studio>
         <Outline slot="outline" blocks={blocks} />
         <CanvasFrame slot="canvas" src={state.canvas} />
-        <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} places={places} place={place} published={published} path={route?.path ?? null} />
+        <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} place={place} published={published} path={route?.path ?? null} />
         <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
         <Dialog id="editor-palette" title="Add a block" size="lg">
           <BlockPalette />

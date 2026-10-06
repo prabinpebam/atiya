@@ -497,53 +497,37 @@ describe('the navigation, as edit mode changes it (documentation/sections/spec.m
 describe('the planet, as edit mode changes it (documentation/sections/spec.md §7.4)', () => {
   const PLANET: PlanetStructure = {
     places: [
-      { id: 'workshop', title: 'Workshop', kicker: 'K', summary: 'S', site: 'work', pages: [{ type: 'article', id: 'a' }, { type: 'article', id: 'b' }] },
-      { id: 'library', title: 'Library', kicker: 'K', summary: 'S', pages: [] },
+      { id: 'workshop', title: 'Workshop', kicker: 'K', summary: 'S', site: 'work' },
+      { id: 'library', title: 'Library', kicker: 'K', summary: 'S', site: 'writing' },
     ],
   };
+  const SITE: SiteStructure = {
+    home: {
+      id: 'home',
+      kind: 'hub',
+      slug: '',
+      title: 'Home',
+      children: [
+        { id: 'work', kind: 'hub', slug: 'work', title: 'Work', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] },
+        { id: 'talks', kind: 'hub', slug: 'talks', title: 'Talks', children: [{ id: 't', kind: 'item', item: { type: 'article', id: 't' } }] },
+      ],
+    },
+  };
 
-  it('finds a page, puts it in a building (moving it from another: one at most), and takes it off', () => {
+  it('a page is in the building that shows its section, and only there (§5.2)', () => {
+    expect(planet.placeOfSection(PLANET, 'writing')).toBe('library');
+    expect(planet.placeOfSection(PLANET, 'talks')).toBeUndefined();
+    expect(planet.placeOfPage(PLANET, SITE, 'a')).toBe('workshop');
+    expect(planet.placeOfPage(PLANET, SITE, 't')).toBeUndefined();
+    expect(planet.placeOfPage(PLANET, SITE, 'nowhere')).toBeUndefined();
+  });
+
+  it("changes a building's words and section, keeping the rest", () => {
     const before = JSON.stringify(PLANET);
-    expect(planet.placeOfPage(PLANET, 'b')).toBe('workshop');
-    expect(planet.placeOfPage(PLANET, 'z')).toBeUndefined();
-    const moved = planet.putIn(PLANET, 'library', 'b');
-    expect(moved.places.map((p) => p.pages.map((r) => r.id))).toEqual([['a'], ['b']]);
-    expect(planet.putIn(PLANET, 'library', 'c').places[1].pages).toEqual([{ type: 'article', id: 'c' }]);
-    expect(planet.takeOff(PLANET, 'a').places[0].pages.map((r) => r.id)).toEqual(['b']);
+    const edited = planet.updatePlace(PLANET, 'workshop', { kicker: 'Case studies', site: 'talks' });
+    expect(edited.places[0]).toEqual({ id: 'workshop', title: 'Workshop', kicker: 'Case studies', summary: 'S', site: 'talks' });
+    expect(edited.places[1]).toEqual(PLANET.places[1]);
     expect(JSON.stringify(PLANET)).toBe(before);
-  });
-
-  it('puts several pages in a building together, in the order given, at a place among the pages that stay', () => {
-    const ids = (p: PlanetStructure) => p.places.map((x) => x.pages.map((r) => r.id));
-    expect(ids(planet.putAllIn(PLANET, 'library', ['b', 'a']))).toEqual([[], ['b', 'a']]);
-    expect(ids(planet.putAllIn(PLANET, 'workshop', ['a'], 1))).toEqual([['b', 'a'], []]);
-    expect(ids(planet.putAllIn(PLANET, 'workshop', ['b', 'c'], 0))).toEqual([['b', 'c', 'a'], []]);
-  });
-
-  it("moves a page within its building's ends, and changes a building's words (an empty site goes back to none)", () => {
-    expect(planet.movePage(PLANET, 'workshop', 1, -1).places[0].pages.map((r) => r.id)).toEqual(['b', 'a']);
-    expect(planet.movePage(PLANET, 'workshop', 0, -1)).toBe(PLANET);
-    expect(planet.movePage(PLANET, 'workshop', 1, 1)).toBe(PLANET);
-    const edited = planet.updatePlace(PLANET, 'workshop', { kicker: 'Case studies', view: 'list', site: '' });
-    expect(edited.places[0]).toMatchObject({ kicker: 'Case studies', view: 'list' });
-    expect(edited.places[0]).not.toHaveProperty('site');
-  });
-
-  it('takes a page placed in a section, or moved to another, to the building that shows it (sections spec §7.6)', () => {
-    const three: PlanetStructure = { places: [...PLANET.places.map((p) => (p.id === 'library' ? { ...p, site: 'writing' } : p)), { id: 'post-office', title: 'Post Office', kicker: 'K', summary: 'S', site: 'contact', pages: [] }] };
-    const ids = (p: PlanetStructure) => p.places.map((x) => x.pages.map((r) => r.id));
-    // a new page in a section with a building goes to its end; in one without, nowhere
-    expect(ids(planet.followSections(three, [{ id: 'cv', from: null, to: 'contact' }]))).toEqual([['a', 'b'], [], ['cv']]);
-    expect(planet.followSections(three, [{ id: 'n', from: null, to: 'talks' }])).toBe(three);
-    // a page moved from the Workshop's section to Writing's moves to the Library; to a section with no building, off the planet
-    expect(ids(planet.followSections(three, [{ id: 'a', from: 'work', to: 'writing' }]))).toEqual([['b'], ['a'], []]);
-    expect(ids(planet.followSections(three, [{ id: 'a', from: 'work', to: 'talks' }]))).toEqual([['b'], [], []]);
-    // a page put in another building by hand stays; so does one taken off the site (V13 says why); nothing moved, nothing changes
-    expect(planet.followSections(three, [{ id: 'a', from: 'about', to: 'writing' }])).toBe(three);
-    expect(planet.followSections(three, [{ id: 'a', from: 'work', to: null }])).toBe(three);
-    expect(planet.followSections(three, [{ id: 'a', from: 'work', to: 'work' }])).toBe(three);
-    expect(planet.placeOfSection(three, 'contact')).toBe('post-office');
-    expect(planet.placeOfSection(three, 'talks')).toBeUndefined();
   });
 });
 

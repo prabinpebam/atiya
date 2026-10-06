@@ -5,7 +5,6 @@
  * (documentation/sections/spec.md §7.2). Every change is one store transaction.
  */
 import { PLACE_IDS, article as articleSchema, type Article, type PlaceId, type PlanetStructure, type SiteStructure } from '../../content/schema';
-import { followSections, placeOfPage, putIn, takeOff } from '../model/planet';
 import { isPublished } from '../../content/load';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { slugify, today, unique } from '../model/ids';
@@ -23,22 +22,6 @@ export const OVERLAY = '/private/structures/overlay.json';
 /** An article's file: in private-pages/ when it's private (documentation/access/spec.md §3), else in content/. */
 export const articleKey = (id: string) => (existsSync(fileOf(`/private/articles/${id}.json`)) ? `/private/articles/${id}.json` : `/content/articles/${id}.json`);
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
-/**
- * The planet's part in a change to the site's structure: pages placed in a section, or moved to another,
- * follow it to its building (followSections), written in the same transaction. Adds nothing when no
- * building changes. `ids` are the pages to look at (all of them, for a whole new structure).
- */
-export function followOnPlanet(before: SiteStructure, after: SiteStructure, ids: Iterable<string>, changes: Change[], ifMatch: Record<string, string | null>): void {
-  const planet = readDoc<PlanetStructure>(PLANET);
-  if (!planet) return;
-  const moves = [...ids].map((id) => ({ id, from: sectionOf(before, { type: 'article', id }), to: sectionOf(after, { type: 'article', id }) }));
-  const next = followSections(planet.value, moves);
-  if (next === planet.value) return;
-  changes.push({ key: PLANET, bytes: jsonBytes(next) });
-  // computed from the planet as it is now, so it's checked against that version
-  ifMatch[PLANET] = planet.version;
-}
 
 /** Every page a site structure places. */
 export function pagesOf(structure: SiteStructure): string[] {
@@ -66,10 +49,8 @@ function articles(): Map<string, Article> {
 export interface SaveArticle {
   id: string;
   article: Article;
-  /** The section (hub id) to place it in, null to take it off the site; left out, it stays where it is. */
+  /** The section (hub id) to place it in, null to take it off the site; left out, it stays where it is. Its building on the planet follows (documentation/sections/spec.md §5.2). */
   section?: string | null;
-  /** The building to put it in on the planet, null to take it off the planet; left out, it stays where it is. */
-  place?: string | null;
   ifMatch: Record<string, string | null>;
 }
 
@@ -97,20 +78,6 @@ export async function saveArticle(req: SaveArticle): Promise<Result & { article?
       const moved = req.section === null ? unplace(s.value, ref) : place(s.value, req.section, ref, unique(req.id, nodeIds(unplace(s.value, ref))));
       changes.push({ key: STRUCTURE, bytes: jsonBytes(moved) });
       ifMatch[STRUCTURE] = req.ifMatch[STRUCTURE] ?? s.version;
-      // its building follows, unless this change chooses one
-      if (req.place === undefined) followOnPlanet(s.value, moved, [req.id], changes, ifMatch);
-    }
-  }
-  // on the planet: one transaction with the article and its section, so V13 (a page on the planet is on the
-  // site) is checked on the result (documentation/sections/spec.md §7.6)
-  if (req.place !== undefined) {
-    const planet = readDoc<PlanetStructure>(PLANET);
-    if (!planet) return refuse(PLANET, 'missing');
-    if ((placeOfPage(planet.value, req.id) ?? null) !== req.place) {
-      if (req.place !== null && !(PLACE_IDS as readonly string[]).includes(req.place)) return refuse(PLANET, `"${req.place}" isn't a building`, 'place');
-      const moved = req.place === null ? takeOff(planet.value, req.id) : putIn(planet.value, req.place as PlaceId, req.id);
-      changes.push({ key: PLANET, bytes: jsonBytes(moved) });
-      ifMatch[PLANET] = req.ifMatch[PLANET] ?? planet.version;
     }
   }
   const r = await commit({ changes, ifMatch });
@@ -179,7 +146,6 @@ export async function createArticle(req: CreateArticle): Promise<Result & { id?:
     const placed = place(s.value, req.section, { type: 'article', id }, unique(id, nodeIds(s.value)));
     changes.push({ key: STRUCTURE, bytes: jsonBytes(placed) });
     ifMatch[STRUCTURE] = s.version;
-    followOnPlanet(s.value, placed, [id], changes, ifMatch);
   }
   const r = await commit({ changes, ifMatch });
   return r.ok ? { ...r, id } : r;
@@ -215,7 +181,6 @@ export async function duplicateArticle(id: string): Promise<Result & { id?: stri
     const placed = place(s.value, section, { type: 'article', id: copyId }, unique(copyId, nodeIds(s.value)));
     changes.push({ key: STRUCTURE, bytes: jsonBytes(placed) });
     ifMatch[STRUCTURE] = s.version;
-    followOnPlanet(s.value, placed, [copyId], changes, ifMatch);
   }
   const r = await commit({ changes, ifMatch });
   return r.ok ? { ...r, id: copyId } : r;
@@ -240,12 +205,6 @@ export async function deleteArticle(id: string, withMedia: boolean, ifMatch: Rec
   if (overlay) {
     changes.push({ key: OVERLAY, bytes: jsonBytes(unplacePrivate(overlay.value, id)) });
     match[OVERLAY] = ifMatch[OVERLAY] ?? overlay.version;
-  }
-  // off the planet too, in the same transaction (a page on the planet needs its page on the site: V13)
-  const planet = readDoc<PlanetStructure>(PLANET);
-  if (planet && placeOfPage(planet.value, id)) {
-    changes.push({ key: PLANET, bytes: jsonBytes(takeOff(planet.value, id)) });
-    match[PLANET] = ifMatch[PLANET] ?? planet.version;
   }
   if (withMedia) {
     const snap = readSnapshot();

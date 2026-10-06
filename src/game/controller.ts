@@ -878,7 +878,23 @@ export class GameController {
     if (id) {
       const d = this.dataById.get(id)!;
       this.announce(`Near ${d.title} — ${d.kicker}. Press E to open.`);
+      // the first time this visit only: where a visitor walks to, not how often they pass it
+      if (!this.placesNear.has(id)) {
+        this.placesNear.add(id);
+        this.track('planet_place_near', { place: id });
+      }
     }
+  }
+
+  private placesNear = new Set<string>();
+
+  /**
+   * Tells the page what happened, for telemetry (documentation/access/spec.md §9.5): play.astro forwards
+   * `planet:event` to the site's telemetry, so the game never imports the site's code. Only the planet's own
+   * names go in an event (a building's ID, what was built, who was talked to): never anything typed.
+   */
+  track(event: string, props: Record<string, string | number> = {}): void {
+    document.dispatchEvent(new CustomEvent('planet:event', { detail: { event, props } }));
   }
 
   announce(text: string): void {
@@ -1549,6 +1565,7 @@ export class GameController {
     this.store.setState({ talk: { id, name, lines, index, reveal: 0, ...(o.welcome ? { welcome: true, shown: index } : {}) }, target: null, menuOpen: false });
     this.talkOpenedAt = performance.now();
     if (o.welcome) return;
+    this.track('planet_talked', { who: id });
     this.sound.pickup();
     this.announce(`${name}: ${lines[index]}`);
   }
@@ -1595,6 +1612,7 @@ export class GameController {
     if (opts.push !== false) history.pushState({ gameOpen: id }, '', PLAY_PATH + buildPlaySearch(id, true, this.openPage));
     this.sound.open();
     this.store.setState({ openId: id, menuOpen: false });
+    this.track('planet_place_opened', { place: id });
   }
 
   /** Close via UI (Space, Esc, the close button): goes through history when the game owns the entry. */
@@ -1680,6 +1698,7 @@ export class GameController {
     this.keyboard.clear();
     this.sim.startTravel(arrivalOrientation(g), id, mode);
     this.focusRegion();
+    this.track('planet_travel', { to: id });
   }
 
   teleport(id: string | 'plaza'): void {

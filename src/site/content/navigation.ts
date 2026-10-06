@@ -41,11 +41,22 @@ export function footerLinks(site: { privacyPage?: string } | null | undefined, r
  * on the planet, to its building, open at that page; a section, to the building that points to it (its
  * `site`); anything else, the plaza.
  */
+/**
+ * A building's pages (documentation/sections/spec.md §5.2): the published, open pages of the section it
+ * shows, in the section's order. A private page is never on the planet (V28): it has no way to sign in.
+ */
+export function placeRoutes(routes: Route[], site: string): Route[] {
+  const section = routes.find((r) => r.node.kind === 'hub' && r.node.id === site);
+  if (!section) return [];
+  return routes.filter((r) => r.parent === section.node && r.node.kind === 'item' && r.node.item.type === 'article' && r.access === 'open' && r.published);
+}
+
 export function exploreHref(route?: Route, planet?: PlanetStructure | null): string {
   const places = planet?.places ?? [];
   const node = route?.node;
   if (node?.kind === 'item') {
-    const place = places.find((p) => p.pages.some((r) => r.id === node.item.id));
+    // its building is the one showing its section; a private page isn't on the planet (V28)
+    const place = route!.access === 'open' && route!.parent ? places.find((p) => p.site === route!.parent!.id) : undefined;
     if (place) return withBase(`/play/?at=${place.id}&open=1&page=${node.item.id}`);
   }
   const place = node?.kind === 'hub' ? places.find((p) => p.site === node.id) : undefined;

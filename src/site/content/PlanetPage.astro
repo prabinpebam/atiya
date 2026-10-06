@@ -2,13 +2,16 @@
 /**
  * A building's list, or one of its pages, read on the planet (documentation/sections/spec.md §6.1): the
  * site's own layouts, opening and blocks in the planet's frame, so a page reads the same in both places.
- * The list is the building's published pages in its view (or its empty state); a page has Previous and
+ * A building shows its section of the site (§5.2): the list is the section's published open pages in the
+ * section's view and words, with the section's invited-readers panel when it has private pages (never on
+ * the planet, V28) and the contact form in the building showing the Contact page; a page has Previous and
  * Next through the building's pages, in its order, and nothing that leads to another building (§6.4).
  */
 import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
+import ContactForm from '../components/compounds/ContactForm.astro';
 import Blocks from './Blocks.astro';
-import { getPlanet, getRoutes, getSite, placePages } from './repository';
+import { getOpenRoutes, getPlanet, getRoutes, getSite, placePages, placeSection } from './repository';
 import { pageMeasure } from './reading';
 import { cardPicture, openingOf, relatedOf, storyKind } from './opening';
 import { withBase } from '../design/meta';
@@ -27,7 +30,18 @@ const site = getSite();
 const pages = placePages(place.id);
 const listHref = withBase(`/play/${place.id}/`);
 const pageHref = (id: string) => withBase(`/play/${place.id}/${id}/`);
-const sectionPath = place.site ? getRoutes().find((r) => r.node.id === place.site)?.path : undefined;
+const section = placeSection(place.id);
+const sectionNode = section?.node.kind === 'hub' ? section.node : undefined;
+const sectionPath = section?.path;
+// the section's private pages: never on the planet (V28), but the building says they're there, as the site does
+const invited = section ? getRoutes().filter((r) => r.parent === section.node && r.access === 'private').length : 0;
+const signIn = withBase(`/sign-in/?return=${encodeURIComponent(withBase(sectionPath ?? '/'))}`);
+const contactPath = getOpenRoutes().find((r) => r.node.id === site.contactPage)?.path;
+const isContact = !!sectionNode && sectionNode.id === site.contactPage;
+const privacyRoute = getOpenRoutes().find((r) => r.node.id === site.privacyPage);
+// the privacy note reads in this building when it's one of its pages, else on the site (in a new tab)
+const privacyHere = pages.find((p) => p.route === privacyRoute);
+const privacy = withBase(privacyHere ? `/play/${place.id}/${privacyHere.article.id}/` : (privacyRoute?.path ?? '/'));
 // every page on the planet, by its address on the site: the frame's script sends each link where it belongs
 const map: PlanetFrame['map'] = Object.fromEntries(
   (getPlanet()?.places ?? []).flatMap((p) => placePages(p.id).map(({ article, route }) => [withBase(route.path), { place: p.id, title: p.title, href: withBase(`/play/${p.id}/${article.id}/`) }])),
@@ -58,13 +72,18 @@ const stories = current
   ) : (
     <IndexLayout
       title={`${place.title} — ${site.name}`}
-      description={place.summary}
+      description={sectionNode?.summary ?? place.summary}
       heading={place.title}
-      standfirst={place.summary}
+      standfirst={sectionNode?.summary ?? place.summary}
       stories={stories}
-      view={place.view}
+      view={sectionNode?.view}
+      invited={invited}
+      signIn={invited ? signIn : undefined}
+      ask={invited && contactPath ? withBase(contactPath) : undefined}
       empty="Nothing here yet. This building is still being fitted out."
       frame={frame}
-    />
+    >
+      {isContact && <ContactForm slot="lead" endpoint={import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | undefined} privacy={privacy} />}
+    </IndexLayout>
   )
 }

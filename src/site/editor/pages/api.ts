@@ -6,7 +6,7 @@
 import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, VideoMedia } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
-import { articleKey, createArticle, deleteArticle, duplicateArticle, followOnPlanet, pagesOf, saveArticle, PLANET, STRUCTURE } from '../server/articles';
+import { articleKey, createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { changes, discard, git, publish, push } from '../server/git';
@@ -53,7 +53,7 @@ const handle: APIRoute = async ({ request, params, url }) => {
       if (method === 'POST' && !id) return result(await createArticle(await body(request)));
       if (method === 'PUT' && id && parts.length === 2) {
         const b = await body<{ article: Article; section?: string | null; place?: string | null; ifMatch: Record<string, string | null> }>(request);
-        return result(await saveArticle({ id, article: b.article, section: b.section, place: b.place, ifMatch: b.ifMatch ?? {} }));
+        return result(await saveArticle({ id, article: b.article, section: b.section, ifMatch: b.ifMatch ?? {} }));
       }
       if (method === 'POST' && id && parts[2] === 'duplicate') return result(await duplicateArticle(id));
       // its access (documentation/access/spec.md §8.2): open or private, and a private page's address
@@ -99,7 +99,6 @@ const handle: APIRoute = async ({ request, params, url }) => {
       const ifMatch: Record<string, string | null> = { [STRUCTURE]: b.ifMatch?.[STRUCTURE] ?? null };
       // pages moved to another section follow it to its building, in the same transaction
       const was = readDoc<SiteStructure>(STRUCTURE);
-      if (was) followOnPlanet(was.value, b.structure, new Set([...pagesOf(was.value), ...pagesOf(b.structure)]), changes, ifMatch);
       return result(await commit({ changes, ifMatch }));
     }
     // the planet structure: what each building holds (documentation/sections/spec.md §7.4); the loader checks V13 to V16

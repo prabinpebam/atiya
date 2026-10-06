@@ -121,20 +121,32 @@ const cross = icon(faXmark);
       box.hidden = false;
     })();
   </script>
-  <script>
-    import '../game/platform/gate';
-  </script>
-  <!-- telemetry (documentation/access/spec.md §9.5): the site's script, started only once the planet is live (PostHog is fetched after that, on idle) -->
+  <!-- telemetry (documentation/access/spec.md §9.5), before the gate so it hears the gate's decision: the visit
+       counts at once, and what happens on the planet is queued; PostHog itself is fetched only once the planet is
+       live (or after 10 s, if it never gets there), so it never slows the planet's own loading -->
   <script>
     import { startTelemetry, track } from '../site/scripts/telemetry';
 
-    const live = () => (startTelemetry(), track('planet_opened'));
-    if (performance.getEntriesByName('game:live', 'mark').length) live();
+    let ready = () => {};
+    startTelemetry({ loadAfter: new Promise<void>((resolve) => ((ready = resolve), setTimeout(resolve, 10_000))) });
+    // live: how long it took (ms from the page's start), and PostHog may load now
+    const opened = (m: PerformanceEntry) => (track('planet_opened', { ms: Math.round(m.startTime) }), ready());
+    const mark = performance.getEntriesByName('game:live', 'mark')[0];
+    if (mark) opened(mark);
     else if ('PerformanceObserver' in window) {
       const watch = new PerformanceObserver((list) => {
-        if (list.getEntriesByName('game:live').length) (watch.disconnect(), live());
+        const m = list.getEntriesByName('game:live')[0];
+        if (m) (watch.disconnect(), opened(m));
       });
       watch.observe({ type: 'mark' });
     }
+    // what the planet says happened (its own names only: a building's ID, what was built, who was talked to)
+    document.addEventListener('planet:event', (e) => {
+      const { event, props } = (e as CustomEvent<{ event?: string; props?: Record<string, string | number> }>).detail ?? {};
+      if (event && /^planet_[a-z_]+$/.test(event)) track(event, props ?? {});
+    });
+  </script>
+  <script>
+    import '../game/platform/gate';
   </script>
 </BaseLayout>

@@ -315,15 +315,17 @@ export const siteStructure = z.strictObject({
 export const PLACE_IDS = ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office'] as const;
 export type PlaceId = (typeof PLACE_IDS)[number];
 
-/** A building's words and what it holds: which pages, in what order, listed how, and its section on the site. */
+/**
+ * A building's words (the game's: its name, its line, its summary on its card) and the section of the site
+ * it shows. What it holds follows that section (documentation/sections/spec.md §5.2): the section's
+ * published open pages, in its order and its view, so the planet and the site never differ.
+ */
 const place = z.strictObject({
   id: z.enum(PLACE_IDS),
   title: z.string().min(1).max(40),
   kicker: z.string().min(1).max(60),
   summary: z.string().min(1).max(160),
-  view: z.enum(SECTION_VIEWS).optional(),
-  site: id.optional(),
-  pages: z.array(pageRef),
+  site: id,
 });
 
 /** The planet structure (spec §5.2): each of the seven buildings once (V14). */

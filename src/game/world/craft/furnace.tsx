@@ -115,6 +115,7 @@ export function attachFurnace(controller: GameController, store: CraftStore): Fu
     }
     up();
     controller.announce('You build the furnace! Smelt iron ore into ingots in it, with firewood to burn.');
+    controller.track('planet_built', { what: 'furnace' });
     controller.refreshTarget();
   };
 

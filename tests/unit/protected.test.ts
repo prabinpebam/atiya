@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { readSnapshot, privateRoot } from '../../src/site/content/source';
 import { ContentError, loadContent } from '../../src/site/content/load';
 import { withOverlay, RESERVED } from '../../src/site/content/routes';
+import { placeRoutes } from '../../src/site/content/navigation';
 import type { Article } from '../../src/site/content/schema';
 
 const ROOT = join(__dirname, '../..');
@@ -168,8 +169,17 @@ describe('the rules (V23 to V32)', () => {
     expect(problems((d) => (d['/private/access.json'].grants[2].scope = { pages: ['fx-private-alpha'], sections: ['work'] }))).toBe('');
   });
 
-  it('V28: a private page is never on the planet', () => {
-    expect(problems((d) => d['/content/structures/planet.json'].places[0].pages.push({ type: 'article', id: 'fx-private-alpha' }))).toMatch(/"fx-private-alpha" is private: it can't be on the planet \(V28\)/);
+  it('V28: a private page is never on the planet, even in a section a building shows', () => {
+    const s = snap();
+    const c = loadContent(s.docs, s.masters, s.errors);
+    const priv = c.routes.find((r) => r.node.kind === 'item' && r.node.item.id === 'fx-private-alpha')!;
+    expect(priv.access).toBe('private');
+    const site = priv.parent!.id;
+    const shown = placeRoutes(c.routes, site);
+    expect(shown.every((r) => r.access === 'open' && r.published)).toBe(true);
+    expect(shown).not.toContain(priv);
+    // the section's open published pages are all there, in its order
+    expect(shown).toEqual(c.routes.filter((r) => r.parent === priv.parent && r.node.kind === 'item' && r.access === 'open' && r.published));
   });
 
   it('V29: grant IDs are never reused; code names are unique among codes that work', () => {

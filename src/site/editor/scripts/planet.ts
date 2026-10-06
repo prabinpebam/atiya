@@ -1,12 +1,12 @@
 /**
- * The Planet screen (documentation/sections/spec.md §7.4): what a move in the list writes (pages into a
- * building, at their place, or off the planet), and each building's settings. Each change is one store
- * transaction (PUT planet, with its version), checked against the content contract: a page on the planet
- * must be on the site (V13), in one building at most (V15). A refusal says why, over the list or in the form.
+ * The Planet screen (documentation/sections/spec.md §7.4): each building's settings, its words and the
+ * section it shows. Its pages are its section's, so they move in Sections, never here. Each change is one
+ * store transaction (PUT planet, with its version), checked against the content contract: a building shows
+ * a section of the site (V16), and a section is shown by one building at most (V15). A refusal says why, in
+ * the form.
  */
 import { api, describeIssue, saveStatus } from './client';
-import { putAllIn, takeOff, updatePlace } from '../model/planet';
-import type { ManagerMove } from './manager';
+import { updatePlace } from '../model/planet';
 import type { PlaceId, PlanetStructure } from '../../content/schema';
 
 const PLANET = '/content/structures/planet.json';
@@ -15,8 +15,6 @@ const FOCUS = 'editor.planet.focus';
 export function initPlanet(root: HTMLElement, signal: AbortSignal) {
   const state = JSON.parse(root.querySelector('[data-editor-planet-state]')?.textContent ?? '{}') as { planet: PlanetStructure; version: string };
   const on = (type: string, fn: (e: Event) => void) => root.addEventListener(type, fn, { signal });
-  const titleOf = (id: string) => root.querySelector(`[data-manager-section="${id}"] .section-name`)?.textContent?.trim() ?? id;
-  const nameOf = (page: string) => root.querySelector<HTMLElement>(`[data-manager-row="${page}"]`)?.dataset.name ?? page;
   const say = (form: Element | null, text: string) => {
     const p = form?.querySelector<HTMLElement>('[data-editor-form-issue]');
     if (p) {
@@ -40,16 +38,7 @@ export function initPlanet(root: HTMLElement, signal: AbortSignal) {
     say(o.form ?? null, why);
   };
 
-  // ---------- pages moved in the list ----------
-  on('manager:move', (e) => {
-    const m = (e as CustomEvent<ManagerMove>).detail;
-    const next = m.to === '_off' ? m.pages.reduce((p, id) => takeOff(p, id), state.planet) : putAllIn(state.planet, m.to as PlaceId, m.pages, m.index);
-    const what = m.pages.length === 1 ? nameOf(m.pages[0]) : `${m.pages.length} pages`;
-    const moved = m.to === m.from ? `Moved ${what}` : m.to === '_off' ? `Took ${what} off the planet` : `Put ${what} in ${titleOf(m.to)}`;
-    void put(next, { focus: m.to === m.from ? `[data-manager-grip="${m.pages[0]}"]` : `[data-manager-section="${m.to}"]`, notice: moved });
-  });
-
-  // ---------- a building's words, view and section ----------
+  // ---------- a building's words and section ----------
   on('submit', (e) => {
     const form = e.target as HTMLFormElement;
     const place = form.dataset.planetPlace as PlaceId | undefined;
@@ -62,8 +51,9 @@ export function initPlanet(root: HTMLElement, signal: AbortSignal) {
     const summary = get('summary');
     if (!title || !kicker || !summary) return say(form, 'A building needs its name, what it holds and a summary.');
     if (summary.length > 160) return say(form, 'The summary is at most 160 characters.');
-    const view = get('view');
-    void put(updatePlace(state.planet, place, { title, kicker, summary, ...(view === 'features' || view === 'list' || view === 'tiles' || view === 'bento' ? { view } : {}), site: get('site') }), {
+    const site = get('site');
+    if (!site) return say(form, 'A building needs the section it shows.');
+    void put(updatePlace(state.planet, place, { title, kicker, summary, site }), {
       focus: `[data-planet-place="${place}"] button[type="submit"]`,
       form,
       notice: `Saved ${title}`,

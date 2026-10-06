@@ -45,9 +45,10 @@ interface Props {
    * isn't set up, so the choice isn't offered.
    */
   access?: 'open' | 'private';
-  /** The planet's buildings it can go in. */
-  places: SelectOption[];
-  /** The building it's in on the planet ('' for none). */
+  /**
+   * The building that shows its section on the planet ('' for none): a page is read there once it's
+   * published and open (documentation/sections/spec.md §5.2).
+   */
   place: string;
   /** Published (a draft can be deleted; a published page is unpublished first). */
   published: boolean;
@@ -55,8 +56,13 @@ interface Props {
   path: string | null;
 }
 
-const { article, media, sections, section, access, places, place, published, path } = Astro.props;
+const { article, media, sections, section, access, place, published, path } = Astro.props;
 const privatePage = access === 'private';
+const onPlanet = privatePage
+  ? 'Not on the planet: private pages never are, as it has no way to sign in.'
+  : place
+    ? `In the ${place}, which shows its section${published ? '' : ', once it’s published'}.`
+    : 'Not on the planet: no building shows its section.';
 const ACCESS: SelectOption[] = [
   { value: 'open', label: 'Everyone', description: 'Public, in its section' },
   { value: 'private', label: 'Private', description: 'Only for readers you share it with' },
@@ -348,7 +354,10 @@ const STATUS: SelectOption[] = [
         )
       }
       <Select label="Section" name="__section" id="page-section" value={section} options={[{ value: '', label: 'Not on the site yet' }, ...sections]} hint={SECTION_HINT[access ?? 'open']} />
-      <Select label="On the planet" name="__place" id="page-place" value={place} disabled={privatePage} options={[{ value: '', label: 'Not on the planet', description: 'Only on the site' }, ...places]} hint={privatePage ? 'Private pages aren’t on the planet: it has no way to sign in.' : "The building it's read in on the planet. It needs its page on the site too."} />
+      <div class="planet-field" data-editor-place>
+        <span class="field-label">On the planet</span>
+        <Text variant="small" tone="muted">{onPlanet}</Text>
+      </div>
 
       <div class="media-field" data-editor-picture="lead">
         <span class="field-label">Lead picture</span>
@@ -475,6 +484,7 @@ const STATUS: SelectOption[] = [
 
   .media-field,
   .private-field,
+  .planet-field,
   .items {
     display: grid;
     gap: var(--space-2);

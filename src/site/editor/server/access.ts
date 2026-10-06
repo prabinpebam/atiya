@@ -8,7 +8,7 @@
  */
 import { type AccessMessage, type Article, type HubNode, type Overlay, type PlanetStructure, type SiteNode, type SiteStructure } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
-import { articleKey, followOnPlanet, OVERLAY, PLANET, STRUCTURE } from './articles';
+import { articleKey, OVERLAY, STRUCTURE } from './articles';
 import { generateCode } from '../../access/codes';
 import { b64, grantId, randomBytes, token } from '../../access/crypto';
 import { grantState, isValid } from '../../access/grants';
@@ -16,7 +16,6 @@ import type { Grant } from '../../access/types';
 import { endDateIssue, endOfDay, fillMessage, insertAfter, localIso, longDate, magicLink, movePages, openBefore, placePrivate, privateNode, reorderSection, sectionOrder, takenNames, unplacePrivate, type PageAccess, type SharingView } from '../model/access';
 import { nodeIds, sectionOf, unplace } from '../model/structure';
 import { unique } from '../model/ids';
-import { placeOfPage, takeOff } from '../model/planet';
 import { isPublished, mediaUsed, videosUsed } from '../../content/load';
 import { readSnapshot } from '../../content/source';
 import { content } from '../../content/repository';
@@ -249,12 +248,6 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
     structure = unplace(structure, ref);
     nextOverlay = placePrivate(overlay, where, { id: nodeId, token: token(), item: ref }, order.includes(nodeId) ? order : [...order, nodeId]);
     move([key, ...mediaFiles(art.value, 'content', true)], 'private', changes, ifMatch);
-    // off the planet: it has no way to sign in (V28)
-    const planet = readDoc<PlanetStructure>(PLANET);
-    if (planet && placeOfPage(planet.value, id)) {
-      changes.push({ key: PLANET, bytes: jsonBytes(takeOff(planet.value, id)) });
-      ifMatch[PLANET] = planet.version;
-    }
   } else if (to === 'open') {
     const where = priv!.section;
     const nodeId = priv!.node.id;
@@ -317,7 +310,6 @@ export async function moveSectionPages(pages: string[], to: string, index?: numb
   const changes: Change[] = [{ key: STRUCTURE, bytes: jsonBytes(r.structure) }];
   const ifMatch: Record<string, string | null> = { [STRUCTURE]: s.version };
   // open pages moved to another section follow it to its building, as a move in the public structure does
-  followOnPlanet(s.value, r.structure, pages, changes, ifMatch);
   if (o || r.overlay.sections.length) {
     changes.push({ key: OVERLAY, bytes: jsonBytes(r.overlay) });
     ifMatch[OVERLAY] = o?.version ?? null;

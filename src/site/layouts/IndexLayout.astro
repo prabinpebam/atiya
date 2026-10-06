@@ -55,6 +55,11 @@ interface Props {
   privatePages?: { id: string; after: string | null; story: Story }[];
   /** Where to sign in to see the private pages (the Sign in page, with the way back). */
   signIn?: string;
+  /**
+   * How many private pages its section has that aren't listed here at all (a building read on the planet,
+   * where private pages never are: V28): the invited-readers panel says so, with Sign in and Ask for access.
+   */
+  invited?: number;
   /** Where a reader asks for access to them (the site's contact page): its form, with the request started for this section. */
   ask?: string;
   /** How they're laid out: list (rows), tiles (an even grid), bento (a lead, then halves and thirds) or features (every page a lead). */
@@ -69,7 +74,7 @@ interface Props {
   noindex?: boolean;
 }
 
-const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, ask, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
+const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, invited = 0, ask, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
 const sealing = import.meta.env.PROD;
 // in dev every page shows in its place, the private ones marked; a build lists the open ones and seals the rest
 const shown: (Story & { privateTag?: boolean })[] = sealing
@@ -115,7 +120,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
         ) : null
       }
       {
-        shown.length === 0 && privatePages.length === 0 && empty && (
+        shown.length === 0 && privatePages.length === 0 && invited === 0 && empty && (
           <div class="empty" data-cards-empty>
             <Text variant="lead" tone="muted">
               {empty}
@@ -145,7 +150,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
         )
       }
       {
-        privatePages.length > 0 && signIn && !frame && (
+        (privatePages.length > 0 || invited > 0) && signIn && (
           <section class="invite" aria-labelledby="invite-heading" data-sign-in-line>
             <Heading level={2} size="h4" id="invite-heading">
               {shown.length === 0 ? 'The work here is shared with invited readers' : 'More work here is shared with invited readers'}

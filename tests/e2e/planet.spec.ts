@@ -2813,3 +2813,51 @@ test.describe('planet', () => {
     await expect(page.getByRole('button', { name: 'Reload planet' })).toBeVisible();
   });
 });
+
+// ---------- telemetry on the planet (documentation/access/spec.md §9.2, §9.5) ----------
+test.describe('planet: telemetry', () => {
+  type Sent = { event: string; properties: Record<string, unknown> };
+  const decode = (body: string): Sent[] => {
+    const parse = (s: string): Sent[] => {
+      const v = JSON.parse(s) as Sent | Sent[] | { batch: Sent[] };
+      return Array.isArray(v) ? v : 'batch' in v ? v.batch : [v];
+    };
+    try {
+      return parse(body);
+    } catch {
+      const data = new URLSearchParams(body).get('data');
+      return data ? parse(Buffer.from(data, 'base64').toString('utf8')) : [];
+    }
+  };
+
+  test('the visit counts, the planet says when it went live and how long it took, which buildings were opened, travelled to and walked up to, and the pages read over it send their own page views', async ({ page }) => {
+    test.setTimeout(150_000);
+    const sent: Sent[] = [];
+    await page.addInitScript(() => localStorage.setItem('site.test.telemetry', '1'));
+    await page.context().route('https://telemetry.test/**', async (route) => {
+      sent.push(...decode(route.request().postData() ?? ''));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":1}' });
+    });
+    const events = () => sent.map((e) => e.event);
+    const props = (event: string) => sent.filter((e) => e.event === event).map((e) => e.properties);
+    // opened at the Library, its list over the planet
+    await openPlanet(page, '/play/?at=library&open=1');
+    await expect.poll(events, { timeout: 30_000 }).toEqual(expect.arrayContaining(['$pageview', 'planet_opened', 'planet_place_opened']));
+    expect(props('planet_opened')[0].ms).toEqual(expect.any(Number));
+    expect(props('planet_opened')[0].ms as number).toBeGreaterThan(0);
+    expect(props('planet_place_opened')).toContainEqual(expect.objectContaining({ place: 'library' }));
+    // the list read over the planet: its own page view, at its /play/ address
+    await expect.poll(() => props('$pageview').map((p) => new URL(String(p.$current_url)).pathname), { timeout: 30_000 }).toContain('/play/library/');
+    // closed, then a fast travel to the Workshop: the travel, then walking up to it
+    await page.frameLocator('[data-testid="reading-frame"]').getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByTestId('reading-frame')).toHaveCount(0);
+    await page.evaluate(() => (window as any).__game.travelTo('workshop'));
+    await expect.poll(() => props('planet_travel'), { timeout: 30_000 }).toContainEqual(expect.objectContaining({ to: 'workshop' }));
+    await expect.poll(() => props('planet_place_near'), { timeout: 30_000 }).toContainEqual(expect.objectContaining({ place: 'workshop' }));
+    // only the planet's own names: nothing else rides on its events
+    for (const e of sent.filter((x) => x.event.startsWith('planet_'))) {
+      const own = Object.keys(e.properties).filter((k) => !k.startsWith('$') && !['token', 'distinct_id'].includes(k));
+      expect(own.every((k) => ['ms', 'place', 'to', 'who', 'what', 'reason', 'why'].includes(k)), `${e.event}: ${own.join(', ')}`).toBe(true);
+    }
+  });
+});

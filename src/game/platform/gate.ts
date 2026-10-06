@@ -42,7 +42,11 @@ function showLoading(): void {
   startLoadScene(container).progress(0.08);
 }
 
+/** Tells the page what the gate decided, for telemetry (play.astro forwards `planet:event`; nothing typed or personal). */
+const tell = (event: string, props: Record<string, string> = {}) => document.dispatchEvent(new CustomEvent('planet:event', { detail: { event, props } }));
+
 function showFallback(): void {
+  tell('planet_unsupported');
   panel(
     `<h1 class="card-title">Your browser can't show the 3D planet</h1>
      <p>No problem — everything is available on the classic site.</p>
@@ -54,6 +58,7 @@ function showFallback(): void {
 }
 
 function showOffer(reason: Extract<GateDecision, { kind: 'offer' }>['reason']): void {
+  tell('planet_offered', { reason });
   const why =
     reason === 'save-data'
       ? 'Data Saver is on, and the 3D planet downloads extra assets.'
@@ -70,6 +75,7 @@ function showOffer(reason: Extract<GateDecision, { kind: 'offer' }>['reason']): 
 }
 
 function showError(kind: 'load' | 'timeout'): void {
+  tell('planet_failed', { why: kind });
   const msg = kind === 'timeout' ? 'The planet is taking too long to load.' : "The planet couldn't be loaded.";
   panel(
     `<h1 class="card-title">${msg}</h1>

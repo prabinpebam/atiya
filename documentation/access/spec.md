@@ -517,7 +517,7 @@ Two columns, the pattern of the Sections screen: the list on the left, the chose
 - **The Sections screen** lists a section's private pages among its open ones, each tagged Private, so you move and order them together; a move that involves one writes the public structure and the overlay in one transaction. A private page can't be taken off the site.
 - **A private page's settings:** its address (token), **Change address** (breaks every link to it, with a confirmation) and **Share** (§8.1).
 - **Media:** a private page's pictures and videos are in the Media library with everyone's, tagged Private, with a Who can see it filter; their details open and save where they live. An upload to a private page's own folder goes into `private-pages/media/`.
-- **Private pages can't be put on the planet** (V28); the Planet screen lists them, not movable.
+- **Private pages are never on the planet** (V28): a building shows its section's open published pages only (sections spec §5.2), and its list carries the invited-readers panel when the section has private pages. The Planet screen lists them, tagged "Private: not on the planet".
 - **The editor shows private pages open**, with a Private tag beside the topic in their opening.
 - **On localhost, every placed page previews at its own address** (6 October 2026), without signing in, exactly as it will look: no banner. A private page shows a **Private** tag beside its topic (as it does for the invited readers who open it on the site), and a page that isn't published yet a **Draft** tag there too, on localhost only. The article editor's top bar has **Preview it as a page** for a draft (View on the site once it's published). This is the dev server only: a build serves published pages alone, and seals the private ones.
 - **Seeing it as a visitor:** `npm run preview:protected` builds the site with the real private content, sealed exactly as the deploy seals it (checked by the leak check), and serves it on `http://localhost:4331/`, where you can sign in with any active grant. The build stays on your machine.
@@ -580,7 +580,15 @@ Alternatives considered:
 | Event | When | Properties |
 |---|---|---|
 | `video_played` | A video starts | Its media ID on open pages; nothing but `place` on protected ones |
-| `planet_opened` | The planet goes live | None (the game's own events come later) |
+| `planet_opened` | The planet goes live | `ms`: how long it took, from the page's start |
+| `planet_unsupported`, `planet_offered`, `planet_failed` | The planet's gate can't show it, offers the classic site instead (Data Saver, no graphics acceleration), or the planet fails to load | `reason` (`save-data` or the device's) for an offer; `why` (`load`, `timeout`) for a failure |
+| `planet_place_near` | The visitor walks up to a building, the first time in the visit | `place`: the building's ID |
+| `planet_place_opened` | A building's list (or one of its pages) opens over the planet | `place` |
+| `planet_travel` | Fast travel to a building | `to`: the building's ID |
+| `planet_talked` | A conversation with someone on the planet starts | `who`: their ID (`prabin`, a family member's) |
+| `planet_built` | Something is built (Chopper's house, the swing, the furnace, each stage of the deck) | `what` |
+
+The pages read over the planet send their own page views (their `/play/<building>/…` addresses), as any page of the site does. The planet's events carry only the game's own names, never anything typed.
 
 ### 9.3 Who looked (A9)
 
@@ -602,7 +610,7 @@ Alternatives considered:
 - A tier-0 site script (`src/site/scripts/telemetry.ts`) imports it on idle after the page loads, so it never delays the first paint or the planet's loading budgets. It's set up without cookies (`persistence: 'sessionStorage'`). The sign-in runtime tells it what happened through DOM events, so neither imports the other.
 - Its project key and host come from Actions variables (`PUBLIC_POSTHOG_KEY`, `PUBLIC_POSTHOG_HOST`). A build without them, a fork for example, has no telemetry. The key is meant to be public.
 - **IP addresses:** PostHog records them only if the project's "Discard client IP data" setting is off; A0 checks it, since it's the whole point of A7 for you.
-- **The planet** (`/play/`) loads the same script from its page, after the planet is live, never from the game, which keeps "the game and the site never import each other".
+- **The planet** (`/play/`) loads the same script from its page, never from the game, which keeps "the game and the site never import each other": the visit counts from the start (a visitor who leaves while it loads is still counted), and PostHog's chunk is fetched only once the planet is live (or after 10 s if it never gets there), so it never slows the planet's own loading. The game tells the page what happened with `planet:event` DOM events (the controller's `track`, and the gate's decision), which the page forwards; the page's script runs before the gate's, so it hears that too.
 
 ### 9.6 Opting out, and the privacy notice
 
@@ -622,7 +630,7 @@ New checks, in the loader (`tests/unit/content.test.ts`) and edit mode's check, 
 | V25 | An open page never refers to a protected page, or to a master in `private-pages/` (blocks, related, thumbnails, the navigation, the home page, redirects) |
 | V26 | A grant's scope names only sections and private pages that exist. A code and a link open the same pages |
 | V27 | A sealed video is at most 10 MB; a sealed picture's master follows the media budgets |
-| V28 | A private page isn't on the planet |
+| V28 | A private page isn't on the planet (by construction: a building's pages are its section's open ones) |
 | V29 | Code names are unique among codes that still work; grant IDs are unique and never reused |
 | V30 | A grant expires after it's created; a withdrawal is after its creation. (That a grant's ID and a working code's name are never reused, a grant that stays keeps its kind, secret and creation date, and a withdrawn grant changes only its purpose and notes are transition rules: edit mode's store enforces them against the file's previous version, §4.1. A grant may be deleted, D22) |
 | V31 | The overlay's order for a section holds every open page the public structure lists there, in the same relative order, plus its private pages |
@@ -766,7 +774,7 @@ Built 5 to 6 October 2026, phase by phase as the [plan](plan.md) sets out, and c
 - **Withdraw now doesn't publish by itself** (§8.3). It marks the grant withdrawn and says to publish, so it never sweeps other unpublished changes into a deploy.
 - **A refused private push** (§8.3): the public commit is still made but held back, never pushed before the private commit it points at. Push again pushes the private repository, then, if you pulled and rebased it, commits the pointer to its new head ("Private pages: update"), then pushes the public one.
 - **An expired or withdrawn code** (§7.2) gets no keyring, so typed, it reads "That code doesn't work"; the distinct expired message shows when a remembered session runs out, and a withdrawn magic link says it was withdrawn.
-- **Telemetry's always-on part** (§9.5) is `scripts/telemetry.ts` (1.1 KB gzip): it queues the runtime's events, links followed on allowlisted pages and videos played, and fetches PostHog's chunk (`telemetryClient.ts`, with the sanitizer `telemetrySanitize.ts`, 98.5 KB gzip) on idle. PostHog's own page views are off everywhere; the site sends them, the router's page swaps too. A page that shows shared cards becomes allowlisted from then on. On `/play/`, the page's script starts it once the planet is live (the `game:live` mark); the game imports nothing of it.
+- **Telemetry's always-on part** (§9.5) is `scripts/telemetry.ts` (1.1 KB gzip): it queues the runtime's events, links followed on allowlisted pages and videos played, and fetches PostHog's chunk (`telemetryClient.ts`, with the sanitizer `telemetrySanitize.ts`, 98.5 KB gzip) on idle. PostHog's own page views are off everywhere; the site sends them, the router's page swaps too. A page that shows shared cards becomes allowlisted from then on. On `/play/`, the page's script starts it at once and fetches PostHog once the planet is live (the `game:live` mark) or after 10 s; the game's `planet:event` events are forwarded to it, and the game imports nothing of it.
 - **Test builds** send only when a test sets `localStorage['site.test.telemetry'] = '1'`, to the fake host `https://telemetry.test`, unbatched and uncompressed, with PostHog's bot filter off (headless Chromium is a bot to it). Production keeps the filter.
 - **`video_played`** carries `media` (the file's ID) on open pages, `place` on protected ones.
 - **The Privacy page's address** comes from the site settings' `privacyPage` (like `contactPage`, checked by the loader: a node, and open); the layouts take a `footer` prop and the footer adds it after its own links.

@@ -233,6 +233,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
     houseUp();
     controller.chopper.visitHouse(true);
     controller.announce("You build Chopper's house! Here he comes to try it out.");
+    controller.track('planet_built', { what: 'chopper-house' });
     controller.refreshTarget();
   };
 
@@ -249,6 +250,7 @@ export function attachCraft(controller: GameController): CraftAttachment | null 
     }
     swingUp();
     controller.announce("You build the swing! It's ready for a push.");
+    controller.track('planet_built', { what: 'swing' });
     controller.refreshTarget();
   };
   let pushed = 0;

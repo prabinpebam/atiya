@@ -446,13 +446,13 @@ describe('the navigation and the redirects', () => {
     expect(stale.warnings.join('\n')).toMatch(/another redirect has its address/);
   });
 
-  it('"Explore in 3D" goes to a page, open in its building; to the building that points to a section; else the plaza', () => {
+  it('"Explore in 3D" goes to a page, open in the building showing its section; to the building showing a section; else the plaza', () => {
     const c = loadContent(docs(undefined), new Set());
     const at = (path: string) => c.routes.find((r) => r.path === path);
-    const planet = { places: [{ id: 'workshop' as const, title: 'Workshop', kicker: 'K', summary: 'S', site: 'work', pages: [{ type: 'article' as const, id: 'b' }] }] };
+    const planet = { places: [{ id: 'workshop' as const, title: 'Workshop', kicker: 'K', summary: 'S', site: 'work' }] };
     expect(exploreHref(at('/work/'), planet)).toBe('/play/?at=workshop');
-    expect(exploreHref(at('/about/b/'), planet)).toBe('/play/?at=workshop&open=1&page=b');
-    expect(exploreHref(at('/work/a/'), planet)).toBe('/play/');
+    expect(exploreHref(at('/work/a/'), planet)).toBe('/play/?at=workshop&open=1&page=a');
+    expect(exploreHref(at('/about/b/'), planet)).toBe('/play/');
     expect(exploreHref(at('/about/'), planet)).toBe('/play/');
     expect(exploreHref(at('/'), planet)).toBe('/play/');
     expect(exploreHref()).toBe('/play/');
@@ -461,13 +461,29 @@ describe('the navigation and the redirects', () => {
 
 describe('the planet structure (documentation/sections/spec.md §5)', () => {
   const ALL = ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office'];
-  const places = (over: Record<string, object> = {}) => ALL.map((id) => ({ id, title: id, kicker: 'K', summary: 'S', pages: [], ...(over[id] ?? {}) }));
-  const docs = (planet: unknown, placed = true) => ({
+  const places = (over: Record<string, object> = {}) => ALL.map((id) => ({ id, title: id, kicker: 'K', summary: 'S', site: `s-${id}`, ...(over[id] ?? {}) }));
+  const page = (id: string, status = 'published') => ({ id, type: 'article', kind: 'note', slug: id, title: id.toUpperCase(), summary: 'S', status, visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [] });
+  const docs = (planet: unknown) => ({
     '/content/site.json': { name: 'N', description: 'D', owner: 'p', locale: 'en' },
     '/content/people/p.json': { id: 'p', name: 'P' },
-    '/content/articles/a.json': { id: 'a', type: 'article', kind: 'note', slug: 'a', title: 'A', summary: 'S', status: 'published', visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [] },
-    '/content/articles/b.json': { id: 'b', type: 'article', kind: 'note', slug: 'b', title: 'B', summary: 'S', status: 'draft', visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [] },
-    '/content/structures/site.json': { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 'work', kind: 'hub', slug: 'work', title: 'Work', children: placed ? [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] : [] }] } },
+    '/content/articles/a.json': page('a'),
+    '/content/articles/b.json': page('b', 'draft'),
+    '/content/articles/c.json': page('c'),
+    '/content/structures/site.json': {
+      home: {
+        id: 'home',
+        kind: 'hub',
+        slug: '',
+        title: 'Home',
+        children: ALL.map((id) => ({
+          id: `s-${id}`,
+          kind: 'hub',
+          slug: id,
+          title: id,
+          children: id === 'workshop' ? ['c', 'b', 'a'].map((p) => ({ id: p, kind: 'item', item: { type: 'article', id: p } })) : [],
+        })),
+      },
+    },
     '/content/structures/planet.json': planet,
   });
   const problems = (d: Record<string, unknown>) => {
@@ -479,28 +495,19 @@ describe('the planet structure (documentation/sections/spec.md §5)', () => {
     }
   };
 
-  it('loads each building once, with its pages and its section', () => {
-    const c = loadContent(docs({ places: places({ workshop: { site: 'work', view: 'tiles', pages: [{ type: 'article', id: 'a' }] } }) }), new Set());
-    expect(c.planet?.places.find((p) => p.id === 'workshop')?.pages).toEqual([{ type: 'article', id: 'a' }]);
+  it('loads each building once, with the section it shows', () => {
+    const c = loadContent(docs({ places: places() }), new Set());
+    expect(c.planet?.places.find((p) => p.id === 'workshop')?.site).toBe('s-workshop');
   });
 
-  it('refuses a missing or doubled building (V14), an unknown one, a page in two (V15), a page off the site (V13) and a site that isn’t a section (V16)', () => {
+  it('refuses a missing or doubled building (V14), an unknown one, a section shown by two (V15) and a site that isn’t a section (V16)', () => {
     expect(problems(docs({ places: places().filter((p) => p.id !== 'library') }))).toMatch(/the library is missing/);
     expect(problems(docs({ places: [...places(), places()[0]] }))).toMatch(/the workshop is listed 2 times/);
     expect(problems(docs({ places: [...places(), { ...places()[0], id: 'castle' }] }))).toMatch(/places\.7\.id/);
-    const both = { pages: [{ type: 'article', id: 'a' }] };
-    expect(problems(docs({ places: places({ workshop: both, library: both }) }))).toMatch(/page "a" is in the workshop and the library/);
-    expect(problems(docs({ places: places({ workshop: both }) }, false))).toMatch(/page "a" isn't on the site/);
-    expect(problems(docs({ places: places({ workshop: { pages: [{ type: 'article', id: 'nope' }] } }) }))).toMatch(/page "nope" doesn't exist/);
+    expect(problems(docs({ places: places({ library: { site: 's-workshop' } }) }))).toMatch(/the workshop and the library both show "s-workshop"/);
     expect(problems(docs({ places: places({ workshop: { site: 'home' } }) }))).toMatch(/"home" isn't a section of the site/);
     expect(problems(docs({ places: places({ workshop: { site: 'nowhere' } }) }))).toMatch(/"nowhere" isn't a section/);
-  });
-
-  it('a draft can be in a building; only published pages are listed', () => {
-    const d = docs({ places: places({ workshop: { pages: [{ type: 'article', id: 'b' }] } }) });
-    const s = d['/content/structures/site.json'] as { home: { children: { children: unknown[] }[] } };
-    s.home.children[0].children.push({ id: 'b', kind: 'item', item: { type: 'article', id: 'b' } });
-    expect(problems(d)).toBe('');
+    expect(problems(docs({ places: places().map(({ site, ...p }) => p) }))).toMatch(/places\.0\.site/);
   });
 });
 

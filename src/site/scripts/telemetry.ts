@@ -73,8 +73,12 @@ function onAccess(e: Event) {
   }
 }
 
-/** Starts telemetry on this page (once; a page the router swaps in sends its own page view). */
-export function startTelemetry(): void {
+/**
+ * Starts telemetry on this page (once; a page the router swaps in sends its own page view). What happens is
+ * queued from now; PostHog itself is fetched on idle, after `loadAfter` if given (the planet: once it's live,
+ * so it never slows the planet's own loading).
+ */
+export function startTelemetry(o: { loadAfter?: Promise<unknown> } = {}): void {
   if (started || !enabled()) return;
   started = true;
   const d = document;
@@ -109,6 +113,6 @@ export function startTelemetry(): void {
         /* blocked or offline: nothing is sent */
       },
     );
-  if ('requestIdleCallback' in window) requestIdleCallback(load, { timeout: 4000 });
-  else setTimeout(load, 1500);
+  const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(load, { timeout: 4000 }) : setTimeout(load, 1500));
+  void (o.loadAfter ?? Promise.resolve()).then(idle, idle);
 }

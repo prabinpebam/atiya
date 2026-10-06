@@ -6,9 +6,9 @@ How the site is organised into sections and pages, how its top navigation is set
 > - **Honest words first.** Every placeholder a visitor could see, on the site or on the planet, now says what's there, what's coming and that the site is under construction. Nothing is invented and no date is promised (§2, done).
 > - **Sections hold pages.** The site is exactly three levels: home, then sections, then pages. A section is a page of its own that lists its pages as a list, tiles, a bento box or features. A page is anything with its own address: an article, a custom page or a gallery (§3).
 > - **The top navigation is data.** It lists the sections you choose, and any pages or custom links you add, in your order. It's never hardcoded (§4).
-> - **The planet is a parallel universe.** Its seven buildings are fixed by the game, and each is a section of its own. You map pages to them, or leave a page off the planet; the site's sections aren't affected (§5).
+> - **The planet shows the site's sections.** Its seven buildings are fixed by the game, and each shows one section of the site: that section's published open pages, in its order and its view, so the planet and the site always match. A building keeps its own name and card words; moving a page between sections moves it between buildings (§5, D12).
 > - **Reading on the planet uses the site's own pages.** Opening a building shows its list, and each of its pages, rendered by the same Astro layouts in a planet frame, over the game behind a white smoke in light mode and a black one in dark. You can move freely through that building's pages, but the only way to another building's is to walk there (§6).
-> - **Edit mode controls it all:** sections and their views, a Navigation screen, and a Planet screen for the mapping, which is separate from the site's. Every change that touches a page, the site and the planet is written in one transaction (§7).
+> - **Edit mode controls it all:** sections and their views, a Navigation screen, and a Planet screen for each building's words and the section it shows. Pages move in Sections, and the planet follows (§7).
 
 <details>
 <summary>What was asked, and where it's answered</summary>
@@ -250,8 +250,7 @@ The planet has seven buildings, and each is one of the game's sections. Their sh
 | In code (the game) | In content (the owner) |
 |---|---|
 | The seven place IDs: `workshop`, `town-hall`, `lighthouse`, `library`, `amphitheater`, `greenhouse`, `post-office` | Each place's words: its name, its kicker (what it holds) and its summary |
-| Each place's world: latitude, longitude, facing, footprint, approach distance, model variant, accent colour, and its fast-travel order | Which pages it holds, in what order, and how its list is shown (`view`) |
-| | Which section of the site it points to (`site`) |
+| Each place's world: latitude, longitude, facing, footprint, approach distance, model variant, accent colour, and its fast-travel order | Which section of the site it shows (`site`): its pages, their order and their view follow it |
 
 - **The world moves out of the landmark files** into `src/game/world/places.ts`, which the game's tests read directly (no more mirrored fixtures). The landmark collection goes when its last use does (phase S4).
 - **The content contract names the seven IDs** (an enum in `schema.ts`), so the content layer never imports the game. A unit test checks that the game's list and the contract's agree.
@@ -265,8 +264,7 @@ The planet has seven buildings, and each is one of the game's sections. Their sh
 { "places": [
   { "id": "lighthouse", "title": "Lighthouse", "kicker": "Leadership",
     "summary": "How I lead design teams and the culture we build.",
-    "view": "list", "site": "leadership",
-    "pages": [ { "type": "article", "id": "do-what-makes-you-proud" } ] }
+    "site": "leadership" }
 ] }
 ```
 
@@ -274,19 +272,19 @@ The planet has seven buildings, and each is one of the game's sections. Their sh
 |---|---|---|
 | `id` | One of the seven | Each exactly once (V14) |
 | `title` | string | The building's name on its card, in fast travel and at the head of its list |
-| `kicker` | string | What it holds, over the name |
-| `summary` | string, ≤ 160 | Under the name on the card and on its list. While it holds nothing, it says what's coming |
-| `view` | `list`, `tiles`, `bento` or `features` | Its list's view (§3.4), independent of any site section's |
-| `site` | a section's node ID, optional | Where "Open classic page" leads from its card and its list. Left out, it leads home |
-| `pages` | page references, in order | What it holds (U10) |
+| `kicker` | string | What it holds, over the name on its card |
+| `summary` | string, ≤ 160 | Under the name on its card. Its list reads its section's summary, as the site does |
+| `site` | a section's node ID | The section it shows (V16), and where "Open classic page" leads. A section is shown by one building at most (V15) |
+
+**A building shows its section (D12).** What it holds isn't kept in the planet structure: it's its section's published open pages, in the section's order, listed in the section's view (§3.4) under the section's summary. So the planet and the site can't drift apart: a page published, moved, reordered or unpublished on the site is the same on the planet at the next build, and a section's view is the building's view.
 
 ### 5.3 The rules
 
-- **Mapped or not (U11).** A page is on the planet when a place lists it, and off it otherwise. The site doesn't change either way.
-- **At most one building per page (V15).** So "where is this page on the planet?" has one answer, which the links between buildings need (§6.4). It's the same rule as the site's one section per page.
-- **Every page on the planet has its page on the site (V13).** So "Open classic page" always works. Edit mode won't put an unplaced page on the planet, and won't take a page off the site while it's on the planet. Either way it says why.
-- **Only published pages show.** A draft can be mapped (it shows in edit mode's lists), and it appears on the planet when it's published, just as on the site.
-- **Independent of the site.** A building can hold pages from several sections, and a section's pages can sit in different buildings or none. The first mapping follows §3.6, one building per section, because that's where the topics came from.
+- **On the planet by its section (U11).** A page is on the planet when its section is shown by a building, and it's published and open. A page in a section no building shows is only on the site.
+- **One building per page.** A section is shown by one building at most (V15), so "where is this page on the planet?" has one answer, which the links between buildings need (§6.4).
+- **Every page on the planet has its page on the site (V13).** By construction: a building's pages are its section's.
+- **Only published, open pages show.** A draft appears on the planet when it's published, just as on the site. A private page never does (V28): the planet has no way to sign in. When a building's section has private pages, its list says so with the site's invited-readers panel (Sign in, Ask for access), whose links open the site in a new tab.
+- **The Post Office's list** carries the contact form, as the site's Contact page does (documentation/contact/spec.md).
 
 ### 5.4 What the game shows
 
@@ -460,36 +458,22 @@ Every operation on the structure keeps its other fields (`menus`) as they are, a
 
 ### 7.4 Planet (new screen, U12)
 
-`/_edit/planet/` is the same two columns as Sections (§7.2), over the seven buildings, separate from the site's sections:
-- **The list** holds the seven buildings, each with what it holds and how many pages, then "Not on the planet" (the pages that aren't in a building); the address keeps the choice (`?building=`).
-- **Pages** and **Settings** (kicker, summary, view and "On the site": the `site` section, or Home) work exactly as in Sections: drag, the keys, Move, Find, Show and a selection.
+`/_edit/planet/` is the same two columns as Sections (§7.2), over the seven buildings:
+- **The list** holds the seven buildings, each with what it holds, the section it shows and how many pages; the address keeps the choice (`?building=`).
+- **Pages** lists the section's pages, read-only: each says its address, or that it's not published or private (so not on the planet). Pages move in Sections, and the building follows.
+- **Settings** has the building's name, what it holds, its card's summary and **Shows**, the section it shows (Save the building). A section already shown by another building is refused (V15), and says why.
 - **Buildings can't be added, removed or reordered here.** The screen says so: they're the game's. So there's no New section and no Move up or down for a building.
-- **The rules** (V13, V15) are checked on save. A refusal says why, naming the page and the building. A page that isn't on the site can't go in a building (its handle and checkbox are off, and its row says to place it in Sections first).
 
 ### 7.5 A page's settings
 
-The article editor's Page tab gains **On the planet**: None, or one of the seven buildings. Next to Section, it shows where the page appears in each world.
+The article editor's Page tab says where the page is **on the planet**: in the building that shows its section (once it's published), or not on the planet (no building shows its section, or it's private). It's not a choice of its own: change the page's Section to move it.
 
-### 7.6 One transaction for a page's places
+### 7.6 A page's places
 
-A page's place on the site and on the planet are two files. So the server changes them together, in one transaction, which:
-- reads the article, the site structure and the planet structure;
-- applies the change asked for;
-- checks V13 and V15 on the result;
-- writes every file that changed, each against its version (`ifMatch`).
-
-Saving a page's settings, taking it off the site, putting it on the planet, and deleting it all go through it:
-- deleting a page takes it off the planet and out of the navigation in the same write;
-- taking it off the site while it's on the planet is refused, and says why;
-- moving it, published or not, just moves it: nothing is written for the address it leaves (D11).
-
-**A page follows its section onto the planet.** A building shows a section (its `site`, §5.2), so a page placed in a section, or moved to another, goes to the building that shows its new section, in the same transaction:
-- a new page (or a copy) made in a section goes to the end of that section's building;
-- a page moved to another section (in its settings, or on the Sections screen) moves from the building that showed its old section to the one that shows its new section, at the end; with no building for its new section, it leaves the planet;
-- a page put in another building by hand stays where it is, and a building chosen in the same change wins;
-- taking a page off the site doesn't take it off the planet: that's still refused (V13), and says why.
-
-A building can still hold pages from other sections, and a page can still be taken off the planet on the Planet screen: the rule only decides what happens when a page's section changes. It's pure, in `model/planet.ts` (`followSections`), and unit-tested.
+A page's place is one file, the site structure; the planet follows it. Saving a page's settings, moving it in Sections, copying it and deleting it write only the site structure (and the private overlay for a private page), never `planet.json`:
+- deleting a page takes it out of its section, and so off the planet, and out of the navigation in the same write;
+- moving it, published or not, just moves it: nothing is written for the address it leaves (D11), and on the planet it's now in the building that shows its new section, if any;
+- deleting a section a building shows is refused by V16, and says why: choose another section for the building first.
 
 ## 8. Rules
 
@@ -498,12 +482,12 @@ New or changed rules, checked by the content loader. So the build, the unit test
 | Rule | What |
 |---|---|
 | V12 (unchanged) | A page is placed at most once on the site |
-| V13 (now enforced) | Every page on the planet is placed on the site |
+| V13 (now enforced) | Every page on the planet is placed on the site: by construction, since a building's pages are its section's (D12) |
 | V14 | The planet structure has each of the seven places exactly once, and no other |
-| V15 | A page is in at most one building |
-| V16 | A place's `site` names a section that exists |
+| V15 | A section is shown by one building at most, so a page is in one building at most |
+| V16 | A place's `site` names a section that exists (it's required) |
 | V17 | Every navigation entry points at a node that exists, or is a valid link; at most eight entries; labels at most 24 characters |
-| V18 | A section's `view`, and a place's, is `list`, `tiles`, `bento` or `features` |
+| V18 | A section's `view` is `list`, `tiles`, `bento` or `features` (a building reads its section's) |
 | V19 | A redirect's source is free (not a built page), its target is a built page, and both go through the base path. A redirect that no longer fits (a page now lives at its source, or its target has gone) is left out of the build with a warning, not an error, since moves write none (D11) |
 | V20 | No placeholder markers in visitor-facing copy |
 | V21 | Every node ID is unique across the site structure, and a moved page keeps its node |
@@ -524,6 +508,7 @@ New or changed rules, checked by the content loader. So the build, the unit test
 | D9 | The navigation is `menus.primary` in the site structure | One file validates nodes and menu entries together, and the IA's spec already placed menus there |
 | D10 | Exactly three levels (V22) | The owner's model; a top-level page reaches the top through the navigation |
 | D11 | Moving a page, published or not, just moves it: the old address goes, with no redirect | The owner's call: a personal site under construction, where keeping edit mode simple matters more than old links |
+| D12 | A building shows a section of the site (its pages, order and view), instead of keeping its own list of pages; this replaces §5's first "parallel universe" mapping | The owner asked for the planet's sections to be at parity with the classic site's: two lists drifted (a page in a section but not its building, a different order, a different view), and one source can't |
 
 ## 10. Critique and v2
 
@@ -600,3 +585,9 @@ Filled in as each phase lands.
   - **The pages:** `relatedOf` (`opening.ts`) ranks every published story for the site's `Page.astro`, and the building's pages for `PlanetPage.astro`.
   - **Checked in a browser:** on Liquid Glass Pro, a visit to the first suggestion (Cloner Pro) dropped it from the three shown on the next visit; with most stories read, the unread one came first and the rest were marked "Read" (dark mode, 390 px wide, no sideways scroll); Back to top scrolled to 0 with the focus on the main region.
 - **The features view (1 October 2026):** a fourth section view (§3.4), every page a eature card one after another; Side projects uses it, and New section starts on it. In the contract (SECTION_VIEWS, so V18 takes it for sections and buildings), IndexLayout, and the editor's view options.
+- **Buildings show their sections (D12, the owner's parity request).** The planet's lists had drifted from the site's: a building held its own list of pages, view and summary, so a page could be in a section but not its building, in another order, or in another view.
+  - **The contract:** a place is `{ id, title, kicker, summary, site }`, with `site` required; `pages` and `view` are gone from `planet.json`. The loader checks V14, V16 (a section of the site) and V15 (a section shown by one building at most); V13 holds by construction.
+  - **The repository:** `placeSection`, and `placePages` / `placeOf` derived from the section (its published open pages, in its order); "Explore in 3D" finds a page's building the same way.
+  - **The planet frame** (`PlanetPage.astro`): the list reads the section's view and summary under the building's name; a section with private pages shows the invited-readers panel (`IndexLayout`'s `invited`: Sign in and Ask for access, opening the site in a new tab); the Post Office's list leads with the contact form.
+  - **Edit mode:** the Planet screen lists each building's section pages read-only (moved in Sections) and its Settings has Shows instead of View and On the site; `model/planet.ts` is `placeOfSection`, `placeOfPage` and `updatePlace`; saving, moving, copying and deleting a page never write `planet.json` (`followOnPlanet` is gone); a page's Page tab says which building shows it.
+  - **Tests:** unit (the planet contract and V15/V16, "Explore in 3D", the planet model, a page's writes leaving `planet.json` alone); E2E "editor" (the Planet screen read-only, Settings refusing a section shown twice, a page's building, a moved page leaving and rejoining the Lighthouse) and "planet" (reading in a building).

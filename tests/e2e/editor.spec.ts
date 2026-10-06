@@ -579,13 +579,15 @@ test.describe('editor', () => {
     await dialog.getByRole('button', { name: 'Create the draft' }).click();
     await expect(page).toHaveURL(/\/_edit\/articles\/a-test-story\/$/);
     await expect(frame(page).locator('h1')).toHaveText('A test story', { timeout: 30_000 });
-    expect((await request.get('/leadership/a-test-story/')).status()).toBe(404);
+    // a draft has a preview on this computer, but its section doesn't list it
+    expect(await (await request.get('/leadership/')).text()).not.toContain('A test story');
 
     await page.getByRole('tab', { name: 'Page' }).click();
     await page.getByRole('combobox', { name: 'Status' }).click();
     await page.getByRole('option', { name: /^Published/ }).click();
     await saved(page);
     expect((await request.get('/leadership/a-test-story/')).status()).toBe(200);
+    expect(await (await request.get('/leadership/')).text()).toContain('A test story');
     await page.reload();
     await page.getByRole('tab', { name: 'Page' }).click();
     await expect(page.locator('#page-slug')).toBeEditable();
@@ -615,26 +617,17 @@ test.describe('editor', () => {
     expect(JSON.stringify(readJson(join(FIXTURE, 'content/structures/site.json')))).not.toContain(copy);
   });
 
-  test('planet: pages put in buildings, moved and taken off, apart from the site; a page\'s own "On the planet"; the rules refuse, and a delete takes a page off', async ({ page }) => {
-    const planet = () => readJson(join(FIXTURE, 'content/structures/planet.json')).places as { id: string; kicker: string; pages: { id: string }[] }[];
-    const pagesOf = (id: string) => planet().find((p) => p.id === id)!.pages.map((r) => r.id);
-    const site = () => JSON.stringify(readJson(join(FIXTURE, 'content/structures/site.json')));
-    const before = site();
-    expect(pagesOf('lighthouse')).toEqual([ARTICLE]);
+  test('planet: each building shows its section, read-only here; its words and section in Settings, the rules refuse; a page says where it is on the planet', async ({ page }) => {
+    const planet = () => readJson(join(FIXTURE, 'content/structures/planet.json')).places as { id: string; kicker: string; site: string }[];
+    const before = JSON.stringify(planet());
 
-    // the same two columns as Sections: off the Lighthouse with Move, then into the Workshop from the pages not on the planet; the site doesn't change
+    // the seven buildings and their sections' pages, which move in Sections, not here
     await page.goto('/_edit/planet/?building=lighthouse');
-    await expect(page.locator('[data-manager-section]')).toHaveCount(8);
-    const move = async (id: string, to: string) => {
-      await page.locator(`[data-manager-grip="${id}"]`).click();
-      await page.locator('#manager-move').getByRole('button', { name: to, exact: true }).click();
-    };
-    await move(ARTICLE, 'Not on the planet');
-    await expect.poll(() => pagesOf('lighthouse')).toEqual([]);
-    await page.goto('/_edit/planet/?building=_off');
-    await move(ARTICLE, 'Workshop');
-    await expect.poll(() => pagesOf('workshop')).toEqual([ARTICLE]);
-    expect(site()).toBe(before);
+    await expect(page.locator('[data-manager-section]')).toHaveCount(7);
+    await expect(page.locator('[data-manager-section="lighthouse"]')).toContainText('shows Leadership');
+    const row = page.locator('[data-manager-pages="lighthouse"]').locator(`[data-manager-row="${ARTICLE}"]`);
+    await expect(row).toBeVisible();
+    await expect(row.locator(`[data-manager-grip="${ARTICLE}"]`)).toBeDisabled();
 
     // a building's own words, in its Settings tab
     await page.goto('/_edit/planet/?building=workshop&tab=settings');
@@ -643,34 +636,20 @@ test.describe('editor', () => {
     await form.getByRole('button', { name: 'Save the building' }).click();
     await expect.poll(() => planet().find((p) => p.id === 'workshop')!.kicker).toBe('Case studies');
 
-    // the page's settings: back to the Lighthouse, saved with the page
+    // a section shown by two buildings is refused (V15), and nothing changes
+    await page.goto('/_edit/planet/?building=workshop&tab=settings');
+    await form.getByRole('combobox', { name: 'Shows' }).click();
+    await page.getByRole('option', { name: /^Writing/ }).click();
+    await form.getByRole('button', { name: 'Save the building' }).click();
+    await expect(form.locator('[data-editor-form-issue]')).toContainText('a section is shown by one building at most');
+    expect(planet().find((p) => p.id === 'workshop')!.site).toBe('work');
+    expect(JSON.stringify(planet().map((p) => p.site))).toBe(JSON.stringify(JSON.parse(before).map((p: { site: string }) => p.site)));
+
+    // the page says where it's read on the planet, and the planet's page is there
     await openArticle(page);
     await page.getByRole('tab', { name: 'Page' }).click();
-    await page.getByRole('combobox', { name: 'On the planet' }).click();
-    await page.getByRole('option', { name: /^Lighthouse/ }).click();
-    await expect.poll(() => pagesOf('lighthouse')).toEqual([ARTICLE]);
-    expect(pagesOf('workshop')).toEqual([]);
-
-    // a draft on the planet can't leave the site (V13), and deleting it takes it off the planet
-    const copy = `${ARTICLE}-copy`;
-    await page.goto('/_edit/articles/');
-    await page.locator(`[data-editor-duplicate="${ARTICLE}"]`).click();
-    await expect(page).toHaveURL(new RegExp(`/_edit/articles/${copy}/$`));
-    // a copy goes where its section's pages go: the Lighthouse shows Leadership
-    expect(pagesOf('lighthouse')).toEqual([ARTICLE, copy]);
-    await page.goto('/_edit/planet/?building=lighthouse');
-    const libraryBefore = pagesOf('library');
-    await move(copy, 'Library');
-    await expect.poll(() => pagesOf('library')).toEqual([...libraryBefore, copy]);
-    await page.goto('/_edit/sections/?section=leadership');
-    await move(copy, 'Not on the site');
-    await expect(page.locator('[data-manager-issue]')).toContainText("isn't on the site; a page on the planet needs its page on the site");
-    expect(site()).toContain(`"id":"${copy}"`);
-    await page.goto('/_edit/articles/');
-    await page.locator(`[data-editor-delete="${copy}"]`).click();
-    await page.locator('#delete-article').getByRole('button', { name: 'Delete the draft' }).click();
-    await expect(page).toHaveURL(/\/_edit\/articles\/$/);
-    await expect.poll(() => pagesOf('library')).toEqual(libraryBefore);
+    await expect(page.locator('[data-editor-place]')).toContainText('In the Lighthouse, which shows its section');
+    expect((await page.request.get(`/play/lighthouse/${ARTICLE}/`)).status()).toBe(200);
   });
 
   test("crop: a picture's tip and note; the lead picture cropped to 21:9 into a copy (the original kept), a 3:2 thumbnail cut from it, the copy cut again in place; the library's crop; a card shows its thumbnail whole", async ({ page }) => {
@@ -1030,9 +1009,9 @@ test.describe('editor', () => {
     expect((await page.request.get(`/field-notes/${ARTICLE}/`)).status()).toBe(200);
     expect((await page.request.get(`/leadership/${ARTICLE}/`)).status()).toBe(404);
     await expect(section('field-notes')).toBeFocused({ timeout: 15_000 });
-    // on the planet it follows: Field notes has no building, so it leaves the Lighthouse
-    const lighthouse = () => (readJson(join(FIXTURE, 'content/structures/planet.json')).places as { id: string; pages: { id: string }[] }[]).find((p) => p.id === 'lighthouse')!.pages.map((r) => r.id);
-    expect(lighthouse()).not.toContain(ARTICLE);
+    // on the planet it follows its section: Field notes has no building, so it leaves the Lighthouse
+    const inLighthouse = async () => (await page.request.get(`/play/lighthouse/${ARTICLE}/`)).status() === 200;
+    expect(await inLighthouse()).toBe(false);
 
     // back to Leadership with Move: the handle's click, in Field notes
     await section('field-notes').click();
@@ -1041,7 +1020,7 @@ test.describe('editor', () => {
     await moveTo('Leadership');
     await expect.poll(() => pagesOf('leadership')).toEqual([ARTICLE]);
     // and back into the Lighthouse, which shows Leadership
-    expect(lighthouse()).toContain(ARTICLE);
+    expect(await inLighthouse()).toBe(true);
 
     // two copies (drafts, in Leadership too): the keys move one; the two, selected, move together
     for (let i = 0; i < 2; i++) {

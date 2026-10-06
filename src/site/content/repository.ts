@@ -6,6 +6,7 @@
 import { generation, readSnapshot } from './source';
 import { loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
 import { withBase } from '../design/meta';
+import { placeRoutes } from './navigation';
 import type { Route } from './routes';
 import type { Article, PlaceId } from './schema';
 
@@ -28,19 +29,31 @@ export const getSite = () => content().site;
 export const getStructure = () => content().structure;
 /** Old addresses and where they now lead. */
 export const getRedirects = () => content().redirects;
-/** The planet's buildings and what each holds (null without content/structures/planet.json). */
+/** The planet's buildings: their words and the section each shows (null without content/structures/planet.json). */
 export const getPlanet = () => content().planet;
 
-/** The building a page is in on the planet, if it's on it. */
-export const placeOf = (pageId: string): PlaceId | undefined => content().planet?.places.find((p) => p.pages.some((r) => r.id === pageId))?.id;
+/** The section of the site a building shows (documentation/sections/spec.md §5.2). */
+export const placeSection = (placeId: string): Route | undefined => {
+  const site = content().planet?.places.find((p) => p.id === placeId)?.site;
+  return site ? getRoutes().find((r) => r.node.kind === 'hub' && r.node.id === site) : undefined;
+};
 
-/** A building's published pages, in its order, each with its page on the site. */
+/** The building a page is in on the planet: the one showing its section, if it's an open published page there. */
+export const placeOf = (pageId: string): PlaceId | undefined => {
+  const route = getRoutes().find((r) => r.node.kind === 'item' && r.node.item.id === pageId);
+  if (!route || route.access !== 'open' || !route.parent) return undefined;
+  return content().planet?.places.find((p) => p.site === route.parent!.id)?.id;
+};
+
+/**
+ * A building's pages: its section's published open pages, in the section's order, each with its page on
+ * the site. A private page is never on the planet (V28): it has no way to sign in there.
+ */
 export function placePages(placeId: string): { article: Article; route: Route }[] {
-  const place = content().planet?.places.find((p) => p.id === placeId);
-  return (place?.pages ?? []).flatMap((ref) => {
-    const article = getArticle(ref.id);
-    const route = getPlacement('article', ref.id);
-    return article && route?.published ? [{ article, route }] : [];
+  const site = content().planet?.places.find((p) => p.id === placeId)?.site;
+  return (site ? placeRoutes(getRoutes(), site) : []).flatMap((route) => {
+    const article = route.node.kind === 'item' ? getArticle(route.node.item.id) : undefined;
+    return article ? [{ article, route }] : [];
   });
 }
 export const getArticle = (id: string) => content().articles.get(id);
