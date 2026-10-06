@@ -23,8 +23,10 @@ const display = z.enum(PICTURE_DISPLAYS);
 const background = z.boolean();
 /** Rounded corners (the design's radius). On by default; false squares them. */
 const rounded = z.boolean();
+/** A drop shadow under it, following its own shape (transparent parts and all). Off by default. */
+const shadow = z.boolean();
 /** How a page's cards show its picture (documentation/content/media.md §9.1). */
-export const pictureStyle = z.strictObject({ display: display.optional(), background: background.optional(), rounded: rounded.optional() });
+export const pictureStyle = z.strictObject({ display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() });
 /** A figure's frame: its own shape (left out), or one of these. */
 export const FIGURE_SHAPES = ['1/1', '4/3', '3/2', '16/9', '21/9'] as const;
 
@@ -113,9 +115,10 @@ export const block = z.discriminatedUnion('type', [
     display: display.optional(),
     background: background.optional(),
     rounded: rounded.optional(),
+    shadow: shadow.optional(),
   }),
-  z.strictObject({ type: z.literal('gallery'), items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), fit: z.enum(['cover', 'contain']).optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
-  z.strictObject({ type: z.literal('carousel'), items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional() }),
+  z.strictObject({ type: z.literal('gallery'), items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), fit: z.enum(['cover', 'contain']).optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
+  z.strictObject({ type: z.literal('carousel'), items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() }),
   z.strictObject({
     type: z.literal('video'),
     /** An uploaded video file (a `video` media ID), or else `embed`: exactly one (the loader checks). */
@@ -173,7 +176,7 @@ export const article = z.strictObject({
   updatedAt: isoDate,
   reviewedAt: isoDate.optional(),
   locale: z.literal('en'),
-  hero: z.strictObject({ media: mediaId, caption: z.string().optional(), credit: z.string().optional(), showCaption: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional() }).optional(),
+  hero: z.strictObject({ media: mediaId, caption: z.string().optional(), credit: z.string().optional(), showCaption: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() }).optional(),
   /** The picture on its cards (shown whole); the lead picture when left out. */
   thumbnail: mediaId.optional(),
   /** How the picture on its cards is shown in their 3:2 frame: left out, fit (whole), no background, rounded. */

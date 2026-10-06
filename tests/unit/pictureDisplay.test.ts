@@ -11,12 +11,12 @@ import { edgeAverage } from '../../src/site/content/edgeColour';
 const base = { id: 'x', type: 'article', kind: 'note', slug: 'x', title: 'X', summary: 'X.', status: 'draft', visibility: 'public', updatedAt: '2026-10-06', locale: 'en', body: [] };
 
 describe('the content model: how a picture is shown', () => {
-  it('every picture use takes a display, a background and rounding', () => {
+  it('every picture use takes a display, a background, rounding and a drop shadow', () => {
     for (const display of PICTURE_DISPLAYS) {
-      expect(block.safeParse({ type: 'figure', media: 'shared/a', display, ratio: '16/9', background: true, rounded: false }).success, display).toBe(true);
-      expect(block.safeParse({ type: 'gallery', items: [{ media: 'shared/a' }, { media: 'shared/b' }], display, background: true, rounded: false }).success).toBe(true);
-      expect(block.safeParse({ type: 'carousel', label: 'L', items: [{ media: 'shared/a' }, { media: 'shared/b' }], display, background: true, rounded: false }).success).toBe(true);
-      expect(article.safeParse({ ...base, hero: { media: 'shared/a', display, background: true, rounded: false }, thumbnailStyle: { display, background: true, rounded: false } }).success).toBe(true);
+      expect(block.safeParse({ type: 'figure', media: 'shared/a', display, ratio: '16/9', background: true, rounded: false, shadow: true }).success, display).toBe(true);
+      expect(block.safeParse({ type: 'gallery', items: [{ media: 'shared/a' }, { media: 'shared/b' }], display, background: true, rounded: false, shadow: true }).success).toBe(true);
+      expect(block.safeParse({ type: 'carousel', label: 'L', items: [{ media: 'shared/a' }, { media: 'shared/b' }], display, background: true, rounded: false, shadow: true }).success).toBe(true);
+      expect(article.safeParse({ ...base, hero: { media: 'shared/a', display, background: true, rounded: false, shadow: true }, thumbnailStyle: { display, background: true, rounded: false, shadow: true } }).success).toBe(true);
     }
   });
 
@@ -31,6 +31,7 @@ describe('the content model: how a picture is shown', () => {
     expect(f).not.toHaveProperty('display');
     expect(f).not.toHaveProperty('background');
     expect(f).not.toHaveProperty('rounded');
+    expect(f).not.toHaveProperty('shadow');
   });
 });
 

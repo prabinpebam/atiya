@@ -28,7 +28,7 @@ interface Props {
   /** When, or how long it takes to read. */
   meta?: string;
   /** The story’s picture in a 3:2 frame, shown whole unless display says otherwise (fill, actual size, tile), and its dark mode version if it has one. */
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
   /** standard: picture above; feature: picture beside, larger type; row: words first, a small picture at the end (a list); compact: no picture. */
   variant?: 'standard' | 'feature' | 'row' | 'compact';
   /** The title’s heading level: h2 on an index, h3 under a section heading. */
@@ -43,7 +43,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
 <article class="card" data-variant={variant}>
   {
     picture && variant !== 'compact' && (
-      <div class="picture" data-square={picture.rounded === false ? '' : undefined}>
+      <div class="picture" data-square={picture.rounded === false ? '' : undefined} data-shadow={picture.shadow ? '' : undefined}>
         <div class="zoom">
           <Image
             src={picture.src}
@@ -119,6 +119,11 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
 
   .picture[data-square] {
     border-radius: var(--radius-none);
+  }
+
+  /* the shadow on the frame, which clips the picture: drawn outside the clip, in the picture's shape */
+  .picture[data-shadow] {
+    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
   }
 
   .zoom {

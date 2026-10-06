@@ -51,6 +51,8 @@ interface Props {
   background?: boolean;
   /** Rounded corners; false squares them. */
   rounded?: boolean;
+  /** A drop shadow under it, following its shape. */
+  shadow?: boolean;
 }
 
 const {
@@ -74,6 +76,7 @@ const {
   bg,
   background = false,
   rounded = true,
+  shadow = false,
 } = Astro.props;
 const behind = background && bg ? { light: bg, dark: dark?.bg } : undefined;
 const radius = width === 'full' ? 'none' : 'default';
@@ -85,10 +88,10 @@ const lightboxThumb = thumb ?? src;
   {
     lightbox ? (
       <a class="media-link" href={href} data-lightbox={lightbox} data-caption={caption} data-thumb={lightboxThumb} data-alt={alt} data-full-dark={dark ? (dark.full ?? dark.src) : undefined} data-thumb-dark={dark ? (dark.thumb ?? dark.src) : undefined}>
-        <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} display={display} focus={focus} radius={radius} rounded={rounded} bg={behind} priority={priority} dark={dark} />
+        <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} display={display} focus={focus} radius={radius} rounded={rounded} shadow={shadow} bg={behind} priority={priority} dark={dark} />
       </a>
     ) : (
-      <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} display={display} focus={focus} radius={radius} rounded={rounded} bg={behind} priority={priority} dark={dark} />
+      <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} display={display} focus={focus} radius={radius} rounded={rounded} shadow={shadow} bg={behind} priority={priority} dark={dark} />
     )
   }
   {(caption || credit) && <Caption credit={credit}>{caption}</Caption>}

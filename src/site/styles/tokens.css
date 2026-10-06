@@ -265,6 +265,9 @@
   --c-image-placeholder: var(--color-bg-sunk);
   --c-image-portrait: 13rem;
   --c-image-portrait-sm: 8rem;
+  --c-image-shadow-y: 0.75rem;
+  --c-image-shadow-blur: 1.25rem;
+  --c-image-shadow: var(--color-shadow-strong);
   --c-quote-rule: var(--color-highlight);
   --c-quote-mark: var(--color-highlight);
   --c-dropcap-color: var(--color-accent);

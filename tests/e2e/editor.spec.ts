@@ -1190,9 +1190,9 @@ test.describe('editor', () => {
     expect(blocks().find((b) => b.type === 'gallery')?.items).toHaveLength(2);
   });
 
-  test("a picture's Shown as, background and corners: chosen in the inspector, saved, and drawn on the page", async ({ page }) => {
+  test("a picture's Shown as, background, corners and drop shadow: chosen in the inspector, saved, and drawn on the page", async ({ page }) => {
     await openArticle(page);
-    const blocks = () => readJson(articleFile()).body as { type: string; display?: string; ratio?: string; background?: boolean; rounded?: boolean }[];
+    const blocks = () => readJson(articleFile()).body as { type: string; display?: string; ratio?: string; background?: boolean; rounded?: boolean; shadow?: boolean }[];
     const at = blocks().findIndex((b) => b.type === 'figure');
     test.skip(at < 0, 'the fixture article has no figure');
     await page.locator(`[data-editor-outline] [data-editor-select="${at}"]`).click();
@@ -1205,11 +1205,14 @@ test.describe('editor', () => {
     await choose('Shown as', /^Actual size/);
     await form.locator('label', { hasText: 'Colour behind it' }).click();
     await form.locator('label', { hasText: 'Rounded corners' }).click();
-    await expect.poll(() => blocks()[at]).toMatchObject({ ratio: '16/9', display: 'actual', background: true, rounded: false });
+    await form.locator('label', { hasText: 'Drop shadow' }).click();
+    await expect.poll(() => blocks()[at]).toMatchObject({ ratio: '16/9', display: 'actual', background: true, rounded: false, shadow: true });
     const frame = page.frameLocator('[data-editor-frame]').locator('figure .frame[data-mode="actual"]').first();
     await expect(frame).toHaveAttribute('data-ratio', '16/9', { timeout: 20_000 });
     await expect(frame).toHaveAttribute('data-bg', '');
     await expect(frame).toHaveAttribute('data-radius', 'none');
+    await expect(frame).toHaveAttribute('data-shadow', '');
+    expect(await frame.evaluate((el) => getComputedStyle(el).filter)).toMatch(/^drop-shadow/);
     expect(await frame.evaluate((el) => getComputedStyle(el).backgroundColor)).toMatch(/^rgb/);
   });
 

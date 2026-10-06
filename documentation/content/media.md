@@ -245,7 +245,7 @@ A picture is never cropped blindly. By default it's shown in one of two ways (§
 - a use can ask for another copy of a copy (the thumbnail cut from the lead picture's copy is a second copy of the original);
 - a copy is a picture like any other: its own master within the budgets, its own sidecar. If its original is deleted, it stays, and cropping it again starts from itself.
 
-### 9.1 How a picture is shown: fill, fit, actual size, tile; a background; corners
+### 9.1 How a picture is shown: fill, fit, actual size, tile; a background; corners; a drop shadow
 
 Every place a page shows a picture lets it choose how (6 October 2026, the owner's request). Left alone, each looks as it always has.
 
@@ -254,8 +254,9 @@ Every place a page shows a picture lets it choose how (6 October 2026, the owner
 | **Shown as** (`display`) | `fill`: fills its frame, cropped around its focus point. `fit`: whole, with room round it. `actual`: its own pixel size, centred, made smaller only to fit, never enlarged. `tile`: repeated at its own size across the frame | Lead picture and carousel: fill. Figure and thumbnail: fit. Gallery: fill (or what its older `fit` says) |
 | **Colour behind it** (`background`) | On: the room round a fitted or actual-size picture, and its transparent parts, take a colour from the picture itself: the average of its opaque edge pixels, or its dominant colour when the edges are transparent. A dark mode version has its own | Off |
 | **Rounded corners** (`rounded`) | Off squares the corners (a full-bleed picture is square anyway) | On |
+| **Drop shadow** (`shadow`) | On: a soft shadow under it that follows what shows (a filled picture casts its frame's shape, a fitted or transparent one its own shape; the room round it casts none). Its offset, softness and colour are the `c.image.shadow-*` tokens | Off |
 
-- **Where:** a figure (`display`, `background`, `rounded`, and its frame's shape, `ratio`: its own, 1:1, 4:3, 3:2, 16:9 or 21:9), a gallery and a carousel (for all their pictures), the lead picture (`hero.display`, `hero.background`, `hero.rounded`) and the thumbnail on cards (`thumbnailStyle`: `display`, `background`, `rounded`).
+- **Where:** a figure (`display`, `background`, `rounded`, `shadow`, and its frame's shape, `ratio`: its own, 1:1, 4:3, 3:2, 16:9 or 21:9), a gallery and a carousel (for all their pictures), the lead picture (`hero.display`, `hero.background`, `hero.rounded`, `hero.shadow`) and the thumbnail on cards (`thumbnailStyle`: `display`, `background`, `rounded`, `shadow`).
 - **The colour is worked out when the picture is prepared** (`src/site/content/pictures.ts`, the pure `edgeColour.ts`), once per master, and handed to the page as data; no colour is written in a stylesheet. It follows the theme with the picture's dark mode version.
 - **Tiles** are drawn by the `Image` fundamental's script from the file the browser chose (the dark one in dark mode); until then, and without JavaScript, the picture itself shows, fitted.
 

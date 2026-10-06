@@ -58,15 +58,17 @@ interface Props {
   background?: boolean;
   /** Rounded corners on each cell; false squares them. */
   rounded?: boolean;
+  /** A drop shadow under each picture, following its shape. */
+  shadow?: boolean;
 }
 
-const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover', display, background = false, rounded = true } = Astro.props;
+const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover', display, background = false, rounded = true, shadow = false } = Astro.props;
 const shown = display ?? (fit === 'contain' ? 'fit' : 'fill');
 const columns = items.length > 2 ? '3' : '2';
 const ratio = layout === 'row' ? '4/3' : '1/1';
 ---
 
-<figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width} data-square={rounded ? undefined : ''} data-gallery>
+<figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width} data-square={rounded ? undefined : ''} data-shadow={shadow ? '' : undefined} data-gallery>
   <div class="items" data-scrollbar>
     {
       items.map((item) => {
@@ -137,6 +139,16 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
   .gallery[data-breakout='full'] .image-shell,
   .gallery[data-square] .image-shell {
     border-radius: var(--radius-none);
+  }
+
+  /* the shadow on the cell, which clips the picture: drawn outside the clip, in the picture's shape */
+  .gallery[data-shadow] .image-shell {
+    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
+  }
+
+  /* a row scrolls sideways, which would cut the shadows off: room for them under the cells */
+  .gallery[data-shadow][data-layout='row'] .items {
+    padding-block-end: calc(var(--c-image-shadow-y) + var(--c-image-shadow-blur));
   }
 
   .gallery[data-layout='row'] .items {

@@ -70,6 +70,8 @@ interface Props {
   background?: boolean;
   /** Rounded corners on each slide; false squares them. */
   rounded?: boolean;
+  /** A drop shadow under each picture, following its shape. */
+  shadow?: boolean;
 }
 
 const {
@@ -85,12 +87,13 @@ const {
   display = 'fill',
   background = false,
   rounded = true,
+  shadow = false,
 } = Astro.props;
 const total = items.length;
 const status = total > 0 ? `1 of ${total}` : '0 of 0';
 ---
 
-<section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek ? '' : undefined} aria-roledescription="carousel" aria-label={label}>
+<section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek ? '' : undefined} data-shadow={shadow ? '' : undefined} aria-roledescription="carousel" aria-label={label}>
   <div class="viewport">
     <div class="track" tabindex="0" role="group" aria-label="Slides" data-carousel-track>
       {
@@ -110,6 +113,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
               focus={item.focus}
               radius={width === 'full' ? 'none' : 'feature'}
               rounded={rounded}
+              shadow={shadow}
               bg={background && item.bg ? { light: item.bg, dark: item.dark?.bg } : undefined}
               fill
               dark={item.dark}
@@ -196,6 +200,11 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
     flex: 0 0 100%;
     min-width: 0;
     scroll-snap-align: center;
+  }
+
+  /* the track scrolls sideways, which would cut the shadows off: room for them under the slides */
+  .carousel[data-shadow] .track {
+    padding-block-end: calc(var(--c-image-shadow-y) + var(--c-image-shadow-blur));
   }
 
   .slide-body {

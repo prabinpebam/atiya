@@ -27,7 +27,7 @@ export interface RelatedStory {
   /** How long it takes to read. */
   meta?: string;
   /** Its card picture in a 3:2 frame (shown whole unless display says otherwise), and its dark mode version. */
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
 }
 
 interface Props {
@@ -53,7 +53,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
           <li class="item" data-related-item={s.id} hidden={i >= shown}>
             <article class="card">
               {s.picture && (
-                <div class="picture" data-square={s.picture.rounded === false ? '' : undefined}>
+                <div class="picture" data-square={s.picture.rounded === false ? '' : undefined} data-shadow={s.picture.shadow ? '' : undefined}>
                   <Image src={s.picture.src} srcset={s.picture.srcset} sizes="(max-width: 40rem) 92vw, (max-width: 72rem) 46vw, 24rem" alt={s.picture.alt} width={s.picture.width} height={s.picture.height} ratio={PICTURE_SPECS.thumbnail.ratio} display={s.picture.display ?? 'fit'} rounded={s.picture.rounded !== false} bg={s.picture.background && s.picture.bg ? { light: s.picture.bg, dark: s.picture.dark?.bg } : undefined} dark={s.picture.dark} />
                 </div>
               )}
@@ -113,6 +113,11 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
 
   .picture[data-square] {
     border-radius: var(--radius-none);
+  }
+
+  /* the shadow on the frame, which clips the picture: drawn outside the clip, in the picture's shape */
+  .picture[data-shadow] {
+    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
   }
 
   .words {

@@ -13,7 +13,8 @@
  * follow it too.
  * Behind it there can be a colour taken from the picture itself (bg: its edges' colour, and its dark
  * version's), filling the room round a fitted or actual-size picture and its transparent parts; and its
- * corners can be squared (rounded false).
+ * corners can be squared (rounded false), and a drop shadow can fall under it (shadow), following its own
+ * shape.
  * @tier fundamental
  * @a11y alt is required: what the picture shows and why it's there; an empty alt only for decoration.
  * @a11y Width and height are required, so the page doesn't shift as it loads (CLS).
@@ -54,9 +55,11 @@ interface Props {
   bg?: { light: string; dark?: string };
   /** Rounded corners (the radius above); false squares them. */
   rounded?: boolean;
+  /** A drop shadow under it, following its own shape (a fitted or transparent picture casts the shadow of what shows). */
+  shadow?: boolean;
 }
 
-const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', display, focus, radius: asked = 'default', priority = false, fill = false, dark, bg, rounded = true } = Astro.props;
+const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', display, focus, radius: asked = 'default', priority = false, fill = false, dark, bg, rounded = true, shadow = false } = Astro.props;
 const radius = rounded ? asked : 'none';
 const mode = display ?? (fit === 'contain' ? 'fit' : 'fill');
 // actual and tile draw in a frame of their own (the ratio's, the cell's, or else the picture's own shape)
@@ -81,6 +84,7 @@ const imgAlt = tile ? '' : alt;
       data-fill={fill ? '' : undefined}
       data-tile={tile ? '' : undefined}
       data-bg={bg ? '' : undefined}
+      data-shadow={shadow ? '' : undefined}
       role={tile ? 'img' : undefined}
       aria-label={tile && alt ? alt : undefined}
       style={frameVars}
@@ -113,6 +117,7 @@ const imgAlt = tile ? '' : alt;
         data-radius={radius}
         data-fill={fill ? '' : undefined}
         data-bg={bg ? '' : undefined}
+      data-shadow={shadow ? '' : undefined}
         style={vars}
       />
     </picture>
@@ -133,6 +138,7 @@ const imgAlt = tile ? '' : alt;
       data-radius={radius}
       data-fill={fill ? '' : undefined}
       data-bg={bg ? '' : undefined}
+      data-shadow={shadow ? '' : undefined}
       style={vars}
     />
   )
@@ -173,6 +179,12 @@ const imgAlt = tile ? '' : alt;
   .image[data-bg],
   .frame[data-bg] {
     background-color: light-dark(var(--picture-bg), var(--picture-bg-dark));
+  }
+
+  /* a drop shadow that follows what shows: a fitted or transparent picture casts the shape of the picture */
+  .image[data-shadow],
+  .frame[data-shadow] {
+    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
   }
 
   .image[data-ratio='1/1'],

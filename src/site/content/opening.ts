@@ -20,7 +20,7 @@ export async function cardPicture(a: Article) {
   const p = await picture(id, 'card');
   const dark = darkOf(p);
   const s = a.thumbnailStyle ?? {};
-  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, bg: p.bg, display: s.display ?? 'fit', background: !!s.background, rounded: s.rounded !== false, ...(dark ? { dark } : {}) };
+  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, bg: p.bg, display: s.display ?? 'fit', background: !!s.background, rounded: s.rounded !== false, shadow: !!s.shadow, ...(dark ? { dark } : {}) };
 }
 
 export interface Opening {
@@ -30,7 +30,7 @@ export interface Opening {
   author?: { name: string; avatar?: string; avatarDark?: string };
   date?: string;
   readingTime?: string;
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; display?: PictureDisplay; bg?: string; background?: boolean; rounded?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; display?: PictureDisplay; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
   /** The person the page is about, whole, beside the title. */
   portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
 }
@@ -74,7 +74,7 @@ export async function openingOf(article: Article, topic?: { label: string; href:
     author: story ? { name: owner.name, avatar: avatar?.thumb, ...(avatar?.dark ? { avatarDark: avatar.dark.thumb } : {}) } : undefined,
     date: story ? article.publishedAt : undefined,
     readingTime: pageMeasure(article),
-    picture: lead ? { ...lead, display: article.hero?.display ?? 'fill', background: !!article.hero?.background, rounded: article.hero?.rounded !== false, dark: darkOf(lead) } : undefined,
+    picture: lead ? { ...lead, display: article.hero?.display ?? 'fill', background: !!article.hero?.background, rounded: article.hero?.rounded !== false, shadow: !!article.hero?.shadow, dark: darkOf(lead) } : undefined,
     ...(portrait ? { portrait: { src: portrait.src, srcset: portrait.srcset, alt: portrait.alt, width: portrait.width, height: portrait.height, focus: portrait.focus, dark: darkOf(portrait) } } : {}),
   };
 }
