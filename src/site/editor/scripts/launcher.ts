@@ -122,7 +122,8 @@ async function show() {
   } catch {
     // the dev server without the editor: the dashboard is still the way in
   }
-  const icon = svgOf('edit');
+  // a pen whose body is the strong layer: the pen-to-square's big square is the light second layer, and read as disabled here
+  const icon = svgOf('edit-page');
   const host = document.createElement('div');
   host.dataset.editorLauncher = '';
   const root = host.attachShadow({ mode: 'open' });

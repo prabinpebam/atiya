@@ -76,7 +76,7 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
         const thumb = item.thumb ?? item.src;
         const itemCaption = item.caption ?? '';
         return (
-          <a class="card" href={full} data-lightbox={lightbox} data-caption={itemCaption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined}>
+          <a class="card" href={full} data-lightbox={lightbox} data-caption={itemCaption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
             <span class="image-shell">
               <Image
                 src={item.src}

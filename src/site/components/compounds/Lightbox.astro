@@ -120,6 +120,7 @@ const { id = 'site-lightbox' } = Astro.props;
 
   .stage {
     display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     place-items: center;
     min-width: 0;
     min-height: 0;
@@ -135,10 +136,20 @@ const { id = 'site-lightbox' } = Astro.props;
     max-width: 100%;
     max-height: 100%;
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
     object-fit: contain;
     opacity: 1;
     transition: opacity var(--duration-slow) var(--ease-standard);
+  }
+
+  /* only a picture whose drop shadow option is on (its link's data-shadow) keeps it here,
+     and the stage leaves room for the whole shadow inside its clip */
+  .stage[data-shadow] {
+    padding: var(--c-image-shadow-blur);
+    padding-block-end: calc(var(--c-image-shadow-y) + var(--c-image-shadow-blur));
+  }
+
+  .stage[data-shadow] .stage-image {
+    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
   }
 
   .stage[data-fading] .stage-image {
@@ -229,6 +240,8 @@ const { id = 'site-lightbox' } = Astro.props;
     thumbDark?: string;
     caption: string;
     alt: string;
+    /** Whether its drop shadow option is on. */
+    shadow: boolean;
   }
 
   const itemFrom = (link: HTMLAnchorElement): LightboxItem => {
@@ -241,6 +254,7 @@ const { id = 'site-lightbox' } = Astro.props;
       thumbDark: link.dataset.thumbDark,
       caption: link.dataset.caption || '',
       alt: link.dataset.alt || img?.alt || '',
+      shadow: link.dataset.shadow !== undefined,
     };
   };
   // a picture's dark version shows in the lightbox, as on the page, while the page is dark
@@ -301,6 +315,7 @@ const { id = 'site-lightbox' } = Astro.props;
       const apply = () => {
         image.src = fullOf(item);
         image.alt = item.alt;
+        stage.toggleAttribute('data-shadow', item.shadow);
         count.textContent = counter(index, items.length);
         caption.textContent = item.caption;
         captionWrap.hidden = item.caption.length === 0;

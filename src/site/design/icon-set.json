@@ -30,6 +30,7 @@
     "drag": "grip-vertical",
     "duplicate": "clone",
     "edit": "pen-to-square",
+    "edit-page": "pen",
     "error": "circle-exclamation",
     "expand": "expand",
     "external": "arrow-up-right-from-square",

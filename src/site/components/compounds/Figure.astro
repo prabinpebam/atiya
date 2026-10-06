@@ -87,7 +87,7 @@ const lightboxThumb = thumb ?? src;
 <figure class="figure" data-breakout={width}>
   {
     lightbox ? (
-      <a class="media-link" href={href} data-lightbox={lightbox} data-caption={caption} data-thumb={lightboxThumb} data-alt={alt} data-full-dark={dark ? (dark.full ?? dark.src) : undefined} data-thumb-dark={dark ? (dark.thumb ?? dark.src) : undefined}>
+      <a class="media-link" href={href} data-lightbox={lightbox} data-caption={caption} data-thumb={lightboxThumb} data-alt={alt} data-full-dark={dark ? (dark.full ?? dark.src) : undefined} data-thumb-dark={dark ? (dark.thumb ?? dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
         <Image src={src} srcset={srcset} sizes={sizes} alt={alt} width={imageWidth} height={imageHeight} ratio={ratio} display={display} focus={focus} radius={radius} rounded={rounded} shadow={shadow} bg={behind} priority={priority} dark={dark} />
       </a>
     ) : (

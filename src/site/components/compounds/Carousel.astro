@@ -123,7 +123,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
             <div class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
               <figure class="slide-body">
                 {lightbox ? (
-                  <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined}>
+                  <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
                     {picture}
                   </a>
                 ) : (
