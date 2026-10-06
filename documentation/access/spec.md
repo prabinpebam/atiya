@@ -439,6 +439,8 @@ While a remembered key is tried, the panel and the sign-in line are replaced by 
 
 A magic link signs its reader in before the page needs the panel, so the panel shows only to someone without access, however the page was shared.
 
+**On the Sign in page, signed in.** A reader who is already signed in (or has just signed in there, with no page to go back to) sees **You're signed in** in place of the form: until when it works, links to the sections where shared work is listed (the open sections that hold private pages, whose sign-in lines already say so), **Use another code** (the form again; the current session stays until another code works) and **Sign out**. A remembered session shows this from the first paint (`base.css` and the head script's `data-signed-in`), so the form never flashes; if the key no longer works, the form comes back with its message. Signing in moves focus to the signed-in state and announces it.
+
 ### 7.2 Messages
 
 Every message follows the site's copy rules: sentence case, says what happened and what to do. "Get in touch" links to the contact page.

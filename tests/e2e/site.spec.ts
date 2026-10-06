@@ -477,6 +477,10 @@ test.describe('site on a phone', () => {
         await page.goto(path);
         expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${path} at ${size.width}`).toBe(0);
         expect(await smallTargets(page), `${path} at ${size.width}`).toEqual([]);
+        // scrolled down too, the header tucked away (a transform: a closed dropdown under it once widened the page)
+        await page.mouse.wheel(0, 800);
+        await page.waitForTimeout(400);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${path} at ${size.width}, scrolled`).toBe(0);
       }
     }
   });

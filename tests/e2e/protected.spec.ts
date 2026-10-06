@@ -264,6 +264,34 @@ test.describe('protected content', () => {
     });
   }
 
+  test('the Sign in page says so once signed in: until when, where shared work is, another code or sign out', async ({ page }) => {
+    await page.goto('/sign-in/');
+    await expect(page.locator('[data-unlock-done]')).toBeHidden();
+    await signIn(page, ALL);
+    const done = page.locator('[data-unlock-done]');
+    await expect(done.getByRole('heading', { name: 'You’re signed in' })).toBeVisible();
+    await expect(done).toBeFocused();
+    await expect(done).toContainText('until 1 January 2099');
+    await expect(page.locator('[data-unlock-form]')).toBeHidden();
+    // the sections where shared work is listed (the open sections holding private pages)
+    await expect(done.getByRole('navigation', { name: 'Where shared work is listed' }).getByRole('link')).toHaveText(['Work', 'Writing', 'Side projects']);
+    expect(await titlesIn(page)).toEqual([]);
+    // coming back: signed in from the first paint, no form flashing
+    await page.reload();
+    await expect(page.locator('[data-unlock-form]')).toBeHidden();
+    await expect(done).toBeVisible();
+    // another code: the form again
+    await done.getByRole('button', { name: 'Use another code' }).click();
+    await expect(page.locator('input[name="code"]')).toBeFocused();
+    await signIn(page, ONE);
+    await expect(done).toBeVisible();
+    // sign out: the form, and the bar gone
+    await done.getByRole('button', { name: 'Sign out' }).click();
+    await expect(page.locator('[data-unlock-form]')).toBeVisible();
+    await expect(page.locator('[data-access-bar]')).toBeHidden();
+    expect(await page.evaluate(() => sessionStorage.getItem('site.access'))).toBeNull();
+  });
+
   test('on a 320 px phone: no sideways scroll, and every control is a 44 px target (QB8)', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto('/sign-in/');
@@ -273,7 +301,13 @@ test.describe('protected content', () => {
       expect(box!.height, sel).toBeGreaterThanOrEqual(44);
     }
     await signIn(page, ALL);
-    await expect(page.locator('[data-unlock-status]')).toHaveText('Signed in.');
+    // the Sign in page now says it's signed in, with its own 44 px targets
+    await expect(page.locator('[data-unlock-done]')).toBeVisible();
+    for (const sel of ['[data-unlock-another]', '[data-unlock-sign-out]']) {
+      const box = await page.locator(sel).boundingBox();
+      expect(box!.height, sel).toBeGreaterThanOrEqual(44);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
     await page.goto(SECTION);
     await expect(page.locator('[data-access-bar]')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);

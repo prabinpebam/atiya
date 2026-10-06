@@ -278,6 +278,8 @@ async function openPage(keys: KeyringBody['keys'], grant: string, via: Session['
 }
 
 function showBar(s: Session) {
+  // the Sign in page's panel says until when too
+  for (const el of document.querySelectorAll<HTMLElement>('[data-unlock-until]')) el.textContent = untilWords(s.expiresAt);
   const bar = document.querySelector<HTMLElement>('[data-access-bar]');
   if (!bar) return;
   const until = bar.querySelector<HTMLElement>('[data-access-until]');
@@ -285,16 +287,25 @@ function showBar(s: Session) {
   bar.hidden = false;
 }
 
+/** The Sign in page's panel (it has a signed-in state); a private page's own panel has none. */
+const signInPanel = () => document.querySelector<HTMLElement>('[data-unlock-panel][data-shared]');
+function panelState(state: 'sign-in' | 'signed-in') {
+  const p = signInPanel();
+  if (p) p.dataset.state = state;
+}
+
 /** Applies a signed-in session to this page: the bar, the cards, the page; or says why it can't. */
 async function apply(s: Session, where: Element | null): Promise<boolean> {
   const r = await keyring(s);
   if (!r.ok) {
     forget();
-    say(r.outcome, where ?? document.querySelector('[data-access-gate]') ?? document.querySelector('[data-sign-in-line]'), { expiresAt: r.expiresAt });
+    panelState('sign-in');
+    say(r.outcome, where ?? document.querySelector('[data-access-gate]') ?? document.querySelector('[data-sign-in-line]') ?? signInPanel(), { expiresAt: r.expiresAt });
     tell('access_failed', { reason: r.outcome });
     return false;
   }
   showBar(s);
+  panelState('signed-in');
   document.querySelector<HTMLElement>('[data-sign-in-line]')?.setAttribute('hidden', '');
   await openCards(r.body.keys, s.grant);
   await openPage(r.body.keys, s.grant, s.via);
@@ -336,6 +347,12 @@ async function signInWithCode(form: HTMLFormElement, panel: HTMLElement) {
     tell('access_signed_in', { grant: s.grant, via: 'code' });
     const back = safeReturn(new URLSearchParams(location.search).get('return'), base);
     if (panel.closest('[data-access-gate]') || !back) {
+      if (panel.hasAttribute('data-shared')) {
+        // the Sign in page: its signed-in state, announced, with focus on it
+        say('signed-in', null);
+        if (await apply(s, panel)) panel.querySelector<HTMLElement>('[data-unlock-done]')?.focus();
+        return;
+      }
       say('signed-in', panel);
       await apply(s, panel);
     } else location.assign(back);
@@ -433,6 +450,18 @@ export function start() {
       },
       { signal },
     );
+    // the Sign in page, signed in: another code (the form again, the session kept until it works), or Sign out
+    panel.querySelector('[data-unlock-another]')?.addEventListener(
+      'click',
+      () => {
+        panel.dataset.state = 'sign-in';
+        const status = panel.querySelector('[data-unlock-status]');
+        if (status) status.textContent = '';
+        input?.focus();
+      },
+      { signal },
+    );
+    panel.querySelector('[data-unlock-sign-out]')?.addEventListener('click', () => signOut(true), { signal });
   });
   each<HTMLElement>('[data-access-bar]', (bar, signal) => {
     bar.querySelector('[data-access-sign-out]')?.addEventListener('click', () => signOut(true), { signal });

@@ -2,11 +2,15 @@
 /**
  * Signing in to see work shared with invited readers (documentation/access/spec.md §7.1): the access
  * code, Sign in, Remember on this device, and how to ask for access, on the Sign in page and on a private
- * page opened without access (a magic link signs its reader in before the panel is needed). The sign-in
- * runtime (scripts/sealed.ts) gives the form its behaviour; without JavaScript the panel says it needs it.
+ * page opened without access (a magic link signs its reader in before the panel is needed). On the Sign in
+ * page (given `shared`), a reader already signed in sees that instead: until when, the sections where
+ * shared work is listed, Use another code and Sign out. The sign-in runtime (scripts/sealed.ts) gives the
+ * form its behaviour and switches the state; a remembered session shows signed in from the first paint
+ * (base.css), so the form never flashes. Without JavaScript the panel says it needs it.
  * @tier compound
  * @a11y A labelled form: one field with its label and hint, the result in a polite live region tied to the field (aria-describedby), and focus back on the field when a code doesn't work.
  * @a11y Show code toggles the field between hidden and plain text and says which (aria-pressed).
+ * @a11y Each state has its own heading; signing in announces it, and focus moves to the signed-in state (or back to the field for Use another code).
  * @key Enter: signs in from the field
  */
 import Heading from '../fundamentals/Heading.astro';
@@ -25,48 +29,111 @@ interface Props {
   returnTo?: string;
   /** The prefix of its elements' ids, unique on the page (two panels in the design library). */
   id?: string;
+  /** On the Sign in page: the sections where shared work is listed, shown once signed in (and turns that state on). */
+  shared?: { label: string; href: string }[];
+  /** Shows the signed-in state from the start (the design library; the runtime sets it on a page). */
+  signedIn?: boolean;
 }
 
-const { contact, headingLevel = 2, returnTo, id = 'access' } = Astro.props;
+const { contact, headingLevel = 2, returnTo, id = 'access', shared, signedIn = false } = Astro.props;
 ---
 
-<section class="unlock" data-unlock-panel="sign-in" data-return={returnTo} aria-labelledby={`${id}-heading`}>
-  <Heading level={headingLevel} size="h3" id={`${id}-heading`}>
-    Sign in to see shared work
-  </Heading>
-  <Text variant="body" tone="muted">
-    Some work is shared only with invited readers. Sign in with the access code you were sent.
-  </Text>
-  <form class="form" data-unlock-form novalidate>
-    <TextField label="Access code" type="password" name="code" id={`${id}-code`} autocomplete="current-password" hint="Five words, as you were sent them." data-unlock-code="" />
-    <div class="actions">
-      <Button type="submit" variant="primary" data-unlock-submit="">
-        Sign in
-      </Button>
-      <Button type="button" variant="quiet" aria-controls={`${id}-code`} aria-pressed="false" data-unlock-show="">
-        Show code
-      </Button>
-    </div>
-    <Checkbox label="Remember on this device" name="remember" id={`${id}-remember`} hint="Leave it off on a shared computer." data-unlock-remember="" />
-    <p class="status" id={`${id}-status`} role="status" aria-live="polite" data-unlock-status />
-  </form>
-  <Text variant="small" tone="muted">
-    No code? <Link href={contact}>Get in touch</Link> to ask for one.
-  </Text>
-  <noscript>
-    <Text variant="body">This page is shared with invited readers and needs JavaScript to open.</Text>
-  </noscript>
-</section>
+<div class="unlock" data-unlock-panel="sign-in" data-return={returnTo} data-shared={shared ? '' : undefined} data-state={signedIn ? 'signed-in' : undefined}>
+  <section class="part signin" aria-labelledby={`${id}-heading`} data-unlock-signin>
+    <Heading level={headingLevel} size="h3" id={`${id}-heading`}>
+      Sign in to see shared work
+    </Heading>
+    <Text variant="body" tone="muted">
+      Some work is shared only with invited readers. Sign in with the access code you were sent.
+    </Text>
+    <form class="form" data-unlock-form novalidate>
+      <TextField label="Access code" type="password" name="code" id={`${id}-code`} autocomplete="current-password" hint="Five words, as you were sent them." data-unlock-code="" />
+      <div class="actions">
+        <Button type="submit" variant="primary" data-unlock-submit="">
+          Sign in
+        </Button>
+        <Button type="button" variant="quiet" aria-controls={`${id}-code`} aria-pressed="false" data-unlock-show="">
+          Show code
+        </Button>
+      </div>
+      <Checkbox label="Remember on this device" name="remember" id={`${id}-remember`} hint="Leave it off on a shared computer." data-unlock-remember="" />
+      <p class="status" id={`${id}-status`} role="status" aria-live="polite" data-unlock-status />
+    </form>
+    <Text variant="small" tone="muted">
+      No code? <Link href={contact}>Get in touch</Link> to ask for one.
+    </Text>
+    <noscript>
+      <Text variant="body">This page is shared with invited readers and needs JavaScript to open.</Text>
+    </noscript>
+  </section>
+  {
+    shared && (
+      <section class="part done" aria-labelledby={`${id}-done-heading`} tabindex="-1" data-unlock-done>
+        <Heading level={headingLevel} size="h3" id={`${id}-done-heading`}>
+          You’re signed in
+        </Heading>
+        <Text variant="body" tone="muted">
+          You can see the work shared with you<span data-unlock-until />. It’s listed in its section, marked Shared with you.
+        </Text>
+        {shared.length > 0 && (
+          <nav class="places" aria-label="Where shared work is listed">
+            <ul>
+              {shared.map((s) => (
+                <li>
+                  <Link href={s.href} variant="standalone">
+                    {s.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+        <div class="actions">
+          <Button type="button" variant="secondary" data-unlock-another="">
+            Use another code
+          </Button>
+          <Button type="button" variant="quiet" data-unlock-sign-out="">
+            Sign out
+          </Button>
+        </div>
+      </section>
+    )
+  }
+</div>
 
 <style>
   .unlock {
-    display: grid;
-    gap: var(--space-5);
     max-width: var(--size-measure-narrow);
     padding: var(--space-8);
     border: var(--border-hairline) solid var(--color-rule);
     border-radius: var(--radius-lg);
     background: var(--color-bg-sunk);
+  }
+
+  .part {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .done {
+    display: none;
+    outline: none;
+  }
+
+  .unlock[data-state='signed-in'] .signin {
+    display: none;
+  }
+
+  .unlock[data-state='signed-in'] .done {
+    display: grid;
+  }
+
+  .places ul {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .form {

@@ -2,8 +2,17 @@
 import Example from '../library/Example.astro';
 import UnlockPanel from '../components/compounds/UnlockPanel.astro';
 import { withBase } from '../design/meta';
+
+const shared = [
+  { label: 'Work', href: withBase('/work/') },
+  { label: 'Side projects', href: withBase('/side-projects/') },
+];
 ---
 
 <Example title="Sign in" layout="block" description="The Sign in page and a private page opened while signed out: the access code, Show code, Remember on this device, and how to ask for one.">
   <UnlockPanel contact={withBase('/contact/')} />
+</Example>
+
+<Example title="Signed in" layout="block" description="The Sign in page for a reader already signed in: until when (filled in by the runtime), the sections where shared work is listed, Use another code and Sign out. A remembered session shows this from the first paint.">
+  <UnlockPanel contact={withBase('/contact/')} id="access-signed-in" shared={shared} signedIn />
 </Example>

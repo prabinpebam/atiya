@@ -326,6 +326,13 @@ const chosenIcon = iconOf(chosen?.icon);
       inset-inline-start: var(--list-left);
       inset-inline-end: auto;
     }
+
+    /* closed, it waits at the window's start, never where its button is: under a moved header (tucked away
+       with a transform, which makes it the list's containing block) the list there would widen the page */
+    .select .list[popover]:not(:popover-open) {
+      inset-inline-start: 0;
+      inset-block-start: 0;
+    }
   }
 
   .select[data-open] .list {

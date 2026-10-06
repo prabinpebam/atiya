@@ -296,6 +296,15 @@ html[data-signed-in] [data-access-gate]:not([data-shown]) {
   display: none;
 }
 
+/* the Sign in page's panel says so from the first paint (UnlockPanel; the runtime then keeps its data-state) */
+html[data-signed-in] [data-unlock-panel][data-shared]:not([data-state='sign-in']) [data-unlock-signin] {
+  display: none;
+}
+
+html[data-signed-in] [data-unlock-panel][data-shared]:not([data-state='sign-in']) [data-unlock-done] {
+  display: grid;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
