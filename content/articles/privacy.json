@@ -45,6 +45,19 @@
     {
       "type": "heading",
       "level": 2,
+      "text": "Messages you send me"
+    },
+    {
+      "type": "text",
+      "markdown": "The contact form sends your name, your email and your message to my inbox, through a small service of mine on Microsoft Azure, and keeps no copy of them. Nothing you type in it is recorded by the analytics above."
+    },
+    {
+      "type": "text",
+      "markdown": "To stop the form being misused, the service counts the messages sent from each IP address in an hour. It keeps the count under a one-way code made from the address, never the address itself."
+    },
+    {
+      "type": "heading",
+      "level": 2,
       "text": "Asking for your data to be deleted"
     },
     {
