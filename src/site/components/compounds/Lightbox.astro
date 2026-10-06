@@ -125,8 +125,6 @@ const { id = 'site-lightbox' } = Astro.props;
     min-width: 0;
     min-height: 0;
     height: 100%;
-    border-radius: var(--radius-xl);
-    overflow: clip;
     touch-action: pan-y;
   }
 
@@ -142,7 +140,7 @@ const { id = 'site-lightbox' } = Astro.props;
   }
 
   /* only a picture whose drop shadow option is on (its link's data-shadow) keeps it here,
-     and the stage leaves room for the whole shadow inside its clip */
+     and the stage (which doesn't clip) keeps the picture far enough in for the whole shadow */
   .stage[data-shadow] {
     padding: var(--c-image-shadow-blur);
     padding-block-end: calc(var(--c-image-shadow-y) + var(--c-image-shadow-blur));
