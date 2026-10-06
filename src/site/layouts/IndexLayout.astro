@@ -4,7 +4,8 @@
  * section's view: a list (rows, words first), tiles (an even grid of cards), a bento box (the lead
  * across the page, then rows of halves and thirds) or features (every page a lead, its picture beside
  * its words, one after another), with the whitespace a magazine's section opener has.
- * An empty section says so. Defined once; every section uses it (documentation/sections/spec.md §3.4),
+ * An empty section says so, only when it has nothing at all: a section whose pages are all shared with
+ * invited readers says that instead, with the ways to sign in and to ask for access. Defined once; every section uses it (documentation/sections/spec.md §3.4),
  * and so does a building's list on the planet, in the planet's frame (§6.1).
  * @tier layout
  * @a11y One h1, the page's title; the list's headings are h2. A main landmark with id="main".
@@ -17,7 +18,7 @@ import StoryCard from '../components/compounds/StoryCard.astro';
 import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
 import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
-import Link from '../components/fundamentals/Link.astro';
+import Button from '../components/fundamentals/Button.astro';
 import type { IconName } from '../design/icons';
 import type { ComponentProps } from 'astro/types';
 
@@ -53,9 +54,11 @@ interface Props {
   privatePages?: { id: string; after: string | null; story: Story }[];
   /** Where to sign in to see the private pages (the Sign in page, with the way back). */
   signIn?: string;
+  /** Where a reader asks for access to them (the site's contact page). */
+  ask?: string;
   /** How they're laid out: list (rows), tiles (an even grid), bento (a lead, then halves and thirds) or features (every page a lead). */
   view?: 'list' | 'tiles' | 'bento' | 'features';
-  /** What an empty section says, in place of its pages. */
+  /** What an empty section says, in place of its pages: only when it has none at all, open or private. */
   empty?: string;
   /** For an address that moved: the page sends the reader on to this path at once (and says so, with a link). */
   redirect?: string;
@@ -65,7 +68,7 @@ interface Props {
   noindex?: boolean;
 }
 
-const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
+const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, ask, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
 const sealing = import.meta.env.PROD;
 // in dev every page shows in its place, the private ones marked; a build lists the open ones and seals the rest
 const shown: (Story & { privateTag?: boolean })[] = sealing
@@ -110,7 +113,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
         ) : null
       }
       {
-        shown.length === 0 && empty && (
+        shown.length === 0 && privatePages.length === 0 && empty && (
           <div class="empty" data-cards-empty>
             <Text variant="lead" tone="muted">
               {empty}
@@ -141,12 +144,34 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
       }
       {
         privatePages.length > 0 && signIn && !frame && (
-          <div class="sign-in" data-sign-in-line>
-            <Text variant="body" tone="muted">
-              More work is shared with invited readers. <Link href={signIn}>Sign in to see it</Link>.
-            </Text>
+          <section class="invite" aria-labelledby="invite-heading" data-sign-in-line>
+            <Heading level={2} size="h4" id="invite-heading">
+              {shown.length === 0 ? 'The work here is shared with invited readers' : 'More work here is shared with invited readers'}
+            </Heading>
+            <div class="when-out">
+              <Text variant="body" tone="muted">
+                Sign in with your access code or magic link to see it. No code yet? Ask me for one.
+              </Text>
+            </div>
+            <div class="when-in">
+              <Text variant="body" tone="muted">
+                Your access doesn't include it. Ask me if you'd like to see it.
+              </Text>
+            </div>
+            <div class="invite-actions">
+              <div class="when-out">
+                <Button href={signIn} variant="primary" icon="sign-in">
+                  Sign in
+                </Button>
+              </div>
+              {ask && (
+                <Button href={ask} variant="secondary" icon="mail">
+                  Ask for access
+                </Button>
+              )}
+            </div>
             <p class="status" role="status" aria-live="polite" data-sign-in-status />
-          </div>
+          </section>
         )
       }
       <slot />
@@ -186,10 +211,38 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
     display: contents;
   }
 
-  .sign-in {
+  /* a section's pages shared with invited readers: what they are, and the ways in (sign in, ask for access) */
+  .invite {
     display: grid;
-    gap: var(--space-2);
+    justify-items: start;
+    gap: var(--space-4);
     max-width: var(--size-popout);
+    padding: var(--space-8);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .invite-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  /* signed in, with access that doesn't cover this section's shared pages (scripts/sealed.ts sets data-uncovered) */
+  .when-in,
+  [data-uncovered] .when-out {
+    display: none;
+  }
+
+  [data-uncovered] .when-in {
+    display: block;
+  }
+
+  @media (max-width: 40rem) {
+    .invite {
+      padding: var(--space-6);
+    }
   }
 
   .status {

@@ -301,8 +301,11 @@ async function apply(s: Session, where: Element | null): Promise<boolean> {
   }
   showBar();
   panelState('signed-in');
-  document.querySelector<HTMLElement>('[data-sign-in-line]')?.setAttribute('hidden', '');
   await openCards(r.body.keys, s.grant);
+  // the section's message goes once its shared pages are open; any the access doesn't cover, it says so
+  const line = document.querySelector<HTMLElement>('[data-sign-in-line]');
+  if (line && document.querySelector('template[data-sealed="card"]')) line.dataset.uncovered = '';
+  else line?.setAttribute('hidden', '');
   await openPage(r.body.keys, s.grant, s.via);
   return true;
 }

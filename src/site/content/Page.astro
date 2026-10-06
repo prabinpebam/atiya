@@ -99,6 +99,7 @@ const privatePages = await Promise.all(
         stories={stories}
         privatePages={privatePages}
         signIn={privatePages.length ? signInHref(route!.path) : undefined}
+        ask={privatePages.length ? contact : undefined}
         view={node.view}
         empty="Nothing here yet. This section is being written."
       />

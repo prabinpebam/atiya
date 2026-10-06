@@ -52,13 +52,17 @@ test.describe('protected content', () => {
     });
     await page.goto(SECTION);
     expect((await cards(page)).filter((n) => n?.startsWith('fx-'))).toEqual([]);
-    await expect(page.locator('[data-sign-in-line]')).toBeVisible();
+    const invite = page.locator('[data-sign-in-line]');
+    await expect(invite).toBeVisible();
+    await expect(invite.getByRole('heading', { level: 2 })).toHaveText('More work here is shared with invited readers');
+    await expect(invite.getByRole('link', { name: 'Sign in' })).toBeVisible();
+    await expect(invite.getByRole('link', { name: 'Ask for access' })).toHaveAttribute('href', /\/contact\/$/);
     await expect(page.locator('template[data-sealed="card"]')).toHaveCount(3);
     expect(await titlesIn(page)).toEqual([]);
-    // a section with only private pages: its empty state, and the sign-in line
+    // a section with only private pages isn't "empty": it says its work is shared with invited readers
     await page.goto('/work/');
-    await expect(page.locator('[data-cards-empty]')).toBeVisible();
-    await expect(page.locator('[data-sign-in-line]')).toBeVisible();
+    await expect(page.locator('[data-cards-empty]')).toHaveCount(0);
+    await expect(page.locator('[data-sign-in-line]').getByRole('heading', { level: 2 })).toHaveText('The work here is shared with invited readers');
     // a private page's shell: neutral, kept out of search, the sign-in panel in place of the page
     await page.goto(ALPHA);
     await expect(page).toHaveTitle('Private page');
@@ -78,7 +82,13 @@ test.describe('protected content', () => {
     await signIn(page, ALL.replace(/-/g, ' ').toUpperCase());
     await page.waitForURL(`**${SECTION}`);
     await expect(page.locator('[data-shared]')).toHaveCount(3);
-    expect((await cards(page)).slice(0, 6)).toEqual(['atiya', 'fx-private-alpha', 'watai', 'fx-private-beta', 'story', 'fx-private-gamma']);
+    // each shared card right after the open page it follows (the open pages are the real content's, so a
+    // draft among them leaves its follower to the next published one: only the order is held)
+    const order = await cards(page);
+    const at = (id: string) => order.indexOf(id);
+    expect(at('fx-private-alpha')).toBe(at('atiya') + 1);
+    expect(at('fx-private-beta')).toBe(at('watai') + 1);
+    expect(at('fx-private-gamma')).toBeGreaterThan(at('fx-private-beta'));
     await expect(page.locator('[data-shared]').first()).toContainText('Shared with you');
     // signed in: the header's Sign in is Sign out now, with no bar and no end date
     await expect(headerSignOut(page)).toBeVisible();
@@ -102,6 +112,12 @@ test.describe('protected content', () => {
     await page.goto(SECTION);
     await expect(page.locator('[data-shared]')).toHaveCount(1);
     expect((await cards(page)).filter((n) => n?.startsWith('fx-'))).toEqual(['fx-private-alpha']);
+    // the section's other shared pages stay sealed, and its message says so, with the way to ask
+    const invite = page.locator('[data-sign-in-line]');
+    await expect(invite).toBeVisible();
+    await expect(invite).toContainText("Your access doesn't include it.");
+    await expect(invite.getByRole('link', { name: 'Sign in' })).toBeHidden();
+    await expect(invite.getByRole('link', { name: 'Ask for access' })).toBeVisible();
     expect(await titlesIn(page)).toEqual(['fx-private-alpha']);
     await page.goto(BETA);
     await expect(page.locator('[data-access-gate] [data-unlock-status]')).toHaveText("This page isn't shared with your access. Get in touch if you'd like to see it.");
@@ -121,8 +137,9 @@ test.describe('protected content', () => {
     await page.goto('/writing/privtwo333/');
     await expect(page.locator('[data-access-gate] [data-unlock-status]')).toHaveText("Your link doesn't open this page.");
     await page.goto('/writing/');
-    expect((await cards(page)).filter((n) => n?.startsWith('fx-'))).toEqual(['fx-private-one']);
+    // the shared card is decrypted after the page loads: wait for it before reading the list
     await expect(page.locator('[data-shared]')).toHaveCount(1);
+    expect((await cards(page)).filter((n) => n?.startsWith('fx-'))).toEqual(['fx-private-one']);
     await page.goto(SECTION);
     await expect(page.locator('[data-shared]')).toHaveCount(0);
   });

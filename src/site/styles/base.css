@@ -290,8 +290,8 @@ mark {
 
 /* signed in on this device (scripts/sealed.ts; documentation/access/spec.md §7.1): while the key is tried,
  * a section's sign-in line and a private page's sign-in panel don't flash. A gate shown on purpose (a page
- * the grant doesn't cover) stays. */
-html[data-signed-in] [data-sign-in-line],
+ * the grant doesn't cover) stays, and so does a section's line when the grant leaves some of its pages sealed. */
+html[data-signed-in] [data-sign-in-line]:not([data-uncovered]),
 html[data-signed-in] [data-access-gate]:not([data-shown]) {
   display: none;
 }

@@ -148,7 +148,7 @@ A section's page is its heading, its standfirst and its pages, in its `view`:
   No section can be styled beyond its view.
 - **The meta line** follows the page's kind: an Article's reading time, a Page's nothing, a Gallery's number of pictures.
 - **On a phone** every view is a single column. The list keeps its small pictures; tiles, bento and features stack (a feature's picture goes above its words).
-- **Empty.** A section with no published pages shows its summary and an empty state: "Nothing here yet. This section is being written." Its address works, and it stays in the navigation if the owner put it there.
+- **Empty.** A section with no published pages at all, open or private, shows its summary and an empty state: "Nothing here yet. This section is being written." One whose pages are all private says that instead ([access spec §2.1](../access/spec.md)). Its address works, and it stays in the navigation if the owner put it there.
 - **Drafts** show in edit mode's canvas only, never on the site (as today).
 
 ### 3.5 The home page (decision O5)
