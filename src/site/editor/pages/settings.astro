@@ -1,7 +1,7 @@
 ---
 /**
- * Edit mode's settings: the site's and its owner's (documentation/editor/spec.md §2), and every access code
- * and magic link that opens private pages (documentation/access/spec.md §8.1). Dev only: injected by
+ * Edit mode's settings: the site's and its owner's (documentation/editor/spec.md §2). Who private pages are
+ * shared with is the Access screen's (documentation/access/spec.md §8.1). Dev only: injected by
  * integrations/editor.mjs.
  */
 import EditorLayout from '../EditorLayout.astro';
@@ -9,12 +9,9 @@ import SettingsForms, { type SettingsThumb } from '../components/SettingsForms.a
 import MediaGrid from '../components/MediaGrid.astro';
 import CropDialog from '../components/CropDialog.astro';
 import ContentIssues from '../components/ContentIssues.astro';
-import SharingPanel from '../components/SharingPanel.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import { load, mediaCards } from '../server/screens';
 import { readDoc } from '../server/store';
-import { posthogPerson, sharingView } from '../server/access';
-import { hasPrivate, privateRoot } from '../../content/source';
 import type { Person, SiteSettings } from '../../content/schema';
 
 export const prerender = false;
@@ -24,11 +21,9 @@ const site = readDoc<SiteSettings>('/content/site.json');
 const person = site ? readDoc<Person>(`/content/people/${site.value.owner}.json`) : null;
 const cards = loaded.ok ? await mediaCards(loaded.index, 'site') : [];
 const thumbs: Record<string, SettingsThumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height }]));
-// sharing private pages, when private-pages/ is set up
-const sharing = loaded.ok && hasPrivate(privateRoot()) ? sharingView() : null;
 ---
 
-<EditorLayout title="Settings" screen="settings" heading="Settings" intro="The site's own settings, your profile, and who you've shared private pages with. Settings and profile save to content/; sharing to private-pages/, never the public repository.">
+<EditorLayout title="Settings" screen="settings" heading="Settings" intro="The site's own settings and your profile, saved to content/. Who you've shared private pages with is on the Access screen.">
   {
     loaded.ok && site && person ? (
       <>
@@ -37,7 +32,6 @@ const sharing = loaded.ok && hasPrivate(privateRoot()) ? sharingView() : null;
           <MediaGrid mode="pick" media={cards} owner="site" />
         </Dialog>
         <CropDialog />
-        {sharing && <SharingPanel view={sharing} posthogPerson={posthogPerson()} />}
       </>
     ) : (
       <ContentIssues issues={loaded.ok ? [{ file: 'content/site.json', message: "the site settings or their owner's profile can't be read" }] : loaded.issues} />

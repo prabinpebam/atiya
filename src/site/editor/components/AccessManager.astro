@@ -1,0 +1,283 @@
+---
+/**
+ * The Access screen's two columns (documentation/access/spec.md §8.1): every access code and magic link on
+ * the left, grouped by state (Ends soon, Active, Expired, Withdrawn: what needs you first), newest first in
+ * each, with Find, Show and Kind to narrow a long list; and the chosen one on the right (the `detail` slot,
+ * a region the screen swaps without a reload, so the list keeps its place and its filters). Share with
+ * someone, over the list, opens the form for a new one in the same place. The list stays in view and
+ * scrolls on its own beside a long form; on a phone it sits above the details.
+ * @tier editor
+ * @a11y The list is a navigation landmark of links, the chosen one aria-current; each group has a heading with its count, and each link says the person, its kind and organisation, and its dates.
+ * @a11y Find, Show and Kind narrow the list in place, and the count (a live region) says how many show.
+ * @a11y The details are a region named by their heading: the chosen one's name, or the form's.
+ * @key Up / Down on a code or link in the list: moves to the one before or after (Home and End: the first and the last)
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import { KIND_LABEL, dateLine, findText, grantGroups, type ListedGrant } from '../model/access';
+
+interface Props {
+  /** Every grant, in any order: the list groups them by state, newest first in each. */
+  grants: ListedGrant[];
+  /** The chosen one's ID, `new` while the form for a new one is shown, or empty. */
+  selected: string;
+}
+
+const { grants, selected } = Astro.props;
+const groups = grantGroups(grants);
+const SHOW = [
+  { value: 'all', label: 'Every state' },
+  { value: 'live', label: 'In use' },
+  { value: 'expiring', label: 'Ends soon' },
+  { value: 'active', label: 'Active' },
+  { value: 'expired', label: 'Expired' },
+  { value: 'withdrawn', label: 'Withdrawn' },
+];
+const KIND = [
+  { value: 'all', label: 'Codes and links' },
+  { value: 'code', label: 'Access codes' },
+  { value: 'link', label: 'Magic links' },
+];
+const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links'}`;
+---
+
+<div class="access" data-access-manager>
+  <div class="split">
+    <nav class="list" aria-label="Access codes and magic links" data-access-list>
+      <div class="list-head">
+        <Button variant="primary" icon="plus" href="?grant=new" block data-access-go="new" data-chosen={selected === 'new' ? '' : undefined}>Share with someone</Button>
+        <TextField label="Find someone" type="search" icon="search" hint="By name, organisation, why, notes or what it opens." data-access-find="" />
+        <div class="selects">
+          <Select label="Show" size="sm" value="all" options={SHOW} data-access-show="" />
+          <Select label="Kind" size="sm" value="all" options={KIND} data-access-kind="" />
+        </div>
+        <p class="count" aria-live="polite" data-access-count>
+          <Text as="span" variant="small" tone="muted">{count(grants.length)}</Text>
+        </p>
+      </div>
+      <div class="groups" data-scrollbar data-region="access-list">
+        {
+          groups.map((g) => (
+            <section class="group" aria-labelledby={`access-group-${g.state}`} data-access-group={g.state}>
+              <Heading level={2} size="ui" tone="muted" id={`access-group-${g.state}`}>
+                {g.label}
+                <span class="group-count" data-access-group-count>{` (${g.grants.length})`}</span>
+              </Heading>
+              <ul class="items">
+                {g.grants.map((x) => (
+                  <li data-access-item={x.id} data-state={x.state} data-kind={x.kind} data-find={findText(x)}>
+                    <a class="item" href={`?grant=${x.id}`} aria-current={x.id === selected ? 'true' : undefined} data-access-go={x.id}>
+                      <span class="mark">
+                        <Icon name={x.kind === 'code' ? 'key' : 'link'} />
+                      </span>
+                      <span class="words">
+                        <span class="name">{x.recipient.name}</span>
+                        <span class="meta">{[KIND_LABEL[x.kind], x.recipient.organisation].filter(Boolean).join(' · ')}</span>
+                        <span class="meta">{dateLine(x)}</span>
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        }
+        {
+          grants.length === 0 && (
+            <p class="empty">
+              <Text as="span" variant="small" tone="muted">
+                No access codes or magic links yet. Share with someone to make the first.
+              </Text>
+            </p>
+          )
+        }
+        <p class="empty" data-access-nomatch hidden>
+          <Text as="span" variant="small" tone="muted">
+            Nothing here matches. Clear the search, or show every state and kind.
+          </Text>
+        </p>
+      </div>
+    </nav>
+
+    <section class="detail" aria-labelledby="access-detail-title" data-region="access-detail" data-access-detail>
+      <slot name="detail" />
+    </section>
+  </div>
+</div>
+
+<style>
+  .access {
+    min-inline-size: 0;
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: var(--c-editor-access-list) minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  /* the list stays in view, its tools on top and its codes and links scrolling under them, beside a long form */
+  .list {
+    position: sticky;
+    inset-block-start: var(--space-4);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    max-block-size: calc(100dvh - var(--c-editor-topbar) - var(--space-8));
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .list-head {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .selects {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .count {
+    margin: 0;
+  }
+
+  .groups {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+    min-block-size: 0;
+    overflow: auto;
+    scrollbar-width: none;
+    padding: var(--space-3);
+  }
+
+  .group {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .group[hidden],
+  li[hidden],
+  .empty[hidden] {
+    display: none;
+  }
+
+  .group-count {
+    font-weight: var(--weight-regular);
+  }
+
+  .items {
+    display: grid;
+    gap: var(--space-0-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-2);
+    min-block-size: var(--size-touch);
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  @media (hover: hover) {
+    .item:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .item:active {
+    background: var(--color-bg-hover);
+  }
+
+  .item[aria-current='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .item:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: calc(var(--border-focus) * -1);
+  }
+
+  .mark {
+    display: grid;
+    padding-block-start: var(--space-0-5);
+  }
+
+  .words {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .name {
+    overflow: hidden;
+    font-weight: var(--weight-semibold);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .meta {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item[aria-current='true'] .meta {
+    color: inherit;
+  }
+
+  .empty {
+    margin: 0;
+  }
+
+  .detail {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .detail[aria-busy='true'] {
+    opacity: var(--opacity-disabled);
+  }
+
+  /* one column: the list above the details, short enough that the details are close */
+  @media (max-width: 56rem) {
+    .split {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-6);
+    }
+
+    .list {
+      position: static;
+      max-block-size: none;
+    }
+
+    .groups {
+      max-block-size: var(--c-editor-scope-list);
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAccessList } from '../scripts/grants';
+
+  each<HTMLElement>('[data-access-manager]', (root, signal) => initAccessList(root, signal));
+</script>

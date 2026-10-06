@@ -2,7 +2,8 @@
  * Edit mode's access model (documentation/access/spec.md §4, §8), pure so it's unit-tested: placing and
  * unplacing private pages in the private overlay (a private page is always in a section), pages moved in the
  * Sections screen with open and private ones together, a section's full order split into the overlay's and
- * the public structure's, a grant's new record, its share message and its magic link.
+ * the public structure's, a grant's new record, its share message and its magic link, and the Access
+ * screen's words: its groups by state, its dates, what a grant opens in one line, and what it's found by.
  */
 import type { HubNode, Overlay, SiteNode, SiteStructure } from '../../content/schema';
 import type { Grant } from '../../access/types';
@@ -15,15 +16,111 @@ export type PageAccess = 'open' | 'private';
 /** A grant as edit mode lists it: its state, and what it opens in words. */
 export type ListedGrant = Grant & { state: ReturnType<typeof grantState>; opens: string[] };
 
-/** What the sharing panel shows (made by the server's `sharingView`). */
+/** A private page a grant can open: its section (its title, and its ID) and whether it's on the site yet. */
+export interface ScopePage {
+  id: string;
+  title: string;
+  /** Its section's title. */
+  section: string;
+  sectionId: string;
+  published: boolean;
+}
+
+/** What the sharing panel and the Access screen show (made by the server's `sharingView`). */
 export interface SharingView {
   /** Every grant, newest first; on a page's Share dialog, only the ones that open it. */
   grants: ListedGrant[];
-  /** The private pages a grant can open, each with its section's title. */
-  pages: { id: string; title: string; section: string }[];
-  /** The sections that hold private pages: a grant can open every private page in one, now and later. */
+  /** The private pages a grant can open, each with its section. */
+  pages: ScopePage[];
+  /** Every section of the site: a grant can open every private page in one, now and later (even before it holds any). */
   sections: { id: string; title: string }[];
 }
+
+type State = ListedGrant['state'];
+
+/** The states in the order the Access screen lists them (what needs you first), with their words and tones. */
+export const GRANT_STATES: { state: State; label: string; tone: 'positive' | 'highlight' | 'neutral' | 'negative' }[] = [
+  { state: 'expiring', label: 'Ends soon', tone: 'highlight' },
+  { state: 'active', label: 'Active', tone: 'positive' },
+  { state: 'expired', label: 'Expired', tone: 'neutral' },
+  { state: 'withdrawn', label: 'Withdrawn', tone: 'negative' },
+];
+export const STATE_OF = Object.fromEntries(GRANT_STATES.map((s) => [s.state, s])) as Record<State, (typeof GRANT_STATES)[number]>;
+
+export const KIND_LABEL: Record<Grant['kind'], string> = { code: 'Access code', link: 'Magic link' };
+
+/** Grants grouped by state, in GRANT_STATES' order, newest first in each; empty groups left out. */
+export function grantGroups<T extends { state: State; createdAt: string }>(grants: T[]): { state: State; label: string; grants: T[] }[] {
+  return GRANT_STATES.map((s) => ({
+    state: s.state,
+    label: s.label,
+    grants: grants.filter((g) => g.state === s.state).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
+  })).filter((g) => g.grants.length > 0);
+}
+
+/** A short date, for lists: "5 Nov 2026". */
+export const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/** What a grant's dates say in the list, by its state: "Until 5 Nov 2026", "Ends 7 Oct 2026", "Expired …", "Withdrawn …", "No end date". */
+export function dateLine(g: { state: State; expiresAt?: string; revokedAt?: string }): string {
+  if (g.state === 'withdrawn' && g.revokedAt) return `Withdrawn ${shortDate(g.revokedAt)}`;
+  if (g.state === 'expired' && g.expiresAt) return `Expired ${shortDate(g.expiresAt)}`;
+  if (g.state === 'expiring' && g.expiresAt) return `Ends ${shortDate(g.expiresAt)}`;
+  return g.expiresAt ? `Until ${shortDate(g.expiresAt)}` : 'No end date';
+}
+
+/** Words joined as a reader would: "A", "A and B", "A, B and C". */
+export function listWords(words: string[]): string {
+  if (words.length < 2) return words[0] ?? '';
+  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+}
+
+/**
+ * What a grant opens, in one line, from its sections' and single pages' titles: "Opens every private page
+ * in Work, and Lantern study". Past three sections or two pages it counts them, so the line stays one line.
+ */
+export function scopeLine(sections: string[], pages: string[]): string {
+  if (!sections.length && !pages.length) return 'Opens nothing yet: choose a section or a page';
+  const parts: string[] = [];
+  if (sections.length) parts.push(`every private page in ${sections.length <= 3 ? listWords(sections) : `${sections.length} sections`}`);
+  if (pages.length) parts.push(pages.length <= 2 ? listWords(pages) : `${pages.length} single pages`);
+  return `Opens ${parts.join(', and ')}`;
+}
+
+/** A section and its private pages, for the list of what a grant can open. */
+export interface ScopeSection {
+  id: string;
+  title: string;
+  pages: ScopePage[];
+}
+
+/**
+ * The sections and their private pages, in the site's order, for choosing what a grant opens. IDs a
+ * grant still names that are no longer a section or a private page come last, as `unknown`, so they can
+ * be seen and taken out.
+ */
+export function scopeGroups(view: Pick<SharingView, 'pages' | 'sections'>, scope: Grant['scope'] = {}): { sections: ScopeSection[]; unknown: { sections: string[]; pages: string[] } } {
+  const sections = view.sections.map((s) => ({ ...s, pages: view.pages.filter((p) => p.sectionId === s.id) }));
+  const known = new Set(view.sections.map((s) => s.id));
+  const pages = new Set(view.pages.map((p) => p.id));
+  return { sections, unknown: { sections: (scope.sections ?? []).filter((s) => !known.has(s)), pages: (scope.pages ?? []).filter((p) => !pages.has(p)) } };
+}
+
+/** Everything a grant can be found by in the Access screen's list, lowercased: who, why, notes, its code's name, what it opens. */
+export function findText(g: ListedGrant): string {
+  const r = g.recipient;
+  return [r.name, r.organisation, r.role, r.email, g.purpose, g.notes, g.name, KIND_LABEL[g.kind], ...g.opens].filter(Boolean).join(' \n ').toLowerCase();
+}
+
+/** A date chosen as a grant's last day (YYYY-MM-DD): what's wrong with it, if anything, today being `today`. */
+export function endDateIssue(date: string, today: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) return 'write the last day it works as a date';
+  if (date < today) return 'the last day it works is today or later: to stop it now, withdraw it';
+  return null;
+}
+
+/** A date `days` after `from`, as YYYY-MM-DD (the suggested end of a new grant). */
+export const daysAfter = (days: number, from = new Date()) => localIso(new Date(from.getTime() + days * 86_400_000)).slice(0, 10);
 
 type PrivateNode = Overlay['sections'][number]['pages'][number];
 

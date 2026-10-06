@@ -1,15 +1,37 @@
 /**
  * Edit mode's access (documentation/access/spec.md §4.1, §8; benchmark QB10): the pure model (the overlay,
- * a section's full order, pages moved with open and private ones together, messages and links), the store's
- * grant rules (none deleted, no ID reused, a withdrawn grant left as it is), the public commit message, and
- * the server's operations on a copy of both folders: making and withdrawing grants, making a page private
- * and public again in its place, moving and ordering a section's pages, and what a page's Share dialog lists.
+ * a section's full order, pages moved with open and private ones together, messages and links, and the
+ * Access screen's groups, dates and lines), the store's grant rules (a grant may be deleted, no ID reused,
+ * a withdrawn grant left as it is), the public commit message, and the server's operations on a copy of
+ * both folders: making, changing, withdrawing and deleting grants, making a page private and public again
+ * in its place, moving and ordering a section's pages, and what a page's Share dialog lists.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { endOfDay, fillMessage, insertAfter, magicLink, movePages, openBefore, placePrivate, privateNode, reorderSection, sectionOrder, unplacePrivate } from '../../src/site/editor/model/access';
+import {
+  dateLine,
+  daysAfter,
+  endDateIssue,
+  endOfDay,
+  fillMessage,
+  findText,
+  grantGroups,
+  insertAfter,
+  listWords,
+  magicLink,
+  movePages,
+  openBefore,
+  placePrivate,
+  privateNode,
+  reorderSection,
+  scopeGroups,
+  scopeLine,
+  sectionOrder,
+  unplacePrivate,
+  type ListedGrant,
+} from '../../src/site/editor/model/access';
 import { suggestMessage } from '../../src/site/editor/model/names';
 import { publicMessage } from '../../src/site/editor/server/git';
 import type { HubNode, Overlay, SiteStructure } from '../../src/site/content/schema';
@@ -81,6 +103,62 @@ describe('the access model', () => {
   });
 });
 
+describe("the Access screen's words", () => {
+  const listed = (o: Partial<ListedGrant>): ListedGrant =>
+    ({ id: 'gaaaaaaaa', kind: 'code', name: 'harbor', recipient: { name: 'Jane Doe' }, purpose: '', scope: {}, createdAt: '2026-10-01T09:00:00+05:30', secret: { salt: 'x' }, state: 'active', opens: [], ...o }) as ListedGrant;
+
+  it('groups by state, what needs you first, newest first in each; empty groups left out', () => {
+    const groups = grantGroups([
+      listed({ id: 'a', state: 'active', createdAt: '2026-10-01T09:00:00+05:30' }),
+      listed({ id: 'b', state: 'withdrawn' }),
+      listed({ id: 'c', state: 'active', createdAt: '2026-10-03T09:00:00+05:30' }),
+      listed({ id: 'd', state: 'expiring' }),
+    ]);
+    expect(groups.map((g) => `${g.label}: ${g.grants.map((x) => x.id).join(',')}`)).toEqual(['Ends soon: d', 'Active: c,a', 'Withdrawn: b']);
+  });
+
+  it("says a grant's dates by its state", () => {
+    expect(dateLine({ state: 'active' })).toBe('No end date');
+    expect(dateLine({ state: 'active', expiresAt: '2026-11-05T23:59:59+05:30' })).toBe('Until 5 Nov 2026');
+    expect(dateLine({ state: 'expiring', expiresAt: '2026-10-07T23:59:59+05:30' })).toBe('Ends 7 Oct 2026');
+    expect(dateLine({ state: 'expired', expiresAt: '2026-10-02T23:59:59+05:30' })).toBe('Expired 2 Oct 2026');
+    expect(dateLine({ state: 'withdrawn', expiresAt: '2026-11-05T23:59:59+05:30', revokedAt: '2026-10-03T10:00:00+05:30' })).toBe('Withdrawn 3 Oct 2026');
+  });
+
+  it('says what a grant opens in one line, counting past a few', () => {
+    expect(listWords(['A', 'B', 'C'])).toBe('A, B and C');
+    expect(scopeLine([], [])).toMatch(/^Opens nothing yet/);
+    expect(scopeLine(['Work'], [])).toBe('Opens every private page in Work');
+    expect(scopeLine(['Work', 'Writing'], ['Lantern'])).toBe('Opens every private page in Work and Writing, and Lantern');
+    expect(scopeLine(['A', 'B', 'C', 'D'], ['p', 'q', 'r'])).toBe('Opens every private page in 4 sections, and 3 single pages');
+  });
+
+  it('every section with its private pages; what a grant names that has gone comes last', () => {
+    const view = {
+      sections: [
+        { id: 'work', title: 'Work' },
+        { id: 'notes', title: 'Notes' },
+      ],
+      pages: [{ id: 'p1', title: 'P1', section: 'Work', sectionId: 'work', published: true }],
+    };
+    const g = scopeGroups(view, { sections: ['work', 'old'], pages: ['p1', 'gone'] });
+    expect(g.sections.map((s) => `${s.id}:${s.pages.length}`)).toEqual(['work:1', 'notes:0']);
+    expect(g.unknown).toEqual({ sections: ['old'], pages: ['gone'] });
+  });
+
+  it('is found by who, why, notes, its code name and what it opens', () => {
+    const text = findText(listed({ recipient: { name: 'Jane Doe', organisation: 'Contoso' }, purpose: 'Panel', notes: 'Met at a talk', opens: ['Every private page in Work'] }));
+    for (const word of ['jane', 'contoso', 'panel', 'met at', 'harbor', 'access code', 'work']) expect(text).toContain(word);
+  });
+
+  it('a last day is a date, today or later', () => {
+    expect(endDateIssue('2026-10-06', '2026-10-06')).toBeNull();
+    expect(endDateIssue('2026-10-05', '2026-10-06')).toMatch(/today or later/);
+    expect(endDateIssue('soon', '2026-10-06')).toMatch(/as a date/);
+    expect(daysAfter(30, new Date('2026-10-06T12:00:00'))).toBe('2026-11-05');
+  });
+});
+
 describe('publishing: no private words in public history (QB10)', () => {
   const files = [
     { key: '/content/articles/khonjel.json', status: 'changed' as const },
@@ -117,7 +195,9 @@ describe('the operations, on a copy of both folders', () => {
     Object.assign(process.env, env);
     rmSync(dir, { recursive: true, force: true });
   });
-  const grants = () => json<{ grants: { id: string; name?: string; kind: string; revokedAt?: string; scope: { pages?: string[]; sections?: string[] }; secret: { words?: string; key?: string } }[] }>(join(dir, 'private/access.json')).grants;
+  const grants = () => json<{ grants: { id: string; name?: string; kind: string; revokedAt?: string; expiresAt?: string; scope: { pages?: string[]; sections?: string[] }; secret: { words?: string; key?: string } }[] }>(join(dir, 'private/access.json')).grants;
+  /** A refusal's first issue. */
+  const refusal = (r: { ok: boolean }) => ('issues' in r ? (r.issues as { path?: string; message: string }[])[0] : undefined);
   const structureNow = () => json<SiteStructure>(join(dir, 'content/structures/site.json'));
   const overlayNow = () => json<Overlay>(join(dir, 'private/structures/overlay.json'));
   /** A section's open and private pages, in its full order, as the files now have them. */
@@ -143,13 +223,17 @@ describe('the operations, on a copy of both folders', () => {
     expect((await access.createGrant({ kind: 'code', recipient: { name: 'Y' }, purpose: '', scope: { pages: ['khonjel'] } })).ok).toBe(false);
   });
 
-  it("a page's Share dialog lists the grants that open it, by the page or by its section", () => {
+  it("a page's Share dialog lists the grants that open it, by the page or by its section; the Access screen offers every section", () => {
     const view = access.sharingView('fx-private-alpha');
     const ids = view.grants.map((g) => g.id);
     expect(ids).toEqual(expect.arrayContaining(['gfixall22', 'gfixone22']));
     expect(ids).not.toContain('gfixlink2');
     expect(view.grants.find((g) => g.id === 'gfixall22')?.opens).toContain('Every private page in Side projects');
     expect(view.pages.map((p) => p.id)).toEqual(expect.arrayContaining(['fx-private-alpha', 'fx-private-one']));
+    expect(view.pages.find((p) => p.id === 'fx-private-one')).toMatchObject({ sectionId: 'writing', section: 'Writing' });
+    // a grant can open every private page in a section before it holds any: every section is offered
+    const hubs = (structureNow().home.children ?? []).filter((c) => c.kind === 'hub').map((c) => c.id);
+    expect(view.sections.map((s) => s.id)).toEqual(hubs);
     expect(access.sharingView().grants.length).toBeGreaterThan(ids.length);
   });
 
@@ -161,11 +245,10 @@ describe('the operations, on a copy of both folders', () => {
     expect((await access.extendGrant(id, '2099-01-01')).ok).toBe(false);
   });
 
-  it('the store refuses a deleted grant, a reused ID and a changed withdrawn grant', async () => {
+  it('the store lets a grant be deleted, and refuses a reused ID and a changed withdrawn grant', async () => {
     const key = '/private/access.json';
     const doc = store.readDoc<{ grants: { id: string; scope: object; notes?: string }[] }>(key)!;
     const write = (grantsNext: unknown[]) => store.commit({ changes: [{ key, bytes: store.jsonBytes({ grants: grantsNext }) }], ifMatch: { [key]: doc.version } });
-    expect((await write(doc.value.grants.slice(1))).ok).toBe(false);
     expect((await write([...doc.value.grants, { ...doc.value.grants[0] }])).ok).toBe(false);
     const withdrawn = doc.value.grants.findIndex((g) => (g as { revokedAt?: string }).revokedAt);
     const changed = doc.value.grants.map((g, i) => (i === withdrawn ? { ...g, scope: { sections: ['work'] } } : g));
@@ -173,6 +256,43 @@ describe('the operations, on a copy of both folders', () => {
     // its notes may change
     const noted = doc.value.grants.map((g, i) => (i === withdrawn ? { ...g, notes: 'Called back on Tuesday' } : g));
     expect((await write(noted)).ok).toBe(true);
+  });
+
+  it("changes a grant's details, what it opens and its last day in one save, keeping an unchanged grant's bytes", async () => {
+    const made = await access.createGrant({ kind: 'code', recipient: { name: 'Ana Ruiz', organisation: 'Contoso' }, purpose: 'Panel', scope: { pages: ['fx-private-alpha'] }, expires: '2099-01-01' });
+    const id = made.grant!.id;
+    const before = readFileSync(join(dir, 'private/access.json'), 'utf8');
+    // the same values again: nothing changes, to the byte
+    expect((await access.updateGrant(id, { recipient: { name: 'Ana Ruiz', organisation: 'Contoso', role: '', email: '' }, purpose: 'Panel', notes: '', scope: { pages: ['fx-private-alpha'] }, expires: '2099-01-01' })).ok).toBe(true);
+    expect(readFileSync(join(dir, 'private/access.json'), 'utf8')).toBe(before);
+    const r = await access.updateGrant(id, { recipient: { name: 'Ana Ruiz-Diaz', role: 'Design manager' }, purpose: 'Second round', notes: 'Asked by Sam', scope: { sections: ['work'], pages: ['fx-private-alpha'] }, expires: null });
+    expect(r.ok).toBe(true);
+    const g = grants().find((x) => x.id === id) as unknown as { recipient: object; purpose: string; notes?: string; expiresAt?: string; scope: object; secret: object };
+    expect(g).toMatchObject({ recipient: { name: 'Ana Ruiz-Diaz', role: 'Design manager' }, purpose: 'Second round', notes: 'Asked by Sam', scope: { sections: ['work'], pages: ['fx-private-alpha'] } });
+    expect(g.recipient).not.toHaveProperty('organisation');
+    expect(g.expiresAt).toBeUndefined();
+    expect(g.secret).toEqual(made.grant!.secret);
+    // refusals, each naming its field
+    expect(refusal(await access.updateGrant(id, { recipient: { name: ' ' } }))).toMatchObject({ path: 'recipient.name' });
+    expect(refusal(await access.updateGrant(id, { scope: {} }))).toMatchObject({ path: 'scope' });
+    expect(refusal(await access.updateGrant(id, { expires: '2001-01-01' }))).toMatchObject({ path: 'expires' });
+    expect((await access.updateGrant(id, { expires: '2099-06-30' })).ok).toBe(true);
+    expect(grants().find((x) => x.id === id)?.expiresAt).toMatch(/^2099-06-30T23:59:59/);
+  });
+
+  it('a withdrawn grant changes only why and its notes; any grant can be deleted', async () => {
+    const withdrawn = grants().find((g) => g.revokedAt)!;
+    expect((await access.updateGrant(withdrawn.id, { purpose: 'Closed', notes: 'Role filled' })).ok).toBe(true);
+    expect(grants().find((g) => g.id === withdrawn.id)).toMatchObject({ purpose: 'Closed', notes: 'Role filled' });
+    expect((await access.updateGrant(withdrawn.id, { scope: { sections: ['writing'] } })).ok).toBe(false);
+    expect((await access.updateGrant(withdrawn.id, { recipient: { name: 'Someone else' } })).ok).toBe(false);
+    const working = grants().find((g) => !g.revokedAt)!;
+    const count = grants().length;
+    expect((await access.deleteGrant(withdrawn.id)).ok).toBe(true);
+    expect((await access.deleteGrant(working.id)).ok).toBe(true);
+    expect(grants()).toHaveLength(count - 2);
+    expect(grants().some((g) => g.id === working.id || g.id === withdrawn.id)).toBe(false);
+    expect((await access.deleteGrant(working.id)).ok).toBe(false);
   });
 
   it('makes an open page private in its place, moving its file into private-pages/, and public again where it was', async () => {

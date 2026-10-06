@@ -10,7 +10,7 @@ import { createArticle, deleteArticle, duplicateArticle, followOnPlanet, pagesOf
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { changes, discard, publish, push } from '../server/git';
-import { changeAddress, createGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, withdrawGrant, type NewGrant, type PageAccess } from '../server/access';
+import { changeAddress, createGrant, deleteGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, updateGrant, withdrawGrant, type GrantEdit, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
 import { picture } from '../../content/pictures';
 
@@ -74,6 +74,9 @@ const handle: APIRoute = async ({ request, params, url }) => {
       if (method === 'POST' && parts[1] === 'grants' && !parts[2]) return result(await createGrant(await body<NewGrant>(request)));
       const gid = parts[2];
       if (parts[1] === 'grants' && gid && !/^g[a-z2-7]{8}$/.test(gid)) return json({ ok: false }, 404);
+      // a grant's details, what it opens and its end date in one save; and a grant deleted (the Access screen)
+      if (method === 'PUT' && parts[1] === 'grants' && gid && !parts[3]) return result(await updateGrant(gid, await body<GrantEdit>(request)));
+      if (method === 'DELETE' && parts[1] === 'grants' && gid && !parts[3]) return result(await deleteGrant(gid));
       if (method === 'POST' && parts[1] === 'grants' && parts[3] === 'extend') return result(await extendGrant(gid, (await body<{ expires: string | null }>(request)).expires));
       if (method === 'POST' && parts[1] === 'grants' && parts[3] === 'scope') return result(await rescopeGrant(gid, (await body<{ scope: { sections?: string[]; pages?: string[] } }>(request)).scope));
       if (method === 'POST' && parts[1] === 'grants' && parts[3] === 'withdraw') return result(await withdrawGrant(gid));

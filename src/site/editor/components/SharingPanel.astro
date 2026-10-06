@@ -1,11 +1,12 @@
 ---
 /**
- * Sharing private pages (documentation/access/spec.md §4, §8.1): the access codes and magic links (who each
- * is for, why, what it opens, when it was made and when it ends, its state, its message to copy again,
- * Set end date, Change what it opens and Withdraw now), and a form to share with someone new. Settings shows
- * every code and link; a private page's Share dialog shows the ones that open it, and shares that page.
+ * Sharing one private page (documentation/access/spec.md §8.1), in its Share dialog: who it's shared with
+ * (each access code or magic link that opens it, by the page or by its section: who it's for, its kind, its
+ * state and when it ends, Copy message, and Manage, which opens it on the Access screen), and a form to share
+ * it with someone new (this page, or every private page in its section). Every code and link is managed on
+ * the Access screen: changing who it's for, what it opens and when it ends, withdrawing, deleting.
  * @tier editor
- * @a11y Headings for each part, a table with a header row for the grants, labelled fields, and the result announced.
+ * @a11y Headings for each part, a list of who it's shared with (each row's actions named with the person), labelled fields, and the result announced.
  */
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
@@ -14,97 +15,75 @@ import TextField from '../../components/fundamentals/TextField.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
-import { longDate, type SharingView } from '../model/access';
+import { withBase } from '../../design/meta';
+import { KIND_LABEL, STATE_OF, daysAfter, dateLine, type SharingView } from '../model/access';
 
 interface Props {
-  /** The grants, and the private pages and sections a grant can open. */
+  /** The grants that open the page, and the private pages and sections a grant can open. */
   view: SharingView;
-  /** A grant's timeline in PostHog, from its ID, when the project is set (spec §8.1). */
-  posthogPerson?: (id: string) => string;
-  /** On a private page: its ID, so the list is the grants that open it and a new one opens it. */
-  page?: string;
+  /** The private page: the list is the grants that open it, and a new one opens it (or its section). */
+  page: string;
 }
 
-const { view, posthogPerson, page } = Astro.props;
-const STATE = { active: { label: 'Active', tone: 'positive' }, expiring: { label: 'Ends soon', tone: 'highlight' }, expired: { label: 'Expired', tone: 'neutral' }, withdrawn: { label: 'Withdrawn', tone: 'negative' } } as const;
-const pageOptions = view.pages.map((p) => ({ value: p.id, label: `${p.title} (${p.section})` }));
-const sectionOptions = view.sections.map((s) => ({ value: s.id, label: s.title }));
-const here = page ? view.pages.find((p) => p.id === page) : undefined;
-const hereSection = here ? view.sections.find((s) => s.title === here.section) : undefined;
-const in30 = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
-const prefix = page ? 'share-page' : 'sharing';
+const { view, page } = Astro.props;
+const here = view.pages.find((p) => p.id === page);
+const hereSection = here ? view.sections.find((s) => s.id === here.sectionId) : undefined;
+const access = (q: string) => withBase(`/_edit/access/${q}`);
+const prefix = 'share-page';
 ---
 
 <div class="sharing" data-editor-sharing>
   <section class="panel" aria-labelledby={`${prefix}-grants`} data-region={`${prefix}-grants`}>
-    <Heading level={2} size="h4" id={`${prefix}-grants`}>{page ? 'Who it’s shared with' : 'Access codes and magic links'}</Heading>
+    <div class="panel-head">
+      <Heading level={2} size="h4" id={`${prefix}-grants`}>Who it’s shared with</Heading>
+      <Link href={access('')} variant="standalone">Manage access</Link>
+    </div>
     {
       view.grants.length ? (
-        <div class="table" data-scrollbar>
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">For</th>
-                <th scope="col">Kind</th>
-                <th scope="col">Opens</th>
-                <th scope="col">Made</th>
-                <th scope="col">Ends</th>
-                <th scope="col">State</th>
-                <th scope="col">
-                  <span class="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.grants.map((g) => (
-                <tr data-grant={g.id}>
-                  <td class="who">
-                    <Text as="span" variant="label">{g.recipient.name}</Text>
-                    <Text as="span" variant="small" tone="muted">{[g.recipient.role, g.recipient.organisation].filter(Boolean).join(', ')}</Text>
-                    {g.purpose && <Text as="span" variant="small" tone="muted">{g.purpose}</Text>}
-                  </td>
-                  <td>{g.kind === 'code' ? 'Access code' : 'Magic link'}</td>
-                  <td>{g.opens.join('; ')}</td>
-                  <td>{longDate(g.createdAt)}</td>
-                  <td>{g.expiresAt ? longDate(g.expiresAt) : 'Never'}</td>
-                  <td>
-                    <Tag size="sm" tone={STATE[g.state].tone}>{STATE[g.state].label}</Tag>
-                  </td>
-                  <td class="row-actions">
-                    <Button variant="quiet" size="sm" icon="copy" data-access-copy={g.id}>Copy message</Button>
-                    {g.state !== 'withdrawn' && (
-                      <Fragment>
-                        <TextField label="Ends on" type="date" name={`expires-${g.id}`} id={`${prefix}-expires-${g.id}`} value={g.expiresAt?.slice(0, 10) ?? ''} data-access-expires={g.id} />
-                        <Button variant="secondary" size="sm" data-access-extend={g.id}>Set end date</Button>
-                        <Button variant="quiet" size="sm" icon="delete" data-access-withdraw={g.id}>Withdraw now</Button>
-                        <details class="scope">
-                          <summary>Change what it opens</summary>
-                          <form data-access-scope={g.id} novalidate>
-                            {sectionOptions.length > 0 && <ChoiceGroup legend="Every private page in a section" name="sections" type="checkbox" value={g.scope.sections ?? []} options={sectionOptions} />}
-                            {pageOptions.length > 0 && <ChoiceGroup legend="Single pages" name="pages" type="checkbox" value={g.scope.pages ?? []} options={pageOptions} />}
-                            <Button variant="secondary" size="sm" type="submit">Save what it opens</Button>
-                          </form>
-                        </details>
-                      </Fragment>
-                    )}
-                    {posthogPerson && <Link href={posthogPerson(g.id)} external>Who looked</Link>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul class="grants">
+          {view.grants.map((g) => (
+            <li class="grant" data-grant={g.id}>
+              <span class="who">
+                <Text as="span" variant="label" id={`${prefix}-who-${g.id}`}>
+                  {g.recipient.name}
+                </Text>
+                <Text as="span" variant="small" tone="muted">
+                  {[KIND_LABEL[g.kind], g.recipient.organisation, g.opens.join('; '), dateLine(g)].filter(Boolean).join(' · ')}
+                </Text>
+              </span>
+              <Tag size="sm" tone={STATE_OF[g.state].tone}>
+                {STATE_OF[g.state].label}
+              </Tag>
+              <span class="row-actions">
+                {g.state !== 'withdrawn' && (
+                  <Button variant="quiet" size="sm" icon="copy" data-access-copy={g.id} aria-describedby={`${prefix}-who-${g.id}`}>
+                    Copy message
+                  </Button>
+                )}
+                <Button variant="quiet" size="sm" icon="edit" href={access(`?grant=${g.id}`)} aria-describedby={`${prefix}-who-${g.id}`}>
+                  Manage
+                </Button>
+              </span>
+            </li>
+          ))}
+        </ul>
       ) : (
-        <Text variant="ui" tone="muted">{page ? 'Not shared with anyone yet. Share it below.' : view.pages.length ? 'No access codes or links yet. Share a private page from its settings, or below.' : 'No private pages yet. Make a page private in its settings (Who can see it), then share it.'}</Text>
+        <Text variant="ui" tone="muted">
+          Not shared with anyone yet. Share it below.
+        </Text>
       )
     }
   </section>
 
   {
-    (page ? here : view.pages.length > 0) && (
+    here && (
       <form class="panel" data-access-new novalidate aria-labelledby={`${prefix}-new`}>
-        <Heading level={2} size="h4" id={`${prefix}-new`}>Share with someone</Heading>
-        <Text variant="ui" tone="muted">One code or link per person: you can see when it's opened, end it, or withdraw it without touching anyone else's. Either way works for any private page.</Text>
+        <Heading level={2} size="h4" id={`${prefix}-new`}>
+          Share with someone
+        </Heading>
+        <Text variant="ui" tone="muted">
+          One code or link per person: you can see when it's opened, end it, or withdraw it without touching anyone else's. To share several pages at once, use the Access screen.
+        </Text>
         <ChoiceGroup legend="How they get in" name="kind" id={`${prefix}-kind`} value="code" orientation="horizontal" options={[{ value: 'code', label: 'Access code', hint: 'A password they type on the Sign in page.' }, { value: 'link', label: 'Magic link', hint: 'A link that opens it with nothing to type.' }]} />
         <div class="fields">
           <TextField label="Their name" name="name" id={`${prefix}-name`} required />
@@ -113,37 +92,29 @@ const prefix = page ? 'share-page' : 'sharing';
           <TextField label="Email" type="email" name="email" id={`${prefix}-email`} optional />
         </div>
         <TextField label="Why you're sharing it" name="purpose" id={`${prefix}-purpose`} optional hint="For your own record; never published." />
-        {
-          here ? (
-            <ChoiceGroup
-              legend="What it opens"
-              name="opens"
-              id={`${prefix}-opens`}
-              value="page"
-              options={[
-                { value: 'page', label: 'This page' },
-                ...(hereSection ? [{ value: 'section', label: `Every private page in ${hereSection.title}`, hint: 'Now and later: new private pages there open too.' }] : []),
-              ]}
-              data-page={here.id}
-              data-section={hereSection?.id}
-            />
-          ) : (
-            <Fragment>
-              {sectionOptions.length > 0 && <ChoiceGroup legend="Every private page in a section" name="sections" type="checkbox" hint="Now and later: new private pages there open too." options={sectionOptions} />}
-              {pageOptions.length > 0 && <ChoiceGroup legend="Single pages" name="pages" type="checkbox" options={pageOptions} />}
-            </Fragment>
-          )
-        }
-        <TextField label="Ends on" type="date" name="expires" id={`${prefix}-expires`} value={in30} hint="The last day it works. Clear it for no end." />
+        <ChoiceGroup
+          legend="What it opens"
+          name="opens"
+          id={`${prefix}-opens`}
+          value="page"
+          options={[{ value: 'page', label: 'This page' }, ...(hereSection ? [{ value: 'section', label: `Every private page in ${hereSection.title}`, hint: 'Now and later: new private pages there open too.' }] : [])]}
+          data-page={here.id}
+          data-section={hereSection?.id}
+        />
+        <TextField label="Ends on" type="date" name="expires" id={`${prefix}-expires`} value={daysAfter(30)} hint="The last day it works. Clear it for no end." />
         <TextField label="Notes" name="notes" id={`${prefix}-notes`} optional multiline rows={2} />
         <p class="issue" role="alert" data-editor-form-issue hidden></p>
         <div class="actions">
-          <Button variant="primary" type="submit" icon="key">Share it</Button>
+          <Button variant="primary" type="submit" icon="key">
+            Share it
+          </Button>
         </div>
         <div class="result" data-access-result hidden>
-          <TextField label="Message to send" name="message" id={`${prefix}-message`} multiline rows={4} hint="Copy it now: it's also kept, so you can copy it again later." data-access-message="" />
+          <TextField label="Message to send" name="message" id={`${prefix}-message`} multiline rows={4} hint="Copy it now: it's also kept on the Access screen, so you can copy it again later." data-access-message="" />
           <div class="actions">
-            <Button variant="secondary" icon="copy" data-access-copy-new="">Copy message</Button>
+            <Button variant="secondary" icon="copy" data-access-copy-new="">
+              Copy message
+            </Button>
           </div>
         </div>
       </form>
@@ -173,31 +144,47 @@ const prefix = page ? 'share-page' : 'sharing';
     background: var(--color-bg);
   }
 
-  .table {
-    overflow-x: auto;
+  .panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--font-ui);
-    font-size: var(--text-sm);
+  .grants {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  th,
-  td {
-    padding: var(--space-3);
-    border-block-end: var(--border-hairline) solid var(--color-rule);
-    text-align: start;
-    vertical-align: top;
+  .grant {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding-block: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .grant:first-child {
+    border-block-start: 0;
   }
 
   .who {
     display: grid;
     gap: var(--space-1);
+    min-inline-size: 0;
   }
 
-  .row-actions,
+  .row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    grid-column: 1 / -1;
+    gap: var(--space-2);
+  }
+
   .actions {
     display: flex;
     flex-wrap: wrap;
@@ -219,18 +206,5 @@ const prefix = page ? 'share-page' : 'sharing';
   .issue {
     margin: 0;
     color: var(--color-negative);
-  }
-
-  .scope summary {
-    cursor: pointer;
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    color: var(--color-accent);
-  }
-
-  .scope form {
-    display: grid;
-    gap: var(--space-3);
-    padding-block-start: var(--space-3);
   }
 </style>

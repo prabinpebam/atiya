@@ -9,7 +9,7 @@ How private pages, signing in, grants and telemetry ([spec](spec.md)) get built:
 > - **A3: sealing the build.** Seal markers in the layouts, the provenance record, the sealer, build-scoped keyrings and the three-layer leak check.
 > - **A4: signing in.** The Sign in page, the access bar, the shared cards, the runtime (regions, pictures, videos, the lightbox) and sign-out that leaves nothing behind.
 > - **A5: deploying.** The workflow fetches the submodule with the deploy key, builds quietly, seals, checks, deploys from `main` only, and runs nightly.
-> - **A6: edit mode.** Private pages and their media listed with the rest (Pages, Sections, Media), a page's access and its Share dialog, sharing in Settings, uploads, and the existing Publish for both repositories. There's no Access screen (spec D21).
+> - **A6: edit mode.** Private pages and their media listed with the rest (Pages, Sections, Media), a page's access and its Share dialog, uploads, and the existing Publish for both repositories. Sharing first lived in Settings with no Access screen (spec D21); since 6 October 2026 it's the Access screen's (D22).
 > - **A7: telemetry.** PostHog with an allowlist on protected pages, identity by grant, opt-outs and the Privacy page.
 > - **After A7, yours:** the first real private page and its first grant, made in edit mode and published (§4).
 > - **Status:** A0 to A7 are built and their Definition of Done rows met, except the two that need your PostHog project and a deploy from `main` (§2).
@@ -92,7 +92,7 @@ In `src/site/access/`, pure, with no DOM and no Node-only API:
 ### A6: edit mode
 
 1. **Two origins in the store:** `/private/…` keys resolved to `private-pages/`; one transaction across both folders; the grant transitions refused (spec §4.1).
-2. **Sharing, with no screen of its own** (spec §8.1, D21): Settings lists every grant and shares any private pages; a private page's Share dialog lists the grants that open it and shares it; each grant has Copy message, Set end date, Change what it opens, Withdraw now and its PostHog link; pure operations in `model/access.ts`. (Built first as an Access screen at `/_edit/access/`, folded in the same day.)
+2. **Sharing on the Access screen** (spec §8.1, D22): every grant by state with Find, Show and Kind, beside the chosen one's details: Copy for its code or link and message, one save for who it's for, why, notes, what it opens (every section, in collapsible groups with its private pages and a search) and its last day, Withdraw now, Delete and its PostHog link; a private page's Share dialog lists the grants that open it, links each to the Access screen, and shares the page; pure operations in `model/access.ts`. (Built first as an Access screen at `/_edit/access/` and folded into Settings the same day, D21; brought back for grants alone on 6 October 2026.)
 3. **A page's access** (Everyone or Private) in the inspector and the New article dialog: the change moves the page and the media only it uses between the folders, keeping its place, with the history warning; a private page's address, Change address and Share.
 4. **Listed with the rest:** the Pages list and the Media library tag private pages and media and filter by them; the Sections screen lists private pages among open ones, and a move that involves one writes both orders in one transaction.
 5. **Uploads** for a private page go into `private-pages/media/`, and every media change is made where the file lives.
@@ -135,8 +135,8 @@ Each phase is done when every row for it is true and evidenced. A row marked *yo
 | 15 | A4 | The runtime and the open-page cost are within budget | QB7 |
 | 16 | A5 | The workflow fetches the submodule, builds quietly, seals, checks before upload, deploys from `main` only, and runs nightly with its guard | The branch run; `activity-guard` unit test |
 | 17 | A5 | The base build keeps every sealed address under `/atiya` | The base build |
-| 18 | A6 | Grants are made, extended, rescoped and withdrawn in edit mode, recording who, why, when and until; the transitions are enforced | E2E "editor"; `editorAccess.test.ts` |
-| 19 | A6 | Pages are made private and public in edit mode, keeping their place; private pages and media are listed, filtered and ordered with the rest; there's no Access screen | E2E "editor" |
+| 18 | A6 | Grants are made, changed (who, why, notes, what it opens, until when), withdrawn and deleted on the Access screen, recording who, why, when and until; the transitions are enforced | E2E "editor"; `editorAccess.test.ts` |
+| 19 | A6 | Pages are made private and public in edit mode, keeping their place; private pages and media are listed, filtered and ordered with the rest, with no screen of their own | E2E "editor" |
 | 20 | A6 | The existing Publish publishes both repositories, private first, and never puts your words in public history when anything private changed | QB10 |
 | 21 | A7 | Telemetry sends nothing secret, only the allowlist on protected pages, and nothing at all when opted out | QB6 |
 | 22 | A7 | The Privacy page says what's collected, and the footer links to it | The page |

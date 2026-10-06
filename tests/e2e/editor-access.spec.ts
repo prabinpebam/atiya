@@ -1,11 +1,12 @@
 /**
  * Edit mode's private pages (documentation/access/spec.md §8; benchmark QB10), on the editor's fixture
  * server: a throwaway copy of content/ whose private-pages/ is a submodule of the made-up fixtures, each with
- * its own bare remote, never the real ones. There's no Access screen: private pages are listed with the rest
- * (Pages, Sections, Media), each tagged Private and filterable; a page is made private in its own settings
- * and shared from there with an access code or a magic link; Settings lists every code and link. The
- * existing Publish sends the private commit first, then the public one with the pointer, never with your
- * words when anything private changed; a refused private push is pushed again.
+ * its own bare remote, never the real ones. Private pages are listed with the rest (Pages, Sections, Media),
+ * each tagged Private and filterable; a page is made private in its own settings and shared from its Share
+ * dialog; the Access screen lists every code and link by state beside the chosen one's details, where each
+ * is made, changed, withdrawn and deleted. The existing Publish sends the private commit first, then the
+ * public one with the pointer, never with your words when anything private changed; a refused private push
+ * is pushed again.
  */
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -28,43 +29,88 @@ test.describe('editor: private pages', () => {
   test.beforeEach(() => reset());
   test.afterAll(() => reset());
 
-  test('there is no Access screen: Settings lists every code and link, and makes, extends, rescopes and withdraws them', async ({ page }) => {
-    confirmAll(page);
-    expect((await page.request.get('/_edit/access/')).status()).toBe(404);
+  test('the Access screen lists every code and link by state beside the chosen one, and makes, changes, withdraws and deletes them', async ({ page }) => {
+    // sharing left Settings for its own screen
     await page.goto('/_edit/settings/');
-    await expect(page.locator('nav').getByRole('link', { name: 'Access', exact: true })).toHaveCount(0);
-    const form = page.locator('[data-access-new]');
-    await form.getByLabel('Their name').fill('Jane Doe');
-    await form.getByLabel('Organisation').fill('Contoso');
-    await form.getByLabel('Why you’re sharing it').or(form.getByLabel("Why you're sharing it")).fill('Design manager role');
-    await form.locator('label', { hasText: 'Side projects' }).first().click();
-    await form.getByRole('button', { name: 'Share it' }).click();
-    const message = form.locator('textarea[name="message"]');
-    await expect(message).toHaveValue(/^Hi Jane, here is access .*\/sign-in\/ and sign in with this access code: [a-z]+(-[a-z]+){4}\. It works until /);
-    expect(grants().at(-1)).toMatchObject({ kind: 'code', recipient: { name: 'Jane Doe' } });
-    await expect(page.locator('[data-region="sharing-grants"]')).toContainText('Jane Doe');
+    await expect(page.locator('[data-access-new]')).toHaveCount(0);
+    await page.locator('nav').getByRole('link', { name: 'Access', exact: true }).click();
+    await expect(page).toHaveURL(/\/_edit\/access\/$/);
+    const list = page.getByRole('navigation', { name: 'Access codes and magic links' });
+    const detail = page.locator('[data-region="access-detail"]');
+    const items = list.locator('[data-access-item]:visible');
+    // grouped by state (the fixtures have working, expired and withdrawn ones), and the first one shown
+    for (const group of [/^Active/, /^Expired/, /^Withdrawn/]) await expect(list.getByRole('heading', { name: group })).toBeVisible();
+    await expect(list.locator('[aria-current="true"]')).toHaveCount(1);
+    await expect(detail.getByRole('heading', { level: 2 })).toHaveText((await list.locator('[aria-current="true"] .name').textContent()) ?? '');
+    // Find and Show narrow the list
+    const all = await items.count();
+    await list.getByLabel('Find someone').fill('expired');
+    await expect(items).toHaveCount(1);
+    await list.getByLabel('Find someone').fill('');
+    await choose(page, list, 'Show', /^Withdrawn$/);
+    await expect(items).toHaveCount(1);
+    await choose(page, list, 'Show', /^Every state$/);
+    await expect(items).toHaveCount(all);
+    // choosing one shows it beside the list, in the address too
+    await list.locator('[data-access-item="gfixlink2"] a').click();
+    await expect(page).toHaveURL(/grant=gfixlink2$/);
+    await expect(detail.getByRole('heading', { level: 2 })).toHaveText('Fixture Reader Link');
+    await expect(detail.locator('[data-grant-text="secret"]')).toHaveText(/#a=gfixlink2\./);
 
-    // a magic link to a page in Writing: its address is the page's own, in its section
-    await form.locator('label', { hasText: 'Magic link' }).first().click();
-    await form.getByLabel('Their name').fill('Sam Lee');
-    await form.locator('label', { hasText: 'Fixture private two' }).first().click();
-    await form.getByRole('button', { name: 'Share it' }).click();
-    await expect(message).toHaveValue(/\/writing\/privtwo333\/#a=g[a-z2-7]{8}\.[\w-]{43}/);
-    expect(grants().at(-1)).toMatchObject({ kind: 'link', recipient: { name: 'Sam Lee' } });
+    // a new access code: who it's for, and every private page in a section, found by name
+    await list.getByRole('link', { name: 'Share with someone' }).click();
+    await expect(page).toHaveURL(/grant=new$/);
+    await expect(detail.getByRole('heading', { level: 2, name: 'Share with someone' })).toBeVisible();
+    await detail.getByLabel('Their name').fill('Jane Doe');
+    await detail.getByLabel('Organisation').fill('Contoso');
+    await detail.getByLabel(/Why you.re sharing it/).fill('Design manager role');
+    await detail.getByLabel('Find a section or page').fill('side');
+    await expect(detail.locator('[data-scope-group="writing"]')).toBeHidden();
+    await detail.locator('[data-scope-section="side-projects"]').click();
+    await expect(detail.locator('[data-scope-line]')).toHaveText('Opens every private page in Side projects');
+    await detail.getByRole('button', { name: 'Share it' }).click();
+    await expect(detail.getByRole('heading', { level: 2, name: 'Jane Doe' })).toBeVisible();
+    await expect(detail.locator('[data-grant-text="message"]')).toHaveText(/^Hi Jane, here is access .*\/sign-in\/ and sign in with this access code: [a-z]+(-[a-z]+){4}\. It works until /);
+    const jane = grants().at(-1)!;
+    expect(jane).toMatchObject({ kind: 'code', recipient: { name: 'Jane Doe', organisation: 'Contoso' }, scope: { sections: ['side-projects'] } });
+    await expect(page).toHaveURL(new RegExp(`grant=${jane.id}$`));
+    await expect(list.locator('[aria-current="true"]')).toContainText('Jane Doe');
 
-    const row = page.locator('[data-grant]', { hasText: 'Jane Doe' });
-    await row.locator('input[type="date"]').fill('2027-03-31');
-    await row.getByRole('button', { name: 'Set end date' }).click();
-    await expect.poll(() => grants().find((g) => g.recipient.name === 'Jane Doe')?.expiresAt).toMatch(/^2027-03-31T/);
-    // rescope: every private page in Work as well
-    const jane = page.locator('[data-grant]', { hasText: 'Jane Doe' });
-    await jane.getByText('Change what it opens').click();
-    await jane.locator('[data-access-scope] label', { hasText: 'Work' }).first().click();
-    await jane.getByRole('button', { name: 'Save what it opens' }).click();
-    await expect.poll(() => grants().find((g) => g.recipient.name === 'Jane Doe')?.scope.sections?.sort()).toEqual(['side-projects', 'work']);
-    await page.locator('[data-grant]', { hasText: 'Jane Doe' }).getByRole('button', { name: 'Withdraw now' }).click();
-    await expect(page.locator('[data-grant]', { hasText: 'Jane Doe' })).toContainText('Withdrawn');
-    expect(grants().find((g) => g.recipient.name === 'Jane Doe')?.revokedAt).toBeTruthy();
+    // a section covers its pages: checked, and they can't be changed on their own
+    await expect(detail.locator('[data-scope-page="fx-private-alpha"] input')).toBeChecked();
+    await expect(detail.locator('[data-scope-page="fx-private-alpha"] input')).toBeDisabled();
+    // who it's for, a single page more and its last day, in one save
+    await detail.getByLabel('Role').fill('Design manager');
+    await detail.locator('[data-scope-page="fx-private-one"] label').click();
+    await detail.getByLabel('Last day it works').fill('2027-03-31');
+    await detail.getByRole('button', { name: 'Save changes' }).click();
+    await expect.poll(() => grants().find((g) => g.id === jane.id)).toMatchObject({ recipient: { role: 'Design manager' }, scope: { sections: ['side-projects'], pages: ['fx-private-one'] } });
+    expect(grants().find((g) => g.id === jane.id)?.expiresAt).toMatch(/^2027-03-31T/);
+    await expect(detail.locator('[data-scope-line]')).toHaveText('Opens every private page in Side projects, and Fixture private one: velvet compass memo');
+
+    // a magic link to one page: its address is the page's own, in its section
+    await list.getByRole('link', { name: 'Share with someone' }).click();
+    await expect(detail.getByRole('heading', { level: 2, name: 'Share with someone' })).toBeVisible();
+    await detail.locator('label', { hasText: 'Magic link' }).first().click();
+    await detail.getByLabel('Their name').fill('Sam Lee');
+    await detail.locator('[data-scope-page="fx-private-two"] label').click();
+    await detail.getByRole('button', { name: 'Share it' }).click();
+    await expect(detail.locator('[data-grant-text="secret"]')).toHaveText(/\/writing\/privtwo333\/#a=g[a-z2-7]{8}\.[\w-]{43}$/);
+    expect(grants().at(-1)).toMatchObject({ kind: 'link', recipient: { name: 'Sam Lee' }, scope: { pages: ['fx-private-two'] } });
+
+    // withdrawn: it keeps its record, in its own group; then deleted, it goes
+    await list.locator(`[data-access-item="${jane.id}"] a`).click();
+    await expect(detail.getByRole('heading', { level: 2 })).toHaveText('Jane Doe');
+    await detail.locator('[data-dialog-open="grant-withdraw"]').click();
+    await page.locator('#grant-withdraw').getByRole('button', { name: 'Withdraw now' }).click();
+    await expect(detail.getByText(/^Withdrawn on /)).toBeVisible();
+    expect(grants().find((g) => g.id === jane.id)?.revokedAt).toBeTruthy();
+    await expect(list.locator('[data-access-group="withdrawn"]')).toContainText('Jane Doe');
+    await detail.locator('[data-dialog-open="grant-delete"]').click();
+    await page.locator('#grant-delete').getByRole('button', { name: 'Delete' }).click();
+    await expect.poll(() => grants().some((g) => g.id === jane.id)).toBe(false);
+    await expect(list).not.toContainText('Jane Doe');
+    await expect(list.locator('[aria-current="true"]')).toHaveCount(1);
   });
 
   test('private pages are listed with the rest: Pages filters them, Sections orders them among open ones, Media tags them', async ({ page }) => {
@@ -149,11 +195,12 @@ test.describe('editor: private pages', () => {
     rmSync(other, { recursive: true, force: true });
     const publicBefore = remoteLog(REMOTE, '%H');
 
-    await page.goto('/_edit/settings/');
-    await page.locator('[data-access-new]').getByLabel('Their name').fill('Ana Ruiz');
-    await page.locator('[data-access-new] label', { hasText: 'Work' }).first().click();
-    await page.locator('[data-access-new]').getByRole('button', { name: 'Share it' }).click();
-    await expect(page.locator('textarea[name="message"]')).toHaveValue(/Hi Ana/);
+    await page.goto('/_edit/access/?grant=new');
+    const detail = page.locator('[data-region="access-detail"]');
+    await detail.getByLabel('Their name').fill('Ana Ruiz');
+    await detail.locator('[data-scope-section="work"]').click();
+    await detail.getByRole('button', { name: 'Share it' }).click();
+    await expect(detail.locator('[data-grant-text="message"]')).toHaveText(/Hi Ana/);
     await page.goto('/_edit/publish/');
     await page.getByLabel('Message').fill('Access for Ana');
     await page.getByRole('button', { name: 'Publish', exact: true }).last().click();
@@ -227,14 +274,17 @@ test.describe('editor: private pages', () => {
   });
 
   for (const scheme of ['light', 'dark'] as const) {
-    test(`Settings' sharing and a private page's Share dialog have no serious axe findings, ${scheme}`, async ({ page }) => {
+    test(`the Access screen and a private page's Share dialog have no serious axe findings, ${scheme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
       const serious = async () => {
         const results = await new AxeBuilder({ page }).analyze();
         return results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
       };
-      await page.goto('/_edit/settings/');
-      await expect(page.getByRole('heading', { name: 'Access codes and magic links' })).toBeVisible();
+      await page.goto('/_edit/access/');
+      await expect(page.getByRole('navigation', { name: 'Access codes and magic links' })).toBeVisible();
+      expect(await serious()).toEqual([]);
+      await page.goto('/_edit/access/?grant=new');
+      await expect(page.getByRole('heading', { level: 2, name: 'Share with someone' })).toBeVisible();
       expect(await serious()).toEqual([]);
       await page.goto('/_edit/articles/fx-private-alpha/');
       await page.getByRole('tab', { name: 'Page' }).click();

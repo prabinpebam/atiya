@@ -1,0 +1,67 @@
+---
+/**
+ * Edit mode's Access screen (documentation/access/spec.md §8.1): every access code and magic link, grouped
+ * by state, beside the chosen one's details, and the form that makes a new one (?grant=new, with ?page= or
+ * ?section= to start from what it opens). Dev only: injected by integrations/editor.mjs.
+ */
+import EditorLayout from '../EditorLayout.astro';
+import AccessManager from '../components/AccessManager.astro';
+import GrantDetails from '../components/GrantDetails.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load } from '../server/screens';
+import { posthogPerson, shareMessage, sharingView } from '../server/access';
+import { hasPrivate, privateRoot } from '../../content/source';
+import { grantGroups, scopeGroups } from '../model/access';
+
+export const prerender = false;
+
+const loaded = load();
+const view = loaded.ok && hasPrivate(privateRoot()) ? sharingView() : null;
+const params = Astro.url.searchParams;
+const asked = params.get('grant') ?? '';
+const grants = view?.grants ?? [];
+// nothing asked for (or one that's gone): the first in the list, which is what needs you first
+const first = grantGroups(grants)[0]?.grants[0]?.id ?? '';
+const selected = asked === 'new' ? 'new' : grants.some((g) => g.id === asked) ? asked : first;
+const grant = grants.find((g) => g.id === selected);
+const mode = selected === 'new' ? 'new' : grant ? 'grant' : 'none';
+// a new one can start from what it opens: a private page (?page=) or a section (?section=)
+const page = params.get('page') ?? '';
+const section = params.get('section') ?? '';
+const preset =
+  mode === 'new' && view
+    ? { ...(view.pages.some((p) => p.id === page) ? { pages: [page] } : {}), ...(view.sections.some((s) => s.id === section) ? { sections: [section] } : {}) }
+    : undefined;
+const options = view ? scopeGroups(view, grant?.scope) : null;
+const share = grant && grant.state !== 'withdrawn' ? shareMessage(grant) : undefined;
+const person = posthogPerson();
+---
+
+<EditorLayout
+  title="Access"
+  screen="access"
+  heading="Access"
+  intro="Everyone you've shared private pages with, by an access code they type or a magic link they open. Choose one to change who it's for, what it opens and when it ends, or to withdraw or delete it. Saved to private-pages/, never the public repository: publish to make a change work on the site."
+>
+  {
+    !loaded.ok ? (
+      <ContentIssues issues={loaded.issues} />
+    ) : !view || !options ? (
+      <ContentIssues issues={[{ file: 'private-pages/', message: "isn't set up, so there's nothing to share: run scripts/setup-private-pages.ps1, then start the site again" }]} />
+    ) : (
+      <AccessManager grants={grants} selected={selected}>
+        <GrantDetails
+          slot="detail"
+          mode={mode}
+          grant={grant}
+          share={share}
+          options={options}
+          preset={preset}
+          made={params.get('made') === '1'}
+          posthog={grant && person ? person(grant.id) : undefined}
+          count={grants.length}
+        />
+      </AccessManager>
+    )
+  }
+</EditorLayout>

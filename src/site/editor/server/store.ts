@@ -148,8 +148,9 @@ async function apply(tx: Transaction, opts: StoreOptions, origin: string | null 
   }
   if (issues.length) return { ok: false, status: 409, issues };
 
-  // the grants' history only moves forward (documentation/access/spec.md §4.1): none deleted, no ID or name
-  // reused, a withdrawn grant left as it is; checked against the file as it was
+  // the grants' history (documentation/access/spec.md §4.1): a grant may be deleted, but one that stays keeps
+  // its kind, secret and creation date, no working code's name is reused, and a withdrawn grant is left as it
+  // is; checked against the file as it was
   const access = targets.find((t) => t.key === '/private/access.json');
   if (access) {
     const before = (readDoc<{ grants: Grant[] }>(access.key, root, priv)?.value.grants ?? []) as Grant[];

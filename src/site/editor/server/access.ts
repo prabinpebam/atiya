@@ -1,22 +1,23 @@
 /**
- * Edit mode's access operations (documentation/access/spec.md §4, §8): grants made, extended, rescoped and
- * withdrawn; a page made open or private (its file and the media only it uses moved between content/ and
- * private-pages/, its place kept); a private page's address changed; pages moved between and within
- * sections, open and private together. Each is one store transaction, checked whole; the grants' history is
- * enforced by the store (no grant deleted, no ID or name reused, a withdrawn grant left as it is).
+ * Edit mode's access operations (documentation/access/spec.md §4, §8): grants made, changed (who it's for,
+ * why, what it opens, when it ends), extended, rescoped, withdrawn and deleted; a page made open or private
+ * (its file and the media only it uses moved between content/ and private-pages/, its place kept); a private
+ * page's address changed; pages moved between and within sections, open and private together. Each is one
+ * store transaction, checked whole; the grants' history is enforced by the store (no ID or working code's
+ * name reused, a withdrawn grant left as it is but for its purpose and notes).
  */
-import { type AccessMessage, type Article, type Overlay, type PlanetStructure, type SiteNode, type SiteStructure } from '../../content/schema';
+import { type AccessMessage, type Article, type HubNode, type Overlay, type PlanetStructure, type SiteNode, type SiteStructure } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { articleKey, followOnPlanet, OVERLAY, PLANET, STRUCTURE } from './articles';
 import { generateCode } from '../../access/codes';
 import { b64, grantId, randomBytes, token } from '../../access/crypto';
 import { grantState, isValid } from '../../access/grants';
 import type { Grant } from '../../access/types';
-import { endOfDay, fillMessage, insertAfter, localIso, longDate, magicLink, movePages, openBefore, placePrivate, privateNode, reorderSection, sectionOrder, takenNames, unplacePrivate, type PageAccess, type SharingView } from '../model/access';
+import { endDateIssue, endOfDay, fillMessage, insertAfter, localIso, longDate, magicLink, movePages, openBefore, placePrivate, privateNode, reorderSection, sectionOrder, takenNames, unplacePrivate, type PageAccess, type SharingView } from '../model/access';
 import { nodeIds, sectionOf, unplace } from '../model/structure';
 import { unique } from '../model/ids';
 import { placeOfPage, takeOff } from '../model/planet';
-import { mediaUsed, videosUsed } from '../../content/load';
+import { isPublished, mediaUsed, videosUsed } from '../../content/load';
 import { readSnapshot } from '../../content/source';
 import { content } from '../../content/repository';
 
@@ -96,12 +97,13 @@ export async function createGrant(req: NewGrant): Promise<Result & { grant?: Gra
   return r.ok ? { ...r, grant: g, share: shareMessage(g) } : r;
 }
 
-async function changeGrant(id: string, change: (g: Grant) => Grant | string): Promise<Result & { grant?: Grant }> {
+async function changeGrant(id: string, change: (g: Grant) => Grant | string | { message: string; path: string }): Promise<Result & { grant?: Grant }> {
   const doc = grantsDoc();
   const g = doc?.value.grants.find((x) => x.id === id);
   if (!doc || !g) return refuse(ACCESS, `grant ${id} doesn't exist`);
   const next = change(g);
   if (typeof next === 'string') return refuse(ACCESS, next);
+  if ('message' in next) return refuse(ACCESS, next.message, next.path);
   const r = await commit({ changes: [{ key: ACCESS, bytes: jsonBytes({ grants: doc.value.grants.map((x) => (x.id === id ? next : x)) }) }], ifMatch: { [ACCESS]: doc.version } });
   return r.ok ? { ...r, grant: next } : r;
 }
@@ -117,6 +119,69 @@ export const rescopeGrant = (id: string, scope: Grant['scope']) =>
   changeGrant(id, (g) => (g.revokedAt ? 'a withdrawn grant stays withdrawn: make a new one' : !(scope.sections?.length || scope.pages?.length) ? 'choose what it opens' : { ...g, scope }));
 
 export const withdrawGrant = (id: string) => changeGrant(id, (g) => (g.revokedAt ? 'it is already withdrawn' : { ...g, revokedAt: localIso() }));
+
+/** A grant's details as the Access screen saves them; a field left out stays as it is. */
+export interface GrantEdit {
+  recipient?: Grant['recipient'];
+  purpose?: string;
+  notes?: string;
+  scope?: Grant['scope'];
+  /** The last day it works (YYYY-MM-DD), or null for no end. */
+  expires?: string | null;
+}
+
+const RECIPIENT = ['name', 'organisation', 'role', 'email'] as const;
+const sameScope = (a: Grant['scope'], b: Grant['scope']) => (['sections', 'pages'] as const).every((k) => [...(a[k] ?? [])].sort().join('\n') === [...(b[k] ?? [])].sort().join('\n'));
+
+/**
+ * Changes a grant's details in one save (documentation/access/spec.md §8.1): who it's for, why, its notes,
+ * what it opens and its last day. A withdrawn grant keeps who it was for, what it opened and its dates (the
+ * store holds that too): only why and the notes change. What's unchanged keeps its exact bytes.
+ */
+export const updateGrant = (id: string, e: GrantEdit) =>
+  changeGrant(id, (g) => {
+    let recipient = g.recipient;
+    if (e.recipient) {
+      const r = Object.fromEntries(RECIPIENT.flatMap((k) => (typeof e.recipient?.[k] === 'string' && e.recipient[k]!.trim() ? [[k, e.recipient[k]!.trim()]] : []))) as Grant['recipient'];
+      if (!r.name) return { message: 'say who it is for', path: 'recipient.name' };
+      if (RECIPIENT.some((k) => (r[k] ?? '') !== (g.recipient[k] ?? ''))) recipient = r;
+    }
+    let scope = g.scope;
+    if (e.scope) {
+      const s: Grant['scope'] = { ...(e.scope.sections?.length ? { sections: [...new Set(e.scope.sections)] } : {}), ...(e.scope.pages?.length ? { pages: [...new Set(e.scope.pages)] } : {}) };
+      if (!(s.sections?.length || s.pages?.length)) return { message: 'choose what it opens: a section or a page', path: 'scope' };
+      if (!sameScope(s, g.scope)) scope = s;
+    }
+    let expiresAt = g.expiresAt;
+    if (e.expires !== undefined && (e.expires || null) !== (g.expiresAt?.slice(0, 10) ?? null)) {
+      if (e.expires) {
+        const issue = endDateIssue(e.expires, localIso().slice(0, 10));
+        if (issue) return { message: issue, path: 'expires' };
+        expiresAt = endOfDay(e.expires);
+      } else expiresAt = undefined;
+    }
+    if (g.revokedAt && (recipient !== g.recipient || scope !== g.scope || expiresAt !== g.expiresAt)) return 'a withdrawn code or link keeps who it was for, what it opened and its dates: only why and the notes can change';
+    const purpose = e.purpose === undefined ? g.purpose : e.purpose.trim();
+    const notes = e.notes === undefined ? g.notes : e.notes.trim() || undefined;
+    // the record's own order of fields, so an unchanged grant's bytes stay the same
+    const next: Grant = { ...g, recipient, purpose, scope };
+    if (expiresAt) next.expiresAt = expiresAt;
+    else delete next.expiresAt;
+    if (notes) next.notes = notes;
+    else delete next.notes;
+    return next;
+  });
+
+/**
+ * Deletes a grant (documentation/access/spec.md §4.1): its record goes from access.json. One that still
+ * works stops once that's published (the next deploy makes no keyring for it); telemetry can no longer
+ * name whose it was. The private repository's history keeps the record.
+ */
+export async function deleteGrant(id: string): Promise<Result> {
+  const doc = grantsDoc();
+  if (!doc || !doc.value.grants.some((g) => g.id === id)) return refuse(ACCESS, `grant ${id} doesn't exist`);
+  return commit({ changes: [{ key: ACCESS, bytes: jsonBytes({ grants: doc.value.grants.filter((g) => g.id !== id) }) }], ifMatch: { [ACCESS]: doc.version } });
+}
 
 /** The media files an article uses that nothing else does, in its folder: each picture's sidecar, master and versions. */
 function mediaFiles(article: Article, from: 'content' | 'private', onlyIfUnshared: boolean): string[] {
@@ -282,18 +347,22 @@ export type { SharingView };
 /** Whether private-pages/ holds the sharing files yet (the first grant writes them). */
 export const sharingReady = () => !!readDoc(ACCESS) || !!overlayDoc();
 
-/** What the sharing panel shows: every grant (or, for one page, the ones that open it), and what a grant can open. */
+/** What the sharing panel and the Access screen show: every grant (or, for one page, the ones that open it), and what a grant can open. */
 export function sharingView(page?: string): SharingView {
   const index = content();
   const o = overlayDoc()?.value ?? null;
   const s = readDoc<SiteStructure>(STRUCTURE)?.value ?? index.structure;
-  const title = (id: string) => index.articles.get(id)?.title ?? id;
-  const sectionTitle = (id: string) => {
-    const h = (s.home.children ?? []).find((c) => c.id === id);
-    return h?.kind === 'hub' ? h.title : id;
-  };
-  const pages = (o?.sections ?? []).flatMap((x) => x.pages.map((p) => ({ id: p.item.id, title: title(p.item.id), section: x.section })));
-  const sectionOfPage = new Map(pages.map((p) => [p.id, p.section]));
+  const hubs = (s.home.children ?? []).filter((c): c is HubNode => c.kind === 'hub');
+  const sectionTitle = (id: string) => hubs.find((h) => h.id === id)?.title ?? id;
+  const article = (id: string) => index.articles.get(id);
+  const title = (id: string) => article(id)?.title ?? id;
+  const pages = (o?.sections ?? []).flatMap((x) =>
+    x.pages.map((p) => {
+      const a = article(p.item.id);
+      return { id: p.item.id, title: title(p.item.id), section: sectionTitle(x.section), sectionId: x.section, published: !!a && isPublished(a) };
+    }),
+  );
+  const sectionOfPage = new Map(pages.map((p) => [p.id, p.sectionId]));
   const opens = (g: Grant) => (page ? (g.scope.pages ?? []).includes(page) || (g.scope.sections ?? []).includes(sectionOfPage.get(page) ?? '') : true);
   const now = new Date();
   return {
@@ -301,8 +370,8 @@ export function sharingView(page?: string): SharingView {
       .filter(opens)
       .map((g) => ({ ...g, state: grantState(g, now), opens: opensTitles(g, title, sectionTitle) }))
       .reverse(),
-    pages: pages.map((p) => ({ ...p, section: sectionTitle(p.section) })),
-    sections: [...new Set(pages.map((p) => p.section))].map((id) => ({ id, title: sectionTitle(id) })),
+    pages,
+    sections: hubs.map((h) => ({ id: h.id, title: h.title })),
   };
 }
 

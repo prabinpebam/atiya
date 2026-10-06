@@ -1,8 +1,8 @@
 /**
- * Sharing private pages (documentation/access/spec.md §8.1): making an access code or a magic link and
- * showing its message to copy, copying a grant's message again, setting its end date, changing what it
- * opens and withdrawing it. Each is one call to the API; the list of grants then refreshes. On a private
- * page's Share dialog, a new grant opens that page (or every private page in its section).
+ * Sharing one private page from its Share dialog (documentation/access/spec.md §8.1): making an access code
+ * or a magic link for this page (or every private page in its section) and showing its message to copy, and
+ * copying a grant's message again. Everything else a code or link can change is on the Access screen
+ * (scripts/grants.ts). Each is one call to the API; the list of who it's shared with then refreshes.
  */
 import { announce, api, describeIssue, saveStatus, swapRegions, type Issue } from './client';
 
@@ -20,13 +20,13 @@ export function initSharing(root: HTMLElement, signal: AbortSignal) {
   const issue = form?.querySelector<HTMLElement>('[data-editor-form-issue]');
   const regions = [...root.querySelectorAll<HTMLElement>('[data-region]')].map((r) => r.dataset.region!);
 
-  const done = async (r: { ok: boolean; data: { issues?: Issue[] } }, what: string, issueAt?: Element | null) => {
+  const done = async (r: { ok: boolean; data: { issues?: Issue[] } }, what: string) => {
     if (!r.ok) {
       const text = (r.data.issues ?? []).map(describeIssue).join('; ') || 'That didn’t work: try again.';
       saveStatus.failed(text);
-      if (issueAt) {
-        issueAt.textContent = text;
-        (issueAt as HTMLElement).hidden = false;
+      if (issue) {
+        issue.textContent = text;
+        issue.hidden = false;
       }
       return false;
     }
@@ -35,11 +35,10 @@ export function initSharing(root: HTMLElement, signal: AbortSignal) {
     return true;
   };
 
-  /** What a new grant opens: the checked sections and pages, or on a page, that page or its section. */
+  /** What a new grant opens: this page, or every private page in its section. */
   const scopeOf = (f: FormData) => {
     const opens = form?.querySelector<HTMLElement>('fieldset[data-page]');
-    if (opens) return f.get('opens') === 'section' && opens.dataset.section ? { sections: [opens.dataset.section] } : { pages: [opens.dataset.page!] };
-    return { sections: f.getAll('sections').map(String), pages: f.getAll('pages').map(String) };
+    return f.get('opens') === 'section' && opens?.dataset.section ? { sections: [opens.dataset.section] } : { pages: [opens?.dataset.page ?? ''] };
   };
 
   form?.addEventListener(
@@ -59,7 +58,8 @@ export function initSharing(root: HTMLElement, signal: AbortSignal) {
       if (issue) issue.hidden = true;
       saveStatus.saving();
       const r = await api<{ share?: { message: string } }>('POST', 'access/grants', body);
-      if (!(await done(r, body.kind === 'code' ? 'Access code made' : 'Magic link made', issue))) return;
+      if (!(await done(r, body.kind === 'code' ? 'Access code made' : 'Magic link made'))) return;
+      delete form.dataset.unsaved;
       const result = form.querySelector<HTMLElement>('[data-access-result]');
       const message = form.querySelector<HTMLTextAreaElement>('textarea[name="message"]');
       if (result && message && r.data.share) {
@@ -68,19 +68,6 @@ export function initSharing(root: HTMLElement, signal: AbortSignal) {
         message.focus();
         message.select();
       }
-    },
-    { signal },
-  );
-
-  root.addEventListener(
-    'submit',
-    async (e) => {
-      const scope = (e.target as Element).closest<HTMLFormElement>('[data-access-scope]');
-      if (!scope) return;
-      e.preventDefault();
-      const f = new FormData(scope);
-      saveStatus.saving();
-      await done(await api('POST', `access/grants/${scope.dataset.accessScope}/scope`, { scope: { sections: f.getAll('sections').map(String), pages: f.getAll('pages').map(String) } }), 'What it opens is saved');
     },
     { signal },
   );
@@ -95,22 +82,9 @@ export function initSharing(root: HTMLElement, signal: AbortSignal) {
         await copy(form?.querySelector<HTMLTextAreaElement>('textarea[name="message"]')?.value ?? '');
         return;
       }
-      const grant = t.dataset.accessCopy ?? t.dataset.accessExtend ?? t.dataset.accessWithdraw;
       if (t.dataset.accessCopy) {
-        const r = await api<{ message: string }>('GET', `access/grants/${grant}/message`);
+        const r = await api<{ message: string }>('GET', `access/grants/${t.dataset.accessCopy}/message`);
         if (r.ok) await copy(r.data.message);
-        return;
-      }
-      if (t.dataset.accessExtend) {
-        const date = root.querySelector<HTMLInputElement>(`input[name="expires-${grant}"]`)?.value || null;
-        saveStatus.saving();
-        await done(await api('POST', `access/grants/${grant}/extend`, { expires: date }), date ? 'End date set' : 'End date cleared');
-        return;
-      }
-      if (t.dataset.accessWithdraw) {
-        if (!confirm('Withdraw this access now? It stops opening anything once you publish, and it can’t be undone: you can make a new one.')) return;
-        saveStatus.saving();
-        await done(await api('POST', `access/grants/${grant}/withdraw`), 'Withdrawn: publish to make it take effect');
       }
     },
     { signal },

@@ -22,7 +22,7 @@ import Text from '../../components/fundamentals/Text.astro';
 import { load, mediaCards, sectionOptions, STATUS_LABEL } from '../server/screens';
 import { readDoc } from '../server/store';
 import { OVERLAY, PLANET, STRUCTURE, articleKey } from '../server/articles';
-import { posthogPerson, sharingView } from '../server/access';
+import { sharingView } from '../server/access';
 import { privateNode } from '../model/access';
 import { hasPrivate, privateRoot } from '../../content/source';
 import { isPublished } from '../../content/load';
@@ -141,7 +141,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         </Dialog>
         {sharing && (
           <Dialog id="share-page" title={`Share ${article.title}`} size="lg">
-            <SharingPanel view={sharing} posthogPerson={posthogPerson()} page={id} />
+            <SharingPanel view={sharing} page={id} />
           </Dialog>
         )}
       </Studio>

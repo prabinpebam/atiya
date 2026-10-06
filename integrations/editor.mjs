@@ -31,6 +31,7 @@ const ROUTES = [
   ['/_edit/planet', 'planet.astro'],
   ['/_edit/media', 'media.astro'],
   ['/_edit/settings', 'settings.astro'],
+  ['/_edit/access', 'access.astro'],
   ['/_edit/publish', 'publish.astro'],
   ['/_edit/api/[...path]', 'api.ts'],
 ];

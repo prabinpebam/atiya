@@ -270,12 +270,14 @@ describe('grants', () => {
     expect(covers(link, pages)).toEqual(covers(code, pages));
   });
 
-  it('checks transition safety while allowing notes on withdrawn grants to change', () => {
+  it('checks transition safety while allowing notes on withdrawn grants to change, and a grant to be deleted', () => {
     const now = new Date('2026-10-20T09:00:00+05:30');
     const original = grant({ id: 'gaaaaaaaa' });
     const withdrawn = grant({ id: 'gbbbbbbbb', name: 'forest', revokedAt: '2026-10-10T09:00:00+05:30' });
     expect(checkTransitions([withdrawn], [{ ...withdrawn, notes: 'Updated note' }], now)).toEqual([]);
-    expect(checkTransitions([original], [], now).join('\n')).toContain('deleted');
+    // deleted on purpose (the Access screen asks first): working or withdrawn, it simply goes
+    expect(checkTransitions([original], [], now)).toEqual([]);
+    expect(checkTransitions([original, withdrawn], [original], now)).toEqual([]);
     expect(checkTransitions([], [original, { ...original }], now).join('\n')).toContain('duplicated');
     expect(checkTransitions([withdrawn], [{ ...withdrawn, scope: { pages: ['other'] } }], now).join('\n')).toContain('Withdrawn grant gbbbbbbbb changed scope');
     expect(checkTransitions([original], [{ ...original, kind: 'link', name: undefined, secret: { key: keyText(2), salt: saltText(1) } }], now).join('\n')).toContain('changed kind');

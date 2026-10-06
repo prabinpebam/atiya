@@ -44,9 +44,13 @@ export function covers(g: Grant, pages: PageAccess[]): string[] {
   return out;
 }
 
+/**
+ * What may change between two versions of the grants (documentation/access/spec.md §4.1): a grant may be
+ * deleted (edit mode's Access screen asks first), but one that stays keeps its kind, secret and creation
+ * date, a withdrawn one stays as it was (its notes and purpose aside), and no two working codes share a name.
+ */
 export function checkTransitions(prev: Grant[], next: Grant[], now = new Date()): string[] {
   const problems: string[] = [];
-  const prevById = new Map(prev.map((grant) => [grant.id, grant]));
   const nextById = new Map<string, Grant>();
   const seenIds = new Set<string>();
 
@@ -58,10 +62,7 @@ export function checkTransitions(prev: Grant[], next: Grant[], now = new Date())
 
   for (const grant of prev) {
     const changed = nextById.get(grant.id);
-    if (!changed) {
-      problems.push(`Grant ${grant.id} was deleted.`);
-      continue;
-    }
+    if (!changed) continue;
     if (grant.kind !== changed.kind) problems.push(`Grant ${grant.id} changed kind.`);
     if (!sameJson(grant.secret, changed.secret)) problems.push(`Grant ${grant.id} changed secret.`);
     if (grant.createdAt !== changed.createdAt) problems.push(`Grant ${grant.id} changed creation date.`);

@@ -27,7 +27,7 @@ interface Props {
   /** The document title: the screen's name. */
   title: string;
   /** Which screen, for the navigation's current item. */
-  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'media' | 'settings' | 'publish';
+  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'media' | 'settings' | 'access' | 'publish';
   /** Show the side navigation (the article editor hides it for its studio). */
   nav?: boolean;
   /** The screen's h1, over its content; left out, the content fills the screen (the studio). */
@@ -60,6 +60,7 @@ const groups = [
     title: 'Site',
     items: [
       { label: 'Settings', href: to('settings/'), current: screen === 'settings' },
+      { label: 'Access', href: to('access/'), current: screen === 'access' },
       { label: 'Publish', href: to('publish/'), current: screen === 'publish', note: pending ? `${pending} to publish` : undefined },
     ],
   },
