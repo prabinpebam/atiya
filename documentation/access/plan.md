@@ -36,7 +36,7 @@ How private pages, signing in, grants and telemetry ([spec](spec.md)) get built:
 5. **Routes:** private pages at `/<section>/<token>/`; `sign-in`, `_sealed` and `_access` reserved; each route knows its access (`open` or `private`). (Built first with a second kind, link-only pages at `/p/<token>/`; folded into one kind, spec D21.)
 6. **Every reader of the content root:** picture metadata in dev (`pictures.ts`), the masters a build imports (`masters.ts` globs both), the files the content-files integration serves and copies, and the editor integration's watcher.
 7. **The repository's lists:** a section lists its open pages, plus its private ones marked for sealing; every other list (related, next and previous, the home page, the navigation, redirects, the planet) is open pages only, for every page (V32).
-8. **In dev,** protected pages render open with a ribbon, and sections list their private pages tagged Private.
+8. **In dev,** protected pages render open (a Private tag in their opening; a ribbon until 6 October 2026), and sections list their private pages tagged Private.
 9. **Fixtures:** a Work-like section with two open pages and three private ones between them (one with a picture and its dark version, one with a small video and its poster), a second section with one private page, a third with two private pages shared by link, and grants: all of two sections (a code), one page (a code), one page (a link), an expired one and a withdrawn one. All made up.
 
 **Tests (unit):** the submodule rule; the two-origin source; V23 to V32 each with a failing fixture; opaque and reserved routes; a public-only build's routes and lists unchanged; a section's order with private pages between open ones; no list but a section's holds a protected page.

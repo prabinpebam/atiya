@@ -94,6 +94,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     <IconButton label="Phone width" icon="phone" size="sm" pressed={false} data-editor-device="phone" />
     <IconButton label="Preview without the editor" icon="preview" size="sm" pressed={false} data-editor-preview="" />
     {publicPath && <IconButton label="View on the site" icon="external" size="sm" href={publicPath} />}
+    {!publicPath && route && <IconButton label="Preview it as a page (on this computer only)" icon="external" size="sm" href={withBase(route.path)} />}
   </Fragment>
   {
     loaded.ok ? (

@@ -518,7 +518,8 @@ Two columns, the pattern of the Sections screen: the list on the left, the chose
 - **A private page's settings:** its address (token), **Change address** (breaks every link to it, with a confirmation) and **Share** (§8.1).
 - **Media:** a private page's pictures and videos are in the Media library with everyone's, tagged Private, with a Who can see it filter; their details open and save where they live. An upload to a private page's own folder goes into `private-pages/media/`.
 - **Private pages can't be put on the planet** (V28); the Planet screen lists them, not movable.
-- **The editor shows private pages open**, with a ribbon saying who can see them.
+- **The editor shows private pages open**, with a Private tag beside the topic in their opening.
+- **On localhost, every placed page previews at its own address** (6 October 2026), without signing in, exactly as it will look: no banner. A private page shows a **Private** tag beside its topic (as it does for the invited readers who open it on the site), and a page that isn't published yet a **Draft** tag there too, on localhost only. The article editor's top bar has **Preview it as a page** for a draft (View on the site once it's published). This is the dev server only: a build serves published pages alone, and seals the private ones.
 - **Seeing it as a visitor:** `npm run preview:protected` builds the site with the real private content, sealed exactly as the deploy seals it (checked by the leak check), and serves it on `http://localhost:4331/`, where you can sign in with any active grant. The build stays on your machine.
 
 ### 8.3 Publishing to two repositories

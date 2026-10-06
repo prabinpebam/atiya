@@ -24,6 +24,10 @@ const plaza = sample('plaza');
   <ArticleHeader level={2} title="Workshop" standfirst="Deep dives into products, the bets and what changed." topic={{ label: 'Selected case studies' }} />
 </Example>
 
+<Example title="A private page" layout="block" bleed description="A Private tag beside its topic, for the invited readers who open it (and, on the dev server, a Draft tag on a page not published yet). Nothing else on the page changes.">
+  <ArticleHeader level={2} title="A case study for invited readers" standfirst="Shared with an access code or a magic link." topic={{ label: 'Work', href: withBase('/work/') }} isPrivate draft />
+</Example>
+
 <Example title="With a portrait" layout="block" bleed description="A page about a person (a résumé, About): their picture whole beside the title, above it on a phone.">
   <ArticleHeader level={2} title="Résumé" standfirst="Design leader · Product strategy · AI transformation" portrait={{ src: withBase('/avatars/npc/prabin.webp'), alt: 'Prabin as a character on the little planet.', width: 192, height: 192 }} />
 </Example>

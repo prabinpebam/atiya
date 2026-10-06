@@ -3,13 +3,16 @@
  * Every page the site structure places (documentation/sections/spec.md §3): its sections and their pages,
  * from the route table (published pages only), each rendered by the content Page; and every address that
  * moved (content/redirects.json), rendered as a redirect page. The home page is src/pages/index.astro.
+ * On the dev server (localhost) a placed page that isn't published yet, open or private, is served at its
+ * address too, with a ribbon saying so, so it can be read before it's published; a build never has it.
  */
 import Page from '../site/content/Page.astro';
 import Moved from '../site/content/Moved.astro';
-import { getRedirects, getRoute, getRoutes } from '../site/content/repository';
+import { content, getRedirects, getRoutes } from '../site/content/repository';
 
 export function getStaticPaths() {
-  const pages = getRoutes()
+  // the pages served: in a build, published ones; on the dev server, every placed page (drafts to preview)
+  const pages = (import.meta.env.DEV ? content().routes : getRoutes())
     .filter((r) => r.path !== '/')
     .map((r) => ({ params: { path: r.path.slice(1, -1) }, props: { path: r.path, moved: undefined } }));
   const moved = getRedirects().map((m) => ({ params: { path: m.from.slice(1, -1) }, props: { path: m.from, moved: m } }));
@@ -17,7 +20,7 @@ export function getStaticPaths() {
 }
 
 const { path, moved } = Astro.props;
-const route = moved ? undefined : getRoute(path);
+const route = moved ? undefined : (import.meta.env.DEV ? content().routes : getRoutes()).find((r) => r.path === path);
 ---
 
 {moved ? <Moved redirect={moved} /> : <Page route={route} />}

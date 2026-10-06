@@ -81,7 +81,7 @@ const privatePages = await Promise.all(
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} footer={footer} action={action} crumbs={crumbs} header={header} dropcap={storyKind(article)} related={related} sealed={sealed}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} dropcap={storyKind(article)} related={related} sealed={sealed}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>

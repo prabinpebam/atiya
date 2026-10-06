@@ -297,6 +297,30 @@ test.describe('editor: private pages', () => {
     await expect(page.locator('[data-publish-drafts]')).toHaveCount(0);
   });
 
+  test('on localhost every placed page previews at its address without signing in: a private draft and an open one, tagged in their opening', async ({ page }) => {
+    const file = join(PRIVATE, 'articles/fx-private-alpha.json');
+    writeFileSync(file, `${JSON.stringify({ ...JSON.parse(readFileSync(file, 'utf8')), status: 'draft' }, null, 2)}\n`);
+    const open = join(FIXTURE, 'content/articles/watai.json');
+    writeFileSync(open, `${JSON.stringify({ ...JSON.parse(readFileSync(open, 'utf8')), status: 'draft' }, null, 2)}\n`);
+    // (the dev server hears the changes: let its live reload pass before navigating)
+    await page.waitForTimeout(1500);
+    // a private draft: open, with no sign-in, and no banner: its opening's tags say Private and Draft
+    await page.goto('/side-projects/alphaaaaa2/');
+    await expect(page.locator('h1')).toHaveText(/Fixture private alpha/);
+    const tags = page.locator('.article-header .topic');
+    await expect(tags).toContainText('Private');
+    await expect(tags).toContainText('Draft');
+    await expect(page.locator('main')).not.toContainText(/Private: listed|Draft: a preview/);
+    await expect(page.locator('[data-access-gate]')).toHaveCount(0);
+    // an open draft too, and the editor's way there
+    await page.goto('/_edit/articles/watai/');
+    const preview = page.getByRole('link', { name: 'Preview it as a page (on this computer only)' });
+    await expect(preview).toBeVisible();
+    await preview.click();
+    await expect(page.locator('.article-header .topic')).toContainText('Draft');
+    await expect(page.locator('.article-header .topic')).not.toContainText('Private');
+  });
+
   for (const scheme of ['light', 'dark'] as const) {
     test(`the Access screen and a private page's Share dialog have no serious axe findings, ${scheme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });

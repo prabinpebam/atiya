@@ -19,9 +19,9 @@ import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.ast
 import RelatedStories, { type RelatedStory } from '../components/compounds/RelatedStories.astro';
 import Prose from '../components/fundamentals/Prose.astro';
 import BackToTop from '../components/fundamentals/BackToTop.astro';
-import Text from '../components/fundamentals/Text.astro';
 import UnlockPanel from '../components/compounds/UnlockPanel.astro';
 import type { IconName } from '../design/icons';
+import type { ComponentProps } from 'astro/types';
 
 interface Props {
   /** The document title. */
@@ -36,18 +36,8 @@ interface Props {
   action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
   /** The trail from the top to this page. */
   crumbs?: { trail: { label: string; href: string }[]; current: string };
-  /** The opening spread (ArticleHeader's props). */
-  header: {
-    title: string;
-    standfirst?: string;
-    topic?: { label: string; href?: string };
-    author?: { name: string; avatar?: string; avatarDark?: string };
-    date?: string;
-    readingTime?: string;
-    picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
-    portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
-    pictureWidth?: 'wide' | 'full';
-  };
+  /** The opening spread (ArticleHeader's props: its topic and tags, title, byline and pictures). */
+  header: ComponentProps<typeof ArticleHeader>;
   /** A drop cap on the opening paragraph. */
   dropcap?: boolean;
   /** The story before this one. */
@@ -60,8 +50,8 @@ interface Props {
   related?: { current: string; stories: RelatedStory[] };
   /**
    * A private page (documentation/access/spec.md §5.4): a build seals the page between comment markers the
-   * sealer replaces, and shows the sign-in panel in its place; the dev server shows it open, with a ribbon
-   * saying who can see it.
+   * sealer replaces, and shows the sign-in panel in its place; the dev server shows it open (its header's
+   * Private tag says who can see it).
    */
   sealed?: { access: 'private'; id: string; contact: string };
 }
@@ -73,15 +63,6 @@ const sealing = !!sealed && import.meta.env.PROD;
 <PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} sealed={sealed?.access} preload={['display', 'display-italic', 'text', 'ui']}>
   {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} access />}
   <main id="main" class="page" tabindex="-1">
-    {
-      sealed && !sealing && (
-        <p class="ribbon">
-          <Text as="span" variant="ui">
-            Private: listed and opened only for readers whose access code or magic link covers it.
-          </Text>
-        </p>
-      )
-    }
     {
       sealing && (
         <div class="gate" data-access-gate={sealed!.access}>
@@ -131,14 +112,6 @@ const sealing = !!sealed && import.meta.env.PROD;
   .page {
     flex: 1 0 auto;
     outline: none;
-  }
-
-  /* edit mode's dev server: who can see this page */
-  .ribbon {
-    margin: 0;
-    padding: var(--space-2) var(--space-gutter);
-    background: var(--color-accent-soft);
-    border-block-end: var(--border-hairline) solid var(--color-rule);
   }
 
   /* a sealed page's sign-in panel (or private note), where the page will be once it's open */

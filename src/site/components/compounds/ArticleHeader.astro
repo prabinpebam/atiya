@@ -1,6 +1,7 @@
 ---
 /**
- * An article's opening spread: its topic, the title set large, the standfirst in soft italic, the
+ * An article's opening spread: its topic (with a Private tag on a private page, and a Draft tag on a dev
+ * server's preview of one not published yet), the title set large, the standfirst in soft italic, the
  * byline with the date and reading time, and the lead picture, wide, with its caption. A page about a
  * person (a résumé, About) can show their portrait beside the title.
  * @tier compound
@@ -35,16 +36,28 @@ interface Props {
   portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
   /** The title's level: 1 on a page, 2 when shown inside another page (the library). */
   level?: 1 | 2;
+  /** A private page: a Private tag beside its topic (documentation/access/spec.md §2). */
+  isPrivate?: boolean;
+  /** Not published yet (a preview on the dev server): a Draft tag beside its topic. */
+  draft?: boolean;
 }
 
-const { title, standfirst, topic, author, date, readingTime, picture, pictureWidth = 'wide', portrait, level = 1 } = Astro.props;
+const { title, standfirst, topic, author, date, readingTime, picture, pictureWidth = 'wide', portrait, level = 1, isPrivate = false, draft = false } = Astro.props;
 const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : null;
 ---
 
 <header class="article-header">
   <div class="words" data-portrait={portrait ? '' : undefined}>
     <div class="text">
-      {topic && <p class="topic"><Tag tone="accent" href={topic.href}>{topic.label}</Tag></p>}
+      {
+        (topic || isPrivate || draft) && (
+          <p class="topic">
+            {topic && <Tag tone="accent" href={topic.href}>{topic.label}</Tag>}
+            {isPrivate && <Tag tone="highlight" icon="key">Private</Tag>}
+            {draft && <Tag>Draft</Tag>}
+          </p>
+        )
+      }
       <Heading level={level} size="h1">{title}</Heading>
       {standfirst && <Text variant="standfirst">{standfirst}</Text>}
       {
@@ -140,6 +153,10 @@ const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
   }
 
   .topic {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
     margin: 0;
   }
 
