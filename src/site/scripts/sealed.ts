@@ -6,6 +6,7 @@
  * Sign in page, or any page while signed in. Telemetry hears what happens through `site:access` events.
  */
 import { each } from './page';
+import { nearestFirst, watchPicturesIn } from './pictures';
 import { b64, deriveCodeKey, deriveLinkKey, open, utf8 } from '../access/crypto.ts';
 import { KeyringError, cardAad, checkEnvelope, mediaAad, openKeyring, pageAad } from '../access/keyring.ts';
 import { parseCode } from '../access/parse.ts';
@@ -95,7 +96,7 @@ async function keyring(s: Session): Promise<{ ok: true; body: KeyringBody } | { 
   }
 }
 
-// ---------- pictures and videos, decrypted as they come into view ----------
+// ---------- pictures and videos: all decrypted, the nearest the view first ----------
 
 const blobs = new Set<string>();
 const mediaKeys = new Map<string, { key: string; type: string }>();
@@ -105,29 +106,71 @@ async function decryptMedia(url: string): Promise<string | null> {
   const name = nameOfUrl(url);
   const m = name && mediaKeys.get(name);
   if (!name || !m) return null;
-  const res = await fetch(url);
-  if (!res.ok) return null;
+  // a failed fetch (a dropped connection, a slow start) is tried again before it gives up
+  let res: Response | null = null;
+  for (const wait of [0, 800, 2400]) {
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    res = await fetch(url).catch(() => null);
+    if (res?.ok) break;
+  }
+  if (!res?.ok) return null;
   const plain = await open(b64.decode(m.key), new Uint8Array(await res.arrayBuffer()), mediaAad(build(), name), MEDIA_MAX);
   const blobUrl = URL.createObjectURL(new Blob([plain as BlobPart], { type: m.type }));
   blobs.add(blobUrl);
   return blobUrl;
 }
 
+// every sealed element is queued, nearest the view first, a few decrypted at a time; one coming into view
+// (scrolled, or swiped to in a carousel) jumps the queue
+const queue: HTMLElement[] = [];
+const queued = new Set<HTMLElement>();
+let running = 0;
+const AT_ONCE = 3;
+/** Queues an element (once); `first` moves a waiting one to the front. One already taken is left alone. */
+function enqueue(el: HTMLElement, first = false) {
+  const known = queued.has(el);
+  if (known && !first) return;
+  queued.add(el);
+  const at = queue.indexOf(el);
+  if (known && at < 0) return;
+  if (at >= 0) queue.splice(at, 1);
+  if (first) queue.unshift(el);
+  else queue.push(el);
+  pump();
+}
+function pump() {
+  while (running < AT_ONCE && queue.length) {
+    const el = queue.shift()!;
+    running++;
+    void reveal(el)
+      .catch(() => markFailed(el))
+      .finally(() => {
+        running--;
+        pump();
+      });
+  }
+}
+const markFailed = (el: Element) => el.closest<HTMLElement>('[data-picture]')?.setAttribute('data-state', 'failed');
 const seen = new IntersectionObserver(
   (entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
       seen.unobserve(e.target);
-      void reveal(e.target as HTMLElement);
+      enqueue(e.target as HTMLElement, true);
     }
   },
-  { rootMargin: '400px 0px' },
+  { rootMargin: '400px 400px' },
 );
+/** How wide a picture will show: its own box, else its place's (a picture not laid out yet), else a wide guess. */
+const shownWidth = (el: HTMLElement) => {
+  const own = el.getBoundingClientRect().width || el.closest<HTMLElement>('[data-picture]')?.parentElement?.getBoundingClientRect().width || 0;
+  return (own || 960) * (window.devicePixelRatio || 1);
+};
 
 /** Fills in one sealed element: a picture (and its dark version), a video's poster and file. */
 async function reveal(el: HTMLElement) {
   if (el instanceof HTMLImageElement) {
-    const width = Math.max(el.getBoundingClientRect().width, 160) * (window.devicePixelRatio || 1);
+    const width = Math.max(shownWidth(el), 160);
     const pick = pickFromSrcset(el.dataset.sealedSrcset ?? '', width) ?? el.dataset.sealedSrc;
     for (const source of el.parentElement?.querySelectorAll<HTMLSourceElement>('source[data-sealed-srcset]') ?? []) {
       const dark = pickFromSrcset(source.dataset.sealedSrcset!, width);
@@ -140,7 +183,7 @@ async function reveal(el: HTMLElement) {
     if (u) {
       el.removeAttribute('sizes');
       el.src = u;
-    }
+    } else markFailed(el);
     return;
   }
   if (el instanceof HTMLVideoElement) {
@@ -162,7 +205,11 @@ async function reveal(el: HTMLElement) {
 
 function watchMedia(root: ParentNode, media: Payload['media']) {
   for (const [name, m] of Object.entries(media)) mediaKeys.set(name, m);
-  root.querySelectorAll<HTMLElement>('img[data-sealed-src], img[data-sealed-srcset], video[data-sealed-poster], video:has(source[data-sealed-src])').forEach((el) => seen.observe(el));
+  // the pictures' places shimmer until they're decrypted and loaded
+  watchPicturesIn(root);
+  const els = [...root.querySelectorAll<HTMLElement>('img[data-sealed-src], img[data-sealed-srcset], video[data-sealed-poster], video:has(source[data-sealed-src])')];
+  for (const el of nearestFirst(els, (e) => (e.closest('[data-picture]') ?? e).getBoundingClientRect(), { width: innerWidth, height: innerHeight })) enqueue(el);
+  els.forEach((el) => seen.observe(el));
 }
 
 /** A link to a sealed file (the lightbox's full size, a video's download): decrypted on the first click, with its group. */

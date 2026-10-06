@@ -15,11 +15,15 @@
  * version's), filling the room round a fitted or actual-size picture and its transparent parts; and its
  * corners can be squared (rounded false), and a drop shadow can fall under it (shadow), following its own
  * shape.
+ * While it loads, its place shimmers, and it fades in once it has (a failed load is tried again, then its
+ * place stays quiet, never a broken icon); once the page has loaded, the pictures still waiting are fetched
+ * nearest the view first (scripts/pictures.ts). Without JavaScript it shows as it loads.
  * @tier fundamental
  * @a11y alt is required: what the picture shows and why it's there; an empty alt only for decoration.
  * @a11y Width and height are required, so the page doesn't shift as it loads (CLS).
  * @a11y A dark version is the same picture in other colours: the alt text covers both.
  * @a11y Tiled, the frame is the image (role="img", named by the alt text), whatever draws it.
+ * @a11y The shimmer stops for prefers-reduced-motion: the place is a still colour until the picture fades in.
  */
 
 interface Props {
@@ -78,6 +82,7 @@ const imgAlt = tile ? '' : alt;
   framed ? (
     <span
       class="frame"
+      data-picture
       data-mode={mode}
       data-ratio={ratio}
       data-radius={radius}
@@ -98,7 +103,9 @@ const imgAlt = tile ? '' : alt;
         <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} style={vars} />
       )}
     </span>
-  ) : dark ? (
+  ) : (
+    <span class="shell" data-picture data-radius={radius} data-fill={fill ? '' : undefined}>
+    {dark ? (
     <picture class="themed">
       <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? sizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />
       <img
@@ -141,6 +148,8 @@ const imgAlt = tile ? '' : alt;
       data-shadow={shadow ? '' : undefined}
       style={vars}
     />
+    )}
+    </span>
   )
 }
 
@@ -148,6 +157,26 @@ const imgAlt = tile ? '' : alt;
   /* the wrapper of a picture with a dark version takes no box: the img lays out as it would alone */
   .themed {
     display: contents;
+  }
+
+  /* a plain picture's root: as wide as its place, its shape the picture's (or its ratio's), with its corners */
+  .shell {
+    position: relative;
+    display: block;
+    width: 100%;
+    border-radius: var(--c-image-radius);
+  }
+
+  .shell[data-radius='feature'] {
+    border-radius: var(--c-image-radius-feature);
+  }
+
+  .shell[data-radius='none'] {
+    border-radius: var(--radius-none);
+  }
+
+  .shell[data-fill] {
+    height: 100%;
   }
 
   .image {
@@ -277,10 +306,54 @@ const imgAlt = tile ? '' : alt;
     object-fit: contain;
     height: 100%;
   }
+
+  /* loading (scripts/pictures.ts sets data-state): its place shimmers, the picture hidden; loaded, it fades in;
+     a load that failed after its retries leaves its place quiet, never a broken icon */
+  [data-picture][data-state='loading'],
+  [data-picture][data-state='failed'] {
+    background-color: var(--c-image-placeholder);
+  }
+
+  [data-picture][data-state='loading'] {
+    background-image: linear-gradient(100deg, transparent 30%, var(--c-image-shimmer) 50%, transparent 70%);
+    background-size: 300% 100%;
+    animation: shimmer var(--c-image-shimmer-cycle) var(--ease-standard) infinite;
+  }
+
+  [data-picture][data-state] .image {
+    transition: opacity var(--c-image-fade-in) var(--ease-standard);
+  }
+
+  [data-picture][data-state='loading'] .image,
+  [data-picture][data-state='failed'] .image {
+    opacity: 0;
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+
+    to {
+      background-position: 0 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-picture][data-state='loading'] {
+      background-image: none;
+      animation: none;
+    }
+  }
 </style>
 
 <script>
   import { each } from '../../scripts/page';
+  import { prefetchPictures, watchPicture } from '../../scripts/pictures';
+
+  // every picture: a shimmer while it loads, a fade once it has; then the rest fetched, nearest the view first
+  each<HTMLElement>('[data-picture]', (root, signal) => watchPicture(root, signal));
+  prefetchPictures();
 
   // a tiled picture: the frame repeats the file the browser chose (the dark one, when the page is dark;
   // a change of theme loads the other, and the tiles follow)

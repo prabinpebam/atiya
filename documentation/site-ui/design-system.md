@@ -155,7 +155,14 @@ The design library is the full, live version (examples, props, keys, tokens, use
   - **Weight:** 159 to 241 KB on a page, italics fetched only when used.
   - **Preloads:** each layout preloads the faces its first screen is set in (`PageShell`'s `preload`), so text doesn't re-wrap as fonts arrive.
   - **The playground:** only the library's type playground loads the full four-axis Fraunces (`--font-specimen`).
-- **Pictures:** sized, `srcset`, lazy unless they're the lead. Videos load their metadata only.
+- **Pictures:** sized, `srcset`, `loading="lazy"` unless they're the lead, so the browser fetches what's in view first. How they load (`scripts/pictures.ts`, from the `Image` fundamental):
+  - **While loading,** a picture's place shimmers in its own shape and corners (`c.image.placeholder`, `c.image.shimmer`; still under reduced motion), and the picture fades in once it has loaded (`c.image.fade-in`). Never a broken icon or its alt text in its place.
+  - **A failed load** is tried twice more (after 0.8 s and 2.4 s), then its place stays quiet.
+  - **Once the page has loaded,** every picture still waiting is fetched, nearest the view first, four at a time. One in a sideways scroller (a carousel, a filmstrip, a row gallery) counts as near as its scroller, and a scroller coming into view fetches all its pictures at once, so a slide is there before it's swiped to. A picture held back unseen (`display: none`) waits until it's shown.
+  - **A private page's pictures** are all decrypted the same way, nearest first, three at a time, one coming into view jumping the queue, each fetch tried three times (`scripts/sealed.ts`).
+  - **The lightbox** starts a picture's full size when its link is pointed at or focused, and once open fetches the rest of the set, nearest the picture shown first.
+
+  Videos load their metadata only.
 - **Measured on a phone** (Lighthouse's mobile throttling): LCP under 2.5 s and CLS under 0.1 on the landing, the index and a section ([the mobile audit](mobile-audit.md) §4).
 
 ## 10. Checks

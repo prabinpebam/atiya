@@ -766,7 +766,9 @@ test.describe('content', () => {
 
   test('pictures have no background colour of their own: a transparent one sits straight on the page', async ({ page }) => {
     await page.goto(ARTICLE);
-    const painted = await page.locator('main img').evaluateAll((els) =>
+    // (unless its page asked for its colour behind it, data-bg: media.md §9.1); wait for them to load, so no shimmer is counted
+    await page.waitForFunction(() => [...document.querySelectorAll('main [data-picture]')].every((p) => (p as HTMLElement).dataset.state !== 'loading' || !(p as HTMLElement).checkVisibility()));
+    const painted = await page.locator('main img:not([data-bg])').evaluateAll((els) =>
       els.flatMap((e) => [e, e.closest('.image-shell')].filter((x): x is Element => !!x)).map((x) => getComputedStyle(x).backgroundColor).filter((c) => c !== 'rgba(0, 0, 0, 0)'),
     );
     expect(painted).toEqual([]);
@@ -799,7 +801,7 @@ test.describe('content', () => {
     const nav = page.getByRole('navigation', { name: 'Sections' });
     for (const path of ['/', '/work/', ARTICLE]) {
       await page.goto(path);
-      await expect(nav.getByRole('link').filter({ hasNotText: 'Explore in 3D' }), path).toHaveText(entries as string[]);
+      await expect(nav.getByRole('link').filter({ hasNotText: /Explore in 3D|Sign in/ }), path).toHaveText(entries as string[]);
     }
     await expect(nav.getByRole('link', { name: 'Leadership' })).toHaveAttribute('aria-current', 'page');
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
@@ -808,19 +810,26 @@ test.describe('content', () => {
     // on a phone, the same entries fold into the menu
     await page.setViewportSize({ width: 390, height: 800 });
     await page.locator('[data-menu-toggle]').click();
-    await expect(nav.getByRole('link').filter({ hasNotText: 'Explore in 3D' })).toHaveText(entries as string[]);
+    await expect(nav.getByRole('link').filter({ hasNotText: /Explore in 3D|Sign in/ })).toHaveText(entries as string[]);
   });
 
   test('each section lists its pages in its view, and an empty one says so; the home page lists the sections', async ({ page }) => {
+    // the test build's private pages (tests/fixtures/private-pages): a section holding only those isn't empty
+    const withPrivate = new Set((JSON.parse(readFileSync(new URL('../fixtures/private-pages/structures/overlay.json', import.meta.url), 'utf8')) as { sections: { section: string }[] }).sections.map((x) => x.section));
     for (const s of SECTIONS) {
       await page.goto(`/${s.slug}/`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(s.title);
       await expect(page.locator('main [data-view]')).toHaveAttribute('data-view', s.view ?? 'tiles');
-      const pages = (s.children ?? []).length;
+      // a draft isn't listed: only the published pages count
+      const published = (c: { item?: { id: string } }) => !c.item || ['published', 'stale'].includes((JSON.parse(readFileSync(new URL(`articles/${c.item.id}.json`, CONTENT), 'utf8')) as Article).status);
+      const pages = (s.children ?? []).filter((c) => published(c as { item?: { id: string } })).length;
       if (pages) {
         await expect(page.locator('main article.card')).toHaveCount(pages);
         // a card shows its picture whole, never cropped (documentation/content/media.md §9)
         for (const img of await page.locator('main article.card img').all()) await expect(img).toHaveCSS('object-fit', 'contain');
+      } else if (withPrivate.has(s.id)) {
+        await expect(page.locator('[data-sign-in-line]').getByRole('heading', { level: 2 })).toHaveText('The work here is shared with invited readers');
+        await expect(page.getByText('Nothing here yet. This section is being written.')).toHaveCount(0);
       } else await expect(page.getByText('Nothing here yet. This section is being written.')).toBeVisible();
     }
     await page.goto('/');

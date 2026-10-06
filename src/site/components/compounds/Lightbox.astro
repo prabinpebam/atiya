@@ -259,6 +259,24 @@ const { id = 'site-lightbox' } = Astro.props;
   const fullOf = (item: LightboxItem) => (item.hrefDark && pageIsDark() ? item.hrefDark : item.href);
   const thumbOf = (item: LightboxItem) => (item.thumbDark && pageIsDark() ? item.thumbDark : item.thumb);
 
+  // a full-size picture fetched ahead (a sealed one can't be: it's decrypted when its link is used)
+  const warmed = new Map<string, Promise<void>>();
+  const warm = (url: string) => {
+    if (!url || url.includes('/_sealed/')) return Promise.resolve();
+    let p = warmed.get(url);
+    if (!p) {
+      p = new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = img.onerror = () => resolve();
+        img.src = url;
+      });
+      warmed.set(url, p);
+    }
+    return p;
+  };
+  /** How far apart two places are in a set that wraps round. */
+  const ring = (a: number, b: number, n: number) => Math.min(Math.abs(a - b), n - Math.abs(a - b));
+
   each<HTMLDialogElement>('[data-lightbox-dialog]', (dialog, signal) => {
     if (dialog.dataset.ready !== undefined) return;
     dialog.dataset.ready = '';
@@ -283,9 +301,20 @@ const { id = 'site-lightbox' } = Astro.props;
     const preload = (i: number) => {
       if (items.length < 2) return;
       const item = items[wrap(i, items.length)];
-      if (!item) return;
-      const img = new Image();
-      img.src = fullOf(item);
+      if (item) void warm(fullOf(item));
+    };
+    // the whole set, once it's open: nearest the picture shown first, two at a time, so stepping through it never waits
+    let warming = 0;
+    const warmSet = () => {
+      const run = ++warming;
+      const n = items.length;
+      const order = items.map((_, k) => k).sort((a, b) => ring(a, index, n) - ring(b, index, n));
+      let next = 0;
+      const worker = async () => {
+        while (run === warming && next < order.length) await warm(fullOf(items[order[next++]]));
+      };
+      void worker();
+      void worker();
     };
 
     const paintStrip = () => {
@@ -333,6 +362,14 @@ const { id = 'site-lightbox' } = Astro.props;
       }, 90);
     };
 
+    // pointing at a picture, or tabbing to it, starts its full size: it's there when it opens
+    const warmLink = (event: Event) => {
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[data-lightbox]') : null;
+      if (link) void warm(fullOf(itemFrom(link)));
+    };
+    document.addEventListener('pointerover', warmLink, { signal, passive: true });
+    document.addEventListener('focusin', warmLink, { signal });
+
     document.addEventListener('click', (event) => {
       const target = event.target;
       const link = target instanceof Element ? target.closest<HTMLAnchorElement>('a[data-lightbox]') : null;
@@ -348,6 +385,7 @@ const { id = 'site-lightbox' } = Astro.props;
       if (!dialog.open) dialog.showModal();
       render(index, true);
       close.focus();
+      warmSet();
     }, { signal });
 
     close.addEventListener('click', () => dialog.close());

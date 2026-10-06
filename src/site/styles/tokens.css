@@ -266,6 +266,9 @@
   --c-image-radius: var(--radius-lg);
   --c-image-radius-feature: var(--radius-xl);
   --c-image-placeholder: var(--color-bg-sunk);
+  --c-image-shimmer: var(--color-bg-raised);
+  --c-image-shimmer-cycle: 1400ms;
+  --c-image-fade-in: 480ms;
   --c-image-portrait: 13rem;
   --c-image-portrait-sm: 8rem;
   --c-image-shadow-y: 0.75rem;
