@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-09-29",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-06",
   "locale": "en",
   "hero": {
     "media": "articles/do-what-makes-you-proud/mark-sculpted-clay",
@@ -80,7 +80,7 @@
       "media": "articles/do-what-makes-you-proud/slide-swan-sage",
       "width": "content",
       "lightbox": true,
-      "showCaption": false
+      "caption": "I used C4D and Octane render to create the visual language"
     },
     {
       "type": "heading",
@@ -170,7 +170,8 @@
       "type": "figure",
       "media": "articles/do-what-makes-you-proud/lettering",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "caption": "Slogan logotype design was done by me"
     },
     {
       "type": "heading",
@@ -194,7 +195,7 @@
       "title": "The team video",
       "poster": "articles/do-what-makes-you-proud/team-video-poster",
       "duration": 140,
-      "caption": "The team video: a ribbon of colour passes from one person to the next.",
+      "caption": "The team video, recording, editing and motion design done by me",
       "width": "wide"
     },
     {

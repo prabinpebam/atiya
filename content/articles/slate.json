@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-06",
   "locale": "en",
   "thumbnail": "articles/slate/docs-overview",
   "body": [
@@ -24,7 +24,8 @@
       "type": "figure",
       "media": "articles/slate/docs-overview",
       "width": "wide",
-      "lightbox": true
+      "lightbox": true,
+      "shadow": true
     },
     {
       "type": "heading",
@@ -99,7 +100,8 @@
       "type": "figure",
       "media": "articles/slate/docs-page",
       "width": "wide",
-      "lightbox": true
+      "lightbox": true,
+      "shadow": true
     },
     {
       "type": "heading",
@@ -118,7 +120,8 @@
       "type": "figure",
       "media": "articles/slate/docs-search",
       "width": "wide",
-      "lightbox": true
+      "lightbox": true,
+      "shadow": true
     },
     {
       "type": "heading",
@@ -135,5 +138,8 @@
     "documentation",
     "tools",
     "static-site"
-  ]
+  ],
+  "thumbnailStyle": {
+    "shadow": true
+  }
 }
