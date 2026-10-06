@@ -8,10 +8,11 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-06",
   "locale": "en",
   "hero": {
-    "media": "articles/cloner-pro/brush-stroke-field"
+    "media": "articles/cloner-pro/brush-stroke-field",
+    "display": "fit"
   },
   "thumbnail": "articles/cloner-pro/quarter-circle-patterns",
   "body": [
