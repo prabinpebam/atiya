@@ -12,4 +12,4 @@
 - [Site design system](./site-ui/design-system.md) (the website's look: a clean printed magazine)
 - [3D navigation proof of concept](./poc-3d-navigation/spec.md)
 
-The IA plan is the source of truth for content organization and navigation. The 3D proof of concept is an optional presentation layer and must preserve the IA's conventional, accessible navigation paths.ddd
+The IA plan is the source of truth for content organization and navigation. The 3D proof of concept is an optional presentation layer and must preserve the IA's conventional, accessible navigation paths.
