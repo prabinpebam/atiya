@@ -214,6 +214,11 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
     gap: var(--space-16);
   }
 
+  /* a build's list before scripts/sealed.ts places any private card: no row, so its gap doesn't push the panel down */
+  [data-cards]:empty {
+    display: none;
+  }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-index-card-min)), 1fr));
