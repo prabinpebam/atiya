@@ -90,6 +90,10 @@ export function protectedTerms(privateRoot) {
       if (b.type === 'heading') add('a heading', b.text, 3);
       if (b.type === 'quote') runs('a quote', b.text), add('a quote', b.cite, 6);
       if (b.type === 'collection') for (const i of b.items) add('an item', i.heading, 6), add('an item', i.subtext, 6), i.text && runs('an item', i.text);
+      if (b.type === 'table') {
+        for (const c of b.columns ?? []) add('a table cell', c, 6);
+        for (const c of (b.rows ?? []).flat()) runs('a table cell', c), add('a table cell', plain(c).trim(), 6);
+      }
       for (const k of ['caption', 'credit', 'title']) add('a caption', b[k], 6);
       for (const i of b.items ?? []) for (const k of ['caption', 'alt']) add('a caption', i[k], 6);
     }

@@ -107,6 +107,20 @@ describe('a rich copy arrives as the closest blocks and marks', () => {
     ]);
   });
 
+  it('keeps a real table a table: the first row its headings, short rows filled, a cell on one line', () => {
+    const t = '<table><thead><tr><th>Typeface</th><th>Role</th><th></th></tr></thead><tbody><tr><td>Fraunces</td><td><b>Display</b></td><td>a<br>b</td></tr><tr><td>Figtree</td></tr></tbody></table>';
+    expect(paste(t)?.blocks).toEqual([
+      {
+        type: 'table',
+        columns: ['Typeface', 'Role', 'Column 3'],
+        rows: [
+          ['Fraunces', '**Display**', 'a b'],
+          ['Figtree', '', ''],
+        ],
+      },
+    ]);
+  });
+
   it('leaves out pictures (counting them) and what the site can’t show', () => {
     expect(paste('<p style="color:red;font-size:30px"><u>Under</u> <span style="font-family:Arial">words</span><img src="x.png"></p><script>alert(1)</script><style>p{}</style><figure><img src="y.png"><figcaption>A caption</figcaption></figure>')).toEqual({
       blocks: [

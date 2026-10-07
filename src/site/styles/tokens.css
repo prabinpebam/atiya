@@ -263,6 +263,9 @@
   --c-collection-column: 13rem;
   --c-collection-row-picture: 11rem;
   --c-collection-slide: 18rem;
+  --c-table-cell-min: 8rem;
+  --c-table-row-heading-min: 10rem;
+  --c-table-cell-max: 16rem;
   --c-image-radius: var(--radius-lg);
   --c-image-radius-feature: var(--radius-xl);
   --c-image-placeholder: var(--color-bg-sunk);

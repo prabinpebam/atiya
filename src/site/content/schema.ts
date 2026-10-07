@@ -107,6 +107,12 @@ export const COLLECTION_LAYOUTS = ['rows', 'columns', 'tiles', 'masonry', 'carou
 export type CollectionLayout = (typeof COLLECTION_LAYOUTS)[number];
 export const COLLECTION_HEADINGS = ['label', 'title'] as const;
 export const COLLECTION_MAX = 24;
+/** A table's most columns and rows: past these, it's a spreadsheet, not a story's table. */
+export const TABLE_MAX_COLUMNS = 8;
+export const TABLE_MAX_ROWS = 60;
+
+/** A table's cell: one line of the inline Markdown (bold, italic, code, links), or empty. */
+const tableCell = z.string().refine((c) => !/[\r\n]/.test(c), 'a cell is one line');
 
 /**
  * One item of a collection: a heading, a picture, a subtext (a short line under the heading) and its
@@ -186,6 +192,21 @@ export const block = z.discriminatedUnion('type', [
     rounded: rounded.optional(),
     shadow: shadow.optional(),
   }),
+  z
+    .strictObject({
+      type: z.literal('table'),
+      /** Its column headings, in order. */
+      columns: z.array(z.string().trim().min(1).max(80)).min(1).max(TABLE_MAX_COLUMNS),
+      /** Its rows, in order: a cell for each column. */
+      rows: z.array(z.array(tableCell)).min(1).max(TABLE_MAX_ROWS),
+      /** The first column names each row (its cells are the rows' headings). */
+      rowHeadings: z.boolean().optional(),
+      /** What it shows, said above it (and read first by assistive tech). */
+      caption: z.string().min(1).optional(),
+      /** Where the article layout places it; left out, in the column. */
+      width: z.enum(['content', 'popout', 'wide']).optional(),
+    })
+    .refine((t) => t.rows.every((r) => r.length === t.columns.length), { message: 'every row has a cell for each column', path: ['rows'] }),
 ]);
 
 const itemRef = z.strictObject({ type: z.enum(['article', 'caseStudy', 'practiceArea', 'leadershipTopic', 'gallery', 'resume']), id });

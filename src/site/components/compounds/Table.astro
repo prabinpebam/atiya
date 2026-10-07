@@ -1,0 +1,156 @@
+---
+/**
+ * A table of facts: column headings over rows of short cells, between hairlines, in the interface face
+ * with even figures, the way a magazine sets a comparison. Its first column can name each row. Too wide
+ * for its place (a phone, many columns), it scrolls sideways in its own frame, with the overlay handle, so
+ * the page itself never does; on a phone, a table of three columns or more sizes each column to its words
+ * (up to a readable width) rather than squeezing them into tall, narrow rows.
+ * @tier compound
+ * @a11y A real table: a caption (when given), column headers (scope col) and, with rowHeadings, row headers (scope row), so a screen reader names each cell by its row and column.
+ * @a11y Its frame is a named region that takes the focus, so a keyboard can scroll a table wider than its place.
+ * @key Tab: onto the table's frame, then Left / Right scroll a table wider than its place
+ */
+
+interface Props {
+  /** Its column headings, in order. */
+  columns: string[];
+  /** Its rows: each a cell for each column, as inline HTML (bold, italic, code, links: the content layer renders it from Markdown). */
+  rows: string[][];
+  /** The first column names each row: its cells are row headers. */
+  rowHeadings?: boolean;
+  /** What it shows, set above it as its caption. */
+  caption?: string;
+  /** Names its frame for assistive tech when there's no caption. */
+  label?: string;
+  /** Where the article layout places it: in the column (the default), a little wider, or wide. */
+  width?: 'content' | 'popout' | 'wide';
+}
+
+const { columns, rows, rowHeadings = false, caption, label = 'Table', width = 'content' } = Astro.props;
+---
+
+<figure class="table" data-breakout={width} data-row-headings={rowHeadings ? '' : undefined} data-many={columns.length > 2 ? '' : undefined}>
+  {caption && <figcaption class="caption">{caption}</figcaption>}
+  <div class="frame" role="region" tabindex="0" aria-label={caption ?? label} data-scrollbar>
+    <div class="sizer">
+    <table class="grid">
+      <thead>
+        <tr>
+          {columns.map((c) => <th class="cell head" scope="col">{c}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((r) => (
+            <tr>
+              {r.map((cell, n) =>
+                n === 0 && rowHeadings ? (
+                  <th class="cell name" scope="row">
+                    <span class="words" set:html={cell} />
+                  </th>
+                ) : (
+                  <td class="cell">
+                    <span class="words" set:html={cell} />
+                  </td>
+                ),
+              )}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+    </div>
+  </div>
+</figure>
+
+<style>
+  .table {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    min-width: 0;
+  }
+
+  .caption {
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    line-height: var(--leading-ui);
+    text-transform: uppercase;
+  }
+
+  .frame {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    border-block: var(--border-strong) solid var(--color-text);
+  }
+
+  .frame:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  .grid {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--leading-ui);
+  }
+
+  .cell {
+    min-width: var(--c-table-cell-min);
+    padding: var(--space-3) var(--space-4);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    font-weight: var(--weight-regular);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  .cell:first-child {
+    padding-inline-start: 0;
+  }
+
+  .cell:last-child {
+    padding-inline-end: 0;
+  }
+
+  tbody tr:last-child .cell {
+    border-block-end: 0;
+  }
+
+  .head {
+    border-block-end-color: var(--color-rule-strong);
+    color: var(--color-text-muted);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    vertical-align: bottom;
+  }
+
+  .name {
+    min-width: var(--c-table-row-heading-min);
+    font-weight: var(--weight-semibold);
+  }
+
+  .words {
+    display: block;
+  }
+
+  /* on a phone, three columns or more (which can't fit anyway): each as wide as its words, up to a readable
+     width, and the table scrolls sideways; two columns share the width. A table ignores an intrinsic width,
+     so its wrapper takes it */
+  @media (max-width: 40rem) {
+    .table[data-many] .sizer {
+      width: max-content;
+      min-width: 100%;
+    }
+
+    .table[data-many] .words {
+      max-inline-size: var(--c-table-cell-max);
+    }
+  }
+</style>

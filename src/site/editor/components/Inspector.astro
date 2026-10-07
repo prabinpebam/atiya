@@ -17,9 +17,10 @@ import IconButton from '../../components/fundamentals/IconButton.astro';
 import Image from '../../components/fundamentals/Image.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
-import { COLLECTION_MAX, type Article, type Block } from '../../content/schema';
+import { COLLECTION_MAX, TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, type Article, type Block } from '../../content/schema';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { kindOf } from '../model/ops';
+import { tableToText } from '../model/table';
 import { pictureNote } from '../model/crop';
 import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS } from '../model/collection';
 import { PICTURE_SPECS, specTip } from '../../design/pictures';
@@ -320,6 +321,24 @@ const STATUS: SelectOption[] = [
             )}
 
             {b.type === 'divider' && <Text variant="ui" tone="muted">A divider has no settings: it marks a turn in the story.</Text>}
+
+            {b.type === 'table' && (
+              <>
+                <TextField
+                  label="Cells"
+                  name={`body.${i}.cells`}
+                  id={id(i, 'cells')}
+                  value={tableToText(b)}
+                  multiline
+                  rows={Math.min(14, b.rows.length + 2)}
+                  data-type="table-cells"
+                  hint={`The column headings on the first line, then a row a line, cells split by | (write a | in a cell as \\|). Bold, italic, code and links work in a cell. At most ${TABLE_MAX_COLUMNS} columns and ${TABLE_MAX_ROWS} rows.`}
+                />
+                <Switch label="First column names each row" name={`body.${i}.rowHeadings`} id={id(i, 'rowHeadings')} checked={!!b.rowHeadings} data-type="bool" />
+                <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} optional hint="What it shows, said above it. Left empty, nothing is." />
+                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'content'} options={WIDTHS.filter((w) => w.value !== 'full')} hint="Wider than its place, it scrolls sideways in its frame." />
+              </>
+            )}
 
             <p class="issue" role="alert" data-editor-issue hidden></p>
             <div class="row block-actions">

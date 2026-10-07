@@ -309,6 +309,7 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | `related` | `items` (item refs), `heading?` | `StoryCard` grid |
 | (pictures) | `showCaption` on `figure`, `gallery`, `carousel`, `video` and an article's `hero` | `false`: no caption and no credit under the picture (or the set, or any slide), and none in the lightbox. Left out: shown (the block's caption, else the picture's own) |
 | `collection` | `items` (one to 24, each `{ heading?, media?, subtext?, text? }` with at least one: §6.1), `layout` (`rows`, `columns`, `tiles`, `masonry`, `carousel`), `columns?` (2 to 4, for tiles and masonry), `headings?` (`label` (the default) or `title`), `label?` (a carousel's name), `width?` (`content` (the default), `popout`, `wide`), and the items' pictures' `ratio?`, `display?`, `background?`, `rounded?`, `shadow?` ([media §9.1](media.md#91-how-a-picture-is-shown-fill-fit-actual-size-tile-a-background-corners-a-drop-shadow)) | `Collection` |
+| `table` | `columns` (one to 8 headings, each at most 80 characters), `rows` (one to 60, each a cell for every column: one line of the Markdown subset (bold, italic, code, links), or empty), `rowHeadings?` (the first column names each row: row headers), `caption?` (said above it), `width?` (`content` (the default), `popout`, `wide`) | `Table` (§6.2) |
 | `metrics` | `items` (`{ value, label, note? }[]`) | New: a metrics list |
 | `callout` | `tone` (`note`, `caution`), `markdown` | New |
 
@@ -335,13 +336,24 @@ A collection is a set of items of one shape, whatever they're about: a story's f
 
 > **As built (6 October 2026).** The collection replaced the `facts` and `tiles` blocks, which were the same content in two layouts: every fact box became a collection laid out as `columns` (each label its heading, each value its subtext) and every set of tiles one laid out as `tiles` (each label its heading, each statement its words, at the width it had), so the pages look as they did. The query-driven list of items once sketched under the same name is now `listing`, still unbuilt.
 
+### 6.2 Tables: rows and columns of short facts
+
+A table is for facts compared across the same columns: options side by side, a schedule, a specification. Use a collection when each item is a few sentences of its own, and a table when the reader reads across.
+
+- **Its cells** are one line each (bold, italic, code and links; no lists or line breaks), and a cell can be empty. Every row has a cell for each column, at most 8 columns and 60 rows.
+- **Row headings:** with `rowHeadings`, the first column names each row, so a screen reader reads every cell with its row's name and its column's.
+- **Narrow places:** it never makes the page scroll sideways. Too wide for its place, it scrolls in its own frame (a focusable region, with the overlay handle); on a phone, a table of three columns or more sizes each column to its words, up to `c.table.cell-max`, instead of squeezing them into tall, narrow rows.
+- **In edit mode** the Table block's cells are written in its settings, the column headings on the first line, then a row a line, cells split by `|` (`\|` for a literal one). A rich copy of an HTML table (two rows and two columns or more) pastes as a table.
+
+> **As built (7 October 2026).** Added when a case study's comparisons needed real tables; until then the subset allowed none.
+
 **The Markdown subset** in `text`, `pointOfView`, `bio` and the like:
 - **Allowed:** paragraphs, emphasis, strong, inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks.
 - **Not allowed:**
   - raw HTML;
   - images (use `figure`);
   - headings (use `heading`, so every heading is a real landmark with a stable anchor);
-  - tables (a block later).
+  - tables (use the `table` block, §6.2).
 
 ## 7. Lifecycle and visibility
 

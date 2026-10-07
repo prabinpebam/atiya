@@ -10,6 +10,7 @@ import * as ops from '../model/ops';
 import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
 import { isVideoFile } from '../model/upload';
+import { starterTable, textToTable } from '../model/table';
 import { openCrop } from './crop';
 import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
@@ -596,6 +597,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       return void moveProtected('private', String(value), 'Moved to another section');
     }
     if (t.name === '__section') return change(doc, ALL, { section: (value as string | undefined) ?? null });
+    // a table's cells: the inspector's text back into its columns and rows (model/table.ts)
+    if (kind === 'table-cells') {
+      const parsed = textToTable(t.value);
+      if (!parsed.ok) return bad(parsed.why);
+      const base = t.name.replace(/\.cells$/, '');
+      return change(ops.setPath(ops.setPath(doc, `${base}.columns`, parsed.columns), `${base}.rows`, parsed.rows), { canvas: true, outline: true });
+    }
     const renders = t.name.startsWith('body.') || t.name.startsWith('hero.') || ['title', 'summary', 'publishedAt', 'kind'].includes(t.name);
     // a choice that changes which fields there are (a collection's layout) draws the settings again
     change(ops.setPath(doc, t.name, value), { canvas: renders, outline: t.name.startsWith('body.'), inspector: !!t.closest('[data-refresh]') });
@@ -776,6 +784,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const at = insertAt;
     if (type === 'text' || type === 'heading') return toCanvas({ type: 'pending', index: at, kind: type });
     if (type === 'divider') return insertBlock(at, { type: 'divider' });
+    if (type === 'table') return insertBlock(at, starterTable());
     if (type === 'quote' || type === 'collection') return dialog(`editor-insert-${type}`)?.showModal();
     // a YouTube or Vimeo video: its address and title, then its poster
     if (type === 'embed') return dialog('editor-insert-video')?.showModal();

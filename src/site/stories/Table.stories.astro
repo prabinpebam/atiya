@@ -1,0 +1,35 @@
+---
+import Example from '../library/Example.astro';
+import Table from '../components/compounds/Table.astro';
+
+const faces = [
+  ['<strong>Fraunces</strong>', 'Display', 'Titles, pull quotes and drop caps', 'Soft, wonky optical axes pinned'],
+  ['<strong>Newsreader</strong>', 'Text', 'Body copy and captions', 'Cut to the weights the site uses'],
+  ['<strong>Figtree</strong>', 'Interface', 'Navigation, labels and tables', 'Even figures for numbers'],
+];
+const statuses = [
+  ['Draft', 'Edit mode only', 'Nothing: anyone can save one'],
+  ['Approved', 'Edit mode only', 'Its facts and words reviewed'],
+  ['Published', 'On the site', 'Saved to remote, and the site built'],
+];
+const wide = [
+  ['Fraunces', 'Display', 'Variable', 'opsz, wght, SOFT, WONK', 'Titles', 'Self-hosted', 'SIL OFL'],
+  ['Figtree', 'Interface', 'Variable', 'wght', 'Labels', 'Self-hosted', 'SIL OFL'],
+];
+---
+
+<Example title="A comparison" description="Column headings over short rows between hairlines, in the interface face with even figures. Cells can carry bold, italic, code and links.">
+  <Table columns={['Typeface', 'Role', 'Used for', 'Notes']} rows={faces} caption="The site's typefaces" />
+</Example>
+
+<Example title="Rows named by their first column" description="With rowHeadings, the first cell of each row is its header (scope row), set in the heavier weight, so a screen reader names every cell by its row.">
+  <Table columns={['Status', 'Where it shows', 'What it takes']} rows={statuses} rowHeadings caption="A page's statuses" />
+</Example>
+
+<Example title="Wider than its place" layout="block" description="Seven columns in the column's width: each keeps its narrowest width and the table scrolls sideways in its frame (Tab to it, then the arrow keys), never the page. On a phone, three columns or more size to their words.">
+  <Table columns={['Typeface', 'Role', 'Kind', 'Axes', 'Used for', 'Served', 'Licence']} rows={wide} rowHeadings label="Typefaces compared" />
+</Example>
+
+<Example title="Stepping out of the column" layout="block" description="width popout or wide lets a many-column table use the article's wider grid lines, as figures do.">
+  <Table columns={['Typeface', 'Role', 'Used for', 'Notes']} rows={faces} width="wide" caption="The site's typefaces" />
+</Example>

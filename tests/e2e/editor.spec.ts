@@ -279,6 +279,42 @@ test.describe('editor', () => {
     await expect(page.locator(`[data-block-form="${count}"]`).getByRole('combobox', { name: 'Columns' })).toHaveCount(0);
   });
 
+  test('a table: added from the palette, its cells written in the inspector and shown on the page, a row that does not fit refused', async ({ page }) => {
+    await openArticle(page);
+    const count = await outlineRows(page).count();
+    await page.locator('[data-editor-outline] [data-editor-add-at]').click();
+    await page.locator('#editor-palette [data-editor-add="table"]').click();
+    await expect(outlineRows(page)).toHaveCount(count + 1);
+    await saved(page);
+    type T = { type: string; columns?: string[]; rows?: string[][]; rowHeadings?: boolean };
+    const last = () => (readJson(articleFile()).body as T[]).at(-1)!;
+    expect(last()).toMatchObject({ type: 'table', columns: ['Column 1', 'Column 2'], rows: [['', ''], ['', '']] });
+
+    await page.locator(`[data-editor-select="${count}"]`).click();
+    const settings = page.locator(`[data-block-form="${count}"]`);
+    const cells = settings.getByLabel('Cells');
+    await cells.fill('Typeface | Role\nFraunces | **Display**\nFigtree');
+    await cells.blur();
+    await expect.poll(() => last().rows).toEqual([
+      ['Fraunces', '**Display**'],
+      ['Figtree', ''],
+    ]);
+    expect(last().columns).toEqual(['Typeface', 'Role']);
+    const shown = frame(page).locator('figure.table').last();
+    await expect(shown.locator('thead th')).toHaveText(['Typeface', 'Role']);
+    await expect(shown.locator('tbody strong')).toHaveText('Display');
+
+    // a row with more cells than columns: refused with the reason, and nothing written
+    await cells.fill('Typeface | Role\nA | B | C');
+    await cells.blur();
+    await expect(settings.locator('[data-editor-issue]')).toContainText('Row 1 has 3 cells');
+    expect(last().rows).toHaveLength(2);
+
+    await settings.getByText('First column names each row').click();
+    await expect.poll(() => last().rowHeadings).toBe(true);
+    await expect(frame(page).locator('figure.table').last().locator('tbody th[scope="row"]')).toHaveCount(2);
+  });
+
   test('a list: Enter makes a new item, and Enter on an empty last item, or Ctrl + Enter anywhere, starts a paragraph after it', async ({ page }) => {
     await openArticle(page);
     const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string }[];

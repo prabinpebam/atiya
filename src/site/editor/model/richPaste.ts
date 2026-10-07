@@ -4,12 +4,13 @@
  * blocks and marks the site has, as pasted Markdown does (paste.ts): headings (H1 and H2 a heading 2, H3 a
  * heading 3, H4 to H6 a heading 4, their words only), paragraphs with their bold, italic, code and links,
  * bulleted and numbered lists (Word's and Docs' too), quotes, dividers, code blocks (a line each, as
- * code), and a table's rows as paragraphs. Pictures are left out (they come from the media library), and
+ * code), and tables (two rows and two columns or more: the first row its column headings; a single row, a
+ * layout's, as a paragraph). Pictures are left out (they come from the media library), and
  * so is anything the site can't show (colours, fonts, sizes, underline). A copy from a code editor (all of
  * it monospaced or preformatted, like VS Code's) is left to its plain text, so Markdown copied from one
  * still arrives as Markdown. Written against a minimal node interface, so it runs in the unit tests.
  */
-import type { Block } from '../../content/schema';
+import { TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, type Block } from '../../content/schema';
 import { normalize, serializeBlocks, type Inline } from '../../content/markdown';
 import type { MiniNode } from './dom';
 import type { Pasted } from './paste';
@@ -146,7 +147,13 @@ function tidy(nodes: Inline[]): Inline[] {
 const wordsOf = (nodes: Inline[]): string => nodes.map((n) => (n.t === 'text' || n.t === 'code' ? n.v : n.t === 'br' ? ' ' : wordsOf(n.c))).join('');
 const plain = (nodes: Inline[]) => wordsOf(nodes).replace(/\s+/g, ' ').trim();
 
-type Piece = { kind: 'p'; c: Inline[] } | { kind: 'li'; ordered: boolean; list: number; c: Inline[] } | { kind: 'h'; level: 2 | 3 | 4; text: string } | { kind: 'quote'; text: string } | { kind: 'hr' } | { kind: 'code'; lines: string[] };
+type Piece = { kind: 'p'; c: Inline[] } | { kind: 'li'; ordered: boolean; list: number; c: Inline[] } | { kind: 'h'; level: 2 | 3 | 4; text: string } | { kind: 'quote'; text: string } | { kind: 'hr' } | { kind: 'code'; lines: string[] } | { kind: 'table'; rows: Inline[][][] };
+
+/** A cell's words as one line of the site's Markdown (a cell has no line breaks: they become spaces). */
+const cellMarkdown = (c: Inline[]) =>
+  serializeBlocks([{ t: 'p', c: normalize(c.map((n): Inline => (n.t === 'br' ? { t: 'text', v: ' ' } : n))) }])
+    .replace(/\s*\n\s*/g, ' ')
+    .trim();
 
 /** Is everything with words in it monospaced or preformatted (a copy from a code editor)? */
 function allCode(n: MiniNode, st: Style): { code: number; all: number } {
@@ -243,6 +250,29 @@ export function blocksFromHtml(root: MiniNode): Pasted | null {
         const lines = (c.textContent ?? '').replace(/\r\n?/g, '\n').split('\n').filter((l) => l.trim());
         if (lines.length) pieces.push({ kind: 'code', lines });
       } else if (tag === 'table' || tag === 'thead' || tag === 'tbody' || tag === 'tfoot') {
+        // a real table (two rows or more, two columns or more, within the block's limits) stays a table
+        if (tag === 'table') {
+          const trs: MiniNode[] = [];
+          const gather = (n: MiniNode) => {
+            for (const x of kids(n)) {
+              if (x.nodeType !== ELEMENT) continue;
+              const t = tagOf(x);
+              if (t === 'tr') trs.push(x);
+              else if (t === 'thead' || t === 'tbody' || t === 'tfoot') gather(x);
+            }
+          };
+          gather(c);
+          const grid = trs.map((row) =>
+            kids(row)
+              .filter((x) => x.nodeType === ELEMENT && (tagOf(x) === 'td' || tagOf(x) === 'th'))
+              .map((x) => tidy(inline(x, within(x, within(row, inner)), counts))),
+          );
+          const width = Math.max(0, ...grid.map((r) => r.length));
+          if (grid.length >= 2 && width >= 2 && width <= TABLE_MAX_COLUMNS && grid.length - 1 <= TABLE_MAX_ROWS) {
+            pieces.push({ kind: 'table', rows: grid });
+            continue;
+          }
+        }
         for (const row of kids(c)) {
           if (row.nodeType !== ELEMENT) continue;
           if (tagOf(row) !== 'tr') {
@@ -287,6 +317,13 @@ export function blocksFromHtml(root: MiniNode): Pasted | null {
     else if (p.kind === 'hr') {
       if (blocks.length && blocks[blocks.length - 1].type !== 'divider') blocks.push({ type: 'divider' });
     } else if (p.kind === 'code') blocks.push({ type: 'text', markdown: serializeBlocks([{ t: 'p', c: p.lines.flatMap((v, k): Inline[] => (k ? [{ t: 'br' }, { t: 'code', v }] : [{ t: 'code', v }])) }]) });
+    else if (p.kind === 'table') {
+      // the first row is the column headings (an empty one is named by its place); short rows are filled
+      const width = Math.max(...p.rows.map((r) => r.length));
+      const pad = (r: string[]) => [...r, ...Array<string>(width - r.length).fill('')];
+      const columns = pad(p.rows[0].map((c) => plain(c).slice(0, 80))).map((c, k) => c || `Column ${k + 1}`);
+      blocks.push({ type: 'table', columns, rows: p.rows.slice(1).map((r) => pad(r.map(cellMarkdown))) });
+    }
   }
   while (blocks[blocks.length - 1]?.type === 'divider') blocks.pop();
   return { blocks, pictures: counts.pictures };

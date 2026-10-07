@@ -11,6 +11,7 @@ import Gallery from '../components/compounds/Gallery.astro';
 import Carousel from '../components/compounds/Carousel.astro';
 import VideoEmbed from '../components/compounds/VideoEmbed.astro';
 import Collection from '../components/compounds/Collection.astro';
+import Table from '../components/compounds/Table.astro';
 import Quote from '../components/fundamentals/Quote.astro';
 import Divider from '../components/fundamentals/Divider.astro';
 import { withBase } from '../design/meta';
@@ -188,6 +189,10 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
         );
       case 'divider':
         return <Divider />;
+      case 'table': {
+        const cell = (md: string) => (md.trim() ? renderInlineMarkdown(md, { resolveRef, annotate: editable }) : '');
+        return <Table columns={b.columns} rows={b.rows.map((r) => r.map(cell))} rowHeadings={!!b.rowHeadings} caption={b.caption} width={b.width ?? 'content'} />;
+      }
       default:
         return null;
     }

@@ -114,6 +114,7 @@ const KIND_LABEL: Record<Block['type'], string> = {
   quote: 'Quote',
   divider: 'Divider',
   collection: 'Collection',
+  table: 'Table',
 };
 
 /** The block's kind as the editor names it ("Heading 2", "Paragraph"). */
@@ -141,6 +142,8 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
       return cut(b.title ?? (b.media ? (alt(b.media) ?? b.media.split('/').pop()!) : ''));
     case 'collection':
       return cut(b.items.map((i) => i.heading ?? i.subtext ?? (i.text ? plainText(i.text) : i.media ? (alt(i.media) ?? i.media.split('/').pop()!) : '')).join(', '));
+    case 'table':
+      return cut(b.caption ?? b.columns.join(', '));
     case 'divider':
       return '';
   }
