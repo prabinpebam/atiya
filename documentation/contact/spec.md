@@ -5,7 +5,7 @@ A form on the site's Contact page that sends a visitor's message to Prabin's inb
 > **TL;DR.**
 > - **Where:** inline on the Contact page, above its pages (the résumé, the privacy page). **Ask for access** on a section with private work, and **Get in touch** on the Sign in page, lead to it with the message started for them.
 > - **What it asks:** name (required), email (required), message (required, plain text, at most 5,000 characters). Nothing else.
-> - **How it sends:** the browser posts JSON to an Azure Function (Flex Consumption, Central India) in Prabin's own subscription, which emails him through Azure Communication Services, with the visitor's address as Reply-To. Nothing is stored; no copy goes to the visitor.
+> - **How it sends:** the browser posts JSON to an Azure Function (Flex Consumption, Central India) in Prabin's own subscription, which emails him from his own Gmail account over Gmail's SMTP (so Gmail files it as his own mail, not spam), or through Azure Communication Services when Gmail isn't set up, with the visitor's address as Reply-To. Nothing is stored; no copy goes to the visitor.
 > - **Against bots and spam**, all invisible to a person: a proof-of-work challenge the browser solves while they type, a honeypot field, a minimum time on the form, strict validation, a limit on links, rate limits per visitor and per day, and one use per challenge.
 > - **Costs** a few cents a month (§9). **GitHub Pages** only serves the form; the endpoint's address is public configuration, and every secret lives in the Function's settings.
 
@@ -107,7 +107,7 @@ Requests are JSON (`Content-Type: application/json`), at most 16 KB; anything el
 
 ### 4.3 The email
 
-- **From:** an Azure-managed sender (`DoNotReply@<id>.azurecomm.net`), display name "Prabin's site".
+- **From:** Prabin's own Gmail address (the app setting `GMAIL_USER`), sent by his account over Gmail's SMTP with an app password (`GMAIL_APP_PASSWORD`), display name "Prabin's site" (D7). Gmail signs it as his and files a message from his own account to himself in his inbox. Without those two settings, it's from an Azure-managed sender (`DoNotReply@<id>.azurecomm.net`), same display name, which Gmail tends to take for spam.
 - **To:** Prabin's address, from the app setting `CONTACT_TO` (never in the repository or the site).
 - **Reply-To:** the visitor's email, with their name, so replying in the mail app answers them.
 - **Subject:** "Message from {name}" (or "Access request from {name}" when it came from Ask for access).
@@ -119,10 +119,13 @@ Requests are JSON (`Content-Type: application/json`), at most 16 KB; anything el
 |---|---|---|
 | `PUBLIC_CONTACT_ENDPOINT` | The site's `.env` (committed: an address, not a secret) | The Function app's base URL; the form adds `/api/contact`. Unset (a fork), the form isn't shown and the section says "The contact form isn't set up on this copy of the site." |
 | `CONTACT_TO` | Function app setting | Where messages go |
-| `ACS_CONNECTION_STRING`, `CONTACT_FROM` | Function app settings | The email service and its sender |
+| `ACS_CONNECTION_STRING`, `CONTACT_FROM` | Function app settings | The Azure email service and its sender, used when Gmail isn't set up |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Function app settings (the password a secret, set by `deploy-contact-api.ps1 -Gmail`, which asks for it without showing it) | Send from Prabin's own Gmail account; both set, or the Azure sender is used |
 | `CONTACT_SECRET` | Function app setting (random, 32 bytes) | Signs challenges and salts the IP hash |
 | `RATE_TABLE_CONNECTION` | Function app setting | The storage account's tables |
 | `ALLOWED_ORIGINS` | Function app setting | Comma-separated origins |
+
+The test build reads `https://contact.test` from `.env.test`, but a `PUBLIC_CONTACT_ENDPOINT` already in the terminal's environment would override it (Vite's order), and the tests would reach the real service. So `.env` is never injected into terminals: VS Code's `python.terminal.useEnvFile` stays off.
 
 ## 5. Bots and spam
 
@@ -189,6 +192,7 @@ Flex Consumption's monthly free grant (250,000 executions, 100,000 GB-s) covers 
 | D4 | Plain-text email only | Nothing in a message can render, track or run |
 | D5 | Central India | Close to Prabin; Flex Consumption is available there |
 | D6 | The rules live once, in `contact-api/src/rules.mjs`, and the site imports them | The browser and the service can never disagree about what's valid |
+| D7 | Sent from Prabin's own Gmail over SMTP with an app password, not from Azure's shared domain | Messages from `azurecomm.net` went to his spam. Azure can only send from a domain it has verified, never `gmail.com`, so the way to send "as" his Gmail is for his account to send it. A custom domain with SPF, DKIM and DMARC would also work, but the site has none (owner's request, 7 October 2026) |
 
 ## 12. As built
 
@@ -197,4 +201,5 @@ Flex Consumption's monthly free grant (250,000 executions, 100,000 GB-s) covers 
 - **Azure** (Visual Studio Enterprise subscription, resource group `rg-atiya-contact`, Central India): the storage account `atiyacontact8a66d9`, the Function app `atiya-contact-8a66d9` (Flex Consumption, Node.js 22, 2,048 MB, on demand), the Email Communication Service `atiya-contact-email-8a66d9` with its Azure-managed domain (data in India), and the Communication Service `atiya-contact-acs-8a66d9` linked to it. The endpoint is `https://atiya-contact-8a66d9.azurewebsites.net`.
 - **The code:** the rules in [contact-api/src/rules.mjs](https://github.com/prabinpebam/atiya/blob/main/contact-api/src/rules.mjs) (the site reaches them through `src/site/scripts/contactRules.ts`, its tier 0), the proof of work in `challenge.mjs` and the browser's `src/site/scripts/contactWork.ts`, the request handling in `handle.mjs` (what it remembers and sends are passed in, so every path is unit-tested), Table Storage in `store.mjs`, the email in `send.mjs`, the runtime's wiring in `functions/contact.mjs`; the form is the `ContactForm` compound, on the Contact page through `IndexLayout`'s `lead` slot.
 - **Publishing:** `scripts/deploy-contact-api.ps1` installs the production packages here and publishes them as a zip, because the lockfile names the Microsoft package feed, which Azure can't reach.
+- **Sending from Gmail (7 October 2026):** `send.mjs` picks the way from the settings (`transport`, unit-tested with the Gmail message itself, `gmailMessage`) and sends by `nodemailer` (pinned) to `smtp.gmail.com:465`. Turned on with `pwsh -File scripts/deploy-contact-api.ps1 -Gmail <address>` after creating an app password at https://myaccount.google.com/apppasswords (it needs 2-Step Verification); `-NoGmail` goes back to the Azure sender. Gmail allows about 500 messages a day from an account, well above the form's 50.
 - **Measured:** the challenge answers in about 3.4 s from cold and at once when warm; from Send to the confirmation, 1.9 s (it was 14 s while the service waited for delivery).

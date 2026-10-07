@@ -135,10 +135,11 @@ Spec, plan, Definition of Done and quality benchmark: [documentation/access/](./
 
 ### Contact form
 
-Spec, plan and Definition of Done: [documentation/contact/](./documentation/contact/spec.md). The `ContactForm` compound (on the Contact page, through `IndexLayout`'s `lead` slot) posts to the contact service, `contact-api/`: an Azure Functions app in the owner's Visual Studio Enterprise subscription (`rg-atiya-contact`, Central India) that emails him through Azure Communication Services.
+Spec, plan and Definition of Done: [documentation/contact/](./documentation/contact/spec.md). The `ContactForm` compound (on the Contact page, through `IndexLayout`'s `lead` slot) posts to the contact service, `contact-api/`: an Azure Functions app in the owner's Visual Studio Enterprise subscription (`rg-atiya-contact`, Central India) that emails him from his own Gmail account over SMTP (an app password in the app's settings; `-Gmail` on the deploy script), or through Azure Communication Services when that isn't set.
 - **The rules live once**, in `contact-api/src/rules.mjs` (pure); the site reaches them through `src/site/scripts/contactRules.ts` (tier 0). Change a limit or a message there, never in two places.
 - **Deploy the service only with** `pwsh -File scripts/deploy-contact-api.ps1` (`-CodeOnly` to publish code); never from the site's workflow. It names the subscription on every call, never prints a secret, and writes the endpoint to `.env` (an address, committed). Secrets live only in the Function app's settings.
 - **Tests never call the real service:** the test build's endpoint is `https://contact.test` (`.env.test`), intercepted by `tests/e2e/contact.spec.ts`. A live check sends the owner a real email: do it only on purpose, and say so.
+- **Never let a terminal inherit `.env`:** leave VS Code's `python.terminal.useEnvFile` off (dismiss the Python extension's "environment file is configured" notice with Don't Show Again). Vite lets a variable already in the environment override the `.env.<mode>` files, so an injected `PUBLIC_CONTACT_ENDPOINT` would point test builds and E2E at the real service.
 - **Nothing typed in the form reaches telemetry** (its wrapper is `ph-no-capture`, and it sends no events); keep it that way.
 
 ### Documentation site (the source of truth)

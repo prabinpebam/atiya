@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { accessRequest, checkField, checkFields, cleanFields, countLinks, errorText, firstName, LIMITS } from '../../contact-api/src/rules.mjs';
 import { DIFFICULTY, issue, leadingZeroBits, TTL_MS, verify } from '../../contact-api/src/challenge.mjs';
 import { challenge, clientIp, contact, DAILY, HOURLY } from '../../contact-api/src/handle.mjs';
-import { compose } from '../../contact-api/src/send.mjs';
+import { compose, gmailMessage, transport } from '../../contact-api/src/send.mjs';
 import { saltOf, solve, zeroBits } from '../../src/site/scripts/contactWork';
 
 const SECRET = 'test-secret-0123456789';
@@ -208,5 +208,26 @@ describe('the email', () => {
     expect(access.subject).toBe('Access request from Ada');
     expect(access.plainText).toContain('About: an access code for Work');
     expect(compose({ name: 'Ada', email: 'a@b.co', message: 'x'.repeat(10), about: '' }, at).plainText).toContain('About: an access code for the shared work');
+  });
+
+  it("goes by Prabin's own Gmail when both its settings are there, else by the Azure sender", () => {
+    expect(transport({ GMAIL_USER: 'me@gmail.com', GMAIL_APP_PASSWORD: 'abcd efgh ijkl mnop' })).toEqual({ via: 'gmail', user: 'me@gmail.com', pass: 'abcdefghijklmnop' });
+    expect(transport({ GMAIL_USER: ' me@gmail.com ', GMAIL_APP_PASSWORD: 'abcdefghijklmnop' })).toMatchObject({ via: 'gmail', user: 'me@gmail.com' });
+    expect(transport({ GMAIL_USER: 'me@gmail.com' })).toEqual({ via: 'acs' });
+    expect(transport({ GMAIL_APP_PASSWORD: 'abcdefghijklmnop' })).toEqual({ via: 'acs' });
+    expect(transport({ GMAIL_USER: 'me@gmail.com', GMAIL_APP_PASSWORD: '   ' })).toEqual({ via: 'acs' });
+    expect(transport({})).toEqual({ via: 'acs' });
+  });
+
+  it('by Gmail, is from his own address under the site name, to CONTACT_TO, answering the visitor', () => {
+    const at = new Date('2026-10-06T17:05:00Z');
+    const m = { name: 'Ada', email: 'ada@example.com', message: 'Hello there.' };
+    expect(gmailMessage(m, 'me@gmail.com', 'inbox@gmail.com', at)).toEqual({
+      from: { name: "Prabin's site", address: 'me@gmail.com' },
+      to: 'inbox@gmail.com',
+      replyTo: { name: 'Ada', address: 'ada@example.com' },
+      subject: 'Message from Ada',
+      text: compose(m, at).plainText,
+    });
   });
 });

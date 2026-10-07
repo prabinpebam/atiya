@@ -15,10 +15,22 @@
 
 .EXAMPLE
   pwsh -File scripts/deploy-contact-api.ps1 -To you@example.com
+
+.EXAMPLE
+  pwsh -File scripts/deploy-contact-api.ps1 -Gmail you@gmail.com
+  Sends messages from that Gmail account over Gmail's SMTP (documentation/contact/spec.md §4.3), so they
+  aren't taken for spam. Asks for the account's app password without showing it. -NoGmail goes back to the
+  Azure-managed sender.
 #>
+# every value needs its name (-Gmail, -To): a bare address would otherwise be taken as -To
+[CmdletBinding(PositionalBinding = $false)]
 param(
   # Where messages go. Needed the first time; later runs keep the app's current value.
   [string]$To,
+  # Send from this Gmail account (asks for its app password). Later runs keep it until -NoGmail.
+  [string]$Gmail,
+  # Stop sending from Gmail: back to the Azure-managed sender.
+  [switch]$NoGmail,
   [string]$Subscription = 'Visual Studio Enterprise Subscription',
   [string]$ResourceGroup = 'rg-atiya-contact',
   [string]$Location = 'centralindia',
@@ -109,6 +121,22 @@ if (-not $CodeOnly) {
   $extra = $cors.allowedOrigins | Where-Object { $Origins -notcontains $_ }
   if ($extra) { Invoke-Az functionapp cors remove -n $app -g $ResourceGroup --allowed-origins @extra -o none | Out-Null }
   Write-Host "CORS allows: $($Origins -join ', ')"
+}
+
+# the sender: Prabin's own Gmail (its app password read without showing it, straight into the app), or back to Azure's
+if ($Gmail -and $NoGmail) { throw 'Give -Gmail or -NoGmail, not both.' }
+if ($Gmail) {
+  if ($Gmail -notmatch '^[^@\s]+@(gmail|googlemail)\.com$') { throw 'Give a Gmail address: -Gmail you@gmail.com' }
+  $secure = Read-Host -AsSecureString "App password for $Gmail (16 letters; not shown)"
+  $pass = ([Net.NetworkCredential]::new('', $secure).Password) -replace '\s', ''
+  if ($pass -notmatch '^[a-zA-Z]{16}$') { throw "That isn't an app password: it's 16 letters, from https://myaccount.google.com/apppasswords" }
+  Invoke-Az functionapp config appsettings set -n $app -g $ResourceGroup --settings "GMAIL_USER=$Gmail" "GMAIL_APP_PASSWORD=$pass" -o none | Out-Null
+  $pass = $null
+  Write-Host "Messages now go from $Gmail over Gmail (the app password isn't shown)"
+}
+if ($NoGmail) {
+  Invoke-Az functionapp config appsettings delete -n $app -g $ResourceGroup --setting-names GMAIL_USER GMAIL_APP_PASSWORD -o none | Out-Null
+  Write-Host 'Messages now go from the Azure-managed sender'
 }
 
 # publish: the code with its production packages, installed here
