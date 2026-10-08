@@ -404,7 +404,7 @@ const STATUS: SelectOption[] = [
                           <TextField label={`Item ${n + 1}: when`} name={`body.${i}.items.${n}.when`} id={id(i, `cw-${n}`)} value={it.when ?? ''} optional hint={n === 0 ? (TIMELINES.has(b.layout) ? 'Its time, in words (2016, July 2019 to now), set by its mark.' : 'Its time, in words: shown over its heading, and by its mark in a timeline.') : undefined} />
                           <TextField label={`Item ${n + 1}: heading`} name={`body.${i}.items.${n}.heading`} id={id(i, `ch-${n}`)} value={it.heading ?? ''} optional hint={n === 0 ? 'A word or a few (80 characters at most).' : undefined} />
                           <TextField label={`Item ${n + 1}: subtext`} name={`body.${i}.items.${n}.subtext`} id={id(i, `cs-${n}`)} value={it.subtext ?? ''} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
-                          <TextField label={`Item ${n + 1}: words`} name={`body.${i}.items.${n}.text`} id={id(i, `ct-${n}`)} value={it.text ?? ''} multiline rows={2} optional hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
+                          <TextField label={`Item ${n + 1}: words`} name={`body.${i}.items.${n}.text`} id={id(i, `ct-${n}`)} value={it.text ?? ''} multiline rows={2} optional hint={n === 0 ? 'A sentence or a few paragraphs: a blank line starts the next. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
                         </section>
                       ))}
                     </div>

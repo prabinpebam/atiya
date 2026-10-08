@@ -338,7 +338,10 @@ describe('the collection block (items of one shape, in any layout)', () => {
     expect(ok(of([]))).toBe(false);
     expect(ok(of([{ heading: 'x'.repeat(81) }]))).toBe(false);
     expect(ok(of([{ subtext: 'x'.repeat(161) }]))).toBe(false);
-    expect(ok(of([{ text: 'one\n\ntwo' }]))).toBe(false);
+    // its words: a paragraph or a few (a blank line between), never blank, at most six
+    expect(ok(of([{ text: 'one\n\ntwo' }]))).toBe(true);
+    expect(ok(of([{ text: ' \n\n ' }]))).toBe(false);
+    expect(ok(of([{ text: Array.from({ length: 7 }, (_, n) => `p${n}`).join('\n\n') }]))).toBe(false);
     expect(ok(of([{ label: 'the old tiles field' }]))).toBe(false);
     expect(ok(of(Array.from({ length: 25 }, (_, n) => ({ heading: `T${n}` }))))).toBe(false);
   });

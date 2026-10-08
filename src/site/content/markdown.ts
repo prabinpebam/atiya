@@ -418,3 +418,11 @@ export function plainText(md: string): string {
     .map((b) => (b.t === 'p' ? flat(b.c) : b.items.map(flat).join('\n')))
     .join('\n\n');
 }
+
+/** Markdown as its paragraphs (a collection item's words): split at the blank lines, each trimmed, none empty. */
+export const paragraphsOf = (md: string): string[] =>
+  md
+    .trim()
+    .split(/\n[ \t]*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);

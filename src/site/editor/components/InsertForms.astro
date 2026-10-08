@@ -48,7 +48,7 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
             <TextField label="When" name={`when${n}`} optional hint={n === 0 ? 'Its time, in words (2016, July 2019 to now): set by its mark in a timeline.' : undefined} />
             <TextField label="Heading" name={`heading${n}`} optional />
             <TextField label="Subtext" name={`subtext${n}`} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
-            <TextField label="Words" name={`text${n}`} multiline rows={2} optional hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
+            <TextField label="Words" name={`text${n}`} multiline rows={2} optional hint={n === 0 ? 'A sentence or a few paragraphs: a blank line starts the next. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
           </fieldset>
         ))}
       </>

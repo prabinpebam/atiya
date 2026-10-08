@@ -5,6 +5,7 @@
  * blocks, image media, a person, the site settings and the site structure.
  */
 import { z } from 'astro/zod';
+import { paragraphsOf } from './markdown';
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'lowercase kebab-case');
 /** A media ID: its path under content/media/ without the extension. */
@@ -92,11 +93,15 @@ export const videoMedia = z.strictObject({
   visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
 });
 
-const oneParagraph = (what: string) =>
-  z
-    .string()
-    .min(1)
-    .refine((m) => !/\n[ \t]*\n/.test(m.trim()), `${what} is one paragraph`);
+/** The most paragraphs an item's words run to: past these, it's a story of its own, not an item. */
+export const ITEM_PARAGRAPHS_MAX = 6;
+
+/** An item's words: a paragraph or a few of the inline Markdown, a blank line between them. */
+const itemWords = z
+  .string()
+  .min(1)
+  .refine((m) => paragraphsOf(m).length >= 1, "an item's words aren't blank")
+  .refine((m) => paragraphsOf(m).length <= ITEM_PARAGRAPHS_MAX, `an item's words are at most ${ITEM_PARAGRAPHS_MAX} paragraphs: a blank line starts each`);
 
 /**
  * How a collection's items are laid out (documentation/content/model.md §6.1). The items are the same
@@ -119,7 +124,7 @@ export const COLLECTION_WHEN_MAX = 40;
 
 /**
  * One item of a collection: when it was (for a timeline), a heading, a picture, a subtext (a short line
- * under the heading) and its words (one paragraph of Markdown). Each is optional, and an item has at least
+ * under the heading) and its words (a paragraph or a few of Markdown). Each is optional, and an item has at least
  * one of a heading, a picture, a subtext or its words.
  */
 export const collectionItem = z
@@ -129,7 +134,7 @@ export const collectionItem = z
     heading: z.string().min(1).max(80).optional(),
     media: mediaId.optional(),
     subtext: z.string().min(1).max(160).optional(),
-    text: oneParagraph("an item's text").optional(),
+    text: itemWords.optional(),
   })
   .refine((i) => i.heading || i.media || i.subtext || i.text, 'an item needs at least one of a heading, a picture, a subtext or its words');
 

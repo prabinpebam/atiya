@@ -4,7 +4,7 @@
  * against the contract; these only keep the shape right.
  */
 import type { Article, Block } from '../../content/schema';
-import { parseMarkdown, plainText, serializeBlocks, type Inline } from '../../content/markdown';
+import { paragraphsOf, parseMarkdown, plainText, serializeBlocks, type Inline } from '../../content/markdown';
 
 export type Body = Block[];
 
@@ -301,7 +301,7 @@ export function collectionToText(b: Block): Block[] | null {
     ...(i.heading ? [{ type: 'heading', level: 3, text: i.heading } as Block] : []),
     ...(i.when ? [{ type: 'text', markdown: `**${i.when}**` } as Block] : []),
     ...(i.subtext ? [{ type: 'text', markdown: i.subtext } as Block] : []),
-    ...(i.text ? [{ type: 'text', markdown: i.text } as Block] : []),
+    ...(i.text ? paragraphsOf(i.text).map((markdown) => ({ type: 'text', markdown }) as Block) : []),
   ]);
 }
 

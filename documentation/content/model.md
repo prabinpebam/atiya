@@ -319,7 +319,7 @@ Hub pages in the site structure use the same blocks for their sections, plus a `
 
 A collection is a set of items of one shape, whatever they're about: a story's facts, its brief, the features of a project, a few places with their pictures, a career. Its content and its layout are separate, so any collection can be shown any way, and changed at any time.
 
-- **An item** has four parts, each optional, and at least one: a `heading` (a word or a few, at most 80 characters), a picture (`media`, an image media ID), a `subtext` (a short line under the heading: a value, a date, a role; at most 160 characters) and its words (`text`, one paragraph of the Markdown subset: bold, italic, code and links). It can also say when it was (`when`: words, not a date, such as `2016` or `July 2019 to now`; at most 40 characters), which a timeline sets by the item's mark and the other layouts show over its heading; a time alone isn't an item.
+- **An item** has four parts, each optional, and at least one: a `heading` (a word or a few, at most 80 characters), a picture (`media`, an image media ID), a `subtext` (a short line under the heading: a value, a date, a role; at most 160 characters) and its words (`text`: a paragraph or a few, at most six, of the Markdown subset: bold, italic, code and links; a blank line starts the next, and each is set as a paragraph, spaced from the last, at the running text's line height). It can also say when it was (`when`: words, not a date, such as `2016` or `July 2019 to now`; at most 40 characters), which a timeline sets by the item's mark and the other layouts show over its heading; a time alone isn't an item.
 - **Its layout** (`layout`) is one of:
 
   | Layout | What it looks like |

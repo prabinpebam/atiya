@@ -188,6 +188,8 @@ describe('turning text into another kind, any time', () => {
     expect(ops.asCollection([h('x'.repeat(81))])).toMatchObject({ ok: false, why: expect.stringMatching(/80 characters/) });
     expect(ops.asCollection([{ type: 'divider' }])).toMatchObject({ ok: false, why: expect.stringMatching(/Only text/) });
     expect(ops.collectionToText(para('x'))).toBeNull();
+    // an item's paragraphs come back a text block each
+    expect(ops.collectionToText({ type: 'collection', layout: 'tiles', items: [{ text: 'One.\n\n_Two._' }] })).toEqual([para('One.'), para('_Two._')]);
     // every part of an item comes back: its picture, its heading, its time (in bold, as a résumé has it), its subtext and its words
     expect(ops.collectionToText({ type: 'collection', layout: 'rows', items: [{ media: 'articles/a/cover', heading: 'H', when: '2016 to 2019', subtext: 'S', text: 'T' }] })).toEqual([
       { type: 'figure', media: 'articles/a/cover', width: 'content' },

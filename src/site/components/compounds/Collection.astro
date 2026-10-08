@@ -53,8 +53,8 @@ export interface CollectionItem {
   picture?: CollectionPicture;
   /** A short line under the heading. */
   subtext?: string;
-  /** Its words as inline HTML (bold, italic, code, links: the content layer renders it from Markdown). */
-  html?: string;
+  /** Its words as inline HTML (bold, italic, code, links: the content layer renders it from Markdown): a paragraph, or a few, each spaced from the last. */
+  html?: string | string[];
 }
 
 interface Props {
@@ -135,12 +135,19 @@ const breakout = width;
           </span>
         );
         const when = !timeline && item.when;
-        const words = (when || item.heading || item.subtext || item.html) && (
+        const paras = Array.isArray(item.html) ? item.html : item.html ? [item.html] : [];
+        const words = (when || item.heading || item.subtext || paras.length > 0) && (
           <div class="words">
             {when && <p class="when">{item.when}</p>}
             {item.heading && <p class="heading">{item.heading}</p>}
             {item.subtext && <p class="subtext">{item.subtext}</p>}
-            {item.html && <p class="text" set:html={item.html} />}
+            {paras.length > 0 && (
+              <div class="texts">
+                {paras.map((para) => (
+                  <p class="text" set:html={para} />
+                ))}
+              </div>
+            )}
           </div>
         );
         return timeline ? (
@@ -253,7 +260,14 @@ const breakout = width;
     color: var(--color-text);
     font-family: var(--font-text);
     font-size: var(--text-md);
-    line-height: var(--leading-snug);
+    line-height: var(--leading-body);
+  }
+
+  /* an item's paragraphs, spaced as paragraphs are, a little apart from the lines over them */
+  .texts {
+    display: grid;
+    gap: var(--space-3);
+    margin-block-start: var(--space-1);
   }
 
   /* rows: one under another, a picture beside its words, between hairlines */
