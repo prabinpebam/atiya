@@ -15,7 +15,7 @@ import Table from '../components/compounds/Table.astro';
 import Quote from '../components/fundamentals/Quote.astro';
 import Divider from '../components/fundamentals/Divider.astro';
 import { withBase } from '../design/meta';
-import { paragraphsOf, renderInlineMarkdown, renderMarkdown } from './markdown';
+import { renderInlineMarkdown, renderMarkdown } from './markdown';
 import { headingId } from './load';
 import { picture, video, type Picture, type VideoFile } from './pictures';
 import { canonicalPath, documentHref } from './repository';
@@ -168,7 +168,7 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
           when: it.when,
           heading: it.heading,
           subtext: it.subtext,
-          html: it.text ? paragraphsOf(it.text).map((para) => renderInlineMarkdown(para, { resolveRef, annotate: editable })) : undefined,
+          html: it.text ? renderMarkdown(it.text, { resolveRef, annotate: editable }) : undefined,
           picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, focus: p.focus, bg: p.bg, dark: p.dark },
         };
       });

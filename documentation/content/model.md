@@ -319,7 +319,7 @@ Hub pages in the site structure use the same blocks for their sections, plus a `
 
 A collection is a set of items of one shape, whatever they're about: a story's facts, its brief, the features of a project, a few places with their pictures, a career. Its content and its layout are separate, so any collection can be shown any way, and changed at any time.
 
-- **An item** has four parts, each optional, and at least one: a `heading` (a word or a few, at most 80 characters), a picture (`media`, an image media ID), a `subtext` (a short line under the heading: a value, a date, a role; at most 160 characters) and its words (`text`: a paragraph or a few, at most six, of the Markdown subset: bold, italic, code and links; a blank line starts the next, and each is set as a paragraph, spaced from the last, at the running text's line height). It can also say when it was (`when`: words, not a date, such as `2016` or `July 2019 to now`; at most 40 characters), which a timeline sets by the item's mark and the other layouts show over its heading; a time alone isn't an item.
+- **An item** has four parts, each optional, and at least one: a `heading` (a word or a few, at most 80 characters), a picture (`media`, an image media ID), a `subtext` (a short line under the heading: a value, a date, a role; at most 160 characters) and its words (`text`: paragraphs and lists, at most six of them, of the Markdown subset: bold, italic, strikethrough, code, links, and lists that nest; a blank line starts the next. They're set as compact prose, the article's own paragraphs and lists at the interface's size and the reading line height). It can also say when it was (`when`: words, not a date, such as `2016` or `July 2019 to now`; at most 40 characters), which a timeline sets by the item's mark and the other layouts show over its heading; a time alone isn't an item.
 - **Its layout** (`layout`) is one of:
 
   | Layout | What it looks like |
@@ -353,7 +353,8 @@ A table is for facts compared across the same columns: options side by side, a s
 > **As built (7 October 2026).** Added when a case study's comparisons needed real tables; until then the subset allowed none.
 
 **The Markdown subset** in `text`, `pointOfView`, `bio` and the like:
-- **Allowed:** paragraphs, emphasis, strong, inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks.
+- **Allowed:** paragraphs, emphasis, strong, strikethrough (`~~words~~`), inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks.
+- **Lists nest,** up to three levels: a line indented under an item (to where that item's words start: two spaces under `- `, three under `1. `) is an item of a list inside it, bulleted or numbered as its own marker says (`- One` then `  1. One a`). A list's own items keep one kind; a list written flat stays flat.
 - **Not allowed:**
   - raw HTML;
   - images (use `figure`);

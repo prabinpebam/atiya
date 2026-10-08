@@ -3,7 +3,8 @@
  * Long-form text as a magazine sets it: the rich text of an article or a page (Markdown's output, or
  * plain HTML) in Newsreader with a comfortable measure, headings in soft Fraunces, a drop cap if you
  * want one, a dinkus for a rule, and a grid that lets figures, galleries and quotes step out of the
- * column (they declare data-breakout="popout", "wide" or "full").
+ * column (they declare data-breakout="popout", "wide" or "full"). Lists nest; compact sets a card's
+ * words (a collection item's) at the interface's size.
  * @tier fundamental
  * @a11y Keeps the document's own headings and lists: it only styles them.
  * @a11y The reading column stays under about 70 characters; text never sits on a picture without a shade.
@@ -13,8 +14,8 @@ interface Props {
   dropcap?: boolean;
   /** Lay the text on the breakout grid: children sit in the reading column unless they declare data-breakout. */
   breakout?: boolean;
-  /** lead: the whole block a size up (a short introduction). */
-  size?: 'body' | 'lead';
+  /** lead: the whole block a size up (a short introduction); compact: the interface's size at the reading line height, blocks closer together and no measure (a card's or a tile's words). */
+  size?: 'body' | 'lead' | 'compact';
   /** The element’s id. */
   id?: string;
 }
@@ -50,6 +51,27 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
   .prose[data-size='lead'] {
     font-size: var(--text-lead);
     line-height: var(--leading-heading);
+  }
+
+  /* compact: a card's words, as wide as their card, a paragraph or a list a little apart */
+  .prose[data-size='compact'] {
+    max-width: none;
+    font-size: var(--text-md);
+  }
+
+  .prose[data-size='compact'] > :global(* + *) {
+    margin-block-start: var(--space-3);
+  }
+
+  .prose[data-size='compact'] :global(li + li),
+  .prose[data-size='compact'] :global(li > ul),
+  .prose[data-size='compact'] :global(li > ol) {
+    margin-block-start: var(--space-1);
+  }
+
+  .prose[data-size='compact'] :global(ul),
+  .prose[data-size='compact'] :global(ol) {
+    padding-inline-start: var(--space-5);
   }
 
   /* ---------- the breakout grid: content, popout, wide, full ---------- */
@@ -151,6 +173,12 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
   }
 
   .prose :global(li + li) {
+    margin-block-start: var(--space-2);
+  }
+
+  /* a list inside an item: a little under its words */
+  .prose :global(li > ul),
+  .prose :global(li > ol) {
     margin-block-start: var(--space-2);
   }
 

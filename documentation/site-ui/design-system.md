@@ -64,7 +64,7 @@ The rules for the website's pages: the landing, the classic site and the design 
 
 - **Fundamentals are sealed.** They take no `class` or `style` prop. They pass `data-*` attributes through, and set inline only data custom properties (`--fill`, `--focus`).
 - **Compounds lay fundamentals out from their own elements.** Wrap a fundamental in the compound's own element to place or size it; never style inside it.
-  - `:global` is banned, except where a component styles markup it didn't write: Prose (Markdown), and the Lightbox and VideoEmbed (elements their scripts create). The test holds this list.
+  - `:global` is banned, except where a component styles markup it didn't write: Prose (Markdown), the Lightbox and VideoEmbed (elements their scripts create), and edit mode's canvas overlay and inspector (the text the browser writes while it's edited). The test holds this list.
 - **One instance per page, composed by the layout.** Some pieces are page-wide: the Lightbox, for one. A compound that needs one never imports it. It marks its links (`a[data-lightbox="group"]`) and the layout places one `<Lightbox />`.
 - **Place, don't position.** Figures, galleries, quotes and videos declare how far they step out of the text (`data-breakout="popout|wide|full"`); Prose's grid places them.
 - **Layouts are defined once.** A page picks the layout that fits; a new kind of page gets a new layout only if no existing one fits, and that layout is then reused.

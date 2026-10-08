@@ -6,7 +6,7 @@ import { SAMPLES } from '../design/samples';
 const brief = [
   { heading: 'Challenge', html: 'Re-energize the team and make purpose feel personal, practical, and visible.' },
   { heading: 'Intent', html: 'Shift the conversation from completing tasks to owning meaningful outcomes.' },
-  { heading: 'My role', html: 'Identity concept, narrative framing, visual direction, and team activation.' },
+  { heading: 'My role', html: '<p>Four parts of one effort:</p><ul><li>Identity concept and narrative framing</li><li>Visual direction<ul><li>Type, colour and motion</li></ul></li><li>Team activation</li></ul>' },
   { heading: 'Core idea', html: '<strong>Do what makes you proud.</strong> A standard chosen from within.' },
 ];
 const facts = [
@@ -34,7 +34,7 @@ const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }))
   <Collection layout="columns" items={facts} />
 </Example>
 
-<Example title="Tiles: a story's brief" description="An even grid of cards, two to a row: a label over a sentence or two. The words can carry bold, italic and links.">
+<Example title="Tiles: a story's brief" description="An even grid of cards, two to a row: a label over a sentence or two, or a list. The words can carry bold, italic, strikethrough, code and links, and lists can nest.">
   <Collection layout="tiles" width="popout" items={brief} />
 </Example>
 

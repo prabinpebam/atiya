@@ -93,15 +93,15 @@ export const videoMedia = z.strictObject({
   visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
 });
 
-/** The most paragraphs an item's words run to: past these, it's a story of its own, not an item. */
+/** The most blocks (paragraphs and lists) an item's words run to: past these, it's a story of its own, not an item. */
 export const ITEM_PARAGRAPHS_MAX = 6;
 
-/** An item's words: a paragraph or a few of the inline Markdown, a blank line between them. */
+/** An item's words: a paragraph or a list, or a few of them, of the Markdown subset, a blank line between them. */
 const itemWords = z
   .string()
   .min(1)
   .refine((m) => paragraphsOf(m).length >= 1, "an item's words aren't blank")
-  .refine((m) => paragraphsOf(m).length <= ITEM_PARAGRAPHS_MAX, `an item's words are at most ${ITEM_PARAGRAPHS_MAX} paragraphs: a blank line starts each`);
+  .refine((m) => paragraphsOf(m).length <= ITEM_PARAGRAPHS_MAX, `an item's words are at most ${ITEM_PARAGRAPHS_MAX} paragraphs or lists: a blank line starts each`);
 
 /**
  * How a collection's items are laid out (documentation/content/model.md §6.1). The items are the same
@@ -124,7 +124,7 @@ export const COLLECTION_WHEN_MAX = 40;
 
 /**
  * One item of a collection: when it was (for a timeline), a heading, a picture, a subtext (a short line
- * under the heading) and its words (a paragraph or a few of Markdown). Each is optional, and an item has at least
+ * under the heading) and its words (paragraphs and lists of Markdown). Each is optional, and an item has at least
  * one of a heading, a picture, a subtext or its words.
  */
 export const collectionItem = z

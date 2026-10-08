@@ -3,9 +3,10 @@
  * The canvas's overlay (documentation/editor/spec.md §3.1, §3.2): drawn over the real page in edit
  * mode's canvas, never inside it, so the page lays out as it will on the site. A box on the block under
  * the pointer (named by its kind), a firm one on the selected block with its toolbar (move, duplicate,
- * add below, delete), a "+" on a line across the column in the space between two blocks while the
+ * delete), a "+" on a line across the column in the space between two blocks while the
  * pointer is there (never over a block), showing exactly where a new block goes, and a format bar over a
- * text selection.
+ * text selection: the inspector's rich field's tools (marks; code and link; lists, and in a list their indents),
+ * the least used moving into a More formatting menu when the bar wouldn't fit the width.
  * @tier editor
  * @a11y The block toolbar and the format bar are named toolbars of named icon buttons; every action also has a key (§3.2, §3.3).
  * @key Enter: edit the selected block's text
@@ -13,7 +14,8 @@
  * @key Alt + Up / Alt + Down: move the selected block
  * @key Ctrl + Shift + D: duplicate it
  * @key Delete: delete it
- * @key Ctrl + B / Ctrl + I / Ctrl + K: bold, italic, link, while editing text
+ * @key Ctrl + B / Ctrl + I / Ctrl + Shift + X / Ctrl + K: bold, italic, strikethrough, link, while editing text
+ * @key Ctrl + ] / Ctrl + [: in a list, indent the item more / less (three levels at most)
  * @key Ctrl + Alt + 0 / 2 / 3 / 4, Ctrl + Shift + 7 / 8 / 9: turn a text block into a paragraph, a heading, a list or a quote (also while editing it)
  */
 import IconButton from '../../components/fundamentals/IconButton.astro';
@@ -45,15 +47,30 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
       <IconButton label="Turn into…" icon="convert" size="sm" shape="square" tooltip="top" data-chrome-op="turn" />
     </span>
     <IconButton label="Duplicate" icon="duplicate" size="sm" shape="square" tooltip="top" data-chrome-op="duplicate" />
-    <IconButton label="Add a block below" icon="plus" size="sm" shape="square" tooltip="top" data-chrome-op="add" />
     <IconButton label="Delete" icon="delete" size="sm" shape="square" tooltip="top" data-chrome-op="delete" />
   </div>
   <div class="format" role="toolbar" aria-label="Text" data-chrome-format hidden>
-    <IconButton label="Bold" icon="bold" size="sm" shape="square" tooltip="top" data-chrome-format-op="bold" />
-    <IconButton label="Italic" icon="italic" size="sm" shape="square" tooltip="top" data-chrome-format-op="italic" />
-    <IconButton label="Code" icon="code" size="sm" shape="square" tooltip="top" data-chrome-format-op="code" />
-    <IconButton label="Link" icon="link" size="sm" shape="square" tooltip="top" data-chrome-format-op="link" />
-  </div>
+    <span class="group">
+      <IconButton label="Bold (Ctrl+B)" icon="bold" size="sm" shape="square" tooltip="top" pressed={false} data-chrome-format-op="bold" />
+      <IconButton label="Italic (Ctrl+I)" icon="italic" size="sm" shape="square" tooltip="top" pressed={false} data-chrome-format-op="italic" />
+      <IconButton label="Strikethrough (Ctrl+Shift+X)" icon="strikethrough" size="sm" shape="square" tooltip="top" pressed={false} data-chrome-format-op="strikethrough" />
+    </span>
+    <span class="group">
+      <IconButton label="Code" icon="code" size="sm" shape="square" tooltip="top" data-chrome-format-op="code" />
+      <IconButton label="Link (Ctrl+K)" icon="link" size="sm" shape="square" tooltip="top" data-chrome-format-op="link" />
+    </span>
+    <span class="group">
+      <IconButton label="Bulleted list (Ctrl+Shift+8)" icon="bulleted" size="sm" shape="square" tooltip="top" pressed={false} data-chrome-format-op="bulleted" />
+      <IconButton label="Numbered list (Ctrl+Shift+7)" icon="numbered" size="sm" shape="square" tooltip="top" pressed={false} data-chrome-format-op="numbered" />
+      <span class="in-list" data-chrome-in-list hidden>
+        <IconButton label="Indent less (Ctrl+[)" icon="outdent" size="sm" shape="square" tooltip="top" data-chrome-format-op="outdent" />
+        <IconButton label="Indent more (Ctrl+])" icon="indent" size="sm" shape="square" tooltip="top" data-chrome-format-op="indent" />
+      </span>
+    </span>
+    <span class="more" data-chrome-more hidden>
+      <IconButton label="More formatting" icon="more" size="sm" shape="square" tooltip="top" aria-controls="chrome-more-menu" aria-expanded="false" data-chrome-more-toggle="" />
+      <span class="more-menu" id="chrome-more-menu" role="group" aria-label="More formatting" data-chrome-more-menu hidden></span>
+    </span>  </div>
 </div>
 
 <style>
@@ -132,7 +149,41 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
   }
 
   .format {
+    gap: var(--space-2);
     transform: translate(-50%, calc(-100% - var(--space-2)));
+  }
+
+  /* the format bar's groups, a little apart: marks; code and link; lists */
+  .format .group,
+  .more-menu {
+    display: flex;
+    gap: var(--space-0-5);
+  }
+
+  .format .group:empty {
+    display: none;
+  }
+
+  .more {
+    position: relative;
+    display: flex;
+  }
+
+  .more[hidden],
+  .more-menu[hidden] {
+    display: none;
+  }
+
+  /* the tools that don't fit, under More formatting */
+  .more-menu {
+    position: absolute;
+    inset-block-start: calc(100% + var(--space-2));
+    inset-inline-end: calc(var(--space-1) * -1);
+    padding: var(--space-1);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-md);
   }
 
   /* the "+" in the space between two blocks, on a line across the column: where the new block goes */
@@ -193,6 +244,11 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
   .format[hidden],
   .insert[hidden] {
     display: none;
+  }
+
+  /* a list's indents, in the format bar only while the selection is in a list */
+  .in-list:not([hidden]) {
+    display: contents;
   }
 
   /* a new paragraph or heading, waiting for its first words */

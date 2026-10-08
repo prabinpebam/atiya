@@ -25,6 +25,7 @@ import Image from '../../components/fundamentals/Image.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
+import Prose from '../../components/fundamentals/Prose.astro';
 import { COLLECTION_MAX, TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, type Article, type Block } from '../../content/schema';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { kindOf } from '../model/ops';
@@ -32,7 +33,11 @@ import { tableToText } from '../model/table';
 import { pictureNote } from '../model/crop';
 import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TIMELINES, itemName } from '../model/collection';
 import { itemKey } from '../model/inspector';
+import { RICH_GROUPS, RICH_TOOLS, richHtml } from '../model/richText';
 import { PICTURE_SPECS, specTip } from '../../design/pictures';
+
+// the toolbar's buttons that stay pressed while the words they mark are selected
+const TOGGLES = new Set<string>(['bold', 'italic', 'strikethrough', 'bulleted', 'numbered']);
 
 export interface Thumb {
   thumb: string;
@@ -122,7 +127,7 @@ const STATUS: SelectOption[] = [
 ---
 
 <div class="inspector" data-region="inspector" data-editor-inspector data-scrollbar>
-  <Tabs label="Settings" id="inspector-tabs" tabs={[{ id: 'block', label: 'Block', icon: 'edit' }, { id: 'page', label: 'Page', icon: 'page' }]}>
+  <Tabs label="Settings" id="inspector-tabs" fill tabs={[{ id: 'block', label: 'Block', icon: 'edit' }, { id: 'page', label: 'Page', icon: 'page' }]}>
     <div slot="block" class="panel">
       <div data-editor-noblock>
         <Text variant="ui" tone="muted">Select a block on the page, or in the outline, to see its settings.</Text>
@@ -137,7 +142,7 @@ const STATUS: SelectOption[] = [
 
             {b.type === 'text' && (
               <>
-                <Text variant="ui" tone="muted">Its words are edited on the page: click them and type. Bold, italic, code and links are in the bar that shows over a selection.</Text>
+                <Text variant="ui" tone="muted">Its words are edited on the page: click them and type. The bar that shows over a selection has bold, italic, strikethrough, code, links and lists (and, in a list, its indents).</Text>
                 <div class="row">
                   <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
                 </div>
@@ -404,7 +409,28 @@ const STATUS: SelectOption[] = [
                           <TextField label={`Item ${n + 1}: when`} name={`body.${i}.items.${n}.when`} id={id(i, `cw-${n}`)} value={it.when ?? ''} optional hint={n === 0 ? (TIMELINES.has(b.layout) ? 'Its time, in words (2016, July 2019 to now), set by its mark.' : 'Its time, in words: shown over its heading, and by its mark in a timeline.') : undefined} />
                           <TextField label={`Item ${n + 1}: heading`} name={`body.${i}.items.${n}.heading`} id={id(i, `ch-${n}`)} value={it.heading ?? ''} optional hint={n === 0 ? 'A word or a few (80 characters at most).' : undefined} />
                           <TextField label={`Item ${n + 1}: subtext`} name={`body.${i}.items.${n}.subtext`} id={id(i, `cs-${n}`)} value={it.subtext ?? ''} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
-                          <TextField label={`Item ${n + 1}: words`} name={`body.${i}.items.${n}.text`} id={id(i, `ct-${n}`)} value={it.text ?? ''} multiline rows={2} optional hint={n === 0 ? 'A sentence or a few paragraphs: a blank line starts the next. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
+                          <div class="rich" data-rich-field>
+                            <div class="rich-head">
+                              <span class="field-label" id={id(i, `ct-${n}-label`)}>{`Item ${n + 1}: words`}</span>
+                              <Text as="span" variant="small" tone="muted">Optional</Text>
+                            </div>
+                            <div class="rich-tools" role="toolbar" aria-label={`Item ${n + 1}: formatting`} aria-controls={id(i, `ct-${n}`)}>
+                              {RICH_GROUPS.map((group) => (
+                                <span class="tool-group">
+                                  {RICH_TOOLS.filter((tool) => tool.group === group).map((tool) => (
+                                    <IconButton label={`${tool.label} (${tool.key})`} icon={tool.icon} size="sm" shape="square" tooltip="bottom" pressed={TOGGLES.has(tool.op) ? false : undefined} disabled={tool.op === 'indent' || tool.op === 'outdent'} data-rich-op={tool.op} />
+                                  ))}
+                                </span>
+                              ))}
+                            </div>
+                            <div class="rich-box">
+                              <Prose size="compact">
+                                <div class="rich-input" id={id(i, `ct-${n}`)} contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby={id(i, `ct-${n}-label`)} aria-describedby={n === 0 ? id(i, `ct-${n}-hint`) : undefined} data-rich-input set:html={richHtml(it.text)} />
+                              </Prose>
+                            </div>
+                            <input type="hidden" name={`body.${i}.items.${n}.text`} value={it.text ?? ''} data-rich-value />
+                            {n === 0 && <Text variant="small" tone="muted" id={id(i, `ct-${n}-hint`)}>Written as it will read: Enter starts a new paragraph, and the toolbar (or its keys) sets bold, italic, strikethrough, code, links and lists, which indent up to three levels.</Text>}
+                          </div>
                         </section>
                       ))}
                     </div>
@@ -626,7 +652,7 @@ const STATUS: SelectOption[] = [
 
       <p class="issue" role="alert" data-editor-issue hidden></p>
       {!published && (
-        <div class="row">
+        <div class="row block-actions">
           <Button variant="quiet" size="sm" icon="delete" data-dialog-open="delete-article">Delete this draft</Button>
         </div>
       )}
@@ -645,13 +671,22 @@ const STATUS: SelectOption[] = [
     background: var(--color-bg-raised);
   }
 
+  /* a panel is a column at least as tall as the inspector (the tabs fill it): the shown form takes all of
+     it, its sections stretch, and its actions sit at the bottom */
   .panel,
   .form {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: var(--space-4);
+    min-block-size: 0;
   }
 
-  .form[hidden] {
+  .panel > .form {
+    flex: 1;
+  }
+
+  .form[hidden],
+  .panel > [hidden] {
     display: none;
   }
 
@@ -668,9 +703,16 @@ const STATUS: SelectOption[] = [
     gap: var(--space-2);
   }
 
+  /* the form's actions: a footer, kept in view at the inspector's bottom edge while the form scrolls */
   .block-actions {
-    padding-block-start: var(--space-3);
+    position: sticky;
+    z-index: var(--layer-raised);
+    inset-block-end: calc(var(--space-4) * -1);
+    margin-block: auto calc(var(--space-4) * -1);
+    margin-inline: calc(var(--space-4) * -1);
+    padding: var(--space-3) var(--space-4);
     border-block-start: var(--border-hairline) solid var(--color-rule);
+    background: var(--color-bg-raised);
   }
 
   .field-label {
@@ -738,6 +780,12 @@ const STATUS: SelectOption[] = [
   .group-head {
     display: grid;
     min-inline-size: 0;
+  }
+
+  /* the sections take the form's height, so a wide inspector's list is ruled to the bottom */
+  .sections {
+    flex: 1;
+    align-content: start;
   }
 
   .panes,
@@ -909,10 +957,12 @@ const STATUS: SelectOption[] = [
   }
 
   @container inspector (min-width: 40rem) {
+    /* the list's rule is the column's, drawn down the whole of it whatever the list's length */
     .sections {
       grid-template-columns: var(--c-editor-inspector-nav) minmax(0, 1fr);
       align-items: start;
       gap: var(--space-6);
+      background: linear-gradient(var(--color-rule), var(--color-rule)) no-repeat var(--c-editor-inspector-nav) 0 / var(--border-hairline) 100%;
     }
 
     .section-nav {
@@ -922,7 +972,6 @@ const STATUS: SelectOption[] = [
       align-content: start;
       gap: var(--space-3);
       padding-inline-end: var(--space-3);
-      border-inline-end: var(--border-hairline) solid var(--color-rule);
     }
 
     /* only the chosen section, without its rule: the list beside it says where it is */
@@ -952,6 +1001,59 @@ const STATUS: SelectOption[] = [
     aspect-ratio: 4 / 3;
     border: var(--border-hairline) dashed var(--color-rule);
     border-radius: var(--radius-md);
+  }
+
+  /* ---------- a rich field: its label, its toolbar, and its words edited as they'll read ---------- */
+  .rich {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .rich-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .rich-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-0-5) var(--space-3);
+  }
+
+  /* the toolbar's groups: marks, then words that go somewhere, then lists */
+  .tool-group {
+    display: flex;
+    gap: var(--space-0-5);
+  }
+
+  .rich-box {
+    min-block-size: calc(var(--size-touch) * 2);
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-control) solid var(--c-control-border);
+    border-radius: var(--c-control-radius);
+    background: var(--c-control-fill);
+    cursor: text;
+  }
+
+  .rich-box:focus-within {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  .rich-input {
+    min-block-size: calc(var(--size-touch) * 1.5);
+    outline: none;
+  }
+
+  /* the paragraphs and lists the field's editing makes (the browser writes them): a paragraph apart, as on the page */
+  .rich-input > :global(*) {
+    margin-block: 0;
+  }
+
+  .rich-input > :global(* + *) {
+    margin-block-start: var(--space-3);
   }
 
   .issue {

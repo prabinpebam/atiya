@@ -23,6 +23,7 @@
  * @key Enter or Space: on Previous or Next, scrolls the strip by a view
  */
 import Image from '../fundamentals/Image.astro';
+import Prose from '../fundamentals/Prose.astro';
 import IconButton from '../fundamentals/IconButton.astro';
 
 export interface CollectionPicture {
@@ -53,7 +54,7 @@ export interface CollectionItem {
   picture?: CollectionPicture;
   /** A short line under the heading. */
   subtext?: string;
-  /** Its words as inline HTML (bold, italic, code, links: the content layer renders it from Markdown): a paragraph, or a few, each spaced from the last. */
+  /** Its words as HTML the content layer rendered from Markdown (paragraphs and lists, bold, italic, strikethrough, code, links), set as compact prose; a line of inline HTML, or several (each a paragraph), works too. */
   html?: string | string[];
 }
 
@@ -135,17 +136,19 @@ const breakout = width;
           </span>
         );
         const when = !timeline && item.when;
-        const paras = Array.isArray(item.html) ? item.html : item.html ? [item.html] : [];
-        const words = (when || item.heading || item.subtext || paras.length > 0) && (
+        // its words as blocks: Markdown's HTML as it is, inline HTML in a paragraph each
+        const block = (h: string) => (/^\s*<(p|ul|ol)[\s>]/.test(h) ? h : `<p>${h}</p>`);
+        const body = (Array.isArray(item.html) ? item.html : item.html ? [item.html] : []).map(block).join('');
+        const words = (when || item.heading || item.subtext || body) && (
           <div class="words">
             {when && <p class="when">{item.when}</p>}
             {item.heading && <p class="heading">{item.heading}</p>}
             {item.subtext && <p class="subtext">{item.subtext}</p>}
-            {paras.length > 0 && (
+            {body && (
               <div class="texts">
-                {paras.map((para) => (
-                  <p class="text" set:html={para} />
-                ))}
+                <Prose size="compact">
+                  <Fragment set:html={body} />
+                </Prose>
               </div>
             )}
           </div>
@@ -208,8 +211,7 @@ const breakout = width;
 
   .when,
   .heading,
-  .subtext,
-  .text {
+  .subtext {
     margin: 0;
   }
 
@@ -256,17 +258,8 @@ const breakout = width;
     color: var(--color-text-muted);
   }
 
-  .text {
-    color: var(--color-text);
-    font-family: var(--font-text);
-    font-size: var(--text-md);
-    line-height: var(--leading-body);
-  }
-
-  /* an item's paragraphs, spaced as paragraphs are, a little apart from the lines over them */
+  /* an item's words (compact prose: paragraphs and lists), a little apart from the lines over them */
   .texts {
-    display: grid;
-    gap: var(--space-3);
     margin-block-start: var(--space-1);
   }
 

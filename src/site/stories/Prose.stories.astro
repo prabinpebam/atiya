@@ -26,3 +26,23 @@ import Prose from '../components/fundamentals/Prose.astro';
     <p>A portfolio you can walk around, and the same portfolio as plain pages.</p>
   </Prose>
 </Example>
+
+<Example title="Compact, with nested lists" layout="block" description="A card's words, as a collection item sets them: the interface's size at the reading line height, paragraphs and lists a little apart, a list nested under an item, struck-through words.">
+  <Prose size="compact">
+    <p>Each stage answered the same question in its own way, and <del>none of them</del> each left something behind.</p>
+    <ul>
+      <li>
+        <strong>Records</strong>: a contact list shared by programs
+        <ul>
+          <li>Useful plumbing</li>
+          <li>No experience of its own</li>
+        </ul>
+      </li>
+      <li><strong>Hubs</strong>: people as a feed</li>
+    </ul>
+    <ol>
+      <li>Find the person</li>
+      <li>Act on them where you are</li>
+    </ol>
+  </Prose>
+</Example>

@@ -3,11 +3,13 @@
  * tree with one parser, one renderer and one serializer, so what the editor writes back is exactly what
  * the site renders (documentation/editor/spec.md §3.2, §9).
  *
- * - Blocks: paragraphs, and bulleted or numbered lists (every line "- " or "1. ").
- * - Inline: text, **strong**, *emphasis* (or _emphasis_ between words), `code` (``code with a ` ``),
- *   [links](https://…) and hard line breaks (a backslash, or two spaces, at the end of a line).
- *   Strong and emphasis may nest; code holds plain text; a link holds text, strong and emphasis.
- * - Escapes: a backslash before \ * _ ` [ ] - . makes it literal.
+ * - Blocks: paragraphs, and bulleted or numbered lists (every line "- " or "1. "). A list nests: a line indented
+ *   under the item above (to where that item's words start) is an item of a list inside it, bulleted or
+ *   numbered as its own marker says, up to three levels.
+ * - Inline: text, **strong**, *emphasis* (or _emphasis_ between words), ~~struck through~~, `code`
+ *   (``code with a ` ``), [links](https://…) and hard line breaks (a backslash, or two spaces, at the end of a
+ *   line). Strong, emphasis and strikethrough may nest; code holds plain text; a link holds text and marks.
+ * - Escapes: a backslash before \ * _ ~ ` [ ] - . makes it literal.
  *
  * Everything else is text: HTML is escaped, so raw markup can never reach a page.
  */
@@ -15,11 +17,21 @@ export type Inline =
   | { t: 'text'; v: string }
   | { t: 'strong'; c: Inline[] }
   | { t: 'em'; c: Inline[] }
+  | { t: 'del'; c: Inline[] }
   | { t: 'code'; v: string }
   | { t: 'link'; href: string; c: Inline[] }
   | { t: 'br' };
 
-export type MdBlock = { t: 'p'; c: Inline[] } | { t: 'ul' | 'ol'; items: Inline[][] };
+/**
+ * A block: a paragraph, or a list. A list's items are in reading order; a nested list keeps each item's
+ * level (`depth`, 0 for the list's own items, at most `LIST_DEPTH_MAX`) and the kind of the list it's in
+ * (`kinds`), both left out when nothing is nested, so a flat list is just its items.
+ */
+export type MdBlock = { t: 'p'; c: Inline[] } | { t: 'ul' | 'ol'; items: Inline[][]; depth?: number[]; kinds?: ('ul' | 'ol')[] };
+export type MdList = Extract<MdBlock, { t: 'ul' | 'ol' }>;
+
+/** The deepest a list nests: its own items at 0, then two lists inside. */
+export const LIST_DEPTH_MAX = 2;
 
 export interface MarkdownOptions {
   /** Turns a ref: link (`ref:caseStudy/some-id`) into an href; an unknown ref is an error. */
@@ -28,7 +40,7 @@ export interface MarkdownOptions {
   annotate?: boolean;
 }
 
-const ESCAPABLE = new Set(['\\', '*', '_', '`', '[', ']', '-', '.']);
+const ESCAPABLE = new Set(['\\', '*', '_', '~', '`', '[', ']', '-', '.']);
 const SAFE_HREF = /^(https?:\/\/|mailto:)/i;
 const WORD = /[\p{L}\p{N}_]/u;
 const isSpace = (c: string | undefined) => c === undefined || /\s/.test(c);
@@ -83,7 +95,7 @@ function push(out: Inline[], node: Inline) {
 
 /** A run of * or _ that may open or close emphasis (CommonMark's delimiter run, with the site's own flanking). */
 interface Delim {
-  ch: '*' | '_';
+  ch: '*' | '_' | '~';
   count: number;
   open: boolean;
   close: boolean;
@@ -148,6 +160,17 @@ export function parseInline(s: string, inLink = false): Inline[] {
         continue;
       }
     }
+    if (c === '~' && s[i + 1] === '~') {
+      // ~~struck through~~: a run of two or more, opening before a non-space and closing after one
+      let n = 0;
+      while (s[i + n] === '~') n++;
+      const open = !isSpace(s[i + n]);
+      const close = i > 0 && !isSpace(s[i - 1]);
+      if (open || close) items.push({ ch: '~', count: n, open, close });
+      else text('~'.repeat(n));
+      i += n;
+      continue;
+    }
     if (c === '*' || c === '_') {
       let n = 0;
       while (s[i + n] === c) n++;
@@ -172,6 +195,10 @@ export function parseInline(s: string, inLink = false): Inline[] {
     for (; oi >= 0; oi--) {
       const o = items[oi];
       if (!isDelim(o) || o.ch !== closer.ch || !o.open || o.count === 0) continue;
+      if (o.ch === '~') {
+        if (o.count < 2 || closer.count < 2) continue;
+        break;
+      }
       const either = (o.open && o.close) || (closer.open && closer.close);
       if (either && (o.count + closer.count) % 3 === 0 && !(o.count % 3 === 0 && closer.count % 3 === 0)) continue;
       break;
@@ -181,7 +208,7 @@ export function parseInline(s: string, inLink = false): Inline[] {
     const use = opener.count >= 2 && closer.count >= 2 ? 2 : 1;
     opener.count -= use;
     closer.count -= use;
-    const node: Inline = { t: use === 2 ? 'strong' : 'em', c: flatten(items.slice(oi + 1, ci)) };
+    const node: Inline = { t: closer.ch === '~' ? 'del' : use === 2 ? 'strong' : 'em', c: flatten(items.slice(oi + 1, ci)) };
     items.splice(oi + 1, ci - oi - 1, node);
     ci = oi + 1; // the loop moves on to this closer again, in case it has more to give
   }
@@ -194,8 +221,40 @@ function flatten(items: Item[]): Inline[] {
   return out;
 }
 
-const LIST = /^\s*[-*] /;
-const NUMBERED = /^\s*\d+\. /;
+const ITEM = /^( *)([-*]|\d+\.) (.*)$/;
+
+/**
+ * A paragraph's lines as a list, or null when they aren't one. Every line is an item ("- " or "1. "); a
+ * line indented past the item before it opens a list inside that item (its own marker says which kind),
+ * one level at a time and no deeper than LIST_DEPTH_MAX; a line indented less goes back out to the level
+ * it lines up with. The list's own items must all be of its kind, as before nesting was allowed.
+ */
+function parseList(lines: string[]): MdList | null {
+  const found = lines.map((l) => ITEM.exec(l));
+  if (!found.every(Boolean)) return null;
+  const kindOf = (m: RegExpExecArray) => (/\d/.test(m[2]) ? 'ol' : 'ul') as 'ul' | 'ol';
+  const top = kindOf(found[0]!);
+  const indents: number[] = [];
+  const runKind: ('ul' | 'ol')[] = [];
+  const depth: number[] = [];
+  const kinds: ('ul' | 'ol')[] = [];
+  for (const m of found as RegExpExecArray[]) {
+    const indent = m[1].length;
+    if (!indents.length) indents.push(indent);
+    else if (indent > indents[indents.length - 1]) {
+      if (indents.length <= LIST_DEPTH_MAX) {
+        indents.push(indent);
+        runKind[indents.length - 1] = kindOf(m);
+      }
+    } else while (indents.length > 1 && indent < indents[indents.length - 1]) indents.pop();
+    const d = indents.length - 1;
+    if (d === 0 && kindOf(m) !== top) return null;
+    depth.push(d);
+    kinds.push(d === 0 ? top : runKind[d]);
+  }
+  const items = (found as RegExpExecArray[]).map((m) => parseInline(m[3]));
+  return depth.some((d) => d > 0) ? { t: top, items, depth, kinds } : { t: top, items };
+}
 
 export function parseMarkdown(md: string): MdBlock[] {
   return md
@@ -203,12 +262,48 @@ export function parseMarkdown(md: string): MdBlock[] {
     .trim()
     .split(/\n[ \t]*\n/)
     .filter((p) => p.trim())
-    .map((para): MdBlock => {
-      const lines = para.split('\n');
-      if (lines.every((l) => LIST.test(l))) return { t: 'ul', items: lines.map((l) => parseInline(l.replace(LIST, ''))) };
-      if (lines.every((l) => NUMBERED.test(l))) return { t: 'ol', items: lines.map((l) => parseInline(l.replace(NUMBERED, ''))) };
-      return { t: 'p', c: parseInline(para) };
-    });
+    .map((para): MdBlock => parseList(para.split('\n')) ?? { t: 'p', c: parseInline(para) });
+}
+
+/** A list as a tree: each item with the list nested in it, if any (what the page draws). */
+export interface ListTree {
+  t: 'ul' | 'ol';
+  items: { c: Inline[]; sub?: ListTree }[];
+}
+
+export function listTree(b: MdList): ListTree {
+  const root: ListTree = { t: b.t, items: [] };
+  const open: ListTree[] = [root];
+  b.items.forEach((c, i) => {
+    const d = Math.min(b.depth?.[i] ?? 0, open.length, LIST_DEPTH_MAX);
+    while (open.length > d + 1) open.pop();
+    const here = open[open.length - 1];
+    const parent = here.items[here.items.length - 1];
+    if (d === open.length && parent) {
+      parent.sub ??= { t: b.kinds?.[i] ?? b.t, items: [] };
+      open.push(parent.sub);
+    }
+    open[open.length - 1].items.push({ c });
+  });
+  return root;
+}
+
+/** A tree back as a list's items with their levels and kinds (what's written). */
+export function listOf(tree: ListTree): MdList {
+  const items: Inline[][] = [];
+  const depth: number[] = [];
+  const kinds: ('ul' | 'ol')[] = [];
+  const walk = (l: ListTree, d: number) => {
+    for (const it of l.items) {
+      items.push(it.c);
+      depth.push(d);
+      kinds.push(l.t);
+      if (it.sub && d < LIST_DEPTH_MAX) walk(it.sub, d + 1);
+      else if (it.sub) for (const x of listOf(it.sub).items) (items.push(x), depth.push(d), kinds.push(l.t));
+    }
+  };
+  walk(tree, 0);
+  return depth.some((d) => d > 0) ? { t: tree.t, items, depth, kinds } : { t: tree.t, items };
 }
 
 // ---------- rendering ----------
@@ -225,6 +320,8 @@ function renderInline(nodes: Inline[], opts: MarkdownOptions): string {
           return `<strong>${renderInline(n.c, opts)}</strong>`;
         case 'em':
           return `<em>${renderInline(n.c, opts)}</em>`;
+        case 'del':
+          return `<del>${renderInline(n.c, opts)}</del>`;
         case 'code':
           return `<code>${escapeHtml(n.v)}</code>`;
         case 'br':
@@ -248,8 +345,8 @@ export function renderBlocks(blocks: MdBlock[], opts: MarkdownOptions = {}): str
   return blocks
     .map((b) => {
       if (b.t === 'p') return `<p>${renderInline(b.c, opts)}</p>`;
-      const items = b.items.map((i) => `<li>${renderInline(i, opts)}</li>`).join('');
-      return `<${b.t}>${items}</${b.t}>`;
+      const list = (l: ListTree): string => `<${l.t}>${l.items.map((i) => `<li>${renderInline(i.c, opts)}${i.sub ? list(i.sub) : ''}</li>`).join('')}</${l.t}>`;
+      return list(listTree(b));
     })
     .join('\n');
 }
@@ -270,6 +367,7 @@ export interface Run {
   br?: true;
   strong?: true;
   em?: true;
+  del?: true;
   code?: true;
   href?: string;
 }
@@ -279,7 +377,7 @@ export function runs(nodes: Inline[], style: Omit<Run, 'text' | 'br'> = {}): Run
   const out: Run[] = [];
   const add = (r: Run) => {
     const last = out[out.length - 1];
-    const same = last && last.text !== undefined && r.text !== undefined && last.strong === r.strong && last.em === r.em && last.code === r.code && last.href === r.href;
+    const same = last && last.text !== undefined && r.text !== undefined && last.strong === r.strong && last.em === r.em && last.del === r.del && last.code === r.code && last.href === r.href;
     if (same) last.text += r.text!;
     else if (r.br || r.text) out.push(r);
   };
@@ -301,15 +399,15 @@ export function runs(nodes: Inline[], style: Omit<Run, 'text' | 'br'> = {}): Run
  * side by side merged; spaces and breaks at a mark's edges moved outside it (as the serializer writes
  * them); and bold round a lone italic turned into italic round bold (what `***x***` reads as).
  */
-export function normalize(nodes: Inline[], inside: { strong?: boolean; em?: boolean } = {}): Inline[] {
+export function normalize(nodes: Inline[], inside: { strong?: boolean; em?: boolean; del?: boolean } = {}): Inline[] {
   const out: Inline[] = [];
   for (const n of nodes) {
     // a mark inside the same mark, at any depth, adds nothing
-    if ((n.t === 'strong' && inside.strong) || (n.t === 'em' && inside.em)) {
+    if ((n.t === 'strong' && inside.strong) || (n.t === 'em' && inside.em) || (n.t === 'del' && inside.del)) {
       for (const x of normalize(n.c, inside)) push(out, x);
       continue;
     }
-    if (n.t === 'strong' || n.t === 'em' || n.t === 'link') {
+    if (n.t === 'strong' || n.t === 'em' || n.t === 'del' || n.t === 'link') {
       const c = normalize(n.c, n.t === 'link' ? inside : { ...inside, [n.t]: true });
       if (!c.length) continue;
       if (n.t !== 'link') {
@@ -355,6 +453,7 @@ export function normalize(nodes: Inline[], inside: { strong?: boolean; em?: bool
 const escapeText = (v: string) =>
   v
     .replace(/[\\*_`[\]]/g, (c) => `\\${c}`)
+    .replace(/~(?=~)|(?<=~)~/g, '\\~')
     .replace(/ +\n/g, '\n')
     .replace(/\n+/g, '\n')
     // a line that would read as a list item
@@ -378,6 +477,9 @@ export function serializeInline(nodes: Inline[]): string {
         break;
       case 'strong':
         out += mark(serializeInline(n.c), '**');
+        break;
+      case 'del':
+        out += mark(serializeInline(n.c), '~~');
         break;
       case 'em': {
         // "_" never merges with a strong's "**" into one run, so it's the clearer choice; inside a word
@@ -405,10 +507,21 @@ export function serializeInline(nodes: Inline[]): string {
   return out;
 }
 
+/** A list's lines: each item indented to where its parent's words start, numbered within its own list. */
+function serializeList(b: MdList): string {
+  const lines: string[] = [];
+  const walk = (l: ListTree, indent: number) =>
+    l.items.forEach((it, n) => {
+      const marker = l.t === 'ul' ? '-' : `${n + 1}.`;
+      lines.push(`${' '.repeat(indent)}${marker} ${serializeInline(it.c)}`);
+      if (it.sub) walk(it.sub, indent + marker.length + 1);
+    });
+  walk(listTree(b), 0);
+  return lines.join('\n');
+}
+
 export function serializeBlocks(blocks: MdBlock[]): string {
-  return blocks
-    .map((b) => (b.t === 'p' ? serializeInline(b.c) : b.items.map((item, i) => `${b.t === 'ul' ? '-' : `${i + 1}.`} ${serializeInline(item)}`).join('\n')))
-    .join('\n\n');
+  return blocks.map((b) => (b.t === 'p' ? serializeInline(b.c) : serializeList(b))).join('\n\n');
 }
 
 /** The words a reader reads: the subset with its markup taken off (for reading time and plain labels). */
@@ -419,7 +532,7 @@ export function plainText(md: string): string {
     .join('\n\n');
 }
 
-/** Markdown as its paragraphs (a collection item's words): split at the blank lines, each trimmed, none empty. */
+/** Markdown as its blocks (a collection item's words: its paragraphs and lists), as written: split at the blank lines, each trimmed, none empty. */
 export const paragraphsOf = (md: string): string[] =>
   md
     .trim()

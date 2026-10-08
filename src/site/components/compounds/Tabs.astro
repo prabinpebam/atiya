@@ -3,7 +3,8 @@
  * Tabs: a few views of one thing, one shown at a time, with the choice in a row of tabs above. The
  * tabs follow the APG pattern: arrow keys move between them and show each at once (the panels are
  * already on the page), Home and End go to the first and the last. Put each panel's content in the slot
- * named after its tab's id.
+ * named after its tab's id. With fill, the tabs are at least as tall as their container and the shown panel
+ * takes the rest, so a panel's content can reach the bottom (a footer, a column ruled all the way down).
  * @tier compound
  * @a11y A tablist of tabs, each controlling its tabpanel; the chosen tab is aria-selected and the only one Tab reaches.
  * @a11y Each panel is named by its tab and can take focus, so its content is reachable after the tabs.
@@ -21,14 +22,16 @@ interface Props {
   selected?: string;
   /** A page-unique prefix for the ids. */
   id?: string;
+  /** At least as tall as the container, the shown panel (and its one child) taking the height the tabs leave. */
+  fill?: boolean;
 }
 
-const { label, tabs, selected, id = `tabs-${Math.random().toString(36).slice(2, 8)}` } = Astro.props;
+const { label, tabs, selected, fill = false, id = `tabs-${Math.random().toString(36).slice(2, 8)}` } = Astro.props;
 const current = tabs.some((t) => t.id === selected) ? selected : tabs[0]?.id;
 const panels = await Promise.all(tabs.map(async (t) => ({ ...t, html: Astro.slots.has(t.id) ? await Astro.slots.render(t.id) : '' })));
 ---
 
-<div class="tabs" data-tabs id={id}>
+<div class="tabs" data-tabs data-fill={fill ? '' : undefined} id={id}>
   <div class="list" role="tablist" aria-label={label}>
     {
       tabs.map((t) => {
@@ -60,6 +63,20 @@ const panels = await Promise.all(tabs.map(async (t) => ({ ...t, html: Astro.slot
     display: grid;
     gap: var(--space-4);
     min-inline-size: 0;
+  }
+
+  /* fill: the panel row takes what the tabs leave, and the panel's content stretches into it */
+  .tabs[data-fill] {
+    grid-template-rows: auto minmax(0, 1fr);
+    min-block-size: 100%;
+  }
+
+  .tabs[data-fill] > .panel {
+    display: grid;
+  }
+
+  .tabs[data-fill] > .panel[hidden] {
+    display: none;
   }
 
   .list {

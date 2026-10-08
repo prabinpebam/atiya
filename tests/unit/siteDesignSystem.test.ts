@@ -320,6 +320,7 @@ describe('CSS reads tokens, never raw values', () => {
       'Lightbox.astro': 'the filmstrip its script builds',
       'VideoEmbed.astro': 'the iframe its script swaps in',
       'CanvasChrome.astro': "edit mode's canvas: the page's own editable text and the paragraph its script adds",
+      'Inspector.astro': "edit mode's rich fields: the paragraphs and lists the browser writes as they're edited",
     };
     const bad = siteAstro.filter((f) => !ALLOWED[f.split(sep).pop()!] && (/:global\(/.test(styles(read(f))) || /<style[^>]*is:global/.test(read(f)))).map(rel);
     expect(bad).toEqual([]);

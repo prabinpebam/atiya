@@ -258,7 +258,7 @@ test.describe('editor', () => {
     expect(last()).toMatchObject({ type: 'collection', layout: 'tiles', items: [{ heading: 'Challenge' }, { heading: 'Core idea' }] });
     const shown = frame(page).locator('[data-collection]').last();
     await expect(shown.locator('.heading')).toHaveText(['Challenge', 'Core idea']);
-    await expect(shown.locator('.text strong')).toHaveText('Do what makes you proud.');
+    await expect(shown.locator('.texts strong')).toHaveText('Do what makes you proud.');
 
     await page.locator(`[data-editor-select="${count}"]`).click();
     await page.locator('[data-editor-collection="add"]').last().click();
@@ -306,6 +306,12 @@ test.describe('editor', () => {
     await expect(region('Layout and width')).toBeVisible();
     await expect(region('Item 1')).toBeHidden();
     await noSeriousViolations(page, 'the wide inspector');
+    // the form fills the inspector: the list's column runs to the footer, and the footer sits at the bottom edge
+    const inspector = (await page.locator('[data-editor-inspector]').boundingBox())!;
+    const footer = (await form.locator('.block-actions').boundingBox())!;
+    const column = (await form.locator('.sections').boundingBox())!;
+    expect(inspector.y + inspector.height - (footer.y + footer.height)).toBeLessThanOrEqual(2);
+    expect(footer.y - (column.y + column.height)).toBeLessThanOrEqual(24);
     // the third item, dragged by its handle to the top of the list: saved in its new place, and still the one shown
     const headings = () => (readJson(articleFile()).body[0] as { items: { heading?: string }[] }).items.map((i) => i.heading);
     const before = headings();
@@ -332,6 +338,108 @@ test.describe('editor', () => {
     await page.mouse.up();
     await expect(nav).toBeHidden();
     await expect(sep).toHaveAttribute('aria-valuenow', '24');
+  });
+
+  test("a collection item's words are edited as they'll read: paragraphs, marks and nested lists from the toolbar and keys, saved as Markdown", async ({ page }) => {
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; layout?: string; items?: { text?: string }[] }[];
+    const t = blocks().findIndex((b) => b.type === 'collection' && b.layout === 'tiles');
+    const before = blocks()[t].items![0].text!;
+    await page.locator(`[data-editor-select="${t}"]`).click();
+    const field = page.locator(`[data-block-form="${t}"] [data-rich-field]`).first();
+    const input = field.getByRole('textbox', { name: 'Item 1: words' });
+    await expect(field.getByRole('toolbar', { name: 'Item 1: formatting' })).toBeVisible();
+    // indents only offered in a list
+    await input.click();
+    await page.keyboard.press('Control+End');
+    await expect(field.locator('[data-rich-op="indent"]')).toBeDisabled();
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('Then ');
+    await page.keyboard.press('Control+b');
+    await page.keyboard.type('own');
+    await page.keyboard.press('Control+b');
+    await page.keyboard.type(' it.');
+    await page.keyboard.press('Enter');
+    await field.locator('[data-rich-op="bulleted"]').click();
+    await expect(field.locator('[data-rich-op="bulleted"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.type('First');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('Inside');
+    await expect(field.locator('[data-rich-op="indent"]')).toBeEnabled();
+    await page.keyboard.press('Control+]');
+    // leaving the field saves its words
+    await page.locator(`[data-block-form="${t}"]`).getByLabel('Item 1: heading').click();
+    const words = () => blocks()[t].items![0].text;
+    await expect.poll(words).toBe(`${before}\n\nThen **own** it.\n\n- First\n  - Inside`);
+    await saved(page);
+    // the page shows them as the field did: a paragraph, and a list with a list inside it
+    const item = frame(page).locator('[data-collection] .item', { hasText: 'Then own it.' });
+    await expect(item.locator('ul > li > ul > li')).toHaveText('Inside');
+    await expect(item.locator('p strong')).toHaveText('own');
+    // struck through from the toolbar
+    await input.locator('p').nth(1).locator('b, strong').dblclick();
+    await field.locator('[data-rich-op="strikethrough"]').click();
+    await page.locator(`[data-block-form="${t}"]`).getByLabel('Item 1: heading').click();
+    await expect.poll(words).toMatch(/Then (~~\*\*own\*\*~~|\*\*~~own~~\*\*) it\./);
+  });
+
+  test('on the canvas, words are struck through (Ctrl+Shift+X) and a list item indents (Ctrl+]) into a list inside the one above', async ({ page }) => {
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string }[];
+    const p = blocks().findIndex((b) => b.type === 'text' && !b.markdown!.startsWith('- '));
+    const para = frame(page).locator(`[data-editor-editable="rich"]`).first();
+    await para.dblclick();
+    await page.keyboard.press('Control+Shift+X');
+    await page.locator('[data-editor-outline]').click({ position: { x: 5, y: 5 } });
+    await expect.poll(() => blocks()[p].markdown).toMatch(/~~\w+~~/);
+    // the paragraph as a bulleted list, a second item, indented under the first
+    // the change reloads the canvas: mark the page it shows now, so the next step waits for the new one
+    const canvas = () => page.frames().find((f) => f.url().includes('/_edit/canvas/'))!;
+    await canvas().evaluate(() => ((window as unknown as { stale: boolean }).stale = true));
+    await page.locator(`[data-editor-select="${p}"]`).focus();
+    await page.keyboard.press('Control+Shift+8');
+    await expect.poll(() => blocks()[p].markdown).toMatch(/^- /);
+    await expect.poll(() => canvas().evaluate(() => !!(window as unknown as { stale?: boolean }).stale).catch(() => true)).toBe(false);
+    const list = frame(page).locator('ul[data-editor-editable="rich"]').first();
+    await list.click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('Inner point');
+    await page.keyboard.press('Control+]');
+    await page.locator('[data-editor-outline]').click({ position: { x: 5, y: 5 } });
+    await expect.poll(() => blocks()[p].markdown).toMatch(/\n {2}- Inner point$/);
+  });
+
+  test("the canvas's format bar: a paragraph made a list from its list buttons, and on a phone's width a list's tools under More formatting", async ({ page }) => {
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string }[];
+    const p = blocks().findIndex((b) => b.type === 'text' && !b.markdown!.startsWith('- '));
+    const canvas = () => page.frames().find((f) => f.url().includes('/_edit/canvas/'))!;
+    const bar = frame(page).locator('[data-chrome-format]');
+    // no "Add a block below" on the block toolbar: new blocks come in with the "+"
+    await expect(frame(page).locator('[data-chrome-op="add"]')).toHaveCount(0);
+    await canvas().evaluate(() => ((window as unknown as { stale: boolean }).stale = true));
+    await frame(page).locator('[data-editor-editable="rich"]').first().dblclick();
+    await expect(bar).toBeVisible();
+    await expect(bar.locator('[data-chrome-format-op="bulleted"]')).toHaveAttribute('aria-pressed', 'false');
+    await bar.locator('[data-chrome-format-op="bulleted"]').click();
+    await expect.poll(() => blocks()[p].markdown).toMatch(/^- /);
+    await expect.poll(() => canvas().evaluate(() => !!(window as unknown as { stale?: boolean }).stale).catch(() => true)).toBe(false);
+    // a phone's width: the list's tools don't all fit, so the least used go under More formatting, in order
+    await page.getByRole('button', { name: 'Phone width' }).click();
+    const list = frame(page).locator('ul[data-editor-editable="rich"]').first();
+    await list.scrollIntoViewIfNeeded();
+    await list.locator('li').first().dblclick();
+    await expect(bar.locator('[data-chrome-format-op="bulleted"]')).toHaveAttribute('aria-pressed', 'true');
+    const more = bar.getByRole('button', { name: 'More formatting' });
+    await expect(more).toBeVisible();
+    await more.click();
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+    const menu = bar.getByRole('group', { name: 'More formatting' });
+    await expect(menu.locator('[data-chrome-format-op]').first()).toHaveAttribute('data-chrome-format-op', 'outdent');
+    expect(await bar.evaluate((b) => b.getBoundingClientRect().right <= document.documentElement.clientWidth)).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('a table: added from the palette, its cells written in the inspector and shown on the page, a row that does not fit refused', async ({ page }) => {
@@ -531,7 +639,7 @@ test.describe('editor', () => {
     });
     const shown = frame(page).locator('[data-collection]', { hasText: 'Constraint' });
     await expect(shown.locator('.heading')).toHaveText(['Constraint', 'Outcome']);
-    await expect(shown.locator('.text strong')).toHaveText('shared');
+    await expect(shown.locator('.texts strong')).toHaveText('shared');
   });
 
   test('a rich copy keeps its formatting: bold, italic, links, headings and lists, in a paragraph and in a list', async ({ page, context }) => {

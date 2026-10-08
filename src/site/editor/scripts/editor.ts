@@ -14,6 +14,7 @@ import { starterTable, textToTable } from '../model/table';
 import { startWidth } from '../model/collection';
 import { followMove, followRemove, itemKey } from '../model/inspector';
 import { applySections, followSection, initSections, revealField } from './inspector';
+import { initRichFields } from './richtext';
 import { openCrop } from './crop';
 import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
@@ -55,6 +56,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   type Events = DocumentEventMap & WindowEventMap;
   const on = <K extends keyof Events>(t: EventTarget, type: K, fn: (e: Events[K]) => void) => t.addEventListener(type, fn as EventListener, { signal });
   initSections(root, signal);
+  initRichFields(root, signal, (href, apply) => openLink(href, apply));
 
   // ---------- history ----------
   const HKEY = `editor.history.${state.id}`;
@@ -665,8 +667,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     p?.onChoose(ids);
   };
   let linkRequest = '';
-  const openLink = (href: string) => {
+  // where the link dialog's address goes: the canvas (its text's selection), or a rich field's own
+  let linkTo: ((href: string) => void) | null = null;
+  const openLink = (href: string, to: ((href: string) => void) | null = null) => {
     linkRequest = href;
+    linkTo = to;
     const d = dialog('editor-insert-link');
     const input = d?.querySelector<HTMLInputElement>('input[name="href"]');
     if (input) input.value = href.startsWith('ref:') ? '' : href;
@@ -785,6 +790,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (d.editorMediaUse !== undefined && pick) return choose([...chosen]);
     if (d.editorUnlink !== undefined) {
       dialog('editor-insert-link')?.close();
+      if (linkTo) return linkTo('');
       return toCanvas({ type: 'link', href: '' });
     }
     if (d.editorReload !== undefined) return location.reload();
@@ -887,6 +893,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       const target = ref || href || linkRequest;
       if (target && !/^(https?:\/\/|mailto:|ref:)/i.test(target)) return issue('Use an address that starts with https://, http:// or mailto:, or choose an article.');
       close();
+      if (linkTo) return linkTo(target);
       return toCanvas({ type: 'link', href: target });
     }
   });

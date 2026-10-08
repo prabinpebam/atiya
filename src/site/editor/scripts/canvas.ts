@@ -224,21 +224,24 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   chrome.addEventListener(
     'click',
     (e) => {
-      const b = (e.target as Element).closest<HTMLElement>('[data-chrome-op], [data-chrome-insert-button], [data-chrome-format-op]');
+      const b = (e.target as Element).closest<HTMLElement>('[data-chrome-op], [data-chrome-insert-button], [data-chrome-format-op], [data-chrome-more-toggle]');
       if (!b) return;
       e.preventDefault();
       if (b.dataset.chromeOp && selected !== null) {
         const op = b.dataset.chromeOp;
-        if (op === 'add') post({ type: 'insert', index: selected + 1 });
-        else if (op === 'turn') post({ type: 'turn', index: selected });
+        if (op === 'turn') post({ type: 'turn', index: selected });
         else post({ type: 'op', index: selected, op: op as 'up' | 'down' | 'duplicate' | 'delete' });
       } else if (b.hasAttribute('data-chrome-insert-button') && insertAt >= 0) post({ type: 'insert', index: insertAt });
-      else if (b.dataset.chromeFormatOp) formatOp(b.dataset.chromeFormatOp);
+      else if (b.hasAttribute('data-chrome-more-toggle')) showMore(moreMenu.hidden);
+      else if (b.dataset.chromeFormatOp) {
+        showMore(false);
+        formatOp(b.dataset.chromeFormatOp);
+      }
     },
     { signal },
   );
   // a toolbar button doesn't take the text's selection away
-  chrome.addEventListener('mousedown', (e) => (e.target as Element).closest('[data-chrome-format-op]') && e.preventDefault(), { signal });
+  chrome.addEventListener('mousedown', (e) => (e.target as Element).closest('[data-chrome-format-op], [data-chrome-more-toggle]') && e.preventDefault(), { signal });
 
   // ---------- editing text ----------
   let session = 0;
@@ -565,21 +568,81 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
 
   // ---------- the format bar ----------
   let savedRange: Range | null = null;
+  const moreWrap = format.querySelector<HTMLElement>('[data-chrome-more]')!;
+  const moreMenu = format.querySelector<HTMLElement>('[data-chrome-more-menu]')!;
+  const moreToggle = format.querySelector<HTMLElement>('[data-chrome-more-toggle]')!;
+  const showMore = (open: boolean) => {
+    moreMenu.hidden = !open;
+    moreToggle.setAttribute('aria-expanded', String(open));
+  };
+  // the tools that go under More formatting when the bar is wider than the page, least used first
+  const OVERFLOW = ['indent', 'outdent', 'code', 'strikethrough', 'numbered'];
+  const ORDER = ['bold', 'italic', 'strikethrough', 'code', 'link', 'bulleted', 'numbered', 'outdent', 'indent'];
+  const homes = new Map<HTMLElement, { parent: HTMLElement; next: Node | null }>();
+  const fit = () => {
+    for (const [b, h] of [...homes].reverse()) h.parent.insertBefore(b, h.next);
+    homes.clear();
+    const room = document.documentElement.clientWidth - 16;
+    moreWrap.hidden = true;
+    for (const op of OVERFLOW) {
+      if (format.offsetWidth <= room) break;
+      const b = format.querySelector<HTMLElement>(`[data-chrome-format-op="${op}"]`);
+      if (!b || b.closest('[hidden]')) continue;
+      moreWrap.hidden = false;
+      homes.set(b, { parent: b.parentElement!, next: b.nextSibling });
+      moreMenu.append(b);
+    }
+    if (moreWrap.hidden) showMore(false);
+    // the menu keeps the bar's own order
+    const order = (b: Element) => ORDER.indexOf((b as HTMLElement).dataset.chromeFormatOp ?? '');
+    moreMenu.append(...[...moreMenu.children].sort((a, b) => order(a) - order(b)));
+  };
+  const STATE: Record<string, string> = { bold: 'bold', italic: 'italic', strikethrough: 'strikeThrough' };
   on('selectionchange', () => {
     const r = caretRange();
     const c = current();
     const show = !!r && !r.collapsed && !!c && c.el.dataset.editorEditable === 'rich' && !preview;
     format.hidden = !show;
-    if (!show) return;
+    if (!show) return showMore(false);
+    const at = r!.commonAncestorContainer.nodeType === 1 ? (r!.commonAncestorContainer as Element) : r!.commonAncestorContainer.parentElement;
+    const indents = format.querySelector<HTMLElement>('[data-chrome-in-list]');
+    const tag = c!.el.nodeName.toLowerCase();
+    // the indents show only in a list (fit puts any under More formatting back in their group first)
+    if (indents) indents.hidden = !at?.closest('li');
+    for (const b of format.querySelectorAll<HTMLElement>('[data-chrome-format-op]')) {
+      const op = b.dataset.chromeFormatOp!;
+      if (STATE[op]) b.setAttribute('aria-pressed', String(document.queryCommandState(STATE[op])));
+      else if (op === 'bulleted' || op === 'numbered') b.setAttribute('aria-pressed', String(tag === (op === 'bulleted' ? 'ul' : 'ol')));
+    }
+    fit();
+    // over the selection, kept inside the page
     const rect = r!.getBoundingClientRect();
-    format.style.setProperty('--x', `${rect.left + rect.width / 2 + scrollX}px`);
+    const half = format.offsetWidth / 2 + 8;
+    const x = Math.min(Math.max(rect.left + rect.width / 2, half), document.documentElement.clientWidth - half);
+    format.style.setProperty('--x', `${x + scrollX}px`);
     format.style.setProperty('--y', `${rect.top + scrollY}px`);
   });
   const formatOp = (op: string) => {
     const c = current();
     if (!c || c.el.dataset.editorEditable !== 'rich') return;
     if (op === 'bold' || op === 'italic') document.execCommand(op);
-    else if (op === 'code') {
+    else if (op === 'strikethrough') document.execCommand('strikeThrough');
+    else if (op === 'bulleted' || op === 'numbered') {
+      // a list is a block's kind: the paragraph turns into one (its words sent first), and the same list back
+      if (c.index === null || c.index < 0) return;
+      const tag = c.el.nodeName.toLowerCase();
+      const to = (op === 'bulleted' && tag === 'ul') || (op === 'numbered' && tag === 'ol') ? 'paragraph' : op;
+      send(true);
+      post({ type: 'turn', index: c.index, to });
+      return;
+    }
+    else if (op === 'indent' || op === 'outdent') {
+      // only a list's items indent (as nested lists, to the subset's three levels); elsewhere the browser would make a quotation
+      const r = caretRange();
+      const at = r && (r.commonAncestorContainer.nodeType === 1 ? (r.commonAncestorContainer as Element) : r.commonAncestorContainer.parentElement);
+      if (!at?.closest('li')) return;
+      document.execCommand(op);
+    } else if (op === 'code') {
       const r = caretRange();
       if (!r) return;
       const inCode = (r.commonAncestorContainer.nodeType === 1 ? (r.commonAncestorContainer as Element) : r.commonAncestorContainer.parentElement)?.closest('code');
@@ -640,6 +703,11 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         post({ type: 'turn', index: at, to: kind });
         return;
       }
+      if (e.key === 'Escape' && !moreMenu.hidden) {
+        e.preventDefault();
+        showMore(false);
+        return;
+      }
       if (editing) {
         if (e.key === 'Escape') {
           e.preventDefault();
@@ -648,6 +716,12 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         } else if (mod && e.key.toLowerCase() === 'k' && editing.el.dataset.editorEditable === 'rich') {
           e.preventDefault();
           formatOp('link');
+        } else if (mod && e.shiftKey && e.key.toLowerCase() === 'x' && editing.el.dataset.editorEditable === 'rich') {
+          e.preventDefault();
+          formatOp('strikethrough');
+        } else if (mod && !e.shiftKey && (e.key === ']' || e.key === '[') && editing.el.dataset.editorEditable === 'rich') {
+          e.preventDefault();
+          formatOp(e.key === ']' ? 'indent' : 'outdent');
         } else if (mod && e.key === 'Enter' && !e.shiftKey && !e.altKey && editing.index !== null && editing.index >= 0 && !composing) {
           // out of a list (or any paragraph or heading) into a new paragraph after it
           e.preventDefault();
