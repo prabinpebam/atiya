@@ -12,6 +12,8 @@ import { SaveQueue } from '../model/queue';
 import { isVideoFile } from '../model/upload';
 import { starterTable, textToTable } from '../model/table';
 import { startWidth } from '../model/collection';
+import { followMove, followRemove, itemKey } from '../model/inspector';
+import { applySections, followSection, initSections, revealField } from './inspector';
 import { openCrop } from './crop';
 import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
@@ -52,6 +54,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   const dialog = (id: string) => document.getElementById(id) as HTMLDialogElement | null;
   type Events = DocumentEventMap & WindowEventMap;
   const on = <K extends keyof Events>(t: EventTarget, type: K, fn: (e: Events[K]) => void) => t.addEventListener(type, fn as EventListener, { signal });
+  initSections(root, signal);
 
   // ---------- history ----------
   const HKEY = `editor.history.${state.id}`;
@@ -182,6 +185,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   // ---------- selection ----------
   const showBlock = (i: number | null) => {
     root.querySelectorAll<HTMLFormElement>('[data-block-form]').forEach((f) => (f.hidden = Number(f.dataset.blockForm) !== i));
+    applySections(root);
     const none = root.querySelector<HTMLElement>('[data-editor-noblock]');
     if (none) none.hidden = i !== null && i < doc.body.length;
     const several = picked.size > 1;
@@ -225,6 +229,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     for (const i of issues) {
       const field = i.path ? root.querySelector<HTMLElement>(`[data-editor-inspector] [name="${CSS.escape(i.path)}"]`) : null;
       field?.setAttribute('aria-invalid', 'true');
+      if (field) revealField(field);
       const form = field?.closest('form') ?? (selected !== null ? root.querySelector(`[data-block-form="${selected}"]`) : root.querySelector('[data-page-form]'));
       const p = form?.querySelector<HTMLElement>('[data-editor-issue]');
       if (p) {
@@ -748,15 +753,18 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       return change(body(ops.replace(doc.body, i, { ...b, items } as Block)), ALL);
     }
     if (d.editorCollection) {
-      // a collection's items: a new one (a heading to start from), or one moved or removed
+      // a collection's items: a new one (a heading to start from), or one moved or removed; a wide
+      // inspector keeps showing the item it showed (or the new one)
       const b = doc.body[i] as Extract<Block, { type: 'collection' }>;
       const n = Number(d.item);
+      const to = d.editorCollection === 'up' ? n - 1 : n + 1;
       const items =
         d.editorCollection === 'add'
           ? [...b.items, { heading: `Item ${b.items.length + 1}` }]
           : d.editorCollection === 'remove'
             ? b.items.filter((_, k) => k !== n)
-            : (ops.move(b.items as unknown as Block[], n, d.editorCollection === 'up' ? n - 1 : n + 1) as unknown as typeof b.items);
+            : (ops.move(b.items as unknown as Block[], n, to) as unknown as typeof b.items);
+      followSection('collection', (cur) => (d.editorCollection === 'add' ? itemKey(b.items.length) : d.editorCollection === 'remove' ? followRemove(cur, n) : followMove(cur, n, to)));
       return change(body(ops.replace(doc.body, i, { ...b, items })), ALL);
     }
     // an optional field taken off (an item's picture)
@@ -970,6 +978,50 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     grip.addEventListener('pointerup', up, { once: true });
     grip.addEventListener('pointercancel', up, { once: true });
   });
+  // ---------- the inspector: a collection's items and a gallery's or carousel's pictures, dragged by their
+  // handles as the outline's rows are (their Move buttons do the same without a drag) ----------
+  on(root, 'pointerdown', (e) => {
+    const grip = (e.target as Element).closest<HTMLElement>('[data-inspector-drag]');
+    const list = grip?.closest<HTMLElement>('[data-sort-list]');
+    const row = grip?.closest<HTMLElement>('[data-sort-row]');
+    if (!grip || !list || !row || e.button !== 0) return;
+    e.preventDefault();
+    const i = Number(grip.dataset.index);
+    const kind = grip.dataset.inspectorDrag as 'collection' | 'items';
+    const rows = [...list.querySelectorAll<HTMLElement>(':scope > [data-sort-row]')];
+    const from = rows.indexOf(row);
+    grip.setPointerCapture(e.pointerId);
+    row.dataset.dragging = '';
+    let to = -1;
+    const move = (ev: PointerEvent) => {
+      const middles = rows.map((r) => {
+        const b = r.getBoundingClientRect();
+        return b.top + b.height / 2;
+      });
+      to = ops.dropTarget(middles, ev.clientY, from);
+      rows.forEach((r, k) => {
+        delete r.dataset.drop;
+        if (to < 0) return;
+        if (to < from && k === to) r.dataset.drop = 'before';
+        if (to > from && k === to) r.dataset.drop = 'after';
+      });
+    };
+    const up = () => {
+      grip.removeEventListener('pointermove', move);
+      rows.forEach((r) => delete r.dataset.drop);
+      delete row.dataset.dragging;
+      const b = doc.body[i] as Extract<Block, { type: 'collection' | 'gallery' | 'carousel' }>;
+      if (to < 0 || !b || !('items' in b)) return;
+      const items = ops.move(b.items as unknown as Block[], from, to);
+      if (kind === 'collection') followSection('collection', (cur) => followMove(cur, from, to));
+      change(body(ops.replace(doc.body, i, { ...b, items } as Block)), ALL);
+      announce(`Moved ${kind === 'collection' ? 'the item' : 'the picture'} to position ${to + 1} of ${b.items.length}`);
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', up, { once: true });
+    grip.addEventListener('pointercancel', up, { once: true });
+  });
+
   on(root, 'keydown', (e) => {
     const b = (e.target as Element).closest<HTMLElement>('[data-editor-select]');
     if (!b) return;

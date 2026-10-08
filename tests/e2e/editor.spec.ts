@@ -279,6 +279,61 @@ test.describe('editor', () => {
     await expect(page.locator(`[data-block-form="${count}"]`).getByRole('combobox', { name: 'Columns' })).toHaveCount(0);
   });
 
+  test('the inspector: its separator widens it into two columns, the sections listed beside the chosen one; an item dragged in the list moves, and the width is kept', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 1000 });
+    await openArticle(page);
+    await page.evaluate(() => localStorage.removeItem('editor.inspector.width'));
+    await openArticle(page);
+    await page.locator('[data-editor-select="0"]').click();
+    const form = page.locator('[data-block-form="0"]');
+    const nav = form.getByRole('navigation', { name: 'Collection settings' });
+    const region = (name: string) => form.getByRole('region', { name, exact: true });
+    // narrow: every section in turn under its heading, and no list
+    await expect(nav).toBeHidden();
+    await expect(region('Item 1')).toBeVisible();
+    await expect(region('Layout and width')).toBeVisible();
+    // widened with the separator's keys (the APG window splitter): two columns
+    const sep = page.getByRole('separator', { name: 'Resize the settings' });
+    await sep.focus();
+    await page.keyboard.press('End');
+    await expect.poll(async () => Number(await sep.getAttribute('aria-valuenow'))).toBeGreaterThan(40);
+    await expect(nav).toBeVisible();
+    await expect(region('Item 1')).toBeVisible();
+    await expect(region('Layout and width')).toBeHidden();
+    const layout = nav.getByRole('button', { name: /^Layout/ });
+    await layout.click();
+    await expect(layout).toHaveAttribute('aria-current', 'true');
+    await expect(region('Layout and width')).toBeVisible();
+    await expect(region('Item 1')).toBeHidden();
+    await noSeriousViolations(page, 'the wide inspector');
+    // the third item, dragged by its handle to the top of the list: saved in its new place, and still the one shown
+    const headings = () => (readJson(articleFile()).body[0] as { items: { heading?: string }[] }).items.map((i) => i.heading);
+    const before = headings();
+    await nav.getByRole('button', { name: /^Item 3/ }).click();
+    const grip = (await nav.locator('[data-inspector-drag]').nth(2).boundingBox())!;
+    const top = (await nav.getByRole('button', { name: /^Item 1/ }).boundingBox())!;
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(top.x + 10, top.y + 4, { steps: 8 });
+    await page.mouse.up();
+    await expect.poll(headings).toEqual([before[2], before[0], before[1]]);
+    await saved(page);
+    await expect(region('Item 1')).toBeVisible();
+    await expect(form.getByLabel('Item 1: heading')).toHaveValue(before[2]!);
+    // the width is kept for the next visit
+    await openArticle(page);
+    await page.locator('[data-editor-select="0"]').click();
+    await expect(nav).toBeVisible();
+    // dragged back narrow with the mouse: one column again
+    const s = (await sep.boundingBox())!;
+    await page.mouse.move(s.x + s.width / 2, s.y + 200);
+    await page.mouse.down();
+    await page.mouse.move(s.x + 800, s.y + 200, { steps: 6 });
+    await page.mouse.up();
+    await expect(nav).toBeHidden();
+    await expect(sep).toHaveAttribute('aria-valuenow', '24');
+  });
+
   test('a table: added from the palette, its cells written in the inspector and shown on the page, a row that does not fit refused', async ({ page }) => {
     await openArticle(page);
     const count = await outlineRows(page).count();

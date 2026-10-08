@@ -6,6 +6,9 @@
   --c-editor-topbar: 4rem;
   --c-editor-outline: 17rem;
   --c-editor-inspector: 24rem;
+  --c-editor-inspector-max: 60rem;
+  --c-editor-inspector-nav: 13rem;
+  --c-editor-canvas-min: 24rem;
   --c-editor-device-tablet: 48rem;
   --c-editor-device-phone: 24.375rem;
   --c-editor-thumb: 9rem;

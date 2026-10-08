@@ -4,9 +4,16 @@
  * settings and the page's. Every field is rendered by the server with the design system's own fields and
  * named by its path in the article (`body.3.caption`, `seo.description`), so the editor maps a change
  * straight into the document; a value the contract refuses is marked on its field with the reason.
+ * A block with several kinds of settings, and the page, group them in sections: narrow, every section in
+ * turn under its heading; widened past 40 rem (the studio's separator), two columns, the sections listed
+ * (in groups, with separators) beside the chosen one's fields. A collection's items are a section each,
+ * reordered by dragging their handles as the outline's rows are, or with their Move buttons.
  * @tier editor
  * @a11y The tabs follow the APG pattern; every field has a label, and hints say what a field does.
- * @a11y A refused value is marked invalid and its reason is tied to the field (role="alert").
+ * @a11y A refused value is marked invalid and its reason is tied to the field (role="alert"); a wide inspector shows its section.
+ * @a11y The list of sections is a named navigation of buttons, the one shown marked aria-current; each section is a region named by its heading.
+ * @a11y Every drag has buttons that do the same (Move up, Move down), so it never needs a drag (WCAG 2.5.7).
+ * @key Up / Down: in the list of sections, the previous / next one
  */
 import Tabs from '../../components/compounds/Tabs.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
@@ -17,12 +24,14 @@ import IconButton from '../../components/fundamentals/IconButton.astro';
 import Image from '../../components/fundamentals/Image.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
 import { COLLECTION_MAX, TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, type Article, type Block } from '../../content/schema';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { kindOf } from '../model/ops';
 import { tableToText } from '../model/table';
 import { pictureNote } from '../model/crop';
-import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TIMELINES } from '../model/collection';
+import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TIMELINES, itemName } from '../model/collection';
+import { itemKey } from '../model/inspector';
 import { PICTURE_SPECS, specTip } from '../../design/pictures';
 
 export interface Thumb {
@@ -156,190 +165,311 @@ const STATUS: SelectOption[] = [
               </>
             )}
 
-            {(b.type === 'figure' || (b.type === 'video' && !b.media)) && (
-              <div class="media-field">
-                <span class="field-label">{b.type === 'video' ? 'Poster' : 'Picture'}</span>
-                <div class="media-row">
-                  {thumbOf(b.type === 'video' ? b.poster : b.media) ? (
-                    <Image src={thumbOf(b.type === 'video' ? b.poster : b.media)!.thumb} alt="" width={thumbOf(b.type === 'video' ? b.poster : b.media)!.width} height={thumbOf(b.type === 'video' ? b.poster : b.media)!.height} ratio="4/3" fit="contain" />
-                  ) : (
-                    <span />
-                  )}
-                  <div class="media-words">
-                    <Text variant="small" tone="muted">{thumbOf(b.type === 'video' ? b.poster : b.media)?.alt || 'No alt text'}</Text>
-                    <div class="row">
-                      <Button variant="secondary" size="sm" icon="image" data-editor-pick={b.type === 'video' ? `body.${i}.poster` : `body.${i}.media`} data-pick-mode="single">Replace</Button>
-                      <Button variant="secondary" size="sm" icon="crop" data-editor-crop={b.type === 'video' ? `body.${i}.poster` : `body.${i}.media`}>Crop</Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {b.type === 'video' && b.media && (
-              <div class="media-field">
-                <span class="field-label">Video</span>
-                <div class="media-row">
-                  {thumbOf(b.media) ? <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" fit="contain" /> : <span />}
-                  <div class="media-words">
-                    <Text variant="small" tone="muted">{thumbOf(b.media)?.alt || b.media.split('/').pop()}</Text>
-                    <div class="row">
-                      <Button variant="secondary" size="sm" icon="video" data-editor-pick={`body.${i}.media`} data-pick-mode="single" data-pick-kind="video">Replace</Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {b.type === 'figure' && (
-              <>
-                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width} options={WIDTHS} />
-                <Select label="Shape" name={`body.${i}.ratio`} id={id(i, 'ratio')} value={b.ratio ?? ''} options={SHAPES} hint="The frame it's shown in." />
-                <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fit'} options={DISPLAYS} hint={b.ratio ? undefined : 'In its own shape, Fill and Fit look the same.'} />
-                <Switch label="Colour behind it" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
-                <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
-                <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
-                <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
-                <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint="Left empty, the picture's own caption shows." />
-                <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
-                <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
-              </>
+              <div class="sections" data-sections="figure">
+                <nav class="section-nav" aria-label="Picture settings">
+                  <ol class="nav-list">
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="picture"><span class="nav-name">Picture</span></button></li>
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="frame"><span class="nav-name">Frame</span></button></li>
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="caption"><span class="nav-name">Caption and credit</span></button></li>
+                  </ol>
+                </nav>
+                <div class="panes">
+                  <section class="pane" data-section="picture" aria-labelledby={id(i, 's-picture')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-picture')}>Picture</Heading></div>
+                    <div class="media-field">
+                      <div class="media-row">
+                        {thumbOf(b.media) ? <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" fit="contain" /> : <span />}
+                        <div class="media-words">
+                          <Text variant="small" tone="muted">{thumbOf(b.media)?.alt || 'No alt text'}</Text>
+                          <div class="row">
+                            <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.media`} data-pick-mode="single">Replace</Button>
+                            <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.media`}>Crop</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
+                  </section>
+                  <section class="pane" data-section="frame" aria-labelledby={id(i, 's-frame')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-frame')}>Frame</Heading></div>
+                    <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width} options={WIDTHS} />
+                    <Select label="Shape" name={`body.${i}.ratio`} id={id(i, 'ratio')} value={b.ratio ?? ''} options={SHAPES} hint="The frame it's shown in." />
+                    <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fit'} options={DISPLAYS} hint={b.ratio ? undefined : 'In its own shape, Fill and Fit look the same.'} />
+                    <Switch label="Colour behind it" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+                    <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
+                    <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
+                  </section>
+                  <section class="pane" data-section="caption" aria-labelledby={id(i, 's-caption')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-caption')}>Caption and credit</Heading></div>
+                    <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
+                    <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint="Left empty, the picture's own caption shows." />
+                    <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
+                  </section>
+                </div>
+              </div>
             )}
 
             {(b.type === 'gallery' || b.type === 'carousel') && (
-              <div class="items" data-editor-items-list>
-                <span class="field-label">{`Pictures (${b.items.length})`}</span>
-                <ol class="item-list">
-                  {b.items.map((it, n) => (
-                    <li class="item">
-                      {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="1/1" fit="cover" /> : <span />}
-                      <TextField label={`Caption ${n + 1}`} name={`body.${i}.items.${n}.caption`} id={id(i, `item-${n}`)} value={it.caption ?? ''} optional />
-                      <span class="item-moves">
-                        <IconButton label={`Move picture ${n + 1} up`} icon="arrow-up" size="sm" tooltip="none" disabled={n === 0} data-editor-items="up" data-index={String(i)} data-item={String(n)} />
-                        <IconButton label={`Move picture ${n + 1} down`} icon="arrow-down" size="sm" tooltip="none" disabled={n === b.items.length - 1} data-editor-items="down" data-index={String(i)} data-item={String(n)} />
-                        <IconButton label={`Remove picture ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 2} data-editor-items="remove" data-index={String(i)} data-item={String(n)} />
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-                <Button variant="secondary" size="sm" icon="plus" data-editor-pick={`body.${i}.items`} data-pick-mode="multiple">Add pictures</Button>
+              <div class="sections" data-sections={b.type}>
+                <nav class="section-nav" aria-label={`${kindOf(b)} settings`}>
+                  <ol class="nav-list">
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="pictures"><span class="nav-name">Pictures</span><span class="nav-detail">{`${b.items.length} pictures`}</span></button></li>
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick={b.type === 'gallery' ? 'layout' : 'slides'}><span class="nav-name">{b.type === 'gallery' ? 'Layout and width' : 'Slides'}</span></button></li>
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="style"><span class="nav-name">Style</span></button></li>
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="captions"><span class="nav-name">Captions</span></button></li>
+                  </ol>
+                </nav>
+                <div class="panes">
+                  <section class="pane" data-section="pictures" aria-labelledby={id(i, 's-pictures')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-pictures')}>{`Pictures (${b.items.length})`}</Heading></div>
+                    <div class="items" data-editor-items-list>
+                      <ol class="item-list" data-sort-list>
+                        {b.items.map((it, n) => (
+                          <li class="item" data-sort-row>
+                            <span class="grip" aria-hidden="true" data-inspector-drag="items" data-index={String(i)} data-item={String(n)}>
+                              <Icon name="drag" />
+                            </span>
+                            {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="1/1" fit="cover" /> : <span />}
+                            <TextField label={`Caption ${n + 1}`} name={`body.${i}.items.${n}.caption`} id={id(i, `item-${n}`)} value={it.caption ?? ''} optional />
+                            <span class="item-moves">
+                              <IconButton label={`Move picture ${n + 1} up`} icon="arrow-up" size="sm" tooltip="none" disabled={n === 0} data-editor-items="up" data-index={String(i)} data-item={String(n)} />
+                              <IconButton label={`Move picture ${n + 1} down`} icon="arrow-down" size="sm" tooltip="none" disabled={n === b.items.length - 1} data-editor-items="down" data-index={String(i)} data-item={String(n)} />
+                              <IconButton label={`Remove picture ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 2} data-editor-items="remove" data-index={String(i)} data-item={String(n)} />
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                      <div class="row">
+                        <Button variant="secondary" size="sm" icon="plus" data-editor-pick={`body.${i}.items`} data-pick-mode="multiple">Add pictures</Button>
+                      </div>
+                    </div>
+                  </section>
+                  {b.type === 'gallery' && (
+                    <section class="pane" data-section="layout" aria-labelledby={id(i, 's-layout')}>
+                      <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-layout')}>Layout and width</Heading></div>
+                      <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout ?? 'grid'} options={[{ value: 'grid', label: 'Grid', description: 'Equal cells' }, { value: 'mosaic', label: 'Mosaic', description: 'The first picture leads' }, { value: 'row', label: 'Row', description: 'A filmstrip' }]} />
+                      <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
+                    </section>
+                  )}
+                  {b.type === 'carousel' && (
+                    <section class="pane" data-section="slides" aria-labelledby={id(i, 's-slides')}>
+                      <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-slides')}>Slides</Heading></div>
+                      <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label} required hint="Names the carousel for assistive tech (\u201cSlide templates\u201d)." />
+                      <Switch label="Show the neighbours (peek)" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />
+                      <Select label="Pager" name={`body.${i}.pager`} id={id(i, 'pager')} value={b.pager ?? 'dots'} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Filmstrip, wrapping' }]} />
+                      <Switch label="Previous and next buttons" name={`body.${i}.arrows`} id={id(i, 'arrows')} checked={b.arrows !== false} data-type="bool-default-true" />
+                    </section>
+                  )}
+                  <section class="pane" data-section="style" aria-labelledby={id(i, 's-style')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-style')}>Style</Heading></div>
+                    {b.type === 'gallery' ? (
+                      <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.fit === 'contain' ? 'fit' : 'fill')} options={DISPLAYS} hint="How each picture sits in its cell." />
+                    ) : (
+                      <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fill'} options={DISPLAYS} hint="How each picture sits in its 3:2 slide." />
+                    )}
+                    <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+                    <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
+                    <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
+                  </section>
+                  <section class="pane" data-section="captions" aria-labelledby={id(i, 's-captions')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-captions')}>Captions</Heading></div>
+                    <Switch label="Show the captions" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
+                    {b.type === 'gallery' && <TextField label="Caption for the set" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional />}
+                    <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
+                  </section>
+                </div>
               </div>
             )}
 
-            {b.type === 'gallery' && (
-              <>
-                <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout ?? 'grid'} options={[{ value: 'grid', label: 'Grid', description: 'Equal cells' }, { value: 'mosaic', label: 'Mosaic', description: 'The first picture leads' }, { value: 'row', label: 'Row', description: 'A filmstrip' }]} />
-                <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.fit === 'contain' ? 'fit' : 'fill')} options={DISPLAYS} hint="How each picture sits in its cell." />
-                <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
-                <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
-                <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
-                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
-                <Switch label="Show the captions" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
-                <TextField label="Caption for the set" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional />
-                <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
-              </>
-            )}
-
-            {b.type === 'carousel' && (
-              <>
-                <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label} required hint="Names the carousel for assistive tech (\u201cSlide templates\u201d)." />
-                <Switch label="Show the neighbours (peek)" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />
-                <Select label="Pager" name={`body.${i}.pager`} id={id(i, 'pager')} value={b.pager ?? 'dots'} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Filmstrip, wrapping' }]} />
-                <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fill'} options={DISPLAYS} hint="How each picture sits in its 3:2 slide." />
-                <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
-                <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
-                <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
-                <Switch label="Previous and next buttons" name={`body.${i}.arrows`} id={id(i, 'arrows')} checked={b.arrows !== false} data-type="bool-default-true" />
-                <Switch label="Show the captions" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
-                <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
-              </>
-            )}
-
             {b.type === 'video' && (
-              <>
-                {b.embed && <TextField label="Address" type="url" name={`body.${i}.embed`} id={id(i, 'embed')} value={videoUrl(b)} data-type="video-url" hint="A YouTube or Vimeo link." />}
-                {b.embed ? (
-                  <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} required hint="Names the player." />
-                ) : (
-                  <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} optional hint="Names the player. Left empty, the video's own title does." />
-                )}
-                {b.embed && <TextField label="Length" name={`body.${i}.duration`} id={id(i, 'duration')} value={duration(b.duration)} data-type="duration" optional hint="Minutes and seconds (2:20), shown on the poster." />}
-                <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
-                <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint={b.media ? "Left empty, the video's own caption shows." : undefined} />
-                <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
-                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
-              </>
+              <div class="sections" data-sections="video">
+                <nav class="section-nav" aria-label="Video settings">
+                  <ol class="nav-list">
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="video"><span class="nav-name">Video</span></button></li>
+                    {!b.media && <li class="nav-row"><button type="button" class="nav-item" data-section-pick="poster"><span class="nav-name">Poster</span></button></li>}
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="caption"><span class="nav-name">Caption and credit</span></button></li>
+                  </ol>
+                </nav>
+                <div class="panes">
+                  <section class="pane" data-section="video" aria-labelledby={id(i, 's-video')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-video')}>Video</Heading></div>
+                    {b.media && (
+                      <div class="media-field">
+                        <div class="media-row">
+                          {thumbOf(b.media) ? <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" fit="contain" /> : <span />}
+                          <div class="media-words">
+                            <Text variant="small" tone="muted">{thumbOf(b.media)?.alt || b.media.split('/').pop()}</Text>
+                            <div class="row">
+                              <Button variant="secondary" size="sm" icon="video" data-editor-pick={`body.${i}.media`} data-pick-mode="single" data-pick-kind="video">Replace</Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {b.embed && <TextField label="Address" type="url" name={`body.${i}.embed`} id={id(i, 'embed')} value={videoUrl(b)} data-type="video-url" hint="A YouTube or Vimeo link." />}
+                    {b.embed ? (
+                      <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} required hint="Names the player." />
+                    ) : (
+                      <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} optional hint="Names the player. Left empty, the video's own title does." />
+                    )}
+                    {b.embed && <TextField label="Length" name={`body.${i}.duration`} id={id(i, 'duration')} value={duration(b.duration)} data-type="duration" optional hint="Minutes and seconds (2:20), shown on the poster." />}
+                    <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
+                  </section>
+                  {!b.media && (
+                    <section class="pane" data-section="poster" aria-labelledby={id(i, 's-poster')}>
+                      <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-poster')}>Poster</Heading></div>
+                      <div class="media-field">
+                        <div class="media-row">
+                          {thumbOf(b.poster) ? <Image src={thumbOf(b.poster)!.thumb} alt="" width={thumbOf(b.poster)!.width} height={thumbOf(b.poster)!.height} ratio="4/3" fit="contain" /> : <span />}
+                          <div class="media-words">
+                            <Text variant="small" tone="muted">{thumbOf(b.poster)?.alt || 'No alt text'}</Text>
+                            <div class="row">
+                              <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.poster`} data-pick-mode="single">Replace</Button>
+                              <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.poster`}>Crop</Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+                  <section class="pane" data-section="caption" aria-labelledby={id(i, 's-caption')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-caption')}>Caption and credit</Heading></div>
+                    <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
+                    <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint={b.media ? "Left empty, the video's own caption shows." : undefined} />
+                    <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
+                  </section>
+                </div>
+              </div>
             )}
 
             {b.type === 'collection' && (
-              <>
-                <div class="items" data-editor-collection-list>
-                  <span class="field-label">{`Items (${b.items.length})`}</span>
-                  <Text variant="small" tone="muted">Each item has a heading, a picture, a subtext or its words: any of them, and at least one. When it was is for a timeline.</Text>
-                  <ol class="entries">
-                    {b.items.map((it, n) => (
-                      <li class="entry">
-                        <span class="field-label">{`Item ${n + 1}`}</span>
-                        <div class="media-row">
-                          {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="4/3" fit="contain" /> : <span class="no-picture"><Text as="span" variant="small" tone="muted">No picture</Text></span>}
-                          <div class="row">
-                            <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.items.${n}.media`} data-pick-mode="single">{it.media ? 'Replace' : 'Add a picture'}</Button>
-                            {it.media && <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.items.${n}.media`}>Crop</Button>}
-                            {it.media && <Button variant="quiet" size="sm" icon="delete" data-editor-unset={`body.${i}.items.${n}.media`}>Remove picture</Button>}
+              <div class="sections" data-sections="collection">
+                <nav class="section-nav" aria-label="Collection settings">
+                  <div class="nav-group">
+                    <span class="nav-label">{`Items (${b.items.length})`}</span>
+                    <ol class="nav-list" data-sort-list>
+                      {b.items.map((it, n) => (
+                        <li class="nav-row" data-sort-row>
+                          <span class="grip" aria-hidden="true" data-inspector-drag="collection" data-index={String(i)} data-item={String(n)}>
+                            <Icon name="drag" />
+                          </span>
+                          <button type="button" class="nav-item" data-section-pick={itemKey(n)}>
+                            <span class="nav-name">{`Item ${n + 1}`}</span>
+                            <span class="nav-detail">{itemName(it, thumbOf(it.media)?.alt)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                    <div class="nav-add">
+                      <Button variant="quiet" size="sm" icon="plus" disabled={b.items.length >= COLLECTION_MAX} data-editor-collection="add" data-index={String(i)}>Add an item</Button>
+                    </div>
+                  </div>
+                  <div class="nav-group">
+                    <span class="nav-label">Settings</span>
+                    <ol class="nav-list">
+                      <li class="nav-row"><button type="button" class="nav-item" data-section-pick="layout"><span class="nav-name">Layout and width</span><span class="nav-detail">{LAYOUT_CHOICES.find((c) => c.value === b.layout)?.label}</span></button></li>
+                      <li class="nav-row"><button type="button" class="nav-item" data-section-pick="pictures"><span class="nav-name">Pictures</span></button></li>
+                    </ol>
+                  </div>
+                </nav>
+                <div class="panes">
+                  <div class="pane-group" data-editor-collection-list>
+                    <div class="group-head">
+                      <span class="field-label">{`Items (${b.items.length})`}</span>
+                      <Text variant="small" tone="muted">Each item has a heading, a picture, a subtext or its words: any of them, and at least one. When it was is for a timeline.</Text>
+                    </div>
+                    <div class="pane-list" data-sort-list>
+                      {b.items.map((it, n) => (
+                        <section class="pane" data-section={itemKey(n)} data-sort-row aria-labelledby={id(i, `s-item-${n}`)}>
+                          <div class="pane-head">
+                            <span class="grip" aria-hidden="true" data-inspector-drag="collection" data-index={String(i)} data-item={String(n)}>
+                              <Icon name="drag" />
+                            </span>
+                            <Heading level={4} size="ui" id={id(i, `s-item-${n}`)}>{`Item ${n + 1}`}</Heading>
+                            <span class="item-moves">
+                              <IconButton label={`Move item ${n + 1} up`} icon="arrow-up" size="sm" tooltip="none" disabled={n === 0} data-editor-collection="up" data-index={String(i)} data-item={String(n)} />
+                              <IconButton label={`Move item ${n + 1} down`} icon="arrow-down" size="sm" tooltip="none" disabled={n === b.items.length - 1} data-editor-collection="down" data-index={String(i)} data-item={String(n)} />
+                              <IconButton label={`Remove item ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 1} data-editor-collection="remove" data-index={String(i)} data-item={String(n)} />
+                            </span>
                           </div>
-                        </div>
-                        <TextField label={`Item ${n + 1}: when`} name={`body.${i}.items.${n}.when`} id={id(i, `cw-${n}`)} value={it.when ?? ''} optional hint={n === 0 ? (TIMELINES.has(b.layout) ? 'Its time, in words (2016, July 2019 to now), set by its mark.' : 'Its time, in words: shown over its heading, and by its mark in a timeline.') : undefined} />
-                        <TextField label={`Item ${n + 1}: heading`} name={`body.${i}.items.${n}.heading`} id={id(i, `ch-${n}`)} value={it.heading ?? ''} optional hint={n === 0 ? 'A word or a few (80 characters at most).' : undefined} />
-                        <TextField label={`Item ${n + 1}: subtext`} name={`body.${i}.items.${n}.subtext`} id={id(i, `cs-${n}`)} value={it.subtext ?? ''} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
-                        <TextField label={`Item ${n + 1}: words`} name={`body.${i}.items.${n}.text`} id={id(i, `ct-${n}`)} value={it.text ?? ''} multiline rows={2} optional hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
-                        <span class="item-moves">
-                          <IconButton label={`Move item ${n + 1} up`} icon="arrow-up" size="sm" tooltip="none" disabled={n === 0} data-editor-collection="up" data-index={String(i)} data-item={String(n)} />
-                          <IconButton label={`Move item ${n + 1} down`} icon="arrow-down" size="sm" tooltip="none" disabled={n === b.items.length - 1} data-editor-collection="down" data-index={String(i)} data-item={String(n)} />
-                          <IconButton label={`Remove item ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 1} data-editor-collection="remove" data-index={String(i)} data-item={String(n)} />
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                  <Button variant="secondary" size="sm" icon="plus" disabled={b.items.length >= COLLECTION_MAX} data-editor-collection="add" data-index={String(i)}>Add an item</Button>
+                          <div class="media-row">
+                            {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="4/3" fit="contain" /> : <span class="no-picture"><Text as="span" variant="small" tone="muted">No picture</Text></span>}
+                            <div class="row">
+                              <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.items.${n}.media`} data-pick-mode="single">{it.media ? 'Replace' : 'Add a picture'}</Button>
+                              {it.media && <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.items.${n}.media`}>Crop</Button>}
+                              {it.media && <Button variant="quiet" size="sm" icon="delete" data-editor-unset={`body.${i}.items.${n}.media`}>Remove picture</Button>}
+                            </div>
+                          </div>
+                          <TextField label={`Item ${n + 1}: when`} name={`body.${i}.items.${n}.when`} id={id(i, `cw-${n}`)} value={it.when ?? ''} optional hint={n === 0 ? (TIMELINES.has(b.layout) ? 'Its time, in words (2016, July 2019 to now), set by its mark.' : 'Its time, in words: shown over its heading, and by its mark in a timeline.') : undefined} />
+                          <TextField label={`Item ${n + 1}: heading`} name={`body.${i}.items.${n}.heading`} id={id(i, `ch-${n}`)} value={it.heading ?? ''} optional hint={n === 0 ? 'A word or a few (80 characters at most).' : undefined} />
+                          <TextField label={`Item ${n + 1}: subtext`} name={`body.${i}.items.${n}.subtext`} id={id(i, `cs-${n}`)} value={it.subtext ?? ''} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
+                          <TextField label={`Item ${n + 1}: words`} name={`body.${i}.items.${n}.text`} id={id(i, `ct-${n}`)} value={it.text ?? ''} multiline rows={2} optional hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
+                        </section>
+                      ))}
+                    </div>
+                    <div class="row panes-add">
+                      <Button variant="secondary" size="sm" icon="plus" disabled={b.items.length >= COLLECTION_MAX} data-editor-collection="add" data-index={String(i)}>Add an item</Button>
+                    </div>
+                  </div>
+                  <section class="pane" data-section="layout" aria-labelledby={id(i, 's-layout')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-layout')}>Layout and width</Heading></div>
+                    <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout} options={LAYOUT_CHOICES} hint="The same items, laid out another way: change it any time." data-refresh="" />
+                    {TAKES_COLUMNS.has(b.layout) && (
+                      <Select label="Columns" name={`body.${i}.columns`} id={id(i, 'columns')} value={b.columns ? String(b.columns) : ''} data-type="number" options={[{ value: '', label: 'By how many there are', description: 'Three for three, six or more than four; else two' }, { value: '2', label: 'Two' }, { value: '3', label: 'Three' }, { value: '4', label: 'Four' }]} hint="On a wide screen; fewer on a tablet, one on a phone." />
+                    )}
+                    {TAKES_LABEL.has(b.layout) && <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label ?? ''} optional hint={`Names the strip for assistive tech. Left empty, “${b.layout === 'carousel' ? 'Carousel' : 'Timeline'}”.`} />}
+                    <Select label="Headings" name={`body.${i}.headings`} id={id(i, 'headings')} value={b.headings ?? 'label'} options={HEADING_CHOICES} />
+                    <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width === 'full' && !TAKES_LABEL.has(b.layout) ? 'wide' : (b.width ?? 'content')} options={TAKES_LABEL.has(b.layout) ? WIDTHS : WIDTHS.filter((w) => w.value !== 'full')} hint={TAKES_LABEL.has(b.layout) ? 'Full bleed spans the window, centred on the page.' : undefined} data-refresh="" />
+                    {TAKES_LABEL.has(b.layout) && b.width !== 'full' && <Switch label="Peek beside the column" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />}
+                    <div class="row">
+                      <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
+                    </div>
+                  </section>
+                  <section class="pane" data-section="pictures" aria-labelledby={id(i, 's-pictures')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-pictures')}>Pictures</Heading></div>
+                    <Select label="Shape" name={`body.${i}.ratio`} id={id(i, 'ratio')} value={b.ratio ?? ''} options={SHAPES} hint="The frame each picture is shown in." />
+                    <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.ratio ? 'fill' : 'fit')} options={DISPLAYS} hint={b.ratio ? 'How each picture sits in its frame.' : 'In its own shape, Fill and Fit look the same.'} />
+                    <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+                    <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
+                    <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
+                  </section>
                 </div>
-                <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout} options={LAYOUT_CHOICES} hint="The same items, laid out another way: change it any time." data-refresh="" />
-                {TAKES_COLUMNS.has(b.layout) && (
-                  <Select label="Columns" name={`body.${i}.columns`} id={id(i, 'columns')} value={b.columns ? String(b.columns) : ''} data-type="number" options={[{ value: '', label: 'By how many there are', description: 'Three for three, six or more than four; else two' }, { value: '2', label: 'Two' }, { value: '3', label: 'Three' }, { value: '4', label: 'Four' }]} hint="On a wide screen; fewer on a tablet, one on a phone." />
-                )}
-                {TAKES_LABEL.has(b.layout) && <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label ?? ''} optional hint={`Names the strip for assistive tech. Left empty, “${b.layout === 'carousel' ? 'Carousel' : 'Timeline'}”.`} />}
-                <Select label="Headings" name={`body.${i}.headings`} id={id(i, 'headings')} value={b.headings ?? 'label'} options={HEADING_CHOICES} />
-                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width === 'full' && !TAKES_LABEL.has(b.layout) ? 'wide' : (b.width ?? 'content')} options={TAKES_LABEL.has(b.layout) ? WIDTHS : WIDTHS.filter((w) => w.value !== 'full')} hint={TAKES_LABEL.has(b.layout) ? 'Full bleed spans the window, centred on the page.' : undefined} data-refresh="" />
-                {TAKES_LABEL.has(b.layout) && b.width !== 'full' && <Switch label="Peek beside the column" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />}
-                <Heading level={4} size="ui">Pictures</Heading>
-                <Select label="Shape" name={`body.${i}.ratio`} id={id(i, 'ratio')} value={b.ratio ?? ''} options={SHAPES} hint="The frame each picture is shown in." />
-                <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.ratio ? 'fill' : 'fit')} options={DISPLAYS} hint={b.ratio ? 'How each picture sits in its frame.' : 'In its own shape, Fill and Fit look the same.'} />
-                <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
-                <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
-                <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
-                <div class="row">
-                  <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
-                </div>
-              </>
+              </div>
             )}
 
             {b.type === 'divider' && <Text variant="ui" tone="muted">A divider has no settings: it marks a turn in the story.</Text>}
 
             {b.type === 'table' && (
-              <>
-                <TextField
-                  label="Cells"
-                  name={`body.${i}.cells`}
-                  id={id(i, 'cells')}
-                  value={tableToText(b)}
-                  multiline
-                  rows={Math.min(14, b.rows.length + 2)}
-                  data-type="table-cells"
-                  hint={`The column headings on the first line, then a row a line, cells split by | (write a | in a cell as \\|). Bold, italic, code and links work in a cell. At most ${TABLE_MAX_COLUMNS} columns and ${TABLE_MAX_ROWS} rows.`}
-                />
-                <Switch label="First column names each row" name={`body.${i}.rowHeadings`} id={id(i, 'rowHeadings')} checked={!!b.rowHeadings} data-type="bool" />
-                <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} optional hint="What it shows, said above it. Left empty, nothing is." />
-                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'content'} options={WIDTHS.filter((w) => w.value !== 'full')} hint="Wider than its place, it scrolls sideways in its frame." />
-              </>
+              <div class="sections" data-sections="table">
+                <nav class="section-nav" aria-label="Table settings">
+                  <ol class="nav-list">
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="cells"><span class="nav-name">Rows and columns</span><span class="nav-detail">{`${b.columns.length} columns, ${b.rows.length} rows`}</span></button></li>
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="details"><span class="nav-name">Caption and width</span></button></li>
+                  </ol>
+                </nav>
+                <div class="panes">
+                  <section class="pane" data-section="cells" aria-labelledby={id(i, 's-cells')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-cells')}>Rows and columns</Heading></div>
+                    <TextField
+                      label="Cells"
+                      name={`body.${i}.cells`}
+                      id={id(i, 'cells')}
+                      value={tableToText(b)}
+                      multiline
+                      rows={Math.min(14, b.rows.length + 2)}
+                      data-type="table-cells"
+                      hint={`The column headings on the first line, then a row a line, cells split by | (write a | in a cell as \\|). Bold, italic, code and links work in a cell. At most ${TABLE_MAX_COLUMNS} columns and ${TABLE_MAX_ROWS} rows.`}
+                    />
+                    <Switch label="First column names each row" name={`body.${i}.rowHeadings`} id={id(i, 'rowHeadings')} checked={!!b.rowHeadings} data-type="bool" />
+                  </section>
+                  <section class="pane" data-section="details" aria-labelledby={id(i, 's-details')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-details')}>Caption and width</Heading></div>
+                    <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} optional hint="What it shows, said above it. Left empty, nothing is." />
+                    <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'content'} options={WIDTHS.filter((w) => w.value !== 'full')} hint="Wider than its place, it scrolls sideways in its frame." />
+                  </section>
+                </div>
+              </div>
             )}
 
             <p class="issue" role="alert" data-editor-issue hidden></p>
@@ -353,101 +483,145 @@ const STATUS: SelectOption[] = [
     </div>
 
     <form slot="page" class="form panel" data-page-form novalidate aria-label="Page settings">
-      <TextField label="Title" name="title" id="page-title" value={article.title} required />
-      <TextField label="Menu label" name="navLabel" id="page-navLabel" value={article.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs." />
-      <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={privatePage ? 'Kept for when it’s public: a private page’s address is a code.' : path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
-      <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 160 characters: the standfirst, the card's line and the search description." data-editor-count="160" />
-      <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : [{ value: 'note', label: 'Article', description: 'A story, a note or an essay' }, { value: 'page', label: 'Page', description: 'About, Contact and the like' }, { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' }]} />
-      <Select label="Status" name="status" id="page-status" value={article.status} options={STATUS} hint="A Published page goes on the site when you save to remote; back to Draft takes it off." />
-      <Select label="Visibility" name="visibility" id="page-visibility" value={article.visibility} options={[{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }]} />
-      {access && <Select label="Who can see it" name="__access" id="page-access" value={access} options={ACCESS} hint="A private page is kept in private-pages/ and published encrypted: never in the public repository. It opens with an access code or a magic link you share. Making it public moves it back." />}
-      {
-        privatePage && (
-          <div class="private-field">
-            <span class="field-label">Private address</span>
-            <Text variant="small" tone="muted">{path ? <code>{path}</code> : 'Its address once it’s on the site.'}</Text>
-            <div class="row">
-              <Button variant="secondary" size="sm" icon="key" data-dialog-open="share-page">Share</Button>
-              <Button variant="quiet" size="sm" data-editor-address="">Change address</Button>
-            </div>
-            <Text variant="small" tone="muted">Share it with an access code (a password they type) or a magic link (opens it with nothing to type). Changing the address stops every link to it, magic links included.</Text>
+      <div class="sections" data-sections="page">
+        <nav class="section-nav" aria-label="Page settings">
+          <div class="nav-group">
+            <span class="nav-label">Page</span>
+            <ol class="nav-list">
+              <li class="nav-row"><button type="button" class="nav-item" data-section-pick="basics"><span class="nav-name">Title and summary</span></button></li>
+              <li class="nav-row"><button type="button" class="nav-item" data-section-pick="publishing"><span class="nav-name">Publishing</span><span class="nav-detail">{STATUS.find((s) => s.value === article.status)?.label}</span></button></li>
+            </ol>
           </div>
-        )
-      }
-      <Select label="Section" name="__section" id="page-section" value={section} options={[{ value: '', label: 'Not on the site yet' }, ...sections]} hint={SECTION_HINT[access ?? 'open']} />
-      <div class="planet-field" data-editor-place>
-        <span class="field-label">On the planet</span>
-        <Text variant="small" tone="muted">{onPlanet}</Text>
-      </div>
+          <div class="nav-group">
+            <span class="nav-label">Pictures</span>
+            <ol class="nav-list">
+              <li class="nav-row"><button type="button" class="nav-item" data-section-pick="lead"><span class="nav-name">Lead picture</span><span class="nav-detail">{article.hero ? lead?.alt || 'Chosen' : 'None'}</span></button></li>
+              <li class="nav-row"><button type="button" class="nav-item" data-section-pick="thumbnail"><span class="nav-name">Thumbnail</span><span class="nav-detail">{article.thumbnail ? card?.alt || 'Chosen' : article.hero ? 'The lead picture' : 'None'}</span></button></li>
+              <li class="nav-row"><button type="button" class="nav-item" data-section-pick="portrait"><span class="nav-name">Portrait</span><span class="nav-detail">{article.portrait ? face?.alt || 'Chosen' : 'None'}</span></button></li>
+            </ol>
+          </div>
+          <div class="nav-group">
+            <span class="nav-label">More</span>
+            <ol class="nav-list">
+              <li class="nav-row"><button type="button" class="nav-item" data-section-pick="search"><span class="nav-name">Search and sharing</span></button></li>
+              <li class="nav-row"><button type="button" class="nav-item" data-section-pick="dates"><span class="nav-name">Dates</span></button></li>
+            </ol>
+          </div>
+        </nav>
+        <div class="panes">
+        <section class="pane" data-section="basics" aria-labelledby="page-s-basics">
+          <div class="pane-head"><Heading level={4} size="ui" id="page-s-basics">Title and summary</Heading></div>
+          <TextField label="Title" name="title" id="page-title" value={article.title} required />
+          <TextField label="Menu label" name="navLabel" id="page-navLabel" value={article.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs." />
+          <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={privatePage ? 'Kept for when it’s public: a private page’s address is a code.' : path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
+          <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 160 characters: the standfirst, the card's line and the search description." data-editor-count="160" />
+          <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : [{ value: 'note', label: 'Article', description: 'A story, a note or an essay' }, { value: 'page', label: 'Page', description: 'About, Contact and the like' }, { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' }]} />
+        </section>
+        <section class="pane" data-section="publishing" aria-labelledby="page-s-publishing">
+          <div class="pane-head"><Heading level={4} size="ui" id="page-s-publishing">Publishing</Heading></div>
+          <Select label="Status" name="status" id="page-status" value={article.status} options={STATUS} hint="A Published page goes on the site when you save to remote; back to Draft takes it off." />
+          <Select label="Visibility" name="visibility" id="page-visibility" value={article.visibility} options={[{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }]} />
+          {access && <Select label="Who can see it" name="__access" id="page-access" value={access} options={ACCESS} hint="A private page is kept in private-pages/ and published encrypted: never in the public repository. It opens with an access code or a magic link you share. Making it public moves it back." />}
+          {
+            privatePage && (
+              <div class="private-field">
+                <span class="field-label">Private address</span>
+                <Text variant="small" tone="muted">{path ? <code>{path}</code> : 'Its address once it’s on the site.'}</Text>
+                <div class="row">
+                  <Button variant="secondary" size="sm" icon="key" data-dialog-open="share-page">Share</Button>
+                  <Button variant="quiet" size="sm" data-editor-address="">Change address</Button>
+                </div>
+                <Text variant="small" tone="muted">Share it with an access code (a password they type) or a magic link (opens it with nothing to type). Changing the address stops every link to it, magic links included.</Text>
+              </div>
+            )
+          }
+          <Select label="Section" name="__section" id="page-section" value={section} options={[{ value: '', label: 'Not on the site yet' }, ...sections]} hint={SECTION_HINT[access ?? 'open']} />
+          <div class="planet-field" data-editor-place>
+            <span class="field-label">On the planet</span>
+            <Text variant="small" tone="muted">{onPlanet}</Text>
+          </div>
 
-      <div class="media-field" data-editor-picture="lead">
-        <span class="field-label">Lead picture</span>
-        <div class="media-row">
-          {lead ? <Image src={lead.thumb} alt="" width={lead.width} height={lead.height} ratio="4/3" fit="contain" /> : <span />}
-          <div class="media-words">
-            <Text variant="small" tone="muted">{article.hero ? lead?.alt || 'No alt text' : 'None'}</Text>
-            <div class="row">
-              <Button variant="secondary" size="sm" icon="image" data-editor-pick="hero.media" data-pick-mode="single">{article.hero ? 'Replace' : 'Choose'}</Button>
-              {article.hero && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="hero.media">Crop</Button>}
-              {article.hero && <Button variant="quiet" size="sm" data-editor-clear="hero">Remove</Button>}
+        </section>
+        <section class="pane" data-section="lead" aria-labelledby="page-s-lead">
+          <div class="pane-head"><Heading level={4} size="ui" id="page-s-lead">Lead picture</Heading></div>
+          <div class="media-field" data-editor-picture="lead">
+            <div class="media-row">
+              {lead ? <Image src={lead.thumb} alt="" width={lead.width} height={lead.height} ratio="4/3" fit="contain" /> : <span />}
+              <div class="media-words">
+                <Text variant="small" tone="muted">{article.hero ? lead?.alt || 'No alt text' : 'None'}</Text>
+                <div class="row">
+                  <Button variant="secondary" size="sm" icon="image" data-editor-pick="hero.media" data-pick-mode="single">{article.hero ? 'Replace' : 'Choose'}</Button>
+                  {article.hero && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="hero.media">Crop</Button>}
+                  {article.hero && <Button variant="quiet" size="sm" data-editor-clear="hero">Remove</Button>}
+                </div>
+              </div>
             </div>
+            <Text variant="small" tone="muted">{specTip(PICTURE_SPECS.lead)}</Text>
+            {lead && <Text variant="small">{pictureNote(PICTURE_SPECS.lead, lead.width, lead.height)}</Text>}
           </div>
+          {article.hero && <Select label="Lead picture shown as" name="hero.display" id="page-hero-display" value={article.hero.display ?? 'fill'} options={DISPLAYS} hint="How it sits in its 21:9 frame." />}
+          {article.hero && <Switch label="Colour behind the lead picture" name="hero.background" id="page-hero-background" checked={!!article.hero.background} data-type="bool" />}
+          {article.hero && <Switch label="Lead picture's rounded corners" name="hero.rounded" id="page-hero-rounded" checked={article.hero.rounded !== false} data-type="bool-default-true" />}
+          {article.hero && <Switch label="Lead picture's drop shadow" name="hero.shadow" id="page-hero-shadow" checked={!!article.hero.shadow} data-type="bool" />}
+          {article.hero && <Switch label="Show the lead picture's caption" name="hero.showCaption" id="page-hero-showCaption" checked={article.hero.showCaption !== false} data-type="bool-default-true" />}
+          {article.hero && <TextField label="Lead picture's caption" name="hero.caption" id="page-hero-caption" value={article.hero.caption ?? ''} optional hint="Left empty, the picture's own caption shows." />}
+
+        </section>
+        <section class="pane" data-section="thumbnail" aria-labelledby="page-s-thumbnail">
+          <div class="pane-head"><Heading level={4} size="ui" id="page-s-thumbnail">Thumbnail</Heading></div>
+          <div class="media-field" data-editor-picture="thumbnail">
+            <div class="media-row">
+              {card ? <Image src={card.thumb} alt="" width={card.width} height={card.height} ratio="3/2" fit="contain" /> : <span />}
+              <div class="media-words">
+                <Text variant="small" tone="muted">{article.thumbnail ? card?.alt || 'No alt text' : article.hero ? 'The lead picture' : 'None'}</Text>
+                <div class="row">
+                  <Button variant="secondary" size="sm" icon="image" data-editor-pick="thumbnail" data-pick-mode="single">{article.thumbnail ? 'Replace' : 'Choose'}</Button>
+                  {card && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="thumbnail">Crop</Button>}
+                  {article.thumbnail && <Button variant="quiet" size="sm" data-editor-clear="thumbnail">Remove</Button>}
+                </div>
+              </div>
+            </div>
+            <Text variant="small" tone="muted">{`${specTip(PICTURE_SPECS.thumbnail)} Left empty, the lead picture is used.`}</Text>
+            {card && <Text variant="small">{pictureNote(PICTURE_SPECS.thumbnail, card.width, card.height)}</Text>}
+          </div>
+          {card && <Select label="Thumbnail shown as" name="thumbnailStyle.display" id="page-thumbnail-display" value={article.thumbnailStyle?.display ?? 'fit'} options={DISPLAYS} hint="How it sits in the cards' 3:2 frame." />}
+          {card && <Switch label="Colour behind the thumbnail" name="thumbnailStyle.background" id="page-thumbnail-background" checked={!!article.thumbnailStyle?.background} data-type="bool" />}
+          {card && <Switch label="Thumbnail's rounded corners" name="thumbnailStyle.rounded" id="page-thumbnail-rounded" checked={article.thumbnailStyle?.rounded !== false} data-type="bool-default-true" />}
+          {card && <Switch label="Thumbnail's drop shadow" name="thumbnailStyle.shadow" id="page-thumbnail-shadow" checked={!!article.thumbnailStyle?.shadow} data-type="bool" />}
+
+        </section>
+        <section class="pane" data-section="portrait" aria-labelledby="page-s-portrait">
+          <div class="pane-head"><Heading level={4} size="ui" id="page-s-portrait">Portrait</Heading></div>
+          <div class="media-field" data-editor-picture="portrait">
+            <div class="media-row">
+              {face ? <Image src={face.thumb} alt="" width={face.width} height={face.height} ratio="4/5" fit="cover" /> : <span />}
+              <div class="media-words">
+                <Text variant="small" tone="muted">{article.portrait ? face?.alt || 'No alt text' : 'None'}</Text>
+                <div class="row">
+                  <Button variant="secondary" size="sm" icon="image" data-editor-pick="portrait" data-pick-mode="single">{article.portrait ? 'Replace' : 'Choose'}</Button>
+                  {article.portrait && <Button variant="quiet" size="sm" data-editor-clear="portrait">Remove</Button>}
+                </div>
+              </div>
+            </div>
+            <Text variant="small" tone="muted">The person the page is about (a résumé, About), beside the title at 4:5 around the picture's focus point.</Text>
+          </div>
+
+        </section>
+        <section class="pane" data-section="search" aria-labelledby="page-s-search">
+          <div class="pane-head"><Heading level={4} size="ui" id="page-s-search">Search and sharing</Heading></div>
+          <TextField label="Search title" name="seo.title" id="page-seo-title" value={article.seo?.title ?? ''} optional />
+          <TextField label="Search description" name="seo.description" id="page-seo-description" value={article.seo?.description ?? ''} multiline rows={2} optional hint="Left empty, the summary is used (at most 160 characters)." />
+          <Switch label="Keep it out of search results" name="seo.noindex" id="page-seo-noindex" checked={!!article.seo?.noindex} data-type="bool" />
+
+        </section>
+        <section class="pane" data-section="dates" aria-labelledby="page-s-dates">
+          <div class="pane-head"><Heading level={4} size="ui" id="page-s-dates">Dates</Heading></div>
+          <TextField label="Published" type="date" name="publishedAt" id="page-publishedAt" value={article.publishedAt ?? ''} optional hint="Set when it's first published." />
+          <TextField label="Updated" type="date" name="updatedAt" id="page-updatedAt" value={article.updatedAt} required hint="Moves to today when its words or blocks change." />
+          <TextField label="Last reviewed" type="date" name="reviewedAt" id="page-reviewedAt" value={article.reviewedAt ?? ''} optional />
+        </section>
         </div>
-        <Text variant="small" tone="muted">{specTip(PICTURE_SPECS.lead)}</Text>
-        {lead && <Text variant="small">{pictureNote(PICTURE_SPECS.lead, lead.width, lead.height)}</Text>}
       </div>
-      {article.hero && <Select label="Lead picture shown as" name="hero.display" id="page-hero-display" value={article.hero.display ?? 'fill'} options={DISPLAYS} hint="How it sits in its 21:9 frame." />}
-      {article.hero && <Switch label="Colour behind the lead picture" name="hero.background" id="page-hero-background" checked={!!article.hero.background} data-type="bool" />}
-      {article.hero && <Switch label="Lead picture's rounded corners" name="hero.rounded" id="page-hero-rounded" checked={article.hero.rounded !== false} data-type="bool-default-true" />}
-      {article.hero && <Switch label="Lead picture's drop shadow" name="hero.shadow" id="page-hero-shadow" checked={!!article.hero.shadow} data-type="bool" />}
-      {article.hero && <Switch label="Show the lead picture's caption" name="hero.showCaption" id="page-hero-showCaption" checked={article.hero.showCaption !== false} data-type="bool-default-true" />}
-      {article.hero && <TextField label="Lead picture's caption" name="hero.caption" id="page-hero-caption" value={article.hero.caption ?? ''} optional hint="Left empty, the picture's own caption shows." />}
-
-      <div class="media-field" data-editor-picture="thumbnail">
-        <span class="field-label">Thumbnail</span>
-        <div class="media-row">
-          {card ? <Image src={card.thumb} alt="" width={card.width} height={card.height} ratio="3/2" fit="contain" /> : <span />}
-          <div class="media-words">
-            <Text variant="small" tone="muted">{article.thumbnail ? card?.alt || 'No alt text' : article.hero ? 'The lead picture' : 'None'}</Text>
-            <div class="row">
-              <Button variant="secondary" size="sm" icon="image" data-editor-pick="thumbnail" data-pick-mode="single">{article.thumbnail ? 'Replace' : 'Choose'}</Button>
-              {card && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="thumbnail">Crop</Button>}
-              {article.thumbnail && <Button variant="quiet" size="sm" data-editor-clear="thumbnail">Remove</Button>}
-            </div>
-          </div>
-        </div>
-        <Text variant="small" tone="muted">{`${specTip(PICTURE_SPECS.thumbnail)} Left empty, the lead picture is used.`}</Text>
-        {card && <Text variant="small">{pictureNote(PICTURE_SPECS.thumbnail, card.width, card.height)}</Text>}
-      </div>
-      {card && <Select label="Thumbnail shown as" name="thumbnailStyle.display" id="page-thumbnail-display" value={article.thumbnailStyle?.display ?? 'fit'} options={DISPLAYS} hint="How it sits in the cards' 3:2 frame." />}
-      {card && <Switch label="Colour behind the thumbnail" name="thumbnailStyle.background" id="page-thumbnail-background" checked={!!article.thumbnailStyle?.background} data-type="bool" />}
-      {card && <Switch label="Thumbnail's rounded corners" name="thumbnailStyle.rounded" id="page-thumbnail-rounded" checked={article.thumbnailStyle?.rounded !== false} data-type="bool-default-true" />}
-      {card && <Switch label="Thumbnail's drop shadow" name="thumbnailStyle.shadow" id="page-thumbnail-shadow" checked={!!article.thumbnailStyle?.shadow} data-type="bool" />}
-
-      <div class="media-field" data-editor-picture="portrait">
-        <span class="field-label">Portrait</span>
-        <div class="media-row">
-          {face ? <Image src={face.thumb} alt="" width={face.width} height={face.height} ratio="4/5" fit="cover" /> : <span />}
-          <div class="media-words">
-            <Text variant="small" tone="muted">{article.portrait ? face?.alt || 'No alt text' : 'None'}</Text>
-            <div class="row">
-              <Button variant="secondary" size="sm" icon="image" data-editor-pick="portrait" data-pick-mode="single">{article.portrait ? 'Replace' : 'Choose'}</Button>
-              {article.portrait && <Button variant="quiet" size="sm" data-editor-clear="portrait">Remove</Button>}
-            </div>
-          </div>
-        </div>
-        <Text variant="small" tone="muted">The person the page is about (a résumé, About), beside the title at 4:5 around the picture's focus point.</Text>
-      </div>
-
-      <Heading level={3} size="ui">Search and sharing</Heading>
-      <TextField label="Search title" name="seo.title" id="page-seo-title" value={article.seo?.title ?? ''} optional />
-      <TextField label="Search description" name="seo.description" id="page-seo-description" value={article.seo?.description ?? ''} multiline rows={2} optional hint="Left empty, the summary is used (at most 160 characters)." />
-      <Switch label="Keep it out of search results" name="seo.noindex" id="page-seo-noindex" checked={!!article.seo?.noindex} data-type="bool" />
-
-      <Heading level={3} size="ui">Dates</Heading>
-      <TextField label="Published" type="date" name="publishedAt" id="page-publishedAt" value={article.publishedAt ?? ''} optional hint="Set when it's first published." />
-      <TextField label="Updated" type="date" name="updatedAt" id="page-updatedAt" value={article.updatedAt} required hint="Moves to today when its words or blocks change." />
-      <TextField label="Last reviewed" type="date" name="reviewedAt" id="page-reviewedAt" value={article.reviewedAt ?? ''} optional />
 
       <p class="issue" role="alert" data-editor-issue hidden></p>
       {!published && (
@@ -538,9 +712,10 @@ const STATUS: SelectOption[] = [
 
   .item {
     display: grid;
-    grid-template-columns: var(--size-avatar-md) minmax(0, 1fr);
+    grid-template-columns: auto var(--size-avatar-md) minmax(0, 1fr);
     align-items: end;
     gap: var(--space-2);
+    position: relative;
   }
 
   .item-moves {
@@ -549,19 +724,225 @@ const STATUS: SelectOption[] = [
     justify-content: end;
   }
 
-  .entries {
+  /* ---------- sections: narrow, each in turn under its heading; wide, listed beside the chosen one ---------- */
+  .inspector {
+    container: inspector / inline-size;
+  }
+
+  .sections,
+  .panes,
+  .pane,
+  .pane-group,
+  .pane-list,
+  .group-head {
     display: grid;
-    gap: var(--space-3);
+    min-inline-size: 0;
+  }
+
+  .panes,
+  .pane-list {
+    gap: var(--space-5);
+  }
+
+  .pane,
+  .pane-group {
+    gap: var(--space-4);
+  }
+
+  .group-head {
+    gap: var(--space-1);
+  }
+
+  /* each section starts under a rule, its heading first */
+  .pane,
+  .pane-group {
+    padding-block-start: var(--space-4);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .pane-list > .pane {
+    padding-block-start: var(--space-3);
+    border-block-start-style: dashed;
+  }
+
+  .pane-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-block-size: var(--size-touch);
+  }
+
+  .pane-head .item-moves {
+    margin-inline-start: auto;
+  }
+
+  .section-nav {
+    display: none;
+  }
+
+  .grip {
+    display: grid;
+    place-items: center;
+    inline-size: var(--space-6);
+    block-size: var(--size-touch);
+    color: var(--color-text-muted);
+    cursor: grab;
+    touch-action: none;
+  }
+
+  /* a row being dragged, and where it would land (the outline's look) */
+  [data-sort-row] {
+    position: relative;
+  }
+
+  [data-sort-row][data-dragging] {
+    opacity: var(--opacity-disabled);
+  }
+
+  [data-sort-row][data-drop='before']::before,
+  [data-sort-row][data-drop='after']::after {
+    position: absolute;
+    inset-inline: var(--space-2);
+    block-size: var(--border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    content: '';
+  }
+
+  [data-sort-row][data-drop='before']::before {
+    inset-block-start: calc(var(--space-1) * -1);
+  }
+
+  [data-sort-row][data-drop='after']::after {
+    inset-block-end: calc(var(--space-1) * -1);
+  }
+
+  .nav-group {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  /* groups apart, a rule between them */
+  .nav-group + .nav-group {
+    padding-block-start: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .nav-label {
+    padding-inline: var(--space-2);
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .nav-list {
+    display: grid;
+    gap: var(--space-0-5);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .entry {
+  .nav-row {
     display: grid;
-    gap: var(--space-2);
-    padding-block-end: var(--space-3);
-    border-block-end: var(--border-hairline) solid var(--color-rule);
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .nav-row:has(.grip) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .nav-item {
+    display: grid;
+    min-inline-size: 0;
+    min-block-size: var(--size-touch);
+    align-content: center;
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .nav-item:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .nav-item:active {
+    background: var(--color-bg-hover);
+  }
+
+  .nav-item[aria-current='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .nav-name {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .nav-detail {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-item[aria-current='true'] .nav-detail {
+    color: var(--color-on-accent-soft);
+  }
+
+  .nav-add {
+    padding-inline-start: var(--space-6);
+  }
+
+  @container inspector (min-width: 40rem) {
+    .sections {
+      grid-template-columns: var(--c-editor-inspector-nav) minmax(0, 1fr);
+      align-items: start;
+      gap: var(--space-6);
+    }
+
+    .section-nav {
+      position: sticky;
+      inset-block-start: var(--space-0);
+      display: grid;
+      align-content: start;
+      gap: var(--space-3);
+      padding-inline-end: var(--space-3);
+      border-inline-end: var(--border-hairline) solid var(--color-rule);
+    }
+
+    /* only the chosen section, without its rule: the list beside it says where it is */
+    .pane:not([data-current]),
+    .pane-group:not(:has(.pane[data-current])) {
+      display: none;
+    }
+
+    .pane,
+    .pane-group,
+    .pane-list > .pane {
+      padding-block-start: var(--space-0);
+      border-block-start: 0;
+    }
+
+    /* the list has the items' handles, their group's name and Add an item */
+    .pane-head .grip,
+    .group-head,
+    .panes-add {
+      display: none;
+    }
   }
 
   .no-picture {

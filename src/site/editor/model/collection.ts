@@ -3,7 +3,8 @@
  * how its headings read, each with a line on what it does. The contract's lists (schema.ts) say which
  * there are; these say them in words, in the same order.
  */
-import type { COLLECTION_HEADINGS, CollectionLayout } from '../../content/schema';
+import type { Block, COLLECTION_HEADINGS, CollectionLayout } from '../../content/schema';
+import { plainText } from '../../content/markdown';
 
 export const LAYOUT_CHOICES: { value: CollectionLayout; label: string; description: string }[] = [
   { value: 'rows', label: 'Rows', description: 'One under another, a picture beside its words' },
@@ -31,3 +32,8 @@ export const TIMELINES: ReadonlySet<CollectionLayout> = new Set(['timeline', 'ti
 
 /** The width a new collection starts at in a layout: the strips and card grids a little wider than the column. */
 export const startWidth = (layout: CollectionLayout): 'popout' | undefined => (TAKES_COLUMNS.has(layout) || TAKES_LABEL.has(layout) ? 'popout' : undefined);
+
+type Item = Extract<Block, { type: 'collection' }>['items'][number];
+
+/** An item's name in the inspector's list of sections: its heading, or else its subtext, its time, its words or its picture's alt text. */
+export const itemName = (it: Item, alt?: string): string => it.heading ?? it.subtext ?? it.when ?? (it.text ? plainText(it.text) : it.media ? alt || 'A picture' : '');

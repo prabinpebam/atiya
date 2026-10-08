@@ -1,23 +1,31 @@
 ---
 /**
  * The article editor's studio (documentation/editor/spec.md §3): the outline, the canvas and the
- * inspector side by side, filling the screen under the top bar. The page fills the named slots.
+ * inspector side by side, filling the screen under the top bar. The page fills the named slots. The
+ * inspector's start edge is a separator that resizes it (drag it, or its keys), from its narrowest to as
+ * wide as the canvas allows; its width is kept for the next visit, and a double click puts it back.
  * @tier editor
  * @a11y The three columns are in reading order: the outline, the page, its settings.
+ * @a11y The separator follows the APG window splitter: focusable, named, with its width as its value (in rem).
+ * @key Left / Right: on the separator, widens / narrows the settings by 1 rem (4 with Shift)
+ * @key Home / End: on the separator, the narrowest / the widest the settings get
  */
 ---
 
 <div class="studio" data-editor-studio>
   <div class="outline"><slot name="outline" /></div>
   <div class="canvas"><slot name="canvas" /></div>
-  <div class="inspector"><slot name="inspector" /></div>
+  <div class="inspector">
+    <div class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the settings" aria-valuemin="24" aria-valuemax="60" aria-valuenow="24" aria-valuetext="24 rem wide" tabindex="0" data-editor-resize></div>
+    <slot name="inspector" />
+  </div>
   <slot />
 </div>
 
 <style>
   .studio {
     display: grid;
-    grid-template-columns: var(--c-editor-outline) minmax(0, 1fr) var(--c-editor-inspector);
+    grid-template-columns: var(--c-editor-outline) minmax(0, 1fr) var(--inspector-width, var(--c-editor-inspector));
     block-size: 100%;
     min-block-size: 0;
   }
@@ -29,9 +37,60 @@
     min-inline-size: 0;
   }
 
+  .inspector {
+    position: relative;
+  }
+
+  /* a wide, quiet strip over the inspector's start edge; the line in it shows when it's hovered, focused or dragged */
+  .resizer {
+    position: absolute;
+    z-index: var(--layer-raised);
+    inset-block: var(--space-0);
+    inset-inline-start: calc(var(--space-2) * -1);
+    inline-size: var(--space-4);
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .resizer::after {
+    position: absolute;
+    inset-block: var(--space-0);
+    inset-inline-start: calc(50% - var(--border-strong) / 2);
+    inline-size: var(--border-strong);
+    background: transparent;
+    content: '';
+    transition: background-color var(--duration-fast) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .resizer:hover::after {
+      background: var(--color-accent);
+    }
+  }
+
+  .resizer:active::after,
+  .resizer[data-dragging]::after,
+  .resizer:focus-visible::after {
+    background: var(--color-accent);
+  }
+
+  .resizer:focus-visible {
+    outline: none;
+  }
+
+  /* while it's dragged, the canvas (an iframe) mustn't take the pointer, nor the page select its words */
+  .studio[data-resizing] {
+    cursor: col-resize;
+    user-select: none;
+  }
+
+  .studio[data-resizing] .canvas {
+    pointer-events: none;
+  }
+
   @media (max-width: 72rem) {
     .studio {
-      grid-template-columns: minmax(0, 1fr) var(--c-editor-inspector);
+      grid-template-columns: minmax(0, 1fr) var(--inspector-width, var(--c-editor-inspector));
     }
 
     .outline {
@@ -43,6 +102,10 @@
 <script>
   import { each } from '../../scripts/page';
   import { initEditor } from '../scripts/editor';
+  import { initResize } from '../scripts/resize';
 
-  each<HTMLElement>('[data-editor-studio]', (root, signal) => initEditor(root, signal));
+  each<HTMLElement>('[data-editor-studio]', (root, signal) => {
+    initResize(root, signal);
+    initEditor(root, signal);
+  });
 </script>
