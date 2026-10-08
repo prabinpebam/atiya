@@ -264,12 +264,13 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     (a.related ?? []).forEach((r, i) => {
       if (r.type === 'article' && origins.get(r.id) === 'private') add(file, origin === 'public' ? `related names "${r.id}", a private page: an open page can't name one (V25)` : `related names "${r.id}", another private page: a private page lists open pages only (V32)`, `related.${i}`);
     });
+    // anchors made from words are made unique (headingIds); two set by hand can't be
     const ids = new Set<string>();
-    for (const b of a.body) if (b.type === 'heading') {
-      const hid = b.id ?? headingId(b.text);
-      if (ids.has(hid)) add(file, `two headings share the anchor "${hid}"; give one an id`);
-      ids.add(hid);
-    }
+    a.body.forEach((b, i) => {
+      if (b.type !== 'heading' || !b.id) return;
+      if (ids.has(b.id)) add(file, `two headings have the anchor "${b.id}"; change one of them`, `body.${i}.id`);
+      ids.add(b.id);
+    });
   }
   for (const p of people.values()) if (p.avatar) needMedia(`content/people/${p.id}.json`, p.avatar);
   if (site?.socialImage) needMedia('content/site.json', site.socialImage);
@@ -410,4 +411,23 @@ export function headingId(text: string): string {
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/[\s-]+/g, '-');
+}
+
+/**
+ * Every heading's anchor in a body, by its block's place (undefined for a block that isn't a heading). One
+ * set by hand (`id`) is kept as it is; one made from its words takes -2, -3… when it's taken already, in the
+ * page's order, so headings with the same words ("What shipped" in each chapter) each have their own, and the
+ * first keeps the plain one.
+ */
+export function headingIds(body: readonly { type: string; text?: string; id?: string }[]): (string | undefined)[] {
+  const taken = new Set(body.flatMap((b) => (b.type === 'heading' && b.id ? [b.id] : [])));
+  return body.map((b) => {
+    if (b.type !== 'heading') return undefined;
+    if (b.id) return b.id;
+    const base = headingId(b.text ?? '') || 'section';
+    let id = base;
+    for (let n = 2; taken.has(id); n++) id = `${base}-${n}`;
+    taken.add(id);
+    return id;
+  });
 }

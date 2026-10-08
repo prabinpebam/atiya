@@ -16,7 +16,7 @@ import Quote from '../components/fundamentals/Quote.astro';
 import Divider from '../components/fundamentals/Divider.astro';
 import { withBase } from '../design/meta';
 import { renderInlineMarkdown, renderMarkdown } from './markdown';
-import { headingId } from './load';
+import { headingIds } from './load';
 import { picture, video, type Picture, type VideoFile } from './pictures';
 import { canonicalPath, documentHref } from './repository';
 import type { Block } from './schema';
@@ -57,8 +57,10 @@ type View =
   | { b: Extract<Block, { type: 'collection' }>; pictures: (Picture | undefined)[] }
   | { b: Exclude<Block, { type: 'figure' | 'gallery' | 'carousel' | 'video' | 'heading' | 'collection' }> };
 
+// every heading's anchor: one set by hand as it is, one from its words unique on the page (what-shipped, what-shipped-2)
+const anchors = headingIds(blocks);
 const views: View[] = await Promise.all(
-  blocks.map(async (b): Promise<View> => {
+  blocks.map(async (b, n): Promise<View> => {
     switch (b.type) {
       case 'figure':
         return { b, p: await picture(b.media, b.width) };
@@ -70,7 +72,7 @@ const views: View[] = await Promise.all(
         // a video file, with its own frame for a poster; or an embed, with its poster picture
         return b.media ? { b, v: await video(b.media, b.width ?? 'wide') } : { b, p: await picture(b.poster!, b.width ?? 'wide') };
       case 'heading':
-        return { b, id: b.id ?? headingId(b.text) };
+        return { b, id: anchors[n]! };
       case 'collection':
         return { b, pictures: await Promise.all(b.items.map((i) => (i.media ? picture(i.media, 'gallery') : undefined))) };
       default:

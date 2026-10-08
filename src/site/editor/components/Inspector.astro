@@ -153,7 +153,7 @@ const STATUS: SelectOption[] = [
             {b.type === 'heading' && (
               <>
                 <Select label="Level" name={`body.${i}.level`} id={id(i, 'level')} value={String(b.level)} data-type="number" options={[{ value: '2', label: 'Heading 2', description: 'A section' }, { value: '3', label: 'Heading 3', description: 'Within a section' }, { value: '4', label: 'Heading 4', description: 'A small heading' }]} />
-                <TextField label="Anchor" name={`body.${i}.id`} id={id(i, 'anchor')} value={b.id ?? ''} optional hint="The address of this heading on the page (#…). Left empty, it's made from its words." />
+                <TextField label="Anchor" name={`body.${i}.id`} id={id(i, 'anchor')} value={b.id ?? ''} optional hint="The address of this heading on the page (#…). Left empty, it's made from its words, with -2, -3 if another heading has the same." />
                 {b.level === 2 && (
                   <>
                     <TextField label="Margin mark" name={`body.${i}.marker`} id={id(i, 'marker')} value={b.marker ?? ''} optional maxlength={40} hint="Set large in the margin beside it, like 1 or 2 for a chapter (over it, on a narrow screen)." />

@@ -42,6 +42,24 @@ test.describe('editor', () => {
   test.beforeEach(() => reset());
   test.afterAll(() => reset());
 
+  test('the minimap works on the page as on the site: a row jumps by click or by key, and the canvas selects nothing for it', async ({ page }) => {
+    // wide enough for the canvas to leave the minimap room beside the column
+    await page.setViewportSize({ width: 2560, height: 1100 });
+    await openArticle(page, 'atiya');
+    const f = frame(page);
+    const rows = f.locator('[data-minimap] .row');
+    await expect(rows.first()).toBeVisible();
+    await rows.last().click();
+    await expect(rows.last()).toHaveAttribute('aria-current', 'location');
+    await expect(f.locator('[data-chrome-selected]')).toBeHidden();
+    // with a block selected, Enter on a row is the minimap's: it jumps, and nothing is edited
+    await f.locator('.prose > p').first().click();
+    await rows.first().focus();
+    await page.keyboard.press('Enter');
+    await expect(rows.first()).toHaveAttribute('aria-current', 'location');
+    await expect(rows.first()).toBeFocused();
+  });
+
   test('the guard: writes from another origin or without the header are refused, and no screen can be framed elsewhere', async ({ request }) => {
     const json = { 'Content-Type': 'application/json' };
     expect((await request.put('/_edit/api/structure', { headers: { ...json, 'X-Editor': '1', Origin: 'http://evil.localhost:4330' }, data: {} })).status()).toBe(403);

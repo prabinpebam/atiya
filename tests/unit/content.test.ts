@@ -9,7 +9,7 @@ import { join, relative, sep } from 'node:path';
 import sharp from 'sharp';
 import { normalize, parseInline, runs, parseMarkdown, plainText, renderMarkdown, serializeBlocks, serializeInline, type Inline } from '../../src/site/content/markdown';
 import { buildRoutes } from '../../src/site/content/routes';
-import { ContentError, headingId, loadContent } from '../../src/site/content/load';
+import { ContentError, headingId, headingIds, loadContent } from '../../src/site/content/load';
 import { content } from '../../src/site/content/repository';
 import { pageMeasure, pictureCount, readingMinutes } from '../../src/site/content/reading';
 import { article, block, siteStructure, type Article, type SiteStructure } from '../../src/site/content/schema';
@@ -161,6 +161,14 @@ describe('routes from the site structure', () => {
     expect(headingId('\u201cBe better than yesterday.\u201d')).toBe('be-better-than-yesterday');
     expect(headingId('Don\u2019t optimize for approval.')).toBe('dont-optimize-for-approval');
   });
+
+  it('headings with the same words each get their own anchor, the first the plain one; one set by hand is kept', () => {
+    const h = (text: string, id?: string) => ({ type: 'heading', text, ...(id ? { id } : {}) });
+    expect(headingIds([h('What shipped'), { type: 'text' }, h('What shipped'), h('What shipped')])).toEqual(['what-shipped', undefined, 'what-shipped-2', 'what-shipped-3']);
+    // a hand-set anchor wins its name; the words' one steps round it
+    expect(headingIds([h('What shipped'), h('Later', 'what-shipped')])).toEqual(['what-shipped-2', 'what-shipped']);
+    expect(headingIds([h('!!!')])).toEqual(['section']);
+  });
 });
 
 describe('the loader checks what it is given', () => {
@@ -271,6 +279,12 @@ describe('the loader checks what it is given', () => {
     expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [{ type: 'text', markdown: 'one\n\ntwo' }] } }).join('\n')).toMatch(/one paragraph or one list/);
   });
 
+  it('headings may repeat their words (each gets its own anchor), but two anchors set by hand must differ', () => {
+    const article = base['/content/articles/a.json'];
+    const heading = (text: string, id?: string) => ({ type: 'heading', level: 3, text, ...(id ? { id } : {}) });
+    expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [heading('What shipped'), heading('What shipped')] } })).toEqual([]);
+    expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [heading('One', 'shipped'), heading('Two', 'shipped')] } }).join('\n')).toMatch(/two headings have the anchor "shipped"/);
+  });
   it('a paragraph can ask for a drop cap (off unless it does)', () => {
     expect(block.safeParse({ type: 'text', markdown: 'Once.', dropcap: true }).success).toBe(true);
     expect(block.safeParse({ type: 'text', markdown: 'Once.' }).success).toBe(true);

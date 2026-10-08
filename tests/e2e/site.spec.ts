@@ -6,7 +6,7 @@
 import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
-import { headingId } from '../../src/site/content/load';
+import { headingIds } from '../../src/site/content/load';
 import { renderMarkdown } from '../../src/site/content/markdown';
 import type { Article, HubNode, SiteStructure } from '../../src/site/content/schema';
 
@@ -811,7 +811,8 @@ test.describe('content', () => {
     // every heading block, with its anchor; the quotes; the text's line breaks
     const headings = of('heading');
     await expect(page.locator('article h2')).toHaveCount(headings.filter((h) => h.level === 2).length);
-    for (const h of headings) await expect(page.locator(`[id="${h.id ?? headingId(h.text)}"]`)).toHaveText(h.text);
+    const anchors = headingIds(headings);
+    for (const [k, h] of headings.entries()) await expect(page.locator(`[id="${anchors[k]}"]`)).toHaveText(h.text);
     for (const q of of('quote')) await expect(page.locator('article blockquote', { hasText: q.text.slice(0, 40) })).toHaveCount(1);
     // every collection, in its layout: a list of its items, each heading in order
     const collections = page.locator('article [data-collection]');

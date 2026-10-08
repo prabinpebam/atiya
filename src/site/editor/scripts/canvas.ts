@@ -205,12 +205,14 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   addEventListener('resize', () => requestAnimationFrame(redraw), { signal });
 
   // ---------- clicks: select, and keep links and players inert ----------
+  /** The page's own way round it, not its content: the minimap works in the canvas as on the site. */
+  const wayfinding = (t: EventTarget | null) => t instanceof Element && !!t.closest('[data-minimap]');
   on(
     'click',
     (e) => {
       if (preview) return;
       const t = e.target as Element;
-      if (chrome.contains(t)) return;
+      if (chrome.contains(t) || wayfinding(t)) return;
       const editable = t.closest<HTMLElement>('[data-editor-editable]');
       const link = t.closest('a');
       if (link || !editable) e.preventDefault();
@@ -729,6 +731,8 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     'keydown',
     (e) => {
       if (e.isComposing || preview) return;
+      // the minimap's own keys (Enter, Space, the arrows) are the minimap's
+      if (wayfinding(e.target) && !((e.ctrlKey || e.metaKey) && ['s', 'z', 'y'].includes(e.key.toLowerCase()))) return;
       const mod = e.ctrlKey || e.metaKey;
       const editing = current();
       if (mod && e.key.toLowerCase() === 's') {
