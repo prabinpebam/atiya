@@ -76,6 +76,7 @@
     "sound-off": "volume-xmark",
     "sound-on": "volume",
     "strikethrough": "strikethrough",
+    "subheading": "text-type",
     "success": "circle-check",
     "table": "table",
     "tablet": "tablet-screen-button",

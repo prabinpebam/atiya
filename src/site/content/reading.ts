@@ -8,7 +8,7 @@ export function wordCount(a: Article): number {
   const texts: string[] = [a.title, a.summary];
   for (const b of a.body) {
     if (b.type === 'text') texts.push(plainText(b.markdown));
-    else if (b.type === 'heading' || b.type === 'quote') texts.push(b.text);
+    else if (b.type === 'heading' || b.type === 'subheading' || b.type === 'quote') texts.push(b.text);
     else if (b.type === 'collection') texts.push(...b.items.map((i) => [i.when, i.heading, i.subtext, i.text && plainText(i.text)].filter(Boolean).join(' ')));
     else if (b.type === 'table') texts.push(b.caption ?? '', ...b.columns, ...b.rows.flat().map((c) => plainText(c)));
   }

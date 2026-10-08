@@ -145,7 +145,7 @@ describe('turning text into another kind, any time', () => {
     expect(ops.textKindOf(h('Title', 3))).toBe('heading-3');
     expect(ops.textKindOf({ type: 'quote', text: 'q', variant: 'pull' })).toBe('pull-quote');
     expect(ops.textKindOf({ type: 'divider' })).toBeNull();
-    expect(ops.TEXT_KINDS.map((k) => k.value)).toEqual(['paragraph', 'heading-2', 'heading-3', 'heading-4', 'quote', 'pull-quote', 'bulleted', 'numbered']);
+    expect(ops.TEXT_KINDS.map((k) => k.value)).toEqual(['paragraph', 'heading-2', 'heading-3', 'heading-4', 'subheading', 'quote', 'pull-quote', 'bulleted', 'numbered']);
   });
 
   it('keeps the words: marks where the kind holds them, plain words where it doesn\'t, lines as items and back', () => {
@@ -165,6 +165,17 @@ describe('turning text into another kind, any time', () => {
     expect(ops.convertText({ type: 'quote', text: 'Q', cite: 'Someone', variant: 'block' }, 'pull-quote')).toEqual({ type: 'quote', text: 'Q', cite: 'Someone', variant: 'pull' });
     expect(ops.convertText({ type: 'heading', level: 2, text: 'T', id: 'intro' }, 'paragraph')).toEqual({ type: 'text', markdown: 'T' });
     expect(ops.convertText({ type: 'divider' }, 'paragraph')).toEqual({ type: 'divider' });
+  });
+
+  it('turns text into a subheading (its plain words) and back', () => {
+    const sub = ops.convertText(para('A **bold** line'), 'subheading');
+    expect(sub).toEqual({ type: 'subheading', text: 'A bold line' });
+    expect(ops.textKindOf(sub)).toBe('subheading');
+    expect(ops.kindOf(sub)).toBe('Subheading');
+    expect(ops.convertText(sub, 'heading-3')).toEqual({ type: 'heading', level: 3, text: 'A bold line' });
+    expect(ops.convertText(sub, 'paragraph')).toEqual(para('A bold line'));
+    // Enter in a subheading: its words stay, the rest becomes a paragraph after it
+    expect(ops.split([sub], 0, ['A bold', 'line'])).toEqual([{ type: 'subheading', text: 'A bold' }, para('line')]);
   });
 
   it('splits a list or a paragraph of lines into paragraphs, and joins blocks into one list', () => {

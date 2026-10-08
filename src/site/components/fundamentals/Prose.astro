@@ -1,7 +1,8 @@
 ---
 /**
  * Long-form text as a magazine sets it: the rich text of an article or a page (Markdown's output, or
- * plain HTML) in Newsreader with a comfortable measure, headings in soft Fraunces, a drop cap if you
+ * plain HTML) in Newsreader with a comfortable measure, headings in soft Fraunces (a paragraph marked
+ * data-subheading right under one is its subheading, in quieter italic), a drop cap if you
  * want one (a paragraph marked data-dropcap: chosen paragraph by paragraph, never automatic), a dinkus for a rule, and a grid that lets figures, galleries and quotes step out of the
  * column (they declare data-breakout="popout", "wide" or "full"). Lists nest; compact sets a card's
  * words (a collection item's) at the interface's size.
@@ -39,7 +40,7 @@ const { breakout = false, size = 'body', id } = Astro.props;
 
   /* a narrow column: hyphenate running text, as a magazine's narrow columns are (never headings) */
   @media (max-width: 40rem) {
-    .prose :global(p),
+    .prose :global(p:not([data-subheading])),
     .prose :global(li) {
       hyphens: auto;
       hyphenate-limit-chars: 7 3 3;
@@ -123,6 +124,13 @@ const { breakout = false, size = 'body', id } = Astro.props;
     margin-block-start: var(--space-4);
   }
 
+  /* a subheading sits close under its heading, read with it */
+  .prose > :global(h2 + p[data-subheading]),
+  .prose > :global(h3 + p[data-subheading]),
+  .prose > :global(h4 + p[data-subheading]) {
+    margin-block-start: var(--space-2);
+  }
+
   .prose > :global(* + [data-breakout]),
   .prose > :global([data-breakout] + *),
   .prose > :global(* + figure),
@@ -146,6 +154,26 @@ const { breakout = false, size = 'body', id } = Astro.props;
 
   .prose :global(p) {
     hanging-punctuation: first;
+  }
+
+  /* ---------- the subheading: the heading's quieter second voice, a size under it ---------- */
+  .prose :global(p[data-subheading]) {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings: var(--axes-display-italic);
+    font-weight: var(--weight-regular);
+    font-size: var(--text-lead);
+    line-height: var(--leading-heading);
+    color: var(--color-text-muted);
+    text-wrap: pretty;
+  }
+
+  .prose :global(h3 + p[data-subheading]) {
+    font-size: var(--text-lg);
+  }
+
+  .prose :global(h4 + p[data-subheading]) {
+    font-size: var(--text-body);
   }
 
   .prose :global(a) {

@@ -448,7 +448,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
           textSession = m.session as number;
           checkpoint();
         }
-        const next: Block = b.type === 'text' ? { ...b, markdown: value } : b.type === 'heading' || b.type === 'quote' ? { ...b, text: value } : b;
+        const next: Block = b.type === 'text' ? { ...b, markdown: value } : b.type === 'heading' || b.type === 'subheading' || b.type === 'quote' ? { ...b, text: value } : b;
         doc = body(ops.replace(doc.body, i, next));
         void save({ refresh: m.final ? { outline: true } : {} });
         break;
@@ -515,7 +515,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         break;
       case 'pending': {
         const at = m.index as number;
-        const block: Block = m.kind === 'heading' ? { type: 'heading', level: 2, text: String(m.value) } : { type: 'text', markdown: String(m.value) };
+        const block: Block =
+          m.kind === 'heading' ? { type: 'heading', level: 2, text: String(m.value) } : m.kind === 'subheading' ? { type: 'subheading', text: String(m.value) } : { type: 'text', markdown: String(m.value) };
         change(body(ops.insert(doc.body, at, block)), { outline: true, inspector: true }, { select: at });
         break;
       }
@@ -681,7 +682,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   on(root, 'click', (e) => {
     const t = e.target as Element;
     const el = t.closest<HTMLElement>(
-      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-turn-to], [data-editor-pick], [data-editor-crop], [data-editor-clear], [data-editor-items], [data-editor-collection], [data-editor-unset], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
+      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-subheading], [data-editor-turn-to], [data-editor-pick], [data-editor-crop], [data-editor-clear], [data-editor-items], [data-editor-collection], [data-editor-unset], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
     );
     if (!el) return;
     const d = el.dataset;
@@ -698,6 +699,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (d.editorMove) return inGroup(i) ? moveGroup(d.editorMove === 'up' ? -1 : 1) : blockOp(i, d.editorMove as 'up' | 'down');
     if (d.editorAddAt !== undefined) return openPalette(Number(d.editorAddAt));
     if (d.editorBlockOp) return blockOp(i, d.editorBlockOp as 'duplicate' | 'delete');
+    // a subheading under the heading: an empty line on the page to write it in
+    if (d.editorSubheading !== undefined) return toCanvas({ type: 'pending', index: Number(d.editorSubheading) + 1, kind: 'subheading' });
     if (d.editorTurnOpen !== undefined) return openTurn(inGroup(Number(d.editorTurnOpen)) ? group() : [Number(d.editorTurnOpen)]);
     if (d.editorTurnTo) {
       dialog('editor-turn')?.close();
@@ -798,7 +801,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
 
   const addBlock = (type: string) => {
     const at = insertAt;
-    if (type === 'text' || type === 'heading') return toCanvas({ type: 'pending', index: at, kind: type });
+    if (type === 'text' || type === 'heading' || type === 'subheading') return toCanvas({ type: 'pending', index: at, kind: type });
     if (type === 'divider') return insertBlock(at, { type: 'divider' });
     if (type === 'table') return insertBlock(at, starterTable());
     if (type === 'quote' || type === 'collection') return dialog(`editor-insert-${type}`)?.showModal();

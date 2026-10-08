@@ -277,6 +277,12 @@ describe('the loader checks what it is given', () => {
     expect(block.safeParse({ type: 'text', markdown: 'Once.', dropcap: 'yes' }).success).toBe(false);
   });
 
+  it('a subheading is plain words, nothing more', () => {
+    expect(block.safeParse({ type: 'subheading', text: 'What it was for' }).success).toBe(true);
+    expect(block.safeParse({ type: 'subheading', text: '' }).success).toBe(false);
+    expect(block.safeParse({ type: 'subheading', text: 'Words', level: 2 }).success).toBe(false);
+  });
+
   it('issues name the file, the field and what is wrong', () => {
     const article = base['/content/articles/a.json'];
     try {

@@ -149,6 +149,8 @@ export const block = z.discriminatedUnion('type', [
       .refine((m) => !/\n[ \t]*\n/.test(m.trim()), 'a text block is one paragraph or one list: split it into two blocks at the blank line'),
   }),
   z.strictObject({ type: z.literal('heading'), level: z.union([z.literal(2), z.literal(3), z.literal(4)]), text: z.string().min(1), id: id.optional() }),
+  /** A line or two more about the heading just above it, set close under it and read as part of it. */
+  z.strictObject({ type: z.literal('subheading'), text: z.string().min(1) }),
   z.strictObject({
     type: z.literal('figure'),
     media: mediaId,

@@ -88,6 +88,7 @@ export function protectedTerms(privateRoot) {
         for (const m of String(b.markdown).matchAll(/\[([^\]]+)\]\(/g)) add('a link text', m[1], 6);
       }
       if (b.type === 'heading') add('a heading', b.text, 3);
+      if (b.type === 'subheading') runs('a heading', b.text), add('a heading', b.text, 6);
       if (b.type === 'quote') runs('a quote', b.text), add('a quote', b.cite, 6);
       if (b.type === 'collection') for (const i of b.items) add('an item', i.when, 6), add('an item', i.heading, 6), add('an item', i.subtext, 6), i.text && runs('an item', i.text);
       if (b.type === 'table') {

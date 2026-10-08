@@ -76,6 +76,7 @@ Interface sizes are fixed. Reading and display sizes are fluid: each grows smoot
 **Where the play is:**
 - the display face set large and light, with the tracking closed up;
 - a drop cap three lines deep in indigo, on the paragraphs the writer chooses (never automatic);
+- a subheading close under a heading, in muted Fraunces italic a size under it: the heading's quieter second voice;
 - pull quotes in the wonky italic behind a marigold quote mark;
 - the classic site's contents page with its big deep-marigold numerals;
 - and the library's live axes playground, which shows what the face can do.

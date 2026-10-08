@@ -68,11 +68,11 @@ export const removeMany = <T>(body: T[], indices: number[]): T[] => {
  */
 export function split(body: Body, at: number, parts: string[]): Body {
   const b = body[at];
-  if (!b || (b.type !== 'text' && b.type !== 'heading')) return body;
+  if (!b || (b.type !== 'text' && b.type !== 'heading' && b.type !== 'subheading')) return body;
   const [first, ...rest] = parts;
   const head: Block = b.type === 'text' ? { ...b, markdown: first } : { ...b, text: plainText(first).replace(/\s+/g, ' ').trim() };
   const tail: Block[] = rest.filter((p) => p.trim()).map((markdown) => ({ type: 'text', markdown }));
-  const keepHead = b.type === 'heading' ? !!(head as { text: string }).text : !!first.trim();
+  const keepHead = b.type !== 'text' ? !!(head as { text: string }).text : !!first.trim();
   return [...body.slice(0, at), ...(keepHead ? [head] : []), ...tail, ...body.slice(at + 1)];
 }
 
@@ -107,6 +107,7 @@ export function getPath(doc: unknown, path: string): unknown {
 const KIND_LABEL: Record<Block['type'], string> = {
   text: 'Paragraph',
   heading: 'Heading',
+  subheading: 'Subheading',
   figure: 'Picture',
   gallery: 'Gallery',
   carousel: 'Carousel',
@@ -131,6 +132,7 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
     case 'text':
       return cut(plainText(b.markdown).replace(/\s+/g, ' ').trim());
     case 'heading':
+    case 'subheading':
     case 'quote':
       return cut(b.text);
     case 'figure':
@@ -193,13 +195,14 @@ export function parseDuration(text: string): number | undefined | null {
 // ---------- turning text into another kind (documentation/editor/spec.md §3.3) ----------
 
 /** The kinds a text block can be turned into, and back, at any time. */
-export type TextKind = 'paragraph' | 'heading-2' | 'heading-3' | 'heading-4' | 'quote' | 'pull-quote' | 'bulleted' | 'numbered';
+export type TextKind = 'paragraph' | 'heading-2' | 'heading-3' | 'heading-4' | 'subheading' | 'quote' | 'pull-quote' | 'bulleted' | 'numbered';
 
 export const TEXT_KINDS: { value: TextKind; label: string; what: string }[] = [
   { value: 'paragraph', label: 'Paragraph', what: 'Words, with bold, italic and links' },
   { value: 'heading-2', label: 'Heading 2', what: 'A section' },
   { value: 'heading-3', label: 'Heading 3', what: 'Within a section' },
   { value: 'heading-4', label: 'Heading 4', what: 'A small heading' },
+  { value: 'subheading', label: 'Subheading', what: 'A line more about the heading above' },
   { value: 'quote', label: 'Quote', what: 'A quotation in the column' },
   { value: 'pull-quote', label: 'Pull quote', what: 'A line lifted out and set large' },
   { value: 'bulleted', label: 'Bulleted list', what: 'One item a line' },
@@ -209,6 +212,7 @@ export const TEXT_KINDS: { value: TextKind; label: string; what: string }[] = [
 /** The text kind a block is, or null for a block that isn't text (a picture, a collection, a divider). */
 export function textKindOf(b: Block): TextKind | null {
   if (b.type === 'heading') return `heading-${b.level}`;
+  if (b.type === 'subheading') return 'subheading';
   if (b.type === 'quote') return b.variant === 'pull' ? 'pull-quote' : 'quote';
   if (b.type !== 'text') return null;
   const first = parseMarkdown(b.markdown)[0];
@@ -232,7 +236,7 @@ export function linesOf(b: Block): Inline[][] {
         return lines;
       }),
     );
-  if (b.type === 'heading' || b.type === 'quote') return kept(b.text.split(/\n+/).map((l): Inline[] => [{ t: 'text', v: l.trim() }]));
+  if (b.type === 'heading' || b.type === 'subheading' || b.type === 'quote') return kept(b.text.split(/\n+/).map((l): Inline[] => [{ t: 'text', v: l.trim() }]));
   return [];
 }
 
@@ -246,6 +250,7 @@ export function toTextKind(lines: Inline[][], to: TextKind, from?: Block): Block
   if (to === 'paragraph') return { type: 'text', markdown: serializeBlocks([{ t: 'p', c: lines.flatMap((l, k): Inline[] => (k ? [{ t: 'br' }, ...l] : l)) }]) };
   if (to === 'bulleted' || to === 'numbered') return { type: 'text', markdown: serializeBlocks([{ t: to === 'bulleted' ? 'ul' : 'ol', items: lines }]) };
   if (to === 'quote' || to === 'pull-quote') return { type: 'quote', variant: to === 'pull-quote' ? 'pull' : 'block', text: plain, ...(from?.type === 'quote' && from.cite ? { cite: from.cite } : {}) };
+  if (to === 'subheading') return { type: 'subheading', text: plain };
   return { type: 'heading', level: Number(to.slice(-1)) as 2 | 3 | 4, text: plain, ...(from?.type === 'heading' && from.id ? { id: from.id } : {}) };
 }
 

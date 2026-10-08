@@ -156,6 +156,19 @@ const STATUS: SelectOption[] = [
                 <TextField label="Anchor" name={`body.${i}.id`} id={id(i, 'anchor')} value={b.id ?? ''} optional hint="The address of this heading on the page (#…). Left empty, it's made from its words." />
                 <div class="row">
                   <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
+                  {article.body[i + 1]?.type !== 'subheading' && (
+                    <Button variant="secondary" size="sm" icon="subheading" data-editor-subheading={String(i)}>Add subheading</Button>
+                  )}
+                </div>
+              </>
+            )}
+
+            {b.type === 'subheading' && (
+              <>
+                <Text variant="ui" tone="muted">Its words are edited on the page. It reads as part of the heading just above it, in a quieter voice.</Text>
+                {article.body[i - 1]?.type !== 'heading' && <Text variant="ui" tone="muted">It isn't under a heading: move it to just after one, or turn it into a paragraph.</Text>}
+                <div class="row">
+                  <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
                 </div>
               </>
             )}

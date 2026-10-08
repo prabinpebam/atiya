@@ -4,10 +4,11 @@ import { withBase } from '../design/meta';
 import Prose from '../components/fundamentals/Prose.astro';
 ---
 
-<Example title="Rich text" layout="block" description="What Markdown produces, set as a magazine sets it: a drop cap (on a paragraph marked data-dropcap), headings, lists, a quotation, a dinkus.">
+<Example title="Rich text" layout="block" description="What Markdown produces, set as a magazine sets it: a drop cap (on a paragraph marked data-dropcap), headings, a subheading (a paragraph marked data-subheading, right under its heading), lists, a quotation, a dinkus.">
   <Prose>
     <p data-dropcap>Walking is the whole interface. The planet turns under your feet, so the path ahead always rises to meet you, and every landmark you reach opens a part of the story. The <a href={withBase('/')}>classic site</a> has the same words as plain pages.</p>
     <h2>What’s on the planet</h2>
+    <p data-subheading>A small world with a story at every landmark</p>
     <p>Seven landmarks, a plaza at the pole, a family at home and a small dog called Chopper. Each landmark is a section of the site:</p>
     <ul>
       <li><strong>The workshop</strong> holds the case studies.</li>

@@ -26,13 +26,16 @@ type Out =
   | { type: 'merge'; index: number }
   | { type: 'insert'; index: number }
   | { type: 'op'; index: number; op: 'up' | 'down' | 'duplicate' | 'delete' }
-  | { type: 'pending'; index: number; kind: 'text' | 'heading'; value: string }
+  | { type: 'pending'; index: number; kind: Pending; value: string }
   | { type: 'link-request'; href: string }
   | { type: 'key'; key: 'undo' | 'redo' | 'save' | 'settings' }
   | { type: 'turn'; index: number; to?: TextKind };
 
 const SOURCE = 'editor-canvas';
-const TEXTY = new Set(['text', 'heading', 'quote']);
+const TEXTY = new Set(['text', 'heading', 'subheading', 'quote']);
+/** What a new, still empty block will be once it has words. */
+type Pending = 'text' | 'heading' | 'subheading';
+const PENDING_KIND: Record<Pending, string> = { text: 'Paragraph', heading: 'Heading 2', subheading: 'Subheading' };
 const ALLOWED_INPUT = new Set([
   'insertText',
   'insertReplacementText',
@@ -262,7 +265,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (!dirty || composing) return;
     const { el, index, field } = dirty;
     if (el.hasAttribute('data-editor-pending')) {
-      const value = el.nodeName === 'P' ? markdownOf(el) : plainOf(el);
+      const value = el.dataset.pendingKind === 'text' ? markdownOf(el) : plainOf(el);
       if (!value.trim()) {
         if (final) {
           el.remove();
@@ -276,9 +279,11 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       el.removeAttribute('data-editor-pending');
       el.removeAttribute('data-placeholder');
       blocks.splice(at, 0, el);
-      kinds.splice(at, 0, { kind: el.nodeName === 'P' ? 'Paragraph' : 'Heading 2', type: el.nodeName === 'P' ? 'text' : 'heading' });
-      makeEditable(el, el.nodeName === 'P');
-      post({ type: 'pending', index: at, kind: el.nodeName === 'P' ? 'text' : 'heading', value });
+      const kind = (el.dataset.pendingKind ?? 'text') as Pending;
+      el.removeAttribute('data-pending-kind');
+      kinds.splice(at, 0, { kind: PENDING_KIND[kind], type: kind });
+      makeEditable(el, kind === 'text');
+      post({ type: 'pending', index: at, kind, value });
       dirty = null;
       return;
     }
@@ -464,7 +469,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   /** A new paragraph after the block being written in (Ctrl or Cmd + Enter, or Enter on a list's empty last item): the block keeps all its words. */
   const paragraphAfter = (el: HTMLElement, index: number) => {
     const t = typeOf(index);
-    if (t !== 'text' && t !== 'heading') return;
+    if (t !== 'text' && t !== 'heading' && t !== 'subheading') return;
     dirty = null;
     clearTimeout(timer);
     post({ type: 'split', index, parts: [t === 'text' ? markdownOf(el) : plainOf(el), ''] });
@@ -474,7 +479,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     const c = current();
     if (!c) return;
     const { el, index } = c;
-    const rich = el.dataset.editorEditable === 'rich' || (el.hasAttribute('data-editor-pending') && el.nodeName === 'P');
+    const rich = el.dataset.editorEditable === 'rich' || (el.hasAttribute('data-editor-pending') && el.dataset.pendingKind === 'text');
     const type = e.inputType;
     if (type === 'insertParagraph') {
       e.preventDefault();
@@ -482,7 +487,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       if (el.nodeName === 'UL' || el.nodeName === 'OL') return newItem(el, index);
       if (el.closest('li')) return;
       const t = typeOf(index);
-      if (t !== 'text' && t !== 'heading') return;
+      if (t !== 'text' && t !== 'heading' && t !== 'subheading') return;
       const h = halves(el);
       if (!h) return;
       dirty = null;
@@ -808,7 +813,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         select(i, null, false, true);
         if (ed) focusText(ed, (m.at as 'start' | 'end' | number) ?? 'start');
         else focusBlock(i);
-      } else if (m.type === 'pending') addPending(m.index as number, m.kind as 'text' | 'heading');
+      } else if (m.type === 'pending') addPending(m.index as number, m.kind as Pending);
       else if (m.type === 'link') applyLink(String(m.href ?? ''));
       else if (m.type === 'flush') send(true);
       else if (m.type === 'mode') {
@@ -821,11 +826,13 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     { signal },
   );
 
-  const addPending = (at: number, kind: 'text' | 'heading') => {
+  const addPending = (at: number, kind: Pending) => {
     if (!prose) return;
-    const el = document.createElement(kind === 'text' ? 'p' : 'h2');
+    const el = document.createElement(kind === 'heading' ? 'h2' : 'p');
+    if (kind === 'subheading') el.dataset.subheading = '';
     el.dataset.editorPending = String(at);
-    el.dataset.placeholder = kind === 'text' ? 'Write here, or press + to add a block' : 'A heading';
+    el.dataset.pendingKind = kind;
+    el.dataset.placeholder = kind === 'text' ? 'Write here, or press + to add a block' : kind === 'heading' ? 'A heading' : 'More about the heading';
     el.contentEditable = kind === 'text' ? 'true' : 'plaintext-only';
     const before = blocks[at - 1];
     if (before) before.after(el);
