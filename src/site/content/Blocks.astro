@@ -79,6 +79,9 @@ const views: View[] = await Promise.all(
   }),
 );
 const tag = (level: 2 | 3 | 4) => `h${level}` as const;
+// a heading's or a subheading's lines (Shift + Enter in edit mode), a line break between them; the newline
+// after each break keeps the words apart in its text (the minimap's label, a reader's copy)
+const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` : l));
 ---
 
 {
@@ -176,7 +179,7 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
     }
     if ('id' in v) {
       const H = tag(v.b.level);
-      return <H id={v.id}>{v.b.text}</H>;
+      return <H id={v.id}>{linesOf(v.b.text).map((l, k) => [k > 0 && <br />, l])}</H>;
     }
     const b = v.b;
     switch (b.type) {
@@ -187,7 +190,7 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
           return <Fragment set:html={b.dropcap ? html.replace(/^<p>/, '<p data-dropcap>') : html} />;
         }
       case 'subheading':
-        return <p data-subheading>{b.text}</p>;
+        return <p data-subheading>{linesOf(b.text).map((l, k) => [k > 0 && <br />, l])}</p>;
       case 'quote':
         return (
           <Quote variant={b.variant} cite={b.cite}>

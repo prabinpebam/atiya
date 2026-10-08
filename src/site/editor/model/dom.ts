@@ -135,4 +135,26 @@ export function plainOf(el: MiniNode): string {
   return (el.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Plain text of a heading or a subheading, keeping its line breaks (a `br`, Shift + Enter) as "\n": each
+ * line's white space collapsed and trimmed, empty lines (the browser's trailing `br`) dropped.
+ */
+export function plainLinesOf(el: MiniNode): string {
+  const lines = [''];
+  const walk = (n: MiniNode) => {
+    for (const c of kids(n)) {
+      if (c.nodeType === TEXT) lines[lines.length - 1] += c.textContent ?? '';
+      else if (c.nodeType === ELEMENT) {
+        if (c.nodeName.toLowerCase() === 'br') lines.push('');
+        else walk(c);
+      }
+    }
+  };
+  walk(el);
+  return lines
+    .map((l) => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
 export { serializeInline };

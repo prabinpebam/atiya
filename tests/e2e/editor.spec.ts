@@ -246,11 +246,18 @@ test.describe('editor', () => {
     await page.locator('[data-editor-outline] [data-editor-add-at]').click();
     await page.locator('#editor-palette [data-editor-add="collection"]').click();
     const form = page.locator('#editor-insert-collection');
-    const item = (n: number) => form.getByRole('group', { name: `Item ${n}` });
+    const item = (n: number) => form.getByRole('group', { name: `Item ${n}`, exact: true });
+    // one item to start; the second is added in the form, and its words are written as they'll read
+    await expect(form.getByRole('group', { name: /^Item \d+$/ })).toHaveCount(1);
     await item(1).getByLabel('Heading').fill('Challenge');
-    await item(1).getByLabel('Words').fill('Re-energize the team.');
+    await item(1).getByRole('textbox', { name: 'Words', exact: true }).fill('Re-energize the team.');
+    await form.getByRole('button', { name: 'Add an item' }).click();
     await item(2).getByLabel('Heading').fill('Core idea');
-    await item(2).getByLabel('Words').fill('**Do what makes you proud.** A standard chosen from within.');
+    await item(2).getByRole('textbox', { name: 'Words', exact: true }).click();
+    await page.keyboard.press('Control+b');
+    await page.keyboard.type('Do what makes you proud.');
+    await page.keyboard.press('Control+b');
+    await page.keyboard.type(' A standard chosen from within.');
     await form.getByRole('button', { name: 'Add the collection' }).click();
     await expect(outlineRows(page)).toHaveCount(count + 1);
     await saved(page);

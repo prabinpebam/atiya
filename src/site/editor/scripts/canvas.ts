@@ -8,7 +8,7 @@ import { turnShortcut, type TextKind } from '../model/ops';
 import { blocksFromMarkdown, kindOf, linesOf, wordsOf } from '../model/paste';
 import { blocksFromHtml } from '../model/richPaste';
 import { pictureOfPaste } from '../model/upload';
-import { markdownOf, plainOf } from '../model/dom';
+import { markdownOf, plainLinesOf, plainOf } from '../model/dom';
 import { serializeInline, type Inline } from '../../content/markdown';
 import type { Block } from '../../content/schema';
 
@@ -35,6 +35,10 @@ const SOURCE = 'editor-canvas';
 const TEXTY = new Set(['text', 'heading', 'subheading', 'quote']);
 /** What a new, still empty block will be once it has words. */
 type Pending = 'text' | 'heading' | 'subheading';
+/** Blocks of plain words that keep their lines: Enter splits them, Shift + Enter breaks the line. */
+const LINED = new Set(['heading', 'subheading']);
+/** Plain lines as a paragraph's Markdown, a line break between them. */
+const linesMarkdown = (text: string) => serializeInline(text.split('\n').flatMap((v, k): Inline[] => (k ? [{ t: 'br' }, { t: 'text', v }] : [{ t: 'text', v }])));
 const PENDING_KIND: Record<Pending, string> = { text: 'Paragraph', heading: 'Heading 2', subheading: 'Subheading' };
 const ALLOWED_INPUT = new Set([
   'insertText',
@@ -258,14 +262,15 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (el === fields.summary) return { el, index: null, field: 'summary' };
     return { el, index: indexOf(el), field: null };
   };
-  const valueOf = (el: HTMLElement, index: number | null) => (index !== null && typeOf(index) === 'text' && el.dataset.editorEditable === 'rich' ? markdownOf(el) : plainOf(el));
+  const valueOf = (el: HTMLElement, index: number | null) =>
+    index !== null && typeOf(index) === 'text' && el.dataset.editorEditable === 'rich' ? markdownOf(el) : index !== null && LINED.has(typeOf(index)) ? plainLinesOf(el) : plainOf(el);
 
   const send = (final: boolean) => {
     clearTimeout(timer);
     if (!dirty || composing) return;
     const { el, index, field } = dirty;
     if (el.hasAttribute('data-editor-pending')) {
-      const value = el.dataset.pendingKind === 'text' ? markdownOf(el) : plainOf(el);
+      const value = el.dataset.pendingKind === 'text' ? markdownOf(el) : plainLinesOf(el);
       if (!value.trim()) {
         if (final) {
           el.remove();
@@ -321,6 +326,13 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   on('focusout', (e) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-editor-editable], [data-editor-pending]');
     if (!el) return;
+    // a new block left without words goes (it was never written)
+    if (el.hasAttribute('data-editor-pending') && !(el.textContent ?? '').trim()) {
+      if (dirty?.el === el) dirty = null;
+      el.remove();
+      redraw();
+      return;
+    }
     send(true);
     if (el.dataset.dropcapPaused !== undefined) {
       delete el.dataset.dropcapPaused;
@@ -472,7 +484,41 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (t !== 'text' && t !== 'heading' && t !== 'subheading') return;
     dirty = null;
     clearTimeout(timer);
-    post({ type: 'split', index, parts: [t === 'text' ? markdownOf(el) : plainOf(el), ''] });
+    post({ type: 'split', index, parts: [t === 'text' ? markdownOf(el) : plainLinesOf(el), ''] });
+  };
+
+  /** Enter: the words before the caret stay in the block, the words after it start a new paragraph (at the end, an empty one opens). */
+  /** The text being written is a heading or a subheading (one on the page, or a new one still pending). */
+  const lined = (c: { el: HTMLElement; index: number | null; field: Field | null }) =>
+    c.el.hasAttribute('data-editor-pending') ? LINED.has(c.el.dataset.pendingKind ?? '') : c.index !== null && c.index >= 0 && LINED.has(typeOf(c.index));
+  const splitAt = (el: HTMLElement, index: number) => {
+    const t = typeOf(index);
+    if (t !== 'text' && !LINED.has(t)) return;
+    const h = halves(el);
+    if (!h) return;
+    dirty = null;
+    clearTimeout(timer);
+    const parts = t === 'text' ? [markdownOf(h[0]), markdownOf(h[1])] : [plainLinesOf(h[0]), linesMarkdown(plainLinesOf(h[1]))];
+    post({ type: 'split', index, parts });
+  };
+  /** Shift + Enter in a heading or a subheading: a line break at the caret (a second one at the very end, so the new line shows). */
+  const lineBreak = (el: HTMLElement) => {
+    const r = caretRange();
+    if (!r || !el.contains(r.commonAncestorContainer)) return;
+    r.deleteContents();
+    const br = document.createElement('br');
+    r.insertNode(br);
+    const rest = document.createRange();
+    rest.setStartAfter(br);
+    rest.setEnd(el, el.childNodes.length);
+    if (!rest.toString() && !rest.cloneContents().querySelector('br')) br.after(document.createElement('br'));
+    const caret = document.createRange();
+    caret.setStartAfter(br);
+    caret.collapse(true);
+    const s = getSelection()!;
+    s.removeAllRanges();
+    s.addRange(caret);
+    markDirty();
   };
 
   on('beforeinput', (e) => {
@@ -486,14 +532,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       if (index === null || index < 0 || composing) return;
       if (el.nodeName === 'UL' || el.nodeName === 'OL') return newItem(el, index);
       if (el.closest('li')) return;
-      const t = typeOf(index);
-      if (t !== 'text' && t !== 'heading' && t !== 'subheading') return;
-      const h = halves(el);
-      if (!h) return;
-      dirty = null;
-      clearTimeout(timer);
-      const parts = t === 'text' ? [markdownOf(h[0]), markdownOf(h[1])] : [plainOf(h[0]), serializeInline([{ t: 'text', v: plainOf(h[1]) }])];
-      post({ type: 'split', index, parts });
+      splitAt(el, index);
       return;
     }
     if (type === 'deleteContentBackward' && index !== null && index > 0 && typeOf(index) === 'text' && typeOf(index - 1) === 'text' && el.nodeName === 'P' && atStart(el)) {
@@ -731,6 +770,17 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
           // out of a list (or any paragraph or heading) into a new paragraph after it
           e.preventDefault();
           paragraphAfter(editing.el, editing.index);
+        } else if (e.key === 'Enter' && !mod && !e.altKey && !composing && lined(editing)) {
+          // a heading or a subheading: Shift + Enter breaks the line, Enter goes on in a new paragraph
+          e.preventDefault();
+          if (e.shiftKey) lineBreak(editing.el);
+          else if (editing.el.hasAttribute('data-editor-pending')) {
+            if (!plainLinesOf(editing.el)) return;
+            dirty = editing;
+            send(true);
+            const at = blocks.indexOf(editing.el);
+            if (at >= 0) addPending(at + 1, 'text');
+          } else splitAt(editing.el, editing.index!);
         } else if (editing.el.dataset.editorEditable === 'plain' && (e.key === 'Enter' || (mod && ['b', 'i', 'u'].includes(e.key.toLowerCase()))) && editing.field) {
           e.preventDefault();
           if (e.key === 'Enter') (document.activeElement as HTMLElement).blur();

@@ -194,9 +194,9 @@ Paragraphs (text blocks), headings, quotes, the title and the standfirst are edi
 | Ctrl or Cmd + Shift + X | Strikethrough |
 | Ctrl or Cmd + ], [ | In a list: the item one level in (an item of a list inside the one above), or back out; three levels at most |
 | Ctrl or Cmd + K | Link: a small dialog for the address (https, http, mailto) or another article (a `ref:` link) |
-| Enter | In a paragraph or heading: a new paragraph (a new text block) after it, split at the caret. In a list: a new item, taking the words after the caret; on an empty last item, the list ends and a new paragraph starts after it |
+| Enter | In a paragraph, a heading or a subheading: a new paragraph (a new text block) after it, split at the caret (at the end, an empty one, ready to type; a new heading's words are kept first). In a list: a new item, taking the words after the caret; on an empty last item, the list ends and a new paragraph starts after it |
 | Ctrl or Cmd + Enter | A new paragraph after the block, its words kept whole: the way out of a list from any item |
-| Shift + Enter | A line break (the poem) |
+| Shift + Enter | A line break (the poem); in a heading or a subheading too, where it's kept as a new line of its text |
 | Backspace at the start | Joins the paragraph to the one before it |
 | Escape | Stops editing; the block stays selected |
 
@@ -210,7 +210,7 @@ Paragraphs (text blocks), headings, quotes, the title and the standfirst are edi
 - **Typing in another script** (an input method) is never interrupted: no shortcut, save or split runs while a composition is open, and the text saves when it ends.
 - **The drop cap** (a paragraph's own setting) is turned off while its paragraph is being edited, because its enlarged first letter moves the caret; the others stay.
 - **Saving** happens 800 ms after typing stops, on leaving the block, and on Ctrl or Cmd + S. Saves go through one queue per document, so two never race; text saves don't reload the canvas, so the caret stays put.
-- **New paragraphs, headings and subheadings** are pending until they have words: an empty one is never written, and it disappears if you leave it empty.
+- **New paragraphs, headings and subheadings** are pending until they have words: an empty one is never written, and it disappears when you leave it (click or tab away) still empty.
 - **A subheading** (a line or two more about a heading, set close under it: [model §6](../content/model.md#6-blocks)) is added from the palette, by turning a text block into one, or with **Add subheading** in a heading's settings (offered while the block after it isn't one), which opens an empty one right under it. It holds plain words, like a heading; a subheading that isn't right under a heading says so in its settings.
 
 ### 3.3 Working with blocks
@@ -226,7 +226,7 @@ Paragraphs (text blocks), headings, quotes, the title and the standfirst are edi
 | Delete or Backspace | Delete it (Undo brings it back) |
 | Ctrl or Cmd + Z, Shift + Ctrl or Cmd + Z | Undo, redo (the document's history) |
 
-- **The outline** lists every block (its kind's icon, and its first words or its picture's alt text). Clicking a row selects the block and scrolls the canvas to it. Rows can be dragged to reorder; every drag has a keyboard and button alternative (Move up, Move down), as WCAG 2.5.7 asks.
+- **The outline** lists every block (its kind's icon, and its first words or its picture's alt text). Clicking a row selects the block and scrolls the canvas to it; selecting a block on the canvas (or with the keys) scrolls the outline, and only it, to bring that block's row into view when it's out of sight. Rows can be dragged to reorder; every drag has a keyboard and button alternative (Move up, Move down), as WCAG 2.5.7 asks.
 - **Turn into, any time.** Any text block (a paragraph, a heading, a subheading, a quote, a list) turns into any other kind of text, and back: from the block toolbar on the canvas, the inspector, the outline's selection bar or the keys above. Its words stay: a paragraph or a list keeps its bold, italic, code and links, a heading, a subheading or a quote takes the plain words, a paragraph's lines become a list's items (and back), and a heading keeps its anchor, a quote its source, while only the level or the style changes. The choices, like the palette's, also make one block from several (one bulleted or numbered list; a collection laid out as tiles, from pairs of a heading and its words, or from one text block alone as a single item) and several from one (a list's items or a paragraph's lines as paragraphs; a collection's items as headings and paragraphs, with their pictures). A choice that doesn't fit what's selected isn't offered, or says why. Each is one step in the history.
 - **Several blocks at once.** In the outline, Shift + click (or Shift + Up and Down) selects a range, Ctrl or Cmd + click adds or removes one block, Ctrl or Cmd + A selects them all, and Escape clears the selection. A bar over the rows says how many are selected, with Move up, Move down and Clear. The selection then moves together, one step at a time, in its order (a row's own Move buttons and Alt + Up and Down do the same; nothing moves past the start or the end). Dragging one of its rows drags them all, and Delete deletes them all. Each of these is one step in the history. The inspector shows the block clicked last; clicking a block on the canvas ends the selection.
 - **Undo and redo** step through whole-document snapshots, one step per change: a block added, moved, deleted or reconfigured, a setting changed, or one editing session of one block's text (from entering it to leaving it). The history lasts for the browser session. While you're typing, Ctrl+Z is the browser's own undo within that text; the top bar's Undo first ends the editing session, then steps back. Picture details (alt text, caption, focus) belong to the picture, not the article, and aren't in the article's history: the media screen says so.
@@ -239,7 +239,7 @@ A dialog listing the content model's blocks, in two groups, each with its icon a
 |---|---|---|
 | Text | Paragraph, Heading, Subheading | An empty one appears in place, ready to type (pending until it has words) |
 | Text | Quote | Asks for the quote (and, optionally, who said it and the style: block or pull) |
-| Text | Collection | Asks for its layout, how its headings read, and up to three items (a heading, a subtext or words each, and when it was, for a timeline; at least one item); pictures and more items are added in the inspector ([model §6.1](../content/model.md#61-collections-one-shape-of-content-any-layout)) |
+| Text | Collection | Asks for its layout, how its headings read, and its items: one to start, more with Add an item (an added one can be removed), each a heading, a subtext or words, and when it was, for a timeline (at least one item). The words are a rich field, as in the inspector (§3.5): bold, italic, strikethrough, code, links and lists, with the same toolbar and keys. The form is laid out as the inspector's sections (§3.5): wide, the list of its items (each named by its heading, else its subtext, time or words) and its layout beside the chosen one; narrow, each in turn. Its Cancel and Add buttons are a footer that stays in view while it scrolls; pictures are added in the inspector ([model §6.1](../content/model.md#61-collections-one-shape-of-content-any-layout)) |
 | Text | Table | Inserted at once, two columns by two empty rows; its cells are written in the inspector ([model §6.2](../content/model.md#62-tables-rows-and-columns-of-short-facts)) |
 | Text | Divider | Inserted at once |
 | Media | Picture | Opens the media picker (choose or upload), then the width |

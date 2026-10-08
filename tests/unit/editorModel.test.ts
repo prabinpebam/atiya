@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import * as ops from '../../src/site/editor/model/ops';
 import * as paste from '../../src/site/editor/model/paste';
 import * as planet from '../../src/site/editor/model/planet';
-import { inlineOf, markdownOf, plainOf, type MiniNode } from '../../src/site/editor/model/dom';
+import { inlineOf, markdownOf, plainLinesOf, plainOf, type MiniNode } from '../../src/site/editor/model/dom';
 import { addHub, addLink, inMenu, menuOf, moveEntry, nodeOf, childSlugs, findHub, hubs, nodeIds, place, placeAll, relabelEntry, removeEntry, reorder, sectionOf, setInMenu, unplace, updateHub } from '../../src/site/editor/model/structure';
 import { slugify, today, unique } from '../../src/site/editor/model/ids';
 import { actionsUrl, groupChanges, resourceName, resourceOf, suggestMessage, type Titles } from '../../src/site/editor/model/names';
@@ -150,7 +150,7 @@ describe('turning text into another kind, any time', () => {
 
   it('keeps the words: marks where the kind holds them, plain words where it doesn\'t, lines as items and back', () => {
     const p = para('A **bold** start,\\\nand a [link](https://example.com).');
-    expect(ops.convertText(p, 'heading-2')).toEqual({ type: 'heading', level: 2, text: 'A bold start, and a link.' });
+    expect(ops.convertText(p, 'heading-2')).toEqual({ type: 'heading', level: 2, text: 'A bold start,\nand a link.' });
     expect(ops.convertText(p, 'pull-quote')).toEqual({ type: 'quote', variant: 'pull', text: 'A bold start, and a link.' });
     const list = ops.convertText(p, 'bulleted');
     expect(list).toEqual({ type: 'text', markdown: '- A **bold** start,\n- and a [link](https://example.com).' });
@@ -176,6 +176,16 @@ describe('turning text into another kind, any time', () => {
     expect(ops.convertText(sub, 'paragraph')).toEqual(para('A bold line'));
     // Enter in a subheading: its words stay, the rest becomes a paragraph after it
     expect(ops.split([sub], 0, ['A bold', 'line'])).toEqual([{ type: 'subheading', text: 'A bold' }, para('line')]);
+  });
+
+  it("keeps a heading's lines (Shift + Enter): through Enter, and turned into a paragraph and back", () => {
+    const two: Block = { type: 'heading', level: 2, text: 'A site\nwith two doors' };
+    expect(ops.split([two], 0, ['A site\nwith', 'two doors'])).toEqual([{ ...two, text: 'A site\nwith' }, para('two doors')]);
+    expect(ops.convertText(two, 'paragraph')).toEqual(para('A site\\\nwith two doors'));
+    expect(ops.convertText(para('A site\\\nwith two doors'), 'heading-3')).toEqual({ type: 'heading', level: 3, text: 'A site\nwith two doors' });
+    expect(ops.convertText(two, 'subheading')).toEqual({ type: 'subheading', text: 'A site\nwith two doors' });
+    expect(ops.convertText(two, 'quote')).toEqual({ type: 'quote', variant: 'block', text: 'A site with two doors' });
+    expect(ops.excerptOf(two)).toBe('A site with two doors');
   });
 
   it('splits a list or a paragraph of lines into paragraphs, and joins blocks into one list', () => {
@@ -370,6 +380,11 @@ describe('the canvas DOM back to the Markdown subset', () => {
     expect(plainOf(p)).toBe('Hello bold, italic, x = 1 and a storynext line');
   });
 
+  it("reads a heading's lines back: a break a newline, each line tidied, the browser's trailing break dropped", () => {
+    expect(plainLinesOf(el('h2', [text('  A site '), el('br'), text('with  two doors'), el('br'), el('br')]))).toBe('A site\nwith two doors');
+    expect(plainLinesOf(el('h2', [text('One line')]))).toBe('One line');
+    expect(plainLinesOf(el('h2', [el('br')]))).toBe('');
+  });
   it("drops the browser's trailing placeholder break, collapses white space, and keeps a typed non-breaking space as a space", () => {
     expect(markdownOf(el('p', [text('  one\n  two\u00a0'), el('br')]))).toBe('one two');
   });

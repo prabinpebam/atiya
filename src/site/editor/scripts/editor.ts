@@ -11,10 +11,11 @@ import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
 import { isVideoFile } from '../model/upload';
 import { starterTable, textToTable } from '../model/table';
-import { startWidth } from '../model/collection';
+import { LAYOUT_CHOICES, startWidth } from '../model/collection';
 import { followMove, followRemove, itemKey } from '../model/inspector';
-import { applySections, followSection, initSections, revealField } from './inspector';
+import { applySections, chooseSection, followSection, initSections, revealField } from './inspector';
 import { initRichFields } from './richtext';
+import { richMarkdown } from '../model/richText';
 import { openCrop } from './crop';
 import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
@@ -205,6 +206,18 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (bar) bar.hidden = !several;
     const count = root.querySelector<HTMLElement>('[data-editor-multicount]');
     if (count) count.textContent = several ? `${picked.size} blocks selected` : '';
+    revealRow(i);
+  };
+  /** Keeps the selected block's row in sight in the outline: its list scrolls (and only it) when the row is out of view. */
+  const revealRow = (i: number | null) => {
+    const row = i === null ? null : root.querySelector<HTMLElement>(`[data-editor-select="${i}"]`)?.closest<HTMLElement>('[data-row]');
+    const list = row?.closest<HTMLElement>('[data-scrollbar]');
+    if (!row || !list) return;
+    const r = row.getBoundingClientRect();
+    const l = list.getBoundingClientRect();
+    if (!l.height || (r.top >= l.top && r.bottom <= l.bottom)) return;
+    const top = list.scrollTop + r.top - l.top - (l.height - r.height) / 2;
+    list.scrollTo({ top: Math.max(0, top), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   };
   const setSelected = (i: number | null, opts: { tab?: boolean; canvas?: boolean; scroll?: boolean; keep?: boolean } = {}) => {
     selected = i !== null && i >= 0 && i < doc.body.length ? i : null;
@@ -804,7 +817,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (type === 'text' || type === 'heading' || type === 'subheading') return toCanvas({ type: 'pending', index: at, kind: type });
     if (type === 'divider') return insertBlock(at, { type: 'divider' });
     if (type === 'table') return insertBlock(at, starterTable());
-    if (type === 'quote' || type === 'collection') return dialog(`editor-insert-${type}`)?.showModal();
+    if (type === 'quote' || type === 'collection') {
+      const d = dialog(`editor-insert-${type}`);
+      // a new collection's form shows its chosen section (its first item to start)
+      if (d) applySections(d);
+      return d?.showModal();
+    }
     // a YouTube or Vimeo video: its address and title, then its poster
     if (type === 'embed') return dialog('editor-insert-video')?.showModal();
     // a video file: one from the library, or one uploaded there and then
@@ -828,6 +846,88 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   let pendingCarousel: string[] = [];
   let pendingVideo: { embed: { provider: 'youtube' | 'vimeo'; id: string }; title: string; duration?: number } | null = null;
 
+  // ---------- a new collection's items: one to start, more added (and removed) in the form ----------
+  // The form has the inspector's sections: each item a pane with its row in the list beside it (item-<uid>).
+  let itemUid = 0;
+  const itemsOf = (form: Element) => [...form.querySelectorAll<HTMLElement>('[data-insert-items] > [data-insert-item]')];
+  const navRowOf = (item: HTMLElement) => item.closest('form')?.querySelector(`[data-section-pick="${item.dataset.section}"]`)?.closest('li') ?? null;
+  const hostOf = (form: Element) => form.querySelector<HTMLElement>('[data-sections]');
+  /** An item's line in the list: its heading, else its subtext, its time or its words. */
+  const describeItem = (item: HTMLElement) => {
+    const v = (k: string) => (item.querySelector<HTMLInputElement>(`[data-insert-field="${k}"] input`)?.value ?? '').trim();
+    const words = (item.querySelector('[data-rich-input]')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const detail = navRowOf(item)?.querySelector('[data-insert-item-detail]');
+    if (detail) detail.textContent = v('heading') || v('subtext') || v('when') || words || 'Empty';
+  };
+  const renumber = (form: Element) => {
+    const items = itemsOf(form);
+    items.forEach((it, k) => {
+      it.querySelector('[data-insert-item-name]')!.textContent = `Item ${k + 1}`;
+      const name = navRowOf(it)?.querySelector('[data-insert-nav-name]');
+      if (name) name.textContent = `Item ${k + 1}`;
+    });
+    form.querySelectorAll<HTMLButtonElement>('[data-insert-add-item]').forEach((b) => (b.disabled = items.length >= Number(b.dataset.max)));
+  };
+  const resetItems = (form: Element) => {
+    itemsOf(form).forEach((it, k) => {
+      if (k) {
+        navRowOf(it)?.remove();
+        it.remove();
+      } else it.querySelectorAll('[data-rich-input]').forEach((r) => r.replaceChildren());
+    });
+    renumber(form);
+    itemsOf(form).forEach(describeItem);
+    const host = hostOf(form);
+    if (host) chooseSection(host, 'item-0');
+  };
+  /** The form's layout, by name, in its row of the list. */
+  const describeLayout = (form: Element) => {
+    const value = form.querySelector<HTMLInputElement>('input[name="layout"]')?.value;
+    const detail = form.querySelector('[data-insert-layout-detail]');
+    if (detail) detail.textContent = LAYOUT_CHOICES.find((c) => c.value === value)?.label ?? '';
+  };
+  const copyOf = (form: Element, template: string, uid: number) => {
+    const holder = document.createElement('div');
+    holder.innerHTML = form.querySelector<HTMLTemplateElement>(template)!.innerHTML.replaceAll('__n__', String(uid));
+    return holder.firstElementChild as HTMLElement;
+  };
+  on(root, 'click', (e) => {
+    const t = e.target as Element;
+    const add = t.closest<HTMLButtonElement>('[data-insert-add-item]');
+    const remove = t.closest<HTMLElement>('[data-insert-remove-item]');
+    const form = (add ?? remove)?.closest<HTMLFormElement>('[data-editor-insert-form]');
+    if (!form) return;
+    const host = hostOf(form);
+    if (add) {
+      const uid = ++itemUid;
+      const item = copyOf(form, '[data-insert-item-template]', uid);
+      form.querySelector('[data-insert-items]')!.append(item);
+      form.querySelector('[data-insert-nav]')!.append(copyOf(form, '[data-insert-nav-template]', uid));
+      renumber(form);
+      if (host) chooseSection(host, `item-${uid}`);
+      item.querySelector<HTMLElement>('input, [contenteditable]')?.focus();
+      announce(`Added item ${itemsOf(form).length}`);
+    } else if (remove) {
+      const item = remove.closest<HTMLElement>('[data-insert-item]')!;
+      const before = itemsOf(form)[Math.max(0, itemsOf(form).indexOf(item) - 1)];
+      navRowOf(item)?.remove();
+      item.remove();
+      renumber(form);
+      const next = before === item ? itemsOf(form)[0] : before;
+      if (host && next) chooseSection(host, next.dataset.section!);
+      form.querySelector<HTMLElement>('[data-insert-add-item]:not([disabled])')?.focus();
+      announce(`Removed the item: ${itemsOf(form).length} left`);
+    }
+  });
+  // the list says what each item is, and which layout, as they're written
+  on(root, 'input', (e) => {
+    const item = (e.target as Element).closest<HTMLElement>('[data-insert-items] > [data-insert-item]');
+    if (item) describeItem(item);
+  });
+  on(root, 'change', (e) => {
+    const t = e.target as HTMLInputElement;
+    if (t.name === 'layout' && t.closest('[data-editor-insert-form]')) describeLayout(t.closest('form')!);
+  });
   on(root, 'submit', (e) => {
     const form = (e.target as HTMLElement).closest<HTMLFormElement>('[data-editor-insert-form]');
     if (!form) return;
@@ -843,6 +943,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const close = () => {
       issue('');
       form.reset();
+      if (kind === 'collection') {
+        resetItems(form);
+        describeLayout(form);
+      }
       form.closest('dialog')?.close();
     };
     if (kind === 'quote') {
@@ -851,8 +955,9 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       return insertBlock(insertAt, { type: 'quote', text: val('text'), variant: (val('variant') || 'pull') as 'pull' | 'block', ...(val('cite') ? { cite: val('cite') } : {}) });
     }
     if (kind === 'collection') {
-      const items = [0, 1, 2]
-        .map((n) => ({ when: val(`when${n}`), heading: val(`heading${n}`), subtext: val(`subtext${n}`), text: val(`text${n}`) }))
+      const field = (it: HTMLElement, k: string) => (it.querySelector<HTMLInputElement>(`[data-insert-field="${k}"] input`)?.value ?? '').trim();
+      const items = [...form.querySelectorAll<HTMLElement>('[data-insert-items] > [data-insert-item]')]
+        .map((it) => ({ when: field(it, 'when'), heading: field(it, 'heading'), subtext: field(it, 'subtext'), text: richMarkdown(it.querySelector<HTMLElement>('[data-rich-input]')!).trim() }))
         .map((it) => Object.fromEntries(Object.entries(it).filter(([, v]) => v)) as { when?: string; heading?: string; subtext?: string; text?: string })
         .filter((it) => it.heading || it.subtext || it.text);
       if (!items.length) return issue('Give at least one item a heading, a subtext or its words.');

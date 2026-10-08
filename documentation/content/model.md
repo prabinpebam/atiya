@@ -298,8 +298,8 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | Block | Fields | Renders with |
 |---|---|---|
 | `text` | `markdown`, `dropcap?` (a paragraph opens with a drop cap: chosen paragraph by paragraph, off unless set, never automatic; a list ignores it) | `Prose` |
-| `heading` | `level` (2 to 4), `text` | `Prose` heading, with an anchor id; it's also a minimap landmark |
-| `subheading` | `text` (plain words) | A line or two more about the heading just above it, set close under it in Fraunces italic, muted and a size under the heading (lead under an H2). It's a `<p data-subheading>`, not a heading: it isn't a landmark and has no anchor. Placed anywhere else, it still renders, as a quiet line on its own; the editor says so |
+| `heading` | `level` (2 to 4), `text` (plain words; a newline is a line break in it, Shift + Enter in edit mode) | `Prose` heading, with an anchor id (from all its words); it's also a minimap landmark |
+| `subheading` | `text` (plain words; a newline is a line break, as in a heading) | A line or two more about the heading just above it, set close under it in Fraunces italic, muted and a size under the heading (lead under an H2). It's a `<p data-subheading>`, not a heading: it isn't a landmark and has no anchor. Placed anywhere else, it still renders, as a quiet line on its own; the editor says so |
 | `figure` | `media`, `caption?`, `credit?`, `width` (`content`, `popout`, `wide`, `full`), `lightbox?` | `Figure` |
 | `gallery` | `gallery` (a gallery ID) or `items` (media refs); `layout?`, `fit?` (`cover`, or `contain` for marks and artwork that mustn't be cropped), `caption?`, `width?`, `lightbox?` | `Gallery` |
 | `carousel` | `gallery` (a gallery ID) or `items` (`{ media, caption? }[]`); `label`, `peek?`, `pager?`, `arrows?` | `Carousel` |

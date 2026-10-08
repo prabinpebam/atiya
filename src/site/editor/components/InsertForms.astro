@@ -2,16 +2,21 @@
 /**
  * What a block asks for before it exists (documentation/editor/spec.md §3.4): a quote's words, a
  * collection's first items and its layout, a video's address and title, a carousel's label, and the link form for text. Each is shown in a
- * Dialog the article editor composes; the editor makes the block (or the link) from what's entered.
+ * Dialog the article editor composes; the editor makes the block (or the link) from what's entered. Its\n * actions are a footer that stays in view while the form scrolls; a collection starts with one item (more\n * are added here), its words a rich field as the inspector's.
  * @tier editor
- * @a11y Labelled fields with hints; a missing value is named under the form (role="alert"); the submit button says what it adds.
+ * @a11y Labelled fields with hints; a missing value is named under the form (role="alert"); the submit button says what it adds.\n * @a11y A collection's items are fieldsets named by their number; a rich field's toolbar is a labelled toolbar, every button named with its key; adding or removing an item is announced and moves focus to its first field (or to Add an item).
  */
 import TextField from '../../components/fundamentals/TextField.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Text from '../../components/fundamentals/Text.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Prose from '../../components/fundamentals/Prose.astro';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { HEADING_CHOICES, LAYOUT_CHOICES } from '../model/collection';
+import { RICH_GROUPS, RICH_TOOLS } from '../model/richText';
+import { COLLECTION_MAX } from '../../content/schema';
 
 interface Props {
   /** Which form. */
@@ -21,6 +26,7 @@ interface Props {
 }
 
 const { kind, articles = [] } = Astro.props;
+const TOGGLES = new Set<string>(['bold', 'italic', 'strikethrough', 'bulleted', 'numbered']);
 const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collection: 'Add the collection', video: 'Add the video', carousel: 'Add the carousel', link: 'Set the link' };
 ---
 
@@ -37,20 +43,115 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
   {
     kind === 'collection' && (
       <>
-        <Text variant="ui" tone="muted">Items of the same shape: each has a heading, a picture, a subtext or its words, any of them, and can say when it was (for a timeline). Pictures and more items are added in its settings; its layout can change at any time.</Text>
-        <div class="pair">
-          <Select label="Layout" name="layout" value="tiles" options={LAYOUT_CHOICES} />
-          <Select label="Headings" name="headings" value="label" options={HEADING_CHOICES} />
+        <Text variant="ui" tone="muted">Items of the same shape: each has a heading, a picture, a subtext or its words, any of them, and can say when it was (for a timeline). Start with one item and add more here; pictures are added in its settings, and its layout can change at any time.</Text>
+        {/* the inspector's sections: wide, the list of items and settings beside the chosen one; narrow, each in turn */}
+        <div class="sections" data-sections="insert-collection">
+          <nav class="section-nav" aria-label="New collection">
+            <div class="nav-group">
+              <span class="nav-label">Items</span>
+              {(['0', '__n__'] as const).map((n) => {
+                const row = (
+                  <li class="nav-row" data-insert-nav-row>
+                    <button type="button" class="nav-item" data-section-pick={`item-${n}`}>
+                      <span class="nav-name" data-insert-nav-name>Item 1</span>
+                      <span class="nav-detail" data-insert-item-detail>Empty</span>
+                    </button>
+                  </li>
+                );
+                return n === '0' ? (
+                  <ol class="nav-list" data-insert-nav>
+                    {row}
+                  </ol>
+                ) : (
+                  <template data-insert-nav-template>{row}</template>
+                );
+              })}
+              <div class="nav-add">
+                <Button variant="quiet" size="sm" icon="plus" data-insert-add-item="" data-max={String(COLLECTION_MAX)}>
+                  Add an item
+                </Button>
+              </div>
+            </div>
+            <div class="nav-group">
+              <span class="nav-label">Settings</span>
+              <ol class="nav-list">
+                <li class="nav-row">
+                  <button type="button" class="nav-item" data-section-pick="layout">
+                    <span class="nav-name">Layout and headings</span>
+                    <span class="nav-detail" data-insert-layout-detail>Tiles</span>
+                  </button>
+                </li>
+              </ol>
+            </div>
+          </nav>
+          <div class="panes">
+            <div class="pane-group">
+              {/* the first item, then a template the editor copies for each item added (its `__n__` made unique) */}
+              {(['0', '__n__'] as const).map((n) => {
+                const first = n === '0';
+                const item = (
+                  <fieldset class="item pane" data-insert-item data-section={`item-${n}`} aria-labelledby={`insert-item-${n}`}>
+                    <legend class="legend">
+                      <span id={`insert-item-${n}`} data-insert-item-name>Item 1</span>
+                      {!first && <IconButton label="Remove this item" icon="delete" size="sm" tooltip="none" data-insert-remove-item="" />}
+                    </legend>
+                    <TextField label="When" name={`when-${n}`} id={`insert-cw-${n}`} optional data-insert-field="when" hint={first ? 'Its time, in words (2016, July 2019 to now): set by its mark in a timeline.' : undefined} />
+                    <TextField label="Heading" name={`heading-${n}`} id={`insert-ch-${n}`} optional data-insert-field="heading" />
+                    <TextField label="Subtext" name={`subtext-${n}`} id={`insert-cs-${n}`} optional data-insert-field="subtext" hint={first ? 'A short line under the heading (a value, a date, a role).' : undefined} />
+                    <div class="rich" data-rich-field>
+                      <div class="rich-head">
+                        <span class="field-label" id={`insert-ct-${n}-label`}>Words</span>
+                        <Text as="span" variant="small" tone="muted">Optional</Text>
+                      </div>
+                      <div class="rich-tools" role="toolbar" aria-label="Words: formatting" aria-controls={`insert-ct-${n}`}>
+                        {RICH_GROUPS.map((group) => (
+                          <span class="tool-group">
+                            {RICH_TOOLS.filter((tool) => tool.group === group).map((tool) => (
+                              <IconButton label={`${tool.label} (${tool.key})`} icon={tool.icon} size="sm" shape="square" tooltip="bottom" pressed={TOGGLES.has(tool.op) ? false : undefined} disabled={tool.op === 'indent' || tool.op === 'outdent'} data-rich-op={tool.op} />
+                            ))}
+                          </span>
+                        ))}
+                      </div>
+                      <div class="rich-box">
+                        <Prose size="compact">
+                          <div class="rich-input" id={`insert-ct-${n}`} contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby={`insert-ct-${n}-label`} aria-describedby={first ? 'insert-ct-hint' : undefined} data-rich-input />
+                        </Prose>
+                      </div>
+                      <input type="hidden" name={`text-${n}`} value="" data-rich-value />
+                      {first && (
+                        <Text variant="small" tone="muted" id="insert-ct-hint">
+                          Written as it will read: Enter starts a new paragraph, and the toolbar (or its keys) sets bold, italic, strikethrough, code, links and lists.
+                        </Text>
+                      )}
+                    </div>
+                  </fieldset>
+                );
+                return first ? (
+                  <div class="pane-list" data-insert-items>
+                    {item}
+                  </div>
+                ) : (
+                  <template data-insert-item-template>{item}</template>
+                );
+              })}
+              <div class="panes-add">
+                <Button variant="secondary" size="sm" icon="plus" data-insert-add-item="" data-max={String(COLLECTION_MAX)}>
+                  Add an item
+                </Button>
+              </div>
+            </div>
+            <section class="pane" data-section="layout" aria-labelledby="insert-layout-title">
+              <Heading level={3} size="ui" id="insert-layout-title">
+                Layout and headings
+              </Heading>
+              <div class="pair">
+                <Select label="Layout" name="layout" value="tiles" options={LAYOUT_CHOICES} />
+                <Select label="Headings" name="headings" value="label" options={HEADING_CHOICES} />
+              </div>
+            </section>
+          </div>
         </div>
-        {[0, 1, 2].map((n) => (
-          <fieldset class="item">
-            <legend class="legend">{`Item ${n + 1}`}</legend>
-            <TextField label="When" name={`when${n}`} optional hint={n === 0 ? 'Its time, in words (2016, July 2019 to now): set by its mark in a timeline.' : undefined} />
-            <TextField label="Heading" name={`heading${n}`} optional />
-            <TextField label="Subtext" name={`subtext${n}`} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
-            <TextField label="Words" name={`text${n}`} multiline rows={2} optional hint={n === 0 ? 'A sentence or a few paragraphs: a blank line starts the next. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
-          </fieldset>
-        ))}
+
       </>
     )
   }
@@ -101,27 +202,269 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
     gap: var(--space-3);
   }
 
-  .item {
-    display: grid;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0 0 var(--space-3);
-    border: 0;
-    border-block-end: var(--border-hairline) solid var(--color-rule);
+  /* ---------- a collection's sections, as the inspector's: narrow, each in turn; wide, listed beside the chosen one ---------- */
+  .form {
+    container: insert / inline-size;
   }
 
+  .sections,
+  .panes,
+  .pane,
+  .pane-group,
+  .pane-list {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .panes,
+  .pane-list {
+    gap: var(--space-5);
+  }
+
+  .pane-group {
+    gap: var(--space-4);
+  }
+
+  .pane {
+    gap: var(--space-2);
+  }
+
+  /* each section starts under a rule, an item's under a dashed one */
+  .pane,
+  .pane-group {
+    margin: 0;
+    padding: var(--space-4) 0 0;
+    border: 0;
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .pane-list > .pane {
+    padding-block-start: var(--space-3);
+    border-block-start-style: dashed;
+  }
+
+  /* the first item is under its group's rule already */
+  .pane-list > .pane:first-child {
+    padding-block-start: var(--space-0);
+    border-block-start: 0;
+  }
+
+  .section-nav {
+    display: none;
+  }
+
+  .nav-group {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .nav-group + .nav-group {
+    padding-block-start: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .nav-label {
+    padding-inline: var(--space-2);
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .nav-list {
+    display: grid;
+    gap: var(--space-0-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .nav-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .nav-item {
+    display: grid;
+    min-inline-size: 0;
+    min-block-size: var(--size-touch);
+    align-content: center;
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .nav-item:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .nav-item:active {
+    background: var(--color-bg-hover);
+  }
+
+  .nav-item[aria-current='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .nav-item:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  .nav-name {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .nav-detail {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-item[aria-current='true'] .nav-detail {
+    color: var(--color-on-accent-soft);
+  }
+
+  .panes-add {
+    display: flex;
+  }
+
+  @container insert (min-width: 40rem) {
+    /* the list's rule is the column's, drawn down the whole of it */
+    .sections {
+      grid-template-columns: var(--c-editor-inspector-nav) minmax(0, 1fr);
+      align-items: start;
+      gap: var(--space-6);
+      background: linear-gradient(var(--color-rule), var(--color-rule)) no-repeat var(--c-editor-inspector-nav) 0 / var(--border-hairline) 100%;
+    }
+
+    .section-nav {
+      position: sticky;
+      inset-block-start: var(--space-0);
+      display: grid;
+      align-content: start;
+      gap: var(--space-3);
+      padding-inline-end: var(--space-3);
+    }
+
+    /* only the chosen section, without its rule: the list beside it says where it is */
+    .pane:not([data-current]),
+    .pane-group:not(:has(.pane[data-current])) {
+      display: none;
+    }
+
+    .pane,
+    .pane-group,
+    .pane-list > .pane {
+      padding-block-start: var(--space-0);
+      border-block-start: 0;
+    }
+
+    .panes-add {
+      display: none;
+    }
+  }
+
+  /* ---------- the words: a rich field, as the inspector's (edited as they'll read) ---------- */
+  .rich {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .rich-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .field-label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .rich-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-0-5) var(--space-3);
+  }
+
+  .tool-group {
+    display: flex;
+    gap: var(--space-0-5);
+  }
+
+  .rich-box {
+    min-block-size: calc(var(--size-touch) * 2);
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-control) solid var(--c-control-border);
+    border-radius: var(--c-control-radius);
+    background: var(--c-control-fill);
+    cursor: text;
+  }
+
+  .rich-box:focus-within {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  .rich-input {
+    min-block-size: calc(var(--size-touch) * 1.5);
+    outline: none;
+  }
+
+  /* the paragraphs and lists the field's editing makes (the browser writes them): a paragraph apart, as on the page */
+  .rich-input > :global(*) {
+    margin-block: 0;
+  }
+
+  .rich-input > :global(* + *) {
+    margin-block-start: var(--space-3);
+  }
+
+  /* its name, and (for an item added) its Remove button at the end of the line; floated, it's a row of the
+     item's grid, not drawn over the item's top rule as a fieldset's legend is */
   .legend {
+    float: inline-start;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    inline-size: 100%;
     padding: 0;
     font-family: var(--font-ui);
     font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
   }
 
+  /* the form's actions: a footer, kept in view at the dialog's bottom edge while the form scrolls (the dialog's body pads by space-6) */
   .actions {
+    position: sticky;
+    z-index: var(--layer-raised);
+    inset-block-end: calc(var(--space-6) * -1);
     display: flex;
     flex-wrap: wrap;
     justify-content: end;
     gap: var(--space-3);
+    margin-block-end: calc(var(--space-6) * -1);
+    margin-inline: calc(var(--space-6) * -1);
+    padding: var(--space-4) var(--space-6);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+    background: var(--color-bg-raised);
   }
 
   .issue {

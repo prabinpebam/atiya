@@ -70,11 +70,19 @@ export function split(body: Body, at: number, parts: string[]): Body {
   const b = body[at];
   if (!b || (b.type !== 'text' && b.type !== 'heading' && b.type !== 'subheading')) return body;
   const [first, ...rest] = parts;
-  const head: Block = b.type === 'text' ? { ...b, markdown: first } : { ...b, text: plainText(first).replace(/\s+/g, ' ').trim() };
+  const head: Block = b.type === 'text' ? { ...b, markdown: first } : { ...b, text: plainLines(first) };
   const tail: Block[] = rest.filter((p) => p.trim()).map((markdown) => ({ type: 'text', markdown }));
   const keepHead = b.type !== 'text' ? !!(head as { text: string }).text : !!first.trim();
   return [...body.slice(0, at), ...(keepHead ? [head] : []), ...tail, ...body.slice(at + 1)];
 }
+
+/** Plain words as a heading's or a subheading's text: each line's spaces collapsed, empty lines dropped. */
+const plainLines = (text: string) =>
+  text
+    .split('\n')
+    .map((l) => plainText(l).replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
 
 /** Joins a text block to the text block before it (Backspace at its start). */
 export function merge(body: Body, at: number): Body {
@@ -134,7 +142,7 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
     case 'heading':
     case 'subheading':
     case 'quote':
-      return cut(b.text);
+      return cut(b.text.replace(/\n/g, ' '));
     case 'figure':
       return cut(alt(b.media) ?? b.media.split('/').pop()!);
     case 'gallery':
@@ -242,16 +250,18 @@ export function linesOf(b: Block): Inline[][] {
 
 /**
  * Lines as a block of a text kind. A paragraph keeps its marks and puts each line on its own (a line
- * break between them); a list makes each line an item; a heading or a quote takes the plain words, on
- * one line. A heading keeps its anchor, and a quote its source, when it only changes level or style.
+ * break between them); a list makes each line an item; a heading or a subheading takes the plain words,
+ * a line each (a line break between them); a quote takes them on one line. A heading keeps its anchor, and a quote its source, when it only changes level or style.
  */
 export function toTextKind(lines: Inline[][], to: TextKind, from?: Block): Block {
-  const plain = lines.map((l) => words(l).replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ');
+  const kept = lines.map((l) => words(l).replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const plain = kept.join(' ');
   if (to === 'paragraph') return { type: 'text', markdown: serializeBlocks([{ t: 'p', c: lines.flatMap((l, k): Inline[] => (k ? [{ t: 'br' }, ...l] : l)) }]) };
   if (to === 'bulleted' || to === 'numbered') return { type: 'text', markdown: serializeBlocks([{ t: to === 'bulleted' ? 'ul' : 'ol', items: lines }]) };
   if (to === 'quote' || to === 'pull-quote') return { type: 'quote', variant: to === 'pull-quote' ? 'pull' : 'block', text: plain, ...(from?.type === 'quote' && from.cite ? { cite: from.cite } : {}) };
-  if (to === 'subheading') return { type: 'subheading', text: plain };
-  return { type: 'heading', level: Number(to.slice(-1)) as 2 | 3 | 4, text: plain, ...(from?.type === 'heading' && from.id ? { id: from.id } : {}) };
+  // a heading and a subheading keep the lines (a line break each)
+  if (to === 'subheading') return { type: 'subheading', text: kept.join('\n') };
+  return { type: 'heading', level: Number(to.slice(-1)) as 2 | 3 | 4, text: kept.join('\n'), ...(from?.type === 'heading' && from.id ? { id: from.id } : {}) };
 }
 
 /** A text block turned into another text kind, keeping its words (a block that isn't text is left as it is). */
