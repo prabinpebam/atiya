@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-06",
-  "updatedAt": "2026-10-06",
+  "updatedAt": "2026-10-08",
   "locale": "en",
   "body": [
     {
@@ -54,6 +54,15 @@
     {
       "type": "text",
       "markdown": "To stop the form being misused, the service counts the messages sent from each IP address in an hour. It keeps the count under a one-way code made from the address, never the address itself."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Agreeing before you see shared work"
+    },
+    {
+      "type": "text",
+      "markdown": "Before you see work I've shared with you, I ask you to agree to keep it confidential and use it only for the reason I shared it. When you agree, a record goes to that same service of mine: which access you used (its ID, never your code or link), the words you agreed to and what they showed, the page, and the time, your IP address and your browser. I keep it as a record of the agreement, in Azure's storage and in an email to myself, and your browser remembers that you agreed so it doesn't ask again."
     },
     {
       "type": "heading",

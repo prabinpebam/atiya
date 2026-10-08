@@ -6,8 +6,8 @@
 import { describe, expect, it } from 'vitest';
 import { accessRequest, checkField, checkFields, cleanFields, countLinks, errorText, firstName, LIMITS } from '../../contact-api/src/rules.mjs';
 import { DIFFICULTY, issue, leadingZeroBits, TTL_MS, verify } from '../../contact-api/src/challenge.mjs';
-import { challenge, clientIp, contact, DAILY, HOURLY } from '../../contact-api/src/handle.mjs';
-import { compose, gmailMessage, transport } from '../../contact-api/src/send.mjs';
+import { AGREE_HOURLY, agreement, challenge, checkAgreement, clientIp, contact, DAILY, HOURLY } from '../../contact-api/src/handle.mjs';
+import { compose, composeAgreement, gmailMessage, transport } from '../../contact-api/src/send.mjs';
 import { saltOf, solve, zeroBits } from '../../src/site/scripts/contactWork';
 
 const SECRET = 'test-secret-0123456789';
@@ -229,5 +229,109 @@ describe('the email', () => {
       subject: 'Message from Ada',
       text: compose(m, at).plainText,
     });
+  });
+});
+
+describe('access agreements (documentation/contact/spec.md §4.5)', () => {
+  type Row = Parameters<typeof composeAgreement>[0];
+  const record = (more: Record<string, unknown> = {}) => ({
+    id: '5f0c1c3e-2b1a-4c8e-9d7a-0a1b2c3d4e5f',
+    grant: 'gabcdefgh',
+    via: 'link',
+    version: '2026-10-08',
+    statement: 'I’ll use what I see only for the reason it was shared with me, and keep it confidential.',
+    shown: { who: 'Asha Rao, Contoso', why: 'Senior design manager role' },
+    digest: '0a1b2c3d',
+    page: '/work/k3v9q2m7xw/',
+    agreedAt: '2026-10-08T10:00:00.000Z',
+    ...more,
+  });
+  const fake = (o: { failSend?: boolean } = {}) => {
+    const rows = new Map<string, Row & { notified: boolean }>();
+    const mails: Row[] = [];
+    const counts = new Map<string, number>();
+    return {
+      rows,
+      mails,
+      deps: {
+        secret: SECRET,
+        origins: [ORIGIN],
+        take: async (key: string, limit: number) => {
+          const n = counts.get(key) ?? 0;
+          if (n >= limit) return false;
+          counts.set(key, n + 1);
+          return true;
+        },
+        keep: async (row: Row) => {
+          const old = rows.get(row.id);
+          if (old) return { created: false, notified: old.notified, row: old };
+          rows.set(row.id, { ...row, notified: false });
+          return { created: true, notified: false, row };
+        },
+        notified: async (row: Row) => void (rows.get(row.id)!.notified = true),
+        notify: async (row: Row) => {
+          if (o.failSend) throw new Error('down');
+          mails.push(row);
+        },
+        now: () => Date.parse('2026-10-08T10:00:05.000Z'),
+      },
+    };
+  };
+  const post = (body: unknown, o: { origin?: string; ip?: string } = {}) => ({
+    origin: o.origin ?? ORIGIN,
+    contentType: 'application/json',
+    forwarded: o.ip ?? '203.0.113.7:51234',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0) Edge/141',
+    text: typeof body === 'string' ? body : JSON.stringify(body),
+  });
+
+  it('checks every field: the grant, the words, what was shown and where', () => {
+    expect(checkAgreement(record())).toMatchObject({ grant: 'gabcdefgh', who: 'Asha Rao, Contoso', why: 'Senior design manager role' });
+    expect(checkAgreement(record({ shown: {} }))).toMatchObject({ who: undefined, why: undefined });
+    for (const bad of [{ grant: 'nope' }, { via: 'email' }, { id: '1' }, { page: 'https://x.test/' }, { digest: 'zz' }, { shown: { notes: 'x' } }, { statement: 'a\nb' }, { extra: 1 }, { agreedAt: 'soon' }]) expect(checkAgreement(record(bad)), JSON.stringify(bad)).toBeNull();
+  });
+
+  it('keeps the record with the server time, the IP and the browser, and emails it once', async () => {
+    const f = fake();
+    expect(await agreement(post(record()), f.deps)).toEqual({ status: 201, body: { ok: true } });
+    const kept = f.rows.get(record().id)!;
+    expect(kept).toMatchObject({ grant: 'gabcdefgh', receivedAt: '2026-10-08T10:00:05.000Z', ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Windows NT 10.0) Edge/141', notified: true });
+    // sent again (a retry): kept once, emailed once
+    expect(await agreement(post(record(), { ip: '198.51.100.1' }), f.deps)).toEqual({ status: 200, body: { ok: true } });
+    expect(f.mails).toHaveLength(1);
+    expect(f.rows.get(record().id)!.ip).toBe('203.0.113.7');
+  });
+
+  it("answers 502 when the email doesn't go, and sends it when the record comes again", async () => {
+    const f = fake({ failSend: true });
+    expect((await agreement(post(record()), f.deps)).status).toBe(502);
+    expect(f.rows.get(record().id)!.notified).toBe(false);
+    const g = { ...f.deps, notify: async (row: Row) => void f.mails.push(row) };
+    expect((await agreement(post(record()), g)).status).toBe(200);
+    expect(f.mails).toHaveLength(1);
+    expect(f.mails[0].receivedAt).toBe('2026-10-08T10:00:05.000Z');
+  });
+
+  it('refuses another origin, a bad shape, and a flood', async () => {
+    const f = fake();
+    expect((await agreement(post(record(), { origin: 'https://evil.test' }), f.deps)).status).toBe(403);
+    expect((await agreement(post('{'), f.deps)).status).toBe(400);
+    expect((await agreement(post(record({ grant: 'x' })), f.deps)).status).toBe(400);
+    for (let i = 0; i < AGREE_HOURLY; i++) await agreement(post(record({ id: `5f0c1c3e-2b1a-4c8e-9d7a-${String(i).padStart(12, '0')}` })), f.deps);
+    expect((await agreement(post(record({ id: '5f0c1c3e-2b1a-4c8e-9d7a-ffffffffffff' })), f.deps)).status).toBe(429);
+  });
+
+  it('emails who agreed, to what, when and from where', () => {
+    const row = { ...(checkAgreement(record()) as NonNullable<ReturnType<typeof checkAgreement>>), receivedAt: '2026-10-08T10:00:05.000Z', ip: '203.0.113.7', userAgent: 'Edge' };
+    const { subject, plainText } = composeAgreement(row);
+    expect(subject).toBe('Access agreed: Asha Rao, Contoso');
+    expect(plainText).toContain('Access: gabcdefgh (signed in with a magic link)');
+    expect(plainText).toContain('Shared for: Senior design manager role');
+    expect(plainText).toContain('Agreed: 2026-10-08 10:00 UTC');
+    expect(plainText).toContain('IP address: 203.0.113.7');
+    expect(plainText).toContain('keep it confidential');
+    const anon = composeAgreement({ ...row, who: undefined, why: undefined });
+    expect(anon.subject).toBe('Access agreed: gabcdefgh');
+    expect(anon.plainText).not.toContain('Shared for:');
   });
 });

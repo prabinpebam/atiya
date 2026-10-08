@@ -101,3 +101,108 @@ export async function contact(req, d) {
   log('sent');
   return { status: 202, body: { ok: true } };
 }
+
+// ---------- access agreements (documentation/contact/spec.md §4.5; documentation/access/spec.md §7.6) ----------
+
+/** A visitor's agreements an hour, and the whole site's a day: generous (a reader agrees once per access), but a flood stops. */
+export const AGREE_HOURLY = 20;
+export const AGREE_DAILY = 300;
+export const AGREE_MAX_BYTES = 4 * 1024;
+
+const AGREE_KEYS = new Set(['id', 'grant', 'via', 'version', 'statement', 'shown', 'digest', 'page', 'agreedAt']);
+const line = (/** @type {unknown} */ v, /** @type {number} */ max) => typeof v === 'string' && v.length > 0 && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v);
+
+/**
+ * The record a browser sends when its reader agrees, checked: every field there, of its shape and size. Null
+ * if anything's off.
+ * @param {unknown} body
+ */
+export function checkAgreement(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const b = /** @type {Record<string, unknown>} */ (body);
+  if (Object.keys(b).some((k) => !AGREE_KEYS.has(k))) return null;
+  const shown = /** @type {Record<string, unknown>} */ (b.shown);
+  if (!shown || typeof shown !== 'object' || Array.isArray(shown) || Object.keys(shown).some((k) => k !== 'who' && k !== 'why')) return null;
+  if (shown.who !== undefined && !line(shown.who, 250)) return null;
+  if (shown.why !== undefined && !line(shown.why, 450)) return null;
+  const ok =
+    typeof b.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(b.id) &&
+    typeof b.grant === 'string' && /^g[a-z2-7]{8}$/.test(b.grant) &&
+    (b.via === 'code' || b.via === 'link') &&
+    typeof b.version === 'string' && /^[\w.-]{1,20}$/.test(b.version) &&
+    line(b.statement, 300) &&
+    typeof b.digest === 'string' && /^[0-9a-f]{8}$/.test(b.digest) &&
+    typeof b.page === 'string' && /^\/[^\s]{0,200}$/.test(b.page) &&
+    typeof b.agreedAt === 'string' && b.agreedAt.length <= 40 && !Number.isNaN(Date.parse(b.agreedAt));
+  if (!ok) return null;
+  return {
+    id: /** @type {string} */ (b.id),
+    grant: /** @type {string} */ (b.grant),
+    via: /** @type {'code' | 'link'} */ (b.via),
+    version: /** @type {string} */ (b.version),
+    statement: /** @type {string} */ (b.statement),
+    who: /** @type {string | undefined} */ (shown.who),
+    why: /** @type {string | undefined} */ (shown.why),
+    digest: /** @type {string} */ (b.digest),
+    page: /** @type {string} */ (b.page),
+    agreedAt: /** @type {string} */ (b.agreedAt),
+  };
+}
+
+/**
+ * @typedef {NonNullable<ReturnType<typeof checkAgreement>> & { receivedAt: string; ip: string; userAgent: string }} AgreementRow
+ * @typedef {{
+ *   origins: string[];
+ *   secret: string;
+ *   take: (key: string, limit: number) => Promise<boolean>;
+ *   keep: (row: AgreementRow) => Promise<{ created: boolean; notified: boolean; row: AgreementRow }>;
+ *   notified: (row: AgreementRow) => Promise<void>;
+ *   notify: (row: AgreementRow) => Promise<void>;
+ *   now?: () => number;
+ *   log?: (msg: string) => void;
+ * }} AgreeDeps
+ */
+
+/**
+ * POST /api/access/agreement: keeps the record (once, however often it's sent), then tells the owner by email
+ * (once: a record whose email failed is emailed when it's sent again).
+ * @param {{ origin: string | null; contentType: string | null; forwarded: string | null; userAgent: string | null; text: string }} req
+ * @param {AgreeDeps} d
+ * @returns {Promise<Answer>}
+ */
+export async function agreement(req, d) {
+  const now = d.now?.() ?? Date.now();
+  const log = d.log ?? (() => {});
+  if (!d.origins.includes(req.origin ?? '')) return { status: 403, body: { error: 'origin' } };
+  if (!(req.contentType ?? '').toLowerCase().startsWith('application/json') || req.text.length > AGREE_MAX_BYTES) return { status: 400, body: { error: 'shape' } };
+  let parsed;
+  try {
+    parsed = JSON.parse(req.text);
+  } catch {
+    return { status: 400, body: { error: 'shape' } };
+  }
+  const a = checkAgreement(parsed);
+  if (!a) return { status: 400, body: { error: 'shape' } };
+  const iso = new Date(now).toISOString();
+  const ip = clientIp(req.forwarded);
+  const who = createHash('sha256').update(`${d.secret}|${ip}`).digest('hex').slice(0, 32);
+  if (!(await d.take(`agree-ip-${who}-${iso.slice(0, 13)}`, AGREE_HOURLY))) return { status: 429, body: { error: 'rate' } };
+  if (!(await d.take(`agree-day-${iso.slice(0, 10)}`, AGREE_DAILY))) return { status: 429, body: { error: 'daily' } };
+  /** @type {AgreementRow} */
+  const row = { ...a, receivedAt: iso, ip, userAgent: (req.userAgent ?? '').slice(0, 300) };
+  const kept = await d.keep(row);
+  if (kept.notified) {
+    log('agreement: sent before');
+    return { status: 200, body: { ok: true } };
+  }
+  try {
+    // the record as first kept: a resend's time and address are the retry's, not the agreement's
+    await d.notify(kept.row);
+    await d.notified(kept.row);
+  } catch (e) {
+    log(`agreement: email failed (${e instanceof Error ? e.message : 'unknown'})`);
+    return { status: 502, body: { error: 'send' } };
+  }
+  log('agreement: kept and sent');
+  return { status: kept.created ? 201 : 200, body: { ok: true } };
+}

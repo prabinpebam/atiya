@@ -204,14 +204,14 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
             </Fragment>
           ) : (
             <div class="fields">
-              <TextField label="Their name" name="name" id={`${prefix}-name`} value={g?.recipient.name ?? ''} required autocomplete="off" />
+              <TextField label="Their name" name="name" id={`${prefix}-name`} value={g?.recipient.name ?? ''} required autocomplete="off" hint="Shown to them, with their organisation, on the agreement they accept before seeing anything." />
               <TextField label="Organisation" name="organisation" id={`${prefix}-organisation`} value={g?.recipient.organisation ?? ''} optional autocomplete="off" />
               <TextField label="Role" name="role" id={`${prefix}-role`} value={g?.recipient.role ?? ''} optional autocomplete="off" />
               <TextField label="Email" type="email" name="email" id={`${prefix}-email`} value={g?.recipient.email ?? ''} optional autocomplete="off" />
             </div>
           )}
-          <TextField label="Why you’re sharing it" name="purpose" id={`${prefix}-purpose`} value={g?.purpose ?? ''} optional hint="For your own record: never published." autocomplete="off" />
-          <TextField label="Notes" name="notes" id={`${prefix}-notes`} value={g?.notes ?? ''} optional multiline rows={3} />
+          <TextField label="Why you’re sharing it" name="purpose" id={`${prefix}-purpose`} value={g?.purpose ?? ''}           optional hint="Shown to them on the agreement: they agree to use what they see only for this." autocomplete="off" />
+                    <TextField label="Notes" name="notes" id={`${prefix}-notes`} value={g?.notes ?? ''} optional multiline rows={3} hint="For you only: never shown to them or published." />
         </section>
 
         <section class="part" aria-labelledby={`${prefix}-opens`}>

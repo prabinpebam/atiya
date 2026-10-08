@@ -1,5 +1,6 @@
 import { PBKDF2_ITERATIONS, aesGcm, aesGcmOpen, b64, randomBytes, utf8 } from './crypto.ts';
 import type { KeyringBody, KeyringEnvelope } from './types.ts';
+import { isReader } from './agreement.ts';
 
 export const KEYRING_MAX_BYTES = 64 * 1024;
 
@@ -93,8 +94,9 @@ export function checkEnvelope(value: unknown, rawLength?: number): KeyringEnvelo
 
 function validateBody(value: unknown): KeyringBody {
   if (!isRecord(value)) damaged('The keyring body is malformed.');
-  const keys = value.expiresAt === undefined ? ['v', 'grant', 'keys'] : ['v', 'grant', 'expiresAt', 'keys'];
+  const keys = ['v', 'grant', 'keys', ...(value.expiresAt === undefined ? [] : ['expiresAt']), ...(value.reader === undefined ? [] : ['reader'])];
   exactKeys(value, keys);
+  if (value.reader !== undefined && !isReader(value.reader)) damaged('The keyring reader is malformed.');
   if (value.v !== 1 || typeof value.grant !== 'string' || value.grant.length === 0) damaged('The keyring body is malformed.');
   if (value.expiresAt !== undefined && (typeof value.expiresAt !== 'string' || Number.isNaN(Date.parse(value.expiresAt)))) {
     damaged('The keyring expiry is malformed.');

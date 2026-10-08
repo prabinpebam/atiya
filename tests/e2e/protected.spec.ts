@@ -9,9 +9,10 @@ import { expect, test, type Page, type Response } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { AGREEMENT, readerOf, withAgreement, type Agreed } from '../../src/site/access/agreement';
 
 const FIX = join(import.meta.dirname, '../fixtures/private-pages');
-const grants = JSON.parse(readFileSync(join(FIX, 'access.json'), 'utf8')).grants as { id: string; name?: string; secret: { words?: string; key?: string } }[];
+const grants = JSON.parse(readFileSync(join(FIX, 'access.json'), 'utf8')).grants as { id: string; name?: string; recipient: { name: string; organisation?: string }; purpose: string; secret: { words?: string; key?: string } }[];
 const code = (id: string) => {
   const g = grants.find((x) => x.id === id)!;
   return `${g.name}-${g.secret.words}`;
@@ -38,6 +39,13 @@ const titlesIn = async (page: Page) => {
 const cards = (page: Page) => page.evaluate(() => [...document.querySelectorAll('[data-cards] > [data-node]')].map((e) => e.getAttribute('data-node')));
 /** The header's Sign out (top right; on a phone, in the menu): only the one shown. */
 const headerSignOut = (page: Page) => page.getByRole('banner').getByRole('button', { name: 'Sign out' });
+/**
+ * Every fixture access already agreed to on this browser (what the runtime remembers), so the tests about
+ * other things go straight in; the agreement's own tests (below) start without it.
+ */
+const PRE_AGREED = JSON.stringify(grants.reduce<Agreed>((a, g) => withAgreement(a, g.id, readerOf(g), '2026-10-08T00:00:00.000Z'), {}));
+const preAgree = (page: Page) => page.addInitScript((v) => localStorage.setItem('site.access.agreed', v), PRE_AGREED);
+
 async function signIn(page: Page, value: string, remember = false) {
   await page.locator('input[name="code"]').fill(value);
   if (remember) await page.locator('input[name="remember"]').check({ force: true });
@@ -45,6 +53,8 @@ async function signIn(page: Page, value: string, remember = false) {
 }
 
 test.describe('protected content', () => {
+  test.beforeEach(({ page }) => preAgree(page));
+
   test('signed out: a section lists its open pages only, and nothing protected is readable anywhere', async ({ page }) => {
     const bodies: string[] = [];
     page.on('response', async (r: Response) => {
@@ -322,7 +332,7 @@ test.describe('protected content', () => {
     await signIn(page, ALL);
     // the Sign in page now says it's signed in, with its own 44 px targets
     await expect(page.locator('[data-unlock-done]')).toBeVisible();
-    for (const sel of ['[data-unlock-another]', '[data-unlock-sign-out]']) {
+    for (const sel of ['[data-unlock-another]', '[data-unlock-done] [data-unlock-sign-out]']) {
       const box = await page.locator(sel).boundingBox();
       expect(box!.height, sel).toBeGreaterThanOrEqual(44);
     }
@@ -350,6 +360,7 @@ const ALLOWED: Record<string, string[]> = {
   access_opened: ['grant', 'place', 'cards'],
   access_failed: ['reason'],
   access_signed_out: ['grant'],
+  access_agreed: ['grant'],
   access_link: ['kind', 'domain'],
   video_played: ['place'],
 };
@@ -383,6 +394,8 @@ async function capture(page: Page, init: () => void = () => {}) {
 }
 
 test.describe('protected content: telemetry (QB6)', () => {
+  test.beforeEach(({ page }) => preAgree(page));
+
   test('nothing secret leaves the browser, protected pages send only the allowlist, and sign-out resets the identity', async ({ page }) => {
     const t = await capture(page);
     // an open page: PostHog's own capture, without the fragment
@@ -462,4 +475,67 @@ test.describe('protected content: telemetry (QB6)', () => {
       expect(t.raw).toEqual([]);
     });
   }
+});
+
+/** The contact service, faked: every agreement it's sent, answered as asked (CORS as the platform's). */
+async function agreementService(page: Page, status = 201) {
+  const posts: Record<string, unknown>[] = [];
+  await page.route('https://contact.test/api/access/agreement', (route) => {
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type', 'Access-Control-Allow-Methods': 'POST' } });
+    posts.push(JSON.parse(route.request().postData() ?? '{}'));
+    return route.fulfill({ status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(status < 400 ? { ok: true } : { error: 'send' }) });
+  });
+  return posts;
+}
+
+test.describe('protected content: agreement', () => {
+  test('signing in asks to agree first: who and why from the grant, nothing opens until then, recorded, and not asked again here', async ({ page }) => {
+    const posts = await agreementService(page);
+    await page.goto(`/sign-in/?return=${encodeURIComponent(SECTION)}`);
+    await signIn(page, ALL);
+    const panel = page.locator('[data-unlock-agree]');
+    await expect(panel.getByRole('heading', { name: AGREEMENT.heading })).toBeVisible();
+    await expect(panel).toContainText('Fixture Reader All, Fixture Org Alpha');
+    await expect(panel).toContainText('Fixture purpose: every private page in two sections');
+    await expect(page).toHaveURL(/\/sign-in\//);
+    await noSeriousViolations(page);
+    // agreeing needs the box ticked
+    await panel.getByRole('button', { name: 'Agree and continue' }).click();
+    await expect(panel.locator('[data-agree-status]')).toHaveText('Tick the box to agree, or sign out.');
+    await panel.getByText(AGREEMENT.statement).click();
+    await panel.getByRole('button', { name: 'Agree and continue' }).click();
+    await page.waitForURL(`**${SECTION}`);
+    await expect(page.locator('[data-shared]')).toHaveCount(3);
+    // the record: the access, the words and what was shown, never the code
+    // sent at once; the next page may send it again before the first answer came (the service keeps it once, by its ID)
+    await expect.poll(() => posts.length).toBeGreaterThanOrEqual(1);
+    expect(new Set(posts.map((p) => p.id)).size).toBe(1);
+    expect(posts[0]).toMatchObject({ grant: 'gfixall22', via: 'code', statement: AGREEMENT.statement, shown: { who: 'Fixture Reader All, Fixture Org Alpha', why: 'Fixture purpose: every private page in two sections' }, page: '/sign-in/' });
+    expect(JSON.stringify(posts[0])).not.toContain(ALL.split('-')[1]);
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('site.access.outbox'))).toBe('[]');
+    // a private page now opens at once: agreed on this browser
+    await page.goto(ALPHA);
+    await expect(page.locator('h1')).toHaveText(title('fx-private-alpha'));
+    await expect(page.locator('[data-unlock-agree]')).toBeHidden();
+    expect(new Set(posts.map((p) => p.id)).size).toBe(1);
+  });
+
+  test("a magic link asks on its page; Sign out there signs out, and a record the service can't take is sent later", async ({ page }) => {
+    const posts = await agreementService(page, 502);
+    await page.goto(LINK);
+    const panel = page.locator('[data-access-gate] [data-unlock-agree]');
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText('Fixture Reader Link, Fixture Org Gamma');
+    expect(await titlesIn(page)).toEqual([]);
+    await panel.getByRole('button', { name: 'Sign out' }).click();
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Sign in' })).toBeVisible();
+    // again, and agreed: the page opens even though the service is down; the record waits to be sent
+    await page.goto(LINK);
+    await page.locator('[data-access-gate] [data-unlock-agree]').getByText(AGREEMENT.statement).click();
+    await page.locator('[data-access-gate] [data-unlock-agree]').getByRole('button', { name: 'Agree and continue' }).click();
+    await expect(page.locator('h1')).toHaveText(title('fx-private-one'));
+    await expect.poll(() => posts.length, { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
+    expect(posts[0]).toMatchObject({ grant: 'gfixlink2', via: 'link' });
+    expect(JSON.parse((await page.evaluate(() => localStorage.getItem('site.access.outbox'))) ?? '[]')).toHaveLength(1);
+  });
 });

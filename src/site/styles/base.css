@@ -301,7 +301,7 @@ html[data-signed-in] [data-unlock-panel][data-shared]:not([data-state='sign-in']
   display: none;
 }
 
-html[data-signed-in] [data-unlock-panel][data-shared]:not([data-state='sign-in']) [data-unlock-done] {
+html[data-signed-in] [data-unlock-panel][data-shared]:not([data-state='sign-in'], [data-state='agree']) [data-unlock-done] {
   display: grid;
 }
 

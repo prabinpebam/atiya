@@ -86,3 +86,49 @@ export async function send(m) {
   const state = poller.getOperationState();
   if (state.error) throw new Error('the email service refused it');
 }
+
+/**
+ * The email an access agreement becomes (documentation/contact/spec.md §4.5): who agreed and to what, when,
+ * from where; plain text, to CONTACT_TO, with nobody to reply to.
+ * @param {import('./handle.mjs').AgreementRow} r
+ */
+export function composeAgreement(r) {
+  const at = (/** @type {string} */ iso) => `${iso.replace('T', ' ').slice(0, 16)} UTC`;
+  const subject = `Access agreed: ${r.who ?? r.grant}`;
+  const lines = [
+    `${r.who ?? 'A reader'} agreed to the confidentiality statement and went on to your shared work.`,
+    '',
+    `Access: ${r.grant} (signed in with a ${r.via === 'link' ? 'magic link' : 'code'})`,
+    ...(r.who ? [`Shared with: ${r.who}`] : []),
+    ...(r.why ? [`Shared for: ${r.why}`] : []),
+    `Agreed: ${at(r.receivedAt)} (their browser said ${r.agreedAt})`,
+    `On: ${r.page}`,
+    `IP address: ${r.ip}`,
+    `Browser: ${r.userAgent || 'not given'}`,
+    `Statement (version ${r.version}, shown ${r.digest}): "${r.statement}"`,
+    '',
+    '--',
+    `Kept in the contact service's table "accessagreements", row ${r.grant} / ${r.id}. The access's own record is on the Access screen in edit mode.`,
+  ];
+  return { subject, plainText: lines.join('\n') };
+}
+
+/**
+ * Tells the owner an access was agreed to, the same way a message goes (Gmail, else Azure); throws if it isn't taken.
+ * @param {import('./handle.mjs').AgreementRow} r
+ */
+export async function notifyAgreement(r) {
+  const { subject, plainText } = composeAgreement(r);
+  const t = transport(process.env);
+  if (t.via === 'gmail') {
+    if (!smtp) {
+      const { default: nodemailer } = await import('nodemailer');
+      smtp = nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: t.user, pass: t.pass } });
+    }
+    await smtp.sendMail({ from: { name: DISPLAY_NAME, address: t.user }, to: process.env.CONTACT_TO ?? '', subject, text: plainText });
+    return;
+  }
+  client ??= new EmailClient(process.env.ACS_CONNECTION_STRING ?? '');
+  const poller = await client.beginSend({ senderAddress: process.env.CONTACT_FROM ?? '', content: { subject, plainText }, recipients: { to: [{ address: process.env.CONTACT_TO ?? '' }] } });
+  if (poller.getOperationState().error) throw new Error('the email service refused it');
+}

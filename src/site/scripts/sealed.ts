@@ -12,6 +12,7 @@ import { KeyringError, cardAad, checkEnvelope, mediaAad, openKeyring, pageAad } 
 import { parseCode } from '../access/parse.ts';
 import { afterSignOut, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, readSession, safeReturn, sessionExpired, withoutSecret, type Outcome, type Session } from '../access/session.ts';
 import type { KeyringBody } from '../access/types.ts';
+import { needsAgreement, readAgreed, readOutbox, recordFor, shownFor, withAgreement } from '../access/agreement.ts';
 
 const STORE = 'site.access';
 const RELOADED = 'site.access.reloaded';
@@ -336,8 +337,105 @@ function panelState(state: 'sign-in' | 'signed-in') {
   if (p) p.dataset.state = state;
 }
 
-/** Applies a signed-in session to this page: the bar, the cards, the page; or says why it can't. */
-async function apply(s: Session, where: Element | null): Promise<boolean> {
+// ---------- agreeing first (spec §7.6): once for each access on this browser, recorded by the contact service ----------
+
+const AGREED = 'site.access.agreed';
+const OUTBOX = 'site.access.outbox';
+const SERVICE = ((import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | undefined) ?? '').replace(/\/$/, '');
+const agreedHere = () => readAgreed(storage('local')?.getItem(AGREED) ?? null);
+
+/** Sends the agreements not yet taken by the service, oldest first; one that keeps failing waits for the next page. */
+let flushing = false;
+async function flush() {
+  if (!SERVICE || flushing) return;
+  flushing = true;
+  try {
+    for (const r of readOutbox(storage('local')?.getItem(OUTBOX) ?? null)) {
+      let done = false;
+      for (const wait of [0, 2000, 8000]) {
+        if (wait) await new Promise((ok) => setTimeout(ok, wait));
+        const res = await fetch(`${SERVICE}/api/access/agreement`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(r), keepalive: true }).catch(() => null);
+        // taken, or refused for good (a malformed record would be refused forever): either way it's done
+        if (res && (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429))) {
+          done = true;
+          break;
+        }
+      }
+      if (!done) break;
+      const left = readOutbox(storage('local')?.getItem(OUTBOX) ?? null).filter((x) => x.id !== r.id);
+      storage('local')?.setItem(OUTBOX, JSON.stringify(left));
+    }
+  } finally {
+    flushing = false;
+  }
+}
+
+/**
+ * Asks the reader to agree before anything shared opens, in the panel given (the Sign in page's, or a private
+ * page's gate): who and why from the keyring, a box to tick, Agree and continue or Sign out. Resolves once
+ * they agree (remembered here, recorded, telemetry told); at once if they agreed to the same before.
+ */
+async function agreeFirst(s: Session, body: KeyringBody, panel: HTMLElement): Promise<void> {
+  if (!needsAgreement(agreedHere(), s.grant, body.reader)) return;
+  const part = panel.querySelector<HTMLElement>('[data-unlock-agree]');
+  const form = part?.querySelector<HTMLFormElement>('[data-agree-form]');
+  const box = form?.querySelector<HTMLInputElement>('input[name="agree"]');
+  if (!part || !form || !box) return;
+  const shown = shownFor(body.reader);
+  for (const k of ['who', 'why'] as const) {
+    const dd = part.querySelector(`[data-agree-${k}]`);
+    if (dd) dd.textContent = shown[k] ?? '';
+    part.querySelector(`[data-agree-row="${k}"]`)?.toggleAttribute('hidden', !shown[k]);
+  }
+  part.querySelector('[data-agree-details]')?.toggleAttribute('hidden', !shown.who && !shown.why);
+  const gate = panel.closest<HTMLElement>('[data-access-gate]');
+  if (gate) {
+    gate.removeAttribute('hidden');
+    gate.dataset.shown = '';
+  }
+  panel.dataset.state = 'agree';
+  part.focus();
+  const status = form.querySelector<HTMLElement>('[data-agree-status]');
+  await new Promise<void>((resolve) => {
+    const stop = new AbortController();
+    form.addEventListener(
+      'submit',
+      (e) => {
+        e.preventDefault();
+        if (!box.checked) {
+          if (status) status.textContent = 'Tick the box to agree, or sign out.';
+          box.setAttribute('aria-invalid', 'true');
+          if (status?.id) box.setAttribute('aria-describedby', status.id);
+          box.focus();
+          return;
+        }
+        stop.abort();
+        resolve();
+      },
+      { signal: stop.signal },
+    );
+  });
+  const at = new Date().toISOString();
+  storage('local')?.setItem(AGREED, JSON.stringify(withAgreement(agreedHere(), s.grant, body.reader, at)));
+  const page = location.pathname.slice(base.length) || '/';
+  const outbox = readOutbox(storage('local')?.getItem(OUTBOX) ?? null);
+  storage('local')?.setItem(OUTBOX, JSON.stringify([...outbox, recordFor({ id: crypto.randomUUID(), grant: s.grant, via: s.via, reader: body.reader, page, at })]));
+  void flush();
+  tell('access_agreed', { grant: s.grant });
+  box.checked = false;
+  box.removeAttribute('aria-invalid');
+  if (status) status.textContent = '';
+  // a private page's gate steps aside while the page opens (it comes back, with its message, if it doesn't)
+  if (gate) {
+    delete gate.dataset.shown;
+    panel.dataset.state = 'sign-in';
+  }
+}
+
+/** The panel that asks: a private page's gate, else the Sign in page's. */
+const agreePanel = () => document.querySelector<HTMLElement>('[data-access-gate] [data-unlock-panel]') ?? signInPanel();
+
+/** Applies a signed-in session to this page: the bar, the cards, the page; or says why it can't. */async function apply(s: Session, where: Element | null): Promise<boolean> {
   const r = await keyring(s);
   if (!r.ok) {
     forget();
@@ -345,6 +443,25 @@ async function apply(s: Session, where: Element | null): Promise<boolean> {
     say(r.outcome, where ?? document.querySelector('[data-access-gate]') ?? document.querySelector('[data-sign-in-line]') ?? signInPanel(), { expiresAt: r.expiresAt });
     tell('access_failed', { reason: r.outcome });
     return false;
+  }
+  if (needsAgreement(agreedHere(), s.grant, r.body.reader)) {
+    const panel = agreePanel();
+    if (panel) {
+      await agreeFirst(s, r.body, panel);
+      // the Sign in page goes on to where the reader was going; a private page's own panel is ready for its next message
+      const back = panel.hasAttribute('data-shared') ? safeReturn(new URLSearchParams(location.search).get('return'), base) : null;
+      if (back) {
+        location.assign(back);
+        return true;
+      }
+    } else if (document.querySelector('template[data-sealed]')) {
+      // a section (or any page) with something sealed and no panel: the Sign in page asks, then comes back
+      location.replace(`${base}/sign-in/?return=${encodeURIComponent(location.pathname + location.search)}`);
+      return false;
+    } else {
+      showBar();
+      return true;
+    }
   }
   showBar();
   panelState('signed-in');
@@ -390,6 +507,7 @@ async function signInWithCode(form: HTMLFormElement, panel: HTMLElement) {
     input.value = '';
     input.removeAttribute('aria-invalid');
     tell('access_signed_in', { grant: s.grant, via: 'code' });
+    await agreeFirst(s, body, panel);
     const back = safeReturn(new URLSearchParams(location.search).get('return'), base);
     if (panel.closest('[data-access-gate]') || !back) {
       if (panel.hasAttribute('data-shared')) {
@@ -506,10 +624,13 @@ export function start() {
       },
       { signal },
     );
-    panel.querySelector('[data-unlock-sign-out]')?.addEventListener('click', () => signOut(true), { signal });
+    for (const b of panel.querySelectorAll('[data-unlock-sign-out]')) b.addEventListener('click', () => signOut(true), { signal });
   });
   // Sign out: the header's (top right, or in the menu on a phone)
   each<HTMLElement>('[data-access-sign-out]', (b, signal) => b.addEventListener('click', () => signOut(true), { signal }));
+
+  // agreements recorded while the service couldn't be reached go now
+  void flush();
 
   void (async () => {
     const link = parseFragment(location.hash);

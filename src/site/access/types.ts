@@ -24,6 +24,8 @@ export interface KeyringBody {
   v: 1;
   grant: string;
   expiresAt?: string;
+  /** Who the grant is for and why, shown on the agreement (access/agreement.ts): never its notes, email or role. */
+  reader?: { name: string; organisation?: string; purpose?: string };
   keys: Record<string, string>;
 }
 

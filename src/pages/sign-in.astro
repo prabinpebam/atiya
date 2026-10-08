@@ -11,6 +11,8 @@ import { withBase } from '../site/design/meta';
 
 const site = getSite();
 const contact = withBase(getOpenRoutes().find((r) => r.node.id === site.contactPage)?.path ?? '/');
+const privacyRoute = getOpenRoutes().find((r) => r.node.id === site.privacyPage);
+const privacy = privacyRoute && withBase(privacyRoute.path);
 // once signed in: the sections where shared work is listed (open sections that hold private pages; their
 // sign-in lines already say so to anyone, so naming them tells nothing more)
 const holding = new Set(getRoutes().filter((r) => r.access === 'private').map((r) => r.path.replace(/[^/]+\/$/, '')));
@@ -18,5 +20,5 @@ const shared = getOpenRoutes().flatMap((r) => (r.node.kind === 'hub' && holding.
 ---
 
 <IndexLayout title={`Sign in — ${site.name}`} heading="Sign in" standfirst="Some of my work is shared only with invited readers." nav={siteNav(getStructure(), getRoutes())} footer={footerLinks(site, getRoutes())} action={exploreAction(undefined, getPlanet())} noindex>
-  <UnlockPanel contact={contact} headingLevel={2} shared={shared} />
+  <UnlockPanel contact={contact} headingLevel={2} shared={shared} privacy={privacy} />
 </IndexLayout>

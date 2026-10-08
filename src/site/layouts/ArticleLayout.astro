@@ -51,7 +51,7 @@ interface Props {
    * sealer replaces, and shows the sign-in panel in its place; the dev server shows it open (its header's
    * Private tag says who can see it).
    */
-  sealed?: { access: 'private'; id: string; contact: string };
+  sealed?: { access: 'private'; id: string; contact: string; privacy?: string };
 }
 
 const { title, description, nav, footer, action, crumbs, header, prev, next, frame, related, sealed } = Astro.props;
@@ -64,7 +64,7 @@ const sealing = !!sealed && import.meta.env.PROD;
     {
       sealing && (
         <div class="gate" data-access-gate={sealed!.access}>
-          <UnlockPanel contact={sealed!.contact} />
+          <UnlockPanel contact={sealed!.contact} privacy={sealed!.privacy} />
         </div>
       )
     }

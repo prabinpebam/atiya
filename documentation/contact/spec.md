@@ -84,14 +84,15 @@ Nothing typed is lost on a failure; a retry is pressing Send again.
 
 ### 4.1 Shape
 
-A Node.js 22 Azure Function app (`contact-api/` in this repository, deployed on its own) with two HTTP functions, anonymous:
+A Node.js 22 Azure Function app (`contact-api/` in this repository, deployed on its own) with three HTTP functions, anonymous:
 
 | Route | Method | Does |
 |---|---|---|
 | `/api/contact/challenge` | GET | Returns a fresh proof-of-work challenge (§5.1): `{ challenge, signature, difficulty }` |
 | `/api/contact` | POST | Checks and sends a message (§4.2) |
+| `/api/access/agreement` | POST | Keeps and emails a reader's agreement before seeing shared work (§4.5) |
 
-Requests are JSON (`Content-Type: application/json`), at most 16 KB; anything else is refused before it's read.
+Requests are JSON (`Content-Type: application/json`), at most 16 KB (an agreement, 4 KB); anything else is refused before it's read.
 
 ### 4.2 What `POST /api/contact` checks, in order
 
@@ -127,6 +128,36 @@ Requests are JSON (`Content-Type: application/json`), at most 16 KB; anything el
 
 The test build reads `https://contact.test` from `.env.test`, but a `PUBLIC_CONTACT_ENDPOINT` already in the terminal's environment would override it (Vite's order), and the tests would reach the real service. So `.env` is never injected into terminals: VS Code's `python.terminal.useEnvFile` stays off.
 
+### 4.5 Access agreements
+
+The same service keeps the record of each reader who agrees to keep shared work confidential, and tells Prabin ([access §7.6](../access/spec.md#76-agreeing-before-seeing-d23)). It's `POST /api/access/agreement`, a third function in the app.
+
+**What it checks, in order** (`agreement` in `contact-api/src/handle.mjs`, the shape in `checkAgreement`):
+1. **The origin**, as §4.2. Otherwise `403 { error: "origin" }`.
+2. **The size and shape:** JSON, at most 4 KB, exactly these fields:
+   - `id`, a random UUID made by the browser;
+   - `grant`, `g` and 8 base32 characters;
+   - `via`, `code` or `link`;
+   - `version` and `statement`, the words agreed to;
+   - `shown`: `who` and `why`, each optional, one line, at most 250 and 450 characters;
+   - `digest`, 8 hex characters;
+   - `page`, a path on the site;
+   - `agreedAt`, the browser's clock.
+
+   Otherwise `400 { error: "shape" }`.
+3. **Rate limits:** per visitor (the IP hashed, as §4.2) at most **20 an hour**, and for the whole site at most **300 a day**. Over → `429`.
+4. **Keep:** one row in the table `accessagreements`, its partition the grant and its row the record's `id`. It holds every field sent, plus the service's own time (`receivedAt`), the client IP **in the clear** (it's part of the evidence) and the browser's user agent (at most 300 characters). A record sent again (a retry) is never written over.
+5. **Email** Prabin, once (§4.5 below). A row whose email failed is emailed when the record comes again: `502 { error: "send" }`, so the browser tries again. Then `201 { ok: true }` (new) or `200 { ok: true }` (kept before).
+
+**The email** (`composeAgreement` in `send.mjs`): from and to as §4.3, with nobody to reply to. The subject is "Access agreed: {who}" (the grant's ID if no name was shown). The plain-text body gives:
+- who agreed, the access (its ID, and code or magic link), and who and what it was shared for;
+- when (the service's time, and the browser's), the page, the IP address and the browser;
+- the statement with its version and digest;
+- where the row is kept.
+
+**The rows are the record.** The service only ever adds a row, and marks that its email went (`notified`, `notifiedAt`). Nothing in it deletes one. Keep the storage account for as long as an agreement might matter. A row can be exported from the Azure portal's Storage browser (or Azure Storage Explorer) when it's needed. The email in Prabin's inbox and the grant's record in the private repository's history back it up.
+
+**The browser's side** (`scripts/sealed.ts`, `flush`): the record is sent as soon as the reader agrees, with `keepalive`, so it survives the page moving on. If the service doesn't take it (offline, a 5xx or a 429), it's kept in `localStorage` and tried again on the next page. A 4xx other than 429 is a refusal for good, and it's dropped. The reader is never held up.
 ## 5. Bots and spam
 
 No single check is enough; together they make sending one message cheap for a person and sending many costly and pointless for a bot.

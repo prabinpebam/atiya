@@ -86,12 +86,12 @@ const prefix = 'share-page';
         </Text>
         <ChoiceGroup legend="How they get in" name="kind" id={`${prefix}-kind`} value="code" orientation="horizontal" options={[{ value: 'code', label: 'Access code', hint: 'A password they type on the Sign in page.' }, { value: 'link', label: 'Magic link', hint: 'A link that opens it with nothing to type.' }]} />
         <div class="fields">
-          <TextField label="Their name" name="name" id={`${prefix}-name`} required />
+          <TextField label="Their name" name="name" id={`${prefix}-name`} required hint="Shown to them, with their organisation, on the agreement they accept before seeing anything." />
           <TextField label="Organisation" name="organisation" id={`${prefix}-organisation`} optional />
           <TextField label="Role" name="role" id={`${prefix}-role`} optional />
           <TextField label="Email" type="email" name="email" id={`${prefix}-email`} optional />
         </div>
-        <TextField label="Why you're sharing it" name="purpose" id={`${prefix}-purpose`} optional hint="For your own record; never published." />
+        <TextField label="Why you're sharing it" name="purpose" id={`${prefix}-purpose`} optional hint="Shown to them on the agreement: they agree to use what they see only for this." />
         <ChoiceGroup
           legend="What it opens"
           name="opens"
@@ -102,7 +102,7 @@ const prefix = 'share-page';
           data-section={hereSection?.id}
         />
         <TextField label="Ends on" type="date" name="expires" id={`${prefix}-expires`} value={daysAfter(30)} hint="The last day it works. Clear it for no end." />
-        <TextField label="Notes" name="notes" id={`${prefix}-notes`} optional multiline rows={2} />
+        <TextField label="Notes" name="notes" id={`${prefix}-notes`} optional multiline rows={2} hint="For you only: never shown to them or published." />
         <p class="issue" role="alert" data-editor-form-issue hidden></p>
         <div class="actions">
           <Button variant="primary" type="submit" icon="key">

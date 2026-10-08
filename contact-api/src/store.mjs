@@ -70,3 +70,53 @@ export async function take(key, limit) {
   }
   return false;
 }
+
+// ---------- access agreements: one row each, kept as it arrived (documentation/contact/spec.md §4.5) ----------
+
+/** @typedef {import('./handle.mjs').AgreementRow} AgreementRow */
+
+const AGREEMENTS = 'accessagreements';
+
+/** A kept row as the handler's record. @param {Record<string, unknown>} e */
+function rowOf(e) {
+  const s = (/** @type {string} */ k) => (typeof e[k] === 'string' ? /** @type {string} */ (e[k]) : '');
+  return /** @type {AgreementRow} */ ({
+    id: s('rowKey'),
+    grant: s('partitionKey'),
+    via: s('via') === 'link' ? 'link' : 'code',
+    version: s('version'),
+    statement: s('statement'),
+    ...(s('who') ? { who: s('who') } : {}),
+    ...(s('why') ? { why: s('why') } : {}),
+    digest: s('digest'),
+    page: s('page'),
+    agreedAt: s('agreedAt'),
+    receivedAt: s('receivedAt'),
+    ip: s('ip'),
+    userAgent: s('userAgent'),
+  });
+}
+
+/**
+ * Keeps an agreement, once: a row by its grant and its ID. One sent again (a retry) isn't written over; the
+ * answer says whether it's new and whether its email went, with the row as first kept.
+ * @param {AgreementRow} row
+ */
+export async function keepAgreement(row) {
+  const t = await table(AGREEMENTS);
+  const { grant, id, who, why, ...rest } = row;
+  try {
+    await t.createEntity({ partitionKey: grant, rowKey: id, ...rest, ...(who ? { who } : {}), ...(why ? { why } : {}), notified: false });
+    return { created: true, notified: false, row };
+  } catch (e) {
+    if (status(e) !== 409) throw e;
+    const old = await t.getEntity(grant, id);
+    return { created: false, notified: old.notified === true, row: rowOf(/** @type {Record<string, unknown>} */ (old)) };
+  }
+}
+
+/** Marks an agreement's email as sent (the one change a kept row ever has). @param {AgreementRow} row */
+export async function agreementNotified(row) {
+  const t = await table(AGREEMENTS);
+  await t.updateEntity({ partitionKey: row.grant, rowKey: row.id, notified: true, notifiedAt: new Date().toISOString() }, 'Merge');
+}

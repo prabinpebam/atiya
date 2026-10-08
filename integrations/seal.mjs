@@ -15,6 +15,7 @@ import { privateRootFor } from './roots.mjs';
 import { readProvenance, resetProvenance } from '../src/site/content/provenance.ts';
 import { b64, buildId, deriveCodeKey, deriveLinkKey, newKey, randomBytes, seal, utf8 } from '../src/site/access/crypto.ts';
 import { cardAad, mediaAad, pageAad, sealKeyring } from '../src/site/access/keyring.ts';
+import { readerOf } from '../src/site/access/agreement.ts';
 import { covers, isValid, lookupOf } from '../src/site/access/grants.ts';
 
 /** Where the sealer leaves what the leak check needs (scripts/verify-sealed.mjs). */
@@ -172,7 +173,9 @@ export async function sealSite({ dist, base, privateRoot, now = new Date(), log 
       if (k && built.has(id)) body[k.kid] = b64.encode(k.key);
     }
     const lookup = lookupOf(g);
-    const env = await sealKeyring(kek, lookup, { build, kdf: g.kind === 'code' ? 'pbkdf2-sha256' : 'hkdf-sha256', salt: g.secret.salt }, { v: 1, grant: g.id, ...(g.expiresAt ? { expiresAt: g.expiresAt } : {}), keys: body });
+    // who it's for and why, for the agreement the reader sees first (encrypted with the rest; never the notes)
+    const reader = readerOf(g);
+    const env = await sealKeyring(kek, lookup, { build, kdf: g.kind === 'code' ? 'pbkdf2-sha256' : 'hkdf-sha256', salt: g.secret.salt }, { v: 1, grant: g.id, ...(g.expiresAt ? { expiresAt: g.expiresAt } : {}), ...(reader ? { reader } : {}), keys: body });
     const out = join(dist, '_access', build, `${lookup}.json`);
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, JSON.stringify(env));

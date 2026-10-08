@@ -48,7 +48,7 @@ const contactEndpoint = import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | unde
 const signInHref = (from: string) => withBase(`/sign-in/?return=${encodeURIComponent(withBase(from))}`);
 // a private page: sealed in a build, open with its ribbon in dev; the build's sealer finds it in the provenance record
 const access = route?.access ?? 'open';
-const sealed = article && route && access !== 'open' && !editable ? { access, id: article.id, contact } : undefined;
+const sealed = article && route && access !== 'open' && !editable ? { access, id: article.id, contact, privacy } : undefined;
 if (sealed && import.meta.env.PROD) {
   const { recordProvenance } = await import('./provenance');
   recordProvenance({ kind: 'page', route: route!.path, access: sealed.access, id: sealed.id });

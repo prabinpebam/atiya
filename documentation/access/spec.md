@@ -257,14 +257,14 @@ Every grant is a record in `private-pages/access.json`:
 |---|---|
 | `id` | Random, opaque and stable (`g` and 8 base32 characters). It's the grant's identity in telemetry, never a name |
 | `kind` | `code` (typed) or `link` (a magic link) |
-| `recipient` | Who it's for: `name`, `organisation`, `role`, optional `email`. Never shown to anyone else |
-| `purpose` | Why it was shared, in your words ("Senior design manager role, first screen") |
+| `recipient` | Who it's for: `name`, `organisation`, `role`, optional `email`. Its name and organisation are shown to the reader on the agreement (§7.6); never to anyone else |
+| `purpose` | Why it was shared, in your words ("Senior design manager role, first screen"). Shown to the reader on the agreement (§7.6), which they agree to use the work only for |
 | `scope` | What it opens: every private page in a section (now and later), and/or single private pages. A code and a link open the same pages (V26) |
 | `createdAt` | When it was made, with its time zone |
 | `expiresAt` | When it stops working (optional; edit mode suggests 30 days) |
 | `revokedAt` | When you withdrew it, if you did |
 | `secret` | A code's four secret words, or a link's 32-byte key, and the grant's salt (§5.2). Kept so you can copy the message again. The salt is published with the grant's keyring (it isn't secret); the words and the key never are |
-| `notes` | Anything else you want to remember. Never published, never sent to telemetry |
+| `notes` | Anything else you want to remember. Never published, never shown to the reader, never sent to telemetry |
 
 **Withdraw a grant to stop it and keep its record; delete it only to drop the record too** (revised 6 October 2026, D22). A withdrawn or expired grant stays in the list, so the record of who had access is complete. Deleting, which the Access screen asks about first, takes the record out of `access.json`: if the grant still worked, it stops at the next deploy (it gets no keyring), and edit mode can no longer put a name to its telemetry. The private repository's git history keeps the deleted record. Edit mode's store checks every change against the file's previous version: it refuses to reuse a working code's name, or to change a grant's kind, secret or creation date, or a withdrawn grant's recipient, scope or dates (its purpose and notes may change). A hand edit to `access.json` bypasses that, which is why grants are made in edit mode. The private repository's history is the audit trail: every grant's creation, change, withdrawal and deletion is a commit with its date.
 
@@ -340,7 +340,7 @@ A page whose keyring is missing (an old page cached after a deploy) reloads itse
 
 - `kdf` is `pbkdf2-sha256` (a code) or `hkdf-sha256` (a link). The browser accepts only those two, PBKDF2 only at exactly 600,000 iterations, a 16-byte salt, a 12-byte IV and a file under 64 KB. Anything else is refused as a damaged file, never derived (no downgrade, no denial of service by a huge count).
 - The clear header is part of the authenticated data (`atiya/keyring/v1|<lookup>|<build>|<kdf>|<iterations>|<salt>`), so changing any of it fails decryption.
-- **Decrypted**, it holds the grant's `id` and `expiresAt`, and the page keys it covers by their per-build key IDs (`kid`, random, never the page's ID). It holds no recipient name and no notes.
+- **Decrypted**, it holds the grant's `id` and `expiresAt`, the page keys it covers by their per-build key IDs (`kid`, random, never the page's ID), and, for the agreement (§7.6), its `reader`: the recipient's name and organisation and the grant's purpose, each only if set. It holds no notes, email or role.
 
 **Every other sealed file** is binary: `ATS1` (4 bytes, the format and version), a 12-byte random IV, then the AES-256-GCM ciphertext and its 16-byte tag. The additional authenticated data binds it to its build, its purpose and its name:
 - **page regions:** `atiya/page/v1|<build>|<kid>`, with the page key;
@@ -484,6 +484,42 @@ Each message goes into the page's live region as well as on the screen.
 - The decrypted page is the same markup an open page has, so it meets the same checks (axe in both modes).
 - Signing in doesn't depend on a pointer, a time limit or a CAPTCHA.
 
+### 7.6 Agreeing before seeing (D23)
+
+Shared work is confidential, so before anything a grant opens is decrypted, the reader agrees to keep it so. The agreement is asked once for each grant on a browser, and recorded where it can be relied on. It's a clickwrap agreement, built the way enforceable ones are:
+- **Clear notice, before access:** the whole statement is on screen, with who and why.
+- **An affirmative act:** an unticked box, then **Agree and continue**. Nothing counts as agreeing by scrolling or by carrying on.
+- **A record of each acceptance**, kept outside the reader's browser.
+- **New words, asked again.**
+
+**What the reader sees.** The panel (`UnlockPanel`, its `agree` state) says **Shared in confidence**: "You're about to see confidential work, shared only with the person or organisation below. If that isn't you, sign out now." Then, from the grant, only what's set (a line that isn't set isn't shown at all, never an empty field):
+- **Shared with:** the recipient's name, and their organisation;
+- **Shared for:** the grant's purpose ("Why you're sharing it" in edit mode).
+
+The grant's notes, email and role are never shown: notes are the owner's own. Then the statement to tick ("I'll use what I see only for the reason it was shared with me, and keep it confidential."), **Agree and continue**, **Sign out**, and a line saying the agreement is recorded with the time, the IP address and the browser, and that Prabin is told, with a link to the privacy notice. Agree without the box ticked says "Tick the box to agree, or sign out." and moves focus to it.
+
+**Where it's asked.** Each path ends in the same panel:
+- **A code** typed on the Sign in page, or in a private page's own panel: the panel turns to the agreement in place, then goes on (back to the page the reader came from, or opens the page).
+- **A magic link** to a private page: its gate shows the agreement before the page is decrypted.
+- **A section** opened by a link, or a session from before this existed: with nothing to ask in, the page goes to the Sign in page (`?return=` the page), which asks and comes back.
+
+Nothing a grant opens is decrypted until the reader agrees.
+
+**Who and why reach the browser in the keyring**, encrypted with the rest of it (§5.3). Only someone holding the code or the link can read them. The sealer takes them from the grant (`readerOf` in `src/site/access/agreement.ts`), and the runtime accepts only a well-formed `reader` (any other key in it fails the keyring).
+
+**Not asked again.** The browser remembers, in `localStorage` (`site.access.agreed`), each grant's agreement as a digest of the words' version, the statement and the lines shown. It asks again on a new browser, for another grant, when the words change (a new `AGREEMENT_VERSION`; a unit test pins the words to it), or when what's shown changes (the owner edits the purpose). Signing out doesn't forget it.
+
+**The record.** On agreeing, the browser sends the contact service (`POST /api/access/agreement`, [contact §4.5](../contact/spec.md#45-access-agreements)):
+- a random ID, the grant's `id` and how it signed in (code or link);
+- the words' version, the statement and the lines shown, with their digest;
+- the page and the browser's clock.
+
+Never the code or the link's secret. The service adds its own time, the IP address and the browser, and keeps one row per agreement in Table Storage. It's never changed but to mark that its email went, and never deleted by the service. It then emails the owner. The browser keeps a record the service didn't take (`site.access.outbox`, at most 20) and sends it again from the next page. The reader isn't held up: they go on as soon as they agree. Telemetry hears `access_agreed` with the grant's `id` (§9.2).
+
+**What it is, and isn't.**
+- **It is evidence:** a named recipient, identified by a code or link issued to them, saw these words and accepted them at this time, from this address and browser. The row, the email in the owner's inbox and the grant's record in the private repository's history corroborate each other.
+- **It isn't a lock:** a static site can't stop a determined reader skipping it, as with the expiry check (§4.5), and anyone can post a record under a grant's `id` (the email would show one the owner doesn't expect).
+- **For anything that needs more,** a signed NDA is still the stronger instrument. This is a lightweight acknowledgement, not legal advice.
 ## 8. Edit mode
 
 Everything here is dev-only, like the rest of edit mode ([editor spec](../editor/spec.md)), and reads and writes through the store.
@@ -573,6 +609,7 @@ Alternatives considered:
 | `access_opened` | A private page opens, or a section shows shared cards | `grant`, `place` (the page's token, or the section's path), `cards` (on a section: how many were shown) |
 | `access_failed` | A code or link doesn't work | `reason`: wrong, expired, withdrawn, unsupported, offline. Never the code |
 | `access_signed_out` | Sign out | `grant` |
+| `access_agreed` | The reader agrees before anything opens (§7.6) | `grant` |
 | `access_link` | A link on a protected page is followed | `kind`: internal, outbound or download; for an outbound link, its domain only |
 
 **Everywhere:**
@@ -700,6 +737,7 @@ These follow the [site design system](../site-ui/design-system.md): tokens only,
 | D13 | Signing in is site-wide, for the session, from one Sign in page | One code or link shows every private page it covers, wherever it is |
 | D21 | One kind of access-controlled page, the private page, in a section; a code and a link are two ways to share any of them; edit mode lists private pages and their media with every other page, with no Access screen (the screen part revised by D22) | The owner's model (5 October 2026): locked and link-only private pages were one idea split in two, and "locked" read as "can't be edited". A separate screen for some pages was IA the site didn't need |
 | D22 | An Access screen for grants alone: every code and link in two columns (the list by state, the chosen one's details), each made, changed in one save, withdrawn or deleted there; a page's Share dialog shares quickly and links to it; Settings no longer holds sharing. Grants may be deleted; withdrawing stays the way to stop one and keep its record | The owner's call (6 October 2026): sharing grows with every recipient and every private page, so it needs a place built for scale (find, filters, a section-by-section picker), not a table at the foot of Settings; and a list that only grows needs a way to remove what's no longer wanted |
+| D23 | Before anything a grant opens is decrypted, its reader agrees to keep it confidential: who and why from the grant (name and organisation, purpose; never the notes), an unticked box, Agree and continue or Sign out; asked once per grant on a browser and again when the words or what's shown change; each agreement recorded by the contact service (its own time, IP and browser, in Table Storage) and emailed to the owner, the reader never held up by the record | The owner's call (8 October 2026): confidential work needs notice and an assent he can rely on later. Industry practice for clickwrap is notice before access, an affirmative act, a server-side record of who, what words, when and from where, and asking again when the words change. Notes stay the owner's own |
 | D14 | A build ID in every sealed file's path and authenticated data | A cached page never meets another deploy's keyring by accident |
 | D15 | The leak check is provenance first, words second | A word list can't prove a negative; a record of every private-origin file can |
 | D16 | Protected pages list open pages only after them | A page's key opens only what's about that page |
@@ -772,6 +810,7 @@ Built 5 to 6 October 2026, phase by phase as the [plan](plan.md) sets out, and c
 - **The leak check's words** (§6.3): words the public sources already hold are let off and counted (`publicCorpus`, `wordsToCheck` in `scripts/verify-sealed.mjs`); tokens and grant IDs never are. The first deploy with a real private article (run 71) failed on five: a product name the résumé uses, two of its fragments, and two common headings.
 - **Not built in edit mode** (§8.1): a grant's history from the private repository's log, and a filter for the grants that open one page (that page's Share dialog lists them).
 - **Withdraw now doesn't publish by itself** (§8.3). It marks the grant withdrawn and says to publish, so it never sweeps other unpublished changes into a deploy.
+- **Agreeing before seeing** (8 October 2026, D23; §7.6): the words, what's shown, the per-browser memory and the record are pure in `src/site/access/agreement.ts` (`readerOf`, `shownFor`, `needsAgreement`, `recordFor`; `AGREEMENT_VERSION` pinned to the words by `tests/unit/accessAgreement.test.ts`); the keyring's body gained `reader` (`keyring.ts` validates it); `UnlockPanel` gained its `agree` state; `scripts/sealed.ts` asks in `agreeFirst` (from signing in with a code, and in `apply` for a link or a remembered session; a page with something sealed and no panel goes to the Sign in page) and sends records through its outbox (`flush`); the contact service gained `POST /api/access/agreement` ([contact §4.5](../contact/spec.md#45-access-agreements)). Edit mode's grant forms say that the name, organisation and purpose are shown to the reader, and that notes never are. E2E: the group "protected content: agreement" (`tests/e2e/protected.spec.ts`); the other protected tests start already agreed.
 - **A refused private push** (§8.3): the public commit is still made but held back, never pushed before the private commit it points at. Push again pushes the private repository, then, if you pulled and rebased it, commits the pointer to its new head ("Private pages: update"), then pushes the public one.
 - **An expired or withdrawn code** (§7.2) gets no keyring, so typed, it reads "That code doesn't work"; the distinct expired message shows when a remembered session runs out, and a withdrawn magic link says it was withdrawn.
 - **Telemetry's always-on part** (§9.5) is `scripts/telemetry.ts` (1.1 KB gzip): it queues the runtime's events, links followed on allowlisted pages and videos played, and fetches PostHog's chunk (`telemetryClient.ts`, with the sanitizer `telemetrySanitize.ts`, 98.5 KB gzip) on idle. PostHog's own page views are off everywhere; the site sends them, the router's page swaps too. A page that shows shared cards becomes allowlisted from then on. On `/play/`, the page's script starts it at once and fetches PostHog once the planet is live (the `game:live` mark) or after 10 s; the game's `planet:event` events are forwarded to it, and the game imports nothing of it.

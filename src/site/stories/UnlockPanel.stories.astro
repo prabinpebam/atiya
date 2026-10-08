@@ -16,3 +16,7 @@ const shared = [
 <Example title="Signed in" layout="block" description="The Sign in page for a reader already signed in: the sections where shared work is listed, Use another code and Sign out. A remembered session shows this from the first paint.">
   <UnlockPanel contact={withBase('/contact/')} id="access-signed-in" shared={shared} signedIn />
 </Example>
+
+<Example title="Agreeing" layout="block" description="Before anything shared opens: who and what it's shared for (each only if the grant says), a statement to tick, Agree and continue, or Sign out. Asked once for each access on a browser, and again if the words change.">
+  <UnlockPanel contact={withBase('/contact/')} id="access-agreeing" privacy={withBase('/privacy/')} agreeing={{ who: 'Asha Rao, Contoso', why: 'Senior design manager role, first screen' }} />
+</Example>

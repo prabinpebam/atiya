@@ -6,11 +6,14 @@
  * page (given `shared`), a reader already signed in sees that instead: the sections where
  * shared work is listed, Use another code and Sign out. The sign-in runtime (scripts/sealed.ts) gives the
  * form its behaviour and switches the state; a remembered session shows signed in from the first paint
- * (base.css), so the form never flashes. Without JavaScript the panel says it needs it.
+ * (base.css), so the form never flashes. Before anything shared opens, the panel asks the reader to agree
+ * (spec §7.6): who and what it's shared for, if the grant says, a statement to tick, Agree and continue or
+ * Sign out. Without JavaScript the panel says it needs it.
  * @tier compound
  * @a11y A labelled form: one field with its label and hint, the result in a polite live region tied to the field (aria-describedby), and focus back on the field when a code doesn't work.
  * @a11y Show code toggles the field between hidden and plain text and says which (aria-pressed).
  * @a11y Each state has its own heading; signing in announces it, and focus moves to the signed-in state (or back to the field for Use another code).
+ * @a11y The agreement has its own heading and takes focus; who and why are a description list; its box must be ticked (an unticked Agree says so in a live region and focuses the box).
  * @key Enter: signs in from the field
  */
 import Heading from '../fundamentals/Heading.astro';
@@ -33,12 +36,16 @@ interface Props {
   shared?: { label: string; href: string }[];
   /** Shows the signed-in state from the start (the design library; the runtime sets it on a page). */
   signedIn?: boolean;
+  /** Shows the agreement from the start (the design library; the runtime sets it on a page, with who and why). */
+  agreeing?: { who?: string; why?: string };
+  /** The privacy notice, linked from the agreement (what's recorded and why). */
+  privacy?: string;
 }
 
-const { contact, headingLevel = 2, returnTo, id = 'access', shared, signedIn = false } = Astro.props;
+const { contact, headingLevel = 2, returnTo, id = 'access', shared, signedIn = false, agreeing, privacy } = Astro.props;
 ---
 
-<div class="unlock" data-unlock-panel="sign-in" data-return={returnTo} data-shared={shared ? '' : undefined} data-state={signedIn ? 'signed-in' : undefined}>
+<div class="unlock" data-unlock-panel="sign-in" data-return={returnTo} data-shared={shared ? '' : undefined} data-state={agreeing ? 'agree' : signedIn ? 'signed-in' : undefined}>
   <section class="part signin" aria-labelledby={`${id}-heading`} data-unlock-signin>
     <Heading level={headingLevel} size="h3" id={`${id}-heading`}>
       Sign in to see shared work
@@ -66,9 +73,48 @@ const { contact, headingLevel = 2, returnTo, id = 'access', shared, signedIn = f
       <Text variant="body">This page is shared with invited readers and needs JavaScript to open.</Text>
     </noscript>
   </section>
+  <section class="part agree" aria-labelledby={`${id}-agree-heading`} tabindex="-1" data-unlock-agree>
+    <Heading level={headingLevel} size="h3" id={`${id}-agree-heading`}>
+      Shared in confidence
+    </Heading>
+    <Text variant="body" tone="muted">
+      You’re about to see confidential work, shared only with the person or organisation below. If that isn’t you, sign out now.
+    </Text>
+    {/* who it's for and why, from the grant (its keyring): the runtime fills each line it has, and leaves out the rest */}
+    <dl class="details" data-agree-details hidden={!(agreeing?.who || agreeing?.why)}>
+      <div class="detail" data-agree-row="who" hidden={!agreeing?.who}>
+        <dt>Shared with</dt>
+        <dd data-agree-who>{agreeing?.who}</dd>
+      </div>
+      <div class="detail" data-agree-row="why" hidden={!agreeing?.why}>
+        <dt>Shared for</dt>
+        <dd data-agree-why>{agreeing?.why}</dd>
+      </div>
+    </dl>
+    <form class="form" data-agree-form novalidate>
+      <Checkbox label="I’ll use what I see only for the reason it was shared with me, and keep it confidential." name="agree" id={`${id}-agree`} required data-agree-check="" />
+      <div class="actions">
+        <Button type="submit" variant="primary" data-agree-submit="">
+          Agree and continue
+        </Button>
+        <Button type="button" variant="quiet" data-unlock-sign-out="">
+          Sign out
+        </Button>
+      </div>
+      <p class="status" id={`${id}-agree-status`} role="status" aria-live="polite" data-agree-status />
+    </form>
+    <Text variant="small" tone="muted">
+      Your agreement is recorded with the time, your IP address and browser, and Prabin is told.
+      {privacy && (
+        <>
+          {' '}
+          <Link href={privacy}>How it’s used</Link>
+        </>
+      )}
+    </Text>
+  </section>
   {
-    shared && (
-      <section class="part done" aria-labelledby={`${id}-done-heading`} tabindex="-1" data-unlock-done>
+    shared && (      <section class="part done" aria-labelledby={`${id}-done-heading`} tabindex="-1" data-unlock-done>
         <Heading level={headingLevel} size="h3" id={`${id}-done-heading`}>
           You’re signed in
         </Heading>
@@ -126,6 +172,57 @@ const { contact, headingLevel = 2, returnTo, id = 'access', shared, signedIn = f
 
   .unlock[data-state='signed-in'] .done {
     display: grid;
+  }
+
+  /* the agreement: before anything shared opens, once for each access on this browser */
+  .agree {
+    display: none;
+    outline: none;
+  }
+
+  .unlock[data-state='agree'] .signin,
+  .unlock[data-state='agree'] .done {
+    display: none;
+  }
+
+  .unlock[data-state='agree'] .agree {
+    display: grid;
+  }
+
+  .details {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: var(--space-5);
+    border-inline-start: var(--border-quote) solid var(--color-accent);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+  }
+
+  .details[hidden],
+  .detail[hidden] {
+    display: none;
+  }
+
+  .detail {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .detail dt {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+    color: var(--color-text-muted);
+  }
+
+  .detail dd {
+    margin: 0;
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    color: var(--color-text);
   }
 
   .places ul {

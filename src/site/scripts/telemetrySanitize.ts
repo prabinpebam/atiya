@@ -61,6 +61,7 @@ export const ALLOWLIST: Record<string, readonly string[]> = {
   access_opened: ['grant', 'place', 'cards'],
   access_failed: ['reason'],
   access_signed_out: ['grant'],
+  access_agreed: ['grant'],
   access_link: ['kind', 'domain'],
   video_played: ['place'],
 };
