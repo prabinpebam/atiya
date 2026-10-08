@@ -182,6 +182,11 @@ describe('turning text into another kind, any time', () => {
     expect(ops.asCollection(pairs.slice(0, 2))).toMatchObject({ ok: true });
     expect(ops.asCollection([h('x'.repeat(81)), para('y'), h('a'), para('b')])).toMatchObject({ ok: false, why: expect.stringMatching(/80 characters/) });
     expect(ops.asCollection([h('a'), { type: 'divider' }, h('b'), para('c')])).toMatchObject({ ok: false, why: expect.stringMatching(/Only text/) });
+    // one text block alone is a single item: a heading as its heading, anything else as its words
+    expect(ops.asCollection([para('A **standard** chosen from within.')])).toEqual({ ok: true, block: { type: 'collection', layout: 'tiles', width: 'popout', items: [{ text: 'A **standard** chosen from within.' }] } });
+    expect(ops.asCollection([h('Core idea', 3)])).toMatchObject({ ok: true, block: { items: [{ heading: 'Core idea' }] } });
+    expect(ops.asCollection([h('x'.repeat(81))])).toMatchObject({ ok: false, why: expect.stringMatching(/80 characters/) });
+    expect(ops.asCollection([{ type: 'divider' }])).toMatchObject({ ok: false, why: expect.stringMatching(/Only text/) });
     expect(ops.collectionToText(para('x'))).toBeNull();
     // every part of an item comes back: its picture, its heading, its time (in bold, as a résumé has it), its subtext and its words
     expect(ops.collectionToText({ type: 'collection', layout: 'rows', items: [{ media: 'articles/a/cover', heading: 'H', when: '2016 to 2019', subtext: 'S', text: 'T' }] })).toEqual([

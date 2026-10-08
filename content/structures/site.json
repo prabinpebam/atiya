@@ -13,7 +13,7 @@
         "slug": "work",
         "title": "Work",
         "summary": "Case studies of products I’ve led: the problem, the bets, how the team shipped and what changed.",
-        "view": "list",
+        "view": "features",
         "children": []
       },
       {

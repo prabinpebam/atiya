@@ -38,6 +38,11 @@ const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }))
   <Collection layout="tiles" width="popout" items={brief} />
 </Example>
 
+<Example title="Prominent tiles, one to a row" layout="stack" description="prominent: each tile on the accent's soft tint, a step up from the raised paper (never inverted), with an accent edge down its start side and its label in the accent's ink. A single item is one to a row by default; columns={1} sets it for more.">
+  <Collection layout="tiles" width="popout" prominent items={brief.slice(3)} />
+  <Collection layout="tiles" width="popout" prominent headings="title" columns={1} items={brief.slice(0, 2)} />
+</Example>
+
 <Example title="Rows, with pictures and titles" layout="block" description="One under another, each picture beside its words; on a phone the picture goes above them.">
   <Collection layout="rows" headings="title" ratio="3/2" items={places.slice(0, 3)} />
 </Example>

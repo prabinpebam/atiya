@@ -183,8 +183,10 @@ export const block = z.discriminatedUnion('type', [
     items: z.array(collectionItem).min(1).max(COLLECTION_MAX),
     /** How the items are laid out: any layout shows the same items. */
     layout: z.enum(COLLECTION_LAYOUTS),
-    /** Items to a row on a wide screen, for tiles and masonry; left out, from how many there are. */
-    columns: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
+    /** Items to a row on a wide screen, for tiles and masonry; left out, one for a single item, else from how many there are. */
+    columns: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional(),
+    /** Tiles only: each tile on the accent's soft surface with an accent edge, to stand out from the page. */
+    prominent: z.boolean().optional(),
     /** How the items' headings read: small capitals over the words (labels, the default) or titles. */
     headings: z.enum(COLLECTION_HEADINGS).optional(),
     /** Names a carousel or a scrolling timeline for assistive tech; left out, "Carousel" or "Timeline". */

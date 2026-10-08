@@ -263,11 +263,22 @@ export function splitLines(b: Block): Block[] | null {
 export const joinAsList = (blocks: Block[], ordered: boolean): Block => toTextKind(blocks.flatMap(linesOf), ordered ? 'numbered' : 'bulleted');
 
 /**
- * Heading and text pairs as a collection, laid out as tiles: a heading (or a short line) then its words,
- * one to twelve times. Returns why not when the blocks aren't such pairs.
+ * Text as a collection, laid out as tiles: heading and text pairs (a heading, or a short line, then its
+ * words), one to twelve times; or one text block alone, as a single item (a heading as its heading,
+ * anything else as its words). Returns why not when the blocks are neither.
  */
 export function asCollection(blocks: Block[]): { ok: true; block: Block } | { ok: false; why: string } {
-  if (blocks.length % 2 || blocks.length < 2 || blocks.length > 24) return { ok: false, why: 'A collection comes from pairs: a heading (or a short line), then its words, up to twelve times.' };
+  if (blocks.length === 1) {
+    const [b] = blocks;
+    if (textKindOf(b) === null) return { ok: false, why: 'Only text becomes a collection: headings, paragraphs, quotes and lists.' };
+    const name = linesOf(b).map(words).join(' ').replace(/\s+/g, ' ').trim();
+    if (b.type === 'heading') {
+      if (!name || name.length > 80) return { ok: false, why: `An item's heading is at most 80 characters: "${name.slice(0, 80)}…" is longer.` };
+      return { ok: true, block: { type: 'collection', layout: 'tiles', items: [{ heading: name }], width: 'popout' } };
+    }
+    return { ok: true, block: { type: 'collection', layout: 'tiles', items: [{ text: (toTextKind(linesOf(b), 'paragraph') as { markdown: string }).markdown }], width: 'popout' } };
+  }
+  if (blocks.length % 2 || blocks.length < 2 || blocks.length > 24) return { ok: false, why: 'A collection comes from one text block, or from pairs: a heading (or a short line), then its words, up to twelve times.' };
   const items: { heading: string; text: string }[] = [];
   for (let k = 0; k < blocks.length; k += 2) {
     const [heading, text] = [blocks[k], blocks[k + 1]];

@@ -359,6 +359,12 @@ describe('the collection block (items of one shape, in any layout)', () => {
     expect(ok(of([{ heading: 'a' }], { peek: 'yes' }))).toBe(false);
   });
 
+  it('a single item, tiles one to a row, and prominent tiles', () => {
+    expect(ok(of([{ heading: 'Core idea', text: 'Do what makes you proud.' }], { columns: 1, prominent: true }))).toBe(true);
+    expect(ok(of([{ heading: 'a' }], { columns: 0 }))).toBe(false);
+    expect(ok(of([{ heading: 'a' }], { prominent: 'yes' }))).toBe(false);
+  });
+
   it('lays them out any of seven ways, with the options every picture has', () => {
     for (const layout of ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll']) expect(ok(of([{ heading: 'a' }], { layout })), layout).toBe(true);
     expect(ok(of([{ heading: 'a' }], { layout: 'grid' }))).toBe(false);

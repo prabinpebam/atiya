@@ -4,7 +4,7 @@
  * optional), laid out one of seven ways. Any layout shows the same items, so a collection can change layout
  * at any time: rows (one under another, a picture beside its words), columns (side by side in a row between
  * two hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph), tiles (an
- * even grid of cards), masonry (cards in columns, each as tall as it is), a carousel (cards in a strip that
+ * even grid of cards, one to four to a row, prominent on the accent's soft surface if asked), masonry (cards in columns, each as tall as it is), a carousel (cards in a strip that
  * scrolls sideways, with previous and next buttons), a timeline (down a line, each item's time in a column
  * before its mark: a career, a project's story) or a sideways timeline (along a line in a strip that
  * scrolls sideways, with the carousel's buttons). An item's time sits by its mark in a timeline, and over
@@ -62,8 +62,10 @@ interface Props {
   items: CollectionItem[];
   /** How they're laid out. */
   layout?: 'rows' | 'columns' | 'tiles' | 'masonry' | 'carousel' | 'timeline' | 'timeline-scroll';
-  /** Items to a row on a wide screen, for tiles and masonry. Left out: three for three, six or more than four items, otherwise two. */
-  columns?: 2 | 3 | 4;
+  /** Items to a row on a wide screen, for tiles and masonry. Left out: one for a single item, three for three, six or more than four items, otherwise two. */
+  columns?: 1 | 2 | 3 | 4;
+  /** Tiles on the accent's soft surface with an accent edge, to stand out from the page (tiles only). */
+  prominent?: boolean;
   /** How the headings read: small capitals over the words (label) or titles. */
   headings?: 'label' | 'title';
   /** Names a strip (the carousel or the sideways timeline) for assistive tech. Left out, "Carousel" or "Timeline". */
@@ -85,7 +87,8 @@ interface Props {
 }
 
 const { items, layout = 'tiles', headings = 'label', ratio, display, background = false, rounded = true, shadow = false } = Astro.props;
-const columns = Astro.props.columns ?? (items.length % 3 === 0 || items.length > 4 ? 3 : 2);
+const columns = Astro.props.columns ?? (items.length === 1 ? 1 : items.length % 3 === 0 || items.length > 4 ? 3 : 2);
+const prominent = layout === 'tiles' && !!Astro.props.prominent;
 const shown = display ?? (ratio ? 'fill' : 'fit');
 // the strips scroll sideways, with Previous and Next; the timelines set each item by its time on a line
 const strip = layout === 'carousel' || layout === 'timeline-scroll';
@@ -121,6 +124,7 @@ const breakout = width;
   data-collection
   data-collection-strip={strip ? '' : undefined}
   data-peek={peek ? '' : undefined}
+  data-prominent={prominent ? '' : undefined}
 >
   <div class="items" role="list" tabindex={strip ? '0' : undefined} data-scrollbar={strip ? '' : undefined} data-collection-track={strip ? '' : undefined}>
     {
@@ -312,14 +316,39 @@ const breakout = width;
     background: var(--color-bg-raised);
   }
 
+  [data-layout='tiles'][data-columns='1'] .items {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   [data-layout='tiles'] .words {
     gap: var(--space-2);
+  }
+
+  /* prominent tiles: a step up from the raised paper (the accent's soft tint, never inverted), an accent edge
+     down the start side, and the labels in the accent's ink */
+  [data-prominent] .item {
+    border-color: transparent;
+    border-inline-start: var(--border-quote) solid var(--c-collection-prominent-edge);
+    background: var(--c-collection-prominent-bg);
+  }
+
+  [data-prominent] .heading,
+  [data-prominent][data-headings='title'] .subtext {
+    color: var(--c-collection-prominent-ink);
+  }
+
+  [data-prominent][data-headings='title'] .heading {
+    color: var(--color-text);
   }
 
   /* masonry: cards in columns, each as tall as it is */
   [data-layout='masonry'] .items {
     columns: 2;
     column-gap: var(--space-4);
+  }
+
+  [data-layout='masonry'][data-columns='1'] .items {
+    columns: 1;
   }
 
   [data-layout='masonry'][data-columns='3'] .items {

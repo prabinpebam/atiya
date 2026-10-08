@@ -336,7 +336,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const collection = ops.asCollection(blocks);
     set('join-bulleted', blocks.length > 1, texts === blocks.length);
     set('join-numbered', blocks.length > 1, texts === blocks.length);
-    set('collection', blocks.length > 1, collection.ok);
+    set('collection', blocks.length > 1 || texts === 1, collection.ok);
     set('split', !!one && !!ops.splitLines(one));
     set('uncollect', one?.type === 'collection');
     d.querySelectorAll<HTMLElement>('[data-turn-group]').forEach((g) => (g.hidden = !g.querySelector('[data-editor-turn-to]:not([hidden])')));
@@ -369,7 +369,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       const r = ops.asCollection(blocks);
       if (!r.ok) return announce(r.why, 'negative');
       change(body(instead([r.block])), ALL, { select: at[0] });
-      return announce(`Made a collection of ${at.length / 2}`);
+      const made = (r.block as Extract<Block, { type: 'collection' }>).items.length;
+      return announce(`Made a collection of ${made} ${made === 1 ? 'item' : 'items'}`);
     }
     if (to === 'split') {
       const parts = ops.splitLines(blocks[0]);
