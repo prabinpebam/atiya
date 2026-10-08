@@ -10,10 +10,13 @@
  * scrolls sideways, with the carousel's buttons). An item's time sits by its mark in a timeline, and over
  * its heading in the other layouts. Headings read as small capitals over the words (labels) or as titles.
  * The pictures take every picture option: a frame shape, how each sits in it, the colour behind it,
- * rounded corners and a drop shadow.
+ * rounded corners and a drop shadow. The strips (the carousel and the sideways timeline) can span the viewport's
+ * width (full), centred inside the page's gutters, their items shrinking a little so the row fits; and with peek, a strip reaches out beside its column into
+ * the room the page has there (up to its main region, or a box marked data-bleed-bounds; at most an item's width)
+ * and fades to nothing across it, so what's next shows as a hint while the column stays the strip's own.
  * @tier compound
  * @a11y A list (role list, not a ul, so the article's list styles stay off it): each item is a list item, read in order whatever the layout (masonry's columns and the strips included); a timeline's item reads its time first.
- * @a11y The strips (the carousel and the sideways timeline) are named regions (the carousel with aria-roledescription carousel) whose list scrolls with the keyboard; their buttons are named and disabled at the ends.
+ * @a11y The strips (the carousel and the sideways timeline) are named regions (the carousel with aria-roledescription carousel) whose list scrolls with the keyboard; their buttons are named and disabled at the ends, and with nothing to scroll the buttons are hidden and the list leaves the tab order.
  * @a11y A timeline's line and marks are drawn, hidden from assistive tech: the time beside each mark is its words.
  * @a11y A picture keeps its own alt text; an item's heading is its first words, not a page heading, so the article's outline stays its own.
  * @key Tab: into a strip (the carousel's or the sideways timeline's), then Left / Right scroll it
@@ -65,8 +68,10 @@ interface Props {
   headings?: 'label' | 'title';
   /** Names a strip (the carousel or the sideways timeline) for assistive tech. Left out, "Carousel" or "Timeline". */
   label?: string;
-  /** Where the article layout places it: in the column (the default), a little wider, or wide. */
-  width?: 'content' | 'popout' | 'wide';
+  /** Where the article layout places it: in the column (the default), a little wider, wide, or (a strip) the viewport's width; other layouts show full as wide. */
+  width?: 'content' | 'popout' | 'wide' | 'full';
+  /** A strip reaches out beside its column and fades to nothing there (not at full width, nor on a phone). */
+  peek?: boolean;
   /** The pictures' frame shape. Left out, each its own. */
   ratio?: '1/1' | '4/3' | '3/2' | '16/9' | '21/9';
   /** How each picture is shown in its frame. Left out, fill in a shape, fit in its own. */
@@ -79,15 +84,18 @@ interface Props {
   shadow?: boolean;
 }
 
-const { items, layout = 'tiles', headings = 'label', width = 'content', ratio, display, background = false, rounded = true, shadow = false } = Astro.props;
+const { items, layout = 'tiles', headings = 'label', ratio, display, background = false, rounded = true, shadow = false } = Astro.props;
 const columns = Astro.props.columns ?? (items.length % 3 === 0 || items.length > 4 ? 3 : 2);
 const shown = display ?? (ratio ? 'fill' : 'fit');
 // the strips scroll sideways, with Previous and Next; the timelines set each item by its time on a line
 const strip = layout === 'carousel' || layout === 'timeline-scroll';
 const timeline = layout === 'timeline' || layout === 'timeline-scroll';
 const label = Astro.props.label ?? (layout === 'carousel' ? 'Carousel' : 'Timeline');
+// only a strip spans the viewport (a grid of cards or a list of rows that wide reads badly); a peek needs room beside it
+const width = Astro.props.width === 'full' && !strip ? 'wide' : (Astro.props.width ?? 'content');
+const peek = strip && !!Astro.props.peek && width !== 'full';
 // how wide a picture shows, for the browser's pick: the place's width (the size tokens) shared by the columns
-const PLACE = { content: 40, popout: 52, wide: 76 }[width];
+const PLACE = { content: 40, popout: 52, wide: 76, full: 120 }[width];
 const across = layout === 'tiles' || layout === 'masonry' ? columns : 1;
 const SIZES: Partial<Record<NonNullable<Props['layout']>, string>> = {
   rows: '(max-width: 40rem) 92vw, 11rem',
@@ -112,6 +120,7 @@ const breakout = width;
   aria-label={strip ? label : undefined}
   data-collection
   data-collection-strip={strip ? '' : undefined}
+  data-peek={peek ? '' : undefined}
 >
   <div class="items" role="list" tabindex={strip ? '0' : undefined} data-scrollbar={strip ? '' : undefined} data-collection-track={strip ? '' : undefined}>
     {
@@ -363,6 +372,52 @@ const breakout = width;
     gap: var(--space-2);
   }
 
+  /* full: the strip spans the viewport inside the page's gutters, centred: its items shrink (to
+     c.collection.strip-min) to fit the window, and only a row that still doesn't fit scrolls, from the gutter */
+  [data-collection-strip][data-breakout='full'] .items {
+    justify-content: safe center;
+    padding-inline: var(--space-gutter);
+    scroll-padding-inline: var(--space-gutter);
+  }
+
+  [data-layout='carousel'][data-breakout='full'] .items {
+    grid-auto-columns: minmax(min(var(--c-collection-strip-min), 85%), min(var(--c-collection-slide), 85%));
+  }
+
+  [data-layout='timeline-scroll'][data-breakout='full'] .items {
+    grid-auto-columns: minmax(min(var(--c-collection-strip-min), 80%), min(var(--c-collection-timeline-slide), 80%));
+  }
+
+  [data-collection-strip][data-breakout='full'] .controls {
+    padding-inline: var(--space-gutter);
+  }
+
+  /* nothing to scroll (everything in view): no buttons */
+  .controls[hidden] {
+    display: none;
+  }
+
+  /* peek: the list reaches out by --bleed-start / --bleed-end (the room beside the strip, from the script)
+     and fades to nothing across it, while the column stays whole; at rest, the first item sits at the
+     column's start. The fade is the strip's, not the items': it stays put while they move under it. Before
+     the script runs, and on a phone, there's no room: a plain strip. */
+  [data-peek] .items {
+    margin-inline: calc(var(--bleed-start, 0px) * -1) calc(var(--bleed-end, 0px) * -1);
+    padding-inline: var(--bleed-start, 0px) var(--bleed-end, 0px);
+    scroll-padding-inline: var(--bleed-start, 0px) var(--bleed-end, 0px);
+    mask-image: linear-gradient(to right, transparent, currentColor var(--bleed-start, 0px), currentColor calc(100% - var(--bleed-end, 0px)), transparent);
+  }
+
+  /* the fade would hide the list's own focus ring at its sides: the strip draws it round the column */
+  [data-peek] .items:focus-visible {
+    outline: none;
+  }
+
+  [data-peek]:has(> .items:focus-visible) {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
   /*
    * The timelines: each item's mark on a line, the line broken a little either side of each mark. The
    * mark sits level with the item's first line: its time's (a line of small text), or its heading's when
@@ -544,24 +599,61 @@ const breakout = width;
 <script>
   import { each } from '../../scripts/page';
 
-  // a strip's Previous and Next (the carousel's, the sideways timeline's) scroll it by a view, and are disabled at its ends
+  // a strip's Previous and Next (the carousel's, the sideways timeline's) scroll it by a view (the column's
+  // width, whatever a peek reaches), and are disabled at its ends; with nothing to scroll (everything in
+  // view) they're hidden, and the list leaves the tab order
   each<HTMLElement>('[data-collection-strip]', (root, signal) => {
     const track = root.querySelector<HTMLElement>('[data-collection-track]');
+    const controls = root.querySelector<HTMLElement>('.controls');
     const prev = root.querySelector<HTMLButtonElement>('[data-collection-prev]');
     const next = root.querySelector<HTMLButtonElement>('[data-collection-next]');
-    if (!track || !prev || !next) return;
+    if (!track || !controls || !prev || !next) return;
     // in a right-to-left page the strip scrolls the other way
     const sign = () => (getComputedStyle(track).direction === 'rtl' ? -1 : 1);
+    const view = () => root.clientWidth;
     const update = () => {
       const at = Math.abs(track.scrollLeft);
       const end = track.scrollWidth - track.clientWidth;
+      const scrolls = end > 1;
+      controls.hidden = !scrolls;
+      if (scrolls) track.tabIndex = 0;
+      else track.removeAttribute('tabindex');
       prev.disabled = at <= 1;
       next.disabled = at >= end - 1;
     };
-    prev.addEventListener('click', () => track.scrollBy({ left: -track.clientWidth * sign() }), { signal });
-    next.addEventListener('click', () => track.scrollBy({ left: track.clientWidth * sign() }), { signal });
+    prev.addEventListener('click', () => track.scrollBy({ left: -view() * sign() }), { signal });
+    next.addEventListener('click', () => track.scrollBy({ left: view() * sign() }), { signal });
     track.addEventListener('scroll', update, { signal, passive: true });
     window.addEventListener('resize', update, { signal });
+    // the strip's width, and so whether it scrolls, changes with the page as well as the window
+    const sized = new ResizeObserver(update);
+    sized.observe(track);
+    signal.addEventListener('abort', () => sized.disconnect());
+
+    if (root.hasAttribute('data-peek')) {
+      const narrow = matchMedia('(max-width: 40rem)');
+      // the room beside the strip, up to its bounds (and the viewport), and no more than an item's width and
+      // its gap: the fade runs across it. None on a phone.
+      const room = () => {
+        const r = root.getBoundingClientRect();
+        const box = (root.closest('[data-bleed-bounds]') ?? root.closest('main') ?? document.documentElement).getBoundingClientRect();
+        const left = Math.max(box.left, 0);
+        const right = Math.min(box.right, document.documentElement.clientWidth);
+        const first = track.firstElementChild as HTMLElement | null;
+        const reach = (first?.offsetWidth ?? 0) + (parseFloat(getComputedStyle(track).columnGap) || 0);
+        const start = narrow.matches ? 0 : Math.max(0, Math.min(r.left - left, reach));
+        const end = narrow.matches ? 0 : Math.max(0, Math.min(right - r.right, reach));
+        root.style.setProperty('--bleed-start', `${Math.floor(start)}px`);
+        root.style.setProperty('--bleed-end', `${Math.floor(end)}px`);
+        update();
+      };
+      const observer = new ResizeObserver(room);
+      observer.observe(root);
+      signal.addEventListener('abort', () => observer.disconnect());
+      window.addEventListener('resize', room, { signal });
+      narrow.addEventListener('change', room, { signal });
+      room();
+    }
     update();
   });
 </script>

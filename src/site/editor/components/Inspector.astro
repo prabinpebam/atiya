@@ -308,7 +308,8 @@ const STATUS: SelectOption[] = [
                 )}
                 {TAKES_LABEL.has(b.layout) && <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label ?? ''} optional hint={`Names the strip for assistive tech. Left empty, “${b.layout === 'carousel' ? 'Carousel' : 'Timeline'}”.`} />}
                 <Select label="Headings" name={`body.${i}.headings`} id={id(i, 'headings')} value={b.headings ?? 'label'} options={HEADING_CHOICES} />
-                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'content'} options={WIDTHS.filter((w) => w.value !== 'full')} />
+                <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width === 'full' && !TAKES_LABEL.has(b.layout) ? 'wide' : (b.width ?? 'content')} options={TAKES_LABEL.has(b.layout) ? WIDTHS : WIDTHS.filter((w) => w.value !== 'full')} hint={TAKES_LABEL.has(b.layout) ? 'Full bleed spans the window, centred on the page.' : undefined} data-refresh="" />
+                {TAKES_LABEL.has(b.layout) && b.width !== 'full' && <Switch label="Peek beside the column" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />}
                 <Heading level={4} size="ui">Pictures</Heading>
                 <Select label="Shape" name={`body.${i}.ratio`} id={id(i, 'ratio')} value={b.ratio ?? ''} options={SHAPES} hint="The frame each picture is shown in." />
                 <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.ratio ? 'fill' : 'fit')} options={DISPLAYS} hint={b.ratio ? 'How each picture sits in its frame.' : 'In its own shape, Fill and Fit look the same.'} />

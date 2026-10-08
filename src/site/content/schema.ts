@@ -189,8 +189,13 @@ export const block = z.discriminatedUnion('type', [
     headings: z.enum(COLLECTION_HEADINGS).optional(),
     /** Names a carousel or a scrolling timeline for assistive tech; left out, "Carousel" or "Timeline". */
     label: z.string().min(1).optional(),
-    /** Where the article layout places it; left out, in the column. */
-    width: z.enum(['content', 'popout', 'wide']).optional(),
+    /**
+     * Where the article layout places it; left out, in the column. Full (the viewport's width) is for the
+     * strips, the carousel and the sideways timeline; the other layouts show it as wide.
+     */
+    width: z.enum(['content', 'popout', 'wide', 'full']).optional(),
+    /** A strip (the carousel, the sideways timeline) reaches out beside its column and fades to nothing there. */
+    peek: z.boolean().optional(),
     /** The items' pictures: their frame's shape (left out, each its own), how each sits in it, and the options every picture has. */
     ratio: z.enum(FIGURE_SHAPES).optional(),
     display: display.optional(),

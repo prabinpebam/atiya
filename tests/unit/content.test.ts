@@ -352,13 +352,20 @@ describe('the collection block (items of one shape, in any layout)', () => {
     expect(ok(of([{ when: 'x'.repeat(41), heading: 'a' }]))).toBe(false);
   });
 
+  it('a strip can span the viewport and peek beside its column; any layout takes them, and shows full as wide where it must', () => {
+    expect(ok(of([{ heading: 'a' }], { layout: 'carousel', width: 'full' }))).toBe(true);
+    expect(ok(of([{ heading: 'a' }], { layout: 'timeline-scroll', peek: true }))).toBe(true);
+    expect(ok(of([{ heading: 'a' }], { layout: 'tiles', width: 'full', peek: false }))).toBe(true);
+    expect(ok(of([{ heading: 'a' }], { peek: 'yes' }))).toBe(false);
+  });
+
   it('lays them out any of seven ways, with the options every picture has', () => {
     for (const layout of ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll']) expect(ok(of([{ heading: 'a' }], { layout })), layout).toBe(true);
     expect(ok(of([{ heading: 'a' }], { layout: 'grid' }))).toBe(false);
     expect(ok({ type: 'collection', items: [{ heading: 'a' }] })).toBe(false);
     expect(ok(of([{ heading: 'a' }], { columns: 4, headings: 'title', label: 'Places', width: 'wide', ratio: '3/2', display: 'tile', background: true, rounded: false, shadow: true }))).toBe(true);
     expect(ok(of([{ heading: 'a' }], { columns: 5 }))).toBe(false);
-    expect(ok(of([{ heading: 'a' }], { width: 'full' }))).toBe(false);
+    expect(ok(of([{ heading: 'a' }], { width: 'bleed' }))).toBe(false);
     expect(ok({ type: 'facts', items: [{ label: 'a', value: 'b' }] })).toBe(false);
     expect(ok({ type: 'tiles', items: [{ label: 'a', text: 'b' }, { label: 'c', text: 'd' }] })).toBe(false);
   });

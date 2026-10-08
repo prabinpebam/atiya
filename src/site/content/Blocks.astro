@@ -172,7 +172,7 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
           picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, focus: p.focus, bg: p.bg, dark: p.dark },
         };
       });
-      return <Collection items={items} layout={b.layout} columns={b.columns} headings={b.headings} label={b.label} width={b.width} ratio={b.ratio} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} />;
+      return <Collection items={items} layout={b.layout} columns={b.columns} headings={b.headings} label={b.label} width={b.width} peek={!!b.peek} ratio={b.ratio} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} />;
     }
     if ('id' in v) {
       const H = tag(v.b.level);

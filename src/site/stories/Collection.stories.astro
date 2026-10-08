@@ -66,6 +66,26 @@ const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }))
   <Collection layout="timeline-scroll" label="A walk round the planet" headings="title" ratio="4/3" width="wide" items={walk} />
 </Example>
 
+<Example title="Peeking beside the column" layout="block" description="peek: the strip reaches out beside its column, as far as an item, and fades to nothing there; at rest its first item sits at the column's start, and the items move under the fade. Where the page has no room it ends at the column, and a phone shows a plain strip. Previous and Next move it by the column's width.">
+  <div class="column">
+    <Collection layout="carousel" label="Places, peeking" headings="title" ratio="4/3" peek items={places} />
+  </div>
+</Example>
+
+<Example title="Timeline, sideways and peeking" layout="block" description="The same peek on a sideways timeline: the line runs out of the column and fades away with the items.">
+  <div class="column">
+    <Collection layout="timeline-scroll" label="A walk, peeking" headings="title" ratio="4/3" peek items={walk} />
+  </div>
+</Example>
+
+<Example title="Full width" layout="block" bleed description="Full width: the strip spans the window (here, the frame), inside the page's gutters, centred: its items shrink a little so the row fits, and only a row that still doesn't fit scrolls (as here), from the gutter. Only the strips take it; the other layouts show it as wide.">
+  <Collection layout="timeline-scroll" label="A walk, full width" headings="title" ratio="4/3" width="full" items={walk} />
+</Example>
+
+<Example title="Full width, all in view" layout="block" bleed description="When every item fits, a full-width strip centres them, and with nothing to scroll it shows no Previous or Next.">
+  <Collection layout="carousel" label="Two places, full width" headings="title" ratio="4/3" width="full" items={places.slice(0, 2)} />
+</Example>
+
 <Example title="Tiles, with times" description="A career as tiles: outside a timeline, each item's time sits over its heading.">
   <Collection layout="tiles" items={career.slice(0, 4)} />
 </Example>
@@ -73,3 +93,11 @@ const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }))
 <Example title="Any layout, the same items" description="Without pictures or subtexts, the brief above as rows: a collection can change layout at any time.">
   <Collection layout="rows" items={brief} />
 </Example>
+
+<style>
+  /* a column narrower than the frame, like an article's, so the peek has room beside it */
+  .column {
+    max-inline-size: var(--size-measure);
+    margin-inline: auto;
+  }
+</style>

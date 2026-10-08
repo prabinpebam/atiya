@@ -249,6 +249,47 @@ test.describe('site design system', () => {
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
 
+  test('a collection strip peeks beside its column, fading to nothing there, and spans the window at full width', async ({ page }) => {
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await page.goto('/design/compounds/collection/');
+    const strip = page.getByRole('region', { name: 'Places, peeking' });
+    await strip.scrollIntoViewIfNeeded();
+    const list = strip.getByRole('list');
+    // the list reaches out beside the column (at most an item and its gap), under a fade across that room
+    await expect.poll(() => strip.evaluate((r) => parseFloat(r.style.getPropertyValue('--bleed-end')) || 0)).toBeGreaterThan(0);
+    const [root, items, item] = await Promise.all([strip.boundingBox(), list.boundingBox(), list.getByRole('listitem').first().boundingBox()]);
+    const reach = await strip.evaluate((r) => parseFloat(r.style.getPropertyValue('--bleed-end')));
+    expect(items!.x + items!.width).toBeCloseTo(root!.x + root!.width + reach, 0);
+    expect(reach).toBeLessThanOrEqual(item!.width + 16 + 1);
+    expect(await list.evaluate((l) => getComputedStyle(l).maskImage)).toContain('linear-gradient');
+    // at rest its first item sits at the column's start; Next moves it by the column's width
+    expect(Math.abs(item!.x - root!.x)).toBeLessThanOrEqual(1);
+    await strip.getByRole('button', { name: 'Next' }).click();
+    await expect.poll(() => list.evaluate((l) => l.scrollLeft)).toBeGreaterThan(root!.width * 0.9);
+    // a phone shows a plain strip: no room taken beside it
+    await page.setViewportSize({ width: 390, height: 800 });
+    await expect.poll(() => strip.evaluate((r) => r.style.getPropertyValue('--bleed-end'))).toBe('0px');
+    // full width: the strip spans its frame inside the gutters, and doesn't peek; a row too long even with its items at their narrowest (here) scrolls from the gutter
+    await page.setViewportSize({ width: 1400, height: 900 });
+    const full = page.getByRole('region', { name: 'A walk, full width' });
+    await full.scrollIntoViewIfNeeded();
+    await expect(full).toHaveAttribute('data-breakout', 'full');
+    await expect(full).not.toHaveAttribute('data-peek', /.*/);
+    const [f, first, gutter] = await Promise.all([full.boundingBox(), full.getByRole('listitem').first().boundingBox(), page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('[aria-label="A walk, full width"] [role="list"]')!).paddingInlineStart))]);
+    expect(gutter).toBeGreaterThan(0);
+    expect(first!.x - f!.x).toBeCloseTo(gutter, 0);
+    // when every item fits, they're centred, and with nothing to scroll there are no buttons and no tab stop
+    const few = page.getByRole('region', { name: 'Two places, full width' });
+    await few.scrollIntoViewIfNeeded();
+    const [box, a, b] = await Promise.all([few.boundingBox(), few.getByRole('listitem').first().boundingBox(), few.getByRole('listitem').last().boundingBox()]);
+    expect(Math.abs(a!.x - box!.x - (box!.x + box!.width - (b!.x + b!.width)))).toBeLessThanOrEqual(2);
+    await expect(few.getByRole('button', { name: 'Next' })).toBeHidden();
+    await expect(few.getByRole('list')).not.toHaveAttribute('tabindex', /.*/);
+    // a strip that scrolls keeps them
+    await expect(full.getByRole('button', { name: 'Next' })).toBeVisible();
+    await expect(full.getByRole('list')).toHaveAttribute('tabindex', '0');
+  });
+
   test('every component and layout has its page, and each renders without an error', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
