@@ -263,6 +263,15 @@
   --c-collection-column: 13rem;
   --c-collection-row-picture: 11rem;
   --c-collection-slide: 18rem;
+  --c-collection-timeline-when-width: 9rem;
+  --c-collection-timeline-mark-size: 0.75rem;
+  --c-collection-timeline-gutter: 1.5rem;
+  --c-collection-timeline-slide: 17rem;
+  --c-collection-timeline-picture: 20rem;
+  --c-collection-timeline-line-width: var(--border-strong);
+  --c-collection-timeline-line: var(--color-rule);
+  --c-collection-timeline-mark: var(--color-highlight);
+  --c-collection-timeline-when: var(--color-highlight-ink);
   --c-table-cell-min: 8rem;
   --c-table-row-heading-min: 10rem;
   --c-table-cell-max: 16rem;

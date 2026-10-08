@@ -209,11 +209,44 @@ test.describe('site design system', () => {
   test('the design library and the layouts pass axe in light and dark', async ({ page }) => {
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
-      for (const path of ['/design/', '/design/tokens/color/', '/design/fundamentals/select/', '/design/fundamentals/checkbox/', '/design/compounds/gallery/', '/design/demo/article-layout/', '/design/demo/index-layout/', '/']) {
+      for (const path of ['/design/', '/design/tokens/color/', '/design/fundamentals/select/', '/design/fundamentals/checkbox/', '/design/compounds/gallery/', '/design/compounds/collection/', '/design/demo/article-layout/', '/design/demo/index-layout/', '/']) {
         await page.goto(path);
         await noSeriousViolations(page);
       }
     }
+  });
+
+  test("a collection's timelines: down a line, each mark by its time; sideways, a named strip whose marks stay level and whose buttons scroll it", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/design/compounds/collection/');
+    // down a line: each item reads its time first; the marks are drawn, hidden from assistive tech
+    const down = page.locator('[data-collection][data-layout="timeline"]').first();
+    const first = down.getByRole('listitem').first();
+    await expect(first.locator(':scope > :not([aria-hidden])').first()).toHaveText('July 2019 to now');
+    await expect(down.locator('.mark[aria-hidden="true"]')).toHaveCount(await down.getByRole('listitem').count());
+    // each time sits before its mark, and the words after it
+    const [when, mark, body] = await Promise.all(['.when', '.mark', '.body'].map((s) => first.locator(s).boundingBox()));
+    expect(when!.x + when!.width).toBeLessThanOrEqual(mark!.x + 1);
+    expect(mark!.x + mark!.width).toBeLessThanOrEqual(body!.x + 1);
+    // sideways: a named region with a list that scrolls, every mark on one line
+    const strip = page.getByRole('region', { name: 'A walk round the planet' });
+    await strip.scrollIntoViewIfNeeded();
+    const items = strip.getByRole('listitem');
+    await expect(items).toHaveCount(5);
+    const tops = await strip.locator('.mark').evaluateAll((ms) => ms.map((m) => Math.round(m.getBoundingClientRect().top)));
+    expect(new Set(tops).size).toBe(1);
+    const prev = strip.getByRole('button', { name: 'Previous' });
+    const next = strip.getByRole('button', { name: 'Next' });
+    await expect(prev).toBeDisabled();
+    await next.click();
+    await expect(prev).toBeEnabled();
+    await expect.poll(() => strip.getByRole('list').evaluate((l) => l.scrollLeft)).toBeGreaterThan(0);
+    // on a phone, the line runs down the start: the time over its words, and nothing scrolls sideways
+    await page.setViewportSize({ width: 320, height: 800 });
+    const [w, b] = await Promise.all([first.locator('.when').boundingBox(), first.locator('.body').boundingBox()]);
+    expect(w!.y + w!.height).toBeLessThanOrEqual(b!.y + 1);
+    // (polled: the overlay scrollbars' handles take a moment to follow a resize)
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
 
   test('every component and layout has its page, and each renders without an error', async ({ page }) => {

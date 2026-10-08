@@ -22,7 +22,7 @@ import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { kindOf } from '../model/ops';
 import { tableToText } from '../model/table';
 import { pictureNote } from '../model/crop';
-import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS } from '../model/collection';
+import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TIMELINES } from '../model/collection';
 import { PICTURE_SPECS, specTip } from '../../design/pictures';
 
 export interface Thumb {
@@ -275,7 +275,7 @@ const STATUS: SelectOption[] = [
               <>
                 <div class="items" data-editor-collection-list>
                   <span class="field-label">{`Items (${b.items.length})`}</span>
-                  <Text variant="small" tone="muted">Each item has a heading, a picture, a subtext or its words: any of them, and at least one.</Text>
+                  <Text variant="small" tone="muted">Each item has a heading, a picture, a subtext or its words: any of them, and at least one. When it was is for a timeline.</Text>
                   <ol class="entries">
                     {b.items.map((it, n) => (
                       <li class="entry">
@@ -288,6 +288,7 @@ const STATUS: SelectOption[] = [
                             {it.media && <Button variant="quiet" size="sm" icon="delete" data-editor-unset={`body.${i}.items.${n}.media`}>Remove picture</Button>}
                           </div>
                         </div>
+                        <TextField label={`Item ${n + 1}: when`} name={`body.${i}.items.${n}.when`} id={id(i, `cw-${n}`)} value={it.when ?? ''} optional hint={n === 0 ? (TIMELINES.has(b.layout) ? 'Its time, in words (2016, July 2019 to now), set by its mark.' : 'Its time, in words: shown over its heading, and by its mark in a timeline.') : undefined} />
                         <TextField label={`Item ${n + 1}: heading`} name={`body.${i}.items.${n}.heading`} id={id(i, `ch-${n}`)} value={it.heading ?? ''} optional hint={n === 0 ? 'A word or a few (80 characters at most).' : undefined} />
                         <TextField label={`Item ${n + 1}: subtext`} name={`body.${i}.items.${n}.subtext`} id={id(i, `cs-${n}`)} value={it.subtext ?? ''} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
                         <TextField label={`Item ${n + 1}: words`} name={`body.${i}.items.${n}.text`} id={id(i, `ct-${n}`)} value={it.text ?? ''} multiline rows={2} optional hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />
@@ -305,7 +306,7 @@ const STATUS: SelectOption[] = [
                 {TAKES_COLUMNS.has(b.layout) && (
                   <Select label="Columns" name={`body.${i}.columns`} id={id(i, 'columns')} value={b.columns ? String(b.columns) : ''} data-type="number" options={[{ value: '', label: 'By how many there are', description: 'Three for three, six or more than four; else two' }, { value: '2', label: 'Two' }, { value: '3', label: 'Three' }, { value: '4', label: 'Four' }]} hint="On a wide screen; fewer on a tablet, one on a phone." />
                 )}
-                {b.layout === 'carousel' && <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label ?? ''} optional hint="Names the carousel for assistive tech. Left empty, “Carousel”." />}
+                {TAKES_LABEL.has(b.layout) && <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label ?? ''} optional hint={`Names the strip for assistive tech. Left empty, “${b.layout === 'carousel' ? 'Carousel' : 'Timeline'}”.`} />}
                 <Select label="Headings" name={`body.${i}.headings`} id={id(i, 'headings')} value={b.headings ?? 'label'} options={HEADING_CHOICES} />
                 <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'content'} options={WIDTHS.filter((w) => w.value !== 'full')} />
                 <Heading level={4} size="ui">Pictures</Heading>

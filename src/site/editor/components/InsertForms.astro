@@ -37,7 +37,7 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
   {
     kind === 'collection' && (
       <>
-        <Text variant="ui" tone="muted">Items of the same shape: each has a heading, a picture, a subtext or its words, any of them. Pictures and more items are added in its settings; its layout can change at any time.</Text>
+        <Text variant="ui" tone="muted">Items of the same shape: each has a heading, a picture, a subtext or its words, any of them, and can say when it was (for a timeline). Pictures and more items are added in its settings; its layout can change at any time.</Text>
         <div class="pair">
           <Select label="Layout" name="layout" value="tiles" options={LAYOUT_CHOICES} />
           <Select label="Headings" name="headings" value="label" options={HEADING_CHOICES} />
@@ -45,6 +45,7 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
         {[0, 1, 2].map((n) => (
           <fieldset class="item">
             <legend class="legend">{`Item ${n + 1}`}</legend>
+            <TextField label="When" name={`when${n}`} optional hint={n === 0 ? 'Its time, in words (2016, July 2019 to now): set by its mark in a timeline.' : undefined} />
             <TextField label="Heading" name={`heading${n}`} optional />
             <TextField label="Subtext" name={`subtext${n}`} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
             <TextField label="Words" name={`text${n}`} multiline rows={2} optional hint={n === 0 ? 'A sentence or two. Bold and links work as in a paragraph: **bold**, [a link](https://…).' : undefined} />

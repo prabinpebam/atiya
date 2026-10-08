@@ -16,7 +16,7 @@ import { SaveQueue, type Outcome } from '../../src/site/editor/model/queue';
 import { parseInline, parseMarkdown, runs } from '../../src/site/content/markdown';
 import type { Article, Block, PlanetStructure, SiteStructure } from '../../src/site/content/schema';
 import { block, COLLECTION_HEADINGS, COLLECTION_LAYOUTS } from '../../src/site/content/schema';
-import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS } from '../../src/site/editor/model/collection';
+import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TIMELINES, startWidth } from '../../src/site/editor/model/collection';
 
 // ---------- document operations ----------
 const t = (markdown: string): Block => ({ type: 'text', markdown });
@@ -183,10 +183,11 @@ describe('turning text into another kind, any time', () => {
     expect(ops.asCollection([h('x'.repeat(81)), para('y'), h('a'), para('b')])).toMatchObject({ ok: false, why: expect.stringMatching(/80 characters/) });
     expect(ops.asCollection([h('a'), { type: 'divider' }, h('b'), para('c')])).toMatchObject({ ok: false, why: expect.stringMatching(/Only text/) });
     expect(ops.collectionToText(para('x'))).toBeNull();
-    // every part of an item comes back: its picture, its heading, its subtext and its words
-    expect(ops.collectionToText({ type: 'collection', layout: 'rows', items: [{ media: 'articles/a/cover', heading: 'H', subtext: 'S', text: 'T' }] })).toEqual([
+    // every part of an item comes back: its picture, its heading, its time (in bold, as a résumé has it), its subtext and its words
+    expect(ops.collectionToText({ type: 'collection', layout: 'rows', items: [{ media: 'articles/a/cover', heading: 'H', when: '2016 to 2019', subtext: 'S', text: 'T' }] })).toEqual([
       { type: 'figure', media: 'articles/a/cover', width: 'content' },
       h('H', 3),
+      para('**2016 to 2019**'),
       para('S'),
       para('T'),
     ]);
@@ -196,6 +197,10 @@ describe('turning text into another kind, any time', () => {
     expect(LAYOUT_CHOICES.map((c) => c.value)).toEqual([...COLLECTION_LAYOUTS]);
     expect(HEADING_CHOICES.map((c) => c.value)).toEqual([...COLLECTION_HEADINGS]);
     expect([...TAKES_COLUMNS].sort()).toEqual(['masonry', 'tiles']);
+    // the strips take a label, the timelines set each item by its time, and a new strip or grid starts a little wider
+    expect([...TAKES_LABEL].sort()).toEqual(['carousel', 'timeline-scroll']);
+    expect([...TIMELINES].sort()).toEqual(['timeline', 'timeline-scroll']);
+    expect(COLLECTION_LAYOUTS.filter((l) => startWidth(l) === 'popout')).toEqual(['tiles', 'masonry', 'carousel', 'timeline-scroll']);
   });
 
   it('reads the keys by their place: Ctrl or Cmd + Alt + 0, 2, 3, 4; Ctrl or Cmd + Shift + 7, 8, 9', () => {

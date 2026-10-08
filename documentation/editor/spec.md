@@ -236,7 +236,7 @@ A dialog listing the content model's blocks, in two groups, each with its icon a
 |---|---|---|
 | Text | Paragraph, Heading | An empty one appears in place, ready to type (pending until it has words) |
 | Text | Quote | Asks for the quote (and, optionally, who said it and the style: block or pull) |
-| Text | Collection | Asks for its layout, how its headings read, and up to three items (a heading, a subtext or words each; at least one item); pictures and more items are added in the inspector ([model §6.1](../content/model.md#61-collections-one-shape-of-content-any-layout)) |
+| Text | Collection | Asks for its layout, how its headings read, and up to three items (a heading, a subtext or words each, and when it was, for a timeline; at least one item); pictures and more items are added in the inspector ([model §6.1](../content/model.md#61-collections-one-shape-of-content-any-layout)) |
 | Text | Table | Inserted at once, two columns by two empty rows; its cells are written in the inspector ([model §6.2](../content/model.md#62-tables-rows-and-columns-of-short-facts)) |
 | Text | Divider | Inserted at once |
 | Media | Picture | Opens the media picker (choose or upload), then the width |
@@ -257,7 +257,7 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 | Carousel | Its pictures; label; peek; pager (dots, filmstrip, wrapping filmstrip); arrows; show the captions (off: none under any slide, nor in the lightbox); open in the lightbox |
 | Video | A video file: the video (thumbnail, its title, Replace from the videos); title (left empty, the video's own); show the caption and credit; caption and credit (each left empty to use the video's own); width. An embed: address (YouTube or Vimeo; the provider and ID are taken from it); title; poster (media field); length (minutes and seconds); show the caption and credit; caption; credit; width |
 | Quote | Style (block or pull); who said it. Its words are edited on the page |
-| Collection | Its items (add, remove, reorder; one to 24), each with its picture (Add a picture or Replace, Crop, Remove picture), heading, subtext and words; layout (Rows, Columns, Tiles, Masonry, Carousel: changing it keeps the items, and shows only the settings that layout uses); columns (tiles and masonry); label (a carousel); headings (labels or titles); width; and for its pictures: Shape, Shown as, Colour behind them, Rounded corners, Drop shadow. Turn into headings and paragraphs |
+| Collection | Its items (add, remove, reorder; one to 24), each with its picture (Add a picture or Replace, Crop, Remove picture), when it was, heading, subtext and words; layout (Rows, Columns, Tiles, Masonry, Carousel, Timeline, Timeline, sideways: changing it keeps the items, and shows only the settings that layout uses); columns (tiles and masonry); label (a carousel or a sideways timeline); headings (labels or titles); width; and for its pictures: Shape, Shown as, Colour behind them, Rounded corners, Drop shadow. Turn into headings and paragraphs |
 | Divider | None |
 | Table | Cells (the column headings on the first line, then a row a line, cells split by `\|`; `\\|` for a literal one; a short row is filled; a line that doesn't fit is refused with the reason); first column names each row; caption; width (content, popout, wide) |
 

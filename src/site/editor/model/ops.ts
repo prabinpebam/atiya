@@ -141,7 +141,7 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
     case 'video':
       return cut(b.title ?? (b.media ? (alt(b.media) ?? b.media.split('/').pop()!) : ''));
     case 'collection':
-      return cut(b.items.map((i) => i.heading ?? i.subtext ?? (i.text ? plainText(i.text) : i.media ? (alt(i.media) ?? i.media.split('/').pop()!) : '')).join(', '));
+      return cut(b.items.map((i) => i.heading ?? i.subtext ?? i.when ?? (i.text ? plainText(i.text) : i.media ? (alt(i.media) ?? i.media.split('/').pop()!) : '')).join(', '));
     case 'table':
       return cut(b.caption ?? b.columns.join(', '));
     case 'divider':
@@ -279,12 +279,16 @@ export function asCollection(blocks: Block[]): { ok: true; block: Block } | { ok
   return { ok: true, block: { type: 'collection', layout: 'tiles', items, width: 'popout' } };
 }
 
-/** A collection back as blocks: for each item, its picture, a heading (level 3) and a paragraph for its subtext and its words. */
+/**
+ * A collection back as blocks: for each item, its picture, a heading (level 3), its time in bold (as a
+ * timeline's item reads on a résumé) and a paragraph for its subtext and its words.
+ */
 export function collectionToText(b: Block): Block[] | null {
   if (b.type !== 'collection') return null;
   return b.items.flatMap((i): Block[] => [
     ...(i.media ? [{ type: 'figure', media: i.media, width: 'content' } as Block] : []),
     ...(i.heading ? [{ type: 'heading', level: 3, text: i.heading } as Block] : []),
+    ...(i.when ? [{ type: 'text', markdown: `**${i.when}**` } as Block] : []),
     ...(i.subtext ? [{ type: 'text', markdown: i.subtext } as Block] : []),
     ...(i.text ? [{ type: 'text', markdown: i.text } as Block] : []),
   ]);

@@ -11,6 +11,7 @@ import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
 import { isVideoFile } from '../model/upload';
 import { starterTable, textToTable } from '../model/table';
+import { startWidth } from '../model/collection';
 import { openCrop } from './crop';
 import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
@@ -833,16 +834,18 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     }
     if (kind === 'collection') {
       const items = [0, 1, 2]
-        .map((n) => ({ heading: val(`heading${n}`), subtext: val(`subtext${n}`), text: val(`text${n}`) }))
-        .map((it) => Object.fromEntries(Object.entries(it).filter(([, v]) => v)) as { heading?: string; subtext?: string; text?: string })
-        .filter((it) => Object.keys(it).length);
+        .map((n) => ({ when: val(`when${n}`), heading: val(`heading${n}`), subtext: val(`subtext${n}`), text: val(`text${n}`) }))
+        .map((it) => Object.fromEntries(Object.entries(it).filter(([, v]) => v)) as { when?: string; heading?: string; subtext?: string; text?: string })
+        .filter((it) => it.heading || it.subtext || it.text);
       if (!items.length) return issue('Give at least one item a heading, a subtext or its words.');
+      if (items.some((it) => (it.when?.length ?? 0) > 40)) return issue('Keep each time to 40 characters.');
       if (items.some((it) => (it.heading?.length ?? 0) > 80)) return issue('Keep each heading to 80 characters.');
       if (items.some((it) => (it.subtext?.length ?? 0) > 160)) return issue('Keep each subtext to 160 characters.');
       const layout = (val('layout') || 'tiles') as Extract<Block, { type: 'collection' }>['layout'];
       const headings = val('headings') === 'title' ? ({ headings: 'title' } as const) : {};
+      const width = startWidth(layout);
       close();
-      return insertBlock(insertAt, { type: 'collection', layout, items, ...headings, ...(layout === 'tiles' || layout === 'masonry' || layout === 'carousel' ? { width: 'popout' as const } : {}) });
+      return insertBlock(insertAt, { type: 'collection', layout, items, ...headings, ...(width ? { width } : {}) });
     }
     if (kind === 'carousel') {
       if (!val('label')) return issue('Name the carousel.');

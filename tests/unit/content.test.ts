@@ -343,8 +343,17 @@ describe('the collection block (items of one shape, in any layout)', () => {
     expect(ok(of(Array.from({ length: 25 }, (_, n) => ({ heading: `T${n}` }))))).toBe(false);
   });
 
-  it('lays them out any of five ways, with the options every picture has', () => {
-    for (const layout of ['rows', 'columns', 'tiles', 'masonry', 'carousel']) expect(ok(of([{ heading: 'a' }], { layout })), layout).toBe(true);
+  it("an item can say when it was, in a few words, but that alone isn't an item", () => {
+    expect(ok(of([{ when: 'July 2019 to now', heading: 'Principal Design Manager', subtext: 'Microsoft' }], { layout: 'timeline' }))).toBe(true);
+    expect(ok(of([{ when: '2016', media: 'articles/a/cover' }], { layout: 'timeline-scroll', label: 'Year by year' }))).toBe(true);
+    expect(ok(of([{ when: '2016' }]))).toBe(false);
+    expect(ok(of([{ when: '', heading: 'a' }]))).toBe(false);
+    expect(ok(of([{ when: '   ', heading: 'a' }]))).toBe(false);
+    expect(ok(of([{ when: 'x'.repeat(41), heading: 'a' }]))).toBe(false);
+  });
+
+  it('lays them out any of seven ways, with the options every picture has', () => {
+    for (const layout of ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll']) expect(ok(of([{ heading: 'a' }], { layout })), layout).toBe(true);
     expect(ok(of([{ heading: 'a' }], { layout: 'grid' }))).toBe(false);
     expect(ok({ type: 'collection', items: [{ heading: 'a' }] })).toBe(false);
     expect(ok(of([{ heading: 'a' }], { columns: 4, headings: 'title', label: 'Places', width: 'wide', ratio: '3/2', display: 'tile', background: true, rounded: false, shadow: true }))).toBe(true);

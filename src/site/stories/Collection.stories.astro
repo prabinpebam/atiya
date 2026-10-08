@@ -20,6 +20,14 @@ const places = SAMPLES.slice(0, 6).map((p) => ({
   html: p.caption,
   picture: { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height },
 }));
+const career = [
+  { when: 'July 2019 to now', heading: 'Principal Design Manager', subtext: 'Microsoft', html: 'Design across Windows and Microsoft consumer experiences, and an <strong>AI transformation program</strong> for Design.' },
+  { when: '2016 to now', heading: 'Core founding team member', subtext: 'DesignUp', html: 'A community and conference for product creators across India and Southeast Asia.' },
+  { when: 'July 2015 to 2019', heading: 'Head of Design', subtext: 'Belong', html: 'Built the Design organization and its design system from scratch.' },
+  { when: 'March 2013 to June 2015', heading: 'UX Designer', subtext: 'Projectplace' },
+  { when: 'August 2008 to March 2013', heading: 'Designer', subtext: 'TVS Motor' },
+];
+const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }));
 ---
 
 <Example title="Columns: a story's facts" description="Headings as labels over a subtext, side by side between two hairlines: the scan layer before the first paragraph. They wrap when they don't fit.">
@@ -44,6 +52,22 @@ const places = SAMPLES.slice(0, 6).map((p) => ({
 
 <Example title="Carousel" layout="block" description="Cards in a strip that scrolls sideways; Previous and Next move it by a view and are disabled at its ends.">
   <Collection layout="carousel" label="Places on the planet" headings="title" ratio="4/3" width="wide" items={places} />
+</Example>
+
+<Example title="Timeline: a career" layout="block" description="Down a line, each item's time in a column before its mark, in deep marigold; the line breaks a little either side of each mark. On a phone, the line runs down the start and each time sits over its words.">
+  <Collection layout="timeline" items={career} />
+</Example>
+
+<Example title="Timeline, with titles and pictures" layout="block" description="Titles set the marks level with their first line; a picture shows under its words, never wider than the column allows.">
+  <Collection layout="timeline" headings="title" ratio="3/2" width="popout" items={walk.slice(0, 3)} />
+</Example>
+
+<Example title="Timeline, sideways" layout="block" description="Along a line in a strip that scrolls sideways: the times over the line, the words under it, every mark level whatever wraps. Previous and Next move it by a view, as the carousel's do.">
+  <Collection layout="timeline-scroll" label="A walk round the planet" headings="title" ratio="4/3" width="wide" items={walk} />
+</Example>
+
+<Example title="Tiles, with times" description="A career as tiles: outside a timeline, each item's time sits over its heading.">
+  <Collection layout="tiles" items={career.slice(0, 4)} />
 </Example>
 
 <Example title="Any layout, the same items" description="Without pictures or subtexts, the brief above as rows: a collection can change layout at any time.">

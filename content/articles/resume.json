@@ -118,22 +118,21 @@
       "text": "Education"
     },
     {
-      "type": "heading",
-      "level": 3,
-      "text": "Indian Institute of Science (IISc)"
-    },
-    {
-      "type": "text",
-      "markdown": "**Master of Design, Product Design · 2006–2008**"
-    },
-    {
-      "type": "heading",
-      "level": 3,
-      "text": "North Eastern Regional Institute of Science and Technology (NERIST)"
-    },
-    {
-      "type": "text",
-      "markdown": "**B.Tech., Mechanical Engineering · 2002–2006**"
+      "type": "collection",
+      "layout": "timeline",
+      "headings": "title",
+      "items": [
+        {
+          "when": "2006–2008",
+          "heading": "Master of Design, Product Design",
+          "subtext": "Indian Institute of Science (IISc)"
+        },
+        {
+          "when": "2002–2006",
+          "heading": "B.Tech., Mechanical Engineering",
+          "subtext": "North Eastern Regional Institute of Science and Technology (NERIST)"
+        }
+      ]
     }
   ]
 }

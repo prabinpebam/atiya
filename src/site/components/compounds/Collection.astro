@@ -1,19 +1,23 @@
 ---
 /**
- * A collection: items of the same shape (a heading, a picture, a subtext and a few words, each optional),
- * laid out one of five ways. Any layout shows the same items, so a collection can change layout at any time:
- * rows (one under another, a picture beside its words), columns (side by side in a row between two
- * hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph), tiles (an
- * even grid of cards), masonry (cards in columns, each as tall as it is) or a carousel (cards in a strip
- * that scrolls sideways, with previous and next buttons). Headings read as small capitals over the words
- * (labels) or as titles. The pictures take every picture option: a frame shape, how each sits in it,
- * the colour behind it, rounded corners and a drop shadow.
+ * A collection: items of the same shape (when it was, a heading, a picture, a subtext and a few words, each
+ * optional), laid out one of seven ways. Any layout shows the same items, so a collection can change layout
+ * at any time: rows (one under another, a picture beside its words), columns (side by side in a row between
+ * two hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph), tiles (an
+ * even grid of cards), masonry (cards in columns, each as tall as it is), a carousel (cards in a strip that
+ * scrolls sideways, with previous and next buttons), a timeline (down a line, each item's time in a column
+ * before its mark: a career, a project's story) or a sideways timeline (along a line in a strip that
+ * scrolls sideways, with the carousel's buttons). An item's time sits by its mark in a timeline, and over
+ * its heading in the other layouts. Headings read as small capitals over the words (labels) or as titles.
+ * The pictures take every picture option: a frame shape, how each sits in it, the colour behind it,
+ * rounded corners and a drop shadow.
  * @tier compound
- * @a11y A list (role list, not a ul, so the article's list styles stay off it): each item is a list item, read in order whatever the layout (masonry's columns and the carousel's strip included).
- * @a11y The carousel is a named region (aria-roledescription carousel) whose strip scrolls with the keyboard; its buttons are named and disabled at the ends.
+ * @a11y A list (role list, not a ul, so the article's list styles stay off it): each item is a list item, read in order whatever the layout (masonry's columns and the strips included); a timeline's item reads its time first.
+ * @a11y The strips (the carousel and the sideways timeline) are named regions (the carousel with aria-roledescription carousel) whose list scrolls with the keyboard; their buttons are named and disabled at the ends.
+ * @a11y A timeline's line and marks are drawn, hidden from assistive tech: the time beside each mark is its words.
  * @a11y A picture keeps its own alt text; an item's heading is its first words, not a page heading, so the article's outline stays its own.
- * @key Tab: into the carousel's strip, then Left / Right scroll it
- * @key Enter or Space: on Previous or Next, scrolls the carousel by a view
+ * @key Tab: into a strip (the carousel's or the sideways timeline's), then Left / Right scroll it
+ * @key Enter or Space: on Previous or Next, scrolls the strip by a view
  */
 import Image from '../fundamentals/Image.astro';
 import IconButton from '../fundamentals/IconButton.astro';
@@ -38,6 +42,8 @@ export interface CollectionPicture {
 }
 
 export interface CollectionItem {
+  /** When it was, in words ("2016", "July 2019 to now"): by its mark in a timeline, over its heading otherwise. */
+  when?: string;
   /** Its heading: a label or a title, as the collection says. */
   heading?: string;
   /** Its picture. */
@@ -52,12 +58,12 @@ interface Props {
   /** The items, in reading order. */
   items: CollectionItem[];
   /** How they're laid out. */
-  layout?: 'rows' | 'columns' | 'tiles' | 'masonry' | 'carousel';
+  layout?: 'rows' | 'columns' | 'tiles' | 'masonry' | 'carousel' | 'timeline' | 'timeline-scroll';
   /** Items to a row on a wide screen, for tiles and masonry. Left out: three for three, six or more than four items, otherwise two. */
   columns?: 2 | 3 | 4;
   /** How the headings read: small capitals over the words (label) or titles. */
   headings?: 'label' | 'title';
-  /** Names the carousel for assistive tech. */
+  /** Names a strip (the carousel or the sideways timeline) for assistive tech. Left out, "Carousel" or "Timeline". */
   label?: string;
   /** Where the article layout places it: in the column (the default), a little wider, or wide. */
   width?: 'content' | 'popout' | 'wide';
@@ -73,66 +79,84 @@ interface Props {
   shadow?: boolean;
 }
 
-const { items, layout = 'tiles', headings = 'label', label = 'Carousel', width = 'content', ratio, display, background = false, rounded = true, shadow = false } = Astro.props;
+const { items, layout = 'tiles', headings = 'label', width = 'content', ratio, display, background = false, rounded = true, shadow = false } = Astro.props;
 const columns = Astro.props.columns ?? (items.length % 3 === 0 || items.length > 4 ? 3 : 2);
 const shown = display ?? (ratio ? 'fill' : 'fit');
+// the strips scroll sideways, with Previous and Next; the timelines set each item by its time on a line
+const strip = layout === 'carousel' || layout === 'timeline-scroll';
+const timeline = layout === 'timeline' || layout === 'timeline-scroll';
+const label = Astro.props.label ?? (layout === 'carousel' ? 'Carousel' : 'Timeline');
 // how wide a picture shows, for the browser's pick: the place's width (the size tokens) shared by the columns
 const PLACE = { content: 40, popout: 52, wide: 76 }[width];
 const across = layout === 'tiles' || layout === 'masonry' ? columns : 1;
-const sizes =
-  layout === 'rows' ? '(max-width: 40rem) 92vw, 11rem' : layout === 'carousel' ? '18rem' : layout === 'columns' ? '(max-width: 40rem) 92vw, 20rem' : `(max-width: 40rem) 92vw, ${Math.ceil(PLACE / across)}rem`;
-const carousel = layout === 'carousel';
+const SIZES: Partial<Record<NonNullable<Props['layout']>, string>> = {
+  rows: '(max-width: 40rem) 92vw, 11rem',
+  columns: '(max-width: 40rem) 92vw, 20rem',
+  carousel: '18rem',
+  timeline: '(max-width: 40rem) 80vw, 20rem',
+  'timeline-scroll': '16rem',
+};
+const sizes = SIZES[layout] ?? `(max-width: 40rem) 92vw, ${Math.ceil(PLACE / across)}rem`;
 // always declared (content too), as a figure does: the article spaces it apart as a block, not as a line of text
 const breakout = width;
 ---
 
-{
-  carousel ? (
-    <section class="collection" data-layout="carousel" data-headings={headings} data-breakout={breakout} aria-roledescription="carousel" aria-label={label} data-collection data-collection-carousel>
-      <div class="items" role="list" tabindex="0" data-scrollbar data-collection-track>
-        {items.map((item) => (
-          <div class="item" role="listitem">
-            {item.picture && (
-              <span class="picture">
-                <Image src={item.picture.src} srcset={item.picture.srcset} sizes={sizes} alt={item.picture.alt} width={item.picture.width} height={item.picture.height} ratio={ratio} display={shown} focus={item.picture.focus} rounded={rounded} shadow={shadow} bg={background && item.picture.bg ? { light: item.picture.bg, dark: item.picture.dark?.bg } : undefined} dark={item.picture.dark} />
-              </span>
-            )}
-            {(item.heading || item.subtext || item.html) && (
-              <div class="words">
-                {item.heading && <p class="heading">{item.heading}</p>}
-                {item.subtext && <p class="subtext">{item.subtext}</p>}
-                {item.html && <p class="text" set:html={item.html} />}
-              </div>
-            )}
+<div
+  class="collection"
+  data-layout={layout}
+  data-columns={String(columns)}
+  data-headings={headings}
+  data-breakout={breakout}
+  role={strip ? 'region' : undefined}
+  aria-roledescription={layout === 'carousel' ? 'carousel' : undefined}
+  aria-label={strip ? label : undefined}
+  data-collection
+  data-collection-strip={strip ? '' : undefined}
+>
+  <div class="items" role="list" tabindex={strip ? '0' : undefined} data-scrollbar={strip ? '' : undefined} data-collection-track={strip ? '' : undefined}>
+    {
+      items.map((item) => {
+        const picture = item.picture && (
+          <span class="picture">
+            <Image src={item.picture.src} srcset={item.picture.srcset} sizes={sizes} alt={item.picture.alt} width={item.picture.width} height={item.picture.height} ratio={ratio} display={shown} focus={item.picture.focus} rounded={rounded} shadow={shadow} bg={background && item.picture.bg ? { light: item.picture.bg, dark: item.picture.dark?.bg } : undefined} dark={item.picture.dark} />
+          </span>
+        );
+        const when = !timeline && item.when;
+        const words = (when || item.heading || item.subtext || item.html) && (
+          <div class="words">
+            {when && <p class="when">{item.when}</p>}
+            {item.heading && <p class="heading">{item.heading}</p>}
+            {item.subtext && <p class="subtext">{item.subtext}</p>}
+            {item.html && <p class="text" set:html={item.html} />}
           </div>
-        ))}
-      </div>
+        );
+        return timeline ? (
+          <div class="item" role="listitem" data-picture={item.picture ? '' : undefined}>
+            <span class="mark" aria-hidden="true" />
+            {item.when && <p class="when">{item.when}</p>}
+            <div class="body">
+              {words}
+              {picture}
+            </div>
+          </div>
+        ) : (
+          <div class="item" role="listitem" data-picture={item.picture ? '' : undefined}>
+            {picture}
+            {words}
+          </div>
+        );
+      })
+    }
+  </div>
+  {
+    strip && (
       <div class="controls">
         <IconButton label="Previous" icon="chevron-left" variant="secondary" disabled data-collection-prev="" />
         <IconButton label="Next" icon="chevron-right" variant="secondary" disabled={items.length <= 1} data-collection-next="" />
       </div>
-    </section>
-  ) : (
-    <div class="collection items" role="list" data-layout={layout} data-columns={String(columns)} data-headings={headings} data-breakout={breakout} data-collection>
-      {items.map((item) => (
-        <div class="item" role="listitem" data-picture={item.picture ? '' : undefined}>
-          {item.picture && (
-            <span class="picture">
-              <Image src={item.picture.src} srcset={item.picture.srcset} sizes={sizes} alt={item.picture.alt} width={item.picture.width} height={item.picture.height} ratio={ratio} display={shown} focus={item.picture.focus} rounded={rounded} shadow={shadow} bg={background && item.picture.bg ? { light: item.picture.bg, dark: item.picture.dark?.bg } : undefined} dark={item.picture.dark} />
-            </span>
-          )}
-          {(item.heading || item.subtext || item.html) && (
-            <div class="words">
-              {item.heading && <p class="heading">{item.heading}</p>}
-              {item.subtext && <p class="subtext">{item.subtext}</p>}
-              {item.html && <p class="text" set:html={item.html} />}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
+    )
+  }
+</div>
 
 <style>
   .items {
@@ -141,13 +165,15 @@ const breakout = width;
   }
 
   .item,
-  .words {
+  .words,
+  .body {
     display: grid;
     align-content: start;
     min-width: 0;
   }
 
-  .item {
+  .item,
+  .body {
     gap: var(--space-3);
   }
 
@@ -160,10 +186,21 @@ const breakout = width;
     min-width: 0;
   }
 
+  .when,
   .heading,
   .subtext,
   .text {
     margin: 0;
+  }
+
+  /* an item's time: marigold as type, in the interface face, its figures lined up */
+  .when {
+    color: var(--c-collection-timeline-when);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--leading-ui);
   }
 
   /* the heading as a label: small capitals over the words */
@@ -207,7 +244,7 @@ const breakout = width;
   }
 
   /* rows: one under another, a picture beside its words, between hairlines */
-  [data-layout='rows'] {
+  [data-layout='rows'] .items {
     display: grid;
   }
 
@@ -226,7 +263,7 @@ const breakout = width;
   }
 
   /* columns: side by side in a row between two hairlines, wrapping when they don't fit */
-  [data-layout='columns'] {
+  [data-layout='columns'] .items {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-4) var(--space-10);
@@ -243,17 +280,17 @@ const breakout = width;
   }
 
   /* tiles: an even grid of cards on the page's raised paper */
-  [data-layout='tiles'] {
+  [data-layout='tiles'] .items {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-4);
   }
 
-  [data-layout='tiles'][data-columns='3'] {
+  [data-layout='tiles'][data-columns='3'] .items {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  [data-layout='tiles'][data-columns='4'] {
+  [data-layout='tiles'][data-columns='4'] .items {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
@@ -271,16 +308,16 @@ const breakout = width;
   }
 
   /* masonry: cards in columns, each as tall as it is */
-  [data-layout='masonry'] {
+  [data-layout='masonry'] .items {
     columns: 2;
     column-gap: var(--space-4);
   }
 
-  [data-layout='masonry'][data-columns='3'] {
+  [data-layout='masonry'][data-columns='3'] .items {
     columns: 3;
   }
 
-  [data-layout='masonry'][data-columns='4'] {
+  [data-layout='masonry'][data-columns='4'] .items {
     columns: 4;
   }
 
@@ -289,31 +326,35 @@ const breakout = width;
     break-inside: avoid;
   }
 
-  /* carousel: cards in a strip that scrolls sideways */
-  [data-layout='carousel'] {
+  /* the strips (the carousel, the sideways timeline): a list that scrolls sideways, its buttons under it */
+  [data-collection-strip] {
     display: grid;
     gap: var(--space-3);
   }
 
-  [data-layout='carousel'] .items {
+  [data-collection-strip] .items {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: min(var(--c-collection-slide), 85%);
-    gap: var(--space-4);
     padding-block-end: var(--space-2);
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
     scroll-padding-inline: var(--space-0);
   }
 
-  [data-layout='carousel'] .items:focus-visible {
+  [data-collection-strip] .items:focus-visible {
     outline: var(--border-focus) solid var(--color-focus);
     outline-offset: var(--border-focus-offset);
   }
 
-  [data-layout='carousel'] .item {
+  [data-collection-strip] .item {
     scroll-snap-align: start;
+  }
+
+  /* carousel: cards in the strip, one snapped to its start at a time */
+  [data-layout='carousel'] .items {
+    grid-auto-columns: min(var(--c-collection-slide), 85%);
+    gap: var(--space-4);
+    scroll-snap-type: x mandatory;
   }
 
   .controls {
@@ -322,38 +363,179 @@ const breakout = width;
     gap: var(--space-2);
   }
 
+  /*
+   * The timelines: each item's mark on a line, the line broken a little either side of each mark. The
+   * mark sits level with the item's first line: its time's (a line of small text), or its heading's when
+   * the time is beside it in a column and the heading is a title.
+   */
+  [data-layout^='timeline'] {
+    --line-sm: calc(var(--text-sm) * var(--leading-ui));
+    --first-line: var(--line-sm);
+    --mark: var(--c-collection-timeline-mark-size);
+  }
+
+  .mark {
+    position: relative;
+    grid-area: mark;
+  }
+
+  .mark::before,
+  .mark::after {
+    position: absolute;
+    content: '';
+  }
+
+  .mark::before {
+    inline-size: var(--mark);
+    block-size: var(--mark);
+    border-radius: var(--radius-round);
+    background: var(--c-collection-timeline-mark);
+  }
+
+  .mark::after {
+    background: var(--c-collection-timeline-line);
+  }
+
+  .item:last-child .mark::after {
+    display: none;
+  }
+
+  [data-layout^='timeline'] .when {
+    grid-area: when;
+  }
+
+  .body {
+    grid-area: body;
+  }
+
+  /* timeline: down a line, its times in a column before it */
+  [data-layout='timeline'] .items {
+    display: grid;
+  }
+
+  [data-layout='timeline'] .item {
+    grid-template-columns: var(--c-collection-timeline-when-width) var(--c-collection-timeline-gutter) minmax(0, 1fr);
+    grid-template-areas: 'when mark body';
+    gap: var(--space-0) var(--space-4);
+  }
+
+  [data-layout='timeline'][data-headings='title'] {
+    --first-line: calc(var(--text-h4) * var(--leading-heading));
+  }
+
+  [data-layout='timeline'] .when {
+    padding-block-start: calc((var(--first-line) - var(--line-sm)) / 2);
+    text-align: end;
+  }
+
+  [data-layout='timeline'] .mark::before {
+    inset-block-start: calc((var(--first-line) - var(--mark)) / 2);
+    inset-inline: var(--space-0);
+    margin-inline: auto;
+  }
+
+  [data-layout='timeline'] .mark::after {
+    inset-block: calc((var(--first-line) + var(--mark)) / 2 + var(--space-1)) var(--space-0);
+    inset-inline: var(--space-0);
+    inline-size: var(--c-collection-timeline-line-width);
+    margin-inline: auto;
+  }
+
+  /* the space between items is the body's, so the line runs through it to the next mark */
+  [data-layout='timeline'] .body {
+    padding-block-end: var(--space-10);
+  }
+
+  [data-layout='timeline'] .item:last-child .body {
+    padding-block-end: var(--space-0);
+  }
+
+  [data-layout='timeline'] .picture {
+    max-inline-size: var(--c-collection-timeline-picture);
+  }
+
+  /* sideways: the times over the line, the words under it; each item runs the line on to the next mark */
+  [data-layout='timeline-scroll'] .items {
+    grid-template-rows: auto var(--c-collection-timeline-gutter) auto;
+    grid-auto-columns: min(var(--c-collection-timeline-slide), 80%);
+    scroll-snap-type: x proximity;
+  }
+
+  [data-layout='timeline-scroll'] .item {
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    grid-template-areas: 'when' 'mark' 'body';
+    gap: var(--space-2) var(--space-0);
+  }
+
+  /* the space between items is the time's and the words', so the line runs through it to the next mark */
+  [data-layout='timeline-scroll'] .when,
+  [data-layout='timeline-scroll'] .body {
+    padding-inline-end: var(--space-6);
+  }
+
+  [data-layout='timeline-scroll'] .mark::before {
+    inset-block: var(--space-0);
+    inset-inline-start: var(--space-0);
+    margin-block: auto;
+  }
+
+  [data-layout='timeline-scroll'] .mark::after {
+    inset-block: var(--space-0);
+    inset-inline: calc(var(--mark) + var(--space-1)) var(--space-1);
+    block-size: var(--c-collection-timeline-line-width);
+    margin-block: auto;
+  }
+
   @media (max-width: 56rem) {
-    [data-layout='tiles'][data-columns='3'],
-    [data-layout='tiles'][data-columns='4'] {
+    [data-layout='tiles'][data-columns='3'] .items,
+    [data-layout='tiles'][data-columns='4'] .items {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    [data-layout='masonry'][data-columns='3'],
-    [data-layout='masonry'][data-columns='4'] {
+    [data-layout='masonry'][data-columns='3'] .items,
+    [data-layout='masonry'][data-columns='4'] .items {
       columns: 2;
     }
   }
 
   @media (max-width: 40rem) {
-    [data-layout='tiles'],
-    [data-layout='tiles'][data-columns='3'],
-    [data-layout='tiles'][data-columns='4'] {
+    [data-layout='tiles'] .items,
+    [data-layout='tiles'][data-columns='3'] .items,
+    [data-layout='tiles'][data-columns='4'] .items {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    [data-layout='masonry'],
-    [data-layout='masonry'][data-columns='3'],
-    [data-layout='masonry'][data-columns='4'] {
+    [data-layout='masonry'] .items,
+    [data-layout='masonry'][data-columns='3'] .items,
+    [data-layout='masonry'][data-columns='4'] .items {
       columns: 1;
     }
 
     [data-layout='rows'] .item[data-picture] {
       grid-template-columns: minmax(0, 1fr);
     }
+
+    /* on a phone, the timeline's line runs down the start, each time over its words */
+    [data-layout='timeline'],
+    [data-layout='timeline'][data-headings='title'] {
+      --first-line: var(--line-sm);
+    }
+
+    [data-layout='timeline'] .item {
+      grid-template-columns: var(--c-collection-timeline-gutter) minmax(0, 1fr);
+      grid-template-areas: 'mark when' 'mark body';
+      column-gap: var(--space-3);
+    }
+
+    [data-layout='timeline'] .when {
+      padding-block: var(--space-0) var(--space-1);
+      text-align: start;
+    }
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    [data-layout='carousel'] .items {
+    [data-collection-strip] .items {
       scroll-behavior: smooth;
     }
   }
@@ -362,8 +544,8 @@ const breakout = width;
 <script>
   import { each } from '../../scripts/page';
 
-  // the carousel's Previous and Next scroll its strip by a view, and are disabled at its ends
-  each<HTMLElement>('[data-collection-carousel]', (root, signal) => {
+  // a strip's Previous and Next (the carousel's, the sideways timeline's) scroll it by a view, and are disabled at its ends
+  each<HTMLElement>('[data-collection-strip]', (root, signal) => {
     const track = root.querySelector<HTMLElement>('[data-collection-track]');
     const prev = root.querySelector<HTMLButtonElement>('[data-collection-prev]');
     const next = root.querySelector<HTMLButtonElement>('[data-collection-next]');

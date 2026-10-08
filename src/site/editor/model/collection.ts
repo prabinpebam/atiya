@@ -11,6 +11,8 @@ export const LAYOUT_CHOICES: { value: CollectionLayout; label: string; descripti
   { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
   { value: 'masonry', label: 'Masonry', description: 'Cards in columns, each as tall as it is' },
   { value: 'carousel', label: 'Carousel', description: 'Cards in a strip that scrolls sideways' },
+  { value: 'timeline', label: 'Timeline', description: 'Down a line, each item by its time' },
+  { value: 'timeline-scroll', label: 'Timeline, sideways', description: 'Along a line that scrolls sideways' },
 ];
 
 export const HEADING_CHOICES: { value: (typeof COLLECTION_HEADINGS)[number]; label: string; description: string }[] = [
@@ -20,3 +22,12 @@ export const HEADING_CHOICES: { value: (typeof COLLECTION_HEADINGS)[number]; lab
 
 /** The layouts that take a number of columns. */
 export const TAKES_COLUMNS: ReadonlySet<CollectionLayout> = new Set(['tiles', 'masonry']);
+
+/** The layouts in a strip that scrolls sideways: a named region, so they take a label. */
+export const TAKES_LABEL: ReadonlySet<CollectionLayout> = new Set(['carousel', 'timeline-scroll']);
+
+/** The layouts that set each item by its time (its `when`). */
+export const TIMELINES: ReadonlySet<CollectionLayout> = new Set(['timeline', 'timeline-scroll']);
+
+/** The width a new collection starts at in a layout: the strips and card grids a little wider than the column. */
+export const startWidth = (layout: CollectionLayout): 'popout' | undefined => (TAKES_COLUMNS.has(layout) || TAKES_LABEL.has(layout) ? 'popout' : undefined);

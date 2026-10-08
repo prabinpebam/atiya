@@ -165,6 +165,7 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
       const items = b.items.map((it, n) => {
         const p = pictures[n];
         return {
+          when: it.when,
           heading: it.heading,
           subtext: it.subtext,
           html: it.text ? renderInlineMarkdown(it.text, { resolveRef, annotate: editable }) : undefined,

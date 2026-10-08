@@ -103,7 +103,7 @@ const oneParagraph = (what: string) =>
  * whatever the layout, so a collection can change layout at any time; a new layout is a new value here and
  * its styles in the Collection compound.
  */
-export const COLLECTION_LAYOUTS = ['rows', 'columns', 'tiles', 'masonry', 'carousel'] as const;
+export const COLLECTION_LAYOUTS = ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll'] as const;
 export type CollectionLayout = (typeof COLLECTION_LAYOUTS)[number];
 export const COLLECTION_HEADINGS = ['label', 'title'] as const;
 export const COLLECTION_MAX = 24;
@@ -114,12 +114,18 @@ export const TABLE_MAX_ROWS = 60;
 /** A table's cell: one line of the inline Markdown (bold, italic, code, links), or empty. */
 const tableCell = z.string().refine((c) => !/[\r\n]/.test(c), 'a cell is one line');
 
+/** An item's time, as words ("2016", "July 2019 to now"): short enough to sit by a timeline's mark. */
+export const COLLECTION_WHEN_MAX = 40;
+
 /**
- * One item of a collection: a heading, a picture, a subtext (a short line under the heading) and its
- * words (one paragraph of Markdown). Each is optional, and an item has at least one.
+ * One item of a collection: when it was (for a timeline), a heading, a picture, a subtext (a short line
+ * under the heading) and its words (one paragraph of Markdown). Each is optional, and an item has at least
+ * one of a heading, a picture, a subtext or its words.
  */
 export const collectionItem = z
   .strictObject({
+    /** When it was, as words: a timeline sets it by the item's mark; other layouts, over its heading. */
+    when: z.string().trim().min(1).max(COLLECTION_WHEN_MAX).optional(),
     heading: z.string().min(1).max(80).optional(),
     media: mediaId.optional(),
     subtext: z.string().min(1).max(160).optional(),
@@ -181,7 +187,7 @@ export const block = z.discriminatedUnion('type', [
     columns: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
     /** How the items' headings read: small capitals over the words (labels, the default) or titles. */
     headings: z.enum(COLLECTION_HEADINGS).optional(),
-    /** Names a carousel for assistive tech; left out, "Carousel". */
+    /** Names a carousel or a scrolling timeline for assistive tech; left out, "Carousel" or "Timeline". */
     label: z.string().min(1).optional(),
     /** Where the article layout places it; left out, in the column. */
     width: z.enum(['content', 'popout', 'wide']).optional(),
