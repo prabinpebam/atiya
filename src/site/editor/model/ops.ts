@@ -68,7 +68,7 @@ export const removeMany = <T>(body: T[], indices: number[]): T[] => {
  */
 export function split(body: Body, at: number, parts: string[]): Body {
   const b = body[at];
-  if (!b || (b.type !== 'text' && b.type !== 'heading' && b.type !== 'subheading')) return body;
+  if (!b || (b.type !== 'text' && b.type !== 'heading' && b.type !== 'subheading' && b.type !== 'marker')) return body;
   const [first, ...rest] = parts;
   const head: Block = b.type === 'text' ? { ...b, markdown: first } : { ...b, text: plainLines(first) };
   const tail: Block[] = rest.filter((p) => p.trim()).map((markdown) => ({ type: 'text', markdown }));
@@ -116,6 +116,7 @@ const KIND_LABEL: Record<Block['type'], string> = {
   text: 'Paragraph',
   heading: 'Heading',
   subheading: 'Subheading',
+  marker: 'Section marker',
   figure: 'Picture',
   gallery: 'Gallery',
   carousel: 'Carousel',
@@ -141,6 +142,7 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
       return cut(plainText(b.markdown).replace(/\s+/g, ' ').trim());
     case 'heading':
     case 'subheading':
+    case 'marker':
     case 'quote':
       return cut(b.text.replace(/\n/g, ' '));
     case 'figure':
@@ -203,7 +205,7 @@ export function parseDuration(text: string): number | undefined | null {
 // ---------- turning text into another kind (documentation/editor/spec.md §3.3) ----------
 
 /** The kinds a text block can be turned into, and back, at any time. */
-export type TextKind = 'paragraph' | 'heading-2' | 'heading-3' | 'heading-4' | 'subheading' | 'quote' | 'pull-quote' | 'bulleted' | 'numbered';
+export type TextKind = 'paragraph' | 'heading-2' | 'heading-3' | 'heading-4' | 'subheading' | 'marker' | 'quote' | 'pull-quote' | 'bulleted' | 'numbered';
 
 export const TEXT_KINDS: { value: TextKind; label: string; what: string }[] = [
   { value: 'paragraph', label: 'Paragraph', what: 'Words, with bold, italic and links' },
@@ -211,6 +213,7 @@ export const TEXT_KINDS: { value: TextKind; label: string; what: string }[] = [
   { value: 'heading-3', label: 'Heading 3', what: 'Within a section' },
   { value: 'heading-4', label: 'Heading 4', what: 'A small heading' },
   { value: 'subheading', label: 'Subheading', what: 'A line more about the heading above' },
+  { value: 'marker', label: 'Section marker', what: 'A big number or word, like Chapter 1' },
   { value: 'quote', label: 'Quote', what: 'A quotation in the column' },
   { value: 'pull-quote', label: 'Pull quote', what: 'A line lifted out and set large' },
   { value: 'bulleted', label: 'Bulleted list', what: 'One item a line' },
@@ -221,6 +224,7 @@ export const TEXT_KINDS: { value: TextKind; label: string; what: string }[] = [
 export function textKindOf(b: Block): TextKind | null {
   if (b.type === 'heading') return `heading-${b.level}`;
   if (b.type === 'subheading') return 'subheading';
+  if (b.type === 'marker') return 'marker';
   if (b.type === 'quote') return b.variant === 'pull' ? 'pull-quote' : 'quote';
   if (b.type !== 'text') return null;
   const first = parseMarkdown(b.markdown)[0];
@@ -244,7 +248,7 @@ export function linesOf(b: Block): Inline[][] {
         return lines;
       }),
     );
-  if (b.type === 'heading' || b.type === 'subheading' || b.type === 'quote') return kept(b.text.split(/\n+/).map((l): Inline[] => [{ t: 'text', v: l.trim() }]));
+  if (b.type === 'heading' || b.type === 'subheading' || b.type === 'marker' || b.type === 'quote') return kept(b.text.split(/\n+/).map((l): Inline[] => [{ t: 'text', v: l.trim() }]));
   return [];
 }
 
@@ -261,7 +265,10 @@ export function toTextKind(lines: Inline[][], to: TextKind, from?: Block): Block
   if (to === 'quote' || to === 'pull-quote') return { type: 'quote', variant: to === 'pull-quote' ? 'pull' : 'block', text: plain, ...(from?.type === 'quote' && from.cite ? { cite: from.cite } : {}) };
   // a heading and a subheading keep the lines (a line break each)
   if (to === 'subheading') return { type: 'subheading', text: kept.join('\n') };
-  return { type: 'heading', level: Number(to.slice(-1)) as 2 | 3 | 4, text: kept.join('\n'), ...(from?.type === 'heading' && from.id ? { id: from.id } : {}) };
+  if (to === 'marker') return { type: 'marker', text: kept.join('\n').slice(0, 60) };
+  // a heading keeps its anchor and its mark (and whether it's shown) while only its level changes
+  const keep = from?.type === 'heading' ? { ...(from.id ? { id: from.id } : {}), ...(from.marker ? { marker: from.marker } : {}), ...(from.showMarker === false ? { showMarker: false } : {}) } : {};
+  return { type: 'heading', level: Number(to.slice(-1)) as 2 | 3 | 4, text: kept.join('\n'), ...keep };
 }
 
 /** A text block turned into another text kind, keeping its words (a block that isn't text is left as it is). */

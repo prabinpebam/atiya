@@ -2,7 +2,9 @@
 /**
  * Long-form text as a magazine sets it: the rich text of an article or a page (Markdown's output, or
  * plain HTML) in Newsreader with a comfortable measure, headings in soft Fraunces (a paragraph marked
- * data-subheading right under one is its subheading, in quieter italic), a drop cap if you
+ * data-subheading right under one is its subheading, in quieter italic; a heading 2's data-heading-mark, or a
+ * paragraph marked data-section-mark, is a section's mark in big marigold type, hung in the margin beside a
+ * heading where there's room), a drop cap if you
  * want one (a paragraph marked data-dropcap: chosen paragraph by paragraph, never automatic), a dinkus for a rule, and a grid that lets figures, galleries and quotes step out of the
  * column (they declare data-breakout="popout", "wide" or "full"). Lists nest; compact sets a card's
  * words (a collection item's) at the interface's size.
@@ -40,7 +42,7 @@ const { breakout = false, size = 'body', id } = Astro.props;
 
   /* a narrow column: hyphenate running text, as a magazine's narrow columns are (never headings) */
   @media (max-width: 40rem) {
-    .prose :global(p:not([data-subheading])),
+    .prose :global(p:not([data-subheading], [data-section-mark])),
     .prose :global(li) {
       hyphens: auto;
       hyphenate-limit-chars: 7 3 3;
@@ -174,6 +176,48 @@ const { breakout = false, size = 'body', id } = Astro.props;
 
   .prose :global(h4 + p[data-subheading]) {
     font-size: var(--text-body);
+  }
+
+  /* ---------- section marks: a big marigold mark in the column, or hung in the margin beside a heading 2 ---------- */
+  .prose :global(p[data-section-mark]),
+  .prose :global([data-heading-mark]) {
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-size: var(--text-jumbo);
+    font-weight: var(--weight-light);
+    font-variant-numeric: lining-nums;
+    line-height: var(--leading-tight);
+    color: var(--color-highlight-ink);
+  }
+
+  .prose > :global(* + p[data-section-mark]) {
+    margin-block-start: var(--space-block);
+  }
+
+  /* the mark leads into what follows it (a heading, usually), close under it */
+  .prose > :global(p[data-section-mark] + *) {
+    margin-block-start: var(--space-2);
+  }
+
+  /* a heading 2's mark: over its heading on a narrow screen, as the design library's tiers are */
+  .prose :global([data-heading-mark]) {
+    display: block;
+    margin-block-end: var(--space-2);
+  }
+
+  /* with room beside the column, it hangs in the margin, its top on the heading's (the design library's tiers) */
+  @media (min-width: 72rem) {
+    .prose :global(h2[data-marked]) {
+      position: relative;
+    }
+
+    .prose :global([data-heading-mark]) {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-end: calc(100% + var(--space-8));
+      margin: 0;
+      white-space: nowrap;
+    }
   }
 
   .prose :global(a) {

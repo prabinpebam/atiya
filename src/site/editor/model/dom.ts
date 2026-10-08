@@ -146,7 +146,8 @@ export function plainLinesOf(el: MiniNode): string {
       if (c.nodeType === TEXT) lines[lines.length - 1] += c.textContent ?? '';
       else if (c.nodeType === ELEMENT) {
         if (c.nodeName.toLowerCase() === 'br') lines.push('');
-        else walk(c);
+        // a heading 2's margin mark is its own field (the inspector's), never the heading's words
+        else if (c.getAttribute?.('data-heading-mark') == null) walk(c);
       }
     }
   };

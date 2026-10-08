@@ -90,6 +90,8 @@ export function protectedTerms(privateRoot) {
       // a heading's lines are apart in the page (a line break between them): each is looked for on its own
       if (b.type === 'heading') for (const l of String(b.text).split('\n')) add('a heading', l, 3);
       if (b.type === 'subheading') for (const l of String(b.text).split('\n')) runs('a heading', l), add('a heading', l, 6);
+      if (b.type === 'heading' && b.marker) add('a heading', b.marker, 6);
+      if (b.type === 'marker') for (const l of String(b.text).split('\n')) add('a heading', l, 6);
       if (b.type === 'quote') runs('a quote', b.text), add('a quote', b.cite, 6);
       if (b.type === 'collection') for (const i of b.items) add('an item', i.when, 6), add('an item', i.heading, 6), add('an item', i.subtext, 6), i.text && runs('an item', i.text);
       if (b.type === 'table') {

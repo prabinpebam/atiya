@@ -179,7 +179,20 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
     }
     if ('id' in v) {
       const H = tag(v.b.level);
-      return <H id={v.id}>{linesOf(v.b.text).map((l, k) => [k > 0 && <br />, l])}</H>;
+      // a heading 2's mark hangs in the margin (Prose): part of the heading's name, never its words (the canvas leaves it be)
+      const mark = v.b.level === 2 && v.b.marker && v.b.showMarker !== false ? v.b.marker : undefined;
+      return (
+        <H id={v.id} data-marked={mark ? '' : undefined}>
+          {mark && (
+            <span data-heading-mark contenteditable={editable ? 'false' : undefined}>
+              {mark}
+              {/* keeps the mark and the words apart in the heading's name (a screen reader, the minimap), unseen */}
+              {' '}
+            </span>
+          )}
+          {linesOf(v.b.text).map((l, k) => [k > 0 && <br />, l])}
+        </H>
+      );
     }
     const b = v.b;
     switch (b.type) {
@@ -191,6 +204,8 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
         }
       case 'subheading':
         return <p data-subheading>{linesOf(b.text).map((l, k) => [k > 0 && <br />, l])}</p>;
+      case 'marker':
+        return <p data-section-mark>{linesOf(b.text).map((l, k) => [k > 0 && <br />, l])}</p>;
       case 'quote':
         return (
           <Quote variant={b.variant} cite={b.cite}>

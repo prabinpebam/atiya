@@ -68,6 +68,7 @@
     "redo": "arrow-rotate-right",
     "restore": "rotate-left",
     "search": "classic-solid/magnifying-glass",
+    "section-mark": "section",
     "sections": "sitemap",
     "settings": "gear",
     "share": "share-nodes",

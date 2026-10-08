@@ -32,14 +32,14 @@ type Out =
   | { type: 'turn'; index: number; to?: TextKind };
 
 const SOURCE = 'editor-canvas';
-const TEXTY = new Set(['text', 'heading', 'subheading', 'quote']);
+const TEXTY = new Set(['text', 'heading', 'subheading', 'marker', 'quote']);
 /** What a new, still empty block will be once it has words. */
-type Pending = 'text' | 'heading' | 'subheading';
+type Pending = 'text' | 'heading' | 'subheading' | 'marker';
 /** Blocks of plain words that keep their lines: Enter splits them, Shift + Enter breaks the line. */
-const LINED = new Set(['heading', 'subheading']);
+const LINED = new Set(['heading', 'subheading', 'marker']);
 /** Plain lines as a paragraph's Markdown, a line break between them. */
 const linesMarkdown = (text: string) => serializeInline(text.split('\n').flatMap((v, k): Inline[] => (k ? [{ t: 'br' }, { t: 'text', v }] : [{ t: 'text', v }])));
-const PENDING_KIND: Record<Pending, string> = { text: 'Paragraph', heading: 'Heading 2', subheading: 'Subheading' };
+const PENDING_KIND: Record<Pending, string> = { text: 'Paragraph', heading: 'Heading 2', subheading: 'Subheading', marker: 'Section marker' };
 const ALLOWED_INPUT = new Set([
   'insertText',
   'insertReplacementText',
@@ -880,9 +880,10 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (!prose) return;
     const el = document.createElement(kind === 'heading' ? 'h2' : 'p');
     if (kind === 'subheading') el.dataset.subheading = '';
+    if (kind === 'marker') el.dataset.sectionMark = '';
     el.dataset.editorPending = String(at);
     el.dataset.pendingKind = kind;
-    el.dataset.placeholder = kind === 'text' ? 'Write here, or press + to add a block' : kind === 'heading' ? 'A heading' : 'More about the heading';
+    el.dataset.placeholder = kind === 'text' ? 'Write here, or press + to add a block' : kind === 'heading' ? 'A heading' : kind === 'marker' ? '1, or Chapter 1' : 'More about the heading';
     el.contentEditable = kind === 'text' ? 'true' : 'plaintext-only';
     const before = blocks[at - 1];
     if (before) before.after(el);

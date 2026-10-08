@@ -77,6 +77,7 @@ Interface sizes are fixed. Reading and display sizes are fluid: each grows smoot
 - the display face set large and light, with the tracking closed up;
 - a drop cap three lines deep in indigo, on the paragraphs the writer chooses (never automatic);
 - a subheading close under a heading, in muted Fraunces italic a size under it: the heading's quieter second voice;
+- section marks in big, light marigold Fraunces (the design library's tier numerals): a heading 2's mark hung in the margin beside it, or a section marker ("Chapter 1") in the column;
 - pull quotes in the wonky italic behind a marigold quote mark;
 - the classic site's contents page with its big deep-marigold numerals;
 - and the library's live axes playground, which shows what the face can do.

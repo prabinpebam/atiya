@@ -145,7 +145,7 @@ describe('turning text into another kind, any time', () => {
     expect(ops.textKindOf(h('Title', 3))).toBe('heading-3');
     expect(ops.textKindOf({ type: 'quote', text: 'q', variant: 'pull' })).toBe('pull-quote');
     expect(ops.textKindOf({ type: 'divider' })).toBeNull();
-    expect(ops.TEXT_KINDS.map((k) => k.value)).toEqual(['paragraph', 'heading-2', 'heading-3', 'heading-4', 'subheading', 'quote', 'pull-quote', 'bulleted', 'numbered']);
+    expect(ops.TEXT_KINDS.map((k) => k.value)).toEqual(['paragraph', 'heading-2', 'heading-3', 'heading-4', 'subheading', 'marker', 'quote', 'pull-quote', 'bulleted', 'numbered']);
   });
 
   it('keeps the words: marks where the kind holds them, plain words where it doesn\'t, lines as items and back', () => {
@@ -176,6 +176,17 @@ describe('turning text into another kind, any time', () => {
     expect(ops.convertText(sub, 'paragraph')).toEqual(para('A bold line'));
     // Enter in a subheading: its words stay, the rest becomes a paragraph after it
     expect(ops.split([sub], 0, ['A bold', 'line'])).toEqual([{ type: 'subheading', text: 'A bold' }, para('line')]);
+  });
+
+  it('turns text into a section marker and back, and a heading keeps its margin mark while only its level changes', () => {
+    const mark = ops.convertText(para('Chapter 1'), 'marker');
+    expect(mark).toEqual({ type: 'marker', text: 'Chapter 1' });
+    expect(ops.kindOf(mark)).toBe('Section marker');
+    expect(ops.textKindOf(mark)).toBe('marker');
+    expect(ops.convertText(mark, 'paragraph')).toEqual(para('Chapter 1'));
+    const marked: Block = { type: 'heading', level: 2, text: 'Learning', marker: '1', showMarker: false, id: 'learning' };
+    expect(ops.convertText(marked, 'heading-3')).toEqual({ type: 'heading', level: 3, text: 'Learning', marker: '1', showMarker: false, id: 'learning' });
+    expect(ops.convertText(marked, 'paragraph')).toEqual(para('Learning'));
   });
 
   it("keeps a heading's lines (Shift + Enter): through Enter, and turned into a paragraph and back", () => {
@@ -384,6 +395,8 @@ describe('the canvas DOM back to the Markdown subset', () => {
     expect(plainLinesOf(el('h2', [text('  A site '), el('br'), text('with  two doors'), el('br'), el('br')]))).toBe('A site\nwith two doors');
     expect(plainLinesOf(el('h2', [text('One line')]))).toBe('One line');
     expect(plainLinesOf(el('h2', [el('br')]))).toBe('');
+    // a heading 2's margin mark is its own field, never read as its words
+    expect(plainLinesOf(el('h2', [el('span', [text('1')], { 'data-heading-mark': '' }), text(' Learning')]))).toBe('Learning');
   });
   it("drops the browser's trailing placeholder break, collapses white space, and keeps a typed non-breaking space as a space", () => {
     expect(markdownOf(el('p', [text('  one\n  two\u00a0'), el('br')]))).toBe('one two');

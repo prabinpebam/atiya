@@ -461,7 +461,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
           textSession = m.session as number;
           checkpoint();
         }
-        const next: Block = b.type === 'text' ? { ...b, markdown: value } : b.type === 'heading' || b.type === 'subheading' || b.type === 'quote' ? { ...b, text: value } : b;
+        const next: Block = b.type === 'text' ? { ...b, markdown: value } : b.type === 'heading' || b.type === 'subheading' || b.type === 'marker' || b.type === 'quote' ? { ...b, text: value } : b;
         doc = body(ops.replace(doc.body, i, next));
         void save({ refresh: m.final ? { outline: true } : {} });
         break;
@@ -529,7 +529,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       case 'pending': {
         const at = m.index as number;
         const block: Block =
-          m.kind === 'heading' ? { type: 'heading', level: 2, text: String(m.value) } : m.kind === 'subheading' ? { type: 'subheading', text: String(m.value) } : { type: 'text', markdown: String(m.value) };
+          m.kind === 'heading' ? { type: 'heading', level: 2, text: String(m.value) } : m.kind === 'subheading' ? { type: 'subheading', text: String(m.value) } : m.kind === 'marker' ? { type: 'marker', text: String(m.value).slice(0, 60) } : { type: 'text', markdown: String(m.value) };
         change(body(ops.insert(doc.body, at, block)), { outline: true, inspector: true }, { select: at });
         break;
       }
@@ -814,7 +814,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
 
   const addBlock = (type: string) => {
     const at = insertAt;
-    if (type === 'text' || type === 'heading' || type === 'subheading') return toCanvas({ type: 'pending', index: at, kind: type });
+    if (type === 'text' || type === 'heading' || type === 'subheading' || type === 'marker') return toCanvas({ type: 'pending', index: at, kind: type });
     if (type === 'divider') return insertBlock(at, { type: 'divider' });
     if (type === 'table') return insertBlock(at, starterTable());
     if (type === 'quote' || type === 'collection') {

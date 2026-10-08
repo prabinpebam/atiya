@@ -22,6 +22,17 @@ import Prose from '../components/fundamentals/Prose.astro';
   </Prose>
 </Example>
 
+<Example title="Section marks" layout="block" description="A heading 2 with its mark (data-heading-mark, part of its name): hung in the margin beside it where there's room (72rem and wider), its top on the heading's as the library's tiers are, and over it on a narrower screen. A section marker (a paragraph marked data-section-mark) sets the same big marigold type in the column, for a number or Chapter 1.">
+  <Prose breakout>
+    <h2 data-marked><span data-heading-mark>1 </span>Learning the medium</h2>
+    <p data-subheading>Chapter 1 · May – Jul 2024</p>
+    <p>Before personalization was anyone’s job, I spent time learning what high-quality image generation takes.</p>
+    <p data-section-mark>Chapter 2</p>
+    <h2>The demand surfaces</h2>
+    <p>Through the year, personalization moved from a side interest to an explicit priority.</p>
+  </Prose>
+</Example>
+
 <Example title="Lead size" layout="block" description="A short introduction, a size up.">
   <Prose size="lead">
     <p>A portfolio you can walk around, and the same portfolio as plain pages.</p>

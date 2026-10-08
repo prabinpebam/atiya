@@ -148,9 +148,20 @@ export const block = z.discriminatedUnion('type', [
       .min(1)
       .refine((m) => !/\n[ \t]*\n/.test(m.trim()), 'a text block is one paragraph or one list: split it into two blocks at the blank line'),
   }),
-  z.strictObject({ type: z.literal('heading'), level: z.union([z.literal(2), z.literal(3), z.literal(4)]), text: z.string().min(1), id: id.optional() }),
+  z.strictObject({
+    type: z.literal('heading'),
+    level: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+    text: z.string().min(1),
+    id: id.optional(),
+    /** A heading 2's mark (a chapter's number, say), set large in the margin beside it; a heading 3 or 4 keeps it but doesn't show it. */
+    marker: z.string().trim().min(1).max(40).optional(),
+    /** The mark is shown unless this is false (it's kept, to show again). */
+    showMarker: z.boolean().optional(),
+  }),
   /** A line or two more about the heading just above it, set close under it and read as part of it. */
   z.strictObject({ type: z.literal('subheading'), text: z.string().min(1) }),
+  /** A section's mark in the column ("1", "Chapter 1"), in the big marigold type of a heading's margin mark. */
+  z.strictObject({ type: z.literal('marker'), text: z.string().trim().min(1).max(60) }),
   z.strictObject({
     type: z.literal('figure'),
     media: mediaId,

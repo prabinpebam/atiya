@@ -277,6 +277,16 @@ describe('the loader checks what it is given', () => {
     expect(block.safeParse({ type: 'text', markdown: 'Once.', dropcap: 'yes' }).success).toBe(false);
   });
 
+  it('a heading 2 can carry a margin mark (shown unless switched off), and a section marker is a short line', () => {
+    expect(block.safeParse({ type: 'heading', level: 2, text: 'Learning the medium', marker: '1' }).success).toBe(true);
+    expect(block.safeParse({ type: 'heading', level: 2, text: 'Learning', marker: '1', showMarker: false }).success).toBe(true);
+    expect(block.safeParse({ type: 'heading', level: 2, text: 'Learning', marker: '  ' }).success).toBe(false);
+    expect(block.safeParse({ type: 'heading', level: 2, text: 'Learning', marker: 'x'.repeat(41) }).success).toBe(false);
+    expect(block.safeParse({ type: 'marker', text: 'Chapter 1' }).success).toBe(true);
+    expect(block.safeParse({ type: 'marker', text: '' }).success).toBe(false);
+    expect(block.safeParse({ type: 'marker', text: 'x'.repeat(61) }).success).toBe(false);
+  });
+
   it('a subheading is plain words, nothing more', () => {
     expect(block.safeParse({ type: 'subheading', text: 'What it was for' }).success).toBe(true);
     expect(block.safeParse({ type: 'subheading', text: '' }).success).toBe(false);

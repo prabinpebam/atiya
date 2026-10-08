@@ -56,7 +56,7 @@ const placeId = planet && structure && access === 'open' ? placeOfPage(planet.va
 const place = planet?.value.places.find((p) => p.id === placeId)?.title ?? '';
 const route = loaded.ok ? getPlacement('article', id) : undefined;
 
-const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', subheading: 'subheading', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', collection: 'collection', table: 'table' };
+const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', subheading: 'subheading', marker: 'section-mark', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', collection: 'collection', table: 'table' };
 const cards: MediaCard[] = loaded.ok ? await mediaCards(loaded.index, `articles/${id}`) : [];
 const thumbs: Record<string, Thumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height }]));
 const blocks = article.body.map((b) => ({ kind: kindOf(b), excerpt: excerptOf(b, (m) => thumbs[m]?.alt), icon: ICON[b.type] }));
