@@ -44,4 +44,22 @@ describe('nested lists', () => {
     expect(parseMarkdown('- a\n1. b')[0].t).toBe('p');
     expect(plainText(nested)).toBe('One\nOne a\nOne b\nDeep\nTwo\nTwo a');
   });
+
+  it('a line break in an item (Shift+Enter) keeps the list a list: the next line is more of that item', () => {
+    // as saved before the fix: the line after the break not indented
+    const saved = '- Led design vision\\\n(story, script)\n- Shared the vision\n- Kept a team going';
+    const [b] = parseMarkdown(saved) as MdList[];
+    expect(b.t).toBe('ul');
+    expect(b.items).toHaveLength(3);
+    expect(renderMarkdown(saved)).toBe('<ul><li>Led design vision<br>\n(story, script)</li><li>Shared the vision</li><li>Kept a team going</li></ul>');
+    // written back with the line under the item's words, and read the same
+    const written = serializeBlocks(parseMarkdown(saved));
+    expect(written).toBe('- Led design vision\\\n  (story, script)\n- Shared the vision\n- Kept a team going');
+    expect(serializeBlocks(parseMarkdown(written))).toBe(written);
+    // in a nested numbered item, and with two spaces for the break
+    const nested = '1. One\n   - Inside  \n     more\n2. Two';
+    expect(renderMarkdown(nested)).toBe('<ol><li>One<ul><li>Inside<br>\nmore</li></ul></li><li>Two</li></ol>');
+    // a line that isn't an item, with no break before it, still isn't a list
+    expect(parseMarkdown('- a\nb')[0].t).toBe('p');
+  });
 });

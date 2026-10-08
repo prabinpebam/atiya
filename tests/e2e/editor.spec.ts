@@ -381,6 +381,14 @@ test.describe('editor', () => {
     await field.locator('[data-rich-op="strikethrough"]').click();
     await page.locator(`[data-block-form="${t}"]`).getByLabel('Item 1: heading').click();
     await expect.poll(words).toMatch(/Then (~~\*\*own\*\*~~|\*\*~~own~~\*\*) it\./);
+    // Shift+Enter in an item: a line break in that item, and the page still shows the list
+    await input.locator('li').first().click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Shift+Enter');
+    await page.keyboard.type('and more');
+    await page.locator(`[data-block-form="${t}"]`).getByLabel('Item 1: heading').click();
+    await expect.poll(words).toContain('- First\\\n  and more\n  - Inside');
+    await expect(frame(page).locator('[data-collection] .item', { hasText: 'and more' }).locator('ul > li').first()).toContainText('and more');
   });
 
   test('on the canvas, words are struck through (Ctrl+Shift+X) and a list item indents (Ctrl+]) into a list inside the one above', async ({ page }) => {

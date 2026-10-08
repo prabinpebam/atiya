@@ -227,11 +227,23 @@ const ITEM = /^( *)([-*]|\d+\.) (.*)$/;
  * A paragraph's lines as a list, or null when they aren't one. Every line is an item ("- " or "1. "); a
  * line indented past the item before it opens a list inside that item (its own marker says which kind),
  * one level at a time and no deeper than LIST_DEPTH_MAX; a line indented less goes back out to the level
- * it lines up with. The list's own items must all be of its kind, as before nesting was allowed.
+ * it lines up with. The list's own items must all be of its kind, as before nesting was allowed. A line
+ * after an item that ends in a hard break (a backslash, or two spaces) is more of that item's words, after
+ * the break (Shift+Enter in an item), however it's indented.
  */
 function parseList(lines: string[]): MdList | null {
-  const found = lines.map((l) => ITEM.exec(l));
-  if (!found.every(Boolean)) return null;
+  const found: RegExpExecArray[] = [];
+  const words: string[] = [];
+  for (const line of lines) {
+    const m = ITEM.exec(line);
+    const broken = words.length > 0 && /(\\| {2,})$/.test(words[words.length - 1]);
+    if (broken && !m) words[words.length - 1] += `\n${line.trimStart()}`;
+    else if (m) {
+      found.push(m);
+      words.push(m[3]);
+    } else return null;
+  }
+  if (!found.length) return null;
   const kindOf = (m: RegExpExecArray) => (/\d/.test(m[2]) ? 'ol' : 'ul') as 'ul' | 'ol';
   const top = kindOf(found[0]!);
   const indents: number[] = [];
@@ -252,7 +264,7 @@ function parseList(lines: string[]): MdList | null {
     depth.push(d);
     kinds.push(d === 0 ? top : runKind[d]);
   }
-  const items = (found as RegExpExecArray[]).map((m) => parseInline(m[3]));
+  const items = words.map((w) => parseInline(w));
   return depth.some((d) => d > 0) ? { t: top, items, depth, kinds } : { t: top, items };
 }
 
@@ -397,7 +409,8 @@ export function runs(nodes: Inline[], style: Omit<Run, 'text' | 'br'> = {}): Run
  * The canonical tree, for comparing by meaning and for writing: adjacent text joined; empty marks and
  * text dropped; a mark inside the same mark flattened (bold in bold is bold); two runs of the same mark
  * side by side merged; spaces and breaks at a mark's edges moved outside it (as the serializer writes
- * them); and bold round a lone italic turned into italic round bold (what `***x***` reads as).
+ * them); spaces beside a line break dropped; and bold round a lone italic turned into italic round bold
+ * (what `***x***` reads as).
  */
 export function normalize(nodes: Inline[], inside: { strong?: boolean; em?: boolean; del?: boolean } = {}): Inline[] {
   const out: Inline[] = [];
@@ -447,7 +460,14 @@ export function normalize(nodes: Inline[], inside: { strong?: boolean; em?: bool
       else if (n.v) out.push({ ...n });
     } else push(out, n.t === 'text' ? { ...n } : n);
   }
-  return out;
+  // white space beside a line break shows as nothing (the browser drops it): none before it, none after
+  for (let i = 0; i < out.length; i++) {
+    const n = out[i];
+    if (n.t !== 'text') continue;
+    if (out[i + 1]?.t === 'br') n.v = n.v.replace(/\s+$/, '');
+    if (out[i - 1]?.t === 'br') n.v = n.v.replace(/^\s+/, '');
+  }
+  return out.filter((n) => n.t !== 'text' || n.v);
 }
 
 const escapeText = (v: string) =>
@@ -513,7 +533,9 @@ function serializeList(b: MdList): string {
   const walk = (l: ListTree, indent: number) =>
     l.items.forEach((it, n) => {
       const marker = l.t === 'ul' ? '-' : `${n + 1}.`;
-      lines.push(`${' '.repeat(indent)}${marker} ${serializeInline(it.c)}`);
+      // an item's line breaks go on to lines indented under its words, as a nested list's are
+      const pad = ' '.repeat(indent + marker.length + 1);
+      lines.push(`${' '.repeat(indent)}${marker} ${serializeInline(it.c).replace(/\n/g, `\n${pad}`)}`);
       if (it.sub) walk(it.sub, indent + marker.length + 1);
     });
   walk(listTree(b), 0);

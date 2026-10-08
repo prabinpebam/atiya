@@ -62,6 +62,10 @@ describe('a rich field', () => {
     expect(richMarkdown(html('<div><ol><li>x</li><li><br></li></ol></div>'))).toBe('1. x');
     // nested deeper than the subset holds: the items join the deepest level, in order
     expect(richMarkdown(html('<ul><li>a<ul><li>b<ul><li>c<ul><li>d</li></ul></li></ul></li></ul></li></ul>'))).toBe('- a\n  - b\n    - c\n    - d');
+    // a line break in an item (Shift+Enter) stays in the item, and reads back as the same list
+    const broken = richMarkdown(html('<ul><li>Led design<br>(story)</li><li>Shared</li></ul>'));
+    expect(broken).toBe('- Led design\\\n  (story)\n- Shared');
+    expect(richMarkdown(html(richHtml(broken)))).toBe(broken);
   });
 
   it('a paste keeps text with its marks and lists, makes a heading or a quote a paragraph, and leaves the rest out', () => {

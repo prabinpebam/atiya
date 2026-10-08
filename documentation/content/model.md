@@ -354,7 +354,7 @@ A table is for facts compared across the same columns: options side by side, a s
 
 **The Markdown subset** in `text`, `pointOfView`, `bio` and the like:
 - **Allowed:** paragraphs, emphasis, strong, strikethrough (`~~words~~`), inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks.
-- **Lists nest,** up to three levels: a line indented under an item (to where that item's words start: two spaces under `- `, three under `1. `) is an item of a list inside it, bulleted or numbered as its own marker says (`- One` then `  1. One a`). A list's own items keep one kind; a list written flat stays flat.
+- **Lists nest,** up to three levels: a line indented under an item (to where that item's words start: two spaces under `- `, three under `1. `) is an item of a list inside it, bulleted or numbered as its own marker says (`- One` then `  1. One a`). A list's own items keep one kind; a list written flat stays flat. An item can break its line (a backslash, or two spaces, at the end, as Shift+Enter writes it): the next line is more of that item, written indented under its words.
 - **Not allowed:**
   - raw HTML;
   - images (use `figure`);
