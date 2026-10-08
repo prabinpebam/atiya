@@ -2,7 +2,7 @@
 /**
  * Long-form text as a magazine sets it: the rich text of an article or a page (Markdown's output, or
  * plain HTML) in Newsreader with a comfortable measure, headings in soft Fraunces, a drop cap if you
- * want one, a dinkus for a rule, and a grid that lets figures, galleries and quotes step out of the
+ * want one (a paragraph marked data-dropcap: chosen paragraph by paragraph, never automatic), a dinkus for a rule, and a grid that lets figures, galleries and quotes step out of the
  * column (they declare data-breakout="popout", "wide" or "full"). Lists nest; compact sets a card's
  * words (a collection item's) at the interface's size.
  * @tier fundamental
@@ -10,8 +10,6 @@
  * @a11y The reading column stays under about 70 characters; text never sits on a picture without a shade.
  */
 interface Props {
-  /** A drop cap on the first paragraph: for an article's opening. */
-  dropcap?: boolean;
   /** Lay the text on the breakout grid: children sit in the reading column unless they declare data-breakout. */
   breakout?: boolean;
   /** lead: the whole block a size up (a short introduction); compact: the interface's size at the reading line height, blocks closer together and no measure (a card's or a tile's words). */
@@ -20,10 +18,10 @@ interface Props {
   id?: string;
 }
 
-const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
+const { breakout = false, size = 'body', id } = Astro.props;
 ---
 
-<div class="prose" data-dropcap={dropcap ? '' : undefined} data-breakout={breakout ? 'grid' : undefined} data-size={size} id={id}>
+<div class="prose" data-breakout={breakout ? 'grid' : undefined} data-size={size} id={id}>
   <slot />
 </div>
 
@@ -264,8 +262,8 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
     font-weight: var(--weight-semibold);
   }
 
-  /* ---------- the drop cap: three lines deep, in the accent ---------- */
-  .prose[data-dropcap] > :global(p:first-of-type::first-letter) {
+  /* ---------- the drop cap: three lines deep, in the accent, on a paragraph that asks for one ---------- */
+  .prose > :global(p[data-dropcap]::first-letter) {
     float: inline-start;
     margin: 0.06em 0.1em 0 0;
     font-family: var(--font-display);
@@ -277,7 +275,7 @@ const { dropcap = false, breakout = false, size = 'body', id } = Astro.props;
   }
 
   @supports (initial-letter: 3) or (-webkit-initial-letter: 3) {
-    .prose[data-dropcap] > :global(p:first-of-type::first-letter) {
+    .prose > :global(p[data-dropcap]::first-letter) {
       float: none;
       margin: 0 0.12em 0 0;
       font-size: 1em;

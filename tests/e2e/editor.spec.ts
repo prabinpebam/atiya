@@ -450,6 +450,21 @@ test.describe('editor', () => {
     await expect(more).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test('a drop cap is a paragraph’s own choice: off unless switched on in its settings, then drawn on the page', async ({ page }) => {
+    await openArticle(page);
+    const blocks = () => readJson(articleFile()).body as { type: string; markdown?: string; dropcap?: boolean }[];
+    const p = blocks().findIndex((b) => b.type === 'text' && !b.markdown!.startsWith('- '));
+    // nothing has one by default: not the opening paragraph either
+    await expect(frame(page).locator('p[data-dropcap]')).toHaveCount(0);
+    await page.locator(`[data-editor-select="${p}"]`).click();
+    await page.locator(`[data-block-form="${p}"]`).getByRole('switch', { name: 'Drop cap' }).click();
+    await expect.poll(() => blocks()[p].dropcap).toBe(true);
+    await saved(page);
+    const cap = frame(page).locator('p[data-dropcap]');
+    await expect(cap).toHaveCount(1);
+    expect(await cap.evaluate((el) => getComputedStyle(el, '::first-letter').getPropertyValue('initial-letter'))).toMatch(/3/);
+  });
+
   test('a table: added from the palette, its cells written in the inspector and shown on the page, a row that does not fit refused', async ({ page }) => {
     await openArticle(page);
     const count = await outlineRows(page).count();

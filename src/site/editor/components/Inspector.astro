@@ -143,6 +143,7 @@ const STATUS: SelectOption[] = [
             {b.type === 'text' && (
               <>
                 <Text variant="ui" tone="muted">Its words are edited on the page: click them and type. The bar that shows over a selection has bold, italic, strikethrough, code, links and lists (and, in a list, its indents).</Text>
+                {!/^\s*([-*]|\d+\.) /.test(b.markdown) && <Switch label="Drop cap" name={`body.${i}.dropcap`} id={id(i, 'dropcap')} checked={!!b.dropcap} data-type="bool" />}
                 <div class="row">
                   <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
                 </div>

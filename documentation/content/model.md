@@ -297,7 +297,7 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 
 | Block | Fields | Renders with |
 |---|---|---|
-| `text` | `markdown` | `Prose` |
+| `text` | `markdown`, `dropcap?` (a paragraph opens with a drop cap: chosen paragraph by paragraph, off unless set, never automatic; a list ignores it) | `Prose` |
 | `heading` | `level` (2 to 4), `text` | `Prose` heading, with an anchor id; it's also a minimap landmark |
 | `figure` | `media`, `caption?`, `credit?`, `width` (`content`, `popout`, `wide`, `full`), `lightbox?` | `Figure` |
 | `gallery` | `gallery` (a gallery ID) or `items` (media refs); `layout?`, `fit?` (`cover`, or `contain` for marks and artwork that mustn't be cropped), `caption?`, `width?`, `lightbox?` | `Gallery` |

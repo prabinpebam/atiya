@@ -13,7 +13,7 @@ import ContactForm from '../components/compounds/ContactForm.astro';
 import Blocks from './Blocks.astro';
 import { getOpenRoutes, getPlanet, getRoutes, getSite, placePages, placeSection } from './repository';
 import { pageMeasure } from './reading';
-import { cardPicture, openingOf, relatedOf, storyKind } from './opening';
+import { cardPicture, openingOf, relatedOf } from './opening';
 import { withBase } from '../design/meta';
 import type { Place } from './schema';
 import type { PlanetFrame } from '../components/compounds/PlaceBar.astro';
@@ -66,7 +66,7 @@ const stories = current
 
 {
   current && header ? (
-    <ArticleLayout title={`${current.article.title} — ${place.title}`} description={current.article.summary} header={header} dropcap={storyKind(current.article)} prev={link(i - 1)} next={link(i + 1)} frame={frame} related={related}>
+    <ArticleLayout title={`${current.article.title} — ${place.title}`} description={current.article.summary} header={header} prev={link(i - 1)} next={link(i + 1)} frame={frame} related={related}>
       <Blocks blocks={current.article.body} />
     </ArticleLayout>
   ) : (

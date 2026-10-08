@@ -181,7 +181,11 @@ const tag = (level: 2 | 3 | 4) => `h${level}` as const;
     const b = v.b;
     switch (b.type) {
       case 'text':
-        return <Fragment set:html={renderMarkdown(b.markdown, { resolveRef, annotate: editable })} />;
+        {
+          // a paragraph that asks for a drop cap is marked for Prose
+          const html = renderMarkdown(b.markdown, { resolveRef, annotate: editable });
+          return <Fragment set:html={b.dropcap ? html.replace(/^<p>/, '<p data-dropcap>') : html} />;
+        }
       case 'quote':
         return (
           <Quote variant={b.variant} cite={b.cite}>

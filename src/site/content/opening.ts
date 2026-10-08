@@ -35,7 +35,7 @@ export interface Opening {
   portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
 }
 
-/** A story (an article, a talk) opens with a byline and a drop cap; a page and a gallery with their words only. */
+/** A story (an article, a talk) opens with a byline; a page and a gallery with their words only. (A drop cap is a paragraph's own choice.) */
 export const storyKind = (a: Pick<Article, 'kind'>) => a.kind === 'note' || a.kind === 'talk';
 
 /**

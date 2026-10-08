@@ -271,6 +271,12 @@ describe('the loader checks what it is given', () => {
     expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [{ type: 'text', markdown: 'one\n\ntwo' }] } }).join('\n')).toMatch(/one paragraph or one list/);
   });
 
+  it('a paragraph can ask for a drop cap (off unless it does)', () => {
+    expect(block.safeParse({ type: 'text', markdown: 'Once.', dropcap: true }).success).toBe(true);
+    expect(block.safeParse({ type: 'text', markdown: 'Once.' }).success).toBe(true);
+    expect(block.safeParse({ type: 'text', markdown: 'Once.', dropcap: 'yes' }).success).toBe(false);
+  });
+
   it('issues name the file, the field and what is wrong', () => {
     const article = base['/content/articles/a.json'];
     try {

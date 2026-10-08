@@ -208,7 +208,7 @@ Paragraphs (text blocks), headings, quotes, the title and the standfirst are edi
   - The rules are pure and unit-tested: `model/richPaste.ts` (HTML to blocks) and `model/paste.ts` (Markdown to blocks, placing them, the words and lines of a paste).
 - **What's stored** is the Markdown subset ([model §6](../content/model.md#6-blocks)). One parser turns it into an inline tree (text, bold, italic, strikethrough, code, link, line break) and its lists into trees (a list can hold a list in an item, to three levels), which render it on the site; the canvas turns the edited text back into the same tree, and one serializer writes it as Markdown, escaping everything else, so what you type is what renders. Bold, italic and strikethrough may nest; code holds plain text only; links hold text and those marks, and never another link. A space the browser leaves inside a mark (`<b>bold </b>next`) is written outside it, so words never run together.
 - **Typing in another script** (an input method) is never interrupted: no shortcut, save or split runs while a composition is open, and the text saves when it ends.
-- **The drop cap** is turned off while its paragraph is being edited, because its enlarged first letter moves the caret.
+- **The drop cap** (a paragraph's own setting) is turned off while its paragraph is being edited, because its enlarged first letter moves the caret; the others stay.
 - **Saving** happens 800 ms after typing stops, on leaving the block, and on Ctrl or Cmd + S. Saves go through one queue per document, so two never race; text saves don't reload the canvas, so the caret stays put.
 - **New paragraphs and headings** are pending until they have words: an empty one is never written, and it disappears if you leave it empty.
 
@@ -259,7 +259,7 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 
 | Block | Its settings |
 |---|---|
-| Paragraph | None: its words are edited on the page. Turn into any other kind of text (§3.3) |
+| Paragraph | Its words are edited on the page. Drop cap (off unless switched on; never automatic, the article's opening included). Turn into any other kind of text (§3.3) |
 | Heading | Level (2, 3 or 4); anchor (optional; made from its words if left empty) |
 | Picture | The picture (media field: thumbnail, Replace, and its alt text); width (content, popout, wide, full); show the caption and credit (off: nothing under the picture, nor in the lightbox); caption and credit (each left empty to use the picture's own); open in the lightbox |
 | Gallery | Its pictures (add, remove, reorder); layout (grid, mosaic, row); fit (cover, or contain for artwork); width; show the captions (off: no caption for the set, none for its pictures in the lightbox); caption; open in the lightbox |

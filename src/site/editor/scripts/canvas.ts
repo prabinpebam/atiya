@@ -306,9 +306,9 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-editor-editable], [data-editor-pending]');
     if (!el) return;
     session++;
-    if (prose?.hasAttribute('data-dropcap') && el.nodeName === 'P' && el === prose.querySelector(':scope > p')) {
-      prose.dataset.dropcapPaused = '';
-      prose.removeAttribute('data-dropcap');
+    if (el.hasAttribute('data-dropcap')) {
+      el.dataset.dropcapPaused = '';
+      el.removeAttribute('data-dropcap');
     }
     const i = indexOf(el);
     if (i >= 0 && i !== selected) select(i);
@@ -317,9 +317,9 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-editor-editable], [data-editor-pending]');
     if (!el) return;
     send(true);
-    if (prose && prose.dataset.dropcapPaused !== undefined) {
-      delete prose.dataset.dropcapPaused;
-      prose.setAttribute('data-dropcap', '');
+    if (el.dataset.dropcapPaused !== undefined) {
+      delete el.dataset.dropcapPaused;
+      el.setAttribute('data-dropcap', '');
     }
   });
   on('compositionstart', () => (composing = true));

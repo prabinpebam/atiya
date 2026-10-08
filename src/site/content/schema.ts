@@ -141,6 +141,8 @@ export const collectionItem = z
 export const block = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('text'),
+    /** A paragraph opens with a drop cap (off unless asked for; a list ignores it). */
+    dropcap: z.boolean().optional(),
     markdown: z
       .string()
       .min(1)

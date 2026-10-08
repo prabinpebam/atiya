@@ -12,7 +12,7 @@ import ContactForm from '../components/compounds/ContactForm.astro';
 import Blocks from './Blocks.astro';
 import { getArticle, getOpenRoutes, getPlanet, getRoutes, getSite, getStructure } from './repository';
 import { pageMeasure } from './reading';
-import { cardPicture, openingOf, relatedOf, storyKind } from './opening';
+import { cardPicture, openingOf, relatedOf } from './opening';
 import { exploreAction, footerLinks, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import type { Route } from './routes';
@@ -86,7 +86,7 @@ const privatePages = await Promise.all(
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} dropcap={storyKind(article)} related={related} sealed={sealed}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? article.summary} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>

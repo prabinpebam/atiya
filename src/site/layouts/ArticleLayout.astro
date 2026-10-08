@@ -1,7 +1,7 @@
 ---
 /**
  * A page: an article, a case study, a custom page or a gallery. The opening spread, then the text
- * in a comfortable column with a drop cap, figures, galleries, videos and quotes stepping out of it,
+ * in a comfortable column (a drop cap where a paragraph asks for one), figures, galleries, videos and quotes stepping out of it,
  * then the way on: the next story, related stories to read next (the ones not read yet first) and back to the top. Pictures open in the lightbox. Defined once; every long read uses it,
  * on the site and on the planet, where the building's frame replaces the site's chrome (documentation/sections/spec.md §6.1).
  * @tier layout
@@ -38,8 +38,6 @@ interface Props {
   crumbs?: { trail: { label: string; href: string }[]; current: string };
   /** The opening spread (ArticleHeader's props: its topic and tags, title, byline and pictures). */
   header: ComponentProps<typeof ArticleHeader>;
-  /** A drop cap on the opening paragraph. */
-  dropcap?: boolean;
   /** The story before this one. */
   prev?: { href: string; title: string };
   /** The story after this one. */
@@ -56,7 +54,7 @@ interface Props {
   sealed?: { access: 'private'; id: string; contact: string };
 }
 
-const { title, description, nav, footer, action, crumbs, header, dropcap = true, prev, next, frame, related, sealed } = Astro.props;
+const { title, description, nav, footer, action, crumbs, header, prev, next, frame, related, sealed } = Astro.props;
 const sealing = !!sealed && import.meta.env.PROD;
 ---
 
@@ -82,7 +80,7 @@ const sealing = !!sealed && import.meta.env.PROD;
       }
       <ArticleHeader {...header} />
       <div class="body">
-        <Prose breakout dropcap={dropcap}>
+        <Prose breakout>
           <slot />
         </Prose>
       </div>
