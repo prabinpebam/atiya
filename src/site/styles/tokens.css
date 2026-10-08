@@ -293,6 +293,7 @@
   --c-quote-rule: var(--color-highlight);
   --c-quote-mark: var(--color-highlight);
   --c-dropcap-color: var(--color-accent);
+  --c-contents-cap: 0.7;
   --c-header-height: 4.5rem;
   --c-header-bg: var(--color-bg);
   --c-header-height-compact: 3.5rem;
