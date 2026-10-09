@@ -1,605 +1,571 @@
 # Inline table editing
 
-> **TL;DR:** Edit a simple editorial table directly in the article canvas. Click or tap a cell to type, use a compact grid keyboard model, and add, move, duplicate, clear or remove rows and columns from contextual controls. Keep the existing semantic table, content limits, Markdown cells, autosave, undo and inspector fallback. Deliberately do not copy Notion's database features, merged cells, arbitrary colours or mouse-only interactions. Unlike Notion's documented limitation, pasting a rectangular range from a spreadsheet must work atomically.
+> **TL;DR:** Atiya's tables are small, static parts of portfolio articles and pages. Edit every cell directly in the real page, with the existing rich-text format bar for bold, italic, strikethrough, code and links. Add rows or columns with edge buttons, and use compact row or column menus to insert, move or delete them. Keep the current semantic table, responsive design, autosave, undo and inspector fallback. Do not build spreadsheet or database behavior.
 
 **Status:** Planned  
 **Research reviewed:** 9 October 2026
 
-## 1. Scope
+## 1. Fit for Atiya
 
-This specification covers the article editor's `table` content block. It is a small, static, presentational table for editorial content. It is not a database, spreadsheet or layout tool.
+Atiya is a personal portfolio. A table helps a reader compare short, static facts inside an article or page:
 
-The implementation must:
+- responsibilities across workstreams;
+- a before-and-after comparison;
+- a compact schedule or sequence;
+- a design or platform capability matrix;
+- a short specification.
 
-- make cell and structure editing direct in the real-page canvas;
-- preserve the public page's native `<table>` semantics;
-- preserve the current content contract and limits;
-- remain usable with keyboard, mouse, touch and assistive technology;
-- retain the inspector as a settings and bulk-edit fallback;
-- use the parent editor's document, history, save, conflict and live-update systems;
-- add no editor code or attributes to production output.
+A table is not the right block for:
 
-The implementation must not add sorting, filtering, formulas, typed properties, relations, database rows, calculations, arbitrary cell styling or blocks nested inside cells.
+- paragraphs that should be read in sequence;
+- a set of cards or project highlights, which is a collection;
+- a small group of headline values, which is metrics content;
+- page layout;
+- data that needs sorting, filtering, calculation or frequent bulk updates.
 
-## 2. Research method
+The primary authoring task is changing words. Structural editing is secondary and should remain easy without turning the editor into a spreadsheet.
 
-The research separates three kinds of evidence:
+## 2. Product boundary
 
-1. **Official behavior** is stated by a current Notion help, release or API page.
-2. **Corroborated behavior** appears in a detailed third-party walkthrough and agrees with the official model.
-3. **Unknown behavior** was not stated clearly enough to treat as a product fact.
+The first release provides:
 
-Generic shortcut lists often say "Notion table" without distinguishing a simple table from a database table. This specification does not use those claims as evidence.
+- WYSIWYG rich-text editing in every cell, including column and row headings;
+- `Tab` and `Shift+Tab` movement through cells;
+- one button to append a row and one to append a column;
+- row and column menus to insert, move or delete structure;
+- caption, width, row-heading semantics and whole-table bulk editing in the inspector;
+- the existing content limits: eight columns and 60 body rows.
 
-### 2.1 Primary sources
+It does not provide:
 
-| Source | Evidence used |
-| --- | --- |
-| [Columns, headings and dividers](https://www.notion.com/help/columns-headings-and-dividers) | Creating a simple table; edge buttons; corner drag; column resize; header row and column; cell colour and clearing; fit to page width; rectangular merge; the explicit inability to paste multiple simple-table cells |
-| [Simple tables versus databases](https://www.notion.com/help/guides/simple-tables-vs-databases) | The simple-table purpose; click-to-edit; horizontal `Tab` navigation; row and column operations; reorder; comments; conversion to a database |
-| [Keyboard shortcuts](https://www.notion.com/help/keyboard-shortcuts) | The generic table shortcut to fill a selected range right or down; general block selection and movement |
-| [Writing and editing basics](https://www.notion.com/help/writing-and-editing-basics) | Notion's block selection, drag and mobile editing model |
-| [Notion 2.14 release](https://www.notion.com/releases/2021-11-16) | The original simple-table interaction and header toggles |
-| [Merge cells release](https://www.notion.com/releases/2026-05-26) | The newer select-then-merge interaction |
-| [Notion block API](https://developers.notion.com/reference/block#table) | A simple table is a fixed-width set of rows whose cells contain rich text; header-row and header-column flags are separate table properties |
-| [Enhanced Markdown](https://developers.notion.com/guides/data-apis/enhanced-markdown#table) | Table cells contain rich text rather than nested blocks; fit-width and header flags are table-level properties |
+- multi-cell selection, copy, paste or fill;
+- merged cells;
+- drag reordering;
+- manual column widths or row heights;
+- author-selected colours, alignment, fonts or sizes;
+- sorting, filtering, formulas, calculations or typed properties;
+- nested blocks, lists or media inside a cell;
+- database conversion or collaboration comments.
 
-The detailed third-party guide [Notion simple tables](https://thomasjfrank.com/notion-simple-tables/) corroborates rich-text cells, row and column reordering, and the absence of nested blocks and multi-cell spreadsheet paste. It is not authority where current official documentation differs.
+These are explicit non-goals, not later requirements hidden inside the MVP.
 
-### 2.2 Accessibility sources
+## 3. Notion as interaction reference
 
-Notion does not publish a table-specific accessibility interaction contract. The site's target behavior therefore follows:
+Notion's simple table is the reference for the frontend pattern, not the feature set:
 
-- the [WAI-ARIA Authoring Practices data-grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) for roving focus, cell navigation and entering or leaving cell edit mode;
-- [WCAG 2.2 SC 2.5.7](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html), which requires a single-pointer alternative to dragging;
-- [WCAG 2.2 SC 2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html), while retaining this site's stronger 44 px target rule.
+- click a cell and type;
+- select text to format it;
+- move through cells with `Tab`;
+- add a row at the bottom or a column at the side;
+- use contextual row and column controls.
 
-## 3. What Notion does
+The behavior is documented in [Simple tables versus databases](https://www.notion.com/help/guides/simple-tables-vs-databases) and [Columns, headings and dividers](https://www.notion.com/help/columns-headings-and-dividers). Notion also supports resizing, colours, merge, drag and database conversion; Atiya deliberately does not.
 
-### 3.1 Confirmed simple-table behavior
+Notion does not document a complete simple-table keyboard or accessibility contract. Atiya defines its own below.
 
-| Area | Confirmed behavior |
-| --- | --- |
-| Purpose | A lightweight visual matrix for notes and documentation, separate from databases |
-| Cell content | Rich text, not nested content blocks |
-| Direct editing | Click a cell and type |
-| Keyboard | `Tab` moves horizontally while content is added |
-| Add structure | Add one row at the bottom, one column at the right, or drag the corner to change both dimensions |
-| Row and column menus | Insert, remove and reorder structure from contextual handles |
-| Column size | Drag a column edge |
-| Headers | Independently toggle the first row and first column as headers |
-| Cell presentation | Set text or background colour and clear the cell |
-| Table width | Fit the table to the containing page or column |
-| Range actions | Select a rectangular group for merging; a generic table shortcut fills a selected range right or down |
-| Promotion | Turn a simple table into a database when filters, sorts, typed properties or row pages become necessary |
-| Spreadsheet paste | Not supported across multiple simple-table cells |
+## 4. Content contract
 
-The fill shortcut is documented for "a table" but the shortcut page does not say whether that means simple tables, database tables or both. It is not used as a requirement here.
+### 4.1 As built
 
-### 3.2 Simple table versus database
+The table block in [`schema.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/schema.ts) already has the right static shape:
 
-A Notion simple table stores formatted text in a visual grid. A database table stores typed properties, and every row can be a page. Sorting, filtering, formulas, calculations, multiple views and relations belong to the database.
+```ts
+type TableBlock = {
+  type: "table";
+  columns: string[];
+  rows: string[][];
+  rowHeadings?: boolean;
+  caption?: string;
+  width?: "content" | "popout" | "wide";
+};
+```
 
-That distinction is the right one for this site. Article tables explain content; they do not become a second content-management system.
+- `columns` has one to eight required headings.
+- `rows` has one to 60 body rows.
+- Every row has exactly one cell per column.
+- Body cells are one line of inline Markdown and may be empty.
+- `rowHeadings` makes the current first column row headers.
 
-### 3.3 Unknown or insufficiently documented behavior
+Body cells already render rich text through [`Blocks.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/Blocks.astro) and [`Table.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Table.astro). Column headings currently render as plain strings.
 
-The research did not find authoritative simple-table definitions for:
+### 4.2 Target rich text
 
-- arrow, `Enter`, `Shift+Tab` and `Escape` behavior in and between cells;
-- row-height controls;
-- a cell text-alignment control;
-- simple-table wrap controls;
-- touch-specific structure editing;
-- undo granularity for cell and structure changes;
-- screen-reader roles, announcements and focus recovery.
+The JSON shape does not change. `columns` becomes the same one-line inline Markdown as body cells.
 
-These are not copied by guesswork. Section 7 defines them for this editor.
+Every cell supports:
 
-## 4. Product decisions
+- bold;
+- italic;
+- strikethrough;
+- inline code;
+- links (`https:`, `http:`, `mailto:` and `ref:`).
 
-| Notion pattern | Decision for this site | Reason |
-| --- | --- | --- |
-| Click a cell and type | Adopt | Direct manipulation is the primary goal |
-| `Tab` through cells | Adopt and complete | Add a documented two-mode keyboard model instead of relying on undocumented behavior |
-| Edge buttons to add rows and columns | Adopt | Fast and discoverable |
-| Drag to reorder rows and columns | Adopt with menu alternatives | Useful for pointer users; alternatives are required by WCAG |
-| Corner drag to change both dimensions | Do not adopt | Imprecise, hidden on touch and unnecessary beside explicit add controls |
-| Per-column drag resize | Defer | It requires a new persistent width model and adds horizontal-layout complexity |
-| Fit to page width | Adapt | Keep the existing `content`, `popout` and `wide` design-system widths |
-| Optional header row | Do not adopt | Every site table keeps mandatory column headings for comprehension and accessibility |
-| Optional header column | Keep | This is the existing `rowHeadings` setting |
-| Cell text and background colours | Do not adopt | Editorial tables use design-system roles, not author-selected styling |
-| Merge cells | Do not adopt | Spans complicate editing, paste, responsive behavior and header associations |
-| Multi-cell selection and fill | Defer | The first release does not need spreadsheet selection once paste-to-grid works |
-| Multi-cell spreadsheet paste | Improve on Notion | This removes a documented Notion pain point and is important for real editorial data |
-| Turn into database | Do not adopt | The site has no database-table block |
-| Inline comments | Out of scope | The local, single-owner CMS has no collaboration model |
+A cell does not support paragraphs, lists, line breaks, headings, media, raw HTML or presentation styling.
 
-## 5. Current site contract
+The editor shows formatted text, not Markdown punctuation. The saved JSON remains Markdown so the editor and public site continue to use one parser, renderer and serializer.
 
-The authoritative schema is [`src/site/content/schema.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/schema.ts):
+### 4.3 Column-heading rules
 
-- one to eight required, non-empty column headings;
-- each heading is at most 80 characters;
-- one to 60 body rows;
-- every body row has exactly one cell per column;
-- body cells contain one line of inline Markdown and may be empty;
-- `rowHeadings` makes the current first column row headers;
-- `caption` is optional;
-- width is `content`, `popout` or `wide`.
+A heading:
 
-The public renderer is [`Table.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Table.astro), reached from [`Blocks.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/Blocks.astro). It already provides:
+- must have visible text after Markdown is parsed;
+- may contain the same rich text as any other cell;
+- has at most 80 visible characters, excluding Markdown punctuation and a link's address;
+- cannot be empty.
 
-- a native `<table>` and `<thead>`;
-- `scope="col"` column headings;
-- optional `scope="row"` row headings;
-- a caption;
-- a focusable horizontal overflow region;
-- content-sized, horizontally scrollable cells on small screens.
+Use `plainText()` from the Markdown module for these checks. Existing plain headings remain valid, so no content migration is required.
 
-The editor currently serializes the whole matrix into one pipe-separated inspector field through [`table.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/table.ts). The first line is the headings, later lines are rows and `\|` represents a literal pipe. Malformed row widths are refused.
+## 5. Editing experience
 
-The canvas in [`canvas.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/scripts/canvas.ts) edits text-like blocks through messages to the parent. The parent in [`editor.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/scripts/editor.ts) owns the article, undo history, save queue, conflicts and refreshes. Inline table editing must preserve that ownership boundary.
+### 5.1 Visual pattern
 
-## 6. Target experience
+The canvas keeps the real rendered table. Edit controls float over it and do not change its public layout.
 
-### 6.1 First contact
+```text
+                    [column menu]
+              +-----------------------+      [add column]
+ [row menu]   | Heading | Heading     |            +
+              | Cell    | Cell        |
+              | Cell    | Cell        |
+              +-----------------------+
+                         +
+                     [add row]
+```
 
-1. Selecting a table block shows a subtle edit outline.
-2. Clicking or tapping cell text places the caret at that point and enters cell edit mode.
-3. Tabbing into the table focuses one cell in navigation mode. The last focused cell is restored while the article remains open; otherwise the first column heading receives focus.
-4. The active cell reveals one row handle, one column handle, an add-row button below the table and an add-column button at its inline end.
-5. The inspector continues to show caption, row-heading and width settings. The old text matrix moves under a collapsed **Bulk edit table** disclosure.
+- Selecting a table reveals **Add row** and **Add column**.
+- Focusing a cell reveals **Row actions** for a body row and **Column actions** for its column.
+- A heading shows only **Column actions**.
+- Controls stay visible for the active cell on touch; no action depends on hover.
+- Preview mode hides the controls and makes the table read-only.
+- Controls use the editor's existing `IconButton`, surface, focus, spacing and layer tokens.
 
-The cell data remains the source of truth. The overlay controls never become part of saved article HTML.
+The public `Table` compound owns the table's appearance. The edit overlay does not add a second table design.
 
-### 6.2 Modes
+### 5.2 Editing a cell
 
-| Mode | Focus | Meaning |
-| --- | --- | --- |
-| Idle | Outside the table | The table is ordinary article content |
-| Block selected | Table frame or existing block control | Whole-block move, duplicate and delete are available |
-| Cell navigation | One header or data cell | Arrow keys navigate; structure controls apply to that row or column |
-| Cell editing | The active cell's text editor | Typing and inline formatting edit that cell |
-| Structure menu | A row or column menu | The menu owns focus until an action or dismissal |
-| Dragging | A row or column handle | A preview indicates the destination; data changes only on drop |
+- Click or tap text to place the caret and type.
+- Clicking cell padding focuses the cell text at its end.
+- Select text to show the existing format bar.
+- In a cell, the format bar shows only Bold, Italic, Strikethrough, Code and Link.
+- List and indent tools are hidden.
+- Links stay inert while editing; the existing link dialog changes their target.
+- A body cell may be empty.
+- An invalid column heading stays in the cell as a local draft until it is fixed or focus leaves.
 
-### 6.3 State transitions
+### 5.3 Adding rows and columns
 
-| From | Action | To | Result |
-| --- | --- | --- | --- |
-| Idle or block selected | Click or tap cell text | Cell editing | Put the caret at the pointer position |
-| Idle or block selected | `Tab` into table | Cell navigation | Focus the remembered or first cell |
-| Cell navigation | `Enter`, `F2` or printable character | Cell editing | `Enter`/`F2` place the caret at the end; a printable character replaces the cell selection and starts text input |
-| Cell editing | `Escape` | Cell navigation | Commit the current value and restore cell focus |
-| Cell navigation | `Escape` | Block selected | Return to the existing block-level canvas model |
-| Cell navigation | Open row or column handle | Structure menu | Focus the first enabled menu item |
-| Structure menu | `Escape` | Cell navigation | Close the menu and restore its cell |
-| Cell editing | Blur to editor UI | Cell navigation or idle | Commit before focus moves |
-| Dragging | `Escape` | Cell navigation | Cancel with no content change |
+- **Add row** appends one empty row and focuses its first cell.
+- **Add column** appends one empty column, assigns the next available `Column N` heading and selects that heading for replacement.
+- An inserted column uses the same generated heading.
+- "Next available" is the smallest positive `N` whose visible `Column N` label is not already used.
+- At a limit, the relevant button stays visible but disabled and exposes the reason in its accessible description.
 
-`Escape` exits rather than cancels cell edits. Undo is the way to reverse a committed change. This avoids an autosave race and matches the editor's existing continuous-save model.
+### 5.4 Row actions
 
-## 7. Interaction contract
-
-### 7.1 Keyboard in cell navigation mode
-
-The edit canvas uses the WAI-ARIA data-grid conventions:
-
-| Key | Behavior |
-| --- | --- |
-| `Right Arrow` / `Left Arrow` | Move one cell in the same row; do not wrap |
-| `Down Arrow` / `Up Arrow` | Move one row in the same column; the heading row is above body row zero |
-| `Home` / `End` | Move to the first or last cell in the current row |
-| `Ctrl/Cmd+Home` / `Ctrl/Cmd+End` | Move to the first or last cell in the table |
-| `Enter` or `F2` | Enter cell edit mode |
-| Printable character | Enter edit mode and replace the cell's current text selection |
-| `Delete` | Clear a body cell; do not clear a required heading |
-| `Ctrl/Cmd+C` | Copy the selected cell as plain text |
-| `Ctrl/Cmd+X` | Copy and clear a body cell; copy but do not clear a heading |
-| `Ctrl/Cmd+V` | Paste one value or a rectangular grid at the active cell |
-| `Escape` | Select the whole table block |
-| `Tab` / `Shift+Tab` | Leave the grid for the next or previous page control |
-
-Only one cell is in the page tab sequence. Navigation changes the roving `tabindex`.
-
-### 7.2 Keyboard in cell edit mode
-
-| Key | Behavior |
-| --- | --- |
-| Arrow keys, `Home`, `End` | Move the text caret normally |
-| `Tab` | Commit and edit the next cell in row-major order |
-| `Shift+Tab` | Commit and edit the previous cell |
-| `Tab` from the last body cell | Add one row when below the 60-row limit, then edit its first cell |
-| `Tab` from the last body cell at the limit | Commit and move focus to the next page control |
-| `Shift+Tab` from the first heading | Commit and move focus to the previous page control |
-| `Enter` | Commit and return to navigation mode in the same cell |
-| `Shift+Enter` | Same as `Enter`; table cells remain one line |
-| `Escape` | Commit and return to navigation mode |
-| `Ctrl/Cmd+B`, `Ctrl/Cmd+I`, other supported inline commands | Use the existing inline-Markdown formatting behavior in body cells |
-
-Composition events must complete before navigation or commit logic runs. Key handlers must not split an IME composition.
-
-Column headings are plain text. Their cell editor does not offer inline formatting. Body and row-heading cells support the same inline Markdown the public renderer already accepts, but never block content or hard line breaks.
-
-### 7.3 Pointer and touch
-
-- Clicking or tapping text enters edit mode at the intended caret position.
-- Clicking cell padding selects the cell in navigation mode.
-- Row and column handles appear for the active cell, not for every cell.
-- A mouse or pen can drag a handle to reorder. The insertion indicator appears between rows or columns, auto-scrolls the table's overflow region near an edge and does not mutate data until drop.
-- A tap opens the same handle menu. Dragging is never the only route to an action.
-- Touch does not depend on hover. Controls for the active cell remain visible until focus leaves the table.
-- Every actionable control is at least 44 by 44 CSS pixels without making every table cell a 44 px button.
-- Horizontal pan in the table's overflow region must not start a row or column drag. Drag starts only from the named handle after the normal movement threshold.
-
-### 7.4 Row menu
-
-The row menu applies only to body rows and contains:
+The active body row's menu contains:
 
 1. **Insert row above**
 2. **Insert row below**
 3. **Move row up**
 4. **Move row down**
-5. **Duplicate row**
-6. **Clear row**
-7. **Delete row**
+5. **Delete row**
 
-Move items are disabled at their respective edges. Insert and duplicate are disabled at 60 rows. Delete is disabled when only one body row remains.
+Move actions are disabled at their edge. Insert actions are disabled at 60 rows. Delete is disabled when one body row remains.
 
-After an operation, focus follows the affected row at the same column where possible. Deleting the active row focuses the row now at that index, or the preceding row when the last row was deleted.
+### 5.5 Column actions
 
-### 7.5 Column menu
-
-The column menu contains:
+The active column's menu contains:
 
 1. **Insert column left**
 2. **Insert column right**
 3. **Move column left**
 4. **Move column right**
-5. **Duplicate column**
-6. **Clear column**
-7. **Use as row headings** or **Stop row headings**, only for the first column
-8. **Delete column**
+5. **Delete column**
 
-Move items are disabled at their respective edges. Insert and duplicate are disabled at eight columns. Delete is disabled when only one column remains.
+Move actions are disabled at their edge. Insert actions are disabled at eight columns. Delete is disabled when one column remains.
 
-Column operations transform the heading and every body row together. A new heading is `Column N`, where `N` is the first positive number that makes the label different from existing generated labels. A duplicated heading adds ` copy`, then the smallest numeric suffix needed to distinguish repeated generated copies.
+A column operation moves or removes its heading and the corresponding cell in every body row. `rowHeadings` remains positional: when enabled, whichever column is first supplies the row headings.
 
-`rowHeadings` is positional. When it is on, whichever column is currently first is the row-heading column. Moving, inserting or deleting a first column does not attach the setting to the displaced content.
+### 5.6 Focus after a structural action
 
-### 7.6 Add controls
+| Action | Focus |
+| --- | --- |
+| Add or insert row | First cell in the new row |
+| Move row | Same column in the moved row |
+| Delete row | Same column in the row now at that position, or the previous row |
+| Add or insert column | New column heading |
+| Move column | Same row in the moved column |
+| Delete column | Same row in the column now at that position, or the previous column |
 
-- **Add row** appends one empty row and edits its first cell.
-- **Add column** appends an empty column, creates its heading and edits that heading.
-- At a limit, the corresponding control remains discoverable but disabled and exposes the reason in its accessible description.
-- Every successful operation is announced, for example: "Row added. 4 rows." or "Column moved to position 2 of 5."
+After the save succeeds and the canvas returns, the editor restores that focus and announces the result, for example, "Row moved to 2 of 5."
 
-### 7.7 Cell validation
+## 6. Keyboard contract
 
-- A heading may be temporarily empty while its editor has focus.
-- Commit is blocked if a heading is empty or longer than 80 characters. Focus stays in that heading and the live region says how to fix it.
-- Body cells may be empty.
-- Hard line breaks are replaced with spaces during ordinary rich-text paste.
-- Inline Markdown is serialized through the existing editor path, not reconstructed from `innerText`.
-- A failed operation leaves the article and DOM unchanged.
+Cells are edited directly; there is no separate spreadsheet-style navigation mode.
 
-## 8. Clipboard and spreadsheet interoperability
+| Key | While editing a cell |
+| --- | --- |
+| Arrow keys, `Home`, `End` | Move the text caret normally |
+| `Tab` | Commit and edit the next cell in row-major order |
+| `Shift+Tab` | Commit and edit the previous cell |
+| `Tab` from the last cell | Commit and focus **Add row** |
+| `Tab` from the last cell at 60 rows | Commit and leave the table for the next editor control |
+| `Shift+Tab` from the first heading | Commit and leave the table for the previous editor control |
+| `Enter` | Commit and edit the cell below in the same column |
+| `Shift+Enter` | Commit and edit the cell above |
+| `Enter` in the final body row | Append a row when allowed and edit its cell in the same column |
+| `Enter` in the final body row at 60 rows | Commit and remain in the cell |
+| `Shift+Enter` in a heading | Commit and remain in the heading |
+| `Escape` | Commit, stop cell editing and leave the whole table selected |
+| `Shift+F10` or context-menu key | Open a compact menu with the active row and column actions |
+| `Ctrl/Cmd+B` | Bold |
+| `Ctrl/Cmd+I` | Italic |
+| `Ctrl/Cmd+Shift+X` | Strikethrough |
+| `Ctrl/Cmd+K` | Link |
 
-### 8.1 One-cell paste
+Inline code uses its format-bar button because browsers keep common code shortcuts. `Ctrl/Cmd+U` does not add underline. Composition completes before a commit or focus move.
 
-Plain or rich text without a table-shaped payload replaces the active cell selection. Rich text is converted to supported inline Markdown. Unsupported block structure is flattened to one line.
+The context menu shows only column actions for a heading. On a body cell it groups row actions before column actions.
 
-### 8.2 Rectangular paste
+## 7. Paste
 
-A paste is a rectangular grid when either:
+Paste affects only the active cell.
 
-- `text/html` contains a table; or
-- `text/plain` contains a tab or more than one line.
+- Rich HTML keeps supported inline marks and safe links.
+- Plain Markdown keeps the same supported inline marks.
+- Paragraphs, list items, hard line breaks, tabs and table cells are joined with one space.
+- Pictures and other media are ignored.
+- Unsupported colours, fonts, sizes, underline and HTML are discarded.
+- Pasting a spreadsheet range does not change neighboring cells or table dimensions.
 
-The parser prefers an HTML table, then falls back to tab-separated plain text with `CRLF` and `LF` row endings. It preserves empty cells, including trailing empty cells. Commas alone never imply a grid.
+Extract a pure one-cell paste helper from the existing rich-paste and DOM serializers. Do not serialize from `innerText`.
 
-The active cell is the top-left anchor:
+Whole-table workflows remain separate:
 
-- a body-cell anchor writes only body cells;
-- a heading anchor writes its first pasted row to headings and later rows to body cells;
-- the table expands right or down as needed, within eight columns and 60 body rows;
-- columns created by a body-anchored paste receive generated headings;
-- an empty or overlong pasted heading rejects the whole paste;
-- a non-rectangular payload is padded with empty cells to the widest pasted row;
-- the entire paste is one validation, history and save transaction;
-- any limit or validation failure rejects the whole paste and explains how to fix it;
-- after success, the bottom-right written cell receives navigation focus and a live region announces the pasted dimensions.
+- pasting an HTML table between article blocks creates a table block through the existing rich-paste path;
+- the inspector's bulk field replaces the whole table.
 
-The editor must not partially paste a range.
+## 8. Pure table operations
 
-### 8.3 Copy
-
-The first release copies one selected cell or the current text selection. Rectangular range selection and range copy are deferred. The inspector's bulk editor remains available for whole-table extraction.
-
-## 9. Pure table operations
-
-Keep text serialization in [`table.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/table.ts). Add a pure `src/site/editor/model/tableGrid.ts` for cell and structure operations.
+Keep pipe-separated serialization in [`table.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/table.ts). Add `src/site/editor/model/tableGrid.ts` for cell and structure rules.
 
 ```ts
+type Table = Extract<Block, { type: "table" }>;
+
 type TableCell = {
   row: "header" | number;
   column: number;
 };
 
 type TableOperation =
-  | { type: "set-cell"; cell: TableCell; value: string }
+  | { type: "set-cell"; cell: TableCell; markdown: string }
   | { type: "insert-row"; at: number }
-  | { type: "duplicate-row"; row: number }
   | { type: "move-row"; from: number; to: number }
-  | { type: "clear-row"; row: number }
   | { type: "delete-row"; row: number }
-  | { type: "insert-column"; at: number; heading?: string }
-  | { type: "duplicate-column"; column: number }
+  | { type: "insert-column"; at: number }
   | { type: "move-column"; from: number; to: number }
-  | { type: "clear-column"; column: number }
-  | { type: "delete-column"; column: number }
-  | { type: "set-row-headings"; value: boolean }
-  | { type: "paste-grid"; anchor: TableCell; cells: string[][] };
+  | { type: "delete-column"; column: number };
+
+type TableResult =
+  | {
+      ok: true;
+      table: Table;
+      focus: TableCell;
+      announcement: string;
+    }
+  | {
+      ok: false;
+      code: TableProblem;
+      message: string;
+    };
+
+function applyTableOperation(
+  table: Table,
+  operation: TableOperation,
+): TableResult;
 ```
 
-The module exposes one operation dispatcher returning either a new valid table and next focus or a typed problem:
+Every successful operation:
 
-```ts
-type TableGridResult =
-  | { ok: true; table: TableBlock; focus: TableCell; announcement: string }
-  | { ok: false; code: TableGridProblem; message: string };
-```
-
-Every successful result must satisfy the content schema. Operations do not mutate their input. The module owns:
-
-- bounds and rectangularity;
-- generated headings;
-- row and column limit checks;
-- focus recovery after deletion and movement;
-- Markdown-cell normalization;
-- atomic paste expansion;
-- announcements that require row or column counts.
+- returns a new value without mutating the input;
+- preserves at least one column and one body row;
+- preserves rectangular rows;
+- stays within the content limits;
+- moves a column heading and all of that column's cells together;
+- returns the focus target and announcement.
 
 The DOM scripts do not duplicate these rules.
 
-## 10. Canvas and parent message contract
+## 9. Integration with the existing editor
 
-### 10.1 Rendered edit metadata
+### 9.1 Rendering
 
-[`Blocks.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/Blocks.astro) passes an edit-only flag to [`Table.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Table.astro). Only in the editor canvas:
+[`Blocks.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/Blocks.astro):
 
-- the table wrapper identifies itself as an editable table;
-- every heading and body cell exposes stable zero-based row and column coordinates;
-- the actual text has a dedicated editable span;
-- no saved content ID is invented from an array position.
+- renders `columns` through the same `renderInlineMarkdown()` call as body cells;
+- keeps edit annotations on links;
+- passes the existing edit-mode flag to `Table`.
 
-The production renderer remains unchanged when the flag is absent. Production builds contain no `data-editor-*` attributes.
+[`Table.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Table.astro):
 
-### 10.2 Canvas state
+- wraps heading text in `.words` and renders it with `set:html`;
+- adds one documented optional `editable` prop;
+- adds stable row and column coordinates only in edit mode;
+- keeps the public `<table>`, caption, column headers, row headers and overflow region unchanged.
 
-[`canvas.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/scripts/canvas.ts) owns ephemeral presentation state only:
+Update [`Table.stories.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/stories/Table.stories.astro) with rich heading and rich body-cell examples.
 
-- active cell and mode;
-- caret and selection;
-- roving `tabindex`;
-- menu anchor and drag preview;
-- edit-only controls;
-- optimistic DOM text while a parent update is in flight.
+Production output contains no table-editor attributes or controls.
 
-It never owns the article, writes content files or reports a save as successful.
+### 9.2 Canvas
 
-In navigation mode, the table is exposed as an ARIA `grid`; headings are `columnheader`, first-column headings are `rowheader`, and other cells are `gridcell`. The grid references the visible caption when one exists, otherwise it receives the accessible name "Edit table". In edit mode, the active text span is a single-line `textbox`.
+Extend [`canvas.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/scripts/canvas.ts); do not add a second editor controller.
 
-### 10.3 Messages
+Reuse:
 
-Extend the existing typed canvas message union with:
+- the block map and selection;
+- `contenteditable`;
+- the 800 ms dirty timer;
+- numeric edit sessions;
+- composition handling;
+- the DOM-to-Markdown serializer;
+- the format bar and link dialog;
+- preview mode and overlay positioning.
+
+Add a table-cell branch to the existing `current()`, `valueOf()`, focus and paste paths. A cell serializes as one inline Markdown line, with block boundaries and breaks normalized to spaces.
+
+Mark the existing list-tool group in [`CanvasChrome.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/components/CanvasChrome.astro) so `canvas.ts` can hide it for a cell without duplicating the toolbar.
+
+### 9.3 Messages
+
+Add two messages to the current canvas union:
 
 ```ts
-type TableCanvasMessage =
-  | {
-      type: "editor:table-cell";
-      block: number;
-      cell: TableCell;
-      markdown: string;
-      session: string;
-      phase: "input" | "commit";
-    }
-  | {
-      type: "editor:table-operation";
-      block: number;
-      operation: TableOperation;
-      request: string;
-    };
+| {
+    type: "table-text";
+    index: number;
+    cell: TableCell;
+    value: string;
+    session: number;
+    final: boolean;
+  }
+| {
+    type: "table-op";
+    index: number;
+    operation: TableOperation;
+  }
 ```
 
-The parent responds to a structure request with the authoritative table, focus cell, announcement and matching request ID, or a typed error. The canvas ignores stale responses.
+Add one parent-to-canvas focus message:
 
-The `session` is created when a cell first enters editing and ends on commit. The parent creates one undo checkpoint for the session, regardless of the number of input messages. Inputs update the in-memory article and use the normal debounced save queue. Commit flushes the final value through that queue; it does not create another checkpoint.
+```ts
+{
+  type: "table-focus";
+  index: number;
+  cell: TableCell;
+  selectText?: boolean;
+}
+```
 
-An empty or overlong heading is the exception: the parent holds it as the session's explicit draft instead of placing invalid data in the article or save queue. The editor remains dirty, the inspector continues to show the last valid table and commit remains blocked. As soon as the draft is valid, the parent applies it through the same session and save queue.
+No request IDs, optimistic document copy, cell-specific save queue or region-patching protocol is needed.
 
-Every structure operation and rectangular paste is one undo checkpoint and one save transaction.
+### 9.4 Parent editor
 
-### 10.4 Parent ownership
+Extend the existing message switch in [`editor.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/scripts/editor.ts).
 
-[`editor.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/scripts/editor.ts):
+For `table-text`:
 
-1. validates the origin, source window, article and block index using the existing message guards;
-2. confirms that the indexed block is still a table;
-3. applies the pure operation to the parent article;
-4. updates undo history once at the required boundary;
-5. mirrors the new matrix into an open bulk-edit field;
-6. queues or flushes save status through the existing mechanism;
-7. tells the canvas the authoritative result.
+1. confirm the indexed block is still a table;
+2. apply `set-cell` through `tableGrid.ts`;
+3. reuse the existing `textSession` checkpoint rule;
+4. replace the block in the parent document;
+5. queue the normal save;
+6. refresh the inspector on `final`;
+7. do not reload the canvas while typing.
 
-Cell typing must not reload the iframe. A structure operation may replace the table region, but not the whole canvas, and must restore focus by coordinate after the swap.
+For `table-op`:
 
-## 11. Saving, undo, conflicts and live updates
+1. confirm the table block;
+2. apply the pure operation;
+3. queue `table-focus` and the announcement through the existing `afterReady` list;
+4. call the existing `change()` once with canvas and inspector refresh.
 
-- The first input in a cell-editing session creates one undo checkpoint. Further input in the same session does not.
-- Moving to another cell commits the first session and starts another only when that cell changes.
-- A row or column action, drag drop or rectangular paste is one checkpoint.
-- Undo and redo restore cell values, dimensions, order, `rowHeadings` and focus together.
-- The normal `dirty`, `saving`, `saved`, `failed` and `carry` states remain authoritative. Table controls never display a second save status.
-- On a validation failure, nothing is queued and the editor announces the actionable error.
-- On a server failure, the normal failed state remains visible; the optimistic table is not described as saved.
-- An article version conflict uses the existing conflict flow. Unsaved active-cell text is preserved as the local side of the conflict.
-- A same-article live update from another tab refreshes an inactive table. If it intersects an active local table session, the editor preserves the local input and surfaces the existing conflict path rather than silently replacing it.
+One menu action is one checkpoint and one save. Undo, redo, save failure and conflict continue through the existing editor paths.
 
-## 12. Inspector fallback
+Structure controls close and disable after an action until a successful save reloads the canvas. The canvas does not optimistically rewrite the table, so a refused save leaves the old canvas and saved document aligned and makes no success announcement.
 
-The inspector remains necessary for:
+### 9.5 Invalid heading draft
+
+The canvas keeps the active heading's last valid Markdown and HTML.
+
+- Valid input uses normal debounced messages.
+- Empty or overlong input remains local and is not sent as `typing` or article data.
+- Leaving the invalid heading restores the last valid content and announces the correction.
+- Restoring it creates no history entry or save.
+
+The parent article is schema-valid at every point.
+
+### 9.6 Canvas controls
+
+Extend [`CanvasChrome.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/components/CanvasChrome.astro) with:
+
+- **Row actions**;
+- **Column actions**;
+- **Add row**;
+- **Add column**;
+- one reusable action menu with row and column groups.
+
+The menu is semantic DOM, uses named buttons, supports arrow-key movement and closes on `Escape`. It uses the same markup for mouse, keyboard and touch.
+
+Do not place editor controls inside the public `Table` compound. Do not create an editor component that imports another editor component.
+
+### 9.7 Inspector
+
+The inspector remains the place for:
 
 - caption;
-- row-heading semantics;
+- first-column row-heading semantics;
 - `content`, `popout` and `wide` width;
-- whole-table pipe-separated bulk editing;
-- a non-visual recovery path if canvas scripting is unavailable.
+- whole-table bulk editing.
 
-Rename the existing **Cells** field to **Bulk edit table** and put its explanation and textarea in a collapsed disclosure. Opening it serializes the current parent document, not stale canvas HTML. A valid bulk change replaces the table in one history and save transaction, then refreshes the canvas region. An invalid matrix keeps the previous table and existing error behavior.
+Rename **Cells** to **Bulk edit table** and place it in a collapsed disclosure under **Rows and columns**.
 
-## 13. Responsive behavior
+```text
+**Heading 1** | Heading 2
+Cell          | [Linked cell](ref:article/example)
+```
 
-- Public rendering does not change.
-- Edit controls are positioned relative to the visible table, not the page viewport.
-- When a table scrolls horizontally, the active cell and its controls remain reachable.
-- Focus navigation scrolls the newly active cell into view with the minimum movement.
-- On a 320 px viewport, controls may overlay editor-only space but must not create page-level sideways scrolling.
-- The row handle stays at the table's inline start; the column handle stays above the active column.
-- Touch actions use menus rather than requiring precision drag.
-- Zoom at 200 percent and larger text must not clip the menu, announcement or active-cell outline.
+Both headings and body cells accept inline Markdown. A valid bulk change is one history and save transaction and reloads the canvas. Invalid input keeps the previous table and uses the existing issue UI.
 
-## 14. Error copy
+## 10. Accessibility, phone and error behavior
 
-Errors say what happened and how to fix it:
+### 10.1 Semantics and focus
 
-| Condition | Copy |
+- The public page remains a native semantic table.
+- Edit mode keeps the table semantics and gives each active cell text a single-line textbox name derived from its row and column.
+- Only one cell editor is in the tab sequence; `Tab` moves that position.
+- The table is named by its caption, or "Edit table" when it has none.
+- Row and column controls are semantic buttons with at least 44 by 44 CSS pixel targets.
+- Every action has a keyboard and single-pointer route.
+- Structural changes restore a predictable cell and announce the result.
+
+### 10.2 Phone and touch
+
+- The public responsive table does not change.
+- Edit controls are positioned from visible cell geometry after horizontal scrolling.
+- Focusing a cell scrolls only the table's overflow region enough to reveal it.
+- At 320 px, controls do not make the page itself scroll sideways.
+- At 200 percent zoom and with larger text, action menus remain reachable.
+- Touch uses the same tap controls; no feature requires dragging or hover.
+
+### 10.3 Errors
+
+An invalid action changes neither parent article nor saved content.
+
+| Condition | Message |
 | --- | --- |
 | Empty heading | "Column headings cannot be empty. Add a heading to continue." |
 | Heading too long | "Column headings can have up to 80 characters. Shorten this heading." |
-| Too many columns | "This table can have up to 8 columns. Remove a column or paste a smaller range." |
-| Too many rows | "This table can have up to 60 rows. Remove a row or paste a smaller range." |
-| Last column delete | "A table needs at least one column." |
-| Last row delete | "A table needs at least one row." |
-| Invalid paste | "That range could not be pasted. Copy a rectangular set of cells and try again." |
-| Stale operation | "The table changed before that action finished. Review the latest table and try again." |
+| Column limit | "This table can have up to 8 columns." |
+| Row limit | "This table can have up to 60 rows." |
+| Delete last column | "A table needs at least one column." |
+| Delete last row | "A table needs at least one row." |
+| Stale coordinate | "The table changed before that action finished. Review it and try again." |
 
-Errors are announced in the editor's existing live region and associated with the relevant cell or control. They are not browser alerts.
+Use the editor's existing live region and save status. Do not use browser alerts or silent fallback.
 
-## 15. Implementation sequence
+## 11. Implementation sequence
 
-### Phase 1: pure model
+### Phase 1: rich cells
 
-1. Add `tableGrid.ts` and typed problems.
-2. Add exhaustive unit tests for every operation, limit and focus result.
-3. Add HTML-table and TSV parsing to the existing pure rich-paste layer.
+1. Make column headings inline Markdown in the schema and renderer.
+2. Add one-cell rich paste normalization.
+3. Add `tableGrid.ts` and its unit tests.
+4. Add edit-only cell coordinates.
+5. Connect cell editing, formatting, messages, save and undo.
 
-### Phase 2: semantic edit surface
+At the end of this phase, the core user need is complete: every table cell is easy to edit as rich text in place.
 
-1. Add conditional edit metadata to the renderer.
-2. Add grid navigation, edit mode and cell messages to the canvas.
-3. Connect the parent document, history and save queue.
-4. Move the current matrix field into the bulk-edit disclosure.
+### Phase 2: simple structure editing
 
-### Phase 3: structure controls
+1. Add row and column action buttons and their shared menu.
+2. Add row and column insert, move and delete operations.
+3. Add edge buttons for appending.
+4. Restore focus after the existing canvas reload.
+5. Move the inspector matrix into the bulk disclosure.
 
-1. Add row, column and edge controls.
-2. Add menus and single-pointer move alternatives.
-3. Add drag previews and drop behavior after the menu operations pass.
-4. Add announcements and focus recovery.
+### Phase 3: hardening
 
-### Phase 4: clipboard and hardening
+1. Add keyboard and touch coverage.
+2. Add undo, save-failure and conflict coverage.
+3. Check phone width, zoom and axe.
+4. Verify that production output has no editor code or hooks.
 
-1. Add atomic rectangular paste and expansion.
-2. Add conflict and cross-tab cases.
-3. Run keyboard, touch, phone, zoom and assistive-technology checks.
-4. Verify that production output contains no editor implementation.
+## 12. Test contract
 
-Per-column widths, rectangular range selection, range copy, fill right/down and merge remain separate proposals. They are not hidden requirements of these phases.
+### 12.1 Unit tests
 
-## 16. Test contract
+Cover:
 
-### 16.1 Unit tests
-
-Pure tests must cover:
-
-- setting headings and body cells;
-- empty and 81-character heading refusal;
-- every row and column insertion position;
-- moving first, middle and last rows and columns;
-- duplicate and generated-heading collisions;
-- clearing without changing dimensions;
-- refusing deletion of the final row or column;
-- first-column `rowHeadings` semantics after insert, move and delete;
+- rich Markdown in headings and body cells;
+- visible-text heading validation;
+- nested supported marks and safe links;
+- refusal or normalization of line breaks, lists and unsupported content;
+- set, insert, move and delete operations at every edge;
+- one-row, one-column, 60-row and eight-column boundaries;
 - rectangularity after every operation;
-- 8-column and 60-row boundaries;
-- HTML table paste;
-- TSV with `LF`, `CRLF`, empty and trailing cells;
-- padding ragged pasted rows;
-- body-anchored expansion and generated headings;
-- heading-anchored paste;
-- atomic rejection on heading or size errors;
-- stable next-focus coordinates;
+- generated `Column N` collisions;
+- positional `rowHeadings`;
+- returned focus and announcements;
 - input immutability;
-- one-line Markdown normalization.
+- rich HTML and Markdown paste normalized to one cell.
 
-### 16.2 Editor browser tests
+### 12.2 Editor E2E
 
-Extend [`tests/e2e/editor.spec.ts`](https://github.com/prabinpebam/atiya/blob/main/tests/e2e/editor.spec.ts) to prove:
+Extend [`editor.spec.ts`](https://github.com/prabinpebam/atiya/blob/main/tests/e2e/editor.spec.ts) to prove:
 
-1. pointer editing of a heading and body cell persists after reload;
-2. supported inline Markdown renders after editing;
-3. arrows, `Home`, `End`, `Enter`, `F2`, `Escape`, `Tab` and `Shift+Tab` follow this contract;
-4. `Tab` from the last cell adds one row;
-5. row and column menu operations save, undo and redo as one step;
-6. drag reorder and its menu alternative produce the same content;
-7. paste from a spreadsheet expands atomically;
-8. an oversized or invalid paste changes nothing and announces the fix;
-9. the inspector mirrors an inline change and bulk edit refreshes the canvas;
-10. a save failure never reports success;
-11. a cross-tab update preserves active local input and exposes a conflict;
-12. row and column controls remain usable through real touch events;
-13. controls remain reachable at 320 px and 200 percent zoom;
-14. the edit grid has one tab stop, correct roles and names, and no axe violations;
-15. the public article still renders a native semantic table without edit controls.
+1. a heading, row heading and body cell edit in place and survive reload;
+2. bold, italic, strikethrough, code and links persist;
+3. list tools stay hidden in a cell;
+4. rich paste keeps supported marks and remains one cell;
+5. `Tab`, `Shift+Tab`, `Enter`, `Shift+Enter`, `Escape` and the context-menu key match this contract;
+6. edge buttons append one row or column;
+7. every row and column menu action saves and restores focus;
+8. limits disable actions and explain why;
+9. an invalid heading restores its prior valid value without saving;
+10. one typing session and one structure action each undo in one step;
+11. a refused save uses the normal rollback and never announces success;
+12. the bulk editor and canvas stay synchronized;
+13. real touch can edit and change structure without hover;
+14. the editor remains usable at 320 px and 200 percent zoom;
+15. edit mode has no serious axe violations;
+16. the public article stays a native table with no editor controls.
 
-### 16.3 Production checks
+### 12.3 Validation
 
-The production verification must continue to fail if `/_edit/`, editor chunks, editor tokens or `data-editor-*` markers reach `dist/`.
+Run:
 
-## 17. Definition of Done
+- `npx vitest related <changed files> --run`;
+- `npm run check`;
+- the targeted editor table E2E test;
+- the targeted site design-system table test;
+- `npm run verify:prod` because edit-only renderer hooks must not reach production.
+
+## 13. Definition of Done
 
 | ID | Requirement |
 | --- | --- |
-| TBL-01 | A heading or body cell can be edited directly in the canvas and survives reload |
-| TBL-02 | The two-mode keyboard contract is complete, documented and covered by browser tests |
-| TBL-03 | Rows and columns can be inserted, moved, duplicated, cleared and deleted without opening the bulk editor |
-| TBL-04 | Every drag action has an equivalent tap or click menu action |
-| TBL-05 | Controls are at least 44 px, work with touch and do not cause page-level overflow at 320 px |
-| TBL-06 | HTML-table and TSV ranges paste atomically, expand within limits and undo in one step |
-| TBL-07 | Pure operations preserve rectangularity, schema validity and stable focus |
-| TBL-08 | Cell typing, structure changes and paste use the parent editor's history, save status, conflict and live-update systems |
-| TBL-09 | The inspector remains a synchronized settings and bulk-edit fallback |
-| TBL-10 | Edit mode exposes an accessible grid while the public page remains a semantic native table |
-| TBL-11 | Empty headings, limits, stale actions and invalid paste leave content unchanged and explain how to recover |
-| TBL-12 | Production output contains no editor controls, attributes or code |
-| TBL-13 | Unit, targeted editor E2E, phone, touch, zoom and axe checks pass |
-
-## 18. Explicit non-goals
-
-This work does not add:
-
-- databases or conversion to them;
-- sort, filter, formula, calculation or typed-property behavior;
-- optional removal of the column-header row;
-- merged cells or row and column spans;
-- per-cell colour, alignment or typography controls;
-- per-column persistent widths;
-- blocks, media or lists inside cells;
-- collaborative comments;
-- arbitrary row heights;
-- rectangular selection, fill or range copy in the first release.
-
-Those features require their own content, accessibility and responsive-design decisions. They must not appear accidentally as side effects of inline editing.
+| TBL-01 | Every heading and body cell is WYSIWYG-editable in the real page |
+| TBL-02 | Every cell supports bold, italic, strikethrough, code and links as one-line inline Markdown |
+| TBL-03 | The existing format bar shows only cell-valid rich-text tools |
+| TBL-04 | `Tab`, `Enter`, `Escape` and the context-menu key follow the documented direct-edit contract |
+| TBL-05 | Edge buttons append one row or column and focus the new cell |
+| TBL-06 | Row and column menus insert, move and delete structure |
+| TBL-07 | Pure operations preserve limits, rectangularity, rich text and predictable focus |
+| TBL-08 | Cell typing reuses the editor's session, undo and save queue; a structure action uses one `change()` |
+| TBL-09 | Caption, row headings, width and a synchronized bulk editor remain in the inspector |
+| TBL-10 | Invalid headings and limit actions keep the last valid table and explain recovery |
+| TBL-11 | Mouse, keyboard and touch work at phone width, larger text and 200 percent zoom |
+| TBL-12 | The public table's semantics and responsive design do not change |
+| TBL-13 | Production output contains no table-editor controls, hooks or code |
+| TBL-14 | Focused unit, editor E2E, design-system and production-isolation checks pass |

@@ -354,6 +354,8 @@ A table is for facts compared across the same columns: options side by side, a s
 
 > **As built (7 October 2026).** Added when a case study's comparisons needed real tables; until then the subset allowed none.
 
+> **Planned (9 October 2026).** [Inline table editing](../editor/table-editing.md) makes every cell, including the column and row headings, WYSIWYG-editable in the article canvas with one-line rich text (bold, italic, strikethrough, code and links), plus edge buttons and compact row and column action menus. The JSON shape stays the same.
+
 **The Markdown subset** in `text`, `pointOfView`, `bio` and the like:
 - **Allowed:** paragraphs, emphasis, strong, strikethrough (`~~words~~`), inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks.
 - **Lists nest,** up to three levels: a line indented under an item (to where that item's words start: two spaces under `- `, three under `1. `) is an item of a list inside it, bulleted or numbered as its own marker says (`- One` then `  1. One a`). A list's own items keep one kind; a list written flat stays flat. An item can break its line (a backslash, or two spaces, at the end, as Shift+Enter writes it): the next line is more of that item, written indented under its words.
