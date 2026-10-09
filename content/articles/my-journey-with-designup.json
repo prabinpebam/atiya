@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-09",
   "locale": "en",
   "topics": [
     "designup",
@@ -38,7 +38,8 @@
     },
     {
       "type": "text",
-      "markdown": "Some of the best things in my life happened because I was lucky enough to be in the right room, with the right people, at the right time. DesignUp was one of them. This is the story of how it shaped me, as a person and as a Designer, and a chance to share the work I was fortunate to create along the way."
+      "markdown": "Some of the best things in my life happened because I was lucky enough to be in the right room, with the right people, at the right time. DesignUp was one of them. This is the story of how it shaped me, as a person and as a Designer, and a chance to share the work I was fortunate to create along the way.",
+      "dropcap": true
     },
     {
       "type": "divider"
@@ -50,29 +51,46 @@
     },
     {
       "type": "text",
-      "markdown": "Back in 2015, I was leading the Design team at Belong. Through work, I was introduced to Jay Dutta, and JD soon became someone I'd go to for all sorts of guidance: managing a team, hiring, and much more. JD used to give talks and organise small Design events in Bengaluru. I was curious and ambitious, so I'd attend as many as I could and help out wherever I could."
+      "markdown": "Back in 2015, I was leading the Design team at Belong. Through work, I was introduced to Jay Dutta, and JD soon became someone I'd go to for all sorts of guidance: managing a team, hiring, and much more. JD used to give talks and organise small Design events in Bengaluru. I was curious and ambitious, so I'd attend as many as I could and help out wherever I could.",
+      "dropcap": true
     },
     {
       "type": "text",
       "markdown": "In 2016, when JD first shared his plan for DesignUp, I was more than excited to be part of it. Little did I know how much it was going to change me, both as a person and as a Designer."
     },
     {
-      "type": "heading",
-      "level": 2,
-      "text": "2016: a basic DSLR and a 50mm lens"
-    },
-    {
-      "type": "text",
-      "markdown": "All I had was a basic DSLR, a Canon 1000D, and my job was to take photographs at the event. I was counting heavily on my 50mm f/1.8 prime lens to do the heavy lifting. I took photos, made a video for the event too, and I was super stoked with the result. It was at DesignUp 2016 that I saw Ranganath Krishnamani's work, which left me fascinated, inspired and wanting to do more."
+      "type": "divider"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "2017: my dream camera"
+      "text": "The inception",
+      "marker": "2016"
     },
     {
       "type": "text",
-      "markdown": "By DesignUp 2017, I had skilledUp, and I convinced JD for the budget to rent a Panasonic GH5, my dream video camera at the time. Here are the videos and photos I covered at the event. That year, I was introduced to Lucky's work. All the speaker intro animations were made by Lucky, and I was so inspired and motivated that I knew this was what I wanted to chase next."
+      "markdown": "All I had was a basic DSLR, a Canon 1000D, and my job was to take photographs at the event. I was counting heavily on my 50mm f/1.8 prime lens to do the heavy lifting. I took photos, made a video for the event too, and I was super stoked with the result. It was at DesignUp 2016 that I saw Ranganath Krishnamani's work, which left me fascinated, inspired and wanting to do more.",
+      "dropcap": true
+    },
+    {
+      "type": "figure",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-2",
+      "width": "wide",
+      "lightbox": true
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The catalyst",
+      "marker": "2017"
+    },
+    {
+      "type": "text",
+      "markdown": "By DesignUp 2017, I had skilledUp, and I convinced JD for the budget to rent a Panasonic GH5, my dream video camera at the time. Here are the videos and photos I covered at the event. That year, I was introduced to Lucky's work. All the speaker intro animations were made by Lucky, and I was so inspired and motivated that I knew this was what I wanted to chase next.",
+      "dropcap": true
     },
     {
       "type": "video",
@@ -85,9 +103,17 @@
       "caption": "The DesignUp 2017 recap."
     },
     {
+      "type": "divider"
+    },
+    {
       "type": "heading",
       "level": 2,
-      "text": "2018: 70 hours in After Effects"
+      "text": "The accelerator",
+      "marker": "2018"
+    },
+    {
+      "type": "subheading",
+      "text": "70 hours in After Effects"
     },
     {
       "type": "text",
@@ -116,6 +142,23 @@
       "title": "DesignUp: three years in recap",
       "poster": "articles/my-journey-with-designup/designup-recap-poster",
       "caption": "Three years of DesignUp, in recap."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Mini DesignUps in multiple cities"
+    },
+    {
+      "type": "text",
+      "markdown": "We organized a bunch of single day events across multiple cities in India, Bengaluru, Pune, Chennai and Hyderabad. I went to cover each of these events."
+    },
+    {
+      "type": "figure",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09",
+      "width": "wide",
+      "lightbox": true,
+      "display": "actual",
+      "caption": "DesignUp: Chennai, Hyderabad, Bengaluru, Pune"
     },
     {
       "type": "heading",
