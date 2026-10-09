@@ -311,7 +311,7 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | `related` | `items` (item refs), `heading?` | `StoryCard` grid |
 | (pictures) | `showCaption` on `figure`, `gallery`, `carousel`, `video` and an article's `hero` | `false`: no caption and no credit under the picture (or the set, or any slide), and none in the lightbox. Left out: shown (the block's caption, else the picture's own) |
 | `collection` | `items` (one to 24, each `{ when?, heading?, media?, subtext?, text? }` with at least one of the last four: §6.1), `layout` (`rows`, `columns`, `tiles`, `masonry`, `carousel`, `timeline`, `timeline-scroll`), `columns?` (1 to 4, for tiles and masonry; left out, one for a single item), `prominent?` (tiles on the accent's soft surface), `headings?` (`label` (the default) or `title`), `label?` (a carousel's or a sideways timeline's name), `width?` (`content` (the default), `popout`, `wide`, and `full` for the strips), `peek?` (a strip reaches out beside its column), and the items' pictures' `ratio?`, `display?`, `background?`, `rounded?`, `shadow?` ([media §9.1](media.md#91-how-a-picture-is-shown-fill-fit-actual-size-tile-a-background-corners-a-drop-shadow)) | `Collection` |
-| `table` | `columns` (one to 8 headings, each at most 80 characters), `rows` (one to 60, each a cell for every column: one line of the Markdown subset (bold, italic, code, links), or empty), `rowHeadings?` (the first column names each row: row headers), `caption?` (said above it), `width?` (`content` (the default), `popout`, `wide`) | `Table` (§6.2) |
+| `table` | `columns` (one to 8 one-line rich-text headings, each with one to 80 visible characters), `rows` (one to 60, each a cell for every column: one line of inline Markdown (bold, italic, strikethrough, code, links), or empty), `rowHeadings?` (the first column names each row: row headers), `caption?` (said above it), `width?` (`content` (the default), `popout`, `wide`) | `Table` (§6.2) |
 | `metrics` | `items` (`{ value, label, note? }[]`) | New: a metrics list |
 | `callout` | `tone` (`note`, `caution`), `markdown` | New |
 
@@ -347,14 +347,14 @@ A collection is a set of items of one shape, whatever they're about: a story's f
 
 A table is for facts compared across the same columns: options side by side, a schedule, a specification. Use a collection when each item is a few sentences of its own, and a table when the reader reads across.
 
-- **Its cells** are one line each (bold, italic, code and links; no lists or line breaks), and a cell can be empty. Every row has a cell for each column, at most 8 columns and 60 rows.
+- **Its cells** are one line each (bold, italic, strikethrough, code and links; no lists or line breaks). A body cell can be empty; every column heading has one to 80 visible characters after its Markdown is parsed. Every row has a cell for each column, at most 8 columns and 60 rows.
 - **Row headings:** with `rowHeadings`, the first column names each row, so a screen reader reads every cell with its row's name and its column's.
 - **Narrow places:** it never makes the page scroll sideways. Too wide for its place, it scrolls in its own frame (a focusable region, with the overlay handle); on a phone, a table of three columns or more sizes each column to its words, up to `c.table.cell-max`, instead of squeezing them into tall, narrow rows.
-- **In edit mode** the Table block's cells are written in its settings, the column headings on the first line, then a row a line, cells split by `|` (`\|` for a literal one). A rich copy of an HTML table (two rows and two columns or more) pastes as a table.
+- **In edit mode** every heading and body cell is rich-text editable in the article canvas. `Tab` moves across cells; `Enter` moves down, appending at the final row; edge buttons append; row and column menus insert, move or delete structure. Caption, width, row-heading semantics and a collapsed **Bulk edit table** fallback remain in the inspector. In that fallback, column headings are on the first line, then a row a line, with cells split by `|` (`\|` for a literal one). A rich copy of an HTML table (two rows and two columns or more) pasted between blocks still creates a table.
 
 > **As built (7 October 2026).** Added when a case study's comparisons needed real tables; until then the subset allowed none.
 
-> **Planned (9 October 2026).** [Inline table editing](../editor/table-editing.md) makes every cell, including the column and row headings, WYSIWYG-editable in the article canvas with one-line rich text (bold, italic, strikethrough, code and links), plus edge buttons and compact row and column action menus. The JSON shape stays the same.
+> **As built (9 October 2026).** [Inline table editing](../editor/table-editing.md) made every cell, including column and row headings, WYSIWYG-editable in the article canvas with one-line rich text (bold, italic, strikethrough, code and links), plus edge buttons and compact row and column action menus. The JSON shape stayed the same.
 
 **The Markdown subset** in `text`, `pointOfView`, `bio` and the like:
 - **Allowed:** paragraphs, emphasis, strong, strikethrough (`~~words~~`), inline code, links (`https:`, `http:`, `mailto:`, `ref:`), bulleted and numbered lists, and hard line breaks.

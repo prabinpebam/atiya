@@ -507,17 +507,22 @@ const STATUS: SelectOption[] = [
                 <div class="panes">
                   <section class="pane" data-section="cells" aria-labelledby={id(i, 's-cells')}>
                     <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-cells')}>Rows and columns</Heading></div>
-                    <TextField
-                      label="Cells"
-                      name={`body.${i}.cells`}
-                      id={id(i, 'cells')}
-                      value={tableToText(b)}
-                      multiline
-                      rows={Math.min(14, b.rows.length + 2)}
-                      data-type="table-cells"
-                      hint={`The column headings on the first line, then a row a line, cells split by | (write a | in a cell as \\|). Bold, italic, code and links work in a cell. At most ${TABLE_MAX_COLUMNS} columns and ${TABLE_MAX_ROWS} rows.`}
-                    />
                     <Switch label="First column names each row" name={`body.${i}.rowHeadings`} id={id(i, 'rowHeadings')} checked={!!b.rowHeadings} data-type="bool" />
+                    <details class="bulk-table">
+                      <summary>Bulk edit table</summary>
+                      <div class="bulk-table-body">
+                        <TextField
+                          label="Bulk edit table"
+                          name={`body.${i}.cells`}
+                          id={id(i, 'cells')}
+                          value={tableToText(b)}
+                          multiline
+                          rows={Math.min(14, b.rows.length + 2)}
+                          data-type="table-cells"
+                          hint={`The rich-text column headings are on the first line, then a row a line, with cells split by | (write a | in a cell as \\|). Bold, italic, strikethrough, code and links work in every cell. At most ${TABLE_MAX_COLUMNS} columns and ${TABLE_MAX_ROWS} rows.`}
+                        />
+                      </div>
+                    </details>
                   </section>
                   <section class="pane" data-section="details" aria-labelledby={id(i, 's-details')}>
                     <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-details')}>Caption and width</Heading></div>
@@ -1083,6 +1088,37 @@ const STATUS: SelectOption[] = [
 
   .rich-input > :global(* + *) {
     margin-block-start: var(--space-3);
+  }
+
+  .bulk-table {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .bulk-table summary {
+    display: flex;
+    min-block-size: var(--size-touch);
+    align-items: center;
+    padding-inline: var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .bulk-table summary:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .bulk-table summary:active {
+    background: var(--color-bg-hover);
+  }
+
+  .bulk-table-body {
+    padding-block-start: var(--space-2);
   }
 
   .issue {

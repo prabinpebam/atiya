@@ -490,7 +490,7 @@ test.describe('editor', () => {
     expect(await cap.evaluate((el) => getComputedStyle(el, '::first-letter').getPropertyValue('initial-letter'))).toMatch(/3/);
   });
 
-  test('a table: added from the palette, its cells written in the inspector and shown on the page, a row that does not fit refused', async ({ page }) => {
+  test('a table: rich cells edit in place, keys move through it, simple controls change its shape, and bulk edits stay available', async ({ page }) => {
     await openArticle(page);
     const count = await outlineRows(page).count();
     await page.locator('[data-editor-outline] [data-editor-add-at]').click();
@@ -503,27 +503,79 @@ test.describe('editor', () => {
 
     await page.locator(`[data-editor-select="${count}"]`).click();
     const settings = page.locator(`[data-block-form="${count}"]`);
-    const cells = settings.getByLabel('Cells');
-    await cells.fill('Typeface | Role\nFraunces | **Display**\nFigtree');
+    await settings.getByText('Bulk edit table', { exact: true }).first().click();
+    const cells = settings.getByLabel('Bulk edit table');
+    await cells.fill('**Typeface** | Role\nFraunces | **Display**\nFigtree');
     await cells.blur();
     await expect.poll(() => last().rows).toEqual([
       ['Fraunces', '**Display**'],
       ['Figtree', ''],
     ]);
-    expect(last().columns).toEqual(['Typeface', 'Role']);
+    expect(last().columns).toEqual(['**Typeface**', 'Role']);
     const shown = frame(page).locator('figure.table').last();
     await expect(shown.locator('thead th')).toHaveText(['Typeface', 'Role']);
+    await expect(shown.locator('thead strong')).toHaveText('Typeface');
     await expect(shown.locator('tbody strong')).toHaveText('Display');
 
+    // headings and body cells use the same rich editor; Enter and Tab move without adding line breaks
+    const heading = (column: number) => shown.locator(`[data-table-row="header"][data-table-column="${column}"] [data-editor-cell-text]`);
+    const bodyCell = (row: number, column: number) => shown.locator(`[data-table-row="${row}"][data-table-column="${column}"] [data-editor-cell-text]`);
+    await heading(1).click();
+    await page.keyboard.press('End');
+    await page.keyboard.type(' ');
+    await page.keyboard.press('Control+b');
+    await page.keyboard.type('work');
+    await page.keyboard.press('Control+b');
+    await expect.poll(() => last().columns).toEqual(['**Typeface**', 'Role **work**']);
+    await page.keyboard.press('Enter');
+    await expect(bodyCell(0, 1)).toBeFocused();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Control+i');
+    await page.keyboard.type('Visual');
+    await page.keyboard.press('Control+i');
+    await page.keyboard.press('Tab');
+    await expect(bodyCell(1, 0)).toBeFocused();
+    await expect.poll(() => last().rows?.[0][1]).toBe('_**Visual**_');
+
+    // Enter on the final row appends one; the edge control appends a column and restores focus after reload
+    await page.keyboard.press('Tab');
+    await expect(bodyCell(1, 1)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => last().rows).toHaveLength(3);
+    await expect(bodyCell(2, 1)).toBeFocused({ timeout: 15_000 });
+    await page.keyboard.press('Tab');
+    await expect(frame(page).getByRole('button', { name: 'Add row' })).toBeFocused();
+    await bodyCell(2, 1).click();
+    await frame(page).getByRole('button', { name: 'Add column' }).click();
+    await expect.poll(() => last().columns).toEqual(['**Typeface**', 'Role **work**', 'Column 1']);
+    await expect(heading(2)).toBeFocused({ timeout: 15_000 });
+
+    // one reusable menu moves the active column; undo uses the article's existing history
+    await frame(page).getByRole('button', { name: 'Column actions' }).click();
+    await frame(page).getByRole('menuitem', { name: 'Move column left' }).click();
+    await expect.poll(() => last().columns).toEqual(['**Typeface**', 'Column 1', 'Role **work**']);
+    await page.locator('[data-editor-undo]').first().click();
+    await expect.poll(() => last().columns).toEqual(['**Typeface**', 'Role **work**', 'Column 1']);
+
+    // an invalid empty heading remains local, restores the last valid rich value on leaving, and never reaches the article
+    await heading(0).click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Tab');
+    await expect(heading(0)).toHaveText('Typeface');
+    expect(last().columns?.[0]).toBe('**Typeface**');
+
     // a row with more cells than columns: refused with the reason, and nothing written
-    await cells.fill('Typeface | Role\nA | B | C');
+    await settings.getByText('Bulk edit table', { exact: true }).first().click();
+    await cells.fill('Typeface | Role\nA | B | C | D');
     await cells.blur();
-    await expect(settings.locator('[data-editor-issue]')).toContainText('Row 1 has 3 cells');
-    expect(last().rows).toHaveLength(2);
+    await expect(settings.locator('[data-editor-issue]')).toContainText('Row 1 has 4 cells');
+    expect(last().rows).toHaveLength(3);
 
     await settings.getByText('First column names each row').click();
     await expect.poll(() => last().rowHeadings).toBe(true);
-    await expect(frame(page).locator('figure.table').last().locator('tbody th[scope="row"]')).toHaveCount(2);
+    await expect(frame(page).locator('figure.table').last().locator('tbody th[scope="row"]')).toHaveCount(3);
   });
 
   test('a list: Enter makes a new item, and Enter on an empty last item, or Ctrl + Enter anywhere, starts a paragraph after it', async ({ page }) => {

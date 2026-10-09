@@ -12,7 +12,7 @@
  */
 
 interface Props {
-  /** Its column headings, in order. */
+  /** Its column headings, in order, as inline HTML. */
   columns: string[];
   /** Its rows: each a cell for each column, as inline HTML (bold, italic, code, links: the content layer renders it from Markdown). */
   rows: string[][];
@@ -24,33 +24,39 @@ interface Props {
   label?: string;
   /** Where the article layout places it: in the column (the default), a little wider, or wide. */
   width?: 'content' | 'popout' | 'wide';
+  /** Edit mode: expose stable cell coordinates and text hooks, never present on the public page. */
+  editable?: boolean;
 }
 
-const { columns, rows, rowHeadings = false, caption, label = 'Table', width = 'content' } = Astro.props;
+const { columns, rows, rowHeadings = false, caption, label = 'Table', width = 'content', editable = false } = Astro.props;
 ---
 
-<figure class="table" data-breakout={width} data-row-headings={rowHeadings ? '' : undefined} data-many={columns.length > 2 ? '' : undefined}>
+<figure class="table" data-breakout={width} data-row-headings={rowHeadings ? '' : undefined} data-many={columns.length > 2 ? '' : undefined} data-editor-table={editable ? '' : undefined}>
   {caption && <figcaption class="caption">{caption}</figcaption>}
   <div class="frame" role="region" tabindex="0" aria-label={caption ?? label} data-scrollbar>
     <div class="sizer">
     <table class="grid">
       <thead>
         <tr>
-          {columns.map((c) => <th class="cell head" scope="col">{c}</th>)}
+          {columns.map((c, column) => (
+            <th class="cell head" scope="col" data-editor-table-cell={editable ? '' : undefined} data-table-row={editable ? 'header' : undefined} data-table-column={editable ? column : undefined}>
+              <span class="words" data-editor-cell-text={editable ? '' : undefined} set:html={c} />
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
         {
-          rows.map((r) => (
+          rows.map((r, row) => (
             <tr>
               {r.map((cell, n) =>
                 n === 0 && rowHeadings ? (
-                  <th class="cell name" scope="row">
-                    <span class="words" set:html={cell} />
+                  <th class="cell name" scope="row" data-editor-table-cell={editable ? '' : undefined} data-table-row={editable ? row : undefined} data-table-column={editable ? n : undefined}>
+                    <span class="words" data-editor-cell-text={editable ? '' : undefined} set:html={cell} />
                   </th>
                 ) : (
-                  <td class="cell">
-                    <span class="words" set:html={cell} />
+                  <td class="cell" data-editor-table-cell={editable ? '' : undefined} data-table-row={editable ? row : undefined} data-table-column={editable ? n : undefined}>
+                    <span class="words" data-editor-cell-text={editable ? '' : undefined} set:html={cell} />
                   </td>
                 ),
               )}

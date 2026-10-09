@@ -5,7 +5,7 @@
  * blocks, image media, a person, the site settings and the site structure.
  */
 import { z } from 'astro/zod';
-import { paragraphsOf } from './markdown';
+import { paragraphsOf, plainText } from './markdown';
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'lowercase kebab-case');
 /** A media ID: its path under content/media/ without the extension. */
@@ -116,8 +116,15 @@ export const COLLECTION_MAX = 24;
 export const TABLE_MAX_COLUMNS = 8;
 export const TABLE_MAX_ROWS = 60;
 
-/** A table's cell: one line of the inline Markdown (bold, italic, code, links), or empty. */
+/** A table's cell: one line of inline Markdown, or empty. */
 const tableCell = z.string().refine((c) => !/[\r\n]/.test(c), 'a cell is one line');
+/** A table's column heading: a non-empty, short cell, measured by what the reader sees. */
+const tableHeading = z
+  .string()
+  .trim()
+  .refine((c) => !/[\r\n]/.test(c), 'a heading is one line')
+  .refine((c) => plainText(c).trim().length > 0, 'a heading has visible text')
+  .refine((c) => plainText(c).trim().length <= 80, 'a heading has at most 80 visible characters');
 
 /** An item's time, as words ("2016", "July 2019 to now"): short enough to sit by a timeline's mark. */
 export const COLLECTION_WHEN_MAX = 40;
@@ -228,8 +235,8 @@ export const block = z.discriminatedUnion('type', [
   z
     .strictObject({
       type: z.literal('table'),
-      /** Its column headings, in order. */
-      columns: z.array(z.string().trim().min(1).max(80)).min(1).max(TABLE_MAX_COLUMNS),
+      /** Its rich-text column headings, in order. */
+      columns: z.array(tableHeading).min(1).max(TABLE_MAX_COLUMNS),
       /** Its rows, in order: a cell for each column. */
       rows: z.array(z.array(tableCell)).min(1).max(TABLE_MAX_ROWS),
       /** The first column names each row (its cells are the rows' headings). */

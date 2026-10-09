@@ -7,10 +7,12 @@
 import { turnShortcut, type TextKind } from '../model/ops';
 import { blocksFromMarkdown, kindOf, linesOf, wordsOf } from '../model/paste';
 import { blocksFromHtml } from '../model/richPaste';
+import { pastedCellMarkdown } from '../model/richText';
 import { pictureOfPaste } from '../model/upload';
-import { markdownOf, plainLinesOf, plainOf } from '../model/dom';
-import { serializeInline, type Inline } from '../../content/markdown';
-import type { Block } from '../../content/schema';
+import { cellMarkdownOf, markdownOf, plainLinesOf, plainOf } from '../model/dom';
+import { parseInline, plainText, serializeInline, type Inline } from '../../content/markdown';
+import { TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, type Block } from '../../content/schema';
+import type { TableCell, TableOperation } from '../model/tableGrid';
 
 type Kind = { kind: string; type: string };
 type Field = 'title' | 'summary';
@@ -18,6 +20,8 @@ type Out =
   | { type: 'ready'; count: number }
   | { type: 'select'; index: number | null; field?: Field }
   | { type: 'text'; index: number; value: string; session: number; final: boolean }
+  | { type: 'table-text'; index: number; cell: TableCell; value: string; session: number; final: boolean }
+  | { type: 'table-op'; index: number; cell: TableCell; operation: TableOperation; focus?: TableCell }
   | { type: 'field'; field: Field; value: string; session: number; final: boolean }
   | { type: 'split'; index: number; parts: string[] }
   | { type: 'paste'; index: number; pending: boolean; before: string; after: string; blocks: Block[]; pictures: number }
@@ -28,6 +32,7 @@ type Out =
   | { type: 'op'; index: number; op: 'up' | 'down' | 'duplicate' | 'delete' }
   | { type: 'pending'; index: number; kind: Pending; value: string }
   | { type: 'link-request'; href: string }
+  | { type: 'notice'; message: string }
   | { type: 'key'; key: 'undo' | 'redo' | 'save' | 'settings' }
   | { type: 'turn'; index: number; to?: TextKind };
 
@@ -80,6 +85,12 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   const toolLabel = $('[data-chrome-label]');
   const insert = $('[data-chrome-insert]');
   const format = $('[data-chrome-format]');
+  const blockTools = format.querySelector<HTMLElement>('[data-chrome-block-tools]');
+  const tableActions = $('[data-chrome-table-actions]');
+  const tableMenu = $('[data-chrome-table-menu]');
+  const tableAdds = [...chrome.querySelectorAll<HTMLElement>('[data-chrome-table-add]')];
+  const tableToggles = [...chrome.querySelectorAll<HTMLButtonElement>('[data-chrome-table-menu-toggle]')];
+  const tableOps = [...chrome.querySelectorAll<HTMLButtonElement>('[data-chrome-table-op]')];
   const on = <K extends keyof DocumentEventMap>(type: K, fn: (e: DocumentEventMap[K]) => void, capture = false) => document.addEventListener(type, fn, { signal, capture });
 
   // ---------- the blocks, from the comments before them ----------
@@ -107,6 +118,14 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (typeOf(i) === 'quote') return b.querySelector('blockquote');
     return TEXTY.has(typeOf(i)) ? b : null;
   };
+  const cellOf = (el: Element): TableCell | null => {
+    const cell = el.closest<HTMLElement>('[data-editor-table-cell]');
+    const column = Number(cell?.dataset.tableColumn);
+    const row = cell?.dataset.tableRow;
+    if (!cell || !Number.isInteger(column) || column < 0 || row === undefined) return null;
+    return { row: row === 'header' ? 'header' : Number(row), column };
+  };
+  const validHeading = new WeakMap<HTMLElement, { markdown: string; html: string; sent: string }>();
 
   // text blocks take the subset's marks; headings, quotes, the title and the standfirst are plain
   const makeEditable = (el: HTMLElement | null, rich: boolean) => {
@@ -116,7 +135,18 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     el.dataset.editorEditable = rich ? 'rich' : 'plain';
   };
   const arm = () => {
-    blocks.forEach((_, i) => makeEditable(editableOf(i), typeOf(i) === 'text'));
+    blocks.forEach((block, i) => {
+      makeEditable(editableOf(i), typeOf(i) === 'text');
+      if (typeOf(i) !== 'table') return;
+      block.querySelectorAll<HTMLElement>('[data-editor-cell-text]').forEach((el) => {
+        makeEditable(el, true);
+        if (el.closest('th')) el.style.fontWeight = getComputedStyle(document.documentElement).getPropertyValue('--weight-regular');
+        if (cellOf(el)?.row === 'header') {
+          const markdown = cellMarkdownOf(el);
+          validHeading.set(el, { markdown, html: el.innerHTML, sent: markdown });
+        }
+      });
+    });
     makeEditable(fields.title, false);
     makeEditable(fields.summary, false);
   };
@@ -126,16 +156,89 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   let selected: number | null = null;
   let selectedField: Field | null = null;
   let preview = false;
+  let activeTable: { index: number; cell: TableCell; el: HTMLElement } | null = null;
+  let tableBusy = false;
+  const closeTableMenu = () => {
+    tableMenu.hidden = true;
+    tableToggles.forEach((button) => button.setAttribute('aria-expanded', 'false'));
+  };
+  const tableOf = (index: number) => {
+    const block = blocks[index];
+    return block?.matches('[data-editor-table]') ? block : block?.querySelector<HTMLElement>('[data-editor-table]');
+  };
+  const tableShape = (index: number) => {
+    const table = tableOf(index);
+    return {
+      rows: table?.querySelectorAll('tbody tr').length ?? 0,
+      columns: table?.querySelectorAll('thead [data-editor-table-cell]').length ?? 0,
+    };
+  };
+  const updateTableControls = () => {
+    if (!activeTable) return;
+    const { rows, columns } = tableShape(activeTable.index);
+    const row = activeTable.cell.row;
+    const rowToggle = tableToggles.find((b) => b.dataset.chromeTableMenuToggle === 'row');
+    if (rowToggle) rowToggle.disabled = tableBusy || row === 'header';
+    const columnToggle = tableToggles.find((b) => b.dataset.chromeTableMenuToggle === 'column');
+    if (columnToggle) columnToggle.disabled = tableBusy;
+    for (const add of tableAdds) {
+      const button = add.querySelector<HTMLButtonElement>('button');
+      if (button) button.disabled = tableBusy || (add.dataset.chromeTableAdd === 'row' ? rows >= TABLE_MAX_ROWS : columns >= TABLE_MAX_COLUMNS);
+    }
+    for (const button of tableOps) {
+      const op = button.dataset.chromeTableOp;
+      button.disabled =
+        tableBusy ||
+        (op?.startsWith('insert-row') === true && rows >= TABLE_MAX_ROWS) ||
+        (op?.startsWith('insert-column') === true && columns >= TABLE_MAX_COLUMNS) ||
+        (op === 'move-row-up' && (row === 'header' || row === 0)) ||
+        (op === 'move-row-down' && (row === 'header' || row === rows - 1)) ||
+        (op === 'delete-row' && (row === 'header' || rows === 1)) ||
+        (op === 'move-column-left' && activeTable.cell.column === 0) ||
+        (op === 'move-column-right' && activeTable.cell.column === columns - 1) ||
+        (op === 'delete-column' && columns === 1);
+    }
+  };
+  const openTableMenu = (kind: 'row' | 'column' | 'both') => {
+    if (!activeTable || tableBusy || (kind !== 'column' && activeTable.cell.row === 'header')) return;
+    tableMenu.querySelectorAll<HTMLElement>('[data-chrome-table-menu-group]').forEach((group) => (group.hidden = kind !== 'both' && group.dataset.chromeTableMenuGroup !== kind));
+    tableMenu.hidden = false;
+    tableToggles.forEach((button) => button.setAttribute('aria-expanded', String(kind !== 'both' && button.dataset.chromeTableMenuToggle === kind)));
+    updateTableControls();
+    tableMenu.querySelector<HTMLButtonElement>('[data-chrome-table-menu-group]:not([hidden]) button:not(:disabled)')?.focus();
+  };
   const place = (box: HTMLElement, rect: DOMRect) => {
     box.style.setProperty('--x', `${rect.left + scrollX}px`);
     box.style.setProperty('--y', `${rect.top + scrollY}px`);
     box.style.setProperty('--w', `${rect.width}px`);
     box.style.setProperty('--h', `${rect.height}px`);
   };
+  const redrawTable = () => {
+    const table = activeTable && tableOf(activeTable.index);
+    const cell = activeTable?.el.closest<HTMLElement>('[data-editor-table-cell]');
+    const show = !!activeTable && !!table && !!cell && !preview;
+    tableActions.hidden = !show;
+    tableAdds.forEach((add) => (add.hidden = !show));
+    if (!show) return closeTableMenu();
+    const c = cell!.getBoundingClientRect();
+    const t = table!.getBoundingClientRect();
+    tableActions.style.setProperty('--x', `${c.right + scrollX}px`);
+    tableActions.style.setProperty('--y', `${c.top + scrollY}px`);
+    tableMenu.style.setProperty('--x', `${c.right + scrollX}px`);
+    tableMenu.style.setProperty('--y', `${c.bottom + scrollY}px`);
+    const row = tableAdds.find((add) => add.dataset.chromeTableAdd === 'row');
+    const column = tableAdds.find((add) => add.dataset.chromeTableAdd === 'column');
+    row?.style.setProperty('--x', `${t.left + t.width / 2 + scrollX}px`);
+    row?.style.setProperty('--y', `${t.bottom + scrollY}px`);
+    column?.style.setProperty('--x', `${t.right + scrollX}px`);
+    column?.style.setProperty('--y', `${t.top + t.height / 2 + scrollY}px`);
+    updateTableControls();
+  };
   const redraw = () => {
     const el = selected !== null ? blocks[selected] : selectedField ? fields[selectedField] : null;
     selBox.hidden = !el || preview;
     toolbar.hidden = selected === null || !el || preview;
+    redrawTable();
     if (!el) return;
     const r = el.getBoundingClientRect();
     place(selBox, r);
@@ -145,6 +248,10 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (turnButton) turnButton.hidden = selected === null || !(TEXTY.has(typeOf(selected)) || typeOf(selected) === 'collection');
   };
   const select = (i: number | null, field: Field | null = null, tell = true, scroll = false) => {
+    if (activeTable && activeTable.index !== i) {
+      activeTable = null;
+      closeTableMenu();
+    }
     selected = i;
     selectedField = field;
     hoverBox.hidden = true;
@@ -233,7 +340,9 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   chrome.addEventListener(
     'click',
     (e) => {
-      const b = (e.target as Element).closest<HTMLElement>('[data-chrome-op], [data-chrome-insert-button], [data-chrome-format-op], [data-chrome-more-toggle]');
+      const b = (e.target as Element).closest<HTMLElement>(
+        '[data-chrome-op], [data-chrome-insert-button], [data-chrome-format-op], [data-chrome-more-toggle], [data-chrome-table-menu-toggle], [data-chrome-table-add], [data-chrome-table-op]',
+      );
       if (!b) return;
       e.preventDefault();
       if (b.dataset.chromeOp && selected !== null) {
@@ -242,6 +351,9 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         else post({ type: 'op', index: selected, op: op as 'up' | 'down' | 'duplicate' | 'delete' });
       } else if (b.hasAttribute('data-chrome-insert-button') && insertAt >= 0) post({ type: 'insert', index: insertAt });
       else if (b.hasAttribute('data-chrome-more-toggle')) showMore(moreMenu.hidden);
+      else if (b.dataset.chromeTableMenuToggle) openTableMenu(b.dataset.chromeTableMenuToggle as 'row' | 'column');
+      else if (b.dataset.chromeTableAdd) useTableControl(`add-${b.dataset.chromeTableAdd}`);
+      else if (b.dataset.chromeTableOp) useTableControl(b.dataset.chromeTableOp);
       else if (b.dataset.chromeFormatOp) {
         showMore(false);
         formatOp(b.dataset.chromeFormatOp);
@@ -250,19 +362,24 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     { signal },
   );
   // a toolbar button doesn't take the text's selection away
-  chrome.addEventListener('mousedown', (e) => (e.target as Element).closest('[data-chrome-format-op], [data-chrome-more-toggle]') && e.preventDefault(), { signal });
+  chrome.addEventListener(
+    'mousedown',
+    (e) => (e.target as Element).closest('[data-chrome-format-op], [data-chrome-more-toggle], [data-chrome-table-menu-toggle], [data-chrome-table-add], [data-chrome-table-op]') && e.preventDefault(),
+    { signal },
+  );
 
   // ---------- editing text ----------
   let session = 0;
   let composing = false;
-  let dirty: { el: HTMLElement; index: number | null; field: Field | null } | null = null;
+  type Current = { el: HTMLElement; index: number | null; field: Field | null; cell: TableCell | null };
+  let dirty: Current | null = null;
   let timer = 0;
-  const current = (): { el: HTMLElement; index: number | null; field: Field | null } | null => {
+  const current = (): Current | null => {
     const el = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('[data-editor-editable], [data-editor-pending]');
     if (!el) return null;
-    if (el === fields.title) return { el, index: null, field: 'title' };
-    if (el === fields.summary) return { el, index: null, field: 'summary' };
-    return { el, index: indexOf(el), field: null };
+    if (el === fields.title) return { el, index: null, field: 'title', cell: null };
+    if (el === fields.summary) return { el, index: null, field: 'summary', cell: null };
+    return { el, index: indexOf(el), field: null, cell: cellOf(el) };
   };
   const valueOf = (el: HTMLElement, index: number | null) =>
     index !== null && typeOf(index) === 'text' && el.dataset.editorEditable === 'rich' ? markdownOf(el) : index !== null && LINED.has(typeOf(index)) ? plainLinesOf(el) : plainOf(el);
@@ -270,7 +387,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   const send = (final: boolean) => {
     clearTimeout(timer);
     if (!dirty || composing) return;
-    const { el, index, field } = dirty;
+    const { el, index, field, cell } = dirty;
     if (el.hasAttribute('data-editor-pending')) {
       const value = el.dataset.pendingKind === 'text' ? markdownOf(el) : plainLinesOf(el);
       if (!value.trim()) {
@@ -294,7 +411,25 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       dirty = null;
       return;
     }
-    if (field) post({ type: 'field', field, value: plainOf(el), session, final });
+    if (cell && index !== null && index >= 0) {
+      const value = cellMarkdownOf(el);
+      if (cell.row === 'header') {
+        const visible = plainText(value).trim();
+        const problem = !visible ? 'Column headings cannot be empty. Add a heading to continue.' : visible.length > 80 ? 'Column headings can have up to 80 characters. Shorten this heading.' : '';
+        if (problem) {
+          if (final) {
+            const valid = validHeading.get(el);
+            if (valid) el.innerHTML = valid.html;
+            dirty = null;
+            post({ type: 'notice', message: problem });
+            requestAnimationFrame(redraw);
+          }
+          return;
+        }
+        validHeading.set(el, { markdown: value, html: el.innerHTML, sent: value });
+      }
+      post({ type: 'table-text', index, cell, value, session, final });
+    } else if (field) post({ type: 'field', field, value: plainOf(el), session, final });
     else if (index !== null && index >= 0) post({ type: 'text', index, value: valueOf(el, index), session, final });
     if (final) dirty = null;
   };
@@ -305,8 +440,18 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     dirty = c;
     clearTimeout(timer);
     timer = window.setTimeout(() => send(false), 800);
+    const headingMarkdown = c.cell?.row === 'header' ? cellMarkdownOf(c.el) : null;
+    const heading = headingMarkdown === null ? null : plainText(headingMarkdown).trim();
+    if (heading !== null) {
+      const valid = validHeading.get(c.el);
+      if (heading && heading.length <= 80) validHeading.set(c.el, { markdown: headingMarkdown!, html: c.el.innerHTML, sent: valid?.sent ?? headingMarkdown! });
+      else if (valid && valid.markdown !== valid.sent && c.index !== null) {
+        post({ type: 'table-text', index: c.index, cell: c.cell!, value: valid.markdown, session, final: false });
+        validHeading.set(c.el, { ...valid, sent: valid.markdown });
+      }
+    }
     // the editor's status says "Unsaved changes" from the first key, not once the words are sent
-    if (Date.now() - typedAt > 700) {
+    if (!(heading !== null && (!heading || heading.length > 80)) && Date.now() - typedAt > 700) {
       typedAt = Date.now();
       post({ type: 'typing' });
     }
@@ -323,7 +468,14 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       el.removeAttribute('data-dropcap');
     }
     const i = indexOf(el);
+    const cell = cellOf(el);
+    if (cell && i >= 0) {
+      activeTable = { index: i, cell, el };
+      tableBusy = false;
+      closeTableMenu();
+    }
     if (i >= 0 && i !== selected) select(i);
+    redraw();
   });
   on('focusout', (e) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-editor-editable], [data-editor-pending]');
@@ -526,11 +678,12 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   on('beforeinput', (e) => {
     const c = current();
     if (!c) return;
-    const { el, index } = c;
+    const { el, index, cell } = c;
     const rich = el.dataset.editorEditable === 'rich' || (el.hasAttribute('data-editor-pending') && el.dataset.pendingKind === 'text');
     const type = e.inputType;
     if (type === 'insertParagraph') {
       e.preventDefault();
+      if (cell) return;
       if (index === null || index < 0 || composing) return;
       if (el.nodeName === 'UL' || el.nodeName === 'OL') return newItem(el, index);
       if (el.closest('li')) return;
@@ -554,6 +707,23 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       const pasted = (html && blocksFromHtml(new DOMParser().parseFromString(html, 'text/html').body)) || blocksFromMarkdown(text);
       const kind = kindOf(pasted.blocks);
       if (kind === 'nothing') return;
+      if (cell) {
+        const r = caretRange();
+        if (!r || !el.contains(r.commonAncestorContainer)) return;
+        r.deleteContents();
+        const fragment = fragmentOf(parseInline(pastedCellMarkdown(pasted.blocks)));
+        const last = fragment.lastChild;
+        r.insertNode(fragment);
+        if (last) {
+          r.setStartAfter(last);
+          r.collapse(true);
+          const selection = getSelection()!;
+          selection.removeAllRanges();
+          selection.addRange(r);
+        }
+        markDirty();
+        return;
+      }
       // blocks (headings, lists, quotes, marks, several paragraphs) in a paragraph arrive as blocks
       const pending = el.hasAttribute('data-editor-pending');
       if (kind === 'blocks' && rich && el.nodeName === 'P' && (pending || (index !== null && index >= 0))) {
@@ -584,7 +754,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     }
     if ((type === 'formatBold' || type === 'formatItalic') && rich) return;
     if (!ALLOWED_INPUT.has(type)) e.preventDefault();
-    if (type === 'insertLineBreak' && !rich) e.preventDefault();
+    if (type === 'insertLineBreak' && (!rich || cell)) e.preventDefault();
   });
 
   // a picture pasted (a screenshot, a copied image) becomes a figure after the block, once it's uploaded
@@ -593,9 +763,13 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     (e) => {
       if (preview) return;
       const data = e.clipboardData;
+      const c = current();
+      if (c?.cell) {
+        if (data?.files.length) e.preventDefault();
+        return;
+      }
       const file = data ? pictureOfPaste([...data.files], data.getData('text/plain')) : null;
       if (!file) return;
-      const c = current();
       let at: number;
       if (c?.el.hasAttribute('data-editor-pending')) {
         at = Number(c.el.dataset.editorPending);
@@ -653,6 +827,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     const at = r!.commonAncestorContainer.nodeType === 1 ? (r!.commonAncestorContainer as Element) : r!.commonAncestorContainer.parentElement;
     const indents = format.querySelector<HTMLElement>('[data-chrome-in-list]');
     const tag = c!.el.nodeName.toLowerCase();
+    if (blockTools) blockTools.hidden = !!c!.cell;
     // the indents show only in a list (fit puts any under More formatting back in their group first)
     if (indents) indents.hidden = !at?.closest('li');
     for (const b of format.querySelectorAll<HTMLElement>('[data-chrome-format-op]')) {
@@ -726,6 +901,39 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     markDirty();
   };
 
+  const focusTableCell = (index: number, cell: TableCell) => {
+    const row = cell.row === 'header' ? 'header' : String(cell.row);
+    const el = blocks[index]?.querySelector<HTMLElement>(`[data-editor-table-cell][data-table-row="${row}"][data-table-column="${cell.column}"] [data-editor-cell-text]`);
+    if (!el) return;
+    select(index, null, false, true);
+    focusText(el, 'end');
+  };
+  const tableCells = (index: number) => [...(blocks[index]?.querySelectorAll<HTMLElement>('[data-editor-cell-text]') ?? [])];
+  const useTableControl = (name: string, focus?: TableCell) => {
+    if (!activeTable || tableBusy) return;
+    const { rows, columns } = tableShape(activeTable.index);
+    const row = activeTable.cell.row;
+    let operation: TableOperation | null = null;
+    if (name === 'add-row') operation = { type: 'insert-row', at: rows };
+    else if (name === 'add-column') operation = { type: 'insert-column', at: columns };
+    else if (name === 'insert-row-above' && row !== 'header') operation = { type: 'insert-row', at: row };
+    else if (name === 'insert-row-below' && row !== 'header') operation = { type: 'insert-row', at: row + 1 };
+    else if (name === 'move-row-up' && row !== 'header') operation = { type: 'move-row', from: row, to: row - 1 };
+    else if (name === 'move-row-down' && row !== 'header') operation = { type: 'move-row', from: row, to: row + 1 };
+    else if (name === 'delete-row' && row !== 'header') operation = { type: 'delete-row', row };
+    else if (name === 'insert-column-left') operation = { type: 'insert-column', at: activeTable.cell.column };
+    else if (name === 'insert-column-right') operation = { type: 'insert-column', at: activeTable.cell.column + 1 };
+    else if (name === 'move-column-left') operation = { type: 'move-column', from: activeTable.cell.column, to: activeTable.cell.column - 1 };
+    else if (name === 'move-column-right') operation = { type: 'move-column', from: activeTable.cell.column, to: activeTable.cell.column + 1 };
+    else if (name === 'delete-column') operation = { type: 'delete-column', column: activeTable.cell.column };
+    if (!operation) return;
+    send(true);
+    tableBusy = true;
+    closeTableMenu();
+    updateTableControls();
+    post({ type: 'table-op', index: activeTable.index, cell: activeTable.cell, operation, ...(focus ? { focus } : {}) });
+  };
+
   // ---------- keys ----------
   on(
     'keydown',
@@ -740,6 +948,56 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         send(true);
         post({ type: 'key', key: 'save' });
         return;
+      }
+      if (!tableMenu.hidden && e.key === 'Escape') {
+        e.preventDefault();
+        closeTableMenu();
+        if (activeTable) focusTableCell(activeTable.index, activeTable.cell);
+        return;
+      }
+      if (!tableMenu.hidden && tableMenu.contains(e.target as Node) && ['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+        e.preventDefault();
+        const items = [...tableMenu.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')].filter((button) => !button.closest<HTMLElement>('[hidden]'));
+        const at = items.indexOf(e.target as HTMLButtonElement);
+        const next = e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : (at + (e.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
+        items[next]?.focus();
+        return;
+      }
+      if (chrome.contains(e.target as Node)) return;
+      if (editing?.cell) {
+        const cells = tableCells(editing.index!);
+        const at = cells.indexOf(editing.el);
+        if (e.key === 'Tab') {
+          send(true);
+          const next = cells[at + (e.shiftKey ? -1 : 1)];
+          if (next) {
+            e.preventDefault();
+            focusText(next, e.shiftKey ? 'start' : 'end');
+          } else if (!e.shiftKey && tableShape(editing.index!).rows < TABLE_MAX_ROWS) {
+            e.preventDefault();
+            tableAdds.find((add) => add.dataset.chromeTableAdd === 'row')?.querySelector<HTMLButtonElement>('button')?.focus();
+          }
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (mod || e.altKey) return;
+          send(true);
+          const { rows } = tableShape(editing.index!);
+          if (!e.shiftKey && editing.cell.row !== 'header' && editing.cell.row === rows - 1) {
+            if (rows < TABLE_MAX_ROWS) useTableControl('add-row', { row: rows, column: editing.cell.column });
+          } else {
+            const nextRow = editing.cell.row === 'header' ? (e.shiftKey ? 'header' : 0) : editing.cell.row + (e.shiftKey ? -1 : 1);
+            if (nextRow === 'header' || nextRow >= 0) focusTableCell(editing.index!, { row: nextRow, column: editing.cell.column });
+          }
+          return;
+        }
+        if ((e.shiftKey && e.key === 'F10') || e.key === 'ContextMenu') {
+          e.preventDefault();
+          send(true);
+          openTableMenu(editing.cell.row === 'header' ? 'column' : 'both');
+          return;
+        }
       }
       // turn the block into another kind of text, even while its words are being typed (they're sent first)
       const kind = turnShortcut(e);
@@ -868,6 +1126,13 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         if (ed) focusText(ed, (m.at as 'start' | 'end' | number) ?? 'start');
         else focusBlock(i);
       } else if (m.type === 'pending') addPending(m.index as number, m.kind as Pending);
+      else if (m.type === 'table-focus') {
+        tableBusy = false;
+        focusTableCell(m.index as number, m.cell as TableCell);
+      } else if (m.type === 'table-unlock') {
+        tableBusy = false;
+        updateTableControls();
+      }
       else if (m.type === 'link') applyLink(String(m.href ?? ''));
       else if (m.type === 'flush') send(true);
       else if (m.type === 'mode') {

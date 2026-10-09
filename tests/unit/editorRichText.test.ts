@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { MiniNode } from '../../src/site/editor/model/dom';
-import { pastedMarkdown, RICH_TOOLS, richHtml, richMarkdown, richShortcut } from '../../src/site/editor/model/richText';
+import { pastedCellMarkdown, pastedMarkdown, RICH_TOOLS, richHtml, richMarkdown, richShortcut } from '../../src/site/editor/model/richText';
 
 interface El extends MiniNode {
   childNodes: MiniNode[];
@@ -77,6 +77,16 @@ describe('a rich field', () => {
         { type: 'quote', text: 'Said', variant: 'block' },
       ]),
     ).toBe('Title \\*star\\*\n\n- one\n- **two**\n\nSaid');
+  });
+
+  it('flattens a rich paste to one table cell, keeping only inline marks and links', () => {
+    expect(
+      pastedCellMarkdown([
+        { type: 'text', markdown: 'One **bold**\\\nline.\n\n- Two\n- [Three](https://example.com)' },
+        { type: 'table', columns: ['*Four*'], rows: [['`Five`']] },
+        { type: 'divider' },
+      ]),
+    ).toBe('One **bold** line. Two [Three](https://example.com) _Four_ `Five`');
   });
 
   it('offers the toolbar’s formatting by its keys too', () => {

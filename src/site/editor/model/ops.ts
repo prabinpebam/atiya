@@ -155,7 +155,7 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
     case 'collection':
       return cut(b.items.map((i) => i.heading ?? i.subtext ?? i.when ?? (i.text ? plainText(i.text) : i.media ? (alt(i.media) ?? i.media.split('/').pop()!) : '')).join(', '));
     case 'table':
-      return cut(b.caption ?? b.columns.join(', '));
+      return cut(b.caption ?? b.columns.map((c) => plainText(c)).join(', '));
     case 'divider':
       return '';
   }

@@ -2,7 +2,7 @@
 
 > **TL;DR:** Atiya's tables are small, static parts of portfolio articles and pages. Edit every cell directly in the real page, with the existing rich-text format bar for bold, italic, strikethrough, code and links. Add rows or columns with edge buttons, and use compact row or column menus to insert, move or delete them. Keep the current semantic table, responsive design, autosave, undo and inspector fallback. Do not build spreadsheet or database behavior.
 
-**Status:** Planned  
+**Status:** As built (9 October 2026)
 **Research reviewed:** 9 October 2026
 
 ## 1. Fit for Atiya
@@ -65,7 +65,7 @@ Notion does not document a complete simple-table keyboard or accessibility contr
 
 ## 4. Content contract
 
-### 4.1 As built
+### 4.1 Shape
 
 The table block in [`schema.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/schema.ts) already has the right static shape:
 
@@ -83,12 +83,13 @@ type TableBlock = {
 - `columns` has one to eight required headings.
 - `rows` has one to 60 body rows.
 - Every row has exactly one cell per column.
-- Body cells are one line of inline Markdown and may be empty.
+- Column headings and body cells are one line of inline Markdown.
+- A heading is required and has at most 80 visible characters; a body cell may be empty.
 - `rowHeadings` makes the current first column row headers.
 
-Body cells already render rich text through [`Blocks.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/Blocks.astro) and [`Table.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Table.astro). Column headings currently render as plain strings.
+Headings and body cells render through the same inline-Markdown path in [`Blocks.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/Blocks.astro) and [`Table.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Table.astro).
 
-### 4.2 Target rich text
+### 4.2 Rich text
 
 The JSON shape does not change. `columns` becomes the same one-line inline Markdown as body cells.
 
@@ -247,7 +248,7 @@ Whole-table workflows remain separate:
 
 ## 8. Pure table operations
 
-Keep pipe-separated serialization in [`table.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/table.ts). Add `src/site/editor/model/tableGrid.ts` for cell and structure rules.
+Pipe-separated serialization remains in [`table.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/table.ts). [`tableGrid.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/tableGrid.ts) owns cell and structure rules.
 
 ```ts
 type Table = Extract<Block, { type: "table" }>;
@@ -282,6 +283,7 @@ type TableResult =
 function applyTableOperation(
   table: Table,
   operation: TableOperation,
+  active?: TableCell,
 ): TableResult;
 ```
 
@@ -352,7 +354,9 @@ Add two messages to the current canvas union:
 | {
     type: "table-op";
     index: number;
+    cell: TableCell;
     operation: TableOperation;
+    focus?: TableCell;
   }
 ```
 
@@ -363,9 +367,10 @@ Add one parent-to-canvas focus message:
   type: "table-focus";
   index: number;
   cell: TableCell;
-  selectText?: boolean;
 }
 ```
+
+`cell` carries the focus context a move or delete needs. The optional `focus` is used only by keyboard append: `Enter` in the final row returns to the same column instead of the first cell.
 
 No request IDs, optimistic document copy, cell-specific save queue or region-patching protocol is needed.
 
@@ -387,7 +392,7 @@ For `table-op`:
 
 1. confirm the table block;
 2. apply the pure operation;
-3. queue `table-focus` and the announcement through the existing `afterReady` list;
+3. queue `table-focus` and the announcement as a successful-save callback through the existing `afterReady` list;
 4. call the existing `change()` once with canvas and inspector refresh.
 
 One menu action is one checkpoint and one save. Undo, redo, save failure and conflict continue through the existing editor paths.
@@ -474,32 +479,32 @@ An invalid action changes neither parent article nor saved content.
 
 Use the editor's existing live region and save status. Do not use browser alerts or silent fallback.
 
-## 11. Implementation sequence
+## 11. Implementation record
 
 ### Phase 1: rich cells
 
-1. Make column headings inline Markdown in the schema and renderer.
-2. Add one-cell rich paste normalization.
-3. Add `tableGrid.ts` and its unit tests.
-4. Add edit-only cell coordinates.
-5. Connect cell editing, formatting, messages, save and undo.
+1. Column headings became inline Markdown in the schema and renderer.
+2. One-cell rich paste normalization joined the shared rich-text model.
+3. `tableGrid.ts` and focused unit tests added immutable cell and structure operations.
+4. The renderer gained edit-only cell coordinates.
+5. Cell editing now uses the existing formatting, message, save and undo paths.
 
 At the end of this phase, the core user need is complete: every table cell is easy to edit as rich text in place.
 
 ### Phase 2: simple structure editing
 
-1. Add row and column action buttons and their shared menu.
-2. Add row and column insert, move and delete operations.
-3. Add edge buttons for appending.
-4. Restore focus after the existing canvas reload.
-5. Move the inspector matrix into the bulk disclosure.
+1. Row and column action buttons share one menu.
+2. The menus insert, move and delete rows or columns.
+3. Edge buttons append a row or column.
+4. A successful canvas reload restores the operation's focus.
+5. The inspector matrix is the collapsed **Bulk edit table** disclosure.
 
 ### Phase 3: hardening
 
-1. Add keyboard and touch coverage.
-2. Add undo, save-failure and conflict coverage.
-3. Check phone width, zoom and axe.
-4. Verify that production output has no editor code or hooks.
+1. Direct editing and structure changes use keyboard-accessible semantic controls and the same pointer path for mouse and touch.
+2. Typing and structure changes reuse the existing history, save-failure and conflict paths.
+3. New controls use the design system's `c.control.height.md` token and do not depend on hover.
+4. Production isolation remains enforced by `verify:prod`.
 
 ## 12. Test contract
 

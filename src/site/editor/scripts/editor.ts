@@ -11,6 +11,7 @@ import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
 import { isVideoFile } from '../model/upload';
 import { starterTable, textToTable } from '../model/table';
+import { applyTableOperation, type TableCell, type TableOperation } from '../model/tableGrid';
 import { LAYOUT_CHOICES, startWidth } from '../model/collection';
 import { followMove, followRemove, itemKey } from '../model/inspector';
 import { applySections, chooseSection, followSection, initSections, revealField } from './inspector';
@@ -76,13 +77,14 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   updateUndo();
 
   // ---------- saving: one queue, never two at once ----------
-  type Job = { section?: string | null; refresh: Refresh };
+  type Job = { section?: string | null; refresh: Refresh; ready?: (() => void)[] };
   const afterReady: (() => void)[] = [];
   const queue = new SaveQueue<Job>(
     (waiting, request) => ({
       ...(waiting ?? {}),
       ...(request.section !== undefined ? { section: request.section } : {}),
       refresh: { ...(waiting?.refresh ?? {}), ...request.refresh },
+      ready: [...(waiting?.ready ?? []), ...(request.ready ?? [])],
     }),
     async (job, more) => {
       saveStatus.saving();
@@ -102,21 +104,25 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         clearIssues();
         if (more()) saveStatus.saving();
         else saveStatus.saved();
+        if (job.ready?.length) afterReady.push(...job.ready);
         await refreshAll(job.refresh);
         return 'ok';
       }
       if (r.status === 409) {
+        if (job.ready?.length) toCanvas({ type: 'table-unlock' });
         saveStatus.failed('Not saved: this article changed in another tab or on disk');
         dialog('editor-conflict')?.showModal();
         return 'stop';
       }
       doc = structuredClone(saved);
+      if (job.ready?.length) toCanvas({ type: 'table-unlock' });
       showIssues(r.data.issues ?? []);
       saveStatus.failed(`Not saved: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`);
       return 'failed';
     },
   );
-  const save = (opts: { section?: string | null; refresh?: Refresh } = {}) => queue.push({ ...(opts.section !== undefined ? { section: opts.section } : {}), refresh: opts.refresh ?? {} });
+  const save = (opts: { section?: string | null; refresh?: Refresh; ready?: (() => void)[] } = {}) =>
+    queue.push({ ...(opts.section !== undefined ? { section: opts.section } : {}), refresh: opts.refresh ?? {}, ...(opts.ready?.length ? { ready: opts.ready } : {}) });
 
   // ---------- refreshing the outline, the inspector and the canvas ----------
   const reloadCanvas = () => frame.contentWindow?.location.reload();
@@ -255,13 +261,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   };
 
   // ---------- changes ----------
-  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; history?: boolean; picked?: number[] } = {}) => {
+  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; history?: boolean; picked?: number[]; ready?: () => void } = {}) => {
     if (opts.history !== false) checkpoint();
     doc = next;
     if (opts.select !== undefined) selected = opts.select;
     picked = new Set(opts.picked ?? []);
     if (!opts.picked) anchor = selected;
-    void save({ refresh, ...(opts.section !== undefined ? { section: opts.section } : {}) });
+    void save({ refresh, ...(opts.section !== undefined ? { section: opts.section } : {}), ...(opts.ready ? { ready: [opts.ready] } : {}) });
   };
   const body = (b: Block[]) => ({ ...doc, body: b });
   const blockOp = (i: number, op: 'up' | 'down' | 'duplicate' | 'delete') => {
@@ -466,6 +472,59 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         void save({ refresh: m.final ? { outline: true } : {} });
         break;
       }
+      case 'table-text': {
+        const i = m.index as number;
+        const current = doc.body[i];
+        const cell = m.cell;
+        if (!cell || typeof cell !== 'object') break;
+        if (current?.type !== 'table') break;
+        const result = applyTableOperation(current, { type: 'set-cell', cell: cell as TableCell, markdown: String(m.value ?? '') });
+        if (!result.ok) {
+          if (m.final) announce(result.message);
+          break;
+        }
+        if (m.session !== textSession) {
+          textSession = m.session as number;
+          checkpoint();
+        }
+        doc = body(ops.replace(doc.body, i, result.table));
+        void save({ refresh: m.final ? { inspector: true } : {} });
+        break;
+      }
+      case 'table-op': {
+        const i = m.index as number;
+        const current = doc.body[i];
+        const operation = m.operation as TableOperation | undefined;
+        const cell = m.cell;
+        const types: TableOperation['type'][] = ['insert-row', 'move-row', 'delete-row', 'insert-column', 'move-column', 'delete-column'];
+        if (current?.type !== 'table' || !operation || !types.includes(operation.type) || !cell || typeof cell !== 'object') {
+          toCanvas({ type: 'table-unlock' });
+          break;
+        }
+        const result = applyTableOperation(current, operation, cell as TableCell);
+        if (!result.ok) {
+          announce(result.message);
+          toCanvas({ type: 'table-unlock' });
+          break;
+        }
+        const requested = m.focus as TableCell | undefined;
+        const focus =
+          requested &&
+          Number.isInteger(requested.column) &&
+          requested.column >= 0 &&
+          requested.column < result.table.columns.length &&
+          (requested.row === 'header' || (Number.isInteger(requested.row) && requested.row >= 0 && requested.row < result.table.rows.length))
+            ? requested
+            : result.focus;
+        change(body(ops.replace(doc.body, i, result.table)), ALL, {
+          select: i,
+          ready: () => {
+            announce(result.announcement);
+            toCanvas({ type: 'table-focus', index: i, cell: focus });
+          },
+        });
+        break;
+      }
       case 'field': {
         const f = m.field as 'title' | 'summary';
         const value = String(m.value ?? '').trim();
@@ -535,6 +594,9 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       }
       case 'link-request':
         openLink(String(m.href ?? ''));
+        break;
+      case 'notice':
+        announce(String(m.message ?? ''));
         break;
       case 'key':
         if (m.key === 'undo') undo();

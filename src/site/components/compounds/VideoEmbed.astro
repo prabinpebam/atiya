@@ -5,6 +5,7 @@
  * @tier compound
  * @a11y Embedded players start as a real link with a local poster and a "Play video" name that includes the length, when given.
  * @a11y The iframe is created only after activation and carries the video’s title.
+ * @a11y The iframe sends only the site's origin as its referrer, including from a protected page.
  * @a11y Local files keep native controls, captions and no autoplay.
  * @key Enter / Space: plays an embedded video facade
  */
@@ -268,6 +269,7 @@ const embedSrc =
       iframe.className = 'video-embed-frame';
       iframe.src = src;
       iframe.title = title;
+      iframe.referrerPolicy = 'strict-origin-when-cross-origin';
       iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
       iframe.allowFullscreen = true;
       facade.replaceWith(iframe);

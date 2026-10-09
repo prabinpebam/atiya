@@ -218,7 +218,7 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
         return <Divider />;
       case 'table': {
         const cell = (md: string) => (md.trim() ? renderInlineMarkdown(md, { resolveRef, annotate: editable }) : '');
-        return <Table columns={b.columns} rows={b.rows.map((r) => r.map(cell))} rowHeadings={!!b.rowHeadings} caption={b.caption} width={b.width ?? 'content'} />;
+        return <Table columns={b.columns.map(cell)} rows={b.rows.map((r) => r.map(cell))} rowHeadings={!!b.rowHeadings} caption={b.caption} width={b.width ?? 'content'} editable={editable} />;
       }
       default:
         return null;

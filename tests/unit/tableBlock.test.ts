@@ -5,11 +5,12 @@ import { excerptOf, kindOf } from '../../src/site/editor/model/ops';
 import { wordCount } from '../../src/site/content/reading';
 import type { Article, Block } from '../../src/site/content/schema';
 
-const table: Extract<Block, { type: 'table' }> = { type: 'table', columns: ['Typeface', 'Role'], rows: [['**Fraunces**', 'Display'], ['Figtree', '']] };
+const table: Extract<Block, { type: 'table' }> = { type: 'table', columns: ['**Typeface**', 'Role'], rows: [['**Fraunces**', 'Display'], ['Figtree', '']] };
 
 describe('the table block: its contract', () => {
   it('takes column headings and rows of one-line cells, with a caption, row headings and a width', () => {
     expect(block.safeParse(table).success).toBe(true);
+    expect(block.safeParse({ ...table, columns: ['[Typeface](https://example.com)', '~~Role~~'] }).success).toBe(true);
     expect(block.safeParse({ ...table, caption: "The site's typefaces", rowHeadings: true, width: 'wide' }).success).toBe(true);
   });
 
@@ -17,6 +18,8 @@ describe('the table block: its contract', () => {
     expect(block.safeParse({ ...table, rows: [['a']] }).success).toBe(false);
     expect(block.safeParse({ ...table, rows: [['a\nb', 'c']] }).success).toBe(false);
     expect(block.safeParse({ ...table, columns: [' ', 'Role'] }).success).toBe(false);
+    expect(block.safeParse({ ...table, columns: ['[](https://example.com)', 'Role'] }).success).toBe(false);
+    expect(block.safeParse({ ...table, columns: [`**${'x'.repeat(81)}**`, 'Role'] }).success).toBe(false);
     expect(block.safeParse({ ...table, columns: Array(9).fill('x'), rows: [Array(9).fill('')] }).success).toBe(false);
     expect(block.safeParse({ ...table, width: 'full' }).success).toBe(false);
   });
@@ -36,9 +39,9 @@ describe("the table block: the inspector's text", () => {
   });
 
   it('writes the headings, then a row a line, and reads it back unchanged', () => {
-    const t = { columns: ['Typeface', 'Role'], rows: [['A | B', '**Display**'], ['C', '']] };
+    const t = { columns: ['**Typeface**', 'Role'], rows: [['A | B', '**Display**'], ['C', '']] };
     const text = tableToText(t);
-    expect(text).toBe('Typeface | Role\nA \\| B | **Display**\nC | ');
+    expect(text).toBe('**Typeface** | Role\nA \\| B | **Display**\nC | ');
     expect(textToTable(text)).toEqual({ ok: true, ...t });
   });
 

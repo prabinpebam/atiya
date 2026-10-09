@@ -6,7 +6,8 @@
  * delete), a "+" on a line across the column in the space between two blocks while the
  * pointer is there (never over a block), showing exactly where a new block goes, and a format bar over a
  * text selection: the inspector's rich field's tools (marks; code and link; lists, and in a list their indents),
- * the least used moving into a More formatting menu when the bar wouldn't fit the width.
+ * the least used moving into a More formatting menu when the bar wouldn't fit the width. A table cell also
+ * gets row and column actions plus add controls at the table's edges.
  * @tier editor
  * @a11y The block toolbar and the format bar are named toolbars of named icon buttons; every action also has a key (§3.2, §3.3).
  * @key Enter: edit the selected block's text
@@ -15,6 +16,8 @@
  * @key Ctrl + Shift + D: duplicate it
  * @key Delete: delete it
  * @key Ctrl + B / Ctrl + I / Ctrl + Shift + X / Ctrl + K: bold, italic, strikethrough, link, while editing text
+ * @key Tab / Shift + Tab: move to the next / previous table cell
+ * @key Enter / Shift + Enter: move down / up a table column
  * @key Ctrl + ] / Ctrl + [: in a list, indent the item more / less (three levels at most)
  * @key Ctrl + Alt + 0 / 2 / 3 / 4, Ctrl + Shift + 7 / 8 / 9: turn a text block into a paragraph, a heading, a list or a quote (also while editing it)
  */
@@ -50,7 +53,7 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     <IconButton label="Delete" icon="delete" size="sm" shape="square" tooltip="top" data-chrome-op="delete" />
   </div>
   <div class="format" role="toolbar" aria-label="Text" data-chrome-format hidden>
-    <span class="group">
+    <span class="group" data-chrome-block-tools>
       <IconButton label="Bold (Ctrl+B)" icon="bold" size="sm" shape="square" tooltip="top" pressed={false} data-chrome-format-op="bold" />
       <IconButton label="Italic (Ctrl+I)" icon="italic" size="sm" shape="square" tooltip="top" pressed={false} data-chrome-format-op="italic" />
       <IconButton label="Strikethrough (Ctrl+Shift+X)" icon="strikethrough" size="sm" shape="square" tooltip="top" pressed={false} data-chrome-format-op="strikethrough" />
@@ -70,7 +73,34 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     <span class="more" data-chrome-more hidden>
       <IconButton label="More formatting" icon="more" size="sm" shape="square" tooltip="top" aria-controls="chrome-more-menu" aria-expanded="false" data-chrome-more-toggle="" />
       <span class="more-menu" id="chrome-more-menu" role="group" aria-label="More formatting" data-chrome-more-menu hidden></span>
-    </span>  </div>
+    </span>
+  </div>
+  <div class="table-actions" role="toolbar" aria-label="Table cell" data-chrome-table-actions hidden>
+    <IconButton label="Row actions" icon="more" size="md" shape="square" tooltip="top" aria-haspopup="menu" aria-controls="chrome-table-menu" aria-expanded="false" data-chrome-table-menu-toggle="row" />
+    <IconButton label="Column actions" icon="more" size="md" shape="square" tooltip="top" aria-haspopup="menu" aria-controls="chrome-table-menu" aria-expanded="false" data-chrome-table-menu-toggle="column" />
+  </div>
+  <div class="table-add row" data-chrome-table-add="row" hidden>
+    <IconButton label="Add row" icon="plus" size="md" shape="square" variant="primary" tooltip="top" />
+  </div>
+  <div class="table-add column" data-chrome-table-add="column" hidden>
+    <IconButton label="Add column" icon="plus" size="md" shape="square" variant="primary" tooltip="top" />
+  </div>
+  <div class="table-menu" id="chrome-table-menu" role="menu" aria-label="Table actions" data-chrome-table-menu hidden>
+    <div role="group" aria-label="Row actions" data-chrome-table-menu-group="row">
+      <button type="button" role="menuitem" data-chrome-table-op="insert-row-above">Insert row above</button>
+      <button type="button" role="menuitem" data-chrome-table-op="insert-row-below">Insert row below</button>
+      <button type="button" role="menuitem" data-chrome-table-op="move-row-up">Move row up</button>
+      <button type="button" role="menuitem" data-chrome-table-op="move-row-down">Move row down</button>
+      <button type="button" role="menuitem" data-chrome-table-op="delete-row">Delete row</button>
+    </div>
+    <div role="group" aria-label="Column actions" data-chrome-table-menu-group="column">
+      <button type="button" role="menuitem" data-chrome-table-op="insert-column-left">Insert column left</button>
+      <button type="button" role="menuitem" data-chrome-table-op="insert-column-right">Insert column right</button>
+      <button type="button" role="menuitem" data-chrome-table-op="move-column-left">Move column left</button>
+      <button type="button" role="menuitem" data-chrome-table-op="move-column-right">Move column right</button>
+      <button type="button" role="menuitem" data-chrome-table-op="delete-column">Delete column</button>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -133,7 +163,9 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
   }
 
   .toolbar,
-  .format {
+  .format,
+  .table-actions,
+  .table-menu {
     position: absolute;
     inset-inline-start: var(--x, 0);
     inset-block-start: var(--y, 0);
@@ -151,6 +183,58 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
   .format {
     gap: var(--space-2);
     transform: translate(-50%, calc(-100% - var(--space-2)));
+  }
+
+  .table-actions {
+    gap: var(--space-1);
+    transform: translate(-100%, calc(-100% - var(--space-2)));
+  }
+
+  .table-add {
+    position: absolute;
+    inset-inline-start: var(--x, 0);
+    inset-block-start: var(--y, 0);
+  }
+
+  .table-add.row {
+    transform: translate(-50%, var(--space-2));
+  }
+
+  .table-add.column {
+    transform: translate(calc(-100% - var(--space-2)), -50%);
+  }
+
+  .table-menu {
+    display: grid;
+    transform: translate(-100%, var(--space-2));
+  }
+
+  .table-menu [role='group'] {
+    display: grid;
+  }
+
+  .table-menu button {
+    min-block-size: var(--c-control-height-md);
+    padding-inline: var(--space-3);
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: start;
+  }
+
+  .table-menu button:active {
+    background: var(--color-bg-hover);
+  }
+
+  @media (hover: hover) {
+    .table-menu button:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .table-menu button:disabled {
+    color: var(--color-text-muted);
   }
 
   /* the format bar's groups, a little apart: marks; code and link; lists */
@@ -242,7 +326,11 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
   .box[hidden],
   .toolbar[hidden],
   .format[hidden],
-  .insert[hidden] {
+  .insert[hidden],
+  .table-actions[hidden],
+  .table-add[hidden],
+  .table-menu[hidden],
+  .table-menu [hidden] {
     display: none;
   }
 

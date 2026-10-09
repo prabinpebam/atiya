@@ -4,6 +4,7 @@
  * A row with fewer cells than columns is filled with empty ones. Pure, so both directions are unit-tested.
  */
 import { TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, type Block } from '../../content/schema';
+import { plainText } from '../../content/markdown';
 
 type Table = Extract<Block, { type: 'table' }>;
 
@@ -40,8 +41,8 @@ export function textToTable(text: string): { ok: true; columns: string[]; rows: 
   if (lines.length < 2) return { ok: false, why: 'Write the column headings on the first line, and at least one row under them.' };
   const columns = splitCells(lines[0]);
   if (columns.length > TABLE_MAX_COLUMNS) return { ok: false, why: `Keep it to ${TABLE_MAX_COLUMNS} columns.` };
-  if (columns.some((c) => !c)) return { ok: false, why: 'Give every column a heading.' };
-  if (columns.some((c) => c.length > 80)) return { ok: false, why: 'Keep each column heading to 80 characters.' };
+  if (columns.some((c) => !plainText(c).trim())) return { ok: false, why: 'Give every column a heading.' };
+  if (columns.some((c) => plainText(c).trim().length > 80)) return { ok: false, why: 'Keep each column heading to 80 visible characters.' };
   if (lines.length - 1 > TABLE_MAX_ROWS) return { ok: false, why: `Keep it to ${TABLE_MAX_ROWS} rows.` };
   const rows: string[][] = [];
   for (let n = 1; n < lines.length; n++) {

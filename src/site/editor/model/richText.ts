@@ -3,7 +3,7 @@
  * that HTML back to Markdown through the same subset, parser and serializer as the canvas and the site,
  * so what the field shows is what the page shows. Pure, so the unit tests run it without a browser.
  */
-import { parseMarkdown, renderBlocks, serializeBlocks, serializeInline } from '../../content/markdown';
+import { normalize, parseMarkdown, renderBlocks, serializeBlocks, serializeInline, type Inline } from '../../content/markdown';
 import type { Block } from '../../content/schema';
 import { blocksOf, type MiniNode } from './dom';
 
@@ -19,6 +19,33 @@ export function pastedMarkdown(blocks: Block[]): string {
     .map((b) => (b.type === 'text' ? b.markdown : b.type === 'heading' || b.type === 'quote' ? serializeInline([{ t: 'text', v: b.text }]) : ''))
     .filter(Boolean)
     .join('\n\n');
+}
+
+/** Pasted content as one table cell: inline marks kept, every block boundary flattened to one space. */
+export function pastedCellMarkdown(blocks: Block[]): string {
+  const parts: Inline[][] = [];
+  const oneLine = (nodes: Inline[]): Inline[] =>
+    nodes.map((n): Inline => {
+      if (n.t === 'br') return { t: 'text', v: ' ' };
+      if (n.t === 'strong' || n.t === 'em' || n.t === 'del' || n.t === 'link') return { ...n, c: oneLine(n.c) };
+      return n;
+    });
+  const take = (md: string) => {
+    for (const b of parseMarkdown(md)) {
+      if (b.t === 'p') parts.push(oneLine(b.c));
+      else parts.push(...b.items.map(oneLine));
+    }
+  };
+  for (const b of blocks) {
+    if (b.type === 'text') take(b.markdown);
+    else if (b.type === 'heading' || b.type === 'subheading' || b.type === 'marker' || b.type === 'quote') parts.push([{ t: 'text', v: b.text }]);
+    else if (b.type === 'table') [...b.columns, ...b.rows.flat()].forEach(take);
+  }
+  return serializeInline(
+    normalize(
+      parts.flatMap((part, index): Inline[] => (index ? [{ t: 'text', v: ' ' }, ...part] : part)),
+    ),
+  );
 }
 
 /** The toolbar's groups, in order: the marks, the words that are code or go somewhere, and lists. */

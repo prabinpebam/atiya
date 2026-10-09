@@ -376,6 +376,7 @@ The build renders a protected page with the same layouts and components as any o
   - **Pictures** decrypt when they come near the viewport, at the one width the layout and the screen's pixel density need, and become `blob:` URLs. The lightbox asks for the full size when it opens.
   - A picture inserted after the page loaded is pointed at the page's chosen colour theme before its files are revealed. An explicit Light choice therefore keeps the light version even when the operating system is dark; later theme changes still update every picture together.
   - **Videos** decrypt whole when they come near the viewport and play from a `blob:` URL, which seeks normally. Web Crypto decrypts a file in one piece, so for a moment the browser holds the sealed bytes, the plain bytes and the video's blob: about three times the file. That's why a sealed video is capped at **10 MB** (V27), about 30 MB at its peak.
+- **A remote YouTube or Vimeo facade** still waits for the reader's press. Its iframe overrides the protected page's `same-origin` referrer policy with `strict-origin-when-cross-origin`: the provider receives only the site's origin, which its player needs to identify the embed, and never the private page's opaque path.
 - **Memory:** a page's `blob:` URLs are revoked when the page is left, and on sign-out.
 
 ## 6. Building and deploying

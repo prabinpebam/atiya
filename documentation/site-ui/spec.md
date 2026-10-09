@@ -152,7 +152,7 @@ See [the design system](design-system.md) §5 for the catalogue. What sets them 
   - focus returns to the opener;
   - any `a[data-lightbox]` joins a group, so galleries, figures and carousels don't import it.
 - **Carousel:** scroll-snap, no rotation, real ends, dots and a counter.
-- **Video embed:** a local file with captions, or a YouTube or Vimeo facade that requests nothing until pressed.
+- **Video embed:** a local file with captions, or a YouTube or Vimeo facade that requests nothing until pressed. The player iframe uses `strict-origin-when-cross-origin`, so providers receive the site origin they require without receiving a private page's path.
 - **Prose:** Markdown set as a magazine sets it, with the breakout grid, a drop cap (`initial-letter` where supported), old-style figures and a marigold dinkus.
 
 ### 4.4 The design library

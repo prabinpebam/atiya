@@ -35,6 +35,7 @@ function inlineIn(node: MiniNode, inLink: boolean): Inline[] {
     }
     if (c.nodeType !== ELEMENT) continue;
     const tag = c.nodeName.toLowerCase();
+    if ((c.getAttribute?.('class') ?? '').split(/\s+/).includes('sr-only')) continue;
     if (tag === 'br') out.push({ t: 'br' });
     else if (tag === 'b' || tag === 'strong') out.push({ t: 'strong', c: inlineIn(c, inLink) });
     else if (tag === 'i' || tag === 'em') out.push({ t: 'em', c: inlineIn(c, inLink) });
@@ -95,6 +96,17 @@ export function listTreeOf(el: MiniNode, depth = 0): ListTree {
 export function markdownOf(el: MiniNode): string {
   if (isList(el)) return serializeBlocks([listOf(listTreeOf(el))]);
   return serializeBlocks([{ t: 'p', c: inlineOf(el) }]);
+}
+
+/** A table cell's element back to one line of inline Markdown. */
+export function cellMarkdownOf(el: MiniNode): string {
+  const oneLine = (nodes: Inline[]): Inline[] =>
+    nodes.map((n): Inline => {
+      if (n.t === 'br') return { t: 'text', v: ' ' };
+      if (n.t === 'strong' || n.t === 'em' || n.t === 'del' || n.t === 'link') return { ...n, c: oneLine(n.c) };
+      return n;
+    });
+  return serializeInline(normalize(oneLine(inlineOf(el))));
 }
 
 const BLOCK = new Set(['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'section', 'article']);

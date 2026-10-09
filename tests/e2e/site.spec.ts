@@ -17,6 +17,15 @@ const noSeriousViolations = async (page: Page) => {
 };
 
 test.describe('site design system', () => {
+  test('the table keeps rich headings and semantic row and column scopes', async ({ page }) => {
+    await page.goto('/design/compounds/table/');
+    const table = page.locator('.example', { has: page.getByRole('heading', { name: 'A comparison', exact: true }) }).getByRole('table');
+    await expect(table.locator('thead strong')).toHaveText('Typeface');
+    expect(await table.locator('thead th').evaluateAll((cells) => cells.every((cell) => cell.getAttribute('scope') === 'col'))).toBe(true);
+    const rowNames = page.locator('.example', { has: page.getByRole('heading', { name: 'Rows named by their first column', exact: true }) }).getByRole('table').locator('tbody th');
+    expect(await rowNames.evaluateAll((cells) => cells.length > 0 && cells.every((cell) => cell.getAttribute('scope') === 'row'))).toBe(true);
+  });
+
   test('links keep the parent domain in this tab and label links that leave it', async ({ page }) => {
     await page.goto('/side-projects/atiya/');
     const sameParent = page.locator('main a[href="https://prabinpebam.github.io/atiya/"]');
@@ -868,11 +877,19 @@ test.describe('content', () => {
 
   test('the video: our own poster and play button, its length, and the player only after Play', async ({ page }) => {
     const remote: string[] = [];
+    const referers: string[] = [];
     await page.route(/youtube(-nocookie)?\.com|ytimg\.com/, (route) => {
       remote.push(route.request().url());
+      if (route.request().url().includes('/embed/')) referers.push(route.request().headers().referer ?? '');
       return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>player</title>' });
     });
     await page.goto(ARTICLE);
+    await page.evaluate(() => {
+      const referrer = document.createElement('meta');
+      referrer.name = 'referrer';
+      referrer.content = 'same-origin';
+      document.head.append(referrer);
+    });
     const play = page.getByRole('link', { name: 'Play video: The team video (2 minutes 20 seconds)' });
     await play.scrollIntoViewIfNeeded();
     await expect(play.locator('img')).toHaveAttribute('srcset', /\d+w/);
@@ -882,7 +899,9 @@ test.describe('content', () => {
     const frame = page.locator('iframe.video-embed-frame');
     await expect(frame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/vIVX-KVUWAE?autoplay=1');
     await expect(frame).toHaveAttribute('title', 'The team video');
+    await expect(frame).toHaveAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
     await expect.poll(() => remote.some((u) => u.includes('youtube-nocookie.com/embed/vIVX-KVUWAE'))).toBe(true);
+    await expect.poll(() => referers).toContain(`${new URL(page.url()).origin}/`);
   });
 
   const STRUCTURE = JSON.parse(readFileSync(new URL('structures/site.json', CONTENT), 'utf8')) as SiteStructure;
