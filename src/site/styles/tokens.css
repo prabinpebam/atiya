@@ -279,6 +279,8 @@
   --c-table-cell-min: 8rem;
   --c-table-row-heading-min: 10rem;
   --c-table-cell-max: 16rem;
+  --c-gallery-row-height: 14rem;
+  --c-gallery-row-height-small: 10rem;
   --c-image-radius: var(--radius-lg);
   --c-image-radius-feature: var(--radius-xl);
   --c-image-placeholder: var(--color-bg-sunk);

@@ -617,6 +617,8 @@ describe('changes, named as resources', () => {
     expect(resourceOf('/content/media/shared/x.webp')).toBe(resourceOf('/content/media/shared/x.json'));
     // a picture's dark version is part of the picture
     expect(resourceOf('/content/media/shared/x.dark.webp')).toBe(resourceOf('/content/media/shared/x.json'));
+    expect(resourceOf('/content/media/shared/x.poster.webp')).toBe(resourceOf('/content/media/shared/x.json'));
+    expect(resourceOf('/content/media/shared/x.dark.poster.webp')).toBe(resourceOf('/content/media/shared/x.json'));
     const grouped = groupChanges(
       [
         { key: '/content/site.json', status: 'changed' },

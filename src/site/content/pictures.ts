@@ -41,7 +41,7 @@ async function metadata(master: string): Promise<ImageMetadata> {
   url.searchParams.append('origFormat', format);
   // exactly what an import gives in dev (astro's emitImageMetadata)
   const src = '/@fs/' + (fileURLToPath(url) + url.search).replace(/\\/g, '/').replace(/^\//, '');
-  const meta = { src, width: m.width!, height: m.height!, format } as ImageMetadata;
+  const meta = { src, width: m.width!, height: m.pageHeight ?? m.height!, format } as ImageMetadata;
   Object.defineProperty(meta, 'fsPath', { enumerable: false, writable: false, value: abs.replace(/\\/g, '/') });
   devMeta.set(abs, { mtime, meta });
   return meta;
@@ -68,6 +68,8 @@ export interface DarkPicture {
   height: number;
   full: string;
   thumb: string;
+  /** A still first frame shown when the reader asks for less motion. */
+  poster?: string;
   /** The colour of its edges, for a background behind it (media.md §9.1). */
   bg: string;
 }
@@ -80,6 +82,8 @@ export interface Picture {
   height: number;
   full: string;
   thumb: string;
+  /** A still first frame shown when the reader asks for less motion. */
+  poster?: string;
   focus?: string;
   caption?: string;
   credit?: string;
@@ -122,8 +126,14 @@ async function record(master: string, urls: string[]) {
 }
 
 /** One master at a slot's widths: what the page needs to show it. */
-async function sized(master: string, slot: Slot) {
+async function sized(master: string, slot: Slot, posterMaster?: string) {
   const meta = await metadata(master);
+  if (posterMaster) {
+    const posterMeta = await metadata(posterMaster);
+    const [poster, thumb, bg] = await Promise.all([webp(posterMeta, Math.min(posterMeta.width, 1600)), webp(posterMeta, Math.min(posterMeta.width, THUMB)), edgeColour(master)]);
+    await record(master, [meta.src, poster, thumb]);
+    return { src: meta.src, srcset: '', width: meta.width, height: meta.height, full: meta.src, thumb, poster, bg };
+  }
   const wanted = WIDTHS[slot];
   const widths = [...new Set([...wanted.filter((w) => w < meta.width), Math.min(meta.width, Math.max(...wanted))])].sort((a, b) => a - b);
   const urls = await Promise.all(widths.map((w) => webp(meta, w)));
@@ -142,7 +152,7 @@ async function sized(master: string, slot: Slot) {
 
 export async function picture(id: string, slot: Slot): Promise<Picture> {
   const m = getMedia(id);
-  const [light, dark] = await Promise.all([sized(m.master, slot), m.darkMaster ? sized(m.darkMaster, slot) : undefined]);
+  const [light, dark] = await Promise.all([sized(m.master, slot, m.posterMaster), m.darkMaster ? sized(m.darkMaster, slot, m.darkPosterMaster) : undefined]);
   return {
     ...light,
     alt: m.decorative ? '' : (m.alt ?? ''),

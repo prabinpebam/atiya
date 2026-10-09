@@ -1,7 +1,8 @@
 /**
  * Media, as edit mode changes it (documentation/editor/spec.md §6): uploads (any format sharp reads: JPEG,
  * PNG, WebP, AVIF, GIF, TIFF, SVG; the browser turns others into PNG first) become WebP masters within
- * the budgets (at most 2560 px on the long side and 1.5 MB, metadata stripped, transparency kept), each
+ * the budgets (at most 2560 px on the long side and 1.5 MB, metadata stripped, transparency and GIF
+ * animation kept), each
  * with its JSON sidecar, in one store transaction, cut first to a crop chosen before the upload, if any;
  * a sidecar's details save to the picture; a picture can have a dark mode version (a second master,
  * `<name>.dark.webp`, named in its sidecar), which its crops, its deletion and its replacement carry along;
@@ -36,26 +37,40 @@ function folderOf(owner: string): string {
 const refuse = (file: string, message: string, path?: string): Result => ({ ok: false, status: 422, issues: [{ file, message, ...(path ? { path } : {}) }] });
 
 /** What sharp reads a picture with: an SVG is drawn at the size a master can be, not at its nominal 72 dpi. */
-async function readOptions(input: Buffer): Promise<{ failOn: 'error'; density?: number; animated: false }> {
+async function readOptions(input: Buffer): Promise<{ failOn: 'error'; density?: number; animated: boolean }> {
   const { default: sharp } = await import('sharp');
   const meta = await sharp(input, { failOn: 'error' }).metadata();
-  if (meta.format !== 'svg' || !meta.width || !meta.height) return { failOn: 'error', animated: false };
+  const animated = (meta.pages ?? 1) > 1;
+  if (meta.format !== 'svg' || !meta.width || !meta.height) return { failOn: 'error', animated };
   return { failOn: 'error', animated: false, density: Math.min(100000, Math.max(72, Math.round((72 * MAX_SIDE) / Math.max(meta.width, meta.height)))) };
 }
 
 /** A master in WebP within the budgets: lossless when the source has transparency (if it fits), stripped of metadata. */
-export async function toMaster(input: Buffer): Promise<{ bytes: Buffer; width: number; height: number }> {
+export async function toMaster(input: Buffer): Promise<{ bytes: Buffer; width: number; height: number; poster?: Buffer }> {
   const { default: sharp } = await import('sharp');
-  const base = sharp(input, await readOptions(input)).rotate().resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
+  const options = await readOptions(input);
+  const source = await sharp(input, { failOn: 'error' }).metadata();
+  const animated = options.animated;
+  const base = sharp(input, options).rotate().resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
   const meta = await base.clone().metadata();
   const alpha = !!meta.hasAlpha;
-  let bytes = alpha ? await base.clone().webp({ lossless: true }).toBuffer() : Buffer.alloc(0);
+  const animation = animated ? { loop: source.loop ?? 0, ...(source.delay?.length ? { delay: source.delay } : {}) } : {};
+  let bytes = !animated && alpha ? await base.clone().webp({ lossless: true }).toBuffer() : Buffer.alloc(0);
   for (let q = 88; !bytes.length || bytes.length > MAX_BYTES; q -= 6) {
     if (q < 60) throw new Error("can't be made small enough (1.5 MB) without losing too much: use a smaller picture");
-    bytes = await base.clone().webp({ quality: q, alphaQuality: 100 }).toBuffer();
+    bytes = await base.clone().webp({ quality: q, alphaQuality: 100, ...animation }).toBuffer();
   }
-  const out = await sharp(bytes).metadata();
-  return { bytes, width: out.width ?? 0, height: out.height ?? 0 };
+  const out = await sharp(bytes, { animated }).metadata();
+  if (animated && out.pages !== source.pages) throw new Error(`couldn't preserve all ${source.pages} animation frames`);
+  let poster: Buffer | undefined;
+  if (animated) {
+    const posterBase = sharp(input, { failOn: 'error', page: 0, pages: 1 }).rotate().resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
+    for (let q = 82; !poster || poster.length > MAX_BYTES; q -= 6) {
+      if (q < 60) throw new Error("its still poster can't be made small enough (1.5 MB) without losing too much: use a smaller picture");
+      poster = await posterBase.clone().webp({ quality: q, alphaQuality: 100 }).toBuffer();
+    }
+  }
+  return { bytes, width: out.width ?? 0, height: out.pageHeight ?? out.height ?? 0, ...(poster ? { poster } : {}) };
 }
 
 export interface Upload {
@@ -71,7 +86,9 @@ export interface Upload {
 /** The picture upright, cut to a crop given in another size of it (the browser's), as a lossless PNG. */
 export async function cutUpload(input: Buffer, crop: NonNullable<Upload['crop']>): Promise<Buffer> {
   const { default: sharp } = await import('sharp');
-  const upright = await sharp(input, await readOptions(input)).rotate().png().toBuffer({ resolveWithObject: true });
+  const options = await readOptions(input);
+  if (options.animated) throw new Error("an animated picture can't be cropped without stopping it; upload it whole, then set its focus point");
+  const upright = await sharp(input, options).rotate().png().toBuffer({ resolveWithObject: true });
   const { width, height } = upright.info;
   const kx = width / crop.of.width;
   const ky = height / crop.of.height;
@@ -101,7 +118,7 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
   if (u.file.bytes.length > MAX_UPLOAD) return refuse('content/media', 'is larger than 20 MB', 'file');
   const snap = readSnapshot();
   const folder = folderOf(u.owner);
-  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark)?\.\w+$/, '')));
+  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark(?:\.poster)?|\.poster)?\.\w+$/, '')));
   const name = unique(slugify(u.file.name.replace(/\.[^.]+$/, '')) || 'picture', taken);
   let master: Awaited<ReturnType<typeof toMaster>>;
   try {
@@ -112,6 +129,7 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
   const sidecar: ImageMedia = {
     kind: 'image',
     file: `${name}.webp`,
+    ...(master.poster ? { animation: { poster: `${name}.poster.webp` } } : {}),
     ...(u.decorative ? { decorative: true } : { alt: (u.alt ?? '').trim() }),
     ...(u.caption?.trim() ? { caption: u.caption.trim() } : {}),
     visibility: 'public',
@@ -120,7 +138,13 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
   if (!parsed.success) return { ok: false, status: 422, issues: parsed.error.issues.map((i) => ({ file: `content/media/${u.owner}/${name}.json`, path: i.path.join('.'), message: i.message })) };
   const masterKey = `${folder}${name}.webp`;
   const sidecarKey = `${folder}${name}.json`;
-  const r = await commit({ changes: [{ key: masterKey, bytes: master.bytes }, { key: sidecarKey, bytes: jsonBytes(sidecar) }], ifMatch: { [masterKey]: null, [sidecarKey]: null } });
+  const posterKey = master.poster ? `${folder}${name}.poster.webp` : null;
+  const changes: Change[] = [
+    { key: masterKey, bytes: master.bytes },
+    ...(posterKey && master.poster ? [{ key: posterKey, bytes: master.poster }] : []),
+    { key: sidecarKey, bytes: jsonBytes(sidecar) },
+  ];
+  const r = await commit({ changes, ifMatch: { [masterKey]: null, ...(posterKey ? { [posterKey]: null } : {}), [sidecarKey]: null } });
   return r.ok ? { ...r, id: `${u.owner}/${name}` } : r;
 }
 
@@ -152,8 +176,8 @@ export async function saveSidecar(id: string, sidecar: ImageMedia | VideoMedia, 
   const image = current.value as ImageMedia;
   // the master's file name is fixed (replacing a picture keeps its id and file), and its dark version is
   // set only by setDark and removeDark: the details form never changes either
-  const { dark: _ignored, ...rest } = sidecar as ImageMedia;
-  const next: ImageMedia = { ...rest, kind: 'image', file: image.file, ...(image.dark ? { dark: image.dark } : {}) };
+  const { dark: _ignoredDark, animation: _ignoredAnimation, ...rest } = sidecar as ImageMedia;
+  const next: ImageMedia = { ...rest, kind: 'image', file: image.file, ...(image.animation ? { animation: image.animation } : {}), ...(image.dark ? { dark: image.dark } : {}) };
   return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
 }
 
@@ -273,13 +297,35 @@ export async function replaceMaster(id: string, bytes: Buffer): Promise<Result> 
   if (!sc) return refuse(key.slice(1), "doesn't exist");
   const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);
   if (!sc.value.file.endsWith('.webp')) return refuse(key.slice(1), 'only a WebP master can be replaced here');
-  const master = await toMaster(bytes);
-  return commit({ changes: [{ key: masterKey, bytes: master.bytes }], ifMatch: { [masterKey]: versionOf(readFile(masterKey)) } });
+  let master: Awaited<ReturnType<typeof toMaster>>;
+  try {
+    master = await toMaster(bytes);
+  } catch (e) {
+    return refuse(key.slice(1), `couldn't be read as a picture: ${(e as Error).message}`, 'file');
+  }
+  const posterKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${posterFileOf(id)}`;
+  const oldPosterKey = posterKeyOf(id, sc.value);
+  const { animation: _animation, ...rest } = sc.value;
+  const next: ImageMedia = { ...rest, ...(master.poster ? { animation: { poster: posterFileOf(id) } } : {}) };
+  const changes: Change[] = [
+    { key: masterKey, bytes: master.bytes },
+    { key, bytes: jsonBytes(next) },
+    ...(master.poster ? [{ key: posterKey, bytes: master.poster }] : []),
+  ];
+  const ifMatch: Record<string, string | null> = { [masterKey]: versionOf(readFile(masterKey)), [key]: sc.version, ...(master.poster ? { [posterKey]: versionOf(readFile(posterKey)) } : {}) };
+  if (oldPosterKey && !master.poster) {
+    changes.push({ key: oldPosterKey, bytes: null });
+    ifMatch[oldPosterKey] = versionOf(readFile(oldPosterKey));
+  }
+  return commit({ changes, ifMatch });
 }
 
 const sidecarKey = (id: string) => `${baseOf(id)}${id}.json`;
 const masterKeyOf = (id: string, sc: ImageMedia) => `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${sc.file}`;
 const darkKeyOf = (id: string, sc: ImageMedia) => (sc.dark ? `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${sc.dark.file}` : null);
+const posterFileOf = (id: string, dark = false) => `${id.slice(id.lastIndexOf('/') + 1)}${dark ? '.dark' : ''}.poster.webp`;
+const posterKeyOf = (id: string, sc: ImageMedia) => (sc.animation ? `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${sc.animation.poster}` : null);
+const darkPosterKeyOf = (id: string, sc: ImageMedia) => (sc.dark?.animation ? `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${sc.dark.animation.poster}` : null);
 /** Where a picture's dark version goes: beside its master, `<name>.dark.webp`. */
 const darkFileOf = (id: string) => `${id.slice(id.lastIndexOf('/') + 1)}.dark.webp`;
 
@@ -301,22 +347,29 @@ export async function setDark(id: string, bytes: Buffer, crop?: Upload['crop']):
     return refuse(key.slice(1), `couldn't be read as a picture: ${(e as Error).message}`, 'file');
   }
   const darkKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
+  const darkPosterKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${posterFileOf(id, true)}`;
   const oldKey = darkKeyOf(id, sc.value);
+  const oldPosterKey = darkPosterKeyOf(id, sc.value);
   const changes: Change[] = [
     { key: darkKey, bytes: master.bytes },
-    { key, bytes: jsonBytes({ ...sc.value, dark: { file: darkFileOf(id) } }) },
+    ...(master.poster ? [{ key: darkPosterKey, bytes: master.poster }] : []),
+    { key, bytes: jsonBytes({ ...sc.value, dark: { file: darkFileOf(id), ...(master.poster ? { animation: { poster: posterFileOf(id, true) } } : {}) } }) },
   ];
-  const ifMatch: Record<string, string | null> = { [darkKey]: versionOf(readFile(darkKey)), [key]: sc.version };
+  const ifMatch: Record<string, string | null> = { [darkKey]: versionOf(readFile(darkKey)), [key]: sc.version, ...(master.poster ? { [darkPosterKey]: versionOf(readFile(darkPosterKey)) } : {}) };
   // a dark version kept in another format before: this one replaces it
   if (oldKey && oldKey !== darkKey) {
     changes.push({ key: oldKey, bytes: null });
     ifMatch[oldKey] = versionOf(readFile(oldKey));
   }
+  if (oldPosterKey && !master.poster) {
+    changes.push({ key: oldPosterKey, bytes: null });
+    ifMatch[oldPosterKey] = versionOf(readFile(oldPosterKey));
+  }
   const res = await commit({ changes, ifMatch });
   if (!res.ok) return res;
   const { default: sharp } = await import('sharp');
   const light = await sharp(readFile(masterKeyOf(id, sc.value))!).metadata();
-  return { ...res, width: master.width, height: master.height, lightWidth: light.width, lightHeight: light.height };
+  return { ...res, width: master.width, height: master.height, lightWidth: light.width, lightHeight: light.pageHeight ?? light.height };
 }
 
 /** Removes a picture's dark mode version: the same picture shows in both modes again. */
@@ -327,13 +380,15 @@ export async function removeDark(id: string): Promise<Result> {
   if (!sc) return refuse(key.slice(1), "doesn't exist");
   const darkKey = darkKeyOf(id, sc.value);
   if (!darkKey) return refuse(key.slice(1), 'has no dark version', 'dark');
+  const darkPosterKey = darkPosterKeyOf(id, sc.value);
   const { dark: _d, ...rest } = sc.value;
   return commit({
     changes: [
       { key, bytes: jsonBytes(rest) },
       { key: darkKey, bytes: null },
+      ...(darkPosterKey ? [{ key: darkPosterKey, bytes: null }] : []),
     ],
-    ifMatch: { [key]: sc.version, [darkKey]: versionOf(readFile(darkKey)) },
+    ifMatch: { [key]: sc.version, [darkKey]: versionOf(readFile(darkKey)), ...(darkPosterKey ? { [darkPosterKey]: versionOf(readFile(darkPosterKey)) } : {}) },
   });
 }
 
@@ -353,7 +408,7 @@ export async function cropSource(id: string): Promise<{ id: string; sidecar: Ima
   const { default: sharp } = await import('sharp');
   const m = await sharp(bytes).metadata();
   const width = m.width ?? 0;
-  const height = m.height ?? 0;
+  const height = m.pageHeight ?? m.height ?? 0;
   const c = sc.value.crop;
   // a copy whose original has gone is cropped from itself, whole
   const rect = c && original && c.x + c.width <= width && c.y + c.height <= height ? { x: c.x, y: c.y, width: c.width, height: c.height } : null;
@@ -369,6 +424,7 @@ export async function cropSource(id: string): Promise<{ id: string; sidecar: Ima
 export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean } = {}): Promise<Result & { id?: string; width?: number; height?: number }> {
   const src = await cropSource(id);
   if (!src) return refuse(`content/media/${id}.json`, "doesn't exist");
+  if (src.sidecar.animation || src.sidecar.dark?.animation) return refuse(`content/media/${id}.json`, "an animated picture can't be cropped without stopping it; set its focus point to control the visible area", 'crop');
   const r = { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   const whole = Object.values(r).every((v) => Number.isInteger(v));
   if (!whole || r.x < 0 || r.y < 0 || r.width < 1 || r.height < 1 || r.x + r.width > src.width || r.y + r.height > src.height) {
@@ -429,7 +485,7 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   const owner = src.id.slice(0, src.id.lastIndexOf('/'));
   const folder = `${baseOf(src.id)}${owner}/`;
   const snap = readSnapshot();
-  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark)?\.\w+$/, '')));
+  const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark(?:\.poster)?|\.poster)?\.\w+$/, '')));
   const shape = ratioLabel(r.width, r.height);
   const name = unique(`${src.id.slice(owner.length + 1)}-${/^\d+:\d+$/.test(shape) ? shape.replace(':', 'x') : 'crop'}`, taken);
   const { file: _file, focus: _focus, crop: _crop, dark: _dark, ...details } = src.sidecar;
@@ -455,12 +511,17 @@ export async function deleteMedia(id: string): Promise<Result> {
   const sc = readDoc<ImageMedia | VideoMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
   const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);
-  const extraKey = sc.value.kind === 'video' ? (sc.value.poster ? key.replace(/[^/]+\.json$/, sc.value.poster.file) : null) : darkKeyOf(id, sc.value);
+  const extraKeys =
+    sc.value.kind === 'video'
+      ? [sc.value.poster ? key.replace(/[^/]+\.json$/, sc.value.poster.file) : null]
+      : [darkKeyOf(id, sc.value), posterKeyOf(id, sc.value), darkPosterKeyOf(id, sc.value)];
+  const presentExtras = extraKeys.filter((extraKey): extraKey is string => !!extraKey);
   const changes: Change[] = [
     { key, bytes: null },
     { key: masterKey, bytes: null },
-    ...(extraKey ? [{ key: extraKey, bytes: null }] : []),
+    ...presentExtras.map((extraKey) => ({ key: extraKey, bytes: null })),
   ];
-  const ifMatch: Record<string, string | null> = { [key]: sc.version, [masterKey]: versionOf(readFile(masterKey)), ...(extraKey ? { [extraKey]: versionOf(readFile(extraKey)) } : {}) };
+  const ifMatch: Record<string, string | null> = { [key]: sc.version, [masterKey]: versionOf(readFile(masterKey)) };
+  for (const extraKey of presentExtras) ifMatch[extraKey] = versionOf(readFile(extraKey));
   return commit({ changes, ifMatch });
 }

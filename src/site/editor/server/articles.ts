@@ -214,8 +214,8 @@ export async function deleteArticle(id: string, withMedia: boolean, ifMatch: Rec
     const seen = new Set<string>();
     for (const master of snap.masters) {
       if (!master.startsWith(folder)) continue;
-      // a picture's master and its dark version are one picture: deleted together, with their sidecar
-      const mediaId = master.slice(prefix.length).replace(/(?:\.dark)?\.\w+$/, '');
+      // a picture's master, animation posters and dark version are one picture: deleted together, with their sidecar
+      const mediaId = master.slice(prefix.length).replace(/(?:\.dark(?:\.poster)?|\.poster)?\.\w+$/, '');
       if (others.includes(`"${mediaId}"`)) continue;
       const sidecar = `${prefix}${mediaId}.json`;
       if (!seen.has(sidecar)) {

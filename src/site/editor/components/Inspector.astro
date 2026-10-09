@@ -282,7 +282,7 @@ const STATUS: SelectOption[] = [
                   {b.type === 'gallery' && (
                     <section class="pane" data-section="layout" aria-labelledby={id(i, 's-layout')}>
                       <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-layout')}>Layout and width</Heading></div>
-                      <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout ?? 'grid'} options={[{ value: 'grid', label: 'Grid', description: 'Equal cells' }, { value: 'mosaic', label: 'Mosaic', description: 'The first picture leads' }, { value: 'row', label: 'Row', description: 'A filmstrip' }]} />
+                      <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout ?? 'grid'} options={[{ value: 'grid', label: 'Justified', description: 'Equal-height rows' }, { value: 'mosaic', label: 'Mosaic', description: 'The first picture leads' }, { value: 'row', label: 'Row', description: 'A filmstrip' }]} />
                       <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
                     </section>
                   )}

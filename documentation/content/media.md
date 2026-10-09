@@ -13,7 +13,7 @@ Where the pictures, videos and files the content uses live in the repository, wh
 <figure class="slate-figure" data-diagram="media">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" role="img" aria-labelledby="cp-media__title cp-media__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="cp-media__title">The media pipeline</title>
-<desc id="cp-media__desc">A master file and its JSON sidecar are committed under content/media. The content check validates alt text, credit and budgets. At build, images go through Astro's image pipeline to WebP sizes from 480 to 2560 pixels; video, captions and PDFs are copied as they are. Both go to dist/ and are published on GitHub Pages. Later, the backend's media service can provide the masters and the sizes instead.</desc>
+<desc id="cp-media__desc">A master file and its JSON sidecar are committed under content/media. The content check validates alt text, credit and budgets. At build, static images go through Astro's image pipeline; animated WebP masters are emitted directly with still posters. Video, captions and PDFs are copied as they are. The output goes to dist and is published on GitHub Pages. Later, the backend's media service can provide the masters and the sizes instead.</desc>
 <g id="cp-media__master" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="cp-media__body-1" x="40" y="60" width="220" height="96" rx="14" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <text x="58" y="90" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-media__body-1" data-slate-fit-padding="16">Master + sidecar</text>
@@ -28,8 +28,8 @@ Where the pictures, videos and files the content uses live in the repository, wh
 <g id="cp-media__images" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
 <rect id="cp-media__body-3" x="540" y="30" width="200" height="96" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
 <text x="558" y="60" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="cp-media__body-3" data-slate-fit-padding="16">Images</text>
-<text x="558" y="84" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-media__body-3" data-slate-fit-padding="16">astro:assets → WebP</text>
-<text x="558" y="106" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-media__body-3" data-slate-fit-padding="16">480 to 2560 px</text>
+<text x="558" y="84" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-media__body-3" data-slate-fit-padding="16">Static: astro:assets</text>
+<text x="558" y="106" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="cp-media__body-3" data-slate-fit-padding="16">Animated: direct + poster</text>
 </g>
 <g id="cp-media__files" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
 <rect id="cp-media__body-4" x="540" y="162" width="200" height="72" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
@@ -71,7 +71,7 @@ Where the pictures, videos and files the content uses live in the repository, wh
 <polygon points="150,157 155,166 145,166" fill="var(--color-neutral-fg-2)" />
 </g>
 </svg>
-<figcaption>The media pipeline. A master and its JSON sidecar are committed under content/media. The content check validates the metadata and the budgets. At build, Astro's image pipeline makes WebP sizes for each place the picture is used, and video, captions and PDFs are copied as they are; the output is published with the pages. Later, the backend's media service provides the masters and, optionally, the sizes.</figcaption>
+<figcaption>The media pipeline. A master and its JSON sidecar are committed under content/media. The content check validates the metadata and the budgets. At build, Astro's image pipeline makes sizes for static pictures; animated WebP masters are emitted directly with still posters. Video, captions and PDFs are copied as they are. The output is published with the pages. Later, the backend's media service provides the masters and, optionally, the sizes.</figcaption>
 </figure>
 
 <details class="slate-figure-data">
@@ -81,7 +81,8 @@ Where the pictures, videos and files the content uses live in the repository, wh
 |---|---|---|---|
 | Author | A master file and its sidecar | Committed under `content/media/` | Any editor |
 | Check | Sidecars, masters | Pass, or errors naming the file (alt text, credit, budget) | `npm run content:check` |
-| Build, images | The master and each use's layout slot | WebP at the slot's widths, width and height, focus | `astro:assets` (`getImage`) |
+| Build, static images | The master and each use's layout slot | WebP at the slot's widths, width and height, focus | `astro:assets` (`getImage`) |
+| Build, animated images | Animated WebP master and its still poster | Original animation URL, responsive still poster, width, height, focus | Media resolver; animation bypasses transforms |
 | Build, other files | Video, captions, posters, PDFs | Copied to `dist/media/` | A small build integration |
 | Publish | `dist/` | GitHub Pages | The deploy workflow |
 | Later | The backend's media service | Masters by URL, or ready-made sizes | The resolver's `remote` or `cdn` strategy |
@@ -155,6 +156,7 @@ content/media/
 | `source` | all | no | Where a third-party asset came from (URL) |
 | `focus` | image | no | The point to keep in a crop, as CSS `object-position` (default `50% 50%`) |
 | `crop` | image | no | A cropped copy's record: `from` (the original's ID) and `x`, `y`, `width`, `height` in the original's pixels. Cropping the copy again starts from there ([§9](#9-shapes-thumbnails-and-crops)) |
+| `animation` | image | no | Present when the WebP master has more than one frame: `{ "poster": "cover.poster.webp" }`. The poster is its still first frame for reduced motion and thumbnails |
 | `dark` | image | no | Its dark mode version: `{ "file": "cover.dark.webp" }`, a second master beside it, shown instead when the page is dark ([§10](#10-dark-mode-versions)). Left out, the same picture shows in both modes |
 | `poster` | video | yes | A media ID (an image with alt text) |
 | `captions` | video | yes | `[{ "file": "walkthrough.en.vtt", "srclang": "en", "label": "English", "default": true }]` |
@@ -168,6 +170,7 @@ content/media/
 | Kind | Master format | Limit | Notes |
 |---|---|---|---|
 | Photo, painting, render | JPEG (quality 85 or more), WebP or AVIF | 2560 px on the long side, 1.5 MB | The build makes the smaller sizes |
+| Animated picture | GIF on upload; animated WebP master | 2560 px per frame on the long side, 1.5 MB | Every frame, delay and loop is preserved; a still WebP poster sits beside it |
 | Screenshot, UI, diagram with text | PNG or WebP (lossless) | 2560 px, 2 MB | Redraw sensitive diagrams schematically ([confidential work](../ia-navigation/06-content-inventory-and-mapping.md)); don't blur |
 | Vector diagram | SVG | 200 KB | Sanitised: no scripts, handlers or external references |
 | Video | MP4 (H.264, AAC) or WebM, kept as uploaded | Under 100 MB (GitHub's limit for a file) | With a poster (a frame from it) and a caption; long videos are better on YouTube or Vimeo as an `embed` ([§12](#12-video-files)) |
@@ -191,6 +194,7 @@ content/media/
 | Card, thumbnail | 240, 480 | the card's width |
 
 - **Format:** WebP at quality 80; AVIF can be added as a second source later without touching content. Widths above the master's own size are skipped.
+- **Animation:** a GIF upload is decoded with all of its frames and written as an animated WebP, with its frame delays and loop count preserved. Astro's image transforms flatten animation, so an animated master bypasses `astro:assets` and is emitted directly; its still poster can use the normal image pipeline. `Image` selects that poster for `prefers-reduced-motion: reduce`, including the right poster for a dark mode version. Thumbnails use the poster rather than starting many animations.
 - **Output** goes to `dist/_astro/` with content-hashed names, so a changed master gets a new URL and caches never serve an old picture.
 - **Caching:** Astro keeps generated images in `node_modules/.astro/assets`, and CI caches that folder between runs, so an unchanged master isn't processed again.
 - **Crops and focus:** the lead picture's slot crops to its ratio around `focus` (CSS `object-position`, as the `Image` fundamental does); cards never crop ([§9](#9-shapes-thumbnails-and-crops)).
@@ -260,6 +264,15 @@ Every place a page shows a picture lets it choose how (6 October 2026, the owner
 - **The colour is worked out when the picture is prepared** (`src/site/content/pictures.ts`, the pure `edgeColour.ts`), once per master, and handed to the page as data; no colour is written in a stylesheet. It follows the theme with the picture's dark mode version.
 - **Tiles** are drawn by the `Image` fundamental's script from the file the browser chose (the dark one in dark mode); until then, and without JavaScript, the picture itself shows, fitted.
 
+### 9.2 Justified galleries
+
+The gallery layout stored as `grid` is presented in edit mode as **Justified**. It keeps source order and uses fixed-height rows: 14 rem normally and 10 rem on a phone. The browser measures the gallery's actual column width and recalculates on a `ResizeObserver`, so the same content fits a reading column, a wide breakout and a resized window.
+
+- A pure dynamic-programming pass considers one to eight consecutive pictures for each row. For each candidate it subtracts the exact gaps, scales every cell's natural aspect ratio by the same amount, and scores the horizontal or vertical crop needed to keep the fixed row height. Crop beyond 25 percent is penalised heavily, so another picture count wins when it is materially kinder to the set.
+- A complete row consumes the column exactly. Widths are rounded to pixels and the final cell takes the rounding remainder, so the right edge and every gutter stay exact. Each picture fills its cell around its stored focus point.
+- The final incomplete row keeps natural widths and the same row height instead of stretching its pictures. An extreme panorama that is wider than the row even on its own becomes a full-width single-picture row; its unavoidable side crop is the exception.
+- Without JavaScript, the same links remain in source order in a wrapping, equal-height flex layout. The one page-level Lightbox still enhances them; it is not part of the geometry.
+
 ## 10. Dark mode versions
 
 A picture made for a light page can glare on a dark one, or vanish into it (a diagram with dark lines, a logo, a screenshot). So a picture can have a **dark mode version**: the same picture, in colours for a dark page.
@@ -269,7 +282,7 @@ A picture made for a light page can glare on a dark one, or vanish into it (a di
   - The `Image` fundamental draws it as a `<picture>` whose dark `<source>` answers to the system's `prefers-color-scheme`. Pictures are the one thing that follows a chosen theme by script, since an `<img>` can't take its picture from a colour role: the page's head points each dark source at a chosen theme as the page is read (so the first picture fetched is the right one), and `followThemeInPictures` (`src/site/scripts/theme.ts`) keeps them on it as the theme changes.
   - Figures, galleries, carousels (their filmstrips too), lead pictures, cards, a video's poster, the hero and avatars all pass it on. The lightbox opens the dark version while the page is dark, and changes with the theme while it's open. The social card (`og:image`) stays the light picture.
 - **The same shape:** a dark version should match its picture's shape, or a page shifts when the theme changes. Edit mode says so when they differ; the page still lays out without a jump, since the dark source carries its own size.
-- **It follows the picture:** a crop cuts it from the same place (scaled, if its size differs), Replace keeps it, and Delete deletes it. It's within the same budgets as every master ([§4](#4-formats-and-budgets)), transparency kept.
+- **It follows the picture:** a static crop cuts a static dark version from the same place (scaled, if its size differs); an animated picture is not destructively cropped. Replace keeps the dark version, and Delete deletes it and any still poster. It's within the same budgets as every master ([§4](#4-formats-and-budgets)), transparency and animation kept.
 - **In edit mode** it's added, replaced and removed from the picture's details in Media ([its spec, §6.2](../editor/spec.md#62-dark-mode-versions)), and the library marks the pictures that have one.
 
 ## 11. Files to download

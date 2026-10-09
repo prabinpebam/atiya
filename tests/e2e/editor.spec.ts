@@ -16,6 +16,10 @@ import sharp from 'sharp';
 import { FIXTURE, REMOTE, reset } from '../../scripts/editor-test-server.mjs';
 
 const ARTICLE = 'do-what-makes-you-proud';
+const ANIMATED_GIF = Buffer.from(
+  '47494638396101000100800000000000ffffff21ff0b4e45545343415045322e30030100000021f90400080000002c000000000100010000020244010021f90400100000002c00000000010001000002024c01003b',
+  'hex',
+);
 const articleFile = (id = ARTICLE) => join(FIXTURE, 'content/articles', `${id}.json`);
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
 const status = (page: Page) => page.locator('[data-editor-status]');
@@ -1094,6 +1098,32 @@ test.describe('editor', () => {
     await page.goto(`/_edit/media/?id=articles/${ARTICLE}/tshirt`);
     await expect(page.locator('[data-editor-media-details]').getByRole('link', { name: /Article: Do what makes you proud/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete the picture' })).toBeDisabled();
+  });
+
+  test('media: an animated GIF keeps its frames and timing, with a still version for reduced motion', async ({ page }) => {
+    await page.goto('/_edit/media/');
+    await page.getByText('Upload a picture').click();
+    await page.locator('[data-editor-upload] input[type="file"]').setInputFiles({ name: 'E2E Motion.gif', mimeType: 'image/gif', buffer: ANIMATED_GIF });
+    await page.locator('[data-editor-upload]').getByLabel('Alt text').fill('Two changing pixels');
+    await page.locator('[data-editor-upload]').getByRole('button', { name: 'Upload it' }).click();
+    await expect(page).toHaveURL(/\?id=shared\/e2e-motion$/, { timeout: 30_000 });
+
+    const master = await sharp(readFileSync(join(FIXTURE, 'content/media/shared/e2e-motion.webp')), { animated: true }).metadata();
+    expect(master).toMatchObject({ pages: 2, pageHeight: 1, loop: 0, delay: [80, 160] });
+    expect(readJson(join(FIXTURE, 'content/media/shared/e2e-motion.json'))).toMatchObject({ animation: { poster: 'e2e-motion.poster.webp' } });
+
+    const details = page.locator('[data-editor-media-details]');
+    const image = details.locator('img').first();
+    const still = details.locator('source[media="(prefers-reduced-motion: reduce)"]').first();
+    await expect(image).toBeVisible();
+    await expect(still).toHaveCount(1);
+    const animatedSrc = await image.evaluate((img) => (img as HTMLImageElement).currentSrc);
+    const posterSrc = await still.getAttribute('srcset');
+    expect(animatedSrc).not.toBe(posterSrc);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).currentSrc)).toContain(posterSrc!);
+    await expect(details).toContainText('An animated picture stays whole.');
+    await expect(details.getByRole('button', { name: 'Crop the picture' })).toHaveCount(0);
   });
 
   test('the "+" shows only inside the main column between blocks, dismisses when stale, and adds a block there', async ({ page }) => {

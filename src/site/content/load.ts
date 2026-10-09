@@ -18,6 +18,10 @@ export interface MediaRecord extends ImageMedia {
   master: string;
   /** Its dark mode version's master (….dark.webp), if it has one. */
   darkMaster?: string;
+  /** Its still first frame, when its master is animated. */
+  posterMaster?: string;
+  /** Its dark mode version's still first frame, when that master is animated. */
+  darkPosterMaster?: string;
   origin: Origin;
 }
 
@@ -205,20 +209,39 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       const dir = file.slice(0, file.lastIndexOf('/') + 1);
       const master = dir + s.file;
       const darkMaster = s.dark ? dir + s.dark.file : undefined;
+      const posterMaster = s.animation ? dir + s.animation.poster : undefined;
+      const darkPosterMaster = s.dark?.animation ? dir + s.dark.animation.poster : undefined;
       if (s.file.replace(/\.\w+$/, '') !== name) add(file, `the master "${s.file}" must share the sidecar's name`, 'file');
       else if (!masters.has(master)) add(file, `its master ${master.slice(1)} is missing`);
+      else if (s.animation && s.animation.poster.replace(/\.poster\.webp$/, '') !== name) add(file, `the animation poster "${s.animation.poster}" must share the sidecar's name (${name}.poster.webp)`, 'animation.poster');
+      else if (posterMaster && !masters.has(posterMaster)) add(file, `its animation poster ${posterMaster.slice(1)} is missing`, 'animation.poster');
       else if (s.dark && s.dark.file.replace(/\.dark\.\w+$/, '') !== name) add(file, `the dark version "${s.dark.file}" must share the sidecar's name (${name}.dark.webp)`, 'dark.file');
       else if (darkMaster && !masters.has(darkMaster)) add(file, `its dark version ${darkMaster.slice(1)} is missing`, 'dark.file');
-      else if (claimMedia(file, mediaKey)) media.set(mediaKey, { ...s, id: mediaKey, master, ...(darkMaster ? { darkMaster } : {}), origin });
+      else if (s.dark?.animation && s.dark.animation.poster.replace(/\.dark\.poster\.webp$/, '') !== name) add(file, `the dark animation poster "${s.dark.animation.poster}" must share the sidecar's name (${name}.dark.poster.webp)`, 'dark.animation.poster');
+      else if (darkPosterMaster && !masters.has(darkPosterMaster)) add(file, `its dark animation poster ${darkPosterMaster.slice(1)} is missing`, 'dark.animation.poster');
+      else if (claimMedia(file, mediaKey))
+        media.set(mediaKey, {
+          ...s,
+          id: mediaKey,
+          master,
+          ...(darkMaster ? { darkMaster } : {}),
+          ...(posterMaster ? { posterMaster } : {}),
+          ...(darkPosterMaster ? { darkPosterMaster } : {}),
+          origin,
+        });
     } else add(file, 'not a resource the content model knows');
   }
   for (const master of masters) {
-    const dark = /\.dark\.\w+$/.test(master);
-    const poster = /\.poster\.\w+$/.test(master);
-    const sidecar = master.replace(dark ? /\.dark\.\w+$/ : poster ? /\.poster\.\w+$/ : /\.\w+$/, '.json');
+    const darkPoster = /\.dark\.poster\.\w+$/.test(master);
+    const dark = !darkPoster && /\.dark\.\w+$/.test(master);
+    const poster = !darkPoster && /\.poster\.\w+$/.test(master);
+    const sidecar = master.replace(darkPoster ? /\.dark\.poster\.\w+$/ : dark ? /\.dark\.\w+$/ : poster ? /\.poster\.\w+$/ : /\.\w+$/, '.json');
+    const doc = docs[sidecar] as { kind?: string; poster?: { file?: string }; animation?: { poster?: string }; dark?: { file?: string; animation?: { poster?: string } } } | null;
     if (!(sidecar in docs)) add(master, `a master without its sidecar (${sidecar.split('/').pop()})`);
-    else if (dark && (docs[sidecar] as { dark?: { file?: string } } | null)?.dark?.file !== master.split('/').pop()) add(master, `a dark version its picture doesn't name (add it as "dark" in ${sidecar.split('/').pop()}, or delete it)`);
-    else if (poster && (docs[sidecar] as { poster?: { file?: string } } | null)?.poster?.file !== master.split('/').pop()) add(master, `a poster its video doesn't name (add it as "poster" in ${sidecar.split('/').pop()}, or delete it)`);
+    else if (darkPoster && doc?.dark?.animation?.poster !== master.split('/').pop()) add(master, `a dark animation poster its picture doesn't name (add it as "dark.animation" in ${sidecar.split('/').pop()}, or delete it)`);
+    else if (dark && doc?.dark?.file !== master.split('/').pop()) add(master, `a dark version its picture doesn't name (add it as "dark" in ${sidecar.split('/').pop()}, or delete it)`);
+    else if (poster && (doc?.kind === 'video' ? doc.poster?.file : doc?.animation?.poster) !== master.split('/').pop())
+      add(master, `a poster its ${doc?.kind === 'video' ? 'video' : 'picture'} doesn't name (add it to ${sidecar.split('/').pop()}, or delete it)`);
   }
   if (!site) add('content/site.json', 'missing');
   if (!structure) add('content/structures/site.json', 'missing');

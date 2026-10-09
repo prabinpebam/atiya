@@ -104,11 +104,19 @@ export function followTheme(root: HTMLElement, target: Pick<Window, 'addEventLis
  */
 export const darkSourceMedia = (t: Theme): string => (t === 'dark' ? 'all' : t === 'light' ? 'not all' : '(prefers-color-scheme: dark)');
 
+/** The dark still frame for an animation follows both the chosen theme and reduced motion. */
+export const darkReducedSourceMedia = (t: Theme): string =>
+  t === 'dark' ? '(prefers-reduced-motion: reduce)' : t === 'light' ? 'not all' : '(prefers-color-scheme: dark) and (prefers-reduced-motion: reduce)';
+
 /** Points every picture's dark source under `root` at a theme (the browser then shows the right version). */
 export function syncDarkSources(root: ParentNode, t: Theme): void {
   const media = darkSourceMedia(t);
   root.querySelectorAll<HTMLSourceElement>('source[data-dark]').forEach((s) => {
     if (s.media !== media) s.media = media;
+  });
+  const reducedMedia = darkReducedSourceMedia(t);
+  root.querySelectorAll<HTMLSourceElement>('source[data-dark-reduced]').forEach((s) => {
+    if (s.media !== reducedMedia) s.media = reducedMedia;
   });
 }
 

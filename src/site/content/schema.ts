@@ -31,6 +31,11 @@ export const pictureStyle = z.strictObject({ display: display.optional(), backgr
 /** A figure's frame: its own shape (left out), or one of these. */
 export const FIGURE_SHAPES = ['1/1', '4/3', '3/2', '16/9', '21/9'] as const;
 
+const animation = z.strictObject({
+  /** A still first frame used when the reader asks for less motion and by thumbnail-only surfaces. */
+  poster: z.string().regex(/^[a-z0-9-]+(?:\.dark)?\.poster\.webp$/),
+});
+
 export const imageMedia = z
   .strictObject({
     kind: z.literal('image'),
@@ -42,6 +47,8 @@ export const imageMedia = z
     licence: z.strictObject({ name: z.string(), url: z.url().optional(), owner: z.string().optional() }).optional(),
     source: z.url().optional(),
     focus: z.string().regex(/^\d{1,3}% \d{1,3}%$/).optional(),
+    /** Present only when the WebP master has more than one frame. */
+    animation: animation.optional(),
     /** A cropped copy: the picture it was cut from, and where (in that picture's pixels). Cropping it again starts from there. */
     crop: z.strictObject({ from: mediaId, x: z.int().min(0), y: z.int().min(0), width: z.int().min(1), height: z.int().min(1) }).optional(),
     /**
@@ -49,7 +56,7 @@ export const imageMedia = z
      * dark (the reader's theme, or their system's). Its words (alt, caption, credit) and focus are the
      * picture's. Without one, the same picture shows in both modes.
      */
-    dark: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.dark\.(webp|jpg|jpeg|png|avif)$/) }).optional(),
+    dark: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.dark\.(webp|jpg|jpeg|png|avif)$/), animation: animation.optional() }).optional(),
     visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
   })
   .refine((m) => m.alt || m.decorative, { message: 'an image needs alt text unless it is decorative', path: ['alt'] })

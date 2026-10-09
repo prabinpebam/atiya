@@ -196,7 +196,7 @@ function mediaFiles(article: Article, from: 'content' | 'private', onlyIfUnshare
     out.push(sidecar);
     const dir = `/${from}/media/${id.slice(0, id.lastIndexOf('/') + 1)}`;
     const name = id.slice(id.lastIndexOf('/') + 1);
-    for (const m of snap.masters) if (m.startsWith(dir) && new RegExp(`^${name}(\\.dark|\\.poster)?\\.\\w+$`).test(m.slice(dir.length))) out.push(m);
+    for (const m of snap.masters) if (m.startsWith(dir) && new RegExp(`^${name}(?:\\.dark(?:\\.poster)?|\\.poster)?\\.\\w+$`).test(m.slice(dir.length))) out.push(m);
   }
   return out;
 }

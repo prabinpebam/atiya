@@ -133,6 +133,33 @@ test.describe('site design system', () => {
     await expect(trigger).toBeFocused();
   });
 
+  test('a justified gallery keeps equal row heights, exact full-row edges and a natural final row', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/compounds/gallery/');
+    const gallery = page.locator('[data-justified-gallery]').first();
+    await expect(gallery).toHaveAttribute('data-ready', '');
+    const geometry = () =>
+      gallery.evaluate((list) => {
+        const outer = list.getBoundingClientRect();
+        const cards = [...list.querySelectorAll<HTMLElement>('[data-gallery-item]')].map((card) => {
+          const box = card.getBoundingClientRect();
+          return { top: box.top, right: box.right, width: box.width, height: box.height };
+        });
+        return { outer: { right: outer.right, width: outer.width }, cards };
+      });
+    const desktop = await geometry();
+    expect(new Set(desktop.cards.map((card) => card.height))).toEqual(new Set([224]));
+    expect(desktop.cards.filter((card) => card.top === desktop.cards[0]!.top)).toHaveLength(3);
+    expect(Math.abs(desktop.cards[2]!.right - desktop.outer.right)).toBeLessThan(1);
+    expect(desktop.cards[3]!.width).toBeLessThan(desktop.outer.width);
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    await expect.poll(async () => (await geometry()).cards[0]!.height).toBe(160);
+    const phone = await geometry();
+    expect(new Set(phone.cards.map((card) => card.height))).toEqual(new Set([160]));
+    expect(await page.locator('html').evaluate((html) => html.scrollWidth)).toBe(360);
+  });
+
   test('the carousel: no autoplay, the buttons and dots move it, and its ends are real', async ({ page }) => {
     await page.goto('/design/demo/article-layout/');
     const carousel = page.getByRole('region', { name: 'The planet, in seven pictures' });

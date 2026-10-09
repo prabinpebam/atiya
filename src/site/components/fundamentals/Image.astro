@@ -10,7 +10,8 @@
  * own size across the frame (the picture itself shows instead until the page's script has drawn the tiles).
  * A picture can have a dark mode version: it shows instead when the page is dark (the reader's theme,
  * or their system's), through a <picture> whose dark source scripts/theme.ts points at the theme; tiles
- * follow it too.
+ * follow it too. An animated picture can carry a still poster, which replaces it when the reader asks
+ * for reduced motion.
  * Behind it there can be a colour taken from the picture itself (bg: its edges' colour, and its dark
  * version's), filling the room round a fitted or actual-size picture and its transparent parts; and its
  * corners can be squared (rounded false), and a drop shadow can fall under it (shadow), following its own
@@ -37,6 +38,8 @@ interface Props {
   height: number;
   /** The same picture at other widths, for the browser to choose. */
   srcset?: string;
+  /** A still first frame used when the reader asks for reduced motion. */
+  poster?: string;
   /** How wide it shows at each breakpoint, for srcset. */
   sizes?: string;
   /** Its frame's shape. Omit for the picture's own shape (or the cell it fills). */
@@ -54,7 +57,7 @@ interface Props {
   /** Fill the container's height too (a gallery cell, a carousel slide). */
   fill?: boolean;
   /** Its dark mode version (its own src, srcset and size), shown when the page is dark. Without one, the picture shows in both modes. */
-  dark?: { src: string; srcset?: string; width: number; height: number };
+  dark?: { src: string; srcset?: string; width: number; height: number; poster?: string };
   /** A colour behind it (the picture's own edge colour, and its dark version's), filling the space round it and its transparent parts. Left out, nothing behind it. */
   bg?: { light: string; dark?: string };
   /** Rounded corners (the radius above); false squares them. */
@@ -63,7 +66,7 @@ interface Props {
   shadow?: boolean;
 }
 
-const { src, alt, width, height, srcset, sizes, ratio, fit = 'cover', display, focus, radius: asked = 'default', priority = false, fill = false, dark, bg, rounded = true, shadow = false } = Astro.props;
+const { src, alt, width, height, srcset, poster, sizes, ratio, fit = 'cover', display, focus, radius: asked = 'default', priority = false, fill = false, dark, bg, rounded = true, shadow = false } = Astro.props;
 const radius = rounded ? asked : 'none';
 const mode = display ?? (fit === 'contain' ? 'fit' : 'fill');
 // actual and tile draw in a frame of their own (the ratio's, the cell's, or else the picture's own shape)
@@ -94,9 +97,11 @@ const imgAlt = tile ? '' : alt;
       aria-label={tile && alt ? alt : undefined}
       style={frameVars}
     >
-      {dark ? (
+      {dark || poster ? (
         <picture class="themed">
-          <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? shownSizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />
+          {dark?.poster && <source srcset={dark.poster} media="(prefers-color-scheme: dark) and (prefers-reduced-motion: reduce)" width={dark.width} height={dark.height} data-dark-reduced="" />}
+          {dark && <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? shownSizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />}
+          {poster && <source srcset={poster} media="(prefers-reduced-motion: reduce)" width={width} height={height} />}
           <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} style={vars} />
         </picture>
       ) : (
@@ -105,9 +110,11 @@ const imgAlt = tile ? '' : alt;
     </span>
   ) : (
     <span class="shell" data-picture data-radius={radius} data-fill={fill ? '' : undefined}>
-    {dark ? (
+    {dark || poster ? (
     <picture class="themed">
-      <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? sizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />
+      {dark?.poster && <source srcset={dark.poster} media="(prefers-color-scheme: dark) and (prefers-reduced-motion: reduce)" width={dark.width} height={dark.height} data-dark-reduced="" />}
+      {dark && <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? sizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />}
+      {poster && <source srcset={poster} media="(prefers-reduced-motion: reduce)" width={width} height={height} />}
       <img
         class="image"
         src={src}

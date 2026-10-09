@@ -36,6 +36,10 @@ const seed = () => {
   put('/content/articles/a.json', article());
 };
 const png = (w: number, h: number, alpha = false) => sharp({ create: { width: w, height: h, channels: alpha ? 4 : 3, background: alpha ? { r: 10, g: 120, b: 200, alpha: 0.5 } : { r: 200, g: 120, b: 60 } } }).png().toBuffer();
+const animatedGif = Buffer.from(
+  '47494638396101000100800000000000ffffff21ff0b4e45545343415045322e30030100000021f90400080000002c000000000100010000020244010021f90400100000002c00000000010001000002024c01003b',
+  'hex',
+);
 const saved = process.env.CONTENT_ROOT;
 const savedPrivate = process.env.PRIVATE_ROOT;
 
@@ -153,6 +157,24 @@ describe('uploads', () => {
     expect((await sharp(readFileSync(join(content, 'media/shared/scan.webp'))).metadata()).width).toBe(40);
   });
 
+  it('keeps every GIF frame and its timing in an animated WebP, with a still reduced-motion poster', async () => {
+    expect(await upload({ file: { name: 'motion.gif', bytes: animatedGif }, owner: 'shared', alt: 'Two changing pixels' })).toMatchObject({ ok: true, id: 'shared/motion' });
+    const master = readFileSync(join(content, 'media/shared/motion.webp'));
+    const meta = await sharp(master, { animated: true }).metadata();
+    expect(meta).toMatchObject({ format: 'webp', pages: 2, pageHeight: 1, loop: 0, delay: [80, 160] });
+    const poster = await sharp(readFileSync(join(content, 'media/shared/motion.poster.webp'))).metadata();
+    expect(poster.format).toBe('webp');
+    expect(poster.pages ?? 1).toBe(1);
+    expect(readDoc('/content/media/shared/motion.json')?.value).toMatchObject({ file: 'motion.webp', animation: { poster: 'motion.poster.webp' } });
+  });
+
+  it('refuses a destructive crop of an animation instead of silently stopping it', async () => {
+    const crop = { x: 0, y: 0, width: 1, height: 1, of: { width: 1, height: 1 } };
+    expect(await upload({ file: { name: 'motion.gif', bytes: animatedGif }, owner: 'shared', alt: 'Two changing pixels', crop })).toMatchObject({ ok: false, status: 422 });
+    const added = (await upload({ file: { name: 'motion.gif', bytes: animatedGif }, owner: 'shared', alt: 'Two changing pixels' })) as { id: string };
+    expect(await cropMedia(added.id, { x: 0, y: 0, width: 1, height: 1 })).toMatchObject({ ok: false, status: 422 });
+  });
+
   it("read the form's crop only when it's a rectangle in a size", () => {
     expect(parseUploadCrop(JSON.stringify({ x: 1, y: 2, width: 3, height: 4, of: { width: 10, height: 10 } }))).toEqual({ x: 1, y: 2, width: 3, height: 4, of: { width: 10, height: 10 } });
     for (const bad of [null, '', 'nope', JSON.stringify({ x: 1, y: 2, width: 0, height: 4, of: { width: 10, height: 10 } }), JSON.stringify({ x: -1, y: 0, width: 3, height: 4, of: { width: 10, height: 10 } }), JSON.stringify({ x: 0, y: 0, width: 3, height: 4 })]) expect(parseUploadCrop(bad)).toBeNull();
@@ -219,6 +241,18 @@ describe('the crop: a copy, never the original (documentation/editor/spec.md §6
     expect(await deleteMedia(copy.id)).toMatchObject({ ok: true });
     expect(existsSync(join(content, `media/${copy.id}.dark.webp`))).toBe(false);
     expect(existsSync(join(content, `media/${copy.id}.webp`))).toBe(false);
+  });
+
+  it("an animated dark version keeps its frames and poster, then removes both", async () => {
+    const { id } = await add();
+    const darkResult = await setDark(id, animatedGif);
+    expect(darkResult).toMatchObject({ ok: true, width: 1, height: 1 });
+    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ dark: { file: 'mark.dark.webp', animation: { poster: 'mark.dark.poster.webp' } } });
+    expect((await sharp(readFileSync(join(content, 'media/articles/a/mark.dark.webp')), { animated: true }).metadata()).pages).toBe(2);
+    expect(existsSync(join(content, 'media/articles/a/mark.dark.poster.webp'))).toBe(true);
+    expect(await removeDark(id)).toMatchObject({ ok: true });
+    expect(existsSync(join(content, 'media/articles/a/mark.dark.webp'))).toBe(false);
+    expect(existsSync(join(content, 'media/articles/a/mark.dark.poster.webp'))).toBe(false);
   });
 
   it('refuses a rectangle outside the picture or in part pixels, and writes nothing', async () => {
@@ -297,6 +331,17 @@ describe("a picture's details, Replace and Delete", () => {
     expect(await replaceMaster(id, await png(1000, 1000))).toMatchObject({ ok: true });
     expect((await sharp(readFileSync(join(content, 'media/articles/a/cover.webp'))).metadata()).width).toBe(1000);
     expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ alt: 'A cover' });
+  });
+
+  it('replace a static master with animation and back without leaving its poster behind', async () => {
+    const { id } = await add();
+    expect(await replaceMaster(id, animatedGif)).toMatchObject({ ok: true });
+    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ animation: { poster: 'cover.poster.webp' }, alt: 'A cover' });
+    expect((await sharp(readFileSync(join(content, 'media/articles/a/cover.webp')), { animated: true }).metadata()).pages).toBe(2);
+    expect(existsSync(join(content, 'media/articles/a/cover.poster.webp'))).toBe(true);
+    expect(await replaceMaster(id, await png(100, 100))).toMatchObject({ ok: true });
+    expect(readDoc(`/content/media/${id}.json`)?.value).not.toHaveProperty('animation');
+    expect(existsSync(join(content, 'media/articles/a/cover.poster.webp'))).toBe(false);
   });
 
   it('delete a picture nothing uses, and refuse one an article uses (a draft included)', async () => {

@@ -1,7 +1,7 @@
 ---
 /**
- * A set of pictures arranged as a quiet magazine gallery: a grid, a lead-image mosaic or a horizontal
- * row. Each picture is a full-size link that the page’s Lightbox can enhance. Photographs fill their
+ * A set of pictures arranged as a quiet magazine gallery: justified rows, a lead-image mosaic or a
+ * horizontal row. Each picture is a full-size link that the page’s Lightbox can enhance. Photographs fill their
  * cells; marks, logos and artwork that mustn't be cropped sit whole in theirs (fit contain), with no
  * background colour behind them.
  * @tier compound
@@ -17,6 +17,8 @@ export interface GalleryItem {
   src: string;
   /** Responsive sources for the displayed image. */
   srcset?: string;
+  /** A still first frame used when the reader asks for reduced motion. */
+  poster?: string;
   /** What the picture shows. */
   alt: string;
   /** The picture’s caption in the lightbox. */
@@ -32,7 +34,7 @@ export interface GalleryItem {
   /** Which part stays in a crop. */
   focus?: string;
   /** Its dark mode version, shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; bg?: string };
+  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; poster?: string; bg?: string };
   /** Its own edge colour (media.md §9.1), for a background behind it. */
   bg?: string;
 }
@@ -42,7 +44,7 @@ interface Props {
   items: GalleryItem[];
   /** A caption for the whole set. */
   caption?: string;
-  /** grid: equal cells; mosaic: first image leads; row: horizontal filmstrip. */
+  /** grid: justified equal-height rows; mosaic: first image leads; row: horizontal filmstrip. */
   layout?: 'grid' | 'mosaic' | 'row';
   /** Where the article layout may place it. */
   width?: 'content' | 'popout' | 'wide' | 'full';
@@ -65,22 +67,23 @@ interface Props {
 const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover', display, background = false, rounded = true, shadow = false } = Astro.props;
 const shown = display ?? (fit === 'contain' ? 'fit' : 'fill');
 const columns = items.length > 2 ? '3' : '2';
-const ratio = layout === 'row' ? '4/3' : '1/1';
+const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined;
 ---
 
 <figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width} data-square={rounded ? undefined : ''} data-shadow={shadow ? '' : undefined} data-gallery>
-  <div class="items" data-scrollbar>
+  <div class="items" data-scrollbar data-justified-gallery={layout === 'grid' ? '' : undefined}>
     {
       items.map((item) => {
         const full = item.full ?? item.src;
         const thumb = item.thumb ?? item.src;
         const itemCaption = item.caption ?? '';
         return (
-          <a class="card" href={full} data-lightbox={lightbox} data-caption={itemCaption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
+          <a class="card" href={full} data-gallery-item data-width={item.width} data-height={item.height} data-lightbox={lightbox} data-caption={itemCaption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
             <span class="image-shell">
               <Image
                 src={item.src}
                 srcset={item.srcset}
+                poster={item.poster}
                 sizes={sizes}
                 alt={item.alt}
                 width={item.width}
@@ -164,14 +167,37 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
     scroll-snap-align: start;
   }
 
-  @media (min-width: 40rem) {
-    .gallery[data-layout='grid'][data-columns='2'] .items {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .gallery[data-layout='grid'] .items {
+    display: flex;
+    flex-wrap: wrap;
+  }
 
-    .gallery[data-layout='grid'][data-columns='3'] .items,
+  .gallery[data-layout='grid'] .card {
+    flex: 1 1 var(--size-measure-narrow);
+    height: var(--c-gallery-row-height-small);
+  }
+
+  .gallery[data-layout='grid'] .items[data-ready] {
+    position: relative;
+    display: block;
+  }
+
+  .gallery[data-layout='grid'] .items[data-ready] .card {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: var(--gallery-item-width);
+    height: var(--gallery-item-height);
+    transform: translate(var(--gallery-item-left), var(--gallery-item-top));
+  }
+
+  @media (min-width: 40rem) {
     .gallery[data-layout='mosaic'] .items {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .gallery[data-layout='grid'] .card {
+      height: var(--c-gallery-row-height);
     }
 
     .gallery[data-layout='mosaic'] .card:first-child {
@@ -203,3 +229,50 @@ const ratio = layout === 'row' ? '4/3' : '1/1';
     }
   }
 </style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { justifyGallery } from '../../scripts/justifiedGallery';
+
+  each<HTMLElement>('[data-justified-gallery]', (list, signal) => {
+    const cards = [...list.querySelectorAll<HTMLElement>('[data-gallery-item]')];
+    let frame = 0;
+    const render = () => {
+      frame = 0;
+      const styles = getComputedStyle(list);
+      const gap = Number.parseFloat(styles.columnGap) || 0;
+      const rootStyles = getComputedStyle(document.documentElement);
+      const token = rootStyles.getPropertyValue(matchMedia('(min-width: 40rem)').matches ? '--c-gallery-row-height' : '--c-gallery-row-height-small').trim();
+      const rowHeight = token.endsWith('rem') ? Number.parseFloat(token) * Number.parseFloat(rootStyles.fontSize) : Number.parseFloat(token);
+      const layout = justifyGallery(
+        cards.map((card) => ({ width: Number(card.dataset.width), height: Number(card.dataset.height) })),
+        list.clientWidth,
+        rowHeight,
+        gap,
+      );
+      for (const box of layout.boxes) {
+        const card = cards[box.index]!;
+        card.style.setProperty('--gallery-item-left', `${box.left}px`);
+        card.style.setProperty('--gallery-item-top', `${box.top}px`);
+        card.style.setProperty('--gallery-item-width', `${box.width}px`);
+        card.style.setProperty('--gallery-item-height', `${box.height}px`);
+      }
+      list.style.height = `${layout.height}px`;
+      list.dataset.ready = '';
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(render);
+    };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(list);
+    signal.addEventListener(
+      'abort',
+      () => {
+        observer.disconnect();
+        if (frame) cancelAnimationFrame(frame);
+      },
+      { once: true },
+    );
+    schedule();
+  });
+</script>

@@ -33,6 +33,8 @@ export interface PictureDetails {
   id: string;
   src: string;
   srcset: string;
+  /** A still first frame used when the reader asks for reduced motion. */
+  poster?: string;
   width: number;
   height: number;
   /** The sidecar as it is on disk, its key (/content/media/… or /private/media/…) and its version (for the save's If-Match). */
@@ -40,7 +42,7 @@ export interface PictureDetails {
   key: string;
   version: string;
   /** Its dark mode version, if it has one. */
-  dark?: { src: string; srcset: string; width: number; height: number };
+  dark?: { src: string; srcset: string; poster?: string; width: number; height: number };
 }
 
 /** A video file's details (media.md §12): where it plays from, its poster, and its sidecar. */
@@ -73,6 +75,7 @@ interface Props {
 const { picture, video, usedIn, copies = [], original } = Astro.props;
 const media = (id: string) => withBase(`/_edit/media/?id=${id}`);
 const sc = picture?.sidecar;
+const animated = !!(sc?.animation || sc?.dark?.animation);
 const [fx, fy] = (sc?.focus ?? '50% 50%').split(' ').map((v) => parseInt(v, 10));
 const name = (picture ?? video)?.id.split('/').pop();
 const state = picture ? JSON.stringify({ id: picture.id, key: picture.key, version: picture.version, sidecar: sc }).replace(/</g, '\\u003c') : video ? JSON.stringify({ id: video.id, key: video.key, version: video.version, sidecar: video.sidecar }).replace(/</g, '\\u003c') : '';
@@ -149,7 +152,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             {isPrivate && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
           </div>
           <div class="focus" style={`--focus-x: ${fx}%; --focus-y: ${fy}%`} data-editor-focus>
-            <Image src={picture.src} srcset={picture.srcset} sizes="(max-width: 56rem) 100vw, 40vw" alt={sc.alt ?? ''} width={picture.width} height={picture.height} radius="default" />
+            <Image src={picture.src} srcset={picture.srcset} poster={picture.poster} sizes="(max-width: 56rem) 100vw, 40vw" alt={sc.alt ?? ''} width={picture.width} height={picture.height} radius="default" />
             <button class="hit" type="button" data-editor-focus-set aria-label="Focus point: where a crop must keep. Click the picture to set it." aria-describedby="media-focus-value" />
             <span class="marker" aria-hidden="true" />
           </div>
@@ -213,7 +216,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             </ul>
           )}
           <div class="actions">
-            <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>
+            {animated ? <Text variant="small" tone="muted">An animated picture stays whole. Set its focus point above to control what a frame keeps.</Text> : <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>}
           </div>
         </section>
 
@@ -223,11 +226,11 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             <>
               <div class="pair">
                 <figure class="side" data-scheme="light">
-                  <Image src={picture.src} alt="" width={picture.width} height={picture.height} ratio="4/3" fit="contain" radius="default" />
+                  <Image src={picture.src} poster={picture.poster} alt="" width={picture.width} height={picture.height} ratio="4/3" fit="contain" radius="default" />
                   <figcaption>Light</figcaption>
                 </figure>
                 <figure class="side" data-scheme="dark">
-                  <Image src={picture.dark.src} alt="" width={picture.dark.width} height={picture.dark.height} ratio="4/3" fit="contain" radius="default" />
+                  <Image src={picture.dark.src} poster={picture.dark.poster} alt="" width={picture.dark.width} height={picture.dark.height} ratio="4/3" fit="contain" radius="default" />
                   <figcaption>Dark</figcaption>
                 </figure>
               </div>

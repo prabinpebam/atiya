@@ -235,6 +235,26 @@ describe('the loader checks what it is given', () => {
     expect(problems({ ...base, '/content/media/articles/a/pic.json': { ...pic, dark: { file: 'pic-dark.webp' } } }, both).join('\n')).toMatch(/dark\.file/);
   });
 
+  it("an animated picture names its still poster, including an animated dark version", () => {
+    const pic = base['/content/media/articles/a/pic.json'];
+    const animated = {
+      ...base,
+      '/content/media/articles/a/pic.json': {
+        ...pic,
+        animation: { poster: 'pic.poster.webp' },
+        dark: { file: 'pic.dark.webp', animation: { poster: 'pic.dark.poster.webp' } },
+      },
+    };
+    const files = new Set([...masters, '/content/media/articles/a/pic.poster.webp', '/content/media/articles/a/pic.dark.webp', '/content/media/articles/a/pic.dark.poster.webp']);
+    expect(loadContent(animated, files).media.get('articles/a/pic')).toMatchObject({
+      posterMaster: '/content/media/articles/a/pic.poster.webp',
+      darkMaster: '/content/media/articles/a/pic.dark.webp',
+      darkPosterMaster: '/content/media/articles/a/pic.dark.poster.webp',
+    });
+    expect(problems(animated, new Set([...files].filter((file) => !file.endsWith('pic.poster.webp')))).join('\n')).toMatch(/animation\.poster: its animation poster .* is missing/);
+    expect(problems(base, new Set([...masters, '/content/media/articles/a/pic.poster.webp'])).join('\n')).toMatch(/a poster its picture doesn't name/);
+  });
+
   it('a video file (media.md §12): its sidecar names it and its poster; a video block shows it, or embeds one with its title and poster', () => {
     const article = base['/content/articles/a.json'];
     const clip = { '/content/media/articles/a/clip.json': { kind: 'video', file: 'clip.webm', title: 'A walk through', width: 1280, height: 720, duration: 12.5, poster: { file: 'clip.poster.webp' }, caption: 'The demo.', visibility: 'public' } };
@@ -331,7 +351,7 @@ describe('the content in content/', () => {
     const over: string[] = [];
     for (const f of masters) {
       const m = await sharp(f).metadata();
-      if (Math.max(m.width ?? 0, m.height ?? 0) > 2560) over.push(`${key(f)}: ${m.width}x${m.height}`);
+      if (Math.max(m.width ?? 0, m.pageHeight ?? m.height ?? 0) > 2560) over.push(`${key(f)}: ${m.width}x${m.pageHeight ?? m.height}`);
       if (statSync(f).size > 1.5 * 1024 * 1024) over.push(`${key(f)}: ${(statSync(f).size / 1048576).toFixed(2)} MB`);
       if (m.exif && /GPS/i.test(m.exif.toString('latin1'))) over.push(`${key(f)}: has GPS data`);
     }

@@ -1,7 +1,7 @@
 /** The site's pure behaviour modules: the select's keyboard, the theme, the media helpers, typography, tokens. */
 import { describe, expect, it } from 'vitest';
 import { keyAction, matchIndex, printable } from '../../src/site/scripts/listbox';
-import { applyTheme, darkSourceMedia, parseTheme, readTheme, resolveTheme, syncDarkSources, themeFromStorage, THEME_KEY, THEME_OPTIONS } from '../../src/site/scripts/theme';
+import { applyTheme, darkReducedSourceMedia, darkSourceMedia, parseTheme, readTheme, resolveTheme, syncDarkSources, themeFromStorage, THEME_KEY, THEME_OPTIONS } from '../../src/site/scripts/theme';
 import { clampIndex, counter, nearest, reveal, swipe, wrap } from '../../src/site/scripts/media';
 import { dragTo, thumbGeometry } from '../../src/site/scripts/scrollbars';
 import { accessibleName, currentIndex, readingLine, JUMP_RATIO, edgeSpeed, isMeaningfulImage, jumpTarget, kindText, repeatsTitle, signature, tidy, waveAt, WAVE } from '../../src/site/scripts/minimap';
@@ -94,6 +94,12 @@ describe('the theme', () => {
     expect(sources.map((s) => s.media)).toEqual(['all', 'all']);
     syncDarkSources(root, 'light');
     expect(sources.map((s) => s.media)).toEqual(['not all', 'not all']);
+  });
+
+  it("points an animation's dark still frame at both the chosen theme and reduced motion", () => {
+    expect(darkReducedSourceMedia('dark')).toBe('(prefers-reduced-motion: reduce)');
+    expect(darkReducedSourceMedia('light')).toBe('not all');
+    expect(darkReducedSourceMedia('system')).toBe('(prefers-color-scheme: dark) and (prefers-reduced-motion: reduce)');
   });
 
   it("follows a choice made on another page of the site (another tab, edit mode around its canvas), and nothing else it stores", () => {
