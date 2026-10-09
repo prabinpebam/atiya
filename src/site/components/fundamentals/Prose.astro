@@ -199,6 +199,10 @@ const { breakout = false, size = 'body', id } = Astro.props;
     margin-block-start: var(--space-2);
   }
 
+  .prose > :global(p[data-section-mark] + h2) {
+    margin-block-start: var(--space-4);
+  }
+
   /* a heading 2's mark: over its heading on a narrow screen, as the design library's tiers are */
   .prose :global([data-heading-mark]) {
     display: block;
