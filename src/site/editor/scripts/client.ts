@@ -166,6 +166,36 @@ export const saveStatus = {
   },
 };
 
+type RemoteSaveState = 'idle' | 'saving' | 'saved' | 'failed';
+const remote = { state: 'idle' as RemoteSaveState, detail: '' };
+
+function paintRemoteStatus() {
+  const el = document.querySelector<HTMLElement>('[data-editor-remote-status]');
+  if (!el) return;
+  el.hidden = remote.state === 'idle';
+  el.dataset.state = remote.state;
+  el.textContent = remote.detail;
+}
+
+/** The article top bar's independent status for a Save to remote operation. */
+export const remoteSaveStatus = {
+  saving(detail = 'Saving to remote…') {
+    remote.state = 'saving';
+    remote.detail = detail;
+    paintRemoteStatus();
+  },
+  saved(detail = 'Saved to remote') {
+    remote.state = 'saved';
+    remote.detail = detail;
+    paintRemoteStatus();
+  },
+  failed(detail: string) {
+    remote.state = 'failed';
+    remote.detail = detail;
+    paintRemoteStatus();
+  },
+};
+
 function clearNote() {
   clearTimeout(status.noteTimer);
   status.note = '';
@@ -234,6 +264,7 @@ export async function swapRegions(names: string[], url = location.href, keep?: (
     old.replaceWith(el);
     if (top) el.scrollTop = top;
   }
+  paintRemoteStatus();
   // as after a page swap: what left the page stops listening (each's signals), then the new regions are set up
   document.dispatchEvent(new Event('astro:after-swap'));
   document.dispatchEvent(new Event('astro:page-load'));

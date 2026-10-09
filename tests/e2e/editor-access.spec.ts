@@ -29,6 +29,21 @@ test.describe('editor: private pages', () => {
   test.beforeEach(() => reset());
   test.afterAll(() => reset());
 
+  test('access form fields stay aligned when only one field has a hint', async ({ page }) => {
+    await page.goto('/_edit/access/?grant=new');
+    const tops = await page.locator('[data-grant-form="new"]').evaluate((form) => {
+      const top = (id: string) => form.querySelector<HTMLInputElement>(`#new-grant-${id}`)?.getBoundingClientRect().top;
+      return {
+        name: top('name'),
+        organisation: top('organisation'),
+        role: top('role'),
+        email: top('email'),
+      };
+    });
+    expect(tops.name).toBe(tops.organisation);
+    expect(tops.role).toBe(tops.email);
+  });
+
   test('the Access screen lists every code and link by state beside the chosen one, and makes, changes, withdraws and deletes them', async ({ page }) => {
     // sharing left Settings for its own screen
     await page.goto('/_edit/settings/');

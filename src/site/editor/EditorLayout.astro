@@ -12,6 +12,7 @@
  */
 import PageShell from '../components/compounds/PageShell.astro';
 import SideNav from '../components/compounds/SideNav.astro';
+import Dialog from '../components/compounds/Dialog.astro';
 import Button from '../components/fundamentals/Button.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Heading from '../components/fundamentals/Heading.astro';
@@ -22,6 +23,9 @@ import { THEME_OPTIONS } from '../scripts/theme';
 import { changes } from './server/git';
 import { generation } from '../content/source';
 import SaveStatus from './components/SaveStatus.astro';
+import ChangeList from './components/ChangeList.astro';
+import ContentIssues from './components/ContentIssues.astro';
+import { publishView } from './server/publishView';
 
 interface Props {
   /** The document title: the screen's name. */
@@ -43,6 +47,7 @@ const aside = Astro.slots.has('aside');
 const git = await changes();
 // files changed in either folder, and commits not pushed from either repository (documentation/access/spec.md §8.3)
 const pending = git.files.length + git.ahead + (git.private?.ahead ?? 0);
+const articlePublish = screen === 'article' ? await publishView(Astro.url) : null;
 const to = (p: string) => withBase(`/_edit/${p}`);
 const groups = [
   {
@@ -76,6 +81,7 @@ const groups = [
       <div class="tools"><slot name="tools" /></div>
       <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" />
       <div class="pending" data-region="editor-pending">
+        {screen === 'article' && <span class="remote-status" data-editor-remote-status role="status" aria-live="polite" hidden />}
         {
           pending > 0 && (
             <Text as="span" variant="small" tone="muted">
@@ -83,7 +89,11 @@ const groups = [
             </Text>
           )
         }
-        <Button href={to('publish/')} variant={pending ? 'primary' : 'secondary'} size="sm" icon="upload">Save to remote</Button>
+        {
+          screen === 'article'
+            ? <Button variant={pending ? 'primary' : 'secondary'} size="sm" icon="upload" data-dialog-open="save-to-remote">Save to remote</Button>
+            : <Button href={to('publish/')} variant={pending ? 'primary' : 'secondary'} size="sm" icon="upload">Save to remote</Button>
+        }
       </div>
     </header>
     {
@@ -124,6 +134,16 @@ const groups = [
         )
       }
     </main>
+    {
+      articlePublish && (
+        <Dialog id="save-to-remote" title="Save to remote" size="lg" closeLabel="Close and keep editing">
+          <ChangeList {...articlePublish.changeList} wide />
+          <div data-region="publish-issues">
+            {articlePublish.issues.length > 0 && <ContentIssues issues={articlePublish.issues} />}
+          </div>
+        </Dialog>
+      )
+    }
   </div>
 </PageShell>
 
@@ -187,6 +207,19 @@ const groups = [
     flex: none;
     align-items: center;
     gap: var(--space-4);
+  }
+
+  .remote-status {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .remote-status[data-state='saved'] {
+    color: var(--color-positive);
+  }
+
+  .remote-status[data-state='failed'] {
+    color: var(--color-negative);
   }
 
   .nav {

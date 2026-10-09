@@ -1457,6 +1457,43 @@ test.describe('editor', () => {
     expect(menu()).toHaveLength(count);
   });
 
+  test('Save to remote from an article stays in a dismissible modal and reports its background progress in the top bar', async ({ page }) => {
+    const site = readJson(join(FIXTURE, 'content/site.json'));
+    writeFileSync(join(FIXTURE, 'content/site.json'), `${JSON.stringify({ ...site, positioning: 'Saved from the article modal.' }, null, 2)}\n`);
+    await page.route('**/_edit/api/publish', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+      await route.continue();
+    }, { times: 1 });
+
+    await openArticle(page);
+    const articleUrl = page.url();
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Save to remote' });
+    await expect(dialog).toBeVisible();
+    const width = await dialog.evaluate((element) => {
+      const body = element.querySelector<HTMLElement>('.body')!;
+      const publish = element.querySelector<HTMLElement>('[data-editor-publish]')!;
+      const style = getComputedStyle(body);
+      return {
+        available: body.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd),
+        used: publish.getBoundingClientRect().width,
+      };
+    });
+    expect(Math.abs(width.available - width.used)).toBeLessThan(1);
+    await dialog.getByRole('button', { name: 'Save to remote', exact: true }).click();
+    await expect(page.locator('[data-editor-remote-status]')).toHaveText('Saving to remote\u2026');
+
+    await dialog.getByRole('button', { name: 'Close and keep editing' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(articleUrl);
+    await expect(frame(page).locator('[data-editor-editable]').first()).toBeVisible();
+
+    await expect(page.locator('[data-editor-remote-status]')).toHaveText('Saved to remote', { timeout: 30_000 });
+    await expect(page).toHaveURL(articleUrl);
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).click();
+    await expect(dialog.getByRole('heading', { name: 'Saved to remote', exact: true })).toBeVisible();
+  });
+
   test('publish: commits content/ only, pushes it to the remote, and discard puts a change back', async ({ page }) => {
     // two changes: one to publish, one to discard
     const site = readJson(join(FIXTURE, 'content/site.json'));

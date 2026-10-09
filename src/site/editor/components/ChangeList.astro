@@ -47,15 +47,17 @@ interface Props {
   published: string | null;
   /** Pages placed on the site that aren't Published yet: each can go on the site with this publish (its Status becomes Published). */
   drafts?: { id: string; title: string; access: 'open' | 'private'; checked: boolean }[];
+  /** Fill the available width when the change list is shown inside the article editor's modal. */
+  wide?: boolean;
 }
 
-const { changes, ahead, blocked, message, privateNote, actions, published, drafts = [] } = Astro.props;
+const { changes, ahead, blocked, message, privateNote, actions, published, drafts = [], wide = false } = Astro.props;
 const ICON: Record<string, IconName> = { Article: 'article', Media: 'image', Sections: 'sections', Settings: 'settings', Person: 'user' };
 const STATUS = { added: { label: 'New', tone: 'positive' }, changed: { label: 'Changed', tone: 'accent' }, deleted: { label: 'Deleted', tone: 'negative' } } as const;
-const reason = blocked ?? (changes.length || drafts.length ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
+const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checked) ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
 ---
 
-<div class="publish" data-region="publish" data-editor-publish>
+<div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined}>
   {
     published && (
       <section class="panel" data-tone="positive" aria-labelledby="publish-done-title">
@@ -137,7 +139,7 @@ const reason = blocked ?? (changes.length || drafts.length ? null : 'Nothing to 
         </fieldset>
       )
     }
-    {reason && <Text variant="small" tone={blocked ? 'negative' : 'muted'}>{reason}</Text>}
+    {reason && <Text variant="small" tone={blocked ? 'negative' : 'muted'} data-publish-reason="">{reason}</Text>}
     <p class="issue" role="alert" data-editor-form-issue hidden />
     <div class="actions">
       <Button variant="primary" type="submit" icon="upload" disabled={!!reason}>Save to remote</Button>
@@ -160,6 +162,10 @@ const reason = blocked ?? (changes.length || drafts.length ? null : 'Nothing to 
     display: grid;
     gap: var(--space-6);
     max-inline-size: var(--size-measure);
+  }
+
+  .publish[data-width='wide'] {
+    max-inline-size: none;
   }
 
   .panel {
