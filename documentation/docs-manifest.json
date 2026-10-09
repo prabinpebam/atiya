@@ -244,6 +244,15 @@
       "group": "Content"
     },
     {
+      "path": "editor/table-editing.md",
+      "title": "Inline table editing",
+      "order": 20.885,
+      "icon": "table_chart",
+      "status": "planned",
+      "updated": "2026-10-09",
+      "group": "Content"
+    },
+    {
       "path": "sections/spec.md",
       "title": "Sections, pages and the planet",
       "order": 20.89,
