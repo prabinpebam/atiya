@@ -488,6 +488,12 @@ test.describe('editor', () => {
     const cap = frame(page).locator('p[data-dropcap]');
     await expect(cap).toHaveCount(1);
     expect(await cap.evaluate((el) => getComputedStyle(el, '::first-letter').getPropertyValue('initial-letter'))).toMatch(/3/);
+    await cap.focus();
+    await expect(cap).toHaveAttribute('data-dropcap', '');
+    await expect(cap).toHaveAttribute('data-dropcap-paused', '');
+    await page.getByRole('button', { name: 'Preview without the editor' }).click();
+    await expect(cap).not.toHaveAttribute('data-dropcap-paused');
+    expect(await cap.evaluate((el) => getComputedStyle(el, '::first-letter').getPropertyValue('initial-letter'))).toMatch(/3/);
   });
 
   test('a table: rich cells edit in place, keys move through it, simple controls change its shape, and bulk edits stay available', async ({ page }) => {

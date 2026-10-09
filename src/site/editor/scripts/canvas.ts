@@ -526,15 +526,24 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     requestAnimationFrame(redraw);
   };
 
-  // the drop cap's big letter moves the caret: it's off while its paragraph is edited
+  // the drop cap's big letter moves the caret: pause its drawing, but keep the paragraph's semantic state
+  const pauseDropcap = (el: HTMLElement) => {
+    if (el.hasAttribute('data-dropcap')) el.dataset.dropcapPaused = '';
+  };
+  const resumeDropcap = (el: HTMLElement) => {
+    delete el.dataset.dropcapPaused;
+  };
+  const resumeDropcaps = () => document.querySelectorAll<HTMLElement>('[data-dropcap-paused]').forEach(resumeDropcap);
+
+  on('pointerdown', (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-editor-editable][data-dropcap]');
+    if (el) pauseDropcap(el);
+  }, true);
   on('focusin', (e) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-editor-editable], [data-editor-pending]');
     if (!el) return;
     session++;
-    if (el.hasAttribute('data-dropcap')) {
-      el.dataset.dropcapPaused = '';
-      el.removeAttribute('data-dropcap');
-    }
+    pauseDropcap(el);
     const i = indexOf(el);
     const cell = cellOf(el);
     if (cell && i >= 0) {
@@ -556,11 +565,9 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       return;
     }
     send(true);
-    if (el.dataset.dropcapPaused !== undefined) {
-      delete el.dataset.dropcapPaused;
-      el.setAttribute('data-dropcap', '');
-    }
+    resumeDropcap(el);
   });
+  addEventListener('blur', resumeDropcaps, { signal });
   on('compositionstart', () => (composing = true));
   on('compositionend', () => {
     composing = false;
@@ -1239,6 +1246,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       else if (m.type === 'flush') send(true);
       else if (m.type === 'mode') {
         preview = !!m.preview;
+        resumeDropcaps();
         document.querySelectorAll<HTMLElement>('[data-editor-editable]').forEach((el) => (el.contentEditable = preview ? 'false' : el.dataset.editorEditable === 'rich' ? 'true' : 'plaintext-only'));
         hoverBox.hidden = format.hidden = true;
         hideInsert();

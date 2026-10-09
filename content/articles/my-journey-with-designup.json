@@ -93,6 +93,18 @@
       "dropcap": true
     },
     {
+      "type": "figure",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-3",
+      "width": "content",
+      "lightbox": true
+    },
+    {
+      "type": "figure",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-5",
+      "width": "content",
+      "lightbox": true
+    },
+    {
       "type": "video",
       "embed": {
         "provider": "youtube",
@@ -117,7 +129,14 @@
     },
     {
       "type": "text",
-      "markdown": "Then came DesignUp 2018, and I signed up to do the motion graphics for the event without ever having used After Effects. \"Excited accountability\" is what I call it. I was excited, and driven by the desire to impress. What followed was the most intense month of learning and creating in my life, with more than 70 hours in After Effects. Here's what came out of it."
+      "markdown": "Then came DesignUp 2018, and I signed up to do the motion graphics for the event without ever having used After Effects. \"Excited accountability\" is what I call it. I was excited, and driven by the desire to impress. What followed was the most intense month of learning and creating in my life, with more than 70 hours in After Effects. Here's what came out of it.",
+      "dropcap": true
+    },
+    {
+      "type": "figure",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-4",
+      "width": "content",
+      "lightbox": true
     },
     {
       "type": "text",
@@ -131,7 +150,8 @@
       },
       "title": "Wrap-up of DesignUp 2018",
       "poster": "articles/my-journey-with-designup/designup-2018-poster",
-      "caption": "The wrap-up of DesignUp 2018."
+      "caption": "The wrap-up video of DesignUp 2018, motion design, videography and editing",
+      "credit": "Prabin Pebam"
     },
     {
       "type": "video",
@@ -141,7 +161,8 @@
       },
       "title": "DesignUp: three years in recap",
       "poster": "articles/my-journey-with-designup/designup-recap-poster",
-      "caption": "Three years of DesignUp, in recap."
+      "caption": "Three years of DesignUp, in recap, motion design, videography and editing",
+      "credit": "Prabin Pebam"
     },
     {
       "type": "heading",
@@ -158,7 +179,8 @@
       "width": "wide",
       "lightbox": true,
       "display": "actual",
-      "caption": "DesignUp: Chennai, Hyderabad, Bengaluru, Pune"
+      "caption": "DesignUp: Chennai, Hyderabad, Bengaluru, Pune, photos by",
+      "credit": "Prabin Pebam"
     },
     {
       "type": "heading",
@@ -170,13 +192,40 @@
       "markdown": "2018 was also the year DesignUp went international, and I was lucky enough to go along to Singapore."
     },
     {
+      "type": "figure",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-6",
+      "width": "wide",
+      "lightbox": true,
+      "caption": "DesignUp Singapore, Photos by",
+      "credit": "Prabin Pebam"
+    },
+    {
+      "type": "divider"
+    },
+    {
       "type": "heading",
       "level": 2,
-      "text": "2019: into 3D"
+      "text": "Intro to 3D",
+      "marker": "2019"
     },
     {
       "type": "text",
       "markdown": "Then it was time for DesignUp 2019, which meant a new challenge and another stepUp. This time, my fascination was 3D: mograph, textures, materials and simulations. I took on the task, and here's what came out of it."
+    },
+    {
+      "type": "gallery",
+      "items": [
+        {
+          "media": "articles/my-journey-with-designup/into-the-design-verse-1"
+        },
+        {
+          "media": "articles/my-journey-with-designup/designup-recap-poster"
+        }
+      ],
+      "layout": "grid",
+      "lightbox": true,
+      "display": "fit",
+      "rounded": false
     },
     {
       "type": "heading",

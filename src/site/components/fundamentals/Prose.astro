@@ -339,7 +339,7 @@ const { breakout = false, size = 'body', id } = Astro.props;
   }
 
   /* ---------- the drop cap: three lines deep, in the accent, on a paragraph that asks for one ---------- */
-  .prose > :global(p[data-dropcap]::first-letter) {
+  .prose > :global(p[data-dropcap]:not([data-dropcap-paused])::first-letter) {
     float: inline-start;
     margin: 0.06em 0.1em 0 0;
     font-family: var(--font-display);
@@ -351,7 +351,7 @@ const { breakout = false, size = 'body', id } = Astro.props;
   }
 
   @supports (initial-letter: 3) or (-webkit-initial-letter: 3) {
-    .prose > :global(p[data-dropcap]::first-letter) {
+    .prose > :global(p[data-dropcap]:not([data-dropcap-paused])::first-letter) {
       float: none;
       margin: 0 0.12em 0 0;
       font-size: 1em;
