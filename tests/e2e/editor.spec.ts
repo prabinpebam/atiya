@@ -538,25 +538,49 @@ test.describe('editor', () => {
     await expect(bodyCell(1, 0)).toBeFocused();
     await expect.poll(() => last().rows?.[0][1]).toBe('_**Visual**_');
 
-    // Enter on the final row appends one; the edge control appends a column and restores focus after reload
+    // Enter on the final row appends one; no permanent row, column or action buttons crowd the table
     await page.keyboard.press('Tab');
     await expect(bodyCell(1, 1)).toBeFocused();
     await page.keyboard.press('Enter');
     await expect.poll(() => last().rows).toHaveLength(3);
     await expect(bodyCell(2, 1)).toBeFocused({ timeout: 15_000 });
     await page.keyboard.press('Tab');
-    await expect(frame(page).getByRole('button', { name: 'Add row' })).toBeFocused();
-    await bodyCell(2, 1).click();
-    await frame(page).getByRole('button', { name: 'Add column' }).click();
-    await expect.poll(() => last().columns).toEqual(['**Typeface**', 'Role **work**', 'Column 1']);
-    await expect(heading(2)).toBeFocused({ timeout: 15_000 });
+    await expect(frame(page).getByRole('button', { name: 'Add row' })).toHaveCount(0);
+    await expect(frame(page).getByRole('button', { name: 'Add column' })).toHaveCount(0);
+    await expect(frame(page).getByRole('button', { name: 'Row actions' })).toHaveCount(0);
+    await expect(frame(page).getByRole('button', { name: 'Column actions' })).toHaveCount(0);
 
-    // one reusable menu moves the active column; undo uses the article's existing history
-    await frame(page).getByRole('button', { name: 'Column actions' }).click();
-    await frame(page).getByRole('menuitem', { name: 'Move column left' }).click();
+    // a practical hover band around an internal cell border exposes that exact column or row boundary
+    await shown.scrollIntoViewIfNeeded();
+    await shown.locator('thead th').nth(1).evaluate((heading) => {
+      const rect = heading.getBoundingClientRect();
+      heading.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: rect.left + 6, clientY: rect.top + rect.height / 2 }));
+    });
+    await frame(page).getByRole('button', { name: 'Insert column here' }).click();
     await expect.poll(() => last().columns).toEqual(['**Typeface**', 'Column 1', 'Role **work**']);
-    await page.locator('[data-editor-undo]').first().click();
+    await expect(heading(1)).toBeFocused({ timeout: 15_000 });
+
+    await shown.locator('tbody tr').nth(1).evaluate((row) => {
+      const table = row.closest('table')!;
+      const tableRect = table.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      row.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: tableRect.left + tableRect.width / 2, clientY: rowRect.top + 6 }));
+    });
+    await frame(page).getByRole('button', { name: 'Insert row here' }).click();
+    await expect.poll(() => last().rows).toHaveLength(4);
+    await expect(bodyCell(1, 0)).toBeFocused({ timeout: 15_000 });
+
+    // right click opens one spacious custom menu at the pointer; undo uses the article's existing history
+    await bodyCell(0, 1).click({ button: 'right' });
+    const menu = frame(page).getByRole('menu', { name: 'Row and column actions' });
+    await expect(menu).toBeVisible();
+    expect(await menu.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(200);
+    await expect(menu.getByText('Row', { exact: true })).toBeVisible();
+    await expect(menu.getByText('Column', { exact: true })).toBeVisible();
+    await menu.getByRole('menuitem', { name: 'Move column right' }).click();
     await expect.poll(() => last().columns).toEqual(['**Typeface**', 'Role **work**', 'Column 1']);
+    await page.locator('[data-editor-undo]').first().click();
+    await expect.poll(() => last().columns).toEqual(['**Typeface**', 'Column 1', 'Role **work**']);
 
     // an invalid empty heading remains local, restores the last valid rich value on leaving, and never reaches the article
     await heading(0).click();
@@ -571,11 +595,11 @@ test.describe('editor', () => {
     await cells.fill('Typeface | Role\nA | B | C | D');
     await cells.blur();
     await expect(settings.locator('[data-editor-issue]')).toContainText('Row 1 has 4 cells');
-    expect(last().rows).toHaveLength(3);
+    expect(last().rows).toHaveLength(4);
 
     await settings.getByText('First column names each row').click();
     await expect.poll(() => last().rowHeadings).toBe(true);
-    await expect(frame(page).locator('figure.table').last().locator('tbody th[scope="row"]')).toHaveCount(3);
+    await expect(frame(page).locator('figure.table').last().locator('tbody th[scope="row"]')).toHaveCount(4);
   });
 
   test('a list: Enter makes a new item, and Enter on an empty last item, or Ctrl + Enter anywhere, starts a paragraph after it', async ({ page }) => {

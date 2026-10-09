@@ -1,6 +1,6 @@
 # Inline table editing
 
-> **TL;DR:** Atiya's tables are small, static parts of portfolio articles and pages. Edit every cell directly in the real page, with the existing rich-text format bar for bold, italic, strikethrough, code and links. Add rows or columns with edge buttons, and use compact row or column menus to insert, move or delete them. Keep the current semantic table, responsive design, autosave, undo and inspector fallback. Do not build spreadsheet or database behavior.
+> **TL;DR:** Atiya's tables are small, static parts of portfolio articles and pages. Edit every cell directly in the real page, with the existing rich-text format bar for bold, italic, strikethrough, code and links. Hover near a border between cells to insert a column or row at that exact boundary, and right-click a cell for every structural action. Keep the current semantic table, responsive design, autosave, undo and inspector fallback. Do not build spreadsheet or database behavior.
 
 **Status:** As built (9 October 2026)
 **Research reviewed:** 9 October 2026
@@ -31,8 +31,8 @@ The first release provides:
 
 - WYSIWYG rich-text editing in every cell, including column and row headings;
 - `Tab` and `Shift+Tab` movement through cells;
-- one button to append a row and one to append a column;
-- row and column menus to insert, move or delete structure;
+- insertion controls on row and column borders;
+- one custom context menu to insert, move or delete rows and columns;
 - caption, width, row-heading semantics and whole-table bulk editing in the inspector;
 - the existing content limits: eight columns and 60 body rows.
 
@@ -56,8 +56,8 @@ Notion's simple table is the reference for the frontend pattern, not the feature
 - click a cell and type;
 - select text to format it;
 - move through cells with `Tab`;
-- add a row at the bottom or a column at the side;
-- use contextual row and column controls.
+- add a row or column at its boundary;
+- use a contextual menu for row and column actions.
 
 The behavior is documented in [Simple tables versus databases](https://www.notion.com/help/guides/simple-tables-vs-databases) and [Columns, headings and dividers](https://www.notion.com/help/columns-headings-and-dividers). Notion also supports resizing, colours, merge, drag and database conversion; Atiya deliberately does not.
 
@@ -123,20 +123,24 @@ Use `plainText()` from the Markdown module for these checks. Existing plain head
 The canvas keeps the real rendered table. Edit controls float over it and do not change its public layout.
 
 ```text
-                    [column menu]
-              +-----------------------+      [add column]
- [row menu]   | Heading | Heading     |            +
-              | Cell    | Cell        |
-              | Cell    | Cell        |
+                         (+)
+                          |
+              +-----------+-----------+
+              | Heading   | Heading   |
+          (+)-+-----------+-----------+
+              | Cell      | Cell      |  [right-click menu]
+              +-----------+-----------+
+              | Cell      | Cell      |
               +-----------------------+
-                         +
-                     [add row]
 ```
 
-- Selecting a table reveals **Add row** and **Add column**.
-- Focusing a cell reveals **Row actions** for a body row and **Column actions** for its column.
-- A heading shows only **Column actions**.
-- Controls stay visible for the active cell on touch; no action depends on hover.
+- Moving the pointer near a vertical border between cells reveals that column boundary as an accent line, with its insertion button anchored at the table's top edge.
+- Moving the pointer near a horizontal border between cells reveals that row boundary in the same way, with its insertion button anchored at the left edge.
+- Each hairline border has a forgiving activation band on both sides, so the writer does not need pixel-perfect pointing.
+- The controls disappear when the pointer leaves the border's activation band. There are no permanent add buttons at the table's right or bottom.
+- Right-clicking a body cell opens one custom menu at the pointer, with the row group followed by the column group.
+- Right-clicking a heading opens the same menu with only its column group.
+- `Shift+F10` and the context-menu key open the same menu from the keyboard, so structural editing never depends on hover.
 - Preview mode hides the controls and makes the table read-only.
 - Controls use the editor's existing `IconButton`, surface, focus, spacing and layer tokens.
 
@@ -155,15 +159,15 @@ The public `Table` compound owns the table's appearance. The edit overlay does n
 
 ### 5.3 Adding rows and columns
 
-- **Add row** appends one empty row and focuses its first cell.
-- **Add column** appends one empty column, assigns the next available `Column N` heading and selects that heading for replacement.
-- An inserted column uses the same generated heading.
+- Hovering near a horizontal cell border shows **Insert row here** at the left end of that border. Activating it inserts one empty row at the boundary and focuses its first cell.
+- Hovering near a vertical cell border shows **Insert column here** at the top end of that border. Activating it inserts one empty column at the boundary, assigns the next available `Column N` heading and selects that heading for replacement.
+- Inserting at the final boundary appends; the editor does not need separate permanent append controls.
 - "Next available" is the smallest positive `N` whose visible `Column N` label is not already used.
-- At a limit, the relevant button stays visible but disabled and exposes the reason in its accessible description.
+- At a limit, the relevant edge button stays visible but disabled.
 
 ### 5.4 Row actions
 
-The active body row's menu contains:
+The custom context menu's **Row** group contains:
 
 1. **Insert row above**
 2. **Insert row below**
@@ -175,7 +179,7 @@ Move actions are disabled at their edge. Insert actions are disabled at 60 rows.
 
 ### 5.5 Column actions
 
-The active column's menu contains:
+The custom context menu's **Column** group contains:
 
 1. **Insert column left**
 2. **Insert column right**
@@ -209,8 +213,7 @@ Cells are edited directly; there is no separate spreadsheet-style navigation mod
 | Arrow keys, `Home`, `End` | Move the text caret normally |
 | `Tab` | Commit and edit the next cell in row-major order |
 | `Shift+Tab` | Commit and edit the previous cell |
-| `Tab` from the last cell | Commit and focus **Add row** |
-| `Tab` from the last cell at 60 rows | Commit and leave the table for the next editor control |
+| `Tab` from the last cell | Commit and leave the table for the next editor control |
 | `Shift+Tab` from the first heading | Commit and leave the table for the previous editor control |
 | `Enter` | Commit and edit the cell below in the same column |
 | `Shift+Enter` | Commit and edit the cell above |
@@ -218,7 +221,7 @@ Cells are edited directly; there is no separate spreadsheet-style navigation mod
 | `Enter` in the final body row at 60 rows | Commit and remain in the cell |
 | `Shift+Enter` in a heading | Commit and remain in the heading |
 | `Escape` | Commit, stop cell editing and leave the whole table selected |
-| `Shift+F10` or context-menu key | Open a compact menu with the active row and column actions |
+| Right click, `Shift+F10` or context-menu key | Open the custom menu with the active row and column actions |
 | `Ctrl/Cmd+B` | Bold |
 | `Ctrl/Cmd+I` | Italic |
 | `Ctrl/Cmd+Shift+X` | Strikethrough |
@@ -226,7 +229,7 @@ Cells are edited directly; there is no separate spreadsheet-style navigation mod
 
 Inline code uses its format-bar button because browsers keep common code shortcuts. `Ctrl/Cmd+U` does not add underline. Composition completes before a commit or focus move.
 
-The context menu shows only column actions for a heading. On a body cell it groups row actions before column actions.
+The context menu opens at the pointer for a right click and beside the active cell for a keyboard request. It is wide enough to keep every action on one line. It shows only column actions for a heading; on a body cell it groups row actions before column actions.
 
 ## 7. Paste
 
@@ -414,13 +417,11 @@ The parent article is schema-valid at every point.
 
 Extend [`CanvasChrome.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/components/CanvasChrome.astro) with:
 
-- **Row actions**;
-- **Column actions**;
-- **Add row**;
-- **Add column**;
-- one reusable action menu with row and column groups.
+- one horizontal row-insertion line and button;
+- one vertical column-insertion line and button;
+- one reusable context menu with visibly separated row and column groups.
 
-The menu is semantic DOM, uses named buttons, supports arrow-key movement and closes on `Escape`. It uses the same markup for mouse, keyboard and touch.
+The insertion controls use a token-sized hit band around the nearest real cell boundary. The line follows the full boundary while its button sits at the table's top or left edge; both disappear outside the hit band. The menu is semantic DOM, opens at the right-click point or beside the keyboard-active cell, uses named buttons, supports arrow-key movement and closes on `Escape` or an outside press.
 
 Do not place editor controls inside the public `Table` compound. Do not create an editor component that imports another editor component.
 
@@ -450,7 +451,8 @@ Both headings and body cells accept inline Markdown. A valid bulk change is one 
 - Edit mode keeps the table semantics and gives each active cell text a single-line textbox name derived from its row and column.
 - Only one cell editor is in the tab sequence; `Tab` moves that position.
 - The table is named by its caption, or "Edit table" when it has none.
-- Row and column controls are semantic buttons with at least 44 by 44 CSS pixel targets.
+- Edge insertion controls are semantic buttons with at least 44 by 44 CSS pixel targets.
+- The context menu remains available by right click, `Shift+F10` and the context-menu key.
 - Every action has a keyboard and single-pointer route.
 - Structural changes restore a predictable cell and announce the result.
 
@@ -461,7 +463,7 @@ Both headings and body cells accept inline Markdown. A valid bulk change is one 
 - Focusing a cell scrolls only the table's overflow region enough to reveal it.
 - At 320 px, controls do not make the page itself scroll sideways.
 - At 200 percent zoom and with larger text, action menus remain reachable.
-- Touch uses the same tap controls; no feature requires dragging or hover.
+- Touch and keyboard use the same insertion actions in the context menu; border hover is a mouse convenience, not the only path.
 
 ### 10.3 Errors
 
@@ -503,7 +505,7 @@ At the end of this phase, the core user need is complete: every table cell is ea
 
 1. Direct editing and structure changes use keyboard-accessible semantic controls and the same pointer path for mouse and touch.
 2. Typing and structure changes reuse the existing history, save-failure and conflict paths.
-3. New controls use the design system's `c.control.height.md` token and do not depend on hover.
+3. Hover insertion controls use design-system tokens, and every insertion remains available in the keyboard- and touch-accessible context menu.
 4. Production isolation remains enforced by `verify:prod`.
 
 ## 12. Test contract

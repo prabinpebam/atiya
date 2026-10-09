@@ -86,10 +86,8 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   const insert = $('[data-chrome-insert]');
   const format = $('[data-chrome-format]');
   const blockTools = format.querySelector<HTMLElement>('[data-chrome-block-tools]');
-  const tableActions = $('[data-chrome-table-actions]');
   const tableMenu = $('[data-chrome-table-menu]');
-  const tableAdds = [...chrome.querySelectorAll<HTMLElement>('[data-chrome-table-add]')];
-  const tableToggles = [...chrome.querySelectorAll<HTMLButtonElement>('[data-chrome-table-menu-toggle]')];
+  const tableInserts = [...chrome.querySelectorAll<HTMLElement>('[data-chrome-table-insert]')];
   const tableOps = [...chrome.querySelectorAll<HTMLButtonElement>('[data-chrome-table-op]')];
   const on = <K extends keyof DocumentEventMap>(type: K, fn: (e: DocumentEventMap[K]) => void, capture = false) => document.addEventListener(type, fn, { signal, capture });
 
@@ -157,15 +155,18 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   let selectedField: Field | null = null;
   let preview = false;
   let activeTable: { index: number; cell: TableCell; el: HTMLElement } | null = null;
+  let tableInsert: { index: number; kind: 'row' | 'column'; at: number; cell: TableCell } | null = null;
   let tableBusy = false;
-  const closeTableMenu = () => {
-    tableMenu.hidden = true;
-    tableToggles.forEach((button) => button.setAttribute('aria-expanded', 'false'));
+  const closeTableMenu = () => (tableMenu.hidden = true);
+  const hideTableInsert = () => {
+    tableInsert = null;
+    tableInserts.forEach((control) => (control.hidden = true));
   };
   const tableOf = (index: number) => {
     const block = blocks[index];
     return block?.matches('[data-editor-table]') ? block : block?.querySelector<HTMLElement>('[data-editor-table]');
   };
+  const tableGridOf = (index: number) => tableOf(index)?.querySelector<HTMLTableElement>('table');
   const tableShape = (index: number) => {
     const table = tableOf(index);
     return {
@@ -177,13 +178,9 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (!activeTable) return;
     const { rows, columns } = tableShape(activeTable.index);
     const row = activeTable.cell.row;
-    const rowToggle = tableToggles.find((b) => b.dataset.chromeTableMenuToggle === 'row');
-    if (rowToggle) rowToggle.disabled = tableBusy || row === 'header';
-    const columnToggle = tableToggles.find((b) => b.dataset.chromeTableMenuToggle === 'column');
-    if (columnToggle) columnToggle.disabled = tableBusy;
-    for (const add of tableAdds) {
-      const button = add.querySelector<HTMLButtonElement>('button');
-      if (button) button.disabled = tableBusy || (add.dataset.chromeTableAdd === 'row' ? rows >= TABLE_MAX_ROWS : columns >= TABLE_MAX_COLUMNS);
+    for (const control of tableInserts) {
+      const button = control.querySelector<HTMLButtonElement>('button');
+      if (button) button.disabled = tableBusy || (control.dataset.chromeTableInsert === 'row' ? rows >= TABLE_MAX_ROWS : columns >= TABLE_MAX_COLUMNS);
     }
     for (const button of tableOps) {
       const op = button.dataset.chromeTableOp;
@@ -199,12 +196,30 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         (op === 'delete-column' && columns === 1);
     }
   };
-  const openTableMenu = (kind: 'row' | 'column' | 'both') => {
+  const cssLength = (name: string) => {
+    const root = getComputedStyle(document.documentElement);
+    const value = root.getPropertyValue(name).trim();
+    const length = parseFloat(value);
+    return value.endsWith('rem') ? length * parseFloat(root.fontSize) : length;
+  };
+  const positionTableMenu = (x: number, y: number) => {
+    const pad = cssLength('--space-2');
+    tableMenu.style.setProperty('--x', `${x + scrollX}px`);
+    tableMenu.style.setProperty('--y', `${y + scrollY}px`);
+    const rect = tableMenu.getBoundingClientRect();
+    const left = Math.max(pad, Math.min(x, document.documentElement.clientWidth - rect.width - pad));
+    const top = Math.max(pad, Math.min(y, document.documentElement.clientHeight - rect.height - pad));
+    tableMenu.style.setProperty('--x', `${left + scrollX}px`);
+    tableMenu.style.setProperty('--y', `${top + scrollY}px`);
+  };
+  const openTableMenu = (kind: 'row' | 'column' | 'both', point?: { x: number; y: number }) => {
     if (!activeTable || tableBusy || (kind !== 'column' && activeTable.cell.row === 'header')) return;
     tableMenu.querySelectorAll<HTMLElement>('[data-chrome-table-menu-group]').forEach((group) => (group.hidden = kind !== 'both' && group.dataset.chromeTableMenuGroup !== kind));
     tableMenu.hidden = false;
-    tableToggles.forEach((button) => button.setAttribute('aria-expanded', String(kind !== 'both' && button.dataset.chromeTableMenuToggle === kind)));
+    tableMenu.setAttribute('aria-label', kind === 'column' ? 'Column actions' : kind === 'row' ? 'Row actions' : 'Row and column actions');
     updateTableControls();
+    const cell = activeTable.el.closest<HTMLElement>('[data-editor-table-cell]')!.getBoundingClientRect();
+    positionTableMenu(point?.x ?? cell.left, point?.y ?? cell.bottom);
     tableMenu.querySelector<HTMLButtonElement>('[data-chrome-table-menu-group]:not([hidden]) button:not(:disabled)')?.focus();
   };
   const place = (box: HTMLElement, rect: DOMRect) => {
@@ -217,21 +232,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     const table = activeTable && tableOf(activeTable.index);
     const cell = activeTable?.el.closest<HTMLElement>('[data-editor-table-cell]');
     const show = !!activeTable && !!table && !!cell && !preview;
-    tableActions.hidden = !show;
-    tableAdds.forEach((add) => (add.hidden = !show));
     if (!show) return closeTableMenu();
-    const c = cell!.getBoundingClientRect();
-    const t = table!.getBoundingClientRect();
-    tableActions.style.setProperty('--x', `${c.right + scrollX}px`);
-    tableActions.style.setProperty('--y', `${c.top + scrollY}px`);
-    tableMenu.style.setProperty('--x', `${c.right + scrollX}px`);
-    tableMenu.style.setProperty('--y', `${c.bottom + scrollY}px`);
-    const row = tableAdds.find((add) => add.dataset.chromeTableAdd === 'row');
-    const column = tableAdds.find((add) => add.dataset.chromeTableAdd === 'column');
-    row?.style.setProperty('--x', `${t.left + t.width / 2 + scrollX}px`);
-    row?.style.setProperty('--y', `${t.bottom + scrollY}px`);
-    column?.style.setProperty('--x', `${t.right + scrollX}px`);
-    column?.style.setProperty('--y', `${t.top + t.height / 2 + scrollY}px`);
     updateTableControls();
   };
   const redraw = () => {
@@ -250,6 +251,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   const select = (i: number | null, field: Field | null = null, tell = true, scroll = false) => {
     if (activeTable && activeTable.index !== i) {
       activeTable = null;
+      hideTableInsert();
       closeTableMenu();
     }
     selected = i;
@@ -299,6 +301,46 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     }
     insert.hidden = insertAt < 0;
   };
+  const showTableInsert = (x: number, y: number, over: number) => {
+    hideTableInsert();
+    if (preview || tableBusy || !tableMenu.hidden || over < 0 || typeOf(over) !== 'table' || !matchMedia('(hover: hover)').matches) return;
+    const grid = tableGridOf(over);
+    if (!grid) return;
+    const rect = grid.getBoundingClientRect();
+    const reach = cssLength('--space-2');
+    const heads = [...grid.querySelectorAll<HTMLElement>('thead [data-editor-table-cell]')];
+    const rowElements = [...grid.querySelectorAll<HTMLElement>('tbody tr')];
+    if (!heads.length || !rowElements.length) return;
+    const columnBoundaries = heads.map((head) => head.getBoundingClientRect().left);
+    columnBoundaries.push(heads.at(-1)!.getBoundingClientRect().right);
+    const rowBoundaries = rowElements.map((row) => row.getBoundingClientRect().top);
+    rowBoundaries.push(rowElements.at(-1)!.getBoundingClientRect().bottom);
+    const columnAt = columnBoundaries.reduce((best, boundary, index) => (Math.abs(x - boundary) < Math.abs(x - columnBoundaries[best]) ? index : best), 0);
+    const rowAt = rowBoundaries.reduce((best, boundary, index) => (Math.abs(y - boundary) < Math.abs(y - rowBoundaries[best]) ? index : best), 0);
+    const columnDistance = Math.abs(x - columnBoundaries[columnAt]);
+    const rowDistance = Math.abs(y - rowBoundaries[rowAt]);
+    const overColumnBorder = y >= rect.top && y <= rect.bottom && columnDistance <= reach;
+    const overRowBorder = x >= rect.left && x <= rect.right && rowDistance <= reach;
+    if (!overColumnBorder && !overRowBorder) return;
+    const kind: 'row' | 'column' = overColumnBorder && (!overRowBorder || columnDistance <= rowDistance) ? 'column' : 'row';
+    const control = tableInserts.find((candidate) => candidate.dataset.chromeTableInsert === kind);
+    if (!control) return;
+    if (kind === 'column') {
+      control.style.setProperty('--x', `${columnBoundaries[columnAt] + scrollX}px`);
+      control.style.setProperty('--y', `${rect.top + scrollY}px`);
+      control.style.setProperty('--h', `${rect.height}px`);
+      tableInsert = { index: over, kind, at: columnAt, cell: { row: 'header', column: Math.min(columnAt, heads.length - 1) } };
+    } else {
+      control.style.setProperty('--x', `${rect.left + scrollX}px`);
+      control.style.setProperty('--y', `${rowBoundaries[rowAt] + scrollY}px`);
+      control.style.setProperty('--w', `${rect.width}px`);
+      tableInsert = { index: over, kind, at: rowAt, cell: { row: Math.min(rowAt, rowElements.length - 1), column: 0 } };
+    }
+    control.hidden = false;
+    const { rows, columns } = tableShape(over);
+    const button = control.querySelector<HTMLButtonElement>('button');
+    if (button) button.disabled = kind === 'row' ? rows >= TABLE_MAX_ROWS : columns >= TABLE_MAX_COLUMNS;
+  };
 
   on('pointermove', (e) => {
     if (preview) return;
@@ -307,9 +349,18 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     const over = indexOf(t);
     hover(over);
     showInsert(e.clientX, e.clientY, over);
+    showTableInsert(e.clientX, e.clientY, over);
   });
-  addEventListener('scroll', () => requestAnimationFrame(redraw), { signal, passive: true });
-  addEventListener('resize', () => requestAnimationFrame(redraw), { signal });
+  addEventListener('scroll', () => {
+    hideTableInsert();
+    closeTableMenu();
+    requestAnimationFrame(redraw);
+  }, { signal, passive: true });
+  addEventListener('resize', () => {
+    hideTableInsert();
+    closeTableMenu();
+    requestAnimationFrame(redraw);
+  }, { signal });
 
   // ---------- clicks: select, and keep links and players inert ----------
   /** The page's own way round it, not its content: the minimap works in the canvas as on the site. */
@@ -341,7 +392,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     'click',
     (e) => {
       const b = (e.target as Element).closest<HTMLElement>(
-        '[data-chrome-op], [data-chrome-insert-button], [data-chrome-format-op], [data-chrome-more-toggle], [data-chrome-table-menu-toggle], [data-chrome-table-add], [data-chrome-table-op]',
+        '[data-chrome-op], [data-chrome-insert-button], [data-chrome-format-op], [data-chrome-more-toggle], [data-chrome-table-insert], [data-chrome-table-op]',
       );
       if (!b) return;
       e.preventDefault();
@@ -351,8 +402,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         else post({ type: 'op', index: selected, op: op as 'up' | 'down' | 'duplicate' | 'delete' });
       } else if (b.hasAttribute('data-chrome-insert-button') && insertAt >= 0) post({ type: 'insert', index: insertAt });
       else if (b.hasAttribute('data-chrome-more-toggle')) showMore(moreMenu.hidden);
-      else if (b.dataset.chromeTableMenuToggle) openTableMenu(b.dataset.chromeTableMenuToggle as 'row' | 'column');
-      else if (b.dataset.chromeTableAdd) useTableControl(`add-${b.dataset.chromeTableAdd}`);
+      else if (b.dataset.chromeTableInsert) useTableInsert(b.dataset.chromeTableInsert as 'row' | 'column');
       else if (b.dataset.chromeTableOp) useTableControl(b.dataset.chromeTableOp);
       else if (b.dataset.chromeFormatOp) {
         showMore(false);
@@ -364,7 +414,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   // a toolbar button doesn't take the text's selection away
   chrome.addEventListener(
     'mousedown',
-    (e) => (e.target as Element).closest('[data-chrome-format-op], [data-chrome-more-toggle], [data-chrome-table-menu-toggle], [data-chrome-table-add], [data-chrome-table-op]') && e.preventDefault(),
+    (e) => (e.target as Element).closest('[data-chrome-format-op], [data-chrome-more-toggle], [data-chrome-table-insert], [data-chrome-table-op]') && e.preventDefault(),
     { signal },
   );
 
@@ -927,12 +977,49 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     else if (name === 'move-column-right') operation = { type: 'move-column', from: activeTable.cell.column, to: activeTable.cell.column + 1 };
     else if (name === 'delete-column') operation = { type: 'delete-column', column: activeTable.cell.column };
     if (!operation) return;
+    runTableOperation(activeTable.index, activeTable.cell, operation, focus);
+  };
+  const runTableOperation = (index: number, cell: TableCell, operation: TableOperation, focus?: TableCell) => {
     send(true);
     tableBusy = true;
+    hideTableInsert();
     closeTableMenu();
     updateTableControls();
-    post({ type: 'table-op', index: activeTable.index, cell: activeTable.cell, operation, ...(focus ? { focus } : {}) });
+    post({ type: 'table-op', index, cell, operation, ...(focus ? { focus } : {}) });
   };
+  const useTableInsert = (kind: 'row' | 'column') => {
+    const insertion = tableInsert;
+    if (!insertion || insertion.kind !== kind || tableBusy) return;
+    const operation: TableOperation = kind === 'row' ? { type: 'insert-row', at: insertion.at } : { type: 'insert-column', at: insertion.at };
+    runTableOperation(insertion.index, insertion.cell, operation);
+  };
+
+  on(
+    'contextmenu',
+    (e) => {
+      if (preview) return;
+      const cellElement = (e.target as Element).closest<HTMLElement>('[data-editor-table-cell]');
+      const text = cellElement?.querySelector<HTMLElement>('[data-editor-cell-text]');
+      const cell = cellElement ? cellOf(cellElement) : null;
+      const index = indexOf(cellElement);
+      if (!text || !cell || index < 0) return;
+      e.preventDefault();
+      send(true);
+      activeTable = { index, cell, el: text };
+      tableBusy = false;
+      hideTableInsert();
+      select(index, null, false);
+      openTableMenu(cell.row === 'header' ? 'column' : 'both', { x: e.clientX, y: e.clientY });
+    },
+    true,
+  );
+  on(
+    'pointerdown',
+    (e) => {
+      if (!tableMenu.hidden && !tableMenu.contains(e.target as Node)) closeTableMenu();
+    },
+    true,
+  );
 
   // ---------- keys ----------
   on(
@@ -973,9 +1060,6 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
           if (next) {
             e.preventDefault();
             focusText(next, e.shiftKey ? 'start' : 'end');
-          } else if (!e.shiftKey && tableShape(editing.index!).rows < TABLE_MAX_ROWS) {
-            e.preventDefault();
-            tableAdds.find((add) => add.dataset.chromeTableAdd === 'row')?.querySelector<HTMLButtonElement>('button')?.focus();
           }
           return;
         }
@@ -1139,6 +1223,8 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         preview = !!m.preview;
         document.querySelectorAll<HTMLElement>('[data-editor-editable]').forEach((el) => (el.contentEditable = preview ? 'false' : el.dataset.editorEditable === 'rich' ? 'true' : 'plaintext-only'));
         hoverBox.hidden = insert.hidden = format.hidden = true;
+        hideTableInsert();
+        closeTableMenu();
         redraw();
       }
     },

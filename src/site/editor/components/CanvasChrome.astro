@@ -6,8 +6,8 @@
  * delete), a "+" on a line across the column in the space between two blocks while the
  * pointer is there (never over a block), showing exactly where a new block goes, and a format bar over a
  * text selection: the inspector's rich field's tools (marks; code and link; lists, and in a list their indents),
- * the least used moving into a More formatting menu when the bar wouldn't fit the width. A table cell also
- * gets row and column actions plus add controls at the table's edges.
+ * the least used moving into a More formatting menu when the bar wouldn't fit the width. A table gets
+ * insertion lines when its top or left edge is hovered, and a custom row/column menu on right click.
  * @tier editor
  * @a11y The block toolbar and the format bar are named toolbars of named icon buttons; every action also has a key (§3.2, §3.3).
  * @key Enter: edit the selected block's text
@@ -75,18 +75,17 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
       <span class="more-menu" id="chrome-more-menu" role="group" aria-label="More formatting" data-chrome-more-menu hidden></span>
     </span>
   </div>
-  <div class="table-actions" role="toolbar" aria-label="Table cell" data-chrome-table-actions hidden>
-    <IconButton label="Row actions" icon="more" size="md" shape="square" tooltip="top" aria-haspopup="menu" aria-controls="chrome-table-menu" aria-expanded="false" data-chrome-table-menu-toggle="row" />
-    <IconButton label="Column actions" icon="more" size="md" shape="square" tooltip="top" aria-haspopup="menu" aria-controls="chrome-table-menu" aria-expanded="false" data-chrome-table-menu-toggle="column" />
+  <div class="table-insert row" data-chrome-table-insert="row" hidden>
+    <span class="table-insert-line" aria-hidden="true"></span>
+    <IconButton label="Insert row here" icon="plus" size="sm" variant="primary" tooltip="none" />
   </div>
-  <div class="table-add row" data-chrome-table-add="row" hidden>
-    <IconButton label="Add row" icon="plus" size="md" shape="square" variant="primary" tooltip="top" />
-  </div>
-  <div class="table-add column" data-chrome-table-add="column" hidden>
-    <IconButton label="Add column" icon="plus" size="md" shape="square" variant="primary" tooltip="top" />
+  <div class="table-insert column" data-chrome-table-insert="column" hidden>
+    <span class="table-insert-line" aria-hidden="true"></span>
+    <IconButton label="Insert column here" icon="plus" size="sm" variant="primary" tooltip="none" />
   </div>
   <div class="table-menu" id="chrome-table-menu" role="menu" aria-label="Table actions" data-chrome-table-menu hidden>
     <div role="group" aria-label="Row actions" data-chrome-table-menu-group="row">
+      <span class="table-menu-label">Row</span>
       <button type="button" role="menuitem" data-chrome-table-op="insert-row-above">Insert row above</button>
       <button type="button" role="menuitem" data-chrome-table-op="insert-row-below">Insert row below</button>
       <button type="button" role="menuitem" data-chrome-table-op="move-row-up">Move row up</button>
@@ -94,6 +93,7 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
       <button type="button" role="menuitem" data-chrome-table-op="delete-row">Delete row</button>
     </div>
     <div role="group" aria-label="Column actions" data-chrome-table-menu-group="column">
+      <span class="table-menu-label">Column</span>
       <button type="button" role="menuitem" data-chrome-table-op="insert-column-left">Insert column left</button>
       <button type="button" role="menuitem" data-chrome-table-op="insert-column-right">Insert column right</button>
       <button type="button" role="menuitem" data-chrome-table-op="move-column-left">Move column left</button>
@@ -164,7 +164,6 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
 
   .toolbar,
   .format,
-  .table-actions,
   .table-menu {
     position: absolute;
     inset-inline-start: var(--x, 0);
@@ -185,42 +184,96 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     transform: translate(-50%, calc(-100% - var(--space-2)));
   }
 
-  .table-actions {
-    gap: var(--space-1);
-    transform: translate(-100%, calc(-100% - var(--space-2)));
-  }
-
-  .table-add {
+  .table-insert {
     position: absolute;
     inset-inline-start: var(--x, 0);
     inset-block-start: var(--y, 0);
+    display: grid;
+    pointer-events: none;
   }
 
-  .table-add.row {
-    transform: translate(-50%, var(--space-2));
+  .table-insert > * {
+    grid-area: 1 / 1;
   }
 
-  .table-add.column {
-    transform: translate(calc(-100% - var(--space-2)), -50%);
+  .table-insert :global(button) {
+    z-index: var(--layer-raised);
+    pointer-events: auto;
+  }
+
+  .table-insert.row {
+    align-items: center;
+    inline-size: var(--w, 0);
+    transform: translateY(-50%);
+  }
+
+  .table-insert.row .table-insert-line {
+    inline-size: 100%;
+    border-block-start: var(--border-strong) solid var(--color-accent);
+  }
+
+  .table-insert.row :global(button) {
+    justify-self: start;
+    transform: translateX(-50%);
+  }
+
+  .table-insert.column {
+    justify-items: center;
+    block-size: var(--h, 0);
+    transform: translateX(-50%);
+  }
+
+  .table-insert.column .table-insert-line {
+    block-size: 100%;
+    border-inline-start: var(--border-strong) solid var(--color-accent);
+  }
+
+  .table-insert.column :global(button) {
+    align-self: start;
+    transform: translateY(-50%);
   }
 
   .table-menu {
     display: grid;
-    transform: translate(-100%, var(--space-2));
+    align-items: stretch;
+    min-inline-size: var(--c-editor-context-menu);
+    gap: var(--space-1);
+    padding: var(--space-2);
+    transform: none;
   }
 
   .table-menu [role='group'] {
     display: grid;
+    gap: var(--c-list-item-gap);
+  }
+
+  .table-menu [role='group'] + [role='group'] {
+    margin-block-start: var(--space-1);
+    padding-block-start: var(--space-2);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .table-menu-label {
+    padding: var(--space-1) var(--space-3);
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
   }
 
   .table-menu button {
     min-block-size: var(--c-control-height-md);
     padding-inline: var(--space-3);
     border: 0;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--color-text);
-    font: inherit;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
     text-align: start;
+    white-space: nowrap;
   }
 
   .table-menu button:active {
@@ -327,8 +380,7 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
   .toolbar[hidden],
   .format[hidden],
   .insert[hidden],
-  .table-actions[hidden],
-  .table-add[hidden],
+  .table-insert[hidden],
   .table-menu[hidden],
   .table-menu [hidden] {
     display: none;
