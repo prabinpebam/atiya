@@ -1090,7 +1090,7 @@ test.describe('editor', () => {
     await expect(page.getByRole('button', { name: 'Delete the picture' })).toBeDisabled();
   });
 
-  test('the "+" shows in the space between blocks, never over a block, on a line as wide as the blocks, and adds a block there', async ({ page }) => {
+  test('the "+" shows only inside the main column between blocks, dismisses when stale, and adds a block there', async ({ page }) => {
     await openArticle(page);
     const canvas = page.frame({ url: /\/_edit\/canvas\// })!;
     const plus = frame(page).locator('[data-chrome-insert]');
@@ -1099,17 +1099,19 @@ test.describe('editor', () => {
       a.scrollIntoView({ block: 'center' });
       const b = a.nextElementSibling!.getBoundingClientRect();
       const r = a.getBoundingClientRect();
-      return { x: r.left + r.width / 2, inside: r.top + r.height / 2, topOfNext: b.top + 4, gap: (r.bottom + b.top) / 2, left: r.left, width: Math.min(r.width, b.width) };
+      return { x: r.left + r.width / 2, outside: r.left - 12, inside: r.top + r.height / 2, topOfNext: b.top + 4, gap: (r.bottom + b.top) / 2, left: r.left, width: r.width };
     });
     const box = (await page.locator('[data-editor-frame]').boundingBox())!;
-    const to = (y: number) => page.mouse.move(box.x + at.x, box.y + y, { steps: 3 });
-    await to(at.inside);
+    const to = (x: number, y: number) => page.mouse.move(box.x + x, box.y + y, { steps: 3 });
+    await to(at.x, at.inside);
     await expect(plus).toBeHidden();
-    await to(at.topOfNext);
+    await to(at.x, at.topOfNext);
     await expect(plus).toBeHidden();
-    await to(at.gap);
+    await to(at.outside, at.gap);
+    await expect(plus).toBeHidden();
+    await to(at.x, at.gap);
     await expect(plus).toBeVisible();
-    // the line marks where the block goes: across the blocks' column, at the middle of the gap
+    // the line marks where the block goes: across the main column, at the middle of the gap
     const line = await canvas.evaluate(async () => {
       const el = document.querySelector('[data-chrome-insert] .insert-line')!;
       // once it has drawn in (it grows from the middle)
@@ -1117,10 +1119,15 @@ test.describe('editor', () => {
       const r = el.getBoundingClientRect();
       return { left: r.left, width: r.width, y: r.top + r.height / 2 };
     });
+    expect(Math.abs(line.left - at.left)).toBeLessThan(2);
     expect(Math.abs(line.width - at.width)).toBeLessThan(2);
     expect(Math.abs(line.y - at.gap)).toBeLessThan(2);
     await plus.getByRole('button').click();
+    await expect(plus).toBeHidden();
     await expect(page.locator('#editor-palette')).toBeVisible();
+    await page.locator('#editor-palette [data-editor-add="text"]').click();
+    await expect(frame(page).locator('[data-editor-pending]')).toBeVisible();
+    await expect(plus).toBeHidden();
   });
 
   test('upload: a picture shows at once (its transparency too), can be cropped before it uploads, and a pasted one fills the form', async ({ page, context }) => {

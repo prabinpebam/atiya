@@ -249,6 +249,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     if (turnButton) turnButton.hidden = selected === null || !(TEXTY.has(typeOf(selected)) || typeOf(selected) === 'collection');
   };
   const select = (i: number | null, field: Field | null = null, tell = true, scroll = false) => {
+    hideInsert();
     if (activeTable && activeTable.index !== i) {
       activeTable = null;
       hideTableInsert();
@@ -268,38 +269,47 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     hoverLabel.textContent = kinds[i]?.kind ?? '';
   };
 
-  // the "+" in the space between two blocks (and above the first, below the last), never over a block
+  // the "+" in the main content column's space between two blocks, never over a block
   let insertAt = -1;
-  const REACH = 24;
+  const hideInsert = () => {
+    insertAt = -1;
+    insert.hidden = true;
+    delete insert.dataset.side;
+  };
+  const mainColumn = (): DOMRect | null => {
+    for (const block of blocks) {
+      const rect = block.getBoundingClientRect();
+      if (rect.width > 0 && getComputedStyle(block).gridColumnStart === 'content') return rect;
+    }
+    return null;
+  };
   const showInsert = (x: number, y: number, over: number) => {
     insertAt = -1;
-    const p = prose?.getBoundingClientRect();
+    const column = mainColumn();
     const rects = blocks.flatMap((b, i) => (b ? [{ i, r: b.getBoundingClientRect() }] : []));
-    if (!p || preview || over >= 0 || !rects.length || x < p.left || x > p.right) return (insert.hidden = true);
-    for (let k = 0; k <= rects.length; k++) {
-      const top = k > 0 ? rects[k - 1].r.bottom : rects[0].r.top - REACH;
-      const bottom = k < rects.length ? rects[k].r.top : rects[rects.length - 1].r.bottom + REACH;
+    if (!column || preview || over >= 0 || rects.length < 2 || x < column.left || x > column.right) return hideInsert();
+    for (let k = 1; k < rects.length; k++) {
+      const top = rects[k - 1].r.bottom;
+      const bottom = rects[k].r.top;
       if (y >= top && y <= bottom) {
-        insertAt = k < rects.length ? rects[k].i : rects[rects.length - 1].i + 1;
-        // a line as wide as the blocks either side (the narrower: the text column beside a wide picture)
-        // shows where the block goes; the "+" is in its middle
-        const n = [k > 0 ? rects[k - 1].r : null, k < rects.length ? rects[k].r : null].filter((r): r is DOMRect => !!r).sort((u, v) => u.width - v.width)[0];
-        insert.style.setProperty('--x', `${n.left + scrollX}px`);
-        insert.style.setProperty('--w', `${n.width}px`);
+        insertAt = rects[k].i;
+        insert.style.setProperty('--x', `${column.left + scrollX}px`);
+        insert.style.setProperty('--w', `${column.width}px`);
         insert.style.setProperty('--y', `${(top + bottom) / 2 + scrollY}px`);
         // never under the block toolbar: where it would cover the "+" in the middle, the "+" goes to the line's
         // start, outside the column when there's room for it there (clear of the words too)
         const plus = insert.querySelector<HTMLElement>('[data-chrome-insert-button]')?.offsetWidth || 40;
         const bar = toolbar.hidden ? null : toolbar.getBoundingClientRect();
-        const cx = n.left + n.width / 2;
+        const cx = column.left + column.width / 2;
         const cy = (top + bottom) / 2;
         const covered = !!bar && cx + plus / 2 > bar.left && cx - plus / 2 < bar.right && cy + plus / 2 > bar.top && cy - plus / 2 < bar.bottom;
         if (!covered) delete insert.dataset.side;
-        else insert.dataset.side = n.left >= plus * 1.25 ? 'outside' : 'start';
+        else insert.dataset.side = column.left >= plus * 1.25 ? 'outside' : 'start';
         break;
       }
     }
-    insert.hidden = insertAt < 0;
+    if (insertAt < 0) hideInsert();
+    else insert.hidden = false;
   };
   const showTableInsert = (x: number, y: number, over: number) => {
     hideTableInsert();
@@ -352,15 +362,19 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     showTableInsert(e.clientX, e.clientY, over);
   });
   addEventListener('scroll', () => {
+    hideInsert();
     hideTableInsert();
     closeTableMenu();
     requestAnimationFrame(redraw);
   }, { signal, passive: true });
   addEventListener('resize', () => {
+    hideInsert();
     hideTableInsert();
     closeTableMenu();
     requestAnimationFrame(redraw);
   }, { signal });
+  on('pointerleave', hideInsert);
+  addEventListener('blur', hideInsert, { signal });
 
   // ---------- clicks: select, and keep links and players inert ----------
   /** The page's own way round it, not its content: the minimap works in the canvas as on the site. */
@@ -400,7 +414,11 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         const op = b.dataset.chromeOp;
         if (op === 'turn') post({ type: 'turn', index: selected });
         else post({ type: 'op', index: selected, op: op as 'up' | 'down' | 'duplicate' | 'delete' });
-      } else if (b.hasAttribute('data-chrome-insert-button') && insertAt >= 0) post({ type: 'insert', index: insertAt });
+      } else if (b.hasAttribute('data-chrome-insert-button') && insertAt >= 0) {
+        const at = insertAt;
+        hideInsert();
+        post({ type: 'insert', index: at });
+      }
       else if (b.hasAttribute('data-chrome-more-toggle')) showMore(moreMenu.hidden);
       else if (b.dataset.chromeTableInsert) useTableInsert(b.dataset.chromeTableInsert as 'row' | 'column');
       else if (b.dataset.chromeTableOp) useTableControl(b.dataset.chromeTableOp);
@@ -1222,7 +1240,8 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       else if (m.type === 'mode') {
         preview = !!m.preview;
         document.querySelectorAll<HTMLElement>('[data-editor-editable]').forEach((el) => (el.contentEditable = preview ? 'false' : el.dataset.editorEditable === 'rich' ? 'true' : 'plaintext-only'));
-        hoverBox.hidden = insert.hidden = format.hidden = true;
+        hoverBox.hidden = format.hidden = true;
+        hideInsert();
         hideTableInsert();
         closeTableMenu();
         redraw();
@@ -1233,6 +1252,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
 
   const addPending = (at: number, kind: Pending) => {
     if (!prose) return;
+    hideInsert();
     const el = document.createElement(kind === 'heading' ? 'h2' : 'p');
     if (kind === 'subheading') el.dataset.subheading = '';
     if (kind === 'marker') el.dataset.sectionMark = '';
