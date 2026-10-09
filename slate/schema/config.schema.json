@@ -41,6 +41,11 @@
     "themeStylesheet": {
       "type": "string",
       "description": "Optional host-relative theme stylesheet also loaded by standalone Slate application surfaces such as Canvas."
+    },
+    "parentDomain": {
+      "type": "string",
+      "description": "Hostname whose own pages and subdomains stay in the current tab. HTTP(S) links outside it open a labelled new tab. Defaults to the viewer's current hostname.",
+      "pattern": "^[A-Za-z0-9.-]+$"
     }
   },
   "additionalProperties": true

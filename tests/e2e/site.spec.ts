@@ -17,6 +17,23 @@ const noSeriousViolations = async (page: Page) => {
 };
 
 test.describe('site design system', () => {
+  test('links keep the parent domain in this tab and label links that leave it', async ({ page }) => {
+    await page.goto('/side-projects/atiya/');
+    const sameParent = page.locator('main a[href="https://prabinpebam.github.io/atiya/"]');
+    await expect(sameParent).not.toHaveAttribute('target', '_blank');
+    const offParent = page.locator('main a[href^="https://github.com/"]').first();
+    await expect(offParent).toHaveAttribute('target', '_blank');
+    await expect(offParent).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(offParent).toHaveAccessibleName(/opens in a new tab/);
+
+    await page.goto('/docs/#engineering/overview.md');
+    await expect(page.locator('#document h1')).toContainText('Engineering');
+    await expect(page.locator('#document a[href="https://prabinpebam.github.io/atiya/"]').first()).not.toHaveAttribute('target', '_blank');
+    const docsOffParent = page.locator('#document a[href^="https://github.com/"]').first();
+    await expect(docsOffParent).toHaveAttribute('target', '_blank');
+    await expect(docsOffParent).toHaveAccessibleName(/opens in a new tab/);
+  });
+
   test('the theme: follows the system, a choice is kept and applied before the first paint', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/');

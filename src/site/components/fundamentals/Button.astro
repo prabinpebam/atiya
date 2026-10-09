@@ -10,6 +10,7 @@
  * @key Space: activates a button
  */
 import { svgOf, type IconName } from '../../design/icons';
+import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 
 interface Props {
   /** primary: the one main action; secondary: an outlined alternative; quiet: a light, text-weight action. */
@@ -30,7 +31,7 @@ interface Props {
   loading?: boolean;
   /** Fills its container's width. */
   block?: boolean;
-  /** Opens in a new tab (links only): adds the external icon and says so. */
+  /** Forces a new tab even on the parent domain (off-domain HTTP(S) links do this automatically). */
   external?: boolean;
   /** The element’s id. */
   id?: string;
@@ -48,10 +49,11 @@ interface Props {
 const { variant = 'secondary', size = 'md', href, type = 'button', icon, iconEnd, disabled = false, loading = false, block = false, external = false, ...rest } = Astro.props;
 const isLink = href !== undefined && !disabled;
 const Tag = isLink ? 'a' : 'button';
+const policy = linkAttrs(isLink ? href : undefined, Astro.url.hostname, external);
 const start = icon ? svgOf(icon) : null;
 // on the accent fill an indigo second layer would sink into it: the icon is tonal there
 const tonal = variant === 'primary' ? 'tonal' : undefined;
-const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
+const end = policy.newTab ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
 ---
 
 <Tag
@@ -60,8 +62,8 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
   data-size={size}
   data-block={block ? '' : undefined}
   href={isLink ? href : undefined}
-  target={isLink && external ? '_blank' : undefined}
-  rel={isLink && external ? 'noopener' : undefined}
+  target={policy.target}
+  rel={policy.rel}
   type={isLink ? undefined : type}
   disabled={!isLink && (disabled || loading) ? true : undefined}
   aria-disabled={href !== undefined && disabled ? 'true' : undefined}
@@ -84,7 +86,7 @@ const end = external ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
       </svg>
     )
   }
-  {external && <span class="sr-only">(opens in a new tab)</span>}
+  {policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
 </Tag>
 
 <style>

@@ -180,7 +180,7 @@ Access belongs to a page, never to a section: every section is open, and any of 
 - **A section with only private pages** isn't empty, and doesn't say so: signed out, it shows the panel alone. "Nothing here yet. This section is being written." is only for a section with no pages at all, open or private (6 October 2026, the owner's call).
 - **Elsewhere,** even signed in, private pages aren't on the home page, in an open page's related stories or next and previous, in the navigation or on the planet (v1).
 - **A private page never names another private page.** Its own related stories and next and previous list open pages only. So a grant that covers one page learns nothing about its neighbours: no title, no address (§5.4). A link the author writes in a page's text to another private page is that page's own content, and opens that page's own sign-in or "not shared with you" note.
-- **The order:** the public structure keeps the open pages' order on its own (so a public-only build is unchanged). The overlay holds the section's full order, open and private node IDs together, and the build uses it when the private folder is present.
+- **The order:** the public structure keeps the open pages' order on its own (so a public-only build is unchanged). The overlay holds the section's full order, open and private node IDs together, and the build uses it when the private folder is present. Development and the sealed runtime both preserve that full order when consecutive private pages share the same preceding open page (including several pages before the first open one).
 
 ### 2.2 Addresses and magic links (A8)
 
@@ -374,6 +374,7 @@ The build renders a protected page with the same layouts and components as any o
 - **A public picture on a protected page** (its master in `content/`) stays readable: it's public anyway. A private master on an open page is refused (V25).
 - **Decrypting is lazy:**
   - **Pictures** decrypt when they come near the viewport, at the one width the layout and the screen's pixel density need, and become `blob:` URLs. The lightbox asks for the full size when it opens.
+  - A picture inserted after the page loaded is pointed at the page's chosen colour theme before its files are revealed. An explicit Light choice therefore keeps the light version even when the operating system is dark; later theme changes still update every picture together.
   - **Videos** decrypt whole when they come near the viewport and play from a `blob:` URL, which seeks normally. Web Crypto decrypts a file in one piece, so for a moment the browser holds the sealed bytes, the plain bytes and the video's blob: about three times the file. That's why a sealed video is capped at **10 MB** (V27), about 30 MB at its peak.
 - **Memory:** a page's `blob:` URLs are revoked when the page is left, and on sign-out.
 
@@ -824,7 +825,7 @@ Built 5 to 6 October 2026, phase by phase as the [plan](plan.md) sets out, and c
 |---|---|
 | QB1, QB1a, QB1b | `verify:sealed` passes on the test and production builds; `tests/unit/sealed.test.ts` (23 tests) plants the leak kinds, lets off words the public sources already hold (never a token or a grant ID) and captures the tools' output |
 | QB2, QB2a, QB2b | `tests/unit/access.test.ts` (14): the RFC 7914, RFC 5869 and GCM test-case-16 vectors, the refusals, the round trips and 100,000 IVs |
-| QB3 | E2E "protected content": the scope matrix (every fixture grant) |
+| QB3 | E2E "protected content": the scope matrix (every fixture grant), private cards in their source order, and a late-decrypted card's picture following an explicit theme |
 | QB4, QB5 | `tests/unit/accessSession.test.ts` (9); E2E: a stale build reloads once, sign-out in every tab and from Back |
 | QB6 | `tests/unit/telemetry.test.ts` (16); E2E "protected content: telemetry" (5): every request to the fake host decoded, no title, sentence, code, link secret, fragment or recipient; only the allowlist on protected pages and the Sign in page; GPC, DNT and `?telemetry=off` send nothing; after sign-out, events aren't the grant's |
 | QB7 | `verify:prod`: sign-in runtime 6.1 KB, telemetry's always-on part 1.12 KB plus the loader's 0.26 KB (1.38 KB on an open page), PostHog's chunk 98.5 KB on idle |

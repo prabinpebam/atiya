@@ -238,6 +238,28 @@
     return html;
   }
 
+  function leavesParentDomain(href) {
+    if (!/^https?:\/\//i.test(href)) return false;
+    const clean = host => host.trim().toLowerCase().replace(/\.$/, '');
+    const within = (host, parent) => host === parent || host.endsWith('.' + parent);
+    const host = clean(new URL(href).hostname);
+    const current = clean(location.hostname);
+    const parent = clean(state.config.parentDomain || current);
+    return !within(host, current) && !within(host, parent);
+  }
+
+  function markNewTab(a) {
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    if (!a.querySelector('[data-slate-new-tab]')) {
+      const note = document.createElement('span');
+      note.className = 'slate-sr-only';
+      note.dataset.slateNewTab = '';
+      note.textContent = ' (opens in a new tab)';
+      a.appendChild(note);
+    }
+  }
+
   /* ==========================================================
      PIPELINE  (REQ-CM-02/07)  order is normative
      ========================================================== */
@@ -246,7 +268,7 @@
     // Links
     container.querySelectorAll('a').forEach(a => {
       const href = a.getAttribute('href'); if (!href) return;
-      if (/^https?:\/\//.test(href)) { a.target = '_blank'; a.rel = 'noopener noreferrer'; return; }
+      if (leavesParentDomain(href)) { markNewTab(a); return; }
       const tool = href.match(/^(.+\.html?)(\?[^#]*)?(#.*)?$/i);
       if (tool && a.target === '_blank') {
         a.setAttribute('href', joinRoot(resolvePath(basePath, tool[1])) + (tool[2] || '') + (tool[3] || ''));
@@ -1648,4 +1670,3 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', main);
   else main();
 })();
-

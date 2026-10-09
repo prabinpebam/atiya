@@ -37,7 +37,8 @@ describe('the Markdown subset', () => {
   });
 
   it('links go only to https, http, mailto or a ref: that resolves', () => {
-    expect(renderMarkdown('[site](https://example.com/a_b_c)')).toBe('<p><a href="https://example.com/a_b_c">site</a></p>');
+    expect(renderMarkdown('[site](https://example.com/a_b_c)')).toBe('<p><a href="https://example.com/a_b_c" target="_blank" rel="noopener noreferrer">site<span class="sr-only"> (opens in a new tab)</span></a></p>');
+    expect(renderMarkdown('[Atiya](https://prabinpebam.github.io/atiya/)')).toBe('<p><a href="https://prabinpebam.github.io/atiya/">Atiya</a></p>');
     expect(renderMarkdown('[a case](ref:caseStudy/x)', { resolveRef: (r) => (r === 'caseStudy/x' ? '/work/x/' : undefined) })).toBe('<p><a href="/work/x/">a case</a></p>');
     expect(() => renderMarkdown('[bad](javascript:void0)')).toThrow(/https, http, mailto or ref/);
     // a target with brackets or spaces isn't a link at all: it stays (escaped) text
@@ -49,7 +50,7 @@ describe('the Markdown subset', () => {
     expect(parseInline('*a **b** c*')).toEqual([{ t: 'em', c: [{ t: 'text', v: 'a ' }, { t: 'strong', c: [{ t: 'text', v: 'b' }] }, { t: 'text', v: ' c' }] }]);
     expect(parseInline('`**x**`')).toEqual([{ t: 'code', v: '**x**' }]);
     expect(parseInline('[a [b](https://x.y) c](https://z.z)')[0]).toMatchObject({ t: 'link', href: 'https://z.z' });
-    expect(renderMarkdown('[**bold** link](https://x.y)')).toBe('<p><a href="https://x.y"><strong>bold</strong> link</a></p>');
+    expect(renderMarkdown('[**bold** link](https://x.y)')).toBe('<p><a href="https://x.y" target="_blank" rel="noopener noreferrer"><strong>bold</strong> link<span class="sr-only"> (opens in a new tab)</span></a></p>');
   });
 
   it('backslash escapes and double-backtick code make the delimiters literal', () => {

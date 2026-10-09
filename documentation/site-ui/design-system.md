@@ -129,6 +129,7 @@ The design library is the full, live version (examples, props, keys, tokens, use
 - **Native first:** real inputs (restyled with `appearance: none`), `<dialog>` for the lightbox, `<details>` for the side navigation's fold. The select follows the APG select-only combobox, key for key.
 - **Motion:** reduced motion turns off every animation. There's no autoplay anywhere; the carousel doesn't rotate.
 - **Structure:** one h1 per page; a skip link first; landmarks with names; `aria-current` on the current page; live regions for counters.
+- **Links and tabs:** relative links and absolute links anywhere under `prabinpebam.github.io` stay in the current tab. An HTTP(S) link that leaves that parent domain opens a new tab with `noopener noreferrer`, an external-link mark where the component has one, and the accessible note “opens in a new tab”. `mailto:`, telephone, fragment and download links keep their browser-native behaviour. A same-domain link may open a new tab only to preserve a task in progress (for example, previewing the public page from edit mode or leaving the planet’s reading frame), and it carries the same note.
 - **Checked by axe** in both modes on the library, the layouts and the pages (the E2E group).
 
 ### Phones and touch ([the mobile audit](mobile-audit.md))

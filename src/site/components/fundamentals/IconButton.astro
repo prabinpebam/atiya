@@ -11,6 +11,7 @@
  * @key Space: activates a button
  */
 import { svgOf, type IconName } from '../../design/icons';
+import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 
 interface Props {
   /** What it does, as a verb ("Close", "Next image"). Names it and is the tooltip. */
@@ -46,6 +47,8 @@ const { label, icon, variant = 'quiet', size = 'md', shape = 'round', href, pres
 const isLink = href !== undefined && !disabled;
 const Tag = isLink ? 'a' : 'button';
 const i = svgOf(icon);
+const policy = linkAttrs(isLink ? href : undefined, Astro.url.hostname);
+const accessibleLabel = `${label}${policy.newTab ? NEW_TAB_NOTE : ''}`;
 ---
 
 <Tag
@@ -55,9 +58,11 @@ const i = svgOf(icon);
   data-shape={shape === 'square' ? 'square' : undefined}
   data-tip={tooltip === 'none' ? undefined : tooltip}
   data-label={label}
-  aria-label={label}
+  aria-label={accessibleLabel}
   aria-pressed={pressed === undefined ? undefined : pressed ? 'true' : 'false'}
   href={isLink ? href : undefined}
+  target={policy.target}
+  rel={policy.rel}
   type={isLink ? undefined : type}
   disabled={!isLink && disabled ? true : undefined}
   {...rest}

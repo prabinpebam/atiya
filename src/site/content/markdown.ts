@@ -13,6 +13,8 @@
  *
  * Everything else is text: HTML is escaped, so raw markup can never reach a page.
  */
+import { linkAttrs, NEW_TAB_NOTE } from '../design/links';
+
 export type Inline =
   | { t: 'text'; v: string }
   | { t: 'strong'; c: Inline[] }
@@ -346,7 +348,10 @@ function renderInline(nodes: Inline[], opts: MarkdownOptions): string {
           } else if (SAFE_HREF.test(n.href)) target = n.href;
           else throw new Error(`links may only go to https, http, mailto or ref: (${n.href})`);
           const written = opts.annotate ? ` data-md-href="${escapeHtml(n.href)}"` : '';
-          return `<a href="${escapeHtml(target)}"${written}>${renderInline(n.c, opts)}</a>`;
+          const policy = linkAttrs(target);
+          const tab = policy.newTab ? ` target="${policy.target}" rel="${policy.rel}"` : '';
+          const note = policy.newTab ? `<span class="sr-only">${NEW_TAB_NOTE}</span>` : '';
+          return `<a href="${escapeHtml(target)}"${written}${tab}>${renderInline(n.c, opts)}${note}</a>`;
         }
       }
     })

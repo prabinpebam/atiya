@@ -5,6 +5,7 @@
  * @a11y A tag that's a link says where it goes by its words; a status tag isn't colour alone (its word carries it).
  */
 import { svgOf, type IconName } from '../../design/icons';
+import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 
 interface Props {
   /** neutral: a topic; accent: the one that matters here; highlight: new or featured; positive, negative: a status. */
@@ -20,9 +21,10 @@ interface Props {
 const { tone = 'neutral', size = 'md', href, icon } = Astro.props;
 const Tag = href ? 'a' : 'span';
 const i = icon ? svgOf(icon) : null;
+const policy = linkAttrs(href, Astro.url.hostname);
 ---
 
-<Tag class="tag" data-tone={tone} data-size={size} href={href}>
+<Tag class="tag" data-tone={tone} data-size={size} href={href} target={policy.target} rel={policy.rel}>
   {
     i && (
       <svg class="icon" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name} data-icon-tone={tone === 'neutral' || tone === 'accent' ? undefined : 'tonal'}>
@@ -31,6 +33,7 @@ const i = icon ? svgOf(icon) : null;
     )
   }
   <slot />
+  {policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
 </Tag>
 
 <style>

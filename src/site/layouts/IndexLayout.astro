@@ -21,6 +21,7 @@ import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Button from '../components/fundamentals/Button.astro';
 import type { IconName } from '../design/icons';
+import { mergeAfterAnchors } from '../content/sectionOrder';
 import type { ComponentProps } from 'astro/types';
 
 type Story = Omit<ComponentProps<typeof StoryCard>, 'variant'> & {
@@ -79,14 +80,11 @@ const sealing = import.meta.env.PROD;
 // in dev every page shows in its place, the private ones marked; a build lists the open ones and seals the rest
 const shown: (Story & { privateTag?: boolean })[] = sealing
   ? stories
-  : (() => {
-      const all: (Story & { privateTag?: boolean })[] = [...stories];
-      for (const l of privatePages) {
-        const at = l.after === null ? 0 : all.findIndex((s) => s.node === l.after) + 1;
-        all.splice(at > 0 || l.after === null ? at : all.length, 0, { ...l.story, node: l.id, privateTag: true });
-      }
-      return all;
-    })();
+  : mergeAfterAnchors(
+      stories,
+      privatePages.map((l) => ({ after: l.after, value: { ...l.story, node: l.id, privateTag: true } })),
+      (story) => story.node ?? '',
+    );
 const sealed = sealing ? privatePages : [];
 const variantOf = (i: number) => (view === 'features' ? 'feature' : view === 'list' ? 'row' : view === 'bento' && i === 0 ? 'feature' : undefined);
 const open = (mark: string) => `<!--sealed:card:${mark}-->`;

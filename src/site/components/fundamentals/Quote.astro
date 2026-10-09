@@ -8,6 +8,7 @@
  * @a11y A pull quote repeats a line from the text, so it's fine for a screen reader to meet it twice; don't put anything only there.
  */
 import { svgOf } from '../../design/icons';
+import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 
 interface Props {
   /** block: a quotation in the column; pull: a line lifted out of the story, set large. */
@@ -24,6 +25,7 @@ interface Props {
 
 const { variant = 'block', cite, source, sourceHref, width = variant === 'pull' ? 'popout' : 'content' } = Astro.props;
 const mark = svgOf('quote');
+const sourcePolicy = linkAttrs(sourceHref, Astro.url.hostname);
 ---
 
 <figure class="quote" data-variant={variant} data-breakout={width === 'content' ? undefined : width}>
@@ -42,7 +44,7 @@ const mark = svgOf('quote');
         <span>
           {cite && <span class="name">{cite}</span>}
           {cite && source && ', '}
-          {source && (sourceHref ? <a href={sourceHref}>{source}</a> : <cite>{source}</cite>)}
+          {source && (sourceHref ? <a href={sourceHref} target={sourcePolicy.target} rel={sourcePolicy.rel}>{source}{sourcePolicy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}</a> : <cite>{source}</cite>)}
         </span>
       </figcaption>
     )

@@ -7,6 +7,7 @@
  */
 import { each } from './page';
 import { nearestFirst, watchPicturesIn } from './pictures';
+import { parseTheme, syncDarkSources } from './theme';
 import { b64, deriveCodeKey, deriveLinkKey, open, utf8 } from '../access/crypto.ts';
 import { KeyringError, cardAad, checkEnvelope, mediaAad, openKeyring, pageAad } from '../access/keyring.ts';
 import { parseCode } from '../access/parse.ts';
@@ -282,6 +283,7 @@ async function openCards(keys: KeyringBody['keys'], grant: string) {
     lastAfter.set(anchorKey, card);
     card.setAttribute('data-shared', '');
     activateScripts(card);
+    syncDarkSources(card, parseTheme(html.dataset.theme));
     watchMedia(card, p.media);
     tpl.remove();
     added++;
@@ -314,6 +316,7 @@ async function openPage(keys: KeyringBody['keys'], grant: string, via: Session['
   const title = main.querySelector<HTMLElement>('[data-page-title]')?.textContent;
   if (title) document.title = title;
   html.dataset.unlocked = '';
+  syncDarkSources(main, parseTheme(html.dataset.theme));
   watchMedia(main, p.media);
   // every component's script sets up the new elements, as on an open page (scripts/page.ts `each`)
   document.dispatchEvent(new Event('astro:page-load'));

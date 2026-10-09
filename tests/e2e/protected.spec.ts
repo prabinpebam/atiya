@@ -194,6 +194,18 @@ test.describe('protected content', () => {
     await expect(source).toHaveAttribute('srcset', /^blob:/);
   });
 
+  test("a private card's picture follows an explicit light theme when the system is dark", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.addInitScript(() => localStorage.setItem('site.theme', 'light'));
+    await page.goto(`/sign-in/?return=${encodeURIComponent(SECTION)}`);
+    await signIn(page, ALL);
+    await page.waitForURL(`**${SECTION}`);
+    await expect(page.locator('[data-shared]')).toHaveCount(3);
+    const source = page.locator('[data-shared] source[data-dark]').first();
+    await expect(source).toHaveAttribute('srcset', /^blob:/);
+    await expect(source).toHaveAttribute('media', 'not all');
+  });
+
   test('Remember on this device keeps the key; sign-out clears it here, in another tab, and from Back (QB5)', async ({ page, context }) => {
     await page.goto(SECTION);
     await page.goto(ALPHA);

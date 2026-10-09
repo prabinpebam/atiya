@@ -4,5 +4,6 @@
   "defaultTheme": "auto",
   "density": "comfortable",
   "landing": "landing.html",
+  "parentDomain": "prabinpebam.github.io",
   "themeStylesheet": "project.theme.css"
 }

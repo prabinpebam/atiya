@@ -5,6 +5,7 @@
 - Principal Design Manager at Microsoft
 - Showcase a broad practice spanning craft, product delivery, technology, strategy, and leadership
 - Make senior-level judgment, outcomes, and organizational influence more prominent than a gallery of polished artifacts
+- Keep navigation in the same tab across the parent domain; open links that leave it in a labelled new tab. Use a same-domain new tab only when preserving the current task is the point, such as previewing a page from edit mode.
 
 ## Planning documents
 

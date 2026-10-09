@@ -12,6 +12,7 @@ import Video, { type VideoCaptions } from '../fundamentals/Video.astro';
 import Image from '../fundamentals/Image.astro';
 import Caption from '../fundamentals/Caption.astro';
 import { svgOf } from '../../design/icons';
+import { linkAttrs } from '../../design/links';
 
 interface Props {
   /** file: local media; youtube or vimeo: a facade that swaps to an iframe. */
@@ -85,6 +86,7 @@ const spoken = duration
   ? [mins && `${mins} minute${mins === 1 ? '' : 's'}`, secs && `${secs} second${secs === 1 ? '' : 's'}`].filter(Boolean).join(' ')
   : undefined;
 const pageHref = kind === 'youtube' ? `https://www.youtube.com/watch?v=${id ?? ''}` : kind === 'vimeo' ? `https://vimeo.com/${id ?? ''}` : src;
+const pagePolicy = linkAttrs(pageHref, Astro.url.hostname);
 const embedSrc =
   kind === 'youtube'
     ? `https://www.youtube-nocookie.com/embed/${id ?? ''}?autoplay=1`
@@ -99,7 +101,7 @@ const embedSrc =
       (src || webm) && <Video src={src} webm={webm} label={title} poster={poster} width={mediaWidth} height={mediaHeight} captions={captions} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} muted={muted} loop={loop} />
     ) : (
       <div class="embed-box" data-ratio={ratio}>
-        <a class="facade" href={pageHref} aria-label={`Play video: ${title}${spoken ? ` (${spoken})` : ''}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
+        <a class="facade" href={pageHref} target={pagePolicy.target} rel={pagePolicy.rel} aria-label={`Play video: ${title}${spoken ? ` (${spoken})` : ''}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
           <Image src={poster ?? ''} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} dark={posterDark} />
           <span class="play-mark" aria-hidden="true">
             <svg class="play-icon" viewBox={play.viewBox} focusable="false" data-icon={play.name}><Fragment set:html={play.body} /></svg>

@@ -17,6 +17,7 @@ import Button from '../fundamentals/Button.astro';
 import IconButton from '../fundamentals/IconButton.astro';
 import Select from '../fundamentals/Select.astro';
 import { SITE_NAME, withBase } from '../../design/meta';
+import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 import { svgOf, type IconName } from '../../design/icons';
 import { THEME_OPTIONS } from '../../scripts/theme';
 
@@ -48,6 +49,7 @@ const uid = Math.random().toString(36).slice(2, 8);
 const navId = `site-nav-${uid}`;
 const open = svgOf('menu');
 const close = svgOf('close');
+const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
 ---
 
 <header
@@ -74,13 +76,16 @@ const close = svgOf('close');
       nav.length > 0 && (
         <nav class="nav" id={navId} aria-label={navLabel} data-nav data-scrollbar>
           <ul>
-            {nav.map((n) => (
-              <li>
-                <a href={n.href} aria-current={n.current ? 'page' : undefined}>
-                  {n.label}
-                </a>
-              </li>
-            ))}
+            {nav.map((n) => {
+              const policy = navPolicy(n.href);
+              return (
+                <li>
+                  <a href={n.href} target={policy.target} rel={policy.rel} aria-current={n.current ? 'page' : undefined}>
+                    {n.label}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
+                  </a>
+                </li>
+              );
+            })}
             {action && (
               <li class="nav-action">
                 <Button variant="primary" href={action.href} icon={action.icon} block {...action.data}>

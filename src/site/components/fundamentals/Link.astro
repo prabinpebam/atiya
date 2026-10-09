@@ -9,13 +9,14 @@
  * @key Enter: follows it
  */
 import { svgOf } from '../../design/icons';
+import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 
 interface Props {
   /** Where it goes (root-relative paths go through withBase). */
   href: string;
   /** inline: in running text; standalone: at the end of a block, with a direction; quiet: footers, meta. */
   variant?: 'inline' | 'standalone' | 'quiet';
-  /** Opens in a new tab: adds the external icon and says so. */
+  /** Forces a new tab even on the parent domain (off-domain HTTP(S) links do this automatically). */
   external?: boolean;
   /** Marks the current page in a set of links. */
   current?: boolean;
@@ -25,15 +26,16 @@ interface Props {
 }
 
 const { href, variant = 'inline', external = false, current = false, download = false, ...rest } = Astro.props;
-const end = external ? svgOf('external') : variant === 'standalone' ? svgOf('arrow-right') : null;
+const policy = linkAttrs(href, Astro.url.hostname, external);
+const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf('arrow-right') : null;
 ---
 
 <a
   class="link"
   data-variant={variant}
   href={href}
-  target={external ? '_blank' : undefined}
-  rel={external ? 'noopener' : undefined}
+  target={policy.target}
+  rel={policy.rel}
   aria-current={current ? 'page' : undefined}
   download={download ? '' : undefined}
   {...rest}
@@ -43,7 +45,7 @@ const end = external ? svgOf('external') : variant === 'standalone' ? svgOf('arr
         <Fragment set:html={end.body} />
       </svg>
     )
-  }{external && <span class="sr-only"> (opens in a new tab)</span>}</a
+  }{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}</a
 >
 
 <style>
