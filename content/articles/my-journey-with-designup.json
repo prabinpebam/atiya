@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-09",
+  "updatedAt": "2026-10-10",
   "locale": "en",
   "topics": [
     "designup",
@@ -216,10 +216,10 @@
       "type": "gallery",
       "items": [
         {
-          "media": "articles/my-journey-with-designup/into-the-design-verse-1"
+          "media": "articles/my-journey-with-designup/designup-recap-poster"
         },
         {
-          "media": "articles/my-journey-with-designup/designup-recap-poster"
+          "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-2"
         }
       ],
       "layout": "grid",
@@ -235,6 +235,16 @@
     {
       "type": "text",
       "markdown": "By now, I had met so many leaders and great Designers. Year after year, I had been lucky to be surrounded by some of the best people in the industry. When you are constantly in the company of brilliant people, you can't help but grow. And it happened at a key moment in my career, when I was still growing, still being moulded, and still defining the kind of professional I wanted to be."
+    },
+    {
+      "type": "video",
+      "embed": {
+        "provider": "vimeo",
+        "id": "680750485"
+      },
+      "title": "DUP fallback background loop",
+      "poster": "articles/my-journey-with-designup/designup-2017-poster",
+      "width": "wide"
     },
     {
       "type": "quote",

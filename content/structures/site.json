@@ -22,7 +22,7 @@
         "slug": "about",
         "title": "About",
         "summary": "Who I am, and how I lead and grow design teams.",
-        "view": "list",
+        "view": "features",
         "children": [
           {
             "id": "my-journey-with-designup",
