@@ -4,7 +4,7 @@ import EditorLayout from '../EditorLayout.astro';
 import Overview from '../components/Overview.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import { articleRows, load, references } from '../server/screens';
-import { changes } from '../server/git';
+import { changes, pendingCount } from '../server/git';
 import { withBase } from '../../design/meta';
 
 export const prerender = false;
@@ -23,7 +23,7 @@ if (loaded.ok) {
   props = {
     counts: { published: rows.filter((r) => r.published).length, draft: rows.filter((r) => r.status === 'draft').length, other: rows.filter((r) => !r.published && r.status !== 'draft').length },
     recent: rows.slice(0, 5),
-    pending: git.files.length,
+    pending: pendingCount(git),
     attention,
   };
 }

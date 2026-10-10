@@ -57,7 +57,7 @@ const STATUS = { added: { label: 'New', tone: 'positive' }, changed: { label: 'C
 const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checked) ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
 ---
 
-<div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined}>
+<div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined} data-published={published ?? undefined}>
   {
     published && (
       <section class="panel" data-tone="positive" aria-labelledby="publish-done-title">
@@ -86,6 +86,7 @@ const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checke
 
   <section class="panel" aria-labelledby="publish-changes-title">
     <Heading level={2} size="h4" id="publish-changes-title">{changes.length ? `${changes.length} ${changes.length === 1 ? 'change' : 'changes'} to save` : 'Changes to save'}</Heading>
+    <p class="checking" role="status" data-publish-checking hidden>Checking what changed…</p>
     {
       changes.length ? (
         <ul class="list">
@@ -109,9 +110,11 @@ const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checke
               <Tag size="sm" tone={STATUS[c.status].tone}>
                 {STATUS[c.status].label}
               </Tag>
-              <Button variant="quiet" size="sm" icon="restore" data-publish-discard={JSON.stringify(c.keys)} data-name={`${c.kind}: ${c.name}`} data-status={c.status}>
-                Discard
-              </Button>
+              {c.keys.length > 0 && (
+                <Button variant="quiet" size="sm" icon="restore" data-publish-discard={JSON.stringify(c.keys)} data-name={`${c.kind}: ${c.name}`} data-status={c.status}>
+                  Discard
+                </Button>
+              )}
             </li>
           ))}
         </ul>
@@ -241,6 +244,18 @@ const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checke
     color: var(--color-negative);
     font-size: var(--text-sm);
     font-weight: var(--weight-medium);
+  }
+
+  .checking {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* being read again from git: what's shown may be out of date, so it steps back until it's replaced */
+  .publish[data-checking] .list,
+  .publish[data-checking] form {
+    opacity: var(--opacity-disabled);
   }
 
   @media (max-width: 40rem) {

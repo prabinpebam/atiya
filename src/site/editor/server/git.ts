@@ -79,11 +79,20 @@ export interface Changes extends RepoState {
   private: RepoState | null;
   /** The private-pages folder's path in the public repository, and whether its pointer has moved (an unpublished private commit). */
   pointer: { path: string; moved: boolean } | null;
+  /** Why git couldn't say what changed (then `files` is unknown, not empty), or null. */
+  error: string | null;
 }
 
-/** Files under `path` that differ from the last commit, as git sees them, keyed with `prefix`. */
+/** git failed to report a folder's status. */
+export class GitStatusError extends Error {}
+
+/** How many things wait to be saved to remote: changed files, commits not pushed (either repository), a private commit not yet recorded. */
+export const pendingCount = (c: Changes): number => c.files.length + c.ahead + (c.private?.ahead ?? 0) + (c.pointer?.moved ? 1 : 0);
+
+/** Files under `path` that differ from the last commit, as git sees them, keyed with `prefix`. A git that fails throws: an unread status is never "nothing changed". */
 async function statusOf(top: string, path: string, prefix: string, skip: (rel: string) => boolean = () => false): Promise<ChangedFile[]> {
   const st = await git(['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', path], { cwd: top });
+  if (st.code) throw new GitStatusError(`git couldn't read what changed in ${prefix === '/private/' ? 'private-pages/' : 'content/'}: ${(st.stderr || st.stdout).trim().split('\n').slice(-1)[0] || `exit ${st.code}`}`);
   const files: ChangedFile[] = [];
   const parts = st.stdout.split('\0').filter(Boolean);
   for (let i = 0; i < parts.length; i++) {
@@ -115,22 +124,29 @@ function pointerPath(publicTop: string, privateTop: string): string | null {
 
 export async function changes(): Promise<Changes> {
   const where = await repo();
-  if (!where) return { files: [], branch: null, upstream: null, ahead: 0, private: null, pointer: null };
-  const files = await statusOf(where.top, where.path, '/content/');
-  const state = await stateOf(where.top);
-  const priv = await privateRepo();
-  let privateState: RepoState | null = null;
-  let pointer: Changes['pointer'] = null;
-  if (priv) {
-    files.push(...(await statusOf(priv.top, '.', '/private/', (rel) => !rel.includes('/') && /^(README\.md|LICENSE|\.git\w*)$/i.test(rel))));
-    privateState = await stateOf(priv.top);
-    const path = pointerPath(where.top, priv.top);
-    if (path) {
-      const st = await git(['status', '--porcelain=v1', '--ignore-submodules=dirty', '--', path], { cwd: where.top });
-      pointer = { path, moved: st.stdout.trim().length > 0 };
+  if (!where) return { files: [], branch: null, upstream: null, ahead: 0, private: null, pointer: null, error: null };
+  try {
+    const files = await statusOf(where.top, where.path, '/content/');
+    const state = await stateOf(where.top);
+    const priv = await privateRepo();
+    let privateState: RepoState | null = null;
+    let pointer: Changes['pointer'] = null;
+    if (priv) {
+      files.push(...(await statusOf(priv.top, '.', '/private/', (rel) => !rel.includes('/') && /^(README\.md|LICENSE|\.git\w*)$/i.test(rel))));
+      privateState = await stateOf(priv.top);
+      const path = pointerPath(where.top, priv.top);
+      if (path) {
+        const st = await git(['status', '--porcelain=v1', '--ignore-submodules=dirty', '--', path], { cwd: where.top });
+        if (st.code) throw new GitStatusError(`git couldn't read the private pages' pointer: ${(st.stderr || st.stdout).trim().split('\n').slice(-1)[0]}`);
+        pointer = { path, moved: st.stdout.trim().length > 0 };
+      }
     }
+    return { files: files.sort((a, b) => a.key.localeCompare(b.key)), ...state, private: privateState, pointer, error: null };
+  } catch (e) {
+    if (!(e instanceof GitStatusError)) throw e;
+    const state = await stateOf(where.top);
+    return { files: [], ...state, private: null, pointer: null, error: e.message };
   }
-  return { files: files.sort((a, b) => a.key.localeCompare(b.key)), ...state, private: privateState, pointer };
 }
 
 /** Where a key lives in its repository: its repository's top, and its path there. */
@@ -211,6 +227,7 @@ export function publish(message: string, titles: Titles = { article: () => undef
     const where = await repo();
     if (!where) return { ok: false, reason: 'the content folder is not in a git repository' };
     const state = await changes();
+    if (state.error) return { ok: false, reason: `${state.error}: try again` };
     if (!state.branch) return { ok: false, reason: 'git is not on a branch (a detached HEAD): check out a branch, then save to remote' };
     if (!state.upstream) return { ok: false, reason: `the branch ${state.branch} has no upstream to push to: set one (git push -u), then save to remote` };
     const priv = state.files.filter((f) => f.key.startsWith('/private/'));

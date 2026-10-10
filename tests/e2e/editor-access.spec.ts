@@ -309,7 +309,8 @@ test.describe('editor: private pages', () => {
     await submit.click();
     await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
     expect(JSON.parse(readFileSync(file, 'utf8')).status).toBe('published');
-    await expect(page.locator('[data-publish-drafts]')).toHaveCount(0);
+    // published, it's no longer offered (other drafts the content holds still can be)
+    await expect(page.locator('[data-publish-drafts]').getByRole('checkbox', { name: /Fixture private alpha/ })).toHaveCount(0);
   });
 
   test('on localhost every placed page previews at its address without signing in: a private draft and an open one, tagged in their opening', async ({ page }) => {

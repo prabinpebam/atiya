@@ -1296,7 +1296,7 @@ test.describe('editor', () => {
     await expect(picker).toBeVisible();
     await picker.locator('[data-media-kind="image"]:visible [data-editor-media]').first().click();
     await expect.poll(() => (blocks()[at] as { poster?: string }).poster).toBeTruthy();
-    const chosen = (blocks()[at] as { poster: string }).poster;
+    const chosen = (blocks()[at] as unknown as { poster: string }).poster;
     await expect(player).toHaveAttribute('poster', new RegExp(chosen.split('/').pop()!), { timeout: 20_000 });
     await form.getByRole('button', { name: 'Use its own frame' }).click();
     await expect.poll(() => (blocks()[at] as { poster?: string }).poster).toBeUndefined();
@@ -1551,6 +1551,32 @@ test.describe('editor', () => {
     await expect(page).toHaveURL(articleUrl);
     await page.getByRole('button', { name: 'Save to remote', exact: true }).click();
     await expect(dialog.getByRole('heading', { name: 'Saved to remote', exact: true })).toBeVisible();
+  });
+
+  test('what waits to be saved to remote is always current: an edit made just now is counted and listed, and git moved outside edit mode is read again when the dialog opens', async ({ page }) => {
+    await openArticle(page);
+    const pending = page.locator('[data-region="editor-pending"]');
+    await expect(pending).not.toContainText('to save');
+    const blocks = () => readJson(articleFile()).body as { type: string; shadow?: boolean }[];
+    const at = blocks().findIndex((b) => b.type === 'figure');
+    test.skip(at < 0, 'the fixture article has no figure');
+    // an edit, saved as it's made: the top bar's count follows without a reload
+    await page.locator(`[data-editor-outline] [data-editor-select="${at}"]`).click();
+    await page.locator(`[data-block-form="${at}"]`).locator('label', { hasText: 'Drop shadow' }).click();
+    await expect.poll(() => blocks()[at].shadow).toBe(true);
+    await expect(pending).toContainText('1 change to save', { timeout: 15_000 });
+    // the dialog, opened at once, lists it, whatever it was drawn with
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Save to remote' });
+    await expect(dialog.getByRole('heading', { name: '1 change to save' })).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.getByRole('button', { name: 'Save to remote', exact: true })).toBeEnabled();
+    await dialog.getByRole('button', { name: 'Close and keep editing' }).click();
+    // committed outside edit mode (a terminal): no file changed, but opening the dialog reads git again
+    git('add', '-A', '--', 'content');
+    git('-c', 'user.name=T', '-c', 'user.email=t@localhost', 'commit', '-q', '-m', 'committed in a terminal');
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).click();
+    await expect(dialog.getByRole('heading', { name: 'Changes to save' })).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.getByRole('heading', { name: '1 commit not on GitHub yet' })).toBeVisible();
   });
 
   test('publish: commits content/ only, pushes it to the remote, and discard puts a change back', async ({ page }) => {

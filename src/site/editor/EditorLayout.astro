@@ -20,7 +20,7 @@ import Select from '../components/fundamentals/Select.astro';
 import '../styles/editor-tokens.css';
 import { withBase } from '../design/meta';
 import { THEME_OPTIONS } from '../scripts/theme';
-import { changes } from './server/git';
+import { changes, pendingCount } from './server/git';
 import { generation } from '../content/source';
 import SaveStatus from './components/SaveStatus.astro';
 import ChangeList from './components/ChangeList.astro';
@@ -45,8 +45,10 @@ interface Props {
 const { title, screen, nav = true, heading, intro, asideLabel } = Astro.props;
 const aside = Astro.slots.has('aside');
 const git = await changes();
-// files changed in either folder, and commits not pushed from either repository (documentation/access/spec.md §8.3)
-const pending = git.files.length + git.ahead + (git.private?.ahead ?? 0);
+// files changed in either folder, commits not pushed from either repository, a private commit not yet
+// recorded (documentation/access/spec.md §8.3); git that couldn't be read says so instead of "nothing"
+const pending = pendingCount(git);
+const unknown = !!git.error;
 const articlePublish = screen === 'article' ? await publishView(Astro.url) : null;
 const to = (p: string) => withBase(`/_edit/${p}`);
 const groups = [
@@ -66,7 +68,7 @@ const groups = [
     items: [
       { label: 'Settings', href: to('settings/'), current: screen === 'settings' },
       { label: 'Access', href: to('access/'), current: screen === 'access' },
-      { label: 'Save to remote', href: to('publish/'), current: screen === 'publish', note: pending ? `${pending} to save` : undefined },
+      { label: 'Save to remote', href: to('publish/'), current: screen === 'publish', note: unknown ? 'Not checked' : pending ? `${pending} to save` : undefined },
     ],
   },
 ];
@@ -80,10 +82,14 @@ const groups = [
       <div class="status"><SaveStatus /></div>
       <div class="tools"><slot name="tools" /></div>
       <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" />
-      <div class="pending" data-region="editor-pending">
+      <div class="pending" data-region="editor-pending" data-pending={String(pending)}>
         {screen === 'article' && <span class="remote-status" data-editor-remote-status role="status" aria-live="polite" hidden />}
         {
-          pending > 0 && (
+          unknown ? (
+            <Text as="span" variant="small" tone="muted">
+              Changes not checked
+            </Text>
+          ) : pending > 0 && (
             <Text as="span" variant="small" tone="muted">
               {`${pending} ${pending === 1 ? 'change' : 'changes'} to save`}
             </Text>
@@ -322,9 +328,23 @@ const groups = [
   import { each } from '../scripts/page';
   import { bindThemeSwitch } from '../scripts/theme';
   import { initLive } from './scripts/live';
+  import { pendingCheckedAt, refreshPending, resumePending } from './scripts/client';
 
   // what changes elsewhere (another tab, a file changed by hand) comes in live; unsaved input stays
   each<HTMLElement>('[data-editor-app]', (app, signal) => initLive(app, signal));
+
+  // coming back to edit mode (another window, a terminal where git committed or pushed): what waits to be
+  // saved to remote is read from git again, at most every few seconds
+  each<HTMLElement>('[data-editor-app]', (_app, signal) => {
+    const again = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - pendingCheckedAt() < 3000) return;
+      refreshPending(0);
+    };
+    document.addEventListener('visibilitychange', again, { signal });
+    window.addEventListener('focus', again, { signal });
+    // a dialog put away: a refresh that waited for it runs now
+    document.addEventListener('close', () => resumePending(), { signal, capture: true });
+  });
 
   // the colour theme, for the whole of edit mode: the canvas (a page of the site) follows it on its own
   each<HTMLElement>('[data-editor-theme-switch]', (sw, signal) => {

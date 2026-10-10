@@ -273,3 +273,43 @@ export async function swapRegions(names: string[], url = location.href, keep?: (
 
 /** An issue in words, for the status and field messages. */
 export const describeIssue = (i: Issue) => `${i.path ? `${i.path}: ` : ''}${i.message}`;
+
+// ---------- what waits to be saved to remote ----------
+let pendingTimer = 0;
+let pendingRunning = false;
+let pendingAt = 0;
+/**
+ * Draws the counts of changes to save to remote again from git (the top bar's and the navigation's), a
+ * moment after the last call: after a save made here, and when the window comes back (git can move outside
+ * edit mode: a commit or a push in a terminal). Never under an open dialog (a refresh sets the page's
+ * components up again); it runs again once the dialog is put away.
+ */
+export function refreshPending(delay = 800) {
+  clearTimeout(pendingTimer);
+  pendingTimer = window.setTimeout(async () => {
+    if (pendingRunning) return refreshPending(delay || 800);
+    if (document.querySelector('dialog[open]')) {
+      pendingWaiting = true;
+      return;
+    }
+    pendingWaiting = false;
+    pendingRunning = true;
+    try {
+      await swapRegions([], location.href, () => !!document.querySelector('dialog[open]'));
+      pendingAt = Date.now();
+    } catch {
+      /* the dev server is away: the next save or return tries again */
+    } finally {
+      pendingRunning = false;
+    }
+  }, delay);
+}
+
+let pendingWaiting = false;
+/** A dialog was put away: a refresh that waited for it runs now. */
+export function resumePending() {
+  if (pendingWaiting && !document.querySelector('dialog[open]')) refreshPending(0);
+}
+
+/** When the counts were last drawn again by refreshPending (0: never). */
+export const pendingCheckedAt = () => pendingAt;

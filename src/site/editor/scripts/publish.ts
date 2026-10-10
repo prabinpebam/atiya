@@ -35,6 +35,67 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
     await swapRegions(['publish', 'publish-issues'], url.toString());
   };
 
+  // ---------- always what git says now ----------
+  // The list is drawn with its page, and content, commits and pushes move on after that (a save made as
+  // you type, a terminal): it's read again when the article's dialog opens (Save waits for it), and when
+  // the window comes back to the standalone screen. A message being written is never swapped away.
+  const message = () => root.querySelector<HTMLInputElement>('input[name="message"]');
+  // a message being written is one that's been changed: the dialog puts the focus in it as it opens
+  const writing = () => {
+    const m = message();
+    return !!m && m.value !== m.defaultValue;
+  };
+  const recheck = async () => {
+    if (writing() || root.querySelector('#publish-discard[open]')) return;
+    const focused = root.contains(document.activeElement) ? document.activeElement?.getAttribute('name') : null;
+    root.dataset.checking = '';
+    root.setAttribute('aria-busy', 'true');
+    const status = root.querySelector<HTMLElement>('[data-publish-checking]');
+    if (status) status.hidden = false;
+    root.querySelectorAll<HTMLButtonElement>('[data-publish-form] button[type="submit"], [data-publish-push]').forEach((b) => (b.disabled = true));
+    try {
+      const url = new URL(location.href);
+      if (inArticleDialog) {
+        url.searchParams.delete('published');
+        url.searchParams.delete('pushed');
+        // the last save's result stays shown while its commit is still the latest (the server checks)
+        if (root.dataset.published) url.searchParams.set('published', root.dataset.published);
+      }
+      // a message started while it was read stays: the list is then left as it is, and Save checks again on the server
+      const next = await swapRegions(['publish', 'publish-issues'], url.toString(), writing);
+      if (next) {
+        // the field that had the focus keeps it, in the list drawn again
+        if (focused) document.querySelector<HTMLElement>(`[data-region="publish"] [name="${CSS.escape(focused)}"]:not([disabled])`)?.focus({ preventScroll: true });
+        return;
+      }
+    } catch {
+      say(root.querySelector('[data-editor-form-issue]'), "Couldn't check what changed: is the dev server running? Close this and open it again.");
+    }
+    delete root.dataset.checking;
+    root.removeAttribute('aria-busy');
+    if (status) status.hidden = true;
+    label();
+    root.querySelectorAll<HTMLButtonElement>('[data-publish-push]').forEach((b) => (b.disabled = false));
+  };
+  if (inArticleDialog) {
+    document.addEventListener(
+      'click',
+      (e) => {
+        if ((e.target as Element).closest?.('[data-dialog-open="save-to-remote"]')) void recheck();
+      },
+      { signal, capture: true },
+    );
+  } else {
+    let lastCheck = Date.now();
+    const onReturn = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - lastCheck < 3000) return;
+      lastCheck = Date.now();
+      void recheck();
+    };
+    document.addEventListener('visibilitychange', onReturn, { signal });
+    window.addEventListener('focus', onReturn, { signal });
+  }
+
   root.addEventListener(
     'click',
     async (e) => {
@@ -124,6 +185,8 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
       // committed: pushed (the site deploys) or left here with Push again (the screen says why)
       if (!r.data.pushed) sessionStorage.setItem('editor.publish.pushError', r.data.pushError ?? '');
       if (inArticleDialog) {
+        // the result is the list's at once: a check started before its refresh lands carries it too
+        if (r.data.pushed) root.dataset.published = r.data.commit;
         if (r.data.pushed) remoteSaveStatus.saved();
         else remoteSaveStatus.failed('Not pushed to remote');
         await refreshArticleDialog(r.data.pushed ? { published: r.data.commit } : {});

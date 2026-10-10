@@ -25,7 +25,14 @@ export async function publishView(url: URL) {
       : undefined;
     return { ...change, href };
   });
-  const blocked = !(await repo())
+  // private commits the public repository doesn't record yet (a private save whose public commit didn't
+  // happen): saving links them, so it counts as a change, but there's no file here to discard
+  if (state.pointer?.moved && !state.files.some((file) => file.key.startsWith('/private/'))) {
+    rows.push({ resource: 'private-pages', kind: 'Private pages', name: 'Saved privately, not yet linked from the site', status: 'changed', keys: [] });
+  }
+  const blocked = state.error
+    ? `${state.error}. Close this and open it again to check again.`
+    : !(await repo())
     ? "content/ isn't in a git repository, so there's nowhere to save it."
     : !state.branch
       ? "git isn't on a branch (a detached HEAD): check out a branch, then save to remote."

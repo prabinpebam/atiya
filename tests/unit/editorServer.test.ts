@@ -17,7 +17,7 @@ import { createArticle, deleteArticle, saveArticle } from '../../src/site/editor
 import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, MAX_UPLOAD, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
 import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 import { byteRange } from '../../integrations/content-files.mjs';
-import { changes, discard, publish, push } from '../../src/site/editor/server/git';
+import { changes, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
 import editor from '../../integrations/editor.mjs';
 
 const ROOT = join(__dirname, '../..');
@@ -427,7 +427,28 @@ describe('publishing with git', { timeout: 60_000 }, () => {
       { key: '/content/people/q.json', status: 'added' },
       { key: '/content/site.json', status: 'changed' },
     ]);
-    expect(c).toMatchObject({ branch: 'main', upstream: 'origin/main', ahead: 0 });
+    expect(c).toMatchObject({ branch: 'main', upstream: 'origin/main', ahead: 0, error: null });
+    expect(pendingCount(c)).toBe(2);
+  });
+
+  it('counts everything that waits to be saved to remote: files, commits not pushed (either repository), a private commit not yet recorded', () => {
+    const base = { files: [], branch: 'main', upstream: 'origin/main', ahead: 0, private: null, pointer: null, error: null };
+    expect(pendingCount(base)).toBe(0);
+    expect(pendingCount({ ...base, files: [{ key: '/content/site.json', status: 'changed' }] })).toBe(1);
+    expect(pendingCount({ ...base, ahead: 2 })).toBe(2);
+    expect(pendingCount({ ...base, private: { branch: 'main', upstream: 'origin/main', ahead: 1 } })).toBe(1);
+    expect(pendingCount({ ...base, pointer: { path: 'private-pages', moved: true } })).toBe(1);
+    expect(pendingCount({ ...base, pointer: { path: 'private-pages', moved: false } })).toBe(0);
+  });
+
+  it("a git status it couldn't read is said, never taken for nothing changed, and nothing is saved", async () => {
+    setupRepo();
+    put('/content/site.json', { name: 'New name', description: 'D', owner: 'p', locale: 'en' });
+    // a broken index: git status fails
+    writeFileSync(join(dir, '.git', 'index'), 'not an index');
+    const c = await changes();
+    expect(c.error).toMatch(/git couldn't read what changed in content\//);
+    expect(await publish('Content: the site settings')).toMatchObject({ ok: false, reason: expect.stringMatching(/couldn't read what changed/) });
   });
 
   it('commits content/ only, exactly as checked, pushes it, and leaves staged code staged', async () => {

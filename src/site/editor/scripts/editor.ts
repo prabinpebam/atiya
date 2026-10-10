@@ -5,7 +5,7 @@
  * fetching the page and swapping those regions) and the canvas (by reloading it) after changes that
  * re-render them, and talks to the canvas by postMessage (same origin only).
  */
-import { api, announce, describeIssue, onContentChange, saveStatus, swapRegions, type Issue } from './client';
+import { api, announce, describeIssue, onContentChange, refreshPending, saveStatus, swapRegions, type Issue } from './client';
 import * as ops from '../model/ops';
 import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
@@ -106,6 +106,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         else saveStatus.saved();
         if (job.ready?.length) afterReady.push(...job.ready);
         await refreshAll(job.refresh);
+        // what waits to be saved to remote has changed too: the top bar's count follows
+        refreshPending();
         return 'ok';
       }
       if (r.status === 409) {
