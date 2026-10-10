@@ -1,0 +1,13 @@
+{
+  "kind": "video",
+  "file": "media10.mp4",
+  "title": "DesignUp fireflies",
+  "width": 800,
+  "height": 800,
+  "duration": 40.07,
+  "poster": {
+    "file": "media10.poster.webp"
+  },
+  "caption": "DesignUp fireflies",
+  "visibility": "public"
+}

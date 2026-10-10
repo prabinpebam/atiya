@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-10",
+  "updatedAt": "2026-10-11",
   "locale": "en",
   "topics": [
     "designup",
@@ -144,7 +144,7 @@
       },
       "title": "DesignUp 2018 speaker intro video",
       "poster": "articles/my-journey-with-designup/speaker-intro-3072x896-v1-1440p-mp4-snapshot-00-04-281",
-      "width": "full",
+      "width": "wide",
       "caption": "DesignUp 2018 speaker intro, created in After Effects",
       "credit": "Prabin Pebam"
     },
@@ -174,13 +174,14 @@
     {
       "type": "video",
       "embed": {
-        "provider": "youtube",
-        "id": "hX_geJrppRg",
+        "provider": "vimeo",
+        "id": "1234686450",
         "width": 1920,
-        "height": 1080
+        "height": 560
       },
-      "title": "DesignUp: three years in recap",
-      "poster": "articles/my-journey-with-designup/designup-recap-poster",
+      "title": "3 years of DesignUp, recap",
+      "poster": "articles/my-journey-with-designup/3-years-of-designup",
+      "width": "wide",
       "caption": "Three years of DesignUp, in recap, motion design, videography and editing",
       "credit": "Prabin Pebam"
     },
@@ -256,7 +257,22 @@
     {
       "type": "video",
       "media": "articles/my-journey-with-designup/media9",
-      "width": "content"
+      "width": "content",
+      "loop": true,
+      "autoplay": true,
+      "caption": "DesignUp emerging primitives, C4D",
+      "credit": "Prabin Pebam"
+    },
+    {
+      "type": "video",
+      "media": "articles/my-journey-with-designup/media10",
+      "width": "content",
+      "title": "DesignUp fireflies",
+      "poster": "articles/my-journey-with-designup/media10-mp4-snapshot-00-12-196",
+      "autoplay": true,
+      "loop": true,
+      "caption": "DesignUp fireflies, C4D",
+      "credit": "Prabin Pebam"
     },
     {
       "type": "video",
