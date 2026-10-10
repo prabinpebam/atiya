@@ -2,10 +2,12 @@
 import Example from '../library/Example.astro';
 import Carousel from '../components/compounds/Carousel.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
-import { SAMPLES } from '../design/samples';
+import { PORTRAIT_SAMPLES, SAMPLES } from '../design/samples';
 
 // the samples twice: more frames than a filmstrip row holds
 const MANY = [...SAMPLES, ...SAMPLES];
+// landscape pictures and a portrait one: every slide takes the portrait's shape, up to 80% of the screen's height
+const MIXED = [SAMPLES[0], PORTRAIT_SAMPLES[0], SAMPLES[3]];
 ---
 
 <Example title="A quiet carousel" layout="block" description="There is no rotation: the reader moves slide by slide.">
@@ -43,3 +45,7 @@ const MANY = [...SAMPLES, ...SAMPLES];
     margin-inline: auto;
   }
 </style>
+
+<Example title="Mixed shapes" layout="block" description='Every slide is the tallest picture&apos;s shape, so the carousel is only as tall as that picture, but never shorter than 300 px or taller than 80% of the screen. With display="fit" each picture shows whole inside it, on its own edge colour.'>
+  <Carousel items={MIXED} label="Landscape and portrait scenes" display="fit" background />
+</Example>

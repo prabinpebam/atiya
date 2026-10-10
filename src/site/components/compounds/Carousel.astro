@@ -64,7 +64,7 @@ interface Props {
   arrows?: boolean;
   /** How to pick a slide: dots, or a filmstrip of thumbnails in one row that scrolls sideways or wrapping onto more rows. */
   pager?: 'dots' | 'filmstrip' | 'filmstrip-wrap';
-  /** How each picture is shown in its 3:2 slide: fill (the default, cropped around its focus point), fit, actual size or tile. */
+  /** How each picture is shown in its slide (every slide the tallest picture's shape, 300 px to 80% of the screen tall): fill (the default, cropped around its focus point), fit, actual size or tile. */
   display?: 'fill' | 'fit' | 'actual' | 'tile';
   /** Puts each picture's own edge colour behind it. */
   background?: boolean;
@@ -91,9 +91,15 @@ const {
 } = Astro.props;
 const total = items.length;
 const status = total > 0 ? `1 of ${total}` : '0 of 0';
+// every slide's picture frame is the tallest picture's shape (its dark version's too), so the carousel is as
+// tall as its tallest picture and no taller: data, set here and read by the stylesheet (which keeps it
+// between the slide-min and slide-max tokens)
+const shapes = items.flatMap((item) => [item, ...(item.dark ? [item.dark] : [])]).filter((s) => s.width > 0 && s.height > 0);
+const tallest = shapes.reduce<{ width: number; height: number } | null>((t, s) => (!t || s.height / s.width > t.height / t.width ? s : t), null) ?? { width: 3, height: 2 };
+const slideShape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
 ---
 
-<section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek ? '' : undefined} data-shadow={shadow ? '' : undefined} aria-roledescription="carousel" aria-label={label}>
+<section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek ? '' : undefined} data-shadow={shadow ? '' : undefined} aria-roledescription="carousel" aria-label={label} style={slideShape}>
   <div class="viewport">
     <div class="track" tabindex="0" role="group" aria-label="Slides" data-carousel-track>
       {
@@ -108,7 +114,6 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
               alt={item.alt}
               width={item.width}
               height={item.height}
-              ratio="3/2"
               display={display}
               focus={item.focus}
               radius={width === 'full' ? 'none' : 'feature'}
@@ -122,13 +127,15 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
           return (
             <div class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
               <figure class="slide-body">
-                {lightbox ? (
-                  <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
-                    {picture}
-                  </a>
-                ) : (
-                  picture
-                )}
+                <div class="slide-frame">
+                  {lightbox ? (
+                    <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
+                      {picture}
+                    </a>
+                  ) : (
+                    picture
+                  )}
+                </div>
                 {item.caption && <Caption>{item.caption}</Caption>}
               </figure>
             </div>
@@ -213,6 +220,18 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
     margin: 0;
   }
 
+  /* every slide's picture frame: the tallest picture's shape (--slide-shape), so the carousel is only as tall
+     as that picture, but never shorter than slide-min or taller than slide-max of the screen */
+  .slide-frame {
+    /* the slide's whole width, always (a grid item with a shape isn't stretched, and would take its width
+       from its clamped height); its height from the shape, held between the two tokens */
+    width: 100%;
+    min-width: 0;
+    aspect-ratio: var(--slide-shape);
+    min-height: var(--c-carousel-slide-min);
+    max-height: calc(var(--c-carousel-slide-max) * 1dvh);
+  }
+
   /* peek: the track reaches out by --bleed-start / --bleed-end (the room beside the carousel, from the
      script) and keeps --inset of each neighbour in view where there's none; the slide being shown keeps
      the carousel's width. Before the script runs: a plain sliver of each neighbour. */
@@ -260,6 +279,7 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
 
   .slide-link {
     display: block;
+    height: 100%;
     color: inherit;
     text-decoration: none;
   }

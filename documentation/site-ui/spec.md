@@ -151,7 +151,7 @@ See [the design system](design-system.md) §5 for the catalogue. What sets them 
   - a filmstrip of thumbnails, arrow keys, Home and End, swipe;
   - focus returns to the opener;
   - any `a[data-lightbox]` joins a group, so galleries, figures and carousels don't import it.
-- **Carousel:** scroll-snap, no rotation, real ends, dots and a counter.
+- **Carousel:** scroll-snap, no rotation, real ends, dots and a counter. Every slide's picture frame is the tallest picture's shape (its dark version's included), so the carousel is only as tall as that picture, held between `c.carousel.slide-min` (300 px) and `c.carousel.slide-max` (80% of the screen's height); each picture sits in it by its `display` (fill, fit, actual size, tile).
 - **Video embed:** a local file with captions, or a YouTube or Vimeo facade that requests nothing until pressed. Either takes exactly the video's own shape (a file's size, an embed's `shape` from its provider; an embed without one is 16:9), as wide as its place but never taller than the screen below the header, so a portrait video narrows and centres. The player iframe uses `strict-origin-when-cross-origin`, so providers receive the site origin they require without receiving a private page's path.
 - **Prose:** Markdown set as a magazine sets it, with the breakout grid, a drop cap (`initial-letter` where supported), old-style figures and a marigold dinkus.
 

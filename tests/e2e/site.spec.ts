@@ -207,6 +207,26 @@ test.describe('site design system', () => {
     await expect(carousel.getByRole('button', { name: 'Next slide' })).toBeDisabled();
   });
 
+  test('a carousel is as tall as its tallest picture: no taller than 80% of the screen, no shorter than 300 px', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/compounds/carousel/');
+    const frame = (name: string) => page.getByRole('region', { name }).locator('.slide-frame').first();
+    const size = async (name: string) => (await frame(name).boundingBox())!;
+    // all landscape (3:2): the frame is that shape, the slide's whole width
+    const landscape = await size('Painted planet tour');
+    expect(Math.abs(landscape.height - (landscape.width * 1067) / 1600)).toBeLessThan(2);
+    // a portrait among them: the frame is the portrait's shape, but stops at 80% of the screen's height
+    const mixed = await size('Landscape and portrait scenes');
+    expect(Math.round(mixed.height)).toBe(720);
+    expect(mixed.width).toBeGreaterThan(mixed.height);
+    // a phone: landscape pictures would make it short, so it keeps 300 px; the portrait's shape fits under the cap
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(async () => Math.round((await size('Painted planet tour')).height)).toBe(300);
+    const phone = await size('Landscape and portrait scenes');
+    expect(Math.abs(phone.height - (phone.width * 1067) / 711)).toBeLessThan(2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  });
+
   test('carousel variants: no arrows, a filmstrip that scrolls and keeps its frame in view, one that wraps', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/design/compounds/carousel/');

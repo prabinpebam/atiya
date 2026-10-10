@@ -302,7 +302,7 @@ const STATUS: SelectOption[] = [
                     {b.type === 'gallery' ? (
                       <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.fit === 'contain' ? 'fit' : 'fill')} options={DISPLAYS} hint="How each picture sits in its cell." />
                     ) : (
-                      <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fill'} options={DISPLAYS} hint="How each picture sits in its 3:2 slide." />
+                      <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fill'} options={DISPLAYS} hint="How each picture sits in its slide. Every slide is the tallest picture's shape, 300 px to 80% of the screen tall." />
                     )}
                     <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
                     <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />

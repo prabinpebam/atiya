@@ -309,6 +309,8 @@
   --c-carousel-thumb-rest: 0.7;
   --c-carousel-peek-scale: 0.88;
   --c-carousel-peek-min: 2rem;
+  --c-carousel-slide-min: 300px;
+  --c-carousel-slide-max: 80;
   --c-video-play: 4.5rem;
   --c-video-play-icon: 1.75rem;
   --c-index-card-min: 18rem;
