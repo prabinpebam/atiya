@@ -194,7 +194,9 @@
       "type": "video",
       "embed": {
         "provider": "youtube",
-        "id": "vIVX-KVUWAE"
+        "id": "vIVX-KVUWAE",
+        "width": 1920,
+        "height": 1080
       },
       "title": "The team video",
       "poster": "articles/do-what-makes-you-proud/team-video-poster",

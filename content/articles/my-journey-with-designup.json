@@ -108,7 +108,9 @@
       "type": "video",
       "embed": {
         "provider": "youtube",
-        "id": "yiPUZtXp09Y"
+        "id": "yiPUZtXp09Y",
+        "width": 1920,
+        "height": 1080
       },
       "title": "DesignUp 2017 recap",
       "poster": "articles/my-journey-with-designup/designup-2017-poster",
@@ -146,7 +148,9 @@
       "type": "video",
       "embed": {
         "provider": "youtube",
-        "id": "f-fSpQO3jdo"
+        "id": "f-fSpQO3jdo",
+        "width": 1920,
+        "height": 1080
       },
       "title": "Wrap-up of DesignUp 2018",
       "poster": "articles/my-journey-with-designup/designup-2018-poster",
@@ -157,7 +161,9 @@
       "type": "video",
       "embed": {
         "provider": "youtube",
-        "id": "hX_geJrppRg"
+        "id": "hX_geJrppRg",
+        "width": 1920,
+        "height": 1080
       },
       "title": "DesignUp: three years in recap",
       "poster": "articles/my-journey-with-designup/designup-recap-poster",
@@ -240,11 +246,16 @@
       "type": "video",
       "embed": {
         "provider": "vimeo",
-        "id": "680750485"
+        "id": "680750485",
+        "width": 1920,
+        "height": 720
       },
       "title": "DUP fallback background loop",
-      "poster": "articles/my-journey-with-designup/designup-2017-poster",
-      "width": "wide"
+      "poster": "articles/my-journey-with-designup/media8-mp4-snapshot-00-00-643-2",
+      "width": "wide",
+      "duration": 59,
+      "credit": "Prabin",
+      "caption": "DesignUp 2019: fallback background loop, created with C4D"
     },
     {
       "type": "quote",
