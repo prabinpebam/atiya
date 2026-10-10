@@ -1,7 +1,8 @@
 ---
 /**
  * A set of pictures arranged as a quiet magazine gallery: justified rows, a lead-image mosaic or a
- * horizontal row. Each picture is a full-size link that the page’s Lightbox can enhance. Photographs fill their
+ * horizontal row. Each picture is a full-size link that the page’s Lightbox can enhance; a video file plays
+ * in its own cell instead (muted by itself while in view when set to autoplay). Photographs fill their
  * cells; marks, logos and artwork that mustn't be cropped sit whole in theirs (fit contain), with no
  * background colour behind them. In justified rows a portrait can span two rows beside two justified rows,
  * where it fits well (on by default; span false keeps every picture in one row).
@@ -12,6 +13,7 @@
  * @key Enter: opens the focused picture link
  */
 import Image from '../fundamentals/Image.astro';
+import Video from '../fundamentals/Video.astro';
 import Caption from '../fundamentals/Caption.astro';
 
 export interface GalleryItem {
@@ -39,6 +41,23 @@ export interface GalleryItem {
   dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; poster?: string; bg?: string };
   /** Its own edge colour (media.md §9.1), for a background behind it. */
   bg?: string;
+  /**
+   * A video file instead of a picture: it plays in its cell (src above is its poster, width and height its
+   * own size, alt its title). Not a link, so not opened in the lightbox.
+   */
+  video?: GalleryVideo;
+}
+
+/** A cell's video file. */
+export interface GalleryVideo {
+  /** The file's address. */
+  src: string;
+  /** Its type: an MP4 or a WebM. */
+  type: 'video/mp4' | 'video/webm';
+  /** Plays by itself, muted, while it's in view. */
+  autoplay?: boolean;
+  /** Starts again when it ends. */
+  loop?: boolean;
 }
 
 interface Props {
@@ -81,6 +100,26 @@ const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined
         const full = item.full ?? item.src;
         const thumb = item.thumb ?? item.src;
         const itemCaption = item.caption ?? '';
+        if (item.video)
+          return (
+            <div class="card" data-gallery-item data-video-cell data-width={item.width} data-height={item.height} data-shadow={shadow ? '' : undefined}>
+              <span class="image-shell">
+                <Video
+                  src={item.video.type === 'video/mp4' ? item.video.src : undefined}
+                  webm={item.video.type === 'video/webm' ? item.video.src : undefined}
+                  label={item.alt}
+                  poster={item.src || undefined}
+                  width={item.width}
+                  height={item.height}
+                  radius="none"
+                  autoplay={!!item.video.autoplay}
+                  loop={!!item.video.loop}
+                  fill
+                  fit={shown === 'fill' ? 'cover' : 'contain'}
+                />
+              </span>
+            </div>
+          );
         return (
           <a class="card" href={full} data-gallery-item data-width={item.width} data-height={item.height} data-lightbox={lightbox} data-caption={itemCaption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
             <span class="image-shell">
@@ -169,6 +208,15 @@ const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined
   .gallery[data-layout='row'] .card {
     flex: 0 0 var(--size-measure-narrow);
     scroll-snap-align: start;
+  }
+
+  /* a video cell has no picture to give it its shape: the layout's (a row's 4:3, a mosaic's square) */
+  .gallery[data-layout='row'] .card[data-video-cell] .image-shell {
+    aspect-ratio: 4 / 3;
+  }
+
+  .gallery[data-layout='mosaic'] .card[data-video-cell] .image-shell {
+    aspect-ratio: 1 / 1;
   }
 
   .gallery[data-layout='grid'] .items {

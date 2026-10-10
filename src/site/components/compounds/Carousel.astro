@@ -1,6 +1,7 @@
 ---
 /**
- * A non-rotating carousel: a scroll-snap row of captioned pictures with previous and next buttons and
+ * A non-rotating carousel: a scroll-snap row of captioned pictures (or video files, which play in their
+ * slides: muted by themselves while in view when set to autoplay) with previous and next buttons and
  * a counter (which can be left out), and dots or a filmstrip of thumbnails to pick a slide. The
  * filmstrip scrolls sideways in one row, or wraps onto more rows. It never moves unless the reader asks.
  * With peek, the neighbouring slides show a little smaller, and the carousel fades out beside the slide
@@ -17,6 +18,7 @@
  * @key Left / Right: previous / next slide when the track is focused
  */
 import Image from '../fundamentals/Image.astro';
+import Video from '../fundamentals/Video.astro';
 import Caption from '../fundamentals/Caption.astro';
 import IconButton from '../fundamentals/IconButton.astro';
 
@@ -43,6 +45,23 @@ export interface CarouselItem {
   dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; bg?: string };
   /** Its own edge colour (media.md §9.1), for a background behind it. */
   bg?: string;
+  /**
+   * A video file instead of a picture: it plays in its slide (src above is its poster, width and height its
+   * own size, alt its title). Not opened in the lightbox.
+   */
+  video?: CarouselVideo;
+}
+
+/** A slide's video file. */
+export interface CarouselVideo {
+  /** The file's address. */
+  src: string;
+  /** Its type: an MP4 or a WebM. */
+  type: 'video/mp4' | 'video/webm';
+  /** Plays by itself, muted, while it's the slide in view. */
+  autoplay?: boolean;
+  /** Starts again when it ends. */
+  loop?: boolean;
 }
 
 interface Props {
@@ -128,7 +147,21 @@ const slideShape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
             <div class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
               <figure class="slide-body">
                 <div class="slide-frame">
-                  {lightbox ? (
+                  {item.video ? (
+                    <Video
+                      src={item.video.type === 'video/mp4' ? item.video.src : undefined}
+                      webm={item.video.type === 'video/webm' ? item.video.src : undefined}
+                      label={item.alt}
+                      poster={item.src || undefined}
+                      width={item.width}
+                      height={item.height}
+                      radius={width === 'full' || !rounded ? 'none' : 'feature'}
+                      autoplay={!!item.video.autoplay}
+                      loop={!!item.video.loop}
+                      fill
+                      fit={display === 'fill' ? 'cover' : 'contain'}
+                    />
+                  ) : lightbox ? (
                     <a class="slide-link" href={full} data-lightbox={lightbox} data-caption={item.caption} data-thumb={thumb} data-alt={item.alt} data-full-dark={item.dark ? (item.dark.full ?? item.dark.src) : undefined} data-thumb-dark={item.dark ? (item.dark.thumb ?? item.dark.src) : undefined} data-shadow={shadow ? '' : undefined}>
                       {picture}
                     </a>

@@ -100,6 +100,9 @@ export function getVideo(id: string): VideoRecord {
   return v;
 }
 
+/** Whether a media ID is a video file's (a gallery's or a carousel's item can be either). */
+export const isVideoMedia = (id: string): boolean => content().videos.has(id);
+
 /**
  * Where a video file is published (with the base): `<base>/media/<id>.<mp4|webm>`, which the content-files
  * integration serves in dev (with ranges, so it seeks) and copies there at build.

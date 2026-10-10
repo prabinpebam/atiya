@@ -58,7 +58,7 @@ const route = loaded.ok ? getPlacement('article', id) : undefined;
 
 const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', subheading: 'subheading', marker: 'section-mark', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', collection: 'collection', table: 'table' };
 const cards: MediaCard[] = loaded.ok ? await mediaCards(loaded.index, `articles/${id}`) : [];
-const thumbs: Record<string, Thumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height }]));
+const thumbs: Record<string, Thumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height, ...(c.kind === 'video' ? { video: true } : {}) }]));
 const blocks = article.body.map((b) => ({ kind: kindOf(b), excerpt: excerptOf(b, (m) => thumbs[m]?.alt), icon: ICON[b.type] }));
 const links = loaded.ok ? [...loaded.index.articles.values()].filter((a) => loaded.index.canonical.has(`article/${a.id}`)).map((a) => ({ value: `ref:article/${a.id}`, label: a.title })) : [];
 const publicPath = route?.published ? withBase(route.path) : null;

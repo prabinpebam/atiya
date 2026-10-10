@@ -9,7 +9,7 @@ import { join, relative, sep } from 'node:path';
 import sharp from 'sharp';
 import { normalize, parseInline, runs, parseMarkdown, plainText, renderMarkdown, serializeBlocks, serializeInline, type Inline } from '../../src/site/content/markdown';
 import { buildRoutes } from '../../src/site/content/routes';
-import { ContentError, headingId, headingIds, loadContent } from '../../src/site/content/load';
+import { ContentError, headingId, headingIds, loadContent, mediaUsed } from '../../src/site/content/load';
 import { content } from '../../src/site/content/repository';
 import { pageMeasure, pictureCount, readingMinutes } from '../../src/site/content/reading';
 import { article, block, siteStructure, type Article, type SiteStructure } from '../../src/site/content/schema';
@@ -282,6 +282,33 @@ describe('the loader checks what it is given', () => {
     // a picture isn't a video, nor a video a picture
     expect(problems(block({ media: 'articles/a/pic' }), files).join('\n')).toMatch(/the video "articles\/a\/pic" doesn't exist/);
     expect(problems({ ...base, ...clip, '/content/articles/a.json': { ...article, body: [{ type: 'figure', media: 'articles/a/clip' }] } }, files).join('\n')).toMatch(/media "articles\/a\/clip" doesn't exist/);
+  });
+
+  it("a video file's options: its own poster picture, actual size, autoplay and loop; an embed takes none of them but the poster", () => {
+    const article = base['/content/articles/a.json'];
+    const clip = { '/content/media/articles/a/clip.json': { kind: 'video', file: 'clip.webm', title: 'A walk through', width: 1280, height: 720, visibility: 'public' } };
+    const files = new Set([...masters, '/content/media/articles/a/clip.webm']);
+    const block = (b: object) => ({ ...base, ...clip, '/content/articles/a.json': { ...article, body: [{ type: 'video', ...b }] } });
+    expect(problems(block({ media: 'articles/a/clip', poster: 'articles/a/pic', width: 'actual', autoplay: true, loop: true }), files)).toEqual([]);
+    expect(problems(block({ media: 'articles/a/clip', poster: 'articles/a/nope' }), files).join('\n')).toMatch(/media "articles\/a\/nope" doesn't exist/);
+    const embed = { embed: { provider: 'youtube', id: 'abc123' }, title: 'T', poster: 'articles/a/pic' };
+    expect(problems(block({ ...embed, autoplay: true }), files).join('\n')).toMatch(/autoplay and loop are for a video file/);
+    expect(problems(block({ ...embed, loop: false }), files).join('\n')).toMatch(/autoplay and loop are for a video file/);
+    expect(problems(block({ ...embed, width: 'actual' }), files).join('\n')).toMatch(/body\.0\.width: actual size is for a video file/);
+  });
+
+  it('a gallery or a carousel can hold video files beside pictures; autoplay and loop are a video\'s', () => {
+    const article = base['/content/articles/a.json'];
+    const clip = { '/content/media/articles/a/clip.json': { kind: 'video', file: 'clip.webm', title: 'A walk through', width: 1280, height: 720, visibility: 'public' } };
+    const files = new Set([...masters, '/content/media/articles/a/clip.webm']);
+    const set = (type: string, items: object[]) => ({ ...base, ...clip, '/content/articles/a.json': { ...article, body: [{ type, items, ...(type === 'carousel' ? { label: 'Scenes' } : {}) }] } });
+    for (const type of ['gallery', 'carousel']) {
+      expect(problems(set(type, [{ media: 'articles/a/pic' }, { media: 'articles/a/clip', autoplay: true, loop: true }]), files), type).toEqual([]);
+      expect(problems(set(type, [{ media: 'articles/a/pic', autoplay: true }, { media: 'articles/a/clip' }]), files).join('\n')).toMatch(/body\.0\.items\.0: autoplay and loop are for a video file, not a picture/);
+      expect(problems(set(type, [{ media: 'articles/a/pic' }, { media: 'articles/a/nope' }]), files).join('\n')).toMatch(/media "articles\/a\/nope" doesn't exist \(a picture or a video file\)/);
+    }
+    // a video in a set is used, so it can't be deleted from under it (the editor's reference graph)
+    expect(mediaUsed(set('gallery', [{ media: 'articles/a/pic' }, { media: 'articles/a/clip' }])['/content/articles/a.json'] as Article)).toContain('articles/a/clip');
   });
 
   it('a draft can be placed: its address is resolved and checked, but only published items are built', () => {

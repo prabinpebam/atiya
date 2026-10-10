@@ -45,6 +45,8 @@ export interface Thumb {
   alt: string;
   width: number;
   height: number;
+  /** A video file's (its thumbnail is its poster). */
+  video?: boolean;
 }
 
 interface Props {
@@ -266,7 +268,11 @@ const STATUS: SelectOption[] = [
                               <Icon name="drag" />
                             </span>
                             {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="1/1" fit="cover" /> : <span />}
-                            <TextField label={`Caption ${n + 1}`} name={`body.${i}.items.${n}.caption`} id={id(i, `item-${n}`)} value={it.caption ?? ''} optional />
+                            <span class="item-fields">
+                              <TextField label={`Caption ${n + 1}`} name={`body.${i}.items.${n}.caption`} id={id(i, `item-${n}`)} value={it.caption ?? ''} optional hint={thumbOf(it.media)?.video ? 'A video: it plays in its place, not in the lightbox.' : undefined} />
+                              {thumbOf(it.media)?.video && <Switch label="Autoplay (muted, while in view)" name={`body.${i}.items.${n}.autoplay`} id={id(i, `item-${n}-autoplay`)} checked={!!it.autoplay} data-type="bool" />}
+                              {thumbOf(it.media)?.video && <Switch label="Loop" name={`body.${i}.items.${n}.loop`} id={id(i, `item-${n}-loop`)} checked={!!it.loop} data-type="bool" />}
+                            </span>
                             <span class="item-moves">
                               <IconButton label={`Move picture ${n + 1} up`} icon="arrow-up" size="sm" tooltip="none" disabled={n === 0} data-editor-items="up" data-index={String(i)} data-item={String(n)} />
                               <IconButton label={`Move picture ${n + 1} down`} icon="arrow-down" size="sm" tooltip="none" disabled={n === b.items.length - 1} data-editor-items="down" data-index={String(i)} data-item={String(n)} />
@@ -276,7 +282,7 @@ const STATUS: SelectOption[] = [
                         ))}
                       </ol>
                       <div class="row">
-                        <Button variant="secondary" size="sm" icon="plus" data-editor-pick={`body.${i}.items`} data-pick-mode="multiple">Add pictures</Button>
+                        <Button variant="secondary" size="sm" icon="plus" data-editor-pick={`body.${i}.items`} data-pick-mode="multiple" data-pick-kind="any">Add pictures or videos</Button>
                       </div>
                     </div>
                   </section>
@@ -323,7 +329,7 @@ const STATUS: SelectOption[] = [
                 <nav class="section-nav" aria-label="Video settings">
                   <ol class="nav-list">
                     <li class="nav-row"><button type="button" class="nav-item" data-section-pick="video"><span class="nav-name">Video</span></button></li>
-                    {!b.media && <li class="nav-row"><button type="button" class="nav-item" data-section-pick="poster"><span class="nav-name">Poster</span></button></li>}
+                    <li class="nav-row"><button type="button" class="nav-item" data-section-pick="poster"><span class="nav-name">Poster</span></button></li>
                     <li class="nav-row"><button type="button" class="nav-item" data-section-pick="caption"><span class="nav-name">Caption and credit</span></button></li>
                   </ol>
                 </nav>
@@ -350,25 +356,32 @@ const STATUS: SelectOption[] = [
                       <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} optional hint="Names the player. Left empty, the video's own title does." />
                     )}
                     {b.embed && <TextField label="Length" name={`body.${i}.duration`} id={id(i, 'duration')} value={duration(b.duration)} data-type="duration" optional hint="Minutes and seconds (2:20), shown on the poster." />}
-                    <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
+                    <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={b.media ? [...WIDTHS, { value: 'actual', label: 'Actual size', description: 'Its own size, centred; never wider than the page' }] : WIDTHS} />
+                    {b.media && <Switch label="Autoplay (muted, while in view)" name={`body.${i}.autoplay`} id={id(i, 'autoplay')} checked={!!b.autoplay} data-type="bool" />}
+                    {b.media && <Switch label="Loop" name={`body.${i}.loop`} id={id(i, 'loop')} checked={!!b.loop} data-type="bool" />}
                   </section>
-                  {!b.media && (
-                    <section class="pane" data-section="poster" aria-labelledby={id(i, 's-poster')}>
-                      <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-poster')}>Poster</Heading></div>
-                      <div class="media-field">
-                        <div class="media-row">
-                          {thumbOf(b.poster) ? <Image src={thumbOf(b.poster)!.thumb} alt="" width={thumbOf(b.poster)!.width} height={thumbOf(b.poster)!.height} ratio="4/3" fit="contain" /> : <span />}
-                          <div class="media-words">
-                            <Text variant="small" tone="muted">{thumbOf(b.poster)?.alt || 'No alt text'}</Text>
-                            <div class="row">
-                              <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.poster`} data-pick-mode="single">Replace</Button>
-                              <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.poster`}>Crop</Button>
-                            </div>
+                  <section class="pane" data-section="poster" aria-labelledby={id(i, 's-poster')}>
+                    <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-poster')}>Poster</Heading></div>
+                    <div class="media-field">
+                      <div class="media-row">
+                        {thumbOf(b.poster) ? (
+                          <Image src={thumbOf(b.poster)!.thumb} alt="" width={thumbOf(b.poster)!.width} height={thumbOf(b.poster)!.height} ratio="4/3" fit="contain" />
+                        ) : b.media && thumbOf(b.media) ? (
+                          <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" fit="contain" />
+                        ) : (
+                          <span />
+                        )}
+                        <div class="media-words">
+                          <Text variant="small" tone="muted">{b.poster ? thumbOf(b.poster)?.alt || 'No alt text' : 'Its own frame, taken when it was uploaded'}</Text>
+                          <div class="row">
+                            <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.poster`} data-pick-mode="single">{b.poster || !b.media ? 'Replace' : 'Choose a picture'}</Button>
+                            {b.poster && <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.poster`}>Crop</Button>}
+                            {b.poster && b.media && <Button variant="quiet" size="sm" icon="restore" data-editor-unset={`body.${i}.poster`}>Use its own frame</Button>}
                           </div>
                         </div>
                       </div>
-                    </section>
-                  )}
+                    </div>
+                  </section>
                   <section class="pane" data-section="caption" aria-labelledby={id(i, 's-caption')}>
                     <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-caption')}>Caption and credit</Heading></div>
                     <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
@@ -801,6 +814,13 @@ const STATUS: SelectOption[] = [
     grid-column: 1 / -1;
     display: flex;
     justify-content: end;
+  }
+
+  /* an item's caption, and a video's autoplay and loop under it */
+  .item-fields {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
   }
 
   /* ---------- sections: narrow, each in turn under its heading; wide, listed beside the chosen one ---------- */

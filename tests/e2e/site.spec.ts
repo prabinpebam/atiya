@@ -207,6 +207,50 @@ test.describe('site design system', () => {
     await expect(carousel.getByRole('button', { name: 'Next slide' })).toBeDisabled();
   });
 
+  test('a video set to autoplay plays muted only while in view, never under reduced motion, and a carousel plays only the slide shown', async ({ page, browser }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/fundamentals/video/');
+    const auto = page.locator('video[data-autoplay]').first();
+    const state = () => auto.evaluate((v: HTMLVideoElement) => ({ paused: v.paused, muted: v.muted, loop: v.loop }));
+    await auto.scrollIntoViewIfNeeded();
+    await expect.poll(async () => (await state()).paused).toBe(false);
+    expect(await state()).toEqual({ paused: false, muted: true, loop: true });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect.poll(async () => (await state()).paused).toBe(true);
+    // the reader paused it: it stays paused when it comes back into view
+    await auto.scrollIntoViewIfNeeded();
+    await expect.poll(async () => (await state()).paused).toBe(false);
+    await auto.evaluate((v: HTMLVideoElement) => v.pause());
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await auto.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(800);
+    expect((await state()).paused).toBe(true);
+    // actual size: its own width (960 px) at most
+    const actual = await page.locator('video[data-actual]').first().boundingBox();
+    expect(actual!.width).toBeLessThanOrEqual(960);
+
+    const still = await browser.newPage({ reducedMotion: 'reduce' });
+    await still.goto('/design/fundamentals/video/');
+    const quiet = still.locator('video[data-autoplay]').first();
+    await quiet.scrollIntoViewIfNeeded();
+    await still.waitForTimeout(1000);
+    expect(await quiet.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
+    await still.close();
+
+    await page.goto('/design/compounds/carousel/');
+    const carousel = page.getByRole('region', { name: 'Scenes and a tour' });
+    await carousel.scrollIntoViewIfNeeded();
+    const clip = carousel.locator('video');
+    await page.waitForTimeout(800);
+    expect(await clip.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
+    await carousel.getByRole('button', { name: 'Next slide' }).click();
+    await expect.poll(() => clip.evaluate((v: HTMLVideoElement) => v.paused)).toBe(false);
+    await carousel.getByRole('button', { name: 'Next slide' }).click();
+    await expect.poll(() => clip.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
+    // a video slide isn't a lightbox link
+    await expect(carousel.locator('a[data-lightbox] video')).toHaveCount(0);
+  });
+
   test('a carousel is as tall as its tallest picture: no taller than 80% of the screen, no shorter than 300 px', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/design/compounds/carousel/');

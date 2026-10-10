@@ -1,11 +1,14 @@
 ---
 /**
  * A native video: controls, captions and a poster, sized before it loads so the page stays still.
- * It never autoplays; the reader starts it when they are ready.
+ * It starts only when the reader starts it, unless it's set to autoplay: then it plays muted while at least
+ * half of it is in view and pauses when it leaves, never when the reader asks for less motion, and never
+ * again by itself once the reader has paused it.
  * @tier fundamental
  * @a11y Uses the browser’s own controls, so keyboard, captions and media preferences stay familiar.
  * @a11y Width and height are required to reserve the video’s shape before metadata arrives.
  * @a11y Captions are a <track kind="captions"> and the file stays available as a fallback link.
+ * @a11y Autoplay is muted, keeps the controls (WCAG 2.2.2: it can be paused), and is off under prefers-reduced-motion.
  * @key Space: plays or pauses when focused
  * @key Left / Right: seeks with native controls
  */
@@ -41,15 +44,23 @@ interface Props {
   muted?: boolean;
   /** Repeats when it reaches the end. */
   loop?: boolean;
+  /** Plays by itself, muted, while it's in view (never under reduced motion). Off by default. */
+  autoplay?: boolean;
+  /** At its own size (width), never enlarged and never wider than its place, centred. */
+  actual?: boolean;
+  /** Fills its container (a gallery cell, a carousel slide) instead of taking its own shape. */
+  fill?: boolean;
+  /** Filling: cover fills it (cropped), contain shows the whole video inside it. */
+  fit?: 'cover' | 'contain';
   /** A page-unique id. */
   id?: string;
   [data: `data-${string}`]: string | undefined;
 }
 
-const { src, webm, label, poster, width, height, captions, ratio, radius = 'default', muted = false, loop = false, id, ...rest } = Astro.props;
+const { src, webm, label, poster, width, height, captions, ratio, radius = 'default', muted = false, loop = false, autoplay = false, actual = false, fill = false, fit = 'cover', id, ...rest } = Astro.props;
 // its shape is data (its own size, or the ratio it's cropped to), set here and read by the stylesheet
 const [shapeW, shapeH] = ratio ? ratio.split('/').map(Number) : [width, height];
-const shape = `--video-w: ${shapeW}; --video-h: ${shapeH}`;
+const shape = [`--video-w: ${shapeW}`, `--video-h: ${shapeH}`, actual ? `--video-natural: ${width}px` : ''].filter(Boolean).join('; ');
 ---
 
 <video
@@ -62,10 +73,14 @@ const shape = `--video-w: ${shapeW}; --video-h: ${shapeH}`;
   poster={poster}
   width={width}
   height={height}
-  muted={muted}
+  muted={muted || autoplay}
   loop={loop}
   data-ratio={ratio}
   data-radius={radius}
+  data-autoplay={autoplay ? '' : undefined}
+  data-actual={actual ? '' : undefined}
+  data-fill={fill ? '' : undefined}
+  data-fit={fill ? fit : undefined}
   style={shape}
   {...rest}
 >
@@ -97,6 +112,22 @@ const shape = `--video-w: ${shapeW}; --video-h: ${shapeH}`;
     border-radius: var(--radius-none);
   }
 
+  /* actual size: its own width at most (and never taller than the screen), centred */
+  .video[data-actual] {
+    width: min(100%, var(--video-natural), (100dvh - var(--c-header-height) - var(--space-12)) * var(--video-w) / var(--video-h));
+  }
+
+  /* filling a container (a gallery cell, a carousel slide): its size, not its own shape */
+  .video[data-fill] {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .video[data-fit='contain'] {
+    object-fit: contain;
+  }
+
   .fallback {
     color: var(--color-accent);
     font-size: var(--text-md);
@@ -104,3 +135,43 @@ const shape = `--video-w: ${shapeW}; --video-h: ${shapeH}`;
     line-height: var(--leading-ui);
   }
 </style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  // autoplay: muted, while at least half of it is in view; paused when it leaves; never under reduced
+  // motion; and once the reader pauses it, only the reader starts it again
+  each<HTMLVideoElement>('video[data-autoplay]', (video, signal) => {
+    const still = matchMedia('(prefers-reduced-motion: reduce)');
+    // the page's own play and pause, told apart from the reader's when their events arrive
+    let ownPlay = false;
+    let ownPause = false;
+    let held = false;
+    let started = false;
+    const play = () => {
+      if (still.matches || held || !video.paused) return;
+      // muted the first time only: a reader who turned the sound on keeps it
+      if (!started) video.muted = true;
+      started = true;
+      ownPlay = true;
+      video.play().catch(() => (ownPlay = false));
+    };
+    const pause = () => {
+      if (video.paused) return;
+      ownPause = true;
+      video.pause();
+    };
+    video.addEventListener('play', () => {
+      if (ownPlay) ownPlay = false;
+      else held = false;
+    }, { signal });
+    video.addEventListener('pause', () => {
+      if (ownPause) ownPause = false;
+      else if (!video.ended) held = true;
+    }, { signal });
+    const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? play() : pause()), { threshold: 0.5 });
+    seen.observe(video);
+    still.addEventListener('change', () => (still.matches ? pause() : play()), { signal });
+    signal.addEventListener('abort', () => seen.disconnect());
+  });
+</script>

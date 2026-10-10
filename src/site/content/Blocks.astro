@@ -18,7 +18,7 @@ import { withBase } from '../design/meta';
 import { renderInlineMarkdown, renderMarkdown } from './markdown';
 import { headingIds } from './load';
 import { picture, video, type Picture, type VideoFile } from './pictures';
-import { canonicalPath, documentHref } from './repository';
+import { canonicalPath, documentHref, isVideoMedia } from './repository';
 import type { Block } from './schema';
 
 interface Props {
@@ -51,11 +51,32 @@ const resolveRef = (ref: string) => {
 
 type View =
   | { b: Extract<Block, { type: 'figure' }>; p: Picture }
-  | { b: Extract<Block, { type: 'gallery' | 'carousel' }>; ps: Picture[] }
+  | { b: Extract<Block, { type: 'gallery' | 'carousel' }>; ps: Slide[] }
   | { b: Extract<Block, { type: 'video' }>; p?: Picture; v?: VideoFile }
   | { b: Extract<Block, { type: 'heading' }>; id: string }
   | { b: Extract<Block, { type: 'collection' }>; pictures: (Picture | undefined)[] }
   | { b: Exclude<Block, { type: 'figure' | 'gallery' | 'carousel' | 'video' | 'heading' | 'collection' }> };
+
+/** A gallery's or a carousel's item: a picture, or a video file shown by its poster's fields with its file beside them. */
+type Slide = Picture & { video?: { src: string; type: 'video/mp4' | 'video/webm'; autoplay?: boolean; loop?: boolean } };
+type Use = Extract<Block, { type: 'gallery' | 'carousel' }>['items'][number];
+const slide = async (use: Use, slot: 'gallery' | 'wide'): Promise<Slide> => {
+  if (!isVideoMedia(use.media)) return picture(use.media, slot);
+  const f = await video(use.media, slot);
+  return {
+    src: f.poster?.src ?? '',
+    srcset: f.poster?.srcset ?? '',
+    alt: f.title,
+    width: f.width,
+    height: f.height,
+    full: f.src,
+    thumb: f.poster?.thumb ?? '',
+    caption: f.caption,
+    credit: f.credit,
+    bg: '',
+    video: { src: f.src, type: f.type, ...(use.autoplay ? { autoplay: true } : {}), ...(use.loop ? { loop: true } : {}) },
+  };
+};
 
 // every heading's anchor: one set by hand as it is, one from its words unique on the page (what-shipped, what-shipped-2)
 const anchors = headingIds(blocks);
@@ -65,12 +86,16 @@ const views: View[] = await Promise.all(
       case 'figure':
         return { b, p: await picture(b.media, b.width) };
       case 'gallery':
-        return { b, ps: await Promise.all(b.items.map((i) => picture(i.media, 'gallery'))) };
+        return { b, ps: await Promise.all(b.items.map((i) => slide(i, 'gallery'))) };
       case 'carousel':
-        return { b, ps: await Promise.all(b.items.map((i) => picture(i.media, 'wide'))) };
-      case 'video':
-        // a video file, with its own frame for a poster; or an embed, with its poster picture
-        return b.media ? { b, v: await video(b.media, b.width ?? 'wide') } : { b, p: await picture(b.poster!, b.width ?? 'wide') };
+        return { b, ps: await Promise.all(b.items.map((i) => slide(i, 'wide'))) };
+      case 'video': {
+        // a video file, with its own frame for a poster unless one is chosen; or an embed, with its poster picture
+        const slot = !b.width || b.width === 'actual' ? 'wide' : b.width;
+        if (!b.media) return { b, p: await picture(b.poster!, slot) };
+        const [v, p] = await Promise.all([video(b.media, slot), b.poster ? picture(b.poster, slot) : undefined]);
+        return { b, v, ...(p ? { p } : {}) };
+      }
       case 'heading':
         return { b, id: anchors[n]! };
       case 'collection':
@@ -136,12 +161,14 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
           src={f.type === 'video/mp4' ? f.src : undefined}
           webm={f.type === 'video/webm' ? f.src : undefined}
           title={b.title ?? f.title}
-          poster={f.poster?.src}
+          poster={v.p?.src ?? f.poster?.src}
           mediaWidth={f.width}
           mediaHeight={f.height}
           caption={b.showCaption === false ? undefined : (b.caption ?? f.caption)}
           credit={b.showCaption === false ? undefined : (b.credit ?? f.credit)}
           width={b.width ?? 'wide'}
+          autoplay={!!b.autoplay}
+          loop={!!b.loop}
         />
       );
     }

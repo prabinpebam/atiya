@@ -37,7 +37,7 @@ interface State {
   media: Record<string, { alt: string; thumb: string }>;
 }
 type Refresh = { canvas?: boolean; outline?: boolean; inspector?: boolean };
-type Pick = { mode: 'single' | 'multiple'; min: number; title: string; onChoose: (ids: string[]) => void; /** What it takes: pictures (the default) or videos. */ kind?: 'image' | 'video' };
+type Pick = { mode: 'single' | 'multiple'; min: number; title: string; onChoose: (ids: string[]) => void; /** What it takes: pictures (the default), videos, or either (a gallery's or a carousel's items). */ kind?: 'image' | 'video' | 'any' };
 const STRUCTURE = '/content/structures/site.json';
 const ALL: Refresh = { canvas: true, outline: true, inspector: true };
 
@@ -740,15 +740,22 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const use = d?.querySelector<HTMLButtonElement>('[data-editor-media-use]');
     const count = d?.querySelector<HTMLElement>('[data-editor-media-count]')?.firstElementChild;
     const several = pick?.mode === 'multiple';
-    const what = pick?.kind === 'video' ? 'video' : 'picture';
+    const what = pick?.kind === 'video' ? 'video' : pick?.kind === 'any' ? 'picture or video' : 'picture';
     if (count) count.textContent = several ? (chosen.size >= pick!.min ? `${chosen.size} chosen` : `${chosen.size} chosen: choose at least ${pick!.min}`) : `Choose a ${what} to add it`;
     if (use) {
       use.disabled = !pick || chosen.size < (pick?.min ?? 1);
       use.hidden = !several;
       // the Button's label span (setting the button's own text would drop its icon)
       const label = use.querySelector('.label') ?? use;
-      if (several) label.textContent = chosen.size >= (pick?.min ?? 1) ? `Use ${chosen.size} pictures` : 'Use them';
+      if (several) label.textContent = chosen.size >= (pick?.min ?? 1) ? `Use ${chosenWords()}` : 'Use them';
     }
+  };
+  /** What's chosen, in words: "2 pictures", "1 picture and 1 video". */
+  const chosenWords = () => {
+    const kindOf = (id: string) => root.querySelector<HTMLElement>(`[data-media-card="${CSS.escape(id)}"]`)?.dataset.mediaKind;
+    const videos = [...chosen].filter((id) => kindOf(id) === 'video').length;
+    const pictures = chosen.size - videos;
+    return [pictures && `${pictures} ${pictures === 1 ? 'picture' : 'pictures'}`, videos && `${videos} ${videos === 1 ? 'video' : 'videos'}`].filter(Boolean).join(' and ');
   };
   const choose = (ids: string[]) => {
     const p = pick;
@@ -798,12 +805,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (d.editorPick) {
       const path = d.editorPick;
       const multiple = d.pickMode === 'multiple';
-      const kind = d.pickKind === 'video' ? 'video' : 'image';
+      const kind = d.pickKind === 'video' ? 'video' : d.pickKind === 'any' ? 'any' : 'image';
       return openPicker({
         mode: multiple ? 'multiple' : 'single',
         min: 1,
         kind,
-        title: multiple ? 'Add pictures' : kind === 'video' ? 'Choose a video' : 'Choose a picture',
+        title: multiple ? (kind === 'any' ? 'Add pictures or videos' : 'Add pictures') : kind === 'video' ? 'Choose a video' : 'Choose a picture',
         onChoose: (ids) => {
           if (multiple) {
             const list = (ops.getPath(doc, path) as { media: string }[]) ?? [];
@@ -907,12 +914,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (type === 'figure')
       return openPicker({ mode: 'single', min: 1, title: 'Choose a picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
     if (type === 'gallery')
-      return openPicker({ mode: 'multiple', min: 2, title: 'Choose the pictures (two or more)', onChoose: (ids) => insertBlock(at, { type: 'gallery', items: ids.map((media) => ({ media })), layout: 'grid', lightbox: true }) });
+      return openPicker({ mode: 'multiple', min: 2, kind: 'any', title: 'Choose the pictures or videos (two or more)', onChoose: (ids) => insertBlock(at, { type: 'gallery', items: ids.map((media) => ({ media })), layout: 'grid', lightbox: true }) });
     if (type === 'carousel')
       return openPicker({
         mode: 'multiple',
         min: 2,
-        title: 'Choose the pictures (two or more)',
+        kind: 'any',
+        title: 'Choose the pictures or videos (two or more)',
         onChoose: (ids) => {
           pendingCarousel = ids;
           dialog('editor-insert-carousel')?.showModal();
@@ -1095,7 +1103,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     pickKind();
     announce('Uploaded');
     const kind = root.querySelector<HTMLElement>(`[data-media-card="${CSS.escape(id)}"]`)?.dataset.mediaKind ?? 'image';
-    if (pick && kind !== (pick.kind ?? 'image')) return announce(kind === 'video' ? 'Uploaded the video: it’s in the library, but this takes a picture.' : 'Uploaded the picture: it’s in the library, but this takes a video.');
+    if (pick && pick.kind !== 'any' && kind !== (pick.kind ?? 'image')) return announce(kind === 'video' ? 'Uploaded the video: it’s in the library, but this takes a picture.' : 'Uploaded the picture: it’s in the library, but this takes a video.');
     if (pick?.mode === 'single') choose([id]);
     else if (pick) {
       chosen.add(id);

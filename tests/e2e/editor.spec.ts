@@ -1279,6 +1279,28 @@ test.describe('editor', () => {
     expect(part.status()).toBe(206);
     expect((await part.body()).length).toBe(100);
 
+    // its settings: actual size, autoplay and loop (a video file's own), and a poster picture of its own
+    const at = blocks().length - 1;
+    await page.locator(`[data-editor-outline] [data-editor-select="${at}"]`).click();
+    const form = page.locator(`[data-block-form="${at}"]`);
+    await form.getByRole('combobox', { name: 'Width' }).click();
+    await page.getByRole('option', { name: /^Actual size/ }).click();
+    await form.locator('label', { hasText: 'Autoplay' }).click();
+    await form.locator('label', { hasText: 'Loop' }).click();
+    await expect.poll(() => blocks()[at]).toMatchObject({ width: 'actual', autoplay: true, loop: true });
+    await expect(player).toHaveAttribute('data-autoplay', '', { timeout: 20_000 });
+    await expect(player).toHaveAttribute('data-actual', '');
+    await expect(player).toHaveAttribute('loop', '');
+    expect((await player.boundingBox())!.width).toBeLessThanOrEqual(320);
+    await form.getByRole('button', { name: 'Choose a picture' }).click();
+    await expect(picker).toBeVisible();
+    await picker.locator('[data-media-kind="image"]:visible [data-editor-media]').first().click();
+    await expect.poll(() => (blocks()[at] as { poster?: string }).poster).toBeTruthy();
+    const chosen = (blocks()[at] as { poster: string }).poster;
+    await expect(player).toHaveAttribute('poster', new RegExp(chosen.split('/').pop()!), { timeout: 20_000 });
+    await form.getByRole('button', { name: 'Use its own frame' }).click();
+    await expect.poll(() => (blocks()[at] as { poster?: string }).poster).toBeUndefined();
+
     // in Media: a video card, its details (the player, its title) and where it's used
     await page.goto(`/_edit/media/?id=${id}`);
     await expect(page.getByRole('button', { name: 'Video: A test pattern' })).toBeVisible();
@@ -1611,6 +1633,8 @@ test.describe('editor', () => {
     await page.locator('#editor-palette [data-editor-add="gallery"]').click();
     const picker = page.locator('#editor-picker');
     await expect(picker).toBeVisible();
+    // a gallery takes pictures and videos alike
+    await expect(picker.locator('[data-editor-media-grid]')).toHaveAttribute('data-pick-kind', 'any');
     // the dialog fits the window and its body scrolls; the footer is always in view
     const box = (await picker.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(720);

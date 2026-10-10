@@ -2,13 +2,16 @@
 import Example from '../library/Example.astro';
 import Gallery from '../components/compounds/Gallery.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
-import { PORTRAIT_SAMPLES, SAMPLES } from '../design/samples';
+import { PORTRAIT_SAMPLES, SAMPLE_VIDEO, SAMPLES } from '../design/samples';
 
 const firstFour = SAMPLES.slice(0, 4);
 const firstFive = SAMPLES.slice(0, 5);
 const all = SAMPLES;
 const [tallLighthouse] = PORTRAIT_SAMPLES;
 const withTall = [tallLighthouse!, ...SAMPLES];
+// a video file among the pictures: it plays in its cell, its poster standing in for the picture
+const tour = { src: SAMPLE_VIDEO.poster, alt: 'A drift over the painted planet', width: SAMPLE_VIDEO.width, height: SAMPLE_VIDEO.height, video: { src: SAMPLE_VIDEO.src, type: 'video/mp4' as const, autoplay: true, loop: true } };
+const withVideo = [SAMPLES[0]!, tour, SAMPLES[2]!, SAMPLES[3]!];
 ---
 
 <Example title="A justified gallery" layout="block" description="Fixed-height rows choose their picture count and crop evenly to meet both edges.">
@@ -32,3 +35,7 @@ const withTall = [tallLighthouse!, ...SAMPLES];
 </Example>
 
 <Lightbox />
+
+<Example title="With a video" layout="block" description="A video file can be a cell: it plays in its place with its own controls (not in the lightbox), and set to autoplay it plays muted while it is in view.">
+  <Gallery items={withVideo} caption="The plaza, a tour, the pond and the waterfall." lightbox="gallery-video" />
+</Example>

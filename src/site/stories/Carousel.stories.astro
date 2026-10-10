@@ -2,12 +2,15 @@
 import Example from '../library/Example.astro';
 import Carousel from '../components/compounds/Carousel.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
-import { PORTRAIT_SAMPLES, SAMPLES } from '../design/samples';
+import { PORTRAIT_SAMPLES, SAMPLE_VIDEO, SAMPLES } from '../design/samples';
 
 // the samples twice: more frames than a filmstrip row holds
 const MANY = [...SAMPLES, ...SAMPLES];
 // landscape pictures and a portrait one: every slide takes the portrait's shape, up to 80% of the screen's height
 const MIXED = [SAMPLES[0], PORTRAIT_SAMPLES[0], SAMPLES[3]];
+// a video file among the pictures: it plays in its slide (its poster stands in for the picture)
+const TOUR = { src: SAMPLE_VIDEO.poster, alt: 'A drift over the painted planet', caption: 'A ten-second tour, playing by itself while it is the slide in view.', width: SAMPLE_VIDEO.width, height: SAMPLE_VIDEO.height, thumb: SAMPLE_VIDEO.poster, video: { src: SAMPLE_VIDEO.src, type: 'video/mp4' as const, autoplay: true, loop: true } };
+const WITH_VIDEO = [SAMPLES[0], TOUR, SAMPLES[5]];
 ---
 
 <Example title="A quiet carousel" layout="block" description="There is no rotation: the reader moves slide by slide.">
@@ -48,4 +51,8 @@ const MIXED = [SAMPLES[0], PORTRAIT_SAMPLES[0], SAMPLES[3]];
 
 <Example title="Mixed shapes" layout="block" description='Every slide is the tallest picture&apos;s shape, so the carousel is only as tall as that picture, but never shorter than 300 px or taller than 80% of the screen. With display="fit" each picture shows whole inside it, on its own edge colour.'>
   <Carousel items={MIXED} label="Landscape and portrait scenes" display="fit" background />
+</Example>
+
+<Example title="With a video" layout="block" description="A video file can be a slide: it plays in its place (not in the lightbox), with its own controls. Set to autoplay, it plays muted while it is the slide in view, and pauses when another is shown.">
+  <Carousel items={WITH_VIDEO} label="Scenes and a tour" display="fit" lightbox="carousel-video" />
 </Example>

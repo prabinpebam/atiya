@@ -96,7 +96,7 @@ const PUBLISHED = new Set(['published', 'stale']);
 const PUBLIC = new Set(['public', 'publicRedacted', 'summaryOnly']);
 export const isPublished = (a: { status: string; visibility: string }) => PUBLISHED.has(a.status) && PUBLIC.has(a.visibility);
 
-/** Every picture's media ID a document uses (a video file's isn't: see videosUsed). */
+/** Every picture's media ID a document uses, and every gallery's and carousel's item (a picture or a video file); a video block's file isn't here: see videosUsed. */
 export function mediaUsed(a: Article): string[] {
   const ids = a.hero ? [a.hero.media] : [];
   if (a.thumbnail) ids.push(a.thumbnail);
@@ -248,16 +248,24 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
 
   // references (V3, V5): media, people; a public page never points at anything private (V25), and a
   // protected page's own `related` names open pages only (V32)
-  const needMedia = (from: string, id: string, origin: Origin = 'public') => {
-    const rec = media.get(id);
-    if (!rec) add(from, `media "${id}" doesn't exist`);
+  const needMedia = (from: string, id: string, origin: Origin = 'public', orVideo = false) => {
+    const rec = media.get(id) ?? (orVideo ? videos.get(id) : undefined);
+    if (!rec) add(from, orVideo ? `media "${id}" doesn't exist (a picture or a video file)` : `media "${id}" doesn't exist`);
     else if (!PUBLIC.has(rec.visibility)) add(from, `media "${id}" isn't public`);
     else if (rec.origin === 'private' && origin === 'public') add(from, `media "${id}" is private (in private-pages/): an open page can't show it (V25)`);
   };
   for (const a of articles.values()) {
     const origin = origins.get(a.id)!;
     const file = `${origin === 'private' ? 'private' : 'content'}/articles/${a.id}.json`;
-    for (const id of mediaUsed(a)) needMedia(file, id, origin);
+    // a gallery's or a carousel's item can be a video file too; every other use is a picture
+    const either = new Set(a.body.flatMap((b) => (b.type === 'gallery' || b.type === 'carousel' ? b.items.map((it) => it.media) : [])));
+    for (const id of mediaUsed(a)) needMedia(file, id, origin, either.has(id));
+    a.body.forEach((b, i) => {
+      if (b.type !== 'gallery' && b.type !== 'carousel') return;
+      b.items.forEach((it, n) => {
+        if ((it.autoplay !== undefined || it.loop !== undefined) && !videos.has(it.media)) add(file, 'autoplay and loop are for a video file, not a picture', `body.${i}.items.${n}`);
+      });
+    });
     // a video block: a video file, or an embed with its title and poster (media.md §12)
     a.body.forEach((b, i) => {
       if (b.type !== 'video') return;
@@ -265,6 +273,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       if (!!b.media === !!b.embed) return add(file, 'a video is a video file (media) or an embed, one of the two', at);
       if (b.embed && !b.title) add(file, 'an embedded video needs its title', `${at}.title`);
       if (b.embed && !b.poster) add(file, 'an embedded video needs a poster picture', `${at}.poster`);
+      if (b.embed && (b.autoplay !== undefined || b.loop !== undefined)) add(file, 'autoplay and loop are for a video file: a YouTube or Vimeo video starts when the reader presses play', at);
+      if (b.embed && b.width === 'actual') add(file, 'actual size is for a video file: choose a width for an embedded video', `${at}.width`);
       if (b.media) {
         const v = videos.get(b.media);
         if (!v) add(file, `the video "${b.media}" doesn't exist`, `${at}.media`);

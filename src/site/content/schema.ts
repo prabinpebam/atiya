@@ -12,6 +12,8 @@ const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'lowercase kebab-case');
 export const mediaId = z.string().regex(/^[a-z0-9-]+(\/[a-z0-9-]+)+$/, 'a path under content/media/, without the extension');
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z)?$/, 'an ISO 8601 date');
 const width = z.enum(['content', 'popout', 'wide', 'full']);
+/** A video's width: a layout place, or its own size (`actual`, a video file only). */
+const videoWidth = z.enum(['content', 'popout', 'wide', 'full', 'actual']);
 /**
  * How a picture is shown in the frame it's given (documentation/content/media.md §9.1): fill (fills the frame,
  * cropped around its focus point), fit (whole, with room round it), actual (its own size, centred, never
@@ -75,7 +77,11 @@ export const documentMedia = z.strictObject({
   visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
 });
 
-const mediaUse = z.strictObject({ media: mediaId, caption: z.string().optional() });
+/**
+ * A gallery's or a carousel's item: a picture, or a video file (it plays in its cell or slide, with its own
+ * frame as its poster). `autoplay` and `loop` are a video's only, off by default.
+ */
+const mediaUse = z.strictObject({ media: mediaId, caption: z.string().optional(), autoplay: z.boolean().optional(), loop: z.boolean().optional() });
 
 /**
  * A video file (documentation/content/media.md §12): an MP4 (H.264) or WebM master beside its sidecar,
@@ -206,13 +212,18 @@ export const block = z.discriminatedUnion('type', [
     embed: z.strictObject({ provider: z.enum(['youtube', 'vimeo']), id: z.string().regex(/^[\w-]+$/), width: z.int().positive().optional(), height: z.int().positive().optional() }).refine((e) => !e.width === !e.height, { message: "an embed's shape needs both its width and its height", path: ['height'] }).optional(),
     /** The player's name; for a video file, left out, the file's own title. */
     title: z.string().min(1).optional(),
-    /** A picture shown before an embed plays; a video file has its own frame. */
+    /** A picture shown before it plays: an embed needs one; a video file, left out, shows its own frame. */
     poster: mediaId.optional(),
     duration: z.number().int().positive().optional(),
     caption: z.string().optional(),
     credit: z.string().optional(),
     showCaption: z.boolean().optional(),
-    width: width.optional(),
+    /** Its place in the layout, or (a video file only) `actual`: its own size, never wider than the page allows. */
+    width: videoWidth.optional(),
+    /** A video file only: starts by itself, muted, while it's in view (never when the reader asks for less motion). Off by default. */
+    autoplay: z.boolean().optional(),
+    /** A video file only: starts again when it ends. Off by default. */
+    loop: z.boolean().optional(),
   }),
   z.strictObject({ type: z.literal('quote'), text: z.string().min(1), cite: z.string().optional(), variant: z.enum(['block', 'pull']).default('block') }),
   z.strictObject({ type: z.literal('divider') }),

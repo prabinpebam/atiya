@@ -17,3 +17,11 @@ const captions = { src: SAMPLE_VIDEO.captions, label: 'English', srclang: 'en' }
 <Example title="Full bleed square" layout="block" description="Use the square edge when the article layout lets the video run to the edge.">
   <Video src={SAMPLE_VIDEO.src} poster={SAMPLE_VIDEO.poster} width={SAMPLE_VIDEO.width} height={SAMPLE_VIDEO.height} captions={captions} ratio="16/9" radius="none" />
 </Example>
+
+<Example title="Autoplay and loop" layout="block" description="autoplay plays it muted while at least half of it is in view and pauses it when it leaves. It never starts by itself for a reader who asks for less motion, nor again once the reader has paused it. loop starts it again when it ends. Both are off by default.">
+  <Video src={SAMPLE_VIDEO.src} poster={SAMPLE_VIDEO.poster} width={SAMPLE_VIDEO.width} height={SAMPLE_VIDEO.height} captions={captions} autoplay loop />
+</Example>
+
+<Example title="Actual size" layout="block" description="actual shows it at its own width (here 960 px), centred, never wider than its place nor taller than the screen.">
+  <Video src={SAMPLE_VIDEO.src} poster={SAMPLE_VIDEO.poster} width={SAMPLE_VIDEO.width} height={SAMPLE_VIDEO.height} captions={captions} actual />
+</Example>

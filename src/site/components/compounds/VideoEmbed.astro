@@ -44,8 +44,8 @@ interface Props {
   caption?: string;
   /** Who made the video or poster. */
   credit?: string;
-  /** Where the article layout may place it. */
-  width?: 'content' | 'popout' | 'wide' | 'full';
+  /** Where the article layout may place it; actual (a local file only): its own size, never wider than the page allows. */
+  width?: 'content' | 'popout' | 'wide' | 'full' | 'actual';
   /** Crop to a shape. Left out, a video file keeps its own shape, and an embed its video's (`shape`), else 16:9. */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
   /** An embedded video's own size (from its provider), so its player takes just that shape. Left out, 16:9. */
@@ -54,6 +54,8 @@ interface Props {
   muted?: boolean;
   /** Repeats a local file when it reaches the end. */
   loop?: boolean;
+  /** A local file plays by itself, muted, while it's in view (never under reduced motion). Off by default. */
+  autoplay?: boolean;
   /** An embedded video's length in seconds, shown on its poster. */
   duration?: number;
 }
@@ -73,13 +75,17 @@ const {
   captions,
   caption,
   credit,
-  width: breakout = 'wide',
+  width: asked = 'wide',
   ratio: shape,
   shape: own,
   muted = false,
   loop = false,
+  autoplay = false,
   duration,
 } = Astro.props;
+// actual size is a local file's: it sits in the widest place and stops at its own width; an embed takes wide
+const actual = asked === 'actual' && kind === 'file';
+const breakout = asked === 'actual' ? 'wide' : asked;
 const ratio = shape ?? (kind === 'file' || own ? undefined : '16/9');
 // an embed's box is the video's own shape (or the ratio it's cropped to): data, set here, read by the stylesheet
 const [boxW, boxH] = ratio ? ratio.split('/').map(Number) : own ? [own.width, own.height] : [16, 9];
@@ -105,7 +111,7 @@ const embedSrc =
 <figure class="video-embed" data-kind={kind} data-breakout={breakout}>
   {
     kind === 'file' ? (
-      (src || webm) && <Video src={src} webm={webm} label={title} poster={poster} width={mediaWidth} height={mediaHeight} captions={captions} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} muted={muted} loop={loop} />
+      (src || webm) && <Video src={src} webm={webm} label={title} poster={poster} width={mediaWidth} height={mediaHeight} captions={captions} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} muted={muted} loop={loop} autoplay={autoplay} actual={actual} />
     ) : (
       <div class="embed-box" data-ratio={ratio} style={boxShape}>
         <a class="facade" href={pageHref} target={pagePolicy.target} rel={pagePolicy.rel} aria-label={`Play video: ${title}${spoken ? ` (${spoken})` : ''}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
