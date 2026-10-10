@@ -33,6 +33,7 @@ import { tableToText } from '../model/table';
 import { pictureNote } from '../model/crop';
 import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TIMELINES, itemName } from '../model/collection';
 import { itemKey } from '../model/inspector';
+import { shapeLabel } from '../model/videoShape';
 import { RICH_GROUPS, RICH_TOOLS, richHtml } from '../model/richText';
 import { PICTURE_SPECS, specTip } from '../../design/pictures';
 
@@ -342,7 +343,7 @@ const STATUS: SelectOption[] = [
                         </div>
                       </div>
                     )}
-                    {b.embed && <TextField label="Address" type="url" name={`body.${i}.embed`} id={id(i, 'embed')} value={videoUrl(b)} data-type="video-url" hint="A YouTube or Vimeo link." />}
+                    {b.embed && <TextField label="Address" type="url" name={`body.${i}.embed`} id={id(i, 'embed')} value={videoUrl(b)} data-type="video-url" hint={b.embed.width && b.embed.height ? `A YouTube or Vimeo link. Shown at its own shape, ${shapeLabel({ width: b.embed.width, height: b.embed.height })}.` : 'A YouTube or Vimeo link. Shown 16:9: its own shape wasn\'t read from it (change the link to read it again).'} />}
                     {b.embed ? (
                       <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} required hint="Names the player." />
                     ) : (

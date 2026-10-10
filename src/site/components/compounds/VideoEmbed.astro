@@ -46,8 +46,10 @@ interface Props {
   credit?: string;
   /** Where the article layout may place it. */
   width?: 'content' | 'popout' | 'wide' | 'full';
-  /** Crop to a shape. Left out, an embed is 16:9 and a video file keeps its own shape. */
+  /** Crop to a shape. Left out, a video file keeps its own shape, and an embed its video's (`shape`), else 16:9. */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** An embedded video's own size (from its provider), so its player takes just that shape. Left out, 16:9. */
+  shape?: { width: number; height: number };
   /** Starts a local file silent. */
   muted?: boolean;
   /** Repeats a local file when it reaches the end. */
@@ -73,11 +75,15 @@ const {
   credit,
   width: breakout = 'wide',
   ratio: shape,
+  shape: own,
   muted = false,
   loop = false,
   duration,
 } = Astro.props;
-const ratio = shape ?? (kind === 'file' ? undefined : '16/9');
+const ratio = shape ?? (kind === 'file' || own ? undefined : '16/9');
+// an embed's box is the video's own shape (or the ratio it's cropped to): data, set here, read by the stylesheet
+const [boxW, boxH] = ratio ? ratio.split('/').map(Number) : own ? [own.width, own.height] : [16, 9];
+const boxShape = `--video-w: ${boxW}; --video-h: ${boxH}`;
 const play = svgOf('play');
 // 140 → "2:20" on the poster, and "2 minutes 20 seconds" in the link's name
 const mins = duration ? Math.floor(duration / 60) : 0;
@@ -101,9 +107,9 @@ const embedSrc =
     kind === 'file' ? (
       (src || webm) && <Video src={src} webm={webm} label={title} poster={poster} width={mediaWidth} height={mediaHeight} captions={captions} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} muted={muted} loop={loop} />
     ) : (
-      <div class="embed-box" data-ratio={ratio}>
+      <div class="embed-box" data-ratio={ratio} style={boxShape}>
         <a class="facade" href={pageHref} target={pagePolicy.target} rel={pagePolicy.rel} aria-label={`Play video: ${title}${spoken ? ` (${spoken})` : ''}`} data-video-embed data-embed-src={embedSrc} data-title={title}>
-          <Image src={poster ?? ''} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} ratio={ratio} radius={breakout === 'full' ? 'none' : 'feature'} dark={posterDark} />
+          <Image src={poster ?? ''} srcset={posterSrcset} alt={posterAlt} width={mediaWidth} height={mediaHeight} fill radius={breakout === 'full' ? 'none' : 'feature'} dark={posterDark} />
           <span class="play-mark" aria-hidden="true">
             <svg class="play-icon" viewBox={play.viewBox} focusable="false" data-icon={play.name}><Fragment set:html={play.body} /></svg>
           </span>
@@ -126,43 +132,19 @@ const embedSrc =
     margin: 0;
   }
 
-  /* rounded like the poster, so the placeholder never shows at its corners */
+  /* rounded like the poster, so the placeholder never shows at its corners; exactly the video's shape, as
+     wide as its place but never taller than the screen below the header (a portrait video narrows, centred) */
   .embed-box {
     position: relative;
+    width: min(100%, (100dvh - var(--c-header-height) - var(--space-12)) * var(--video-w) / var(--video-h));
+    aspect-ratio: var(--video-w) / var(--video-h);
+    justify-self: center;
     border-radius: var(--c-image-radius-feature);
     background: var(--c-image-placeholder);
   }
 
   .video-embed[data-breakout='full'] .embed-box {
     border-radius: var(--radius-none);
-  }
-
-  .embed-box[data-ratio='1/1'] {
-    aspect-ratio: 1 / 1;
-  }
-
-  .embed-box[data-ratio='4/5'] {
-    aspect-ratio: 4 / 5;
-  }
-
-  .embed-box[data-ratio='3/4'] {
-    aspect-ratio: 3 / 4;
-  }
-
-  .embed-box[data-ratio='4/3'] {
-    aspect-ratio: 4 / 3;
-  }
-
-  .embed-box[data-ratio='3/2'] {
-    aspect-ratio: 3 / 2;
-  }
-
-  .embed-box[data-ratio='16/9'] {
-    aspect-ratio: 16 / 9;
-  }
-
-  .embed-box[data-ratio='21/9'] {
-    aspect-ratio: 21 / 9;
   }
 
   .facade {

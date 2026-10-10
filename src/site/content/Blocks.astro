@@ -158,6 +158,7 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
           posterAlt={p.alt}
           mediaWidth={p.width}
           mediaHeight={p.height}
+          shape={b.embed!.width && b.embed!.height ? { width: b.embed!.width, height: b.embed!.height } : undefined}
           duration={b.duration}
           caption={b.showCaption === false ? undefined : b.caption}
           credit={b.showCaption === false ? undefined : b.credit}

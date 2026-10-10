@@ -47,6 +47,9 @@ interface Props {
 }
 
 const { src, webm, label, poster, width, height, captions, ratio, radius = 'default', muted = false, loop = false, id, ...rest } = Astro.props;
+// its shape is data (its own size, or the ratio it's cropped to), set here and read by the stylesheet
+const [shapeW, shapeH] = ratio ? ratio.split('/').map(Number) : [width, height];
+const shape = `--video-w: ${shapeW}; --video-h: ${shapeH}`;
 ---
 
 <video
@@ -63,6 +66,7 @@ const { src, webm, label, poster, width, height, captions, ratio, radius = 'defa
   loop={loop}
   data-ratio={ratio}
   data-radius={radius}
+  style={shape}
   {...rest}
 >
   {webm && <source src={webm} type="video/webm" />}
@@ -72,10 +76,14 @@ const { src, webm, label, poster, width, height, captions, ratio, radius = 'defa
 </video>
 
 <style>
+  /* exactly its shape, as wide as its place, but never taller than the screen below the header: a
+     portrait video narrows (centred) rather than running off the page */
   .video {
     display: block;
-    width: 100%;
+    width: min(100%, (100dvh - var(--c-header-height) - var(--space-12)) * var(--video-w) / var(--video-h));
     height: auto;
+    aspect-ratio: var(--video-w) / var(--video-h);
+    margin-inline: auto;
     border-radius: var(--c-image-radius);
     background: var(--c-image-placeholder);
     object-fit: cover;
@@ -87,34 +95,6 @@ const { src, webm, label, poster, width, height, captions, ratio, radius = 'defa
 
   .video[data-radius='none'] {
     border-radius: var(--radius-none);
-  }
-
-  .video[data-ratio='1/1'] {
-    aspect-ratio: 1 / 1;
-  }
-
-  .video[data-ratio='4/5'] {
-    aspect-ratio: 4 / 5;
-  }
-
-  .video[data-ratio='3/4'] {
-    aspect-ratio: 3 / 4;
-  }
-
-  .video[data-ratio='4/3'] {
-    aspect-ratio: 4 / 3;
-  }
-
-  .video[data-ratio='3/2'] {
-    aspect-ratio: 3 / 2;
-  }
-
-  .video[data-ratio='16/9'] {
-    aspect-ratio: 16 / 9;
-  }
-
-  .video[data-ratio='21/9'] {
-    aspect-ratio: 21 / 9;
   }
 
   .fallback {

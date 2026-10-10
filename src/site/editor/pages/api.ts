@@ -9,6 +9,7 @@ import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store'
 import { articleKey, createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
+import { measureVideo } from '../server/videoShape';
 import { changes, discard, git, publish, push } from '../server/git';
 import { changeAddress, createGrant, deleteGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, updateGrant, withdrawGrant, type GrantEdit, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
@@ -44,6 +45,12 @@ const handle: APIRoute = async ({ request, params, url }) => {
       const key = url.searchParams.get('key') ?? '';
       const doc = readDoc(key);
       return doc ? json(doc) : json({ ok: false }, 404);
+    }
+
+    // ---------- an embedded video's own shape, from its provider (model/videoShape.ts) ----------
+    if (method === 'GET' && path === 'video-shape') {
+      const r = await measureVideo(url.searchParams.get('url') ?? '');
+      return r.ok ? json({ ok: true, ...r.shape }) : json({ ok: false, issues: [{ file: '', path: 'url', message: r.message }] }, 422);
     }
 
     // ---------- articles ----------

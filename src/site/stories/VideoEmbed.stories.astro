@@ -34,3 +34,32 @@ const poster = sample('waterfall');
     caption="A privacy-friendly facade for a remote video."
   />
 </Example>
+
+<Example title="An embed at its own shape" layout="block" description="Given the video's own size (read from its provider when it's added), the player takes exactly that shape: a wide loop stays wide, with the poster filling it.">
+  <VideoEmbed
+    kind="vimeo"
+    id="76979871"
+    title="A wide loop"
+    poster={poster.src}
+    posterSrcset={poster.srcset}
+    posterAlt={poster.alt}
+    mediaWidth={poster.width}
+    mediaHeight={poster.height}
+    shape={{ width: 1920, height: 720 }}
+    caption="A wide video takes only its own height."
+  />
+</Example>
+
+<Example title="A portrait embed" layout="block" description="A portrait video (a YouTube Short) keeps its shape too, but never grows taller than the screen: it narrows and centres instead.">
+  <VideoEmbed
+    kind="youtube"
+    id="aqz-KE-bpKQ"
+    title="A portrait sample"
+    poster={poster.src}
+    posterSrcset={poster.srcset}
+    posterAlt={poster.alt}
+    mediaWidth={poster.width}
+    mediaHeight={poster.height}
+    shape={{ width: 1080, height: 1920 }}
+  />
+</Example>

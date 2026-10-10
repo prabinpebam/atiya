@@ -270,6 +270,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     void save({ refresh, ...(opts.section !== undefined ? { section: opts.section } : {}), ...(opts.ready ? { ready: [opts.ready] } : {}) });
   };
   const body = (b: Block[]) => ({ ...doc, body: b });
+  /** An embedded video's own shape, from its provider (the dev server asks its oEmbed); null, with a note, when it can't say (it's then shown 16:9). */
+  const videoShape = async (url: string): Promise<{ width: number; height: number } | null> => {
+    const r = await api<{ width: number; height: number }>('GET', `video-shape?url=${encodeURIComponent(url)}`);
+    if (r.ok) return { width: r.data.width, height: r.data.height };
+    announce(r.data.issues?.[0]?.message ?? "Its shape couldn't be read: it's shown 16:9");
+    return null;
+  };
   const blockOp = (i: number, op: 'up' | 'down' | 'duplicate' | 'delete') => {
     if (op === 'up' && i > 0) change(body(ops.move(doc.body, i, i - 1)), ALL, { select: i - 1 });
     else if (op === 'down' && i < doc.body.length - 1) change(body(ops.move(doc.body, i, i + 1)), ALL, { select: i + 1 });
@@ -672,6 +679,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       const v = ops.parseVideo(t.value);
       if (!v) return bad('Use a YouTube or Vimeo link (https://youtu.be/…, https://vimeo.com/…).');
       value = v;
+      // its own shape, once its provider says it: the player then takes just that space
+      const path = t.name;
+      void videoShape(t.value).then((shape) => {
+        const now = ops.getPath(doc, path) as { provider?: string; id?: string } | undefined;
+        if (!shape || now?.provider !== v.provider || now?.id !== v.id) return;
+        change(ops.setPath(doc, path, { ...v, ...shape }), { canvas: true, inspector: true }, { history: false });
+      });
     } else value = t.value.trim() === '' ? undefined : t.value;
     if (t.name === '__access') return void setAccess(String(value ?? 'open') as State['access'], t);
     if (t.name === '__section' && state.access === 'private') {
@@ -1039,21 +1053,27 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       return insertBlock(insertAt, { type: 'carousel', items: ids.map((media) => ({ media })), label: val('label'), lightbox: true });
     }
     if (kind === 'video') {
-      const embed = ops.parseVideo(val('url'));
+      const url = val('url');
+      const embed = ops.parseVideo(url);
       if (!embed) return issue('Use a YouTube or Vimeo link.');
       if (!val('title')) return issue('Give the video a title.');
       const duration = ops.parseDuration(val('duration'));
       if (duration === null) return issue('Write the length as minutes and seconds (2:20).');
       pendingVideo = { embed, title: val('title'), ...(duration ? { duration } : {}) };
+      // asked now, while the poster is being chosen: the player takes the video's own shape
+      const shaped = videoShape(url);
       const at = insertAt;
       close();
       return openPicker({
         mode: 'single',
         min: 1,
         title: 'Choose the poster',
-        onChoose: (ids) => {
-          if (pendingVideo) insertBlock(at, { type: 'video', ...pendingVideo, poster: ids[0], width: 'wide' });
+        onChoose: async (ids) => {
+          const video = pendingVideo;
           pendingVideo = null;
+          if (!video) return;
+          const shape = await shaped;
+          insertBlock(at, { type: 'video', ...video, embed: { ...video.embed, ...(shape ?? {}) }, poster: ids[0], width: 'wide' });
         },
       });
     }

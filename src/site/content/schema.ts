@@ -198,8 +198,12 @@ export const block = z.discriminatedUnion('type', [
     type: z.literal('video'),
     /** An uploaded video file (a `video` media ID), or else `embed`: exactly one (the loader checks). */
     media: mediaId.optional(),
-    /** A YouTube or Vimeo video, which needs its `title` and a `poster` picture. */
-    embed: z.strictObject({ provider: z.enum(['youtube', 'vimeo']), id: z.string().regex(/^[\w-]+$/) }).optional(),
+    /**
+     * A YouTube or Vimeo video, which needs its `title` and a `poster` picture. Its `width` and `height`
+     * are the video's own shape (from the provider's oEmbed, measured when it's added), so its player
+     * takes just that space; left out, it's shown 16:9.
+     */
+    embed: z.strictObject({ provider: z.enum(['youtube', 'vimeo']), id: z.string().regex(/^[\w-]+$/), width: z.int().positive().optional(), height: z.int().positive().optional() }).refine((e) => !e.width === !e.height, { message: "an embed's shape needs both its width and its height", path: ['height'] }).optional(),
     /** The player's name; for a video file, left out, the file's own title. */
     title: z.string().min(1).optional(),
     /** A picture shown before an embed plays; a video file has its own frame. */
