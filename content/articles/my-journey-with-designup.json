@@ -135,6 +135,20 @@
       "dropcap": true
     },
     {
+      "type": "video",
+      "embed": {
+        "provider": "vimeo",
+        "id": "294956094",
+        "width": 1920,
+        "height": 560
+      },
+      "title": "DesignUp 2018 speaker intro video",
+      "poster": "articles/my-journey-with-designup/speaker-intro-3072x896-v1-1440p-mp4-snapshot-00-04-281",
+      "width": "full",
+      "caption": "DesignUp 2018 speaker intro, created in After Effects",
+      "credit": "Prabin Pebam"
+    },
+    {
       "type": "figure",
       "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-4",
       "width": "content",
@@ -231,21 +245,6 @@
       "markdown": "Then it was time for DesignUp 2019, which meant a new challenge and another stepUp. This time, my fascination was 3D: mograph, textures, materials and simulations. I took on the task, and here's what came out of it."
     },
     {
-      "type": "gallery",
-      "items": [
-        {
-          "media": "articles/my-journey-with-designup/designup-recap-poster"
-        },
-        {
-          "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-2"
-        }
-      ],
-      "layout": "grid",
-      "lightbox": true,
-      "display": "fit",
-      "rounded": false
-    },
-    {
       "type": "heading",
       "level": 2,
       "text": "What I came back with"
@@ -253,6 +252,11 @@
     {
       "type": "text",
       "markdown": "By now, I had met so many leaders and great Designers. Year after year, I had been lucky to be surrounded by some of the best people in the industry. When you are constantly in the company of brilliant people, you can't help but grow. And it happened at a key moment in my career, when I was still growing, still being moulded, and still defining the kind of professional I wanted to be."
+    },
+    {
+      "type": "video",
+      "media": "articles/my-journey-with-designup/media9",
+      "width": "content"
     },
     {
       "type": "video",

@@ -1,0 +1,13 @@
+{
+  "kind": "video",
+  "file": "media9.mp4",
+  "title": "DesignUp, emerging primitives",
+  "width": 800,
+  "height": 800,
+  "duration": 30.47,
+  "poster": {
+    "file": "media9.poster.webp"
+  },
+  "caption": "DesignUp, emerging primitives",
+  "visibility": "public"
+}
