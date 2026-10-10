@@ -76,7 +76,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
   <details class="upload" open={media.length === 0 ? true : undefined}>
     <summary><Icon name="upload" /><span>Upload a picture or a video</span></summary>
     <form class="upload-form" data-editor-upload novalidate>
-      <FileField label="Picture or video" name="file" accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.m4v,.webm,.mov" hint="Choose, drop or paste (Ctrl+V) any picture up to 20 MB: JPEG, PNG, WebP, AVIF, GIF, SVG and more. Saved as WebP, at most 2560 px and 1.5 MB, with its transparency and without its location data. Or a video under 100 MB (GitHub's limit for a file): MP4 (H.264), WebM or MOV, kept as it is, with a frame from it as its poster." />
+      <FileField label="Picture or video" name="file" accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.m4v,.webm,.mov" hint="Choose, drop or paste (Ctrl+V) any picture up to 20 MB: JPEG, PNG, WebP, AVIF, SVG and more. Saved as WebP, at most 2560 px and 1.5 MB, with its transparency and without its location data. A GIF is kept exactly as it is, under 100 MB and at most 2560 px. Or a video under 100 MB (GitHub's limit for a file): MP4 (H.264), WebM or MOV, kept as it is, with a frame from it as its poster." />
       <div class="preview" data-upload-preview hidden>
         <div class="stage" data-upload-stage>
           <div class="view" data-upload-view>

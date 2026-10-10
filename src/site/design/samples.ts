@@ -43,6 +43,21 @@ export const SAMPLES: SamplePicture[] = PICTURES.map(([slug, alt, caption]) => (
 
 export const sample = (slug: string): SamplePicture => SAMPLES.find((s) => s.slug === slug)!;
 
+/** A portrait (2:3) crop of one of the paintings, for the gallery's tall pictures. */
+export const PORTRAIT_SAMPLES: SamplePicture[] = (
+  [['lighthouse-dusk', 'A red and white lighthouse rises above a flowered hilltop at dusk, a path leading to its door.', 'The lighthouse, close up.']] as const
+).map(([slug, alt, caption]) => ({
+  slug: `${slug}-tall`,
+  alt,
+  caption,
+  width: 711,
+  height: 1067,
+  src: withBase(`/design/samples/${slug}-tall-480.webp`),
+  srcset: `${withBase(`/design/samples/${slug}-tall-480.webp`)} 480w, ${withBase(`/design/samples/${slug}-tall-711.webp`)} 711w`,
+  thumb: withBase(`/design/samples/${slug}-tall-thumb.webp`),
+  full: withBase(`/design/samples/${slug}-tall-711.webp`),
+}));
+
 export const SAMPLE_VIDEO = {
   src: withBase('/design/samples/planet-tour.mp4'),
   poster: withBase('/design/samples/planet-tour-poster.webp'),

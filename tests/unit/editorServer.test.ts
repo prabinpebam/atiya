@@ -1,6 +1,6 @@
 /**
  * Edit mode's server, against temporary folders (documentation/editor/plan.md §4): uploads through sharp
- * (WebP within the budgets, metadata stripped, the sidecar in the same transaction), a picture's details,
+ * (WebP within the budgets, metadata stripped, the sidecar in the same transaction; a GIF kept byte for byte), a picture's details,
  * Replace and Delete; publishing with git against a temporary repository and a bare remote (only the
  * content folder is committed, staged code stays staged, a failed push is reported, Discard restores);
  * and the integration (nothing for a build, CONTENT_ROOT refused in one).
@@ -14,8 +14,8 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
 import { createArticle, deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
-import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
-import { MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
+import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, MAX_UPLOAD, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
+import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 import { byteRange } from '../../integrations/content-files.mjs';
 import { changes, discard, publish, push } from '../../src/site/editor/server/git';
 import editor from '../../integrations/editor.mjs';
@@ -153,26 +153,53 @@ describe('uploads', () => {
     const gif = await sharp(await png(40, 30)).gif().toBuffer();
     const tiff = await sharp(await png(40, 30)).tiff().toBuffer();
     expect(await upload({ file: { name: 'anim.gif', bytes: gif }, owner: 'shared', alt: 'G' })).toMatchObject({ ok: true });
+    expect(readFileSync(join(content, 'media/shared/anim.gif')).equals(gif)).toBe(true);
     expect(await upload({ file: { name: 'scan.tiff', bytes: tiff }, owner: 'shared', alt: 'T' })).toMatchObject({ ok: true });
     expect((await sharp(readFileSync(join(content, 'media/shared/scan.webp'))).metadata()).width).toBe(40);
   });
 
-  it('keeps every GIF frame and its timing in an animated WebP, with a still reduced-motion poster', async () => {
+  it('keeps a GIF exactly as it is (never re-encoded), with a still reduced-motion poster when it moves', async () => {
     expect(await upload({ file: { name: 'motion.gif', bytes: animatedGif }, owner: 'shared', alt: 'Two changing pixels' })).toMatchObject({ ok: true, id: 'shared/motion' });
-    const master = readFileSync(join(content, 'media/shared/motion.webp'));
-    const meta = await sharp(master, { animated: true }).metadata();
-    expect(meta).toMatchObject({ format: 'webp', pages: 2, pageHeight: 1, loop: 0, delay: [80, 160] });
+    const master = readFileSync(join(content, 'media/shared/motion.gif'));
+    expect(master.equals(animatedGif)).toBe(true);
+    expect(existsSync(join(content, 'media/shared/motion.webp'))).toBe(false);
     const poster = await sharp(readFileSync(join(content, 'media/shared/motion.poster.webp'))).metadata();
     expect(poster.format).toBe('webp');
     expect(poster.pages ?? 1).toBe(1);
-    expect(readDoc('/content/media/shared/motion.json')?.value).toMatchObject({ file: 'motion.webp', animation: { poster: 'motion.poster.webp' } });
+    expect(readDoc('/content/media/shared/motion.json')?.value).toMatchObject({ file: 'motion.gif', animation: { poster: 'motion.poster.webp' } });
   });
 
-  it('refuses a destructive crop of an animation instead of silently stopping it', async () => {
+  it('takes a GIF far over the 1.5 MB budget (kept as it is), up to GitHub’s limit for a file', async () => {
+    // a still GIF of noise: big, and nothing a re-encode would keep under 1.5 MB
+    const noise = Buffer.alloc(1600 * 1600 * 3);
+    let s = 1;
+    for (let i = 0; i < noise.length; i++) {
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+      noise[i] = s >>> 24;
+    }
+    const big = await sharp(noise, { raw: { width: 1600, height: 1600, channels: 3 } }).gif({ effort: 1 }).toBuffer();
+    expect(big.length).toBeGreaterThan(MAX_BYTES);
+    expect(await upload({ file: { name: 'big.gif', bytes: big }, owner: 'shared', alt: 'Noise' })).toMatchObject({ ok: true, id: 'shared/big' });
+    expect(readFileSync(join(content, 'media/shared/big.gif')).equals(big)).toBe(true);
+    expect(readDoc('/content/media/shared/big.json')?.value).not.toHaveProperty('animation');
+    const huge = Buffer.concat([animatedGif.subarray(0, 6), Buffer.alloc(MAX_GIF_BYTES)]);
+    expect(JSON.stringify(await upload({ file: { name: 'huge.gif', bytes: huge }, owner: 'shared', alt: 'Huge' }))).toMatch(/under 100 MB, GitHub's limit/);
+    expect(JSON.stringify(await upload({ file: { name: 'huge.png', bytes: Buffer.alloc(MAX_UPLOAD + 1) }, owner: 'shared', alt: 'Huge' }))).toMatch(/up to 20 MB/);
+  });
+
+  it('refuses a GIF wider than a master can be, rather than resizing it', async () => {
+    const wide = await sharp(await png(MAX_SIDE + 1, 10)).gif().toBuffer();
+    expect(JSON.stringify(await upload({ file: { name: 'wide.gif', bytes: wide }, owner: 'shared', alt: 'Wide' }))).toMatch(/at most 2560 px/);
+    expect(existsSync(join(content, 'media/shared/wide.gif'))).toBe(false);
+  });
+
+  it('refuses a destructive crop of an animation, or of any GIF, instead of re-encoding it', async () => {
     const crop = { x: 0, y: 0, width: 1, height: 1, of: { width: 1, height: 1 } };
     expect(await upload({ file: { name: 'motion.gif', bytes: animatedGif }, owner: 'shared', alt: 'Two changing pixels', crop })).toMatchObject({ ok: false, status: 422 });
     const added = (await upload({ file: { name: 'motion.gif', bytes: animatedGif }, owner: 'shared', alt: 'Two changing pixels' })) as { id: string };
     expect(await cropMedia(added.id, { x: 0, y: 0, width: 1, height: 1 })).toMatchObject({ ok: false, status: 422 });
+    const still = (await upload({ file: { name: 'still.gif', bytes: await sharp(await png(40, 30)).gif().toBuffer() }, owner: 'shared', alt: 'Still' })) as { id: string };
+    expect(JSON.stringify(await cropMedia(still.id, { x: 0, y: 0, width: 10, height: 10 }))).toMatch(/GIF is kept exactly as it is/);
   });
 
   it("read the form's crop only when it's a rectangle in a size", () => {
@@ -243,15 +270,15 @@ describe('the crop: a copy, never the original (documentation/editor/spec.md §6
     expect(existsSync(join(content, `media/${copy.id}.webp`))).toBe(false);
   });
 
-  it("an animated dark version keeps its frames and poster, then removes both", async () => {
+  it("an animated GIF dark version is kept as it is, with its poster, then removes both", async () => {
     const { id } = await add();
     const darkResult = await setDark(id, animatedGif);
     expect(darkResult).toMatchObject({ ok: true, width: 1, height: 1 });
-    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ dark: { file: 'mark.dark.webp', animation: { poster: 'mark.dark.poster.webp' } } });
-    expect((await sharp(readFileSync(join(content, 'media/articles/a/mark.dark.webp')), { animated: true }).metadata()).pages).toBe(2);
+    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ dark: { file: 'mark.dark.gif', animation: { poster: 'mark.dark.poster.webp' } } });
+    expect(readFileSync(join(content, 'media/articles/a/mark.dark.gif')).equals(animatedGif)).toBe(true);
     expect(existsSync(join(content, 'media/articles/a/mark.dark.poster.webp'))).toBe(true);
     expect(await removeDark(id)).toMatchObject({ ok: true });
-    expect(existsSync(join(content, 'media/articles/a/mark.dark.webp'))).toBe(false);
+    expect(existsSync(join(content, 'media/articles/a/mark.dark.gif'))).toBe(false);
     expect(existsSync(join(content, 'media/articles/a/mark.dark.poster.webp'))).toBe(false);
   });
 
@@ -333,14 +360,17 @@ describe("a picture's details, Replace and Delete", () => {
     expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ alt: 'A cover' });
   });
 
-  it('replace a static master with animation and back without leaving its poster behind', async () => {
+  it('replace a static master with a GIF (kept as it is) and back, without leaving its poster or old file behind', async () => {
     const { id } = await add();
     expect(await replaceMaster(id, animatedGif)).toMatchObject({ ok: true });
-    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ animation: { poster: 'cover.poster.webp' }, alt: 'A cover' });
-    expect((await sharp(readFileSync(join(content, 'media/articles/a/cover.webp')), { animated: true }).metadata()).pages).toBe(2);
+    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ file: 'cover.gif', animation: { poster: 'cover.poster.webp' }, alt: 'A cover' });
+    expect(readFileSync(join(content, 'media/articles/a/cover.gif')).equals(animatedGif)).toBe(true);
+    expect(existsSync(join(content, 'media/articles/a/cover.webp'))).toBe(false);
     expect(existsSync(join(content, 'media/articles/a/cover.poster.webp'))).toBe(true);
     expect(await replaceMaster(id, await png(100, 100))).toMatchObject({ ok: true });
+    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ file: 'cover.webp' });
     expect(readDoc(`/content/media/${id}.json`)?.value).not.toHaveProperty('animation');
+    expect(existsSync(join(content, 'media/articles/a/cover.gif'))).toBe(false);
     expect(existsSync(join(content, 'media/articles/a/cover.poster.webp'))).toBe(false);
   });
 

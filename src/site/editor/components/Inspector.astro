@@ -284,6 +284,7 @@ const STATUS: SelectOption[] = [
                       <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-layout')}>Layout and width</Heading></div>
                       <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout ?? 'grid'} options={[{ value: 'grid', label: 'Justified', description: 'Equal-height rows' }, { value: 'mosaic', label: 'Mosaic', description: 'The first picture leads' }, { value: 'row', label: 'Row', description: 'A filmstrip' }]} />
                       <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
+                      <Switch label="Let tall pictures span two rows" name={`body.${i}.span`} id={id(i, 'span')} checked={b.span !== false} data-type="bool-default-true" />
                     </section>
                   )}
                   {b.type === 'carousel' && (

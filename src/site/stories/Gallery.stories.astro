@@ -2,15 +2,21 @@
 import Example from '../library/Example.astro';
 import Gallery from '../components/compounds/Gallery.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
-import { SAMPLES } from '../design/samples';
+import { PORTRAIT_SAMPLES, SAMPLES } from '../design/samples';
 
 const firstFour = SAMPLES.slice(0, 4);
 const firstFive = SAMPLES.slice(0, 5);
 const all = SAMPLES;
+const [tallLighthouse] = PORTRAIT_SAMPLES;
+const withTall = [tallLighthouse!, ...SAMPLES];
 ---
 
 <Example title="A justified gallery" layout="block" description="Fixed-height rows choose their picture count and crop evenly to meet both edges.">
   <Gallery items={firstFour} caption="Clockwise from top left: the plaza, the workshop, the pond and the waterfall." lightbox="gallery-grid" />
+</Example>
+
+<Example title="Tall pictures span two rows" layout="block" description="A portrait takes two rows beside two justified rows where it fits well (bands alternate sides and never touch); on a phone, or with span off, it stays in a row.">
+  <Gallery items={withTall} caption="The planet, from the lighthouse down." lightbox="gallery-tall" />
 </Example>
 
 <Example title="A mosaic gallery" layout="block" description="The first picture leads, the rest support it.">

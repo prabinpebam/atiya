@@ -15,7 +15,7 @@ import { pageMeasure, pictureCount, readingMinutes } from '../../src/site/conten
 import { article, block, siteStructure, type Article, type SiteStructure } from '../../src/site/content/schema';
 import { exploreHref, siteNav } from '../../src/site/content/navigation';
 import { renderInlineMarkdown } from '../../src/site/content/markdown';
-import { MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
+import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 
 const ROOT = join(__dirname, '../..');
 const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => (statSync(join(dir, n)).isDirectory() ? walk(join(dir, n)) : [join(dir, n)]));
@@ -340,19 +340,20 @@ describe('the loader checks what it is given', () => {
 
 describe('the content in content/', () => {
   const c = content();
-  const masters = walk(join(ROOT, 'content/media')).filter((f) => /\.(webp|jpe?g|png|avif)$/.test(f));
+  const masters = walk(join(ROOT, 'content/media')).filter((f) => /\.(webp|jpe?g|png|avif|gif)$/.test(f));
 
   it('validates, and every published article has a page', () => {
     expect(c.warnings).toEqual([]);
     expect(c.canonical.get('article/do-what-makes-you-proud')).toBe('/leadership/do-what-makes-you-proud/');
   });
 
-  it('every master is within its budget: 2560 px on the long side and 1.5 MB, with no location data', async () => {
+  it('every master is within its budget: 2560 px on the long side and 1.5 MB (a GIF, kept as it is, under 100 MB), with no location data', async () => {
     const over: string[] = [];
     for (const f of masters) {
       const m = await sharp(f).metadata();
       if (Math.max(m.width ?? 0, m.pageHeight ?? m.height ?? 0) > 2560) over.push(`${key(f)}: ${m.width}x${m.pageHeight ?? m.height}`);
-      if (statSync(f).size > 1.5 * 1024 * 1024) over.push(`${key(f)}: ${(statSync(f).size / 1048576).toFixed(2)} MB`);
+      const budget = f.endsWith('.gif') ? MAX_GIF_BYTES - 1 : 1.5 * 1024 * 1024;
+      if (statSync(f).size > budget) over.push(`${key(f)}: ${(statSync(f).size / 1048576).toFixed(2)} MB`);
       if (m.exif && /GPS/i.test(m.exif.toString('latin1'))) over.push(`${key(f)}: has GPS data`);
     }
     expect(over).toEqual([]);

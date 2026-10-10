@@ -108,10 +108,11 @@ async function edgeColour(master: string): Promise<string> {
   if (hit && hit.mtime === mtime) return hit.bg;
   const { default: sharp } = await import('sharp');
   const N = 24;
-  const { data } = await sharp(readFileSync(abs)).resize(N, N, { fit: 'fill' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  // a GIF is kept as it is, and browsers show ones a strict decoder warns about: read it leniently
+  const { data } = await sharp(readFileSync(abs), { failOn: 'none' }).resize(N, N, { fit: 'fill' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   let bg = edgeAverage(data, N);
   if (!bg) {
-    const { dominant } = await sharp(readFileSync(abs)).stats();
+    const { dominant } = await sharp(readFileSync(abs), { failOn: 'none' }).stats();
     bg = `rgb(${dominant.r} ${dominant.g} ${dominant.b})`;
   }
   edges.set(abs, { mtime, bg });
@@ -125,7 +126,7 @@ async function record(master: string, urls: string[]) {
   for (const url of new Set(urls)) recordProvenance({ kind: 'asset', url, master });
 }
 
-/** One master at a slot's widths: what the page needs to show it. */
+/** One master at a slot's widths: what the page needs to show it. An animation, or a GIF (kept as it is, never converted), is shown as its master. */
 async function sized(master: string, slot: Slot, posterMaster?: string) {
   const meta = await metadata(master);
   if (posterMaster) {
@@ -133,6 +134,11 @@ async function sized(master: string, slot: Slot, posterMaster?: string) {
     const [poster, thumb, bg] = await Promise.all([webp(posterMeta, Math.min(posterMeta.width, 1600)), webp(posterMeta, Math.min(posterMeta.width, THUMB)), edgeColour(master)]);
     await record(master, [meta.src, poster, thumb]);
     return { src: meta.src, srcset: '', width: meta.width, height: meta.height, full: meta.src, thumb, poster, bg };
+  }
+  if (/\.gif$/i.test(master)) {
+    const bg = await edgeColour(master);
+    await record(master, [meta.src]);
+    return { src: meta.src, srcset: '', width: meta.width, height: meta.height, full: meta.src, thumb: meta.src, bg };
   }
   const wanted = WIDTHS[slot];
   const widths = [...new Set([...wanted.filter((w) => w < meta.width), Math.min(meta.width, Math.max(...wanted))])].sort((a, b) => a - b);

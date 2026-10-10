@@ -8,7 +8,7 @@ export interface Titles {
   person(id: string): string | undefined;
 }
 
-const MEDIA = /^\/(content|private)\/media\/(.+?)(?:\.dark(?:\.poster)?|\.poster)?\.(json|webp|jpe?g|png|avif|pdf|mp4|webm)$/;
+const MEDIA = /^\/(content|private)\/media\/(.+?)(?:\.dark(?:\.poster)?|\.poster)?\.(json|webp|jpe?g|png|avif|gif|pdf|mp4|webm)$/;
 
 /** The resource a file belongs to: a picture's master, versions, posters and sidecar share one (/content/media/<id>); any other file is its own. */
 export const resourceOf = (key: string) => {

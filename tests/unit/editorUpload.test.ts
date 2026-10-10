@@ -4,7 +4,7 @@
  * the preview's line.
  */
 import { describe, expect, it } from 'vitest';
-import { clock, describePicture, describeVideo, formatLabel, isVideoFile, MAX_VIDEO_BYTES, mayHaveAlpha, megabytes, needsConversion, pastedName, pictureOfPaste, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../../src/site/editor/model/upload';
+import { clock, describePicture, describeVideo, formatLabel, isVideoFile, keptAsIs, MAX_GIF_BYTES, MAX_PICTURE_BYTES, MAX_VIDEO_BYTES, mayHaveAlpha, megabytes, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../../src/site/editor/model/upload';
 
 describe('the upload form', () => {
   it('knows a file by its type, or by its extension when the system gives none', () => {
@@ -42,6 +42,19 @@ describe('the upload form', () => {
     expect(describePicture({ width: 1200, height: 800, type: 'image/png', alpha: true })).toBe('1200 × 800 px, PNG, transparent.');
     expect(describePicture({ width: 1200, height: 800, type: 'image/jpeg', alpha: false, crop: { width: 600, height: 400 } })).toBe('1200 × 800 px, JPEG. Cropped to 600 × 400 px.');
     expect(describePicture({ width: 16, height: 16, type: 'image/x-icon', alpha: true, converted: true })).toBe('16 × 16 px, ICO, transparent. Uploads as a PNG.');
+    expect(describePicture({ width: 200, height: 300, type: 'image/gif', alpha: false, bytes: 9_354_419 })).toBe('200 × 300 px, GIF, 9.4 MB. Kept exactly as it is.');
+    expect(describePicture({ width: 200, height: 300, type: 'image/gif', alpha: false, bytes: 60_000_000 })).toMatch(/Kept exactly as it is\. Over 50 MB: GitHub takes it/);
+  });
+
+  it('a GIF is kept as it is, so its limit is GitHub’s for a file; any other picture uploads at up to 20 MB', () => {
+    expect(keptAsIs('image/gif')).toBe(true);
+    expect(keptAsIs('image/png')).toBe(false);
+    expect(MAX_GIF_BYTES).toBe(MAX_VIDEO_BYTES);
+    expect(pictureSizeIssue('image/gif', 9_354_419)).toBeNull();
+    expect(pictureSizeIssue('image/gif', MAX_GIF_BYTES - 1)).toBeNull();
+    expect(pictureSizeIssue('image/gif', MAX_GIF_BYTES)).toMatch(/a GIF is kept as it is, so it must be under 100 MB/);
+    expect(pictureSizeIssue('image/png', MAX_PICTURE_BYTES)).toBeNull();
+    expect(pictureSizeIssue('image/png', MAX_PICTURE_BYTES + 1)).toMatch(/up to 20 MB/);
   });
 });
 

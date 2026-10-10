@@ -78,13 +78,16 @@ export function pastedName(name: string, type: string, now: Date): string {
 /** The name a converted picture uploads as: the same, as a PNG. */
 export const pngName = (name: string) => `${name.replace(/\.[^.]+$/, '') || 'picture'}.png`;
 
-/** The preview's line: "1200 × 800 px, PNG, transparent", and the crop when there is one. */
-export function describePicture(p: { width: number; height: number; type: string; alpha: boolean; crop?: { width: number; height: number } | null; converted?: boolean }): string {
+/** The preview's line: "1200 × 800 px, PNG, transparent", and the crop when there is one; a GIF says it's kept as it is, and its size. */
+export function describePicture(p: { width: number; height: number; type: string; alpha: boolean; crop?: { width: number; height: number } | null; converted?: boolean; bytes?: number }): string {
   const parts = [`${p.width} × ${p.height} px`, formatLabel(p.type)];
+  if (keptAsIs(p.type) && p.bytes) parts.push(megabytes(p.bytes));
   if (p.alpha) parts.push('transparent');
   let s = parts.join(', ');
   if (p.crop) s += `. Cropped to ${p.crop.width} × ${p.crop.height} px`;
   if (p.converted) s += '. Uploads as a PNG';
+  if (keptAsIs(p.type)) s += '. Kept exactly as it is';
+  if (keptAsIs(p.type) && (p.bytes ?? 0) > LARGE_VIDEO_BYTES) s += '. Over 50 MB: GitHub takes it, but warns about files this big';
   return `${s}.`;
 }
 
@@ -110,6 +113,27 @@ export function videoTypeOf(file: { type: string; name: string }): string {
 
 /** Whether a file is a video at all (one the site takes or not), by its type or extension. */
 export const isVideoFile = (file: { type: string; name: string }) => file.type.startsWith('video/') || /\.(mp4|m4v|webm|mov|mkv|avi|wmv|3gp)$/i.test(file.name);
+
+/** A picture uploads at up to 20 MB: it's saved smaller (a WebP master within the budgets). */
+export const MAX_PICTURE_BYTES = 20 * 1024 * 1024;
+/**
+ * A GIF is kept exactly as it is, never re-encoded (media.md §4): its look rarely survives a conversion. So
+ * its only limit is the one a video has, GitHub's for a file.
+ */
+export const MAX_GIF_BYTES = MAX_VIDEO_BYTES;
+
+/** Whether a picture of this type is kept as it is rather than saved as a WebP master. */
+export const keptAsIs = (type: string) => type === 'image/gif';
+
+/** Why a picture can't be uploaded because of its size, or null when it can. */
+export function pictureSizeIssue(type: string, bytes: number): string | null {
+  if (keptAsIs(type)) {
+    if (bytes < MAX_GIF_BYTES) return null;
+    return `It's ${megabytes(bytes)}: a GIF is kept as it is, so it must be under 100 MB, GitHub's limit for a file. Make it shorter or smaller, or save it as a video, then choose it again.`;
+  }
+  if (bytes <= MAX_PICTURE_BYTES) return null;
+  return `It's ${megabytes(bytes)}: a picture can be up to 20 MB (it's saved smaller). Save a smaller copy, then choose it again.`;
+}
 
 /** Why a video can't be uploaded because of its size, or null when it can. */
 export function videoSizeIssue(bytes: number): string | null {

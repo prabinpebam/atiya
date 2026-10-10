@@ -1,11 +1,12 @@
 /**
  * Media, as edit mode changes it (documentation/editor/spec.md §6): uploads (any format sharp reads: JPEG,
  * PNG, WebP, AVIF, GIF, TIFF, SVG; the browser turns others into PNG first) become WebP masters within
- * the budgets (at most 2560 px on the long side and 1.5 MB, metadata stripped, transparency and GIF
- * animation kept), each
+ * the budgets (at most 2560 px on the long side and 1.5 MB, metadata stripped, transparency kept), each
  * with its JSON sidecar, in one store transaction, cut first to a crop chosen before the upload, if any;
+ * a GIF is the exception: it's kept exactly as it is (`<name>.gif`, under GitHub's 100 MB, never re-encoded
+ * or cropped), with a still WebP poster of its first frame when it's animated (media.md §4);
  * a sidecar's details save to the picture; a picture can have a dark mode version (a second master,
- * `<name>.dark.webp`, named in its sidecar), which its crops, its deletion and its replacement carry along;
+ * `<name>.dark.webp` or `.dark.gif`, named in its sidecar), which its crops, its deletion and its replacement carry along;
  * a picture is cropped into a
  * copy, never in place (§6.1); a picture is deleted only when nothing refers to it (the content check
  * refuses a deletion that would leave a reference). A private page's media live in private-pages/ with it
@@ -18,11 +19,11 @@ import { fileOf, readSnapshot } from '../../content/source';
 import { existsSync } from 'node:fs';
 import { slugify, unique } from '../model/ids';
 import { ratioLabel, type Rect } from '../model/crop';
-import { videoSizeIssue } from '../model/upload';
+import { MAX_PICTURE_BYTES, pictureSizeIssue, videoSizeIssue } from '../model/upload';
 
 export const MAX_BYTES = 1.5 * 1024 * 1024;
 export const MAX_SIDE = 2560;
-export const MAX_UPLOAD = 20 * 1024 * 1024;
+export const MAX_UPLOAD = MAX_PICTURE_BYTES;
 const OWNER = /^(shared|site|articles\/[a-z0-9]+(?:-[a-z0-9]+)*|people\/[a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const MEDIA_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
 
@@ -62,16 +63,50 @@ export async function toMaster(input: Buffer): Promise<{ bytes: Buffer; width: n
   }
   const out = await sharp(bytes, { animated }).metadata();
   if (animated && out.pages !== source.pages) throw new Error(`couldn't preserve all ${source.pages} animation frames`);
-  let poster: Buffer | undefined;
-  if (animated) {
-    const posterBase = sharp(input, { failOn: 'error', page: 0, pages: 1 }).rotate().resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
-    for (let q = 82; !poster || poster.length > MAX_BYTES; q -= 6) {
-      if (q < 60) throw new Error("its still poster can't be made small enough (1.5 MB) without losing too much: use a smaller picture");
-      poster = await posterBase.clone().webp({ quality: q, alphaQuality: 100 }).toBuffer();
-    }
-  }
+  const poster = animated ? await stillOf(input) : undefined;
   return { bytes, width: out.width ?? 0, height: out.pageHeight ?? out.height ?? 0, ...(poster ? { poster } : {}) };
 }
+
+/** An animation's still first frame, as a WebP within the budgets: its poster for reduced motion and thumbnails. */
+async function stillOf(input: Buffer, failOn: 'error' | 'none' = 'error'): Promise<Buffer> {
+  const { default: sharp } = await import('sharp');
+  const posterBase = sharp(input, { failOn, page: 0, pages: 1 }).rotate().resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
+  let poster: Buffer | undefined;
+  for (let q = 82; !poster || poster.length > MAX_BYTES; q -= 6) {
+    if (q < 60) throw new Error("its still poster can't be made small enough (1.5 MB) without losing too much: use a smaller picture");
+    poster = await posterBase.clone().webp({ quality: q, alphaQuality: 100 }).toBuffer();
+  }
+  return poster;
+}
+
+/** Whether the bytes are a GIF (by its signature, whatever the file is called). */
+export const isGif = (bytes: Buffer) => bytes.length >= 6 && /^GIF8[79]a$/.test(bytes.subarray(0, 6).toString('latin1'));
+
+/**
+ * A GIF as its own master, byte for byte (media.md §4): never re-encoded, resized or stripped, since a GIF's
+ * look rarely survives a conversion. Its limits are checked, never met by changing it: under GitHub's 100 MB
+ * for a file, and at most 2560 px on its long side. An animated one gets a still WebP poster of its first frame.
+ */
+async function gifMaster(input: Buffer): Promise<{ bytes: Buffer; width: number; height: number; poster?: Buffer }> {
+  const tooBig = pictureSizeIssue('image/gif', input.length);
+  if (tooBig) throw new Error(tooBig);
+  const { default: sharp } = await import('sharp');
+  const meta = await sharp(input, { failOn: 'none' }).metadata();
+  const width = meta.width ?? 0;
+  const height = meta.pageHeight ?? meta.height ?? 0;
+  if (!width || !height) throw new Error("its size couldn't be read");
+  if (Math.max(width, height) > MAX_SIDE) throw new Error(`it's ${width} × ${height} px: a GIF is kept as it is, so it must be at most ${MAX_SIDE} px on its long side. Save a smaller one, then choose it again`);
+  const poster = (meta.pages ?? 1) > 1 ? await stillOf(input, 'none') : undefined;
+  return { bytes: input, width, height, ...(poster ? { poster } : {}) };
+}
+
+/** The master an upload becomes, and its extension: a GIF kept as it is, anything else a WebP within the budgets. */
+export async function asMaster(input: Buffer): Promise<{ bytes: Buffer; width: number; height: number; poster?: Buffer; ext: 'gif' | 'webp' }> {
+  return isGif(input) ? { ...(await gifMaster(input)), ext: 'gif' } : { ...(await toMaster(input)), ext: 'webp' };
+}
+
+/** Why a crop can't be made of these bytes before upload: a GIF is never cut (it would be re-encoded). */
+const GIF_UNCROPPED = "a GIF is kept exactly as it is, so it can't be cropped: upload it whole, then set its focus point";
 
 export interface Upload {
   file: { name: string; bytes: Buffer };
@@ -115,20 +150,23 @@ export function parseUploadCrop(v: unknown): Upload['crop'] | null {
 
 export async function upload(u: Upload): Promise<Result & { id?: string }> {
   if (!OWNER.test(u.owner)) return refuse('content/media', `"${u.owner}" isn't a media folder (shared, site, articles/<id> or people/<id>)`, 'owner');
-  if (u.file.bytes.length > MAX_UPLOAD) return refuse('content/media', 'is larger than 20 MB', 'file');
+  const gif = isGif(u.file.bytes);
+  const tooBig = pictureSizeIssue(gif ? 'image/gif' : '', u.file.bytes.length);
+  if (tooBig) return refuse('content/media', tooBig, 'file');
+  if (gif && u.crop) return refuse('content/media', GIF_UNCROPPED, 'crop');
   const snap = readSnapshot();
   const folder = folderOf(u.owner);
   const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark(?:\.poster)?|\.poster)?\.\w+$/, '')));
   const name = unique(slugify(u.file.name.replace(/\.[^.]+$/, '')) || 'picture', taken);
-  let master: Awaited<ReturnType<typeof toMaster>>;
+  let master: Awaited<ReturnType<typeof asMaster>>;
   try {
-    master = await toMaster(u.crop ? await cutUpload(u.file.bytes, u.crop) : u.file.bytes);
+    master = await asMaster(u.crop ? await cutUpload(u.file.bytes, u.crop) : u.file.bytes);
   } catch (e) {
     return refuse('content/media', `couldn't be read as a picture: ${(e as Error).message}`, 'file');
   }
   const sidecar: ImageMedia = {
     kind: 'image',
-    file: `${name}.webp`,
+    file: `${name}.${master.ext}`,
     ...(master.poster ? { animation: { poster: `${name}.poster.webp` } } : {}),
     ...(u.decorative ? { decorative: true } : { alt: (u.alt ?? '').trim() }),
     ...(u.caption?.trim() ? { caption: u.caption.trim() } : {}),
@@ -136,7 +174,7 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
   };
   const parsed = imageMedia.safeParse(sidecar);
   if (!parsed.success) return { ok: false, status: 422, issues: parsed.error.issues.map((i) => ({ file: `content/media/${u.owner}/${name}.json`, path: i.path.join('.'), message: i.message })) };
-  const masterKey = `${folder}${name}.webp`;
+  const masterKey = `${folder}${sidecar.file}`;
   const sidecarKey = `${folder}${name}.json`;
   const posterKey = master.poster ? `${folder}${name}.poster.webp` : null;
   const changes: Change[] = [
@@ -289,30 +327,39 @@ export async function uploadVideo(u: VideoUpload): Promise<Result & { id?: strin
   return r.ok ? { ...r, id: `${u.owner}/${name}` } : r;
 }
 
-/** Replaces a picture's master, keeping its id and its sidecar (its dark version stays as it is). */
+/**
+ * Replaces a picture's master, keeping its id and its sidecar (its dark version stays as it is). The new
+ * master can be of another format (a GIF kept as it is, or a WebP): the old file goes, and the sidecar names the new one.
+ */
 export async function replaceMaster(id: string, bytes: Buffer): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = `${baseOf(id)}${id}.json`;
   const sc = readDoc<ImageMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
-  const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);
-  if (!sc.value.file.endsWith('.webp')) return refuse(key.slice(1), 'only a WebP master can be replaced here');
-  let master: Awaited<ReturnType<typeof toMaster>>;
+  const oldMasterKey = key.replace(/[^/]+\.json$/, sc.value.file);
+  if (!/\.(webp|gif)$/.test(sc.value.file)) return refuse(key.slice(1), 'only a WebP or GIF master can be replaced here');
+  let master: Awaited<ReturnType<typeof asMaster>>;
   try {
-    master = await toMaster(bytes);
+    master = await asMaster(bytes);
   } catch (e) {
     return refuse(key.slice(1), `couldn't be read as a picture: ${(e as Error).message}`, 'file');
   }
+  const file = `${id.slice(id.lastIndexOf('/') + 1)}.${master.ext}`;
+  const masterKey = key.replace(/[^/]+\.json$/, file);
   const posterKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${posterFileOf(id)}`;
   const oldPosterKey = posterKeyOf(id, sc.value);
   const { animation: _animation, ...rest } = sc.value;
-  const next: ImageMedia = { ...rest, ...(master.poster ? { animation: { poster: posterFileOf(id) } } : {}) };
+  const next: ImageMedia = { ...rest, file, ...(master.poster ? { animation: { poster: posterFileOf(id) } } : {}) };
   const changes: Change[] = [
     { key: masterKey, bytes: master.bytes },
     { key, bytes: jsonBytes(next) },
     ...(master.poster ? [{ key: posterKey, bytes: master.poster }] : []),
   ];
   const ifMatch: Record<string, string | null> = { [masterKey]: versionOf(readFile(masterKey)), [key]: sc.version, ...(master.poster ? { [posterKey]: versionOf(readFile(posterKey)) } : {}) };
+  if (oldMasterKey !== masterKey) {
+    changes.push({ key: oldMasterKey, bytes: null });
+    ifMatch[oldMasterKey] = versionOf(readFile(oldMasterKey));
+  }
   if (oldPosterKey && !master.poster) {
     changes.push({ key: oldPosterKey, bytes: null });
     ifMatch[oldPosterKey] = versionOf(readFile(oldPosterKey));
@@ -326,34 +373,36 @@ const darkKeyOf = (id: string, sc: ImageMedia) => (sc.dark ? `${baseOf(id)}${id.
 const posterFileOf = (id: string, dark = false) => `${id.slice(id.lastIndexOf('/') + 1)}${dark ? '.dark' : ''}.poster.webp`;
 const posterKeyOf = (id: string, sc: ImageMedia) => (sc.animation ? `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${sc.animation.poster}` : null);
 const darkPosterKeyOf = (id: string, sc: ImageMedia) => (sc.dark?.animation ? `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${sc.dark.animation.poster}` : null);
-/** Where a picture's dark version goes: beside its master, `<name>.dark.webp`. */
-const darkFileOf = (id: string) => `${id.slice(id.lastIndexOf('/') + 1)}.dark.webp`;
+/** Where a picture's dark version goes: beside its master, `<name>.dark.webp` (or `.dark.gif`, a GIF kept as it is). */
+const darkFileOf = (id: string, ext: 'gif' | 'webp' = 'webp') => `${id.slice(id.lastIndexOf('/') + 1)}.dark.${ext}`;
 
 /**
  * Adds a picture's dark mode version, or replaces it (documentation/editor/spec.md §6.2): a master like
- * every other (WebP, within the budgets, transparency kept), beside the picture as `<name>.dark.webp`,
- * named in its sidecar, in one transaction. Answers both sizes, so the editor can say when the two
- * shapes differ (a page shifts when the theme changes).
+ * every other (WebP, within the budgets, transparency kept; a GIF kept as it is), beside the picture as
+ * `<name>.dark.webp` (or `.dark.gif`), named in its sidecar, in one transaction. Answers both sizes, so the
+ * editor can say when the two shapes differ (a page shifts when the theme changes).
  */
 export async function setDark(id: string, bytes: Buffer, crop?: Upload['crop']): Promise<Result & { width?: number; height?: number; lightWidth?: number; lightHeight?: number }> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = sidecarKey(id);
   const sc = readDoc<ImageMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
-  let master: Awaited<ReturnType<typeof toMaster>>;
+  if (crop && isGif(bytes)) return refuse(key.slice(1), GIF_UNCROPPED, 'crop');
+  let master: Awaited<ReturnType<typeof asMaster>>;
   try {
-    master = await toMaster(crop ? await cutUpload(bytes, crop) : bytes);
+    master = await asMaster(crop ? await cutUpload(bytes, crop) : bytes);
   } catch (e) {
     return refuse(key.slice(1), `couldn't be read as a picture: ${(e as Error).message}`, 'file');
   }
-  const darkKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
+  const darkFile = darkFileOf(id, master.ext);
+  const darkKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${darkFile}`;
   const darkPosterKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${posterFileOf(id, true)}`;
   const oldKey = darkKeyOf(id, sc.value);
   const oldPosterKey = darkPosterKeyOf(id, sc.value);
   const changes: Change[] = [
     { key: darkKey, bytes: master.bytes },
     ...(master.poster ? [{ key: darkPosterKey, bytes: master.poster }] : []),
-    { key, bytes: jsonBytes({ ...sc.value, dark: { file: darkFileOf(id), ...(master.poster ? { animation: { poster: posterFileOf(id, true) } } : {}) } }) },
+    { key, bytes: jsonBytes({ ...sc.value, dark: { file: darkFile, ...(master.poster ? { animation: { poster: posterFileOf(id, true) } } : {}) } }) },
   ];
   const ifMatch: Record<string, string | null> = { [darkKey]: versionOf(readFile(darkKey)), [key]: sc.version, ...(master.poster ? { [darkPosterKey]: versionOf(readFile(darkPosterKey)) } : {}) };
   // a dark version kept in another format before: this one replaces it
@@ -425,6 +474,7 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   const src = await cropSource(id);
   if (!src) return refuse(`content/media/${id}.json`, "doesn't exist");
   if (src.sidecar.animation || src.sidecar.dark?.animation) return refuse(`content/media/${id}.json`, "an animated picture can't be cropped without stopping it; set its focus point to control the visible area", 'crop');
+  if ([src.sidecar.file, src.sidecar.dark?.file].some((f) => f?.endsWith('.gif'))) return refuse(`content/media/${id}.json`, "a GIF is kept exactly as it is, so it can't be cropped; set its focus point to control the visible area", 'crop');
   const r = { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   const whole = Object.values(r).every((v) => Number.isInteger(v));
   if (!whole || r.x < 0 || r.y < 0 || r.width < 1 || r.height < 1 || r.x + r.width > src.width || r.y + r.height > src.height) {

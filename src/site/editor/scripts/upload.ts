@@ -7,7 +7,7 @@
  */
 import { announce, api, describeIssue, saveStatus } from './client';
 import { canCrop, openCrop } from './crop';
-import { describePicture, describeVideo, formatLabel, isVideoFile, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../model/upload';
+import { describePicture, describeVideo, formatLabel, isVideoFile, keptAsIs, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../model/upload';
 import type { Rect } from '../model/crop';
 
 /** A video chosen: its file and what this browser read of it (media.md §12). */
@@ -164,9 +164,10 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
       view.style.setProperty('--it', `${(-r.y / r.height) * 100}%`);
     }
     facts.textContent = c.shown
-      ? describePicture({ width: c.width, height: c.height, type: c.type, alpha: c.alpha, crop: c.rect, converted: c.converted })
+      ? describePicture({ width: c.width, height: c.height, type: c.type, alpha: c.alpha, crop: c.rect, converted: c.converted, bytes: c.file.size })
       : `${formatLabel(c.type)}. This browser can't show it, but it uploads as it is.`;
-    cropWrap.hidden = !c.shown || !canCrop();
+    // a GIF is kept exactly as it is: cutting it would re-encode it
+    cropWrap.hidden = !c.shown || !canCrop() || keptAsIs(c.type);
     uncropWrap.hidden = !c.rect;
   };
 
@@ -213,6 +214,11 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     if (!type.startsWith('image/')) {
       render();
       return say(`${file.name} isn't a picture or a video. Choose a JPEG, PNG, WebP, AVIF, GIF, SVG or another picture, or an MP4, WebM or MOV video.`);
+    }
+    const big = pictureSizeIssue(type, file.size);
+    if (big) {
+      render();
+      return say(big);
     }
     let up = file;
     let converted = false;

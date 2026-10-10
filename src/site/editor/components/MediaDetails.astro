@@ -76,6 +76,8 @@ const { picture, video, usedIn, copies = [], original } = Astro.props;
 const media = (id: string) => withBase(`/_edit/media/?id=${id}`);
 const sc = picture?.sidecar;
 const animated = !!(sc?.animation || sc?.dark?.animation);
+// a GIF is kept exactly as it is (media.md §4): cropping it would re-encode it
+const gif = [sc?.file, sc?.dark?.file].some((f) => f?.endsWith('.gif'));
 const [fx, fy] = (sc?.focus ?? '50% 50%').split(' ').map((v) => parseInt(v, 10));
 const name = (picture ?? video)?.id.split('/').pop();
 const state = picture ? JSON.stringify({ id: picture.id, key: picture.key, version: picture.version, sidecar: sc }).replace(/</g, '\\u003c') : video ? JSON.stringify({ id: video.id, key: video.key, version: video.version, sidecar: video.sidecar }).replace(/</g, '\\u003c') : '';
@@ -216,7 +218,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             </ul>
           )}
           <div class="actions">
-            {animated ? <Text variant="small" tone="muted">An animated picture stays whole. Set its focus point above to control what a frame keeps.</Text> : <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>}
+            {gif ? <Text variant="small" tone="muted">A GIF is kept exactly as it is, so it isn't cropped. Set its focus point above to control what a frame keeps.</Text> : animated ? <Text variant="small" tone="muted">An animated picture stays whole. Set its focus point above to control what a frame keeps.</Text> : <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>}
           </div>
         </section>
 
@@ -242,7 +244,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           ) : (
             <Text variant="small" tone="muted">None: the same picture shows in light and dark mode. Add one when a picture needs other colours on a dark page (a diagram, a logo, a screenshot).</Text>
           )}
-          <FileField label={picture.dark ? 'New dark version' : 'Dark version'} name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="The same picture, in colours for a dark page, and of the same shape. Saved as WebP within the budgets, with its transparency." />
+          <FileField label={picture.dark ? 'New dark version' : 'Dark version'} name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="The same picture, in colours for a dark page, and of the same shape. Saved as WebP within the budgets, with its transparency; a GIF is kept exactly as it is." />
           <p class="issue" role="alert" data-editor-form-issue hidden />
           <div class="actions">
             {picture.dark && <Button variant="quiet" icon="delete" data-editor-media-dark-remove="">Remove it</Button>}
@@ -252,7 +254,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
 
         <form class="part" data-editor-media-replace novalidate aria-labelledby="media-replace-title">
           <Heading level={3} size="ui" id="media-replace-title">Replace the picture</Heading>
-          <FileField label="New picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="It keeps its name and details, so every page that uses it shows the new one." />
+          <FileField label="New picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="It keeps its name and details, so every page that uses it shows the new one. A GIF is kept exactly as it is." />
           <p class="issue" role="alert" data-editor-form-issue hidden />
           <div class="actions">
             <Button variant="secondary" type="submit" icon="upload">Replace it</Button>

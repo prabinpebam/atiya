@@ -39,7 +39,7 @@ const animation = z.strictObject({
 export const imageMedia = z
   .strictObject({
     kind: z.literal('image'),
-    file: z.string().regex(/^[a-z0-9-]+\.(webp|jpg|jpeg|png|avif)$/),
+    file: z.string().regex(/^[a-z0-9-]+\.(webp|jpg|jpeg|png|avif|gif)$/),
     alt: z.string().min(1).max(250).optional(),
     decorative: z.boolean().optional(),
     caption: z.string().optional(),
@@ -47,7 +47,7 @@ export const imageMedia = z
     licence: z.strictObject({ name: z.string(), url: z.url().optional(), owner: z.string().optional() }).optional(),
     source: z.url().optional(),
     focus: z.string().regex(/^\d{1,3}% \d{1,3}%$/).optional(),
-    /** Present only when the WebP master has more than one frame. */
+    /** Present only when the master (an animated WebP, or a GIF kept as it is) has more than one frame. */
     animation: animation.optional(),
     /** A cropped copy: the picture it was cut from, and where (in that picture's pixels). Cropping it again starts from there. */
     crop: z.strictObject({ from: mediaId, x: z.int().min(0), y: z.int().min(0), width: z.int().min(1), height: z.int().min(1) }).optional(),
@@ -56,7 +56,7 @@ export const imageMedia = z
      * dark (the reader's theme, or their system's). Its words (alt, caption, credit) and focus are the
      * picture's. Without one, the same picture shows in both modes.
      */
-    dark: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.dark\.(webp|jpg|jpeg|png|avif)$/), animation: animation.optional() }).optional(),
+    dark: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.dark\.(webp|jpg|jpeg|png|avif|gif)$/), animation: animation.optional() }).optional(),
     visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
   })
   .refine((m) => m.alt || m.decorative, { message: 'an image needs alt text unless it is decorative', path: ['alt'] })
@@ -192,7 +192,7 @@ export const block = z.discriminatedUnion('type', [
     rounded: rounded.optional(),
     shadow: shadow.optional(),
   }),
-  z.strictObject({ type: z.literal('gallery'), items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), fit: z.enum(['cover', 'contain']).optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
+  z.strictObject({ type: z.literal('gallery'), items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), span: z.boolean().optional(), fit: z.enum(['cover', 'contain']).optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
   z.strictObject({ type: z.literal('carousel'), items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() }),
   z.strictObject({
     type: z.literal('video'),

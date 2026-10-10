@@ -121,7 +121,7 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
     if ('ps' in v && v.b.type === 'gallery') {
       const { b, ps } = v;
       const items = ps.map((p, n) => ({ ...p, caption: b.showCaption === false ? '' : (b.items[n].caption ?? p.caption) }));
-      return <Gallery items={items} layout={b.layout} fit={b.fit} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} caption={b.showCaption === false ? undefined : b.caption} width={b.width} sizes={SIZES.popout} lightbox={b.lightbox ? lightbox : undefined} />;
+      return <Gallery items={items} layout={b.layout} span={b.span !== false} fit={b.fit} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} caption={b.showCaption === false ? undefined : b.caption} width={b.width} sizes={SIZES.popout} lightbox={b.lightbox ? lightbox : undefined} />;
     }
     if ('ps' in v && v.b.type === 'carousel') {
       const { b, ps } = v;

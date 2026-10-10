@@ -21,7 +21,7 @@ import { covers, isValid, lookupOf } from '../src/site/access/grants.ts';
 /** Where the sealer leaves what the leak check needs (scripts/verify-sealed.mjs). */
 export const SEALED_SUMMARY = join(process.cwd(), 'node_modules', '.cache', 'site-protected', 'sealed.json');
 
-const TYPES = /** @type {Record<string, string>} */ ({ webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', avif: 'image/avif', mp4: 'video/mp4', webm: 'video/webm' });
+const TYPES = /** @type {Record<string, string>} */ ({ webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', avif: 'image/avif', gif: 'image/gif', mp4: 'video/mp4', webm: 'video/webm' });
 const MAIN = /<!--sealed:main:([a-z0-9-]+)-->([\s\S]*?)<!--\/sealed:main-->/g;
 const CARD = /<!--sealed:card:([a-z0-9-]+):([a-z0-9-]*)-->([\s\S]*?)<!--\/sealed:card-->/g;
 

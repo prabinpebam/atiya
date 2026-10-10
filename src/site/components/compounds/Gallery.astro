@@ -3,10 +3,12 @@
  * A set of pictures arranged as a quiet magazine gallery: justified rows, a lead-image mosaic or a
  * horizontal row. Each picture is a full-size link that the page’s Lightbox can enhance. Photographs fill their
  * cells; marks, logos and artwork that mustn't be cropped sit whole in theirs (fit contain), with no
- * background colour behind them.
+ * background colour behind them. In justified rows a portrait can span two rows beside two justified rows,
+ * where it fits well (on by default; span false keeps every picture in one row).
  * @tier compound
  * @a11y Every picture is a link to the full image, so the gallery works without JavaScript.
  * @a11y The overall caption describes the set; each image still carries its own alt text.
+ * @a11y A spanning picture keeps its place in the source order, so focus and the lightbox follow the sequence.
  * @key Enter: opens the focused picture link
  */
 import Image from '../fundamentals/Image.astro';
@@ -46,6 +48,8 @@ interface Props {
   caption?: string;
   /** grid: justified equal-height rows; mosaic: first image leads; row: horizontal filmstrip. */
   layout?: 'grid' | 'mosaic' | 'row';
+  /** Justified only: a portrait can span two rows beside two justified rows, where it fits well. On by default. */
+  span?: boolean;
   /** Where the article layout may place it. */
   width?: 'content' | 'popout' | 'wide' | 'full';
   /** The lightbox group name. */
@@ -64,14 +68,14 @@ interface Props {
   shadow?: boolean;
 }
 
-const { items, caption, layout = 'grid', width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover', display, background = false, rounded = true, shadow = false } = Astro.props;
+const { items, caption, layout = 'grid', span = true, width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover', display, background = false, rounded = true, shadow = false } = Astro.props;
 const shown = display ?? (fit === 'contain' ? 'fit' : 'fill');
 const columns = items.length > 2 ? '3' : '2';
 const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined;
 ---
 
 <figure class="gallery" data-layout={layout} data-columns={columns} data-breakout={width} data-square={rounded ? undefined : ''} data-shadow={shadow ? '' : undefined} data-gallery>
-  <div class="items" data-scrollbar data-justified-gallery={layout === 'grid' ? '' : undefined}>
+  <div class="items" data-scrollbar data-justified-gallery={layout === 'grid' ? '' : undefined} data-span={layout === 'grid' && span ? '' : undefined}>
     {
       items.map((item) => {
         const full = item.full ?? item.src;
@@ -249,9 +253,11 @@ const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined
         list.clientWidth,
         rowHeight,
         gap,
+        { span: list.dataset.span !== undefined },
       );
       for (const box of layout.boxes) {
         const card = cards[box.index]!;
+        card.toggleAttribute('data-tall', box.rows === 2);
         card.style.setProperty('--gallery-item-left', `${box.left}px`);
         card.style.setProperty('--gallery-item-top', `${box.top}px`);
         card.style.setProperty('--gallery-item-width', `${box.width}px`);

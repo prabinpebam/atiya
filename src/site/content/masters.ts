@@ -11,8 +11,8 @@ import type { ImageMetadata } from 'astro';
 
 type Masters = Record<string, { default: ImageMetadata }>;
 
-const publicMasters: Masters = import.meta.glob<{ default: ImageMetadata }>('/content/media/**/*.{webp,jpg,jpeg,png,avif}', { eager: true });
-const privateMasters: Masters = import.meta.glob<{ default: ImageMetadata }>('@private-pages/media/**/*.{webp,jpg,jpeg,png,avif}', { eager: true });
+const publicMasters: Masters = import.meta.glob<{ default: ImageMetadata }>('/content/media/**/*.{webp,jpg,jpeg,png,avif,gif}', { eager: true });
+const privateMasters: Masters = import.meta.glob<{ default: ImageMetadata }>('@private-pages/media/**/*.{webp,jpg,jpeg,png,avif,gif}', { eager: true });
 
 /** A private master's key, whatever form the glob gives it (the alias, or the folder's path). */
 const privateKey = (key: string) => '/private/media/' + key.replace(/\\/g, '/').replace(/^.*?\/media\//, '');

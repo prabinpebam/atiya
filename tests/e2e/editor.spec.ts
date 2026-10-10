@@ -1100,17 +1100,18 @@ test.describe('editor', () => {
     await expect(page.getByRole('button', { name: 'Delete the picture' })).toBeDisabled();
   });
 
-  test('media: an animated GIF keeps its frames and timing, with a still version for reduced motion', async ({ page }) => {
+  test('media: an animated GIF is kept exactly as it is, with a still version for reduced motion', async ({ page }) => {
     await page.goto('/_edit/media/');
     await page.getByText('Upload a picture').click();
     await page.locator('[data-editor-upload] input[type="file"]').setInputFiles({ name: 'E2E Motion.gif', mimeType: 'image/gif', buffer: ANIMATED_GIF });
+    await expect(page.locator('[data-upload-facts]')).toContainText('Kept exactly as it is');
+    await expect(page.locator('[data-editor-upload]').getByRole('button', { name: 'Crop it' })).toBeHidden();
     await page.locator('[data-editor-upload]').getByLabel('Alt text').fill('Two changing pixels');
     await page.locator('[data-editor-upload]').getByRole('button', { name: 'Upload it' }).click();
     await expect(page).toHaveURL(/\?id=shared\/e2e-motion$/, { timeout: 30_000 });
 
-    const master = await sharp(readFileSync(join(FIXTURE, 'content/media/shared/e2e-motion.webp')), { animated: true }).metadata();
-    expect(master).toMatchObject({ pages: 2, pageHeight: 1, loop: 0, delay: [80, 160] });
-    expect(readJson(join(FIXTURE, 'content/media/shared/e2e-motion.json'))).toMatchObject({ animation: { poster: 'e2e-motion.poster.webp' } });
+    expect(readFileSync(join(FIXTURE, 'content/media/shared/e2e-motion.gif')).equals(ANIMATED_GIF)).toBe(true);
+    expect(readJson(join(FIXTURE, 'content/media/shared/e2e-motion.json'))).toMatchObject({ file: 'e2e-motion.gif', animation: { poster: 'e2e-motion.poster.webp' } });
 
     const details = page.locator('[data-editor-media-details]');
     const image = details.locator('img').first();
@@ -1122,7 +1123,7 @@ test.describe('editor', () => {
     expect(animatedSrc).not.toBe(posterSrc);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).currentSrc)).toContain(posterSrc!);
-    await expect(details).toContainText('An animated picture stays whole.');
+    await expect(details).toContainText('A GIF is kept exactly as it is, so it isn\'t cropped.');
     await expect(details.getByRole('button', { name: 'Crop the picture' })).toHaveCount(0);
   });
 

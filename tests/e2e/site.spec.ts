@@ -160,6 +160,37 @@ test.describe('site design system', () => {
     expect(await page.locator('html').evaluate((html) => html.scrollWidth)).toBe(360);
   });
 
+  test('a tall picture spans two rows beside two exactly justified rows, and stays in a row on a phone', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/compounds/gallery/');
+    const gallery = page.locator('.example', { has: page.getByRole('heading', { name: 'Tall pictures span two rows', exact: true }) }).locator('[data-justified-gallery]');
+    await gallery.scrollIntoViewIfNeeded();
+    await expect(gallery).toHaveAttribute('data-ready', '');
+    const geometry = () =>
+      gallery.evaluate((list) => {
+        const outer = list.getBoundingClientRect();
+        return [...list.querySelectorAll<HTMLElement>('[data-gallery-item]')].map((card) => {
+          const box = card.getBoundingClientRect();
+          return { left: box.left - outer.left, top: box.top - outer.top, right: outer.right - box.right, width: box.width, height: box.height, tall: card.hasAttribute('data-tall') };
+        });
+      });
+    const desktop = await geometry();
+    const tall = desktop.filter((card) => card.tall);
+    expect(tall).toHaveLength(1);
+    expect(tall[0]).toMatchObject({ left: 0, top: 0, height: 2 * 224 + 12 });
+    for (const top of [0, 236]) {
+      const beside = desktop.filter((card) => !card.tall && card.top === top);
+      expect(beside.length).toBeGreaterThan(0);
+      expect(beside[0]!.left).toBeCloseTo(tall[0]!.width + 12, 0);
+      expect(Math.abs(beside.at(-1)!.right)).toBeLessThan(1);
+      expect(new Set(beside.map((card) => card.height))).toEqual(new Set([224]));
+    }
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    await expect.poll(async () => (await geometry()).filter((card) => card.tall).length).toBe(0);
+    expect(new Set((await geometry()).map((card) => card.height))).toEqual(new Set([160]));
+  });
+
   test('the carousel: no autoplay, the buttons and dots move it, and its ends are real', async ({ page }) => {
     await page.goto('/design/demo/article-layout/');
     const carousel = page.getByRole('region', { name: 'The planet, in seven pictures' });

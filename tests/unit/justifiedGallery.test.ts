@@ -58,3 +58,57 @@ describe('justified gallery', () => {
     expect(justifyGallery([{ width: 1, height: 1 }], 0, 200, 12)).toEqual({ boxes: [], height: 0, rows: 0 });
   });
 });
+
+describe('a portrait spanning two rows', () => {
+  const W = 925;
+  const H = 224;
+  const G = 12;
+  const portrait = { width: 1067, height: 1600 };
+  const landscape = { width: 1600, height: 1067 };
+  const tallOf = (layout: ReturnType<typeof justifyGallery>) => layout.boxes.filter((box) => box.rows === 2);
+
+  it('takes two rows and a gap, beside two rows that meet both of its edges exactly', () => {
+    const items = [portrait, landscape, landscape, landscape, landscape];
+    const layout = justifyGallery(items, W, H, G, { span: true });
+    const [tall] = tallOf(layout);
+    expect(tall).toMatchObject({ index: 0, left: 0, top: 0, row: 0, height: 2 * H + G });
+    for (const row of [0, 1]) {
+      const beside = layout.boxes.filter((box) => box.rows === 1 && box.row === row);
+      expect(beside.length).toBeGreaterThan(0);
+      expect(beside[0]!.left).toBe(tall!.width + G);
+      expect(beside.at(-1)!.left + beside.at(-1)!.width).toBe(W);
+      expect(new Set(beside.map((box) => box.height))).toEqual(new Set([H]));
+      expect(beside[0]!.top).toBe(row * (H + G));
+    }
+    expect(layout.boxes.map((box) => box.index)).toEqual(items.map((_, index) => index));
+    expect(layout.height).toBe(layout.rows * H + (layout.rows - 1) * G);
+  });
+
+  it('puts a tall picture that ends its band on the right, its rows before it in reading order', () => {
+    const layout = justifyGallery([landscape, landscape, landscape, landscape, portrait], W, H, G, { span: true });
+    const [tall] = tallOf(layout);
+    expect(tall).toMatchObject({ index: 4, top: 0 });
+    expect(tall!.left + tall!.width).toBe(W);
+    expect(layout.boxes.map((box) => box.index)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('never puts two bands back to back, and alternates their sides', () => {
+    const items = Array.from({ length: 20 }, (_, index) => (index % 5 === 0 ? portrait : landscape));
+    const layout = justifyGallery(items, W, H, G, { span: true });
+    const talls = tallOf(layout);
+    expect(talls.length).toBeGreaterThan(1);
+    for (let n = 1; n < talls.length; n++) {
+      expect(talls[n]!.row - talls[n - 1]!.row).toBeGreaterThanOrEqual(3);
+      expect(talls[n]!.left === 0).not.toBe(talls[n - 1]!.left === 0);
+    }
+  });
+
+  it('stays in a row where it would be too wide or leave too little room: a near-square, or a phone', () => {
+    expect(tallOf(justifyGallery([{ width: 900, height: 1000 }, landscape, landscape, landscape, landscape], W, H, G, { span: true }))).toEqual([]);
+    expect(tallOf(justifyGallery([portrait, landscape, landscape, landscape, landscape], 254, 160, G, { span: true }))).toEqual([]);
+  });
+
+  it('never spans when the gallery turns it off', () => {
+    expect(tallOf(justifyGallery([portrait, landscape, landscape, landscape, landscape], W, H, G))).toEqual([]);
+  });
+});

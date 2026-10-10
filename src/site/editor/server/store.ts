@@ -50,7 +50,7 @@ export const versionOf = (bytes: Buffer | null): string | null => (bytes ? creat
 export const jsonBytes = (value: unknown): Buffer => Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8');
 
 /** A resource path the content model allows: lowercase kebab-case folders and names, known extensions (including dark versions and animation posters), in content/ or private-pages/. */
-const KEY = /^\/(?:content|private)\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*(?:\.json|\.pdf|\.mp4|\.webm|(?:\.dark(?:\.poster)?|\.poster)?\.(?:webp|jpe?g|png|avif))$/;
+const KEY = /^\/(?:content|private)\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*(?:\.json|\.pdf|\.mp4|\.webm|(?:\.dark(?:\.poster)?|\.poster)?\.(?:webp|jpe?g|png|avif|gif))$/;
 
 /** The absolute path of a key, or null when the key isn't one the content model allows or leaves its folder. */
 export function pathOf(key: string, root = contentRoot(), priv = privateRoot()): string | null {
