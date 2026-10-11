@@ -1,0 +1,148 @@
+{
+  "id": "defining-microsoft-family",
+  "type": "article",
+  "kind": "note",
+  "slug": "defining-microsoft-family",
+  "title": "Defining Microsoft Family",
+  "summary": "How Microsoft Family Safety grew from a set of parental controls toward the whole family, told from my seat as a designer on the team to eventually leading the team and the product.",
+  "status": "published",
+  "visibility": "public",
+  "updatedAt": "2026-10-11",
+  "locale": "en",
+  "body": [
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "It started with helping families stay safe online."
+    },
+    {
+      "type": "text",
+      "markdown": "In July 2020 Microsoft launched the [Microsoft Family Safety app](https://www.microsoft.com/en-us/microsoft-365/blog/2020/07/28/microsoft-family-safety-app-helping-protect-what-matters-most/) for iOS and Android. It brought together tools parents had been asking for: screen time limits across Windows, Xbox and Android, content filters for the web, apps and games, weekly activity reports, spending controls and location sharing, with driving safety for Microsoft 365 subscribers."
+    },
+    {
+      "type": "video",
+      "embed": {
+        "provider": "youtube",
+        "id": "zUOy-NPaP6M",
+        "width": 1920,
+        "height": 1080
+      },
+      "title": "Microsoft Family Safety",
+      "poster": "articles/defining-microsoft-family/pasted-picture-2026-10-06",
+      "width": "wide",
+      "caption": "Microsoft Family Safety, 2020"
+    },
+    {
+      "type": "carousel",
+      "items": [
+        {
+          "media": "articles/defining-microsoft-family/pasted-picture-2026-10-06-7"
+        },
+        {
+          "media": "articles/defining-microsoft-family/pasted-picture-2026-10-06-2"
+        },
+        {
+          "media": "articles/defining-microsoft-family/pasted-picture-2026-10-06-5"
+        },
+        {
+          "media": "articles/defining-microsoft-family/pasted-picture-2026-10-06-6"
+        }
+      ],
+      "label": "Microsoft Family Safety, 2020",
+      "lightbox": true,
+      "arrows": false,
+      "peek": true,
+      "rounded": false,
+      "display": "fit"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "My role"
+    },
+    {
+      "type": "text",
+      "markdown": "As a design leader on the team, I worked on various aspects of the product leading, defining and executing the features."
+    },
+    {
+      "type": "text",
+      "markdown": "- Child account creation\n- Device setup for iOS\n- Spending controls, Add balance, \"Ask to buy\"\n- Activity insights and reporting"
+    },
+    {
+      "type": "quote",
+      "variant": "block",
+      "text": "Later I became the design lead for the whole Family Safety experience as the full product area was transitioned to the India team."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Not every feature lasted, and that is part of the story."
+    },
+    {
+      "type": "text",
+      "markdown": "Products change as we learn what families actually use. Microsoft has since [retired the location and driving safety features](https://support.microsoft.com/en-us/topic/saved-places-and-location-alerts-97c31393-3863-6cf1-a290-950f89549fdc) of Family Safety. The app now focuses on a family's digital life: screen time, content filters, activity and spending."
+    },
+    {
+      "type": "text",
+      "markdown": "Letting go of a feature is a design decision too. It makes room to do fewer things, and to do them well."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "In 2026, Windows made a public commitment to families."
+    },
+    {
+      "type": "text",
+      "markdown": "In March 2026 Pavan Davuluri, who leads Windows, wrote to Windows Insiders about [our commitment to Windows quality](https://blogs.windows.com/windows-insider/2026/03/20/our-commitment-to-windows-quality/), built on performance, reliability and well-crafted experiences. His [July update](https://blogs.windows.com/windows-insider/2026/07/31/windows-quality-an-update-on-the-commitment-we-made-in-march/) named Family as one of the new areas of focus."
+    },
+    {
+      "type": "quote",
+      "text": "Family: Providing a faster set up and making it easier for families to access useful parental controls.",
+      "variant": "pull",
+      "cite": "Pavan Davuluri, EVP Windows, Microsoft"
+    },
+    {
+      "type": "text",
+      "markdown": "A new version of the Microsoft Family experience is in the works as part of that commitment. I'm proud to be part of the team building it, and I'll share more once it's out."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Some aspects I was able to influence"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Setup is part of the product."
+    },
+    {
+      "type": "text",
+      "markdown": "Parental controls only help a family once they're set up. Getting a parent from \"I should do this\" to \"it's working\" deserves as much design care as any setting in the product. This is now baked in as a key customer promise."
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Direction is built in layers, not decided in a meeting."
+    },
+    {
+      "type": "text",
+      "markdown": "No single meeting turns a product into something new. Research, design explorations, reviews and pitches each move the framing a little. When the opening comes, the thinking is already done, and the team can move fast."
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "What looks obvious and simple looks so only because the complexity was worked out of it."
+    },
+    {
+      "type": "text",
+      "markdown": "A family should never have to see the work behind a simple setting. That's the job."
+    },
+    {
+      "type": "text",
+      "markdown": "*Note: Microsoft Family is built by a team of PM, design, engineering and data. This is told from my seat as a designer, covers only what Microsoft has shared publicly, and the views are my own.*"
+    }
+  ],
+  "navLabel": "Defining Microsoft Family",
+  "seo": {},
+  "publishedAt": "2026-10-11"
+}

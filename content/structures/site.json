@@ -14,7 +14,16 @@
         "title": "Work",
         "summary": "Case studies of products I’ve led: the problem, the bets, how the team shipped and what changed.",
         "view": "features",
-        "children": []
+        "children": [
+          {
+            "id": "defining-microsoft-family",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "defining-microsoft-family"
+            }
+          }
+        ]
       },
       {
         "id": "about",
