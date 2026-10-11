@@ -347,12 +347,25 @@ Effort: **S** under half a day, **M** one to two days, **L** more.
 
 ## 4. Definition of Done
 
-- [ ] Every item above is closed, each with the test its "Done when" names.
-- [ ] `npx vitest run tests/unit/siteDesignSystem.test.ts tests/unit/designSystem.test.ts tests/unit/lanes.test.ts` passes in full.
-- [ ] `npx playwright test -g "site design system|site on a phone|landing & classic"` passes, and so does the new "Larger text" test.
-- [ ] `npm run verify:prod` holds every budget.
-- [ ] The baseline in §2 is re-measured; each row meets its target.
-- [ ] [The site design system](design-system.md) and [the game UI design system](../game-ui/design-system.md) describe the rules as built (ownership, generated responsive values, game primitives), and their check tables name the new tests.
+- [x] Every item above is closed, each with the test its "Done when" names. DS-16 met its intent rather than its letter for `Collection` (§5).
+- [x] `npx vitest run tests/unit/siteDesignSystem.test.ts tests/unit/designSystem.test.ts tests/unit/lanes.test.ts` passes in full.
+- [x] `npx playwright test -g "site design system|site on a phone|landing & classic"` passes, and so does the new "Larger text" test.
+- [x] `npm run verify:prod` holds every budget. The game's critical JS is 450.0 KB, at its 450 KB limit (§5, DS-14).
+- [x] The baseline in §2 is re-measured; each row meets its target (§5).
+- [x] [The site design system](design-system.md) and [the game UI design system](../game-ui/design-system.md) describe the rules as built (ownership, generated responsive values, game primitives), and their check tables name the new tests.
+
+**The full validation (11 October 2026):**
+- **Unit:** every test passes but one that already fails on the stable tree (the telemetry allowlist).
+- **Types:** `npm run check` is clean.
+- **Build:** `verify:prod` passes.
+- **E2E:** every group was run. All pass except three that fail on the stable tree too:
+  - the editor's "a new article is private from the start… made public and private again";
+  - the planet's "proximity preview…";
+  - (in unit tests) the telemetry allowlist.
+- **What the run found:** one regression the audit caused. A demo page's wide pull quote left the article minimap no room on touch screens; it was fixed.
+- **Timeouts under load:**
+  - two crafting tests (the swing, the viewing deck) timed out while other runs shared the machine, and pass when run alone;
+  - two editor tests timed out the same way, and pass alone.
 
 ## 5. As built
 
