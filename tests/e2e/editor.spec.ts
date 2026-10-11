@@ -891,13 +891,13 @@ test.describe('editor', () => {
     await page.getByRole('tab', { name: 'Page' }).click();
     const summary = page.locator('#page-summary');
     const before = readJson(articleFile()).summary;
-    await summary.fill('x'.repeat(200));
+    await summary.fill('x'.repeat(260));
     await summary.press('Tab');
     await expect(status(page)).toHaveText(/^Not saved/, { timeout: 15_000 });
     // it says how long, and keeps what was typed to be shortened
-    await expect(status(page)).toContainText('The summary is 200 characters: keep it to 160.');
+    await expect(status(page)).toContainText('The summary is 260 characters: keep it to 240.');
     await expect(status(page)).not.toContainText("doesn't exist");
-    await expect(summary).toHaveValue('x'.repeat(200));
+    await expect(summary).toHaveValue('x'.repeat(260));
     expect(readJson(articleFile()).summary).toBe(before);
     await summary.fill('A shorter summary, set in the test.');
     await summary.press('Tab');

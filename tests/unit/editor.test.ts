@@ -83,7 +83,7 @@ describe('the store', () => {
   });
 
   it('refuses what the contract refuses, naming the field, and writes nothing', async () => {
-    const r = await commit({ changes: [{ key, bytes: jsonBytes(article({ summary: 'x'.repeat(200) })) }], ifMatch: { [key]: version(key) } }, { root });
+    const r = await commit({ changes: [{ key, bytes: jsonBytes(article({ summary: 'x'.repeat(241) })) }], ifMatch: { [key]: version(key) } }, { root });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.status).toBe(422);

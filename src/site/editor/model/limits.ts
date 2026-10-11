@@ -3,11 +3,11 @@
  * as they're typed, so an over-long field is caught with a plain message before a save is tried, and the
  * words stay where they were typed (documentation/editor/spec.md §2.1).
  */
-import { SUMMARY_MAX } from '../../content/limits';
+import { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX } from '../../content/limits';
 
 const LIMITS: Record<string, { max: number; what: string }> = {
   summary: { max: SUMMARY_MAX, what: 'The summary' },
-  'seo.description': { max: SUMMARY_MAX, what: 'The search description' },
+  'seo.description': { max: SEARCH_DESCRIPTION_MAX, what: 'The search description' },
 };
 
 /** What to say when a field's value (as it would be saved) is over its limit, or null when it fits (or the field has none). */

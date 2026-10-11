@@ -206,7 +206,7 @@ describe('the loader checks what it is given', () => {
     expect(problems(base, new Set()).join('\n')).toMatch(/its master content\/media\/articles\/a\/pic\.webp is missing/);
     expect(problems(base, new Set([...masters, '/content/media/articles/a/stray.webp'])).join('\n')).toMatch(/stray\.webp: a master without its sidecar/);
     expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [{ type: 'figure', media: 'articles/a/nope' }] } }).join('\n')).toMatch(/media "articles\/a\/nope" doesn't exist/);
-    expect(problems({ ...base, '/content/articles/a.json': { ...article, summary: 'x'.repeat(161) } }).join('\n')).toMatch(/summary/);
+    expect(problems({ ...base, '/content/articles/a.json': { ...article, summary: 'x'.repeat(241) } }).join('\n')).toMatch(/summary/);
   });
 
   it('a file to download (a PDF): its sidecar names it; a link to it (ref:media/<id>) needs it, public; a page can have a portrait', () => {
@@ -368,7 +368,7 @@ describe('the loader checks what it is given', () => {
     const article = base['/content/articles/a.json'];
     const issues = (() => {
       try {
-        loadContent({ ...base, '/content/articles/a.json': { ...article, summary: 'x'.repeat(161) } }, masters);
+        loadContent({ ...base, '/content/articles/a.json': { ...article, summary: 'x'.repeat(241) } }, masters);
         return [];
       } catch (e) {
         return (e as ContentError).issues;

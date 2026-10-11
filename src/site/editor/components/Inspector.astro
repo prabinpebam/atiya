@@ -590,7 +590,7 @@ const STATUS: SelectOption[] = [
           <TextField label="Title" name="title" id="page-title" value={article.title} required />
           <TextField label="Menu label" name="navLabel" id="page-navLabel" value={article.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs." />
           <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={privatePage ? 'Kept for when it’s public: a private page’s address is a code.' : path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
-          <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 160 characters: the standfirst, the card's line and the search description." data-editor-count="160" />
+          <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 240 characters: the standfirst and the card's line. Search results show about the first 160, cut at a word." data-editor-count="240" />
           <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : [{ value: 'note', label: 'Article', description: 'A story, a note or an essay' }, { value: 'page', label: 'Page', description: 'About, Contact and the like' }, { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' }]} />
         </section>
         <section class="pane" data-section="publishing" aria-labelledby="page-s-publishing">
@@ -686,7 +686,7 @@ const STATUS: SelectOption[] = [
         <section class="pane" data-section="search" aria-labelledby="page-s-search">
           <div class="pane-head"><Heading level={4} size="ui" id="page-s-search">Search and sharing</Heading></div>
           <TextField label="Search title" name="seo.title" id="page-seo-title" value={article.seo?.title ?? ''} optional />
-          <TextField label="Search description" name="seo.description" id="page-seo-description" value={article.seo?.description ?? ''} multiline rows={2} optional hint="Left empty, the summary is used (at most 160 characters)." />
+          <TextField label="Search description" name="seo.description" id="page-seo-description" value={article.seo?.description ?? ''} multiline rows={2} optional hint="At most 160 characters. Left empty, the summary is used, cut at a word near 160." />
           <Switch label="Keep it out of search results" name="seo.noindex" id="page-seo-noindex" checked={!!article.seo?.noindex} data-type="bool" />
 
         </section>

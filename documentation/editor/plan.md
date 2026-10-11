@@ -165,7 +165,7 @@ All five phases are built, and every point of the Definition of Done is met. The
 | 8 | The parser, serializer and DOM unit tests (marks in marks, links keep their written target, breaks, lists, compared by meaning); E2E typing with bold saves `**boldly**` and renders it on the site |
 | 9 | E2E "blocks": added from the palette, moved with the outline's button, duplicated and deleted from the canvas toolbar |
 | 10 | E2E "blocks" (undo brings a deletion back, saved); the save queue's unit tests (one save at a time, requests folded, a conflict stops it) |
-| 11 | E2E "the page's settings…": a summary over 160 characters is refused with its reason and not written; a valid one saves |
+| 11 | E2E "the page's settings…": a summary over 240 characters is refused with its reason and not written; a valid one saves |
 | 12 | E2E "a new draft…": rendered on the canvas, 404 on the site; published, 200 at once without a restart; its slug then fixed |
 | 13 | "uploads" unit tests (a 3200 px JPEG with EXIF becomes a 2560 px WebP under 1.5 MB without metadata; transparency kept; names never overwritten); E2E "media": an upload opens at once in the library |
 | 14 | The reference graph's unit tests; "a picture's details" unit tests (a used picture, the site's social image included, can't be deleted); E2E "media" (details save; Delete disabled on a used picture, with Used in) |

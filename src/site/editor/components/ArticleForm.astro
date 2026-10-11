@@ -36,7 +36,7 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
   mode === 'new' ? (
     <form class="form" data-editor-new novalidate>
       <TextField label="Title" name="title" required />
-      <TextField label="Summary" name="summary" multiline rows={3} required hint="At most 160 characters: the standfirst, the card's line and the search description." />
+      <TextField label="Summary" name="summary" multiline rows={3} required hint="At most 240 characters: the standfirst and the card's line. Search results show about the first 160." />
       <Select
         label="Kind"
         name="kind"

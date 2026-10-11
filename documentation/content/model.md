@@ -141,7 +141,7 @@ The items encode the IA's [taxonomy and content model](../ia-navigation/03-taxon
 - **IDs** are lowercase `kebab-case`, unique within their type, and **never change**. References use IDs.
 - **Slugs** are lowercase `kebab-case`. An item's `slug` is the URL segment the site structure uses by default; a node may override it. Slugs may change, with a redirect (§8).
 - **Dates** are ISO 8601: `2026-09-29` or `2026-09-29T10:00:00Z`. A period uses the precision the story allows: `2021`, `2021-03`.
-- **Text lengths** are limits, not targets: a `summary` is at most 160 characters, a card phrase at most 80.
+- **Text lengths** are limits, not targets: a `summary` is at most 240 characters (the standfirst and the card's line; a search description, its own or the summary cut at a word, at most 160), a card phrase at most 80.
 - **Localisation.** Every resource has `locale` (default `en`). One locale is built today ([spec §9](spec.md#9-security-privacy-and-localisation)).
 - **Unknown fields** are an error in the mock files (to catch typos), and ignored from the API (so the backend can add fields within a version, D12).
 
