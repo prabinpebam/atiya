@@ -252,6 +252,7 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
   3. Use the CSS variable.
 - **To change a colour:** change the primitive or the role; the contrast test tells you if it still passes on both surfaces.
 - **Exceptions:** the lint's exceptions are listed in the test with a reason. Add one only with a reason.
+- **Open gaps:** where the tokens and stylesheets don't yet follow these rules (DTCG values, px sizes, the raw-value lint's reach, typed primitives) is in [the design systems audit](../site-ui/design-system-audit.md), as work items DS-10 to DS-14.
 
 ## 10. Touch
 

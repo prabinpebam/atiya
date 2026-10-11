@@ -163,6 +163,15 @@
       "group": "Site UI"
     },
     {
+      "path": "site-ui/design-system-audit.md",
+      "title": "Design systems: audit and fixes",
+      "order": 20.75,
+      "icon": "checklist",
+      "status": "planned",
+      "updated": "2026-10-11",
+      "group": "Site UI"
+    },
+    {
       "path": "content/spec.md",
       "title": "Content platform",
       "order": 20.8,

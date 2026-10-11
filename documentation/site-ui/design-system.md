@@ -176,3 +176,5 @@ The design library is the full, live version (examples, props, keys, tokens, use
 | The rules | `npx vitest run tests/unit/siteDesignSystem.test.ts tests/unit/siteBehaviour.test.ts tests/unit/siteControls.test.ts` |
 | In the browser | `npx playwright test -g "site design system|site on a phone|landing & classic"` |
 | Types | `npm run check` |
+
+The open gaps in these checks, and the work items that close them, are in [the design systems audit](design-system-audit.md).
