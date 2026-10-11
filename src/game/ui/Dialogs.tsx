@@ -33,17 +33,23 @@ export function PreviewCard({ controller }: { controller: GameController }) {
   const d = controller.dataById.get(nearbyId)!;
   return (
     <section className="card preview-card lane" hidden={shown === 'hidden'} aria-labelledby="preview-title" style={{ ['--accent' as string]: d.accent }} data-testid="preview-card">
-      <p className="kicker">{d.kicker}</p>
-      <h2 id="preview-title">{d.title}</h2>
-      <p>{d.summary}</p>
-      {d.pages.length === 0 && <p>It’s still being fitted out: its pages are on their way.</p>}
-      <div className="actions">
-        <Button variant="primary" onClick={(e) => controller.openLandmark(d.id, { invoker: e.currentTarget })}>
-          Open <KeyCap>E</KeyCap>
-        </Button>
-        <a className="btn" href={d.siteHref} onClick={toClassic}>
-          Open classic page <Icon icon={faArrowUpRightFromSquare} />
-        </a>
+      <Button variant="bare" className="preview-row" aria-label={`Open ${d.title}`} onClick={(e) => controller.openLandmark(d.id, { invoker: e.currentTarget })}>
+        <span className="preview-row-title">{d.title}</span>
+        <span className="preview-row-action">Open</span>
+      </Button>
+      <div className="preview-full">
+        <p className="kicker">{d.kicker}</p>
+        <h2 id="preview-title">{d.title}</h2>
+        <p>{d.summary}</p>
+        {d.pages.length === 0 && <p>It’s still being fitted out: its pages are on their way.</p>}
+        <div className="actions">
+          <Button variant="primary" onClick={(e) => controller.openLandmark(d.id, { invoker: e.currentTarget })}>
+            Open <KeyCap>E</KeyCap>
+          </Button>
+          <a className="btn" href={d.siteHref} onClick={toClassic}>
+            Open classic page <Icon icon={faArrowUpRightFromSquare} />
+          </a>
+        </div>
       </div>
     </section>
   );

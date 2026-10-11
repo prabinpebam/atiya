@@ -1,19 +1,19 @@
 # Design systems: audit and fixes
 
-An audit of the site's design system and the game's UI design system, with every gap turned into a work item that can be fixed, tested and closed on its own. The rules being audited are in [the site design system](design-system.md) and [the game UI design system](../game-ui/design-system.md). The first audit was a code review; this page records the second (11 October 2026), which re-measured that review's ten findings and found five more.
+An audit of the site's design system and the game's UI design system, with every gap turned into a work item that can be fixed, tested and closed on its own. The rules being audited are in [the site design system](design-system.md) and [the game UI design system](../game-ui/design-system.md). The first audit was a code review; the re-measurement on 11 October 2026 led to the first completed round of fixes recorded here.
 
-> **TL;DR.** The site's system is strong: four real tiers, 55 components and layouts with 55 stories, 333 generated tokens, and 218 policy tests. But one rule is broken (**217 of 218 pass**: `IndexLayout` imports from the content layer). The game's system has the right rules, but its tokens and stylesheets don't follow them yet:
-> - its tokens are plain strings, not DTCG 2025.10 objects (45 hex, 38 px, 14 rem, 6 durations);
-> - its stylesheets have **116 lines with raw units**;
-> - its px sizes don't scale with "Larger text".
+> **TL;DR. One round of audit fixes is complete (11 October 2026): all 16 work items are closed.** The work covered 7 workstreams on two tracks, site and game, with regression checks for each item.
+> - **Site:** all 227 policy checks pass. Tier and token ownership violations are fixed; responsive values come from generated tokens; story variants, listener lifecycle and component size are checked.
+> - **Game:** tokens now use DTCG 2025.10 objects, sizes scale with "Larger text" except documented pixel values, raw CSS values are allow-listed only, and controls use game-local primitives. Critical JS is **449.6 KB against a 450 KB budget**.
+> - **One accepted deviation:** `Collection` remains 620 lines, mostly styles. DS-16 closes with tested limits of 350 lines for markup and script and 650 for the whole file, rather than the original 450-line target.
 >
-> **None of the first audit's ten findings is closed;** two have grown (raw values in the game, components reading other components' tokens). The fix is **16 work items in 7 workstreams on two tracks**, site and game, which can run in parallel. Every item ends with a test, so nothing it fixes can come back.
->
-> **Status (as built, 11 October 2026):** every item is closed, each with its test. What was built, and where it differs from the plan, is in [§5](#5-as-built).
+> [§4](#4-definition-of-done) records the validation and pre-existing failures; [§5](#5-as-built) records the re-measured baseline and implementation. The [maturity review and next steps](design-system-review.md) starts from this completed round: its DS2 items are **planned, not completed or scheduled**.
 
-![Seven workstreams on two tracks. Site: WS1 suite green, then WS2 token ownership, then WS3 one source for values, then WS7a coverage and size; WS4 script lifecycle at any time. Game: WS5 docs match the split, then WS6 game tokens, then WS7b game primitives.](assets/design-system-audit-plan.svg)
+![The completed round's seven workstreams on two tracks. Site: WS1 suite green, then WS2 token ownership, then WS3 one source for values, then WS7a coverage and size; WS4 script lifecycle at any time. Game: WS5 docs match the split, then WS6 game tokens, then WS7b game primitives.](assets/design-system-audit-plan.svg)
 
 ## 1. Method
+
+These are the observations **before this fix round**, not the current state. At that point none of the first review's ten findings was closed; two had grown. Closure evidence is in §4 and §5.
 
 - **Scope.** The site (`src/site/`: tokens, fundamentals, compounds, layouts, stories, the design library, the editor's parts) and the game UI (`src/design/tokens.json`, `src/styles/`, `src/game/**/*.tsx`).
 - **Policy suites:**
@@ -26,13 +26,13 @@ An audit of the site's design system and the game's UI design system, with every
   - literal `sizes` strings and `matchMedia` queries;
   - window, document and media-query listeners without a `signal`;
   - examples per story, and prop variants a story doesn't show.
-- **Not re-run:** the Playwright design-library and axe checks, which passed at the first audit. Nothing they cover had changed.
+- **Not re-run at measurement time:** the Playwright design-library and axe checks, which had passed at the first audit. The completed round's browser validation is recorded in §4.
 
 ## 2. Baseline
 
-Re-measure these when a workstream closes; the target is what "done" looks like.
+The pre-fix measurements and original targets are preserved here for comparison. The re-measured results are in §5, including the accepted DS-16 deviation.
 
-| Measure | Now (2026-10-11) | Target | Item |
+| Measure | Before fixes (2026-10-11) | Original target | Item |
 |---|---|---|---|
 | Site policy tests passing | 217 / 218 | All | DS-01 |
 | Components reading `--c-header-height` (not the header) | 6 (one a fundamental) | 0: a shared token instead | DS-02 |
@@ -51,6 +51,8 @@ Re-measure these when a workstream closes; the target is what "done" looks like.
 | Site components over 550 lines | 4 | 0 | DS-16 |
 
 ## 3. Findings and work items
+
+**All DS-01 to DS-16 items below are closed.** The problems, proposed fixes, severity and first-audit status describe the pre-fix findings; they are retained as the original plan, not as outstanding work. See §5 for what shipped and any deviations.
 
 Severity:
 - **High:** a written rule is broken, or a test is red.
@@ -351,17 +353,17 @@ Effort: **S** under half a day, **M** one to two days, **L** more.
 - [x] `npx vitest run tests/unit/siteDesignSystem.test.ts tests/unit/designSystem.test.ts tests/unit/lanes.test.ts` passes in full.
 - [x] `npx playwright test -g "site design system|site on a phone|landing & classic"` passes, and so does the new "Larger text" test.
 - [x] `npm run verify:prod` holds every budget. The game's critical JS is 449.6 KB against its 450 KB limit (§5, DS-14).
-- [x] The baseline in §2 is re-measured; each row meets its target (§5).
+- [x] The baseline in §2 is re-measured; each row meets its target or its documented, accepted replacement (DS-16, §5).
 - [x] [The site design system](design-system.md) and [the game UI design system](../game-ui/design-system.md) describe the rules as built (ownership, generated responsive values, game primitives), and their check tables name the new tests.
 
 **The full validation (11 October 2026):**
 - **Unit:** every test passes but one that already fails on the stable tree (the telemetry allowlist).
 - **Types:** `npm run check` is clean.
 - **Build:** `verify:prod` passes.
-- **E2E:** every group was run. All pass except three that fail on the stable tree too:
+- **E2E:** every group was run. Two tests failed on the stable tree too:
   - the editor's "a new article is private from the start… made public and private again";
   - the planet's "proximity preview…";
-  - (in unit tests) the telemetry allowlist.
+- **Later follow-up:** [commit `f029cc7`](https://github.com/prabinpebam/atiya/commit/f029cc73057c44defe72f61e75bb3ea59136eb28) updated the proximity-preview test to follow the real content and moved the preview card and lost-view notice off the initial load path. The failures above describe the full validation at closure, not a fresh run after that follow-up.
 - **What the run found:** one regression the audit caused. A demo page's wide pull quote left the article minimap no room on touch screens; it was fixed.
 - **Timeouts under load:**
   - two crafting tests (the swing, the viewing deck) timed out while other runs shared the machine, and pass when run alone;

@@ -203,6 +203,8 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 - Announcements are reworded in the chunk (`forTouch`: "Press E to open." becomes "Tap Open."), so the main bundle carries no second set of strings. The site card's hint and Prabin's one line that said "press E" follow the input too, or no longer name a key.
 - **Budgets:** the game's initial JS went from 449.7 to 449.9 KB gz (limit 450); the touch chunk is 1.8 KB, and on-demand JS is 77.2 KB (limit 80). A mouse-only device never requests the chunk.
 
+**Structure preview update (11 October 2026).** The height-only summary reduction above still left too much card on a phone. Touch input now uses a single-row preview up to 1100 px wide, in portrait and landscape: the building's title and Open, with the whole row tappable. It stays in the bottom focus lane above the hotbar and opens the existing detail view; closing returns focus to the row. Keyboard or mouse input restores the full preview. The earlier screenshots show the previous layout. The E2E test "structure preview is one tappable bottom row on a phone" covers 390 × 844, 844 × 390 and 320 × 568, including Larger text.
+
 ## 6. Definition of Done
 
 | # | Item | Evidence | Status |

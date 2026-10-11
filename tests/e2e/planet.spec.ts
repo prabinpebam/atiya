@@ -892,6 +892,46 @@ test.describe('touch', () => {
   // a phone held upright, with a real touchscreen (touch.md §5)
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
 
+  test('structure preview is one tappable bottom row on a phone, opens details and restores focus', async ({ page }) => {
+    test.setTimeout(180_000);
+    await openPlanet(page);
+    await page.evaluate(() => (window as any).__game.teleport('library'));
+    const card = page.getByTestId('preview-card');
+    const row = card.getByRole('button', { name: 'Open Library', exact: true });
+    await expect(row).toBeVisible();
+    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 320, height: 568 }]) {
+      await page.setViewportSize(viewport);
+      for (const larger of [false, true]) {
+        await page.locator('html').evaluate((el, on) => el.classList.toggle('text-lg', on), larger);
+        await expect(card.getByRole('heading')).toBeHidden();
+        await expect(card.getByRole('link')).toBeHidden();
+        await expect(card.getByRole('button')).toHaveCount(1);
+        const box = (await row.boundingBox())!;
+        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.height).toBeLessThanOrEqual(64);
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+        expect(box.y).toBeGreaterThan(viewport.height / 2);
+        const hotbar = (await page.getByTestId('hotbar').boundingBox())!;
+        expect(box.y + box.height).toBeLessThanOrEqual(hotbar.y);
+      }
+    }
+    await page.locator('html').evaluate((el) => el.classList.remove('text-lg'));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: 'test-results/mobile-structure-preview.png' });
+    await row.tap();
+    await expect(page.getByTestId('landmark-dialog')).toBeVisible();
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    await expect(frame.getByRole('heading', { level: 1, name: 'Library' })).toBeVisible();
+    await frame.getByRole('button', { name: 'Close', exact: true }).tap();
+    await expect(page.getByTestId('landmark-dialog')).toBeHidden();
+    await expect(row).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('html')).toHaveAttribute('data-input', 'keys');
+    await expect(card.getByRole('heading', { name: 'Library' })).toBeVisible();
+    await expect(row).toBeHidden();
+  });
+
   test('drag anywhere summons the stick: walk, push to run, a second finger turns the view, lifting stops; a tap still walks', async ({ page }) => {
     test.setTimeout(180_000);
     await openPlanet(page);

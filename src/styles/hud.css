@@ -301,17 +301,73 @@ body.play {
   font-size: var(--text-2xl);
 }
 
+.preview-row {
+  display: none;
+}
+
+@media (max-width: 68.75rem) {
+  [data-input='touch'] .preview-card {
+    padding: 0;
+  }
+
+  [data-input='touch'] .preview-full {
+    display: none;
+  }
+
+  [data-input='touch'] .preview-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: var(--c-btn-h);
+    padding: var(--space-2) var(--space-4);
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: var(--surface-bg);
+    color: var(--surface-text);
+    font-family: var(--font-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
+    text-align: start;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  [data-input='touch'] .preview-row:active {
+    background: var(--surface-bg-warm);
+  }
+
+  [data-input='touch'] .preview-row:focus-visible {
+    outline: var(--border-focus) solid var(--surface-focus);
+    outline-offset: var(--border-focus-offset);
+  }
+
+  .preview-row-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview-row-action {
+    flex: none;
+    color: var(--surface-link);
+  }
+}
+
 /* a short screen: the card keeps its title and actions (the summary is on the page it opens). Held
  * sideways (≤ 500 px) for everyone; up to 700 px on touch, where a small phone upright would otherwise
  * cover the view pad (a laptop's short window keeps the summary) */
 @media (max-height: 31.25rem) {
-  .preview-card > p:not(.kicker) {
+  .preview-full > p:not(.kicker) {
     display: none;
   }
 }
 
 @media (max-height: 43.75rem) {
-  [data-input='touch'] .preview-card > p:not(.kicker) {
+  [data-input='touch'] .preview-full > p:not(.kicker) {
     display: none;
   }
 }
