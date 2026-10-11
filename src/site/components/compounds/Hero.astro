@@ -9,6 +9,7 @@
 import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
+import { sizes } from '../../design/responsive';
 
 export interface HeroPicture {
   src: string;
@@ -62,7 +63,7 @@ const titleId = `hero-${Math.random().toString(36).slice(2, 8)}`;
         <Image
           src={picture.src}
           srcset={picture.srcset}
-          sizes={layout === 'split' ? '(max-width: 40rem) 92vw, 46vw' : '(max-width: 76rem) 92vw, 76rem'}
+          sizes={layout === 'split' ? sizes(['sm', '92vw'], '46vw') : sizes(['wide', '92vw'], 'wide')}
           alt={picture.alt}
           width={picture.width}
           height={picture.height}
@@ -146,7 +147,7 @@ const titleId = `hero-${Math.random().toString(36).slice(2, 8)}`;
   @keyframes settle {
     from {
       opacity: 0;
-      transform: scale(1.03);
+      transform: scale(var(--scale-zoom));
     }
   }
 

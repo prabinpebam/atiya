@@ -132,7 +132,7 @@ const described = hint ? `${id}-hint` : undefined;
   }
 
   .range:active::-webkit-slider-thumb {
-    transform: scale(1.08);
+    transform: scale(var(--scale-lift));
   }
 
   .range::-moz-range-track,
@@ -160,7 +160,7 @@ const described = hint ? `${id}-hint` : undefined;
   }
 
   .range:active::-moz-range-thumb {
-    transform: scale(1.08);
+    transform: scale(var(--scale-lift));
   }
 
   .hint {

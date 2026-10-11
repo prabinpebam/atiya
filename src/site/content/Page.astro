@@ -16,6 +16,7 @@ import { cardPicture, openingOf, relatedOf } from './opening';
 import { exploreAction, footerLinks, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import { searchCopy } from './limits';
+import { mergeAfterAnchors } from './sectionOrder';
 import type { Route } from './routes';
 import type { Article } from './schema';
 import type { ComponentProps } from 'astro/types';
@@ -83,6 +84,15 @@ const privatePages = await Promise.all(
     return [story(r).then((s) => ({ id: r.node.id, after: before?.node.id ?? null, story: s }))];
   }),
 );
+// a build lists the open pages and seals the rest; the dev server shows every page in its place, the private ones marked
+const sealing = import.meta.env.PROD;
+const shown = sealing
+  ? stories
+  : mergeAfterAnchors(
+      stories,
+      privatePages.map((l) => ({ after: l.after, value: { ...l.story, node: l.id, privateTag: true } })),
+      (s) => s.node ?? '',
+    );
 ---
 
 {
@@ -102,8 +112,8 @@ const privatePages = await Promise.all(
         footer={footer}
         action={action}
         crumbs={crumbs}
-        stories={stories}
-        privatePages={privatePages}
+        stories={shown}
+        privatePages={sealing ? privatePages : []}
         signIn={privatePages.length ? signInHref(route!.path) : undefined}
         ask={privatePages.length ? contact : undefined}
         view={node.view}

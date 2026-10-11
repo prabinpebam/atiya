@@ -25,7 +25,11 @@ const RAMP_FACE: Record<string, string> = { sm: 'ui', md: 'ui', lg: 'ui', body: 
 const RAMP_SAMPLE: Record<string, string> = { sm: 'A caption under a picture', md: 'Explore the planet', lg: 'Show the code', body: 'The planet turns under your feet as you walk.', lead: 'A standfirst: what the story is about, in a line.', h4: 'A small heading', h3: 'A section heading', h2: 'A chapter heading', h1: 'An article title', quote: 'A line worth lifting', display: 'Prabin Pebam', jumbo: '07' };
 const px = (v: unknown) => (typeof v === 'object' && v && 'value' in v ? Math.round(Number((v as { value: number }).value) * 16) : null);
 const ramp = pick('text').map((t) => ({ t, min: t.fluidMin !== undefined ? px(t.fluidMin) : px(t.value), max: px(t.value) }));
-const tables = ['leading', 'tracking', 'weight', 'axes'].map((g) => ({ g, list: pick(g) }));
+const tables = [
+  ...['leading', 'tracking', 'weight', 'axes', 'underline'].map((g) => ({ g, title: g === 'axes' ? 'Axes' : g.charAt(0).toUpperCase() + g.slice(1), list: pick(g) })),
+  // the components' type details: drop cap, inline code, a link's external mark, an icon in a line (all in em)
+  { g: 'details', title: 'Details, in em', list: m.tokens.filter((t) => t.path[0] === 'c' && t.unit === 'em') },
+];
 ---
 
 <section class="block" aria-labelledby="faces">
@@ -100,10 +104,10 @@ const tables = ['leading', 'tracking', 'weight', 'axes'].map((g) => ({ g, list: 
 </section>
 
 {
-  tables.map(({ g, list }) => (
+  tables.map(({ g, title, list }) => (
     <section class="block" aria-labelledby={`t-${g}`}>
       <Heading level={2} size="h3" id={`t-${g}`}>
-        {g === 'axes' ? 'Axes' : g.charAt(0).toUpperCase() + g.slice(1)}
+        {title}
       </Heading>
       <ul class="rows">
         {list.map((t) => (

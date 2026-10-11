@@ -1,18 +1,18 @@
-/* ---------- Components shared by the site and the game (design-system.md §4.2) ----------
- * Paper by default; inside .surface-wood they read the wood roles. */
+/* ---------- The game UI's shared components: key caps, buttons, cards, dialogs (design-system.md §4) ----------
+ * They read the --surface-* roles: paper by default (the loading shell), wood inside .surface-wood (the game). */
 
 /* Key cap: a key the player can press, after the action it does */
 kbd {
   display: inline-block;
-  min-width: 1.6em;
-  padding: 0 0.35em;
-  margin: 0 0.1em;
+  min-width: var(--c-kbd-min);
+  padding: 0 var(--c-kbd-pad-x);
+  margin: 0 var(--c-kbd-gap);
   border: var(--border-hair) solid var(--color-paper-line);
   border-bottom-width: var(--border-base);
   border-radius: var(--radius-xs);
   background: var(--color-paper-bg);
   font-family: var(--font-text);
-  font-size: 0.85em;
+  font-size: var(--c-kbd-size);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-base);
   text-align: center;
@@ -25,7 +25,7 @@ kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4em;
+  gap: var(--c-btn-gap);
   min-height: var(--c-btn-h);
   padding: 0 var(--c-btn-pad-x);
   border: var(--border-base) solid var(--surface-border);
@@ -49,7 +49,7 @@ kbd {
 }
 
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(var(--shift-sm));
 }
 
 .btn.primary {
@@ -102,7 +102,7 @@ kbd {
 }
 
 .card p {
-  margin: 0.4em 0;
+  margin: var(--c-card-para-gap) 0;
 }
 
 .card-title {
@@ -115,7 +115,7 @@ kbd {
 
 /* Dialog: a modal paper sheet (native <dialog>, the browser's top layer) */
 .dialog {
-  width: min(560px, calc(100vw - var(--space-8)));
+  width: min(var(--c-dialog-width), calc(100vw - var(--space-8)));
   max-height: calc(100dvh - var(--space-12));
   padding: 0;
   border: var(--border-base) solid var(--surface-border);
@@ -144,7 +144,7 @@ kbd {
 }
 
 .dialog ul {
-  padding-left: 1.2em;
+  padding-left: var(--c-dialog-list-indent);
 }
 
 /* A building's reading overlay (documentation/sections/spec.md §6): the whole window, clear. The framed
@@ -200,7 +200,7 @@ kbd {
   position: absolute;
   inset-block-start: 50%;
   inset-inline-start: 50%;
-  max-width: min(440px, calc(100vw - var(--space-8)));
+  max-width: min(var(--c-card-width), calc(100vw - var(--space-8)));
   transform: translate(-50%, -50%);
 }
 
@@ -326,12 +326,12 @@ kbd {
 
 .travel-tile:hover {
   background: var(--surface-bg-warm);
-  transform: translateY(-2px);
+  transform: translateY(calc(-1 * var(--shift-md)));
 }
 
 .travel-tile:focus-visible {
   outline: var(--border-focus) solid var(--surface-focus);
-  outline-offset: 2px;
+  outline-offset: var(--border-focus-offset);
 }
 
 .travel-sign {
@@ -386,8 +386,8 @@ kbd {
 }
 
 .check input {
-  width: 22px;
-  height: 22px;
+  width: var(--c-check-size);
+  height: var(--c-check-size);
 }
 
 .radio-group {
@@ -424,9 +424,9 @@ kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4em;
+  gap: var(--c-time-gap);
   min-height: var(--c-btn-h);
-  min-width: 8.2em;
+  min-width: var(--c-time-width);
   padding: 0 var(--space-3-5);
   border: var(--border-base) solid var(--surface-border);
   border-radius: var(--radius-pill);

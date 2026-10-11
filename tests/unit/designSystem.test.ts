@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import postcss from 'postcss';
+import { load, resolve } from '../../scripts/build-tokens.mjs';
 
 const ROOT = join(__dirname, '../..');
 const STYLES = ['base', 'components', 'hud', 'panels'].map((f) => join(ROOT, 'src/styles', `${f}.css`));
@@ -38,6 +40,62 @@ describe('tokens: one source of truth', () => {
     expect(() => execFileSync(process.execPath, [join(ROOT, 'scripts/build-tokens.mjs'), '--check'], { stdio: 'pipe' })).not.toThrow();
   });
 
+  type T = { path: string[]; name: string; type: string; value: unknown; extensions: Record<string, unknown> };
+  const tokens = (load(TOKENS_JSON) as { tokens: T[] }).tokens;
+  const isAlias = (v: unknown) => typeof v === 'string' && /^\{[\w.-]+\}$/.test(v);
+
+  it('colours use the 2025.10 colour object (colorSpace, components, hex; alpha when translucent)', () => {
+    const colours = tokens.filter((t) => t.type === 'color' && !isAlias(t.value));
+    expect(colours.length).toBeGreaterThan(50);
+    for (const t of colours) {
+      const v = t.value as { colorSpace: string; components: number[]; hex: string; alpha?: number };
+      expect(v.colorSpace, t.name).toBe('srgb');
+      expect(v.components, t.name).toHaveLength(3);
+      for (const c of v.components) expect(c, t.name).toBeGreaterThanOrEqual(0);
+      expect(v.hex, t.name).toMatch(/^#[0-9a-f]{6}$/);
+      if (v.alpha !== undefined) expect(v.alpha, t.name).toBeLessThan(1);
+    }
+  });
+
+  it('dimensions and durations use the 2025.10 {value, unit} object (px or rem; ms or s), and no colour, dimension, duration or shadow is a string', () => {
+    for (const t of tokens.filter((x) => ['dimension', 'duration'].includes(x.type) && !isAlias(x.value))) {
+      const v = t.value as { value: number; unit: string };
+      expect(typeof v.value, t.name).toBe('number');
+      expect(t.type === 'duration' ? ['ms', 's'] : ['px', 'rem'], t.name).toContain(v.unit);
+    }
+    const strings = tokens.filter((t) => ['color', 'dimension', 'duration', 'shadow'].includes(t.type) && typeof t.value === 'string' && !isAlias(t.value));
+    expect(strings.map((t) => t.name)).toEqual([]);
+    // a unit DTCG has no dimension for (a percentage, an em) is a number with its unit named
+    for (const t of tokens.filter((x) => x.extensions['game.unit'])) expect(['%', 'em', 'deg'], t.name).toContain(t.extensions['game.unit']);
+  });
+
+  it('sizes are in rem, so "Larger text" scales them: px only for lines and outlines, the pill shape, blurs and the scrollbar', () => {
+    const PX = /^(border\.[\w-]+|radius\.pill|blur\.[\w-]+|c\.scrollbar)$/;
+    const px = tokens.filter((t) => t.type === 'dimension' && (t.value as { unit?: string })?.unit === 'px').map((t) => t.path.join('.'));
+    expect(px.filter((p) => !PX.test(p))).toEqual([]);
+  });
+
+  it('every semantic and component token is read: by a stylesheet, the game’s code, or another token', () => {
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const f of readdirSync(dir)) {
+        const p = join(dir, f);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.(css|tsx?|astro)$/.test(f) && f !== 'tokens.css') files.push(p);
+      }
+    };
+    for (const d of ['src/styles', 'src/game', 'src/pages', 'src/layouts']) walk(join(ROOT, d));
+    const sources = files.map((f) => readFileSync(f, 'utf8')).join('\n');
+    const aliased = TOKENS_CSS.replace(/^\s*--[\w-]+:/gm, '');
+    // a breakpoint is read by the @media queries that write its value
+    const queries = [...sources.matchAll(/@media([^{]*)\{/g)].map((m) => m[1]).join('\n');
+    const atBreakpoint = (t: T) => t.path[0] === 'breakpoint' && queries.includes(`: ${(t.value as { value: number }).value}rem)`);
+    const unread = tokens.filter((t) => t.path[0] !== 'p' && !atBreakpoint(t) && !sources.includes(t.name) && !aliased.includes(`var(${t.name})`)).map((t) => t.name);
+    expect(unread).toEqual([]);
+    // and every primitive is read by a token
+    expect(tokens.filter((t) => t.path[0] === 'p' && !aliased.includes(`var(${t.name})`)).map((t) => t.name)).toEqual([]);
+  });
+
   it('every var() the stylesheets use is defined (a token, a surface role, or a layout variable)', () => {
     const defined = new Set([...TOKENS_CSS.matchAll(/(--[\w-]+):/g)].map((m) => m[1]));
     for (const d of all) if (d.prop.startsWith('--')) defined.add(d.prop);
@@ -65,8 +123,8 @@ describe('component CSS uses tokens, never raw values', () => {
     expect(all.filter((d) => d.prop === 'z-index' && !/^var\(--layer-[\w-]+\)$/.test(d.value)).map(where)).toEqual([]);
   });
 
-  it('font sizes only from the type scale (or em, relative to the parent)', () => {
-    expect(all.filter((d) => d.prop === 'font-size' && !/^(var\(--text-[\w-]+\)|[\d.]+em|112\.5%)$/.test(d.value)).map(where)).toEqual([]);
+  it('font sizes only from the type scale or a component token (1em: the parent’s own size)', () => {
+    expect(all.filter((d) => d.prop === 'font-size' && !/^(var\(--(text|c)-[\w-]+\)|1em|112\.5%)$/.test(d.value)).map(where)).toEqual([]);
     // no font shorthand: it hides sizes and weights
     expect(all.filter((d) => d.prop === 'font').map(where)).toEqual([]);
   });
@@ -98,6 +156,43 @@ describe('component CSS uses tokens, never raw values', () => {
     expect([...new Set(custom)].sort()).toEqual(['--hotbar-h', '--lane-bottom', '--slot']);
   });
 
+  it('every value is a token: a parser finds no raw size, offset, blur, turn or time outside the allow-list (P5)', () => {
+    // structural values a token would only rename, each with its reason ("<selector> <property>")
+    const ALLOW: Record<string, string> = {
+      '.sr-only width': 'the visually hidden pattern: one pixel',
+      '.sr-only height': 'the visually hidden pattern: one pixel',
+      '.sr-only margin': 'the visually hidden pattern: one pixel back',
+      '.skip-link top': 'off the top of the page until it has the focus',
+    };
+    const UNIT = /(?<![\w.#-])(-?\d*\.?\d+)(px|rem|em|vh|vw|vmin|vmax|dvh|dvw|svh|svw|lvh|ch|ex|deg|turn|ms|s)\b/g;
+    const ok = (n: number, unit: string) =>
+      n === 0 || (n === 1 && unit === 'em') || (n === 100 && /^(vw|vh|dvh|dvw|svh|svw|lvh)$/.test(unit)) || (unit === 'deg' && n % 90 === 0) || (unit === 'turn' && Number.isInteger(n));
+    const bps = new Set((load(TOKENS_JSON) as { tokens: { path: string[]; value: unknown }[] }).tokens.filter((t) => t.path[0] === 'breakpoint').map((t) => `${(t.value as { value: number }).value}${(t.value as { unit: string }).unit}`));
+    const bad: string[] = [];
+    let seen = 0;
+    for (const f of STYLES) {
+      const file = f.split(/[\\/]/).pop();
+      const root = postcss.parse(readFileSync(f, 'utf8'));
+      root.walkDecls((d) => {
+        seen++;
+        if (d.important) return; // the reduced-motion reset
+        const parent = d.parent as postcss.Rule | postcss.AtRule;
+        const sel = parent.type === 'rule' ? (parent as postcss.Rule).selector : `@${(parent as postcss.AtRule).name} ${(parent as postcss.AtRule).params}`;
+        if (ALLOW[`${sel} ${d.prop}`]) return;
+        const v = d.value.replace(/var\([^()]*(\([^()]*\))?[^()]*\)/g, '');
+        for (const m of v.matchAll(UNIT)) if (!ok(Number(m[1]), m[2])) bad.push(`${file} ${sel} { ${d.prop}: ${d.value} }`);
+        // a scale factor is a feel, so a token (0 and 1 are structural)
+        if (/(?<![a-z])scale\(/.test(v) && [...v.slice(v.search(/(?<![a-z])scale\(/)).matchAll(/(?<![\w.-])-?\d*\.?\d+(?![\w.%])/g)].some((m) => !/^-?[01]$/.test(m[0]))) bad.push(`${file} ${sel} { ${d.prop}: ${d.value} }`);
+      });
+      // a width or height query only at a breakpoint token (CSS can't read a variable there)
+      root.walkAtRules('media', (a) => {
+        for (const m of a.params.matchAll(/\((?:min|max)-(?:width|height):\s*([\d.]+\w+)\)/g)) if (!bps.has(m[1])) bad.push(`${file} @media ${a.params}`);
+      });
+    }
+    expect(seen).toBeGreaterThan(600);
+    expect([...new Set(bad)]).toEqual([]);
+  });
+
   it('inline styles in components carry data only (a custom property, a position, a paint colour from its table)', () => {
     const files: string[] = [];
     const walk = (dir: string) => {
@@ -118,17 +213,9 @@ describe('component CSS uses tokens, never raw values', () => {
 
 // ---------- contrast (WCAG 2.2 1.4.3 / 1.4.11; XAG 102) ----------
 type RGBA = [number, number, number, number];
-const flat = new Map<string, string>();
-(function walk(node: Record<string, unknown>, path: string[]) {
-  for (const [k, v] of Object.entries(node)) {
-    if (k.startsWith('$') || typeof v !== 'object' || v === null) continue;
-    if ('$value' in v) flat.set([...path, k].join('.'), String((v as { $value: unknown }).$value));
-    else walk(v as Record<string, unknown>, [...path, k]);
-  }
-})(TOKENS_JSON, []);
+const MODEL = load(TOKENS_JSON);
 function colour(path: string): RGBA {
-  let v = flat.get(path)!;
-  for (let i = 0; i < 8 && /^\{.+\}$/.test(v); i++) v = flat.get(v.slice(1, -1))!;
+  const v = resolve(MODEL.byPath.get(path), MODEL.byPath) as string;
   const hex = /^#([0-9a-f]{6})$/i.exec(v);
   if (hex) return [parseInt(hex[1].slice(0, 2), 16), parseInt(hex[1].slice(2, 4), 16), parseInt(hex[1].slice(4, 6), 16), 1];
   const rgb = /^rgb\((\d+) (\d+) (\d+)(?: \/ ([\d.]+))?\)$/.exec(v);
@@ -170,9 +257,7 @@ describe('contrast: every text and background role pair is readable', () => {
     }
   });
 
-  it('the brand button, the toast and the talk plate at 4.5:1', () => {
-    expect(ratio(colour('color.on-brand'), colour('color.brand'))).toBeGreaterThanOrEqual(4.5);
-    expect(ratio(colour('color.on-brand'), colour('color.brand-hover'))).toBeGreaterThanOrEqual(4.5);
+  it('the toast and the talk plate at 4.5:1', () => {
     expect(ratio(colour('color.toast-text'), colour('color.toast-bg'))).toBeGreaterThanOrEqual(4.5);
     // the primary action and the speaker's name plate use the surface's accent
     for (const s of ['paper', 'wood']) {

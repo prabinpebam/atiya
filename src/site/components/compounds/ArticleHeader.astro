@@ -14,6 +14,7 @@ import Avatar from '../fundamentals/Avatar.astro';
 import Image from '../fundamentals/Image.astro';
 import Caption from '../fundamentals/Caption.astro';
 import { PICTURE_SPECS } from '../../design/pictures';
+import { sizes } from '../../design/responsive';
 
 interface Props {
   /** The article’s title (its h1). */
@@ -84,7 +85,7 @@ const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
     {
       portrait && (
         <div class="portrait">
-          <Image src={portrait.src} srcset={portrait.srcset} sizes="(max-width: 40rem) 8rem, 13rem" alt={portrait.alt} width={portrait.width} height={portrait.height} ratio="4/5" focus={portrait.focus} radius="feature" priority dark={portrait.dark} />
+          <Image src={portrait.src} srcset={portrait.srcset} sizes={sizes(['sm', 'image-portrait-sm'], 'image-portrait')} alt={portrait.alt} width={portrait.width} height={portrait.height} ratio="4/5" focus={portrait.focus} radius="feature" priority dark={portrait.dark} />
         </div>
       )
     }
@@ -95,7 +96,7 @@ const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
         <Image
           src={picture.src}
           srcset={picture.srcset}
-          sizes={pictureWidth === 'full' ? '100vw' : '(max-width: 76rem) 92vw, 76rem'}
+          sizes={pictureWidth === 'full' ? '100vw' : sizes(['wide', '92vw'], 'wide')}
           alt={picture.alt}
           width={picture.width}
           height={picture.height}

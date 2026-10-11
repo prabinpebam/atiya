@@ -20,7 +20,7 @@ export const DOC_OUT = join(ROOT, 'documentation/game-ui/tokens.md');
 export const SURFACES = ['paper', 'wood'];
 
 /**
- * @typedef {{ path: string[]; name: string; type: string; value: unknown; description: string }} Token
+ * @typedef {{ path: string[]; name: string; type: string; value: unknown; description: string; extensions: Record<string, any> }} Token
  */
 
 /** Flatten the tree into tokens (inheriting $type from groups). @returns {Token[]} */
@@ -32,7 +32,7 @@ export function flatten(tree, path = [], type = '') {
     if (key.startsWith('$') || typeof node !== 'object' || node === null) continue;
     const p = [...path, key];
     if ('$value' in node) {
-      out.push({ path: p, name: cssName(p), type: typeof node.$type === 'string' ? node.$type : t, value: node.$value, description: node.$description ?? '' });
+      out.push({ path: p, name: cssName(p), type: typeof node.$type === 'string' ? node.$type : t, value: node.$value, description: node.$description ?? '', extensions: node.$extensions ?? {} });
     } else out.push(...flatten(node, p, t));
   }
   return out;
@@ -41,6 +41,44 @@ export function flatten(tree, path = [], type = '') {
 /** `p.color.ink.900` → `--p-color-ink-900`; `color.paper.bg` → `--color-paper-bg`. */
 export function cssName(path) {
   return `--${path.join('-')}`;
+}
+
+const isObj = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** A 2025.10 colour object as CSS: its hex when opaque, rgb() with its alpha otherwise. */
+export function colourCss(c) {
+  if (c.alpha === undefined || c.alpha === 1) return c.hex;
+  const [r, g, b] = c.components.map((x) => Math.round(x * 255));
+  return `rgb(${r} ${g} ${b} / ${c.alpha})`;
+}
+
+/** A 2025.10 dimension or duration ({ value, unit }) as CSS; a zero length is written bare. */
+export const lengthCss = (d) => (d.value === 0 && d.unit !== 'ms' && d.unit !== 's' ? '0' : `${d.value}${d.unit}`);
+
+/** One 2025.10 shadow object as CSS: [inset] x y blur [spread] colour. */
+function shadowCss(s) {
+  const lens = [s.offsetX, s.offsetY, s.blur, ...(s.spread && s.spread.value !== 0 ? [s.spread] : [])].map(lengthCss);
+  return `${s.inset ? 'inset ' : ''}${lens.join(' ')} ${colourCss(s.color)}`;
+}
+
+/** A token's literal (non-alias) value as CSS, from its 2025.10 form and its `game.*` extensions. */
+function literalCss(token) {
+  const v = token.value;
+  const ext = token.extensions ?? {};
+  if (token.type === 'cubicBezier' && Array.isArray(v)) return `cubic-bezier(${v.join(', ')})`;
+  if (token.type === 'color' && isObj(v)) return colourCss(v);
+  if ((token.type === 'dimension' || token.type === 'duration') && isObj(v)) {
+    const fluid = ext['game.fluid'];
+    const viewport = ext['game.viewport'];
+    if (viewport) return `min(${viewport.vmin}vmin, ${lengthCss(v)})`;
+    return fluid ? `clamp(${lengthCss(fluid.min)}, ${fluid.vw}vw, ${lengthCss(v)})` : lengthCss(v);
+  }
+  if (token.type === 'shadow' && (isObj(v) || Array.isArray(v))) {
+    const list = (Array.isArray(v) ? v : [v]).map(shadowCss).join(', ');
+    return ext['game.filter'] ? `${ext['game.filter']}(${list})` : list;
+  }
+  if (typeof v === 'number') return `${v}${ext['game.unit'] ?? ''}`;
+  return String(v);
 }
 
 /** A token's CSS value: aliases become var() references. */
@@ -53,8 +91,7 @@ export function cssValue(token, byPath) {
       return `var(${target.name})`;
     });
   }
-  if (Array.isArray(v) && token.type === 'cubicBezier') return `cubic-bezier(${v.join(', ')})`;
-  return String(v);
+  return literalCss(token);
 }
 
 /** Resolve a token to its final literal value (aliases followed). */

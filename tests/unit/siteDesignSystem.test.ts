@@ -242,7 +242,7 @@ describe('CSS reads tokens, never raw values', () => {
   });
 
   it('type from its scales: sizes, weights, line heights, families', () => {
-    expect(all.filter((d) => d.prop === 'font-size' && !/^(var\(--text-[\w-]+\)|[\d.]+em|100%|inherit)$/.test(d.value)).map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'font-size' && !/^(var\(--(text|c)-[\w-]+\)|1em|100%|inherit)$/.test(d.value)).map(where)).toEqual([]);
     expect(all.filter((d) => d.prop === 'font').map(where)).toEqual([]);
     expect(all.filter((d) => d.prop === 'font-weight' && !/^(var\(--weight-[\w-]+\)|inherit)$/.test(d.value)).map(where)).toEqual([]);
     expect(all.filter((d) => d.prop === 'line-height' && !/^(var\(--leading-[\w-]+\)|0|inherit)$/.test(d.value)).map(where)).toEqual([]);
@@ -270,6 +270,38 @@ describe('CSS reads tokens, never raw values', () => {
     expect(bad.map(where)).toEqual([]);
   });
 
+  it('transforms from the scale and shift tokens: only tokens, percentages, 0, identity scales and quarter turns are written', () => {
+    const TRANSFORM = /^(transform|translate|scale|rotate)$/;
+    const raw = (d: Decl) => {
+      const v = bare(d.value);
+      if (/(^|[\s(,*-])[\d.]*[1-9][\d.]*(px|r?em)\b/.test(v)) return true;
+      // a scale factor other than nothing (0) or none (1): a feel, which the scale tokens hold (a calc() of tokens may use 0 and 1)
+      if (/scale[XYZ3d]*\(/.test(v) && [...v.slice(v.search(/scale[XYZ3d]*\(/)).matchAll(/(?<![\w.-])-?[\d.]+(?![\w.%])/g)].some((m) => !/^-?[01]$/.test(m[0]))) return true;
+      if (d.prop === 'scale' && v.split(/\s+/).some((n) => n && !/^-?[01]$|^none$/.test(n))) return true;
+      // a turn is geometry (a spinner's turn, a chevron flipped), not a feel
+      return [...v.matchAll(/(-?[\d.]+)deg\b/g)].some((m) => Number(m[1]) % 90 !== 0);
+    };
+    expect(all.filter((d) => TRANSFORM.test(d.prop) && !d.value.includes('!important') && raw(d)).map(where)).toEqual([]);
+  });
+
+  it('em only from tokens: a written em is 1em, named here with its reason', () => {
+    // where 1em is the point: the thing is exactly as big as the text it sits in
+    const ONE_EM: Record<string, string> = {
+      'Icon.astro': 'an icon in a line is as tall as the text',
+      'Prose.astro': 'with initial-letter, the drop cap keeps the paragraph’s size (initial-letter sets its height)',
+    };
+    const bad = all.filter((d) => !d.prop.startsWith('--') && /(^|[\s(,*-])[\d.]+em\b/.test(bare(d.value)) && !(ONE_EM[d.file.split('/').pop()!] && /^(?:[^\d]*\b1em\b[^\d]*)$/.test(bare(d.value))));
+    expect(bad.map(where)).toEqual([]);
+  });
+
+  it('grid tracks from tokens: no px or rem literal sizes a column or row (the design library’s specimen pages and the stories’ sample grids excepted)', () => {
+    // their columns are sized to the samples they lay out, not a decision of the site's
+    const SPECIMENS = /^src\/(site\/(library\/tokens|stories)|pages\/design)\//;
+    const GRID = /^grid(-template(-columns|-rows)?|-auto-(columns|rows))?$/;
+    const bad = all.filter((d) => GRID.test(d.prop) && !SPECIMENS.test(d.file) && /(^|[\s(,*-])[\d.]*[1-9][\d.]*(px|r?em)\b/.test(bare(d.value)));
+    expect(bad.map(where)).toEqual([]);
+  });
+
   it('width and height queries only at the breakpoint tokens, in CSS and in scripts', () => {
     const bps = new Set(model.tokens.filter((t) => t.path[0] === 'breakpoint').map((t) => resolve(t, model.byPath)));
     const bad: string[] = [];
@@ -277,6 +309,36 @@ describe('CSS reads tokens, never raw values', () => {
     for (const c of cssOf) for (const m of c.css.matchAll(/@(?:media|container)([^{]*)\{/g)) for (const v of sizes(m[1])) if (!bps.has(v)) bad.push(`${c.file}: ${m[0]}`);
     for (const f of siteAstro) for (const m of read(f).matchAll(/matchMedia\('([^']*)'\)/g)) for (const v of sizes(m[1])) if (!bps.has(v)) bad.push(`${rel(f)}: ${m[0]}`);
     expect(bad).toEqual([]);
+  });
+
+  it("scripts and props take breakpoints and widths from the generated responsive.ts: no rem literal in a matchMedia query or a picture's sizes", () => {
+    const bad: string[] = [];
+    const files = walk(join(ROOT, 'src/site'), /\.(astro|ts)$/).filter((f) => !f.endsWith(`${sep}responsive.ts`));
+    for (const f of files) {
+      const src = read(f).replace(/<style[^>]*>[\s\S]*?<\/style>/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+      for (const m of src.matchAll(/['"`][^'"`\n]*\((?:min|max)-(?:width|height):\s*[\d.]+r?em\)[^'"`\n]*['"`]/g)) bad.push(`${rel(f)}: ${m[0]}`);
+      for (const m of src.matchAll(/\bsizes=(["'])[^"']*?[\d.]+r?em[^"']*\1/g)) bad.push(`${rel(f)}: ${m[0]}`);
+      for (const m of src.matchAll(/\bsizes=\{\s*['"`][^'"`]*?[\d.]+r?em[^'"`]*['"`]\s*\}/g)) bad.push(`${rel(f)}: ${m[0]}`);
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('every semantic and component token is read: by a style or script, by another token, or (a breakpoint) by a query', () => {
+    const generated = (TOKENS_CSS + EDITOR_TOKENS_CSS).replace(/^\s*--[\w-]+:/gm, '');
+    const sources = [...walk(join(ROOT, 'src/site'), /\.(astro|ts|css)$/), ...walk(join(ROOT, 'src/pages'), /\.astro$/)]
+      .filter((f) => !/[\\/](tokens|editor-tokens)\.css$|[\\/]responsive\.ts$/.test(f))
+      .map(read)
+      .join('\n');
+    const queries = cssOf.map((c) => [...c.css.matchAll(/@(?:media|container)([^{]*)\{/g)].map((m) => m[1]).join('\n')).join('\n');
+    const unread = model.tokens
+      .filter((t) => t.path[0] !== 'p')
+      .filter((t) => {
+        if (t.path[0] === 'breakpoint') return !queries.includes(resolve(t, model.byPath)) && !sources.includes(`media('${t.path[1]}'`);
+        if (t.extensions?.['site.sizes']) return !new RegExp(`'${t.name.replace(/^--c-/, '')}'`).test(sources) && !sources.includes(`var(${t.name})`);
+        return !sources.includes(t.name) && !generated.includes(`var(${t.name})`);
+      })
+      .map((t) => t.name);
+    expect(unread).toEqual([]);
   });
 
   it('hover is an enhancement: every :hover rule sits inside @media (hover: hover), so a tap never leaves a phone stuck in a hover state', () => {
@@ -353,6 +415,32 @@ describe('CSS reads tokens, never raw values', () => {
       .map(([f]) => rel(f));
     expect(bad).toEqual([]);
   });
+
+  it('a listener on window, document or a media query passes signal, or says why it lives once per document', () => {
+    const named: string[] = [];
+    const bad: string[] = [];
+    const files = [...tierFiles.map((f) => f.file), ...walk(join(ROOT, 'src/site/editor/components'), /\.astro$/), join(ROOT, 'src/site/editor/EditorLayout.astro')].filter(existsSync);
+    for (const f of files) {
+      const script = [...read(f).matchAll(/<script(?![^>]*is:inline)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n');
+      const mqls = [...script.matchAll(/(?:const|let)\s+(\w+)\s*=\s*(?:window\.)?matchMedia\(/g)].map((m) => m[1]);
+      const receiver = new RegExp(`(?:\\b(?:window|document|${['matchMedia\\([^)]*\\)', ...mqls].join('|')}))\\s*\\.addEventListener\\(`, 'g');
+      for (const m of script.matchAll(receiver)) {
+        // the call's arguments, to its closing parenthesis
+        let depth = 1;
+        let i = m.index! + m[0].length;
+        for (; i < script.length && depth > 0; i++) depth += script[i] === '(' ? 1 : script[i] === ')' ? -1 : 0;
+        if (/\bsignal\b/.test(script.slice(m.index!, i))) continue;
+        const before = script.slice(0, m.index!).trimEnd().split('\n').pop() ?? '';
+        const where = `${rel(f)}: ${m[0]}`;
+        if (/\/\/\s*once per document:\s*\S/.test(before)) named.push(where);
+        else bad.push(where);
+      }
+    }
+    expect(bad).toEqual([]);
+    // the side nav, kept across the library's page swaps, is the one component that listens for the whole document
+    expect(named.every((n) => n.startsWith('src/site/components/compounds/SideNav.astro'))).toBe(true);
+    expect(named).toHaveLength(3);
+  });
 });
 
 // ---------- tiers ----------
@@ -399,6 +487,42 @@ describe('tiers: tokens → fundamentals → compounds → layouts, each made on
 });
 
 // ---------- documentation ----------
+describe('component tokens: each group is owned by one component or shared by all (design system §2.4)', () => {
+  type Group = { $extensions?: Record<string, unknown> } & Record<string, unknown>;
+  const C = SOURCES['tokens.json'].c as Record<string, Group>;
+  const groups = Object.keys(C).filter((k) => !k.startsWith('$'));
+  const ownerOf = (g: string) => C[g].$extensions?.['site.owner'] as string | undefined;
+  // the longest group a --c-* name starts with (list and listbox, image and its kin)
+  const groupOfName = (name: string) => groups.filter((g) => name === g || name.startsWith(`${g}-`)).sort((a, b) => b.length - a.length)[0];
+  const readers = [...walk(join(ROOT, 'src/site'), /\.(astro|ts|css)$/), ...walk(join(ROOT, 'src/pages'), /\.astro$/)].filter(
+    (f) => !/[\\/](tokens|editor-tokens)\.css$|[\\/]iconData\.ts$/.test(f) && !rel(f).startsWith('src/site/library/') && !rel(f).startsWith('src/pages/design/'),
+  );
+
+  it('every group names its owner (a component) or says it is shared', () => {
+    const names = new Set(tierFiles.map((f) => f.name));
+    const bad = groups.filter((g) => {
+      const o = ownerOf(g);
+      return !o || (o !== 'shared' && !names.has(o));
+    });
+    expect(bad).toEqual([]);
+  });
+
+  it('a component reads only shared groups and the group it owns', () => {
+    const bad: string[] = [];
+    expect(readers.length).toBeGreaterThan(60);
+    for (const f of readers) {
+      const name = f.split(sep).pop()!.replace(/\.(astro|ts|css)$/, '');
+      for (const m of read(f).matchAll(/--c-([\w-]+)/g)) {
+        const g = groupOfName(m[1]);
+        if (!g) continue;
+        const o = ownerOf(g);
+        if (o !== 'shared' && o !== name) bad.push(`${rel(f)} reads --c-${m[1]} (${g} is ${o}'s)`);
+      }
+    }
+    expect([...new Set(bad)]).toEqual([]);
+  });
+});
+
 describe('every component documents itself and has a story', () => {
   it.each(tierFiles.map((f) => [`${f.tier} ${f.name}`, f] as const))('%s', (_, f) => {
     const fm = frontmatter(f.src);

@@ -14,6 +14,7 @@ import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
 import Tag from '../fundamentals/Tag.astro';
 import { PICTURE_SPECS } from '../../design/pictures';
+import { sizes } from '../../design/responsive';
 import { RELATED_SHOWN } from '../../scripts/related';
 
 export interface RelatedStory {
@@ -54,7 +55,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
             <article class="card">
               {s.picture && (
                 <div class="picture" data-square={s.picture.rounded === false ? '' : undefined} data-shadow={s.picture.shadow ? '' : undefined}>
-                  <Image src={s.picture.src} srcset={s.picture.srcset} sizes="(max-width: 40rem) 92vw, (max-width: 72rem) 46vw, 24rem" alt={s.picture.alt} width={s.picture.width} height={s.picture.height} ratio={PICTURE_SPECS.thumbnail.ratio} display={s.picture.display ?? 'fit'} rounded={s.picture.rounded !== false} bg={s.picture.background && s.picture.bg ? { light: s.picture.bg, dark: s.picture.dark?.bg } : undefined} dark={s.picture.dark} />
+                  <Image src={s.picture.src} srcset={s.picture.srcset} sizes={sizes(['sm', '92vw'], ['lg', '46vw'], { share: 'wide', of: 3 })} alt={s.picture.alt} width={s.picture.width} height={s.picture.height} ratio={PICTURE_SPECS.thumbnail.ratio} display={s.picture.display ?? 'fit'} rounded={s.picture.rounded !== false} bg={s.picture.background && s.picture.bg ? { light: s.picture.bg, dark: s.picture.dark?.bg } : undefined} dark={s.picture.dark} />
                 </div>
               )}
               <div class="words">
@@ -148,17 +149,17 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
   @media (hover: hover) {
     .card:hover .title {
       text-decoration: underline;
-      text-decoration-thickness: var(--border-strong);
+      text-decoration-thickness: var(--underline-thickness-strong);
       text-decoration-color: var(--color-highlight);
-      text-underline-offset: 0.12em;
+      text-underline-offset: var(--underline-offset);
     }
   }
 
   .card:has(.title:active) .title {
     text-decoration: underline;
-    text-decoration-thickness: var(--border-strong);
+    text-decoration-thickness: var(--underline-thickness-strong);
     text-decoration-color: var(--color-highlight);
-    text-underline-offset: 0.12em;
+    text-underline-offset: var(--underline-offset);
   }
 
   .title:focus-visible {

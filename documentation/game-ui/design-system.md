@@ -1,6 +1,6 @@
 # Game UI design system
 
-> **TL;DR.** The rules for every piece of UI on the site and in the game. All values come from **tokens** (one DTCG file, three tiers, generated CSS). Components read colour only through **surface roles**: **Wood** (dark) is the game, **Paper** (light) is the website. The screen is split into fixed **regions** with the centre kept clear. A pure **arbiter** (`ui/lanes.ts`) decides the one thing that may ask for attention, and it decides what <kbd>E</kbd> does as well. Copy is warm, plain and short. Tests enforce all of this (`tests/unit/designSystem.test.ts`, `tests/unit/lanes.test.ts`). The research and the critique behind these rules are in [the spec](spec.md). The token list is in [tokens.md](tokens.md).
+> **TL;DR.** The rules for every piece of the game's UI, and the loading shell before it (the website has [its own system](../site-ui/design-system.md)). All values come from **tokens** (one DTCG 2025.10 file, three tiers, generated CSS). Components read colour only through **surface roles**: **Wood** (dark) is the game; **Paper** (light) is the default under it, and the face of a key cap. The screen is split into fixed **regions** with the centre kept clear. A pure **arbiter** (`ui/lanes.ts`) decides the one thing that may ask for attention, and it decides what <kbd>E</kbd> does as well. Copy is warm, plain and short. Tests enforce all of this (`tests/unit/designSystem.test.ts`, `tests/unit/lanes.test.ts`). The research and the critique behind these rules are in [the spec](spec.md). The token list is in [tokens.md](tokens.md).
 
 ![The screen regions](assets/regions.svg)
 
@@ -13,7 +13,7 @@ These are ranked: when two conflict, the higher one wins.
 | P1 | **The planet first** | The centre of the screen belongs to the world. The HUD lives on the edges, is small, and hides when there's nothing to say. |
 | P2 | **One thing asks at a time** | At most one surface asks for attention in the focus lane, and <kbd>E</kbd> always does what that surface says. There's never a second "press E". |
 | P3 | **The prompt tells the truth** | The prompt names the verb and the object that <kbd>E</kbd> will act on right now. If <kbd>E</kbd> would do something else, the prompt is wrong. |
-| P4 | **One meaning per surface** | Wood means "you're in the game"; Paper means "you're on the website". Never mix them within one region. |
+| P4 | **One meaning per surface** | Wood means "you're in the game"; Paper is the shell before it (the loading page) and the light face of a key cap, so a key reads as a key. Never mix them within one region. |
 | P5 | **Tokens, not values** | A colour, size, space, radius, shadow, duration or layer that isn't a token is a bug. Add a token first. |
 | P6 | **Calm motion** | Motion explains a change (appear, move, confirm); it never decorates. It's short, eased, and removed under reduced motion. |
 | P7 | **Every cue has a text twin** | Anything shown by colour, motion, sound or a 3D cue (a wiggling chest) is also said in words: a prompt, a label, or a live-region announcement. |
@@ -35,6 +35,14 @@ When something new wants to be on screen, answer these in order:
 
 The source of truth is `src/design/tokens.json`, in the [W3C Design Tokens (DTCG 2025.10)](https://www.designtokens.org/tr/drafts/format/) format. `node scripts/build-tokens.mjs` generates `src/styles/tokens.css` and [tokens.md](tokens.md). Never hand-edit either; the unit test fails if they're out of date (`--check`).
 
+**Format.** Values are 2025.10 objects, the same conventions as the site's tokens (the values themselves are separate):
+- a colour is `{ colorSpace: "srgb", components, hex }`, with `alpha` when it's translucent;
+- a dimension or a duration is `{ value, unit }` (px or rem; ms or s);
+- a shadow is `{ color, offsetX, offsetY, blur, spread, inset? }`, or a list of them;
+- what DTCG has no type for is a number with its unit in `$extensions`: `game.unit` (`%`, `em`), `game.fluid` (a `clamp()` between `min` and the value, growing with `vw`), `game.filter` (a shadow written as `drop-shadow()`).
+
+`designSystem.test.ts` checks the format, and that every token is read (by a stylesheet, the game's code or another token).
+
 | Tier | Prefix | Who may use it | Examples |
 |---|---|---|---|
 | 1. Primitives | `--p-*` | Only other tokens. Never component CSS (the lint rejects it) | `--p-color-wood-900`, `--p-color-gold-300` |
@@ -46,7 +54,7 @@ The source of truth is `src/design/tokens.json`, in the [W3C Design Tokens (DTCG
 | Surface | Where | Look |
 |---|---|---|
 | `.surface-wood` | `body.play` (the whole game), the backpack, crafting, paint and the dialogs on it | Dark wood-brown, cream text, **gold** primary actions with dark text, light-blue links. Key caps stay light so they read as keys. `color-scheme: dark`. |
-| `.surface-paper` (the default, on `:root`) | The default under the game's surfaces. The landing and the classic pages used it until 2026-09-29, when the website moved to its own, separate design system ([site design system](../site-ui/design-system.md)) | Warm off-white, ink text, blue primary actions and links. |
+| `.surface-paper` (the default, on `:root`) | The default under the game's surfaces: the loading shell before the planet, and the key caps. (The website used it until 2026-09-29, when it moved to its own, separate design system: [site design system](../site-ui/design-system.md).) | Warm off-white, ink text, blue primary actions and links. |
 
 Both surfaces define every role (a test checks), and each surface re-declares `color`, because inherited text colour doesn't follow a changed custom property.
 

@@ -18,7 +18,7 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   font-optical-sizing: auto;
-  scroll-padding-top: var(--c-header-height);
+  scroll-padding-top: var(--size-chrome-block);
   hanging-punctuation: first;
 }
 
@@ -219,14 +219,14 @@ select {
 
 a {
   color: var(--color-accent);
-  text-decoration-thickness: var(--border-hairline);
-  text-underline-offset: 0.18em;
+  text-decoration-thickness: var(--underline-thickness);
+  text-underline-offset: var(--underline-offset);
 }
 
 @media (hover: hover) {
   a:hover {
     color: var(--color-accent-hover);
-    text-decoration-thickness: var(--border-strong);
+    text-decoration-thickness: var(--underline-thickness-strong);
   }
 }
 

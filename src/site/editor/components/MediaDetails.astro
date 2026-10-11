@@ -26,6 +26,7 @@ import Dialog from '../../components/compounds/Dialog.astro';
 import Video from '../../components/fundamentals/Video.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import { withBase } from '../../design/meta';
+import { sizes } from '../../design/responsive';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
 import { clock, megabytes } from '../model/upload';
 
@@ -154,7 +155,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             {isPrivate && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
           </div>
           <div class="focus" style={`--focus-x: ${fx}%; --focus-y: ${fy}%`} data-editor-focus>
-            <Image src={picture.src} srcset={picture.srcset} poster={picture.poster} sizes="(max-width: 56rem) 100vw, 40vw" alt={sc.alt ?? ''} width={picture.width} height={picture.height} radius="default" />
+            <Image src={picture.src} srcset={picture.srcset} poster={picture.poster} sizes={sizes(['md', '100vw'], '40vw')} alt={sc.alt ?? ''} width={picture.width} height={picture.height} radius="default" />
             <button class="hit" type="button" data-editor-focus-set aria-label="Focus point: where a crop must keep. Click the picture to set it." aria-describedby="media-focus-value" />
             <span class="marker" aria-hidden="true" />
           </div>

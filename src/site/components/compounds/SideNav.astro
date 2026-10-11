@@ -63,7 +63,7 @@ const uid = Math.random().toString(36).slice(2, 8);
   .scroll {
     display: grid;
     gap: var(--space-8);
-    max-height: calc(100dvh - var(--c-header-height) - var(--space-12));
+    max-height: calc(100dvh - var(--size-chrome-block) - var(--space-12));
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-inline-end: var(--space-3);
@@ -128,8 +128,8 @@ const uid = Math.random().toString(36).slice(2, 8);
   @media (forced-colors: active) {
     a[aria-current='page'] {
       text-decoration-line: underline;
-      text-decoration-thickness: var(--border-strong);
-      text-underline-offset: 0.3em;
+      text-decoration-thickness: var(--underline-thickness-strong);
+      text-underline-offset: var(--underline-offset-marker);
     }
   }
 
@@ -158,12 +158,14 @@ const uid = Math.random().toString(36).slice(2, 8);
 
 <script>
   import { onEveryPage } from '../../scripts/page';
+  import { media } from '../../design/responsive';
 
-  const wide = matchMedia('(min-width: 56rem)');
+  const wide = matchMedia(media('md', 'min'));
   const path = (p: string) => p.replace(/\/+$/, '');
 
   // open on wide screens (a sidebar), folded on narrow ones until asked for (and again after a pick)
   const sync = () => document.querySelectorAll<HTMLDetailsElement>('[data-side-nav]').forEach((d) => (d.open = wide.matches));
+  // once per document: it syncs whichever navs the page has now, so it never needs removing
   wide.addEventListener('change', sync);
 
   // a nav kept across pages marks the page it's now on, and keeps it in view within its own scroll
@@ -197,7 +199,9 @@ const uid = Math.random().toString(36).slice(2, 8);
   // moving the kept nav into the new page resets its scroll: carry it over
   const kept = new Map<HTMLElement, number>();
   const followed = () => document.querySelectorAll<HTMLElement>('[data-side-nav][data-follow] .scroll');
+  // once per document: the kept nav outlives every swap, so these carry its scroll across all of them
   document.addEventListener('astro:before-swap', () => followed().forEach((s) => kept.set(s, s.scrollTop)));
+  // once per document: (the pair's second half) puts the scroll back after the swap
   document.addEventListener('astro:after-swap', () => {
     kept.forEach((y, s) => (s.scrollTop = y));
     kept.clear();

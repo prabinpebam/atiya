@@ -176,6 +176,6 @@ const described = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean)
   }
 
   .choice-group[data-variant='cards'] .choice-card:active:has(input:not(:disabled)) {
-    transform: scale(0.99);
+    transform: scale(var(--scale-press-large));
   }
 </style>

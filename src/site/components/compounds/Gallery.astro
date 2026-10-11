@@ -285,6 +285,7 @@ const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined
 <script>
   import { each } from '../../scripts/page';
   import { justifyGallery } from '../../scripts/justifiedGallery';
+  import { media } from '../../design/responsive';
 
   each<HTMLElement>('[data-justified-gallery]', (list, signal) => {
     const cards = [...list.querySelectorAll<HTMLElement>('[data-gallery-item]')];
@@ -294,7 +295,7 @@ const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined
       const styles = getComputedStyle(list);
       const gap = Number.parseFloat(styles.columnGap) || 0;
       const rootStyles = getComputedStyle(document.documentElement);
-      const token = rootStyles.getPropertyValue(matchMedia('(min-width: 40rem)').matches ? '--c-gallery-row-height' : '--c-gallery-row-height-small').trim();
+      const token = rootStyles.getPropertyValue(matchMedia(media('sm', 'min')).matches ? '--c-gallery-row-height' : '--c-gallery-row-height-small').trim();
       const rowHeight = token.endsWith('rem') ? Number.parseFloat(token) * Number.parseFloat(rootStyles.fontSize) : Number.parseFloat(token);
       const layout = justifyGallery(
         cards.map((card) => ({ width: Number(card.dataset.width), height: Number(card.dataset.height) })),

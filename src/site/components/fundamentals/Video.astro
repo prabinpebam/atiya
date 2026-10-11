@@ -95,7 +95,7 @@ const shape = [`--video-w: ${shapeW}`, `--video-h: ${shapeH}`, actual ? `--video
      portrait video narrows (centred) rather than running off the page */
   .video {
     display: block;
-    width: min(100%, (100dvh - var(--c-header-height) - var(--space-12)) * var(--video-w) / var(--video-h));
+    width: min(100%, (100dvh - var(--size-chrome-block) - var(--space-12)) * var(--video-w) / var(--video-h));
     height: auto;
     aspect-ratio: var(--video-w) / var(--video-h);
     margin-inline: auto;
@@ -114,7 +114,7 @@ const shape = [`--video-w: ${shapeW}`, `--video-h: ${shapeH}`, actual ? `--video
 
   /* actual size: its own width at most (and never taller than the screen), centred */
   .video[data-actual] {
-    width: min(100%, var(--video-natural), (100dvh - var(--c-header-height) - var(--space-12)) * var(--video-w) / var(--video-h));
+    width: min(100%, var(--video-natural), (100dvh - var(--size-chrome-block) - var(--space-12)) * var(--video-w) / var(--video-h));
   }
 
   /* filling a container (a gallery cell, a carousel slide): its size, not its own shape */

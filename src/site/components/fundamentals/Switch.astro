@@ -95,7 +95,7 @@ const hasSlot = Astro.slots.has('default');
   }
 
   .input:active:not(:disabled) {
-    transform: scale(0.98);
+    transform: scale(var(--scale-press));
   }
 
   /* forced colours drop the track's fill: an outline keeps its shape (the focus ring replaces it),

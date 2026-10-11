@@ -30,18 +30,18 @@ const { label, orientation = 'vertical', maxHeight = 'md', ...rest } = Astro.pro
 
 <style>
   .scroll-area {
-    max-block-size: var(--c-listbox-max-height);
+    max-block-size: var(--c-scroll-area-height-md);
     overflow: auto;
     overscroll-behavior: contain;
     border-radius: var(--radius-lg);
   }
 
   .scroll-area[data-max-height='sm'] {
-    max-block-size: calc(var(--c-listbox-max-height) - var(--space-20));
+    max-block-size: var(--c-scroll-area-height-sm);
   }
 
   .scroll-area[data-max-height='lg'] {
-    max-block-size: calc(var(--c-listbox-max-height) + var(--space-24));
+    max-block-size: var(--c-scroll-area-height-lg);
   }
 
   .scroll-area[data-orientation='vertical'] {

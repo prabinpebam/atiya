@@ -21,12 +21,13 @@ import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Button from '../components/fundamentals/Button.astro';
 import type { IconName } from '../design/icons';
-import { mergeAfterAnchors } from '../content/sectionOrder';
 import type { ComponentProps } from 'astro/types';
 
 type Story = Omit<ComponentProps<typeof StoryCard>, 'variant'> & {
   /** The node it places: open cards name it, so a private card can be placed after the one it follows. */
   node?: string;
+  /** A private page shown in its place (the dev server), marked Private. */
+  privateTag?: boolean;
 };
 
 interface Props {
@@ -46,12 +47,12 @@ interface Props {
   action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
   /** For an index below the top level. */
   crumbs?: { trail: { label: string; href: string }[]; current: string };
-  /** The pages in it, in order. */
+  /** The pages it shows, in order (on the dev server, its private pages in their places, each marked `privateTag`). */
   stories?: Story[];
   /**
-   * Its private pages (documentation/access/spec.md §2.1), each with the open page it follows (null: the
-   * start). A build seals each card and holds it after the list until a signed-in reader's grant opens it;
-   * the dev server shows them in their places, marked Private.
+   * Its sealed private pages (documentation/access/spec.md §2.1), each with the open page it follows (null:
+   * the start). The page seals each card and holds it after the list until a signed-in reader's grant opens
+   * it. Only a build passes them; the dev server shows them among `stories`.
    */
   privatePages?: { id: string; after: string | null; story: Story }[];
   /** Where to sign in to see the private pages (the Sign in page, with the way back). */
@@ -76,16 +77,9 @@ interface Props {
 }
 
 const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, invited = 0, ask, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
-const sealing = import.meta.env.PROD;
-// in dev every page shows in its place, the private ones marked; a build lists the open ones and seals the rest
-const shown: (Story & { privateTag?: boolean })[] = sealing
-  ? stories
-  : mergeAfterAnchors(
-      stories,
-      privatePages.map((l) => ({ after: l.after, value: { ...l.story, node: l.id, privateTag: true } })),
-      (story) => story.node ?? '',
-    );
-const sealed = sealing ? privatePages : [];
+const shown = stories;
+const sealed = privatePages;
+const hasPrivate = sealed.length > 0 || shown.some((s) => s.privateTag);
 const variantOf = (i: number) => (view === 'features' ? 'feature' : view === 'list' ? 'row' : view === 'bento' && i === 0 ? 'feature' : undefined);
 const open = (mark: string) => `<!--sealed:card:${mark}-->`;
 ---
@@ -118,7 +112,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
         ) : null
       }
       {
-        shown.length === 0 && privatePages.length === 0 && invited === 0 && empty && (
+        shown.length === 0 && !hasPrivate && invited === 0 && empty && (
           <div class="empty" data-cards-empty>
             <Text variant="lead" tone="muted">
               {empty}
@@ -148,7 +142,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
         )
       }
       {
-        (privatePages.length > 0 || invited > 0) && signIn && (
+        (hasPrivate || invited > 0) && signIn && (
           <section class="invite" aria-labelledby="invite-heading" data-sign-in-line>
             <Heading level={2} size="h4" id="invite-heading">
               {shown.length === 0 ? 'The work here is shared with invited readers' : 'More work here is shared with invited readers'}

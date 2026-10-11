@@ -346,8 +346,8 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
   @media (forced-colors: active) {
     .nav a[aria-current='page'] {
       text-decoration-line: underline;
-      text-decoration-thickness: var(--border-strong);
-      text-underline-offset: 0.3em;
+      text-decoration-thickness: var(--underline-thickness-strong);
+      text-underline-offset: var(--underline-offset-marker);
     }
   }
 </style>
@@ -356,6 +356,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
   import { each } from '../../scripts/page';
   import { bindThemeSwitch } from '../../scripts/theme';
   import { tuck } from '../../scripts/header';
+  import { media } from '../../design/responsive';
 
   const store = (() => {
     try {
@@ -366,7 +367,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
   })();
 
   // where the header tucks away as you scroll: phones, upright or on their side
-  const small = matchMedia('(max-width: 56rem), (max-height: 30rem)');
+  const small = matchMedia(`${media('md')}, ${media('short')}`);
 
   each<HTMLElement>('[data-site-header]', (header, signal) => {
     const sw = header.querySelector<HTMLElement>('[data-theme-switch]');
@@ -405,7 +406,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
         if (isOpen() && !header.contains(e.target as Node)) setOpen(false);
         }, { signal });
       // back to the wide layout: nothing stays open behind it
-      matchMedia('(min-width: 56rem)').addEventListener('change', (m) => m.matches && setOpen(false), { signal });
+      matchMedia(media('md', 'min')).addEventListener('change', (m) => m.matches && setOpen(false), { signal });
     }
 
     // tuck the header away while reading down on a phone; bring it back on the way up

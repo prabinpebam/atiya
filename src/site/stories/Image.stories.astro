@@ -2,6 +2,10 @@
 import Example from '../library/Example.astro';
 import Image from '../components/fundamentals/Image.astro';
 import { sample } from '../design/samples';
+import { sizes } from '../design/responsive';
+
+// a picture half the column wide
+const half = sizes({ share: 'measure', of: 2 });
 
 const plaza = sample('plaza');
 const pond = sample('pond');
@@ -9,21 +13,21 @@ const night = sample('plaza-night');
 ---
 
 <Example title="Its own shape" layout="stack" description="Responsive, sized so the page doesn’t jump, softly rounded.">
-  <Image src={plaza.src} srcset={plaza.srcset} sizes="(max-width: 56rem) 92vw, 60rem" alt={plaza.alt} width={plaza.width} height={plaza.height} />
+  <Image src={plaza.src} srcset={plaza.srcset} sizes={sizes(['md', '92vw'], 'popout')} alt={plaza.alt} width={plaza.width} height={plaza.height} />
 </Example>
 
 <Example title="Cropped to a ratio" description="The picture fills the shape; focus keeps the part that matters.">
   <div class="demo-grid">
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="1/1" focus="40% 60%" />
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="4/5" />
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="1/1" focus="40% 60%" />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="4/5" />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" />
   </div>
 </Example>
 
 <Example title="Fill, fit, actual size and tile" description="The same picture in the same 16:9 frame, shown the four ways a page can choose: filling it (cropped around its focus point), fitting inside it, at its own size (never enlarged), and tiled at its own size.">
   <div class="demo-grid">
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fill" />
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fill" />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" />
     <Image src={pond.thumb} alt={pond.alt} width={160} height={Math.round((160 * pond.height) / pond.width)} ratio="16/9" display="actual" />
     <Image src={pond.thumb} alt={pond.alt} width={96} height={Math.round((96 * pond.height) / pond.width)} ratio="16/9" display="tile" />
   </div>
@@ -31,28 +35,28 @@ const night = sample('plaza-night');
 
 <Example title="A colour behind it, and square corners" description="Fitted in a 16:9 frame with the picture's own edge colour behind it (worked out from the picture when the site is built; set by hand here), then the same with its corners squared.">
   <div class="demo-grid">
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" bg={{ light: 'rgb(124 170 120)', dark: 'rgb(30 52 44)' }} />
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" bg={{ light: 'rgb(124 170 120)', dark: 'rgb(30 52 44)' }} rounded={false} />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" bg={{ light: 'rgb(124 170 120)', dark: 'rgb(30 52 44)' }} />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" bg={{ light: 'rgb(124 170 120)', dark: 'rgb(30 52 44)' }} rounded={false} />
   </div>
 </Example>
 
 <Example title="A drop shadow" description="A shadow under the picture that follows what shows: filled, it's the frame's shape; fitted, the picture's own (the room round it casts none).">
   <div class="demo-grid">
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fill" shadow />
-    <Image src={pond.src} srcset={pond.srcset} sizes="20rem" alt={pond.alt} width={pond.width} height={pond.height} ratio="1/1" display="fit" shadow />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fill" shadow />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="1/1" display="fit" shadow />
   </div>
 </Example>
 
 <Example title="Radius" description="Default in the text, feature for a lead picture, none at full bleed.">
   <div class="demo-grid">
-    <Image src={night.src} srcset={night.srcset} sizes="20rem" alt={night.alt} width={night.width} height={night.height} ratio="4/3" />
-    <Image src={night.src} srcset={night.srcset} sizes="20rem" alt={night.alt} width={night.width} height={night.height} ratio="4/3" radius="feature" />
-    <Image src={night.src} srcset={night.srcset} sizes="20rem" alt={night.alt} width={night.width} height={night.height} ratio="4/3" radius="none" />
+    <Image src={night.src} srcset={night.srcset} sizes={half} alt={night.alt} width={night.width} height={night.height} ratio="4/3" />
+    <Image src={night.src} srcset={night.srcset} sizes={half} alt={night.alt} width={night.width} height={night.height} ratio="4/3" radius="feature" />
+    <Image src={night.src} srcset={night.srcset} sizes={half} alt={night.alt} width={night.width} height={night.height} ratio="4/3" radius="none" />
   </div>
 </Example>
 
 <Example title="With a dark mode version" layout="stack" description="The plaza by day in light mode, at night in dark mode: switch the theme to see it change. Without a dark version, the same picture shows in both.">
-  <Image src={plaza.src} srcset={plaza.srcset} sizes="(max-width: 56rem) 92vw, 60rem" alt="The plaza: by day in light mode, at night in dark mode." width={plaza.width} height={plaza.height} dark={{ src: night.src, srcset: night.srcset, width: night.width, height: night.height }} />
+  <Image src={plaza.src} srcset={plaza.srcset} sizes={sizes(['md', '92vw'], 'popout')} alt="The plaza: by day in light mode, at night in dark mode." width={plaza.width} height={plaza.height} dark={{ src: night.src, srcset: night.srcset, width: night.width, height: night.height }} />
 </Example>
 
 <style>

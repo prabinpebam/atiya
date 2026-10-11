@@ -226,14 +226,14 @@ const { breakout = false, size = 'body', id } = Astro.props;
 
   .prose :global(a) {
     color: var(--color-accent);
-    text-decoration-thickness: var(--border-hairline);
-    text-underline-offset: 0.18em;
+    text-decoration-thickness: var(--underline-thickness);
+    text-underline-offset: var(--underline-offset);
   }
 
   @media (hover: hover) {
     .prose :global(a:hover) {
       color: var(--color-accent-hover);
-      text-decoration-thickness: var(--border-strong);
+      text-decoration-thickness: var(--underline-thickness-strong);
     }
   }
 
@@ -288,7 +288,7 @@ const { breakout = false, size = 'body', id } = Astro.props;
     border-radius: var(--radius-xs);
     background: var(--color-bg-sunk);
     font-family: var(--font-code);
-    font-size: 0.85em;
+    font-size: var(--c-prose-code-size);
   }
 
   /* a code block from Markdown can't carry data-scrollbar: it gets the overlay handle from the script */
@@ -341,10 +341,10 @@ const { breakout = false, size = 'body', id } = Astro.props;
   /* ---------- the drop cap: three lines deep, in the accent, on a paragraph that asks for one ---------- */
   .prose > :global(p[data-dropcap]:not([data-dropcap-paused])::first-letter) {
     float: inline-start;
-    margin: 0.06em 0.1em 0 0;
+    margin: var(--c-dropcap-lift) var(--c-dropcap-gap) 0 0;
     font-family: var(--font-display);
     font-variation-settings: var(--axes-display);
-    font-size: 4.35em;
+    font-size: var(--c-dropcap-size);
     font-weight: var(--weight-display);
     line-height: var(--leading-tight);
     color: var(--c-dropcap-color);
@@ -353,7 +353,7 @@ const { breakout = false, size = 'body', id } = Astro.props;
   @supports (initial-letter: 3) or (-webkit-initial-letter: 3) {
     .prose > :global(p[data-dropcap]:not([data-dropcap-paused])::first-letter) {
       float: none;
-      margin: 0 0.12em 0 0;
+      margin: 0 var(--c-dropcap-gap-initial) 0 0;
       font-size: 1em;
       -webkit-initial-letter: 3;
       initial-letter: 3;

@@ -15,6 +15,7 @@ import Table from '../components/compounds/Table.astro';
 import Quote from '../components/fundamentals/Quote.astro';
 import Divider from '../components/fundamentals/Divider.astro';
 import { withBase } from '../design/meta';
+import { sizes } from '../design/responsive';
 import { renderInlineMarkdown, renderMarkdown } from './markdown';
 import { headingIds } from './load';
 import { picture, video, type Picture, type VideoFile } from './pictures';
@@ -35,9 +36,9 @@ const mark = (i: number) => (editable ? `<!--editor-block:${i}-->` : '');
 
 // the layout's widths (the size-measure, size-popout and size-wide tokens), for the browser's pick
 const SIZES = {
-  content: '(max-width: 40rem) 92vw, 40rem',
-  popout: '(max-width: 52rem) 92vw, 52rem',
-  wide: '(max-width: 76rem) 96vw, 76rem',
+  content: sizes(['measure', '92vw'], 'measure'),
+  popout: sizes(['popout', '92vw'], 'popout'),
+  wide: sizes(['wide', '96vw'], 'wide'),
   full: '100vw',
 } as const;
 

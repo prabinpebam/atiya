@@ -52,8 +52,8 @@ const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf
   .link {
     color: var(--color-accent);
     text-decoration-line: underline;
-    text-decoration-thickness: var(--border-hairline);
-    text-underline-offset: 0.18em;
+    text-decoration-thickness: var(--underline-thickness);
+    text-underline-offset: var(--underline-offset);
     transition:
       color var(--duration-instant) var(--ease-standard),
       text-decoration-thickness var(--duration-instant) var(--ease-standard);
@@ -62,16 +62,16 @@ const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf
   @media (hover: hover) {
     .link:hover {
       color: var(--color-accent-hover);
-      text-decoration-thickness: var(--border-strong);
+      text-decoration-thickness: var(--underline-thickness-strong);
     }
   }
 
   .icon {
     display: inline-block;
-    width: 0.8em;
-    height: 0.8em;
-    margin-inline-start: 0.3em;
-    vertical-align: -0.05em;
+    width: var(--c-link-icon-size);
+    height: var(--c-link-icon-size);
+    margin-inline-start: var(--c-link-icon-gap);
+    vertical-align: var(--c-link-icon-shift);
     transition: transform var(--duration-fast) var(--ease-spring);
   }
 
@@ -124,6 +124,6 @@ const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf
     color: var(--color-text);
     font-weight: var(--weight-semibold);
     text-decoration-color: var(--color-highlight);
-    text-decoration-thickness: var(--border-strong);
+    text-decoration-thickness: var(--underline-thickness-strong);
   }
 </style>

@@ -179,7 +179,7 @@ const end = policy.newTab ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
   }
 
   .button:active:not(:disabled, [aria-disabled='true']) {
-    transform: translateY(1px) scale(0.98);
+    transform: translateY(var(--shift-press)) scale(var(--scale-press));
   }
 
   .button:disabled,

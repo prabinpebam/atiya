@@ -142,7 +142,7 @@ const embedSrc =
      wide as its place but never taller than the screen below the header (a portrait video narrows, centred) */
   .embed-box {
     position: relative;
-    width: min(100%, (100dvh - var(--c-header-height) - var(--space-12)) * var(--video-w) / var(--video-h));
+    width: min(100%, (100dvh - var(--size-chrome-block) - var(--space-12)) * var(--video-w) / var(--video-h));
     aspect-ratio: var(--video-w) / var(--video-h);
     justify-self: center;
     border-radius: var(--c-image-radius-feature);
@@ -202,7 +202,7 @@ const embedSrc =
   @media (hover: hover) {
     .facade:hover .play-mark {
       background: var(--color-bg-hover);
-      transform: translate(-50%, -50%) scale(1.06);
+      transform: translate(-50%, -50%) scale(var(--scale-lift));
     }
   }
 

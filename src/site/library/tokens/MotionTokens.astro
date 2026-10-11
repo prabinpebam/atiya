@@ -13,6 +13,7 @@ import { tokenAnchor } from '../tokenLinks';
 const m = siteTokens();
 const eases = m.tokens.filter((t) => t.path[0] === 'ease');
 const durations = m.tokens.filter((t) => t.path[0] === 'duration');
+const scales = m.tokens.filter((t) => t.path[0] === 'scale' || t.path[0] === 'shift');
 // a curve's path in a 100 x 100 box (y up), overshoot allowed
 const curve = (v: number[]) => `M0 100 C ${v[0] * 100} ${100 - v[1] * 100}, ${v[2] * 100} ${100 - v[3] * 100}, 100 0`;
 ---
@@ -55,6 +56,29 @@ const curve = (v: number[]) => `M0 100 C ${v[0] * 100} ${100 - v[1] * 100}, ${v[
           <code>{t.name}</code>
           <span class="track">
             <span class="fill" style={`--d: var(${t.name})`} />
+          </span>
+          <Text as="span" variant="meta">
+            {resolve(t, m.byPath)}
+          </Text>
+          <Text as="span" variant="small" tone="muted">
+            {t.description}
+          </Text>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<section class="block" aria-labelledby="scales">
+  <Heading level={2} size="h2" id="scales">Feedback scales</Heading>
+  <Text narrow>A press, a pop, a lift and a zoom, each by intent, so the same press feels the same everywhere. Smaller things squeeze more, so a press reads at every size. Press a sample to feel it.</Text>
+  <ul class="durations scales">
+    {
+      scales.map((t) => (
+        <li id={tokenAnchor(t.name)}>
+          <code>{t.name}</code>
+          <span class="sample-row">
+            <span class="sample" style={t.path[0] === 'shift' ? `--to: translateY(var(${t.name}))` : `--to: scale(var(${t.name}))`} tabindex="0" role="img" aria-label={`A sample at ${resolve(t, m.byPath)}`} />
           </span>
           <Text as="span" variant="meta">
             {resolve(t, m.byPath)}
@@ -158,6 +182,26 @@ const curve = (v: number[]) => `M0 100 C ${v[0] * 100} ${100 - v[1] * 100}, ${v[
 
   [data-playing] .fill {
     width: 100%;
+  }
+
+  .sample {
+    display: block;
+    width: var(--size-touch);
+    height: var(--size-touch);
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+
+  @media (hover: hover) {
+    .sample:hover {
+      transform: var(--to);
+    }
+  }
+
+  .sample:active,
+  .sample:focus-visible {
+    transform: var(--to);
   }
 
   code {

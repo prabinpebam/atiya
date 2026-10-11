@@ -3,6 +3,7 @@ import Example from '../library/Example.astro';
 import IconButton from '../components/fundamentals/IconButton.astro';
 import Image from '../components/fundamentals/Image.astro';
 import { sample } from '../design/samples';
+import { sizes } from '../design/responsive';
 
 const p = sample('waterfall');
 ---
@@ -34,7 +35,7 @@ const p = sample('waterfall');
 
 <Example title="On a picture" layout="block" description="The overlay variant keeps its own dark surface, so it reads on any picture.">
   <div class="demo-over">
-    <Image src={p.src} srcset={p.srcset} sizes="40rem" alt={p.alt} width={p.width} height={p.height} ratio="16/9" />
+    <Image src={p.src} srcset={p.srcset} sizes={sizes('measure')} alt={p.alt} width={p.width} height={p.height} ratio="16/9" />
     <span class="demo-buttons">
       <IconButton label="Previous picture" icon="chevron-left" variant="overlay" size="lg" tooltip="top" />
       <IconButton label="Next picture" icon="chevron-right" variant="overlay" size="lg" tooltip="top" />

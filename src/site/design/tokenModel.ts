@@ -25,6 +25,8 @@ export interface Token {
   fluidMin?: unknown;
   /** A number's CSS unit, from `$extensions["site.unit"]` (tracking in em). */
   unit?: string;
+  /** Its `$extensions`, as written (e.g. `site.sizes`: a picture width scripts may read, through responsive.ts). */
+  extensions?: Record<string, unknown>;
 }
 
 export interface Model {
@@ -96,6 +98,7 @@ export function flatten(tree: Json, path: string[] = [], type = ''): Token[] {
         description: typeof node.$description === 'string' ? node.$description : '',
         fluidMin: isObj(ext['site.fluid']) ? (ext['site.fluid'] as Json).min : undefined,
         unit: typeof ext['site.unit'] === 'string' ? (ext['site.unit'] as string) : undefined,
+        extensions: isObj(node.$extensions) ? (node.$extensions as Record<string, unknown>) : undefined,
       });
     } else out.push(...flatten(node, p, t));
   }

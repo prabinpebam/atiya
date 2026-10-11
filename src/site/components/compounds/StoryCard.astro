@@ -15,6 +15,7 @@ import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
 import Tag from '../fundamentals/Tag.astro';
 import { PICTURE_SPECS } from '../../design/pictures';
+import { sizes } from '../../design/responsive';
 
 interface Props {
   /** The story’s address. */
@@ -48,7 +49,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
           <Image
             src={picture.src}
             srcset={picture.srcset}
-            sizes={variant === 'feature' ? '(max-width: 56rem) 92vw, 50vw' : variant === 'row' ? '(max-width: 40rem) 6rem, 11rem' : '(max-width: 40rem) 92vw, (max-width: 72rem) 46vw, 30vw'}
+            sizes={variant === 'feature' ? sizes(['md', '92vw'], '50vw') : variant === 'row' ? sizes(['sm', 'story-card-row-picture-compact'], 'story-card-row-picture') : sizes(['sm', '92vw'], ['lg', '46vw'], '30vw')}
             alt={picture.alt}
             width={picture.width}
             height={picture.height}
@@ -96,7 +97,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
 
   /* a line of a list: the words first, the picture at the end of the row */
   .card[data-variant='row'] {
-    grid-template-columns: minmax(0, 1fr) var(--c-index-row-picture);
+    grid-template-columns: minmax(0, 1fr) var(--c-story-card-row-picture);
     gap: var(--space-8);
     padding-block-start: var(--space-6);
     border-block-start: var(--border-hairline) solid var(--color-rule);
@@ -132,13 +133,13 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
 
   @media (hover: hover) {
     .card:hover .zoom {
-      transform: scale(1.02);
+      transform: scale(var(--scale-zoom));
     }
   }
 
   /* touch: the card answers the press */
   .card:has(.title:active) .zoom {
-    transform: scale(0.99);
+    transform: scale(var(--scale-press-large));
   }
 
   .words {
@@ -169,9 +170,9 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
   @media (hover: hover) {
     .card:hover .title {
       text-decoration: underline;
-      text-decoration-thickness: var(--border-strong);
+      text-decoration-thickness: var(--underline-thickness-strong);
       text-decoration-color: var(--color-highlight);
-      text-underline-offset: 0.12em;
+      text-underline-offset: var(--underline-offset);
     }
   }
 
@@ -194,7 +195,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
 
   @media (max-width: 40rem) {
     .card[data-variant='row'] {
-      grid-template-columns: minmax(0, 1fr) var(--c-index-row-picture-compact);
+      grid-template-columns: minmax(0, 1fr) var(--c-story-card-row-picture-compact);
       gap: var(--space-5);
     }
   }

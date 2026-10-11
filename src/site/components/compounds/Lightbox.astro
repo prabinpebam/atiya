@@ -192,7 +192,7 @@ const { id = 'site-lightbox' } = Astro.props;
 
   @keyframes drift {
     50% {
-      transform: translate3d(var(--space-8), calc(var(--space-6) * -1), 0) scale(1.04);
+      transform: translate3d(var(--space-8), calc(var(--space-6) * -1), 0) scale(var(--c-lightbox-drift-scale));
     }
   }
 

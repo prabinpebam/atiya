@@ -46,7 +46,7 @@ h3 {
 
 a {
   color: var(--surface-link);
-  text-underline-offset: 0.15em;
+  text-underline-offset: var(--underline-offset);
 }
 
 :focus-visible {
@@ -103,7 +103,7 @@ a {
   flex: none;
   width: 1em;
   height: 1em;
-  vertical-align: -0.125em;
+  vertical-align: var(--c-icon-shift);
   overflow: visible;
 }
 

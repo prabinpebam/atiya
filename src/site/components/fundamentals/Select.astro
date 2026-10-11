@@ -20,6 +20,7 @@
  * @key Escape: closes the list without choosing
  */
 import { svgOf, type IconName } from '../../design/icons';
+import { describedBy, initialIndex } from '../../scripts/listbox';
 
 export interface SelectOption {
   value: string;
@@ -61,10 +62,9 @@ interface Props {
 }
 
 const { label, options, value, placeholder, name, id = `select-${Math.random().toString(36).slice(2, 8)}`, hint, error, disabled = false, hideLabel = false, size = 'md', trigger = 'field', align = 'start', ...rest } = Astro.props;
-const selectedIndex = Math.max(-1, options.findIndex((o) => o.value === value));
-const chosen = selectedIndex >= 0 ? options[selectedIndex] : placeholder ? null : options[0];
-const chosenIndex = chosen ? options.indexOf(chosen) : -1;
-const described = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
+const chosenIndex = initialIndex(options.map((o) => o.value), value, placeholder);
+const chosen = chosenIndex >= 0 ? options[chosenIndex] : null;
+const described = describedBy(id, hint, error);
 const check = svgOf('check');
 const caret = svgOf('chevron-down');
 const iconOf = (n?: IconName) => (n ? svgOf(n) : null);
@@ -279,7 +279,7 @@ const chosenIcon = iconOf(chosen?.icon);
     box-shadow: var(--shadow-md);
     visibility: hidden;
     opacity: 0;
-    transform: translateY(calc(var(--space-2) * -1)) scale(0.98);
+    transform: translateY(calc(var(--space-2) * -1)) scale(var(--scale-enter-from));
     transform-origin: top center;
     transition:
       opacity var(--duration-fast) var(--ease-exit),
@@ -424,169 +424,7 @@ const chosenIcon = iconOf(chosen?.icon);
 
 <script>
   import { each } from '../../scripts/page';
-  import { keyAction, matchIndex, TYPEAHEAD_MS } from '../../scripts/listbox';
+  import { setupSelect } from '../../scripts/select';
 
-  function init(root: HTMLElement, signal: AbortSignal) {
-    if (root.dataset.ready) return;
-    root.dataset.ready = '';
-    const combo = root.querySelector<HTMLElement>('[data-combo]')!;
-    const list = root.querySelector<HTMLElement>('[data-list]')!;
-    const options = [...root.querySelectorAll<HTMLElement>('[data-option]')];
-    const input = root.querySelector<HTMLInputElement>('[data-input]');
-    const valueText = root.querySelector<HTMLElement>('[data-value-text]')!;
-    const labels = options.map((o) => o.dataset.label ?? '');
-    let open = false;
-    let active = options.findIndex((o) => o.getAttribute('aria-selected') === 'true');
-    let typed = '';
-    let typedAt = 0;
-
-    const usable = (i: number) => i >= 0 && options[i]?.getAttribute('aria-disabled') !== 'true';
-
-    function setActive(i: number) {
-      active = i;
-      options.forEach((o, k) => o.toggleAttribute('data-active', k === i));
-      if (open && i >= 0) {
-        combo.setAttribute('aria-activedescendant', options[i].id);
-        options[i].scrollIntoView({ block: 'nearest' });
-      } else combo.removeAttribute('aria-activedescendant');
-    }
-
-    // the list opens in the top layer where the browser has one (the Popover API): no dialog or scrolling
-    // panel around the select can clip it; elsewhere it opens in place
-    const layered = typeof list.showPopover === 'function' && list.hasAttribute('popover') && CSS.supports('selector(:popover-open)');
-    const MARGIN = 16;
-
-    /** Places the open list against its button: below it, or above when there's more room there; in the window. */
-    function position() {
-      const r = combo.getBoundingClientRect();
-      const below = innerHeight - r.bottom;
-      const above = r.top;
-      const up = below < list.scrollHeight + MARGIN && above > below;
-      if (up) root.dataset.placement = 'top';
-      else root.removeAttribute('data-placement');
-      if (!layered) return;
-      list.style.setProperty('--list-width', `${r.width}px`);
-      list.style.setProperty('--list-room', `${Math.max(0, (up ? above : below) - MARGIN * 2)}px`);
-      const w = list.offsetWidth;
-      const left = root.dataset.align === 'end' ? r.right - w : r.left;
-      list.style.setProperty('--list-left', `${Math.max(MARGIN / 2, Math.min(left, innerWidth - w - MARGIN / 2))}px`);
-      list.style.setProperty('--list-top', `${up ? r.top - list.offsetHeight : r.bottom}px`);
-    }
-
-    function place() {
-      // shown again on each opening, so it's over whatever opened since (a modal dialog, the header)
-      if (layered) {
-        if (list.matches(':popover-open')) list.hidePopover();
-        list.showPopover();
-      }
-      position();
-    }
-
-    if (layered) {
-      document.addEventListener('scroll', () => open && position(), { capture: true, passive: true, signal });
-      addEventListener('resize', () => open && position(), { signal });
-      // once it has faded out, it leaves the top layer
-      list.addEventListener('transitionend', () => !open && list.matches(':popover-open') && list.hidePopover(), { signal });
-      signal.addEventListener('abort', () => list.matches(':popover-open') && list.hidePopover());
-    }
-
-    function setOpen(o: boolean) {
-      if (combo.getAttribute('aria-disabled') === 'true') return;
-      open = o;
-      combo.setAttribute('aria-expanded', String(o));
-      // placed (and, in the top layer, shown) before it's marked open, so it fades in from its closed look
-      if (o) place();
-      root.toggleAttribute('data-open', o);
-      setActive(o ? active : -1);
-      if (!o) active = options.findIndex((x) => x.getAttribute('aria-selected') === 'true');
-    }
-
-    function choose(i: number) {
-      if (!usable(i)) return;
-      const prev = options.findIndex((x) => x.getAttribute('aria-selected') === 'true');
-      options.forEach((o, k) => o.setAttribute('aria-selected', String(k === i)));
-      const o = options[i];
-      valueText.textContent = o.dataset.label ?? '';
-      valueText.classList.remove('placeholder');
-      const icon = o.querySelector('.option-icon');
-      const shown = root.querySelector('[data-value-icon]');
-      if (icon && shown) {
-        shown.setAttribute('viewBox', icon.getAttribute('viewBox') ?? '');
-        shown.setAttribute('data-icon', icon.getAttribute('data-icon') ?? '');
-        shown.innerHTML = icon.innerHTML;
-      }
-      active = i;
-      if (prev === i) return;
-      if (input) {
-        input.value = o.dataset.value ?? '';
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      root.dispatchEvent(new CustomEvent('select-change', { bubbles: true, detail: { value: o.dataset.value } }));
-    }
-
-    combo.addEventListener('click', () => setOpen(!open));
-    combo.addEventListener('keydown', (e) => {
-      const act = keyAction(e, { open, active, count: options.length });
-      switch (act.type) {
-        case 'none':
-          return;
-        case 'open':
-          e.preventDefault();
-          setOpen(true);
-          setActive(act.active);
-          return;
-        case 'move':
-          e.preventDefault();
-          setActive(act.active);
-          return;
-        case 'commit':
-          if (act.keepFocus) e.preventDefault();
-          choose(act.active);
-          setOpen(false);
-          return;
-        case 'close':
-          e.preventDefault();
-          setOpen(false);
-          return;
-        case 'type': {
-          const now = performance.now();
-          typed = now - typedAt > TYPEAHEAD_MS ? act.char : typed + act.char;
-          typedAt = now;
-          const i = matchIndex(labels, typed, active);
-          if (i < 0) return;
-          if (!open) setOpen(true);
-          setActive(i);
-        }
-      }
-    });
-    combo.addEventListener('blur', (e) => {
-      if (!open) return;
-      const to = (e as FocusEvent).relatedTarget as Node | null;
-      if (to && list.contains(to)) return;
-      setOpen(false);
-    });
-    options.forEach((o, i) => {
-      o.addEventListener('pointermove', () => open && usable(i) && active !== i && setActive(i));
-      // keep focus on the combobox while the pointer is down on an option
-      o.addEventListener('pointerdown', (e) => e.preventDefault());
-      o.addEventListener('click', () => {
-        if (!usable(i)) return;
-        choose(i);
-        setOpen(false);
-        combo.focus();
-      });
-    });
-    list.addEventListener('pointerdown', (e) => e.preventDefault());
-    document.addEventListener('pointerdown', (e) => {
-      if (open && !root.contains(e.target as Node)) setOpen(false);
-    }, { signal });
-    // set from outside (the theme switch shows the saved theme): no change event if it's already chosen
-    root.addEventListener('select-set', (e) => {
-      const i = options.findIndex((o) => o.dataset.value === (e as CustomEvent<{ value: string }>).detail.value);
-      if (i >= 0) choose(i);
-    });
-    root.dispatchEvent(new CustomEvent('select-ready', { bubbles: true }));
-  }
-
-  each<HTMLElement>('[data-select]', init);
+  each<HTMLElement>('[data-select]', setupSelect);
 </script>

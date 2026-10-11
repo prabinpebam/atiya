@@ -1,7 +1,8 @@
 /**
  * The custom select's keyboard model (docs: documentation/site-ui/design-system.md §2, §7): the WAI-ARIA
  * APG "select-only combobox" (https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
- * Pure: the component's script turns keys into actions with it, then moves the DOM.
+ * Pure: the component's script (`select.ts`) turns keys into actions with it, places the list with it, then
+ * moves the DOM.
  */
 
 export type ListAction =
@@ -101,3 +102,53 @@ export function matchIndex(labels: string[], typed: string, from: number): numbe
 
 /** How long the typed string is kept between keys (ms). */
 export const TYPEAHEAD_MS = 600;
+
+/** What's been typed so far, and when the last key came (ms). */
+export interface Typed {
+  text: string;
+  at: number;
+}
+
+/** The typeahead's string after a key at `now`: started again after a pause longer than TYPEAHEAD_MS. */
+export function typeahead(prev: Typed, char: string, now: number): Typed {
+  return { text: now - prev.at > TYPEAHEAD_MS ? char : prev.text + char, at: now };
+}
+
+/**
+ * The option chosen when the select is drawn: the one whose value is `value`; failing that, none if
+ * there's a placeholder to show, else the first. -1 when none.
+ */
+export function initialIndex(values: readonly string[], value?: string, placeholder?: string): number {
+  const i = values.indexOf(value as string);
+  if (value !== undefined && i >= 0) return i;
+  return placeholder || values.length === 0 ? -1 : 0;
+}
+
+/** The combobox's aria-describedby: its hint's and its error's ids, or nothing. */
+export function describedBy(id: string, hint?: string, error?: string): string | undefined {
+  return [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
+}
+
+/** How far the open list keeps from the window's edges (px); half of it at the sides. */
+export const LIST_MARGIN = 16;
+
+/** Whether the list opens above its button: there isn't room for it below, and there's more above. */
+export function opensUp(below: number, above: number, listHeight: number, margin = LIST_MARGIN): boolean {
+  return below < listHeight + margin && above > below;
+}
+
+/** The height the open list may take: the room on its side, less a margin at each end. */
+export function listRoom(up: boolean, above: number, below: number, margin = LIST_MARGIN): number {
+  return Math.max(0, (up ? above : below) - margin * 2);
+}
+
+/** The open list's left edge: lined up with its button's start or end, kept inside the window. */
+export function listLeft(button: { left: number; right: number }, width: number, alignEnd: boolean, viewport: number, margin = LIST_MARGIN): number {
+  const left = alignEnd ? button.right - width : button.left;
+  return Math.max(margin / 2, Math.min(left, viewport - width - margin / 2));
+}
+
+/** The open list's top edge (before the CSS gap): under its button, or its own height over it. */
+export function listTop(up: boolean, button: { top: number; bottom: number }, height: number): number {
+  return up ? button.top - height : button.bottom;
+}
