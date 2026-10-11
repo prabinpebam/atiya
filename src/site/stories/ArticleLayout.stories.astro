@@ -54,7 +54,7 @@ const pictures = SAMPLES.map((s) => ({ ...s, caption: s.caption }));
     In the dark, the paper turns to charcoal and the indigo lifts to a lavender that still reads at 8.5:1. Nothing is designed twice: each colour is a pair, and the browser picks the half that fits.
   </p>
 
-  <Quote variant="pull" cite="The design system’s first rule" width="wide">Pictures carry this site, so every one is given the space and the care of a printed plate.</Quote>
+  <Quote variant="pull" cite="The design system’s first rule" width="content">Pictures carry this site, so every one is given the space and the care of a printed plate.</Quote>
 
   <h2 id="pictures">Pictures, given room</h2>
   <p>
@@ -62,7 +62,7 @@ const pictures = SAMPLES.map((s) => ({ ...s, caption: s.caption }));
   </p>
   <Gallery items={pictures.slice(0, 5)} layout="mosaic" caption="Five views of the planet: the plaza, the workshop, the pond, the waterfall and the bridge." lightbox="article" width="full" />
   <p>A carousel does the same job in less space, for a set you browse rather than study.</p>
-  <Carousel items={pictures} label="The planet, in seven pictures" lightbox="tour" peek width="content" />
+  <Carousel items={pictures} label="The planet, in seven pictures" lightbox="tour" peek width="wide" />
 
   <h2 id="moving-pictures">Moving pictures</h2>
   <p>Video plays in place, at its own size, with its captions, and nothing starts on its own.</p>
