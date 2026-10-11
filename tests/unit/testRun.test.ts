@@ -145,9 +145,11 @@ describe('judging a run', () => {
     expect(healthOf(r, { now: T0 + 3_000_001, alive: false }).state).toBe('failed');
   });
 
-  it('time left adds each unfinished test at its usual time', () => {
+  it('time left adds each unfinished test at its usual time, and says nothing without anything to go on', () => {
     const r = running();
     expect(timeLeft(r, new Map([['a', 10_000], ['b', 20_000]]), T0 + 6000)).toBe(5000 + 20_000);
+    expect(timeLeft(r, new Map([['a', 10_000]]), T0 + 6000)).toBeUndefined();
+    expect(timeLeft(r, new Map(), T0 + 6000)).toBeUndefined();
     expect(usualTimes([foldRun([begin('a'), { t: T0, type: 'test-begin', id: 'a', retry: 0 }, { t: T0 + 1, type: 'test-end', id: 'a', status: 'passed', expected: 'passed', retry: 0, duration: 7 }])]).get('a')).toBe(7);
   });
 
@@ -156,5 +158,18 @@ describe('judging a run', () => {
     expect(areaOf('tests\\e2e\\editor-access.spec.ts')).toBe('Edit mode: private pages');
     expect(clock(161_000)).toBe('2:41');
     expect(clock(3_723_000)).toBe('1:02:03');
+  });
+});
+
+describe('the live reporter', () => {
+  it("reads a test's own time limit from its body, which Playwright doesn't tell reporters", async () => {
+    const { declaredTimeout } = await import('../reporters/live');
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const file = join(mkdtempSync(join(tmpdir(), 'live-')), 'a.spec.ts');
+    writeFileSync(file, ["test('slow', async () => {", '  // a long sequence', '  test.setTimeout(300_000);', '});', "test('quick', async () => {", '  await go();', '});'].join('\n'));
+    expect(declaredTimeout(file, 1, 60_000)).toBe(300_000);
+    expect(declaredTimeout(file, 5, 60_000)).toBe(60_000);
   });
 });

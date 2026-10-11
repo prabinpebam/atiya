@@ -294,16 +294,18 @@ export function usualTimes(history: RunState[]): Map<string, number> {
   return new Map([...all].map(([id, xs]) => [id, median(xs)!]));
 }
 
-/** Time left: each test not finished at its usual time (or this run's median), the running ones less what they've had. */
+/** Time left: each test not finished at its usual time (or this run's median), the running ones less what they've had; unknown until there's something of its own to go on. */
 export function timeLeft(run: RunState, usual: Map<string, number>, now: number): number | undefined {
   const tests = run.order.map((id) => run.tests[id]);
-  const fallback = median(tests.filter((t) => t.status === 'passed' && t.duration).map((t) => t.duration!)) ?? median([...usual.values()]);
-  if (fallback === undefined) return undefined;
+  const fallback = median(tests.filter((t) => t.status === 'passed' && t.duration).map((t) => t.duration!));
   let left = 0;
   for (const t of tests) {
     const each = usual.get(t.id) ?? fallback;
-    if (t.status === 'queued' || t.status === 'retrying') left += each;
-    else if (t.status === 'running') left += Math.max(0, each - (now - (t.start ?? now)));
+    if (t.status !== 'queued' && t.status !== 'retrying' && t.status !== 'running') continue;
+    // a test with no history, in a run with nothing finished yet: no honest estimate
+    if (each === undefined) return undefined;
+    if (t.status === 'running') left += Math.max(0, each - (now - (t.start ?? now)));
+    else left += each;
   }
   return left;
 }

@@ -12,7 +12,7 @@
  * says who started it and why. A run started without it gets a folder of its own, "started by: unknown".
  */
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestError, TestResult, TestStep } from '@playwright/test/reporter';
-import { appendFileSync, existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { cpus } from 'node:os';
 import { join, relative } from 'node:path';
 import { RunFolder, type ErrorInfo, type RunEvent } from '../../src/site/editor/model/testRun.ts';
@@ -42,6 +42,30 @@ export function writeJson(file: string, value: unknown) {
 
 const errorOf = (e: TestError | undefined): ErrorInfo | undefined =>
   e && { message: plain(e.message ?? e.value ?? 'Error'), ...(e.snippet ? { snippet: plain(e.snippet) } : {}), ...(e.location ? { file: relative(ROOT, e.location.file).split('\\').join('/'), line: e.location.line } : {}) };
+
+/**
+ * A test's real time limit: the configured one, unless its body raises it (`test.setTimeout(150_000)`), which
+ * Playwright doesn't tell reporters; read from the test's source, between its line and the next test.
+ */
+const sources = new Map<string, string[]>();
+export function declaredTimeout(file: string, line: number, configured: number): number {
+  let lines = sources.get(file);
+  if (!lines) {
+    try {
+      lines = readFileSync(file, 'utf8').split(/\r?\n/);
+    } catch {
+      lines = [];
+    }
+    sources.set(file, lines);
+  }
+  for (let i = line; i < lines.length && i < line + 400; i++) {
+    const m = /test\.setTimeout\(\s*([\d_]+)\s*\)/.exec(lines[i]);
+    if (m) return Number(m[1].replace(/_/g, ''));
+    // the next test (or group) begins: this one didn't raise its limit
+    if (/^\s*test(\.(only|skip|fixme|describe))?\(/.test(lines[i])) break;
+  }
+  return configured;
+}
 
 export default class LiveReporter implements Reporter {
   readonly dir: string;
@@ -109,7 +133,7 @@ export default class LiveReporter implements Reporter {
       file: relative(ROOT, t.location.file).split('\\').join('/'),
       path: t.titlePath().slice(3),
       line: t.location.line,
-      timeout: t.timeout,
+      timeout: declaredTimeout(t.location.file, t.location.line, t.timeout),
       retries: t.retries,
     }));
     this.emit({ t: Date.now(), type: 'begin', tests });
