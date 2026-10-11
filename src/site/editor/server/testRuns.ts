@@ -264,7 +264,7 @@ export function viewOf(run: RunListing, runs: RunListing[], now = Date.now()): R
     asOf: now,
     health,
     counts: countsOf(tests),
-    ...(state && run.active ? { left: timeLeft(state, usual, now) } : {}),
+    ...(state && run.active && state.phase === 'tests' ? { left: timeLeft(state, usual, now) } : {}),
     summary: state ? summaryOf(state, baseline, state.phase === 'done' ? state.updatedAt : now).sentence : '',
     phase: state?.phase ?? 'unknown',
     ...(() => {

@@ -54,6 +54,8 @@ export default defineConfig({
             url: `http://localhost:${PORT}/`,
             timeout: 240_000,
             reuseExistingServer: !process.env.CI,
+            // the server's own lines (the test build's progress) reach the console, so the Tests screen can say what it's doing while it gets ready
+            stdout: 'pipe',
           },
         ]
       : []),
@@ -64,6 +66,8 @@ export default defineConfig({
             url: `http://localhost:${EDITOR_PORT}/_edit/`,
             timeout: 240_000,
             reuseExistingServer: !process.env.CI,
+            // the server's own lines (the test build's progress) reach the console, so the Tests screen can say what it's doing while it gets ready
+            stdout: 'pipe',
           },
         ]
       : []),
