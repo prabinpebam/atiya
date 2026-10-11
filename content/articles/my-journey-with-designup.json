@@ -302,5 +302,9 @@
   "hero": {
     "media": "articles/my-journey-with-designup/media8-mp4-snapshot-00-00-643-2",
     "showCaption": false
+  },
+  "thumbnail": "articles/my-journey-with-designup/colorful-geometric-arrow-cluster",
+  "thumbnailStyle": {
+    "rounded": false
   }
 }
