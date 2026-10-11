@@ -144,5 +144,13 @@
   ],
   "navLabel": "Defining Microsoft Family",
   "seo": {},
-  "publishedAt": "2026-10-11"
+  "publishedAt": "2026-10-11",
+  "thumbnail": "articles/defining-microsoft-family/pasted-picture-2026-10-11",
+  "hero": {
+    "media": "articles/defining-microsoft-family/pasted-picture-2026-10-11",
+    "display": "fit"
+  },
+  "thumbnailStyle": {
+    "rounded": false
+  }
 }
