@@ -1066,9 +1066,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       if (items.some((it) => (it.subtext?.length ?? 0) > 160)) return issue('Keep each subtext to 160 characters.');
       const layout = (val('layout') || 'tiles') as Extract<Block, { type: 'collection' }>['layout'];
       const headings = val('headings') === 'title' ? ({ headings: 'title' } as const) : {};
+      const heading = val('heading').trim();
+      if (heading.length > 80) return issue('Keep the collection heading to 80 characters.');
       const width = startWidth(layout);
       close();
-      return insertBlock(insertAt, { type: 'collection', layout, items, ...headings, ...(width ? { width } : {}) });
+      return insertBlock(insertAt, { type: 'collection', layout, items, ...headings, ...(heading ? { heading } : {}), ...(width ? { width } : {}) });
     }
     if (kind === 'carousel') {
       if (!val('label')) return issue('Name the carousel.');

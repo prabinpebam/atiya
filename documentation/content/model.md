@@ -321,6 +321,8 @@ Hub pages in the site structure use the same blocks for their sections, plus a `
 
 A collection is a set of items of one shape, whatever they're about: a story's facts, its brief, the features of a project, a few places with their pictures, a career. Its content and its layout are separate, so any collection can be shown any way, and changed at any time.
 
+**Optional collection header.** `heading` supplies a plain-text header for the whole collection (one to 80 characters), separate from the items' headings. It renders above the items as a level-three heading. `showHeading: false` hides it without discarding its words; without a heading, existing collections render unchanged. A visible header also names a scrolling collection for assistive tech; otherwise its `label` or default name is used. Turning a collection into text preserves its visible header as a heading.
+
 - **An item** has four parts, each optional, and at least one: a `heading` (a word or a few, at most 80 characters), a picture (`media`, an image media ID), a `subtext` (a short line under the heading: a value, a date, a role; at most 160 characters) and its words (`text`: paragraphs and lists, at most six of them, of the Markdown subset: bold, italic, strikethrough, code, links, and lists that nest; a blank line starts the next. They're set as compact prose, the article's own paragraphs and lists at the interface's size and the reading line height). It can also say when it was (`when`: words, not a date, such as `2016` or `July 2019 to now`; at most 40 characters), which a timeline sets by the item's mark and the other layouts show over its heading; a time alone isn't an item.
 - **Its layout** (`layout`) is one of:
 

@@ -144,6 +144,7 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
               <Heading level={3} size="ui" id="insert-layout-title">
                 Layout and headings
               </Heading>
+              <TextField label="Collection heading" name="heading" maxlength={80} optional hint="A header above all items, up to 80 characters." />
               <div class="pair">
                 <Select label="Layout" name="layout" value="tiles" options={LAYOUT_CHOICES} />
                 <Select label="Headings" name="headings" value="label" options={HEADING_CHOICES} />

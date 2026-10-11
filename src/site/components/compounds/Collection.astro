@@ -23,6 +23,7 @@
  * @key Enter or Space: on Previous or Next, scrolls the strip by a view
  */
 import Image from '../fundamentals/Image.astro';
+import Heading from '../fundamentals/Heading.astro';
 import Prose from '../fundamentals/Prose.astro';
 import IconButton from '../fundamentals/IconButton.astro';
 import { collectionView, itemBody } from '../../scripts/collection';
@@ -60,6 +61,10 @@ export interface CollectionItem {
 }
 
 interface Props {
+  /** Optional plain-text header for the whole collection, rendered as a level-three heading. */
+  heading?: string;
+  /** Show the header when its words are set; false hides it without discarding them. */
+  showHeading?: boolean;
   /** The items, in reading order. */
   items: CollectionItem[];
   /** How they're laid out. */
@@ -92,6 +97,7 @@ const { items, layout = 'tiles', headings = 'label', ratio, background = false, 
 const { columns, prominent, shown, strip, timeline, label, width, peek, pictureSizes } = collectionView({ ...Astro.props, count: items.length, layout });
 // always declared (content too), as a figure does: the article spaces it apart as a block, not as a line of text
 const breakout = width;
+const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() : undefined;
 ---
 
 <div
@@ -102,12 +108,13 @@ const breakout = width;
   data-breakout={breakout}
   role={strip ? 'region' : undefined}
   aria-roledescription={layout === 'carousel' ? 'carousel' : undefined}
-  aria-label={strip ? label : undefined}
+  aria-label={strip ? heading || label : undefined}
   data-collection
   data-collection-strip={strip ? '' : undefined}
   data-peek={peek ? '' : undefined}
   data-prominent={prominent ? '' : undefined}
 >
+  {heading && <header class="collection-header"><Heading level={3}>{heading}</Heading></header>}
   <div class="items" role="list" tabindex={strip ? '0' : undefined} data-scrollbar={strip ? '' : undefined} data-collection-track={strip ? '' : undefined}>
     {
       items.map((item) => {
@@ -161,6 +168,10 @@ const breakout = width;
 </div>
 
 <style>
+  .collection-header {
+    margin-bottom: var(--space-6);
+  }
+
   .items {
     padding: 0;
     list-style: none;

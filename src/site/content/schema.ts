@@ -232,6 +232,10 @@ export const block = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('divider') }),
   z.strictObject({
     type: z.literal('collection'),
+    /** Optional plain-text header for the whole collection, separate from its item headings. */
+    heading: z.string().trim().min(1).max(80).optional(),
+    /** Hide the header without discarding its words. Shown when a heading is set unless false. */
+    showHeading: z.boolean().optional(),
     items: z.array(collectionItem).min(1).max(COLLECTION_MAX),
     /** How the items are laid out: any layout shows the same items. */
     layout: z.enum(COLLECTION_LAYOUTS),

@@ -299,6 +299,20 @@ test.describe('editor', () => {
     await expect(frame(page).locator('[data-collection]').last().locator('.item').first().locator('img')).toHaveCount(1);
     // another layout, the same items: rows, which take no number of columns (that field goes)
     const settings = page.locator(`[data-block-form="${count}"]`);
+    await settings.getByLabel(/^Collection heading/).fill('My role in this project');
+    await settings.getByLabel(/^Collection heading/).blur();
+    await saved(page);
+    await expect(shown.getByRole('heading', { name: 'My role in this project' })).toBeVisible();
+    await settings.getByRole('switch', { name: 'Show collection heading' }).uncheck();
+    await saved(page);
+    await expect(shown.getByRole('heading', { name: 'My role in this project' })).toHaveCount(0);
+    expect(readJson(articleFile()).body.at(-1)).toMatchObject({ heading: 'My role in this project', showHeading: false });
+    await settings.getByRole('switch', { name: 'Show collection heading' }).check();
+    await saved(page);
+    await expect(shown.getByRole('heading', { name: 'My role in this project' })).toBeVisible();
+    await page.reload();
+    await expect(frame(page).locator('[data-collection]').last().getByRole('heading', { name: 'My role in this project' })).toBeVisible();
+    await page.locator(`[data-editor-select="${count}"]`).click();
     await expect(settings.getByRole('combobox', { name: 'Columns' })).toHaveCount(1);
     await settings.getByRole('combobox', { name: 'Layout' }).click();
     await page.getByRole('option', { name: /^Rows/ }).click();

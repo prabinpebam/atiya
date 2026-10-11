@@ -232,6 +232,17 @@ describe('turning text into another kind, any time', () => {
     ]);
   });
 
+  it('accepts optional collection headers and preserves visible ones when turning into text', () => {
+    const collection: Block = { type: 'collection', layout: 'tiles', heading: 'My role', items: [{ text: 'Led the team.' }] };
+    expect(block.parse(collection)).toEqual(collection);
+    expect(block.parse({ ...collection, heading: ' My role ' })).toMatchObject({ heading: 'My role' });
+    expect(block.safeParse({ ...collection, heading: ' ' }).success).toBe(false);
+    expect(block.safeParse({ ...collection, heading: 'x'.repeat(81) }).success).toBe(false);
+    expect(ops.collectionToText(collection)).toEqual([h('My role', 3), para('Led the team.')]);
+    expect(ops.collectionToText({ ...collection, showHeading: false })).toEqual([para('Led the team.')]);
+    expect(block.safeParse({ type: 'collection', layout: 'rows', items: [{ text: 'Unchanged.' }] }).success).toBe(true);
+  });
+
   it("offers every layout and heading style the contract has, in its order, and columns only where they're used", () => {
     expect(LAYOUT_CHOICES.map((c) => c.value)).toEqual([...COLLECTION_LAYOUTS]);
     expect(HEADING_CHOICES.map((c) => c.value)).toEqual([...COLLECTION_HEADINGS]);

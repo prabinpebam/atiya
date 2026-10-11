@@ -484,6 +484,8 @@ const STATUS: SelectOption[] = [
                   </div>
                   <section class="pane" data-section="layout" aria-labelledby={id(i, 's-layout')}>
                     <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-layout')}>Layout and width</Heading></div>
+                    <Switch label="Show collection heading" name={`body.${i}.showHeading`} id={id(i, 'show-heading')} checked={b.showHeading !== false} data-type="bool-default-true" />
+                    <TextField label="Collection heading" name={`body.${i}.heading`} id={id(i, 'collection-heading')} value={b.heading ?? ''} maxlength={80} optional hint="A header above all items, up to 80 characters. Separate from each item's heading." />
                     <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout} options={LAYOUT_CHOICES} hint="The same items, laid out another way: change it any time." data-refresh="" />
                     {TAKES_COLUMNS.has(b.layout) && (
                       <Select label="Columns" name={`body.${i}.columns`} id={id(i, 'columns')} value={b.columns ? String(b.columns) : ''} data-type="number" options={[{ value: '', label: 'By how many there are', description: 'One for one; three for three, six or more than four; else two' }, { value: '1', label: 'One', description: 'Each as wide as the collection' }, { value: '2', label: 'Two' }, { value: '3', label: 'Three' }, { value: '4', label: 'Four' }]} hint="On a wide screen; fewer on a tablet, one on a phone." />

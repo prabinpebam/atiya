@@ -34,6 +34,11 @@ const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }))
   <Collection layout="columns" items={facts} />
 </Example>
 
+<Example title="Optional collection header" layout="stack" description="A heading for the whole collection, separate from the item labels. Hide it without discarding its words; collections without a heading remain unchanged.">
+  <Collection heading="Project at a glance" items={facts} />
+  <Collection heading="Hidden collection header" showHeading={false} items={facts} />
+</Example>
+
 <Example title="Tiles: a story's brief" description="An even grid of cards, two to a row: a label over a sentence or two, or a list. The words can carry bold, italic, strikethrough, code and links, and lists can nest.">
   <Collection layout="tiles" width="popout" items={brief} />
 </Example>

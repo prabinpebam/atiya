@@ -318,13 +318,16 @@ export function asCollection(blocks: Block[]): { ok: true; block: Block } | { ok
  */
 export function collectionToText(b: Block): Block[] | null {
   if (b.type !== 'collection') return null;
-  return b.items.flatMap((i): Block[] => [
+  return [
+    ...(b.heading && b.showHeading !== false ? [{ type: 'heading', level: 3, text: b.heading } as Block] : []),
+    ...b.items.flatMap((i): Block[] => [
     ...(i.media ? [{ type: 'figure', media: i.media, width: 'content' } as Block] : []),
     ...(i.heading ? [{ type: 'heading', level: 3, text: i.heading } as Block] : []),
     ...(i.when ? [{ type: 'text', markdown: `**${i.when}**` } as Block] : []),
     ...(i.subtext ? [{ type: 'text', markdown: i.subtext } as Block] : []),
     ...(i.text ? paragraphsOf(i.text).map((markdown) => ({ type: 'text', markdown }) as Block) : []),
-  ]);
+    ]),
+  ];
 }
 
 /**
