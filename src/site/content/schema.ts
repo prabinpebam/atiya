@@ -6,6 +6,9 @@
  */
 import { z } from 'astro/zod';
 import { paragraphsOf, plainText } from './markdown';
+import { SUMMARY_MAX } from './limits';
+
+export { SUMMARY_MAX };
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'lowercase kebab-case');
 /** A media ID: its path under content/media/ without the extension. */
@@ -284,7 +287,7 @@ export const article = z.strictObject({
   slug: id,
   title: z.string().min(1),
   navLabel: z.string().optional(),
-  summary: z.string().min(1).max(160),
+  summary: z.string().min(1).max(SUMMARY_MAX),
   status: z.enum(['draft', 'factReview', 'editorialReview', 'approved', 'published', 'stale', 'archived']),
   visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
   publishedAt: isoDate.optional(),
@@ -301,7 +304,7 @@ export const article = z.strictObject({
   body: z.array(block),
   related: z.array(itemRef).max(3).optional(),
   topics: z.array(id).optional(),
-  seo: z.strictObject({ title: z.string().optional(), description: z.string().max(160).optional(), image: mediaId.optional(), noindex: z.boolean().optional() }).optional(),
+  seo: z.strictObject({ title: z.string().optional(), description: z.string().max(SUMMARY_MAX).optional(), image: mediaId.optional(), noindex: z.boolean().optional() }).optional(),
 });
 
 export const person = z.strictObject({

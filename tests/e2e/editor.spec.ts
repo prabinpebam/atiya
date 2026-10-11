@@ -894,6 +894,10 @@ test.describe('editor', () => {
     await summary.fill('x'.repeat(200));
     await summary.press('Tab');
     await expect(status(page)).toHaveText(/^Not saved/, { timeout: 15_000 });
+    // it says how long, and keeps what was typed to be shortened
+    await expect(status(page)).toContainText('The summary is 200 characters: keep it to 160.');
+    await expect(status(page)).not.toContainText("doesn't exist");
+    await expect(summary).toHaveValue('x'.repeat(200));
     expect(readJson(articleFile()).summary).toBe(before);
     await summary.fill('A shorter summary, set in the test.');
     await summary.press('Tab');

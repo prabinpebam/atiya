@@ -14,6 +14,7 @@ import { starterTable, textToTable } from '../model/table';
 import { applyTableOperation, type TableCell, type TableOperation } from '../model/tableGrid';
 import { LAYOUT_CHOICES, startWidth } from '../model/collection';
 import { followMove, followRemove, itemKey } from '../model/inspector';
+import { tooLong } from '../model/limits';
 import { applySections, chooseSection, followSection, initSections, revealField } from './inspector';
 import { initRichFields } from './richtext';
 import { richMarkdown } from '../model/richText';
@@ -538,6 +539,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         const f = m.field as 'title' | 'summary';
         const value = String(m.value ?? '').trim();
         if (!value) break;
+        // too long to save: say so on the field, and leave the words on the page to be shortened
+        const long = tooLong(f, value);
+        if (long) {
+          showIssues([{ file: state.key, path: f, message: long }]);
+          saveStatus.failed(`Not saved: ${long}`);
+          break;
+        }
         if (m.session !== textSession) {
           textSession = m.session as number;
           checkpoint();
@@ -706,6 +714,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       return change(ops.setPath(ops.setPath(doc, `${base}.columns`, parsed.columns), `${base}.rows`, parsed.rows), { canvas: true, outline: true });
     }
     const renders = t.name.startsWith('body.') || t.name.startsWith('hero.') || ['title', 'summary', 'publishedAt', 'kind'].includes(t.name);
+    // too long to save: say so on the field and keep what's typed in it
+    const long = typeof value === 'string' ? tooLong(t.name, value) : null;
+    if (long) {
+      bad(long);
+      return void saveStatus.failed(`Not saved: ${long}`);
+    }
     // a choice that changes which fields there are (a collection's layout) draws the settings again
     change(ops.setPath(doc, t.name, value), { canvas: renders, outline: t.name.startsWith('body.'), inspector: !!t.closest('[data-refresh]') });
   });

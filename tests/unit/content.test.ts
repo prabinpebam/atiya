@@ -363,6 +363,22 @@ describe('the loader checks what it is given', () => {
       expect((e as ContentError).issues).toContainEqual(expect.objectContaining({ file: 'content/articles/a.json', path: 'summary' }));
     }
   });
+
+  it('an article that fails its own check is reported once: the node placing it is not also "missing"', () => {
+    const article = base['/content/articles/a.json'];
+    const issues = (() => {
+      try {
+        loadContent({ ...base, '/content/articles/a.json': { ...article, summary: 'x'.repeat(161) } }, masters);
+        return [];
+      } catch (e) {
+        return (e as ContentError).issues;
+      }
+    })();
+    expect(issues.map((i) => i.path)).toEqual(['summary']);
+    // an article that really isn't there still is
+    const { ['/content/articles/a.json']: _gone, ...without } = base;
+    expect(problems(without).join('\n')).toMatch(/places article "a", which doesn't exist/);
+  });
 });
 
 describe('the content in content/', () => {

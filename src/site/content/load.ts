@@ -140,6 +140,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   let grants: GrantRecord[] = [];
   let message: AccessMessage | null = null;
   const articles = new Map<string, Article>();
+  // articles whose file is there but doesn't pass its own check: its issues say why, so a node placing one isn't "missing"
+  const invalidArticles = new Set<string>();
   const origins = new Map<string, Origin>();
   const people = new Map<string, Person>();
   const media = new Map<string, MediaRecord>();
@@ -166,6 +168,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     else if (file === '/private/access-message.json') message = parse(accessMessage, file, data) ?? null;
     else if ((m = /^\/(content|private)\/articles\/[^/]+\.json$/.exec(file))) {
       const a = parse(article, file, data);
+      if (!a) invalidArticles.add(name);
       if (a && a.id !== name) add(file, `id "${a.id}" must match the file name`, 'id');
       else if (a && articles.has(a.id)) add(file, `article "${a.id}" is in both content/ and private-pages/: an ID is unique across both (V24)`, 'id');
       else if (a) {
@@ -344,7 +347,11 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     for (const e of merged.errors) add(OVERLAY, e);
     warnings.push(...merged.warnings);
     const built = buildRoutes(merged.structure, lookup, merged.private);
-    for (const e of built.errors) add([...merged.private].some((id) => e.startsWith(`node ${id}:`)) ? OVERLAY : 'content/structures/site.json', e);
+    const missingOnlyAsInvalid = (e: string) => {
+      const m = /places article "([^"]+)", which doesn't exist$/.exec(e);
+      return !!m && invalidArticles.has(m[1]);
+    };
+    for (const e of built.errors) if (!missingOnlyAsInvalid(e)) add([...merged.private].some((id) => e.startsWith(`node ${id}:`)) ? OVERLAY : 'content/structures/site.json', e);
     routes = built.routes;
     for (const r of routes) if (r.node.kind === 'item') access.set(r.node.item.id, r.access);
     const placed = canonicalPaths(routes);
