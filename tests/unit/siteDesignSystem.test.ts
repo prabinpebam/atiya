@@ -544,6 +544,31 @@ describe('every component documents itself and has a story', () => {
     const orphans = walk(join(ROOT, 'src/site/stories'), /\.stories\.astro$/).map((f) => f.split(sep).pop()!.replace('.stories.astro', '')).filter((n) => !names.has(n));
     expect(orphans).toEqual([]);
   });
+
+  it('every story shows each choice a prop offers: every value of a union prop (or the prop says which story shows it, and that one does)', () => {
+    const storyOf = (name: string) => {
+      const p = join(ROOT, 'src/site/stories', `${name}.stories.astro`);
+      return existsSync(p) ? read(p) : '';
+    };
+    const shows = (s: string, v: string) => s.includes(`'${v}'`) || s.includes(`"${v}"`);
+    // HTML semantics, not a look: the element (as), a button's or field's type, and ARIA states scripts set
+    const SEMANTIC = /^(as|type|aria-[\w-]+)$/;
+    const missing: string[] = [];
+    for (const f of tierFiles) {
+      const own = storyOf(f.name);
+      if (!own) continue;
+      for (const p of propsOf(frontmatter(f.src)).props) {
+        const type = p.type.replace(/\s+/g, ' ').trim();
+        if (SEMANTIC.test(p.name) || !/^('[^']*' \| )+'[^']*'$/.test(type)) continue;
+        const def = p.default?.replace(/^['"]|['"]$/g, '');
+        // a prop passed on to another component may say where its choices are shown ("shown in Image")
+        const elsewhere = /\bshown in ([A-Z]\w+)/.exec(p.description ?? '')?.[1];
+        const s = elsewhere ? storyOf(elsewhere) : own;
+        for (const v of [...type.matchAll(/'([^']*)'/g)].map((m) => m[1])) if (v !== def && !shows(s, v)) missing.push(`${f.name}: ${p.name}="${v}"${elsewhere ? ` (said to be shown in ${elsewhere})` : ''}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
 });
 
 // ---------- copy and paths ----------
