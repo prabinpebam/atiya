@@ -172,6 +172,15 @@
       "group": "Site UI"
     },
     {
+      "path": "site-ui/design-system-review.md",
+      "title": "Design systems: maturity review and next steps",
+      "order": 20.76,
+      "icon": "workspace_premium",
+      "status": "planned",
+      "updated": "2026-10-11",
+      "group": "Site UI"
+    },
+    {
       "path": "content/spec.md",
       "title": "Content platform",
       "order": 20.8,
