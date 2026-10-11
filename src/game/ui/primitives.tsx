@@ -2,7 +2,7 @@
  * The game UI's controls (design-system.md §4.1): every button and key cap in the game is one of these,
  * so its anatomy (the `.btn` family in components.css), its accessible name and its states live in one
  * place. The containers the on-demand screens use (`Dialog`, `Panel`, `ScrollArea`) are in `overlays.tsx`.
- * These sit in the initial bundle, a few bytes under its 450 KB budget (scripts/size-report.mjs): keep
+ * These sit in the initial bundle, just under its 450 KB budget (scripts/size-report.mjs): keep
  * them tiny, and import nothing but React's runtime and `Icon`.
  */
 import type { ComponentPropsWithRef } from 'react';

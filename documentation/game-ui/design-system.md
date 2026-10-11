@@ -104,7 +104,7 @@ The game's TSX never writes a `<button>`, `<dialog>` or `<kbd>` itself: it uses 
 | `Panel` | ui/overlays.tsx | A wood panel: the `.surface-wood` backdrop (`backdrop` props, `outside` for what floats over it) round a modal `role="dialog"` `.inv-panel`. |
 | `ScrollArea` | ui/overlays.tsx | A scroller with the thin scrollbar (`.scroll-thin`), a `div` or a `ul`. |
 
-The controls sit in the initial bundle, so they import only `Icon`; they cost it about 0.1 KB gz, and on 11 October 2026 left it 6 bytes under its 450 KB budget. The containers are used only by the screens that load on demand, so they're a separate module that the initial bundle never imports.
+The controls sit in the initial bundle, so they import only `Icon`; they cost it about 0.1 KB gz, and on 11 October 2026 left it 6 bytes under its 450 KB budget, which the deploy's base-path build then crossed. A landmark's preview card and the lost-view notice now load with the reading overlay's chunk (`Dialogs.tsx`, through Hud's `Later`: when they're needed, or 2 s after start), since neither shows at load: the initial bundle is 449.6 KB, 432 bytes under. The containers are used only by the screens that load on demand, so they're a separate module that the initial bundle never imports.
 
 ## 5. Screen regions
 

@@ -7,9 +7,70 @@ import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
 import { Button, KeyCap } from './primitives';
 import { Dialog } from './overlays';
+import { focusLane, laneBeneath, overlayOpen } from './lanes';
 
 const toClassic = () => prefs.setMode('classic');
 const FROM = 'planet-frame';
+
+/**
+ * A landmark's preview card, near its building (spec §6). It loads with this chunk, as nothing shows it at
+ * load (Hud.tsx's `Later`). It owns the focus lane only when nothing ranks above it (a conversation, a seat,
+ * a target: lanes.ts); under a modal it stays mounted but hidden, so its Open button can take the focus back.
+ */
+export function PreviewCard({ controller }: { controller: GameController }) {
+  const nearbyId = useStore(controller.store, (s) => s.nearbyId);
+  const shown = useStore(controller.store, (s) => (focusLane(s) === 'preview' ? 'shown' : overlayOpen(s) && laneBeneath(s) === 'preview' ? 'hidden' : null));
+  // near a building, its list is fetched ahead, so Open shows it at once (documentation/sections/spec.md §6.7)
+  useEffect(() => {
+    if (!nearbyId || document.querySelector(`link[data-prefetch="${nearbyId}"]`)) return;
+    const l = document.createElement('link');
+    l.rel = 'prefetch';
+    l.href = withBase(`/play/${nearbyId}/`);
+    l.dataset.prefetch = nearbyId;
+    document.head.append(l);
+  }, [nearbyId]);
+  if (!nearbyId || !shown) return null;
+  const d = controller.dataById.get(nearbyId)!;
+  return (
+    <section className="card preview-card lane" hidden={shown === 'hidden'} aria-labelledby="preview-title" style={{ ['--accent' as string]: d.accent }} data-testid="preview-card">
+      <p className="kicker">{d.kicker}</p>
+      <h2 id="preview-title">{d.title}</h2>
+      <p>{d.summary}</p>
+      {d.pages.length === 0 && <p>It’s still being fitted out: its pages are on their way.</p>}
+      <div className="actions">
+        <Button variant="primary" onClick={(e) => controller.openLandmark(d.id, { invoker: e.currentTarget })}>
+          Open <KeyCap>E</KeyCap>
+        </Button>
+        <a className="btn" href={d.siteHref} onClick={toClassic}>
+          Open classic page <Icon icon={faArrowUpRightFromSquare} />
+        </a>
+      </div>
+    </section>
+  );
+}
+
+/** What shows if the 3D view is lost (the GPU dropped the canvas): reload, or go to the classic site. */
+export function ContextLost({ controller }: { controller: GameController }) {
+  const lost = useStore(controller.store, (s) => s.contextLost);
+  if (!lost) return null;
+  return (
+    <div className="overlay" role="alertdialog" aria-labelledby="ctx-title">
+      <div className="card center-card">
+        <h2 id="ctx-title" className="card-title">
+          The 3D view stopped working
+        </h2>
+        <div className="actions">
+          <Button variant="primary" onClick={() => location.reload()}>
+            Reload planet
+          </Button>
+          <a className="btn" href={controller.classicHref()} onClick={toClassic}>
+            Classic site
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** The site's theme (its own key: the game never imports the site), resolved to light or dark for the frame. */
 function siteScheme(): 'light' | 'dark' {

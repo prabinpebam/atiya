@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 
 type GameState = {
@@ -2576,7 +2577,9 @@ test.describe('planet', () => {
     await expect(card).toBeVisible();
     await expect(card.getByRole('heading', { name: 'Workshop' })).toBeVisible();
     await expect(card.getByRole('link', { name: /Open classic page/ })).toHaveAttribute('href', '/work/');
-    await expect(card.getByText('still being fitted out')).toBeVisible();
+    // the "still being fitted out" note shows only while the building's section has no open page
+    const workPages = (JSON.parse(readFileSync('content/structures/site.json', 'utf8')).home.children as { id: string; children?: unknown[] }[]).find((c) => c.id === 'work')?.children?.length ?? 0;
+    await expect(card.getByText('still being fitted out')).toHaveCount(workPages ? 0 : 1);
     await expect(page.getByTestId('live-region')).toContainText('Near Workshop');
 
     await page.locator('.game-region').focus();
@@ -2584,10 +2587,10 @@ test.describe('planet', () => {
     const dialog = page.getByTestId('landmark-dialog');
     await expect(dialog).toBeVisible();
     await expect(page).toHaveURL(/\?at=workshop&open=1$/);
-    // its list is the site's own page, framed over the planet; the Workshop holds nothing yet
+    // its list is the site's own page, framed over the planet; while it holds no open page, it says so
     const frame = page.frameLocator('[data-testid="reading-frame"]');
     await expect(frame.getByRole('heading', { level: 1, name: 'Workshop' })).toBeFocused();
-    await expect(frame.getByText('Nothing here yet. This building is still being fitted out.')).toBeVisible();
+    await expect(frame.getByText('Nothing here yet. This building is still being fitted out.')).toHaveCount(workPages ? 0 : 1);
     await expect(frame.getByRole('link', { name: 'Open classic page' })).toHaveAttribute('href', '/work/');
     await noSeriousViolations(page);
 

@@ -1,13 +1,11 @@
-import { Suspense, lazy, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState, type ComponentType, type KeyboardEvent, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { GameController } from '../controller';
-import { prefs } from '../platform/prefs';
 import { SUNRISE, SUNSET, formatHours, wrapHours } from '../world/timeOfDay';
 import { ViewControls } from './ViewControls';
 import { CHARACTERS, type CharacterId } from '../player/characters';
 import {
-  faArrowUpRightFromSquare,
   faBars,
   faBoxOpen,
   faBreadSlice,
@@ -28,55 +26,33 @@ import {
 import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
 import { Button, IconButton, KeyCap } from './primitives';
-import { withBase } from '../platform/base';
-import { focusLane, laneBeneath, overlayOpen } from './lanes';
-
-const toClassic = () => prefs.setMode('classic');
-
-function PreviewCard({ controller }: { controller: GameController }) {
-  const nearbyId = useStore(controller.store, (s) => s.nearbyId);
-  // it owns the focus lane only when nothing ranks above it (a conversation, a seat, a target: lanes.ts);
-  // under a modal it stays mounted but hidden, so its Open button can take the focus back on close
-  const shown = useStore(controller.store, (s) => (focusLane(s) === 'preview' ? 'shown' : overlayOpen(s) && laneBeneath(s) === 'preview' ? 'hidden' : null));
-  // near a building, its list is fetched ahead, so Open shows it at once (documentation/sections/spec.md §6.7)
-  useEffect(() => {
-    if (!nearbyId || document.querySelector(`link[data-prefetch="${nearbyId}"]`)) return;
-    const l = document.createElement('link');
-    l.rel = 'prefetch';
-    l.href = withBase(`/play/${nearbyId}/`);
-    l.dataset.prefetch = nearbyId;
-    document.head.append(l);
-  }, [nearbyId]);
-  if (!nearbyId || !shown) return null;
-  const d = controller.dataById.get(nearbyId)!;
-  return (
-    <section className="card preview-card lane" hidden={shown === 'hidden'} aria-labelledby="preview-title" style={{ ['--accent' as string]: d.accent }} data-testid="preview-card">
-      <p className="kicker">{d.kicker}</p>
-      <h2 id="preview-title">{d.title}</h2>
-      <p>{d.summary}</p>
-      {d.pages.length === 0 && <p>It’s still being fitted out: its pages are on their way.</p>}
-      <div className="actions">
-        <Button variant="primary" onClick={(e) => controller.openLandmark(d.id, { invoker: e.currentTarget })}>
-          Open <KeyCap>E</KeyCap>
-        </Button>
-        <a className="btn" href={d.siteHref} onClick={toClassic}>
-          Open classic page <Icon icon={faArrowUpRightFromSquare} />
-        </a>
-      </div>
-    </section>
-  );
-}
+import { focusLane } from './lanes';
 
 // (the targets a chunk adds bring their own icon: the crafting table, the site, the watering can, the plants)
 const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment, notice: faClipboardList } as const;
 
 // the menu and a landmark's dialog load on demand: the first time they're opened, or soon after the game starts
+// (so do a landmark's preview card and the lost-view notice, which ride in the reading overlay's chunk:
+// neither shows at load, and the initial bundle is held to its budget, scripts/size-report.mjs)
 const MenuDialog = lazy(() => import('./MenuDialog'));
-const LandmarkDialog = lazy(() => import('./Dialogs'));
+const dialogs = () => import('./Dialogs');
+const LandmarkDialog = lazy(dialogs);
+const PreviewCard = lazy(() => dialogs().then((m) => ({ default: m.PreviewCard })));
+const ContextLost = lazy(() => dialogs().then((m) => ({ default: m.ContextLost })));
 
 function LandmarkDialogSlot({ controller }: { controller: GameController }) {
   const open = useStore(controller.store, (s) => Boolean(s.openId));
   return <Later controller={controller} open={open} Screen={LandmarkDialog} />;
+}
+
+function PreviewCardSlot({ controller }: { controller: GameController }) {
+  const open = useStore(controller.store, (s) => Boolean(s.nearbyId));
+  return <Later controller={controller} open={open} Screen={PreviewCard} />;
+}
+
+function ContextLostSlot({ controller }: { controller: GameController }) {
+  const open = useStore(controller.store, (s) => s.contextLost);
+  return <Later controller={controller} open={open} Screen={ContextLost} />;
 }
 
 function MenuDialogSlot({ controller }: { controller: GameController }) {
@@ -84,7 +60,7 @@ function MenuDialogSlot({ controller }: { controller: GameController }) {
   return <Later controller={controller} open={open} Screen={MenuDialog} />;
 }
 
-function Later({ controller, open, Screen }: { controller: GameController; open: boolean; Screen: typeof MenuDialog }) {
+function Later({ controller, open, Screen }: { controller: GameController; open: boolean; Screen: ComponentType<{ controller: GameController }> }) {
   const [wanted, setWanted] = useState(false);
   useEffect(() => {
     if (open) setWanted(true);
@@ -368,28 +344,6 @@ function MenuButton({ controller, target }: { controller: GameController; target
   );
 }
 
-function ContextLost({ controller }: { controller: GameController }) {
-  const lost = useStore(controller.store, (s) => s.contextLost);
-  if (!lost) return null;
-  return (
-    <div className="overlay" role="alertdialog" aria-labelledby="ctx-title">
-      <div className="card center-card">
-        <h2 id="ctx-title" className="card-title">
-          The 3D view stopped working
-        </h2>
-        <div className="actions">
-          <Button variant="primary" onClick={() => location.reload()}>
-            Reload planet
-          </Button>
-          <a className="btn" href={controller.classicHref()} onClick={toClassic}>
-            Classic site
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function Hud({ controller }: { controller: GameController }) {
   // the crafting screen, the palette and the site card come with the crafting chunk (crafting.md)
   const CraftScreens = controller.craft?.Screens ?? null;
@@ -397,7 +351,7 @@ export function Hud({ controller }: { controller: GameController }) {
   const HomeHud = controller.home?.Hud ?? null;
   return (
     <>
-      <PreviewCard controller={controller} />
+      <PreviewCardSlot controller={controller} />
       <ActionPrompt controller={controller} />
       {HomeHud && <HomeHud />}
       <Hotbar controller={controller} />
@@ -418,7 +372,7 @@ export function Hud({ controller }: { controller: GameController }) {
       <ChopperCardSlot controller={controller} />
       {CraftScreens && <CraftScreens />}
       <MenuButton controller={controller} target={controller.hudActions} />
-      <ContextLost controller={controller} />
+      <ContextLostSlot controller={controller} />
     </>
   );
 }
