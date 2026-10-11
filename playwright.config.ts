@@ -55,7 +55,7 @@ export default defineConfig({
             timeout: 240_000,
             reuseExistingServer: !process.env.CI,
             // the server's own lines (the test build's progress) reach the console, so the Tests screen can say what it's doing while it gets ready
-            stdout: 'pipe',
+            stdout: 'pipe' as const,
           },
         ]
       : []),
@@ -67,7 +67,7 @@ export default defineConfig({
             timeout: 240_000,
             reuseExistingServer: !process.env.CI,
             // the server's own lines (the test build's progress) reach the console, so the Tests screen can say what it's doing while it gets ready
-            stdout: 'pipe',
+            stdout: 'pipe' as const,
           },
         ]
       : []),
