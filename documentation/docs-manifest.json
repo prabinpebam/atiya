@@ -262,6 +262,15 @@
       "group": "Content"
     },
     {
+      "path": "editor/test-runs.md",
+      "title": "Edit mode: live test runs",
+      "order": 20.887,
+      "icon": "monitor_heart",
+      "status": "planned",
+      "updated": "2026-10-11",
+      "group": "Content"
+    },
+    {
       "path": "sections/spec.md",
       "title": "Sections, pages and the planet",
       "order": 20.89,
