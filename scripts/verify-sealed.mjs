@@ -190,9 +190,10 @@ export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = r
     for (const p of [...(o.sections ?? []).flatMap((/** @type {any} */ s) => s.pages)]) tokens.push(p.token);
   }
 
-  // 1. provenance
+  // 1. provenance (a file a public page also shows, made from a public master with the same bytes, is public)
+  const publicUrls = new Set(provenance.filter((e) => e.kind === 'public-asset').map((e) => String(e.url)));
   for (const e of provenance) {
-    if (e.kind === 'asset' && existsSync(join(dist, ...String(e.url).slice(base.length).split('/').filter(Boolean)))) report('a file made from a private master is still readable', folderOf(e.url.slice(base.length)));
+    if (e.kind === 'asset' && !publicUrls.has(String(e.url)) && existsSync(join(dist, ...String(e.url).slice(base.length).split('/').filter(Boolean)))) report('a file made from a private master is still readable', folderOf(e.url.slice(base.length)));
     if (e.kind === 'page') {
       const file = join(dist, ...String(e.route).split('/').filter(Boolean), 'index.html');
       if (!existsSync(file)) report('a protected page is missing from the build', 'a protected page');
@@ -231,7 +232,7 @@ export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = r
     const r = rel(f);
     if (r.startsWith('_sealed/') || r.startsWith('_access/')) continue;
     const bytes = readFileSync(f);
-    if (masters.has(sha256(bytes))) report('a private master is readable', r);
+    if (masters.has(sha256(bytes)) && !publicUrls.has(`${base}/${r}`)) report('a private master is readable', r);
     if (!TEXT.test(f) || statSync(f).size > 20 * 1024 * 1024) continue;
     const text = fold(bytes.toString('utf8'));
     for (const [term, category] of terms) if (text.includes(term)) report(`protected words: ${category}`, r);

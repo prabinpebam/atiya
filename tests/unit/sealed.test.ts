@@ -187,3 +187,24 @@ describe('the leak check', () => {
     expect(wordsToCheck(protectedTerms(FIXTURES), publicCorpus()).public.size).toBe(0);
   });
 });
+
+describe('a picture both a public and a private page show', () => {
+  // the build names a file by its source's name and bytes, so the same paste in a public and a private page is one file
+  const SHARED = '/_astro/paste.def456_x1.webp';
+  it('stays readable for the public page; the private page still gets its sealed copy, and the leak check passes', async () => {
+    const dir = mkdtempSync(join(root, 'shared-'));
+    build(dir);
+    writeFileSync(join(dir, SHARED), Buffer.from('a picture size of the same paste'));
+    writeFileSync(join(dir, 'index.html'), page('Home — Site', `<img src="${SHARED}" alt="An open picture.">`));
+    const page2 = join(dir, 'side-projects', 'alphaaaaa2', 'index.html');
+    writeFileSync(page2, readFileSync(page2, 'utf8').replace('<!--/sealed:main-->', `<img src="${SHARED}" alt="x"><!--/sealed:main-->`));
+    const prov = [...provenance, { kind: 'asset' as const, url: SHARED, master: '/private/media/articles/fx-private-alpha/paste.webp' }, { kind: 'public-asset' as const, url: SHARED }];
+    const s = await sealSite({ dist: dir, base: '', privateRoot: FIXTURES, now: NOW, provenance: prov, summaryFile: join(dir, '..', 'shared-sealed.json') });
+    expect(existsSync(join(dir, SHARED))).toBe(true);
+    expect(readFileSync(join(dir, 'index.html'), 'utf8')).toContain(`src="${SHARED}"`);
+    // the private-only picture still goes, and the private page carries both its pictures sealed
+    expect(existsSync(join(dir, ASSET))).toBe(false);
+    expect(s.sealedFiles).toBe(2);
+    expect(verifySealed({ dist: dir, summary: s.summary, provenance: prov })).toEqual([]);
+  });
+});

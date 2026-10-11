@@ -61,6 +61,8 @@ export async function sealSite({ dist, base, privateRoot, now = new Date(), log 
   const prov = provenance ?? readProvenance();
   const pages = /** @type {{ kind: 'page'; route: string; access: 'private'; id: string }[]} */ (prov.filter((e) => e.kind === 'page'));
   const assets = new Map(/** @type {{ kind: 'asset'; url: string; master: string }[]} */ (prov.filter((e) => e.kind === 'asset')).map((a) => [a.url, a.master]));
+  // the same file made from a public master (identical bytes and name): public already, so it stays readable
+  const publicUrls = new Set(/** @type {{ kind: 'public-asset'; url: string }[]} */ (prov.filter((e) => e.kind === 'public-asset')).map((a) => a.url));
   const build = buildId();
   /** @type {Map<string, { kid: string; key: Uint8Array }>} */
   const keys = new Map();
@@ -135,7 +137,9 @@ export async function sealSite({ dist, base, privateRoot, now = new Date(), log 
   }
 
   // every file made from a private master goes, sealed or not; so does any copy of a private master itself
+  // (unless a public page shows the same file: then it was never only private)
   for (const url of assets.keys()) {
+    if (publicUrls.has(url)) continue;
     const file = fileOfUrl(url);
     if (existsSync(file)) {
       rmSync(file);
@@ -146,6 +150,7 @@ export async function sealSite({ dist, base, privateRoot, now = new Date(), log 
   for (const f of walk(join(privateRoot, 'media'))) if (!f.endsWith('.json')) masterHashes.add(sha256(readFileSync(f)));
   for (const f of walk(dist)) {
     if (f.includes(`${sep}_sealed${sep}`) || statSync(f).size === 0) continue;
+    if (publicUrls.has(base + '/' + relative(dist, f).split(sep).join('/'))) continue;
     if (masterHashes.has(sha256(readFileSync(f)))) {
       rmSync(f);
       removed.add(base + '/' + relative(dist, f).split(sep).join('/'));

@@ -119,11 +119,16 @@ async function edgeColour(master: string): Promise<string> {
   return bg;
 }
 
-/** In a build, every file made from a private master goes in the provenance record, for the sealer (documentation/access/spec.md §6.2). */
+/**
+ * In a build, every file made from a private master goes in the provenance record, for the sealer
+ * (documentation/access/spec.md §6.2); so does every file made from a public one, so a file both make (the
+ * same picture in a public and a private page) stays readable for the public page.
+ */
 async function record(master: string, urls: string[]) {
-  if (!import.meta.env.PROD || !master.startsWith('/private/')) return;
+  if (!import.meta.env.PROD) return;
   const { recordProvenance } = await import('./provenance');
-  for (const url of new Set(urls)) recordProvenance({ kind: 'asset', url, master });
+  const isPrivate = master.startsWith('/private/');
+  for (const url of new Set(urls)) recordProvenance(isPrivate ? { kind: 'asset', url, master } : { kind: 'public-asset', url });
 }
 
 /** One master at a slot's widths: what the page needs to show it. An animation, or a GIF (kept as it is, never converted), is shown as its master. */
