@@ -44,9 +44,9 @@ interface Props {
   caption?: string;
   /** Who made the video or poster. */
   credit?: string;
-  /** Where the article layout may place it; actual (a local file only): its own size, never wider than the page allows. */
+  /** Where the article layout may place it; actual (a local file only): its own size, never wider than the page allows (shown in ArticleLayout). */
   width?: 'content' | 'popout' | 'wide' | 'full' | 'actual';
-  /** Crop to a shape. Left out, a video file keeps its own shape, and an embed its video's (`shape`), else 16:9. */
+  /** Crop to a shape. Left out, a video file keeps its own shape, and an embed its video's (`shape`), else 16:9 (the shapes are Image’s: shown in Image). */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
   /** An embedded video's own size (from its provider), so its player takes just that shape. Left out, 16:9. */
   shape?: { width: number; height: number };

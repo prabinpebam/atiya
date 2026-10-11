@@ -72,13 +72,13 @@ interface Props {
   headings?: 'label' | 'title';
   /** Names a strip (the carousel or the sideways timeline) for assistive tech. Left out, "Carousel" or "Timeline". */
   label?: string;
-  /** Where the article layout places it: in the column (the default), a little wider, wide, or (a strip) the viewport's width; other layouts show full as wide. */
+  /** Where the article layout places it: in the column (the default), a little wider, wide, or (a strip) the viewport's width; other layouts show full as wide (shown in ArticleLayout). */
   width?: 'content' | 'popout' | 'wide' | 'full';
   /** A strip reaches out beside its column and fades to nothing there (not at full width, nor on a phone). */
   peek?: boolean;
-  /** The pictures' frame shape. Left out, each its own. */
+  /** The pictures' frame shape. Left out, each its own (the shapes are Image’s: shown in Image). */
   ratio?: '1/1' | '4/3' | '3/2' | '16/9' | '21/9';
-  /** How each picture is shown in its frame. Left out, fill in a shape, fit in its own. */
+  /** How each picture is shown in its frame. Left out, fill in a shape, fit in its own (each shown in Image). */
   display?: 'fill' | 'fit' | 'actual' | 'tile';
   /** Puts each picture's own edge colour behind it. */
   background?: boolean;

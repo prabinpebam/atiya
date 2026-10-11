@@ -36,9 +36,9 @@ interface Props {
   height: number;
   /** A single captions track. */
   captions?: VideoCaptions;
-  /** Crop to a shape. Omit to keep the video’s own ratio. */
+  /** Crop to a shape. Omit to keep the video’s own ratio (the shapes are Image’s: shown in Image). */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
-  /** default: softly rounded; feature: rounder; none: square. */
+  /** default: softly rounded; feature: rounder; none: square (as a picture’s: shown in Image). */
   radius?: 'default' | 'feature' | 'none';
   /** Starts silent. */
   muted?: boolean;
@@ -50,7 +50,7 @@ interface Props {
   actual?: boolean;
   /** Fills its container (a gallery cell, a carousel slide) instead of taking its own shape. */
   fill?: boolean;
-  /** Filling: cover fills it (cropped), contain shows the whole video inside it. */
+  /** Filling: cover fills it (cropped), contain shows the whole video inside it (as a picture does: shown in Image). */
   fit?: 'cover' | 'contain';
   /** A page-unique id. */
   id?: string;

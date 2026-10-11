@@ -31,11 +31,11 @@ interface Props {
   caption: string;
   /** Who made the picture. */
   credit?: string;
-  /** Where the article layout may place it. */
+  /** Where the article layout may place it (shown in ArticleLayout). */
   width?: 'content' | 'popout' | 'wide' | 'full';
-  /** Crop to a shape. Omit to keep the picture’s own ratio. */
+  /** Crop to a shape. Omit to keep the picture’s own ratio (the shapes are Image’s: shown in Image). */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
-  /** How it's shown in its frame: fill, fit (the default), actual size or tile. */
+  /** How it's shown in its frame: fill, fit (the default), actual size or tile (shown in Image). */
   display?: 'fill' | 'fit' | 'actual' | 'tile';
   /** Which part stays in a crop. */
   focus?: string;

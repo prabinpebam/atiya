@@ -545,6 +545,15 @@ describe('every component documents itself and has a story', () => {
     expect(orphans).toEqual([]);
   });
 
+  it('a component stays short enough to change safely: markup and script at most 350 lines (logic beyond wiring lives in tier 0), the whole file at most 650', () => {
+    const lines = (s: string) => s.split('\n').length;
+    const long = tierFiles
+      .map((f) => ({ name: f.name, total: lines(f.src), rest: lines(f.src) - [...f.src.matchAll(/<style[\s\S]*?<\/style>/g)].reduce((n, m) => n + lines(m[0]), 0) }))
+      .filter((f) => f.rest > 350 || f.total > 650)
+      .map((f) => `${f.name}: ${f.total} lines, ${f.rest} without its styles`);
+    expect(long).toEqual([]);
+  });
+
   it('every story shows each choice a prop offers: every value of a union prop (or the prop says which story shows it, and that one does)', () => {
     const storyOf = (name: string) => {
       const p = join(ROOT, 'src/site/stories', `${name}.stories.astro`);
@@ -554,9 +563,11 @@ describe('every component documents itself and has a story', () => {
     // HTML semantics, not a look: the element (as), a button's or field's type, and ARIA states scripts set
     const SEMANTIC = /^(as|type|aria-[\w-]+)$/;
     const missing: string[] = [];
+    // a whole page (a layout, PageShell) is its story's one page, so it can't show its choices side by side
+    const WHOLE_PAGE = (f: (typeof tierFiles)[number]) => f.tier === 'layout' || f.name === 'PageShell';
     for (const f of tierFiles) {
       const own = storyOf(f.name);
-      if (!own) continue;
+      if (!own || WHOLE_PAGE(f)) continue;
       for (const p of propsOf(frontmatter(f.src)).props) {
         const type = p.type.replace(/\s+/g, ' ').trim();
         if (SEMANTIC.test(p.name) || !/^('[^']*' \| )+'[^']*'$/.test(type)) continue;

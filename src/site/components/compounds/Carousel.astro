@@ -70,7 +70,7 @@ interface Props {
   items: CarouselItem[];
   /** The carousel region’s accessible name. */
   label?: string;
-  /** Where the article layout may place it. */
+  /** Where the article layout may place it (shown in ArticleLayout). */
   width?: 'content' | 'popout' | 'wide' | 'full';
   /** Shows the neighbouring slides, smaller, under a fade that reaches beside the carousel where the page has room. */
   peek?: boolean;
@@ -84,7 +84,7 @@ interface Props {
   arrows?: boolean;
   /** How to pick a slide: dots, or a filmstrip of thumbnails in one row that scrolls sideways or wrapping onto more rows. */
   pager?: 'dots' | 'filmstrip' | 'filmstrip-wrap';
-  /** How each picture is shown in its slide (every slide the tallest picture's shape, 300 px to 80% of the screen tall): fill (the default, cropped around its focus point), fit, actual size or tile. */
+  /** How each picture is shown in its slide (every slide the tallest picture's shape, 300 px to 80% of the screen tall): fill (the default, cropped around its focus point), fit, actual size or tile (each shown in Image). */
   display?: 'fill' | 'fit' | 'actual' | 'tile';
   /** Puts each picture's own edge colour behind it. */
   background?: boolean;

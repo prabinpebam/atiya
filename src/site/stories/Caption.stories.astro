@@ -19,7 +19,26 @@ const p = sample('lighthouse-dusk');
   <Caption as="p" align="start">The plaza, where every path on the planet begins.</Caption>
 </Example>
 
+<Example title="Over a picture" layout="stack" description="White on the picture's shade, for a caption laid over the photograph itself.">
+  <figure class="demo-over">
+    <Image src={p.src} srcset={p.srcset} sizes={sizes('measure')} alt={p.alt} width={p.width} height={p.height} />
+    <div class="demo-shade"><Caption tone="on-image" align="start">The lighthouse at dusk.</Caption></div>
+  </figure>
+</Example>
+
 <style>
+  .demo-over {
+    position: relative;
+    margin: 0;
+  }
+
+  .demo-shade {
+    position: absolute;
+    inset: auto 0 0;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-image-shade);
+  }
+
   .demo-figure {
     display: grid;
     gap: var(--space-3);

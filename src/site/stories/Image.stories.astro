@@ -24,6 +24,19 @@ const night = sample('plaza-night');
   </div>
 </Example>
 
+<Example title="Every frame shape" description="The seven shapes a picture, a video or a placeholder can take, from square to cinema: figures, galleries, collections and videos pass the same choice on.">
+  <div class="demo-grid">
+    {(['1/1', '4/5', '3/4', '4/3', '3/2', '16/9', '21/9'] as const).map((r) => <Image src={night.src} srcset={night.srcset} sizes={half} alt={`${night.alt} (${r.replace('/', ':')})`} width={night.width} height={night.height} ratio={r} />)}
+  </div>
+</Example>
+
+<Example title="Cover or contain" description="Cover fills the frame and crops; contain shows the whole picture inside it.">
+  <div class="demo-grid">
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="1/1" fit="cover" />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="1/1" fit="contain" />
+  </div>
+</Example>
+
 <Example title="Fill, fit, actual size and tile" description="The same picture in the same 16:9 frame, shown the four ways a page can choose: filling it (cropped around its focus point), fitting inside it, at its own size (never enlarged), and tiled at its own size.">
   <div class="demo-grid">
     <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fill" />

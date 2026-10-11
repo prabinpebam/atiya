@@ -31,6 +31,16 @@ import Text from '../components/fundamentals/Text.astro';
   </Dialog>
 </Example>
 
+<Example title="A picker" description="The widest size, for choosing from many things: here, a place.">
+  <Button variant="secondary" data-dialog-open="story-dialog-pick">Choose a place</Button>
+  <Dialog id="story-dialog-pick" title="Choose a place" size="lg">
+    <Text variant="ui">The plaza, the lighthouse, the library, the workshop, the greenhouse, the observatory: each one a part of the site.</Text>
+    <Fragment slot="actions">
+      <Button variant="quiet" data-dialog-close="">Cancel</Button>
+    </Fragment>
+  </Dialog>
+</Example>
+
 <style>
   .stack {
     display: grid;

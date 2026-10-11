@@ -31,7 +31,7 @@ import { SAMPLES } from '../design/samples';
 </Example>
 
 <Example title="Over pictures" layout="block" description="The handle is frosted glass tinted with the spot indigo: it blurs what passes under it, so it reads over a photograph as well as over paper.">
-  <ScrollArea label="Planet scenes" orientation="horizontal">
+  <ScrollArea label="Planet scenes" orientation="horizontal" maxHeight="lg">
     <div class="row">
       {SAMPLES.map((p) => <span class="cell"><Image src={p.thumb} alt={p.alt} width={p.width} height={p.height} ratio="3/2" /></span>)}
     </div>

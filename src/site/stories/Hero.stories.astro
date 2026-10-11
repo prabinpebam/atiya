@@ -10,7 +10,7 @@ const dusk = sample('lighthouse-dusk');
 ---
 
 <Example title="Split" layout="block" bleed description="Words and picture side by side; on a phone the picture comes first.">
-  <Hero level={2} title="A little planet" standfirst="Walk around a portfolio, or read it as plain pages." picture={plaza}>
+  <Hero level={2} layout="split" title="A little planet" standfirst="Walk around a portfolio, or read it as plain pages." picture={plaza}>
     <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet">Explore the planet</Button>
     <Button variant="secondary" size="lg" href={withBase('/')}>Classic site</Button>
   </Hero>
@@ -21,5 +21,5 @@ const dusk = sample('lighthouse-dusk');
 </Example>
 
 <Example title="Type only" layout="block" bleed description="No picture: the headline carries the page.">
-  <Hero level={2} title="Notes" standfirst="Short pieces on design leadership, systems and craft." />
+  <Hero level={2} layout="type" title="Notes" standfirst="Short pieces on design leadership, systems and craft." />
 </Example>

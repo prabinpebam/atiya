@@ -24,7 +24,7 @@ const waterfall = sample('waterfall');
 
 <Example title="Standard" layout="block" description="A grid of them makes an index. The whole card is one link, on its title.">
   <div class="demo-cards">
-    <StoryCard href={withBase('/side-projects/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." topic="Craft" meta="6 min read" picture={bridge} headingLevel={3} />
+    <StoryCard variant="standard" href={withBase('/side-projects/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." topic="Craft" meta="6 min read" picture={bridge} headingLevel={3} />
     <StoryCard href={withBase('/writing/')} title="A pond that reads as one body of water" dek="One level, one shader, and a lobed shore." topic="Engineering" meta="4 min read" picture={pond} headingLevel={3} />
     <StoryCard href={withBase('/leadership/')} title="Wind that everything shares" dek="Grass, trees and flags sway to the same gusts." topic="Craft" meta="5 min read" picture={waterfall} headingLevel={3} />
   </div>
@@ -39,7 +39,7 @@ const waterfall = sample('waterfall');
 
 <Example title="Compact" layout="block" description="No picture: for a long list.">
   <div class="demo-cards">
-    <StoryCard href={withBase('/writing/')} title="Why the planet turns, not the camera" dek="Keeping the sky, the sun and the moon in frame." meta="3 min read" headingLevel={3} />
+    <StoryCard variant="compact" href={withBase('/writing/')} title="Why the planet turns, not the camera" dek="Keeping the sky, the sun and the moon in frame." meta="3 min read" headingLevel={3} />
     <StoryCard href={withBase('/writing/')} title="One thing asks at a time" dek="How the game decides which prompt to show." meta="4 min read" headingLevel={3} />
   </div>
 </Example>
@@ -59,4 +59,8 @@ const waterfall = sample('waterfall');
 
 <Example title="Shared with you" layout="block" description="A private page in its section's list, shown only to a reader whose access code or magic link covers it (dev and edit mode mark it Private).">
   <StoryCard href={withBase('/work/')} title="A case study shared with you" dek="Listed only for invited readers, in its place among the open work." meta="8 min read" picture={workshop} shared="shared" />
+</Example>
+
+<Example title="Private, in dev and edit mode" layout="block" description="The same card on the dev server and in edit mode, where every page shows in its place: marked Private.">
+  <StoryCard href={withBase('/work/')} title="A case study for invited readers" dek="Shown here in its place; a build seals it." meta="8 min read" picture={bridge} shared="private" />
 </Example>

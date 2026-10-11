@@ -20,6 +20,10 @@ const plaza = sample('plaza');
   />
 </Example>
 
+<Example title="Full bleed" layout="block" bleed description="The lead picture runs edge to edge instead of wide.">
+  <ArticleHeader level={2} title="The plaza" standfirst="Where every path on the planet begins." topic={{ label: 'Places' }} picture={{ ...plaza, caption: plaza.caption }} pictureWidth="full" />
+</Example>
+
 <Example title="Words only" layout="block" bleed>
   <ArticleHeader level={2} title="Workshop" standfirst="Deep dives into products, the bets and what changed." topic={{ label: 'Selected case studies' }} />
 </Example>
