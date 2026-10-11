@@ -23,6 +23,7 @@ import { THEME_OPTIONS } from '../scripts/theme';
 import { changes, pendingCount } from './server/git';
 import { generation } from '../content/source';
 import SaveStatus from './components/SaveStatus.astro';
+import TestStatus from './components/TestStatus.astro';
 import ChangeList from './components/ChangeList.astro';
 import ContentIssues from './components/ContentIssues.astro';
 import { publishView } from './server/publishView';
@@ -31,7 +32,7 @@ interface Props {
   /** The document title: the screen's name. */
   title: string;
   /** Which screen, for the navigation's current item. */
-  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'media' | 'settings' | 'access' | 'publish';
+  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'media' | 'settings' | 'access' | 'publish' | 'tests';
   /** Show the side navigation (the article editor hides it for its studio). */
   nav?: boolean;
   /** The screen's h1, over its content; left out, the content fills the screen (the studio). */
@@ -71,6 +72,10 @@ const groups = [
       { label: 'Save to remote', href: to('publish/'), current: screen === 'publish', note: unknown ? 'Not checked' : pending ? `${pending} to save` : undefined },
     ],
   },
+  {
+    title: 'Checks',
+    items: [{ label: 'Tests', href: to('tests/'), current: screen === 'tests' }],
+  },
 ];
 ---
 
@@ -80,6 +85,7 @@ const groups = [
       <a class="brand" href={to('')}>Edit mode</a>
       <div class="title"><slot name="title" /></div>
       <div class="status"><SaveStatus /></div>
+      <TestStatus />
       <div class="tools"><slot name="tools" /></div>
       <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" />
       <div class="pending" data-region="editor-pending" data-pending={String(pending)}>

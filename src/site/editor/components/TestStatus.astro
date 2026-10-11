@@ -1,0 +1,104 @@
+---
+/**
+ * The top bar's test status (documentation/editor/test-runs.md §6.1): while a test run is active, and for an
+ * hour after it ends, its health in a word, how far it is, its failures and how long ago it last signalled,
+ * on every edit-mode screen. It links to the Tests screen. Hidden when there's nothing to say. Fed once a
+ * second by /_edit/api/tests/stream?brief=1 (scripts/testStatus.ts).
+ * @tier editor
+ * @a11y A link named by its words ("Tests: on track, 64 of 211, 1 failed"); the dot is hidden, the words say it all.
+ * @a11y Not a live region: the Tests screen announces failures and stalls; this only shows them.
+ */
+import Icon from '../../components/fundamentals/Icon.astro';
+import { withBase } from '../../design/meta';
+---
+
+<a class="tests" href={withBase('/_edit/tests/')} data-test-status data-health="preparing" hidden>
+  <span class="dot" aria-hidden="true"></span>
+  <span class="label"><Icon name="play" /> <span data-t="text">Tests</span></span>
+  <span class="ago" data-t="ago"></span>
+</a>
+
+<style>
+  .tests {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+    min-inline-size: 0;
+    min-block-size: var(--size-touch);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .tests[hidden] {
+    display: none;
+  }
+
+  @media (hover: hover) {
+    .tests:hover {
+      background: var(--color-bg-sunk);
+      color: var(--color-text);
+    }
+  }
+
+  .tests:active {
+    background: var(--color-bg-sunk);
+    color: var(--color-text);
+  }
+
+  .label {
+    display: inline-flex;
+    gap: var(--space-1);
+    align-items: center;
+    overflow: hidden;
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+    text-overflow: ellipsis;
+  }
+
+  .ago {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ago[data-stale='true'] {
+    color: var(--color-negative);
+    font-weight: var(--weight-semibold);
+  }
+
+  .dot {
+    flex: none;
+    inline-size: var(--space-2);
+    block-size: var(--space-2);
+    border-radius: var(--radius-round);
+    background: var(--color-text-muted);
+  }
+
+  .tests[data-health='ok'] .dot,
+  .tests[data-health='passed'] .dot {
+    background: var(--color-positive);
+  }
+
+  .tests[data-health='slow'] .dot,
+  .tests[data-health='idle'] .dot,
+  .tests[data-health='silent'] .dot {
+    background: var(--color-highlight);
+  }
+
+  .tests[data-health='failed'] .dot,
+  .tests[data-health='dead'] .dot {
+    background: var(--color-negative);
+  }
+
+  .tests[data-health='preparing'] .dot {
+    background: var(--color-accent);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initTestStatus } from '../scripts/testStatus';
+  each<HTMLAnchorElement>('[data-test-status]', (el, signal) => initTestStatus(el, signal));
+</script>

@@ -1,0 +1,16 @@
+---
+/**
+ * Edit mode's Tests screen (documentation/editor/test-runs.md): every end-to-end run on this machine, live,
+ * from any worktree. `?run=<id>` shows an earlier one. Dev only: injected by integrations/editor.mjs.
+ */
+import EditorLayout from '../EditorLayout.astro';
+import TestRuns from '../components/TestRuns.astro';
+
+export const prerender = false;
+
+const run = Astro.url.searchParams.get('run') ?? 'current';
+---
+
+<EditorLayout title="Tests" screen="tests" heading="Tests" intro="Every test run on this machine, as it happens: whoever started it, on whichever worktree. Open a group or a test for its detail.">
+  <TestRuns run={run} />
+</EditorLayout>

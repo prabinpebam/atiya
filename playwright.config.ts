@@ -16,7 +16,8 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  reporter: [['list']],
+  // the live reporter: every run shows in edit mode's Tests screen (documentation/editor/test-runs.md)
+  reporter: [['list'], ['./tests/reporters/live.ts']],
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
@@ -25,7 +26,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /editor(-access)?\.spec\.ts$/,
+      testIgnore: /editor(-access|-tests)?\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
         // Set PW_CHANNEL=msedge to use the locally installed Edge instead of Playwright's Chromium.
@@ -40,7 +41,7 @@ export default defineConfig({
     {
       // edit mode: its screens and API against the fixture (it writes, commits and pushes there, never to content/)
       name: 'editor',
-      testMatch: /editor(-access)?\.spec\.ts$/,
+      testMatch: /editor(-access|-tests)?\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'], channel: process.env.PW_CHANNEL || undefined, baseURL: `http://localhost:${EDITOR_PORT}`, viewport: { width: 1440, height: 900 } },
     },
   ],

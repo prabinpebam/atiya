@@ -25,11 +25,68 @@ async function body<T>(request: Request): Promise<T> {
   return (await request.json()) as T;
 }
 
+/**
+ * Test runs: the list, one run judged, one test's detail, and a live stream of either (server-sent events,
+ * every half second): `tests/stream?run=<id|current>` for the Tests screen, `&brief=1` for the top bar.
+ */
+async function tests(parts: string[], url: URL, request: Request): Promise<Response> {
+  const { briefOf, currentRun, listRuns, testDetail, viewOf } = await import('../server/testRuns');
+  if (parts[1] === 'runs' && !parts[2]) return json({ ok: true, runs: listRuns().slice(0, 60).map((r) => briefOf(r)) });
+  if (parts[1] === 'runs' && parts[2]) {
+    const runs = listRuns();
+    const run = runs.find((r) => r.id === parts[2]);
+    if (!run) return json({ ok: false, issues: [{ file: '.test-runs', message: `no run ${parts[2]}` }] }, 404);
+    if (parts[3] === 'tests' && parts[4]) {
+      const t = testDetail(run, decodeURIComponent(parts[4]));
+      return t ? json({ ok: true, test: t }) : json({ ok: false, issues: [{ file: run.id, message: 'no such test' }] }, 404);
+    }
+    return json({ ok: true, view: viewOf(run, runs) });
+  }
+  if (parts[1] === 'stream') {
+    const want = url.searchParams.get('run') ?? 'current';
+    const brief = url.searchParams.get('brief') === '1';
+    const enc = new TextEncoder();
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const stop = () => timer && clearInterval(timer);
+    request.signal.addEventListener('abort', stop);
+    const stream = new ReadableStream<Uint8Array>({
+      start(ctrl) {
+        const send = (event: string, data: unknown) => {
+          try {
+            ctrl.enqueue(enc.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          } catch {
+            stop();
+          }
+        };
+        const tick = () => {
+          try {
+            const now = Date.now();
+            const runs = listRuns(process.cwd(), now);
+            const run = want === 'current' ? currentRun(runs) : runs.find((r) => r.id === want);
+            if (brief) send('brief', { asOf: now, run: run ? briefOf(run, now) : null, active: runs.filter((r) => r.active).length });
+            else send('view', { asOf: now, runs: runs.slice(0, 60).map((r) => briefOf(r, now)), view: run ? viewOf(run, runs, now) : null });
+          } catch (e) {
+            send('problem', { message: e instanceof Error ? e.message : String(e) });
+          }
+        };
+        tick();
+        timer = setInterval(tick, brief ? 1000 : 500);
+      },
+      cancel: stop,
+    });
+    return new Response(stream, { headers: { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', connection: 'keep-alive' } });
+  }
+  return json({ ok: false, issues: [{ file: '', message: 'unknown tests request' }] }, 404);
+}
+
 const handle: APIRoute = async ({ request, params, url }) => {
   const path = (params.path ?? '').replace(/\/$/, '');
   const method = request.method.toUpperCase();
   const parts = path.split('/');
   try {
+    // ---------- test runs, read only (documentation/editor/test-runs.md §7) ----------
+    if (method === 'GET' && parts[0] === 'tests') return await tests(parts, url, request);
+
     // ---------- where the site's launcher leads ----------
     if (method === 'GET' && path === 'where') {
       const at = url.searchParams.get('path') ?? '/';

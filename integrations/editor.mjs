@@ -33,6 +33,7 @@ const ROUTES = [
   ['/_edit/settings', 'settings.astro'],
   ['/_edit/access', 'access.astro'],
   ['/_edit/publish', 'publish.astro'],
+  ['/_edit/tests', 'tests.astro'],
   ['/_edit/api/[...path]', 'api.ts'],
 ];
 

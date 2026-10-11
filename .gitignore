@@ -3,6 +3,7 @@ dist/
 dist-test/
 .astro/
 test-results/
+.test-runs/
 playwright-report/
 *.log
 .DS_Store

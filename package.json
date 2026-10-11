@@ -14,7 +14,7 @@
     "check": "astro check",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "e2e": "node scripts/test-run.mjs --by script --",
     "size": "node scripts/size-report.mjs",
     "build:character": "node scripts/build-character.mjs",
     "build:portraits": "node scripts/render-portraits.mjs",

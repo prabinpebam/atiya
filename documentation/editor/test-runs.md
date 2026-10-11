@@ -1,6 +1,6 @@
 # Edit mode: live test runs
 
-A screen in edit mode that shows every end-to-end test run on this machine as it happens, whoever started it (you, a script or an agent), from any worktree. It's simple at a glance, with detail one click deeper. Its promise: at any moment you can tell whether a run is working, slow, stuck, failed or gone, and whether a failure is caused by the change being tested. This page is the spec (v3: user needs first, §1 to §3; the earlier sketches critiqued in §9) and its plan (§10). It isn't built yet.
+A screen in edit mode that shows every end-to-end test run on this machine as it happens, whoever started it (you, a script or an agent), from any worktree. It's simple at a glance, with detail one click deeper. Its promise: at any moment you can tell whether a run is working, slow, stuck, failed or gone, and whether a failure is caused by the change being tested. This page is the spec (v3: user needs first, §1 to §3; the earlier sketches critiqued in §9) and its plan (§10). Phase 1 is built: what it does, and where it differs from the spec, is in §11.
 
 > **TL;DR.**
 > - **For:** you, the owner, while agents validate changes and you keep working; the agents themselves, which read the same state; and whoever fixes a failure.
@@ -235,3 +235,25 @@ The failure in plain words ("Timed out after 5:00 waiting for the page to answer
 | 4. Unit tests | Vitest runs on the same screen | U1 to U10 for unit runs | The same promise holds for unit runs |
 
 It's built in a worktree, checked on its own port, then merged. The new route needs one restart of the dev server (about 20 seconds). AGENTS.md gains one rule: start every test run through the launcher, with `--by agent` and a `--purpose`.
+
+## 11. As built (phase 1, 11 October 2026)
+
+- **Where:** `/_edit/tests/` (a Tests item under Checks in edit mode's navigation), and the status in edit mode's top bar.
+- **The pieces:**
+  - the reporter, `tests/reporters/live.ts`, in `playwright.config.ts`;
+  - the launcher, `scripts/test-run.mjs` (`npm run e2e` goes through it);
+  - the pure model, `src/site/editor/model/testRun.ts`: folding, health, verdicts, the summary and time left;
+  - the reading side, `src/site/editor/server/testRuns.ts`: finding runs in every worktree, judging them, one test's detail;
+  - the API under `/_edit/api/tests/`: `runs`, `runs/<id>`, `runs/<id>/tests/<test id>`, and `stream`, server-sent events every half second (`brief=1` once a second for the top bar);
+  - the parts, `TestRuns.astro` and `TestStatus.astro`, and their scripts, `scripts/tests.ts` and `scripts/testStatus.ts`.
+- **Built as specified:** U1 to U8, U10, U11, U12 (the list), U17 and U18. Error, code excerpt, output and the paths of kept files are shown (part of U9).
+- **Where it differs:**
+  - **CPU is the machine's,** not the run's process tree: the reporter samples `os.cpus()` each second. "Waiting, idle" means the whole machine has been idle for 20 s, which is what a stuck test looks like here, and it needs no dependency.
+  - **A step's own time limit isn't known:** Playwright's reporter API gives a test's limit, not a step's. The screen shows a step's time, and the test's time against its limit.
+  - **A reused server is found by its port** (something already listening on 4329 or 4330 before the run), not by its build time and commit.
+  - **The tree opens in place:** a test opens under its row, rather than in a pane beside the tree. Following closes a test it opened itself once that test passes, so it never leaves a trail; failures, and anything you open, stay open.
+  - **Verdicts need a run on the stable tree:** until one has been run through the launcher there, a failure reads "Not compared".
+- **Not built yet (phases 2 to 4):** the trace viewer, screenshots shown in place, VS Code links, the timeline, notifications, stop and re-run, and Vitest.
+- **Checks:**
+  - `tests/unit/testRun.test.ts`: folding, folded repeats, every health state with its reason, verdicts, the summary, time left;
+  - `tests/e2e/editor-tests.spec.ts` (the editor project): a fixture run with a heartbeat kept fresh shows the sentence, the failure and its verdict, the step clocks ticking and the tree following the running test; once the heartbeat stops, the screen says "No word" within seconds.
