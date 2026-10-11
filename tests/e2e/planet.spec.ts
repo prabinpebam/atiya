@@ -958,6 +958,51 @@ test.describe('touch', () => {
   });
 });
 
+test.describe('larger text', () => {
+  // every size is in rem (design-system.md §3): with Larger text on, nothing in the menu, the backpack, the
+  // hotbar or a dialog is clipped or pushed off the side of the screen
+  const problems = (root: Locator) =>
+    root.evaluate((el) => {
+      const out: string[] = [];
+      for (const e of el.querySelectorAll<HTMLElement>('button, label, h1, h2, h3, p, kbd, [role="tab"], [data-slot]')) {
+        const r = e.getBoundingClientRect();
+        if (!r.width || !r.height || getComputedStyle(e).visibility === 'hidden') continue;
+        const cs = getComputedStyle(e);
+        const name = (e.getAttribute('aria-label') || e.textContent || e.className).trim().replace(/\s+/g, ' ').slice(0, 40);
+        if (cs.overflowX !== 'visible' && cs.textOverflow !== 'ellipsis' && e.scrollWidth > e.clientWidth + 1) out.push(`clipped: ${name}`);
+        if (r.left < -1 || r.right > innerWidth + 1) out.push(`off the side: ${name}`);
+      }
+      return out;
+    });
+
+  test('the menu, fast travel, the backpack and the hotbar keep every label whole', async ({ page }) => {
+    test.setTimeout(150_000);
+    await openPlanet(page);
+    await page.evaluate(() => (window as any).__game.giveItem('stone', 5));
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await page.getByTestId('large-text').check();
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).fontSize)).toBe('18px');
+    const menu = page.getByRole('dialog').filter({ has: page.getByTestId('large-text') });
+    expect(await problems(menu)).toEqual([]);
+    // (the focus is on the checkbox, which keeps Space: Esc closes)
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    // fast travel: the menu dialog's travel page, its tiles a grid
+    await page.locator('.game-region').focus();
+    await page.keyboard.press('t');
+    const travel = page.getByRole('dialog').filter({ has: page.locator('.travel-tile') });
+    await expect(travel).toBeVisible();
+    expect(await problems(travel)).toEqual([]);
+    await page.keyboard.press('Space');
+    await expect(travel).toBeHidden();
+    expect(await problems(page.getByTestId('hotbar'))).toEqual([]);
+    await page.getByTestId('backpack-button').click();
+    const screen = page.getByTestId('inventory-screen');
+    await expect(screen.getByRole('dialog', { name: 'Backpack' })).toBeVisible();
+    expect(await problems(screen)).toEqual([]);
+  });
+});
+
 test.describe('touch inventory', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
 

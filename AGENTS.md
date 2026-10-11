@@ -31,7 +31,9 @@ The landing, the classic site and the design library have their **own** design s
 - **Tokens are W3C DTCG 2025.10:**
   - `site.resolver.json` merges the base set `tokens.json` with the theme contexts `tokens.light.json` and `tokens.dark.json`, then the contrast modifier (`tokens.contrast-more.json`, written inside `@media (prefers-contrast: more)`);
   - values are 2025.10 objects;
-  - after a change, run `node scripts/build-site-tokens.mjs` (never hand-edit `src/site/styles/tokens.css` or `documentation/site-ui/tokens.md`).
+  - after a change, run `node scripts/build-site-tokens.mjs` (never hand-edit `src/site/styles/tokens.css`, `documentation/site-ui/tokens.md` or `src/site/design/responsive.ts`).
+  - every `c.*` group names who reads it in `$extensions["site.owner"]`: one component (only it may read the group) or `shared` (a family's common decisions: control, check, list, image, quote, icon, scrollbar, editor). A value every page needs is semantic (`--size-chrome-block`, the top bar's height), never another component's token (tested).
+  - a `matchMedia` query or a picture's `sizes` never holds a rem literal: use `media()` and `sizes()` from the generated `src/site/design/responsive.ts` (tested). Press, pop, lift and zoom are `--scale-*` tokens; underlines `--underline-*`; the only `em` written in a stylesheet is `1em`.
 - **Colour roles are `light-dark()` pairs.** The page follows the system unless `<html data-theme>` is set (the header's theme switch, `localStorage['site.theme']`). Never branch on the theme: a subtree switches with `color-scheme`. The one exception is a picture's dark mode version: `Image` takes `dark` and draws a `<picture>` with a `source[data-dark]`, which `followThemeInPictures` and PageShell's head script point at the theme; pass a picture's `dark` on wherever you draw it (the lightbox links carry `data-full-dark` / `data-thumb-dark`).
 - **Components read tokens only:** never a primitive, never a raw value. Width media queries use only the breakpoint tokens (40, 56, 72 rem).
 - **Fundamentals are sealed:** no `class` or `style` props. Compounds lay them out from their own wrappers and never restyle them. `:global` is allowed only in Prose, Lightbox and VideoEmbed (markup they didn't write).
@@ -59,12 +61,14 @@ The landing, the classic site and the design library have their **own** design s
 
 The rules are in [documentation/game-ui/design-system.md](./documentation/game-ui/design-system.md). Read it before any UI change.
 
-- **Tokens only.** Every colour, space, size, radius, shadow, duration, easing and layer comes from `src/design/tokens.json`, a DTCG file with three tiers:
+- **Tokens only.** Every colour, space, size, radius, shadow, duration, easing and layer comes from `src/design/tokens.json`, a DTCG 2025.10 file (colour objects, `{value, unit}`, shadow objects; never a string value) with three tiers:
   - `p.*` primitives, which are private: never use `--p-*` in component CSS;
   - semantic roles and scales;
   - `c.*` component tokens.
+- **Sizes are rem,** so "Larger text" scales everything; px only for lines and outlines (`border.*`), blurs, the pill and the scrollbar. Every `@media` query writes a `breakpoint.*` value. A CSS parser (`postcss`) holds every declaration in the four stylesheets to tokens, with a named allow-list.
 - After any change to `tokens.json`, run `node scripts/build-tokens.mjs`. Never hand-edit `src/styles/tokens.css` or `documentation/game-ui/tokens.md`. `tests/unit/designSystem.test.ts` fails on:
   - raw values;
+  - a token nothing reads;
   - stale output;
   - contrast below WCAG on either surface;
   - copy-rule breaks.

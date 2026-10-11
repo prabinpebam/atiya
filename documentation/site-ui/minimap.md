@@ -7,7 +7,7 @@ A slim strip along the right edge of a long article: one indicator per landmark,
 > - **Place and hover:** the landmark being read is highlighted in indigo and marked `aria-current="location"`. Hover or focus shows a tooltip and magnifies the indicator, with its neighbours growing less, like a dock.
 > - **Choosing:** a click, Enter or a tap scrolls the landmark to 18% down the view, below the sticky header.
 > - **Out of the way:** only the strip takes pointer input, and it hides wherever it would cover text (as on a phone). It scrolls on its own, without a scrollbar and without passing the scroll on to the page.
-> - **Where the rules live:** the pure rules are in [`scripts/minimap.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/minimap.ts), unit-tested. The E2E group "article minimap" covers the scenarios.
+> - **Where the rules live:** the pure rules are in [`scripts/minimap.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/minimap.ts), unit-tested; the DOM wiring (building the strip, scrolling, the preview) is [`scripts/articleMinimap.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/articleMinimap.ts), set up by the component. The E2E group "article minimap" covers the scenarios.
 
 ## 1. Landmarks
 

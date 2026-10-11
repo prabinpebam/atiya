@@ -58,7 +58,9 @@ The source of truth is `src/design/tokens.json`, in the [W3C Design Tokens (DTCG
 
 Both surfaces define every role (a test checks), and each surface re-declares `color`, because inherited text colour doesn't follow a changed custom property.
 
-**Scales.** Space is a 4 px grid (`--space-0-5` … `--space-18`). Type is `--text-2xs` (0.625 rem) to `--text-hero`; everything is in `rem`, so the "Larger text" setting (`html.text-lg`, 112.5 %) scales it all. Layers are named, not numbered: `base` 1 < `hud` 10 < `lane` 20 < `fade` 25 < `chrome` 30 < `toast` 35 < `overlay` 40 < `greeting` 42 < `drag` 45 < `skip` 1000.
+**Scales.** Space is a 4 px grid in rem (`--space-0-5` … `--space-18`). Type is `--text-2xs` (0.625 rem) to `--text-3xl`. Every size is in `rem`, so the "Larger text" setting (`html.text-lg`, 112.5 %) scales it all: spaces, radii, controls, panels, slots and the HUD's places. Only lines and outlines (`--border-*`, focus offsets included), the pill shape, blurs and the scrollbar's line stay in px, and the test lists them. Layers are named, not numbered: `base` 1 < `hud` 10 < `lane` 20 < `fade` 25 < `chrome` 30 < `toast` 35 < `overlay` 40 < `greeting` 42 < `drag` 45 < `skip` 1000.
+
+**Queries and feedback.** `@media` can't read a variable, so every width and height query writes a `breakpoint.*` value (in rem: `xs` 480 px to `3xl` 1100 px, and `h-sm` to `h-lg` for heights; tested). A press or a lift moves by `--shift-*`, a nod tips by `--tilt-nod`, and a pop scales by `--scale-*`. A key cap, a button's gap and the other details that follow the text's size are component tokens in `em`; the only `em` written in a stylesheet is `1em`.
 
 ## 4. Components
 
@@ -245,22 +247,24 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
 
 - `tests/unit/designSystem.test.ts` checks:
   - generated tokens are up to date, and every `var()` is defined;
+  - the tokens' 2025.10 format (colour objects, `{value, unit}`, shadow objects; no string values), that every token is read, and that sizes are rem (px only for the listed lines, outlines, blurs and the pill);
   - no colour literals and no `--p-*` in component CSS;
-  - z-index only from layers; font sizes only from `--text-*` or `em`; weight and leading from their scales; radius from the scale;
+  - z-index only from layers; font sizes only from `--text-*`, a component token or `1em`; weight and leading from their scales; radius from the scale;
   - durations and easing from motion tokens, and no px/rem spacing literals;
+  - every value is a token: a CSS parser (`postcss`, pinned) reads the four stylesheets and finds no raw size, offset, blur, turn, time or scale outside an allow-list (`0`, `1em`, percentages, `100vw`/`100dvh`, quarter turns, and the named `.sr-only` and skip-link values), and every `@media` query at a breakpoint token;
   - only three free custom properties (`--slot`, `--hotbar-h`, `--lane-bottom`);
   - inline styles have no colour literals;
   - contrast on both surfaces, and wood defines every paper role;
   - the copy lint.
 - `tests/unit/lanes.test.ts` covers the arbiter, the aside, the compact rule, toast timing, the guard and the target tiers.
-- The E2E test "one thing asks at a time" talks to Prabin by a landmark, checks that only the talk box shows, and checks that <kbd>E</kbd> advances it.
+- The E2E test "one thing asks at a time" talks to Prabin by a landmark, checks that only the talk box shows, and checks that <kbd>E</kbd> advances it. The E2E group "larger text" turns the setting on and checks that the menu, fast travel, the backpack and the hotbar keep every label whole and on screen.
 - **To add a token:**
   1. Add it to `tokens.json` with `$type`, `$value` and `$description`, in the right tier.
   2. Run `node scripts/build-tokens.mjs`.
   3. Use the CSS variable.
 - **To change a colour:** change the primitive or the role; the contrast test tells you if it still passes on both surfaces.
 - **Exceptions:** the lint's exceptions are listed in the test with a reason. Add one only with a reason.
-- **Open gaps:** where the tokens and stylesheets don't yet follow these rules (DTCG values, px sizes, the raw-value lint's reach, typed primitives) is in [the design systems audit](../site-ui/design-system-audit.md), as work items DS-10 to DS-14.
+- **The audit:** what the [design systems audit](../site-ui/design-system-audit.md) found here and closed (DS-10 to DS-14) is recorded there.
 
 ## 10. Touch
 

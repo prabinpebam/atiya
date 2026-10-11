@@ -22,15 +22,23 @@ The rules for the website's pages: the landing, the classic site and the design 
   - The `theme` modifier adds `tokens.light.json` or `tokens.dark.json`, the colour roles.
   - The `contrast` modifier (`normal` or `more`) adds `tokens.contrast-more.json` when the reader asks for more contrast. It points the muted text, outlines and rules at their strong roles (aliases, so one file serves both themes), and the build writes them inside `@media (prefers-contrast: more)`.
   - Values use the 2025.10 objects (colours `{colorSpace, components, hex}`; dimensions and durations `{value, unit}`).
-  - `$extensions` holds only vendor data: `site.fluid.min` (a fluid size's value at 360 px) and `site.unit` (a number's CSS unit, for tracking in `em`).
-- **Build:** after any change, run `node scripts/build-site-tokens.mjs`. It writes `src/site/styles/tokens.css` and [tokens.md](tokens.md); never hand-edit either. The unit test fails on stale output.
-- **Tiers of tokens:** a component reads semantic roles and scales (`--color-*`, `--text-*`, `--space-*`, `--radius-*`, …) or its own component tokens (`--c-button-*`). **Never a primitive (`--p-*`)**: only tokens and the library's token pages read them. A component token aliases a semantic role, never a primitive.
+  - `$extensions` holds only vendor data: `site.fluid.min` (a fluid size's value at 360 px), `site.unit` (a number's CSS unit: tracking, underline offsets and the components' type details in `em`), `site.owner` (who reads a component group: below) and `site.sizes` (a picture width scripts may read: below).
+- **Build:** after any change, run `node scripts/build-site-tokens.mjs`. It writes `src/site/styles/tokens.css`, [tokens.md](tokens.md) and `src/site/design/responsive.ts`; never hand-edit any of them. The unit test fails on stale output.
+- **Tiers of tokens:** a component reads semantic roles and scales (`--color-*`, `--text-*`, `--space-*`, `--radius-*`, …) or component tokens (`--c-button-*`). **Never a primitive (`--p-*`)**: only tokens and the library's token pages read them. A component token aliases a semantic role, never a primitive.
+- **Who reads a component group.** Every `c.*` group says so in `$extensions["site.owner"]`, and [tokens.md](tokens.md) shows it:
+  - **owned** (`"site.owner": "Button"`): only that component reads it (`c.button`, `c.carousel`, `c.story-card`, …);
+  - **shared** (`"site.owner": "shared"`): any component may read it. Only groups that are a family's common decisions are shared: `c.control` (every control's height and padding), `c.check` (Checkbox and Radio), `c.list` (rows that take a background), `c.image` (every picture), `c.quote` (Quote and Prose's blockquote), `c.icon`, `c.scrollbar` and `c.editor`.
+
+  To choose: a value one component decides is owned by it. When a second component needs it, ask whether they're one family (then share the group and say who in its `$description`) or whether the second only needs something like it (then it gets its own token, as `ScrollArea`'s heights and `StoryCard`'s row picture did). A value every page needs, like the top bar's height, is semantic (`--size-chrome-block`), not a component's. A test fails on any read across owned groups.
+- **Feedback and type details are tokens too.** A press, a check's pop, a lift and a picture's zoom are `--scale-*` by intent (smaller things squeeze more), a button's press-in is `--shift-press`, and a link's underline is `--underline-offset` / `--underline-thickness` (the current page's mark in a nav is `--underline-offset-marker`). The drop cap, inline code, a link's external mark and an icon in a line read their component tokens in `em`. The only `em` written in a stylesheet is `1em` (an icon as tall as its text), and the only literal transforms are `0`, `1`, percentages and quarter turns (tested).
 - **Modes:**
   - A colour role that differs between the contexts is emitted as `light-dark()`.
   - The page follows the system unless `<html data-theme="light|dark">` says otherwise. The header's theme switch (and edit mode's, the same control) sets it, `localStorage['site.theme']` keeps it, and PageShell applies it before the first paint. Every other open page of the site follows a change at once (the `storage` event, `followTheme` in `scripts/theme.ts`).
   - Any subtree can switch with `color-scheme` (`data-scheme="dark"`). Never branch on the theme in CSS or script, with one exception: a picture's dark mode version ([media §10](../content/media.md#10-dark-mode-versions)). An `<img>` can't take its picture from a colour role, so `Image` draws a `<picture>` whose dark `<source data-dark>` answers to `prefers-color-scheme`, and the page's head and `followThemeInPictures` (`scripts/theme.ts`) point it at a chosen theme. Nothing else reads the theme.
 - **Fluid sizes:** type and whitespace grow between a 360 px and a 1280 px viewport, emitted as `clamp()`. A fluid token's maximum is at most 2.5 times its minimum (WCAG 1.4.4; tested).
 - **Breakpoints:** `@media` can't read a variable, so width queries use exactly the breakpoint tokens: 40 rem, 56 rem, 72 rem (tested).
+- **Breakpoints and widths in scripts and props:** a `matchMedia` query or a picture's `sizes` can't read a custom property either, so they come from the generated `src/site/design/responsive.ts`: `media('md')` is `(max-width: 56rem)` (`media('sm', 'min')`, `media('short')` for the height), and `sizes(['popout', '92vw'], 'popout')` is `(max-width: 52rem) 92vw, 52rem`, taking breakpoints, measures, a share of a measure (`{ share: 'wide', of: 3 }`) and the picture widths flagged `site.sizes`. No `matchMedia` query or `sizes` in `src/site` holds a rem literal (tested).
+- **Every token is read:** by a style or a script, by another token, or (a breakpoint) by a query. One nothing reads is removed (tested).
 
 ### Icons, behaviour and base (also tier 0)
 
@@ -48,7 +56,8 @@ The rules for the website's pages: the landing, the classic site and the design 
   - `controls.ts`: the slider's values;
   - `page.ts`: runs a component's script on every page, including pages swapped in without a reload (§4);
   - `scrollbars.ts`: the overlay scrollbars (§3): the handle's size and place (`thumbGeometry`) and dragging it (`dragTo`);
-  - `minimap.ts`: the article minimap's rules ([the minimap](minimap.md)): the current landmark, the wave, edge auto-scroll, the jump's landing, which pictures count.
+  - `minimap.ts`: the article minimap's rules ([the minimap](minimap.md)): the current landmark, the wave, edge auto-scroll, the jump's landing, which pictures count, the preview's placement;
+  - the large components' wiring, kept out of their files so they stay short (each set up from the component's `each(…)`): `articleMinimap.ts` (the minimap), `carousel.ts`, `collection.ts` (a collection's layout from its items and width, and its strip's steps) with `collectionStrip.ts`, and `select.ts` (with `listbox.ts`'s pure rules); `units.ts` reads a token's number.
 - **Base styles** (`src/site/styles/base.css`) set element defaults only: the reset, type, links, the focus ring, selection, and `.sr-only`.
 - **Assets:** the font cuts in `src/site/assets/fonts/` (generated; §9).
 - **Helpers:** `src/site/design/meta.ts` (the base path and the theme colours), `samples.ts` (the library's sample media) and `typography.ts` (curly quotes).
@@ -87,7 +96,7 @@ The rules for the website's pages: the landing, the classic site and the design 
    - `@key Keys: action` lines if it takes keys.
 
    Every prop in `interface Props` has a JSDoc comment. Defaults go in the `Astro.props` destructuring, because the library reads them.
-2. **Styles and script.** Styles are scoped, in the file, from tokens only. A client `<script>` initialises every instance through `each('[data-…]', (el, signal) => …)` (`src/site/scripts/page.ts`), never a bare `querySelectorAll` loop: a bundled script runs once, but the library swaps pages in without a reload, and `each` sets up each new page's elements, once each. Pass `signal` to every listener on `window`, `document` or a media query, so a swapped-out instance stops listening. Logic beyond wiring goes in `src/site/scripts/` with a unit test.
+2. **Styles and script.** Styles are scoped, in the file, from tokens only. A client `<script>` initialises every instance through `each('[data-…]', (el, signal) => …)` (`src/site/scripts/page.ts`), never a bare `querySelectorAll` loop: a bundled script runs once, but the library swaps pages in without a reload, and `each` sets up each new page's elements, once each. Pass `signal` to every listener on `window`, `document` or a media query, so a swapped-out instance stops listening. A listener that must live for the whole document (the side nav, kept across swaps, carries its scroll over) sits at the module's top level with a comment that starts `// once per document:` and says why; the test reads it. Logic beyond wiring goes in `src/site/scripts/` with a unit test.
 3. **The story.** Add `src/site/stories/<Name>.stories.astro` with one `<Example title="…" description="…">` per variant or state. What's inside each Example is what the library shows as code, so keep it clean. Use `withBase()` for root-relative links, real copy about the site (never lorem ipsum or invented personal facts), and `SAMPLES` or `SAMPLE_VIDEO` for media. A layout's story is a whole page: the library frames it at `/design/demo/<slug>/`.
 4. **Check it.** The library page appears by itself at `/design/<tier>/<kebab-name>/`. Run `npx vitest related <file> --run` and the "site design system" E2E group if it has behaviour.
 
@@ -138,7 +147,7 @@ The design library is the full, live version (examples, props, keys, tokens, use
 - **No grey tap flash, no double-tap delay.** Base styles turn off the tap highlight and set `touch-action: manipulation` on controls; pinch zoom stays, and zoom is never disabled.
 - **Reflow from 320 px:** no sideways scroll at any width (tested at 320, 360, 430 and 844×390). Long words break; running text hyphenates below 40 rem.
 - **The first screen:** on a phone, upright or on its side, the page's heading (and the landing's primary action) is on it.
-- **The header is compact on phones** (`--c-header-height-compact`, below 40 rem or 30 rem of height), tucks away while you read down, and returns on the way up or on focus.
+- **The header is compact on phones** (`--size-chrome-block-compact`, below 40 rem or 30 rem of height), tucks away while you read down, and returns on the way up or on focus. What clears the top bar (a sticky column, a scrolled-to heading, the minimap's inset) reads `--size-chrome-block`, never the header's own token.
 - **Everything reachable on a phone:** the header's action moves into the menu (or to the footer where there's no menu). The menu closes on a tap outside and scrolls inside on a short screen.
 - **Height queries** use the `short` breakpoint token (30 rem), as width queries use theirs.
 - **Contrast settings:** `prefers-contrast: more` (iOS Increase Contrast) strengthens muted text to 7:1 or more, outlines to 4.5:1 and rules to 3:1 (tested). In forced colours, a state shown by a fill (the current page's pill) gets a non-colour mark too, such as an underline.
@@ -173,8 +182,10 @@ The design library is the full, live version (examples, props, keys, tokens, use
 | Tokens up to date | `node scripts/build-site-tokens.mjs --check` (also in the unit test) |
 | Fonts up to date | `python scripts/build-site-fonts.py --check` |
 | Icons up to date | `node scripts/import-site-icons.mjs --check` (also in the unit test; without the library it checks only that the data covers the set) |
-| The rules | `npx vitest run tests/unit/siteDesignSystem.test.ts tests/unit/siteBehaviour.test.ts tests/unit/siteControls.test.ts` |
+| The rules | `npx vitest run tests/unit/siteDesignSystem.test.ts tests/unit/responsive.test.ts tests/unit/siteBehaviour.test.ts tests/unit/siteControls.test.ts` |
 | In the browser | `npx playwright test -g "site design system|site on a phone|landing & classic"` |
 | Types | `npm run check` |
 
-The open gaps in these checks, and the work items that close them, are in [the design systems audit](design-system-audit.md).
+Beyond the tokens and raw values, `siteDesignSystem.test.ts` holds: who reads each component group (ownership), every token read, transforms, `em` and grid tracks from tokens (the library's specimen pages and the stories' sample grids excepted, by name), `sizes` and `matchMedia` from `responsive.ts`, every window, document and media-query listener passing `signal` (or, once per document, saying why: the side nav's three), and every story showing each value of its component's union props (or the prop naming the story that shows it).
+
+The audit that added these checks, and what each closed, is [the design systems audit](design-system-audit.md).
