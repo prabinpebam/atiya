@@ -51,7 +51,7 @@ const { run = 'current' } = Astro.props;
       <Button variant="secondary" size="sm" icon="copy" data-tests-copy="">Copy summary</Button>
       <Button variant="quiet" size="sm" icon="expand" data-tests-expand="">Open all</Button>
       <Button variant="quiet" size="sm" icon="compress" data-tests-collapse="">Close all</Button>
-      <Button variant="quiet" size="sm" icon="location" data-tests-follow="">Follow the running test</Button>
+      <span class="follow" data-t="follow"><Button variant="quiet" size="sm" icon="location" data-tests-follow="">Follow the running test</Button></span>
     </div>
   </header>
 

@@ -117,6 +117,8 @@ export function initTestRuns(root: HTMLElement, signal: AbortSignal): void {
     $('left').textContent = v.active && v.left !== undefined ? `${roughly(v.left)} left` : '';
     $('reason').textContent = v.active || !v.summary ? v.health.reason : `${v.health.reason === v.summary ? '' : `${v.health.reason} `}${v.summary}`;
     renderNow(v);
+    // following needs something running
+    $('follow').hidden = !v.active;
     renderWho(v);
     renderPhases(v);
     renderBar(v);
@@ -312,7 +314,7 @@ export function initTestRuns(root: HTMLElement, signal: AbortSignal): void {
       for (const k of [a.key, g.key]) groups.set(k, [...(groups.get(k) ?? []), t]);
       // a test's row
       setMark(tn.li, t.status);
-      tn.li.querySelector('.status-word')!.textContent = WORD[t.status];
+      tn.li.querySelector('.status-word')!.textContent = !v.active && t.status === 'queued' ? 'Not run' : WORD[t.status];
       const time = tn.li.querySelector<HTMLElement>('.time')!;
       if (t.status === 'running' && t.start) {
         time.dataset.from = String(t.start);
@@ -333,11 +335,13 @@ export function initTestRuns(root: HTMLElement, signal: AbortSignal): void {
       const failed = list.filter((t) => MARK[t.status] === 'failed').length;
       const running = list.some((t) => MARK[t.status] === 'running');
       const done = list.filter((t) => !['queued', 'running', 'retrying'].includes(t.status)).length;
-      setMark(n.li, failed ? 'failed' : running ? 'running' : done === 0 ? 'queued' : done < list.length ? 'running' : list.some((t) => t.status === 'flaky') ? 'flaky' : 'passed');
-      n.li.querySelector('.status-word')!.textContent = failed ? `${failed} failed` : running ? 'Running' : done === list.length ? 'Done' : 'Not run yet';
+      // a group part done is still running only while the run is; in a finished run its rest wasn't run
+      const partly = done > 0 && done < list.length;
+      setMark(n.li, failed ? 'failed' : running || (partly && v.active) ? 'running' : done === 0 || partly ? 'queued' : list.some((t) => t.status === 'flaky') ? 'flaky' : 'passed');
+      n.li.querySelector('.status-word')!.textContent = failed ? `${failed} failed` : running || (partly && v.active) ? 'Running' : done === list.length ? 'Done' : v.active ? 'Not run yet' : partly ? 'Not finished' : 'Not run';
       n.li.querySelector('.meta')!.textContent = `${done} of ${list.length}`;
       n.li.hidden = !list.some((t) => shows(t.status));
-      n.li.toggleAttribute('data-current', running);
+      n.li.toggleAttribute('data-current', running || (partly && v.active));
     }
     // follow the running test: open its area and group, and show it (once each time it changes); the test it
     // opened before closes once it has passed, so following never leaves a trail (failures stay open)

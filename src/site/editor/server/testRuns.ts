@@ -14,6 +14,7 @@ import {
   countsOf,
   currentStep,
   healthOf,
+  settleRun,
   summaryOf,
   timeLeft,
   usualTimes,
@@ -131,6 +132,7 @@ export function worktrees(root = process.cwd()): Worktree[] {
 }
 
 const SILENCE_GONE_MS = 30_000;
+const SETTLE_AFTER_MS = 5000;
 
 /** One run's folder, read. */
 export function readRun(dir: string, worktree: Worktree, now = Date.now()): RunListing | undefined {
@@ -142,7 +144,11 @@ export function readRun(dir: string, worktree: Worktree, now = Date.now()): RunL
   const a = alive(info?.childPid ?? info?.pid);
   const done = exit || state?.phase === 'done';
   const active = !done && (a === true || (a === null && !!state && now - state.beat < SILENCE_GONE_MS));
-  return { id, dir, worktree, info: info ?? { id, by: 'unknown', purpose: '', cwd: worktree.path, startedAt: state?.startedAt ?? 0, launcher: false }, ...(state ? { state } : {}), ...(exit ? { exit } : {}), alive: a, active: !!active };
+  // a run that isn't active is over: once its process has been gone a few seconds (it may still be writing its
+  // end), nothing in it is left running and no clock counts on (settleRun)
+  const over = !active && !!state && state.phase !== 'done' && (!!exit || now - state.updatedAt > SETTLE_AFTER_MS);
+  const shown = over ? settleRun(state!, exit) : state;
+  return { id, dir, worktree, info: info ?? { id, by: 'unknown', purpose: '', cwd: worktree.path, startedAt: state?.startedAt ?? 0, launcher: false }, ...(shown ? { state: shown } : {}), ...(exit ? { exit } : {}), alive: a, active: !!active };
 }
 
 /** Every run, in every worktree, the newest first. */

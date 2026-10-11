@@ -119,6 +119,7 @@ A run started without the launcher still reports through the reporter, as "start
 | Waiting, idle | A step has run 20 s with no CPU use | "Waiting for page.evaluate, CPU idle 34 s; gives up in 2:19" |
 | No word | No heartbeat for over 5 s | "No word from the run for 12 s; its process is running" (or isn't) |
 | Ended unexpectedly | The process is gone with no `end` event | "The run ended unexpectedly at 14:22 (exit code 1)", its last output lines |
+| Stopped | Stopped from the screen, or its process gone for over 5 s with no `end` event and no error exit (stopped from outside, most often) | "Stopped at 20:53, with 21 of 213 done: its process ended without a final report. Nothing is running." The run is settled: a test that was under way goes back to not run, and no clock counts on |
 | Failed | A test failed, or the build or server did | The test with its verdict, or the cause ("Port 4329 is in use") |
 | Passed | All done, as expected | "Passed: 211 tests in 48 min" |
 
@@ -253,7 +254,8 @@ It's built in a worktree, checked on its own port, then merged. The new route ne
   - **A reused server is found by its port** (something already listening on 4329 or 4330 before the run), not by its build time and commit.
   - **The tree opens in place:** a test opens under its row, rather than in a pane beside the tree. Following closes a test it opened itself once that test passes, so it never leaves a trail; failures, and anything you open, stay open.
   - **Verdicts need a run on the stable tree:** until one has been run through the launcher there, a failure reads "Not compared".
+  - **A run whose process is gone is settled** (`settleRun`, applied by `readRun` once its process has been gone 5 s): it is shown as finished, with nothing running and no clock counting. Without an error exit it reads "Stopped" (a run killed from outside, by a terminal or an agent, never sends its `end`, and used to show "Ended unexpectedly" with a test's clock counting for hours); an error exit the launcher saw still reads "Ended unexpectedly". A group part done reads "Not finished", the rest "Not run", and Follow the running test is hidden.
 - **Not built yet (phases 2 to 4):** the trace viewer, screenshots shown in place, VS Code links, the timeline, notifications, stop and re-run, and Vitest.
 - **Checks:**
-  - `tests/unit/testRun.test.ts`: folding, folded repeats, every health state with its reason, verdicts, the summary, time left;
+  - `tests/unit/testRun.test.ts`: folding, folded repeats, every health state with its reason, verdicts, the summary, time left, and settling a run whose process went without an end;
   - `tests/e2e/editor-tests.spec.ts` (the editor project): a fixture run with a heartbeat kept fresh shows the sentence, the failure and its verdict, the step clocks ticking and the tree following the running test; once the heartbeat stops, the screen says "No word" within seconds.

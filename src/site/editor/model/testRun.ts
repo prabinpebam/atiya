@@ -204,6 +204,23 @@ export class RunFolder {
   }
 }
 
+/**
+ * A run whose process is gone without its `end`: finished as it stood. Nothing is left running, so no clock
+ * counts on: a test that was under way didn't finish and goes back to not run (`queued`), keeping its steps
+ * out; the run ends when it was last heard from, `gone` (no word of why: most often stopped from outside) or
+ * `crashed` (the launcher saw it exit with an error). The state given is left as it was.
+ */
+export function settleRun(run: RunState, exit?: { code: number | null; at: number; reason?: string }): RunState {
+  if (run.phase === 'done') return run;
+  const tests: Record<string, TestState> = {};
+  for (const id of run.order) {
+    const t = run.tests[id];
+    tests[id] = t.status === 'running' || t.status === 'retrying' ? { ...t, status: 'queued', start: undefined, end: undefined, duration: undefined, steps: [] } : t;
+  }
+  const crashed = exit && exit.reason !== 'stopped' && exit.code !== 0;
+  return { ...run, tests, phase: 'done', endStatus: exit?.reason === 'stopped' ? 'interrupted' : crashed ? 'crashed' : 'gone', updatedAt: exit?.at ?? run.updatedAt, idleSince: undefined };
+}
+
 export function foldRun(events: RunEvent[], t = events[0]?.t ?? 0): RunState {
   const f = new RunFolder(t);
   for (const e of events) f.apply(e);
@@ -339,7 +356,8 @@ export function healthOf(run: RunState, live: Liveness, usual: Map<string, numbe
   const c = countsOf(run.order.map((id) => run.tests[id]));
   if (run.phase === 'done' || live.exit) {
     const finished = run.phase === 'done';
-    if (!finished || run.endStatus === 'interrupted') {
+    if (run.endStatus === 'gone') return { state: 'stopped', label: 'Stopped', reason: `Stopped at ${at(run.updatedAt)}, with ${c.done} of ${c.total} done: its process ended without a final report. Nothing is running.` };
+    if (!finished || run.endStatus === 'interrupted' || run.endStatus === 'crashed') {
       const code = live.exit?.code;
       if (live.exit?.reason === 'stopped' || run.endStatus === 'interrupted') return { state: 'stopped', label: 'Stopped', reason: `Stopped at ${at(live.exit?.at ?? run.updatedAt)}, with ${c.done} of ${c.total} done.` };
       return { state: 'dead', label: 'Ended unexpectedly', reason: `The run ended unexpectedly at ${at(live.exit?.at ?? run.updatedAt)}${code !== undefined && code !== null ? ` (exit code ${code})` : ''}, with ${c.done} of ${c.total} done.` };

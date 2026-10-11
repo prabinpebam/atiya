@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RunFolder, areaOf, clock, countsOf, currentStep, foldRun, healthOf, summaryOf, timeLeft, usualTimes, verdictOf, type RunEvent, type TestInfo, type TestStatus } from '../../src/site/editor/model/testRun';
+import { RunFolder, areaOf, clock, countsOf, currentStep, foldRun, healthOf, settleRun, summaryOf, timeLeft, usualTimes, verdictOf, type RunEvent, type TestInfo, type TestStatus } from '../../src/site/editor/model/testRun';
 
 const T0 = Date.parse('2026-10-11T09:00:00Z');
 const info = (id: string, title = id, timeout = 60_000): TestInfo => ({ id, project: 'chromium', file: 'tests/e2e/planet.spec.ts', path: ['crafting', title], line: 1, timeout, retries: 0 });
@@ -114,6 +114,26 @@ describe('judging a run', () => {
     expect(h.state).toBe('dead');
     expect(h.reason).toMatch(/^The run ended unexpectedly at \d\d:\d\d \(exit code 1\), with 0 of 2 done\.$/);
     expect(healthOf(r, { now: T0 + 6000, alive: false, exit: { code: 1, at: T0 + 5500, reason: 'stopped' } }).state).toBe('stopped');
+  });
+
+  it('a run whose process went without an end is settled: nothing left running, no clock counting, stopped', () => {
+    const r = running([{ t: T0 + 5000, type: 'beat', cpu: 50 }]);
+    const s = settleRun(r);
+    expect(r.phase).toBe('tests');
+    expect(r.tests.a.status).toBe('running');
+    expect(s.phase).toBe('done');
+    expect(s.tests.a).toMatchObject({ status: 'queued', steps: [] });
+    expect(s.tests.a.start).toBeUndefined();
+    expect(countsOf(s.order.map((id) => s.tests[id]))).toMatchObject({ running: 0, queued: 2 });
+    const later = { now: T0 + 10 * 3600_000, alive: false as const };
+    expect(healthOf(s, later)).toMatchObject({ state: 'stopped', label: 'Stopped' });
+    expect(healthOf(s, later).reason).toMatch(/^Stopped at \d\d:\d\d, with 0 of 2 done: its process ended without a final report\. Nothing is running\.$/);
+    // the summary's time is the run's own, not the hours since
+    expect(summaryOf(s, undefined, s.updatedAt).sentence).toBe('0 passed. 2 not run. under a minute.');
+    // the launcher saw it exit with an error: still said, as a crash; stopped from the screen: stopped
+    expect(healthOf(settleRun(r, { code: 1, at: T0 + 5500 }), later).state).toBe('dead');
+    expect(healthOf(settleRun(r, { code: null, at: T0 + 5500, reason: 'stopped' }), later).state).toBe('stopped');
+    expect(settleRun(s)).toBe(s);
   });
 
   it('preparing says what it is getting ready, from its last line', () => {
