@@ -1,5 +1,5 @@
 /** The menu (settings, the classic site), its How to play page and its fast travel page, loaded on demand by the HUD. */
-import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { useRef, type KeyboardEvent } from 'react';
 import { faBookOpen, faEnvelope, faHouse, faLandmark, faMicrophoneLines, faScrewdriverWrench, faSeedling, faTowerObservation, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
 import { useStore } from 'zustand';
@@ -7,7 +7,8 @@ import type { GameController } from '../controller';
 import { prefs } from '../platform/prefs';
 import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import type { TimeMode } from '../world/timeOfDay';
-import { spaceBack } from '../input/keyboard';
+import { Button, KeyCap } from './primitives';
+import { Dialog } from './overlays';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -20,7 +21,7 @@ const TIME_OPTIONS: ReadonlyArray<readonly [TimeMode, string]> = [
 const Keys = ({ k }: { k: string }) => (
   <>
     {k.split(' ').map((x) => (
-      <kbd key={x}>{x}</kbd>
+      <KeyCap key={x}>{x}</KeyCap>
     ))}
   </>
 );
@@ -74,8 +75,8 @@ function TravelPage({ controller }: { controller: GameController }) {
       <ul ref={grid} className="travel-grid" onKeyDown={onKeyDown}>
         {places.map((l, i) => (
           <li key={l.id}>
-            <button
-              type="button"
+            <Button
+              variant="bare"
               className="travel-tile"
               style={{ ['--accent' as string]: l.accent }}
               aria-current={nearby === l.id ? 'location' : undefined}
@@ -88,20 +89,20 @@ function TravelPage({ controller }: { controller: GameController }) {
               <strong>{l.title}</strong>
               <span className="travel-kicker">{l.kicker}</span>
               {nearby === l.id && <span className="travel-here">You're here</span>}
-              <kbd>{i + 1}</kbd>
-            </button>
+              <KeyCap>{i + 1}</KeyCap>
+            </Button>
           </li>
         ))}
         <li>
-          <button type="button" className="travel-tile plaza" aria-current={atSpawn ? 'location' : undefined} aria-keyshortcuts="H" onClick={() => controller.returnHome()}>
+          <Button variant="bare" className="travel-tile plaza" aria-current={atSpawn ? 'location' : undefined} aria-keyshortcuts="H" onClick={() => controller.returnHome()}>
             <span className="travel-sign" aria-hidden="true">
               <Icon icon={faHouse} />
             </span>
             <strong>The plaza</strong>
             <span className="travel-kicker">Where you started, facing north</span>
             {atSpawn && <span className="travel-here">You're here</span>}
-            <kbd>H</kbd>
-          </button>
+            <KeyCap>H</KeyCap>
+          </Button>
         </li>
       </ul>
     </>
@@ -186,25 +187,13 @@ export default function MenuDialog({ controller }: { controller: GameController 
   const musicOn = useStore(controller.store, (s) => s.musicOn);
   const largeText = useStore(controller.store, (s) => s.largeText);
   const ambientPaused = useStore(controller.store, selectAmbientPaused);
-  const ref = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (menuOpen && !d.open) d.showModal();
-    if (!menuOpen && d.open) d.close();
-  }, [menuOpen]);
-
   return (
-    <dialog
-      ref={ref}
-      className={`dialog menu-dialog${travel ? ' travel-dialog' : ''}`}
+    <Dialog
+      open={Boolean(menuOpen)}
+      onDismiss={() => controller.closeMenu()}
+      className={`menu-dialog${travel ? ' travel-dialog' : ''}`}
       aria-labelledby="menu-title"
       data-testid="menu-dialog"
-      onCancel={(e) => {
-        e.preventDefault();
-        controller.closeMenu();
-      }}
       onKeyDown={(e) => {
         // fast travel's keys: a place's number (the plaza is H) flies there; T closes, as it opened
         if (travel && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -215,15 +204,8 @@ export default function MenuDialog({ controller }: { controller: GameController 
             if (place) controller.travelTo(place.id);
             else if (e.code === 'KeyH') controller.returnHome();
             else controller.closeMenu();
-            return;
           }
         }
-        if (!spaceBack(e)) return;
-        e.preventDefault();
-        controller.closeMenu();
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) controller.closeMenu();
       }}
     >
       <div className="dialog-body">
@@ -236,42 +218,40 @@ export default function MenuDialog({ controller }: { controller: GameController 
             <h2 id="menu-title">Menu</h2>
             <section aria-labelledby="menu-places">
               <h3 id="menu-places">Places</h3>
-              <button type="button" className="btn" onClick={() => controller.openTravel()}>
-                Fast travel <kbd>T</kbd>
-              </button>
+              <Button onClick={() => controller.openTravel()}>
+                Fast travel <KeyCap>T</KeyCap>
+              </Button>
             </section>
             <section aria-labelledby="menu-view">
               <h3 id="menu-view">View</h3>
               <div className="menu-view" role="group" aria-label="Turn and tilt the view">
-                <button type="button" className="btn" onClick={() => controller.rotateViewStep(1)}>
-                  Rotate left <kbd>,</kbd>
-                </button>
-                <button type="button" className="btn" onClick={() => controller.rotateViewStep(-1)}>
-                  Rotate right <kbd>.</kbd>
-                </button>
-                <button type="button" className="btn" onClick={() => controller.tiltViewStep(1)}>
-                  Tilt to top <kbd>PgUp</kbd>
-                </button>
-                <button type="button" className="btn" onClick={() => controller.tiltViewStep(-1)}>
-                  Tilt to side <kbd>PgDn</kbd>
-                </button>
+                <Button onClick={() => controller.rotateViewStep(1)}>
+                  Rotate left <KeyCap>,</KeyCap>
+                </Button>
+                <Button onClick={() => controller.rotateViewStep(-1)}>
+                  Rotate right <KeyCap>.</KeyCap>
+                </Button>
+                <Button onClick={() => controller.tiltViewStep(1)}>
+                  Tilt to top <KeyCap>PgUp</KeyCap>
+                </Button>
+                <Button onClick={() => controller.tiltViewStep(-1)}>
+                  Tilt to side <KeyCap>PgDn</KeyCap>
+                </Button>
               </div>
             </section>
             <section aria-labelledby="menu-rest">
               <h3 id="menu-rest">Rest</h3>
               <div className="menu-view" role="group" aria-label="Rest here">
                 {(['sit', 'lie'] as const).map((k) => (
-                  <button
+                  <Button
                     key={k}
-                    type="button"
-                    className="btn"
                     onClick={() => {
                       controller.closeMenu();
                       controller.restAs?.(k);
                     }}
                   >
-                    {k === 'sit' ? 'Sit down' : 'Lie down'} <kbd>{k === 'sit' ? 'X' : 'Z'}</kbd>
-                  </button>
+                    {k === 'sit' ? 'Sit down' : 'Lie down'} <KeyCap>{k === 'sit' ? 'X' : 'Z'}</KeyCap>
+                  </Button>
                 ))}
               </div>
             </section>
@@ -317,18 +297,18 @@ export default function MenuDialog({ controller }: { controller: GameController 
         )}
         <div className="actions">
           {!help && !travel && (
-            <button type="button" className="btn" onClick={() => controller.openHelp()}>
+            <Button onClick={() => controller.openHelp()}>
               Show controls
-            </button>
+            </Button>
           )}
           <a className="btn" href={controller.classicHref()} onClick={toClassic}>
             Classic site
           </a>
-          <button type="button" className="btn primary" onClick={() => controller.closeMenu()}>
-            Close <kbd>Space</kbd>
-          </button>
+          <Button variant="primary" onClick={() => controller.closeMenu()}>
+            Close <KeyCap>Space</KeyCap>
+          </Button>
         </div>
       </div>
-    </dialog>
+    </Dialog>
   );
 }

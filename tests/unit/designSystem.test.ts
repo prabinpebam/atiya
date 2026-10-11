@@ -306,3 +306,47 @@ describe('copy: the word rules', () => {
     expect(bad).toEqual([]);
   });
 });
+
+// ---------- primitives (design-system.md §4.1; audit DS-14) ----------
+describe('controls: the game writes them through its primitives', () => {
+  const PRIMITIVES = join(ROOT, 'src/game/ui/primitives.tsx');
+  const OVERLAYS = join(ROOT, 'src/game/ui/overlays.tsx');
+  const files: string[] = [];
+  const walk = (dir: string) => {
+    for (const f of readdirSync(dir)) {
+      const p = join(dir, f);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (f.endsWith('.tsx')) files.push(p);
+    }
+  };
+  walk(join(ROOT, 'src/game'));
+  const code = (f: string) => readFileSync(f, 'utf8').replace(/\/\/.*|\/\*[\s\S]*?\*\//g, '');
+  const imports = (f: string) => [...readFileSync(f, 'utf8').matchAll(/^import\s+(type\s+)?[^'"]*from\s+'([^']+)'/gm)].filter((m) => !m[1]).map((m) => m[2]).sort();
+
+  it('no <button> or <kbd> is written outside ui/primitives.tsx (Button, IconButton, KeyCap), and no <dialog> outside ui/overlays.tsx (Dialog)', () => {
+    expect(files).toEqual(expect.arrayContaining([PRIMITIVES, OVERLAYS]));
+    const bad = files.flatMap((f) =>
+      [...code(f).matchAll(/<(button|dialog|kbd)\b/g)]
+        .filter((m) => (m[1] === 'dialog' ? f !== OVERLAYS : f !== PRIMITIVES))
+        .map((m) => `${f.slice(ROOT.length + 1)}: <${m[1]}>`),
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it('the controls import only Icon (they sit in the initial bundle); the containers stay out of it', () => {
+    expect(imports(PRIMITIVES)).toEqual(['./Icon']);
+    expect(imports(OVERLAYS)).toEqual(['../input/keyboard', 'react']);
+    // nothing the initial bundle loads may import the containers (the on-demand screens do)
+    const initial = ['src/game/ui/Hud.tsx', 'src/game/ui/Inventory.tsx', 'src/game/ui/ViewControls.tsx', 'src/game/ui/primitives.tsx'];
+    expect(initial.filter((f) => imports(join(ROOT, f)).includes('./overlays'))).toEqual([]);
+  });
+
+  it('IconButton requires a label, which becomes its aria-label (an icon names nothing)', () => {
+    const src = readFileSync(PRIMITIVES, 'utf8');
+    const props = /export type IconButtonProps = Omit<ButtonProps, ([^>]*)> & \{([\s\S]*?)\r?\n\};/.exec(src);
+    expect(props, 'IconButtonProps').not.toBeNull();
+    expect(props![1]).toContain("'aria-label'");
+    expect(props![2]).toMatch(/^\s*label: string;/m);
+    expect(src).toMatch(/aria-label=\{label\}/);
+  });
+});

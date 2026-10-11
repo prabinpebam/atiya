@@ -91,6 +91,21 @@ Each component has one class family, reads only surface roles and tokens, and ha
 
 Adding a component: give it a class family, put it in the right stylesheet, use only surface roles and tokens (add `c.*` tokens if needed), add its row here, and let the design-system test run.
 
+### 4.1 Primitives
+
+The game's TSX never writes a `<button>`, `<dialog>` or `<kbd>` itself: it uses these React primitives, which own each control's classes, name, states and surface (a unit test holds it).
+
+| Primitive | Module | What it owns |
+|---|---|---|
+| `Button` | [ui/primitives.tsx](https://github.com/prabinpebam/atiya/blob/main/src/game/ui/primitives.tsx) | `type="button"`, `.btn` and `variant` (`primary`, or `bare` for controls with their own anatomy: slots, travel tiles, the compass, swatches, portraits). States are native: `disabled`, `aria-disabled` (busy or unavailable but focusable, like the crafting button), `aria-pressed`, `aria-expanded`. Every other prop (refs, handlers, `data-*`, `className` for layout) passes through. |
+| `IconButton` | ui/primitives.tsx | An icon-only button: a required `label` (its `aria-label`) and an `icon` (through `Icon`); square `.icon-btn` unless `pill`. A button with an icon and a key cap but no words is a `Button` with an `aria-label`. |
+| `KeyCap` | ui/primitives.tsx | The key cap: the `kbd` element itself (styled by the `kbd` rule in `components.css`), so it costs the initial bundle nothing. |
+| `Dialog` | [ui/overlays.tsx](https://github.com/prabinpebam/atiya/blob/main/src/game/ui/overlays.tsx) | The native modal `dialog`: `open` keeps it in step (`showModal`, `close`), and `onDismiss` hears Esc, Space (`spaceBack`, §6.7) and the backdrop. `.dialog` unless `bare` (the reading overlay, which ignores its backdrop). |
+| `Panel` | ui/overlays.tsx | A wood panel: the `.surface-wood` backdrop (`backdrop` props, `outside` for what floats over it) round a modal `role="dialog"` `.inv-panel`. |
+| `ScrollArea` | ui/overlays.tsx | A scroller with the thin scrollbar (`.scroll-thin`), a `div` or a `ul`. |
+
+The controls sit in the initial bundle, so they import only `Icon`; they cost it about 0.1 KB gz, and on 11 October 2026 left it 6 bytes under its 450 KB budget. The containers are used only by the screens that load on demand, so they're a separate module that the initial bundle never imports.
+
 ## 5. Screen regions
 
 | Region | Where | Holds | Rule |
@@ -255,7 +270,8 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
   - only three free custom properties (`--slot`, `--hotbar-h`, `--lane-bottom`);
   - inline styles have no colour literals;
   - contrast on both surfaces, and wood defines every paper role;
-  - the copy lint.
+  - the copy lint;
+  - no `<button>`, `<kbd>` or `<dialog>` outside the primitives (§4.1), `IconButton` requires its `label`, and the initial bundle never imports the containers.
 - `tests/unit/lanes.test.ts` covers the arbiter, the aside, the compact rule, toast timing, the guard and the target tiers.
 - The E2E test "one thing asks at a time" talks to Prabin by a landmark, checks that only the talk box shows, and checks that <kbd>E</kbd> advances it. The E2E group "larger text" turns the setting on and checks that the menu, fast travel, the backpack and the hotbar keep every label whole and on screen.
 - **To add a token:**

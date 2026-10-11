@@ -17,6 +17,8 @@ import { BACKPACK_SLOTS, CHEST_SLOTS, HOTBAR, type ContainerId, type Screen, typ
 import { itemDef, stackLabel, type ItemId } from '../inventory/items';
 import { doubleClick, dropHeld, leftClick, moveAllOf, numberSwap, planSpread, rightClick, shiftClick, sortSection, spread, storeAll, takeAll, wheelMove } from '../inventory/screenOps';
 import { Icon } from './Icon';
+import { Button, IconButton } from './primitives';
+import { Panel } from './overlays';
 import { SlotFace } from './Inventory';
 import { spaceBack } from '../input/keyboard';
 
@@ -67,17 +69,16 @@ function HelpPopover({ groups }: { groups: ReadonlyArray<{ title: string; keys: 
         setOpen(false);
       }}
     >
-      <button
-        type="button"
-        className="btn help-btn"
-        aria-label="Show controls"
+      <IconButton
+        pill
+        label="Show controls"
+        icon={faCircleQuestion}
+        className="help-btn"
         aria-expanded={Boolean(open)}
         aria-controls={id}
         data-testid="help-button"
         onClick={() => setOpen((o) => (o === 'pin' ? false : 'pin'))}
-      >
-        <Icon icon={faCircleQuestion} />
-      </button>
+      />
       <div id={id} className="help-card" role="group" aria-label="Controls" hidden={!open} data-testid="help-card">
         {groups.map((g) => (
           <section key={g.title}>
@@ -458,96 +459,102 @@ export default function InventoryPanel({
   const held = plan && inv.held ? (plan.left > 0 ? { id: inv.held.id, n: plan.left } : null) : (inv.held ?? (lift ? inv.get(lift.from) : null));
   let flat = 0;
   return (
-    <div className="inv-backdrop surface-wood" data-testid={`${kind}-screen`} onPointerMove={onMove} onPointerDown={onBackdrop} onContextMenu={(e) => e.preventDefault()}>
-      <div ref={panel} className={`inv-panel ${kind}-panel`} role="dialog" aria-modal="true" aria-label={title} onKeyDown={onKey}>
-        <div className="inv-head">
-          <h2>
-            {icon && <Icon icon={icon} />} {title}
-          </h2>
-          <HelpPopover groups={[...(help ? [help] : []), { title: screen === 'chest' ? 'Backpack and chest' : 'Backpack', keys: touch ? SLOT_TOUCH : SLOT_KEYS }]} />
-          <button type="button" className="btn inv-close" aria-label="Close" onClick={onClose}>
-            <Icon icon={faXmark} />
-          </button>
-        </div>
-        {top}
-        {sections.map((sec) => (
-          <section key={sec.id} className={`inv-section ${sec.id}`} aria-label={sec.title}>
-            {sec.id !== 'inv-hotbar' && (
-              <div className="inv-sec-head">
-                <h3>{sec.title}</h3>
-                <div className="inv-tools" role="group" aria-label={`${sec.title} tools`}>
-                  {sec.id === 'inv-chest' && (
-                    <button type="button" className="btn" onClick={onTake} title="Move everything in the chest into your backpack">
-                      Take all
-                    </button>
-                  )}
-                  {sec.id === 'inv-main' && screen === 'chest' && (
-                    <>
-                      <button type="button" className="btn" onClick={() => onStore(true)} title="Store the items the chest already holds">
-                        Store matching
-                      </button>
-                      <button type="button" className="btn" onClick={() => onStore(false)} title="Move everything in your backpack into the chest">
-                        Store all
-                      </button>
-                    </>
-                  )}
-                  <button type="button" className="btn" aria-label={`Sort ${sec.title.toLowerCase()}`} onClick={() => sort(sec)} title="Merge stacks and put them in order (R)">
-                    Sort
-                  </button>
-                </div>
-              </div>
-            )}
-            <div className="inv-grid">
-              {Array.from({ length: sec.to - sec.from }, (_, k) => {
-                const r: SlotRef = { c: sec.c, i: sec.from + k };
-                const st = inv.get(r);
-                const ghost = plan?.slots.get(keyOf(r));
-                const idx = flat++;
-                const name = `${sec.c === 'chest' ? 'Chest' : sec.id === 'inv-hotbar' ? 'Hotbar' : 'Backpack'} slot ${sec.id === 'inv-hotbar' ? r.i + 1 : sec.c === 'chest' ? r.i + 1 : r.i - HOTBAR + 1}`;
-                return (
-                  <button
-                    key={keyOf(r)}
-                    ref={(el) => {
-                      slotEls.current[idx] = el;
-                    }}
-                    type="button"
-                    className={`slot${sec.id === 'inv-hotbar' && r.i === inv.selected ? ' selected' : ''}${ghost ? ' spread' : ''}${lift && keyOf(lift.from) === keyOf(r) ? ' lifting' : ''}${lift?.over && keyOf(lift.over) === keyOf(r) && keyOf(lift.from) !== keyOf(r) ? ' drop-target' : ''}`}
-                    tabIndex={idx === focusIdx ? 0 : -1}
-                    aria-label={`${name}: ${st ? stackLabel(st.id, st.n) : 'empty'}`}
-                    data-slot={keyOf(r)}
-                    onPointerDown={onSlotDown(r)}
-                    onPointerEnter={onSlotEnter(r)}
-                    onPointerLeave={() => {
-                      hovered.current = null;
-                      setTip(null);
-                    }}
-                    onWheel={onSlotWheel(r)}
-                    onMouseDown={(e) => e.button === 1 && e.preventDefault()}
-                    onFocus={(e) => {
-                      setFocusIdx(idx);
-                      hovered.current = r;
-                      // keyboard: the held stack sits by the focused slot
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      if (cursor.current) cursor.current.style.transform = `translate(${rect.right - 26}px, ${rect.top - 18}px)`;
-                    }}
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    <SlotFace stack={ghost ?? st} />
-                  </button>
-                );
-              })}
+    <Panel
+      ref={panel}
+      className={`${kind}-panel`}
+      aria-label={title}
+      onKeyDown={onKey}
+      backdrop={{ 'data-testid': `${kind}-screen`, onPointerMove: onMove, onPointerDown: onBackdrop, onContextMenu: (e) => e.preventDefault() }}
+      outside={
+        <>
+          {tip && !inv.held && !lift && (
+            <div className="inv-tip" style={{ left: tip.x, top: tip.y } as CSSProperties} aria-hidden="true">
+              {tip.text}
             </div>
-          </section>
-        ))}
+          )}
+          <div ref={cursor} className={`inv-cursor${lift ? ' carrying' : ''}`} aria-hidden="true" data-testid="inventory-cursor">
+            {held && <SlotFace stack={held} />}
+          </div>
+        </>
+      }
+    >
+      <div className="inv-head">
+        <h2>
+          {icon && <Icon icon={icon} />} {title}
+        </h2>
+        <HelpPopover groups={[...(help ? [help] : []), { title: screen === 'chest' ? 'Backpack and chest' : 'Backpack', keys: touch ? SLOT_TOUCH : SLOT_KEYS }]} />
+        <IconButton pill label="Close" icon={faXmark} className="inv-close" onClick={onClose} />
       </div>
-      {tip && !inv.held && !lift && (
-        <div className="inv-tip" style={{ left: tip.x, top: tip.y } as CSSProperties} aria-hidden="true">
-          {tip.text}
-        </div>
-      )}
-      <div ref={cursor} className={`inv-cursor${lift ? ' carrying' : ''}`} aria-hidden="true" data-testid="inventory-cursor">
-        {held && <SlotFace stack={held} />}
-      </div>
-    </div>
+      {top}
+      {sections.map((sec) => (
+        <section key={sec.id} className={`inv-section ${sec.id}`} aria-label={sec.title}>
+          {sec.id !== 'inv-hotbar' && (
+            <div className="inv-sec-head">
+              <h3>{sec.title}</h3>
+              <div className="inv-tools" role="group" aria-label={`${sec.title} tools`}>
+                {sec.id === 'inv-chest' && (
+                  <Button onClick={onTake} title="Move everything in the chest into your backpack">
+                    Take all
+                  </Button>
+                )}
+                {sec.id === 'inv-main' && screen === 'chest' && (
+                  <>
+                    <Button onClick={() => onStore(true)} title="Store the items the chest already holds">
+                      Store matching
+                    </Button>
+                    <Button onClick={() => onStore(false)} title="Move everything in your backpack into the chest">
+                      Store all
+                    </Button>
+                  </>
+                )}
+                <Button aria-label={`Sort ${sec.title.toLowerCase()}`} onClick={() => sort(sec)} title="Merge stacks and put them in order (R)">
+                  Sort
+                </Button>
+              </div>
+            </div>
+          )}
+          <div className="inv-grid">
+            {Array.from({ length: sec.to - sec.from }, (_, k) => {
+              const r: SlotRef = { c: sec.c, i: sec.from + k };
+              const st = inv.get(r);
+              const ghost = plan?.slots.get(keyOf(r));
+              const idx = flat++;
+              const name = `${sec.c === 'chest' ? 'Chest' : sec.id === 'inv-hotbar' ? 'Hotbar' : 'Backpack'} slot ${sec.id === 'inv-hotbar' ? r.i + 1 : sec.c === 'chest' ? r.i + 1 : r.i - HOTBAR + 1}`;
+              return (
+                <Button
+                  key={keyOf(r)}
+                  ref={(el) => {
+                    slotEls.current[idx] = el;
+                  }}
+                  variant="bare"
+                  className={`slot${sec.id === 'inv-hotbar' && r.i === inv.selected ? ' selected' : ''}${ghost ? ' spread' : ''}${lift && keyOf(lift.from) === keyOf(r) ? ' lifting' : ''}${lift?.over && keyOf(lift.over) === keyOf(r) && keyOf(lift.from) !== keyOf(r) ? ' drop-target' : ''}`}
+                  tabIndex={idx === focusIdx ? 0 : -1}
+                  aria-label={`${name}: ${st ? stackLabel(st.id, st.n) : 'empty'}`}
+                  data-slot={keyOf(r)}
+                  onPointerDown={onSlotDown(r)}
+                  onPointerEnter={onSlotEnter(r)}
+                  onPointerLeave={() => {
+                    hovered.current = null;
+                    setTip(null);
+                  }}
+                  onWheel={onSlotWheel(r)}
+                  onMouseDown={(e) => e.button === 1 && e.preventDefault()}
+                  onFocus={(e) => {
+                    setFocusIdx(idx);
+                    hovered.current = r;
+                    // keyboard: the held stack sits by the focused slot
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    if (cursor.current) cursor.current.style.transform = `translate(${rect.right - 26}px, ${rect.top - 18}px)`;
+                  }}
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <SlotFace stack={ghost ?? st} />
+                </Button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </Panel>
   );
 }

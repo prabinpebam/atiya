@@ -27,6 +27,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
+import { Button, IconButton, KeyCap } from './primitives';
 import { withBase } from '../platform/base';
 import { focusLane, laneBeneath, overlayOpen } from './lanes';
 
@@ -55,9 +56,9 @@ function PreviewCard({ controller }: { controller: GameController }) {
       <p>{d.summary}</p>
       {d.pages.length === 0 && <p>It’s still being fitted out: its pages are on their way.</p>}
       <div className="actions">
-        <button className="btn primary" type="button" onClick={(e) => controller.openLandmark(d.id, { invoker: e.currentTarget })}>
-          Open <kbd>E</kbd>
-        </button>
+        <Button variant="primary" onClick={(e) => controller.openLandmark(d.id, { invoker: e.currentTarget })}>
+          Open <KeyCap>E</KeyCap>
+        </Button>
         <a className="btn" href={d.siteHref} onClick={toClassic}>
           Open classic page <Icon icon={faArrowUpRightFromSquare} />
         </a>
@@ -141,21 +142,14 @@ function ActionPrompt({ controller }: { controller: GameController }) {
   return (
     <div className="seat-prompt action-prompt lane" data-testid="seat-prompt" data-kind={feed ? 'feed' : extra ? 'seat-action' : seated ? 'stand' : target!.kind}>
       {extra && (
-        <button className="btn primary" type="button" onClick={() => (extra.run(), controller.focusRegion())}>
-          <Icon icon={extra.icon} /> {extra.label} <kbd>E</kbd>
-        </button>
+        <Button variant="primary" onClick={() => (extra.run(), controller.focusRegion())}>
+          <Icon icon={extra.icon} /> {extra.label} <KeyCap>E</KeyCap>
+        </Button>
       )}
-      <button className={extra ? 'btn' : 'btn primary'} type="button" onClick={act}>
-        {seated ? (
-          <>
-            <Icon icon={faPersonWalking} /> Stand up <kbd>Space</kbd>
-          </>
-        ) : (
-          <>
-            <Icon icon={controller.targets.find((x) => x.key === target!.key)?.icon?.() ?? TARGET_ICONS[target!.kind as keyof typeof TARGET_ICONS]} /> {target!.label} <kbd>E</kbd>
-          </>
-        )}
-      </button>
+      <Button variant={extra ? undefined : 'primary'} onClick={act}>
+        <Icon icon={seated ? faPersonWalking : (controller.targets.find((x) => x.key === target!.key)?.icon?.() ?? TARGET_ICONS[target!.kind as keyof typeof TARGET_ICONS])} /> {seated ? 'Stand up' : target!.label}{' '}
+        <KeyCap>{seated ? 'Space' : 'E'}</KeyCap>
+      </Button>
     </div>
   );
 }
@@ -297,17 +291,15 @@ function TimeBadge({ controller }: { controller: GameController }) {
 function SoundButton({ controller }: { controller: GameController }) {
   const on = useStore(controller.store, (s) => s.soundOn);
   return (
-    <button
-      type="button"
-      className="btn icon-btn sound-btn"
-      aria-label="Sound"
+    <IconButton
+      label="Sound"
+      icon={on ? faVolumeHigh : faVolumeXmark}
+      className="sound-btn"
       aria-pressed={on}
       title={on ? 'Sound on — click to mute' : 'Sound off — click to unmute'}
       onClick={() => controller.setSound(!on)}
       data-testid="sound-button"
-    >
-      <Icon icon={on ? faVolumeHigh : faVolumeXmark} />
-    </button>
+    />
   );
 }
 
@@ -337,12 +329,12 @@ function CharacterPicker({ controller }: { controller: GameController }) {
       {CHARACTERS.map((c, i) => {
         const on = c.id === current;
         return (
-          <button
+          <Button
             key={c.id}
             ref={(el) => {
               buttons.current[i] = el;
             }}
-            type="button"
+            variant="bare"
             role="radio"
             aria-checked={on}
             aria-label={c.label}
@@ -354,7 +346,7 @@ function CharacterPicker({ controller }: { controller: GameController }) {
             onKeyDown={(e) => onKeyDown(e, i)}
           >
             <img src={c.portrait} alt="" width={64} height={64} draggable={false} />
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -369,12 +361,8 @@ function MenuButton({ controller, target }: { controller: GameController; target
       <TimeBadge controller={controller} />
       <SoundButton controller={controller} />
       {/* every place reachable without the canvas (spec §6): fast travel's tiles */}
-      <button type="button" className="btn icon-btn" aria-label="Fast travel" title="Fast travel (T)" aria-haspopup="dialog" onClick={() => controller.openTravel()} data-testid="travel-button">
-        <Icon icon={faLocationDot} />
-      </button>
-      <button type="button" className="btn icon-btn" aria-label="Menu" title="Menu (M)" aria-haspopup="dialog" onClick={() => controller.openMenu()} data-testid="menu-button">
-        <Icon icon={faBars} />
-      </button>
+      <IconButton label="Fast travel" icon={faLocationDot} title="Fast travel (T)" aria-haspopup="dialog" onClick={() => controller.openTravel()} data-testid="travel-button" />
+      <IconButton label="Menu" icon={faBars} title="Menu (M)" aria-haspopup="dialog" onClick={() => controller.openMenu()} data-testid="menu-button" />
     </>,
     target,
   );
@@ -390,9 +378,9 @@ function ContextLost({ controller }: { controller: GameController }) {
           The 3D view stopped working
         </h2>
         <div className="actions">
-          <button className="btn primary" type="button" onClick={() => location.reload()}>
+          <Button variant="primary" onClick={() => location.reload()}>
             Reload planet
-          </button>
+          </Button>
           <a className="btn" href={controller.classicHref()} onClick={toClassic}>
             Classic site
           </a>

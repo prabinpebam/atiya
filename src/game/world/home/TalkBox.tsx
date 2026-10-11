@@ -4,6 +4,7 @@ import { faCaretDown, faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { GameController } from '../../controller';
 import { selectReducedMotion } from '../../state/store';
 import { Icon } from '../../ui/Icon';
+import { Button, KeyCap } from '../../ui/primitives';
 import { withBase } from '../../platform/base';
 
 /** Who has a talking head (a portrait rendered from their model: `scripts/render-npc-portraits.mjs`). */
@@ -66,20 +67,20 @@ export function TalkBox({ controller }: { controller: GameController }) {
         <span className="talk-rest">{line.slice(shown)}</span>
       </p>
       <div className="talk-actions">
-        <button
-          type="button"
-          className="btn primary talk-next"
+        <Button
+          variant="primary"
+          className="talk-next"
           data-testid="talk-next"
           onClick={() => {
             controller.advanceTalk();
             controller.focusRegion();
           }}
         >
-          {done && last ? 'Bye' : 'Next'} <Icon icon={faCaretDown} className={done ? 'talk-more' : undefined} /> <kbd>E</kbd>
-        </button>
-        <button type="button" className="btn talk-close" aria-label="Stop talking" onClick={() => controller.endTalk()}>
-          <Icon icon={faXmark} /> <kbd>Space</kbd>
-        </button>
+          {done && last ? 'Bye' : 'Next'} <Icon icon={faCaretDown} className={done ? 'talk-more' : undefined} /> <KeyCap>E</KeyCap>
+        </Button>
+        <Button className="talk-close" aria-label="Stop talking" onClick={() => controller.endTalk()}>
+          <Icon icon={faXmark} /> <KeyCap>Space</KeyCap>
+        </Button>
       </div>
     </section>
   );

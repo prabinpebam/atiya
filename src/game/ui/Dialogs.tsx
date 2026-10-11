@@ -5,7 +5,8 @@ import { withBase } from '../platform/base';
 import { prefs } from '../platform/prefs';
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
-import { spaceBack } from '../input/keyboard';
+import { Button, KeyCap } from './primitives';
+import { Dialog } from './overlays';
 
 const toClassic = () => prefs.setMode('classic');
 const FROM = 'planet-frame';
@@ -32,7 +33,6 @@ function siteScheme(): 'light' | 'dark' {
  */
 export default function LandmarkDialog({ controller }: { controller: GameController }) {
   const openId = useStore(controller.store, (s) => s.openId);
-  const ref = useRef<HTMLDialogElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [scheme, setScheme] = useState<'light' | 'dark'>('light');
@@ -43,8 +43,6 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
   const shown = openId ? controller.dataById.get(openId) : undefined;
 
   useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
     if (openId) {
       const data = controller.dataById.get(openId);
       const asked = controller.openPage;
@@ -54,9 +52,7 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
       setScheme(siteScheme());
       setSrc(withBase(`/play/${openId}/${page ? `${page}/` : ''}`));
       setState('loading');
-      if (!d.open) d.showModal();
     } else {
-      if (d.open) d.close();
       setSrc(null);
     }
   }, [openId, controller]);
@@ -103,21 +99,7 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
   };
 
   return (
-    <dialog
-      ref={ref}
-      className="reading-overlay"
-      aria-label={shown?.title ?? 'Reading'}
-      data-testid="landmark-dialog"
-      onCancel={(e) => {
-        e.preventDefault();
-        controller.requestCloseLandmark();
-      }}
-      onKeyDown={(e) => {
-        if (!spaceBack(e)) return;
-        e.preventDefault();
-        controller.requestCloseLandmark();
-      }}
-    >
+    <Dialog bare open={Boolean(openId)} onDismiss={() => controller.requestCloseLandmark()} className="reading-overlay" aria-label={shown?.title ?? 'Reading'} data-testid="landmark-dialog">
       {src && <iframe key={`${src}#${tries}`} ref={frame} className="reading-frame" src={src} title={shown?.title ?? 'Reading'} data-scheme={scheme} data-ready={state === 'ready' ? '' : undefined} data-testid="reading-frame" />}
       {state === 'slow' && shown && (
         <p className="card reading-status" role="status">
@@ -129,18 +111,18 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
           <p className="card-title">The {shown.title} didn’t open.</p>
           <p>Try again, or read it on the classic site.</p>
           <div className="actions">
-            <button className="btn primary" type="button" onClick={retry}>
+            <Button variant="primary" onClick={retry}>
               Try again
-            </button>
+            </Button>
             <a className="btn" href={controller.classicHref()} onClick={toClassic}>
               Open classic page <Icon icon={faArrowUpRightFromSquare} />
             </a>
-            <button className="btn" type="button" onClick={() => controller.requestCloseLandmark()}>
-              Close <kbd>Space</kbd>
-            </button>
+            <Button onClick={() => controller.requestCloseLandmark()}>
+              Close <KeyCap>Space</KeyCap>
+            </Button>
           </div>
         </div>
       )}
-    </dialog>
+    </Dialog>
   );
 }

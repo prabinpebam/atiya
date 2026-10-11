@@ -4,6 +4,8 @@ import { faCheck, faFire, faHammer, faMinus, faPaintRoller, faPlus, faXmark } fr
 import type { GameController } from '../../controller';
 import { itemDef } from '../../inventory/items';
 import { Icon } from '../../ui/Icon';
+import { Button, IconButton, KeyCap } from '../../ui/primitives';
+import { Panel, ScrollArea } from '../../ui/overlays';
 import { asideLane } from '../../ui/lanes';
 import { useCompact } from '../../ui/useCompact';
 import { ItemIcon } from '../../ui/Inventory';
@@ -230,7 +232,7 @@ function CraftPane({ controller, crafting, recipes, smelt = false }: { controlle
         <h3 className="craft-sub" aria-hidden="true">
           Recipes
         </h3>
-        <ul ref={grid} className="craft-grid scroll-thin" role="listbox" aria-label="Recipes" aria-orientation="horizontal" tabIndex={0} aria-activedescendant={`recipe-${r.id}`}>
+        <ScrollArea as="ul" ref={grid} className="craft-grid" role="listbox" aria-label="Recipes" aria-orientation="horizontal" tabIndex={0} aria-activedescendant={`recipe-${r.id}`}>
           {recipes.map((x, i) => {
             const can = maxCraftable(inv, x) * x.yield;
             const name = itemDef(x.out).name;
@@ -259,7 +261,7 @@ function CraftPane({ controller, crafting, recipes, smelt = false }: { controlle
           {Array.from({ length: cells - recipes.length }, (_, k) => (
             <li key={`empty-${k}`} className="slot craft-cell empty" aria-hidden="true" role="presentation" />
           ))}
-        </ul>
+        </ScrollArea>
       </div>
       <section className="craft-detail" aria-labelledby="craft-detail-name" data-testid="craft-detail">
         <div className="craft-result">
@@ -305,26 +307,22 @@ function CraftPane({ controller, crafting, recipes, smelt = false }: { controlle
         </ul>
         <div className="craft-go">
           <div className="craft-qty" role="group" aria-label="How many">
-            <button type="button" className="btn" aria-label="Fewer" disabled={q <= 1} onClick={() => step(-1)}>
-              <Icon icon={faMinus} />
-            </button>
+            <IconButton pill label="Fewer" icon={faMinus} disabled={q <= 1} onClick={() => step(-1)} />
             <output data-testid="craft-qty" aria-label={`Make ${q * r.yield}`}>
               {q * r.yield}
             </output>
-            <button type="button" className="btn" aria-label="More" disabled={q >= Math.min(BULK_MAX, max)} onClick={() => step(1)}>
-              <Icon icon={faPlus} />
-            </button>
+            <IconButton pill label="More" icon={faPlus} disabled={q >= Math.min(BULK_MAX, max)} onClick={() => step(1)} />
           </div>
-          <button
-            type="button"
-            className="btn primary craft-btn"
+          <Button
+            variant="primary"
+            className="craft-btn"
             data-testid="craft-go"
             aria-disabled={max < 1 || Boolean(busy)}
             title="Shift+click: make as many as you can"
             onClick={(e) => go(e.shiftKey)}
           >
-            <Icon icon={smelt ? faFire : faHammer} /> {smelt ? 'Smelt' : 'Craft'} <kbd>Enter</kbd>
-          </button>
+            <Icon icon={smelt ? faFire : faHammer} /> {smelt ? 'Smelt' : 'Craft'} <KeyCap>Enter</KeyCap>
+          </Button>
         </div>
         <p className="craft-status" data-testid="craft-status">
           {max < 1
@@ -372,44 +370,42 @@ function PaintPicker({ controller, crafting }: { controller: GameController; cra
     btns.current[next]?.focus();
   };
   return (
-    <div className="inv-backdrop surface-wood" data-testid="paint-screen" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="inv-panel paint-panel" role="dialog" aria-modal="true" aria-labelledby="paint-title" onKeyDown={onKey}>
-        <div className="inv-head">
-          <h2 id="paint-title">
-            <Icon icon={faPaintRoller} /> Paint Chopper&rsquo;s house
-          </h2>
-          <button type="button" className="btn" aria-label="Close the palette" onClick={close}>
-            <Icon icon={faXmark} /> <kbd>Space</kbd>
-          </button>
-        </div>
-        <div className="paint-grid">
-          {opts.map((o, i) => {
-            const none = o.pots < 1;
-            return (
-              <button
-                key={o.colour}
-                ref={(el) => {
-                  btns.current[i] = el;
-                }}
-                type="button"
-                className={`paint-swatch${o.colour === colour ? ' on' : ''}`}
-                data-testid={`paint-${o.colour}`}
-                aria-pressed={o.colour === colour}
-                disabled={none}
-                onClick={() => crafting.paint(o.colour)}
-              >
-                <span className="paint-chip" style={{ background: HOUSE_HEX[o.colour] }} aria-hidden="true">
-                  {o.colour === colour && <Icon icon={faCheck} />}
-                </span>
-                <span className="paint-name">{colourName(o.colour)}</span>
-                <span className="paint-pots">{o.colour === 'original' ? 'Free' : `${o.pots} ${o.pots === 1 ? 'pot' : 'pots'}`}</span>
-              </button>
-            );
-          })}
-        </div>
-        <p className="inv-help">Each coat uses one pot of paint. Make paint from three flowers of a colour at the crafting table.</p>
+    <Panel className="paint-panel" aria-labelledby="paint-title" onKeyDown={onKey} backdrop={{ 'data-testid': 'paint-screen', onPointerDown: (e) => e.target === e.currentTarget && close() }}>
+      <div className="inv-head">
+        <h2 id="paint-title">
+          <Icon icon={faPaintRoller} /> Paint Chopper&rsquo;s house
+        </h2>
+        <Button aria-label="Close the palette" onClick={close}>
+          <Icon icon={faXmark} /> <KeyCap>Space</KeyCap>
+        </Button>
       </div>
-    </div>
+      <div className="paint-grid">
+        {opts.map((o, i) => {
+          const none = o.pots < 1;
+          return (
+            <Button
+              key={o.colour}
+              ref={(el) => {
+                btns.current[i] = el;
+              }}
+              variant="bare"
+              className={`paint-swatch${o.colour === colour ? ' on' : ''}`}
+              data-testid={`paint-${o.colour}`}
+              aria-pressed={o.colour === colour}
+              disabled={none}
+              onClick={() => crafting.paint(o.colour)}
+            >
+              <span className="paint-chip" style={{ background: HOUSE_HEX[o.colour] }} aria-hidden="true">
+                {o.colour === colour && <Icon icon={faCheck} />}
+              </span>
+              <span className="paint-name">{colourName(o.colour)}</span>
+              <span className="paint-pots">{o.colour === 'original' ? 'Free' : `${o.pots} ${o.pots === 1 ? 'pot' : 'pots'}`}</span>
+            </Button>
+          );
+        })}
+      </div>
+      <p className="inv-help">Each coat uses one pot of paint. Make paint from three flowers of a colour at the crafting table.</p>
+    </Panel>
   );
 }
 

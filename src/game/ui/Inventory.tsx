@@ -6,6 +6,7 @@ import { HOTBAR, type Slot } from '../inventory/inventory';
 import { itemDef, stackLabel, type ItemId } from '../inventory/items';
 import { ICONS } from '../inventory/iconManifest';
 import { Icon } from './Icon';
+import { Button } from './primitives';
 import { withBase } from '../platform/base';
 
 /** Minecraft-style hotbar and inventory / chest screens (docs: collection-inventory.md §4). */
@@ -61,9 +62,9 @@ export function Hotbar({ controller }: { controller: GameController }) {
       )}
       <div className="hotbar" role="toolbar" aria-label="Hotbar" data-testid="hotbar" onWheel={(e) => controller.onWheel(e)}>
         {inv.backpack.slice(0, HOTBAR).map((st, i) => (
-          <button
+          <Button
             key={i}
-            type="button"
+            variant="bare"
             className={`slot${i === sel ? ' selected' : ''}`}
             aria-pressed={i === sel}
             aria-label={`Hotbar slot ${i + 1}: ${st ? stackLabel(st.id, st.n) : 'empty'}`}
@@ -77,10 +78,10 @@ export function Hotbar({ controller }: { controller: GameController }) {
             <span className="slot-key" aria-hidden="true">
               {i + 1}
             </span>
-          </button>
+          </Button>
         ))}
-        <button
-          type="button"
+        <Button
+          variant="bare"
           className="slot backpack-btn"
           aria-label="Open backpack (I)"
           title="Open backpack (I or B)"
@@ -91,9 +92,9 @@ export function Hotbar({ controller }: { controller: GameController }) {
           <span className="slot-key" aria-hidden="true">
             I
           </span>
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="bare"
           className="slot whistle-btn"
           aria-label="Whistle for Chopper (F)"
           title="Whistle for Chopper (F)"
@@ -107,7 +108,7 @@ export function Hotbar({ controller }: { controller: GameController }) {
           <span className="slot-key" aria-hidden="true">
             F
           </span>
-        </button>
+        </Button>
       </div>
     </div>
   );

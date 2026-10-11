@@ -8,6 +8,8 @@ An audit of the site's design system and the game's UI design system, with every
 > - its px sizes don't scale with "Larger text".
 >
 > **None of the first audit's ten findings is closed;** two have grown (raw values in the game, components reading other components' tokens). The fix is **16 work items in 7 workstreams on two tracks**, site and game, which can run in parallel. Every item ends with a test, so nothing it fixes can come back.
+>
+> **Status (as built, 11 October 2026):** every item is closed, each with its test. What was built, and where it differs from the plan, is in [§5](#5-as-built).
 
 ![Seven workstreams on two tracks. Site: WS1 suite green, then WS2 token ownership, then WS3 one source for values, then WS7a coverage and size; WS4 script lifecycle at any time. Game: WS5 docs match the split, then WS6 game tokens, then WS7b game primitives.](assets/design-system-audit-plan.svg)
 
@@ -351,3 +353,44 @@ Effort: **S** under half a day, **M** one to two days, **L** more.
 - [ ] `npm run verify:prod` holds every budget.
 - [ ] The baseline in §2 is re-measured; each row meets its target.
 - [ ] [The site design system](design-system.md) and [the game UI design system](../game-ui/design-system.md) describe the rules as built (ownership, generated responsive values, game primitives), and their check tables name the new tests.
+
+## 5. As built
+
+### The baseline, re-measured
+
+| Measure | Before | After | Target met |
+|---|---|---|---|
+| Site policy tests passing | 217 / 218 | All (227, with the new rules) | Yes |
+| Components reading `--c-header-height` (not the header) | 6 | 0: they read `--size-chrome-block` | Yes |
+| Picture `sizes` strings with hand-copied widths | 5 files | 0 | Yes |
+| Literal `matchMedia` queries in components | 6 | 0 | Yes |
+| Raw `em` type values | 13 lines in 3 files | 0 (only `1em`, by name) | Yes |
+| Literal scale factors in transforms | about 20 | 0 | Yes |
+| Site tokens nothing reads | 3 | 0 | Yes |
+| Unsignalled document listeners, undocumented | 2 | 0 (3 documented, all the side nav's) | Yes |
+| Game docs that still call the system shared | 3 files | 0 | Yes |
+| Game token values written as strings | 103 | 0 (shadows too) | Yes |
+| Game size tokens in px | 38 | 15: lines and outlines, the blur, the pill, the scrollbar | Yes |
+| Game stylesheet lines with raw units | 116 | Allow-listed only (the visually hidden pattern, the skip link) | Yes |
+| Game `<button>` written by hand | 41 | 0 outside the primitives (and no hand-written `<dialog>` or `<kbd>`) | Yes |
+| Stories with one example | 11 | 11, each a whole page or with no prop that can vary | Yes |
+| Site components over 550 lines | 4 | 1: `Collection`, 620, of which 450 are its styles | See DS-16 |
+
+### By item
+
+- **DS-01.** `Page.astro` merges a section's private pages among its open ones in dev (`mergeAfterAnchors`) and passes the build only the sealed ones; `IndexLayout` renders what it's given (each private card is marked `privateTag`).
+- **DS-02.** `size.chrome-block` and `size.chrome-block-compact` are the top bar's heights; `c.header.height` and its compact twin alias them.
+- **DS-03.** Every `c.*` group carries `$extensions["site.owner"]`: a component's name or `shared`, shown in [tokens.md](tokens.md). Eight groups are shared (control, check, list, image, quote, icon, scrollbar, editor). Two reads were wrong and were fixed by new groups rather than exceptions: `ScrollArea` got its own heights (`c.scroll-area`) and `StoryCard`'s row picture moved from `c.index` to `c.story-card`. The rule for choosing is in [the site design system](design-system.md) §2.
+- **DS-04.** `scripts/build-site-tokens.mjs` also writes `src/site/design/responsive.ts` (breakpoints, measures, the picture widths flagged `site.sizes`, `media()` and `sizes()`), checked for staleness with the rest. Two hints changed slightly where a literal wasn't a token: the sideways timeline's pictures are asked for at 17 rem (its slide token) instead of 16, and "Read next" at a third of the wide measure (26 rem) instead of 24.
+- **DS-05.** `underline.*` (offset, the nav's marker offset, the two thicknesses), `c.dropcap` (size, lift, gap, gap with initial-letter), `c.prose.code-size`, `c.link.icon-*` and `c.icon.baseline-shift`, all in `em`. Card titles now take the links' 0.18 em offset (they had 0.12). The library's type page lists them (Underline, and "Details, in em").
+- **DS-06.** `scale.*` by intent (press-large, press, press-small, pop-from, enter-from, lift, zoom) and `shift.press`; the lightbox's drifting smoke has its own `c.lightbox.drift-scale`. Three values moved onto a shared intent: the icon button's press (0.94 to 0.92, with the checks), a video's play mark under the pointer (1.06 to 1.08, with the slider's thumb) and the hero's settle (1.03 to 1.02, with the cards' zoom). The library's motion page shows them, pressable.
+- **DS-07.** The scanner now holds transforms (tokens, percentages, `0`, `1`, quarter turns), `em` (only `1em`, by name) and grid tracks (tokens; the library's specimen pages and the stories' sample grids excepted, by name, because their columns are sized to their samples). The library's nav column and the contents list's numeral column are tokens.
+- **DS-08.** `--layer-base`, `--tracking-normal` and `--weight-bold` are removed. The test counts a breakpoint as read by its `@media` queries or a `media()` call.
+- **DS-09.** The test reads every component script: a `window`, `document` or media-query listener passes `signal`, or the line before it starts `// once per document:` and says why. The side nav has three such listeners, not two: its media query's `change` too.
+- **DS-10.** The game's TL;DR, P4, the surfaces table, `components.css` and the token descriptions name the game and its loading shell. Eleven tokens nothing read, most left over from the website (the brand colours, the poster's, `header-glass`, `radius.2xl`, `text.display`, `text.hero`, `shadow.poster`, `space.10`) and five primitives only they used are removed; a new test fails on any token nothing reads.
+- **DS-11.** `src/design/tokens.json` is 2025.10 objects throughout, shadows included; what DTCG has no type for is named in `$extensions` (`game.unit`, `game.fluid`, `game.viewport`, `game.filter`). `scripts/build-tokens.mjs` reads them. The conversion was checked byte for byte: the generated CSS and reference didn't change.
+- **DS-12.** Every game size token is rem except lines and outlines (`border.*`), `blur.glass`, the pill and the scrollbar, listed in the test. The E2E group "larger text" turns the setting on and checks the menu, fast travel, the backpack and the hotbar for clipped or off-screen labels.
+- **DS-13.** `postcss` is pinned (8.5.28, a dev dependency it already was through Vite). The test parses the four stylesheets and holds every declaration and `@media` query to tokens; tokenising what it found added breakpoints (in rem), shifts, a tilt, scales, a blur, focus offsets, the underline offset and component tokens for the key cap, cards, dialogs, slots, the loader, the talk box, the aside, the toast, the view controls, the picker, Chopper's card, the help popover, recipes and paint.
+- **DS-14.** `src/game/ui/primitives.tsx` holds `Button` (`default`, `primary`, or `bare` for controls with their own anatomy: slots, tiles, the compass, swatches), `IconButton` (its `label` is required and becomes its `aria-label`) and `KeyCap`; `src/game/ui/overlays.tsx` holds `Dialog` (opens modally from `open`, closes on Esc, Space and the backdrop through `onDismiss`), `Panel` (the wood panel on its backdrop) and `ScrollArea`. The containers live apart because only the on-demand screens use them: in one module they pushed the initial bundle over its budget. That budget is nearly full: the game's critical JS is 450.0 KB against 450 KB (460,794 of 460,800 bytes; it was 460,685 before), so `KeyCap` is the plain `kbd` element name rather than a component. A test fails on any `<button>`, `<dialog>` or `<kbd>` written outside the primitives, on an `IconButton` without `label`, and on the initial bundle importing `overlays.tsx`. Not converted: link-styled buttons (`<a className="btn">`, links by nature) and the View whole planet button, which `camera/overview.ts` builds with DOM calls.
+- **DS-15.** The test reads each component's union props through the registry: every non-default value is in its story, or the prop's comment names the story that shows it ("shown in Image", "shown in ArticleLayout") and that story does. Layouts and `PageShell` are excepted by name: each is its story's one page. Closing the 78 gaps added examples: every frame shape and cover or contain (Image), each width in the article (ArticleLayout), a caption over a picture, a spacing divider, a picker dialog, a full-bleed opening, explicit hero layouts, standard, compact and private cards, and the remaining variants.
+- **DS-16.** The pure decisions and the DOM wiring moved to tier 0 with unit tests (`collection.ts`, `collectionStrip.ts`, `carousel.ts`, `select.ts`, `articleMinimap.ts`, and additions to `listbox.ts`, `media.ts` and `minimap.ts`). `ArticleMinimap` is 250 lines (from 596), `Select` 430 (592), `Carousel` 442 (590) and `Collection` 620 (697). Collection's stylesheet alone is 450 lines, and the item's own fix keeps styles in the component, so its target became its markup and script: 170 lines. Splitting its timelines into their own compound would get the file under 450, but it would change a public component, the editor's canvas and its stories, so it isn't done. Instead a test keeps every component's markup and script under 350 lines and its file under 650, so logic can't grow back into one.

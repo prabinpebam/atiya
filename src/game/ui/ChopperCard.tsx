@@ -8,8 +8,8 @@ import { selectReducedMotion } from '../state/store';
 import { buildChopper } from '../world/chopper/build';
 import type { Clip } from '../world/chopper/anim';
 import { CHOPPER } from '../world/chopper/profile';
-import { Icon } from './Icon';
-import { spaceBack } from '../input/keyboard';
+import { Button, IconButton } from './primitives';
+import { Dialog } from './overlays';
 
 /** The little doggy things he does beside his card, in random order (never the same twice running). */
 const CARD_IDLES: ReadonlyArray<{ clip: Clip; dur: [number, number]; wag: number; pant?: boolean }> = [
@@ -147,51 +147,24 @@ function Stage({ reduced }: { reduced: boolean }) {
 export default function ChopperCard({ controller }: { controller: GameController }) {
   const open = useStore(controller.store, (s) => s.chopperOpen);
   const reduced = useStore(controller.store, selectReducedMotion);
-  const ref = useRef<HTMLDialogElement>(null);
   const [photo, setPhoto] = useState(0);
   const P = CHOPPER;
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) d.showModal();
-    if (!open && d.open) d.close();
-  }, [open]);
 
   const close = () => controller.closeChopper();
   const shown = P.photos[photo];
   return (
-    <dialog
-      ref={ref}
-      className="dialog chopper-dialog"
-      aria-labelledby="chopper-title"
-      data-testid="chopper-dialog"
-      onCancel={(e) => {
-        e.preventDefault();
-        close();
-      }}
-      onKeyDown={(e) => {
-        if (!spaceBack(e)) return;
-        e.preventDefault();
-        close();
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) close();
-      }}
-    >
+    <Dialog open={open} onDismiss={close} className="chopper-dialog" aria-labelledby="chopper-title" data-testid="chopper-dialog">
       {open && (
         <div className="dialog-body chopper-body">
-          <button type="button" className="btn icon-btn chopper-close" aria-label="Close" onClick={close}>
-            <Icon icon={faXmark} />
-          </button>
+          <IconButton label="Close" icon={faXmark} className="chopper-close" onClick={close} />
           <figure className="chopper-photo">
             <img src={shown.src} alt={shown.alt} width={shown.width} height={shown.height} decoding="async" data-testid="chopper-photo" />
             {P.photos.length > 1 && (
               <div className="chopper-thumbs" role="group" aria-label="Photos of Chopper">
                 {P.photos.map((p, i) => (
-                  <button key={p.src} type="button" className={`chopper-thumb${i === photo ? ' selected' : ''}`} aria-pressed={i === photo} aria-label={`Photo ${i + 1}`} onClick={() => setPhoto(i)}>
+                  <Button key={p.src} variant="bare" className={`chopper-thumb${i === photo ? ' selected' : ''}`} aria-pressed={i === photo} aria-label={`Photo ${i + 1}`} onClick={() => setPhoto(i)}>
                     <img src={p.src} alt="" width={64} height={Math.round((64 * p.height) / p.width)} decoding="async" />
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -234,6 +207,6 @@ export default function ChopperCard({ controller }: { controller: GameController
           <Stage reduced={reduced} />
         </div>
       )}
-    </dialog>
+    </Dialog>
   );
 }

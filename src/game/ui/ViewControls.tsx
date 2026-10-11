@@ -4,6 +4,7 @@ import type { GameController } from '../controller';
 import { compassPoint, viewBearingDeg, type CompassPoint } from '../math/compass';
 import { faHouse } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
+import { Button } from './primitives';
 
 /**
  * Run a view action. After a mouse/touch click, hand focus back to the planet so WASD keeps
@@ -45,8 +46,8 @@ export function ViewControls({ controller }: { controller: GameController }) {
   if (!visible) return null;
   return (
     <div className="view-controls" role="group" aria-label="View" data-testid="view-controls">
-      <button
-        type="button"
+      <Button
+        variant="bare"
         className="compass"
         data-testid="compass"
         aria-label={`Compass: facing ${facing}. Face north (N)`}
@@ -73,21 +74,16 @@ export function ViewControls({ controller }: { controller: GameController }) {
             W
           </text>
         </svg>
-      </button>
-      <button
-        type="button"
-        className="btn view-home"
+      </Button>
+      <Button
+        className="view-home"
         data-testid="view-home"
         aria-label="Reset position and direction: back to the plaza, facing north (H)"
         title="Back to the plaza, facing north (H)"
         onClick={() => controller.returnHome()}
       >
-        <HomeIcon /> Reset
-      </button>
+        <Icon icon={faHouse} /> Reset
+      </Button>
     </div>
   );
-}
-
-function HomeIcon() {
-  return <Icon icon={faHouse} />;
 }
