@@ -74,8 +74,16 @@ export function initTestRuns(root: HTMLElement, signal: AbortSignal): void {
       fresh.textContent = `This screen hasn't heard from the dev server for ${clock(quiet)}: what's shown is from then. Reconnecting…`;
     } else if (view) {
       fresh.dataset.stale = 'false';
-      const beat = view.beat ? serverNow() - view.beat : undefined;
-      fresh.textContent = `Updated just now · the run's last signal ${beat === undefined ? 'not yet' : `${clock(beat)} ago`}${view.cpu !== undefined ? ` · the machine is ${view.cpu < 10 ? 'idle' : 'busy'} (${view.cpu}% CPU)` : ''}`;
+      // a finished run has no heartbeat to report; a running one says how fresh its last one is, and the
+      // machine's CPU (every program on it, not only the tests: what a stuck test shows as, when it drops to idle)
+      if (!view.active) {
+        const end = view.exit?.at ?? view.state?.updatedAt;
+        fresh.textContent = `Up to date · this run finished${end ? ` at ${new Date(end).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}`;
+      } else {
+        const beat = view.beat ? serverNow() - view.beat : undefined;
+        const cpu = view.cpu === undefined ? '' : ` · machine CPU ${view.cpu}% (all programs, not only the tests)${view.cpu < 10 ? ': idle' : ''}`;
+        fresh.textContent = `Updated just now · the run's last signal ${beat === undefined ? 'not yet' : `${clock(beat)} ago`}${cpu}`;
+      }
     }
     for (const el of root.querySelectorAll<HTMLElement>('[data-from]')) {
       const took = clock(serverNow() - Number(el.dataset.from));

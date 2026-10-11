@@ -40,7 +40,7 @@ A screen in edit mode that shows every end-to-end test run on this machine as it
 | # | Scenario | What the screen does |
 |---|---|---|
 | S1 | An agent starts a full suite while the owner edits an article | The top bar shows "Tests: running · 64 / 211 · on track · 1 s ago"; nothing else interrupts |
-| S2 | Nothing has moved for four minutes | One sentence: "Waiting for page.evaluate in the swing test · 2:41 of a 5:00 limit · the test usually takes 3:40 · the machine is busy" |
+| S2 | Nothing has moved for four minutes | One sentence: "Waiting for page.evaluate in the swing test · 2:41 of a 5:00 limit · the test usually takes 3:40" |
 | S3 | The runner crashes or is killed | "The run ended unexpectedly at 14:22 (exit code 1)", its last output lines, and Re-run |
 | S4 | A test fails mid-run | It's pinned at the top with its verdict: "New: passes on the stable tree", "Known: fails on the stable tree too" or "Flaky: passed on retry" |
 | S5 | The run ends | The summary: passed, failed (new and known), flaky, not run, time; "Copy summary" for a chat with the agent |
@@ -148,7 +148,7 @@ Click it to open the Tests screen. While a run is active, the browser tab's titl
 ```
 ● On track · 164 of 211 · 3 failed (1 new) · about 22 min left                    last signal 1 s ago
 Now: crafting › the swing › build the swing · waiting for page.evaluate · 2:41 of 5:00 ·
-     the test usually takes 3:40 · the machine is busy
+     the test usually takes 3:40
 Started by an agent at 14:12 · "Validate the design systems audit" · audit branch @ ff10aa1 ·
      its own test server (fresh, 14:15) · your site on localhost:4321 isn't touched
 [ Build ✓ 3:12 ] › [ Server ✓ 0:20 ] › [ Tests ● 41:05 ] › [ Done ]
@@ -248,7 +248,7 @@ It's built in a worktree, checked on its own port, then merged. The new route ne
   - the parts, `TestRuns.astro` and `TestStatus.astro`, and their scripts, `scripts/tests.ts` and `scripts/testStatus.ts`.
 - **Built as specified:** U1 to U8, U10, U11, U12 (the list), U17 and U18. Error, code excerpt, output and the paths of kept files are shown (part of U9).
 - **Where it differs:**
-  - **CPU is the machine's,** not the run's process tree: the reporter samples `os.cpus()` each second. "Waiting, idle" means the whole machine has been idle for 20 s, which is what a stuck test looks like here, and it needs no dependency.
+  - **CPU is the machine's,** not the run's process tree: the reporter samples `os.cpus()` each second. "Waiting, idle" means the whole machine has been idle for 20 s, which is what a stuck test looks like here, and it needs no dependency. So the screen labels it as such ("machine CPU 28% (all programs, not only the tests)"), shows it only while a run is active, and calls it idle only below 10%; a finished run shows when it finished instead.
   - **A step's own time limit isn't known:** Playwright's reporter API gives a test's limit, not a step's. The screen shows a step's time, and the test's time against its limit.
   - **A reused server is found by its port** (something already listening on 4329 or 4330 before the run), not by its build time and commit.
   - **The tree opens in place:** a test opens under its row, rather than in a pane beside the tree. Following closes a test it opened itself once that test passes, so it never leaves a trail; failures, and anything you open, stay open.
