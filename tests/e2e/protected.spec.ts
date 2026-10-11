@@ -69,10 +69,12 @@ test.describe('protected content', () => {
     await expect(invite.getByRole('link', { name: 'Ask for access' })).toHaveAttribute('href', /\/contact\/\?access=Side%20projects#contact-form$/);
     await expect(page.locator('template[data-sealed="card"]')).toHaveCount(3);
     expect(await titlesIn(page)).toEqual([]);
-    // a section with only private pages isn't "empty": it says its work is shared with invited readers
+    // a section whose only private page is a fixture isn't "empty": it says its work is shared with invited readers
+    // ("The work…" when it lists no open page, "More work…" once the real content puts one there)
     await page.goto('/work/');
     await expect(page.locator('[data-cards-empty]')).toHaveCount(0);
-    await expect(page.locator('[data-sign-in-line]').getByRole('heading', { level: 2 })).toHaveText('The work here is shared with invited readers');
+    const open = (await cards(page)).filter((n) => !n?.startsWith('fx-')).length;
+    await expect(page.locator('[data-sign-in-line]').getByRole('heading', { level: 2 })).toHaveText(open === 0 ? 'The work here is shared with invited readers' : 'More work here is shared with invited readers');
     // a private page's shell: neutral, kept out of search, the sign-in panel in place of the page
     await page.goto(ALPHA);
     await expect(page).toHaveTitle('Private page');
