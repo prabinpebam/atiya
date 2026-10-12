@@ -52,6 +52,38 @@ export interface CollectionView {
   pictureSizes: string;
 }
 
+export interface MasonryItemBox {
+  /** The item's inline position: items at the same position are in one visual column. */
+  inlineStart: number;
+  /** The item's visible bottom, relative to the masonry track. */
+  blockEnd: number;
+  /** The item's content-driven height. */
+  blockSize: number;
+}
+
+/**
+ * Each shorter masonry column shares its shortfall evenly between its items, so every column's
+ * visible bottom meets the longest one's. One column needs no adjustment.
+ */
+export function masonryItemSizes(boxes: MasonryItemBox[]): number[] {
+  const columns = new Map<number, { end: number; count: number }>();
+  const columnAt = (box: MasonryItemBox) => Math.round(box.inlineStart);
+  for (const box of boxes) {
+    const key = columnAt(box);
+    const column = columns.get(key);
+    if (column) {
+      column.end = Math.max(column.end, box.blockEnd);
+      column.count += 1;
+    } else columns.set(key, { end: box.blockEnd, count: 1 });
+  }
+  if (columns.size < 2) return boxes.map((box) => box.blockSize);
+  const end = Math.max(...[...columns.values()].map((column) => column.end));
+  return boxes.map((box) => {
+    const column = columns.get(columnAt(box))!;
+    return box.blockSize + Math.max(0, end - column.end) / column.count;
+  });
+}
+
 /** What a collection's props come to. */
 export function collectionView(o: CollectionOptions): CollectionView {
   const columns = o.columns ?? defaultColumns(o.count);

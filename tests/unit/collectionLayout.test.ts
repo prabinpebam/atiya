@@ -1,6 +1,6 @@
 /** The collection's decisions (src/site/scripts/collection.ts) and the strips' room to peek into (media.ts `bleed`). */
 import { describe, expect, it } from 'vitest';
-import { collectionView, defaultColumns, itemBody, stripState, stripStep, type CollectionLayout } from '../../src/site/scripts/collection';
+import { collectionView, defaultColumns, itemBody, masonryItemSizes, stripState, stripStep, type CollectionLayout } from '../../src/site/scripts/collection';
 import { bleed } from '../../src/site/scripts/media';
 
 describe('collection: the layout from its props', () => {
@@ -61,6 +61,18 @@ describe('collection: the layout from its props', () => {
     expect(collectionView({ count: 4, layout: 'masonry', width: 'wide' }).pictureSizes).toBe('(max-width: 40rem) 92vw, 38rem');
     expect(collectionView({ count: 1, layout: 'tiles', width: 'popout' }).pictureSizes).toBe('(max-width: 40rem) 92vw, 52rem');
     expect(collectionView({ count: 2, layout: 'tiles', width: 'full' }).pictureSizes).toBe('(max-width: 40rem) 92vw, 38rem');
+  });
+
+  it('masonry shares each shorter column’s remaining height across its own cards', () => {
+    expect(
+      masonryItemSizes([
+        { inlineStart: 0.2, blockEnd: 100, blockSize: 100 },
+        { inlineStart: 0.4, blockEnd: 220, blockSize: 100 },
+        { inlineStart: 200, blockEnd: 80, blockSize: 80 },
+        { inlineStart: 200, blockEnd: 160, blockSize: 60 },
+      ]),
+    ).toEqual([100, 100, 110, 90]);
+    expect(masonryItemSizes([{ inlineStart: 0, blockEnd: 80, blockSize: 80 }])).toEqual([80]);
   });
 });
 

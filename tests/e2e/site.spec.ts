@@ -17,6 +17,22 @@ const noSeriousViolations = async (page: Page) => {
 };
 
 test.describe('site design system', () => {
+  test('masonry collections expand shorter columns until their card bottoms align', async ({ page }) => {
+    await page.goto('/design/compounds/collection/');
+    const masonry = page.locator('[data-layout="masonry"]').first();
+    await expect(masonry).toHaveAttribute('data-masonry-justified', '');
+    const bottoms = await masonry.locator('[data-masonry-item]').evaluateAll((items) => {
+      const columns = new Map<number, number>();
+      items.forEach((item) => {
+        const box = item.getBoundingClientRect();
+        columns.set(Math.round(box.left), Math.max(columns.get(Math.round(box.left)) ?? 0, box.bottom));
+      });
+      return [...columns.values()];
+    });
+    expect(bottoms.length).toBeGreaterThan(1);
+    expect(Math.max(...bottoms) - Math.min(...bottoms)).toBeLessThan(2);
+  });
+
   test('the table keeps rich headings and semantic row and column scopes', async ({ page }) => {
     await page.goto('/design/compounds/table/');
     const table = page.locator('.example', { has: page.getByRole('heading', { name: 'A comparison', exact: true }) }).getByRole('table');

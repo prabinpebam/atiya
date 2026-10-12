@@ -4,7 +4,7 @@
  * optional), laid out one of seven ways. Any layout shows the same items, so a collection can change layout
  * at any time: rows (one under another, a picture beside its words), columns (side by side in a row between
  * two hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph), tiles (an
- * even grid of cards, one to four to a row, prominent on the accent's soft surface if asked), masonry (cards in columns, each as tall as it is), a carousel (cards in a strip that
+ * even grid of cards, one to four to a row, prominent on the accent's soft surface if asked), masonry (cards in balanced columns, with shorter columns stretching their cards to end level), a carousel (cards in a strip that
  * scrolls sideways, with previous and next buttons), a timeline (down a line, each item's time in a column
  * before its mark: a career, a project's story) or a sideways timeline (along a line in a strip that
  * scrolls sideways, with the carousel's buttons). An item's time sits by its mark in a timeline, and over
@@ -115,7 +115,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   data-prominent={prominent ? '' : undefined}
 >
   {heading && <header class="collection-header"><Heading level={3}>{heading}</Heading></header>}
-  <div class="items" role="list" tabindex={strip ? '0' : undefined} data-scrollbar={strip ? '' : undefined} data-collection-track={strip ? '' : undefined}>
+  <div class="items" role="list" tabindex={strip ? '0' : undefined} data-scrollbar={strip ? '' : undefined} data-collection-track={strip ? '' : undefined} data-masonry-track={layout === 'masonry' ? '' : undefined}>
     {
       items.map((item) => {
         const picture = item.picture && (
@@ -149,7 +149,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
             </div>
           </div>
         ) : (
-          <div class="item" role="listitem" data-picture={item.picture ? '' : undefined}>
+          <div class="item" role="listitem" data-picture={item.picture ? '' : undefined} data-masonry-item={layout === 'masonry' ? '' : undefined}>
             {picture}
             {words}
           </div>
@@ -359,6 +359,15 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   [data-layout='masonry'] .item {
     margin-block-end: var(--space-4);
     break-inside: avoid;
+  }
+
+  [data-layout='masonry'][data-masonry-justified] .items {
+    block-size: var(--masonry-block-size);
+    column-fill: auto;
+  }
+
+  [data-layout='masonry'][data-masonry-justified] .item {
+    min-block-size: var(--masonry-item-block-size);
   }
 
   /* the strips (the carousel, the sideways timeline): a list that scrolls sideways, its buttons under it */
@@ -624,8 +633,10 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
 
 <script>
   import { each } from '../../scripts/page';
+  import { setupCollectionMasonry } from '../../scripts/collectionMasonry';
   import { setupCollectionStrip } from '../../scripts/collectionStrip';
 
+  each<HTMLElement>('[data-layout="masonry"]', setupCollectionMasonry);
   // a strip's Previous and Next (the carousel's, the sideways timeline's), and a peek's room
   each<HTMLElement>('[data-collection-strip]', setupCollectionStrip);
 </script>

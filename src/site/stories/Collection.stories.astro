@@ -56,7 +56,7 @@ const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }))
   <Collection layout="tiles" headings="title" ratio="3/2" shadow width="wide" items={places} />
 </Example>
 
-<Example title="Masonry" layout="block" description="Cards in columns, each as tall as it is: the pictures keep their own shape, and the words their own length.">
+<Example title="Masonry" layout="block" description="Cards balance into columns, then shorter columns share their remaining height across their cards so every column ends level.">
   <Collection layout="masonry" headings="title" width="wide" items={places.map((p, n) => (n % 2 ? { ...p, html: `${p.html} ${p.picture.alt}` } : p))} />
 </Example>
 

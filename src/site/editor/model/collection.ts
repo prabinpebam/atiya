@@ -10,7 +10,7 @@ export const LAYOUT_CHOICES: { value: CollectionLayout; label: string; descripti
   { value: 'rows', label: 'Rows', description: 'One under another, a picture beside its words' },
   { value: 'columns', label: 'Columns', description: 'Side by side in a row, wrapping when they don’t fit' },
   { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
-  { value: 'masonry', label: 'Masonry', description: 'Cards in columns, each as tall as it is' },
+  { value: 'masonry', label: 'Masonry', description: 'Cards in balanced columns that end level' },
   { value: 'carousel', label: 'Carousel', description: 'Cards in a strip that scrolls sideways' },
   { value: 'timeline', label: 'Timeline', description: 'Down a line, each item by its time' },
   { value: 'timeline-scroll', label: 'Timeline, sideways', description: 'Along a line that scrolls sideways' },
