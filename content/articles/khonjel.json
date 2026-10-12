@@ -8,13 +8,21 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-12",
   "locale": "en",
   "thumbnail": "articles/khonjel/khonjel-icon",
   "body": [
     {
       "type": "text",
       "markdown": "I was inspired by Whisper AI, but I wanted to use my own local models. In Khonjel, that means Whisper-family speech-to-text through `whisper.cpp`, with the rest of the voice workflow designed around the same principle: it should run on my machine first, and only leave it when I deliberately connect something else."
+    },
+    {
+      "type": "figure",
+      "media": "articles/khonjel/pasted-picture-2026-10-12",
+      "width": "wide",
+      "lightbox": true,
+      "rounded": false,
+      "display": "fit"
     },
     {
       "type": "text",
@@ -47,6 +55,13 @@
       ]
     },
     {
+      "type": "figure",
+      "media": "articles/khonjel/pasted-picture-2026-10-12-3",
+      "width": "wide",
+      "lightbox": true,
+      "rounded": false
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "Dictation where the text belongs"
@@ -67,6 +82,13 @@
     {
       "type": "text",
       "markdown": "The privacy model is the part I cared about most. Khonjel is offline by default, collects no telemetry, and stores transcripts, notes, history and dictionary entries locally. The privacy policy says microphone audio is processed in memory and temporary files are deleted after transcription; recordings are not retained."
+    },
+    {
+      "type": "figure",
+      "media": "articles/khonjel/pasted-picture-2026-10-12-2",
+      "width": "wide",
+      "lightbox": true,
+      "rounded": false
     },
     {
       "type": "text",

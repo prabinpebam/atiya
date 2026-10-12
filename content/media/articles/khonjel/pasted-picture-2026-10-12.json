@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "file": "pasted-picture-2026-10-12.webp",
+  "alt": "Khonjel main UI",
+  "caption": "Khonjel main UI",
+  "visibility": "public",
+  "dark": {
+    "file": "pasted-picture-2026-10-12.dark.webp"
+  }
+}
