@@ -256,7 +256,7 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
 - **Motion:** every animation uses `--dur-*` and `--ease-*`, and `prefers-reduced-motion` shortens it to nothing (the talk box then shows lines instantly).
 - **Text twins (P7):** prompts are buttons with names; toasts, talk lines and results are announced in the polite live region.
 - **Keys:** scoped to the focused game region; Tab and the browser's keys are never taken.
-- **Touch:** every drag has a single-pointer alternative (tap to walk, the menu's View buttons), and every two-finger gesture too (WCAG 2.5.1, 2.5.7). See §10.
+- **Touch:** every drag has a single-pointer alternative (tap to walk, the menu's View buttons), and every two-finger gesture too (WCAG 2.5.1, 2.5.7). The world draws through the device cutout and home-indicator areas; controls stay inside their safe-area insets in both orientations. See §10.
 
 ## 9. Governance
 
@@ -267,7 +267,7 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
   - z-index only from layers; font sizes only from `--text-*`, a component token or `1em`; weight and leading from their scales; radius from the scale;
   - durations and easing from motion tokens, and no px/rem spacing literals;
   - every value is a token: a CSS parser (`postcss`, pinned) reads the four stylesheets and finds no raw size, offset, blur, turn, time or scale outside an allow-list (`0`, `1em`, percentages, `100vw`/`100dvh`, quarter turns, and the named `.sr-only` and skip-link values), and every `@media` query at a breakpoint token;
-  - only three free custom properties (`--slot`, `--hotbar-h`, `--lane-bottom`);
+  - only the three calculated layout properties (`--slot`, `--hotbar-h`, `--lane-bottom`) and the four OS safe-area insets (`--safe-*`) are free custom properties;
   - inline styles have no colour literals;
   - contrast on both surfaces, and wood defines every paper role;
   - the copy lint;
@@ -287,6 +287,7 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
 The rules for playing under a thumb; the research, the critique and the plan are in [touch controls](touch.md).
 
 - **The last input decides.** `<html data-input="touch|keys">` follows the last `pointerdown` or `keydown` (set by the touch chunk, mirrored in the store as `input`). Style touch-only changes with `[data-input='touch']`, never with a pointer media query: a touchscreen laptop can switch back and forth.
+- **Full-bleed world, safe controls.** The game viewport uses `viewport-fit=cover`; `body.play`, the loading scene, the game container and the canvas fill `100dvh` edge to edge. The four `--safe-*` layout properties read `env(safe-area-inset-*)`. Every edge-anchored interactive region composes its token spacing with those insets: header, hotbar and focus lane, aside, compass, picker, dialogs, panels and the reading overlay. Never inset the canvas or world visuals. Both portrait and landscape are covered by the E2E test "the world fills iOS while controls stay inside portrait and landscape safe areas".
 - **In touch mode:** keycaps in buttons and the hotbar's slot numbers hide; Prabin's welcome, the How to play page and the announcements use the touch copy (`input/touchCopy.ts`); the compass and Reset are 44 px.
 - **Structure previews on phones:** at widths up to the `3xl` breakpoint (1100 px), touch input shows one compact row in the bottom focus lane, above the hotbar. The whole row is a named button: the building's title and Open, with a 44 px minimum target. Tapping opens the same reading overlay and closing restores focus to the row. The kicker, summary and classic-page link stay in the full preview for keyboard or mouse input and larger screens; the classic site remains reachable from the header. The E2E test "structure preview is one tappable bottom row on a phone" checks both orientations, 320 px, Larger text, opening, focus restoration and switching back to keys.
 - **Gestures:** one finger dragged on the planet is the floating stick (`c.stick.*`); a second finger, or two together, turn and tilt the view; a tap walks. A touch that starts on a HUD control stays with it.

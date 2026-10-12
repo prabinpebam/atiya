@@ -932,6 +932,52 @@ test.describe('touch', () => {
     await expect(row).toBeHidden();
   });
 
+  test('the world fills iOS while controls stay inside portrait and landscape safe areas', async ({ page }) => {
+    test.setTimeout(180_000);
+    await openPlanet(page);
+
+    const cases = [
+      { viewport: { width: 390, height: 844 }, safe: { top: 47, right: 0, bottom: 34, left: 0 } },
+      { viewport: { width: 844, height: 390 }, safe: { top: 0, right: 59, bottom: 21, left: 59 } },
+    ];
+
+    for (const { viewport, safe } of cases) {
+      await page.setViewportSize(viewport);
+      await page.locator('html').evaluate((el, insets) => {
+        const root = el as HTMLElement;
+        for (const [edge, value] of Object.entries(insets)) root.style.setProperty(`--safe-${edge}`, `${value}px`);
+      }, safe);
+
+      for (const selector of ['#game-container', '#game-container canvas']) {
+        await expect.poll(async () => page.locator(selector).first().boundingBox()).toEqual({ x: 0, y: 0, width: viewport.width, height: viewport.height });
+      }
+
+      const assertControlsAreSafe = async () => {
+        const violations = await page.locator('body').evaluate((body, bounds) => {
+          const controls = [...body.querySelectorAll<HTMLElement>('a, button, input, select, textarea, dialog[open]')];
+          return controls.flatMap((control) => {
+            if (control.tagName !== 'DIALOG' && control.closest('dialog[open]')) return [];
+            const rect = control.getBoundingClientRect();
+            const style = getComputedStyle(control);
+            if (style.display === 'none' || style.visibility === 'hidden' || rect.width === 0 || rect.height === 0 || rect.bottom <= 0 || rect.top >= innerHeight) return [];
+            const name = control.getAttribute('aria-label') || control.textContent?.trim().replace(/\s+/g, ' ').slice(0, 40) || control.tagName;
+            return rect.left < bounds.left - 1 || rect.right > innerWidth - bounds.right + 1 || rect.top < bounds.top - 1 || rect.bottom > innerHeight - bounds.bottom + 1
+              ? [`${name}: ${Math.round(rect.left)},${Math.round(rect.top)}-${Math.round(rect.right)},${Math.round(rect.bottom)}`]
+              : [];
+          });
+        }, safe);
+        expect(violations).toEqual([]);
+      };
+
+      await assertControlsAreSafe();
+      if (viewport.width > viewport.height) await page.screenshot({ path: 'test-results/ios-safe-area-landscape.png' });
+      await page.getByTestId('menu-button').click();
+      await expect(page.getByTestId('menu-dialog')).toBeVisible();
+      await assertControlsAreSafe();
+      await page.getByTestId('menu-dialog').getByRole('button', { name: /Close/ }).click();
+    }
+  });
+
   test('drag anywhere summons the stick: walk, push to run, a second finger turns the view, lifting stops; a tap still walks', async ({ page }) => {
     test.setTimeout(180_000);
     await openPlanet(page);

@@ -153,7 +153,27 @@ describe('component CSS uses tokens, never raw values', () => {
 
   it('only the layout variables are defined outside the tokens', () => {
     const custom = all.filter((d) => d.prop.startsWith('--')).map((d) => d.prop);
-    expect([...new Set(custom)].sort()).toEqual(['--hotbar-h', '--lane-bottom', '--slot']);
+    expect([...new Set(custom)].sort()).toEqual(['--hotbar-h', '--lane-bottom', '--safe-bottom', '--safe-left', '--safe-right', '--safe-top', '--slot']);
+  });
+
+  it('the game viewport is full-bleed while edge UI follows the OS safe area', () => {
+    const layout = readFileSync(join(ROOT, 'src/layouts/BaseLayout.astro'), 'utf8');
+    expect(layout).toContain('width=device-width, initial-scale=1, viewport-fit=cover');
+
+    const safe = Object.fromEntries(all.filter((d) => d.prop.startsWith('--safe-')).map((d) => [d.prop, d.value]));
+    expect(safe).toEqual({
+      '--safe-top': 'env(safe-area-inset-top, 0px)',
+      '--safe-right': 'env(safe-area-inset-right, 0px)',
+      '--safe-bottom': 'env(safe-area-inset-bottom, 0px)',
+      '--safe-left': 'env(safe-area-inset-left, 0px)',
+    });
+
+    const css = Object.fromEntries(STYLES.map((f) => [f.split(/[\\/]/).pop()!, readFileSync(f, 'utf8')]));
+    for (const edge of ['top', 'right', 'bottom', 'left']) expect(Object.values(css).join('\n')).toContain(`var(--safe-${edge})`);
+    expect(css['hud.css']).toMatch(/\.game-container\s*\{[^}]*inset:\s*0;/s);
+    expect(css['hud.css']).toMatch(/\.play-header\s*\{[^}]*var\(--safe-top\)[^}]*var\(--safe-right\)[^}]*var\(--safe-left\)/s);
+    expect(css['panels.css']).toMatch(/\.hotbar-wrap\s*\{[^}]*var\(--safe-bottom\)/s);
+    expect(css['components.css']).toMatch(/\.dialog\s*\{[^}]*inset:\s*var\(--safe-top\) var\(--safe-right\) var\(--safe-bottom\) var\(--safe-left\)/s);
   });
 
   it('every value is a token: a parser finds no raw size, offset, blur, turn or time outside the allow-list (P5)', () => {

@@ -81,7 +81,7 @@ What already works: the planet has `touch-action: none`, the canvas fills `100dv
 | 1 Split screen | Not what was asked ("anywhere"), and it breaks one-handed portrait play: a right thumb could only turn the camera | The stick starts anywhere; a *second* finger, or two fingers together, turns the view |
 | 2 nipplejs | About 6 KB gz against 0.3 KB of headroom in the 450 KB budget; its DOM carries inline colours (the tokens rule) and its own listeners would fight tap-to-walk. We need about 100 lines | A pure `Stick` and gesture router of our own, unit-tested, in a lazy chunk |
 | 3 Run button | One more persistent control in the thumb zone, and it needs a second thumb | Push to the rim to run, with hysteresis (on at 85 %, off under 65 %) |
-| 4 `viewport-fit=cover` | Every region and the canvas would need insets; the default already keeps the HUD out of the notch, and the sky gradient on `body.play` fills the bars | Keep the default viewport |
+| 4 `viewport-fit=cover` | Every region and the canvas would need insets; the original v2 kept the default viewport to avoid that work | Initially kept the default viewport; superseded by the safe-area update in §5.8 |
 | 5 Media query | A touchscreen laptop with a keyboard would lose its keycaps, and a phone with a keyboard would keep none | Follow the last input: `data-input` on `<html>`, from the last pointer or key |
 | 6 Fixed px size | Ignores Larger text | A rem-based `c.stick.size` token; the range is read from the drawn ring |
 | 7 Haptics | Not in Safari at all; buzzing on every run is noise | Deferred |
@@ -154,7 +154,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 - HUD buttons and links: `touch-action: manipulation` (no double-tap zoom, no tap delay). The slots keep `none` for dragging.
 - The planet region and HUD controls: `-webkit-touch-callout: none`, `user-select: none`, `-webkit-tap-highlight-color: transparent` (they have their own pressed states).
 - `body.play`: `overscroll-behavior: none`.
-- The viewport meta stays as it is: no `user-scalable=no` (1.4.4), no `viewport-fit=cover` (§4).
+- The viewport keeps zoom available (no `user-scalable=no`, WCAG 1.4.4) and uses `viewport-fit=cover`. The world draws edge to edge; every interactive edge region composes its token spacing with `env(safe-area-inset-*)`.
 - Both orientations; nothing is locked.
 
 ### 5.6 Architecture
@@ -205,6 +205,8 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 
 **Structure preview update (11 October 2026).** The height-only summary reduction above still left too much card on a phone. Touch input now uses a single-row preview up to 1100 px wide, in portrait and landscape: the building's title and Open, with the whole row tappable. It stays in the bottom focus lane above the hotbar and opens the existing detail view; closing returns focus to the row. Keyboard or mouse input restores the full preview. The earlier screenshots show the previous layout. The E2E test "structure preview is one tappable bottom row on a phone" covers 390 × 844, 844 × 390 and 320 × 568, including Larger text.
 
+**Safe-area update (12 October 2026).** The installed iOS experience now opts into `viewport-fit=cover`. The loading sky, game container and WebGL canvas remain full viewport, including the cutout and home-indicator areas. Four layout properties (`--safe-top`, `--safe-right`, `--safe-bottom`, `--safe-left`) read the corresponding `env(safe-area-inset-*)` values. The header, skip link, hotbar and focus lane, aside, toast, view controls, character picker, dialogs, inventory panels and reading overlay add those insets to their existing token spacing. On narrow portrait screens the redundant Prabin Pebam home link yields so the required Classic site action and all four 44 px game controls remain on one safe line; landscape keeps it. The E2E test "the world fills iOS while controls stay inside portrait and landscape safe areas" emulates 390 × 844 portrait insets and 844 × 390 landscape insets, proves the canvas remains edge to edge, and checks all visible controls and the menu dialog stay inside the interaction-safe rectangle.
+
 ## 6. Definition of Done
 
 | # | Item | Evidence | Status |
@@ -219,6 +221,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 | 8 | No double-tap zoom on HUD buttons, no callout, no pull-to-refresh | CSS review ([`hud.css`](https://github.com/prabinpebam/atiya/blob/main/src/styles/hud.css)); needs a pass on a real iPhone and Android phone | Done (emulated) |
 | 9 | Desktop unchanged: mouse drag turns the view, keyboard walks | "view controls" E2E (4 tests) | Done |
 | 10 | Budgets met: initial ≤ 450 KB, on demand ≤ 80 KB; nothing loads on a mouse-only device | `verify:prod`; the import is behind `(any-pointer: coarse)` | Done |
+| 11 | Installed iOS fills the display while controls avoid cutouts and the home indicator in portrait and landscape | E2E "the world fills iOS while controls stay inside portrait and landscape safe areas"; design-system unit contract | Done |
 
 ## 7. Deferred, with reasons
 

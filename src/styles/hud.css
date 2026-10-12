@@ -5,7 +5,7 @@
   --slot: var(--c-slot-size);
   /* the hotbar's height; the focus lane and the aside sit just above it (R4, R6) */
   --hotbar-h: calc(var(--slot) + var(--c-hotbar-chrome));
-  --lane-bottom: calc(var(--c-lane-edge) + var(--hotbar-h) + var(--c-lane-gap));
+  --lane-bottom: calc(var(--safe-bottom) + var(--c-lane-edge) + var(--hotbar-h) + var(--c-lane-gap));
 }
 
 body.play {
@@ -25,7 +25,7 @@ body.play {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: calc(var(--space-3) + var(--safe-top)) calc(var(--space-4) + var(--safe-right)) var(--space-3) calc(var(--space-4) + var(--safe-left));
   pointer-events: none;
 }
 
@@ -53,7 +53,7 @@ body.play {
 /* narrow screens: the header stays on one line (smaller pills) */
 @media (max-width: 32.5rem) {
   .play-header {
-    padding: var(--space-2) var(--space-2-5);
+    padding: calc(var(--space-2) + var(--safe-top)) calc(var(--space-2-5) + var(--safe-right)) var(--space-2) calc(var(--space-2-5) + var(--safe-left));
     gap: var(--space-1-5);
   }
   .play-actions,
@@ -75,6 +75,9 @@ body.play {
   }
   .play-header .btn.icon-btn {
     padding: 0;
+  }
+  .brand {
+    display: none;
   }
 }
 
@@ -178,9 +181,9 @@ body.play {
   place-content: center;
   justify-items: center;
   gap: var(--space-4);
-  padding: var(--space-6);
-  /* (lifted clear of the welcome in the bottom lane) */
-  padding-bottom: calc(var(--space-18) + var(--space-18) + var(--space-16));
+  /* lifted clear of the welcome in the bottom lane, and kept inside the interaction-safe rectangle */
+  padding: calc(var(--space-6) + var(--safe-top)) calc(var(--space-6) + var(--safe-right)) calc(var(--space-18) + var(--space-18) + var(--space-16) + var(--safe-bottom))
+    calc(var(--space-6) + var(--safe-left));
   background: linear-gradient(180deg, var(--color-sky-top) 0%, var(--color-sky-mid) 45%, var(--color-sky-low) 100%);
   transition: opacity var(--dur-reveal) var(--ease-out);
 }
@@ -268,7 +271,8 @@ body.play {
   z-index: var(--layer-overlay);
   display: grid;
   place-items: center;
-  padding: var(--space-6);
+  padding: calc(var(--space-6) + var(--safe-top)) calc(var(--space-6) + var(--safe-right)) calc(var(--space-6) + var(--safe-bottom))
+    calc(var(--space-6) + var(--safe-left));
   background: var(--color-scrim-soft);
 }
 
@@ -292,7 +296,7 @@ body.play {
 }
 
 .preview-card {
-  width: min(var(--c-card-width), calc(100vw - var(--space-8)));
+  width: min(var(--c-card-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-8)));
   border-top: var(--border-rule) solid var(--accent, var(--surface-accent));
 }
 
@@ -386,7 +390,7 @@ body.play {
 
 /* the conversation (family.md §6): name plate, the line typing out, Next and close */
 .talk-box {
-  width: min(var(--c-talk-width), calc(100vw - var(--space-6)));
+  width: min(var(--c-talk-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-6)));
   padding: var(--space-4-5) var(--space-5) var(--space-3-5);
   border-top: var(--border-rule-sm) solid var(--color-talk-rule);
   animation-name: talk-in;
@@ -508,10 +512,10 @@ body.play {
 /* R6: the aside, bottom left: the build-site card (ui/lanes.ts) */
 .aside {
   position: absolute;
-  left: var(--space-4);
+  left: calc(var(--space-4) + var(--safe-left));
   bottom: var(--lane-bottom);
   z-index: var(--layer-lane);
-  width: min(var(--c-aside-width), calc(100vw - var(--space-8)));
+  width: min(var(--c-aside-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-8)));
 }
 
 /* full planet (camera/overview.ts): no character to steer, so nothing that steers or uses it shows */
@@ -552,19 +556,20 @@ body.play {
 
 @media (max-width: 47.5rem) {
   .aside {
-    left: 50%;
+    right: var(--safe-right);
+    left: var(--safe-left);
     bottom: calc(var(--lane-bottom) + var(--c-aside-lift));
-    transform: translateX(-50%);
+    margin-inline: auto;
   }
 }
 
 /* R7: the toast, top centre: one at a time, the newest replaces (also announced) */
 .toast {
   position: absolute;
-  top: var(--c-toast-top);
+  top: calc(var(--c-toast-top) + var(--safe-top));
   left: 50%;
   z-index: var(--layer-toast);
-  max-width: min(var(--c-toast-width), calc(100vw - var(--space-8)));
+  max-width: min(var(--c-toast-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-8)));
   transform: translateX(-50%);
   padding: var(--space-2-5) var(--space-4);
   border: var(--border-base) solid var(--surface-accent);
@@ -580,8 +585,8 @@ body.play {
 /* R3: view controls (the compass and reset), right edge */
 .view-controls {
   position: absolute;
-  right: var(--space-4);
-  bottom: var(--space-6);
+  right: calc(var(--space-4) + var(--safe-right));
+  bottom: calc(var(--space-6) + var(--safe-bottom));
   z-index: var(--layer-hud);
   display: grid;
   justify-items: center;
@@ -677,9 +682,9 @@ body.play {
 @media (max-width: 45rem) {
   .view-controls {
     /* below the character picker */
-    top: var(--c-view-top);
+    top: calc(var(--c-view-top) + var(--safe-top));
     bottom: auto;
-    right: var(--space-3);
+    right: calc(var(--space-3) + var(--safe-right));
   }
 }
 
@@ -734,8 +739,8 @@ body.play {
 /* R2: the character picker (top right, under the header) */
 .character-picker {
   position: absolute;
-  top: var(--c-picker-top);
-  right: var(--space-4);
+  top: calc(var(--c-picker-top) + var(--safe-top));
+  right: calc(var(--space-4) + var(--safe-right));
   z-index: var(--layer-hud);
   display: flex;
   gap: var(--space-2-5);
@@ -811,7 +816,7 @@ body.play {
 
 /* ---------- Chopper's profile card: his photo, his details, a little 3D Chopper (a paper dialog) ---------- */
 .dialog.chopper-dialog {
-  width: min(var(--c-chopper-width), calc(100vw - var(--space-6)));
+  width: min(var(--c-chopper-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-6)));
   border-top: var(--border-rule-lg) solid var(--color-chopper-rule);
   background: var(--surface-bg);
 }

@@ -5,7 +5,7 @@
 .hotbar-wrap {
   position: absolute;
   left: 50%;
-  bottom: var(--c-lane-edge);
+  bottom: calc(var(--c-lane-edge) + var(--safe-bottom));
   z-index: var(--layer-hud);
   display: grid;
   justify-items: center;
@@ -127,7 +127,8 @@
   display: grid;
   place-items: center;
   /* panels stay clear of the top bar (a button and its padding), which stays usable above them */
-  padding: calc(var(--c-btn-h) + 2 * var(--space-3)) var(--space-2) var(--space-2);
+  padding: calc(var(--c-btn-h) + 2 * var(--space-3) + var(--safe-top)) calc(var(--space-2) + var(--safe-right)) calc(var(--space-2) + var(--safe-bottom))
+    calc(var(--space-2) + var(--safe-left));
   background: var(--color-scrim-wood);
 }
 
@@ -139,7 +140,7 @@
   background: var(--surface-bg);
   color: var(--surface-text);
   box-shadow: var(--shadow-panel);
-  max-width: calc(100vw - var(--space-4));
+  max-width: calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-4));
 }
 
 .inv-head {
@@ -348,7 +349,7 @@
     'book inv-main'
     'book inv-hotbar';
   column-gap: var(--space-4);
-  max-height: calc(100dvh - var(--c-btn-h) - 2 * var(--space-3) - var(--space-2));
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - var(--c-btn-h) - 2 * var(--space-3) - var(--space-2));
   overflow-y: auto;
 }
 
@@ -672,7 +673,7 @@
 }
 
 .paint-panel {
-  width: min(var(--c-paint-width), calc(100vw - var(--space-4)));
+  width: min(var(--c-paint-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-4)));
 }
 
 .paint-grid {

@@ -115,8 +115,9 @@ kbd {
 
 /* Dialog: a modal paper sheet (native <dialog>, the browser's top layer) */
 .dialog {
-  width: min(var(--c-dialog-width), calc(100vw - var(--space-8)));
-  max-height: calc(100dvh - var(--space-12));
+  inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  width: min(var(--c-dialog-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-8)));
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - var(--space-12));
   padding: 0;
   border: var(--border-base) solid var(--surface-border);
   border-radius: var(--radius-xl);
@@ -152,9 +153,9 @@ kbd {
  * browser paints an opaque backdrop behind it and its prefers-color-scheme stays the game's light. */
 .reading-overlay {
   position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  width: auto;
+  height: auto;
   max-width: none;
   max-height: none;
   margin: 0;
@@ -200,7 +201,7 @@ kbd {
   position: absolute;
   inset-block-start: 50%;
   inset-inline-start: 50%;
-  max-width: min(var(--c-card-width), calc(100vw - var(--space-8)));
+  max-width: min(var(--c-card-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-8)));
   transform: translate(-50%, -50%);
 }
 
@@ -283,7 +284,7 @@ kbd {
 
 /* Fast travel (the menu's travel page): a tile per place, its sign on an accent disc, its number key */
 .travel-dialog {
-  width: min(var(--c-travel-width), calc(100vw - var(--space-8)));
+  width: min(var(--c-travel-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-8)));
 }
 
 .travel-lead {
