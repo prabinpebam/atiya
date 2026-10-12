@@ -14,8 +14,8 @@
  * for reduced motion.
  * Behind it there can be a colour taken from the picture itself (bg: its edges' colour, and its dark
  * version's), filling the room round a fitted or actual-size picture and its transparent parts; and its
- * corners can be squared (rounded false), and a drop shadow can fall under it (shadow), following its own
- * shape.
+ * picture's corners can be squared (rounded false; the frame itself stays square), and a drop shadow can
+ * fall under it (shadow), following its own shape.
  * While it loads, its place shimmers, and it fades in once it has (a failed load is tried again, then its
  * place stays quiet, never a broken icon); once the page has loaded, the pictures still waiting are fetched
  * nearest the view first (scripts/pictures.ts). Without JavaScript it shows as it loads.
@@ -60,7 +60,7 @@ interface Props {
   dark?: { src: string; srcset?: string; width: number; height: number; poster?: string };
   /** A colour behind it (the picture's own edge colour, and its dark version's), filling the space round it and its transparent parts. Left out, nothing behind it. */
   bg?: { light: string; dark?: string };
-  /** Rounded corners (the radius above); false squares them. */
+  /** Rounded corners on the picture itself (the radius above); false squares them. */
   rounded?: boolean;
   /** A drop shadow under it, following its own shape (a fitted or transparent picture casts the shadow of what shows). */
   shadow?: boolean;
@@ -88,7 +88,6 @@ const imgAlt = tile ? '' : alt;
       data-picture
       data-mode={mode}
       data-ratio={ratio}
-      data-radius={radius}
       data-fill={fill ? '' : undefined}
       data-tile={tile ? '' : undefined}
       data-bg={bg ? '' : undefined}
@@ -102,14 +101,14 @@ const imgAlt = tile ? '' : alt;
           {dark?.poster && <source srcset={dark.poster} media="(prefers-color-scheme: dark) and (prefers-reduced-motion: reduce)" width={dark.width} height={dark.height} data-dark-reduced="" />}
           {dark && <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? shownSizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />}
           {poster && <source srcset={poster} media="(prefers-reduced-motion: reduce)" width={width} height={height} />}
-          <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} style={vars} />
+          <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} data-radius={radius} style={vars} />
         </picture>
       ) : (
-        <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} style={vars} />
+        <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} data-radius={radius} style={vars} />
       )}
     </span>
   ) : (
-    <span class="shell" data-picture data-radius={radius} data-fill={fill ? '' : undefined}>
+    <span class="shell" data-picture data-fill={fill ? '' : undefined}>
     {dark || poster ? (
     <picture class="themed">
       {dark?.poster && <source srcset={dark.poster} media="(prefers-color-scheme: dark) and (prefers-reduced-motion: reduce)" width={dark.width} height={dark.height} data-dark-reduced="" />}
@@ -166,20 +165,11 @@ const imgAlt = tile ? '' : alt;
     display: contents;
   }
 
-  /* a plain picture's root: as wide as its place, its shape the picture's (or its ratio's), with its corners */
+  /* a plain picture's root: as wide as its place, its shape the picture's (or its ratio's) */
   .shell {
     position: relative;
     display: block;
     width: 100%;
-    border-radius: var(--c-image-radius);
-  }
-
-  .shell[data-radius='feature'] {
-    border-radius: var(--c-image-radius-feature);
-  }
-
-  .shell[data-radius='none'] {
-    border-radius: var(--radius-none);
   }
 
   .shell[data-fill] {
@@ -266,15 +256,6 @@ const imgAlt = tile ? '' : alt;
     width: 100%;
     aspect-ratio: var(--own-ratio);
     overflow: clip;
-    border-radius: var(--c-image-radius);
-  }
-
-  .frame[data-radius='feature'] {
-    border-radius: var(--c-image-radius-feature);
-  }
-
-  .frame[data-radius='none'] {
-    border-radius: var(--radius-none);
   }
 
   .frame[data-fill] {
@@ -289,7 +270,6 @@ const imgAlt = tile ? '' : alt;
   .frame[data-mode='actual'] .image {
     width: min(100%, var(--natural));
     max-height: 100%;
-    border-radius: var(--radius-none);
     object-fit: contain;
   }
 
@@ -309,7 +289,6 @@ const imgAlt = tile ? '' : alt;
   }
 
   .frame[data-mode='tile'] .image {
-    border-radius: var(--radius-none);
     object-fit: contain;
     height: 100%;
   }
