@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-11",
+  "updatedAt": "2026-10-12",
   "locale": "en",
   "topics": [
     "designup",
@@ -20,26 +20,15 @@
   "body": [
     {
       "type": "collection",
-      "layout": "columns",
+      "layout": "tiles",
       "items": [
         {
-          "heading": "Event",
-          "subtext": "DesignUp, Bengaluru and Singapore"
-        },
-        {
-          "heading": "Years",
-          "subtext": "2016 to 2019"
-        },
-        {
-          "heading": "Role",
-          "subtext": "Volunteer: photos, video, motion graphics and 3D"
+          "text": "[DesignUp](https://designup.io/) is a community and conference for product creators, designers, makers and technology leaders across India and Southeast Asia. It began in Bengaluru and grew through large conferences and smaller events across Indian cities and Singapore, bringing practitioners together to share their work, ideas and experience."
         }
-      ]
-    },
-    {
-      "type": "text",
-      "markdown": "Some of the best things in my life happened because I was lucky enough to be in the right room, with the right people, at the right time. DesignUp was one of them. This is the story of how it shaped me, as a person and as a Designer, and a chance to share the work I was fortunate to create along the way.",
-      "dropcap": true
+      ],
+      "width": "popout",
+      "heading": "What is DesignUp?",
+      "showHeading": false
     },
     {
       "type": "divider"
@@ -51,8 +40,12 @@
     },
     {
       "type": "text",
-      "markdown": "Back in 2015, I was leading the Design team at Belong. Through work, I was introduced to Jay Dutta, and JD soon became someone I'd go to for all sorts of guidance: managing a team, hiring, and much more. JD used to give talks and organise small Design events in Bengaluru. I was curious and ambitious, so I'd attend as many as I could and help out wherever I could.",
+      "markdown": "Some of the best things in my life happened because I was lucky enough to be in the right room, with the right people, at the right time. DesignUp was one of them. This is the story of how it shaped me, as a person and as a Designer, and a chance to share the work I was fortunate to create along the way.",
       "dropcap": true
+    },
+    {
+      "type": "text",
+      "markdown": "Back in 2015, I was leading the Design team at Belong. Through work, I was introduced to [Jay Dutta](https://www.linkedin.com/in/jaydutta/), and JD soon became someone I'd go to for all sorts of guidance: managing a team, hiring, and much more. JD used to give talks and organise small Design events in Bengaluru. I was curious and ambitious, so I'd attend as many as I could and help out wherever I could."
     },
     {
       "type": "text",
