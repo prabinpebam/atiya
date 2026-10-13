@@ -74,17 +74,21 @@ interface Props {
   frame?: PlanetFrame;
   /** Keep the page out of search results (the Sign in page). */
   noindex?: boolean;
+  /** The articles the page shows (dev only): a change to another article's files doesn't reload it. */
+  shows?: string[];
 }
 
-const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, invited = 0, ask, view = 'tiles', empty, redirect, frame, noindex } = Astro.props;
+const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, invited = 0, ask, view = 'tiles', empty, redirect, frame, noindex, shows } = Astro.props;
 const shown = stories;
 const sealed = privatePages;
 const hasPrivate = sealed.length > 0 || shown.some((s) => s.privateTag);
 const variantOf = (i: number) => (view === 'features' ? 'feature' : view === 'list' ? 'row' : view === 'bento' && i === 0 ? 'feature' : undefined);
+// a bento's halves (.cell:nth-child(5n + 2) and (5n + 3)) share their row by two, so their pictures are wider
+const columnsOf = (i: number) => (i % 5 === 1 || i % 5 === 2 ? 2 : 3);
 const open = (mark: string) => `<!--sealed:card:${mark}-->`;
 ---
 
-<PageShell title={title} description={description} redirect={redirect} noindex={noindex} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} preload={['display', 'display-italic', 'text', 'ui']}>
+<PageShell title={title} description={description} redirect={redirect} noindex={noindex} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} shows={shows} preload={standfirst ? ['display', 'display-italic', 'text', 'ui'] : ['display', 'text', 'ui']}>
   {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} access />}
   <main id="main" class="index" tabindex="-1">
     <header class="intro">
@@ -100,7 +104,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
             {shown.map((s, i) =>
               view === 'bento' ? (
                 <div class="cell" data-node={s.node}>
-                  <StoryCard {...s} variant={variantOf(i)} shared={s.privateTag ? 'private' : undefined} />
+                  <StoryCard {...s} variant={variantOf(i)} columns={columnsOf(i)} shared={s.privateTag ? 'private' : undefined} />
                 </div>
               ) : (
                 <div class="item" data-node={s.node}>

@@ -7,6 +7,8 @@
  * open page when a server-only module changes, so every save in the editor would reload the editor
  * (documentation/editor/spec.md §8.4). When to read again is the content generation's job: the editor's
  * store advances it when a write commits, and the dev integration when anything else changes a file.
+ * Parsed documents are kept by path, size and time, so a read parses only what changed, and the store
+ * hands the snapshot it wrote to the next reader (documentation/engineering/performance-report.md R8).
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
@@ -58,48 +60,214 @@ export const fileOf = (key: string, root = contentRoot(), priv = privateRoot()) 
 /** How the store and the dev integration's watcher name a written file: absolute, case-blind on Windows. */
 export const writeKey = (abs: string) => (process.platform === 'win32' ? resolve(abs).toLowerCase() : resolve(abs));
 
-function walk(dir: string): string[] {
-  if (!existsSync(dir)) return [];
+/** Every file under a folder: its absolute path and its path under the folder (with `/`). */
+function walk(dir: string, rel = ''): { abs: string; rel: string }[] {
+  if (!rel && !existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     if (IGNORED_FILE.test(e.name)) return [];
-    const p = join(dir, e.name);
-    return e.isDirectory() ? walk(p) : [p];
+    const p = { abs: join(dir, e.name), rel: rel ? `${rel}/${e.name}` : e.name };
+    return e.isDirectory() ? walk(p.abs, p.rel) : [p];
   });
 }
 
 /** The private folder counts once it holds its access file (a fresh clone of the submodule holds only its README). */
 export const hasPrivate = (priv: string | null | undefined): priv is string => !!priv && existsSync(join(priv, 'access.json'));
 
+/** A JSON document as last parsed, with the size and time it had then. */
+type Parsed = { size: number; mtimeMs: number } & ({ value: unknown } | { error: string });
+
+interface DocCache {
+  /** Keyed by absolute path, so another content folder (CONTENT_ROOT, a test build's fixtures) never sees this one's. */
+  files: Map<string, Parsed>;
+  /** For the tests: freeze what's parsed, so a reader that changes a shared document fails loudly. */
+  freeze?: boolean;
+  /** For the tests: how many documents were parsed (not reused). */
+  parsed: number;
+}
+
+/** On globalThis: the dev server's modules, the editor's and a module reloaded by HMR share one cache. */
+function docCache(): DocCache {
+  const g = globalThis as typeof globalThis & { __siteDocCache?: DocCache };
+  return (g.__siteDocCache ??= { files: new Map(), parsed: 0 });
+}
+
+const cacheKey = (abs: string) => resolve(abs);
+
+function deepFreeze(v: unknown): unknown {
+  if (v && typeof v === 'object' && !Object.isFrozen(v)) {
+    Object.freeze(v);
+    for (const x of Object.values(v)) deepFreeze(x);
+  }
+  return v;
+}
+
+/**
+ * The parsed documents the snapshot keeps (documentation/engineering/performance-report.md R8). Readers
+ * share them: never change a document read from a snapshot (copy it first).
+ */
+export const snapshotCache = {
+  /** Forget every parsed document (the tests). */
+  clear() {
+    docCache().files.clear();
+    docCache().parsed = 0;
+  },
+  /** For the tests: freeze every document parsed from now on, so a reader that changes one throws. */
+  freeze(on = true) {
+    docCache().freeze = on;
+  },
+  /** How many documents have been parsed rather than reused since the last clear. */
+  get parsed() {
+    return docCache().parsed;
+  },
+  /**
+   * What the store just wrote: the document it parsed to check the change, kept as the file's parsed
+   * value at its new size and time (so the next read doesn't parse it again), or forgotten if it's gone
+   * (or isn't the size written: changed again since).
+   */
+  wrote(abs: string, value: unknown | undefined, bytes?: number) {
+    const files = docCache().files;
+    const key = cacheKey(abs);
+    const st = value === undefined ? undefined : statSync(abs, { throwIfNoEntry: false });
+    if (!st || (bytes !== undefined && st.size !== bytes)) {
+      files.delete(key);
+      return;
+    }
+    files.set(key, { size: st.size, mtimeMs: st.mtimeMs, value: docCache().freeze ? deepFreeze(value) : value });
+  },
+};
+
+/** A JSON file's document, parsed again only when its size or time changed since it was last parsed. */
+function parsedDoc(file: string, size: number, mtimeMs: number): Parsed {
+  const cache = docCache();
+  const key = cacheKey(file);
+  const hit = cache.files.get(key);
+  if (hit && hit.size === size && hit.mtimeMs === mtimeMs) return hit;
+  let entry: Parsed;
+  try {
+    const value = JSON.parse(readFileSync(file, 'utf8'));
+    entry = { size, mtimeMs, value: cache.freeze ? deepFreeze(value) : value };
+  } catch (e) {
+    entry = { size, mtimeMs, error: (e as Error).message };
+  }
+  cache.parsed++;
+  cache.files.set(key, entry);
+  return entry;
+}
+
 /**
  * Both folders, read into one snapshot: the public content folder, and the private one when it exists
- * (a clone without access to it, or without its submodule, builds the public site alone).
+ * (a clone without access to it, or without its submodule, builds the public site alone). Every file is
+ * stat'd each time; a JSON document is parsed again only when its size or time changed, so the parsed
+ * documents are shared between snapshots: a reader must never change one (copy it first). Each snapshot's
+ * `docs` record is its own.
  * @param priv the private folder; null reads the public folder alone
  */
 export function readSnapshot(root = contentRoot(), priv: string | null = privateRoot()): Snapshot {
   const docs: Record<string, unknown> = {};
   const masters = new Set<string>();
   const errors: string[] = [];
-  const hash = createHash('sha1');
+  const entries: Entry[] = [];
   const folders: [string, string][] = [[root, '/content/']];
   if (hasPrivate(priv) && resolve(priv) !== resolve(root)) folders.push([priv, PRIVATE_PREFIX]);
   for (const [dir, prefix] of folders) {
-    for (const file of walk(dir).sort()) {
-      const key = keyOf(file, dir, prefix);
+    for (const { abs: file, rel } of walk(dir).sort((a, b) => (a.abs < b.abs ? -1 : a.abs > b.abs ? 1 : 0))) {
+      const key = prefix + rel;
       // the private repository's own files at its top (its README) aren't content
-      if (prefix === PRIVATE_PREFIX && !key.slice(prefix.length).includes('/') && PRIVATE_IGNORED.test(key.slice(prefix.length))) continue;
+      if (prefix === PRIVATE_PREFIX && !rel.includes('/') && PRIVATE_IGNORED.test(rel)) continue;
       const st = statSync(file);
-      hash.update(`${key}\0${st.size}\0${st.mtimeMs}\n`);
+      entries.push({ abs: file, key, line: `${key}\0${st.size}\0${st.mtimeMs}\n` });
       if (file.endsWith('.json')) {
-        try {
-          docs[key] = JSON.parse(readFileSync(file, 'utf8'));
-        } catch (e) {
-          errors.push(`${key.slice(1)}: not valid JSON (${(e as Error).message})`);
-        }
+        const parsed = parsedDoc(file, st.size, st.mtimeMs);
+        if ('value' in parsed) docs[key] = parsed.value;
+        else errors.push(`${key.slice(1)}: not valid JSON (${parsed.error})`);
       } else if (MASTER_FILE.test(file)) masters.add(key);
       else errors.push(`${key.slice(1)}: not a file the content model knows`);
     }
   }
-  return { docs, masters, errors, digest: hash.digest('hex') };
+  const snap = { docs, masters, errors, digest: digestOf(entries) };
+  metas.set(snap, { folders, entries });
+  return snap;
+}
+
+/** One file in a snapshot's digest, in the order it's read (by absolute path, folder by folder). */
+interface Entry {
+  abs: string;
+  key: string;
+  line: string;
+}
+/** What a snapshot was read from, so the store can tell what it became after a write without reading it all again. */
+const metas = new WeakMap<Snapshot, { folders: [string, string][]; entries: Entry[] }>();
+
+function digestOf(entries: Entry[]): string {
+  const hash = createHash('sha1');
+  for (const e of entries) hash.update(e.line);
+  return hash.digest('hex');
+}
+
+/**
+ * The snapshot as it is after the store wrote these files (each JSON document's new value, or deleted):
+ * exactly what `readSnapshot` would read now, with the written files stat'd again and nothing else read.
+ * Null when the snapshot wasn't read by `readSnapshot` or a key isn't in its folders.
+ */
+export function snapshotAfter(snap: Snapshot, written: { key: string; deleted: boolean; doc?: unknown }[]): Snapshot | null {
+  const meta = metas.get(snap);
+  if (!meta) return null;
+  const entries = [...meta.entries];
+  const values = new Map<string, unknown>();
+  for (const w of written) {
+    const folder = meta.folders.find(([, prefix]) => w.key.startsWith(prefix));
+    if (!folder) return null;
+    const abs = join(folder[0], ...w.key.slice(folder[1].length).split('/'));
+    const at = entries.findIndex((e) => e.abs === abs);
+    if (at >= 0) entries.splice(at, 1);
+    if (w.deleted) continue;
+    const st = statSync(abs);
+    const after = entries.findIndex((e) => e.abs > abs);
+    entries.splice(after < 0 ? entries.length : after, 0, { abs, key: w.key, line: `${w.key}\0${st.size}\0${st.mtimeMs}\n` });
+    values.set(w.key, w.doc);
+  }
+  // in the order readSnapshot gives them
+  const docs: Record<string, unknown> = {};
+  const masters = new Set<string>();
+  for (const e of entries) {
+    if (values.has(e.key)) {
+      if (e.key.endsWith('.json')) docs[e.key] = values.get(e.key);
+      else masters.add(e.key);
+    } else if (e.key in snap.docs) docs[e.key] = snap.docs[e.key];
+    else if (snap.masters.has(e.key)) masters.add(e.key);
+  }
+  const keys = written.map((w) => `${w.key.slice(1)}: `);
+  const errors = snap.errors.filter((e) => !keys.some((k) => e.startsWith(k)));
+  const next = { docs, masters, errors, digest: digestOf(entries) };
+  metas.set(next, { folders: meta.folders, entries });
+  return next;
+}
+
+interface HandOff {
+  generation: number;
+  roots: string;
+  snap: Snapshot;
+}
+const rootsOf = (root: string, priv: string | null) => `${resolve(root)}|${hasPrivate(priv) && resolve(priv) !== resolve(root) ? resolve(priv) : ''}`;
+
+/**
+ * The store's snapshot after a write, for the next reader at that generation: the repository then has
+ * nothing to read again (documentation/engineering/performance-report.md R8). Any other change moves the
+ * generation on, and the reader reads the folders again.
+ */
+export function handOff(snap: Snapshot, generation: number, root = contentRoot(), priv: string | null = privateRoot()): void {
+  (globalThis as typeof globalThis & { __siteSnapshotHandOff?: HandOff }).__siteSnapshotHandOff = { generation, roots: rootsOf(root, priv), snap };
+}
+
+/** The content as it is now: the store's snapshot when nothing has changed since its write, else read from the folders. */
+export function currentSnapshot(root = contentRoot(), priv: string | null = privateRoot()): Snapshot {
+  const g = globalThis as typeof globalThis & { __siteSnapshotHandOff?: HandOff };
+  const h = g.__siteSnapshotHandOff;
+  const now = generation();
+  if (h && now !== -1 && h.generation === now && h.roots === rootsOf(root, priv)) {
+    return { docs: { ...h.snap.docs }, masters: new Set(h.snap.masters), errors: [...h.snap.errors], digest: h.snap.digest };
+  }
+  return readSnapshot(root, priv);
 }
 
 /** Shared by the dev server's modules and the editor integration (one process), so both see one generation. */

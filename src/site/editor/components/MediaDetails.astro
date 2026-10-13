@@ -404,6 +404,40 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
   .side[data-scheme='dark'] {
     color-scheme: dark;
   }
+  /* drawn again from the server (editor spec §2.2): what it shows stays while it updates, with a line
+     along its top past the delay */
+  .details[data-busy='on'] {
+    position: relative;
+  }
+
+  .details[data-busy='on']::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 0;
+    z-index: var(--layer-raised);
+    block-size: var(--border-strong);
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
+    background-size: 40% 100%;
+    animation: region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes region-busy {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 100% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .details[data-busy='on']::before {
+      animation: none;
+      background: var(--color-accent);
+    }
+  }
 </style>
 
 <script>

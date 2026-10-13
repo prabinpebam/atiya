@@ -6,7 +6,10 @@
  * the system's): it changes the whole of edit mode, its canvas with it. The article editor turns the
  * navigation off for its studio; a screen
  * with a detail pane (Media) puts it in the aside slot, beside its content and in view as it scrolls. Built
- * from the site's compounds and fundamentals; only the editor imports it (and editor-tokens.css).
+ * from the site's compounds and fundamentals; only the editor imports it (and editor-tokens.css). A screen
+ * never waits for git: the counts come from the cached status, or are checked once the screen has
+ * painted ("Checking changes…"); a swap draws only the regions it names (X-Editor-Regions). A screen
+ * that takes past the delay to open shows a line under the top bar, then its skeleton (spec §2.2).
  * @tier editor
  * @a11y One main landmark (id="main"); the navigation is named "Edit mode"; the save status is announced (role="status").
  */
@@ -20,7 +23,10 @@ import Select from '../components/fundamentals/Select.astro';
 import '../styles/editor-tokens.css';
 import { withBase } from '../design/meta';
 import { THEME_OPTIONS } from '../scripts/theme';
-import { changes, pendingCount } from './server/git';
+import { changes, peekChanges, pendingCount } from './server/git';
+import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from './model/regions';
+import Spinner from '../components/fundamentals/Spinner.astro';
+import Skeleton from '../components/fundamentals/Skeleton.astro';
 import { generation } from '../content/source';
 import SaveStatus from './components/SaveStatus.astro';
 import TestStatus from './components/TestStatus.astro';
@@ -45,12 +51,16 @@ interface Props {
 
 const { title, screen, nav = true, heading, intro, asideLabel } = Astro.props;
 const aside = Astro.slots.has('aside');
-const git = await changes();
+// a swap names its regions; a whole screen never waits for git (performance-report.md R1, R2): the counts
+// come from the cached status, or, when there's none yet, are checked once the screen has painted
+const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
+const git = asked ? (wants(asked, ...ALWAYS) ? await changes() : null) : await peekChanges();
+const checking = !git;
 // files changed in either folder, commits not pushed from either repository, a private commit not yet
 // recorded (documentation/access/spec.md §8.3); git that couldn't be read says so instead of "nothing"
-const pending = pendingCount(git);
-const unknown = !!git.error;
-const articlePublish = screen === 'article' ? await publishView(Astro.url) : null;
+const pending = git ? pendingCount(git) : 0;
+const unknown = !!git?.error;
+const articlePublish = screen === 'article' && git && wants(asked, 'publish', 'publish-issues') ? await publishView(Astro.url) : null;
 const to = (p: string) => withBase(`/_edit/${p}`);
 const groups = [
   {
@@ -88,10 +98,17 @@ const groups = [
       <TestStatus />
       <div class="tools"><slot name="tools" /></div>
       <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" />
-      <div class="pending" data-region="editor-pending" data-pending={String(pending)}>
+      <div class="pending" data-region="editor-pending" data-pending={checking ? undefined : String(pending)} data-pending-checking={checking ? '' : undefined}>
         {screen === 'article' && <span class="remote-status" data-editor-remote-status role="status" aria-live="polite" hidden />}
         {
-          unknown ? (
+          checking ? (
+            <span class="checking">
+              <Spinner size="sm" label="Checking changes to save" />
+              <Text as="span" variant="small" tone="muted">
+                Checking changes…
+              </Text>
+            </span>
+          ) : unknown ? (
             <Text as="span" variant="small" tone="muted">
               Changes not checked
             </Text>
@@ -116,6 +133,11 @@ const groups = [
       )
     }
     <main id="main" class="main" tabindex="-1" data-scrollbar>
+      <div class="opening" aria-hidden="true" data-editor-opening>
+        <Skeleton shape="text" lines={1} size="lg" />
+        <Skeleton shape="block" ratio="21/9" />
+        <Skeleton shape="text" lines={4} />
+      </div>
       {
         heading ? (
           <div class="screen" data-region="screen">
@@ -147,11 +169,15 @@ const groups = [
       }
     </main>
     {
-      articlePublish && (
+      screen === 'article' && (
         <Dialog id="save-to-remote" title="Save to remote" size="lg" closeLabel="Close and keep editing">
-          <ChangeList {...articlePublish.changeList} wide />
+          {articlePublish ? (
+            <ChangeList {...articlePublish.changeList} wide />
+          ) : (
+            <ChangeList changes={[]} ahead={0} blocked={null} message="" actions={null} published={null} wide checking />
+          )}
           <div data-region="publish-issues">
-            {articlePublish.issues.length > 0 && <ContentIssues issues={articlePublish.issues} />}
+            {articlePublish && articlePublish.issues.length > 0 && <ContentIssues issues={articlePublish.issues} />}
           </div>
         </Dialog>
       )
@@ -224,6 +250,96 @@ const groups = [
   .remote-status {
     color: var(--color-text-muted);
     font-size: var(--text-sm);
+  }
+
+  .checking {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* §2.2's signs that are the layout's: the counts checked (a small spinner), a screen drawn again (a
+     line along its top), a screen opening (a line under the top bar, then its skeleton past 1 s) */
+  .pending[data-busy='on']::before {
+    content: '';
+    inline-size: var(--text-sm);
+    block-size: var(--text-sm);
+    border: var(--border-strong) solid var(--color-border);
+    border-inline-end-color: var(--color-accent);
+    border-radius: var(--radius-round);
+    animation: busy-turn var(--duration-slower) linear infinite;
+  }
+
+  .top,
+  .screen {
+    position: relative;
+  }
+
+  .top[data-busy='on']::after,
+  .screen[data-busy='on']::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    block-size: var(--border-strong);
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
+    background-size: 40% 100%;
+    animation: busy-line var(--duration-slower) var(--ease-standard) infinite alternate;
+    pointer-events: none;
+  }
+
+  .top[data-busy='on']::after {
+    inset-block-end: calc(var(--border-hairline) * -1);
+  }
+
+  .screen[data-busy='on']::before {
+    inset-block-start: 0;
+  }
+
+  .opening {
+    display: none;
+  }
+
+  .editor[data-opening] .opening {
+    position: absolute;
+    inset: 0;
+    z-index: var(--layer-raised);
+    display: grid;
+    align-content: start;
+    gap: var(--space-6);
+    padding: var(--space-8);
+    background: var(--color-bg);
+  }
+
+  .editor[data-opening] .main {
+    position: relative;
+  }
+
+  @keyframes busy-turn {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @keyframes busy-line {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 100% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pending[data-busy='on']::before,
+    .top[data-busy='on']::after,
+    .screen[data-busy='on']::before {
+      animation: none;
+    }
+
+    .top[data-busy='on']::after,
+    .screen[data-busy='on']::before {
+      background: var(--color-accent);
+    }
   }
 
   .remote-status[data-state='saved'] {
@@ -334,10 +450,46 @@ const groups = [
   import { each } from '../scripts/page';
   import { bindThemeSwitch } from '../scripts/theme';
   import { initLive } from './scripts/live';
-  import { pendingCheckedAt, refreshPending, resumePending } from './scripts/client';
+  import { editorUrl, pendingCheckedAt, refreshPending, resumePending, startTask, type Task } from './scripts/client';
 
   // what changes elsewhere (another tab, a file changed by hand) comes in live; unsaved input stays
   each<HTMLElement>('[data-editor-app]', (app, signal) => initLive(app, signal));
+
+  // the counts weren't known when the screen was drawn (git not asked yet since a start or a change): read now, after the paint
+  each<HTMLElement>('[data-pending-checking]', () => refreshPending(0));
+
+  // a screen opening (§2.2): past the delay a line under the top bar and the link marked busy, past 1 s the
+  // screen's skeleton, until the next screen replaces this one (or the browser comes back to it)
+  each<HTMLElement>('[data-editor-app]', (app, signal) => {
+    let task: Task | null = null;
+    let long = 0;
+    const stop = () => {
+      task?.failed();
+      task = null;
+      clearTimeout(long);
+      delete app.dataset.opening;
+    };
+    document.addEventListener(
+      'click',
+      (e) => {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const a = (e.target as Element).closest?.<HTMLAnchorElement>('a[href]');
+        if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+        const url = new URL(a.href, location.href);
+        if (url.origin !== location.origin || !url.pathname.startsWith(editorUrl()) || url.pathname.startsWith(editorUrl('api'))) return;
+        if (url.pathname === location.pathname && url.search === location.search) return;
+        stop();
+        const name = a.textContent?.trim().replace(/\s+/g, ' ');
+        task = startTask(name && name.length < 40 ? `Opening ${name}…` : 'Opening…', { el: [app.querySelector('.top'), a] });
+        long = window.setTimeout(() => (app.dataset.opening = ''), 1000);
+        // a leave that was called off (the browser asked about unsaved changes) shows nothing for long
+        window.setTimeout(() => document.visibilityState === 'visible' && task && stop(), 30_000);
+      },
+      { signal },
+    );
+    window.addEventListener('pageshow', stop, { signal });
+    window.addEventListener('pagehide', stop, { signal });
+  });
 
   // coming back to edit mode (another window, a terminal where git committed or pushed): what waits to be
   // saved to remote is read from git again, at most every few seconds

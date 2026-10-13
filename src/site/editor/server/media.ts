@@ -11,11 +11,13 @@
  * copy, never in place (§6.1); a picture is deleted only when nothing refers to it (the content check
  * refuses a deletion that would leave a reference). A private page's media live in private-pages/ with it
  * (documentation/access/spec.md §8.2): an upload to its folder goes there, and every other change is made
- * where the picture or video already is.
+ * where the picture or video already is. Every master a change saves has its size and background measured
+ * into its sidecar (`facts`, media.md §9.3), so no page decodes it to show it.
  */
 import { imageMedia, videoMedia, type ImageMedia, type VideoMedia } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { fileOf, readSnapshot } from '../../content/source';
+import { measureFacts, type SidecarFacts } from '../../content/pictureFacts';
 import { existsSync } from 'node:fs';
 import { slugify, unique } from '../model/ids';
 import { ratioLabel, type Rect } from '../model/crop';
@@ -36,6 +38,18 @@ function folderOf(owner: string): string {
 }
 
 const refuse = (file: string, message: string, path?: string): Result => ({ ok: false, status: 422, issues: [{ file, message, ...(path ? { path } : {}) }] });
+
+/**
+ * A new master's facts for its sidecar (its size and background: documentation/content/media.md §9.3), so
+ * no page decodes it to show it. Left out if they can't be measured: then they're measured when it's shown.
+ */
+async function factsOf(bytes: Buffer): Promise<{ facts?: SidecarFacts }> {
+  try {
+    return { facts: await measureFacts(bytes) };
+  } catch {
+    return {};
+  }
+}
 
 /** What sharp reads a picture with: an SVG is drawn at the size a master can be, not at its nominal 72 dpi. */
 async function readOptions(input: Buffer): Promise<{ failOn: 'error'; density?: number; animated: boolean }> {
@@ -170,6 +184,7 @@ export async function upload(u: Upload): Promise<Result & { id?: string }> {
     ...(master.poster ? { animation: { poster: `${name}.poster.webp` } } : {}),
     ...(u.decorative ? { decorative: true } : { alt: (u.alt ?? '').trim() }),
     ...(u.caption?.trim() ? { caption: u.caption.trim() } : {}),
+    ...(await factsOf(master.bytes)),
     visibility: 'public',
   };
   const parsed = imageMedia.safeParse(sidecar);
@@ -212,10 +227,10 @@ export async function saveSidecar(id: string, sidecar: ImageMedia | VideoMedia, 
     return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
   }
   const image = current.value as ImageMedia;
-  // the master's file name is fixed (replacing a picture keeps its id and file), and its dark version is
-  // set only by setDark and removeDark: the details form never changes either
-  const { dark: _ignoredDark, animation: _ignoredAnimation, ...rest } = sidecar as ImageMedia;
-  const next: ImageMedia = { ...rest, kind: 'image', file: image.file, ...(image.animation ? { animation: image.animation } : {}), ...(image.dark ? { dark: image.dark } : {}) };
+  // the master's file name is fixed (replacing a picture keeps its id and file), and its dark version and
+  // its facts are set only with the masters (upload, Replace, setDark): the details form never changes them
+  const { dark: _ignoredDark, animation: _ignoredAnimation, facts: _ignoredFacts, ...rest } = sidecar as ImageMedia;
+  const next: ImageMedia = { ...rest, kind: 'image', file: image.file, ...(image.animation ? { animation: image.animation } : {}), ...(image.dark ? { dark: image.dark } : {}), ...(image.facts ? { facts: image.facts } : {}) };
   return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
 }
 
@@ -348,8 +363,8 @@ export async function replaceMaster(id: string, bytes: Buffer): Promise<Result> 
   const masterKey = key.replace(/[^/]+\.json$/, file);
   const posterKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${posterFileOf(id)}`;
   const oldPosterKey = posterKeyOf(id, sc.value);
-  const { animation: _animation, ...rest } = sc.value;
-  const next: ImageMedia = { ...rest, file, ...(master.poster ? { animation: { poster: posterFileOf(id) } } : {}) };
+  const { animation: _animation, facts: _facts, ...rest } = sc.value;
+  const next: ImageMedia = { ...rest, file, ...(master.poster ? { animation: { poster: posterFileOf(id) } } : {}), ...(await factsOf(master.bytes)) };
   const changes: Change[] = [
     { key: masterKey, bytes: master.bytes },
     { key, bytes: jsonBytes(next) },
@@ -402,7 +417,7 @@ export async function setDark(id: string, bytes: Buffer, crop?: Upload['crop']):
   const changes: Change[] = [
     { key: darkKey, bytes: master.bytes },
     ...(master.poster ? [{ key: darkPosterKey, bytes: master.poster }] : []),
-    { key, bytes: jsonBytes({ ...sc.value, dark: { file: darkFile, ...(master.poster ? { animation: { poster: posterFileOf(id, true) } } : {}) } }) },
+    { key, bytes: jsonBytes({ ...sc.value, dark: { file: darkFile, ...(master.poster ? { animation: { poster: posterFileOf(id, true) } } : {}), ...(await factsOf(master.bytes)) } }) },
   ];
   const ifMatch: Record<string, string | null> = { [darkKey]: versionOf(readFile(darkKey)), [key]: sc.version, ...(master.poster ? { [darkPosterKey]: versionOf(readFile(darkPosterKey)) } : {}) };
   // a dark version kept in another format before: this one replaces it
@@ -511,13 +526,13 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   const current = readDoc<ImageMedia>(sidecarKey(id))!;
   if (current.value.crop && !opts.copy) {
     // a copy, cut again: its master (and its dark version, which follows its original's) and its record change; its name and details stay
-    const { focus: _f, dark: _d, ...rest } = current.value;
+    const { focus: _f, dark: _d, facts: _facts, ...rest } = current.value;
     const masterKey = masterKeyOf(id, current.value);
     const darkKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${darkFileOf(id)}`;
     const oldDark = darkKeyOf(id, current.value);
     const changes: Change[] = [
       { key: masterKey, bytes: master.bytes },
-      { key: sidecarKey(id), bytes: jsonBytes({ ...rest, crop, ...(darkMaster ? { dark: { file: darkFileOf(id) } } : {}) }) },
+      { key: sidecarKey(id), bytes: jsonBytes({ ...rest, crop, ...(await factsOf(master.bytes)), ...(darkMaster ? { dark: { file: darkFileOf(id), ...(await factsOf(darkMaster.bytes)) } } : {}) }) },
     ];
     const ifMatch: Record<string, string | null> = { [masterKey]: versionOf(readFile(masterKey)), [sidecarKey(id)]: current.version };
     if (darkMaster) {
@@ -538,9 +553,9 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark(?:\.poster)?|\.poster)?\.\w+$/, '')));
   const shape = ratioLabel(r.width, r.height);
   const name = unique(`${src.id.slice(owner.length + 1)}-${/^\d+:\d+$/.test(shape) ? shape.replace(':', 'x') : 'crop'}`, taken);
-  const { file: _file, focus: _focus, crop: _crop, dark: _dark, ...details } = src.sidecar;
+  const { file: _file, focus: _focus, crop: _crop, dark: _dark, facts: _facts, ...details } = src.sidecar;
   const newId = `${owner}/${name}`;
-  const sidecar: ImageMedia = { ...details, kind: 'image', file: `${name}.webp`, crop, ...(darkMaster ? { dark: { file: darkFileOf(newId) } } : {}) };
+  const sidecar: ImageMedia = { ...details, kind: 'image', file: `${name}.webp`, crop, ...(await factsOf(master.bytes)), ...(darkMaster ? { dark: { file: darkFileOf(newId), ...(await factsOf(darkMaster.bytes)) } } : {}) };
   const changes: Change[] = [
     { key: `${folder}${name}.webp`, bytes: master.bytes },
     { key: `${folder}${name}.json`, bytes: jsonBytes(sidecar) },

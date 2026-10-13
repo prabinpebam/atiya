@@ -37,9 +37,21 @@ interface Props {
   headingLevel?: 2 | 3;
   /** A private page, shown only to readers its access covers: its card says so ("Shared with you"; "Private" in dev and edit mode), with a key. */
   shared?: 'shared' | 'private';
+  /** How many cards share its row on a wide screen: an even grid's three, or a bento's halves, two. It decides how large a picture the browser fetches (standard cards only). */
+  columns?: 2 | 3;
 }
 
-const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' : 'compact', headingLevel = 2, shared } = Astro.props;
+const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' : 'compact', headingLevel = 2, shared, columns = 3 } = Astro.props;
+// the width the picture's frame shows at (Image narrows it for a picture shown whole in it); past the wide
+// measure, the index stops growing, so a share of it
+const pictureSizes =
+  variant === 'feature'
+    ? sizes(['md', '92vw'], ['wide', '50vw'], { share: 'wide', of: 2 })
+    : variant === 'row'
+      ? sizes(['sm', 'story-card-row-picture-compact'], 'story-card-row-picture')
+      : columns === 2
+        ? sizes(['sm', '92vw'], ['wide', '46vw'], { share: 'wide', of: 2 })
+        : sizes(['sm', '92vw'], ['lg', '46vw'], ['wide', '30vw'], { share: 'wide', of: 3 });
 ---
 
 <article class="card" data-variant={variant}>
@@ -50,7 +62,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
           <Image
             src={picture.src}
             srcset={picture.srcset}
-            sizes={variant === 'feature' ? sizes(['md', '92vw'], '50vw') : variant === 'row' ? sizes(['sm', 'story-card-row-picture-compact'], 'story-card-row-picture') : sizes(['sm', '92vw'], ['lg', '46vw'], '30vw')}
+            sizes={pictureSizes}
             alt={picture.alt}
             width={picture.width}
             height={picture.height}

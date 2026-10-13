@@ -291,7 +291,7 @@ const handle: APIRoute = async ({ request, params, url }) => {
       }
       const r = await publish(b.message ?? '', titles);
       // published back to what the remote already has: nothing new to send, and that's done
-      if (!r.ok && published.length && (await changes()).files.length === 0) return json({ ok: true, commit: (await git(['rev-parse', '--short', 'HEAD'])).stdout.trim(), pushed: true });
+      if (!r.ok && published.length && (await changes({ fresh: true })).files.length === 0) return json({ ok: true, commit: (await git(['rev-parse', '--short', 'HEAD'])).stdout.trim(), pushed: true });
       return json(r, r.ok ? 200 : 422);
     }
     if (method === 'POST' && path === 'push') {

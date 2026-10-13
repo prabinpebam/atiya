@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { optOut } from '../../src/site/scripts/telemetryRules';
 import { ALLOWLIST, linkKind, mediaId, neutralTitle, sanitize } from '../../src/site/scripts/telemetrySanitize';
+import { addInteraction, clsOf, inpOf, lcpOf, pageKind, rating, rounded, VITALS_PROPS, vitalsProps } from '../../src/site/scripts/webVitals';
 import type { PageFacts } from '../../src/site/scripts/telemetryRules';
 
 const open: PageFacts = { mode: 'open', signIn: false, origin: 'https://site.example', pathname: '/atiya/work/' };
@@ -46,6 +47,72 @@ describe('links and videos', () => {
   });
   it('neutral titles', () => {
     expect([neutralTitle('private', false), neutralTitle(undefined, true), neutralTitle(undefined, false)]).toEqual(['Private page', 'Sign in', 'Page']);
+  });
+});
+
+describe('field data (web_vitals)', () => {
+  it("rates each metric against Web Vitals' thresholds: good up to the first, poor beyond the second", () => {
+    expect([rating('lcp', 2500), rating('lcp', 2501), rating('lcp', 4000), rating('lcp', 4001)]).toEqual(['good', 'needs-improvement', 'needs-improvement', 'poor']);
+    expect([rating('inp', 200), rating('inp', 201), rating('inp', 500), rating('inp', 501)]).toEqual(['good', 'needs-improvement', 'needs-improvement', 'poor']);
+    expect([rating('cls', 0.1), rating('cls', 0.11), rating('cls', 0.25), rating('cls', 0.26)]).toEqual(['good', 'needs-improvement', 'needs-improvement', 'poor']);
+  });
+
+  it('rounds what it sends: 10 ms, and CLS to three decimals', () => {
+    expect([rounded('lcp', 1234.5), rounded('inp', 16), rounded('cls', 0.123456)]).toEqual([1230, 20, 0.123]);
+  });
+
+  it("CLS is the largest session window: shifts under 1 s apart, for at most 5 s, not after the reader's input", () => {
+    expect(clsOf([])).toBe(0);
+    // one window: 0.1 + 0.2 + 0.05
+    expect(clsOf([{ startTime: 100, value: 0.1 }, { startTime: 900, value: 0.2 }, { startTime: 1800, value: 0.05 }])).toBeCloseTo(0.35);
+    // a gap of a second or more starts a new window; the larger one wins
+    expect(clsOf([{ startTime: 0, value: 0.1 }, { startTime: 1000, value: 0.05 }, { startTime: 1500, value: 0.08 }])).toBeCloseTo(0.13);
+    // a window lasts at most 5 s
+    const steady = Array.from({ length: 12 }, (_, i) => ({ startTime: i * 900, value: 0.01 }));
+    expect(clsOf(steady)).toBeCloseTo(0.06);
+    // shifts just after input don't count
+    expect(clsOf([{ startTime: 0, value: 0.3, hadRecentInput: true }, { startTime: 200, value: 0.02 }])).toBeCloseTo(0.02);
+  });
+
+  it("INP is each interaction's longest event, leaving out one in 50 (the 98th percentile); nothing without one", () => {
+    const m = new Map<number, number>();
+    expect(inpOf(m)).toBeUndefined();
+    addInteraction(m, { interactionId: 0, duration: 900 }); // not an interaction (a mouse move)
+    addInteraction(m, { interactionId: 7, duration: 48 });
+    addInteraction(m, { interactionId: 7, duration: 120 }); // the same tap's click
+    addInteraction(m, { interactionId: 9, duration: 64 });
+    expect(inpOf(m)).toBe(120);
+    // with 50 or more interactions on the page, the longest is left out
+    expect(inpOf(m, 50)).toBe(64);
+    expect(inpOf(m, 120)).toBe(64);
+  });
+
+  it('LCP is the last candidate before the page was first hidden, from its activation', () => {
+    expect(lcpOf([])).toBeUndefined();
+    expect(lcpOf([{ startTime: 300 }, { startTime: 700 }])).toBe(700);
+    expect(lcpOf([{ startTime: 300 }, { startTime: 7000 }], { hiddenAt: 5000 })).toBe(300);
+    expect(lcpOf([{ startTime: 900 }], { activationStart: 600 })).toBe(300);
+    expect(lcpOf([{ startTime: 100 }], { activationStart: 600 })).toBe(0);
+  });
+
+  it("a page's kind is coarse: never its address, title or ID", () => {
+    expect(pageKind({ path: '/', signIn: false })).toBe('home');
+    expect(pageKind({ path: '', signIn: false })).toBe('home');
+    expect(pageKind({ path: '/work/', signIn: false })).toBe('section');
+    expect(pageKind({ path: '/work/some-story/', signIn: false })).toBe('page');
+    expect(pageKind({ path: '/work/k7d2q9xh/', access: 'private', signIn: false })).toBe('private');
+    expect(pageKind({ path: '/sign-in/', signIn: true })).toBe('sign-in');
+    expect(pageKind({ path: '/play/', signIn: false })).toBe('planet');
+    expect(pageKind({ path: '/play/workshop/', signIn: false, frame: 'planet' })).toBe('planet-page');
+    expect(pageKind({ path: '/design/tokens/', signIn: false })).toBe('library');
+  });
+
+  it('the event carries its kind and each measured metric with its rating, and nothing when none was measured', () => {
+    expect(vitalsProps('section', { lcp: 2600, cls: 0 })).toEqual({ kind: 'section', lcp: 2600, lcp_rating: 'needs-improvement', cls: 0, cls_rating: 'good' });
+    expect(vitalsProps('home', { inp: 640 })).toEqual({ kind: 'home', inp: 640, inp_rating: 'poor' });
+    expect(vitalsProps('home', {})).toBeNull();
+    expect(vitalsProps('home', { lcp: Number.NaN, inp: -1 })).toBeNull();
+    for (const p of [vitalsProps('page', { lcp: 1, inp: 1, cls: 1 })!]) expect(Object.keys(p).every((k) => (VITALS_PROPS as readonly string[]).includes(k))).toBe(true);
   });
 });
 
@@ -107,8 +174,23 @@ describe('before_send', () => {
   });
 
   it('the allowlist is the spec\'s', () => {
-    expect(Object.keys(ALLOWLIST).sort()).toEqual(['$identify', '$pageview', 'access_failed', 'access_link', 'access_opened', 'access_signed_in', 'access_signed_out', 'video_played'].sort());
+    expect(Object.keys(ALLOWLIST).sort()).toEqual(['$identify', '$pageview', 'access_agreed', 'access_failed', 'access_link', 'access_opened', 'access_signed_in', 'access_signed_out', 'video_played', 'web_vitals'].sort());
+    expect(ALLOWLIST.web_vitals).toEqual([...VITALS_PROPS]);
   });
+
+  for (const [name, page] of [
+    ['an open page', open],
+    ['a private page', privatePage],
+    ['the Sign in page', signIn],
+  ] as const) {
+    it(`on ${name}, web_vitals leaves with its numbers, ratings and kind (and, where allowlisted, nothing else)`, () => {
+      const props = vitalsProps(pageKind({ path: page.pathname.slice('/atiya'.length), access: page.access, signIn: page.signIn }), { lcp: 1234.5, inp: 87, cls: 0.04321 })!;
+      const e = sanitize({ event: 'web_vitals', properties: { ...device, ...props, $current_url: `https://site.example${page.pathname}#x`, $title: 'Secret' } }, page)!;
+      expect(e.properties).toMatchObject({ lcp: 1230, lcp_rating: 'good', inp: 90, inp_rating: 'good', cls: 0.043, cls_rating: 'good' });
+      if (page.mode === 'allowlist') expect(e.properties).toEqual({ ...device, ...props });
+      expect(JSON.stringify(e)).not.toMatch(/#/);
+    });
+  }
 
   it('the always-on part never imports PostHog (it is fetched on idle, its own chunk)', () => {
     const shim = readFileSync('src/site/scripts/telemetry.ts', 'utf8');

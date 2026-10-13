@@ -128,30 +128,54 @@ export interface LibraryPicture {
   private?: boolean;
 }
 
-/** Every picture and video, for the library and the picker: grouped by folder (the article being edited first, when there is one). */
-export function mediaCards(index: ContentIndex, first?: string): Promise<LibraryPicture[]> {
-  return timedAsync('media.cards', () => buildCards(index, first));
+/** Which cards to draw: only some (a picture's own), a page of them (the picker, as it fills), or all. */
+export interface CardOptions {
+  /** Only these ids (the pictures an article uses). */
+  only?: Set<string>;
+  /** A page: the cards from `at`, at most `size` (in the same order as all of them). */
+  page?: { at: number; size: number };
 }
 
-async function buildCards(index: ContentIndex, first?: string): Promise<LibraryPicture[]> {
+/** Every picture and video, for the library and the picker: grouped by folder (the article being edited first, when there is one). */
+export function mediaCards(index: ContentIndex, first?: string, opts: CardOptions = {}): Promise<LibraryPicture[]> {
+  return timedAsync('media.cards', () => buildCards(index, first, opts));
+}
+
+/** How many cards there are (the picker's "Preparing pictures: 40 of 105"), without drawing any. */
+export const mediaCount = (index: ContentIndex): number => index.media.size + index.videos.size;
+
+/** The picker's count of everything, in words, read from the content alone: "105 pictures, 2 videos, 3 without alt text". */
+export function mediaSummary(index: ContentIndex): string {
+  const pictures = index.media.size;
+  const videos = index.videos.size;
+  const missing = [...index.media.values()].filter((m) => !m.alt && !m.decorative).length;
+  return `${pictures} ${pictures === 1 ? 'picture' : 'pictures'}${videos ? `, ${videos} ${videos === 1 ? 'video' : 'videos'}` : ''}${missing ? `, ${missing} without alt text` : ''}`;
+}
+
+async function buildCards(index: ContentIndex, first?: string, opts: CardOptions = {}): Promise<LibraryPicture[]> {
   const refs = references(index);
-  const pictures = await Promise.all(
-    [...index.media.values()].map(async (m): Promise<LibraryPicture> => {
-      const p = await picture(m.id, 'card');
-      const owner = ownerOf(m.id);
-      return { id: m.id, kind: 'image', owner, ownerLabel: ownerLabel(index, owner), thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height, used: refs.has(m.id), ...(m.darkMaster ? { dark: true } : {}), ...(m.origin === 'private' ? { private: true } : {}) };
-    }),
-  );
-  const videos = await Promise.all(
-    [...index.videos.values()].map(async (v): Promise<LibraryPicture> => {
+  // ordered before anything is drawn: a page draws only its own pictures
+  const entries = [
+    ...[...index.media.values()].map((m) => ({ kind: 'image' as const, id: m.id, owner: ownerOf(m.id) })),
+    ...[...index.videos.values()].map((v) => ({ kind: 'video' as const, id: v.id, owner: ownerOf(v.id) })),
+  ]
+    .filter((e) => !opts.only || opts.only.has(e.id))
+    .map((e) => ({ ...e, ownerLabel: ownerLabel(index, e.owner) }));
+  const rank = (c: { owner: string }) => (c.owner === first ? 0 : 1);
+  entries.sort((a, b) => rank(a) - rank(b) || a.ownerLabel.localeCompare(b.ownerLabel) || a.id.localeCompare(b.id));
+  const shown = opts.page ? entries.slice(opts.page.at, opts.page.at + opts.page.size) : entries;
+  return Promise.all(
+    shown.map(async (e): Promise<LibraryPicture> => {
+      if (e.kind === 'image') {
+        const m = index.media.get(e.id)!;
+        const p = await picture(m.id, 'card');
+        return { id: m.id, kind: 'image', owner: e.owner, ownerLabel: e.ownerLabel, thumb: p.thumb, src: p.src, alt: m.alt ?? '', decorative: !!m.decorative, width: p.width, height: p.height, used: refs.has(m.id), ...(m.darkMaster ? { dark: true } : {}), ...(m.origin === 'private' ? { private: true } : {}) };
+      }
+      const v = index.videos.get(e.id)!;
       const f = await video(v.id, 'card');
-      const owner = ownerOf(v.id);
-      return { id: v.id, kind: 'video', owner, ownerLabel: ownerLabel(index, owner), thumb: f.poster?.thumb ?? '', src: f.src, alt: v.title, decorative: false, width: v.width, height: v.height, used: refs.has(v.id), ...(v.duration ? { duration: v.duration } : {}), ...(v.origin === 'private' ? { private: true } : {}) };
+      return { id: v.id, kind: 'video', owner: e.owner, ownerLabel: e.ownerLabel, thumb: f.poster?.thumb ?? '', src: f.src, alt: v.title, decorative: false, width: v.width, height: v.height, used: refs.has(v.id), ...(v.duration ? { duration: v.duration } : {}), ...(v.origin === 'private' ? { private: true } : {}) };
     }),
   );
-  const cards = [...pictures, ...videos];
-  const rank = (c: LibraryPicture) => (c.owner === first ? 0 : 1);
-  return cards.sort((a, b) => rank(a) - rank(b) || a.ownerLabel.localeCompare(b.ownerLabel) || a.id.localeCompare(b.id));
 }
 
 export const STATUS_LABEL: Record<Article['status'], string> = {

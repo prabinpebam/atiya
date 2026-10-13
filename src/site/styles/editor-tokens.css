@@ -18,6 +18,10 @@
   --c-editor-scope-list: 26rem;
   --c-editor-crop-stage: 32rem;
   --c-editor-upload-preview: 14rem;
+  --c-editor-feedback-delay: 300ms;
+  --c-editor-feedback-min: 500ms;
+  --c-editor-feedback-elapsed: 3s;
+  --c-editor-feedback-done: 2s;
   --c-editor-crop-veil: 0.72;
   --c-editor-crop-handle: 0.875rem;
 }

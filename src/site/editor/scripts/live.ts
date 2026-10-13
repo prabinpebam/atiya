@@ -8,7 +8,8 @@
  *   field in use or a dialog open, the screen keeps what's being typed, says it's behind, and catches up
  *   once that's saved, put away or left.
  */
-import { announce, onContentChange, saveStatus, swapRegions } from './client';
+import { announce, onContentChange, refreshPending, saveStatus, swapRegions } from './client';
+import { liveRegions } from '../model/live';
 
 const UNSAVED = 'Unsaved changes: save them to keep them';
 
@@ -61,8 +62,13 @@ export function initLive(app: HTMLElement, signal: AbortSignal) {
   }
 
   // ---------- changes made elsewhere ----------
+  // only what shows the change is drawn again (performance-report.md R10): files gather until it's drawn
   let soon = 0;
-  onContentChange(() => {
+  const changed = new Set<string>();
+  onContentChange((c) => {
+    for (const f of c.files) changed.add(f);
+    // a change that names no file may be anything
+    if (!c.files.length) changed.add('*');
     clearTimeout(soon);
     soon = window.setTimeout(() => void refresh(), 200);
   }, signal);
@@ -70,6 +76,14 @@ export function initLive(app: HTMLElement, signal: AbortSignal) {
   async function refresh() {
     const region = app.querySelector('[data-region="screen"]');
     if (!region) return;
+    const files = changed.has('*') ? [] : [...changed];
+    const regions = liveRegions(app.dataset.screen ?? '', files, new URL(location.href).searchParams.get('id'));
+    if (!regions.length) {
+      changed.clear();
+      // nothing here shows it, but the counts of changes to save to remote may have moved
+      refreshPending();
+      return;
+    }
     if (unsaved().length || typingIn() || app.querySelector('dialog[open]')) {
       if (!behind) announce('Changed elsewhere. Your unsaved changes here are kept: save or cancel them to see it.');
       behind = true;
@@ -84,7 +98,7 @@ export function initLive(app: HTMLElement, signal: AbortSignal) {
     }
     const focused = document.activeElement as HTMLElement | null;
     const id = focused && region.contains(focused) ? focused.id : '';
-    const next = await swapRegions(['screen'], location.href, busy);
+    const next = await swapRegions(regions, location.href, busy, { label: 'Updating with a change made elsewhere…' });
     if (!next) {
       // busy by the time it came: a click retries in a moment; a field in use catches up when it's left
       behind = true;
@@ -93,9 +107,10 @@ export function initLive(app: HTMLElement, signal: AbortSignal) {
       return;
     }
     behind = false;
-    // the whole screen is drawn again: it has every change up to the server's generation now
+    changed.clear();
+    // the whole screen drawn again has every change up to the server's generation now (a region alone may not)
     const gen = next.querySelector<HTMLElement>('[data-editor-app]')?.dataset.generation;
-    if (gen) app.dataset.generation = gen;
+    if (gen && regions.includes('screen')) app.dataset.generation = gen;
     if (id) document.getElementById(id)?.focus({ preventScroll: true });
     announce('Updated with a change made elsewhere');
   }

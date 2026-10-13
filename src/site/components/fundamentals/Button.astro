@@ -215,8 +215,15 @@ const end = policy.newTab ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
     transition: transform var(--duration-fast) var(--ease-spring);
   }
 
-  /* drawn on every button, shown only while it's busy (the loading prop, or a script's aria-busy) */
-  .button:not([aria-busy='true']) .spinner {
+  /* drawn on every button, shown only while it's busy (the loading prop, or a script's aria-busy); a
+     script's wait shows it only past its delay (data-busy="ack" before that: edit mode's §2.2), in place
+     of the icon, so the button keeps its width */
+  .button:not([aria-busy='true']) .spinner,
+  .button[data-busy='ack'] .spinner {
+    display: none;
+  }
+
+  .button[aria-busy='true']:not([data-busy='ack']) .spinner ~ .icon:not(.end) {
     display: none;
   }
 

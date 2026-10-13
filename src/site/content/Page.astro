@@ -58,6 +58,7 @@ if (sealed && import.meta.env.PROD) {
 
 let header: ComponentProps<typeof ArticleLayout>['header'] | undefined;
 let related: ComponentProps<typeof ArticleLayout>['related'];
+let relatedIds: string[] = [];
 if (article) {
   // its section (a page's parent is always one: V22)
   const section = route && route.ancestors.length > 1 ? route.ancestors.at(-1) : undefined;
@@ -67,6 +68,8 @@ if (article) {
     .filter((r) => r.node.kind === 'item' && r.node.item.type === 'article')
     .map((r) => ({ article: getArticle((r.node as { item: { id: string } }).item.id)!, href: withBase(r.path), section: r.parent?.id }));
   related = await relatedOf(article, route?.parent?.id, pool);
+  const byHref = new Map(pool.map((p) => [p.href, p.article.id]));
+  relatedIds = (related?.stories ?? []).map((s) => byHref.get((s as { href?: string }).href ?? '')).filter((id): id is string => !!id);
 }
 
 // a hub lists what it places (published): its open pages as story cards, its private ones sealed (§2.1)
@@ -93,11 +96,13 @@ const shown = sealing
       privatePages.map((l) => ({ after: l.after, value: { ...l.story, node: l.id, privateTag: true } })),
       (s) => s.node ?? '',
     );
+// the articles this page shows (dev only): a change to any other article's own files doesn't reload it (report R10)
+const shows = import.meta.env.DEV ? (article ? [article.id, ...relatedIds] : node?.kind === 'hub' ? children.map((r) => (r.node as { item: { id: string } }).item.id) : undefined) : undefined;
 ---
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? searchCopy(article.summary)} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? searchCopy(article.summary)} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed} shows={shows}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>
@@ -117,6 +122,7 @@ const shown = sealing
         signIn={privatePages.length ? signInHref(route!.path) : undefined}
         ask={privatePages.length ? contact : undefined}
         view={node.view}
+        shows={shows}
         empty="Nothing here yet. This section is being written."
       >
         {isContact && <ContactForm slot="lead" endpoint={contactEndpoint} privacy={privacy} />}

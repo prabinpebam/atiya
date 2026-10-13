@@ -4,10 +4,11 @@ How edit mode's and the site's performance is measured, tracked and kept from sl
 
 > **TL;DR.**
 > - **One command:** `npm run perf:bench` measures edit mode on its own throwaway copy of the content (never the real one) and the production site on `astro preview`, and writes a run to `perf/runs/`.
-> - **Edit mode:** the dev server's start, each screen's first load after it (cold) and every later one (warm), and nine interactions as a person does them (select, type and save, a field, the picker, a new block, undo, another tab, a picture's details and its save), timed from the key or click to what the person waits for.
+> - **Edit mode:** the dev server's start and its first-start warm-up, each screen's first load after it (cold) and every later one (warm), and the interactions as a person does them (select, type and save, a field, the picker, a new block, undo, a move and a delete shown at once, another tab, a picture's details and its save), timed from the key or click to what the person waits for, and to the first visible sign.
 > - **The site:** six pages on a desktop and on a throttled phone (CPU ×4, 10 Mbps, 40 ms), each in an empty cache: TTFB, FCP, LCP, CLS, TBT, load, requests and bytes by type.
 > - **Causes, not only symptoms:** in dev every request is timed to its last byte, with named spans for the costly work (a content reload, a picture, a git process, the store's check). `GET /_edit/api/perf` returns them; each response carries a `Server-Timing` header for the browser's developer tools.
 > - **Tracking:** `perf/baseline.json` is the committed reference; `--compare perf/baseline.json --check` fails on a metric worse than the baseline beyond its noise allowance; `perf/budgets.json` holds the allowances and the plan's targets.
+> - **Field data:** real visits report LCP, INP and CLS through the site's telemetry (one `web_vitals` event per page load, numbers and ratings only), so the site's numbers come from readers as well as one machine.
 
 ## 1. What is measured
 
@@ -48,14 +49,17 @@ Each is timed from the person's key or click (the last `pointerdown` or `keydown
 | `select-block` | A click on a block in the outline | Its settings in the inspector |
 | `type-to-saved` | The last key typed in the canvas | "Saved" (includes the canvas's 800 ms pause before it sends the words) |
 | `save-round-trip` | "Saving…" | "Saved" (the `editor:save` measure) |
-| `type-swap`, `type-swap-kb`, `type-to-settled` | After the save, the outline and inspector drawn again: how long, how much HTML it fetched, and the last key to that |
+| `type-swap`, `type-swap-kb`, `type-to-settled` | After the save, the outline and inspector drawn again: how long, how much HTML it fetched, and the last key to that (since words alone redraw nothing, `type-to-settled` is the save, and the swap's size 0) |
 | `field-to-saved`, `field-to-canvas`, `field-canvas-redraw` | A field in the inspector committed (Tab) | Saved; the canvas drawn again with it; the redraw alone |
-| `picker-open`, `picker-images`, `picker-cards` | Choose on the thumbnail's field | The picker shown; its pictures in view loaded; how many cards it holds |
-| `add-block-to-saved`, `add-block-to-canvas` | A block chosen in the palette | Saved; on the canvas |
+| `picker-open`, `picker-images`, `picker-filled`, `picker-cards` | Choose on the thumbnail's field | The picker shown; its first pictures in view loaded; every card in (it fills a page at a time); how many cards it holds |
+| `add-block-shown`, `add-block-to-saved`, `add-block-to-canvas` | A block chosen in the palette | Its row and its place on the canvas shown (editor spec §3.6); saved; drawn on the canvas |
+| `move-shown`, `delete-shown` | Move down on a row; Delete on a selected row | The outline and the canvas both showing it |
+| `feedback-shown` | Each of the above, and a click on a picture in Media | The first visible sign (the result itself, or the card marked current) |
 | `undo-to-saved` | Undo | Saved |
 | `other-tab-updated`, `other-tab-swap`, `other-tab-swap-kb` | A save in one tab | The articles list open in another tab drawn again with it |
 | `media-details`, `media-save` | A click on a picture in Media; Save the details | Its details shown; saved |
 | `api/changes`, `api/where` | The API's git status (behind the counts of changes to save to remote) and the launcher's lookup | The answer |
+| `first-ready` | The dev server started | Its first-start warm-up done: every screen compiled and every picture's facts read (`/_edit/__warm`) |
 
 ## 3. Instrumentation
 
@@ -87,16 +91,27 @@ Three `performance.measure` entries, readable in the Performance panel and by th
 
 ## 4. Tracking
 
-- **Run it:** `npm run perf:bench` (both suites, 5 runs; about 20 minutes on the audit machine). `--suite editor` or `--suite site` for one; `--runs N`; `--build` to rebuild the site first; `--reuse` measures an editor test server already running (warm only); `--only screens|api|interactions` for one part of the editor suite. Port 4330 must be free (the editor's E2E server uses it too), and 4332.
+- **Run it:** `npm run perf:bench` (both suites, 5 runs; about 20 minutes on the audit machine). `--suite editor` or `--suite site` for one; `--runs N`; `--build` to rebuild the site first; `--reuse` measures an editor test server already running (warm only); `--only screens|api|interactions` for one part of the editor suite; `--cpu 4` slows the editor's pages four times (a laptop, report R15), keeping those metrics apart as `editor-cpu4/…`. Port 4330 must be free (the editor's E2E server uses it too), and 4332.
 - **Read it:** the run prints every metric's median, p75, min and max, then the plan's targets met or not, and writes `perf/runs/<stamp>.json` with the machine, the commit, the content's size and the dev server's spans for each step.
 - **Compare:** `--compare perf/baseline.json` prints each metric against the baseline. `--check` exits 1 if any is worse beyond its noise allowance: both 20% and 75 ms for times, 10% and 10 KB for bytes, 10% and 2 for counts (`perf/budgets.json`, `noise`).
-- **The baseline** is `perf/baseline.json`, committed. Save a new one (`--save-baseline`) only on purpose: after an improvement lands, on the same machine, with nothing else heavy running, and say so in the commit.
+- **The baseline** is `perf/baseline.json`, committed (saved 13 October 2026, after the report's plan was built). Save a new one (`--save-baseline`) only on purpose: after an improvement lands, on the same machine, with nothing else heavy running, and say so in the commit. The October audit's run is kept as it was in `perf/baseline-2026-10-13.json`: the report's charts are drawn from it (`node scripts/build-perf-charts.mjs`).
 - **Targets** (`perf/budgets.json`, `targets`) are the plan's goals ([report §6](performance-report.md#6-plan)). They're reported, not enforced; a target met becomes the baseline's floor.
 - **When to run it** (the Validation tiers in AGENTS.md): after a change to the editor's server or client code, the content loader, the picture pipeline, a layout or a page's loading; before a release; and as the evidence for any performance change. A change that only touches copy or docs needs none.
 
-## 5. Limits
+## 5. Field data
+
+The benchmark is one machine; the field data is every reader's. Each page load on the production site reports its own Largest Contentful Paint, Interaction to Next Paint and Cumulative Layout Shift through the site's telemetry, as one `web_vitals` event ([access spec §9.2](../access/spec.md#92-whats-recorded)).
+
+- **Measured in the browser, without a library** (`src/site/scripts/webVitals.ts`): buffered `PerformanceObserver`s for `largest-contentful-paint` (the last candidate before the page was first hidden, from its activation), `layout-shift` (CLS: the largest session window, shifts under 1 s apart for at most 5 s, none just after input) and `event` (INP: each interaction's longest event, with a 40 ms threshold, at the 98th percentile of the page's interactions). The rules are pure and unit-tested (`tests/unit/telemetry.test.ts`, "field data").
+- **Sent once,** with `sendBeacon`, the first time the page is hidden or left. A metric the browser doesn't report (Safari has none of the three) is left out; a page opened in the background isn't measured.
+- **Off the critical path:** the observers start in PostHog's chunk, fetched on idle (on the planet, once it's live), and being buffered they still see the page's first paints. The part every page runs is unchanged (the telemetry shim's 1.2 KB budget).
+- **Nothing protected:** the event carries the page's coarse kind (`home`, `section`, `page`, `private`, `sign-in`, `planet`, `planet-page`, `library`), the three values rounded (10 ms; CLS to three decimals) and their ratings against Web Vitals' thresholds (LCP 2.5 s and 4 s, INP 200 ms and 500 ms, CLS 0.1 and 0.25), never an address, a title or an ID. It's allowlisted, so protected pages and the Sign in page send it with those properties alone.
+- **Consent as for the rest of telemetry:** production builds with a PostHog key only, never in dev; Global Privacy Control, Do Not Track and `?telemetry=off` turn it off with everything else.
+- **Reading it:** in PostHog, the `web_vitals` event's `lcp`, `inp` and `cls` at p75, by `kind`, beside the benchmark's lab numbers ([report §2.3](performance-report.md#23-the-site)); the plan's goal is LCP under 2.5 s at p75. A page that's left before PostHog's chunk has loaded (a few seconds) sends nothing, so very short visits are under-counted.
+
+## 6. Limits
 
 - **Dev isn't production.** Edit mode only runs in dev, so its numbers include Vite serving each module separately and transforming pictures on demand. That's what the owner lives with, so it's what's measured. The site is measured on the production build.
-- **One machine.** The baseline's machine is in the run (`meta.machine`): compare runs from the same machine. The audit machine is fast (a 24-core desktop CPU), so a laptop's editor will be slower; the phone profile is a CPU slowdown, not a real phone.
+- **One machine.** The baseline's machine is in the run (`meta.machine`): compare runs from the same machine. The audit machine is fast (a 24-core desktop CPU), so a laptop's editor will be slower (`--cpu 4` measures that: report §6.1); the phone profile is a CPU slowdown, not a real phone.
 - **Noise.** Medians over 5 runs, and allowances wider than run-to-run noise. Close other heavy work (a build, the E2E suite) while measuring; the owner's own dev server on port 4321 may run alongside, idle.
 - **Headless.** Paint timings come from headless Chromium; they track a real browser's closely but aren't identical.

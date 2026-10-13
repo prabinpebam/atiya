@@ -2,15 +2,17 @@
 /**
  * The performance benchmark for edit mode and the site (documentation/engineering/performance.md).
  *
- *   npm run perf:bench -- [--suite editor|site|all] [--runs 5] [--build] [--reuse]
+ *   npm run perf:bench -- [--suite editor|site|all] [--runs 5] [--build] [--reuse] [--cpu 4]
  *                         [--compare perf/baseline.json] [--check] [--save-baseline]
  *
  * editor: its own dev server on the editor's fixture (scripts/editor-test-server.mjs, port 4330: a git copy
- *   of content/ with a bare remote, so the real content is never written). It measures the server's start
- *   and each screen's first load after it (cold), then every screen warm, the editing interactions (select,
- *   type and save, a field, the picker, a new block, undo, the media details, another tab hearing a save),
- *   and the API's slow calls. Each step also reads the dev server's own record of where its time went
- *   (integrations/perf.mjs: GET /_edit/api/perf), so a number comes with its causes.
+ *   of content/ with a bare remote, so the real content is never written). It measures the server's start,
+ *   its first-start warm-up (first-ready), and each screen's first load after it (cold), then every screen
+ *   warm, the editing interactions (select, type and save, a field, the picker, a new block, undo, a move and
+ *   a delete shown at once, the media details, another tab hearing a save, and the first visible sign of each:
+ *   feedback-shown), and the API's slow calls. Each step also reads the dev server's own record of where its time went
+ *   (integrations/perf.mjs: GET /_edit/api/perf), so a number comes with its causes. --cpu slows the
+ *   editor's pages (×4: a laptop, report R15); those metrics are kept apart as editor-cpu4/….
  * site: the production build (npm run build, with --build or when dist/ is missing) on `astro preview`
  *   (port 4332), each page in a fresh browser (empty cache), on a desktop and on a throttled phone profile
  *   (CPU ×4, 10 Mbps, 40 ms): TTFB, FCP, LCP, CLS, TBT, load, requests and bytes by type.
@@ -41,6 +43,8 @@ const SITE_PORT = 4332;
 const EDITOR = `http://localhost:${EDITOR_PORT}`;
 const SITE = `http://localhost:${SITE_PORT}`;
 const BUDGETS = JSON.parse(readFileSync(join(ROOT, 'perf/budgets.json'), 'utf8'));
+/** A CPU slowdown for the editor's pages (--cpu 4: a laptop, report R15); its metrics are kept apart (editor-cpu4/…). */
+const CPU = Math.max(1, Number(arg('cpu', 1)) || 1);
 
 // ---------- numbers ----------
 const results = {};
@@ -48,6 +52,7 @@ const server = {};
 /** Adds one sample of a metric (ms unless the name says otherwise). */
 const sample = (key, value, unit = 'ms') => {
   if (!Number.isFinite(value)) return;
+  if (CPU > 1) key = key.replace(/^editor\//, `editor-cpu${CPU}/`);
   (results[key] ??= { unit, values: [] }).values.push(Math.round(value * 10) / 10);
 };
 const stats = (values) => {
@@ -299,12 +304,76 @@ async function nextMeasure(page, name, before, timeout = 60_000) {
   return all[all.length - 1];
 }
 const lastInput = (page) => page.evaluate(() => window.__lastInput ?? NaN);
+/** The next swap that draws a region the person sees (not the counts' background check), or null within `timeout`. */
+async function nextDrawn(page, before, timeout) {
+  for (const end = Date.now() + timeout; Date.now() < end; await sleep(100)) {
+    const s = (await measures(page, 'editor:swap')).slice(before).find((e) => e.detail?.regions?.length);
+    if (s) return s;
+  }
+  return null;
+}
+
+/** A browser context for the editor's pages: the collector in every frame, and the CPU slowdown when asked. */
+async function editorContext(browser) {
+  const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  await context.addInitScript(collector);
+  if (CPU > 1)
+    context.on('page', (p) => {
+      void context.newCDPSession(p).then((cdp) => cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU })).catch(() => {});
+    });
+  return context;
+}
+
+/**
+ * When something first shows (spec §3.6 and §2.2: from the click to the outline and the canvas both
+ * showing it, or to the first visible sign): polls `check` in the page every frame, started before the
+ * click; returns the time (epoch ms) it first held, or NaN.
+ */
+function shownWhen(page, check, timeout = 15_000) {
+  return page
+    .evaluate(
+      ([src, ms]) =>
+        new Promise((resolve) => {
+          const fn = new Function(`return (${src})()`);
+          const end = performance.now() + ms;
+          const tick = () => {
+            let ok = false;
+            try {
+              ok = !!fn();
+            } catch {
+              ok = false;
+            }
+            if (ok) resolve(performance.timeOrigin + performance.now());
+            else if (performance.now() > end) resolve(NaN);
+            else requestAnimationFrame(tick);
+          };
+          tick();
+        }),
+      [check.toString(), timeout],
+    )
+    .catch(() => NaN);
+}
+/** In the editor's page: the canvas's blocks' words, in order, and the outline's rows' names. */
+const VIEWS = () => {
+  const doc = document.querySelector('[data-editor-frame]')?.contentDocument;
+  const prose = doc?.querySelector('.prose');
+  const canvas = [];
+  let mark = false;
+  for (const n of prose ? [...prose.childNodes] : []) {
+    if (n.nodeType === 8 && /^editor-block:\d+$/.test(n.data.trim())) mark = true;
+    else if (n.nodeType === 1 && mark) {
+      canvas.push((n.textContent ?? '').trim().slice(0, 40));
+      mark = false;
+    }
+  }
+  const outline = [...document.querySelectorAll('[data-editor-outline] [data-editor-rows] > [data-row] [data-editor-select]')].map((b) => b.getAttribute('aria-label'));
+  return { canvas, outline };
+};
 
 async function editorInteractions(browser, run, reset) {
   reset();
   await sleep(1500);
-  const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
-  await context.addInitScript(collector);
+  const context = await editorContext(browser);
   const page = await context.newPage();
   await page.goto(`${EDITOR}/_edit/articles/${ARTICLE}/`, { timeout: 180_000 });
   await readyAt(page, screenReady('article'));
@@ -333,11 +402,15 @@ async function editorInteractions(browser, run, reset) {
     const save = await nextMeasure(page, 'editor:save', saves);
     sample('editor/interaction/type-to-saved', save.origin + save.end - typedAt);
     sample('editor/interaction/save-round-trip', save.duration);
-    const swap = await nextMeasure(page, 'editor:swap', swaps).catch(() => null);
+    const swap = await nextDrawn(page, swaps, 3000);
     if (swap) {
       sample('editor/interaction/type-swap', swap.duration);
       sample('editor/interaction/type-swap-kb', swap.detail.bytes / 1024, 'KB');
       sample('editor/interaction/type-to-settled', swap.origin + swap.end - typedAt);
+    } else {
+      // words alone redraw nothing (spec §3.6): typing has settled once it's saved
+      sample('editor/interaction/type-swap-kb', 0, 'KB');
+      sample('editor/interaction/type-to-settled', save.origin + save.end - typedAt);
     }
     // the canvas stops being edited (the Page tab takes the focus): its final words are sent and saved
     await page.getByRole('tab', { name: 'Page', exact: true }).click();
@@ -377,10 +450,13 @@ async function editorInteractions(browser, run, reset) {
     const shown = await page.evaluate(() => performance.timeOrigin + performance.now());
     sample('editor/interaction/picker-open', shown - openedAt);
     const settled = await page
-      .waitForFunction(() => [...document.querySelectorAll('#editor-picker img')].filter((i) => { const r = i.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.width > 0; }).every((i) => i.complete), null, { timeout: 60_000, polling: 100 })
+      .waitForFunction(() => { const shown = [...document.querySelectorAll('#editor-picker [data-editor-media] img')].filter((i) => { const r = i.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.width > 0; }); return shown.length > 0 && shown.every((i) => i.complete); }, null, { timeout: 60_000, polling: 100 })
       .then(() => page.evaluate(() => performance.timeOrigin + performance.now()))
       .catch(() => NaN);
     sample('editor/interaction/picker-images', settled - openedAt);
+    // every card, once the last page has landed (the picker fills a page at a time)
+    await page.waitForFunction(() => !document.querySelector('#editor-picker [data-media-preparing], #editor-picker [data-picker-pending]'), null, { timeout: 60_000, polling: 100 }).catch(() => {});
+    sample('editor/interaction/picker-filled', (await page.evaluate(() => performance.timeOrigin + performance.now())) - openedAt);
     sample('editor/interaction/picker-cards', await dialog.locator('[data-editor-media]').count(), 'count');
     await page.keyboard.press('Escape');
   }
@@ -397,8 +473,13 @@ async function editorInteractions(browser, run, reset) {
       await palette.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
       const paragraph = palette.locator('[data-editor-add="divider"]');
       if (await paragraph.count()) {
+        const rows = (await page.evaluate(VIEWS)).outline.length;
+        const shown = shownWhen(page, new Function(`const v = (${VIEWS.toString()})(); return v.outline.length === ${rows + 1} && v.canvas.length === ${rows + 1};`));
         await paragraph.click();
         const at = await lastInput(page);
+        const seen = await shown;
+        sample('editor/interaction/add-block-shown', seen - at);
+        sample('editor/interaction/feedback-shown', seen - at);
         const save = await nextMeasure(page, 'editor:save', saves).catch(() => null);
         if (save) sample('editor/interaction/add-block-to-saved', save.origin + save.end - at);
         const redraw = await nextMeasure(page, 'editor:canvas', canvases, 30_000).catch(() => null);
@@ -417,6 +498,33 @@ async function editorInteractions(browser, run, reset) {
     const save = await nextMeasure(page, 'editor:save', saves).catch(() => null);
     if (save) sample('editor/interaction/undo-to-saved', save.origin + save.end - at);
     await sleep(1500);
+  }
+
+  // 7. a move and a delete, shown at once (spec §3.6): from the click to the outline and the canvas both showing it
+  {
+    await sleep(2500);
+    const before = await page.evaluate(VIEWS);
+    if (before.outline.length >= 3 && before.canvas.length === before.outline.length) {
+      const [a, b] = before.outline.slice(1, 3);
+      const [ca, cb] = before.canvas.slice(1, 3);
+      const moved = shownWhen(page, new Function(`const v = (${VIEWS.toString()})(); return v.outline[1] === ${JSON.stringify(b)} && v.outline[2] === ${JSON.stringify(a)} && v.canvas[1] === ${JSON.stringify(cb)} && v.canvas[2] === ${JSON.stringify(ca)};`));
+      await page.locator('[data-editor-outline] [data-editor-select="1"]').click();
+      await page.locator('[data-editor-outline] [data-editor-move="down"][data-index="1"]').click();
+      const at = await lastInput(page);
+      const seen = await moved;
+      sample('editor/interaction/move-shown', seen - at);
+      sample('editor/interaction/feedback-shown', seen - at);
+      await sleep(2500);
+      const n = (await page.evaluate(VIEWS)).outline.length;
+      const gone = shownWhen(page, new Function(`const v = (${VIEWS.toString()})(); return v.outline.length === ${n - 1} && v.canvas.length === ${n - 1};`));
+      await page.locator('[data-editor-outline] [data-editor-select="2"]').click();
+      await page.keyboard.press('Delete');
+      const del = await lastInput(page);
+      const gotIt = await gone;
+      sample('editor/interaction/delete-shown', gotIt - del);
+      sample('editor/interaction/feedback-shown', gotIt - del);
+      await sleep(2500);
+    }
   }
   await page.close();
 
@@ -457,8 +565,10 @@ async function editorInteractions(browser, run, reset) {
     const card = page2.locator('[data-editor-media]').nth(3);
     const id = await card.getAttribute('data-editor-media');
     const since = Date.now();
+    const current = shownWhen(page2, new Function(`return document.querySelector('[data-editor-media="${id}"]')?.getAttribute('aria-current') === 'true';`));
     await card.click();
     const at = await lastInput(page2);
+    sample('editor/interaction/feedback-shown', (await current) - at);
     await page2.waitForFunction((want) => document.querySelector('[data-editor-media-details] [data-editor-media-form]') && document.querySelector(`[data-editor-media="${CSS.escape(want)}"]`)?.getAttribute('aria-current') === 'true', id, { timeout: 60_000 });
     sample('editor/interaction/media-details', (await page2.evaluate(() => performance.timeOrigin + performance.now())) - at);
     recordServer('editor/interaction/media-details', await serverSince(since));
@@ -509,6 +619,12 @@ async function editorSuite(browser) {
     startServer('npx', ['astro', 'dev', '--port', String(EDITOR_PORT), '--ignore-lock'], { CONTENT_ROOT: join(FIXTURE, 'content'), PRIVATE_ROOT: PRIVATE, SITE_VITE_CACHE: join(ROOT, 'node_modules', '.vite-editor-test'), SITE_STRICT_PORT: '1' });
     if (!(await waitFor(`${EDITOR}/_edit/api/perf`, 180_000))) throw new Error('the editor dev server did not start');
     sample('editor/server-start', performance.now() - t);
+    // the first start's warm-up (report R12): the screens compiled and the pictures' facts read, until edit mode is ready
+    for (let end = Date.now() + 300_000; Date.now() < end; await sleep(250)) {
+      const w = await fetch(`${EDITOR}/_edit/__warm`).then((r) => r.json()).catch(() => null);
+      if (w && !w.running && w.done) break;
+    }
+    sample('editor/first-ready', performance.now() - t);
     log('editor server up');
   }
   const pages = articlePages();
@@ -518,8 +634,7 @@ async function editorSuite(browser) {
 
   // cold: each screen's first load on a server that has just started (its modules, pictures and git)
   if (!reuse) {
-    const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
-    await context.addInitScript(collector);
+    const context = await editorContext(browser);
     for (const [name, url] of screens) {
       await measureScreen(context, `editor/cold/${name}`, url, name);
       log(`cold ${name}`);
@@ -530,8 +645,7 @@ async function editorSuite(browser) {
   // warm: a browser that has been here before, a server that has drawn each screen
   const only = arg('only', '');
   if (!only || only === 'screens') {
-    const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
-    await context.addInitScript(collector);
+    const context = await editorContext(browser);
     for (const [name, url] of screens) {
       for (let i = 0; i < RUNS; i++) await measureScreen(context, `editor/warm/${name}`, url, name);
       log(`warm ${name}`);
@@ -659,6 +773,7 @@ async function main() {
     dirty: git('status', '--porcelain', '--untracked-files=no').length > 0,
     suite: SUITE,
     runs: RUNS,
+    cpu: CPU,
     machine: { ...machine(), chrome: browser.version() },
     content: inventory(join(ROOT, 'content')),
   };

@@ -26,7 +26,7 @@ interface Props {
 const { title, description, nav, footer } = Astro.props;
 ---
 
-<PageShell title={`${title} · Design library · Prabin Pebam`} description={description ?? `${title}, in the design library of Prabin Pebam's site.`} preload={['display', 'text', 'ui']} router>
+<PageShell title={`${title} · Design library · Prabin Pebam`} description={description ?? `${title}, in the design library of Prabin Pebam's site.`} preload={['display', 'display-italic', 'text', 'ui']} router>
   <SiteHeader section={{ label: 'Design library', href: withBase('/design/') }} action={{ label: 'Visit the site', href: withBase('/') }} />
   <div class="library">
     <aside class="side" transition:persist="library-nav">

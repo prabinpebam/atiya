@@ -3,7 +3,7 @@
  * never in dev or edit mode, and not at all where the visitor opted out (Global Privacy Control, Do Not
  * Track, or `?telemetry=off` on this device). This part runs on every page and stays small: it hears the
  * sign-in runtime's `site:access` events, links followed on allowlisted pages and videos played, and queues
- * them; PostHog and the rules for what it may send (scripts/telemetryClient.ts) are fetched on idle. A test
+ * them; PostHog, the rules for what it may send and the field data (scripts/telemetryClient.ts) are fetched on idle. A test
  * build sends to a fake host, and only when a test asks (`localStorage['site.test.telemetry']`).
  */
 import { OPT_OUT_KEY, optOut, type PageFacts, type Queued } from './telemetryRules';

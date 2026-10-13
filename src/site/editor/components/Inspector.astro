@@ -136,12 +136,17 @@ const STATUS: SelectOption[] = [
       <div data-editor-noblock>
         <Text variant="ui" tone="muted">Select a block on the page, or in the outline, to see its settings.</Text>
       </div>
+      <template data-editor-form-arriving>
+        <form class="form" data-block-form="" hidden novalidate aria-label="New block settings">
+          <Text variant="ui" tone="muted">Its settings show once it's saved.</Text>
+        </form>
+      </template>
       {
         article.body.map((b, i) => (
           <form class="form" data-block-form={i} hidden novalidate aria-label={`${kindOf(b)} settings`}>
             <div class="form-head">
               <Heading level={3} size="ui">{kindOf(b)}</Heading>
-              <Text as="span" variant="small" tone="muted">{`Block ${i + 1} of ${article.body.length}`}</Text>
+              <Text as="span" variant="small" tone="muted" data-editor-block-of="">{`Block ${i + 1} of ${article.body.length}`}</Text>
             </div>
 
             {b.type === 'text' && (
@@ -1151,5 +1156,40 @@ const STATUS: SelectOption[] = [
     color: var(--color-negative);
     font-size: var(--text-sm);
     font-weight: var(--weight-medium);
+  }
+  /* drawn again from the server (editor spec §2.2): what it shows stays while it updates, with a line
+     along its top past the delay (held at the top of what scrolls) */
+  .inspector[data-busy='on'] {
+    position: relative;
+  }
+
+  .inspector[data-busy='on']::before {
+    content: '';
+    position: sticky;
+    display: block;
+    margin-block-end: calc(var(--border-strong) * -1);
+    inset-block-start: 0;
+    z-index: var(--layer-raised);
+    block-size: var(--border-strong);
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
+    background-size: 40% 100%;
+    animation: region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes region-busy {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 100% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .inspector[data-busy='on']::before {
+      animation: none;
+      background: var(--color-accent);
+    }
   }
 </style>

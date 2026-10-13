@@ -4,7 +4,7 @@
  * Replace and Delete. Each saves to the picture at once, in one store transaction, and the grid and the
  * details are rendered again from the server.
  */
-import { api, announce, describeIssue, saveStatus, swapRegions } from './client';
+import { api, announce, describeIssue, feedbackTiming, saveStatus, startTask, swapRegions } from './client';
 import { openCrop } from './crop';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
 
@@ -13,10 +13,20 @@ const nameOf = (id: string) => id.split('/').pop() ?? id;
 // a media ID is [a-z0-9-/] only, so it goes in the address as it is (readable, slashes and all)
 const urlFor = (id: string | null) => new URL(`${location.pathname}${id ? `?id=${id}` : ''}`, location.href);
 
+/** The grid's card for a picture marked as the one open, at once (spec §3.6): the details follow. */
+function markCurrent(id: string | null) {
+  document.querySelectorAll<HTMLElement>('[data-editor-media-grid][data-mode="library"] [data-editor-media]').forEach((c) => {
+    if (c.dataset.editorMedia === id) c.setAttribute('aria-current', 'true');
+    else c.removeAttribute('aria-current');
+  });
+}
+
+/** Opens a picture's details: its card is current at once, and only the details are drawn again (R11). */
 async function show(id: string | null, push = true) {
   const url = urlFor(id);
   if (push) history.pushState(null, '', url);
-  await swapRegions(['media-details', 'media-grid'], url.href);
+  markCurrent(id);
+  await swapRegions(['media-details'], url.href, undefined, { label: id ? `Showing ${nameOf(id)}…` : 'Updating…' });
 }
 
 /** The grid in the library: a picture opens its details; an upload opens the new picture's. */
@@ -40,11 +50,53 @@ export function initMediaLibrary(root: HTMLElement, signal: AbortSignal) {
     'media:uploaded',
     (e) => {
       const id = (e as CustomEvent<{ id: string }>).detail.id;
-      void show(id).then(() => announce(`Uploaded ${nameOf(id)}`));
+      // a new card: the grid is drawn again with it, and its details open; the address follows once they're there
+      void (async () => {
+        await swapRegions(['media-details', 'media-grid'], urlFor(id).href, undefined, { label: `Showing ${nameOf(id)}…` });
+        history.pushState(null, '', urlFor(id));
+        announce(`Uploaded ${nameOf(id)}`);
+      })();
     },
     { signal },
   );
-  window.addEventListener('popstate', () => void swapRegions(['media-details', 'media-grid']), { signal });
+  window.addEventListener(
+    'popstate',
+    () => {
+      markCurrent(new URL(location.href).searchParams.get('id'));
+      void swapRegions(['media-details']);
+    },
+    { signal },
+  );
+}
+
+/** A picture's card, changed in place after its details are saved: its name and its "No alt text" mark. */
+function updateCard(id: string, alt: string, decorative: boolean) {
+  const card = document.querySelector<HTMLElement>(`[data-editor-media-grid] [data-editor-media="${CSS.escape(id)}"]`);
+  if (!card) return;
+  const video = card.closest<HTMLElement>('[data-media-card]')?.dataset.mediaKind === 'video';
+  card.setAttribute('aria-label', video ? `Video: ${alt || id}` : alt || id);
+  const li = card.closest<HTMLElement>('[data-media-card]');
+  if (li) li.dataset.find = `${id} ${alt}`.toLowerCase();
+  if (alt || decorative) card.querySelector('.missing')?.remove();
+}
+
+/** Draws the grid and the details again, quietly, unless something is being typed in the details meanwhile. */
+function confirmLater() {
+  const inDetails = (el: Element | null) => !!el?.closest('[data-editor-media-details]');
+  const typing = () => {
+    const a = document.activeElement;
+    return !!document.querySelector('[data-editor-media-details] [data-unsaved]') || (inDetails(a) && !!a?.matches('input:not([type="checkbox"]):not([type="radio"]), textarea'));
+  };
+  let focused: string | null = null;
+  const landing = () => {
+    const a = document.activeElement as HTMLElement | null;
+    focused = a && inDetails(a) ? (a.id ? `#${CSS.escape(a.id)}` : a.matches('button[type="submit"]') ? '[data-editor-media-details] [data-editor-media-form] button[type="submit"]' : null) : null;
+  };
+  void swapRegions(['media-details', 'media-grid'], location.href, typing, { quiet: true, landing })
+    .then((next) => {
+      if (next && focused) document.querySelector<HTMLElement>(focused)?.focus({ preventScroll: true });
+    })
+    .catch(() => {});
 }
 
 /** A picture's details: the focus point, the fields, Replace and Delete; a video's: its fields and Delete. */
@@ -130,15 +182,24 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       else if (licence.url) return say(form, 'Name the licence, or leave its address empty.');
       else delete next.licence;
       say(form, '');
+      const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (button?.getAttribute('aria-busy') === 'true') return;
+      const task = startTask('Saving the details…', { el: button, busyLabel: 'Saving the details…' });
       saveStatus.saving();
       const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [state.key]: state.version } });
       if (!r.ok) {
+        task.failed();
         const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The details weren't saved.";
         saveStatus.failed(`Not saved: ${why}`);
         return say(form, r.status === 409 ? 'Its details changed elsewhere since you opened it. Open it again to see them.' : why);
       }
-      await swapRegions(['media-details', 'media-grid']);
+      // saved: said at once, and the card changed in place (§3.6); the grid and the details confirm it quietly
+      state.version = r.data.versions?.[state.key] ?? state.version;
+      state.sidecar = next;
+      delete form.dataset.unsaved;
+      updateCard(state.id, next.alt ?? '', !!next.decorative);
       saveStatus.saved(`Saved the details of ${nameOf(state.id)}: every page that shows it has them now`);
+      void task.done({ check: true }).then(() => window.setTimeout(confirmLater, feedbackTiming().done));
     },
     { signal },
   );

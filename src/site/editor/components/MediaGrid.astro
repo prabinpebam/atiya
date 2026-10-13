@@ -8,7 +8,9 @@
  * uploaded. Any picture the browser or the server can read is taken. Grouped by folder (an article's own, a person's, shared). In the picker it chooses one picture,
  * or several (or one video: it shows only what the field or block takes); in the library it opens a picture's details, and marks the pictures nothing uses (a
  * replaced lead picture, an upload not placed yet): they're allowed, and Delete is offered for them.
- * Thumbnails show the whole image with square corners, without the public page's styling.
+ * Thumbnails show the whole image with square corners, without the public page's styling. The picker is
+ * drawn without its cards and fills as it first opens, a page at a time, saying how far it's got
+ * (`pending`, `paging`; performance-report.md R5).
  * @tier editor
  * @a11y Each picture is a button named by its alt text (or its ID), and each video by "Video:" and its title; in the picker chosen ones are
  * aria-pressed, in the library the open one is aria-current.
@@ -27,6 +29,8 @@ import Icon from '../../components/fundamentals/Icon.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Select from '../../components/fundamentals/Select.astro';
+import Progress from '../../components/fundamentals/Progress.astro';
+import Skeleton from '../../components/fundamentals/Skeleton.astro';
 
 export interface MediaCard {
   id: string;
@@ -52,7 +56,7 @@ export interface MediaCard {
 }
 
 interface Props {
-  /** Every picture. */
+  /** Every picture (or, drawn a page at a time, this page's). */
   media: MediaCard[];
   /** pick: choose for a field or block; library: open a picture's details. */
   mode: 'pick' | 'library';
@@ -60,21 +64,30 @@ interface Props {
   owner: string;
   /** In the library: the picture whose details are open. */
   selected?: string;
+  /**
+   * The picker drawn a page at a time (performance-report.md R5): how many there are in all, the line
+   * that counts them, and the address of the next page (null on the last). The picker asks for each page
+   * in turn and adds its cards to the grid, saying how far it's got.
+   */
+  paging?: { of: number; shown: number; total: string; next: string | null };
+  /** No card drawn yet: the picker draws them as it first opens (its upload form works meanwhile). */
+  pending?: boolean;
 }
 
-const { media, mode, owner, selected } = Astro.props;
+const { media, mode, owner, selected, paging, pending = false } = Astro.props;
 const pictures = media.filter((m) => m.kind !== 'video');
 const videos = media.length - pictures.length;
 const missing = pictures.filter((m) => !m.alt && !m.decorative).length;
 const unused = mode === 'library' ? media.filter((m) => m.used === false).length : 0;
-const total = `${pictures.length} ${pictures.length === 1 ? 'picture' : 'pictures'}${videos ? `, ${videos} ${videos === 1 ? 'video' : 'videos'}` : ''}${missing ? `, ${missing} without alt text` : ''}${unused ? `, ${unused} not used` : ''}`;
+const total = paging?.total ?? `${pictures.length} ${pictures.length === 1 ? 'picture' : 'pictures'}${videos ? `, ${videos} ${videos === 1 ? 'video' : 'videos'}` : ''}${missing ? `, ${missing} without alt text` : ''}${unused ? `, ${unused} not used` : ''}`;
+const preparing = pending ? 'Preparing pictures…' : paging?.next ? `Preparing pictures: ${paging.shown} of ${paging.of}` : '';
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 const anyPrivate = media.some((m) => m.private);
 const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, label: media.find((m) => m.owner === o)!.ownerLabel, items: media.filter((m) => m.owner === o) }));
 ---
 
-<div class="media-grid" data-region="media-grid" data-editor-media-grid data-mode={mode} data-owner={owner}>
-  <details class="upload" open={media.length === 0 ? true : undefined}>
+<div class="media-grid" data-region="media-grid" data-editor-media-grid data-mode={mode} data-owner={owner} data-picker-pending={pending ? '' : undefined} data-media-next={paging?.next ?? undefined}>
+  <details class="upload" open={media.length === 0 && !pending ? true : undefined}>
     <summary><Icon name="upload" /><span>Upload a picture or a video</span></summary>
     <form class="upload-form" data-editor-upload novalidate>
       <FileField label="Picture or video" name="file" accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.m4v,.webm,.mov" hint="Choose, drop or paste (Ctrl+V) any picture up to 20 MB: JPEG, PNG, WebP, AVIF, SVG and more. Saved as WebP, at most 2560 px and 1.5 MB, with its transparency and without its location data. A GIF is kept exactly as it is, under 100 MB and at most 2560 px. Or a video under 100 MB (GitHub's limit for a file): MP4 (H.264), WebM or MOV, kept as it is, with a frame from it as its poster." />
@@ -124,6 +137,22 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     }
   </div>
   <p class="count" aria-live="polite" data-editor-media-found data-total={total}>{total}</p>
+  {
+    preparing && (
+      <div class="preparing" data-media-preparing>
+        <Progress label={preparing} value={pending || !paging ? undefined : Math.round((paging.shown / paging.of) * 100)} size="sm" />
+      </div>
+    )
+  }
+  {
+    pending && (
+      <div class="placeholder" aria-hidden="true">
+        <Skeleton shape="block" ratio="4/3" />
+        <Skeleton shape="block" ratio="4/3" />
+        <Skeleton shape="block" ratio="4/3" />
+      </div>
+    )
+  }
   {
     groups.map((g) => (
       <section class="group" data-media-group aria-label={g.label}>
@@ -364,6 +393,47 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     display: flex;
     align-items: center;
     gap: var(--space-1);
+  }
+
+  /* the picker filling, a page at a time: how far it's got, and where the cards will be */
+  .placeholder {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--c-editor-thumb), 1fr));
+    gap: var(--space-3);
+  }
+  /* drawn again from the server (editor spec §2.2): what it shows stays while it updates, with a line
+     along its top past the delay */
+  .media-grid[data-busy='on'] {
+    position: relative;
+  }
+
+  .media-grid[data-busy='on']::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 0;
+    z-index: var(--layer-raised);
+    block-size: var(--border-strong);
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
+    background-size: 40% 100%;
+    animation: region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes region-busy {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 100% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .media-grid[data-busy='on']::before {
+      animation: none;
+      background: var(--color-accent);
+    }
   }
 </style>
 

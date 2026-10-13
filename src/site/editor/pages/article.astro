@@ -19,7 +19,9 @@ import Button from '../../components/fundamentals/Button.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
-import { load, mediaCards, sectionOptions, STATUS_LABEL } from '../server/screens';
+import { load, mediaCards, mediaCount, mediaSummary, sectionOptions, STATUS_LABEL } from '../server/screens';
+import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
+import { mediaUsed, videosUsed } from '../../content/load';
 import { readDoc } from '../server/store';
 import { OVERLAY, PLANET, STRUCTURE, articleKey } from '../server/articles';
 import { sharingView } from '../server/access';
@@ -57,9 +59,36 @@ const place = planet?.value.places.find((p) => p.id === placeId)?.title ?? '';
 const route = loaded.ok ? getPlacement('article', id) : undefined;
 
 const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'heading', subheading: 'subheading', marker: 'section-mark', figure: 'image', gallery: 'gallery', carousel: 'carousel', video: 'video', quote: 'quote', divider: 'minus', collection: 'collection', table: 'table' };
-const cards: MediaCard[] = loaded.ok ? await mediaCards(loaded.index, `articles/${id}`) : [];
+// a swap names its regions, and only they are drawn (performance-report.md R4); a whole screen draws them all
+const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
+const draw = (...names: string[]) => wants(asked, ...names);
+// only the counts, or the picker's next page, asked for: none of the studio is drawn
+const fragment = !!asked && [...asked].every((n) => (ALWAYS as readonly string[]).includes(n) || n === 'media-grid');
+const owner = `articles/${id}`;
+// the pictures this article uses: the inspector's thumbnails (the picker's cards are drawn when it opens, R5)
+const used = new Set([...mediaUsed(article), ...videosUsed(article)]);
+const cards: MediaCard[] = loaded.ok && draw('inspector', 'state') ? await mediaCards(loaded.index, owner, { only: used }) : [];
 const thumbs: Record<string, Thumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height, ...(c.kind === 'video' ? { video: true } : {}) }]));
-const blocks = article.body.map((b) => ({ kind: kindOf(b), excerpt: excerptOf(b, (m) => thumbs[m]?.alt), icon: ICON[b.type] }));
+// a picture's words for the outline come from the content, so drawing it never waits for a picture
+const altOf = (m: string) => {
+  if (!loaded.ok) return thumbs[m]?.alt;
+  const pic = loaded.index.media.get(m);
+  return pic ? (pic.decorative ? '' : (pic.alt ?? '')) : loaded.index.videos.get(m)?.title;
+};
+const blocks = article.body.map((b) => ({ kind: kindOf(b), excerpt: excerptOf(b, altOf), icon: ICON[b.type], type: b.type }));
+// the picker, a page at a time, when it asks (R5)
+const PICKER_PAGE = 40;
+const pickerAt = Math.max(0, Math.floor(Number(Astro.url.searchParams.get('picker') ?? 0)) || 0);
+const picker = loaded.ok && !!asked?.has('media-grid') ? await mediaCards(loaded.index, owner, { page: { at: pickerAt, size: PICKER_PAGE } }) : null;
+const pickerOf = loaded.ok ? mediaCount(loaded.index) : 0;
+const pickerPaging = loaded.ok
+  ? {
+      of: pickerOf,
+      shown: Math.min(pickerOf, pickerAt + PICKER_PAGE),
+      total: mediaSummary(loaded.index),
+      next: pickerAt + PICKER_PAGE < pickerOf ? `${Astro.url.pathname}?picker=${pickerAt + PICKER_PAGE}` : null,
+    }
+  : undefined;
 const links = loaded.ok ? [...loaded.index.articles.values()].filter((a) => loaded.index.canonical.has(`article/${a.id}`)).map((a) => ({ value: `ref:article/${a.id}`, label: a.title })) : [];
 const publicPath = route?.published ? withBase(route.path) : null;
 const state = {
@@ -96,17 +125,20 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     {!publicPath && route && <IconButton label="Preview it as a page (on this computer only)" icon="external" size="sm" href={withBase(route.path)} />}
   </Fragment>
   {
-    loaded.ok ? (
+    loaded.ok && fragment ? (
+      // a swap of the counts, or of the picker's next page: only what was asked for
+      picker && <MediaGrid mode="pick" media={picker} owner={owner} paging={pickerPaging} />
+    ) : loaded.ok ? (
       <Studio>
-        <Outline slot="outline" blocks={blocks} />
+        {draw('outline') && <Outline slot="outline" blocks={blocks} icons={ICON} />}
         <CanvasFrame slot="canvas" src={state.canvas} />
-        <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} place={place} published={published} path={route?.path ?? null} />
+        {draw('inspector') && <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} place={place} published={published} path={route?.path ?? null} />}
         <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
         <Dialog id="editor-palette" title="Add a block" size="lg">
           <BlockPalette />
         </Dialog>
         <Dialog id="editor-picker" title="Choose a picture" size="lg">
-          <MediaGrid mode="pick" media={cards} owner={`articles/${id}`} />
+          {picker ? <MediaGrid mode="pick" media={picker} owner={owner} paging={pickerPaging} /> : <MediaGrid mode="pick" media={[]} owner={owner} paging={pickerPaging} pending />}
           <Fragment slot="actions">
             <span data-editor-media-count>
               <Text as="span" variant="small" tone="muted">

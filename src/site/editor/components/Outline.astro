@@ -4,9 +4,13 @@
  * first words, to select it (the canvas scrolls to it) and reorder it: drag its handle, or use Move up
  * and Move down (a single-pointer alternative to the drag, WCAG 2.5.7), or Alt+Up and Alt+Down. Several
  * blocks can be selected (Shift for a range, Ctrl or Cmd for one more) and moved, dragged or deleted
- * together; a bar over the rows says how many, with Move up, Move down and Clear.
+ * together; a bar over the rows says how many, with Move up, Move down and Clear. A move, a removal, a
+ * copy or a new block shows here at once (spec §3.6): the editor draws the rows from its own document
+ * (the row template and each type's icon are in the markup), and a row whose change is saving shows a
+ * small spinner at its end past the delay (§2.2).
  * @tier editor
  * @a11y A named list; each row's main button selects the block and is marked current when it's selected; a block in a selection of several is pressed.
+ * @a11y A row whose change is saving is aria-busy; its spinner is hidden from assistive technology (the status line says Saving…).
  * @a11y Every drag has buttons and keys that do the same; a move, and how many blocks are selected, are announced in the status.
  * @key Up / Down: the previous / next block's row
  * @key Shift + Up / Shift + Down: add the previous / next block to the selection
@@ -25,17 +29,19 @@ import Button from '../../components/fundamentals/Button.astro';
 import type { IconName } from '../../design/icons';
 
 interface Props {
-  /** The blocks, in order: their kind, a few words, an icon. */
-  blocks: { kind: string; excerpt: string; icon: IconName }[];
+  /** The blocks, in order: their kind, a few words, an icon, and their type. */
+  blocks: { kind: string; excerpt: string; icon: IconName; type: string }[];
+  /** Each block type's icon: the editor draws the outline from its own document as a change happens (spec §3.6), with the same icons. */
+  icons: Record<string, IconName>;
 }
 
-const { blocks } = Astro.props;
+const { blocks, icons } = Astro.props;
 ---
 
 <section class="outline" aria-labelledby="outline-title" data-region="outline" data-editor-outline>
   <div class="head">
     <Heading level={2} size="ui" id="outline-title">Outline</Heading>
-    <Text as="span" variant="small" tone="muted">{`${blocks.length} ${blocks.length === 1 ? 'block' : 'blocks'}`}</Text>
+    <Text as="span" variant="small" tone="muted" data-editor-outline-count>{`${blocks.length} ${blocks.length === 1 ? 'block' : 'blocks'}`}</Text>
   </div>
   <div class="group" role="toolbar" aria-label="The selected blocks" data-editor-multibar hidden>
     <span class="group-count" data-editor-multicount></span>
@@ -46,28 +52,38 @@ const { blocks } = Astro.props;
       <IconButton label="Clear the selection" icon="close" size="sm" tooltip="none" data-editor-group="clear" />
     </span>
   </div>
-  <ol class="rows" data-scrollbar>
+  <ol class="rows" data-scrollbar data-editor-rows>
     {
-      blocks.map((b, i) => (
-        <li class="row" data-row={i}>
-          <span class="grip" data-editor-drag={i} aria-hidden="true">
-            <Icon name="drag" />
-          </span>
-          <button class="pick" type="button" data-editor-select={i} aria-label={`${b.kind}${b.excerpt ? `: ${b.excerpt}` : ''}`}>
-            <Icon name={b.icon} />
-            <span class="words">
-              <span class="kind">{b.kind}</span>
-              {b.excerpt && <span class="excerpt">{b.excerpt}</span>}
+      [...blocks, null].map((b, i) => {
+        // the last is the template a new block's row is made from (§3.6), never shown
+        const row = b ?? { kind: 'Paragraph', excerpt: '', icon: icons.text, type: 'text' };
+        const last = b ? i === blocks.length - 1 : true;
+        const Row = (
+          <li class="row" data-row={i} data-type={row.type}>
+            <span class="grip" data-editor-drag={i} aria-hidden="true">
+              <Icon name="drag" />
             </span>
-          </button>
-          <span class="moves">
-            <IconButton label={`Move ${b.kind.toLowerCase()} up`} icon="arrow-up" size="sm" tooltip="none" disabled={i === 0} data-editor-move="up" data-index={String(i)} />
-            <IconButton label={`Move ${b.kind.toLowerCase()} down`} icon="arrow-down" size="sm" tooltip="none" disabled={i === blocks.length - 1} data-editor-move="down" data-index={String(i)} />
-          </span>
-        </li>
-      ))
+            <button class="pick" type="button" data-editor-select={i} aria-label={`${row.kind}${row.excerpt ? `: ${row.excerpt}` : ''}`}>
+              <span class="icon" data-editor-row-icon><Icon name={row.icon} /></span>
+              <span class="words">
+                <span class="kind" data-editor-row-kind>{row.kind}</span>
+                <span class="excerpt" data-editor-row-excerpt hidden={!row.excerpt}>{row.excerpt}</span>
+              </span>
+            </button>
+            <span class="saving" aria-hidden="true"></span>
+            <span class="moves">
+              <IconButton label={`Move ${row.kind.toLowerCase()} up`} icon="arrow-up" size="sm" tooltip="none" disabled={i === 0} data-editor-move="up" data-index={String(i)} />
+              <IconButton label={`Move ${row.kind.toLowerCase()} down`} icon="arrow-down" size="sm" tooltip="none" disabled={last} data-editor-move="down" data-index={String(i)} />
+            </span>
+          </li>
+        );
+        return b ? Row : <template data-editor-outline-row>{Row}</template>;
+      })
     }
   </ol>
+  <template data-editor-outline-icons>
+    {Object.entries(icons).map(([type, name]) => <span data-type={type}><Icon name={name} /></span>)}
+  </template>
   <div class="foot">
     <Button variant="quiet" size="sm" icon="plus" block data-editor-add-at={String(blocks.length)}>Add a block</Button>
   </div>
@@ -135,10 +151,42 @@ const { blocks } = Astro.props;
   .row {
     position: relative;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
     gap: var(--space-1);
     border-radius: var(--radius-md);
+  }
+
+  .icon {
+    display: inline-grid;
+    flex: none;
+  }
+
+  /* a row whose change is saving (spec §2.2): a small spinner at its end, past the delay */
+  .saving {
+    display: none;
+    inline-size: var(--text-sm);
+    block-size: var(--text-sm);
+    border: var(--border-strong) solid var(--color-border);
+    border-inline-end-color: var(--color-accent);
+    border-radius: var(--radius-round);
+    animation: row-turn var(--duration-slower) linear infinite;
+  }
+
+  .row[data-busy='on'] .saving {
+    display: inline-block;
+  }
+
+  @keyframes row-turn {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .saving {
+      animation: none;
+    }
   }
 
   .row[data-dragging] {

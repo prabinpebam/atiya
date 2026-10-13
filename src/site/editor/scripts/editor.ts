@@ -1,11 +1,14 @@
 /**
  * The article editor's controller (documentation/editor/spec.md §3, §8.6): the one owner of the article
  * while it's open. It applies every change with the shared document operations, saves through one
- * queue (never two saves at once), keeps the undo history, refreshes the outline and the inspector (by
- * fetching the page and swapping those regions) and the canvas (by reloading it) after changes that
- * re-render them, and talks to the canvas by postMessage (same origin only).
+ * queue (never two saves at once), keeps the undo history, and shows a move, a removal, a copy or a new
+ * block at once in the outline, the inspector and the canvas (§3.6), from its own document; the server's
+ * redraw after the save (the outline and inspector regions swapped in, the canvas loaded behind the old
+ * one and swapped in when ready) only confirms it. It talks to the canvas by postMessage (same origin only).
  */
-import { api, announce, describeIssue, onContentChange, refreshPending, saveStatus, swapRegions, type Issue } from './client';
+import { api, announce, describeIssue, onContentChange, refreshPending, saveStatus, startTask, swapRegions, type Issue, type Task } from './client';
+import { fillPicker } from './picker';
+import { isStructural, originsOf, renameTree, targetsOf, type Origin } from '../model/optimistic';
 import * as ops from '../model/ops';
 import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
@@ -37,7 +40,7 @@ interface State {
   publicPath: string | null;
   media: Record<string, { alt: string; thumb: string }>;
 }
-type Refresh = { canvas?: boolean; outline?: boolean; inspector?: boolean };
+type Refresh = { canvas?: boolean; outline?: boolean; inspector?: boolean; /** A redraw that only confirms what's already shown (§3.6): no sign. */ quiet?: boolean };
 type Pick = { mode: 'single' | 'multiple'; min: number; title: string; onChoose: (ids: string[]) => void; /** What it takes: pictures (the default), videos, or either (a gallery's or a carousel's items). */ kind?: 'image' | 'video' | 'any' };
 const STRUCTURE = '/content/structures/site.json';
 const ALL: Refresh = { canvas: true, outline: true, inspector: true };
@@ -52,7 +55,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   let picked = new Set<number>();
   let anchor: number | null = null;
   const group = () => [...picked].sort((a, b) => a - b);
-  const frame = root.querySelector<HTMLIFrameElement>('[data-editor-frame]')!;
+  let frame = root.querySelector<HTMLIFrameElement>('[data-editor-frame]')!;
   const canvasBox = root.querySelector<HTMLElement>('[data-editor-canvas]')!;
   const toCanvas = (m: Record<string, unknown>) => frame.contentWindow?.postMessage({ source: 'editor', ...m }, location.origin);
   const dialog = (id: string) => document.getElementById(id) as HTMLDialogElement | null;
@@ -78,14 +81,19 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   updateUndo();
 
   // ---------- saving: one queue, never two at once ----------
-  type Job = { section?: string | null; refresh: Refresh; ready?: (() => void)[] };
+  type Job = { section?: string | null; refresh: Refresh; ready?: (() => void)[]; /** Shown at once (§3.6): a refusal puts it back. */ optimistic?: boolean; /** The rows marked as saving. */ signs?: Task[] };
   const afterReady: (() => void)[] = [];
+  /** A redraw the person waits to see (one that isn't only confirming what's shown). */
+  const loud = (r: Refresh) => !r.quiet && !!(r.canvas || r.outline || r.inspector);
   const queue = new SaveQueue<Job>(
     (waiting, request) => ({
       ...(waiting ?? {}),
       ...(request.section !== undefined ? { section: request.section } : {}),
-      refresh: { ...(waiting?.refresh ?? {}), ...request.refresh },
+      // a redraw stays quiet only if every change it carries was shown already
+      refresh: { ...(waiting?.refresh ?? {}), ...request.refresh, quiet: !(waiting && loud(waiting.refresh)) && !loud(request.refresh) },
       ready: [...(waiting?.ready ?? []), ...(request.ready ?? [])],
+      optimistic: !!waiting?.optimistic || !!request.optimistic,
+      signs: [...(waiting?.signs ?? []), ...(request.signs ?? [])],
     }),
     async (job, more) => {
       saveStatus.saving();
@@ -105,12 +113,14 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         clearIssues();
         if (more()) saveStatus.saving();
         else saveStatus.saved();
+        for (const s of job.signs ?? []) void s.done();
         if (job.ready?.length) afterReady.push(...job.ready);
         await refreshAll(job.refresh);
         // what waits to be saved to remote has changed too: the top bar's count follows
         refreshPending();
         return 'ok';
       }
+      for (const s of job.signs ?? []) s.failed();
       if (r.status === 409) {
         if (job.ready?.length) toCanvas({ type: 'table-unlock' });
         saveStatus.failed('Not saved: this article changed in another tab or on disk');
@@ -119,25 +129,101 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       }
       doc = structuredClone(saved);
       if (job.ready?.length) toCanvas({ type: 'table-unlock' });
+      const why = (r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused';
+      if (job.optimistic) {
+        // shown at once and refused: every view goes back to the last saved document, and says so (§3.6 rule 4)
+        renderOutline();
+        await refreshAll({ inspector: true, canvas: true });
+        showIssues(r.data.issues ?? []);
+        saveStatus.failed(`Not saved: ${why}. The change was put back`);
+        return 'failed';
+      }
       showIssues(r.data.issues ?? []);
-      saveStatus.failed(`Not saved: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`);
+      saveStatus.failed(`Not saved: ${why}`);
       return 'failed';
     },
   );
-  const save = (opts: { section?: string | null; refresh?: Refresh; ready?: (() => void)[] } = {}) =>
-    queue.push({ ...(opts.section !== undefined ? { section: opts.section } : {}), refresh: opts.refresh ?? {}, ...(opts.ready?.length ? { ready: opts.ready } : {}) });
+  const save = (opts: { section?: string | null; refresh?: Refresh; ready?: (() => void)[]; optimistic?: boolean; signs?: Task[] } = {}) =>
+    queue.push({ ...(opts.section !== undefined ? { section: opts.section } : {}), refresh: opts.refresh ?? {}, ...(opts.ready?.length ? { ready: opts.ready } : {}), ...(opts.optimistic ? { optimistic: true } : {}), ...(opts.signs?.length ? { signs: opts.signs } : {}) });
 
   // ---------- refreshing the outline, the inspector and the canvas ----------
-  const reloadCanvas = () => {
+  // The canvas is double-buffered (spec §3.6, report R6): the new one loads behind the old, transparent and
+  // inert, at the same scroll position, and replaces it once it says it's ready; the old one stays usable
+  // meanwhile. Typing in the old one drops the new one, and the redraw is tried again once the typing stops.
+  let incoming: HTMLIFrameElement | null = null;
+  let canvasTask: Task | null = null;
+  let redrawTimer = 0;
+  let redrawQuiet = true;
+  const canvasPath = new URL(state.canvas, location.href).pathname;
+  const reloadCanvas = (opts: { quiet?: boolean } = {}) => {
+    redrawQuiet = redrawQuiet && !!opts.quiet;
+    clearTimeout(redrawTimer);
+    if (typing()) {
+      redrawTimer = window.setTimeout(() => reloadCanvas({ quiet: redrawQuiet }), 1600);
+      return;
+    }
+    const quiet = redrawQuiet;
+    redrawQuiet = true;
     performance.mark('editor:canvas-start');
-    frame.contentWindow?.location.reload();
+    incoming?.remove();
+    try {
+      sessionStorage.setItem(`editor.canvas.scroll.${canvasPath}`, String(frame.contentWindow?.scrollY ?? 0));
+    } catch {
+      /* the new canvas opens at its top */
+    }
+    const next = frame.cloneNode(false) as HTMLIFrameElement;
+    delete next.dataset.editorFrame;
+    next.dataset.editorIncoming = '';
+    next.inert = true;
+    next.setAttribute('aria-hidden', 'true');
+    next.tabIndex = -1;
+    next.src = state.canvas;
+    frame.after(next);
+    incoming = next;
+    if (!quiet && !canvasTask) canvasTask = startTask('Updating the canvas…', { el: [root.querySelector('[data-editor-canvas-pill]'), canvasBox] });
   };
-  const swap = async (names: string[]) => {
-    const active = document.activeElement as HTMLElement | null;
-    const focusKey = active?.id || (active?.dataset.editorSelect !== undefined ? `select:${active.dataset.editorSelect}` : '');
-    const tab = root.querySelector<HTMLElement>('#inspector-tabs [role="tab"][aria-selected="true"]')?.dataset.tab;
-    const scroll = root.querySelector<HTMLElement>('[data-editor-inspector]')?.scrollTop ?? 0;
-    await swapRegions(names);
+  /** The new canvas is ready: it takes the old one's place (not while words are being typed in the old one). */
+  const promote = () => {
+    if (!incoming) return;
+    if (typing()) return holdRedraw();
+    const old = frame;
+    frame = incoming;
+    incoming = null;
+    frame.dataset.editorFrame = '';
+    delete frame.dataset.editorIncoming;
+    frame.inert = false;
+    frame.removeAttribute('aria-hidden');
+    frame.removeAttribute('tabindex');
+    old.remove();
+    void canvasTask?.done();
+    canvasTask = null;
+  };
+  /** Typing in the canvas: a new one loading behind it would replace the words being typed, so it waits; what was to happen once it's ready (a caret put back) is dropped, as the person has moved on. */
+  const holdRedraw = () => {
+    if (!incoming) return;
+    incoming.remove();
+    incoming = null;
+    afterReady.splice(0);
+    redrawTimer = window.setTimeout(() => reloadCanvas({ quiet: !canvasTask }), 1600);
+  };
+  const swap = async (names: string[], opts: { quiet?: boolean; label?: string } = {}) => {
+    // what to keep is read when the regions land, never when they were asked for (the tab could change meanwhile)
+    let focusKey = '';
+    let tab: string | undefined;
+    let scroll = 0;
+    const landing = () => {
+      const active = document.activeElement as HTMLElement | null;
+      focusKey = active?.id || (active?.dataset.editorSelect !== undefined ? `select:${active.dataset.editorSelect}` : '');
+      tab = root.querySelector<HTMLElement>('#inspector-tabs [role="tab"][aria-selected="true"]')?.dataset.tab;
+      scroll = root.querySelector<HTMLElement>('[data-editor-inspector]')?.scrollTop ?? 0;
+    };
+    // the inspector isn't drawn again under a field being typed in: it waits for the next save
+    const busyField = () => {
+      const a = document.activeElement;
+      return !!a?.closest('[data-editor-inspector]') && a.matches('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]') && names.includes('inspector') && !!opts.quiet;
+    };
+    const next = await swapRegions(names, location.href, busyField, { quiet: opts.quiet, label: opts.label, landing });
+    if (!next) return;
     Object.assign(state, { media: readState().media });
     if (tab) root.querySelector('#inspector-tabs')?.dispatchEvent(new CustomEvent('tabs:select', { detail: { tab } }));
     const ins = root.querySelector<HTMLElement>('[data-editor-inspector]');
@@ -150,8 +236,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   };
   const refreshAll = async (r: Refresh) => {
     const names = [...(r.outline ? ['outline'] : []), ...(r.inspector ? ['inspector', 'state'] : [])];
-    if (names.length) await swap(names);
-    if (r.canvas) reloadCanvas();
+    if (r.canvas) reloadCanvas({ quiet: r.quiet });
+    if (names.length) await swap(names, { quiet: r.quiet });
   };
 
   // ---------- changes made elsewhere: another tab, another screen, a file changed by hand ----------
@@ -179,7 +265,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     }
     heard = new Set();
     fromTab = false;
-    await swap(['outline', 'inspector', 'state']);
+    reloadCanvas();
+    await swap(['outline', 'inspector', 'state'], { label: `Updating with a change made ${where}…` });
     const fresh = readState();
     if (files.has(state.key)) {
       doc = fresh.article;
@@ -187,7 +274,6 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       state.version = fresh.version;
     }
     Object.assign(state, { structureVersion: fresh.structureVersion, section: fresh.section, published: fresh.published, publicPath: fresh.publicPath });
-    reloadCanvas();
     announce(files.has(state.key) ? `Updated with changes made ${where}` : `Updated with a change made ${where}`);
   };
   onContentChange(({ files, origin }) => {
@@ -266,14 +352,140 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     }
   };
 
+  // ---------- optimistic views (spec §3.6) ----------
+  // A move, a removal, a copy or a new block shows in the outline, the inspector and the canvas at once,
+  // from the document held here; the server's redraw after the save only confirms it, quietly.
+  const ARTICLE_WORD = (k: string) => `${/^[aeiou]/i.test(k) ? 'an' : 'a'} ${k.toLowerCase()}`;
+  /** A picture's words for the outline: the ones the screen was drawn with, or its card in the picker. */
+  const altOf = (m: string) => {
+    if (state.media[m]) return state.media[m].alt;
+    const card = document.querySelector<HTMLElement>(`#editor-picker [data-editor-media="${CSS.escape(m)}"]`);
+    const label = card?.getAttribute('aria-label') ?? '';
+    return label === m ? '' : label.replace(/^Video: /, '');
+  };
+  /** One outline row, filled for the block at `j` of `n`. */
+  const fillRow = (row: HTMLElement, b: Block, j: number, n: number) => {
+    const kind = ops.kindOf(b);
+    const excerpt = ops.excerptOf(b, altOf);
+    if (row.dataset.type !== b.type) {
+      const icon = root.querySelector<HTMLTemplateElement>('[data-editor-outline-icons]')?.content.querySelector(`[data-type="${b.type}"]`);
+      const slot = row.querySelector('[data-editor-row-icon]');
+      if (icon && slot) slot.replaceChildren(...[...icon.childNodes].map((c) => c.cloneNode(true)));
+    }
+    row.dataset.row = String(j);
+    row.dataset.type = b.type;
+    row.querySelector<HTMLElement>('[data-editor-drag]')?.setAttribute('data-editor-drag', String(j));
+    const pick = row.querySelector<HTMLElement>('[data-editor-select]');
+    pick?.setAttribute('data-editor-select', String(j));
+    pick?.setAttribute('aria-label', `${kind}${excerpt ? `: ${excerpt}` : ''}`);
+    const k = row.querySelector('[data-editor-row-kind]');
+    if (k && k.textContent !== kind) k.textContent = kind;
+    const ex = row.querySelector<HTMLElement>('[data-editor-row-excerpt]');
+    if (ex) {
+      if (ex.textContent !== excerpt) ex.textContent = excerpt;
+      ex.hidden = !excerpt;
+    }
+    row.querySelectorAll<HTMLButtonElement>('[data-editor-move]').forEach((m) => {
+      const up = m.dataset.editorMove === 'up';
+      m.dataset.index = String(j);
+      m.disabled = up ? j === 0 : j === n - 1;
+      m.setAttribute('aria-label', `Move ${kind.toLowerCase()} ${up ? 'up' : 'down'}`);
+    });
+  };
+  /** The outline drawn from the document: rows moved, copied, removed or made for new blocks (`origins`), or just filled again. */
+  const renderOutline = (origins?: Origin[]) => {
+    const outline = root.querySelector<HTMLElement>('[data-editor-outline]');
+    const list = outline?.querySelector<HTMLElement>('[data-editor-rows]');
+    const tpl = list?.querySelector<HTMLTemplateElement>('[data-editor-outline-row]');
+    if (!outline || !list || !tpl) return [] as HTMLElement[];
+    const old = [...list.querySelectorAll<HTMLElement>(':scope > [data-row]')];
+    const used = new Set<number>();
+    const fresh: HTMLElement[] = [];
+    const rows = doc.body.map((b, j) => {
+      const o = origins ? origins[j] : { from: j, copy: false };
+      let row: HTMLElement;
+      if (o && old[o.from] && !o.copy && !used.has(o.from)) {
+        used.add(o.from);
+        row = old[o.from];
+        if (o.from !== j) fresh.push(row);
+      } else {
+        row = (o && old[o.from] ? old[o.from] : (tpl.content.firstElementChild as HTMLElement)).cloneNode(true) as HTMLElement;
+        row.removeAttribute('data-current');
+        row.removeAttribute('data-picked');
+        fresh.push(row);
+      }
+      fillRow(row, b, j, doc.body.length);
+      return row;
+    });
+    if (origins) list.replaceChildren(...rows, tpl);
+    const count = outline.querySelector('[data-editor-outline-count]');
+    if (count) count.textContent = `${doc.body.length} ${doc.body.length === 1 ? 'block' : 'blocks'}`;
+    outline.querySelector<HTMLElement>('[data-editor-add-at]')?.setAttribute('data-editor-add-at', String(doc.body.length));
+    return fresh;
+  };
+  /** The inspector's forms follow their blocks: renamed for their new places, a removed block's gone, a new or copied block's a note until the server draws it. */
+  const remapInspector = (before: number, origins: Origin[]) => {
+    const ins = root.querySelector<HTMLElement>('[data-editor-inspector]');
+    if (!ins) return;
+    const forms = [...ins.querySelectorAll<HTMLFormElement>('form[data-block-form]')];
+    const to = targetsOf(origins, before);
+    for (const f of forms) {
+      const i = Number(f.dataset.blockForm);
+      if (!(i >= 0 && i < before) || to[i] < 0) f.remove();
+    }
+    // each from its own place before, so two that swap places don't collide
+    for (const f of forms) {
+      const i = Number(f.dataset.blockForm);
+      if (f.isConnected && to[i] !== i) renameTree(f, i, to[i]);
+    }
+    const tpl = ins.querySelector<HTMLTemplateElement>('[data-editor-form-arriving]');
+    const host = forms[0]?.parentElement ?? tpl?.parentElement;
+    origins.forEach((o, j) => {
+      if (o && !o.copy) return;
+      const note = tpl?.content.firstElementChild?.cloneNode(true) as HTMLElement | undefined;
+      if (!note || !host) return;
+      note.setAttribute('data-block-form', String(j));
+      host.append(note);
+    });
+    ins.querySelectorAll<HTMLFormElement>('form[data-block-form]').forEach((f) => {
+      const at = f.querySelector('[data-editor-block-of]');
+      if (at) at.textContent = `Block ${Number(f.dataset.blockForm) + 1} of ${origins.length}`;
+    });
+  };
+  /**
+   * Shows a change of order or presence at once in every view (§3.6), when that's all it is; then the save
+   * confirms it. Returns the rows marked as saving, or null when the change isn't one to show this way.
+   */
+  const showAtOnce = (before: Block[], after: Block[]): Task[] | null => {
+    const origins = originsOf(before, after);
+    if (!isStructural(before, after, origins)) return null;
+    const fresh = renderOutline(origins);
+    remapInspector(before.length, origins);
+    toCanvas({
+      type: 'remap',
+      origins,
+      kinds: after.map((b) => ({ kind: ops.kindOf(b), type: b.type })),
+      arriving: origins.map((o, j) => (o ? null : `Adding ${ARTICLE_WORD(ops.kindOf(after[j]))}…`)),
+    });
+    performance.mark('editor:shown');
+    return fresh.length ? [startTask('Saving…', { el: fresh, line: false })] : [];
+  };
+
   // ---------- changes ----------
-  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; history?: boolean; picked?: number[]; ready?: () => void } = {}) => {
+  const change = (next: Article, refresh: Refresh, opts: { select?: number | null; section?: string | null; history?: boolean; picked?: number[]; ready?: () => void; /** A move, a removal, a copy or a new block: shown at once (§3.6). */ atOnce?: boolean } = {}) => {
     if (opts.history !== false) checkpoint();
+    const before = doc.body;
     doc = next;
     if (opts.select !== undefined) selected = opts.select;
     picked = new Set(opts.picked ?? []);
     if (!opts.picked) anchor = selected;
-    void save({ refresh, ...(opts.section !== undefined ? { section: opts.section } : {}), ...(opts.ready ? { ready: [opts.ready] } : {}) });
+    // order and presence show at once; the server's redraw then only confirms them
+    const signs = opts.atOnce && before !== next.body ? showAtOnce(before, next.body) : null;
+    if (signs) {
+      showBlock(selected);
+      if (selected !== null) toCanvas({ type: 'select', index: selected });
+    }
+    void save({ refresh: signs ? { ...refresh, quiet: true } : refresh, ...(opts.section !== undefined ? { section: opts.section } : {}), ...(opts.ready ? { ready: [opts.ready] } : {}), ...(signs ? { optimistic: true, signs } : {}) });
   };
   const body = (b: Block[]) => ({ ...doc, body: b });
   /** An embedded video's own shape, from its provider (the dev server asks its oEmbed); null, with a note, when it can't say (it's then shown 16:9). */
@@ -284,15 +496,15 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     return null;
   };
   const blockOp = (i: number, op: 'up' | 'down' | 'duplicate' | 'delete') => {
-    if (op === 'up' && i > 0) change(body(ops.move(doc.body, i, i - 1)), ALL, { select: i - 1 });
-    else if (op === 'down' && i < doc.body.length - 1) change(body(ops.move(doc.body, i, i + 1)), ALL, { select: i + 1 });
-    else if (op === 'duplicate') change(body(ops.duplicate(doc.body, i)), ALL, { select: i + 1 });
+    if (op === 'up' && i > 0) change(body(ops.move(doc.body, i, i - 1)), ALL, { select: i - 1, atOnce: true });
+    else if (op === 'down' && i < doc.body.length - 1) change(body(ops.move(doc.body, i, i + 1)), ALL, { select: i + 1, atOnce: true });
+    else if (op === 'duplicate') change(body(ops.duplicate(doc.body, i)), ALL, { select: i + 1, atOnce: true });
     else if (op === 'delete') {
-      change(body(ops.remove(doc.body, i)), ALL, { select: doc.body.length > 1 ? Math.max(0, i - 1) : null });
+      change(body(ops.remove(doc.body, i)), ALL, { select: doc.body.length > 1 ? Math.max(0, i - 1) : null, atOnce: true });
       announce(`Deleted: Undo brings it back`);
     }
   };
-  const insertBlock = (at: number, block: Block) => change(body(ops.insert(doc.body, at, block)), ALL, { select: at });
+  const insertBlock = (at: number, block: Block) => change(body(ops.insert(doc.body, at, block)), ALL, { select: at, atOnce: true });
 
   // ---------- several blocks at once ----------
   const announcePicked = () => announce(picked.size > 1 ? `${picked.size} blocks selected` : '');
@@ -331,7 +543,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const before = group();
     const r = ops.moveMany(doc.body, before, dir);
     if (r.body === doc.body) return announce(dir < 0 ? 'The selected blocks are already at the top' : 'The selected blocks are already at the end');
-    change(body(r.body), ALL, { select: follow(before, r.indices, selected), picked: r.indices });
+    change(body(r.body), ALL, { select: follow(before, r.indices, selected), picked: r.indices, atOnce: true });
     anchor = follow(before, r.indices, anchor);
     announce(`Moved ${r.indices.length} blocks to positions ${r.indices[0] + 1} to ${r.indices[r.indices.length - 1] + 1} of ${doc.body.length}`);
     if (focus !== undefined) {
@@ -341,7 +553,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   };
   const deleteGroup = () => {
     const at = group();
-    change(body(ops.removeMany(doc.body, at)), ALL, { select: doc.body.length > at.length ? Math.max(0, Math.min(at[0], doc.body.length - at.length - 1)) : null });
+    change(body(ops.removeMany(doc.body, at)), ALL, { select: doc.body.length > at.length ? Math.max(0, Math.min(at[0], doc.body.length - at.length - 1)) : null, atOnce: true });
     announce(`Deleted ${at.length} blocks: Undo brings them back`);
   };
   const inGroup = (i: number) => picked.size > 1 && picked.has(i);
@@ -449,7 +661,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   let textSession = -1;
   on(window, 'message', (e) => {
     const m = (e as MessageEvent).data as { source?: string; type: string; [k: string]: unknown };
-    if ((e as MessageEvent).origin !== location.origin || (e as MessageEvent).source !== frame.contentWindow || m?.source !== 'editor-canvas') return;
+    if ((e as MessageEvent).origin !== location.origin || m?.source !== 'editor-canvas') return;
+    // the canvas drawn again behind the old one is ready: it takes the old one's place, then is set up as any canvas
+    if (incoming && (e as MessageEvent).source === incoming.contentWindow && m.type === 'ready') promote();
+    if ((e as MessageEvent).source !== frame.contentWindow) return;
     switch (m.type) {
       case 'ready': {
         // the canvas drawn again after a save: from the reload to a canvas that takes edits
@@ -465,6 +680,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       case 'typing':
         typingAt = Date.now();
         saveStatus.dirty();
+        holdRedraw();
         break;
       case 'select':
         if (m.field) {
@@ -487,7 +703,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         }
         const next: Block = b.type === 'text' ? { ...b, markdown: value } : b.type === 'heading' || b.type === 'subheading' || b.type === 'marker' || b.type === 'quote' ? { ...b, text: value } : b;
         doc = body(ops.replace(doc.body, i, next));
-        void save({ refresh: m.final ? { outline: true } : {} });
+        // the outline row's words follow as they're typed; words alone redraw nothing (§3.6)
+        const row = root.querySelector<HTMLElement>(`[data-editor-outline] [data-editor-rows] > [data-row="${i}"]`);
+        if (row) fillRow(row, next, i, doc.body.length);
+        void save();
         break;
       }
       case 'table-text': {
@@ -506,7 +725,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
           checkpoint();
         }
         doc = body(ops.replace(doc.body, i, result.table));
-        void save({ refresh: m.final ? { inspector: true } : {} });
+        // the inspector's copy of the cells follows quietly once the words are done
+        void save({ refresh: m.final ? { inspector: true, quiet: true } : {} });
         break;
       }
       case 'table-op': {
@@ -559,7 +779,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
           checkpoint();
         }
         doc = { ...doc, [f]: value };
-        void save({ refresh: m.final ? { inspector: true } : {} });
+        // the page's settings show the same words, changed in place: nothing is drawn again for words (R4)
+        const input = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-editor-inspector] [name="${f}"]`);
+        if (input && document.activeElement !== input && input.value !== value) input.value = value;
+        void save();
         break;
       }
       case 'split': {
@@ -587,9 +810,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         // it's a figure (or a video) there
         const at = m.index as number;
         if (!(m.file instanceof File)) break;
-        if (isVideoFile(m.file)) openPicker({ mode: 'single', min: 1, kind: 'video', title: 'Add the pasted video', onChoose: (ids) => insertBlock(at, { type: 'video', media: ids[0], width: 'wide' }) });
-        else openPicker({ mode: 'single', min: 1, title: 'Add the pasted picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
-        dialog('editor-picker')?.querySelector('[data-editor-media-grid]')?.dispatchEvent(new CustomEvent('media:file', { detail: { file: m.file } }));
+        const file = m.file;
+        const opened = isVideoFile(file)
+          ? openPicker({ mode: 'single', min: 1, kind: 'video', title: 'Add the pasted video', onChoose: (ids) => insertBlock(at, { type: 'video', media: ids[0], width: 'wide' }) })
+          : openPicker({ mode: 'single', min: 1, title: 'Add the pasted picture', onChoose: (ids) => insertBlock(at, { type: 'figure', media: ids[0], width: 'content', lightbox: true }) });
+        // into the upload form once the picker is drawn (its first page replaces the form it opened with)
+        void Promise.resolve(opened).then(() => dialog('editor-picker')?.querySelector('[data-editor-media-grid]')?.dispatchEvent(new CustomEvent('media:file', { detail: { file } })));
         break;
       }
       case 'merge': {
@@ -753,6 +979,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     pickKind();
     syncPicker();
     d.showModal();
+    // its cards are drawn as it first opens, a page at a time (R5): each page takes what this pick shows
+    return fillPicker(d, (grid) => {
+      grid.querySelectorAll('[data-editor-media]').forEach((b) => b.setAttribute('aria-pressed', String(chosen.has(b.getAttribute('data-editor-media') ?? ''))));
+      pickKind();
+      syncPicker();
+    });
   };
   /** The picker's grid shows only what it takes (and keeps doing so when the grid is drawn again). */
   const pickKind = () => {
@@ -1127,6 +1359,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const id = (e as CustomEvent<{ id: string }>).detail.id;
     await swap(['media-grid', 'state']);
     pickKind();
+    const pickerDialog = dialog('editor-picker');
+    if (pickerDialog) void fillPicker(pickerDialog, () => pickKind());
     announce('Uploaded');
     const kind = root.querySelector<HTMLElement>(`[data-media-card="${CSS.escape(id)}"]`)?.dataset.mediaKind ?? 'image';
     if (pick && pick.kind !== 'any' && kind !== (pick.kind ?? 'image')) return announce(kind === 'video' ? 'Uploaded the video: it’s in the library, but this takes a picture.' : 'Uploaded the picture: it’s in the library, but this takes a video.');
@@ -1176,7 +1410,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         if (slot < 0) return;
         const r = ops.moveGroupTo(doc.body, before, slot);
         if (r.indices.every((k, n) => k === before[n])) return;
-        change(body(r.body), ALL, { select: follow(before, r.indices, selected), picked: r.indices });
+        change(body(r.body), ALL, { select: follow(before, r.indices, selected), picked: r.indices, atOnce: true });
         anchor = follow(before, r.indices, anchor);
         announce(`Moved ${r.indices.length} blocks to positions ${r.indices[0] + 1} to ${r.indices[r.indices.length - 1] + 1} of ${doc.body.length}`);
       };
@@ -1202,7 +1436,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       rows.forEach((r) => delete r.dataset.drop);
       delete row.dataset.dragging;
       if (to >= 0) {
-        change(body(ops.move(doc.body, from, to)), ALL, { select: to });
+        change(body(ops.move(doc.body, from, to)), ALL, { select: to, atOnce: true });
         announce(`Moved to position ${to + 1} of ${doc.body.length}`);
       }
     };

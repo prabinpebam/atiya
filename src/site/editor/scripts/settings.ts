@@ -5,6 +5,7 @@
  * and removed as rows.
  */
 import { api, describeIssue, saveStatus, swapRegions } from './client';
+import { fillPicker } from './picker';
 import type { Person, SiteSettings } from '../../content/schema';
 
 interface State {
@@ -70,6 +71,13 @@ export function initSettings(root: HTMLElement, signal: AbortSignal) {
         picker.querySelectorAll('[data-editor-media]').forEach((c) => c.setAttribute('aria-pressed', String(c.getAttribute('data-editor-media') === current)));
         picker.querySelector<HTMLElement>('.pick-actions')?.setAttribute('hidden', '');
         picker.showModal();
+        // the cards are drawn as it first opens, a page at a time (R5)
+        const owner = field?.dataset.owner;
+        const mark = (g: HTMLElement) => {
+          if (owner) g.dataset.owner = owner;
+          g.querySelectorAll('[data-editor-media]').forEach((c) => c.setAttribute('aria-pressed', String(c.getAttribute('data-editor-media') === current)));
+        };
+        void fillPicker(picker, mark);
         return;
       }
       const clear = t.closest<HTMLElement>('[data-settings-clear]');
@@ -121,6 +129,7 @@ export function initSettings(root: HTMLElement, signal: AbortSignal) {
       await swapRegions(['media-grid']);
       const grid = picker.querySelector<HTMLElement>('[data-editor-media-grid]');
       if (grid && owner) grid.dataset.owner = owner;
+      if (grid) void fillPicker(picker, (g) => owner && (g.dataset.owner = owner));
       picker.querySelector<HTMLElement>('.pick-actions')?.setAttribute('hidden', '');
       choose(id);
     },

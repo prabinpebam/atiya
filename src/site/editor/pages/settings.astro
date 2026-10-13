@@ -10,8 +10,9 @@ import MediaGrid from '../components/MediaGrid.astro';
 import CropDialog from '../components/CropDialog.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
-import { load, mediaCards } from '../server/screens';
+import { load, mediaCards, mediaCount, mediaSummary, references } from '../server/screens';
 import { readDoc } from '../server/store';
+import { REGIONS_HEADER, regionsAsked } from '../model/regions';
 import type { Person, SiteSettings } from '../../content/schema';
 
 export const prerender = false;
@@ -19,8 +20,16 @@ export const prerender = false;
 const loaded = load();
 const site = readDoc<SiteSettings>('/content/site.json');
 const person = site ? readDoc<Person>(`/content/people/${site.value.owner}.json`) : null;
-const cards = loaded.ok ? await mediaCards(loaded.index, 'site') : [];
+// the settings' own pictures for their fields; the picker's cards are drawn when it opens, a page at a time (R5)
+const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
+const own = loaded.ok ? new Set([...references(loaded.index)].filter(([, refs]) => refs.some((r) => r.href === 'settings/')).map(([id]) => id)) : new Set<string>();
+const cards = loaded.ok ? await mediaCards(loaded.index, 'site', { only: own }) : [];
 const thumbs: Record<string, SettingsThumb> = Object.fromEntries(cards.map((c) => [c.id, { thumb: c.thumb, alt: c.decorative ? '' : c.alt, width: c.width, height: c.height }]));
+const PICKER_PAGE = 40;
+const pickerAt = Math.max(0, Math.floor(Number(Astro.url.searchParams.get('picker') ?? 0)) || 0);
+const picker = loaded.ok && !!asked?.has('media-grid') ? await mediaCards(loaded.index, 'site', { page: { at: pickerAt, size: PICKER_PAGE } }) : null;
+const pickerOf = loaded.ok ? mediaCount(loaded.index) : 0;
+const pickerPaging = loaded.ok ? { of: pickerOf, shown: Math.min(pickerOf, pickerAt + PICKER_PAGE), total: mediaSummary(loaded.index), next: pickerAt + PICKER_PAGE < pickerOf ? `${Astro.url.pathname}?picker=${pickerAt + PICKER_PAGE}` : null } : undefined;
 ---
 
 <EditorLayout title="Settings" screen="settings" heading="Settings" intro="The site's own settings and your profile, saved to content/. Who you've shared private pages with is on the Access screen.">
@@ -29,7 +38,7 @@ const thumbs: Record<string, SettingsThumb> = Object.fromEntries(cards.map((c) =
       <>
         <SettingsForms site={site.value} siteVersion={site.version} person={person.value} personVersion={person.version} thumbs={thumbs} />
         <Dialog id="settings-picker" title="Choose a picture" size="lg">
-          <MediaGrid mode="pick" media={cards} owner="site" />
+          {picker ? <MediaGrid mode="pick" media={picker} owner="site" paging={pickerPaging} /> : <MediaGrid mode="pick" media={[]} owner="site" paging={pickerPaging} pending />}
         </Dialog>
         <CropDialog />
       </>

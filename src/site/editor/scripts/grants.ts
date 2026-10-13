@@ -48,7 +48,7 @@ async function redraw(url: string, regions = [LIST, DETAIL]) {
 export function initAccessList(root: HTMLElement, signal: AbortSignal) {
   const on = (el: EventTarget, type: string, fn: (e: Event) => void) => el.addEventListener(type, fn, { signal });
   const list = root.querySelector<HTMLElement>('[data-access-list]')!;
-  const filters = { q: '', show: 'all', kind: 'all' };
+  const filters = { q: (root.querySelector<HTMLInputElement>('[data-access-find] input')?.value ?? '').trim().toLowerCase(), show: 'all', kind: 'all' };
   const items = () => [...root.querySelectorAll<HTMLElement>('[data-access-item]')];
   const links = () => items().filter((i) => !i.hidden).map((i) => i.querySelector<HTMLAnchorElement>('[data-access-go]')!);
 

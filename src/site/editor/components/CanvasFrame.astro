@@ -2,9 +2,15 @@
 /**
  * The canvas's frame (documentation/editor/spec.md §3.1): the article as it will render, in an iframe
  * the editor sizes to desktop, tablet or phone width, on the paper's sunk tone so the page stands out.
+ * Drawn again, it's double-buffered (§3.6): the new page loads behind the old one, transparent and inert,
+ * and takes its place once it's ready; past the delay an "Updating the canvas…" pill shows at its top
+ * edge (§2.2), in the editor's chrome, never inside the page.
  * @tier editor
  * @a11y The frame is named ("The page, as it will look"); what's inside is the real page, with its own landmarks.
+ * @a11y The frame loading behind is inert and hidden from assistive technology; the pill's words are in the top bar's status too.
  */
+import Spinner from '../../components/fundamentals/Spinner.astro';
+
 interface Props {
   /** The canvas route for this article. */
   src: string;
@@ -15,10 +21,12 @@ const { src } = Astro.props;
 
 <div class="canvas" data-editor-canvas data-device="desktop" data-scrollbar>
   <iframe class="frame" src={src} title="The page, as it will look" data-editor-frame></iframe>
+  <p class="pill" aria-hidden="true" data-editor-canvas-pill><Spinner size="sm" label="Updating the canvas" /></p>
 </div>
 
 <style>
   .canvas {
+    position: relative;
     display: grid;
     justify-items: center;
     block-size: 100%;
@@ -29,6 +37,7 @@ const { src } = Astro.props;
   }
 
   .frame {
+    grid-area: 1 / 1;
     inline-size: 100%;
     block-size: 100%;
     border: var(--border-hairline) solid var(--color-rule);
@@ -36,6 +45,40 @@ const { src } = Astro.props;
     background: var(--color-bg);
     box-shadow: var(--shadow-sm);
     transition: inline-size var(--duration-base) var(--ease-standard);
+  }
+
+  /* the page drawn again, loading behind the one in use until it's ready */
+  .frame[data-editor-incoming] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pill {
+    position: absolute;
+    inset-block-start: var(--space-6);
+    inset-inline: 0;
+    z-index: var(--layer-raised);
+    display: none;
+    align-items: center;
+    gap: var(--space-1);
+    inline-size: max-content;
+    margin: 0 auto;
+    padding-inline: var(--space-2) var(--space-4);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    pointer-events: none;
+  }
+
+  .pill[data-busy='on'] {
+    display: flex;
+  }
+
+  .pill::after {
+    content: attr(data-busy-text);
   }
 
   .canvas[data-device='tablet'] .frame {

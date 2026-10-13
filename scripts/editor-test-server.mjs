@@ -98,7 +98,8 @@ if (isMain) {
       cwd: ROOT,
       stdio: 'inherit',
       shell: process.platform === 'win32',
-      env: { ...process.env, CONTENT_ROOT: join(FIXTURE, 'content'), PRIVATE_ROOT: PRIVATE, SITE_VITE_CACHE: join(ROOT, 'node_modules', '.vite-editor-test'), SITE_STRICT_PORT: '1' },
+      // no warm-up (performance-report.md R12): the tests open screens at once, and one test asks for the starting page itself
+      env: { ...process.env, CONTENT_ROOT: join(FIXTURE, 'content'), PRIVATE_ROOT: PRIVATE, SITE_VITE_CACHE: join(ROOT, 'node_modules', '.vite-editor-test'), SITE_STRICT_PORT: '1', SITE_EDITOR_WARM: 'off' },
     });
     const stop = () => child.kill();
     process.on('SIGINT', stop);

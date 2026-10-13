@@ -400,6 +400,38 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
   :global([data-editor-editable]:focus) {
     outline: none;
   }
+
+  /* a new block shown at once (editor spec §3.6), named and shimmering until the canvas is drawn again
+     with it; still, with its words, under reduced motion */
+  :global([data-editor-arriving]) {
+    display: grid;
+    place-items: center;
+    min-block-size: var(--c-editor-upload-preview);
+    margin-block: var(--space-6);
+    border-radius: var(--radius-md);
+    background: linear-gradient(90deg, var(--color-bg-sunk), var(--color-bg-hover), var(--color-bg-sunk)) no-repeat;
+    background-size: 200% 100%;
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    animation: arriving calc(var(--duration-slower) * 2) linear infinite;
+  }
+
+  @keyframes arriving {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global([data-editor-arriving]) {
+      animation: none;
+      background: var(--color-bg-sunk);
+    }
+  }
 </style>
 
 <script>

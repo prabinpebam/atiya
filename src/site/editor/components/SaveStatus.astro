@@ -4,10 +4,13 @@
  * always in view. A mark and a line: a pencil for unsaved changes, a spinner while saving, a check and
  * how long ago once saved, a warning when a save was refused or the dev server isn't answering. A
  * moment's note (Moved, Uploaded, Updated from another tab) has the line for a few seconds while the
- * mark keeps the save state. The screens' scripts drive it through `saveStatus` and `announce`
- * (scripts/client.ts).
+ * mark keeps the save state. A wait past its delay (spec §2.2: Updating the canvas…, Showing a picture…)
+ * has the line too, with a spinner, how long past 3 s, and how many when there's more than one. The
+ * screens' scripts drive it through `saveStatus`, `announce` and the task tracker (`startTask`;
+ * scripts/client.ts).
  * @tier editor
  * @a11y The line is a polite live region (role="status"): a save, a refusal and a note are each heard once; the marks are hidden, the words say it all.
+ * @a11y A wait is heard only once it passes 1 s, and then its end, through its own polite region; its visible words are hidden from assistive technology, so nothing is heard twice.
  * @a11y The time saved is a <time> with the exact time as its title.
  */
 import Icon from '../../components/fundamentals/Icon.astro';
@@ -21,7 +24,8 @@ import Spinner from '../../components/fundamentals/Spinner.astro';
     <span class="for" data-for="dirty"><Icon name="edit" /></span>
     <span class="for" data-for="failed offline"><Icon name="error" tone="tonal" /></span>
   </span>
-  <p class="line"><span class="text" role="status" aria-live="polite" data-editor-status></span> <time class="time" data-editor-save-time hidden></time></p>
+  <p class="line"><span class="text" role="status" aria-live="polite" data-editor-status></span> <time class="time" data-editor-save-time hidden></time><span class="task" data-editor-task aria-hidden="true"></span></p>
+  <span class="sr-only" role="status" aria-live="polite" data-editor-task-live></span>
 </div>
 
 <style>
@@ -99,6 +103,36 @@ import Spinner from '../../components/fundamentals/Spinner.astro';
   /* a note (Moved, Uploaded, Updated from another tab) has the line; the mark keeps the save state */
   .save[data-note] .text {
     color: var(--color-text);
+  }
+
+  /* a wait past its delay (§2.2: Updating the canvas…, Uploading…) has the line and a spinner; the save
+     state stays in the live region underneath (visually hidden, still heard), and is back once it ends */
+  .task {
+    display: none;
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+  }
+
+  .save[data-task] .task {
+    display: inline;
+  }
+
+  .save[data-task] .text,
+  .save[data-task] .time {
+    position: absolute;
+    overflow: hidden;
+    inline-size: var(--border-hairline);
+    block-size: var(--border-hairline);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .save[data-task] .for {
+    display: none;
+  }
+
+  .save[data-task] [data-for~='saving'] {
+    display: inline-grid;
   }
 
   @keyframes settle {

@@ -208,4 +208,38 @@ const prefix = 'share-page';
     margin: 0;
     color: var(--color-negative);
   }
+  /* drawn again from the server (editor spec §2.2): what it shows stays while it updates, with a line
+     along its top past the delay */
+  .panel[data-busy='on'] {
+    position: relative;
+  }
+
+  .panel[data-busy='on']::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 0;
+    z-index: var(--layer-raised);
+    block-size: var(--border-strong);
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
+    background-size: 40% 100%;
+    animation: region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes region-busy {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 100% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel[data-busy='on']::before {
+      animation: none;
+      background: var(--color-accent);
+    }
+  }
 </style>

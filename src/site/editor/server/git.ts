@@ -8,8 +8,9 @@
  * public commit only when nothing private changed. A failed push leaves its commit local, with Push again.
  */
 import { execFile } from 'node:child_process';
-import { relative, resolve } from 'node:path';
-import { contentRoot, hasPrivate, privateRoot, readSnapshot } from '../../content/source';
+import { statSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
+import { contentRoot, generation as contentGeneration, hasPrivate, privateRoot, readSnapshot } from '../../content/source';
 import { ContentError, loadContent, type Issue } from '../../content/load';
 import { timedAsync } from '../../content/timing';
 import { commit, readFile, versionOf, withWriterLock, type Result } from './store';
@@ -30,13 +31,15 @@ const ENV = {
   LC_ALL: 'C',
 };
 
-export function git(args: string[], opts: { cwd?: string; timeout?: number; input?: string } = {}): Promise<GitResult> {
+type GitOptions = { cwd?: string; timeout?: number; input?: string; env?: Record<string, string> };
+
+export function git(args: string[], opts: GitOptions = {}): Promise<GitResult> {
   return timedAsync('git', () => run(args, opts));
 }
 
-function run(args: string[], opts: { cwd?: string; timeout?: number; input?: string }): Promise<GitResult> {
+function run(args: string[], opts: GitOptions): Promise<GitResult> {
   return new Promise((resolvePromise) => {
-    const child = execFile('git', args, { cwd: opts.cwd ?? contentRoot(), timeout: opts.timeout ?? 30_000, env: { ...process.env, ...ENV }, maxBuffer: 32 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
+    const child = execFile('git', args, { cwd: opts.cwd ?? contentRoot(), timeout: opts.timeout ?? 30_000, env: { ...process.env, ...ENV, ...opts.env }, maxBuffer: 32 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
       const code = err ? (typeof (err as { code?: unknown }).code === 'number' ? (err as { code: number }).code : 1) : 0;
       const killed = err && (err as { killed?: boolean }).killed;
       resolvePromise({ code, stdout: String(stdout), stderr: killed ? `git took too long and was stopped (${args[0]})` : String(stderr) });
@@ -45,13 +48,20 @@ function run(args: string[], opts: { cwd?: string; timeout?: number; input?: str
   });
 }
 
+/** Where each folder's repository is: asked once per folder (a folder doesn't move repositories while the server runs). */
+const repos = new Map<string, { top: string; path: string }>();
+
 /** The repository holding a folder, and the folder's path inside it (with forward slashes). */
 async function repoOf(dir: string): Promise<{ top: string; path: string } | null> {
+  const known = repos.get(dir);
+  if (known) return known;
   const r = await git(['rev-parse', '--show-toplevel', '--show-prefix'], { cwd: dir });
   if (r.code) return null;
   // git's own prefix, not a path computed here: Windows short names (PRABIN~2) and junctions name one folder two ways
   const [top, prefix = ''] = r.stdout.split('\n').map((l) => l.trim());
-  return { top, path: prefix.replace(/\/$/, '') || '.' };
+  const found = { top, path: prefix.replace(/\/$/, '') || '.' };
+  repos.set(dir, found);
+  return found;
 }
 
 /** The repository holding the content folder, and the folder's path inside it. */
@@ -80,6 +90,8 @@ export interface RepoState {
 
 export interface Changes extends RepoState {
   files: ChangedFile[];
+  /** The public repository's last commit (its full id), when git said. */
+  head: string | null;
   /** The private repository's own state, when there is one. */
   private: RepoState | null;
   /** The private-pages folder's path in the public repository, and whether its pointer has moved (an unpublished private commit). */
@@ -93,25 +105,6 @@ export class GitStatusError extends Error {}
 
 /** How many things wait to be saved to remote: changed files, commits not pushed (either repository), a private commit not yet recorded. */
 export const pendingCount = (c: Changes): number => c.files.length + c.ahead + (c.private?.ahead ?? 0) + (c.pointer?.moved ? 1 : 0);
-
-/** Files under `path` that differ from the last commit, as git sees them, keyed with `prefix`. A git that fails throws: an unread status is never "nothing changed". */
-async function statusOf(top: string, path: string, prefix: string, skip: (rel: string) => boolean = () => false): Promise<ChangedFile[]> {
-  const st = await git(['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', path], { cwd: top });
-  if (st.code) throw new GitStatusError(`git couldn't read what changed in ${prefix === '/private/' ? 'private-pages/' : 'content/'}: ${(st.stderr || st.stdout).trim().split('\n').slice(-1)[0] || `exit ${st.code}`}`);
-  const files: ChangedFile[] = [];
-  const parts = st.stdout.split('\0').filter(Boolean);
-  for (let i = 0; i < parts.length; i++) {
-    const p = parts[i];
-    const xy = p.slice(0, 2);
-    const file = p.slice(3);
-    if (xy.startsWith('R') || xy.startsWith('C')) i++; // the renamed-from path follows
-    const rel = path === '.' ? file : file.slice(path.length + 1);
-    if (/(^|\/)\.[^/]*$|\.tmp$/.test(rel) || skip(rel)) continue;
-    const status = xy.includes('D') ? 'deleted' : xy === '??' || xy.includes('A') ? 'added' : 'changed';
-    files.push({ key: `${prefix}${rel}`, status });
-  }
-  return files;
-}
 
 async function stateOf(top: string): Promise<RepoState> {
   const branch = (await git(['symbolic-ref', '--quiet', '--short', 'HEAD'], { cwd: top })).stdout.trim() || null;
@@ -127,31 +120,182 @@ function pointerPath(publicTop: string, privateTop: string): string | null {
   return rel && !rel.startsWith('..') ? rel : null;
 }
 
-export async function changes(): Promise<Changes> {
-  const where = await repo();
-  if (!where) return { files: [], branch: null, upstream: null, ahead: 0, private: null, pointer: null, error: null };
-  try {
-    const files = await statusOf(where.top, where.path, '/content/');
-    const state = await stateOf(where.top);
+const PRIVATE_SKIP = (rel: string) => !rel.includes('/') && /^(README\.md|LICENSE|\.git\w*)$/i.test(rel);
+
+/** One repository's status in one call (porcelain v2: the branch, its upstream, how far ahead, and the files). */
+export interface StatusV2 extends RepoState {
+  /** The last commit's full id (null before the first commit). */
+  head: string | null;
+  /** Each entry's XY (dots for unchanged) and its path. */
+  entries: { xy: string; path: string }[];
+}
+
+/** Reads `git status --porcelain=v2 --branch -z` output. */
+export function parseStatusV2(out: string): StatusV2 {
+  const parts = out.split('\0');
+  let branch: string | null = null;
+  let upstream: string | null = null;
+  let head: string | null = null;
+  let ahead = 0;
+  const entries: StatusV2['entries'] = [];
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (!p) continue;
+    if (p.startsWith('# branch.oid ')) {
+      const oid = p.slice('# branch.oid '.length);
+      head = /^[0-9a-f]{7,}$/.test(oid) ? oid : null;
+    } else if (p.startsWith('# branch.head ')) {
+      const b = p.slice('# branch.head '.length);
+      branch = b === '(detached)' ? null : b;
+    } else if (p.startsWith('# branch.upstream ')) upstream = p.slice('# branch.upstream '.length);
+    else if (p.startsWith('# branch.ab ')) ahead = Math.max(0, Number(/\+(\d+)/.exec(p)?.[1] ?? 0));
+    else if (p.startsWith('1 ')) entries.push({ xy: p.slice(2, 4), path: p.split(' ').slice(8).join(' ') });
+    else if (p.startsWith('2 ')) {
+      entries.push({ xy: p.slice(2, 4), path: p.split(' ').slice(9).join(' ') });
+      i++; // the renamed-from path follows
+    } else if (p.startsWith('u ')) entries.push({ xy: p.slice(2, 4), path: p.split(' ').slice(10).join(' ') });
+    else if (p.startsWith('? ')) entries.push({ xy: '??', path: p.slice(2) });
+  }
+  return { branch, upstream, head, ahead, entries };
+}
+
+/** Files under `path` from a status's entries, keyed with `prefix` (hidden and temporary files left out). */
+export function filesOf(entries: StatusV2['entries'], path: string, prefix: string, skip: (rel: string) => boolean = () => false): ChangedFile[] {
+  const files: ChangedFile[] = [];
+  for (const { xy, path: file } of entries) {
+    if (path !== '.' && !file.startsWith(`${path}/`)) continue;
+    const rel = path === '.' ? file : file.slice(path.length + 1);
+    if (/(^|\/)\.[^/]*$|\.tmp$/.test(rel) || skip(rel)) continue;
+    const status = xy.includes('D') ? 'deleted' : xy === '??' || xy.includes('A') ? 'added' : 'changed';
+    files.push({ key: `${prefix}${rel}`, status });
+  }
+  return files;
+}
+
+async function statusV2(top: string, paths: string[], what: string): Promise<StatusV2> {
+  // optional locks off: status never rewrites the index, so it doesn't race a save or move the cache's key
+  const st = await git(['status', '--porcelain=v2', '--branch', '-z', '--untracked-files=all', '--ignore-submodules=dirty', '--', ...paths], { cwd: top, env: { GIT_OPTIONAL_LOCKS: '0' } });
+  if (st.code) throw new GitStatusError(`git couldn't read what changed in ${what}: ${(st.stderr || st.stdout).trim().split('\n').slice(-1)[0] || `exit ${st.code}`}`);
+  return parseStatusV2(st.stdout);
+}
+
+/** The folders git keeps a repository's state in: its own (a worktree's or a submodule's) and the shared one. */
+const gitDirs = new Map<string, Promise<string[]>>();
+function gitDirsOf(top: string): Promise<string[]> {
+  let p = gitDirs.get(top);
+  if (!p)
+    gitDirs.set(
+      top,
+      (p = git(['rev-parse', '--absolute-git-dir', '--git-common-dir'], { cwd: top }).then((r) => {
+        if (r.code) return [];
+        const [own, common] = r.stdout.split('\n').map((l) => l.trim());
+        return [...new Set([own, resolve(top, common || own)])];
+      })),
+    );
+  return p;
+}
+
+/** What git's own files say about a repository's state: they change on every stage, commit, checkout, fetch and push. */
+async function gitStamp(top: string, state: RepoState | null): Promise<string> {
+  const dirs = await gitDirsOf(top);
+  const files = ['index', 'HEAD', 'logs/HEAD', 'packed-refs', 'FETCH_HEAD', 'ORIG_HEAD'];
+  if (state?.branch) files.push(`refs/heads/${state.branch}`, `logs/refs/heads/${state.branch}`);
+  if (state?.upstream) files.push(`refs/remotes/${state.upstream}`, `logs/refs/remotes/${state.upstream}`);
+  return dirs
+    .flatMap((d) =>
+      files.map((f) => {
+        try {
+          const s = statSync(join(d, f));
+          return `${s.mtimeMs}:${s.size}`;
+        } catch {
+          return '-';
+        }
+      }),
+    )
+    .join(',');
+}
+
+/**
+ * How long a cached status may be kept with nothing seen to change: a change git's files don't show
+ * (a file edited outside the content folder's watcher) is caught within this.
+ */
+export const CHANGES_TTL_MS = 30_000;
+
+interface Cached {
+  at: number;
+  key: string;
+  value: Changes;
+}
+let cached: Cached | null = null;
+let inFlight: Promise<Changes> | null = null;
+
+async function cacheKey(where: { top: string } | null, priv: { top: string } | null, value: Changes | null): Promise<string> {
+  const parts = [String(contentGeneration())];
+  if (where) parts.push(await gitStamp(where.top, value));
+  if (priv) parts.push(await gitStamp(priv.top, value?.private ?? null));
+  return parts.join('|');
+}
+
+/** Forgets the cached status (after a publish, a push or a discard: anything that ran git itself). */
+export function forgetChanges(): void {
+  cached = null;
+}
+
+/**
+ * What waits to be saved to remote. Asks each repository once, both at once, and keeps the answer until
+ * the content generation, git's own files or {@link CHANGES_TTL_MS} say it may be stale; callers in the same
+ * moment share one call. `fresh` always asks git (Save to remote does, before it commits).
+ */
+export async function changes(opts: { fresh?: boolean } = {}): Promise<Changes> {
+  // nothing tells a build or a test when files change (generation -1): it always asks git
+  if (contentGeneration() < 0) return readChanges();
+  if (!opts.fresh && cached && Date.now() - cached.at < CHANGES_TTL_MS) {
+    const where = await repo();
     const priv = await privateRepo();
-    let privateState: RepoState | null = null;
-    let pointer: Changes['pointer'] = null;
-    if (priv) {
-      files.push(...(await statusOf(priv.top, '.', '/private/', (rel) => !rel.includes('/') && /^(README\.md|LICENSE|\.git\w*)$/i.test(rel))));
-      privateState = await stateOf(priv.top);
-      const path = pointerPath(where.top, priv.top);
-      if (path) {
-        const st = await git(['status', '--porcelain=v1', '--ignore-submodules=dirty', '--', path], { cwd: where.top });
-        if (st.code) throw new GitStatusError(`git couldn't read the private pages' pointer: ${(st.stderr || st.stdout).trim().split('\n').slice(-1)[0]}`);
-        pointer = { path, moved: st.stdout.trim().length > 0 };
-      }
-    }
-    return { files: files.sort((a, b) => a.key.localeCompare(b.key)), ...state, private: privateState, pointer, error: null };
+    if ((await cacheKey(where, priv, cached.value)) === cached.key) return cached.value;
+  }
+  if (inFlight && !opts.fresh) return inFlight;
+  const run = readChanges().finally(() => {
+    if (inFlight === run) inFlight = null;
+  });
+  inFlight = run;
+  return run;
+}
+
+/** The cached status if it's still good, without asking git (null if it isn't). */
+export async function peekChanges(): Promise<Changes | null> {
+  if (contentGeneration() < 0 || !cached || Date.now() - cached.at >= CHANGES_TTL_MS) return null;
+  const key = await cacheKey(await repo(), await privateRepo(), cached.value);
+  return key === cached.key ? cached.value : null;
+}
+
+async function readChanges(): Promise<Changes> {
+  const where = await repo();
+  if (!where) return { files: [], head: null, branch: null, upstream: null, ahead: 0, private: null, pointer: null, error: null };
+  const priv = await privateRepo();
+  const guess = cached?.value ?? null;
+  const before = await cacheKey(where, priv, guess);
+  let value: Changes;
+  try {
+    const path = priv ? pointerPath(where.top, priv.top) : null;
+    const [pub, own] = await Promise.all([
+      statusV2(where.top, path ? [where.path, path] : [where.path], 'content/'),
+      priv ? statusV2(priv.top, ['.'], 'private-pages/') : Promise.resolve(null),
+    ]);
+    const files = filesOf(pub.entries, where.path, '/content/');
+    if (own) files.push(...filesOf(own.entries, '.', '/private/', PRIVATE_SKIP));
+    const pointer = path ? { path, moved: pub.entries.some((e) => e.path === path) } : null;
+    const { branch, upstream, ahead, head } = pub;
+    value = { files: files.sort((a, b) => a.key.localeCompare(b.key)), head, branch, upstream, ahead, private: own ? { branch: own.branch, upstream: own.upstream, ahead: own.ahead } : null, pointer, error: null };
   } catch (e) {
     if (!(e instanceof GitStatusError)) throw e;
     const state = await stateOf(where.top);
-    return { files: [], ...state, private: null, pointer: null, error: e.message };
+    // a failed read is never kept
+    return { files: [], head: null, ...state, private: null, pointer: null, error: e.message };
   }
+  // kept only if nothing moved while git was asked (the same key before and after), under the key for the branch and upstream now known
+  cached = (await cacheKey(where, priv, guess)) === before ? { at: Date.now(), key: await cacheKey(where, priv, value), value } : null;
+  return value;
 }
 
 /** Where a key lives in its repository: its repository's top, and its path there. */
@@ -183,6 +327,7 @@ export async function discard(keys: string[]): Promise<Result> {
   const r = await commit({ changes, ifMatch: Object.fromEntries(keys.map((k) => [k, versionOf(readFile(k))])) });
   // unstaged one at a time: a new file that was never staged doesn't match, and would fail the others
   if (r.ok) for (const p of places) await git(['restore', '--staged', '--', p!.path], { cwd: p!.top });
+  forgetChanges();
   return r;
 }
 
@@ -190,9 +335,16 @@ export async function discard(keys: string[]): Promise<Result> {
 export async function remoteUrl(upstream: string | null): Promise<string | null> {
   const where = await repo();
   if (!where || !upstream) return null;
-  const r = await git(['remote', 'get-url', upstream.split('/')[0]], { cwd: where.top });
-  return r.code ? null : r.stdout.trim();
+  const name = upstream.split('/')[0];
+  const known = remotes.get(name);
+  if (known !== undefined) return known;
+  const r = await git(['remote', 'get-url', name], { cwd: where.top });
+  const url = r.code ? null : r.stdout.trim();
+  remotes.set(name, url);
+  return url;
 }
+/** Each remote's address, asked once (a remote's address doesn't change while the server runs). */
+const remotes = new Map<string, string | null>();
 
 function showBinary(cwd: string, path: string): Promise<Buffer | null> {
   return new Promise((resolvePromise) => {
@@ -228,10 +380,14 @@ export function publicMessage(mine: string, files: ChangedFile[], titles: Titles
 }
 
 export function publish(message: string, titles: Titles = { article: () => undefined, person: () => undefined }): Promise<PublishResult> {
-  return withWriterLock(async (): Promise<PublishResult> => {
+  return withWriterLock(() => publishLocked(message, titles)).finally(forgetChanges);
+}
+
+async function publishLocked(message: string, titles: Titles): Promise<PublishResult> {
+  {
     const where = await repo();
     if (!where) return { ok: false, reason: 'the content folder is not in a git repository' };
-    const state = await changes();
+    const state = await changes({ fresh: true });
     if (state.error) return { ok: false, reason: `${state.error}: try again` };
     if (!state.branch) return { ok: false, reason: 'git is not on a branch (a detached HEAD): check out a branch, then save to remote' };
     if (!state.upstream) return { ok: false, reason: `the branch ${state.branch} has no upstream to push to: set one (git push -u), then save to remote` };
@@ -295,7 +451,7 @@ export function publish(message: string, titles: Titles = { article: () => undef
     if (privatePushError) return { ok: true, commit: sha, ...(privateCommit ? { privateCommit } : {}), pushed: false, pushError: privatePushError, files: checked.staged.length + priv.length, message: publicMsg };
     const p = await pushIn(where.top);
     return { ok: true, commit: sha, ...(privateCommit ? { privateCommit } : {}), pushed: p.ok, ...(p.ok ? {} : { pushError: p.reason }), files: checked.staged.length + priv.length, message: publicMsg };
-  });
+  }
 }
 
 async function pushIn(top: string): Promise<{ ok: true } | { ok: false; reason: string }> {
@@ -317,7 +473,11 @@ async function pushIn(top: string): Promise<{ ok: true } | { ok: false; reason: 
  * (you pulled and rebased it), a public commit pointing at the head GitHub now has; then the public one.
  */
 export function push(): Promise<{ ok: true } | { ok: false; reason: string }> {
-  return withWriterLock(async () => {
+  return withWriterLock(pushLocked).finally(forgetChanges);
+}
+
+async function pushLocked(): Promise<{ ok: true } | { ok: false; reason: string }> {
+  {
     const where = await repo();
     if (!where) return { ok: false, reason: 'the content folder is not in a git repository' };
     const priv = await privateRepo();
@@ -337,5 +497,5 @@ export function push(): Promise<{ ok: true } | { ok: false; reason: string }> {
       }
     }
     return pushIn(where.top);
-  });
+  }
 }

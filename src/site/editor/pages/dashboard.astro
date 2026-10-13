@@ -4,13 +4,15 @@ import EditorLayout from '../EditorLayout.astro';
 import Overview from '../components/Overview.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import { articleRows, load, references } from '../server/screens';
-import { changes, pendingCount } from '../server/git';
+import { changes, peekChanges, pendingCount } from '../server/git';
+import { REGIONS_HEADER, regionsAsked } from '../model/regions';
 import { withBase } from '../../design/meta';
 
 export const prerender = false;
 
 const loaded = load();
-const git = await changes();
+// never waits for git on a whole screen: the layout reads the counts after the paint, and this panel comes with them
+const git = regionsAsked(Astro.request.headers.get(REGIONS_HEADER)) ? await changes() : await peekChanges();
 let props: Parameters<typeof Overview>[0] | undefined;
 if (loaded.ok) {
   const rows = articleRows(loaded.index);
@@ -23,7 +25,7 @@ if (loaded.ok) {
   props = {
     counts: { published: rows.filter((r) => r.published).length, draft: rows.filter((r) => r.status === 'draft').length, other: rows.filter((r) => !r.published && r.status !== 'draft').length },
     recent: rows.slice(0, 5),
-    pending: pendingCount(git),
+    pending: git ? pendingCount(git) : null,
     attention,
   };
 }

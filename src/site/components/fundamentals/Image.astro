@@ -27,7 +27,7 @@
  * @a11y Tiled, the frame is the image (role="img", named by the alt text), whatever draws it.
  * @a11y The shimmer stops for prefers-reduced-motion: the place is a still colour until the picture fades in.
  */
-import { fittedWidth } from '../../design/pictures';
+import { fittedSizes, fittedWidth } from '../../design/pictures';
 
 interface Props {
   /** The picture (the size a middle-sized screen needs). */
@@ -42,7 +42,7 @@ interface Props {
   srcset?: string;
   /** A still first frame used when the reader asks for reduced motion. */
   poster?: string;
-  /** How wide it shows at each breakpoint, for srcset. */
+  /** How wide its place shows at each breakpoint, for srcset. Shown whole in a frame of another shape, it asks for the narrower width the picture really takes. */
   sizes?: string;
   /** Its frame's shape. Omit for the picture's own shape (or the cell it fills). */
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
@@ -75,8 +75,9 @@ const mode = display ?? (fit === 'contain' ? 'fit' : 'fill');
 const fittedRatio = mode === 'fit' && !fill ? ratio : undefined;
 const framed = mode === 'actual' || mode === 'tile' || fittedRatio !== undefined;
 const tile = mode === 'tile';
-// tiles are the picture at its own size: the browser picks the file nearest it
-const shownSizes = tile ? `${width}px` : sizes;
+// tiles are the picture at its own size: the browser picks the file nearest it; a picture shown whole in a
+// frame of another shape is narrower than its frame, so it asks for the width it really shows at
+const shownSizes = tile ? `${width}px` : sizes && fittedRatio ? fittedSizes(sizes, fittedWidth(width, height, fittedRatio) / 100) : sizes;
 // the background is data: the picture's own colours, set here and read by the stylesheet
 const bgVars = bg ? [`--picture-bg: ${bg.light}`, `--picture-bg-dark: ${bg.dark ?? bg.light}`] : [];
 const vars = [focus ? `--focus: ${focus}` : '', framed ? `--natural: ${width}px` : '', ...(framed ? [] : bgVars)].filter(Boolean).join('; ') || undefined;

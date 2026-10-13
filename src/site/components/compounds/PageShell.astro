@@ -52,6 +52,8 @@ interface Props {
    * sealed with it.
    */
   sealed?: 'private';
+  /** In dev, the articles the page shows: a change to any other article's own files leaves it as it is (documentation/engineering/performance-report.md R10); left out, any change reloads it. */
+  shows?: string[];
 }
 
 const {
@@ -67,6 +69,7 @@ const {
   redirect,
   frame = 'site',
   sealed,
+  shows,
 } = Astro.props;
 // social previews need an absolute URL: `site` is set when deploying
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
@@ -146,7 +149,7 @@ const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
       }
     </script>
   </head>
-  <body data-live-content={import.meta.env.DEV && !liveContent ? 'off' : undefined}>
+  <body data-live-content={import.meta.env.DEV && !liveContent ? 'off' : undefined} data-live-shows={import.meta.env.DEV && shows ? shows.join(' ') : undefined}>
     <a class="skip" href="#main">Skip to content</a>
     <slot />
   </body>
@@ -174,11 +177,15 @@ const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
 
   // dev only: content is read from disk, so a change (a save in edit mode, or a file changed by hand)
   // reloads nothing by itself (documentation/editor/spec.md §8.4): this page reloads once the changes
-  // settle (typing in edit mode saves every second or so). A page in a frame, or one that opts out, stays put
+  // settle (typing in edit mode saves every second or so), unless every change is to an article it
+  // doesn't show (performance-report.md R10). A page in a frame, or one that opts out, stays put
   if (import.meta.hot) {
     let settle = 0;
-    import.meta.hot.on('site:content-changed', () => {
+    import.meta.hot.on('site:content-changed', async (d: { files?: string[] }) => {
       if (window.frameElement || document.body.dataset.liveContent === 'off') return;
+      const shows = document.body.dataset.liveShows;
+      const { pageShows } = await import('../../scripts/liveContent');
+      if (!pageShows(shows === undefined ? null : shows.split(' ').filter(Boolean), d?.files ?? [])) return;
       clearTimeout(settle);
       settle = window.setTimeout(() => location.reload(), 600);
     });

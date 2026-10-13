@@ -41,6 +41,19 @@ const animation = z.strictObject({
   poster: z.string().regex(/^[a-z0-9-]+(?:\.dark)?\.poster\.webp$/),
 });
 
+/**
+ * What the editor measured of a master when it saved it (documentation/content/media.md §9.3): its size
+ * (a frame's, for an animation), its automatic background and its file size in bytes then. Kept so a
+ * picture needn't be decoded to be shown; facts whose `bytes` aren't the master's size any more (it was
+ * changed since) are measured afresh.
+ */
+const pictureFacts = z.strictObject({
+  width: z.int().min(1),
+  height: z.int().min(1),
+  bg: z.string().regex(/^rgb\(\d{1,3} \d{1,3} \d{1,3}\)$/),
+  bytes: z.int().min(1),
+});
+
 export const imageMedia = z
   .strictObject({
     kind: z.literal('image'),
@@ -61,7 +74,9 @@ export const imageMedia = z
      * dark (the reader's theme, or their system's). Its words (alt, caption, credit) and focus are the
      * picture's. Without one, the same picture shows in both modes.
      */
-    dark: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.dark\.(webp|jpg|jpeg|png|avif|gif)$/), animation: animation.optional() }).optional(),
+    dark: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.dark\.(webp|jpg|jpeg|png|avif|gif)$/), animation: animation.optional(), facts: pictureFacts.optional() }).optional(),
+    /** Its master's size and background, as measured when it was saved (optional: measured when missing). */
+    facts: pictureFacts.optional(),
     visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
   })
   .refine((m) => m.alt || m.decorative, { message: 'an image needs alt text unless it is decorative', path: ['alt'] })

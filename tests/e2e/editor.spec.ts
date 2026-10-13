@@ -72,6 +72,8 @@ test.describe('editor', () => {
     await check(page.locator('[data-page-form] img'));
     await page.locator('[data-editor-pick="thumbnail"]').click();
     await expect(page.locator('#editor-picker')).toBeVisible();
+    // the picker's cards are drawn as it first opens (performance-report.md R5)
+    await expect(page.locator('#editor-picker [data-editor-media-grid] [data-editor-media] img').first()).toBeVisible({ timeout: 30_000 });
     await check(page.locator('#editor-picker [data-editor-media-grid] img:not([data-upload-img])'));
     await page.keyboard.press('Escape');
     expect(readFileSync(articleFile(), 'utf8')).toBe(before);
@@ -1371,7 +1373,8 @@ test.describe('editor', () => {
     await form.getByRole('button', { name: 'Add it' }).click();
     await expect(status(page)).toHaveText(/^Saved the dark version of /, { timeout: 30_000 });
     const name = fig.media!.split('/').pop();
-    expect(readJson(sidecarFile).dark).toEqual({ file: `${name}.dark.webp` });
+    // its facts (size, edge colour) are kept with it, so they're never worked out again (performance-report.md R9)
+    expect(readJson(sidecarFile).dark).toEqual({ file: `${name}.dark.webp`, facts: expect.objectContaining({ width: expect.any(Number), height: expect.any(Number), bg: expect.any(String) }) });
     await expect(page.locator('[data-editor-media-dark] figure[data-scheme="dark"]')).toBeVisible();
     for (const preview of await page.locator('[data-editor-media-dark] .pair img').all()) {
       await expect(preview).toHaveCSS('border-radius', '0px');
@@ -1531,6 +1534,9 @@ test.describe('editor', () => {
     await form.getByRole('button', { name: 'Save the section' }).click();
     await expect.poll(nodes).not.toContain('contact');
     expect(menu()).toHaveLength(count - 1);
+    // the screen opens itself again once its save has answered: let it, before going elsewhere
+    await page.waitForURL(/\/_edit\/sections\/\?section=contact&tab=settings$/);
+    await expect(page.locator('[data-editor-status]')).toHaveText(/^Saved/);
 
     // from Navigation: back in, at the end
     await page.goto('/_edit/navigation/');

@@ -1,10 +1,11 @@
 {
   "meta": {
-    "date": "2026-10-13T08:15:24.032Z",
-    "commit": "5eb7b43",
+    "date": "2026-10-13T11:09:55.807Z",
+    "commit": "ce6bd03",
     "dirty": true,
     "suite": "all",
     "runs": 5,
+    "cpu": 1,
     "machine": {
       "cpu": "13th Gen Intel(R) Core(TM) i9-13900K",
       "threads": 32,
@@ -39,66 +40,74 @@
   "metrics": {
     "editor/fixture-prepare": {
       "unit": "ms",
-      "median": 12613.3,
-      "p75": 12613.3,
-      "min": 12613.3,
-      "max": 12613.3,
+      "median": 14594.5,
+      "p75": 14594.5,
+      "min": 14594.5,
+      "max": 14594.5,
       "n": 1
     },
     "editor/server-start": {
       "unit": "ms",
-      "median": 11345,
-      "p75": 11345,
-      "min": 11345,
-      "max": 11345,
+      "median": 7850.6,
+      "p75": 7850.6,
+      "min": 7850.6,
+      "max": 7850.6,
+      "n": 1
+    },
+    "editor/first-ready": {
+      "unit": "ms",
+      "median": 10895.8,
+      "p75": 10895.8,
+      "min": 10895.8,
+      "max": 10895.8,
       "n": 1
     },
     "editor/cold/dashboard/ttfb": {
       "unit": "ms",
-      "median": 2735.4,
-      "p75": 2735.4,
-      "min": 2735.4,
-      "max": 2735.4,
+      "median": 17,
+      "p75": 17,
+      "min": 17,
+      "max": 17,
       "n": 1
     },
     "editor/cold/dashboard/html": {
       "unit": "ms",
-      "median": 2737.5,
-      "p75": 2737.5,
-      "min": 2737.5,
-      "max": 2737.5,
+      "median": 17.9,
+      "p75": 17.9,
+      "min": 17.9,
+      "max": 17.9,
       "n": 1
     },
     "editor/cold/dashboard/dcl": {
       "unit": "ms",
-      "median": 2909.3,
-      "p75": 2909.3,
-      "min": 2909.3,
-      "max": 2909.3,
+      "median": 184.3,
+      "p75": 184.3,
+      "min": 184.3,
+      "max": 184.3,
       "n": 1
     },
     "editor/cold/dashboard/load": {
       "unit": "ms",
-      "median": 2909.5,
-      "p75": 2909.5,
-      "min": 2909.5,
-      "max": 2909.5,
+      "median": 184.6,
+      "p75": 184.6,
+      "min": 184.6,
+      "max": 184.6,
       "n": 1
     },
     "editor/cold/dashboard/fcp": {
       "unit": "ms",
-      "median": 2792,
-      "p75": 2792,
-      "min": 2792,
-      "max": 2792,
+      "median": 80,
+      "p75": 80,
+      "min": 80,
+      "max": 80,
       "n": 1
     },
     "editor/cold/dashboard/lcp": {
       "unit": "ms",
-      "median": 2792,
-      "p75": 2792,
-      "min": 2792,
-      "max": 2792,
+      "median": 80,
+      "p75": 80,
+      "min": 80,
+      "max": 80,
       "n": 1
     },
     "editor/cold/dashboard/tbt": {
@@ -119,42 +128,42 @@
     },
     "editor/cold/dashboard/requests": {
       "unit": "count",
-      "median": 52,
-      "p75": 52,
-      "min": 52,
-      "max": 52,
+      "median": 57,
+      "p75": 57,
+      "min": 57,
+      "max": 57,
       "n": 1
     },
     "editor/cold/dashboard/scripts": {
       "unit": "count",
-      "median": 49,
-      "p75": 49,
-      "min": 49,
-      "max": 49,
+      "median": 54,
+      "p75": 54,
+      "min": 54,
+      "max": 54,
       "n": 1
     },
     "editor/cold/dashboard/html-kb": {
       "unit": "KB",
-      "median": 137.7,
-      "p75": 137.7,
-      "min": 137.7,
-      "max": 137.7,
+      "median": 145.1,
+      "p75": 145.1,
+      "min": 145.1,
+      "max": 145.1,
       "n": 1
     },
     "editor/cold/dashboard/dom-nodes": {
       "unit": "count",
-      "median": 380,
-      "p75": 380,
-      "min": 380,
-      "max": 380,
+      "median": 395,
+      "p75": 395,
+      "min": 395,
+      "max": 395,
       "n": 1
     },
     "editor/cold/dashboard/script-kb": {
       "unit": "KB",
-      "median": 818.7,
-      "p75": 818.7,
-      "min": 818.7,
-      "max": 818.7,
+      "median": 883.8,
+      "p75": 883.8,
+      "min": 883.8,
+      "max": 883.8,
       "n": 1
     },
     "editor/cold/dashboard/css-kb": {
@@ -191,18 +200,26 @@
     },
     "editor/cold/dashboard/ready": {
       "unit": "ms",
-      "median": 2803.8,
-      "p75": 2803.8,
-      "min": 2803.8,
-      "max": 2803.8,
+      "median": 38.4,
+      "p75": 38.4,
+      "min": 38.4,
+      "max": 38.4,
       "n": 1
     },
     "editor/cold/dashboard/images-settled": {
       "unit": "ms",
-      "median": 2914.5,
-      "p75": 2914.5,
-      "min": 2914.5,
-      "max": 2914.5,
+      "median": 188.2,
+      "p75": 188.2,
+      "min": 188.2,
+      "max": 188.2,
+      "n": 1
+    },
+    "editor/cold/dashboard/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.2,
+      "p75": 2.2,
+      "min": 2.2,
+      "max": 2.2,
       "n": 1
     },
     "editor/cold/dashboard/server/editor-requests": {
@@ -215,106 +232,82 @@
     },
     "editor/cold/dashboard/server/editor-ms": {
       "unit": "ms",
-      "median": 2731.8,
-      "p75": 2731.8,
-      "min": 2731.8,
-      "max": 2731.8,
+      "median": 12.3,
+      "p75": 12.3,
+      "min": 12.3,
+      "max": 12.3,
       "n": 1
     },
     "editor/cold/dashboard/server/module-requests": {
       "unit": "count",
-      "median": 51,
-      "p75": 51,
-      "min": 51,
-      "max": 51,
+      "median": 56,
+      "p75": 56,
+      "min": 56,
+      "max": 56,
       "n": 1
     },
     "editor/cold/dashboard/server/module-ms": {
       "unit": "ms",
-      "median": 744.8,
-      "p75": 744.8,
-      "min": 744.8,
-      "max": 744.8,
-      "n": 1
-    },
-    "editor/cold/dashboard/span/content.read": {
-      "unit": "ms",
-      "median": 185.5,
-      "p75": 185.5,
-      "min": 185.5,
-      "max": 185.5,
-      "n": 1
-    },
-    "editor/cold/dashboard/span/content.validate": {
-      "unit": "ms",
-      "median": 32.4,
-      "p75": 32.4,
-      "min": 32.4,
-      "max": 32.4,
-      "n": 1
-    },
-    "editor/cold/dashboard/span/git": {
-      "unit": "ms",
-      "median": 1789.1,
-      "p75": 1789.1,
-      "min": 1789.1,
-      "max": 1789.1,
+      "median": 733.2,
+      "p75": 733.2,
+      "min": 733.2,
+      "max": 733.2,
       "n": 1
     },
     "editor/cold/dashboard/span/git-processes": {
       "unit": "count",
-      "median": 22,
-      "p75": 22,
-      "min": 22,
-      "max": 22,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/articles/ttfb": {
       "unit": "ms",
-      "median": 996.5,
-      "p75": 996.5,
-      "min": 996.5,
-      "max": 996.5,
+      "median": 10.6,
+      "p75": 10.6,
+      "min": 10.6,
+      "max": 10.6,
       "n": 1
     },
     "editor/cold/articles/html": {
       "unit": "ms",
-      "median": 1000.1,
-      "p75": 1000.1,
-      "min": 1000.1,
-      "max": 1000.1,
+      "median": 12.8,
+      "p75": 12.8,
+      "min": 12.8,
+      "max": 12.8,
       "n": 1
     },
     "editor/cold/articles/dcl": {
       "unit": "ms",
-      "median": 1098.9,
-      "p75": 1098.9,
-      "min": 1098.9,
-      "max": 1098.9,
+      "median": 100.2,
+      "p75": 100.2,
+      "min": 100.2,
+      "max": 100.2,
       "n": 1
     },
     "editor/cold/articles/load": {
       "unit": "ms",
-      "median": 1099.5,
-      "p75": 1099.5,
-      "min": 1099.5,
-      "max": 1099.5,
+      "median": 100.4,
+      "p75": 100.4,
+      "min": 100.4,
+      "max": 100.4,
       "n": 1
     },
     "editor/cold/articles/fcp": {
       "unit": "ms",
-      "median": 1044,
-      "p75": 1044,
-      "min": 1044,
-      "max": 1044,
+      "median": 56,
+      "p75": 56,
+      "min": 56,
+      "max": 56,
       "n": 1
     },
     "editor/cold/articles/lcp": {
       "unit": "ms",
-      "median": 1044,
-      "p75": 1044,
-      "min": 1044,
-      "max": 1044,
+      "median": 56,
+      "p75": 56,
+      "min": 56,
+      "max": 56,
       "n": 1
     },
     "editor/cold/articles/tbt": {
@@ -335,42 +328,42 @@
     },
     "editor/cold/articles/requests": {
       "unit": "count",
-      "median": 57,
-      "p75": 57,
-      "min": 57,
-      "max": 57,
+      "median": 62,
+      "p75": 62,
+      "min": 62,
+      "max": 62,
       "n": 1
     },
     "editor/cold/articles/scripts": {
       "unit": "count",
-      "median": 54,
-      "p75": 54,
-      "min": 54,
-      "max": 54,
+      "median": 59,
+      "p75": 59,
+      "min": 59,
+      "max": 59,
       "n": 1
     },
     "editor/cold/articles/html-kb": {
       "unit": "KB",
-      "median": 200.6,
-      "p75": 200.6,
-      "min": 200.6,
-      "max": 200.6,
+      "median": 207.9,
+      "p75": 207.9,
+      "min": 207.9,
+      "max": 207.9,
       "n": 1
     },
     "editor/cold/articles/dom-nodes": {
       "unit": "count",
-      "median": 1110,
-      "p75": 1110,
-      "min": 1110,
-      "max": 1110,
+      "median": 1124,
+      "p75": 1124,
+      "min": 1124,
+      "max": 1124,
       "n": 1
     },
     "editor/cold/articles/script-kb": {
       "unit": "KB",
-      "median": 37,
-      "p75": 37,
-      "min": 37,
-      "max": 37,
+      "median": 38.5,
+      "p75": 38.5,
+      "min": 38.5,
+      "max": 38.5,
       "n": 1
     },
     "editor/cold/articles/css-kb": {
@@ -407,18 +400,26 @@
     },
     "editor/cold/articles/ready": {
       "unit": "ms",
-      "median": 1035.6,
-      "p75": 1035.6,
-      "min": 1035.6,
-      "max": 1035.6,
+      "median": 47.6,
+      "p75": 47.6,
+      "min": 47.6,
+      "max": 47.6,
       "n": 1
     },
     "editor/cold/articles/images-settled": {
       "unit": "ms",
-      "median": 1105.6,
-      "p75": 1105.6,
-      "min": 1105.6,
-      "max": 1105.6,
+      "median": 103,
+      "p75": 103,
+      "min": 103,
+      "max": 103,
+      "n": 1
+    },
+    "editor/cold/articles/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.3,
+      "p75": 2.3,
+      "min": 2.3,
+      "max": 2.3,
       "n": 1
     },
     "editor/cold/articles/server/editor-requests": {
@@ -431,90 +432,82 @@
     },
     "editor/cold/articles/server/editor-ms": {
       "unit": "ms",
-      "median": 999,
-      "p75": 999,
-      "min": 999,
-      "max": 999,
+      "median": 11.9,
+      "p75": 11.9,
+      "min": 11.9,
+      "max": 11.9,
       "n": 1
     },
     "editor/cold/articles/server/module-requests": {
       "unit": "count",
-      "median": 56,
-      "p75": 56,
-      "min": 56,
-      "max": 56,
+      "median": 61,
+      "p75": 61,
+      "min": 61,
+      "max": 61,
       "n": 1
     },
     "editor/cold/articles/server/module-ms": {
       "unit": "ms",
-      "median": 282.1,
-      "p75": 282.1,
-      "min": 282.1,
-      "max": 282.1,
-      "n": 1
-    },
-    "editor/cold/articles/span/git": {
-      "unit": "ms",
-      "median": 918.2,
-      "p75": 918.2,
-      "min": 918.2,
-      "max": 918.2,
+      "median": 213.5,
+      "p75": 213.5,
+      "min": 213.5,
+      "max": 213.5,
       "n": 1
     },
     "editor/cold/articles/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/article/ttfb": {
       "unit": "ms",
-      "median": 3903.6,
-      "p75": 3903.6,
-      "min": 3903.6,
-      "max": 3903.6,
+      "median": 30.9,
+      "p75": 30.9,
+      "min": 30.9,
+      "max": 30.9,
       "n": 1
     },
     "editor/cold/article/html": {
       "unit": "ms",
-      "median": 3934.4,
-      "p75": 3934.4,
-      "min": 3934.4,
-      "max": 3934.4,
+      "median": 64.8,
+      "p75": 64.8,
+      "min": 64.8,
+      "max": 64.8,
       "n": 1
     },
     "editor/cold/article/dcl": {
       "unit": "ms",
-      "median": 4356.1,
-      "p75": 4356.1,
-      "min": 4356.1,
-      "max": 4356.1,
+      "median": 606.9,
+      "p75": 606.9,
+      "min": 606.9,
+      "max": 606.9,
       "n": 1
     },
     "editor/cold/article/load": {
       "unit": "ms",
-      "median": 5052.6,
-      "p75": 5052.6,
-      "min": 5052.6,
-      "max": 5052.6,
+      "median": 739.1,
+      "p75": 739.1,
+      "min": 739.1,
+      "max": 739.1,
       "n": 1
     },
     "editor/cold/article/fcp": {
       "unit": "ms",
-      "median": 3992,
-      "p75": 3992,
-      "min": 3992,
-      "max": 3992,
+      "median": 80,
+      "p75": 80,
+      "min": 80,
+      "max": 80,
       "n": 1
     },
     "editor/cold/article/lcp": {
       "unit": "ms",
-      "median": 4028,
-      "p75": 4028,
-      "min": 4028,
-      "max": 4028,
+      "median": 80,
+      "p75": 80,
+      "min": 80,
+      "max": 80,
       "n": 1
     },
     "editor/cold/article/tbt": {
@@ -535,42 +528,42 @@
     },
     "editor/cold/article/requests": {
       "unit": "count",
-      "median": 111,
-      "p75": 111,
-      "min": 111,
-      "max": 111,
+      "median": 119,
+      "p75": 119,
+      "min": 119,
+      "max": 119,
       "n": 1
     },
     "editor/cold/article/scripts": {
       "unit": "count",
-      "median": 107,
-      "p75": 107,
-      "min": 107,
-      "max": 107,
+      "median": 115,
+      "p75": 115,
+      "min": 115,
+      "max": 115,
       "n": 1
     },
     "editor/cold/article/html-kb": {
       "unit": "KB",
-      "median": 904.5,
-      "p75": 904.5,
-      "min": 904.5,
-      "max": 904.5,
+      "median": 767.6,
+      "p75": 767.6,
+      "min": 767.6,
+      "max": 767.6,
       "n": 1
     },
     "editor/cold/article/dom-nodes": {
       "unit": "count",
-      "median": 5131,
-      "p75": 5131,
-      "min": 5131,
-      "max": 5131,
+      "median": 4608,
+      "p75": 4608,
+      "min": 4608,
+      "max": 4608,
       "n": 1
     },
     "editor/cold/article/script-kb": {
       "unit": "KB",
-      "median": 3269.7,
-      "p75": 3269.7,
-      "min": 3269.7,
-      "max": 3269.7,
+      "median": 3361.1,
+      "p75": 3361.1,
+      "min": 3361.1,
+      "max": 3361.1,
       "n": 1
     },
     "editor/cold/article/css-kb": {
@@ -599,42 +592,50 @@
     },
     "editor/cold/article/other-kb": {
       "unit": "KB",
-      "median": 239.2,
-      "p75": 239.2,
-      "min": 239.2,
-      "max": 239.2,
+      "median": 241.1,
+      "p75": 241.1,
+      "min": 241.1,
+      "max": 241.1,
       "n": 1
     },
     "editor/cold/article/ready": {
       "unit": "ms",
-      "median": 4803.4,
-      "p75": 4803.4,
-      "min": 4803.4,
-      "max": 4803.4,
+      "median": 611.5,
+      "p75": 611.5,
+      "min": 611.5,
+      "max": 611.5,
       "n": 1
     },
     "editor/cold/article/images-settled": {
       "unit": "ms",
-      "median": 5057.4,
-      "p75": 5057.4,
-      "min": 5057.4,
-      "max": 5057.4,
+      "median": 742.6,
+      "p75": 742.6,
+      "min": 742.6,
+      "max": 742.6,
+      "n": 1
+    },
+    "editor/cold/article/js-heap-mb": {
+      "unit": "MB",
+      "median": 10.9,
+      "p75": 10.9,
+      "min": 10.9,
+      "max": 10.9,
       "n": 1
     },
     "editor/cold/article/server/module-requests": {
       "unit": "count",
-      "median": 205,
-      "p75": 205,
-      "min": 205,
-      "max": 205,
+      "median": 213,
+      "p75": 213,
+      "min": 213,
+      "max": 213,
       "n": 1
     },
     "editor/cold/article/server/module-ms": {
       "unit": "ms",
-      "median": 1405.7,
-      "p75": 1405.7,
-      "min": 1405.7,
-      "max": 1405.7,
+      "median": 1360.1,
+      "p75": 1360.1,
+      "min": 1360.1,
+      "max": 1360.1,
       "n": 1
     },
     "editor/cold/article/server/editor-requests": {
@@ -647,10 +648,10 @@
     },
     "editor/cold/article/server/editor-ms": {
       "unit": "ms",
-      "median": 3932.9,
-      "p75": 3932.9,
-      "min": 3932.9,
-      "max": 3932.9,
+      "median": 63.7,
+      "p75": 63.7,
+      "min": 63.7,
+      "max": 63.7,
       "n": 1
     },
     "editor/cold/article/server/canvas-requests": {
@@ -663,10 +664,10 @@
     },
     "editor/cold/article/server/canvas-ms": {
       "unit": "ms",
-      "median": 692.9,
-      "p75": 692.9,
-      "min": 692.9,
-      "max": 692.9,
+      "median": 31.1,
+      "p75": 31.1,
+      "min": 31.1,
+      "max": 31.1,
       "n": 1
     },
     "editor/cold/article/server/image-requests": {
@@ -679,106 +680,74 @@
     },
     "editor/cold/article/server/image-ms": {
       "unit": "ms",
-      "median": 894.9,
-      "p75": 894.9,
-      "min": 894.9,
-      "max": 894.9,
-      "n": 1
-    },
-    "editor/cold/article/span/picture.metadata": {
-      "unit": "ms",
-      "median": 16723.8,
-      "p75": 16723.8,
-      "min": 16723.8,
-      "max": 16723.8,
-      "n": 1
-    },
-    "editor/cold/article/span/picture.url": {
-      "unit": "ms",
-      "median": 172.1,
-      "p75": 172.1,
-      "min": 172.1,
-      "max": 172.1,
-      "n": 1
-    },
-    "editor/cold/article/span/picture.edge": {
-      "unit": "ms",
-      "median": 30071.1,
-      "p75": 30071.1,
-      "min": 30071.1,
-      "max": 30071.1,
+      "median": 1091.4,
+      "p75": 1091.4,
+      "min": 1091.4,
+      "max": 1091.4,
       "n": 1
     },
     "editor/cold/article/span/media.cards": {
       "unit": "ms",
-      "median": 1420.6,
-      "p75": 1420.6,
-      "min": 1420.6,
-      "max": 1420.6,
-      "n": 1
-    },
-    "editor/cold/article/span/git": {
-      "unit": "ms",
-      "median": 2152.3,
-      "p75": 2152.3,
-      "min": 2152.3,
-      "max": 2152.3,
+      "median": 0.6,
+      "p75": 0.6,
+      "min": 0.6,
+      "max": 0.6,
       "n": 1
     },
     "editor/cold/article/span/git-processes": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 26,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/article-large/ttfb": {
       "unit": "ms",
-      "median": 2189.1,
-      "p75": 2189.1,
-      "min": 2189.1,
-      "max": 2189.1,
+      "median": 36.2,
+      "p75": 36.2,
+      "min": 36.2,
+      "max": 36.2,
       "n": 1
     },
     "editor/cold/article-large/html": {
       "unit": "ms",
-      "median": 2230.5,
-      "p75": 2230.5,
-      "min": 2230.5,
-      "max": 2230.5,
+      "median": 92.9,
+      "p75": 92.9,
+      "min": 92.9,
+      "max": 92.9,
       "n": 1
     },
     "editor/cold/article-large/dcl": {
       "unit": "ms",
-      "median": 2546.8,
-      "p75": 2546.8,
-      "min": 2546.8,
-      "max": 2546.8,
+      "median": 301.1,
+      "p75": 301.1,
+      "min": 301.1,
+      "max": 301.1,
       "n": 1
     },
     "editor/cold/article-large/load": {
       "unit": "ms",
-      "median": 2573.1,
-      "p75": 2573.1,
-      "min": 2573.1,
-      "max": 2573.1,
+      "median": 301.5,
+      "p75": 301.5,
+      "min": 301.5,
+      "max": 301.5,
       "n": 1
     },
     "editor/cold/article-large/fcp": {
       "unit": "ms",
-      "median": 2232,
-      "p75": 2232,
-      "min": 2232,
-      "max": 2232,
+      "median": 120,
+      "p75": 120,
+      "min": 120,
+      "max": 120,
       "n": 1
     },
     "editor/cold/article-large/lcp": {
       "unit": "ms",
-      "median": 2264,
-      "p75": 2264,
-      "min": 2264,
-      "max": 2264,
+      "median": 120,
+      "p75": 120,
+      "min": 120,
+      "max": 120,
       "n": 1
     },
     "editor/cold/article-large/tbt": {
@@ -799,42 +768,42 @@
     },
     "editor/cold/article-large/requests": {
       "unit": "count",
-      "median": 111,
-      "p75": 111,
-      "min": 111,
-      "max": 111,
+      "median": 119,
+      "p75": 119,
+      "min": 119,
+      "max": 119,
       "n": 1
     },
     "editor/cold/article-large/scripts": {
       "unit": "count",
-      "median": 107,
-      "p75": 107,
-      "min": 107,
-      "max": 107,
+      "median": 115,
+      "p75": 115,
+      "min": 115,
+      "max": 115,
       "n": 1
     },
     "editor/cold/article-large/html-kb": {
       "unit": "KB",
-      "median": 1297.1,
-      "p75": 1297.1,
-      "min": 1297.1,
-      "max": 1297.1,
+      "median": 1169.3,
+      "p75": 1169.3,
+      "min": 1169.3,
+      "max": 1169.3,
       "n": 1
     },
     "editor/cold/article-large/dom-nodes": {
       "unit": "count",
-      "median": 8156,
-      "p75": 8156,
-      "min": 8156,
-      "max": 8156,
+      "median": 7685,
+      "p75": 7685,
+      "min": 7685,
+      "max": 7685,
       "n": 1
     },
     "editor/cold/article-large/script-kb": {
       "unit": "KB",
-      "median": 2318.3,
-      "p75": 2318.3,
-      "min": 2318.3,
-      "max": 2318.3,
+      "median": 2320.7,
+      "p75": 2320.7,
+      "min": 2320.7,
+      "max": 2320.7,
       "n": 1
     },
     "editor/cold/article-large/css-kb": {
@@ -863,42 +832,50 @@
     },
     "editor/cold/article-large/other-kb": {
       "unit": "KB",
-      "median": 275.2,
-      "p75": 275.2,
-      "min": 275.2,
-      "max": 275.2,
+      "median": 277.4,
+      "p75": 277.4,
+      "min": 277.4,
+      "max": 277.4,
       "n": 1
     },
     "editor/cold/article-large/ready": {
       "unit": "ms",
-      "median": 2578.8,
-      "p75": 2578.8,
-      "min": 2578.8,
-      "max": 2578.8,
+      "median": 308.1,
+      "p75": 308.1,
+      "min": 308.1,
+      "max": 308.1,
       "n": 1
     },
     "editor/cold/article-large/images-settled": {
       "unit": "ms",
-      "median": 2583.1,
-      "p75": 2583.1,
-      "min": 2583.1,
-      "max": 2583.1,
+      "median": 310.9,
+      "p75": 310.9,
+      "min": 310.9,
+      "max": 310.9,
+      "n": 1
+    },
+    "editor/cold/article-large/js-heap-mb": {
+      "unit": "MB",
+      "median": 11.2,
+      "p75": 11.2,
+      "min": 11.2,
+      "max": 11.2,
       "n": 1
     },
     "editor/cold/article-large/server/module-requests": {
       "unit": "count",
-      "median": 207,
-      "p75": 207,
-      "min": 207,
-      "max": 207,
+      "median": 215,
+      "p75": 215,
+      "min": 215,
+      "max": 215,
       "n": 1
     },
     "editor/cold/article-large/server/module-ms": {
       "unit": "ms",
-      "median": 154.6,
-      "p75": 154.6,
-      "min": 154.6,
-      "max": 154.6,
+      "median": 141.4,
+      "p75": 141.4,
+      "min": 141.4,
+      "max": 141.4,
       "n": 1
     },
     "editor/cold/article-large/server/editor-requests": {
@@ -911,10 +888,10 @@
     },
     "editor/cold/article-large/server/editor-ms": {
       "unit": "ms",
-      "median": 2229.8,
-      "p75": 2229.8,
-      "min": 2229.8,
-      "max": 2229.8,
+      "median": 92,
+      "p75": 92,
+      "min": 92,
+      "max": 92,
       "n": 1
     },
     "editor/cold/article-large/server/canvas-requests": {
@@ -927,10 +904,10 @@
     },
     "editor/cold/article-large/server/canvas-ms": {
       "unit": "ms",
-      "median": 50,
-      "p75": 50,
-      "min": 50,
-      "max": 50,
+      "median": 46.1,
+      "p75": 46.1,
+      "min": 46.1,
+      "max": 46.1,
       "n": 1
     },
     "editor/cold/article-large/server/image-requests": {
@@ -943,90 +920,82 @@
     },
     "editor/cold/article-large/server/image-ms": {
       "unit": "ms",
-      "median": 1107.5,
-      "p75": 1107.5,
-      "min": 1107.5,
-      "max": 1107.5,
-      "n": 1
-    },
-    "editor/cold/article-large/span/picture.url": {
-      "unit": "ms",
-      "median": 2765.3,
-      "p75": 2765.3,
-      "min": 2765.3,
-      "max": 2765.3,
+      "median": 989.9,
+      "p75": 989.9,
+      "min": 989.9,
+      "max": 989.9,
       "n": 1
     },
     "editor/cold/article-large/span/media.cards": {
       "unit": "ms",
-      "median": 27.7,
-      "p75": 27.7,
-      "min": 27.7,
-      "max": 27.7,
+      "median": 1.3,
+      "p75": 1.3,
+      "min": 1.3,
+      "max": 1.3,
       "n": 1
     },
-    "editor/cold/article-large/span/git": {
+    "editor/cold/article-large/span/picture.url": {
       "unit": "ms",
-      "median": 2128.5,
-      "p75": 2128.5,
-      "min": 2128.5,
-      "max": 2128.5,
+      "median": 109.1,
+      "p75": 109.1,
+      "min": 109.1,
+      "max": 109.1,
       "n": 1
     },
     "editor/cold/article-large/span/git-processes": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 26,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/sections/ttfb": {
       "unit": "ms",
-      "median": 989.3,
-      "p75": 989.3,
-      "min": 989.3,
-      "max": 989.3,
+      "median": 14.1,
+      "p75": 14.1,
+      "min": 14.1,
+      "max": 14.1,
       "n": 1
     },
     "editor/cold/sections/html": {
       "unit": "ms",
-      "median": 994.3,
-      "p75": 994.3,
-      "min": 994.3,
-      "max": 994.3,
+      "median": 17.8,
+      "p75": 17.8,
+      "min": 17.8,
+      "max": 17.8,
       "n": 1
     },
     "editor/cold/sections/dcl": {
       "unit": "ms",
-      "median": 1081,
-      "p75": 1081,
-      "min": 1081,
-      "max": 1081,
+      "median": 102.5,
+      "p75": 102.5,
+      "min": 102.5,
+      "max": 102.5,
       "n": 1
     },
     "editor/cold/sections/load": {
       "unit": "ms",
-      "median": 1081.1,
-      "p75": 1081.1,
-      "min": 1081.1,
-      "max": 1081.1,
+      "median": 102.6,
+      "p75": 102.6,
+      "min": 102.6,
+      "max": 102.6,
       "n": 1
     },
     "editor/cold/sections/fcp": {
       "unit": "ms",
-      "median": 1048,
-      "p75": 1048,
-      "min": 1048,
-      "max": 1048,
+      "median": 68,
+      "p75": 68,
+      "min": 68,
+      "max": 68,
       "n": 1
     },
     "editor/cold/sections/lcp": {
       "unit": "ms",
-      "median": 1048,
-      "p75": 1048,
-      "min": 1048,
-      "max": 1048,
+      "median": 68,
+      "p75": 68,
+      "min": 68,
+      "max": 68,
       "n": 1
     },
     "editor/cold/sections/tbt": {
@@ -1047,42 +1016,42 @@
     },
     "editor/cold/sections/requests": {
       "unit": "count",
-      "median": 65,
-      "p75": 65,
-      "min": 65,
-      "max": 65,
+      "median": 70,
+      "p75": 70,
+      "min": 70,
+      "max": 70,
       "n": 1
     },
     "editor/cold/sections/scripts": {
       "unit": "count",
-      "median": 62,
-      "p75": 62,
-      "min": 62,
-      "max": 62,
+      "median": 67,
+      "p75": 67,
+      "min": 67,
+      "max": 67,
       "n": 1
     },
     "editor/cold/sections/html-kb": {
       "unit": "KB",
-      "median": 341.2,
-      "p75": 341.2,
-      "min": 341.2,
-      "max": 341.2,
+      "median": 348.6,
+      "p75": 348.6,
+      "min": 348.6,
+      "max": 348.6,
       "n": 1
     },
     "editor/cold/sections/dom-nodes": {
       "unit": "count",
-      "median": 2157,
-      "p75": 2157,
-      "min": 2157,
-      "max": 2157,
+      "median": 2171,
+      "p75": 2171,
+      "min": 2171,
+      "max": 2171,
       "n": 1
     },
     "editor/cold/sections/script-kb": {
       "unit": "KB",
-      "median": 133.3,
-      "p75": 133.3,
-      "min": 133.3,
-      "max": 133.3,
+      "median": 134.7,
+      "p75": 134.7,
+      "min": 134.7,
+      "max": 134.7,
       "n": 1
     },
     "editor/cold/sections/css-kb": {
@@ -1119,18 +1088,26 @@
     },
     "editor/cold/sections/ready": {
       "unit": "ms",
-      "median": 1010.4,
-      "p75": 1010.4,
-      "min": 1010.4,
-      "max": 1010.4,
+      "median": 37.1,
+      "p75": 37.1,
+      "min": 37.1,
+      "max": 37.1,
       "n": 1
     },
     "editor/cold/sections/images-settled": {
       "unit": "ms",
-      "median": 1084.7,
-      "p75": 1084.7,
-      "min": 1084.7,
-      "max": 1084.7,
+      "median": 106,
+      "p75": 106,
+      "min": 106,
+      "max": 106,
+      "n": 1
+    },
+    "editor/cold/sections/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.4,
+      "p75": 2.4,
+      "min": 2.4,
+      "max": 2.4,
       "n": 1
     },
     "editor/cold/sections/server/editor-requests": {
@@ -1143,90 +1120,82 @@
     },
     "editor/cold/sections/server/editor-ms": {
       "unit": "ms",
-      "median": 992.6,
-      "p75": 992.6,
-      "min": 992.6,
-      "max": 992.6,
+      "median": 16.8,
+      "p75": 16.8,
+      "min": 16.8,
+      "max": 16.8,
       "n": 1
     },
     "editor/cold/sections/server/module-requests": {
       "unit": "count",
-      "median": 64,
-      "p75": 64,
-      "min": 64,
-      "max": 64,
+      "median": 69,
+      "p75": 69,
+      "min": 69,
+      "max": 69,
       "n": 1
     },
     "editor/cold/sections/server/module-ms": {
       "unit": "ms",
-      "median": 156.1,
-      "p75": 156.1,
-      "min": 156.1,
-      "max": 156.1,
-      "n": 1
-    },
-    "editor/cold/sections/span/git": {
-      "unit": "ms",
-      "median": 901.5,
-      "p75": 901.5,
-      "min": 901.5,
-      "max": 901.5,
+      "median": 144.1,
+      "p75": 144.1,
+      "min": 144.1,
+      "max": 144.1,
       "n": 1
     },
     "editor/cold/sections/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/navigation/ttfb": {
       "unit": "ms",
-      "median": 957.2,
-      "p75": 957.2,
-      "min": 957.2,
-      "max": 957.2,
+      "median": 55.7,
+      "p75": 55.7,
+      "min": 55.7,
+      "max": 55.7,
       "n": 1
     },
     "editor/cold/navigation/html": {
       "unit": "ms",
-      "median": 960.3,
-      "p75": 960.3,
-      "min": 960.3,
-      "max": 960.3,
+      "median": 57.1,
+      "p75": 57.1,
+      "min": 57.1,
+      "max": 57.1,
       "n": 1
     },
     "editor/cold/navigation/dcl": {
       "unit": "ms",
-      "median": 1035.2,
-      "p75": 1035.2,
-      "min": 1035.2,
-      "max": 1035.2,
+      "median": 120.4,
+      "p75": 120.4,
+      "min": 120.4,
+      "max": 120.4,
       "n": 1
     },
     "editor/cold/navigation/load": {
       "unit": "ms",
-      "median": 1035.8,
-      "p75": 1035.8,
-      "min": 1035.8,
-      "max": 1035.8,
+      "median": 120.5,
+      "p75": 120.5,
+      "min": 120.5,
+      "max": 120.5,
       "n": 1
     },
     "editor/cold/navigation/fcp": {
       "unit": "ms",
-      "median": 1008,
-      "p75": 1008,
-      "min": 1008,
-      "max": 1008,
+      "median": 100,
+      "p75": 100,
+      "min": 100,
+      "max": 100,
       "n": 1
     },
     "editor/cold/navigation/lcp": {
       "unit": "ms",
-      "median": 1008,
-      "p75": 1008,
-      "min": 1008,
-      "max": 1008,
+      "median": 100,
+      "p75": 100,
+      "min": 100,
+      "max": 100,
       "n": 1
     },
     "editor/cold/navigation/tbt": {
@@ -1247,42 +1216,42 @@
     },
     "editor/cold/navigation/requests": {
       "unit": "count",
-      "median": 58,
-      "p75": 58,
-      "min": 58,
-      "max": 58,
+      "median": 63,
+      "p75": 63,
+      "min": 63,
+      "max": 63,
       "n": 1
     },
     "editor/cold/navigation/scripts": {
       "unit": "count",
-      "median": 55,
-      "p75": 55,
-      "min": 55,
-      "max": 55,
+      "median": 60,
+      "p75": 60,
+      "min": 60,
+      "max": 60,
       "n": 1
     },
     "editor/cold/navigation/html-kb": {
       "unit": "KB",
-      "median": 161.8,
-      "p75": 161.8,
-      "min": 161.8,
-      "max": 161.8,
+      "median": 169.1,
+      "p75": 169.1,
+      "min": 169.1,
+      "max": 169.1,
       "n": 1
     },
     "editor/cold/navigation/dom-nodes": {
       "unit": "count",
-      "median": 640,
-      "p75": 640,
-      "min": 640,
-      "max": 640,
+      "median": 654,
+      "p75": 654,
+      "min": 654,
+      "max": 654,
       "n": 1
     },
     "editor/cold/navigation/script-kb": {
       "unit": "KB",
-      "median": 34.5,
-      "p75": 34.5,
-      "min": 34.5,
-      "max": 34.5,
+      "median": 36,
+      "p75": 36,
+      "min": 36,
+      "max": 36,
       "n": 1
     },
     "editor/cold/navigation/css-kb": {
@@ -1319,18 +1288,26 @@
     },
     "editor/cold/navigation/ready": {
       "unit": "ms",
-      "median": 977.5,
-      "p75": 977.5,
-      "min": 977.5,
-      "max": 977.5,
+      "median": 74.9,
+      "p75": 74.9,
+      "min": 74.9,
+      "max": 74.9,
       "n": 1
     },
     "editor/cold/navigation/images-settled": {
       "unit": "ms",
-      "median": 1040.6,
-      "p75": 1040.6,
-      "min": 1040.6,
-      "max": 1040.6,
+      "median": 123.8,
+      "p75": 123.8,
+      "min": 123.8,
+      "max": 123.8,
+      "n": 1
+    },
+    "editor/cold/navigation/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.3,
+      "p75": 2.3,
+      "min": 2.3,
+      "max": 2.3,
       "n": 1
     },
     "editor/cold/navigation/server/editor-requests": {
@@ -1343,90 +1320,82 @@
     },
     "editor/cold/navigation/server/editor-ms": {
       "unit": "ms",
-      "median": 959.4,
-      "p75": 959.4,
-      "min": 959.4,
-      "max": 959.4,
+      "median": 56.2,
+      "p75": 56.2,
+      "min": 56.2,
+      "max": 56.2,
       "n": 1
     },
     "editor/cold/navigation/server/module-requests": {
       "unit": "count",
-      "median": 57,
-      "p75": 57,
-      "min": 57,
-      "max": 57,
+      "median": 62,
+      "p75": 62,
+      "min": 62,
+      "max": 62,
       "n": 1
     },
     "editor/cold/navigation/server/module-ms": {
       "unit": "ms",
-      "median": 49.3,
-      "p75": 49.3,
-      "min": 49.3,
-      "max": 49.3,
-      "n": 1
-    },
-    "editor/cold/navigation/span/git": {
-      "unit": "ms",
-      "median": 907.8,
-      "p75": 907.8,
-      "min": 907.8,
-      "max": 907.8,
+      "median": 40.6,
+      "p75": 40.6,
+      "min": 40.6,
+      "max": 40.6,
       "n": 1
     },
     "editor/cold/navigation/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/planet/ttfb": {
       "unit": "ms",
-      "median": 970.7,
-      "p75": 970.7,
-      "min": 970.7,
-      "max": 970.7,
+      "median": 44.2,
+      "p75": 44.2,
+      "min": 44.2,
+      "max": 44.2,
       "n": 1
     },
     "editor/cold/planet/html": {
       "unit": "ms",
-      "median": 980,
-      "p75": 980,
-      "min": 980,
-      "max": 980,
+      "median": 47.8,
+      "p75": 47.8,
+      "min": 47.8,
+      "max": 47.8,
       "n": 1
     },
     "editor/cold/planet/dcl": {
       "unit": "ms",
-      "median": 1043.4,
-      "p75": 1043.4,
-      "min": 1043.4,
-      "max": 1043.4,
+      "median": 115,
+      "p75": 115,
+      "min": 115,
+      "max": 115,
       "n": 1
     },
     "editor/cold/planet/load": {
       "unit": "ms",
-      "median": 1043.5,
-      "p75": 1043.5,
-      "min": 1043.5,
-      "max": 1043.5,
+      "median": 115.1,
+      "p75": 115.1,
+      "min": 115.1,
+      "max": 115.1,
       "n": 1
     },
     "editor/cold/planet/fcp": {
       "unit": "ms",
-      "median": 1020,
-      "p75": 1020,
-      "min": 1020,
-      "max": 1020,
+      "median": 88,
+      "p75": 88,
+      "min": 88,
+      "max": 88,
       "n": 1
     },
     "editor/cold/planet/lcp": {
       "unit": "ms",
-      "median": 1020,
-      "p75": 1020,
-      "min": 1020,
-      "max": 1020,
+      "median": 88,
+      "p75": 88,
+      "min": 88,
+      "max": 88,
       "n": 1
     },
     "editor/cold/planet/tbt": {
@@ -1447,42 +1416,42 @@
     },
     "editor/cold/planet/requests": {
       "unit": "count",
-      "median": 63,
-      "p75": 63,
-      "min": 63,
-      "max": 63,
+      "median": 68,
+      "p75": 68,
+      "min": 68,
+      "max": 68,
       "n": 1
     },
     "editor/cold/planet/scripts": {
       "unit": "count",
-      "median": 60,
-      "p75": 60,
-      "min": 60,
-      "max": 60,
+      "median": 65,
+      "p75": 65,
+      "min": 65,
+      "max": 65,
       "n": 1
     },
     "editor/cold/planet/html-kb": {
       "unit": "KB",
-      "median": 317.9,
-      "p75": 317.9,
-      "min": 317.9,
-      "max": 317.9,
+      "median": 325.2,
+      "p75": 325.2,
+      "min": 325.2,
+      "max": 325.2,
       "n": 1
     },
     "editor/cold/planet/dom-nodes": {
       "unit": "count",
-      "median": 1932,
-      "p75": 1932,
-      "min": 1932,
-      "max": 1932,
+      "median": 1946,
+      "p75": 1946,
+      "min": 1946,
+      "max": 1946,
       "n": 1
     },
     "editor/cold/planet/script-kb": {
       "unit": "KB",
-      "median": 32.3,
-      "p75": 32.3,
-      "min": 32.3,
-      "max": 32.3,
+      "median": 34,
+      "p75": 34,
+      "min": 34,
+      "max": 34,
       "n": 1
     },
     "editor/cold/planet/css-kb": {
@@ -1519,34 +1488,26 @@
     },
     "editor/cold/planet/ready": {
       "unit": "ms",
-      "median": 991.1,
-      "p75": 991.1,
-      "min": 991.1,
-      "max": 991.1,
+      "median": 80.1,
+      "p75": 80.1,
+      "min": 80.1,
+      "max": 80.1,
       "n": 1
     },
     "editor/cold/planet/images-settled": {
       "unit": "ms",
-      "median": 1046.9,
-      "p75": 1046.9,
-      "min": 1046.9,
-      "max": 1046.9,
+      "median": 117.4,
+      "p75": 117.4,
+      "min": 117.4,
+      "max": 117.4,
       "n": 1
     },
-    "editor/cold/planet/server/module-requests": {
-      "unit": "count",
-      "median": 62,
-      "p75": 62,
-      "min": 62,
-      "max": 62,
-      "n": 1
-    },
-    "editor/cold/planet/server/module-ms": {
-      "unit": "ms",
-      "median": 39.5,
-      "p75": 39.5,
-      "min": 39.5,
-      "max": 39.5,
+    "editor/cold/planet/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.4,
+      "p75": 2.4,
+      "min": 2.4,
+      "max": 2.4,
       "n": 1
     },
     "editor/cold/planet/server/editor-requests": {
@@ -1559,74 +1520,82 @@
     },
     "editor/cold/planet/server/editor-ms": {
       "unit": "ms",
-      "median": 977.3,
-      "p75": 977.3,
-      "min": 977.3,
-      "max": 977.3,
+      "median": 47,
+      "p75": 47,
+      "min": 47,
+      "max": 47,
       "n": 1
     },
-    "editor/cold/planet/span/git": {
+    "editor/cold/planet/server/module-requests": {
+      "unit": "count",
+      "median": 67,
+      "p75": 67,
+      "min": 67,
+      "max": 67,
+      "n": 1
+    },
+    "editor/cold/planet/server/module-ms": {
       "unit": "ms",
-      "median": 917,
-      "p75": 917,
-      "min": 917,
-      "max": 917,
+      "median": 55.6,
+      "p75": 55.6,
+      "min": 55.6,
+      "max": 55.6,
       "n": 1
     },
     "editor/cold/planet/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/media/ttfb": {
       "unit": "ms",
-      "median": 995.5,
-      "p75": 995.5,
-      "min": 995.5,
-      "max": 995.5,
+      "median": 23.2,
+      "p75": 23.2,
+      "min": 23.2,
+      "max": 23.2,
       "n": 1
     },
     "editor/cold/media/html": {
       "unit": "ms",
-      "median": 1012.8,
-      "p75": 1012.8,
-      "min": 1012.8,
-      "max": 1012.8,
+      "median": 31.8,
+      "p75": 31.8,
+      "min": 31.8,
+      "max": 31.8,
       "n": 1
     },
     "editor/cold/media/dcl": {
       "unit": "ms",
-      "median": 1142.7,
-      "p75": 1142.7,
-      "min": 1142.7,
-      "max": 1142.7,
+      "median": 142.4,
+      "p75": 142.4,
+      "min": 142.4,
+      "max": 142.4,
       "n": 1
     },
     "editor/cold/media/load": {
       "unit": "ms",
-      "median": 1147.3,
-      "p75": 1147.3,
-      "min": 1147.3,
-      "max": 1147.3,
+      "median": 143.1,
+      "p75": 143.1,
+      "min": 143.1,
+      "max": 143.1,
       "n": 1
     },
     "editor/cold/media/fcp": {
       "unit": "ms",
-      "median": 1048,
-      "p75": 1048,
-      "min": 1048,
-      "max": 1048,
+      "median": 88,
+      "p75": 88,
+      "min": 88,
+      "max": 88,
       "n": 1
     },
     "editor/cold/media/lcp": {
       "unit": "ms",
-      "median": 1048,
-      "p75": 1048,
-      "min": 1048,
-      "max": 1048,
+      "median": 88,
+      "p75": 88,
+      "min": 88,
+      "max": 88,
       "n": 1
     },
     "editor/cold/media/tbt": {
@@ -1647,42 +1616,42 @@
     },
     "editor/cold/media/requests": {
       "unit": "count",
-      "median": 165,
-      "p75": 165,
-      "min": 165,
-      "max": 165,
+      "median": 185,
+      "p75": 185,
+      "min": 185,
+      "max": 185,
       "n": 1
     },
     "editor/cold/media/scripts": {
       "unit": "count",
-      "median": 71,
-      "p75": 71,
-      "min": 71,
-      "max": 71,
+      "median": 77,
+      "p75": 77,
+      "min": 77,
+      "max": 77,
       "n": 1
     },
     "editor/cold/media/html-kb": {
       "unit": "KB",
-      "median": 277.2,
-      "p75": 277.2,
-      "min": 277.2,
-      "max": 277.2,
+      "median": 288.8,
+      "p75": 288.8,
+      "min": 288.8,
+      "max": 288.8,
       "n": 1
     },
     "editor/cold/media/dom-nodes": {
       "unit": "count",
-      "median": 1081,
-      "p75": 1081,
-      "min": 1081,
-      "max": 1081,
+      "median": 1097,
+      "p75": 1097,
+      "min": 1097,
+      "max": 1097,
       "n": 1
     },
     "editor/cold/media/script-kb": {
       "unit": "KB",
-      "median": 24.7,
-      "p75": 24.7,
-      "min": 24.7,
-      "max": 24.7,
+      "median": 27.3,
+      "p75": 27.3,
+      "min": 27.3,
+      "max": 27.3,
       "n": 1
     },
     "editor/cold/media/css-kb": {
@@ -1695,10 +1664,10 @@
     },
     "editor/cold/media/img-kb": {
       "unit": "KB",
-      "median": 546,
-      "p75": 546,
-      "min": 546,
-      "max": 546,
+      "median": 601.4,
+      "p75": 601.4,
+      "min": 601.4,
+      "max": 601.4,
       "n": 1
     },
     "editor/cold/media/font-kb": {
@@ -1719,18 +1688,26 @@
     },
     "editor/cold/media/ready": {
       "unit": "ms",
-      "median": 1017.9,
-      "p75": 1017.9,
-      "min": 1017.9,
-      "max": 1017.9,
+      "median": 47.1,
+      "p75": 47.1,
+      "min": 47.1,
+      "max": 47.1,
       "n": 1
     },
     "editor/cold/media/images-settled": {
       "unit": "ms",
-      "median": 1153.2,
-      "p75": 1153.2,
-      "min": 1153.2,
-      "max": 1153.2,
+      "median": 398.1,
+      "p75": 398.1,
+      "min": 398.1,
+      "max": 398.1,
+      "n": 1
+    },
+    "editor/cold/media/js-heap-mb": {
+      "unit": "MB",
+      "median": 3.7,
+      "p75": 3.7,
+      "min": 3.7,
+      "max": 3.7,
       "n": 1
     },
     "editor/cold/media/server/editor-requests": {
@@ -1743,122 +1720,106 @@
     },
     "editor/cold/media/server/editor-ms": {
       "unit": "ms",
-      "median": 1011.8,
-      "p75": 1011.8,
-      "min": 1011.8,
-      "max": 1011.8,
+      "median": 30.2,
+      "p75": 30.2,
+      "min": 30.2,
+      "max": 30.2,
       "n": 1
     },
     "editor/cold/media/server/module-requests": {
       "unit": "count",
-      "median": 73,
-      "p75": 73,
-      "min": 73,
-      "max": 73,
+      "median": 79,
+      "p75": 79,
+      "min": 79,
+      "max": 79,
       "n": 1
     },
     "editor/cold/media/server/module-ms": {
       "unit": "ms",
-      "median": 42.2,
-      "p75": 42.2,
-      "min": 42.2,
-      "max": 42.2,
+      "median": 50.9,
+      "p75": 50.9,
+      "min": 50.9,
+      "max": 50.9,
       "n": 1
     },
     "editor/cold/media/server/image-requests": {
       "unit": "count",
-      "median": 91,
-      "p75": 91,
-      "min": 91,
-      "max": 91,
+      "median": 104,
+      "p75": 104,
+      "min": 104,
+      "max": 104,
       "n": 1
     },
     "editor/cold/media/server/image-ms": {
       "unit": "ms",
-      "median": 2678.1,
-      "p75": 2678.1,
-      "min": 2678.1,
-      "max": 2678.1,
-      "n": 1
-    },
-    "editor/cold/media/span/picture.url": {
-      "unit": "ms",
-      "median": 3619,
-      "p75": 3619,
-      "min": 3619,
-      "max": 3619,
+      "median": 2914.2,
+      "p75": 2914.2,
+      "min": 2914.2,
+      "max": 2914.2,
       "n": 1
     },
     "editor/cold/media/span/media.cards": {
       "unit": "ms",
-      "median": 44.6,
-      "p75": 44.6,
-      "min": 44.6,
-      "max": 44.6,
-      "n": 1
-    },
-    "editor/cold/media/span/git": {
-      "unit": "ms",
-      "median": 893.3,
-      "p75": 893.3,
-      "min": 893.3,
-      "max": 893.3,
+      "median": 11.8,
+      "p75": 11.8,
+      "min": 11.8,
+      "max": 11.8,
       "n": 1
     },
     "editor/cold/media/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/settings/ttfb": {
       "unit": "ms",
-      "median": 966.8,
-      "p75": 966.8,
-      "min": 966.8,
-      "max": 966.8,
+      "median": 18.9,
+      "p75": 18.9,
+      "min": 18.9,
+      "max": 18.9,
       "n": 1
     },
     "editor/cold/settings/html": {
       "unit": "ms",
-      "median": 988.9,
-      "p75": 988.9,
-      "min": 988.9,
-      "max": 988.9,
+      "median": 21.9,
+      "p75": 21.9,
+      "min": 21.9,
+      "max": 21.9,
       "n": 1
     },
     "editor/cold/settings/dcl": {
       "unit": "ms",
-      "median": 1049.8,
-      "p75": 1049.8,
-      "min": 1049.8,
-      "max": 1049.8,
+      "median": 115.5,
+      "p75": 115.5,
+      "min": 115.5,
+      "max": 115.5,
       "n": 1
     },
     "editor/cold/settings/load": {
       "unit": "ms",
-      "median": 1050,
-      "p75": 1050,
-      "min": 1050,
-      "max": 1050,
+      "median": 115.6,
+      "p75": 115.6,
+      "min": 115.6,
+      "max": 115.6,
       "n": 1
     },
     "editor/cold/settings/fcp": {
       "unit": "ms",
-      "median": 1012,
-      "p75": 1012,
-      "min": 1012,
-      "max": 1012,
+      "median": 76,
+      "p75": 76,
+      "min": 76,
+      "max": 76,
       "n": 1
     },
     "editor/cold/settings/lcp": {
       "unit": "ms",
-      "median": 1012,
-      "p75": 1012,
-      "min": 1012,
-      "max": 1012,
+      "median": 76,
+      "p75": 76,
+      "min": 76,
+      "max": 76,
       "n": 1
     },
     "editor/cold/settings/tbt": {
@@ -1879,42 +1840,42 @@
     },
     "editor/cold/settings/requests": {
       "unit": "count",
-      "median": 75,
-      "p75": 75,
-      "min": 75,
-      "max": 75,
+      "median": 82,
+      "p75": 82,
+      "min": 82,
+      "max": 82,
       "n": 1
     },
     "editor/cold/settings/scripts": {
       "unit": "count",
-      "median": 71,
-      "p75": 71,
-      "min": 71,
-      "max": 71,
+      "median": 78,
+      "p75": 78,
+      "min": 78,
+      "max": 78,
       "n": 1
     },
     "editor/cold/settings/html-kb": {
       "unit": "KB",
-      "median": 286.7,
-      "p75": 286.7,
-      "min": 286.7,
-      "max": 286.7,
+      "median": 169.8,
+      "p75": 169.8,
+      "min": 169.8,
+      "max": 169.8,
       "n": 1
     },
     "editor/cold/settings/dom-nodes": {
       "unit": "count",
-      "median": 1160,
-      "p75": 1160,
-      "min": 1160,
-      "max": 1160,
+      "median": 592,
+      "p75": 592,
+      "min": 592,
+      "max": 592,
       "n": 1
     },
     "editor/cold/settings/script-kb": {
       "unit": "KB",
-      "median": 50.5,
-      "p75": 50.5,
-      "min": 50.5,
-      "max": 50.5,
+      "median": 55,
+      "p75": 55,
+      "min": 55,
+      "max": 55,
       "n": 1
     },
     "editor/cold/settings/css-kb": {
@@ -1951,34 +1912,26 @@
     },
     "editor/cold/settings/ready": {
       "unit": "ms",
-      "median": 1014.1,
-      "p75": 1014.1,
-      "min": 1014.1,
-      "max": 1014.1,
+      "median": 38.9,
+      "p75": 38.9,
+      "min": 38.9,
+      "max": 38.9,
       "n": 1
     },
     "editor/cold/settings/images-settled": {
       "unit": "ms",
-      "median": 1053.7,
-      "p75": 1053.7,
-      "min": 1053.7,
-      "max": 1053.7,
+      "median": 118.8,
+      "p75": 118.8,
+      "min": 118.8,
+      "max": 118.8,
       "n": 1
     },
-    "editor/cold/settings/server/module-requests": {
-      "unit": "count",
-      "median": 73,
-      "p75": 73,
-      "min": 73,
-      "max": 73,
-      "n": 1
-    },
-    "editor/cold/settings/server/module-ms": {
-      "unit": "ms",
-      "median": 43.5,
-      "p75": 43.5,
-      "min": 43.5,
-      "max": 43.5,
+    "editor/cold/settings/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.6,
+      "p75": 2.6,
+      "min": 2.6,
+      "max": 2.6,
       "n": 1
     },
     "editor/cold/settings/server/editor-requests": {
@@ -1991,90 +1944,90 @@
     },
     "editor/cold/settings/server/editor-ms": {
       "unit": "ms",
-      "median": 987.5,
-      "p75": 987.5,
-      "min": 987.5,
-      "max": 987.5,
+      "median": 20.6,
+      "p75": 20.6,
+      "min": 20.6,
+      "max": 20.6,
       "n": 1
     },
-    "editor/cold/settings/span/picture.url": {
+    "editor/cold/settings/server/module-requests": {
+      "unit": "count",
+      "median": 80,
+      "p75": 80,
+      "min": 80,
+      "max": 80,
+      "n": 1
+    },
+    "editor/cold/settings/server/module-ms": {
       "unit": "ms",
-      "median": 1670.2,
-      "p75": 1670.2,
-      "min": 1670.2,
-      "max": 1670.2,
+      "median": 75.7,
+      "p75": 75.7,
+      "min": 75.7,
+      "max": 75.7,
       "n": 1
     },
     "editor/cold/settings/span/media.cards": {
       "unit": "ms",
-      "median": 25.1,
-      "p75": 25.1,
-      "min": 25.1,
-      "max": 25.1,
-      "n": 1
-    },
-    "editor/cold/settings/span/git": {
-      "unit": "ms",
-      "median": 879.6,
-      "p75": 879.6,
-      "min": 879.6,
-      "max": 879.6,
+      "median": 0.4,
+      "p75": 0.4,
+      "min": 0.4,
+      "max": 0.4,
       "n": 1
     },
     "editor/cold/settings/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/access/ttfb": {
       "unit": "ms",
-      "median": 1001,
-      "p75": 1001,
-      "min": 1001,
-      "max": 1001,
+      "median": 85.1,
+      "p75": 85.1,
+      "min": 85.1,
+      "max": 85.1,
       "n": 1
     },
     "editor/cold/access/html": {
       "unit": "ms",
-      "median": 1003,
-      "p75": 1003,
-      "min": 1003,
-      "max": 1003,
+      "median": 88.4,
+      "p75": 88.4,
+      "min": 88.4,
+      "max": 88.4,
       "n": 1
     },
     "editor/cold/access/dcl": {
       "unit": "ms",
-      "median": 1080.1,
-      "p75": 1080.1,
-      "min": 1080.1,
-      "max": 1080.1,
+      "median": 167.5,
+      "p75": 167.5,
+      "min": 167.5,
+      "max": 167.5,
       "n": 1
     },
     "editor/cold/access/load": {
       "unit": "ms",
-      "median": 1080.3,
-      "p75": 1080.3,
-      "min": 1080.3,
-      "max": 1080.3,
+      "median": 167.5,
+      "p75": 167.5,
+      "min": 167.5,
+      "max": 167.5,
       "n": 1
     },
     "editor/cold/access/fcp": {
       "unit": "ms",
-      "median": 1060,
-      "p75": 1060,
-      "min": 1060,
-      "max": 1060,
+      "median": 144,
+      "p75": 144,
+      "min": 144,
+      "max": 144,
       "n": 1
     },
     "editor/cold/access/lcp": {
       "unit": "ms",
-      "median": 1060,
-      "p75": 1060,
-      "min": 1060,
-      "max": 1060,
+      "median": 144,
+      "p75": 144,
+      "min": 144,
+      "max": 144,
       "n": 1
     },
     "editor/cold/access/tbt": {
@@ -2095,42 +2048,42 @@
     },
     "editor/cold/access/requests": {
       "unit": "count",
-      "median": 62,
-      "p75": 62,
-      "min": 62,
-      "max": 62,
+      "median": 67,
+      "p75": 67,
+      "min": 67,
+      "max": 67,
       "n": 1
     },
     "editor/cold/access/scripts": {
       "unit": "count",
-      "median": 59,
-      "p75": 59,
-      "min": 59,
-      "max": 59,
+      "median": 64,
+      "p75": 64,
+      "min": 64,
+      "max": 64,
       "n": 1
     },
     "editor/cold/access/html-kb": {
       "unit": "KB",
-      "median": 174.1,
-      "p75": 174.1,
-      "min": 174.1,
-      "max": 174.1,
+      "median": 182.4,
+      "p75": 182.4,
+      "min": 182.4,
+      "max": 182.4,
       "n": 1
     },
     "editor/cold/access/dom-nodes": {
       "unit": "count",
-      "median": 766,
-      "p75": 766,
-      "min": 766,
-      "max": 766,
+      "median": 780,
+      "p75": 780,
+      "min": 780,
+      "max": 780,
       "n": 1
     },
     "editor/cold/access/script-kb": {
       "unit": "KB",
-      "median": 124.8,
-      "p75": 124.8,
-      "min": 124.8,
-      "max": 124.8,
+      "median": 128.1,
+      "p75": 128.1,
+      "min": 128.1,
+      "max": 128.1,
       "n": 1
     },
     "editor/cold/access/css-kb": {
@@ -2167,18 +2120,26 @@
     },
     "editor/cold/access/ready": {
       "unit": "ms",
-      "median": 1048.2,
-      "p75": 1048.2,
-      "min": 1048.2,
-      "max": 1048.2,
+      "median": 105.6,
+      "p75": 105.6,
+      "min": 105.6,
+      "max": 105.6,
       "n": 1
     },
     "editor/cold/access/images-settled": {
       "unit": "ms",
-      "median": 1085.1,
-      "p75": 1085.1,
-      "min": 1085.1,
-      "max": 1085.1,
+      "median": 171.8,
+      "p75": 171.8,
+      "min": 171.8,
+      "max": 171.8,
+      "n": 1
+    },
+    "editor/cold/access/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.5,
+      "p75": 2.5,
+      "min": 2.5,
+      "max": 2.5,
       "n": 1
     },
     "editor/cold/access/server/editor-requests": {
@@ -2191,90 +2152,82 @@
     },
     "editor/cold/access/server/editor-ms": {
       "unit": "ms",
-      "median": 1001.6,
-      "p75": 1001.6,
-      "min": 1001.6,
-      "max": 1001.6,
+      "median": 87.5,
+      "p75": 87.5,
+      "min": 87.5,
+      "max": 87.5,
       "n": 1
     },
     "editor/cold/access/server/module-requests": {
       "unit": "count",
-      "median": 61,
-      "p75": 61,
-      "min": 61,
-      "max": 61,
+      "median": 66,
+      "p75": 66,
+      "min": 66,
+      "max": 66,
       "n": 1
     },
     "editor/cold/access/server/module-ms": {
       "unit": "ms",
-      "median": 96.1,
-      "p75": 96.1,
-      "min": 96.1,
-      "max": 96.1,
-      "n": 1
-    },
-    "editor/cold/access/span/git": {
-      "unit": "ms",
-      "median": 912.6,
-      "p75": 912.6,
-      "min": 912.6,
-      "max": 912.6,
+      "median": 94.2,
+      "p75": 94.2,
+      "min": 94.2,
+      "max": 94.2,
       "n": 1
     },
     "editor/cold/access/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/publish/ttfb": {
       "unit": "ms",
-      "median": 2202,
-      "p75": 2202,
-      "min": 2202,
-      "max": 2202,
+      "median": 16.9,
+      "p75": 16.9,
+      "min": 16.9,
+      "max": 16.9,
       "n": 1
     },
     "editor/cold/publish/html": {
       "unit": "ms",
-      "median": 2203,
-      "p75": 2203,
-      "min": 2203,
-      "max": 2203,
+      "median": 18.6,
+      "p75": 18.6,
+      "min": 18.6,
+      "max": 18.6,
       "n": 1
     },
     "editor/cold/publish/dcl": {
       "unit": "ms",
-      "median": 2267.4,
-      "p75": 2267.4,
-      "min": 2267.4,
-      "max": 2267.4,
+      "median": 66.3,
+      "p75": 66.3,
+      "min": 66.3,
+      "max": 66.3,
       "n": 1
     },
     "editor/cold/publish/load": {
       "unit": "ms",
-      "median": 2268,
-      "p75": 2268,
-      "min": 2268,
-      "max": 2268,
+      "median": 66.4,
+      "p75": 66.4,
+      "min": 66.4,
+      "max": 66.4,
       "n": 1
     },
     "editor/cold/publish/fcp": {
       "unit": "ms",
-      "median": 2248,
-      "p75": 2248,
-      "min": 2248,
-      "max": 2248,
+      "median": 52,
+      "p75": 52,
+      "min": 52,
+      "max": 52,
       "n": 1
     },
     "editor/cold/publish/lcp": {
       "unit": "ms",
-      "median": 2248,
-      "p75": 2248,
-      "min": 2248,
-      "max": 2248,
+      "median": 52,
+      "p75": 52,
+      "min": 52,
+      "max": 52,
       "n": 1
     },
     "editor/cold/publish/tbt": {
@@ -2295,42 +2248,42 @@
     },
     "editor/cold/publish/requests": {
       "unit": "count",
-      "median": 55,
-      "p75": 55,
-      "min": 55,
-      "max": 55,
+      "median": 60,
+      "p75": 60,
+      "min": 60,
+      "max": 60,
       "n": 1
     },
     "editor/cold/publish/scripts": {
       "unit": "count",
-      "median": 52,
-      "p75": 52,
-      "min": 52,
-      "max": 52,
+      "median": 57,
+      "p75": 57,
+      "min": 57,
+      "max": 57,
       "n": 1
     },
     "editor/cold/publish/html-kb": {
       "unit": "KB",
-      "median": 105.1,
-      "p75": 105.1,
-      "min": 105.1,
-      "max": 105.1,
+      "median": 112.4,
+      "p75": 112.4,
+      "min": 112.4,
+      "max": 112.4,
       "n": 1
     },
     "editor/cold/publish/dom-nodes": {
       "unit": "count",
-      "median": 274,
-      "p75": 274,
-      "min": 274,
-      "max": 274,
+      "median": 288,
+      "p75": 288,
+      "min": 288,
+      "max": 288,
       "n": 1
     },
     "editor/cold/publish/script-kb": {
       "unit": "KB",
-      "median": 15.2,
-      "p75": 15.2,
-      "min": 15.2,
-      "max": 15.2,
+      "median": 16.7,
+      "p75": 16.7,
+      "min": 16.7,
+      "max": 16.7,
       "n": 1
     },
     "editor/cold/publish/css-kb": {
@@ -2367,18 +2320,26 @@
     },
     "editor/cold/publish/ready": {
       "unit": "ms",
-      "median": 2258.4,
-      "p75": 2258.4,
-      "min": 2258.4,
-      "max": 2258.4,
+      "median": 45.2,
+      "p75": 45.2,
+      "min": 45.2,
+      "max": 45.2,
       "n": 1
     },
     "editor/cold/publish/images-settled": {
       "unit": "ms",
-      "median": 2271.4,
-      "p75": 2271.4,
-      "min": 2271.4,
-      "max": 2271.4,
+      "median": 69.7,
+      "p75": 69.7,
+      "min": 69.7,
+      "max": 69.7,
+      "n": 1
+    },
+    "editor/cold/publish/js-heap-mb": {
+      "unit": "MB",
+      "median": 3,
+      "p75": 3,
+      "min": 3,
+      "max": 3,
       "n": 1
     },
     "editor/cold/publish/server/editor-requests": {
@@ -2391,74 +2352,66 @@
     },
     "editor/cold/publish/server/editor-ms": {
       "unit": "ms",
-      "median": 2202.3,
-      "p75": 2202.3,
-      "min": 2202.3,
-      "max": 2202.3,
+      "median": 17.9,
+      "p75": 17.9,
+      "min": 17.9,
+      "max": 17.9,
       "n": 1
     },
     "editor/cold/publish/server/module-requests": {
       "unit": "count",
-      "median": 54,
-      "p75": 54,
-      "min": 54,
-      "max": 54,
+      "median": 59,
+      "p75": 59,
+      "min": 59,
+      "max": 59,
       "n": 1
     },
     "editor/cold/publish/server/module-ms": {
       "unit": "ms",
-      "median": 9.9,
-      "p75": 9.9,
-      "min": 9.9,
-      "max": 9.9,
-      "n": 1
-    },
-    "editor/cold/publish/span/git": {
-      "unit": "ms",
-      "median": 2172.9,
-      "p75": 2172.9,
-      "min": 2172.9,
-      "max": 2172.9,
+      "median": 8.6,
+      "p75": 8.6,
+      "min": 8.6,
+      "max": 8.6,
       "n": 1
     },
     "editor/cold/publish/span/git-processes": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 26,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 1
     },
     "editor/cold/site-article/ttfb": {
       "unit": "ms",
-      "median": 49.7,
-      "p75": 49.7,
-      "min": 49.7,
-      "max": 49.7,
+      "median": 40.6,
+      "p75": 40.6,
+      "min": 40.6,
+      "max": 40.6,
       "n": 1
     },
     "editor/cold/site-article/html": {
       "unit": "ms",
-      "median": 51.4,
-      "p75": 51.4,
-      "min": 51.4,
-      "max": 51.4,
+      "median": 42.8,
+      "p75": 42.8,
+      "min": 42.8,
+      "max": 42.8,
       "n": 1
     },
     "editor/cold/site-article/dcl": {
       "unit": "ms",
-      "median": 141.4,
-      "p75": 141.4,
-      "min": 141.4,
-      "max": 141.4,
+      "median": 121.2,
+      "p75": 121.2,
+      "min": 121.2,
+      "max": 121.2,
       "n": 1
     },
     "editor/cold/site-article/load": {
       "unit": "ms",
-      "median": 579.5,
-      "p75": 579.5,
-      "min": 579.5,
-      "max": 579.5,
+      "median": 121.3,
+      "p75": 121.3,
+      "min": 121.3,
+      "max": 121.3,
       "n": 1
     },
     "editor/cold/site-article/fcp": {
@@ -2471,10 +2424,10 @@
     },
     "editor/cold/site-article/lcp": {
       "unit": "ms",
-      "median": 620,
-      "p75": 620,
-      "min": 620,
-      "max": 620,
+      "median": 116,
+      "p75": 116,
+      "min": 116,
+      "max": 116,
       "n": 1
     },
     "editor/cold/site-article/tbt": {
@@ -2511,10 +2464,10 @@
     },
     "editor/cold/site-article/html-kb": {
       "unit": "KB",
-      "median": 210.7,
-      "p75": 210.7,
-      "min": 210.7,
-      "max": 210.7,
+      "median": 211.7,
+      "p75": 211.7,
+      "min": 211.7,
+      "max": 211.7,
       "n": 1
     },
     "editor/cold/site-article/dom-nodes": {
@@ -2543,10 +2496,10 @@
     },
     "editor/cold/site-article/img-kb": {
       "unit": "KB",
-      "median": 826.1,
-      "p75": 826.1,
-      "min": 826.1,
-      "max": 826.1,
+      "median": 601.4,
+      "p75": 601.4,
+      "min": 601.4,
+      "max": 601.4,
       "n": 1
     },
     "editor/cold/site-article/font-kb": {
@@ -2567,18 +2520,26 @@
     },
     "editor/cold/site-article/ready": {
       "unit": "ms",
-      "median": 603.4,
-      "p75": 603.4,
-      "min": 603.4,
-      "max": 603.4,
+      "median": 128,
+      "p75": 128,
+      "min": 128,
+      "max": 128,
       "n": 1
     },
     "editor/cold/site-article/images-settled": {
       "unit": "ms",
-      "median": 607,
-      "p75": 607,
-      "min": 607,
-      "max": 607,
+      "median": 132.2,
+      "p75": 132.2,
+      "min": 132.2,
+      "max": 132.2,
+      "n": 1
+    },
+    "editor/cold/site-article/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.4,
+      "p75": 2.4,
+      "min": 2.4,
+      "max": 2.4,
       "n": 1
     },
     "editor/cold/site-article/server/page-requests": {
@@ -2591,10 +2552,10 @@
     },
     "editor/cold/site-article/server/page-ms": {
       "unit": "ms",
-      "median": 50.5,
-      "p75": 50.5,
-      "min": 50.5,
-      "max": 50.5,
+      "median": 42.2,
+      "p75": 42.2,
+      "min": 42.2,
+      "max": 42.2,
       "n": 1
     },
     "editor/cold/site-article/server/module-requests": {
@@ -2607,10 +2568,10 @@
     },
     "editor/cold/site-article/server/module-ms": {
       "unit": "ms",
-      "median": 12.5,
-      "p75": 12.5,
-      "min": 12.5,
-      "max": 12.5,
+      "median": 11.6,
+      "p75": 11.6,
+      "min": 11.6,
+      "max": 11.6,
       "n": 1
     },
     "editor/cold/site-article/server/api-requests": {
@@ -2623,34 +2584,10 @@
     },
     "editor/cold/site-article/server/api-ms": {
       "unit": "ms",
-      "median": 4.3,
-      "p75": 4.3,
-      "min": 4.3,
-      "max": 4.3,
-      "n": 1
-    },
-    "editor/cold/site-article/server/image-requests": {
-      "unit": "count",
-      "median": 1,
-      "p75": 1,
-      "min": 1,
-      "max": 1,
-      "n": 1
-    },
-    "editor/cold/site-article/server/image-ms": {
-      "unit": "ms",
-      "median": 482,
-      "p75": 482,
-      "min": 482,
-      "max": 482,
-      "n": 1
-    },
-    "editor/cold/site-article/span/picture.url": {
-      "unit": "ms",
-      "median": 32.5,
-      "p75": 32.5,
-      "min": 32.5,
-      "max": 32.5,
+      "median": 3.9,
+      "p75": 3.9,
+      "min": 3.9,
+      "max": 3.9,
       "n": 1
     },
     "editor/cold/site-article/span/git-processes": {
@@ -2663,50 +2600,50 @@
     },
     "editor/warm/dashboard/ttfb": {
       "unit": "ms",
-      "median": 1800.6,
-      "p75": 1801.7,
-      "min": 1747.3,
-      "max": 1837.1,
+      "median": 10.5,
+      "p75": 12.6,
+      "min": 10.2,
+      "max": 20.5,
       "n": 5
     },
     "editor/warm/dashboard/html": {
       "unit": "ms",
-      "median": 1801.4,
-      "p75": 1804.5,
-      "min": 1748.7,
-      "max": 1838.1,
+      "median": 11.6,
+      "p75": 13.4,
+      "min": 11.1,
+      "max": 25.1,
       "n": 5
     },
     "editor/warm/dashboard/dcl": {
       "unit": "ms",
-      "median": 1873.9,
-      "p75": 1875.8,
-      "min": 1820.7,
-      "max": 1917.6,
+      "median": 71.2,
+      "p75": 77.9,
+      "min": 63.2,
+      "max": 106,
       "n": 5
     },
     "editor/warm/dashboard/load": {
       "unit": "ms",
-      "median": 1875.8,
-      "p75": 1876.5,
-      "min": 1822.7,
-      "max": 1919.8,
+      "median": 71.4,
+      "p75": 78.1,
+      "min": 63.3,
+      "max": 106.6,
       "n": 5
     },
     "editor/warm/dashboard/fcp": {
       "unit": "ms",
-      "median": 1852,
-      "p75": 1852,
-      "min": 1800,
-      "max": 1888,
+      "median": 68,
+      "p75": 72,
+      "min": 52,
+      "max": 84,
       "n": 5
     },
     "editor/warm/dashboard/lcp": {
       "unit": "ms",
-      "median": 1852,
-      "p75": 1852,
-      "min": 1800,
-      "max": 1888,
+      "median": 68,
+      "p75": 72,
+      "min": 52,
+      "max": 84,
       "n": 5
     },
     "editor/warm/dashboard/tbt": {
@@ -2727,42 +2664,42 @@
     },
     "editor/warm/dashboard/requests": {
       "unit": "count",
-      "median": 52,
-      "p75": 52,
-      "min": 52,
-      "max": 52,
+      "median": 57,
+      "p75": 57,
+      "min": 57,
+      "max": 57,
       "n": 5
     },
     "editor/warm/dashboard/scripts": {
       "unit": "count",
-      "median": 49,
-      "p75": 49,
-      "min": 49,
-      "max": 49,
+      "median": 54,
+      "p75": 54,
+      "min": 54,
+      "max": 54,
       "n": 5
     },
     "editor/warm/dashboard/html-kb": {
       "unit": "KB",
-      "median": 137.7,
-      "p75": 137.7,
-      "min": 137.7,
-      "max": 137.7,
+      "median": 145.1,
+      "p75": 145.1,
+      "min": 145.1,
+      "max": 145.1,
       "n": 5
     },
     "editor/warm/dashboard/dom-nodes": {
       "unit": "count",
-      "median": 380,
-      "p75": 380,
-      "min": 380,
-      "max": 380,
+      "median": 395,
+      "p75": 395,
+      "min": 395,
+      "max": 395,
       "n": 5
     },
     "editor/warm/dashboard/script-kb": {
       "unit": "KB",
-      "median": 14.4,
-      "p75": 14.4,
-      "min": 14.4,
-      "max": 818.7,
+      "median": 15.8,
+      "p75": 15.8,
+      "min": 15.8,
+      "max": 883.8,
       "n": 5
     },
     "editor/warm/dashboard/css-kb": {
@@ -2799,18 +2736,26 @@
     },
     "editor/warm/dashboard/ready": {
       "unit": "ms",
-      "median": 1861.1,
-      "p75": 1863.8,
-      "min": 1805.9,
-      "max": 1899.6,
+      "median": 29.8,
+      "p75": 32.9,
+      "min": 28.2,
+      "max": 40.3,
       "n": 5
     },
     "editor/warm/dashboard/images-settled": {
       "unit": "ms",
-      "median": 1879.1,
-      "p75": 1880.8,
-      "min": 1825.5,
-      "max": 1923.1,
+      "median": 74.3,
+      "p75": 81.1,
+      "min": 68.9,
+      "max": 111.2,
+      "n": 5
+    },
+    "editor/warm/dashboard/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.2,
+      "p75": 2.2,
+      "min": 2.2,
+      "max": 2.9,
       "n": 5
     },
     "editor/warm/dashboard/server/editor-requests": {
@@ -2823,90 +2768,82 @@
     },
     "editor/warm/dashboard/server/editor-ms": {
       "unit": "ms",
-      "median": 1800.3,
-      "p75": 1803.7,
-      "min": 1747.6,
-      "max": 1835.8,
+      "median": 10.6,
+      "p75": 12.6,
+      "min": 10.2,
+      "max": 22.4,
       "n": 5
     },
     "editor/warm/dashboard/server/module-requests": {
       "unit": "count",
-      "median": 51,
-      "p75": 51,
-      "min": 51,
-      "max": 51,
+      "median": 56,
+      "p75": 56,
+      "min": 56,
+      "max": 56,
       "n": 5
     },
     "editor/warm/dashboard/server/module-ms": {
       "unit": "ms",
-      "median": 8.9,
-      "p75": 10.7,
-      "min": 7,
-      "max": 16.1,
-      "n": 5
-    },
-    "editor/warm/dashboard/span/git": {
-      "unit": "ms",
-      "median": 1791.7,
-      "p75": 1795.3,
-      "min": 1740.5,
-      "max": 1829.6,
+      "median": 7.5,
+      "p75": 8,
+      "min": 7.4,
+      "max": 38.7,
       "n": 5
     },
     "editor/warm/dashboard/span/git-processes": {
       "unit": "count",
-      "median": 22,
-      "p75": 22,
-      "min": 22,
-      "max": 22,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/articles/ttfb": {
       "unit": "ms",
-      "median": 883.4,
-      "p75": 907.3,
-      "min": 874.5,
-      "max": 907.7,
+      "median": 8.9,
+      "p75": 8.9,
+      "min": 8.8,
+      "max": 20.2,
       "n": 5
     },
     "editor/warm/articles/html": {
       "unit": "ms",
-      "median": 886.7,
-      "p75": 909.4,
-      "min": 877.4,
-      "max": 915.1,
+      "median": 11.3,
+      "p75": 13.6,
+      "min": 10.9,
+      "max": 22.6,
       "n": 5
     },
     "editor/warm/articles/dcl": {
       "unit": "ms",
-      "median": 946.9,
-      "p75": 973.1,
-      "min": 944.6,
-      "max": 979.7,
+      "median": 72.6,
+      "p75": 74,
+      "min": 66.7,
+      "max": 90.9,
       "n": 5
     },
     "editor/warm/articles/load": {
       "unit": "ms",
-      "median": 947.2,
-      "p75": 973.8,
-      "min": 945,
-      "max": 980.2,
+      "median": 72.7,
+      "p75": 74.1,
+      "min": 66.9,
+      "max": 91.1,
       "n": 5
     },
     "editor/warm/articles/fcp": {
       "unit": "ms",
-      "median": 936,
-      "p75": 952,
-      "min": 932,
-      "max": 964,
+      "median": 64,
+      "p75": 68,
+      "min": 52,
+      "max": 72,
       "n": 5
     },
     "editor/warm/articles/lcp": {
       "unit": "ms",
-      "median": 936,
-      "p75": 952,
-      "min": 932,
-      "max": 964,
+      "median": 64,
+      "p75": 68,
+      "min": 52,
+      "max": 72,
       "n": 5
     },
     "editor/warm/articles/tbt": {
@@ -2927,42 +2864,42 @@
     },
     "editor/warm/articles/requests": {
       "unit": "count",
-      "median": 57,
-      "p75": 57,
-      "min": 57,
-      "max": 57,
+      "median": 62,
+      "p75": 62,
+      "min": 62,
+      "max": 62,
       "n": 5
     },
     "editor/warm/articles/scripts": {
       "unit": "count",
-      "median": 54,
-      "p75": 54,
-      "min": 54,
-      "max": 54,
+      "median": 59,
+      "p75": 59,
+      "min": 59,
+      "max": 59,
       "n": 5
     },
     "editor/warm/articles/html-kb": {
       "unit": "KB",
-      "median": 200.6,
-      "p75": 200.6,
-      "min": 200.6,
-      "max": 200.6,
+      "median": 207.9,
+      "p75": 207.9,
+      "min": 207.9,
+      "max": 207.9,
       "n": 5
     },
     "editor/warm/articles/dom-nodes": {
       "unit": "count",
-      "median": 1110,
-      "p75": 1110,
-      "min": 1110,
-      "max": 1110,
+      "median": 1124,
+      "p75": 1124,
+      "min": 1124,
+      "max": 1124,
       "n": 5
     },
     "editor/warm/articles/script-kb": {
       "unit": "KB",
-      "median": 15.8,
-      "p75": 15.8,
-      "min": 15.8,
-      "max": 37,
+      "median": 17.3,
+      "p75": 17.3,
+      "min": 17.3,
+      "max": 38.5,
       "n": 5
     },
     "editor/warm/articles/css-kb": {
@@ -2999,18 +2936,26 @@
     },
     "editor/warm/articles/ready": {
       "unit": "ms",
-      "median": 903.6,
-      "p75": 926.6,
-      "min": 893.9,
-      "max": 927.2,
+      "median": 28.2,
+      "p75": 28.8,
+      "min": 28,
+      "max": 40.6,
       "n": 5
     },
     "editor/warm/articles/images-settled": {
       "unit": "ms",
-      "median": 951.6,
-      "p75": 979.1,
-      "min": 950.1,
-      "max": 985.2,
+      "median": 75.6,
+      "p75": 76.9,
+      "min": 70.9,
+      "max": 94,
+      "n": 5
+    },
+    "editor/warm/articles/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.3,
+      "p75": 2.3,
+      "min": 2.3,
+      "max": 2.3,
       "n": 5
     },
     "editor/warm/articles/server/editor-requests": {
@@ -3023,90 +2968,82 @@
     },
     "editor/warm/articles/server/editor-ms": {
       "unit": "ms",
-      "median": 885.7,
-      "p75": 908.5,
-      "min": 876.6,
-      "max": 913.9,
+      "median": 10.4,
+      "p75": 12.6,
+      "min": 9.8,
+      "max": 21.5,
       "n": 5
     },
     "editor/warm/articles/server/module-requests": {
       "unit": "count",
-      "median": 56,
-      "p75": 56,
-      "min": 56,
-      "max": 56,
+      "median": 61,
+      "p75": 61,
+      "min": 61,
+      "max": 61,
       "n": 5
     },
     "editor/warm/articles/server/module-ms": {
       "unit": "ms",
-      "median": 9.9,
-      "p75": 10.9,
-      "min": 8.5,
-      "max": 11.7,
-      "n": 5
-    },
-    "editor/warm/articles/span/git": {
-      "unit": "ms",
-      "median": 876.5,
-      "p75": 896.3,
-      "min": 864.2,
-      "max": 900.6,
+      "median": 7.8,
+      "p75": 8.6,
+      "min": 7.2,
+      "max": 9.3,
       "n": 5
     },
     "editor/warm/articles/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/article/ttfb": {
       "unit": "ms",
-      "median": 2223.2,
-      "p75": 2231.5,
-      "min": 2127.9,
-      "max": 2246.6,
+      "median": 25.7,
+      "p75": 28.8,
+      "min": 24.8,
+      "max": 39.1,
       "n": 5
     },
     "editor/warm/article/html": {
       "unit": "ms",
-      "median": 2238.4,
-      "p75": 2269.2,
-      "min": 2142.7,
-      "max": 2302.3,
+      "median": 36.6,
+      "p75": 53.5,
+      "min": 30.8,
+      "max": 53.6,
       "n": 5
     },
     "editor/warm/article/dcl": {
       "unit": "ms",
-      "median": 2442.9,
-      "p75": 2458.4,
-      "min": 2362.9,
-      "max": 2500.4,
+      "median": 260.8,
+      "p75": 262.4,
+      "min": 231.2,
+      "max": 266.3,
       "n": 5
     },
     "editor/warm/article/load": {
       "unit": "ms",
-      "median": 2467.8,
-      "p75": 2500.7,
-      "min": 2363.2,
-      "max": 2619.9,
+      "median": 261.1,
+      "p75": 292.4,
+      "min": 231.4,
+      "max": 374.4,
       "n": 5
     },
     "editor/warm/article/fcp": {
       "unit": "ms",
-      "median": 2272,
-      "p75": 2284,
-      "min": 2192,
-      "max": 2304,
+      "median": 136,
+      "p75": 136,
+      "min": 72,
+      "max": 144,
       "n": 5
     },
     "editor/warm/article/lcp": {
       "unit": "ms",
-      "median": 2284,
-      "p75": 2304,
-      "min": 2204,
-      "max": 2324,
+      "median": 136,
+      "p75": 136,
+      "min": 72,
+      "max": 144,
       "n": 5
     },
     "editor/warm/article/tbt": {
@@ -3127,42 +3064,42 @@
     },
     "editor/warm/article/requests": {
       "unit": "count",
-      "median": 111,
-      "p75": 111,
-      "min": 111,
-      "max": 111,
+      "median": 119,
+      "p75": 119,
+      "min": 119,
+      "max": 119,
       "n": 5
     },
     "editor/warm/article/scripts": {
       "unit": "count",
-      "median": 107,
-      "p75": 107,
-      "min": 107,
-      "max": 107,
+      "median": 115,
+      "p75": 115,
+      "min": 115,
+      "max": 115,
       "n": 5
     },
     "editor/warm/article/html-kb": {
       "unit": "KB",
-      "median": 904.5,
-      "p75": 904.5,
-      "min": 904.5,
-      "max": 904.5,
+      "median": 767.6,
+      "p75": 767.6,
+      "min": 767.6,
+      "max": 767.6,
       "n": 5
     },
     "editor/warm/article/dom-nodes": {
       "unit": "count",
-      "median": 5131,
-      "p75": 5131,
-      "min": 5131,
-      "max": 5131,
+      "median": 4608,
+      "p75": 4608,
+      "min": 4608,
+      "max": 4608,
       "n": 5
     },
     "editor/warm/article/script-kb": {
       "unit": "KB",
-      "median": 2318.3,
-      "p75": 2318.3,
-      "min": 2318.3,
-      "max": 3118.4,
+      "median": 2320.7,
+      "p75": 2320.7,
+      "min": 2320.7,
+      "max": 3029.2,
       "n": 5
     },
     "editor/warm/article/css-kb": {
@@ -3191,42 +3128,50 @@
     },
     "editor/warm/article/other-kb": {
       "unit": "KB",
-      "median": 239.2,
-      "p75": 239.2,
-      "min": 239.2,
-      "max": 239.2,
+      "median": 241.1,
+      "p75": 241.1,
+      "min": 241.1,
+      "max": 241.1,
       "n": 5
     },
     "editor/warm/article/ready": {
       "unit": "ms",
-      "median": 2447.5,
-      "p75": 2472.6,
-      "min": 2363.8,
-      "max": 2505.4,
+      "median": 266.5,
+      "p75": 266.6,
+      "min": 236.6,
+      "max": 302.5,
       "n": 5
     },
     "editor/warm/article/images-settled": {
       "unit": "ms",
-      "median": 2477.7,
-      "p75": 2509.3,
-      "min": 2368.7,
-      "max": 2623,
+      "median": 269.9,
+      "p75": 305.7,
+      "min": 239.9,
+      "max": 377.9,
+      "n": 5
+    },
+    "editor/warm/article/js-heap-mb": {
+      "unit": "MB",
+      "median": 10.8,
+      "p75": 10.9,
+      "min": 10.5,
+      "max": 10.9,
       "n": 5
     },
     "editor/warm/article/server/module-requests": {
       "unit": "count",
-      "median": 203,
-      "p75": 203,
-      "min": 203,
-      "max": 205,
+      "median": 213,
+      "p75": 213,
+      "min": 213,
+      "max": 213,
       "n": 5
     },
     "editor/warm/article/server/module-ms": {
       "unit": "ms",
-      "median": 39.9,
-      "p75": 40.7,
-      "min": 36.4,
-      "max": 85.1,
+      "median": 31.4,
+      "p75": 33.5,
+      "min": 28.4,
+      "max": 55.5,
       "n": 5
     },
     "editor/warm/article/server/editor-requests": {
@@ -3239,10 +3184,10 @@
     },
     "editor/warm/article/server/editor-ms": {
       "unit": "ms",
-      "median": 2234.7,
-      "p75": 2267.6,
-      "min": 2141.7,
-      "max": 2300.9,
+      "median": 33.7,
+      "p75": 39.8,
+      "min": 29.6,
+      "max": 50,
       "n": 5
     },
     "editor/warm/article/server/canvas-requests": {
@@ -3255,10 +3200,10 @@
     },
     "editor/warm/article/server/canvas-ms": {
       "unit": "ms",
-      "median": 28.6,
-      "p75": 31.7,
-      "min": 26.2,
-      "max": 47,
+      "median": 16.6,
+      "p75": 18.6,
+      "min": 14.4,
+      "max": 26,
       "n": 5
     },
     "editor/warm/article/server/image-requests": {
@@ -3271,90 +3216,74 @@
     },
     "editor/warm/article/server/image-ms": {
       "unit": "ms",
-      "median": 812.8,
-      "p75": 812.8,
-      "min": 812.8,
-      "max": 812.8,
+      "median": 676.3,
+      "p75": 676.3,
+      "min": 676.3,
+      "max": 676.3,
       "n": 1
-    },
-    "editor/warm/article/span/picture.url": {
-      "unit": "ms",
-      "median": 3203,
-      "p75": 4309.3,
-      "min": 1651.1,
-      "max": 4417.1,
-      "n": 5
     },
     "editor/warm/article/span/media.cards": {
       "unit": "ms",
-      "median": 31.1,
-      "p75": 40.2,
-      "min": 27.5,
-      "max": 48,
-      "n": 5
-    },
-    "editor/warm/article/span/git": {
-      "unit": "ms",
-      "median": 2154.2,
-      "p75": 2157.7,
-      "min": 2075.1,
-      "max": 2176.1,
+      "median": 0.6,
+      "p75": 0.6,
+      "min": 0.5,
+      "max": 1.5,
       "n": 5
     },
     "editor/warm/article/span/git-processes": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 26,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/article-large/ttfb": {
       "unit": "ms",
-      "median": 2188,
-      "p75": 2262,
-      "min": 2119,
-      "max": 2301.5,
+      "median": 36.3,
+      "p75": 37,
+      "min": 32.2,
+      "max": 42.5,
       "n": 5
     },
     "editor/warm/article-large/html": {
       "unit": "ms",
-      "median": 2214.1,
-      "p75": 2323.9,
-      "min": 2154.6,
-      "max": 2324.1,
+      "median": 55.9,
+      "p75": 73.9,
+      "min": 44.7,
+      "max": 88.2,
       "n": 5
     },
     "editor/warm/article-large/dcl": {
       "unit": "ms",
-      "median": 2444.3,
-      "p75": 2536.7,
-      "min": 2354.1,
-      "max": 2581.3,
+      "median": 293.7,
+      "p75": 328,
+      "min": 276,
+      "max": 350.2,
       "n": 5
     },
     "editor/warm/article-large/load": {
       "unit": "ms",
-      "median": 2444.8,
-      "p75": 2537.2,
-      "min": 2364,
-      "max": 2581.7,
+      "median": 294.1,
+      "p75": 328.5,
+      "min": 276.5,
+      "max": 371.9,
       "n": 5
     },
     "editor/warm/article-large/fcp": {
       "unit": "ms",
-      "median": 2268,
-      "p75": 2324,
-      "min": 2172,
-      "max": 2348,
+      "median": 104,
+      "p75": 104,
+      "min": 92,
+      "max": 164,
       "n": 5
     },
     "editor/warm/article-large/lcp": {
       "unit": "ms",
-      "median": 2268,
-      "p75": 2356,
-      "min": 2208,
-      "max": 2396,
+      "median": 104,
+      "p75": 104,
+      "min": 92,
+      "max": 164,
       "n": 5
     },
     "editor/warm/article-large/tbt": {
@@ -3375,42 +3304,42 @@
     },
     "editor/warm/article-large/requests": {
       "unit": "count",
-      "median": 111,
-      "p75": 111,
-      "min": 111,
-      "max": 111,
+      "median": 119,
+      "p75": 119,
+      "min": 119,
+      "max": 119,
       "n": 5
     },
     "editor/warm/article-large/scripts": {
       "unit": "count",
-      "median": 107,
-      "p75": 107,
-      "min": 107,
-      "max": 107,
+      "median": 115,
+      "p75": 115,
+      "min": 115,
+      "max": 115,
       "n": 5
     },
     "editor/warm/article-large/html-kb": {
       "unit": "KB",
-      "median": 1297.1,
-      "p75": 1297.1,
-      "min": 1297.1,
-      "max": 1297.1,
+      "median": 1169.3,
+      "p75": 1169.3,
+      "min": 1169.3,
+      "max": 1169.3,
       "n": 5
     },
     "editor/warm/article-large/dom-nodes": {
       "unit": "count",
-      "median": 8156,
-      "p75": 8156,
-      "min": 8156,
-      "max": 8156,
+      "median": 7685,
+      "p75": 7685,
+      "min": 7685,
+      "max": 7685,
       "n": 5
     },
     "editor/warm/article-large/script-kb": {
       "unit": "KB",
-      "median": 2318.3,
-      "p75": 2318.3,
-      "min": 2318.3,
-      "max": 2318.3,
+      "median": 2320.7,
+      "p75": 2320.7,
+      "min": 2320.7,
+      "max": 2320.7,
       "n": 5
     },
     "editor/warm/article-large/css-kb": {
@@ -3439,42 +3368,50 @@
     },
     "editor/warm/article-large/other-kb": {
       "unit": "KB",
-      "median": 275.2,
-      "p75": 275.2,
-      "min": 275.2,
-      "max": 275.2,
+      "median": 277.4,
+      "p75": 277.4,
+      "min": 277.4,
+      "max": 277.4,
       "n": 5
     },
     "editor/warm/article-large/ready": {
       "unit": "ms",
-      "median": 2451.6,
-      "p75": 2537.9,
-      "min": 2370.9,
-      "max": 2586.7,
+      "median": 294.8,
+      "p75": 332.8,
+      "min": 284.7,
+      "max": 377.6,
       "n": 5
     },
     "editor/warm/article-large/images-settled": {
       "unit": "ms",
-      "median": 2455,
-      "p75": 2543.8,
-      "min": 2374.7,
-      "max": 2590.7,
+      "median": 305.1,
+      "p75": 337,
+      "min": 289.2,
+      "max": 381.1,
+      "n": 5
+    },
+    "editor/warm/article-large/js-heap-mb": {
+      "unit": "MB",
+      "median": 11.2,
+      "p75": 11.3,
+      "min": 10.9,
+      "max": 11.3,
       "n": 5
     },
     "editor/warm/article-large/server/module-requests": {
       "unit": "count",
-      "median": 207,
-      "p75": 207,
-      "min": 207,
-      "max": 207,
+      "median": 215,
+      "p75": 217,
+      "min": 215,
+      "max": 217,
       "n": 5
     },
     "editor/warm/article-large/server/module-ms": {
       "unit": "ms",
-      "median": 36.6,
-      "p75": 37.8,
-      "min": 33.5,
-      "max": 54.3,
+      "median": 34.5,
+      "p75": 35.3,
+      "min": 31.6,
+      "max": 35.9,
       "n": 5
     },
     "editor/warm/article-large/server/editor-requests": {
@@ -3487,10 +3424,10 @@
     },
     "editor/warm/article-large/server/editor-ms": {
       "unit": "ms",
-      "median": 2212.7,
-      "p75": 2320.5,
-      "min": 2153.5,
-      "max": 2322,
+      "median": 55,
+      "p75": 72.6,
+      "min": 43.4,
+      "max": 87.4,
       "n": 5
     },
     "editor/warm/article-large/server/canvas-requests": {
@@ -3503,10 +3440,10 @@
     },
     "editor/warm/article-large/server/canvas-ms": {
       "unit": "ms",
-      "median": 33.6,
-      "p75": 33.8,
-      "min": 27.2,
-      "max": 49.4,
+      "median": 28.5,
+      "p75": 33.3,
+      "min": 25,
+      "max": 43.3,
       "n": 5
     },
     "editor/warm/article-large/server/image-requests": {
@@ -3519,90 +3456,74 @@
     },
     "editor/warm/article-large/server/image-ms": {
       "unit": "ms",
-      "median": 991.1,
-      "p75": 991.1,
-      "min": 991.1,
-      "max": 991.1,
+      "median": 933.6,
+      "p75": 933.6,
+      "min": 933.6,
+      "max": 933.6,
       "n": 1
-    },
-    "editor/warm/article-large/span/picture.url": {
-      "unit": "ms",
-      "median": 2536.5,
-      "p75": 2568.5,
-      "min": 1721.7,
-      "max": 3521.2,
-      "n": 5
     },
     "editor/warm/article-large/span/media.cards": {
       "unit": "ms",
-      "median": 29.1,
-      "p75": 29.5,
-      "min": 20.6,
-      "max": 45.5,
-      "n": 5
-    },
-    "editor/warm/article-large/span/git": {
-      "unit": "ms",
-      "median": 2120.4,
-      "p75": 2190.8,
-      "min": 2056.9,
-      "max": 2208.9,
+      "median": 1.7,
+      "p75": 2.4,
+      "min": 1.3,
+      "max": 3.1,
       "n": 5
     },
     "editor/warm/article-large/span/git-processes": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 26,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/sections/ttfb": {
       "unit": "ms",
-      "median": 920.3,
-      "p75": 935.6,
-      "min": 871.5,
-      "max": 972.5,
+      "median": 13.9,
+      "p75": 17.2,
+      "min": 13.7,
+      "max": 21.4,
       "n": 5
     },
     "editor/warm/sections/html": {
       "unit": "ms",
-      "median": 929.7,
-      "p75": 965.7,
-      "min": 874.9,
-      "max": 982.4,
+      "median": 25.7,
+      "p75": 27.3,
+      "min": 17.1,
+      "max": 28.3,
       "n": 5
     },
     "editor/warm/sections/dcl": {
       "unit": "ms",
-      "median": 995.5,
-      "p75": 1022.5,
-      "min": 938,
-      "max": 1043,
+      "median": 83.1,
+      "p75": 95.9,
+      "min": 79.4,
+      "max": 100.1,
       "n": 5
     },
     "editor/warm/sections/load": {
       "unit": "ms",
-      "median": 995.5,
-      "p75": 1022.6,
-      "min": 938.7,
-      "max": 1043.6,
+      "median": 83.3,
+      "p75": 96,
+      "min": 79.7,
+      "max": 100.2,
       "n": 5
     },
     "editor/warm/sections/fcp": {
       "unit": "ms",
-      "median": 976,
-      "p75": 1020,
-      "min": 916,
-      "max": 1028,
+      "median": 68,
+      "p75": 72,
+      "min": 56,
+      "max": 76,
       "n": 5
     },
     "editor/warm/sections/lcp": {
       "unit": "ms",
-      "median": 976,
-      "p75": 1020,
-      "min": 916,
-      "max": 1028,
+      "median": 68,
+      "p75": 72,
+      "min": 56,
+      "max": 76,
       "n": 5
     },
     "editor/warm/sections/tbt": {
@@ -3623,42 +3544,42 @@
     },
     "editor/warm/sections/requests": {
       "unit": "count",
-      "median": 65,
-      "p75": 65,
-      "min": 65,
-      "max": 65,
+      "median": 70,
+      "p75": 70,
+      "min": 70,
+      "max": 70,
       "n": 5
     },
     "editor/warm/sections/scripts": {
       "unit": "count",
-      "median": 62,
-      "p75": 62,
-      "min": 62,
-      "max": 62,
+      "median": 67,
+      "p75": 67,
+      "min": 67,
+      "max": 67,
       "n": 5
     },
     "editor/warm/sections/html-kb": {
       "unit": "KB",
-      "median": 341.2,
-      "p75": 341.2,
-      "min": 341.2,
-      "max": 341.2,
+      "median": 348.6,
+      "p75": 348.6,
+      "min": 348.6,
+      "max": 348.6,
       "n": 5
     },
     "editor/warm/sections/dom-nodes": {
       "unit": "count",
-      "median": 2157,
-      "p75": 2157,
-      "min": 2157,
-      "max": 2157,
+      "median": 2171,
+      "p75": 2171,
+      "min": 2171,
+      "max": 2171,
       "n": 5
     },
     "editor/warm/sections/script-kb": {
       "unit": "KB",
-      "median": 18.2,
-      "p75": 18.2,
-      "min": 18.2,
-      "max": 133.3,
+      "median": 19.6,
+      "p75": 19.6,
+      "min": 19.6,
+      "max": 134.7,
       "n": 5
     },
     "editor/warm/sections/css-kb": {
@@ -3695,34 +3616,42 @@
     },
     "editor/warm/sections/ready": {
       "unit": "ms",
-      "median": 942.4,
-      "p75": 994.3,
-      "min": 893.2,
-      "max": 1000.1,
+      "median": 39.8,
+      "p75": 43.1,
+      "min": 34.9,
+      "max": 50.1,
       "n": 5
     },
     "editor/warm/sections/images-settled": {
       "unit": "ms",
-      "median": 999.2,
-      "p75": 1026.8,
-      "min": 942.6,
-      "max": 1047.8,
+      "median": 87.1,
+      "p75": 99.2,
+      "min": 82.2,
+      "max": 103,
+      "n": 5
+    },
+    "editor/warm/sections/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.4,
+      "p75": 2.4,
+      "min": 2.4,
+      "max": 2.4,
       "n": 5
     },
     "editor/warm/sections/server/module-requests": {
       "unit": "count",
-      "median": 64,
-      "p75": 64,
-      "min": 64,
-      "max": 64,
+      "median": 69,
+      "p75": 69,
+      "min": 69,
+      "max": 69,
       "n": 5
     },
     "editor/warm/sections/server/module-ms": {
       "unit": "ms",
-      "median": 12.7,
-      "p75": 13.5,
-      "min": 9.7,
-      "max": 13.9,
+      "median": 9.5,
+      "p75": 11.6,
+      "min": 9,
+      "max": 12.2,
       "n": 5
     },
     "editor/warm/sections/server/editor-requests": {
@@ -3735,74 +3664,66 @@
     },
     "editor/warm/sections/server/editor-ms": {
       "unit": "ms",
-      "median": 928.4,
-      "p75": 964.6,
-      "min": 874.3,
-      "max": 980.1,
-      "n": 5
-    },
-    "editor/warm/sections/span/git": {
-      "unit": "ms",
-      "median": 902.5,
-      "p75": 923.2,
-      "min": 860.7,
-      "max": 951.2,
+      "median": 23.5,
+      "p75": 25.9,
+      "min": 16,
+      "max": 26.4,
       "n": 5
     },
     "editor/warm/sections/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/navigation/ttfb": {
       "unit": "ms",
-      "median": 891.7,
-      "p75": 919.2,
-      "min": 864.5,
-      "max": 950.7,
+      "median": 9.7,
+      "p75": 10,
+      "min": 6.3,
+      "max": 12.9,
       "n": 5
     },
     "editor/warm/navigation/html": {
       "unit": "ms",
-      "median": 892.7,
-      "p75": 920.5,
-      "min": 868.3,
-      "max": 952.2,
+      "median": 11.4,
+      "p75": 13,
+      "min": 7.3,
+      "max": 14,
       "n": 5
     },
     "editor/warm/navigation/dcl": {
       "unit": "ms",
-      "median": 958.5,
-      "p75": 982.1,
-      "min": 924.2,
-      "max": 1015.6,
+      "median": 72.3,
+      "p75": 75.6,
+      "min": 69.9,
+      "max": 82.1,
       "n": 5
     },
     "editor/warm/navigation/load": {
       "unit": "ms",
-      "median": 959.1,
-      "p75": 982.7,
-      "min": 924.7,
-      "max": 1016.2,
+      "median": 74.3,
+      "p75": 75.8,
+      "min": 69.9,
+      "max": 82.6,
       "n": 5
     },
     "editor/warm/navigation/fcp": {
       "unit": "ms",
-      "median": 948,
-      "p75": 964,
-      "min": 908,
-      "max": 1004,
+      "median": 64,
+      "p75": 68,
+      "min": 52,
+      "max": 72,
       "n": 5
     },
     "editor/warm/navigation/lcp": {
       "unit": "ms",
-      "median": 948,
-      "p75": 964,
-      "min": 908,
-      "max": 1004,
+      "median": 64,
+      "p75": 68,
+      "min": 52,
+      "max": 72,
       "n": 5
     },
     "editor/warm/navigation/tbt": {
@@ -3823,42 +3744,42 @@
     },
     "editor/warm/navigation/requests": {
       "unit": "count",
-      "median": 58,
-      "p75": 58,
-      "min": 58,
-      "max": 58,
+      "median": 63,
+      "p75": 63,
+      "min": 63,
+      "max": 64,
       "n": 5
     },
     "editor/warm/navigation/scripts": {
       "unit": "count",
-      "median": 55,
-      "p75": 55,
-      "min": 55,
-      "max": 55,
+      "median": 60,
+      "p75": 60,
+      "min": 60,
+      "max": 60,
       "n": 5
     },
     "editor/warm/navigation/html-kb": {
       "unit": "KB",
-      "median": 161.8,
-      "p75": 161.8,
-      "min": 161.8,
-      "max": 161.8,
+      "median": 169.1,
+      "p75": 169.1,
+      "min": 169.1,
+      "max": 169.6,
       "n": 5
     },
     "editor/warm/navigation/dom-nodes": {
       "unit": "count",
-      "median": 640,
-      "p75": 640,
-      "min": 640,
-      "max": 640,
+      "median": 654,
+      "p75": 654,
+      "min": 654,
+      "max": 654,
       "n": 5
     },
     "editor/warm/navigation/script-kb": {
       "unit": "KB",
-      "median": 16.1,
-      "p75": 16.1,
-      "min": 16.1,
-      "max": 34.5,
+      "median": 17.6,
+      "p75": 17.6,
+      "min": 17.6,
+      "max": 36,
       "n": 5
     },
     "editor/warm/navigation/css-kb": {
@@ -3890,23 +3811,31 @@
       "median": 0,
       "p75": 0,
       "min": 0,
-      "max": 0,
+      "max": 169.1,
       "n": 5
     },
     "editor/warm/navigation/ready": {
       "unit": "ms",
-      "median": 910.9,
-      "p75": 937.2,
-      "min": 883.6,
-      "max": 969.2,
+      "median": 28.3,
+      "p75": 28.6,
+      "min": 24.7,
+      "max": 31.8,
       "n": 5
     },
     "editor/warm/navigation/images-settled": {
       "unit": "ms",
-      "median": 963.3,
-      "p75": 987.2,
-      "min": 928.4,
-      "max": 1019.8,
+      "median": 77.3,
+      "p75": 79.3,
+      "min": 73.6,
+      "max": 87,
+      "n": 5
+    },
+    "editor/warm/navigation/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.3,
+      "p75": 2.3,
+      "min": 2.3,
+      "max": 2.3,
       "n": 5
     },
     "editor/warm/navigation/server/editor-requests": {
@@ -3914,95 +3843,95 @@
       "median": 1,
       "p75": 1,
       "min": 1,
-      "max": 1,
+      "max": 2,
       "n": 5
     },
     "editor/warm/navigation/server/editor-ms": {
       "unit": "ms",
-      "median": 891.5,
-      "p75": 919.6,
-      "min": 867.2,
-      "max": 951.1,
+      "median": 12.4,
+      "p75": 13.2,
+      "min": 9.7,
+      "max": 124.2,
       "n": 5
     },
     "editor/warm/navigation/server/module-requests": {
       "unit": "count",
-      "median": 57,
-      "p75": 57,
-      "min": 57,
-      "max": 57,
+      "median": 62,
+      "p75": 62,
+      "min": 62,
+      "max": 62,
       "n": 5
     },
     "editor/warm/navigation/server/module-ms": {
       "unit": "ms",
-      "median": 7.8,
-      "p75": 8.5,
-      "min": 7.8,
-      "max": 9.3,
-      "n": 5
-    },
-    "editor/warm/navigation/span/git": {
-      "unit": "ms",
-      "median": 883.2,
-      "p75": 910.3,
-      "min": 855.7,
-      "max": 941.7,
+      "median": 8.5,
+      "p75": 9.4,
+      "min": 7.1,
+      "max": 10.2,
       "n": 5
     },
     "editor/warm/navigation/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 2,
       "n": 5
+    },
+    "editor/warm/navigation/span/git": {
+      "unit": "ms",
+      "median": 170.4,
+      "p75": 170.4,
+      "min": 170.4,
+      "max": 170.4,
+      "n": 1
     },
     "editor/warm/planet/ttfb": {
       "unit": "ms",
-      "median": 897.7,
-      "p75": 909,
-      "min": 891.9,
-      "max": 960.6,
+      "median": 14.3,
+      "p75": 15.7,
+      "min": 11.3,
+      "max": 16.4,
       "n": 5
     },
     "editor/warm/planet/html": {
       "unit": "ms",
-      "median": 903.7,
-      "p75": 912.9,
-      "min": 897,
-      "max": 969,
+      "median": 18.9,
+      "p75": 19.2,
+      "min": 14.6,
+      "max": 22.9,
       "n": 5
     },
     "editor/warm/planet/dcl": {
       "unit": "ms",
-      "median": 963.3,
-      "p75": 975.7,
-      "min": 960.4,
-      "max": 1034.1,
+      "median": 80.2,
+      "p75": 81,
+      "min": 77.7,
+      "max": 83.5,
       "n": 5
     },
     "editor/warm/planet/load": {
       "unit": "ms",
-      "median": 963.3,
-      "p75": 976.3,
-      "min": 961.1,
-      "max": 1034.3,
+      "median": 80.7,
+      "p75": 81.2,
+      "min": 78.3,
+      "max": 83.6,
       "n": 5
     },
     "editor/warm/planet/fcp": {
       "unit": "ms",
-      "median": 952,
-      "p75": 952,
-      "min": 940,
-      "max": 1016,
+      "median": 60,
+      "p75": 60,
+      "min": 56,
+      "max": 68,
       "n": 5
     },
     "editor/warm/planet/lcp": {
       "unit": "ms",
-      "median": 952,
-      "p75": 952,
-      "min": 940,
-      "max": 1016,
+      "median": 60,
+      "p75": 60,
+      "min": 56,
+      "max": 68,
       "n": 5
     },
     "editor/warm/planet/tbt": {
@@ -4023,42 +3952,42 @@
     },
     "editor/warm/planet/requests": {
       "unit": "count",
-      "median": 63,
-      "p75": 63,
-      "min": 63,
-      "max": 63,
+      "median": 68,
+      "p75": 68,
+      "min": 68,
+      "max": 68,
       "n": 5
     },
     "editor/warm/planet/scripts": {
       "unit": "count",
-      "median": 60,
-      "p75": 60,
-      "min": 60,
-      "max": 60,
+      "median": 65,
+      "p75": 65,
+      "min": 65,
+      "max": 65,
       "n": 5
     },
     "editor/warm/planet/html-kb": {
       "unit": "KB",
-      "median": 317.9,
-      "p75": 317.9,
-      "min": 317.9,
-      "max": 317.9,
+      "median": 325.2,
+      "p75": 325.2,
+      "min": 325.2,
+      "max": 325.2,
       "n": 5
     },
     "editor/warm/planet/dom-nodes": {
       "unit": "count",
-      "median": 1932,
-      "p75": 1932,
-      "min": 1932,
-      "max": 1932,
+      "median": 1946,
+      "p75": 1946,
+      "min": 1946,
+      "max": 1946,
       "n": 5
     },
     "editor/warm/planet/script-kb": {
       "unit": "KB",
-      "median": 17.6,
-      "p75": 17.6,
-      "min": 17.6,
-      "max": 32.3,
+      "median": 19,
+      "p75": 19,
+      "min": 19,
+      "max": 34,
       "n": 5
     },
     "editor/warm/planet/css-kb": {
@@ -4095,18 +4024,26 @@
     },
     "editor/warm/planet/ready": {
       "unit": "ms",
-      "median": 921.4,
-      "p75": 929.8,
-      "min": 914,
-      "max": 982.8,
+      "median": 36.1,
+      "p75": 37.9,
+      "min": 33.5,
+      "max": 38.4,
       "n": 5
     },
     "editor/warm/planet/images-settled": {
       "unit": "ms",
-      "median": 967,
-      "p75": 980.4,
-      "min": 965.3,
-      "max": 1038.5,
+      "median": 84.3,
+      "p75": 85.9,
+      "min": 82.3,
+      "max": 87.1,
+      "n": 5
+    },
+    "editor/warm/planet/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.4,
+      "p75": 2.4,
+      "min": 2.4,
+      "max": 2.4,
       "n": 5
     },
     "editor/warm/planet/server/editor-requests": {
@@ -4119,90 +4056,82 @@
     },
     "editor/warm/planet/server/editor-ms": {
       "unit": "ms",
-      "median": 901,
-      "p75": 911.6,
-      "min": 896.2,
-      "max": 966.3,
+      "median": 17.3,
+      "p75": 18.2,
+      "min": 13.6,
+      "max": 20.8,
       "n": 5
     },
     "editor/warm/planet/server/module-requests": {
       "unit": "count",
-      "median": 62,
-      "p75": 62,
-      "min": 62,
-      "max": 62,
+      "median": 67,
+      "p75": 67,
+      "min": 67,
+      "max": 67,
       "n": 5
     },
     "editor/warm/planet/server/module-ms": {
       "unit": "ms",
-      "median": 11.2,
-      "p75": 11.8,
-      "min": 8.6,
-      "max": 12.5,
-      "n": 5
-    },
-    "editor/warm/planet/span/git": {
-      "unit": "ms",
-      "median": 888.1,
-      "p75": 890.7,
-      "min": 876.7,
-      "max": 944.2,
+      "median": 9.7,
+      "p75": 10.1,
+      "min": 8,
+      "max": 10.7,
       "n": 5
     },
     "editor/warm/planet/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/media/ttfb": {
       "unit": "ms",
-      "median": 913.6,
-      "p75": 967.2,
-      "min": 901.2,
-      "max": 995.1,
+      "median": 21.1,
+      "p75": 21.4,
+      "min": 18.3,
+      "max": 23.2,
       "n": 5
     },
     "editor/warm/media/html": {
       "unit": "ms",
-      "median": 925.5,
-      "p75": 989,
-      "min": 909.1,
-      "max": 1015,
+      "median": 28.1,
+      "p75": 30.6,
+      "min": 24.8,
+      "max": 35.8,
       "n": 5
     },
     "editor/warm/media/dcl": {
       "unit": "ms",
-      "median": 1063.8,
-      "p75": 1078.6,
-      "min": 998.4,
-      "max": 1109.1,
+      "median": 125.8,
+      "p75": 148.1,
+      "min": 119,
+      "max": 148.7,
       "n": 5
     },
     "editor/warm/media/load": {
       "unit": "ms",
-      "median": 1072.5,
-      "p75": 1079.2,
-      "min": 999.1,
-      "max": 1109.2,
+      "median": 126,
+      "p75": 148.4,
+      "min": 119.2,
+      "max": 149.1,
       "n": 5
     },
     "editor/warm/media/fcp": {
       "unit": "ms",
-      "median": 976,
-      "p75": 1036,
-      "min": 956,
-      "max": 1048,
+      "median": 84,
+      "p75": 84,
+      "min": 72,
+      "max": 88,
       "n": 5
     },
     "editor/warm/media/lcp": {
       "unit": "ms",
-      "median": 976,
-      "p75": 1036,
-      "min": 956,
-      "max": 1048,
+      "median": 84,
+      "p75": 84,
+      "min": 72,
+      "max": 88,
       "n": 5
     },
     "editor/warm/media/tbt": {
@@ -4223,42 +4152,42 @@
     },
     "editor/warm/media/requests": {
       "unit": "count",
-      "median": 179,
-      "p75": 179,
-      "min": 179,
-      "max": 179,
+      "median": 185,
+      "p75": 185,
+      "min": 185,
+      "max": 185,
       "n": 5
     },
     "editor/warm/media/scripts": {
       "unit": "count",
-      "median": 71,
-      "p75": 71,
-      "min": 71,
-      "max": 71,
+      "median": 77,
+      "p75": 77,
+      "min": 77,
+      "max": 77,
       "n": 5
     },
     "editor/warm/media/html-kb": {
       "unit": "KB",
-      "median": 277.2,
-      "p75": 277.2,
-      "min": 277.2,
-      "max": 277.2,
+      "median": 288.8,
+      "p75": 288.8,
+      "min": 288.8,
+      "max": 288.8,
       "n": 5
     },
     "editor/warm/media/dom-nodes": {
       "unit": "count",
-      "median": 1081,
-      "p75": 1081,
-      "min": 1081,
-      "max": 1081,
+      "median": 1097,
+      "p75": 1097,
+      "min": 1097,
+      "max": 1097,
       "n": 5
     },
     "editor/warm/media/script-kb": {
       "unit": "KB",
-      "median": 20.8,
-      "p75": 20.8,
-      "min": 20.8,
-      "max": 24.7,
+      "median": 22.6,
+      "p75": 22.6,
+      "min": 22.6,
+      "max": 27.3,
       "n": 5
     },
     "editor/warm/media/css-kb": {
@@ -4295,34 +4224,26 @@
     },
     "editor/warm/media/ready": {
       "unit": "ms",
-      "median": 937.6,
-      "p75": 1033,
-      "min": 923.5,
-      "max": 1046.3,
+      "median": 44.2,
+      "p75": 47.6,
+      "min": 40.4,
+      "max": 64.3,
       "n": 5
     },
     "editor/warm/media/images-settled": {
       "unit": "ms",
-      "median": 1085.4,
-      "p75": 1114.8,
-      "min": 1005.1,
-      "max": 1327.6,
+      "median": 129.7,
+      "p75": 153.4,
+      "min": 123.3,
+      "max": 412.1,
       "n": 5
     },
-    "editor/warm/media/server/module-requests": {
-      "unit": "count",
-      "median": 73,
-      "p75": 73,
-      "min": 73,
-      "max": 73,
-      "n": 5
-    },
-    "editor/warm/media/server/module-ms": {
-      "unit": "ms",
-      "median": 13.3,
-      "p75": 14.1,
-      "min": 10.3,
-      "max": 14.3,
+    "editor/warm/media/js-heap-mb": {
+      "unit": "MB",
+      "median": 3.6,
+      "p75": 3.6,
+      "min": 3.6,
+      "max": 3.7,
       "n": 5
     },
     "editor/warm/media/server/editor-requests": {
@@ -4335,10 +4256,26 @@
     },
     "editor/warm/media/server/editor-ms": {
       "unit": "ms",
-      "median": 922.8,
-      "p75": 988,
-      "min": 907.9,
-      "max": 1013.8,
+      "median": 26.2,
+      "p75": 29.6,
+      "min": 23.9,
+      "max": 34.8,
+      "n": 5
+    },
+    "editor/warm/media/server/module-requests": {
+      "unit": "count",
+      "median": 79,
+      "p75": 79,
+      "min": 79,
+      "max": 79,
+      "n": 5
+    },
+    "editor/warm/media/server/module-ms": {
+      "unit": "ms",
+      "median": 11,
+      "p75": 12,
+      "min": 9.2,
+      "max": 12.7,
       "n": 5
     },
     "editor/warm/media/server/image-requests": {
@@ -4351,90 +4288,74 @@
     },
     "editor/warm/media/server/image-ms": {
       "unit": "ms",
-      "median": 3258.8,
-      "p75": 3258.8,
-      "min": 3258.8,
-      "max": 3258.8,
+      "median": 2763.3,
+      "p75": 2763.3,
+      "min": 2763.3,
+      "max": 2763.3,
       "n": 1
-    },
-    "editor/warm/media/span/picture.url": {
-      "unit": "ms",
-      "median": 2301.6,
-      "p75": 3398.6,
-      "min": 1806.7,
-      "max": 3943.4,
-      "n": 5
     },
     "editor/warm/media/span/media.cards": {
       "unit": "ms",
-      "median": 27.2,
-      "p75": 33.6,
-      "min": 22,
-      "max": 46.4,
-      "n": 5
-    },
-    "editor/warm/media/span/git": {
-      "unit": "ms",
-      "median": 877.8,
-      "p75": 930.8,
-      "min": 871.5,
-      "max": 932.3,
+      "median": 10.3,
+      "p75": 11.2,
+      "min": 8.8,
+      "max": 11.6,
       "n": 5
     },
     "editor/warm/media/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/settings/ttfb": {
       "unit": "ms",
-      "median": 970.7,
-      "p75": 991.2,
-      "min": 926,
-      "max": 1011.2,
+      "median": 14.7,
+      "p75": 18.8,
+      "min": 10.8,
+      "max": 19.2,
       "n": 5
     },
     "editor/warm/settings/html": {
       "unit": "ms",
-      "median": 988.7,
-      "p75": 999.7,
-      "min": 935,
-      "max": 1019.8,
+      "median": 18.2,
+      "p75": 21.2,
+      "min": 11.9,
+      "max": 22.1,
       "n": 5
     },
     "editor/warm/settings/dcl": {
       "unit": "ms",
-      "median": 1044,
-      "p75": 1066.6,
-      "min": 996.8,
-      "max": 1075.9,
+      "median": 85.2,
+      "p75": 87,
+      "min": 79.2,
+      "max": 94.9,
       "n": 5
     },
     "editor/warm/settings/load": {
       "unit": "ms",
-      "median": 1044.1,
-      "p75": 1067.2,
-      "min": 998.4,
-      "max": 1076.7,
+      "median": 85.3,
+      "p75": 87.1,
+      "min": 79.5,
+      "max": 95,
       "n": 5
     },
     "editor/warm/settings/fcp": {
       "unit": "ms",
-      "median": 1016,
-      "p75": 1068,
-      "min": 988,
-      "max": 1068,
+      "median": 68,
+      "p75": 72,
+      "min": 60,
+      "max": 72,
       "n": 5
     },
     "editor/warm/settings/lcp": {
       "unit": "ms",
-      "median": 1016,
-      "p75": 1068,
-      "min": 988,
-      "max": 1068,
+      "median": 68,
+      "p75": 72,
+      "min": 60,
+      "max": 72,
       "n": 5
     },
     "editor/warm/settings/tbt": {
@@ -4455,42 +4376,42 @@
     },
     "editor/warm/settings/requests": {
       "unit": "count",
-      "median": 75,
-      "p75": 75,
-      "min": 75,
-      "max": 75,
+      "median": 82,
+      "p75": 82,
+      "min": 82,
+      "max": 82,
       "n": 5
     },
     "editor/warm/settings/scripts": {
       "unit": "count",
-      "median": 71,
-      "p75": 71,
-      "min": 71,
-      "max": 71,
+      "median": 78,
+      "p75": 78,
+      "min": 78,
+      "max": 78,
       "n": 5
     },
     "editor/warm/settings/html-kb": {
       "unit": "KB",
-      "median": 286.7,
-      "p75": 286.7,
-      "min": 286.7,
-      "max": 286.7,
+      "median": 169.8,
+      "p75": 169.8,
+      "min": 169.8,
+      "max": 169.8,
       "n": 5
     },
     "editor/warm/settings/dom-nodes": {
       "unit": "count",
-      "median": 1160,
-      "p75": 1160,
-      "min": 1160,
-      "max": 1160,
+      "median": 592,
+      "p75": 592,
+      "min": 592,
+      "max": 592,
       "n": 5
     },
     "editor/warm/settings/script-kb": {
       "unit": "KB",
-      "median": 20.8,
-      "p75": 20.8,
-      "min": 20.8,
-      "max": 50.5,
+      "median": 22.9,
+      "p75": 22.9,
+      "min": 22.9,
+      "max": 55,
       "n": 5
     },
     "editor/warm/settings/css-kb": {
@@ -4527,18 +4448,26 @@
     },
     "editor/warm/settings/ready": {
       "unit": "ms",
-      "median": 1014.9,
-      "p75": 1017.6,
-      "min": 950.5,
-      "max": 1033.4,
+      "median": 38.5,
+      "p75": 38.7,
+      "min": 31.2,
+      "max": 38.7,
       "n": 5
     },
     "editor/warm/settings/images-settled": {
       "unit": "ms",
-      "median": 1047.6,
-      "p75": 1071.5,
-      "min": 1001.6,
-      "max": 1080.4,
+      "median": 87.9,
+      "p75": 91,
+      "min": 81.9,
+      "max": 98,
+      "n": 5
+    },
+    "editor/warm/settings/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.6,
+      "p75": 2.6,
+      "min": 2.6,
+      "max": 2.6,
       "n": 5
     },
     "editor/warm/settings/server/editor-requests": {
@@ -4551,106 +4480,90 @@
     },
     "editor/warm/settings/server/editor-ms": {
       "unit": "ms",
-      "median": 987.4,
-      "p75": 998.7,
-      "min": 934,
-      "max": 1018,
+      "median": 17.5,
+      "p75": 20.2,
+      "min": 11.1,
+      "max": 21,
       "n": 5
     },
     "editor/warm/settings/server/module-requests": {
       "unit": "count",
-      "median": 73,
-      "p75": 73,
-      "min": 73,
-      "max": 73,
+      "median": 80,
+      "p75": 80,
+      "min": 80,
+      "max": 80,
       "n": 5
     },
     "editor/warm/settings/server/module-ms": {
       "unit": "ms",
-      "median": 11.7,
-      "p75": 15,
-      "min": 9.9,
-      "max": 15.4,
-      "n": 5
-    },
-    "editor/warm/settings/span/picture.url": {
-      "unit": "ms",
-      "median": 3083.5,
-      "p75": 3237.9,
-      "min": 1353.3,
-      "max": 3491.9,
+      "median": 10.4,
+      "p75": 10.4,
+      "min": 9.6,
+      "max": 13,
       "n": 5
     },
     "editor/warm/settings/span/media.cards": {
       "unit": "ms",
-      "median": 34,
-      "p75": 43.8,
-      "min": 20.9,
-      "max": 50.3,
-      "n": 5
-    },
-    "editor/warm/settings/span/git": {
-      "unit": "ms",
-      "median": 904.3,
-      "p75": 950.6,
-      "min": 884.2,
-      "max": 952.9,
+      "median": 0.2,
+      "p75": 0.4,
+      "min": 0.2,
+      "max": 0.5,
       "n": 5
     },
     "editor/warm/settings/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/access/ttfb": {
       "unit": "ms",
-      "median": 920.4,
-      "p75": 955.5,
-      "min": 881,
-      "max": 993.9,
+      "median": 19,
+      "p75": 22.9,
+      "min": 15.7,
+      "max": 23.9,
       "n": 5
     },
     "editor/warm/access/html": {
       "unit": "ms",
-      "median": 922.7,
-      "p75": 957.4,
-      "min": 883.5,
-      "max": 996.1,
+      "median": 20.7,
+      "p75": 25.6,
+      "min": 17.4,
+      "max": 29.1,
       "n": 5
     },
     "editor/warm/access/dcl": {
       "unit": "ms",
-      "median": 1006.6,
-      "p75": 1040.8,
-      "min": 967.5,
-      "max": 1081.1,
+      "median": 99.7,
+      "p75": 103.6,
+      "min": 91.9,
+      "max": 112.2,
       "n": 5
     },
     "editor/warm/access/load": {
       "unit": "ms",
-      "median": 1006.7,
-      "p75": 1040.9,
-      "min": 968,
-      "max": 1081.3,
+      "median": 99.8,
+      "p75": 103.7,
+      "min": 92,
+      "max": 112.4,
       "n": 5
     },
     "editor/warm/access/fcp": {
       "unit": "ms",
-      "median": 992,
-      "p75": 1020,
-      "min": 972,
-      "max": 1060,
+      "median": 80,
+      "p75": 80,
+      "min": 72,
+      "max": 96,
       "n": 5
     },
     "editor/warm/access/lcp": {
       "unit": "ms",
-      "median": 992,
-      "p75": 1020,
-      "min": 972,
-      "max": 1060,
+      "median": 80,
+      "p75": 80,
+      "min": 72,
+      "max": 96,
       "n": 5
     },
     "editor/warm/access/tbt": {
@@ -4671,42 +4584,42 @@
     },
     "editor/warm/access/requests": {
       "unit": "count",
-      "median": 62,
-      "p75": 62,
-      "min": 62,
-      "max": 62,
+      "median": 67,
+      "p75": 67,
+      "min": 67,
+      "max": 67,
       "n": 5
     },
     "editor/warm/access/scripts": {
       "unit": "count",
-      "median": 59,
-      "p75": 59,
-      "min": 59,
-      "max": 59,
+      "median": 64,
+      "p75": 64,
+      "min": 64,
+      "max": 64,
       "n": 5
     },
     "editor/warm/access/html-kb": {
       "unit": "KB",
-      "median": 174.1,
-      "p75": 174.1,
-      "min": 174.1,
-      "max": 174.1,
+      "median": 182.4,
+      "p75": 182.4,
+      "min": 182.4,
+      "max": 182.4,
       "n": 5
     },
     "editor/warm/access/dom-nodes": {
       "unit": "count",
-      "median": 766,
-      "p75": 766,
-      "min": 766,
-      "max": 766,
+      "median": 780,
+      "p75": 780,
+      "min": 780,
+      "max": 780,
       "n": 5
     },
     "editor/warm/access/script-kb": {
       "unit": "KB",
-      "median": 17.3,
-      "p75": 17.3,
-      "min": 17.3,
-      "max": 124.8,
+      "median": 18.8,
+      "p75": 18.8,
+      "min": 18.8,
+      "max": 128.1,
       "n": 5
     },
     "editor/warm/access/css-kb": {
@@ -4743,18 +4656,26 @@
     },
     "editor/warm/access/ready": {
       "unit": "ms",
-      "median": 939.8,
-      "p75": 1004.6,
-      "min": 902,
-      "max": 1015,
+      "median": 39.4,
+      "p75": 42.9,
+      "min": 35.4,
+      "max": 43.5,
       "n": 5
     },
     "editor/warm/access/images-settled": {
       "unit": "ms",
-      "median": 1011,
-      "p75": 1045.6,
-      "min": 972.6,
-      "max": 1086.2,
+      "median": 104.1,
+      "p75": 107.8,
+      "min": 96.1,
+      "max": 115.5,
+      "n": 5
+    },
+    "editor/warm/access/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.5,
+      "p75": 2.5,
+      "min": 2.5,
+      "max": 3.3,
       "n": 5
     },
     "editor/warm/access/server/editor-requests": {
@@ -4767,90 +4688,82 @@
     },
     "editor/warm/access/server/editor-ms": {
       "unit": "ms",
-      "median": 921.8,
-      "p75": 956.4,
-      "min": 882.3,
-      "max": 995,
+      "median": 19.7,
+      "p75": 24.3,
+      "min": 16.6,
+      "max": 26.7,
       "n": 5
     },
     "editor/warm/access/server/module-requests": {
       "unit": "count",
-      "median": 61,
-      "p75": 61,
-      "min": 61,
-      "max": 61,
+      "median": 66,
+      "p75": 66,
+      "min": 66,
+      "max": 66,
       "n": 5
     },
     "editor/warm/access/server/module-ms": {
       "unit": "ms",
-      "median": 10.7,
-      "p75": 11.2,
-      "min": 8.6,
-      "max": 11.2,
-      "n": 5
-    },
-    "editor/warm/access/span/git": {
-      "unit": "ms",
-      "median": 909.2,
-      "p75": 940.2,
-      "min": 867.4,
-      "max": 977.3,
+      "median": 9.7,
+      "p75": 10,
+      "min": 7.9,
+      "max": 11.4,
       "n": 5
     },
     "editor/warm/access/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/publish/ttfb": {
       "unit": "ms",
-      "median": 2082.4,
-      "p75": 2112.1,
-      "min": 2036.1,
-      "max": 2154.3,
+      "median": 13.1,
+      "p75": 15.2,
+      "min": 10.4,
+      "max": 17.2,
       "n": 5
     },
     "editor/warm/publish/html": {
       "unit": "ms",
-      "median": 2083.1,
-      "p75": 2112.9,
-      "min": 2036.8,
-      "max": 2155.9,
+      "median": 15.3,
+      "p75": 16.5,
+      "min": 11.3,
+      "max": 19.2,
       "n": 5
     },
     "editor/warm/publish/dcl": {
       "unit": "ms",
-      "median": 2152.3,
-      "p75": 2177.8,
-      "min": 2104.5,
-      "max": 2226.3,
+      "median": 69.6,
+      "p75": 76.3,
+      "min": 61.9,
+      "max": 76.5,
       "n": 5
     },
     "editor/warm/publish/load": {
       "unit": "ms",
-      "median": 2152.7,
-      "p75": 2178.1,
-      "min": 2104.9,
-      "max": 2226.8,
+      "median": 69.6,
+      "p75": 76.5,
+      "min": 62,
+      "max": 76.7,
       "n": 5
     },
     "editor/warm/publish/fcp": {
       "unit": "ms",
-      "median": 2124,
-      "p75": 2156,
-      "min": 2080,
-      "max": 2200,
+      "median": 56,
+      "p75": 60,
+      "min": 48,
+      "max": 64,
       "n": 5
     },
     "editor/warm/publish/lcp": {
       "unit": "ms",
-      "median": 2124,
-      "p75": 2156,
-      "min": 2080,
-      "max": 2200,
+      "median": 56,
+      "p75": 60,
+      "min": 48,
+      "max": 64,
       "n": 5
     },
     "editor/warm/publish/tbt": {
@@ -4871,42 +4784,42 @@
     },
     "editor/warm/publish/requests": {
       "unit": "count",
-      "median": 55,
-      "p75": 55,
-      "min": 55,
-      "max": 55,
+      "median": 60,
+      "p75": 60,
+      "min": 60,
+      "max": 60,
       "n": 5
     },
     "editor/warm/publish/scripts": {
       "unit": "count",
-      "median": 52,
-      "p75": 52,
-      "min": 52,
-      "max": 52,
+      "median": 57,
+      "p75": 57,
+      "min": 57,
+      "max": 57,
       "n": 5
     },
     "editor/warm/publish/html-kb": {
       "unit": "KB",
-      "median": 105.1,
-      "p75": 105.1,
-      "min": 105.1,
-      "max": 105.1,
+      "median": 112.4,
+      "p75": 112.4,
+      "min": 112.4,
+      "max": 112.4,
       "n": 5
     },
     "editor/warm/publish/dom-nodes": {
       "unit": "count",
-      "median": 274,
-      "p75": 274,
-      "min": 274,
-      "max": 274,
+      "median": 288,
+      "p75": 288,
+      "min": 288,
+      "max": 288,
       "n": 5
     },
     "editor/warm/publish/script-kb": {
       "unit": "KB",
-      "median": 15.2,
-      "p75": 15.2,
-      "min": 15.2,
-      "max": 15.2,
+      "median": 16.7,
+      "p75": 16.7,
+      "min": 16.7,
+      "max": 16.7,
       "n": 5
     },
     "editor/warm/publish/css-kb": {
@@ -4943,18 +4856,26 @@
     },
     "editor/warm/publish/ready": {
       "unit": "ms",
-      "median": 2137.9,
-      "p75": 2165.2,
-      "min": 2090.3,
-      "max": 2208.2,
+      "median": 31.1,
+      "p75": 36.7,
+      "min": 27,
+      "max": 37.2,
       "n": 5
     },
     "editor/warm/publish/images-settled": {
       "unit": "ms",
-      "median": 2155.7,
-      "p75": 2181.1,
-      "min": 2108.3,
-      "max": 2230.3,
+      "median": 72.8,
+      "p75": 79.3,
+      "min": 64,
+      "max": 79.5,
+      "n": 5
+    },
+    "editor/warm/publish/js-heap-mb": {
+      "unit": "MB",
+      "median": 3,
+      "p75": 3,
+      "min": 2.3,
+      "max": 3,
       "n": 5
     },
     "editor/warm/publish/server/editor-requests": {
@@ -4967,90 +4888,82 @@
     },
     "editor/warm/publish/server/editor-ms": {
       "unit": "ms",
-      "median": 2082.2,
-      "p75": 2112.2,
-      "min": 2035.6,
-      "max": 2154.7,
+      "median": 14.4,
+      "p75": 15.4,
+      "min": 10.5,
+      "max": 18.1,
       "n": 5
     },
     "editor/warm/publish/server/module-requests": {
       "unit": "count",
-      "median": 54,
-      "p75": 54,
-      "min": 54,
-      "max": 54,
+      "median": 59,
+      "p75": 59,
+      "min": 59,
+      "max": 59,
       "n": 5
     },
     "editor/warm/publish/server/module-ms": {
       "unit": "ms",
-      "median": 7.9,
-      "p75": 8.1,
-      "min": 7.5,
-      "max": 10.9,
-      "n": 5
-    },
-    "editor/warm/publish/span/git": {
-      "unit": "ms",
-      "median": 2077.3,
-      "p75": 2107.3,
-      "min": 2030.6,
-      "max": 2146.7,
+      "median": 8.6,
+      "p75": 9,
+      "min": 7.6,
+      "max": 11.5,
       "n": 5
     },
     "editor/warm/publish/span/git-processes": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 26,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/warm/site-article/ttfb": {
       "unit": "ms",
-      "median": 11.2,
-      "p75": 12.3,
-      "min": 10.2,
-      "max": 16,
+      "median": 12.3,
+      "p75": 12.7,
+      "min": 10.6,
+      "max": 14.1,
       "n": 5
     },
     "editor/warm/site-article/html": {
       "unit": "ms",
-      "median": 13.8,
-      "p75": 13.8,
-      "min": 12.3,
-      "max": 20,
+      "median": 14.4,
+      "p75": 15.6,
+      "min": 12.1,
+      "max": 15.8,
       "n": 5
     },
     "editor/warm/site-article/dcl": {
       "unit": "ms",
-      "median": 96,
-      "p75": 96.2,
-      "min": 92.7,
-      "max": 97.1,
+      "median": 91.1,
+      "p75": 93.4,
+      "min": 85.4,
+      "max": 94.7,
       "n": 5
     },
     "editor/warm/site-article/load": {
       "unit": "ms",
-      "median": 97.1,
-      "p75": 98,
-      "min": 94,
-      "max": 499.3,
+      "median": 91.8,
+      "p75": 94.4,
+      "min": 86.2,
+      "max": 94.8,
       "n": 5
     },
     "editor/warm/site-article/fcp": {
       "unit": "ms",
-      "median": 76,
-      "p75": 80,
-      "min": 68,
-      "max": 88,
+      "median": 72,
+      "p75": 72,
+      "min": 64,
+      "max": 72,
       "n": 5
     },
     "editor/warm/site-article/lcp": {
       "unit": "ms",
-      "median": 80,
-      "p75": 88,
-      "min": 68,
-      "max": 504,
+      "median": 72,
+      "p75": 72,
+      "min": 64,
+      "max": 72,
       "n": 5
     },
     "editor/warm/site-article/tbt": {
@@ -5087,10 +5000,10 @@
     },
     "editor/warm/site-article/html-kb": {
       "unit": "KB",
-      "median": 210.7,
-      "p75": 210.7,
-      "min": 210.7,
-      "max": 210.7,
+      "median": 211.7,
+      "p75": 211.7,
+      "min": 211.7,
+      "max": 211.7,
       "n": 5
     },
     "editor/warm/site-article/dom-nodes": {
@@ -5119,10 +5032,10 @@
     },
     "editor/warm/site-article/img-kb": {
       "unit": "KB",
-      "median": 825.8,
-      "p75": 825.8,
-      "min": 825.8,
-      "max": 826.1,
+      "median": 601.4,
+      "p75": 601.4,
+      "min": 601.4,
+      "max": 601.4,
       "n": 5
     },
     "editor/warm/site-article/font-kb": {
@@ -5143,18 +5056,26 @@
     },
     "editor/warm/site-article/ready": {
       "unit": "ms",
-      "median": 100.2,
-      "p75": 101.1,
-      "min": 96.1,
-      "max": 511.4,
+      "median": 95.6,
+      "p75": 96.1,
+      "min": 90.5,
+      "max": 97.6,
       "n": 5
     },
     "editor/warm/site-article/images-settled": {
       "unit": "ms",
-      "median": 104.1,
-      "p75": 105.1,
-      "min": 100.3,
-      "max": 515.2,
+      "median": 99.4,
+      "p75": 100.8,
+      "min": 93.3,
+      "max": 100.8,
+      "n": 5
+    },
+    "editor/warm/site-article/js-heap-mb": {
+      "unit": "MB",
+      "median": 2.4,
+      "p75": 3.3,
+      "min": 2.4,
+      "max": 3.3,
       "n": 5
     },
     "editor/warm/site-article/server/page-requests": {
@@ -5167,10 +5088,10 @@
     },
     "editor/warm/site-article/server/page-ms": {
       "unit": "ms",
-      "median": 12.6,
-      "p75": 12.8,
-      "min": 11.3,
-      "max": 19.1,
+      "median": 13.4,
+      "p75": 14.6,
+      "min": 11.1,
+      "max": 14.7,
       "n": 5
     },
     "editor/warm/site-article/server/module-requests": {
@@ -5183,10 +5104,10 @@
     },
     "editor/warm/site-article/server/module-ms": {
       "unit": "ms",
-      "median": 13.1,
-      "p75": 14.1,
-      "min": 12.6,
-      "max": 16.1,
+      "median": 12,
+      "p75": 12.8,
+      "min": 10.4,
+      "max": 13.6,
       "n": 5
     },
     "editor/warm/site-article/server/api-requests": {
@@ -5199,34 +5120,10 @@
     },
     "editor/warm/site-article/server/api-ms": {
       "unit": "ms",
-      "median": 3,
-      "p75": 3.5,
-      "min": 2.6,
-      "max": 4.7,
-      "n": 5
-    },
-    "editor/warm/site-article/server/image-requests": {
-      "unit": "count",
-      "median": 1,
-      "p75": 1,
-      "min": 1,
-      "max": 1,
-      "n": 1
-    },
-    "editor/warm/site-article/server/image-ms": {
-      "unit": "ms",
-      "median": 457.6,
-      "p75": 457.6,
-      "min": 457.6,
-      "max": 457.6,
-      "n": 1
-    },
-    "editor/warm/site-article/span/picture.url": {
-      "unit": "ms",
-      "median": 16.3,
-      "p75": 27.3,
-      "min": 14.6,
-      "max": 28.8,
+      "median": 2.6,
+      "p75": 2.6,
+      "min": 2.2,
+      "max": 3,
       "n": 5
     },
     "editor/warm/site-article/span/git-processes": {
@@ -5239,66 +5136,58 @@
     },
     "editor/api/changes": {
       "unit": "ms",
-      "median": 887.6,
-      "p75": 888.3,
-      "min": 868.8,
-      "max": 922,
+      "median": 8.3,
+      "p75": 8.4,
+      "min": 5.4,
+      "max": 9.1,
       "n": 5
     },
     "editor/api/where": {
       "unit": "ms",
-      "median": 2.8,
-      "p75": 2.8,
+      "median": 2.6,
+      "p75": 3,
       "min": 2.3,
-      "max": 3.2,
+      "max": 3.4,
       "n": 5
     },
     "editor/interaction/select-block": {
       "unit": "ms",
-      "median": 19.6,
-      "p75": 21.7,
-      "min": 17.1,
-      "max": 21.9,
+      "median": 16.8,
+      "p75": 17,
+      "min": 12.9,
+      "max": 17.6,
       "n": 5
     },
     "editor/interaction/type-to-saved": {
       "unit": "ms",
-      "median": 1019.7,
-      "p75": 1021.4,
-      "min": 1004.7,
-      "max": 1175.5,
+      "median": 859.3,
+      "p75": 861.2,
+      "min": 851.3,
+      "max": 866.4,
       "n": 5
     },
     "editor/interaction/save-round-trip": {
       "unit": "ms",
-      "median": 203,
-      "p75": 206.7,
-      "min": 192.6,
-      "max": 359.5,
-      "n": 5
-    },
-    "editor/interaction/type-swap": {
-      "unit": "ms",
-      "median": 2413.9,
-      "p75": 2438.6,
-      "min": 2311.8,
-      "max": 3117.4,
+      "median": 44.7,
+      "p75": 46.8,
+      "min": 43.6,
+      "max": 54.9,
       "n": 5
     },
     "editor/interaction/type-swap-kb": {
       "unit": "KB",
-      "median": 1298.9,
-      "p75": 1298.9,
-      "min": 1298.9,
-      "max": 1298.9,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/interaction/type-to-settled": {
       "unit": "ms",
-      "median": 4228.1,
-      "p75": 4275,
-      "min": 4137.3,
-      "max": 5121.1,
+      "median": 859.3,
+      "p75": 861.2,
+      "min": 851.3,
+      "max": 866.4,
       "n": 5
     },
     "editor/interaction/type/server/api-requests": {
@@ -5311,26 +5200,26 @@
     },
     "editor/interaction/type/server/api-ms": {
       "unit": "ms",
-      "median": 400,
-      "p75": 419.1,
-      "min": 390.1,
-      "max": 557.5,
+      "median": 89.6,
+      "p75": 102.9,
+      "min": 82.7,
+      "max": 104.3,
       "n": 5
     },
     "editor/interaction/type/server/editor-requests": {
       "unit": "count",
-      "median": 1,
-      "p75": 1,
-      "min": 1,
+      "median": 2,
+      "p75": 2,
+      "min": 2,
       "max": 2,
       "n": 5
     },
     "editor/interaction/type/server/editor-ms": {
       "unit": "ms",
-      "median": 2419.2,
-      "p75": 3076.3,
-      "min": 2296.3,
-      "max": 4609.3,
+      "median": 251.4,
+      "p75": 253.2,
+      "min": 246.9,
+      "max": 256.7,
       "n": 5
     },
     "editor/interaction/type/server/image-requests": {
@@ -5343,98 +5232,82 @@
     },
     "editor/interaction/type/server/image-ms": {
       "unit": "ms",
-      "median": 473.8,
-      "p75": 501.7,
-      "min": 442.1,
-      "max": 516,
+      "median": 85.8,
+      "p75": 86.8,
+      "min": 63.5,
+      "max": 91.2,
       "n": 5
     },
     "editor/interaction/type/span/store.read": {
       "unit": "ms",
-      "median": 352.8,
-      "p75": 369.7,
-      "min": 335.5,
-      "max": 499.7,
+      "median": 43,
+      "p75": 43.4,
+      "min": 39.7,
+      "max": 58,
       "n": 5
     },
     "editor/interaction/type/span/store.check": {
       "unit": "ms",
-      "median": 8.9,
-      "p75": 11.5,
-      "min": 7.2,
-      "max": 20.1,
+      "median": 8.4,
+      "p75": 8.5,
+      "min": 6.3,
+      "max": 17.7,
       "n": 5
     },
     "editor/interaction/type/span/content.read": {
       "unit": "ms",
-      "median": 176.4,
-      "p75": 323.6,
-      "min": 170.6,
-      "max": 351.3,
+      "median": 0.5,
+      "p75": 0.7,
+      "min": 0.4,
+      "max": 0.7,
       "n": 5
     },
     "editor/interaction/type/span/content.validate": {
       "unit": "ms",
-      "median": 3.9,
-      "p75": 3.9,
-      "min": 1.8,
-      "max": 4.9,
-      "n": 5
-    },
-    "editor/interaction/type/span/picture.url": {
-      "unit": "ms",
-      "median": 3257.6,
-      "p75": 3268.9,
-      "min": 1704.7,
-      "max": 3705.7,
-      "n": 5
-    },
-    "editor/interaction/type/span/media.cards": {
-      "unit": "ms",
-      "median": 43.2,
-      "p75": 45.9,
-      "min": 23.1,
-      "max": 46.9,
+      "median": 3.5,
+      "p75": 4,
+      "min": 3.2,
+      "max": 5.3,
       "n": 5
     },
     "editor/interaction/type/span/git": {
       "unit": "ms",
-      "median": 2152.9,
-      "p75": 2621.2,
-      "min": 2052.2,
-      "max": 4115.4,
+      "median": 349.5,
+      "p75": 349.8,
+      "min": 348.7,
+      "max": 360,
       "n": 5
     },
     "editor/interaction/type/span/git-processes": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 52,
+      "median": 4,
+      "p75": 4,
+      "min": 4,
+      "max": 4,
       "n": 5
     },
     "editor/interaction/field-to-saved": {
       "unit": "ms",
-      "median": 225.6,
-      "p75": 226.4,
-      "min": 184.3,
-      "max": 232.7,
+      "median": 45,
+      "p75": 46.7,
+      "min": 43.2,
+      "max": 61.8,
       "n": 5
     },
     "editor/interaction/field-canvas-redraw": {
       "unit": "ms",
-      "median": 335.3,
-      "p75": 335.3,
-      "min": 283.7,
-      "max": 372.2,
+      "median": 109.1,
+      "p75": 109.4,
+      "min": 93.4,
+      "max": 113.7,
       "n": 5
     },
     "editor/interaction/field-to-canvas": {
       "unit": "ms",
-      "median": 535.5,
-      "p75": 568,
-      "min": 468.1,
-      "max": 598.7,
+      "median": 154.6,
+      "p75": 160.5,
+      "min": 136.8,
+      "max": 171.1,
       "n": 5
     },
     "editor/interaction/field/server/api-requests": {
@@ -5447,26 +5320,10 @@
     },
     "editor/interaction/field/server/api-ms": {
       "unit": "ms",
-      "median": 221.7,
-      "p75": 222.5,
-      "min": 181.1,
-      "max": 228.1,
-      "n": 5
-    },
-    "editor/interaction/field/server/module-requests": {
-      "unit": "count",
-      "median": 100,
-      "p75": 100,
-      "min": 100,
-      "max": 100,
-      "n": 5
-    },
-    "editor/interaction/field/server/module-ms": {
-      "unit": "ms",
-      "median": 15.3,
-      "p75": 18.9,
-      "min": 14.1,
-      "max": 19.3,
+      "median": 41.8,
+      "p75": 43.6,
+      "min": 39.9,
+      "max": 58.6,
       "n": 5
     },
     "editor/interaction/field/server/canvas-requests": {
@@ -5479,74 +5336,114 @@
     },
     "editor/interaction/field/server/canvas-ms": {
       "unit": "ms",
-      "median": 223.4,
-      "p75": 230.6,
-      "min": 183,
-      "max": 232.1,
+      "median": 18.2,
+      "p75": 19.5,
+      "min": 16.3,
+      "max": 19.5,
+      "n": 5
+    },
+    "editor/interaction/field/server/module-requests": {
+      "unit": "count",
+      "median": 100,
+      "p75": 100,
+      "min": 100,
+      "max": 100,
+      "n": 5
+    },
+    "editor/interaction/field/server/module-ms": {
+      "unit": "ms",
+      "median": 13.3,
+      "p75": 14.9,
+      "min": 12.2,
+      "max": 16.5,
+      "n": 5
+    },
+    "editor/interaction/field/server/editor-requests": {
+      "unit": "count",
+      "median": 1,
+      "p75": 1,
+      "min": 1,
+      "max": 1,
+      "n": 5
+    },
+    "editor/interaction/field/server/editor-ms": {
+      "unit": "ms",
+      "median": 117.7,
+      "p75": 118.6,
+      "min": 113.8,
+      "max": 126.3,
       "n": 5
     },
     "editor/interaction/field/span/store.read": {
       "unit": "ms",
-      "median": 194.3,
-      "p75": 196.2,
-      "min": 157.8,
-      "max": 200.5,
+      "median": 19.7,
+      "p75": 19.8,
+      "min": 19.1,
+      "max": 30.5,
       "n": 5
     },
     "editor/interaction/field/span/store.check": {
       "unit": "ms",
-      "median": 6,
-      "p75": 6.7,
-      "min": 3.5,
-      "max": 8,
+      "median": 3.3,
+      "p75": 4.5,
+      "min": 3.2,
+      "max": 6.6,
       "n": 5
     },
     "editor/interaction/field/span/content.read": {
       "unit": "ms",
-      "median": 185.5,
-      "p75": 197.4,
-      "min": 160.8,
-      "max": 204.9,
+      "median": 0.2,
+      "p75": 0.3,
+      "min": 0.2,
+      "max": 0.3,
       "n": 5
     },
     "editor/interaction/field/span/content.validate": {
       "unit": "ms",
-      "median": 2,
-      "p75": 2.2,
-      "min": 1.8,
-      "max": 2.5,
+      "median": 1.7,
+      "p75": 1.9,
+      "min": 1.6,
+      "max": 2.1,
       "n": 5
     },
-    "editor/interaction/field/span/picture.url": {
+    "editor/interaction/field/span/git": {
       "unit": "ms",
-      "median": 53.2,
-      "p75": 71.3,
-      "min": 43.8,
-      "max": 81,
+      "median": 172.7,
+      "p75": 174.8,
+      "min": 166.4,
+      "max": 181.8,
       "n": 5
     },
     "editor/interaction/field/span/git-processes": {
       "unit": "count",
-      "median": 0,
-      "p75": 0,
-      "min": 0,
-      "max": 0,
+      "median": 2,
+      "p75": 2,
+      "min": 2,
+      "max": 2,
       "n": 5
     },
     "editor/interaction/picker-open": {
       "unit": "ms",
-      "median": 49.9,
-      "p75": 59.5,
-      "min": 35.5,
-      "max": 59.9,
+      "median": 20.5,
+      "p75": 21.3,
+      "min": 20,
+      "max": 23.4,
       "n": 5
     },
     "editor/interaction/picker-images": {
       "unit": "ms",
-      "median": 271.2,
-      "p75": 275.9,
-      "min": 250.6,
-      "max": 370.1,
+      "median": 233.6,
+      "p75": 234.3,
+      "min": 226,
+      "max": 238.8,
+      "n": 5
+    },
+    "editor/interaction/picker-filled": {
+      "unit": "ms",
+      "median": 237.5,
+      "p75": 238,
+      "min": 233.3,
+      "max": 242.6,
       "n": 5
     },
     "editor/interaction/picker-cards": {
@@ -5557,36 +5454,52 @@
       "max": 105,
       "n": 5
     },
+    "editor/interaction/add-block-shown": {
+      "unit": "ms",
+      "median": 30.7,
+      "p75": 30.8,
+      "min": 29.7,
+      "max": 31.1,
+      "n": 5
+    },
+    "editor/interaction/feedback-shown": {
+      "unit": "ms",
+      "median": 30.7,
+      "p75": 31.5,
+      "min": 13.1,
+      "max": 44.5,
+      "n": 20
+    },
     "editor/interaction/add-block-to-saved": {
       "unit": "ms",
-      "median": 227.5,
-      "p75": 233.4,
-      "min": 211.1,
-      "max": 240.9,
+      "median": 60.7,
+      "p75": 62.7,
+      "min": 59.9,
+      "max": 64.5,
       "n": 5
     },
     "editor/interaction/add-block-to-canvas": {
       "unit": "ms",
-      "median": 3160.3,
-      "p75": 3190.8,
-      "min": 3090.8,
-      "max": 3228.5,
+      "median": 266,
+      "p75": 292.4,
+      "min": 253.5,
+      "max": 301,
       "n": 5
     },
     "editor/interaction/add-block/server/image-requests": {
       "unit": "count",
-      "median": 41,
-      "p75": 42,
-      "min": 39,
-      "max": 42,
+      "median": 45,
+      "p75": 45,
+      "min": 40,
+      "max": 47,
       "n": 5
     },
     "editor/interaction/add-block/server/image-ms": {
       "unit": "ms",
-      "median": 1382.2,
-      "p75": 1436.5,
-      "min": 1299.5,
-      "max": 1527.3,
+      "median": 1466.9,
+      "p75": 1504.9,
+      "min": 1331.1,
+      "max": 1669,
       "n": 5
     },
     "editor/interaction/add-block/server/api-requests": {
@@ -5599,42 +5512,10 @@
     },
     "editor/interaction/add-block/server/api-ms": {
       "unit": "ms",
-      "median": 215.3,
-      "p75": 221,
-      "min": 194.4,
-      "max": 230.5,
-      "n": 5
-    },
-    "editor/interaction/add-block/server/editor-requests": {
-      "unit": "count",
-      "median": 1,
-      "p75": 1,
-      "min": 1,
-      "max": 1,
-      "n": 5
-    },
-    "editor/interaction/add-block/server/editor-ms": {
-      "unit": "ms",
-      "median": 2312.6,
-      "p75": 2365,
-      "min": 2293.3,
-      "max": 2393.9,
-      "n": 5
-    },
-    "editor/interaction/add-block/server/canvas-requests": {
-      "unit": "count",
-      "median": 1,
-      "p75": 1,
-      "min": 1,
-      "max": 1,
-      "n": 5
-    },
-    "editor/interaction/add-block/server/canvas-ms": {
-      "unit": "ms",
-      "median": 22.2,
-      "p75": 24.5,
-      "min": 15.9,
-      "max": 31.1,
+      "median": 43.7,
+      "p75": 44.6,
+      "min": 43.2,
+      "max": 46.4,
       "n": 5
     },
     "editor/interaction/add-block/server/module-requests": {
@@ -5647,114 +5528,154 @@
     },
     "editor/interaction/add-block/server/module-ms": {
       "unit": "ms",
-      "median": 16.6,
-      "p75": 20,
-      "min": 15.3,
-      "max": 20.4,
+      "median": 17.8,
+      "p75": 20.3,
+      "min": 16.4,
+      "max": 22.4,
+      "n": 5
+    },
+    "editor/interaction/add-block/server/canvas-requests": {
+      "unit": "count",
+      "median": 1,
+      "p75": 1,
+      "min": 1,
+      "max": 1,
+      "n": 5
+    },
+    "editor/interaction/add-block/server/canvas-ms": {
+      "unit": "ms",
+      "median": 65.3,
+      "p75": 69.2,
+      "min": 22,
+      "max": 94.4,
+      "n": 5
+    },
+    "editor/interaction/add-block/server/editor-requests": {
+      "unit": "count",
+      "median": 2,
+      "p75": 2,
+      "min": 2,
+      "max": 2,
+      "n": 5
+    },
+    "editor/interaction/add-block/server/editor-ms": {
+      "unit": "ms",
+      "median": 196.6,
+      "p75": 202.3,
+      "min": 191,
+      "max": 234.4,
       "n": 5
     },
     "editor/interaction/add-block/span/store.read": {
       "unit": "ms",
-      "median": 191.6,
-      "p75": 194.5,
-      "min": 170.9,
-      "max": 199.7,
+      "median": 20.7,
+      "p75": 21.2,
+      "min": 20.5,
+      "max": 24.4,
       "n": 5
     },
     "editor/interaction/add-block/span/store.check": {
       "unit": "ms",
-      "median": 5.5,
-      "p75": 6.2,
-      "min": 3.7,
-      "max": 7.9,
+      "median": 3.7,
+      "p75": 4.1,
+      "min": 3.5,
+      "max": 4.1,
       "n": 5
     },
     "editor/interaction/add-block/span/content.read": {
       "unit": "ms",
-      "median": 181,
-      "p75": 186.9,
-      "min": 164.8,
-      "max": 193.3,
+      "median": 0.2,
+      "p75": 0.2,
+      "min": 0.2,
+      "max": 0.4,
       "n": 5
     },
     "editor/interaction/add-block/span/content.validate": {
       "unit": "ms",
-      "median": 2.2,
-      "p75": 2.2,
-      "min": 1.8,
-      "max": 2.6,
-      "n": 5
-    },
-    "editor/interaction/add-block/span/picture.url": {
-      "unit": "ms",
-      "median": 1601.7,
-      "p75": 1738.3,
-      "min": 1526.1,
-      "max": 3172.4,
+      "median": 1.9,
+      "p75": 2.1,
+      "min": 1.6,
+      "max": 3.4,
       "n": 5
     },
     "editor/interaction/add-block/span/media.cards": {
       "unit": "ms",
-      "median": 21.6,
-      "p75": 30.8,
-      "min": 19.2,
-      "max": 32.9,
+      "median": 1.4,
+      "p75": 1.7,
+      "min": 1.3,
+      "max": 1.9,
       "n": 5
     },
     "editor/interaction/add-block/span/git": {
       "unit": "ms",
-      "median": 2073.3,
-      "p75": 2084.6,
-      "min": 2040.2,
-      "max": 2121.3,
+      "median": 188.9,
+      "p75": 198.9,
+      "min": 184.6,
+      "max": 207.2,
       "n": 5
     },
     "editor/interaction/add-block/span/git-processes": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 26,
+      "median": 2,
+      "p75": 2,
+      "min": 2,
+      "max": 2,
       "n": 5
     },
     "editor/interaction/undo-to-saved": {
       "unit": "ms",
-      "median": 216.9,
-      "p75": 225.5,
-      "min": 215.5,
-      "max": 227.9,
+      "median": 47.3,
+      "p75": 47.6,
+      "min": 37.2,
+      "max": 50.4,
+      "n": 5
+    },
+    "editor/interaction/move-shown": {
+      "unit": "ms",
+      "median": 30.8,
+      "p75": 30.8,
+      "min": 29.7,
+      "max": 31.5,
+      "n": 5
+    },
+    "editor/interaction/delete-shown": {
+      "unit": "ms",
+      "median": 43.5,
+      "p75": 44.3,
+      "min": 42.2,
+      "max": 44.5,
       "n": 5
     },
     "editor/interaction/other-tab-updated": {
       "unit": "ms",
-      "median": 1171,
-      "p75": 1204,
-      "min": 1155.9,
-      "max": 1230.6,
+      "median": 336.1,
+      "p75": 339.3,
+      "min": 332.7,
+      "max": 341.2,
       "n": 5
     },
     "editor/interaction/other-tab-swap": {
       "unit": "ms",
-      "median": 969,
-      "p75": 1005.6,
-      "min": 948.1,
-      "max": 1026.8,
+      "median": 127.4,
+      "p75": 131,
+      "min": 124.5,
+      "max": 133,
       "n": 5
     },
     "editor/interaction/other-tab-swap-kb": {
       "unit": "KB",
-      "median": 200.5,
-      "p75": 200.5,
-      "min": 200.5,
-      "max": 200.5,
+      "median": 207.8,
+      "p75": 207.8,
+      "min": 207.8,
+      "max": 207.8,
       "n": 5
     },
     "editor/interaction/media-details": {
       "unit": "ms",
-      "median": 967.3,
-      "p75": 1072.2,
-      "min": 949.4,
-      "max": 1105.2,
+      "median": 33.3,
+      "p75": 33.9,
+      "min": 33.1,
+      "max": 34,
       "n": 5
     },
     "editor/interaction/media-details/server/editor-requests": {
@@ -5767,97 +5688,81 @@
     },
     "editor/interaction/media-details/server/editor-ms": {
       "unit": "ms",
-      "median": 937.3,
-      "p75": 1034.6,
-      "min": 919.7,
-      "max": 1055,
+      "median": 10.2,
+      "p75": 10.4,
+      "min": 10.1,
+      "max": 12.8,
       "n": 5
     },
     "editor/interaction/media-details/span/picture.url": {
       "unit": "ms",
-      "median": 1606.1,
-      "p75": 1835.3,
-      "min": 1365.2,
-      "max": 2279.3,
-      "n": 5
-    },
-    "editor/interaction/media-details/span/media.cards": {
-      "unit": "ms",
-      "median": 22.2,
-      "p75": 26.1,
-      "min": 18.6,
-      "max": 31.6,
-      "n": 5
-    },
-    "editor/interaction/media-details/span/git": {
-      "unit": "ms",
-      "median": 897.2,
-      "p75": 981.9,
-      "min": 886.1,
-      "max": 1009,
-      "n": 5
+      "median": 0.5,
+      "p75": 0.5,
+      "min": 0.5,
+      "max": 0.5,
+      "n": 1
     },
     "editor/interaction/media-details/span/git-processes": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 0,
+      "p75": 0,
+      "min": 0,
+      "max": 0,
       "n": 5
     },
     "editor/interaction/media-save": {
       "unit": "ms",
-      "median": 1433.8,
-      "p75": 1442,
-      "min": 1353.1,
-      "max": 1539,
+      "median": 53.6,
+      "p75": 56.9,
+      "min": 48.7,
+      "max": 58.1,
       "n": 5
     },
     "site/desktop/home/ttfb": {
       "unit": "ms",
-      "median": 5.4,
-      "p75": 6.1,
-      "min": 4.9,
-      "max": 6.9,
+      "median": 5.6,
+      "p75": 6.4,
+      "min": 4.7,
+      "max": 6.5,
       "n": 5
     },
     "site/desktop/home/html": {
       "unit": "ms",
       "median": 5.9,
-      "p75": 6.5,
-      "min": 5.3,
-      "max": 7.2,
+      "p75": 6.6,
+      "min": 5,
+      "max": 6.9,
       "n": 5
     },
     "site/desktop/home/dcl": {
       "unit": "ms",
-      "median": 60.5,
-      "p75": 67.8,
-      "min": 55.2,
-      "max": 105.3,
+      "median": 52.5,
+      "p75": 52.8,
+      "min": 49,
+      "max": 61.2,
       "n": 5
     },
     "site/desktop/home/load": {
       "unit": "ms",
-      "median": 60.6,
-      "p75": 68,
-      "min": 58.2,
-      "max": 105.4,
+      "median": 52.7,
+      "p75": 53.5,
+      "min": 50.1,
+      "max": 62,
       "n": 5
     },
     "site/desktop/home/fcp": {
       "unit": "ms",
-      "median": 60,
-      "p75": 60,
-      "min": 52,
+      "median": 52,
+      "p75": 56,
+      "min": 48,
       "max": 64,
       "n": 5
     },
     "site/desktop/home/lcp": {
       "unit": "ms",
-      "median": 60,
-      "p75": 60,
-      "min": 52,
+      "median": 52,
+      "p75": 56,
+      "min": 48,
       "max": 64,
       "n": 5
     },
@@ -5951,50 +5856,50 @@
     },
     "site/desktop/section/ttfb": {
       "unit": "ms",
-      "median": 7.3,
-      "p75": 7.8,
-      "min": 5.9,
-      "max": 8.2,
+      "median": 6,
+      "p75": 6.8,
+      "min": 5.3,
+      "max": 7.5,
       "n": 5
     },
     "site/desktop/section/html": {
       "unit": "ms",
-      "median": 7.8,
-      "p75": 8.1,
-      "min": 6.2,
-      "max": 8.6,
+      "median": 6.2,
+      "p75": 7,
+      "min": 5.6,
+      "max": 7.7,
       "n": 5
     },
     "site/desktop/section/dcl": {
       "unit": "ms",
-      "median": 78.9,
-      "p75": 83.1,
-      "min": 64.2,
-      "max": 85.6,
+      "median": 60.6,
+      "p75": 77.8,
+      "min": 52.3,
+      "max": 81.7,
       "n": 5
     },
     "site/desktop/section/load": {
       "unit": "ms",
-      "median": 79.1,
-      "p75": 83.2,
-      "min": 64.3,
-      "max": 85.6,
+      "median": 60.6,
+      "p75": 77.9,
+      "min": 52.3,
+      "max": 81.8,
       "n": 5
     },
     "site/desktop/section/fcp": {
       "unit": "ms",
-      "median": 60,
-      "p75": 64,
-      "min": 56,
-      "max": 68,
+      "median": 56,
+      "p75": 60,
+      "min": 52,
+      "max": 60,
       "n": 5
     },
     "site/desktop/section/lcp": {
       "unit": "ms",
       "median": 84,
-      "p75": 96,
-      "min": 72,
-      "max": 108,
+      "p75": 88,
+      "min": 76,
+      "max": 96,
       "n": 5
     },
     "site/desktop/section/tbt": {
@@ -6015,42 +5920,42 @@
     },
     "site/desktop/section/requests": {
       "unit": "count",
-      "median": 27,
-      "p75": 27,
-      "min": 27,
-      "max": 27,
+      "median": 28,
+      "p75": 28,
+      "min": 28,
+      "max": 28,
       "n": 5
     },
     "site/desktop/section/scripts": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 12,
+      "p75": 12,
+      "min": 12,
+      "max": 12,
       "n": 5
     },
     "site/desktop/section/html-kb": {
       "unit": "KB",
-      "median": 8.1,
-      "p75": 8.1,
-      "min": 8.1,
-      "max": 8.1,
+      "median": 15.9,
+      "p75": 15.9,
+      "min": 15.9,
+      "max": 15.9,
       "n": 5
     },
     "site/desktop/section/dom-nodes": {
       "unit": "count",
-      "median": 252,
-      "p75": 252,
-      "min": 252,
-      "max": 252,
+      "median": 281,
+      "p75": 281,
+      "min": 281,
+      "max": 281,
       "n": 5
     },
     "site/desktop/section/script-kb": {
       "unit": "KB",
-      "median": 14.2,
-      "p75": 14.2,
-      "min": 14.2,
-      "max": 14.2,
+      "median": 22.6,
+      "p75": 22.6,
+      "min": 22.6,
+      "max": 22.6,
       "n": 5
     },
     "site/desktop/section/css-kb": {
@@ -6063,10 +5968,10 @@
     },
     "site/desktop/section/img-kb": {
       "unit": "KB",
-      "median": 867.5,
-      "p75": 867.5,
-      "min": 867.5,
-      "max": 867.5,
+      "median": 396.9,
+      "p75": 396.9,
+      "min": 396.9,
+      "max": 396.9,
       "n": 5
     },
     "site/desktop/section/font-kb": {
@@ -6087,50 +5992,50 @@
     },
     "site/desktop/article/ttfb": {
       "unit": "ms",
-      "median": 6.5,
-      "p75": 7.3,
-      "min": 5.7,
-      "max": 7.3,
+      "median": 6.1,
+      "p75": 6.9,
+      "min": 5.5,
+      "max": 8,
       "n": 5
     },
     "site/desktop/article/html": {
       "unit": "ms",
-      "median": 6.8,
-      "p75": 7.5,
-      "min": 6.1,
-      "max": 7.7,
+      "median": 6.5,
+      "p75": 7.4,
+      "min": 5.8,
+      "max": 8.5,
       "n": 5
     },
     "site/desktop/article/dcl": {
       "unit": "ms",
-      "median": 89.9,
-      "p75": 92.7,
-      "min": 79.4,
-      "max": 109.1,
+      "median": 81,
+      "p75": 86.4,
+      "min": 74.7,
+      "max": 92.3,
       "n": 5
     },
     "site/desktop/article/load": {
       "unit": "ms",
-      "median": 89.9,
-      "p75": 92.7,
-      "min": 79.5,
-      "max": 109.1,
+      "median": 81.1,
+      "p75": 86.5,
+      "min": 74.8,
+      "max": 92.4,
       "n": 5
     },
     "site/desktop/article/fcp": {
       "unit": "ms",
-      "median": 72,
-      "p75": 72,
+      "median": 68,
+      "p75": 68,
       "min": 60,
-      "max": 76,
+      "max": 72,
       "n": 5
     },
     "site/desktop/article/lcp": {
       "unit": "ms",
-      "median": 76,
-      "p75": 100,
+      "median": 72,
+      "p75": 80,
       "min": 68,
-      "max": 104,
+      "max": 92,
       "n": 5
     },
     "site/desktop/article/tbt": {
@@ -6167,10 +6072,10 @@
     },
     "site/desktop/article/html-kb": {
       "unit": "KB",
-      "median": 12.3,
-      "p75": 12.3,
-      "min": 12.3,
-      "max": 12.3,
+      "median": 12.4,
+      "p75": 12.4,
+      "min": 12.4,
+      "max": 12.4,
       "n": 5
     },
     "site/desktop/article/dom-nodes": {
@@ -6199,10 +6104,10 @@
     },
     "site/desktop/article/img-kb": {
       "unit": "KB",
-      "median": 828.5,
-      "p75": 828.5,
-      "min": 828.5,
-      "max": 828.5,
+      "median": 604,
+      "p75": 604,
+      "min": 604,
+      "max": 604,
       "n": 5
     },
     "site/desktop/article/font-kb": {
@@ -6223,50 +6128,50 @@
     },
     "site/desktop/article-large/ttfb": {
       "unit": "ms",
-      "median": 6.3,
-      "p75": 7.3,
-      "min": 5.9,
-      "max": 8.6,
+      "median": 6.6,
+      "p75": 7,
+      "min": 5.4,
+      "max": 7.2,
       "n": 5
     },
     "site/desktop/article-large/html": {
       "unit": "ms",
-      "median": 6.7,
-      "p75": 7.7,
-      "min": 6.2,
-      "max": 8.9,
+      "median": 7.1,
+      "p75": 7.3,
+      "min": 5.7,
+      "max": 7.8,
       "n": 5
     },
     "site/desktop/article-large/dcl": {
       "unit": "ms",
-      "median": 101,
-      "p75": 101,
-      "min": 91.1,
-      "max": 111.3,
+      "median": 100.6,
+      "p75": 102.9,
+      "min": 87.8,
+      "max": 103.4,
       "n": 5
     },
     "site/desktop/article-large/load": {
       "unit": "ms",
-      "median": 101.1,
-      "p75": 101.2,
-      "min": 91.3,
-      "max": 111.5,
+      "median": 100.8,
+      "p75": 103.1,
+      "min": 89.4,
+      "max": 103.6,
       "n": 5
     },
     "site/desktop/article-large/fcp": {
       "unit": "ms",
-      "median": 76,
-      "p75": 76,
-      "min": 72,
-      "max": 80,
+      "median": 88,
+      "p75": 100,
+      "min": 80,
+      "max": 104,
       "n": 5
     },
     "site/desktop/article-large/lcp": {
       "unit": "ms",
-      "median": 88,
-      "p75": 92,
-      "min": 76,
-      "max": 92,
+      "median": 92,
+      "p75": 100,
+      "min": 80,
+      "max": 104,
       "n": 5
     },
     "site/desktop/article-large/tbt": {
@@ -6303,10 +6208,10 @@
     },
     "site/desktop/article-large/html-kb": {
       "unit": "KB",
-      "median": 16.3,
-      "p75": 16.3,
-      "min": 16.3,
-      "max": 16.3,
+      "median": 16.4,
+      "p75": 16.4,
+      "min": 16.4,
+      "max": 16.4,
       "n": 5
     },
     "site/desktop/article-large/dom-nodes": {
@@ -6359,50 +6264,50 @@
     },
     "site/desktop/design-library/ttfb": {
       "unit": "ms",
-      "median": 6.6,
-      "p75": 7.6,
-      "min": 5.6,
-      "max": 8.9,
+      "median": 6.4,
+      "p75": 6.7,
+      "min": 6,
+      "max": 6.8,
       "n": 5
     },
     "site/desktop/design-library/html": {
       "unit": "ms",
       "median": 6.8,
-      "p75": 8.1,
-      "min": 6,
-      "max": 9.3,
+      "p75": 7.1,
+      "min": 6.3,
+      "max": 7.1,
       "n": 5
     },
     "site/desktop/design-library/dcl": {
       "unit": "ms",
-      "median": 78.3,
-      "p75": 82.6,
-      "min": 69.8,
-      "max": 95,
+      "median": 82.2,
+      "p75": 84.2,
+      "min": 65.4,
+      "max": 91.1,
       "n": 5
     },
     "site/desktop/design-library/load": {
       "unit": "ms",
-      "median": 79.1,
-      "p75": 83.1,
-      "min": 70.3,
-      "max": 95.5,
+      "median": 82.6,
+      "p75": 84.6,
+      "min": 65.7,
+      "max": 91.5,
       "n": 5
     },
     "site/desktop/design-library/fcp": {
       "unit": "ms",
-      "median": 80,
-      "p75": 96,
+      "median": 84,
+      "p75": 100,
       "min": 60,
-      "max": 112,
+      "max": 104,
       "n": 5
     },
     "site/desktop/design-library/lcp": {
       "unit": "ms",
-      "median": 80,
-      "p75": 96,
+      "median": 84,
+      "p75": 100,
       "min": 60,
-      "max": 112,
+      "max": 104,
       "n": 5
     },
     "site/desktop/design-library/tbt": {
@@ -6447,10 +6352,10 @@
     },
     "site/desktop/design-library/dom-nodes": {
       "unit": "count",
-      "median": 716,
-      "p75": 716,
-      "min": 716,
-      "max": 716,
+      "median": 717,
+      "p75": 717,
+      "min": 717,
+      "max": 717,
       "n": 5
     },
     "site/desktop/design-library/script-kb": {
@@ -6495,58 +6400,58 @@
     },
     "site/desktop/play-first-paint/ttfb": {
       "unit": "ms",
-      "median": 6.2,
-      "p75": 6.2,
-      "min": 5,
-      "max": 6.6,
+      "median": 5.1,
+      "p75": 5.9,
+      "min": 4.4,
+      "max": 7.2,
       "n": 5
     },
     "site/desktop/play-first-paint/html": {
       "unit": "ms",
-      "median": 6.5,
-      "p75": 6.7,
-      "min": 5.5,
-      "max": 7,
+      "median": 5.4,
+      "p75": 6.2,
+      "min": 4.8,
+      "max": 7.4,
       "n": 5
     },
     "site/desktop/play-first-paint/dcl": {
       "unit": "ms",
-      "median": 67.9,
-      "p75": 71.6,
-      "min": 37.1,
-      "max": 84.3,
+      "median": 64.7,
+      "p75": 65.3,
+      "min": 34.8,
+      "max": 71.4,
       "n": 5
     },
     "site/desktop/play-first-paint/load": {
       "unit": "ms",
-      "median": 68,
-      "p75": 71.7,
-      "min": 39.1,
-      "max": 84.4,
+      "median": 64.9,
+      "p75": 65.3,
+      "min": 36.4,
+      "max": 71.4,
       "n": 5
     },
     "site/desktop/play-first-paint/fcp": {
       "unit": "ms",
-      "median": 88,
-      "p75": 88,
-      "min": 68,
-      "max": 92,
+      "median": 60,
+      "p75": 68,
+      "min": 60,
+      "max": 80,
       "n": 5
     },
     "site/desktop/play-first-paint/lcp": {
       "unit": "ms",
-      "median": 88,
-      "p75": 88,
-      "min": 68,
-      "max": 92,
+      "median": 60,
+      "p75": 68,
+      "min": 60,
+      "max": 80,
       "n": 5
     },
     "site/desktop/play-first-paint/tbt": {
       "unit": "ms",
-      "median": 144,
-      "p75": 145,
-      "min": 140,
-      "max": 150,
+      "median": 135,
+      "p75": 144,
+      "min": 129,
+      "max": 147,
       "n": 5
     },
     "site/desktop/play-first-paint/cls": {
@@ -6559,18 +6464,18 @@
     },
     "site/desktop/play-first-paint/requests": {
       "unit": "count",
-      "median": 82,
-      "p75": 82,
-      "min": 82,
-      "max": 82,
+      "median": 86,
+      "p75": 86,
+      "min": 86,
+      "max": 86,
       "n": 5
     },
     "site/desktop/play-first-paint/scripts": {
       "unit": "count",
-      "median": 26,
-      "p75": 26,
-      "min": 26,
-      "max": 26,
+      "median": 30,
+      "p75": 30,
+      "min": 30,
+      "max": 30,
       "n": 5
     },
     "site/desktop/play-first-paint/html-kb": {
@@ -6583,18 +6488,18 @@
     },
     "site/desktop/play-first-paint/dom-nodes": {
       "unit": "count",
-      "median": 104,
-      "p75": 104,
-      "min": 96,
-      "max": 104,
+      "median": 108,
+      "p75": 108,
+      "min": 108,
+      "max": 108,
       "n": 5
     },
     "site/desktop/play-first-paint/script-kb": {
       "unit": "KB",
-      "median": 592.9,
-      "p75": 592.9,
-      "min": 592.9,
-      "max": 592.9,
+      "median": 603.5,
+      "p75": 603.5,
+      "min": 603.5,
+      "max": 603.5,
       "n": 5
     },
     "site/desktop/play-first-paint/css-kb": {
@@ -6631,50 +6536,50 @@
     },
     "site/phone/home/ttfb": {
       "unit": "ms",
-      "median": 5.4,
-      "p75": 5.7,
-      "min": 5.1,
-      "max": 5.8,
+      "median": 5.9,
+      "p75": 6,
+      "min": 5.3,
+      "max": 6.7,
       "n": 5
     },
     "site/phone/home/html": {
       "unit": "ms",
-      "median": 69.1,
-      "p75": 71.2,
-      "min": 61.6,
+      "median": 62.2,
+      "p75": 71.7,
+      "min": 58.9,
       "max": 72.4,
       "n": 5
     },
     "site/phone/home/dcl": {
       "unit": "ms",
-      "median": 486.4,
-      "p75": 528.2,
-      "min": 470,
-      "max": 532.4,
+      "median": 476.3,
+      "p75": 499.1,
+      "min": 452.3,
+      "max": 509.1,
       "n": 5
     },
     "site/phone/home/load": {
       "unit": "ms",
-      "median": 543.3,
-      "p75": 555.4,
-      "min": 530,
-      "max": 559.2,
+      "median": 525.9,
+      "p75": 528.5,
+      "min": 499.4,
+      "max": 531.2,
       "n": 5
     },
     "site/phone/home/fcp": {
       "unit": "ms",
-      "median": 456,
-      "p75": 468,
+      "median": 444,
+      "p75": 444,
       "min": 432,
-      "max": 476,
+      "max": 448,
       "n": 5
     },
     "site/phone/home/lcp": {
       "unit": "ms",
-      "median": 456,
-      "p75": 468,
+      "median": 444,
+      "p75": 444,
       "min": 432,
-      "max": 476,
+      "max": 448,
       "n": 5
     },
     "site/phone/home/tbt": {
@@ -6767,50 +6672,50 @@
     },
     "site/phone/section/ttfb": {
       "unit": "ms",
-      "median": 6.6,
-      "p75": 6.7,
-      "min": 5.6,
+      "median": 6.4,
+      "p75": 7.6,
+      "min": 5.1,
       "max": 8,
       "n": 5
     },
     "site/phone/section/html": {
       "unit": "ms",
-      "median": 67.5,
-      "p75": 71.6,
-      "min": 60.1,
-      "max": 71.9,
+      "median": 62.7,
+      "p75": 64.7,
+      "min": 61.3,
+      "max": 73.7,
       "n": 5
     },
     "site/phone/section/dcl": {
       "unit": "ms",
-      "median": 610.5,
-      "p75": 621.1,
-      "min": 595.7,
-      "max": 623,
+      "median": 623.2,
+      "p75": 634.4,
+      "min": 597.8,
+      "max": 679.7,
       "n": 5
     },
     "site/phone/section/load": {
       "unit": "ms",
-      "median": 641.8,
-      "p75": 646.5,
-      "min": 626.2,
-      "max": 650.6,
+      "median": 641.3,
+      "p75": 648.2,
+      "min": 622.1,
+      "max": 700.1,
       "n": 5
     },
     "site/phone/section/fcp": {
       "unit": "ms",
-      "median": 472,
-      "p75": 472,
-      "min": 440,
-      "max": 472,
+      "median": 456,
+      "p75": 464,
+      "min": 444,
+      "max": 532,
       "n": 5
     },
     "site/phone/section/lcp": {
       "unit": "ms",
       "median": 660,
-      "p75": 664,
-      "min": 652,
-      "max": 672,
+      "p75": 672,
+      "min": 648,
+      "max": 732,
       "n": 5
     },
     "site/phone/section/tbt": {
@@ -6831,42 +6736,42 @@
     },
     "site/phone/section/requests": {
       "unit": "count",
-      "median": 27,
-      "p75": 27,
-      "min": 27,
-      "max": 27,
+      "median": 28,
+      "p75": 28,
+      "min": 28,
+      "max": 28,
       "n": 5
     },
     "site/phone/section/scripts": {
       "unit": "count",
-      "median": 11,
-      "p75": 11,
-      "min": 11,
-      "max": 11,
+      "median": 12,
+      "p75": 12,
+      "min": 12,
+      "max": 12,
       "n": 5
     },
     "site/phone/section/html-kb": {
       "unit": "KB",
-      "median": 8.1,
-      "p75": 8.1,
-      "min": 8.1,
-      "max": 8.1,
+      "median": 15.9,
+      "p75": 15.9,
+      "min": 15.9,
+      "max": 15.9,
       "n": 5
     },
     "site/phone/section/dom-nodes": {
       "unit": "count",
-      "median": 252,
-      "p75": 252,
-      "min": 252,
-      "max": 252,
+      "median": 281,
+      "p75": 281,
+      "min": 281,
+      "max": 281,
       "n": 5
     },
     "site/phone/section/script-kb": {
       "unit": "KB",
-      "median": 14.2,
-      "p75": 14.2,
-      "min": 14.2,
-      "max": 14.2,
+      "median": 22.6,
+      "p75": 22.6,
+      "min": 22.6,
+      "max": 22.6,
       "n": 5
     },
     "site/phone/section/css-kb": {
@@ -6879,10 +6784,10 @@
     },
     "site/phone/section/img-kb": {
       "unit": "KB",
-      "median": 271.3,
-      "p75": 271.3,
-      "min": 271.3,
-      "max": 271.3,
+      "median": 193,
+      "p75": 193,
+      "min": 193,
+      "max": 193,
       "n": 5
     },
     "site/phone/section/font-kb": {
@@ -6903,50 +6808,50 @@
     },
     "site/phone/article/ttfb": {
       "unit": "ms",
-      "median": 6.9,
-      "p75": 7,
-      "min": 5.7,
-      "max": 7.4,
+      "median": 6.2,
+      "p75": 6.2,
+      "min": 5.5,
+      "max": 6.3,
       "n": 5
     },
     "site/phone/article/html": {
       "unit": "ms",
-      "median": 69.9,
-      "p75": 71,
-      "min": 59,
-      "max": 74.1,
+      "median": 64,
+      "p75": 65.5,
+      "min": 62.5,
+      "max": 68,
       "n": 5
     },
     "site/phone/article/dcl": {
       "unit": "ms",
-      "median": 731.8,
-      "p75": 735.7,
-      "min": 674.3,
-      "max": 751.8,
+      "median": 697,
+      "p75": 724.7,
+      "min": 664,
+      "max": 724.8,
       "n": 5
     },
     "site/phone/article/load": {
       "unit": "ms",
-      "median": 732.6,
-      "p75": 736.6,
-      "min": 682.7,
-      "max": 752.6,
+      "median": 698.5,
+      "p75": 725.4,
+      "min": 688,
+      "max": 725.8,
       "n": 5
     },
     "site/phone/article/fcp": {
       "unit": "ms",
-      "median": 508,
-      "p75": 520,
-      "min": 480,
-      "max": 536,
+      "median": 484,
+      "p75": 508,
+      "min": 472,
+      "max": 512,
       "n": 5
     },
     "site/phone/article/lcp": {
       "unit": "ms",
-      "median": 508,
-      "p75": 520,
-      "min": 480,
-      "max": 536,
+      "median": 484,
+      "p75": 508,
+      "min": 472,
+      "max": 512,
       "n": 5
     },
     "site/phone/article/tbt": {
@@ -6983,10 +6888,10 @@
     },
     "site/phone/article/html-kb": {
       "unit": "KB",
-      "median": 12.3,
-      "p75": 12.3,
-      "min": 12.3,
-      "max": 12.3,
+      "median": 12.4,
+      "p75": 12.4,
+      "min": 12.4,
+      "max": 12.4,
       "n": 5
     },
     "site/phone/article/dom-nodes": {
@@ -7015,10 +6920,10 @@
     },
     "site/phone/article/img-kb": {
       "unit": "KB",
-      "median": 487.2,
-      "p75": 487.2,
-      "min": 487.2,
-      "max": 487.2,
+      "median": 416.1,
+      "p75": 416.1,
+      "min": 416.1,
+      "max": 416.1,
       "n": 5
     },
     "site/phone/article/font-kb": {
@@ -7039,50 +6944,50 @@
     },
     "site/phone/article-large/ttfb": {
       "unit": "ms",
-      "median": 7.6,
-      "p75": 8.7,
-      "min": 6.3,
-      "max": 9.6,
+      "median": 6.8,
+      "p75": 6.8,
+      "min": 6.1,
+      "max": 7.3,
       "n": 5
     },
     "site/phone/article-large/html": {
       "unit": "ms",
-      "median": 71.9,
-      "p75": 73.8,
-      "min": 64.8,
-      "max": 76.3,
+      "median": 63,
+      "p75": 63.6,
+      "min": 61.8,
+      "max": 71.1,
       "n": 5
     },
     "site/phone/article-large/dcl": {
       "unit": "ms",
-      "median": 798.7,
-      "p75": 802.8,
-      "min": 779.4,
-      "max": 843.1,
+      "median": 785.4,
+      "p75": 809.9,
+      "min": 741.5,
+      "max": 879.5,
       "n": 5
     },
     "site/phone/article-large/load": {
       "unit": "ms",
-      "median": 799.6,
-      "p75": 803.5,
-      "min": 780.4,
-      "max": 844.1,
+      "median": 786.1,
+      "p75": 811,
+      "min": 742.3,
+      "max": 880.2,
       "n": 5
     },
     "site/phone/article-large/fcp": {
       "unit": "ms",
-      "median": 572,
+      "median": 560,
       "p75": 572,
-      "min": 556,
-      "max": 588,
+      "min": 532,
+      "max": 604,
       "n": 5
     },
     "site/phone/article-large/lcp": {
       "unit": "ms",
-      "median": 656,
-      "p75": 660,
-      "min": 640,
-      "max": 708,
+      "median": 640,
+      "p75": 684,
+      "min": 604,
+      "max": 744,
       "n": 5
     },
     "site/phone/article-large/tbt": {
@@ -7119,10 +7024,10 @@
     },
     "site/phone/article-large/html-kb": {
       "unit": "KB",
-      "median": 16.3,
-      "p75": 16.3,
-      "min": 16.3,
-      "max": 16.3,
+      "median": 16.4,
+      "p75": 16.4,
+      "min": 16.4,
+      "max": 16.4,
       "n": 5
     },
     "site/phone/article-large/dom-nodes": {
@@ -7175,50 +7080,50 @@
     },
     "site/phone/design-library/ttfb": {
       "unit": "ms",
-      "median": 7.5,
-      "p75": 8.3,
-      "min": 6,
-      "max": 8.4,
+      "median": 6.5,
+      "p75": 6.5,
+      "min": 5.5,
+      "max": 6.7,
       "n": 5
     },
     "site/phone/design-library/html": {
       "unit": "ms",
-      "median": 70.8,
-      "p75": 71.6,
-      "min": 62.3,
-      "max": 72.5,
+      "median": 65.4,
+      "p75": 66.2,
+      "min": 59.3,
+      "max": 74.3,
       "n": 5
     },
     "site/phone/design-library/dcl": {
       "unit": "ms",
-      "median": 713.8,
-      "p75": 754.3,
-      "min": 641.9,
-      "max": 771.3,
+      "median": 724.3,
+      "p75": 730.9,
+      "min": 675.9,
+      "max": 738,
       "n": 5
     },
     "site/phone/design-library/load": {
       "unit": "ms",
-      "median": 716,
-      "p75": 756.3,
-      "min": 643.7,
-      "max": 773.3,
+      "median": 726.2,
+      "p75": 732.2,
+      "min": 677.6,
+      "max": 739.9,
       "n": 5
     },
     "site/phone/design-library/fcp": {
       "unit": "ms",
-      "median": 640,
-      "p75": 680,
-      "min": 504,
-      "max": 696,
+      "median": 636,
+      "p75": 640,
+      "min": 604,
+      "max": 660,
       "n": 5
     },
     "site/phone/design-library/lcp": {
       "unit": "ms",
-      "median": 640,
-      "p75": 680,
-      "min": 504,
-      "max": 696,
+      "median": 636,
+      "p75": 640,
+      "min": 604,
+      "max": 660,
       "n": 5
     },
     "site/phone/design-library/tbt": {
@@ -7263,10 +7168,10 @@
     },
     "site/phone/design-library/dom-nodes": {
       "unit": "count",
-      "median": 716,
-      "p75": 716,
-      "min": 716,
-      "max": 716,
+      "median": 717,
+      "p75": 717,
+      "min": 717,
+      "max": 717,
       "n": 5
     },
     "site/phone/design-library/script-kb": {
@@ -7311,50 +7216,50 @@
     },
     "site/phone/play-first-paint/ttfb": {
       "unit": "ms",
-      "median": 5.6,
-      "p75": 6.3,
-      "min": 5.1,
-      "max": 7.7,
+      "median": 6,
+      "p75": 6,
+      "min": 5.7,
+      "max": 6.9,
       "n": 5
     },
     "site/phone/play-first-paint/html": {
       "unit": "ms",
-      "median": 64.7,
-      "p75": 68.6,
-      "min": 58.9,
-      "max": 74.4,
+      "median": 65.9,
+      "p75": 68.1,
+      "min": 59,
+      "max": 71.4,
       "n": 5
     },
     "site/phone/play-first-paint/dcl": {
       "unit": "ms",
-      "median": 489.8,
-      "p75": 491.6,
-      "min": 467.7,
-      "max": 517,
+      "median": 487.7,
+      "p75": 496.4,
+      "min": 466,
+      "max": 521.5,
       "n": 5
     },
     "site/phone/play-first-paint/load": {
       "unit": "ms",
-      "median": 490.3,
-      "p75": 492.4,
-      "min": 468.6,
-      "max": 517.4,
+      "median": 488.5,
+      "p75": 496.4,
+      "min": 466.8,
+      "max": 522,
       "n": 5
     },
     "site/phone/play-first-paint/fcp": {
       "unit": "ms",
       "median": 276,
-      "p75": 284,
-      "min": 260,
-      "max": 292,
+      "p75": 288,
+      "min": 264,
+      "max": 296,
       "n": 5
     },
     "site/phone/play-first-paint/lcp": {
       "unit": "ms",
       "median": 276,
-      "p75": 284,
-      "min": 260,
-      "max": 292,
+      "p75": 288,
+      "min": 264,
+      "max": 296,
       "n": 5
     },
     "site/phone/play-first-paint/tbt": {
@@ -7377,7 +7282,7 @@
       "unit": "count",
       "median": 18,
       "p75": 18,
-      "min": 18,
+      "min": 17,
       "max": 18,
       "n": 5
     },
@@ -7399,18 +7304,18 @@
     },
     "site/phone/play-first-paint/dom-nodes": {
       "unit": "count",
-      "median": 85,
-      "p75": 85,
-      "min": 85,
-      "max": 85,
+      "median": 88,
+      "p75": 88,
+      "min": 88,
+      "max": 88,
       "n": 5
     },
     "site/phone/play-first-paint/script-kb": {
       "unit": "KB",
-      "median": 8.8,
-      "p75": 8.8,
-      "min": 8.8,
-      "max": 8.8,
+      "median": 8.9,
+      "p75": 8.9,
+      "min": 8.9,
+      "max": 8.9,
       "n": 5
     },
     "site/phone/play-first-paint/css-kb": {
@@ -7425,7 +7330,7 @@
       "unit": "KB",
       "median": 342.7,
       "p75": 342.7,
-      "min": 342.7,
+      "min": 301.4,
       "max": 342.7,
       "n": 5
     },
@@ -7447,127 +7352,73 @@
     }
   },
   "serverSpans": {
-    "editor/cold/dashboard": {
-      "content.read": 185.5,
-      "content.validate": 32.4,
-      "git": 1789.1
-    },
-    "editor/cold/articles": {
-      "git": 918.2
-    },
+    "editor/cold/dashboard": {},
+    "editor/cold/articles": {},
     "editor/cold/article": {
-      "picture.metadata": 16723.8,
-      "picture.url": 172.1,
-      "picture.edge": 30071.1,
-      "media.cards": 1420.6,
-      "git": 2152.3
+      "media.cards": 0.6
     },
     "editor/cold/article-large": {
-      "picture.url": 2765.3,
-      "media.cards": 27.7,
-      "git": 2128.5
+      "media.cards": 1.3,
+      "picture.url": 109.1
     },
-    "editor/cold/sections": {
-      "git": 901.5
-    },
-    "editor/cold/navigation": {
-      "git": 907.8
-    },
-    "editor/cold/planet": {
-      "git": 917
-    },
+    "editor/cold/sections": {},
+    "editor/cold/navigation": {},
+    "editor/cold/planet": {},
     "editor/cold/media": {
-      "picture.url": 3619,
-      "media.cards": 44.6,
-      "git": 893.3
+      "media.cards": 11.8
     },
     "editor/cold/settings": {
-      "picture.url": 1670.2,
-      "media.cards": 25.1,
-      "git": 879.6
+      "media.cards": 0.4
     },
-    "editor/cold/access": {
-      "git": 912.6
-    },
-    "editor/cold/publish": {
-      "git": 2172.9
-    },
-    "editor/cold/site-article": {
-      "picture.url": 32.5
-    },
-    "editor/warm/dashboard": {
-      "git": 1791.7
-    },
-    "editor/warm/articles": {
-      "git": 876.5
-    },
+    "editor/cold/access": {},
+    "editor/cold/publish": {},
+    "editor/cold/site-article": {},
+    "editor/warm/dashboard": {},
+    "editor/warm/articles": {},
     "editor/warm/article": {
-      "picture.url": 3203,
-      "media.cards": 31.1,
-      "git": 2154.2
+      "media.cards": 0.6
     },
     "editor/warm/article-large": {
-      "picture.url": 2536.5,
-      "media.cards": 29.1,
-      "git": 2120.4
+      "media.cards": 1.7
     },
-    "editor/warm/sections": {
-      "git": 902.5
-    },
+    "editor/warm/sections": {},
     "editor/warm/navigation": {
-      "git": 883.2
+      "git": 170.4
     },
-    "editor/warm/planet": {
-      "git": 888.1
-    },
+    "editor/warm/planet": {},
     "editor/warm/media": {
-      "picture.url": 2301.6,
-      "media.cards": 27.2,
-      "git": 877.8
+      "media.cards": 10.3
     },
     "editor/warm/settings": {
-      "picture.url": 3083.5,
-      "media.cards": 34,
-      "git": 904.3
+      "media.cards": 0.2
     },
-    "editor/warm/access": {
-      "git": 909.2
-    },
-    "editor/warm/publish": {
-      "git": 2077.3
-    },
-    "editor/warm/site-article": {
-      "picture.url": 16.3
-    },
+    "editor/warm/access": {},
+    "editor/warm/publish": {},
+    "editor/warm/site-article": {},
     "editor/interaction/type": {
-      "store.read": 352.79999999999995,
-      "store.check": 8.9,
-      "content.read": 176.4,
-      "content.validate": 3.9,
-      "picture.url": 3257.6,
-      "media.cards": 43.2,
-      "git": 2152.9
+      "store.read": 43,
+      "store.check": 8.4,
+      "content.read": 0.5,
+      "content.validate": 3.5,
+      "git": 349.5
     },
     "editor/interaction/field": {
-      "store.read": 194.3,
-      "store.check": 6,
-      "content.read": 185.5,
-      "content.validate": 2,
-      "picture.url": 53.2
+      "store.read": 19.7,
+      "store.check": 3.3,
+      "content.read": 0.2,
+      "content.validate": 1.7,
+      "git": 172.7
     },
     "editor/interaction/add-block": {
-      "store.read": 191.6,
-      "store.check": 5.5,
-      "content.read": 181,
-      "content.validate": 2.2,
-      "picture.url": 1601.7,
-      "media.cards": 21.6,
-      "git": 2073.3
+      "store.read": 20.7,
+      "store.check": 3.7,
+      "content.read": 0.2,
+      "content.validate": 1.9,
+      "media.cards": 1.4,
+      "git": 188.9
     },
     "editor/interaction/media-details": {
-      "picture.url": 1606.1,
-      "media.cards": 22.2,
-      "git": 897.2
+      "picture.url": 0.5
     }
   }
 }

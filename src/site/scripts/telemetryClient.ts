@@ -3,9 +3,12 @@
  * chunk): its build that loads no other script, no cookies (the session's storage), profiles for signed-in
  * grants only, no replay, surveys, heatmaps or flags; its own page views off (the site sends them, so a
  * protected page's is allowlisted), autocapture only on open pages; and every event through `sanitize`.
+ * It also measures the page's Web Vitals (scripts/webVitals.ts: PostHog's own would load a script) and
+ * sends them once, as `web_vitals`, when the page is hidden or left.
  */
 import posthog from 'posthog-js/dist/module.no-external';
 import { linkKind, mediaId, sanitize, type CaptureEvent } from './telemetrySanitize';
+import { pageKind, vitalsProps, watchVitals } from './webVitals';
 import type { PageFacts, Queued } from './telemetryRules';
 
 export function connect(o: { test: boolean; testHost: string; base: string; page: () => PageFacts }): { run: (q: Queued) => void } {
@@ -34,6 +37,14 @@ export function connect(o: { test: boolean; testHost: string; base: string; page
   });
   // signed out since this tab's identity was set (a session that ran out): anonymous again
   if (document.documentElement.dataset.signedIn === undefined && posthog.get_property('$user_state') === 'identified') posthog.reset();
+  // the field data, for the document as a whole, under the kind of page it opened on (never its address or title)
+  const facts = o.page();
+  const kind = pageKind({ path: facts.pathname.slice(o.base.length), access: facts.access, signIn: facts.signIn, frame: document.documentElement.dataset.frame });
+  watchVitals((v) => {
+    const props = vitalsProps(kind, v);
+    // a beacon outlives the page; the test build sends it as any event, which a test can read
+    if (props) posthog.capture('web_vitals', props, o.test ? undefined : { transport: 'sendBeacon' });
+  });
   return {
     run(q) {
       if (q.kind === 'pageview') posthog.capture('$pageview');

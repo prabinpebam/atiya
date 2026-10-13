@@ -158,12 +158,13 @@ content/media/
 | `crop` | image | no | A cropped copy's record: `from` (the original's ID) and `x`, `y`, `width`, `height` in the original's pixels. Cropping the copy again starts from there ([§9](#9-shapes-thumbnails-and-crops)) |
 | `animation` | image | no | Present when the WebP master has more than one frame: `{ "poster": "cover.poster.webp" }`. The poster is its still first frame for reduced motion and thumbnails |
 | `dark` | image | no | Its dark mode version: `{ "file": "cover.dark.webp" }`, a second master beside it, shown instead when the page is dark ([§10](#10-dark-mode-versions)). Left out, the same picture shows in both modes |
+| `facts` | image | no | Written by edit mode, never by hand: the master's `width`, `height`, background `bg` and file size `bytes` when it was saved, so it needn't be decoded to be shown ([§9.3](#93-picture-facts-kept)); `dark.facts` the same for its dark version |
 | `poster` | video | yes | A media ID (an image with alt text) |
 | `captions` | video | yes | `[{ "file": "walkthrough.en.vtt", "srclang": "en", "label": "English", "default": true }]` |
 | `transcript` | video, audio | when speech carries meaning | Markdown |
 | `visibility` | all | yes | As for documents; a non-public asset can't be used by a published document |
 
-**Measured, not written.** Width, height, duration, MIME type, file size and a dominant colour (the placeholder shown while a picture loads) are measured by the build, and returned by the API. They're never typed into a sidecar.
+**Measured, not written.** Width, height, duration, MIME type, file size and a dominant colour (the placeholder shown while a picture loads) are measured by the build, and returned by the API. They're never typed into a sidecar (edit mode's `facts` are measurements it keeps, not typed: [§9.3](#93-picture-facts-kept)).
 
 ## 4. Formats and budgets
 
@@ -291,6 +292,14 @@ At a fixed row height a portrait gets far less area than a landscape (a 2:3 port
 - **How it's chosen:** the same dynamic-programming pass weighs a band against normal rows. A band's cost is the crop of its two rows and its tall cell, less a bonus that grows with how tall the picture is (a 9:16 spans before a 4:5); so a portrait spans where its rows fit well and stays in a row where they wouldn't. The pass carries the side of the last band and whether the last unit was one, so the rhythm holds across the whole gallery.
 - **Order:** the tall picture comes first (on the left, its rows after it) or last (on the right, its rows before it), so the source order is unchanged: focus, assistive tech and the lightbox's next and previous follow the sequence.
 - **Built as:** `justifyGallery(items, width, rowHeight, gap, { span })` in `src/site/scripts/justifiedGallery.ts`, unit-tested; the `Gallery` compound passes `span` and marks a spanning card `data-tall`.
+
+### 9.3 Picture facts kept
+
+A picture's size and its automatic background ([§9.1](#91-how-a-picture-is-shown-fill-fit-actual-size-tile-a-background-corners-a-drop-shadow)) take a full decode of its master to work out, so they're kept rather than worked out again after every start of the dev server ([performance report](../engineering/performance-report.md) R9).
+
+- **In the sidecar:** edit mode measures every master it saves (an upload, Replace, a dark version, a crop) into `facts`: `{ "width", "height", "bg": "rgb(r g b)", "bytes" }`, and a dark version's into `dark.facts`. It's optional: a sidecar without it is valid, and its facts are measured when the picture is first shown. `bytes` is the master's file size when it was measured: when the master's size isn't that any more (it was changed outside edit mode), the facts are ignored and measured afresh. The details form never changes them. `scripts/fill-picture-facts.mjs` fills them in for existing sidecars, once.
+- **On disk, in dev:** anything measured is kept in `node_modules/.cache/site-picture-facts.json`, by the master's path, size and time, and filled in the background at a dev server's first start (`warmPictureFacts` in `src/site/content/pictureFacts.ts`). A build doesn't use it.
+- **In memory:** each picture as the page shows it (its URLs at a slot's widths) is kept by its master's and poster's path, size and time and the slot, so drawing the same picture again costs nothing; replacing a master works it out again.
 
 ## 10. Dark mode versions
 

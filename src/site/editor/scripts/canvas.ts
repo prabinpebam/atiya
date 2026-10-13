@@ -1243,6 +1243,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         updateTableControls();
       }
       else if (m.type === 'link') applyLink(String(m.href ?? ''));
+      else if (m.type === 'remap') remap(m.origins as ({ from: number; copy: boolean } | null)[], m.kinds as Kind[], m.arriving as (string | null)[]);
       else if (m.type === 'flush') send(true);
       else if (m.type === 'mode') {
         preview = !!m.preview;
@@ -1257,6 +1258,55 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     },
     { signal },
   );
+
+  /**
+   * A change shown at once (spec §3.6): the blocks in their new order, a copy cloned after its original, a
+   * removed one gone, and a placeholder where a new one goes until the canvas is drawn again. `origins`
+   * says where each block came from (model/optimistic.ts); the comments that mark them are numbered again.
+   */
+  const remap = (origins: ({ from: number; copy: boolean } | null)[], next: Kind[], arriving: (string | null)[]) => {
+    if (!prose) return;
+    // each block's nodes: its comment, and what follows it until the next block's
+    const segs: Node[][] = [];
+    let current = -1;
+    let first: Node | null = null;
+    for (const n of Array.from(prose.childNodes)) {
+      const m = n.nodeType === Node.COMMENT_NODE ? /^editor-block:(\d+)$/.exec((n as Comment).data.trim()) : null;
+      if (m) {
+        current = Number(m[1]);
+        segs[current] = [n];
+        first ??= n;
+      } else if (current >= 0) segs[current].push(n);
+    }
+    const anchor = first?.previousSibling ?? null;
+    const used = new Set<number>();
+    const out = origins.map((o, j): Node[] => {
+      const seg = o ? segs[o.from] : undefined;
+      if (o && seg && !o.copy && !used.has(o.from)) {
+        used.add(o.from);
+        return seg;
+      }
+      if (o && seg) return seg.map((n) => n.cloneNode(true));
+      const ph = document.createElement('div');
+      ph.dataset.editorArriving = '';
+      ph.textContent = arriving[j] ?? 'Adding a block…';
+      return [document.createComment(`editor-block:${j}`), ph];
+    });
+    segs.forEach((seg, i) => {
+      if (seg && !used.has(i)) seg.forEach((n) => n.parentNode?.removeChild(n));
+    });
+    const flat = out.flatMap((seg, j) => {
+      (seg[0] as Comment).data = `editor-block:${j}`;
+      return seg;
+    });
+    if (anchor) anchor.after(...flat);
+    else prose.prepend(...flat);
+    kinds.splice(0, kinds.length, ...next);
+    map();
+    arm();
+    resumeDropcaps();
+    redraw();
+  };
 
   const addPending = (at: number, kind: Pending) => {
     if (!prose) return;

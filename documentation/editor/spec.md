@@ -15,8 +15,8 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 >   - **Blocks:** a "+" between blocks adds one from a palette of the content model's blocks. A toolbar on the selected block moves, duplicates or deletes it.
 >   - **Order and look:** an outline beside the canvas reorders blocks by drag or keyboard. A block's look is limited to the choices the design system offers (its width, a gallery's layout), so no edit can break the design.
 > - **Saving:** every change is written as soon as it's made, after the same contract check the build runs, as one transaction: a change the contract refuses, or one that conflicts with an edit made elsewhere, never reaches a file. The top bar always says whether it's saved, and every open tab shows a change the moment it's saved (§2.1). Undo and redo cover the whole document, and git is the version history.
-> - **Proposed: optimistic edits** (§3.6, for review, not built): every change shown in the outline, the inspector and the canvas at once, the server's redraw only confirming it, and a refused change put back with the reason.
-> - **Proposed: never a silent wait** (§2.2, for review, not built): every wait shows a sign where it happens (a busy button, a pending row, a field saving, a region or the canvas updating, a long task's progress) as well as in the status line.
+> - **Optimistic edits** (§3.6, built 13 October 2026): a move, a removal, a copy or a new block shows in the outline, the inspector and the canvas at once, the server's redraw only confirming it; a refused change is put back with the reason.
+> - **Never a silent wait** (§2.2, built 13 October 2026): every wait shows a sign where it happens (a busy button, a pending row, a region or the canvas updating, the picker filling, a screen opening) as well as in the status line, through one task tracker.
 > - **Pages move freely:** a page's slug, section and status can change at any time, published or not. Its address follows, and the old one simply goes, with no redirect (the owner's call). Only a draft can be deleted.
 > - **Publishing:** Save to remote lists what changed in `content/`, checks it all, commits just those files and pushes. From a page editor it opens as a dismissible modal and keeps running after the modal closes; the top bar keeps showing its progress and result. Discard puts a file back as it was last saved to remote.
 > - **Built from the design system:** the editor's screens are Astro pages made of the site's own tokens, fundamentals and compounds, with two new generic compounds (Dialog, Tabs). Client scripts only coordinate; the page and every form are rendered by the server.
@@ -161,11 +161,11 @@ Edit mode always says what's become of a change, and every open page shows a cha
   - **Every other screen** draws itself again (its `screen` region). With unsaved input, a text field in use or a dialog open, it keeps what's being typed, says it's behind, and catches up once that's saved, put away or left.
   - A tab's own saves come back to it as its own (the `X-Editor-Tab` header), and a page drawn after a change (one that reloaded after its save) knows it has it already (the content generation), so neither is told twice.
 
-### 2.2 Never a silent wait: progress where it happens (proposed, not built)
+### 2.2 Never a silent wait: progress where it happens
 
-> **Status: a proposal for review (13 October 2026), with §3.6. Nothing here is built yet.** The classes of wait and their research are in [perceived performance](../engineering/perceived-performance.md); the measured waits are in [the performance report](../engineering/performance-report.md).
+> **Status: built 13 October 2026, with §3.6** (what was built, and what's still to come, is in "As built" at the end of this section). The classes of wait and their research are in [perceived performance](../engineering/perceived-performance.md); the measured waits are in [the performance report](../engineering/performance-report.md).
 
-**The rule.** From the moment the person acts until the work is done or has failed, something visible says that it's working, **at the place the work affects**, and the status line says **what** it is. Never a state where something is processing and the person can't tell. The status line alone isn't enough: today a save shows "Saved" in the top bar while the outline, the inspector or the canvas is still being drawn again for 2 to 4 seconds with no sign of it, and a screen can take 2 seconds to open with nothing but the browser's own spinner.
+**The rule.** From the moment the person acts until the work is done or has failed, something visible says that it's working, **at the place the work affects**, and the status line says **what** it is. Never a state where something is processing and the person can't tell. The status line alone isn't enough: before this, a save showed "Saved" in the top bar while the outline, the inspector or the canvas was still being drawn again for 2 to 4 seconds with no sign of it, and a screen could take 2 seconds to open with nothing but the browser's own spinner.
 
 #### Two layers, always both
 
@@ -236,9 +236,17 @@ Each is built from the design system's own fundamentals (`Spinner`, `Skeleton`, 
 - **Accessible.** The status line announces a wait's start only if it passes 1 s, and its end; inline spinners are hidden from assistive technology, their words carried by the status line and the element's `aria-busy` and description; reduced motion turns spinners and shimmers into still marks with words.
 - **Measured and tested.** The benchmark adds `feedback-shown`, from the action to its first visible sign, targeted at under 100 ms for every interaction it measures. An E2E group, "no silent wait", delays the API by 2 s and checks that each operation in the table above shows its inline sign within 400 ms and its words in the status line, and that each sign goes once the work ends.
 
-#### Open question for the owner
+#### Decision taken
 
-**The done check:** a brief "Saved" check at the place for every change (proposed only where nothing else shows the result), or the status line alone when the result is visible? (§3.6 has three more.)
+**The done check** is shown only where nothing else shows the result (a button that saved a form says "Saved" for 2 s); where the result is visible (a moved row, the details drawn again), the status line alone says it. The owner can still ask for more.
+
+#### As built (13 October 2026)
+
+- **The tracker** is `startTask(label, { el, quiet, line, busyLabel })` in [`scripts/client.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/scripts/client.ts), with `track()` around a promise. An element it names gets `aria-busy` and `data-busy="ack"` at once, `data-busy="on"` past the delay, `data-busy="done"` for a done check; past 3 s its `data-busy-text` and the status line add the elapsed time. The status line's words come from the pure [`model/feedback.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/feedback.ts) (`taskLine`), and its own polite region is written only past 1 s ([SaveStatus](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/components/SaveStatus.astro)). `swapRegions` starts a task for the regions it draws (quiet when it only confirms, §3.6).
+- **The timings** are `c.editor` tokens: `feedback-delay` 300 ms, `feedback-min` 500 ms, `feedback-elapsed` 3 s, `feedback-done` 2 s.
+- **Signs built:** Button's spinner replaces its icon past the delay, keeping its width (a script's `data-busy="ack"` holds it back); the outline's rows (a small spinner at the end); the regions drawn again (a line along the top: the inspector, Media's grid and details, Settings, Access, a page's Share dialog, and the layout's screen region); the canvas pill ([CanvasFrame](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/components/CanvasFrame.astro)); the arriving block (§3.6); the picker filling ("Preparing pictures: 40 of 105", a `Progress`); a screen opening (a line under the top bar past the delay, the layout's skeleton past 1 s); the counts checked ("Checking changes…" with a spinner, and a small spinner while they're read again); the first start (§8.4).
+- **Still to come:** the field state in the inspector's hint row and a long task's named steps with an elapsed time in uploads, crops and Save to remote (they keep their own progress and words today); a pending row on the Sections, Navigation, Planet and Access screens.
+- **Tested** by the E2E group "editor: no silent wait" in [`tests/e2e/editor-perf.spec.ts`](https://github.com/prabinpebam/atiya/blob/main/tests/e2e/editor-perf.spec.ts) (the API held back by 2 s) and the unit tests in `tests/unit/editorPerf.test.ts`; the benchmark's `feedback-shown` takes the first visible sign of a move, a delete, a new block and opening a picture's details.
 
 ## 3. The article editor
 
@@ -372,11 +380,11 @@ Two tabs, as the APG tabs pattern: **Block** (the selected block's settings) and
 - **Dates:** published, updated and last reviewed. The server keeps "Updated" and "Published" true (§9); a date set by hand in the same change wins.
 - **Delete:** a draft can be deleted, and with it, if you ask, the pictures in its own folder that nothing else uses. A published article goes back to Draft first, then can be deleted.
 
-### 3.6 Optimistic edits (proposed, not built)
+### 3.6 Optimistic edits
 
-> **Status: a proposal for review (13 October 2026). Nothing here is built yet; it's implemented only once the owner signs it off.** The measured problem and the wider plan are in [the performance report](../engineering/performance-report.md); the feedback rules it applies are in [perceived performance](../engineering/perceived-performance.md).
+> **Status: built 13 October 2026, as the owner asked (what was built is in "As built" at the end of this section).** The measured problem and the wider plan are in [the performance report](../engineering/performance-report.md); the feedback rules it applies are in [perceived performance](../engineering/perceived-performance.md).
 
-**The problem.** Edit mode already applies every change to the article in the browser (§8.6), but it shows the change only after the server has saved it *and* drawn the screen and the canvas again. The save itself takes 0.2 s; the redraw after it is what the owner waits for: a new block reaches the canvas after 3.2 s, the outline settles 4.2 s after typing stops, and a picture's saved details show after 1.4 s (the October baseline).
+**The problem.** Edit mode already applied every change to the article in the browser (§8.6), but showed the change only after the server had saved it *and* drawn the screen and the canvas again. The save itself took 0.2 s; the redraw after it was what the owner waited for: a new block reached the canvas after 3.2 s, the outline settled 4.2 s after typing stopped, and a picture's saved details showed after 1.4 s (the October baseline).
 
 **The idea.** Show each change everywhere at once, from the document the editor already holds, and let the server's redraw only confirm it. The person sees the result in under 100 ms; the save goes on in the background; the status line keeps telling the truth about it, and the place the change happened shows that it's still saving (§2.2: the moved row pending, the arriving block, the canvas updating).
 
@@ -420,11 +428,20 @@ The benchmark (`npm run perf:bench`) gains three interactions, each from the key
 
 **Tests it adds:** unit tests for `model/optimistic.ts` (moves, several, drags, deletions, duplicates, new blocks, renaming a form's fields); E2E tests with the save delayed by the test: a move, a delete and a new block show at once and stay after the save; a refused save puts the views back and says why; typing in the canvas never has its text replaced; the inspector's tab doesn't change after a late redraw; the canvas is never blank during a redraw (a screenshot).
 
-#### Open questions for the owner
+#### Decisions taken
 
-1. **A placeholder on the canvas** for a new block ("Adding a picture…"), or nothing there until its drawing arrives?
-2. **When a save is refused,** put the change back at once (proposed), or keep it on screen, marked as not saved, until the person fixes or undoes it?
-3. **The Sections, Navigation and Planet screens:** make their moves optimistic in the same step, or after the article editor?
+1. **A placeholder on the canvas** for a new block, named ("Adding a divider…"), shimmering until its drawing arrives (still under reduced motion).
+2. **A refused save** puts the change back at once and says so.
+3. **The Sections, Navigation and Planet screens'** moves are a later step: the article editor and Media first.
+
+#### As built (13 October 2026)
+
+- [`model/optimistic.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/optimistic.ts): `originsOf` (where each block came from: moved, a copy, or new), `isStructural` (an edit in place isn't shown this way), `targetsOf`, and `renameIndex` / `renameTree` (a form's names, ids, `for`, `aria-describedby`, `data-index`, `data-editor-pick` and the rest). Unit-tested in `tests/unit/editorPerf.test.ts`.
+- The controller's `change(…, { atOnce: true })` is used by Move up and down, the keys, a drag (one block or a selection), Delete (one or several), Duplicate and every new block; `showAtOnce` draws the outline from the document (the row template and each type's icon are in [Outline](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/components/Outline.astro)'s markup), renames the inspector's forms (a new or copied block shows Inspector's "Its settings show once it's saved"), and sends the canvas `remap`; the rows it touched show a spinner while the save runs. The save then confirms the outline and the inspector quietly (the inspector is left as it is while a field in it is being typed in) and draws the canvas again behind the old one.
+- Typing in the canvas updates its outline row as it's typed and redraws nothing; the title and the standfirst typed on the canvas change the Page tab's fields in place.
+- The double-buffered canvas: `reloadCanvas` loads `data-editor-incoming` behind the frame (it writes the scroll position the canvas restores), `promote` swaps it in on its `ready`; a `typing` message drops it and tries again 1.6 s after the typing stops, and drops what was to happen once it was ready (a caret put back).
+- Media: opening a picture marks its card current at once and draws only the details region (R11); saving its details says Saved as soon as the store commits, changes the card's name and its No alt text mark in place, and draws the grid and the details again quietly after the button's done check.
+- **Not built:** patching a single block's drawing into the canvas by message (report R6's first option): the double-buffered canvas covers it without a blank frame.
 
 ## 4. Articles, and the dashboard
 
@@ -566,7 +583,9 @@ Anything else gets 403, with no detail. Paths come from IDs checked against the 
   - **on any change** it sends Astro's own `astro:content-changed` event to the `ssr` and `prerender` environments, which clears the route cache, so a new or newly published article's route exists at once, without a restart;
   - **and it pushes the change to every open page** as a custom `site:content-changed` event on the dev server's socket, with the files, the editor tab that made it (`origin`: the store reads it from the request's `X-Editor-Tab` header, through `asTab` in `server/store.ts`; null for a change made by hand) and the content generation it brought the content to. The store tells it of its own writes (it records the hash of each file it writes); the watcher tells it of everything else and advances the generation, ignoring temporary files and a change whose bytes the pages already know (the store's write, or a change already announced: Windows reports one write as several events, and a second report used to look like an edit made elsewhere). What each page does with it is §2.1: a public page reloads once the changes settle; an editor screen brings the change in live, keeps unsaved input, and ignores its own saves and changes it already shows.
   - **Pictures' masters aren't watched** (the dev server's `server.watch.ignored`): a new master (an upload, a crop) made the dev server reload every open page, losing unsaved typing in other tabs. The store tells the pages of the masters it writes, and what a page shows of a picture comes from its sidecar.
-- **Canvas refreshes:** the editor refreshes the canvas itself, only after changes that re-render it (a block moved, added or reconfigured, or a change made elsewhere), keeping its scroll position and selection. Text saves don't refresh it. (Proposed in §3.6: the canvas reordered in place at once, and every redraw double-buffered, so it's never blank.)
+- **Canvas refreshes:** the editor refreshes the canvas itself, only after changes that re-render it (a block moved, added or reconfigured, or a change made elsewhere), keeping its scroll position and selection. Text saves don't refresh it. A move, a removal, a copy or a new block is shown in the canvas at once by message (`remap`, §3.6), and every redraw is double-buffered: the new canvas loads behind the old one and replaces it when ready, so it's never blank.
+- **Region fragments** (performance-report.md R4): a swap names its regions in an `X-Editor-Regions` header ([`model/regions.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/editor/model/regions.ts)), and the layout and the screens draw only those (the article editor its outline, inspector or state; Media its grid or details; the picker a page of cards). The counts of changes to save to remote always come along. git is asked once per repository (`git status --porcelain=v2 --branch`, both repositories at once) and the answer kept until the content generation or git's own files move (at most 30 s), so a whole screen never waits for it: with no answer kept yet, the counts say "Checking changes…" and are read after the paint (R1, R2).
+- **A first start** (R12): once `astro dev` listens, the integration asks each screen once (so its modules compile) and reads every picture's facts (a disk cache makes later starts quick); meanwhile a screen opened in the browser gets a plain page that says what it waits for ("Compiling the screens: 3 of 8", "Preparing pictures: 40 of 118") and then opens it (`/_edit/__warm` reports the progress; `SITE_EDITOR_WARM=off` turns it off, as the E2E fixture server does).
 
 ### 8.5 The API
 
@@ -604,7 +623,7 @@ All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's vers
 | `src/site/editor/scripts/` | The browser's controllers: the editor, the canvas, the screens, and the site's Edit button (the launcher, in a shadow root so it touches nothing of the page) |
 
 - **One owner of the document.** The article editor's controller holds the article, applies each operation with the shared document operations, saves it through the API and tells the canvas what changed (by `postMessage`, same origin only). The canvas only reports what the reader did (selected, typed, asked to add or move) and redraws when told.
-- **Forms are rendered by the server** with the design system's fields, one form per block and one for the page, so the inspector needs no client-side templating. The page re-renders its outline and inspector after structural changes by fetching itself and swapping those regions. (Proposed in §3.6: the outline drawn in the browser, the forms moved with their blocks, and the server's redraw only confirming them.)
+- **Forms are rendered by the server** with the design system's fields, one form per block and one for the page, so the inspector needs no client-side templating. The page re-renders its outline and inspector after structural changes by fetching those regions and swapping them in; a move, a removal, a copy or a new block is drawn in the outline and the inspector at once from the document (§3.6), and the server's redraw only confirms it. The picker's cards aren't in the page: they're drawn when it first opens, a page at a time (R5).
 
 ## 9. Content rules the editor adds or changes
 

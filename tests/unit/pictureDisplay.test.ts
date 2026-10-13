@@ -7,7 +7,8 @@
 import { describe, expect, it } from 'vitest';
 import { article, block, PICTURE_DISPLAYS } from '../../src/site/content/schema';
 import { edgeAverage } from '../../src/site/content/edgeColour';
-import { fittedWidth, ratioValue } from '../../src/site/design/pictures';
+import { fittedSizes, fittedWidth, ratioValue } from '../../src/site/design/pictures';
+import { sizes } from '../../src/site/design/responsive';
 
 const base = { id: 'x', type: 'article', kind: 'note', slug: 'x', title: 'X', summary: 'X.', status: 'draft', visibility: 'public', updatedAt: '2026-10-06', locale: 'en', body: [] };
 
@@ -28,6 +29,20 @@ describe('fitted images hug the picture inside their frame', () => {
     expect(shownWidth).toBeLessThanOrEqual(frameWidth);
     expect(shownHeight).toBeLessThanOrEqual(frameHeight + 1e-9);
     expect(Math.min(frameWidth - shownWidth, frameHeight - shownHeight)).toBeCloseTo(0, 8);
+  });
+
+  it("asks for the width a fitted picture really shows at: its frame's sizes times its share, rounded up", () => {
+    const card = sizes(['md', '92vw'], ['wide', '50vw'], { share: 'wide', of: 2 });
+    expect(card).toBe('(max-width: 56rem) 92vw, (max-width: 76rem) 50vw, 38rem');
+    // a square thumbnail takes two thirds of its 3:2 card
+    expect(fittedSizes(card, fittedWidth(1024, 1024, '3/2') / 100)).toBe('(max-width: 56rem) 61.4vw, (max-width: 76rem) 33.4vw, 25.4rem');
+    // a picture as wide as its frame or wider asks for the frame's
+    expect(fittedSizes(card, fittedWidth(1920, 1080, '3/2') / 100)).toBe(card);
+    expect(fittedSizes(card, 0.7)).toBe('(max-width: 56rem) 64.4vw, (max-width: 76rem) 35vw, 26.6rem');
+    expect(fittedSizes('11rem', 0.5)).toBe('5.5rem');
+    expect(fittedSizes('320px', 0.5)).toBe('160px');
+    // what it can't read stays as it was
+    expect(fittedSizes('calc(100vw - 2rem)', 0.5)).toBe('calc(100vw - 2rem)');
   });
 });
 

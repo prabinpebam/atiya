@@ -102,7 +102,7 @@
       {
         "interaction": "Type to settled",
         "series": "Target",
-        "seconds": 1.5
+        "seconds": 1.2
       }
     ],
     "categoryAccessor": "interaction",

@@ -16,7 +16,7 @@
  *   the middleware that guards them.
  */
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { privateRootFor } from './roots.mjs';
@@ -53,8 +53,89 @@ function contentState() {
   return (g.__siteContent ??= { generation: 0, writes: new Map() });
 }
 
+/**
+ * The first start (performance-report.md R12): once `astro dev` is listening, each screen is asked for
+ * once, so its modules compile before anyone waits on them, and then every picture's facts are read (or
+ * found in their disk cache). Meanwhile a screen opened in the browser gets the starting page.
+ */
+const warm = { running: false, done: false, phase: '', screens: { done: 0, total: 0 }, pictures: { done: 0, total: 0 }, error: '' };
+
+/**
+ * @param {string} edit the editor's address on this server
+ * @param {string} contentRoot
+ * @param {any} server Vite's dev server
+ * @param {import('astro').AstroIntegrationLogger} logger
+ */
+async function warmUp(edit, contentRoot, server, logger) {
+  if (warm.running || warm.done) return;
+  warm.running = true;
+  const started = Date.now();
+  try {
+    const dir = join(contentRoot, 'articles');
+    const first = existsSync(dir) ? readdirSync(dir).find((f) => f.endsWith('.json'))?.replace(/\.json$/, '') : undefined;
+    const screens = ['', 'articles/', ...(first ? [`articles/${first}/`, `canvas/articles/${first}/`] : []), 'media/', 'sections/', 'settings/', 'publish/'];
+    warm.phase = 'screens';
+    warm.screens = { done: 0, total: screens.length };
+    for (const s of screens) {
+      try {
+        await (await fetch(`${edit}${s}`, { headers: { 'x-editor-warm': '1' } })).arrayBuffer();
+      } catch {
+        /* a screen that fails says so when it's opened */
+      }
+      warm.screens.done++;
+    }
+    warm.phase = 'pictures';
+    const load = server?.ssrLoadModule?.bind(server) ?? ((/** @type {string} */ id) => server.environments.ssr.runner.import(id));
+    const facts = await load('/src/site/content/pictureFacts.ts');
+    await facts.warmPictureFacts((/** @type {{ done: number, total: number }} */ p) => {
+      warm.pictures = { done: p.done, total: p.total };
+    });
+  } catch (e) {
+    warm.error = String(/** @type {Error} */ (e)?.message ?? e);
+  } finally {
+    warm.running = false;
+    warm.done = true;
+    warm.phase = 'done';
+    logger.info(`Edit mode is ready (${((Date.now() - started) / 1000).toFixed(1)} s to compile its screens and read ${warm.pictures.total} pictures' facts)`);
+  }
+}
+
+/**
+ * The starting page: plain, at once, and honest about what it waits for; it opens the screen asked for
+ * once edit mode is ready (or at once, with Open it now).
+ * @param {string} to
+ * @param {string} status
+ */
+function startingPage(to, status) {
+  const safe = (/** @type {string} */ s) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Starting edit mode</title>
+<style>:root{color-scheme:light dark;font-family:system-ui,sans-serif}body{display:grid;place-items:center;min-height:100dvh;margin:0}main{display:grid;gap:.75rem;width:min(28rem,90vw)}h1{margin:0;font-size:1.5rem}p{margin:0}progress{width:100%}@media (prefers-reduced-motion:reduce){progress:indeterminate{opacity:.6}}</style></head>
+<body data-editor-starting><main aria-busy="true"><h1>Starting edit mode</h1><p role="status" aria-live="polite" data-starting-what>Compiling the screens…</p><progress data-starting-progress></progress><p><a href="${safe(to)}" data-starting-open>Open it now</a></p></main>
+<script>
+const to = ${JSON.stringify(to)};
+const what = document.querySelector('[data-starting-what]');
+const bar = document.querySelector('[data-starting-progress]');
+async function poll() {
+  try {
+    const w = await (await fetch(${JSON.stringify(status)}, { cache: 'no-store' })).json();
+    if (!w.running) return location.replace(to);
+    const [label, p] = w.phase === 'pictures' ? ['Preparing pictures', w.pictures] : ['Compiling the screens', w.screens];
+    what.textContent = p.total ? label + ': ' + p.done + ' of ' + p.total : label + '…';
+    if (p.total) { bar.max = p.total; bar.value = p.done; }
+  } catch {}
+  setTimeout(poll, 400);
+}
+poll();
+</script></body></html>`;
+}
+
 /** @returns {import('astro').AstroIntegration} */
 export default function editor() {
+  /** @type {string} */
+  let base = '/';
+  /** @type {any} */
+  let devServer = null;
   /** @type {string} */
   let contentRoot = '';
   /** @type {string} */
@@ -66,6 +147,7 @@ export default function editor() {
     hooks: {
       'astro:config:setup': ({ command, config, injectRoute, injectScript, addMiddleware, updateConfig, logger }) => {
         const root = fileURLToPath(config.root);
+        base = config.base || '/';
         const override = process.env.CONTENT_ROOT;
         if (override && command === 'build') throw new Error('CONTENT_ROOT is only for the editor in dev and its tests: unset it to build, so the build reads the real content.');
         contentRoot = override && command === 'dev' ? (isAbsolute(override) ? override : resolve(root, override)) : join(root, 'content');
@@ -96,7 +178,31 @@ export default function editor() {
       },
 
       'astro:server:setup': ({ server }) => {
+        devServer = server;
         const state = contentState();
+        // a friendly first start (performance-report.md R12): while the screens compile and the pictures'
+        // facts are read, a screen opened in the browser gets a plain page that says so, then the screen
+        if (editing) {
+          const edit = `${base.replace(/\/$/, '')}/_edit/`;
+          server.middlewares.use((/** @type {any} */ req, /** @type {any} */ res, /** @type {() => void} */ next) => {
+            const url = String(req.url ?? '');
+            const path = url.split('?')[0];
+            if (!path.startsWith(edit)) return next();
+            if (path === `${edit}__warm`) {
+              res.setHeader('content-type', 'application/json');
+              res.setHeader('cache-control', 'no-store');
+              return res.end(JSON.stringify(warm));
+            }
+            const asked = path === `${edit}__starting`;
+            const opening = req.method === 'GET' && req.headers['sec-fetch-mode'] === 'navigate' && req.headers['sec-fetch-dest'] === 'document' && !req.headers['x-editor'] && !req.headers['x-editor-warm'] && !path.startsWith(`${edit}api/`) && !path.startsWith(`${edit}canvas/`);
+            if (!asked && !(opening && warm.running)) return next();
+            const wanted = asked ? new URLSearchParams(url.split('?')[1] ?? '').get('to') ?? edit : url;
+            res.statusCode = 200;
+            res.setHeader('content-type', 'text/html; charset=utf-8');
+            res.setHeader('cache-control', 'no-store');
+            res.end(startingPage(wanted.startsWith(edit) ? wanted : edit, `${edit}__warm`));
+          });
+        }
         state.notify = (files, fromEditor, origin = null) => {
           // Astro's own signal that content changed: it clears the route cache (getStaticPaths)
           for (const name of ['ssr', 'prerender']) server.environments[name]?.hot.send('astro:content-changed', {});
@@ -133,6 +239,7 @@ export default function editor() {
         const host = address.family === 'IPv6' ? `[${address.address}]` : address.address;
         const shown = ['::1', '127.0.0.1', '::'].includes(address.address) ? 'localhost' : host;
         logger.info(`Edit mode: http://${shown}:${address.port}/_edit/`);
+        if (process.env.SITE_EDITOR_WARM !== 'off') void warmUp(`http://localhost:${address.port}${base.replace(/\/$/, '')}/_edit/`, contentRoot, devServer, logger);
       },
     },
   };

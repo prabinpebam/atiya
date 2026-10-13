@@ -49,15 +49,17 @@ interface Props {
   drafts?: { id: string; title: string; access: 'open' | 'private'; checked: boolean }[];
   /** Fill the available width when the change list is shown inside the article editor's modal. */
   wide?: boolean;
+  /** Not read from git yet: the list says it's checking, and Save to remote waits (the dialog reads it as it opens). */
+  checking?: boolean;
 }
 
-const { changes, ahead, blocked, message, privateNote, actions, published, drafts = [], wide = false } = Astro.props;
+const { changes, ahead, blocked, message, privateNote, actions, published, drafts = [], wide = false, checking = false } = Astro.props;
 const ICON: Record<string, IconName> = { Article: 'article', Media: 'image', Sections: 'sections', Settings: 'settings', Person: 'user' };
 const STATUS = { added: { label: 'New', tone: 'positive' }, changed: { label: 'Changed', tone: 'accent' }, deleted: { label: 'Deleted', tone: 'negative' } } as const;
-const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checked) ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
+const reason = checking ? null : blocked ?? (changes.length || drafts.some((draft) => draft.checked) ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
 ---
 
-<div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined} data-published={published ?? undefined}>
+<div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined} data-published={published ?? undefined} data-checking={checking ? '' : undefined} aria-busy={checking ? 'true' : undefined}>
   {
     published && (
       <section class="panel" data-tone="positive" aria-labelledby="publish-done-title">
@@ -86,9 +88,9 @@ const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checke
 
   <section class="panel" aria-labelledby="publish-changes-title">
     <Heading level={2} size="h4" id="publish-changes-title">{changes.length ? `${changes.length} ${changes.length === 1 ? 'change' : 'changes'} to save` : 'Changes to save'}</Heading>
-    <p class="checking" role="status" data-publish-checking hidden>Checking what changed…</p>
+    <p class="checking" role="status" data-publish-checking hidden={!checking}>Checking what changed…</p>
     {
-      changes.length ? (
+      checking ? null : changes.length ? (
         <ul class="list">
           {changes.map((c) => (
             <li class="row">
@@ -127,7 +129,7 @@ const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checke
   <form class="panel" data-publish-form novalidate aria-labelledby="publish-form-title">
     <Heading level={2} size="h4" id="publish-form-title">Save to remote</Heading>
     <Text variant="ui" tone="muted">Commits content/ and private-pages/ (and nothing else), private pages first, then pushes them to GitHub, which deploys the site.</Text>
-    <TextField label="Message" name="message" value={message} required disabled={!!reason} />
+    <TextField label="Message" name="message" value={message} required disabled={checking || !!reason} />
     {privateNote && <Text variant="small" tone="muted">{privateNote}</Text>}
     {
       drafts.length > 0 && (
@@ -145,7 +147,7 @@ const reason = blocked ?? (changes.length || drafts.some((draft) => draft.checke
     {reason && <Text variant="small" tone={blocked ? 'negative' : 'muted'} data-publish-reason="">{reason}</Text>}
     <p class="issue" role="alert" data-editor-form-issue hidden />
     <div class="actions">
-      <Button variant="primary" type="submit" icon="upload" disabled={!!reason}>Save to remote</Button>
+      <Button variant="primary" type="submit" icon="upload" disabled={checking || !!reason}>Save to remote</Button>
     </div>
   </form>
 

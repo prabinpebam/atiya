@@ -116,7 +116,14 @@ describe('uploads', () => {
     expect(Math.max(meta.width!, meta.height!)).toBe(MAX_SIDE);
     expect(master.length).toBeLessThanOrEqual(MAX_BYTES);
     expect(meta.exif).toBeUndefined();
-    expect(readDoc('/content/media/shared/my-photo.json')?.value).toEqual({ kind: 'image', file: 'my-photo.webp', alt: 'An orange field', visibility: 'public' });
+    expect(readDoc('/content/media/shared/my-photo.json')?.value).toEqual({
+      kind: 'image',
+      file: 'my-photo.webp',
+      alt: 'An orange field',
+      // its size and background, measured as it's saved (documentation/content/media.md §9.3)
+      facts: { width: meta.width, height: meta.height, bg: expect.stringMatching(/^rgb\(\d+ \d+ \d+\)$/), bytes: master.length },
+      visibility: 'public',
+    });
   });
 
   it('keep transparency (lossless), never overwrite a name in use, and take decorative in place of alt text', async () => {
@@ -222,7 +229,9 @@ describe('the crop: a copy, never the original (documentation/editor/spec.md §6
     const r = await cropMedia(id, { x: 0, y: 69, width: 1024, height: 439 });
     expect(r).toMatchObject({ ok: true, id: 'articles/a/mark-21x9', width: 1024, height: 439 });
     expect(await size('mark-21x9.webp')).toEqual([1024, 439, true]);
-    expect(readDoc('/content/media/articles/a/mark-21x9.json')?.value).toEqual({ kind: 'image', file: 'mark-21x9.webp', alt: 'The mark', credit: 'Me', visibility: 'public', crop: { from: id, x: 0, y: 69, width: 1024, height: 439 } });
+    // the copy's own facts, never its original's
+    const copyBytes = readFileSync(join(content, 'media/articles/a/mark-21x9.webp')).length;
+    expect(readDoc('/content/media/articles/a/mark-21x9.json')?.value).toEqual({ kind: 'image', file: 'mark-21x9.webp', alt: 'The mark', credit: 'Me', visibility: 'public', crop: { from: id, x: 0, y: 69, width: 1024, height: 439 }, facts: { width: 1024, height: 439, bg: expect.stringMatching(/^rgb\(/), bytes: copyBytes } });
     expect(readFileSync(join(content, 'media/articles/a/mark.webp')).equals(before)).toBe(true);
     // a second copy of the same shape takes the next name
     expect(await cropMedia(id, { x: 10, y: 60, width: 1000, height: 429 })).toMatchObject({ ok: true, id: 'articles/a/mark-21x9-2' });
@@ -247,11 +256,13 @@ describe('the crop: a copy, never the original (documentation/editor/spec.md §6
     // a dark version of another size (its crops scale to it), transparency kept
     const r = await setDark(id, await png(512, 288, true));
     expect(r).toMatchObject({ ok: true, width: 512, height: 288, lightWidth: 1024, lightHeight: 576 });
-    expect(sidecar().value).toMatchObject({ dark: { file: 'mark.dark.webp' } });
+    expect(sidecar().value).toMatchObject({ dark: { file: 'mark.dark.webp', facts: { width: 512, height: 288 } } });
     expect(await size('mark.dark.webp')).toEqual([512, 288, true]);
-    // the details form can't change it
-    expect(await saveSidecar(id, { kind: 'image', file: 'mark.webp', alt: 'The mark, again', visibility: 'public' }, { [`/content/media/${id}.json`]: sidecar().version })).toMatchObject({ ok: true });
-    expect(sidecar().value).toMatchObject({ alt: 'The mark, again', dark: { file: 'mark.dark.webp' } });
+    // the details form can't change it, or the facts measured of its masters
+    const facts = sidecar().value.facts;
+    expect(facts).toMatchObject({ width: 1024, height: 576 });
+    expect(await saveSidecar(id, { kind: 'image', file: 'mark.webp', alt: 'The mark, again', facts: { width: 1, height: 1, bg: 'rgb(0 0 0)', bytes: 1 }, visibility: 'public' }, { [`/content/media/${id}.json`]: sidecar().version })).toMatchObject({ ok: true });
+    expect(sidecar().value).toMatchObject({ alt: 'The mark, again', dark: { file: 'mark.dark.webp', facts: { width: 512 } }, facts });
     // a crop cuts it too, from the same place in its own pixels
     const copy = (await cropMedia(id, { x: 0, y: 0, width: 512, height: 576 })) as { id: string };
     expect(readDoc(`/content/media/${copy.id}.json`)?.value).toMatchObject({ dark: { file: `${copy.id.split('/').pop()}.dark.webp` } });
@@ -357,7 +368,8 @@ describe("a picture's details, Replace and Delete", () => {
     const { id } = await add();
     expect(await replaceMaster(id, await png(1000, 1000))).toMatchObject({ ok: true });
     expect((await sharp(readFileSync(join(content, 'media/articles/a/cover.webp'))).metadata()).width).toBe(1000);
-    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ alt: 'A cover' });
+    // its facts are the new master's
+    expect(readDoc(`/content/media/${id}.json`)?.value).toMatchObject({ alt: 'A cover', facts: { width: 1000, height: 1000, bytes: readFileSync(join(content, 'media/articles/a/cover.webp')).length } });
   });
 
   it('replace a static master with a GIF (kept as it is) and back, without leaving its poster or old file behind', async () => {
@@ -432,7 +444,7 @@ describe('publishing with git', { timeout: 60_000 }, () => {
   });
 
   it('counts everything that waits to be saved to remote: files, commits not pushed (either repository), a private commit not yet recorded', () => {
-    const base = { files: [], branch: 'main', upstream: 'origin/main', ahead: 0, private: null, pointer: null, error: null };
+    const base = { files: [], head: null, branch: 'main', upstream: 'origin/main', ahead: 0, private: null, pointer: null, error: null };
     expect(pendingCount(base)).toBe(0);
     expect(pendingCount({ ...base, files: [{ key: '/content/site.json', status: 'changed' }] })).toBe(1);
     expect(pendingCount({ ...base, ahead: 2 })).toBe(2);

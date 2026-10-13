@@ -41,10 +41,11 @@ export async function publishView(url: URL) {
         : !loaded.ok
           ? 'The content has problems (listed below): fix them, then save to remote.'
           : null;
-  const currentHead = (await git(['rev-parse', '--short', 'HEAD'])).stdout.trim();
-  const asked = url.searchParams.get('published') ?? (url.searchParams.get('pushed') ? currentHead : null);
+  // the head comes with the status (no git of its own); the result's commit is its short form
+  const head = state.head ?? (await git(['rev-parse', 'HEAD'])).stdout.trim();
+  const asked = url.searchParams.get('published') ?? (url.searchParams.get('pushed') ? head.slice(0, 7) : null);
   const ahead = state.ahead + (state.private?.ahead ?? 0);
-  const published = asked && asked === currentHead && ahead === 0 ? currentHead : null;
+  const published = asked && /^[0-9a-f]{4,}$/.test(asked) && head.startsWith(asked) && ahead === 0 ? asked : null;
   const anyPrivate = state.files.some((file) => file.key.startsWith('/private/'));
   const privateNote = anyPrivate
     ? state.files.some((file) => file.key.startsWith('/content/'))

@@ -1,9 +1,10 @@
 /**
  * The repository: the only way pages and layouts read content (documentation/content/spec.md §5). It
  * reads and validates the content folder, and reads it again whenever the content generation moves (a
- * save in the editor, or a file changed by hand, in dev); a build reads it once.
+ * save in the editor, or a file changed by hand, in dev); a build reads it once. After an editor save it
+ * takes the store's snapshot as written instead of reading the folders again.
  */
-import { generation, readSnapshot } from './source';
+import { currentSnapshot, generation } from './source';
 import { loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
 import { withBase } from '../design/meta';
 import { placeRoutes } from './navigation';
@@ -17,7 +18,9 @@ let cached: { generation: number; index: ContentIndex } | undefined;
 export function content(): ContentIndex {
   const now = generation();
   if (!cached || cached.generation !== now) {
-    const snap = timed('content.read', () => readSnapshot());
+    // the store's snapshot after its write, when nothing else changed since; else read again (only the
+    // documents that changed are parsed again: source.ts)
+    const snap = timed('content.read', () => currentSnapshot());
     const index = timed('content.validate', () => loadContent(snap.docs, snap.masters, snap.errors));
     for (const w of index.warnings) console.warn(`[content] ${w}`);
     cached = { generation: now, index };

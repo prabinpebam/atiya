@@ -11,7 +11,7 @@ import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, rea
 import { basename, dirname, join, relative, resolve, isAbsolute } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { contentRoot, contentState, fileOf, privateRoot, readSnapshot, writeKey, MASTER_FILE, type Snapshot } from '../../content/source';
+import { contentRoot, contentState, fileOf, handOff, privateRoot, readSnapshot, snapshotAfter, snapshotCache, writeKey, MASTER_FILE, type Snapshot } from '../../content/source';
 import { ContentError, describe, loadContent, type Issue } from '../../content/load';
 import { timed } from '../../content/timing';
 import { checkTransitions } from '../../access/grants';
@@ -166,9 +166,13 @@ async function apply(tx: Transaction, opts: StoreOptions, origin: string | null 
   }
 
   // 2. the whole content check, on the snapshot as it would be; only new issues refuse the change
+  // (the generation it was read at: if nothing else moves it before this write does, the snapshot as
+  // written is handed to the next reader)
+  const readAt = contentState().generation;
   const snap = timed('store.read', () => readSnapshot(root, priv));
   const was = check(snap);
   const before = new Set(was.issues.map(describe));
+  // a copy: the parsed documents are shared with every reader, so they're replaced here, never changed
   const docs = { ...snap.docs };
   const masters = new Set(snap.masters);
   for (const t of targets) {
@@ -241,9 +245,18 @@ async function apply(tx: Transaction, opts: StoreOptions, origin: string | null 
     return { ok: false, status: 422, issues: [{ file: 'content', message: `couldn't save, nothing was changed: ${(e as Error).message}` }] };
   }
   for (const t of ordered) if (!t.bytes) removeEmptyFolders(dirname(t.abs!), t.key.startsWith('/private/') ? priv : root);
+  // what it wrote is what the next read would parse: kept, so it isn't parsed again
+  let written: Snapshot | null = null;
+  try {
+    for (const t of ordered) if (t.key.endsWith('.json')) snapshotCache.wrote(t.abs!, t.bytes ? docs[t.key] : undefined, t.bytes?.length);
+    written = snapshotAfter(snap, ordered.map((t) => ({ key: t.key, deleted: !t.bytes, doc: docs[t.key] })));
+  } catch {
+    // a file changed again already: the next reader reads the folders
+  }
 
   // 6. tell the dev server, every open page (with the tab that made the change), and whoever reads next
   state.generation++;
+  if (written && state.generation === readAt + 1) handOff(written, state.generation, root, priv);
   state.notify?.(ordered.map((t) => t.key), true, origin);
   return { ok: true, versions: Object.fromEntries(targets.map((t) => [t.key, versionOf(t.bytes)])) };
 }

@@ -377,6 +377,7 @@ const ALLOWED: Record<string, string[]> = {
   access_agreed: ['grant'],
   access_link: ['kind', 'domain'],
   video_played: ['place'],
+  web_vitals: ['kind', 'lcp', 'lcp_rating', 'inp', 'inp_rating', 'cls', 'cls_rating'],
 };
 
 function decode(body: string): Sent[] {
@@ -462,6 +463,32 @@ test.describe('protected content: telemetry (QB6)', () => {
       const own = Object.keys(e.properties).filter((k) => !k.startsWith('$') && !['token', 'distinct_id'].includes(k));
       expect(own.filter((k) => !ALLOWED[e.event].includes(k)), e.event).toEqual([]);
     }
+  });
+
+  test('web vitals: one event when a page is hidden or left, with its kind, numbers and ratings only (the Sign in page is allowlisted)', async ({ page }) => {
+    const t = await capture(page);
+    await page.goto('/sign-in/');
+    await expect.poll(() => t.sent.some((e) => e.event === '$pageview' && e.properties.$title === 'Sign in'), { timeout: 15_000 }).toBe(true);
+    // the page hidden (another tab, the window put away): a beacon in production; the test build sends it as any event
+    const hide = () =>
+      page.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+        document.dispatchEvent(new Event('visibilitychange', { bubbles: true }));
+      });
+    await hide();
+    await expect.poll(() => t.sent.filter((e) => e.event === 'web_vitals').length, { timeout: 15_000 }).toBe(1);
+    // once only: hidden again, nothing more
+    await hide();
+    await page.waitForTimeout(1000);
+    expect(t.sent.filter((e) => e.event === 'web_vitals')).toHaveLength(1);
+    const v = t.sent.find((e) => e.event === 'web_vitals')!;
+    expect(v.properties.kind).toBe('sign-in');
+    const own = Object.keys(v.properties).filter((k) => !k.startsWith('$') && !['token', 'distinct_id'].includes(k));
+    expect(own.filter((k) => !ALLOWED.web_vitals.includes(k))).toEqual([]);
+    expect(v.properties.$current_url).toBeUndefined();
+    expect(typeof v.properties.lcp).toBe('number');
+    expect(['good', 'needs-improvement', 'poor']).toContain(v.properties.lcp_rating);
+    expect(typeof v.properties.cls).toBe('number');
   });
 
   test('a magic link sends its grant, never its secret', async ({ page }) => {

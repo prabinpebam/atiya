@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * The performance report's charts and their data tables, from the committed baseline (perf/baseline.json):
- * documentation/engineering/performance-report.md. Each chart is a Slate chart spec (kept beside its SVG in
+ * The performance report's charts and their data tables, from the October baseline the report's §2
+ * describes (perf/baseline-2026-10-13.json, pinned: perf/baseline.json moves on as the reference for
+ * regressions): documentation/engineering/performance-report.md. Each chart is a Slate chart spec (kept beside its SVG in
  * documentation/engineering/assets/perf/), rendered offline by Slate's chart renderer, and written into the
  * page's figure (<figure class="slate-figure" data-perf-chart="<name>">, its figcaption kept) with its data
- * table (<details class="slate-figure-data" data-perf-data="<name>">). Run it after saving a new baseline.
+ * table (<details class="slate-figure-data" data-perf-data="<name>">).
  *
  *   node scripts/build-perf-charts.mjs          write the charts into the report
  *   node scripts/build-perf-charts.mjs --check  fail if the report's charts are stale
@@ -17,7 +18,7 @@ import { renderChartSpec } from '../slate/visualization/skills/chart/scripts/ren
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PAGE = join(ROOT, 'documentation/engineering/performance-report.md');
 const ASSETS = join(ROOT, 'documentation/engineering/assets/perf');
-const base = JSON.parse(readFileSync(join(ROOT, 'perf/baseline.json'), 'utf8'));
+const base = JSON.parse(readFileSync(join(ROOT, 'perf/baseline-2026-10-13.json'), 'utf8'));
 const budgets = JSON.parse(readFileSync(join(ROOT, 'perf/budgets.json'), 'utf8'));
 const m = (key) => base.metrics[key]?.median;
 const s = (ms) => Math.round(ms) / 1000;

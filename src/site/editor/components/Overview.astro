@@ -20,8 +20,8 @@ interface Props {
   counts: { published: number; draft: number; other: number };
   /** The most recently updated articles. */
   recent: ArticleRow[];
-  /** How many content files differ from the last publish. */
-  pending: number;
+  /** How many content files differ from the last publish; null while git hasn't been asked yet (the screen reads it after its paint). */
+  pending: number | null;
   /** What needs attention, each with where to fix it. */
   attention: { text: string; href: string }[];
 }
@@ -52,13 +52,17 @@ const to = (p: string) => withBase(`/_edit/${p}`);
 
   <section class="panel" aria-labelledby="dash-publish">
     <Heading level={2} size="h4" id="dash-publish">Since the last save to remote</Heading>
-    {
-      pending ? (
-        <Text variant="ui">{`${pending} ${pending === 1 ? 'content file has' : 'content files have'} changed and aren't on the site yet.`}</Text>
-      ) : (
-        <Text variant="ui" tone="muted">Nothing's waiting: the site has everything.</Text>
-      )
-    }
+    <div data-region="pending-summary">
+      {
+        pending === null ? (
+          <Text variant="ui" tone="muted">Checking what changed…</Text>
+        ) : pending ? (
+          <Text variant="ui">{`${pending} ${pending === 1 ? 'content file has' : 'content files have'} changed and aren't on the site yet.`}</Text>
+        ) : (
+          <Text variant="ui" tone="muted">Nothing's waiting: the site has everything.</Text>
+        )
+      }
+    </div>
     <Link href={to('publish/')} variant="standalone">Review and save to remote</Link>
   </section>
 

@@ -52,13 +52,15 @@ interface Props {
    * Private tag says who can see it).
    */
   sealed?: { access: 'private'; id: string; contact: string; privacy?: string };
+  /** The articles the page shows (dev only): a change to another article's files doesn't reload it. */
+  shows?: string[];
 }
 
-const { title, description, nav, footer, action, crumbs, header, prev, next, frame, related, sealed } = Astro.props;
+const { title, description, nav, footer, action, crumbs, header, prev, next, frame, related, sealed, shows } = Astro.props;
 const sealing = !!sealed && import.meta.env.PROD;
 ---
 
-<PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} sealed={sealed?.access} preload={['display', 'display-italic', 'text', 'ui']}>
+<PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} sealed={sealed?.access} shows={shows} preload={header.standfirst ? ['display', 'display-italic', 'text', 'ui'] : ['display', 'text', 'ui']}>
   {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} access />}
   <main id="main" class="page" tabindex="-1">
     {

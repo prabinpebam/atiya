@@ -33,6 +33,19 @@ export const ratioValue = (ratio: string): number => {
 /** The width of a whole fitted image, as a percentage of its fixed-ratio frame. */
 export const fittedWidth = (width: number, height: number, ratio: string): number => Math.min(1, width / height / ratioValue(ratio)) * 100;
 
+/**
+ * A picture's `sizes` when it's shown whole in a frame of another shape, so narrower than the frame its
+ * `sizes` describes (a square thumbnail takes two thirds of a 3:2 card): each width times its share (0 to 1),
+ * rounded up to a tenth, so the browser fetches the file for the width the picture really shows at.
+ */
+export function fittedSizes(sizes: string, share: number): string {
+  if (!(share > 0 && share < 1)) return sizes;
+  return sizes
+    .split(',')
+    .map((entry) => entry.replace(/(\d*\.?\d+)(vw|rem|px)(\s*)$/, (_, n: string, unit: string, end: string) => `${Math.ceil(Math.round(Number(n) * share * 1e7) / 1e6) / 10}${unit}${end}`))
+    .join(',');
+}
+
 /** The smallest picture that stays sharp in a use: its spec's width, and the height its ratio gives. */
 export const sharpSize = (spec: PictureSpec) => ({ width: spec.width, height: Math.round(spec.width / ratioValue(spec.ratio)) });
 

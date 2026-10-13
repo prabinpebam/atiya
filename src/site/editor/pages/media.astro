@@ -10,19 +10,24 @@ import { readDoc } from '../server/store';
 import { picture, video as videoFile } from '../../content/pictures';
 import { fileOf } from '../../content/source';
 import { statSync } from 'node:fs';
+import { REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
 
 export const prerender = false;
 
 const loaded = load();
 const wanted = Astro.url.searchParams.get('id');
+// a swap draws only what it asks for (R4, R11): opening a picture's details doesn't draw every card again
+const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
+const drawGrid = wants(asked, 'media-grid', 'screen');
+const drawDetails = wants(asked, 'media-details', 'screen');
 let details: PictureDetails | null = null;
 let video: VideoDetails | null = null;
 let usedIn: { label: string; href: string }[] = [];
 let copies: string[] = [];
 let original: { id: string; exists: boolean } | undefined;
-const cards = loaded.ok ? await mediaCards(loaded.index) : [];
-if (loaded.ok && wanted && loaded.index.videos.has(wanted)) {
+const cards = loaded.ok && drawGrid ? await mediaCards(loaded.index) : [];
+if (loaded.ok && drawDetails && wanted && loaded.index.videos.has(wanted)) {
   const rec = loaded.index.videos.get(wanted)!;
   const key = `${rec.origin === 'private' ? '/private' : '/content'}/media/${wanted}.json`;
   const sidecar = readDoc<VideoMedia>(key);
@@ -30,7 +35,7 @@ if (loaded.ok && wanted && loaded.index.videos.has(wanted)) {
   if (sidecar) video = { id: wanted, src: f.src, type: f.type, ...(f.poster ? { poster: f.poster.src } : {}), bytes: statSync(fileOf(rec.master)).size, sidecar: sidecar.value, key, version: sidecar.version };
   usedIn = references(loaded.index).get(wanted) ?? [];
 }
-if (loaded.ok && wanted && loaded.index.media.has(wanted)) {
+if (loaded.ok && drawDetails && wanted && loaded.index.media.has(wanted)) {
   const key = `${loaded.index.media.get(wanted)!.origin === 'private' ? '/private' : '/content'}/media/${wanted}.json`;
   const sidecar = readDoc<ImageMedia>(key);
   const p = await picture(wanted, 'popout');
@@ -43,7 +48,7 @@ if (loaded.ok && wanted && loaded.index.media.has(wanted)) {
 ---
 
 <EditorLayout title="Media" screen="media" heading="Media" intro="Every picture and video, by folder: everyone's in content/media/, and private pages' (tagged Private) in private-pages/media/. Choose one for its details; an upload here goes to the shared folder." asideLabel="Details">
-  {loaded.ok ? <MediaGrid mode="library" media={cards} owner="shared" selected={(details ?? video)?.id} /> : <ContentIssues issues={loaded.issues} />}
-  {loaded.ok && <MediaDetails slot="aside" picture={details} video={video} usedIn={usedIn} copies={copies} original={original} />}
+  {loaded.ok ? drawGrid && <MediaGrid mode="library" media={cards} owner="shared" selected={(details ?? video)?.id ?? wanted ?? undefined} /> : <ContentIssues issues={loaded.issues} />}
+  {loaded.ok && drawDetails && <MediaDetails slot="aside" picture={details} video={video} usedIn={usedIn} copies={copies} original={original} />}
   {loaded.ok && <CropDialog />}
 </EditorLayout>
