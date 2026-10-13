@@ -8,6 +8,7 @@
  * turn under its heading; widened past 40 rem (the studio's separator), two columns, the sections listed
  * (in groups, with separators) beside the chosen one's fields. A collection's items are a section each,
  * reordered by dragging their handles as the outline's rows are, or with their Move buttons.
+ * Media thumbnails always show the whole source with square corners; the canvas shows its page styling.
  * @tier editor
  * @a11y The tabs follow the APG pattern; every field has a label, and hints say what a field does.
  * @a11y A refused value is marked invalid and its reason is tied to the field (role="alert"); a wide inspector shows its section.
@@ -216,7 +217,7 @@ const STATUS: SelectOption[] = [
                     <div class="pane-head"><Heading level={4} size="ui" id={id(i, 's-picture')}>Picture</Heading></div>
                     <div class="media-field">
                       <div class="media-row">
-                        {thumbOf(b.media) ? <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" fit="contain" /> : <span />}
+                        {thumbOf(b.media) ? <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" display="fit" rounded={false} /> : <span />}
                         <div class="media-words">
                           <Text variant="small" tone="muted">{thumbOf(b.media)?.alt || 'No alt text'}</Text>
                           <div class="row">
@@ -267,7 +268,7 @@ const STATUS: SelectOption[] = [
                             <span class="grip" aria-hidden="true" data-inspector-drag="items" data-index={String(i)} data-item={String(n)}>
                               <Icon name="drag" />
                             </span>
-                            {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="1/1" fit="cover" /> : <span />}
+                            {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="1/1" display="fit" rounded={false} /> : <span />}
                             <span class="item-fields">
                               <TextField label={`Caption ${n + 1}`} name={`body.${i}.items.${n}.caption`} id={id(i, `item-${n}`)} value={it.caption ?? ''} optional hint={thumbOf(it.media)?.video ? 'A video: it plays in its place, not in the lightbox.' : undefined} />
                               {thumbOf(it.media)?.video && <Switch label="Autoplay (muted, while in view)" name={`body.${i}.items.${n}.autoplay`} id={id(i, `item-${n}-autoplay`)} checked={!!it.autoplay} data-type="bool" />}
@@ -339,7 +340,7 @@ const STATUS: SelectOption[] = [
                     {b.media && (
                       <div class="media-field">
                         <div class="media-row">
-                          {thumbOf(b.media) ? <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" fit="contain" /> : <span />}
+                          {thumbOf(b.media) ? <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" display="fit" rounded={false} /> : <span />}
                           <div class="media-words">
                             <Text variant="small" tone="muted">{thumbOf(b.media)?.alt || b.media.split('/').pop()}</Text>
                             <div class="row">
@@ -365,9 +366,9 @@ const STATUS: SelectOption[] = [
                     <div class="media-field">
                       <div class="media-row">
                         {thumbOf(b.poster) ? (
-                          <Image src={thumbOf(b.poster)!.thumb} alt="" width={thumbOf(b.poster)!.width} height={thumbOf(b.poster)!.height} ratio="4/3" fit="contain" />
+                          <Image src={thumbOf(b.poster)!.thumb} alt="" width={thumbOf(b.poster)!.width} height={thumbOf(b.poster)!.height} ratio="4/3" display="fit" rounded={false} />
                         ) : b.media && thumbOf(b.media) ? (
-                          <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" fit="contain" />
+                          <Image src={thumbOf(b.media)!.thumb} alt="" width={thumbOf(b.media)!.width} height={thumbOf(b.media)!.height} ratio="4/3" display="fit" rounded={false} />
                         ) : (
                           <span />
                         )}
@@ -443,7 +444,7 @@ const STATUS: SelectOption[] = [
                             </span>
                           </div>
                           <div class="media-row">
-                            {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="4/3" fit="contain" /> : <span class="no-picture"><Text as="span" variant="small" tone="muted">No picture</Text></span>}
+                            {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="4/3" display="fit" rounded={false} /> : <span class="no-picture"><Text as="span" variant="small" tone="muted">No picture</Text></span>}
                             <div class="row">
                               <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.items.${n}.media`} data-pick-mode="single">{it.media ? 'Replace' : 'Add a picture'}</Button>
                               {it.media && <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.items.${n}.media`}>Crop</Button>}
@@ -624,7 +625,7 @@ const STATUS: SelectOption[] = [
           <div class="pane-head"><Heading level={4} size="ui" id="page-s-lead">Lead picture</Heading></div>
           <div class="media-field" data-editor-picture="lead">
             <div class="media-row">
-              {lead ? <Image src={lead.thumb} alt="" width={lead.width} height={lead.height} ratio="4/3" fit="contain" /> : <span />}
+              {lead ? <Image src={lead.thumb} alt="" width={lead.width} height={lead.height} ratio="4/3" display="fit" rounded={false} /> : <span />}
               <div class="media-words">
                 <Text variant="small" tone="muted">{article.hero ? lead?.alt || 'No alt text' : 'None'}</Text>
                 <div class="row">
@@ -649,7 +650,7 @@ const STATUS: SelectOption[] = [
           <div class="pane-head"><Heading level={4} size="ui" id="page-s-thumbnail">Thumbnail</Heading></div>
           <div class="media-field" data-editor-picture="thumbnail">
             <div class="media-row">
-              {card ? <Image src={card.thumb} alt="" width={card.width} height={card.height} ratio="3/2" fit="contain" /> : <span />}
+              {card ? <Image src={card.thumb} alt="" width={card.width} height={card.height} ratio="3/2" display="fit" rounded={false} /> : <span />}
               <div class="media-words">
                 <Text variant="small" tone="muted">{article.thumbnail ? card?.alt || 'No alt text' : article.hero ? 'The lead picture' : 'None'}</Text>
                 <div class="row">
@@ -672,7 +673,7 @@ const STATUS: SelectOption[] = [
           <div class="pane-head"><Heading level={4} size="ui" id="page-s-portrait">Portrait</Heading></div>
           <div class="media-field" data-editor-picture="portrait">
             <div class="media-row">
-              {face ? <Image src={face.thumb} alt="" width={face.width} height={face.height} ratio="4/5" fit="cover" /> : <span />}
+              {face ? <Image src={face.thumb} alt="" width={face.width} height={face.height} ratio="4/5" display="fit" rounded={false} /> : <span />}
               <div class="media-words">
                 <Text variant="small" tone="muted">{article.portrait ? face?.alt || 'No alt text' : 'None'}</Text>
                 <div class="row">

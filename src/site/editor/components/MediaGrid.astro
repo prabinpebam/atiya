@@ -8,6 +8,7 @@
  * uploaded. Any picture the browser or the server can read is taken. Grouped by folder (an article's own, a person's, shared). In the picker it chooses one picture,
  * or several (or one video: it shows only what the field or block takes); in the library it opens a picture's details, and marks the pictures nothing uses (a
  * replaced lead picture, an upload not placed yet): they're allowed, and Delete is offered for them.
+ * Thumbnails show the whole image with square corners, without the public page's styling.
  * @tier editor
  * @a11y Each picture is a button named by its alt text (or its ID), and each video by "Video:" and its title; in the picker chosen ones are
  * aria-pressed, in the library the open one is aria-current.
@@ -131,7 +132,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
           {g.items.map((m) => (
         <li data-media-card={m.id} data-media-kind={m.kind ?? 'image'} data-find={`${m.id} ${m.alt}`.toLowerCase()} data-private={m.private ? '' : undefined}>
           <button class="card" type="button" aria-pressed={mode === 'pick' ? 'false' : undefined} aria-current={mode === 'library' && m.id === selected ? 'true' : undefined} data-editor-media={m.id} aria-label={m.kind === 'video' ? `Video: ${m.alt || m.id}` : m.alt || m.id}>
-            {m.thumb ? <Image src={m.thumb} alt="" width={m.width} height={m.height} ratio="4/3" fit="contain" radius="default" /> : <span class="no-poster"><Icon name="video" size="lg" /></span>}
+            {m.thumb ? <Image src={m.thumb} alt="" width={m.width} height={m.height} ratio="4/3" display="fit" rounded={false} /> : <span class="no-poster"><Icon name="video" size="lg" /></span>}
             <span class="id">{m.id.split('/').pop()}</span>
             {mode === 'library' && m.used === false && <Tag size="sm">Not used</Tag>}
             {m.private && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}

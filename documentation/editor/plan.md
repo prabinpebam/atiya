@@ -153,6 +153,8 @@ E0 comes first: every screen stands on the source, the guard, the store and the 
 
 All five phases are built, and every point of the Definition of Done is met. The unit tests are `tests/unit/editor.test.ts`, `editorModel.test.ts` and `editorServer.test.ts`; the E2E group is the Playwright project `editor` (`npx playwright test --project=editor`, `tests/e2e/editor.spec.ts`). What the build added or settled is in the [spec, §13](spec.md#13-as-built).
 
+**Whole, square previews (13 October 2026):** the design-system unit "Media and inspector previews always show whole images with square corners" holds every image use in the three editor parts. The editor E2E "editor thumbnails show whole images with square corners in Media, the picker and the inspector" checks their computed radius and fit and confirms no article change; the dark-version E2E checks both comparison previews, and the picture-settings E2E checks that canvas styling still follows the saved settings ([spec §6](spec.md#6-media)).
+
 | # | Met by |
 |---|---|
 | 1 | `npm run verify:prod` searches `dist/` for `/_edit`, `editor-block`, `--c-editor` and `data-editor` (none found; the design library no longer lists `c.editor`); "the dev integration" unit tests: nothing injected for a build or a preview, `CONTENT_ROOT` refused in a build |

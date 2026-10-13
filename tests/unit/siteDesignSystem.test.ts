@@ -680,6 +680,19 @@ describe('edit mode: parts made only from the design system, pages that compose 
 
   it('found the parts', () => expect(parts.length).toBeGreaterThanOrEqual(15));
 
+  it('Media and inspector previews always show whole images with square corners', () => {
+    for (const name of ['MediaGrid.astro', 'MediaDetails.astro', 'Inspector.astro']) {
+      const part = parts.find((p) => p.name === name)!;
+      const images = [...part.src.matchAll(/<Image\b[\s\S]*?\/>/g)];
+      expect(images.length, name).toBeGreaterThan(0);
+      for (const [tag] of images) {
+        expect(tag, name).toContain('display="fit"');
+        expect(tag, name).toContain('rounded={false}');
+        expect(tag, name).not.toContain('fit="cover"');
+      }
+    }
+  });
+
   it.each(parts.map((p) => [p.name, p] as const))('part %s uses fundamentals, compounds, tier 0 and the editor model only (never another part, a layout or a server module that writes)', (_, p) => {
     const ok = (i: string) =>
       /^\.\.\/\.\.\/components\/(fundamentals|compounds)\/[A-Z]\w*\.astro$/.test(i) ||

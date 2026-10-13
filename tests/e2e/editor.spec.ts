@@ -46,6 +46,37 @@ test.describe('editor', () => {
   test.beforeEach(() => reset());
   test.afterAll(() => reset());
 
+  test('editor thumbnails show whole images with square corners in Media, the picker and the inspector', async ({ page }) => {
+    const before = readFileSync(articleFile(), 'utf8');
+    const check = async (images: ReturnType<Page['locator']>) => {
+      expect(await images.count()).toBeGreaterThan(0);
+      for (const img of await images.all()) {
+        await expect(img).toHaveCSS('border-radius', '0px');
+        await expect(img).toHaveCSS('object-fit', 'contain');
+      }
+    };
+    await page.goto(`/_edit/media/?id=articles/${ARTICLE}/tshirt`);
+    await check(page.locator('[data-editor-media-grid] img:not([data-upload-img])'));
+    await check(page.locator('[data-editor-media-details] .focus img'));
+    await page.locator('[data-editor-media-details]').screenshot({ path: test.info().outputPath('editor-square-preview.png') });
+
+    await openArticle(page);
+    const blocks = readJson(articleFile()).body as { type: string }[];
+    for (const [at, block] of blocks.entries()) {
+      if (!['figure', 'gallery', 'carousel', 'collection', 'video'].includes(block.type)) continue;
+      await page.locator(`[data-editor-outline] [data-editor-select="${at}"]`).click();
+      const images = page.locator(`[data-block-form="${at}"] img`);
+      if (await images.count()) await check(images);
+    }
+    await page.getByRole('tab', { name: 'Page', exact: true }).click();
+    await check(page.locator('[data-page-form] img'));
+    await page.locator('[data-editor-pick="thumbnail"]').click();
+    await expect(page.locator('#editor-picker')).toBeVisible();
+    await check(page.locator('#editor-picker [data-editor-media-grid] img:not([data-upload-img])'));
+    await page.keyboard.press('Escape');
+    expect(readFileSync(articleFile(), 'utf8')).toBe(before);
+  });
+
   test('the minimap works on the page as on the site: a row jumps by click or by key, and the canvas selects nothing for it', async ({ page }) => {
     // wide enough for the canvas to leave the minimap room beside the column
     await page.setViewportSize({ width: 2560, height: 1100 });
@@ -1342,6 +1373,10 @@ test.describe('editor', () => {
     const name = fig.media!.split('/').pop();
     expect(readJson(sidecarFile).dark).toEqual({ file: `${name}.dark.webp` });
     await expect(page.locator('[data-editor-media-dark] figure[data-scheme="dark"]')).toBeVisible();
+    for (const preview of await page.locator('[data-editor-media-dark] .pair img').all()) {
+      await expect(preview).toHaveCSS('border-radius', '0px');
+      await expect(preview).toHaveCSS('object-fit', 'contain');
+    }
     await expect(page.locator(`[data-editor-media="${fig.media}"]`)).toContainText('Dark version');
 
     // on the site: the dark version in dark mode, the picture in light mode, and the lightbox follows
@@ -1718,7 +1753,7 @@ test.describe('editor', () => {
     const frame = page.frameLocator('[data-editor-frame]').locator('figure .frame[data-mode="actual"]').first();
     await expect(frame).toHaveAttribute('data-ratio', '16/9', { timeout: 20_000 });
     await expect(frame).toHaveAttribute('data-bg', '');
-    await expect(frame).toHaveAttribute('data-radius', 'none');
+    await expect(frame.locator('img')).toHaveAttribute('data-radius', 'none');
     await expect(frame).toHaveAttribute('data-shadow', '');
     expect(await frame.evaluate((el) => getComputedStyle(el).filter)).toMatch(/^drop-shadow/);
     expect(await frame.evaluate((el) => getComputedStyle(el).backgroundColor)).toMatch(/^rgb/);
