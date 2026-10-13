@@ -20,7 +20,15 @@ html {
   background: var(--color-page);
   line-height: var(--leading-base);
   -webkit-text-size-adjust: 100%;
+  color-scheme: light dark;
+}
+
+html[data-theme='light'] {
   color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 /* the larger-text setting (the game's menu): every rem-based size scales */
@@ -38,9 +46,9 @@ body {
   color: var(--surface-text);
 }
 
-/* the game's surface is dark: native controls (checkboxes, scrollbars) follow */
+/* Nested panels inherit the root's choice, including native controls. */
 .surface-wood {
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 h1,

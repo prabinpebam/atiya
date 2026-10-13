@@ -1,6 +1,6 @@
 # Game UI design system
 
-> **TL;DR.** The rules for every piece of the game's UI, and the loading shell before it (the website has [its own system](../site-ui/design-system.md)). All values come from **tokens** (one DTCG 2025.10 file, three tiers, generated CSS). Components read colour only through **surface roles**: **Wood** (dark) is the game; **Paper** (light) is the default under it, and the face of a key cap. The screen is split into fixed **regions** with the centre kept clear. A pure **arbiter** (`ui/lanes.ts`) decides the one thing that may ask for attention, and it decides what <kbd>E</kbd> does as well. Copy is warm, plain and short. Tests enforce all of this (`tests/unit/designSystem.test.ts`, `tests/unit/lanes.test.ts`). The research and the critique behind these rules are in [the spec](spec.md). The token list is in [tokens.md](tokens.md).
+> **TL;DR.** The rules for every piece of the game's UI, and the loading shell before it (the website has [its own system](../site-ui/design-system.md)). All values come from **tokens** (one DTCG 2025.10 file, three tiers, generated CSS). Components read colour only through **surface roles**: the game pairs **Paper** (light) with **Wood** (dark), following the shared theme; key caps stay light. Reading overlays frost and tint the planet. The screen is split into fixed **regions** with the centre kept clear. A pure **arbiter** (`ui/lanes.ts`) decides the one thing that may ask for attention, and it decides what <kbd>E</kbd> does as well. Copy is warm, plain and short. Tests enforce all of this (`tests/unit/designSystem.test.ts`, `tests/unit/lanes.test.ts`). The research and the critique behind these rules are in [the spec](spec.md). The token list is in [tokens.md](tokens.md).
 
 ![The screen regions](assets/regions.svg)
 
@@ -13,7 +13,7 @@ These are ranked: when two conflict, the higher one wins.
 | P1 | **The planet first** | The centre of the screen belongs to the world. The HUD lives on the edges, is small, and hides when there's nothing to say. |
 | P2 | **One thing asks at a time** | At most one surface asks for attention in the focus lane, and <kbd>E</kbd> always does what that surface says. There's never a second "press E". |
 | P3 | **The prompt tells the truth** | The prompt names the verb and the object that <kbd>E</kbd> will act on right now. If <kbd>E</kbd> would do something else, the prompt is wrong. |
-| P4 | **One meaning per surface** | Wood means "you're in the game"; Paper is the shell before it (the loading page) and the light face of a key cap, so a key reads as a key. Never mix them within one region. |
+| P4 | **One meaning per surface** | The game is one consistent surface: paper in light mode, wood in dark. Key caps keep their light face, so a key reads as a key. Never mix panel themes within one region. |
 | P5 | **Tokens, not values** | A colour, size, space, radius, shadow, duration or layer that isn't a token is a bug. Add a token first. |
 | P6 | **Calm motion** | Motion explains a change (appear, move, confirm); it never decorates. It's short, eased, and removed under reduced motion. |
 | P7 | **Every cue has a text twin** | Anything shown by colour, motion, sound or a 3D cue (a wiggling chest) is also said in words: a prompt, a label, or a live-region announcement. |
@@ -53,10 +53,12 @@ The source of truth is `src/design/tokens.json`, in the [W3C Design Tokens (DTCG
 
 | Surface | Where | Look |
 |---|---|---|
-| `.surface-wood` | `body.play` (the whole game), the backpack, crafting, paint and the dialogs on it | Dark wood-brown, cream text, **gold** primary actions with dark text, light-blue links. Key caps stay light so they read as keys. `color-scheme: dark`. |
+| `.surface-wood` | `body.play` (the whole game), the backpack, crafting, paint and the dialogs on it | Light paper with ink and blue actions, or dark wood-brown with cream text, gold actions and light-blue links, paired by `light-dark()`. Key caps stay light. Native controls inherit the root colour scheme. |
 | `.surface-paper` (the default, on `:root`) | The default under the game's surfaces: the loading shell before the planet, and the key caps. (The website used it until 2026-09-29, when it moved to its own, separate design system: [site design system](../site-ui/design-system.md).) | Warm off-white, ink text, blue primary actions and links. |
 
 Both surfaces define every role (a test checks), and each surface re-declares `color`, because inherited text colour doesn't follow a changed custom property.
+
+**Themes (13 October 2026).** The game follows `site.theme` (Match system, Light or Dark), applied before paint. Change it in Menu's Settings or a reading overlay's place bar; the site, the frame and the game share the saved choice. Other tabs and live OS changes follow too. The game's own theme helper imports no site code, React or three. This changes only DOM UI, never the planet's time of day. Reading overlays frost the planet with the `blur.reading` token on the transparent parent dialog; the site's smoke remains on top ([sections §6.2](../sections/spec.md#62-the-planet-frame)).
 
 **Scales.** Space is a 4 px grid in rem (`--space-0-5` … `--space-18`). Type is `--text-2xs` (0.625 rem) to `--text-3xl`. Every size is in `rem`, so the "Larger text" setting (`html.text-lg`, 112.5 %) scales it all: spaces, radii, controls, panels, slots and the HUD's places. Only lines and outlines (`--border-*`, focus offsets included), the pill shape, blurs and the scrollbar's line stay in px, and the test lists them. Layers are named, not numbered: `base` 1 < `hud` 10 < `lane` 20 < `fade` 25 < `chrome` 30 < `toast` 35 < `overlay` 40 < `greeting` 42 < `drag` 45 < `skip` 1000.
 

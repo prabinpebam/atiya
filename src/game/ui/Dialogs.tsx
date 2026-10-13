@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 import type { GameController } from '../controller';
 import { withBase } from '../platform/base';
 import { prefs } from '../platform/prefs';
+import { applyGameTheme, gameScheme, gameTheme, GAME_THEME_EVENT, isGameTheme } from '../platform/theme';
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
 import { Button, KeyCap } from './primitives';
@@ -78,23 +79,12 @@ export function ContextLost({ controller }: { controller: GameController }) {
   );
 }
 
-/** The site's theme (its own key: the game never imports the site), resolved to light or dark for the frame. */
-function siteScheme(): 'light' | 'dark' {
-  let t: string | null = null;
-  try {
-    t = localStorage.getItem('site.theme');
-  } catch {
-    /* no storage: the system's */
-  }
-  if (t === 'light' || t === 'dark') return t;
-  return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
+const siteScheme = () => gameScheme(gameTheme(document.documentElement), matchMedia('(prefers-color-scheme: dark)').matches);
 
 /**
  * A building's reading overlay (documentation/sections/spec.md §6): its list and its pages are the site's
  * own pages, framed over the planet (/play/<building>/…), which paint the smoke and carry their own bar.
- * The overlay holds the frame, matches its colour scheme (a frame whose scheme differs from its parent's
- * gets an opaque backdrop, and its prefers-color-scheme follows this element's), hears only its own
+ * The overlay frosts the planet, shares its theme choice with the framed pages, hears only its own
  * frame's messages (§6.9), and shows a status while it loads and a way out if it fails. Loaded on demand,
  * like the menu.
  */
@@ -136,18 +126,27 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
   }, [src, state, tries]);
 
   useEffect(() => {
+    const syncTheme = () => {
+      setScheme(siteScheme());
+      frame.current?.contentWindow?.postMessage({ source: 'planet-game', type: 'planet:theme', theme: gameTheme(document.documentElement) }, location.origin);
+    };
     const onMessage = (e: MessageEvent) => {
       const f = frame.current;
       if (!f || e.origin !== location.origin || e.source !== f.contentWindow) return;
-      const m = e.data as { source?: string; type?: string; place?: string; page?: string | null; title?: string; heading?: string; scheme?: string; index?: number | null; count?: number | null };
+      const m = e.data as { source?: string; type?: string; place?: string; page?: string | null; title?: string; heading?: string; scheme?: string; theme?: unknown; index?: number | null; count?: number | null };
       if (m?.source !== FROM || typeof m.type !== 'string' || typeof m.place !== 'string') return;
       // a message from a building that's no longer open belongs to an overlay that's closing
       if (m.place !== controller.store.getState().openId) return;
+      if (m.type === 'planet:theme' && isGameTheme(m.theme)) {
+        applyGameTheme(m.theme, document.documentElement, null);
+        setScheme(siteScheme());
+        return;
+      }
       if (m.type === 'planet:ready') {
         const data = controller.dataById.get(m.place);
         setState('ready');
         if (typeof m.title === 'string') f.title = m.title;
-        if (m.scheme === 'light' || m.scheme === 'dark') setScheme(m.scheme);
+        syncTheme();
         const where = data ? `the ${data.title}` : 'this building';
         const said = notice.current ?? (m.page && typeof m.index === 'number' && typeof m.count === 'number' ? `${m.heading}. Page ${m.index + 1} of ${m.count} in ${where}.` : `${data?.title ?? ''}: what’s inside.`);
         notice.current = null;
@@ -157,7 +156,11 @@ export default function LandmarkDialog({ controller }: { controller: GameControl
       } else if (m.type === 'planet:close') controller.requestCloseLandmark();
     };
     window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
+    window.addEventListener(GAME_THEME_EVENT, syncTheme);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      window.removeEventListener(GAME_THEME_EVENT, syncTheme);
+    };
   }, [controller]);
 
   const retry = () => {

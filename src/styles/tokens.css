@@ -80,18 +80,19 @@
   --color-stage-edge: var(--p-color-stage-300);
   --color-toast-bg: var(--p-color-ink-900);
   --color-toast-text: var(--p-color-white);
-  --color-tooltip-bg: var(--p-color-wood-950);
   --color-chip-ink: var(--p-color-wood-950);
   --color-count-text: var(--p-color-white);
   --color-paper-bg: var(--p-color-paper-0);
   --color-paper-bg-glass: rgb(255 255 255 / 0.92);
   --color-paper-bg-soft: var(--p-color-paper-100);
   --color-paper-bg-warm: var(--p-color-paper-50);
+  --color-paper-bg-sunk: var(--p-color-paper-100);
   --color-paper-border: var(--p-color-ink-900);
   --color-paper-line: var(--p-color-paper-300);
   --color-paper-text: var(--p-color-ink-900);
   --color-paper-text-muted: var(--p-color-ink-700);
   --color-paper-highlight: var(--p-color-gold-300);
+  --color-paper-highlight-soft: var(--p-color-paper-300);
   --color-paper-positive: var(--p-color-green-700);
   --color-paper-negative: var(--p-color-red-700);
   --color-paper-focus: var(--p-color-blue-800);
@@ -179,7 +180,6 @@
   --shadow-tray: 0 6px 20px rgb(0 0 0 / 0.25), inset 0 0 0 1px rgb(255 244 222 / 0.12);
   --shadow-slot: inset 2px 2px 0 rgb(0 0 0 / 0.35), inset -2px -2px 0 rgb(255 244 222 / 0.12);
   --shadow-text-count: 1px 1px 0 #2a1f18, -1px 0 0 #2a1f18, 0 -1px 0 #2a1f18, 1px 0 0 #2a1f18;
-  --shadow-text-label: 0 1px 0 #000000;
   --shadow-icon: drop-shadow(0 1px 1px rgb(0 0 0 / 0.35));
   --shadow-avatar: 0 0 0 3px #ffffff, 0 4px 12px rgb(31 29 36 / 0.3);
   --shadow-chip: inset 0 -3px 0 rgb(0 0 0 / 0.18), 0 0 0 2px rgb(255 244 222 / 0.3);
@@ -221,6 +221,7 @@
   --scale-fly-mid: 1.1;
   --scale-pop: 1.18;
   --blur-glass: 4px;
+  --blur-reading: 8px;
   --underline-offset: 0.15em;
   --c-btn-h: 2.75rem;
   --c-btn-h-sm: 2.25rem;
@@ -294,11 +295,13 @@
   --surface-bg-glass: var(--color-paper-bg-glass);
   --surface-bg-soft: var(--color-paper-bg-soft);
   --surface-bg-warm: var(--color-paper-bg-warm);
+  --surface-bg-sunk: var(--color-paper-bg-sunk);
   --surface-border: var(--color-paper-border);
   --surface-line: var(--color-paper-line);
   --surface-text: var(--color-paper-text);
   --surface-text-muted: var(--color-paper-text-muted);
   --surface-highlight: var(--color-paper-highlight);
+  --surface-highlight-soft: var(--color-paper-highlight-soft);
   --surface-positive: var(--color-paper-positive);
   --surface-negative: var(--color-paper-negative);
   --surface-focus: var(--color-paper-focus);
@@ -309,22 +312,22 @@
 }
 
 .surface-wood {
-  --surface-bg: var(--color-wood-bg);
-  --surface-bg-glass: var(--color-wood-bg-glass);
-  --surface-bg-soft: var(--color-wood-bg-soft);
-  --surface-bg-warm: var(--color-wood-bg-warm);
-  --surface-bg-sunk: var(--color-wood-bg-sunk);
-  --surface-border: var(--color-wood-border);
-  --surface-line: var(--color-wood-line);
-  --surface-text: var(--color-wood-text);
-  --surface-text-muted: var(--color-wood-text-muted);
-  --surface-highlight: var(--color-wood-highlight);
-  --surface-highlight-soft: var(--color-wood-highlight-soft);
-  --surface-positive: var(--color-wood-positive);
-  --surface-negative: var(--color-wood-negative);
-  --surface-focus: var(--color-wood-focus);
-  --surface-accent: var(--color-wood-accent);
-  --surface-accent-hover: var(--color-wood-accent-hover);
-  --surface-on-accent: var(--color-wood-on-accent);
-  --surface-link: var(--color-wood-link);
+  --surface-bg: light-dark(var(--color-paper-bg), var(--color-wood-bg));
+  --surface-bg-glass: light-dark(var(--color-paper-bg-glass), var(--color-wood-bg-glass));
+  --surface-bg-soft: light-dark(var(--color-paper-bg-soft), var(--color-wood-bg-soft));
+  --surface-bg-warm: light-dark(var(--color-paper-bg-warm), var(--color-wood-bg-warm));
+  --surface-bg-sunk: light-dark(var(--color-paper-bg-sunk), var(--color-wood-bg-sunk));
+  --surface-border: light-dark(var(--color-paper-border), var(--color-wood-border));
+  --surface-line: light-dark(var(--color-paper-line), var(--color-wood-line));
+  --surface-text: light-dark(var(--color-paper-text), var(--color-wood-text));
+  --surface-text-muted: light-dark(var(--color-paper-text-muted), var(--color-wood-text-muted));
+  --surface-highlight: light-dark(var(--color-paper-highlight), var(--color-wood-highlight));
+  --surface-highlight-soft: light-dark(var(--color-paper-highlight-soft), var(--color-wood-highlight-soft));
+  --surface-positive: light-dark(var(--color-paper-positive), var(--color-wood-positive));
+  --surface-negative: light-dark(var(--color-paper-negative), var(--color-wood-negative));
+  --surface-focus: light-dark(var(--color-paper-focus), var(--color-wood-focus));
+  --surface-accent: light-dark(var(--color-paper-accent), var(--color-wood-accent));
+  --surface-accent-hover: light-dark(var(--color-paper-accent-hover), var(--color-wood-accent-hover));
+  --surface-on-accent: light-dark(var(--color-paper-on-accent), var(--color-wood-on-accent));
+  --surface-link: light-dark(var(--color-paper-link), var(--color-wood-link));
 }

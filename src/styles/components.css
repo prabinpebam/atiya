@@ -148,9 +148,8 @@ kbd {
   padding-left: var(--c-dialog-list-indent);
 }
 
-/* A building's reading overlay (documentation/sections/spec.md §6): the whole window, clear. The framed
- * page (the site's own) paints its smoke and its bar; the frame takes the site's colour scheme, or the
- * browser paints an opaque backdrop behind it and its prefers-color-scheme stays the game's light. */
+/* The parent dialog frosts the planet: an iframe cannot blur pixels outside its own document.
+ * The site's framed page paints its themed smoke above it. */
 .reading-overlay {
   position: fixed;
   inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
@@ -163,6 +162,8 @@ kbd {
   border: 0;
   overflow: hidden;
   background: transparent;
+  -webkit-backdrop-filter: blur(var(--blur-reading));
+  backdrop-filter: blur(var(--blur-reading));
 }
 
 .reading-overlay::backdrop {
@@ -175,7 +176,7 @@ kbd {
   height: 100%;
   border: 0;
   background: transparent;
-  color-scheme: light;
+  color-scheme: inherit;
   /* shown once its page says it's ready, faded in: never a blank or half-drawn frame over the planet */
   opacity: 0;
   transition: opacity var(--dur-base) var(--ease-out);
@@ -189,10 +190,6 @@ kbd {
   .reading-frame {
     transition: none;
   }
-}
-
-.reading-frame[data-scheme='dark'] {
-  color-scheme: dark;
 }
 
 /* while it loads (after a moment), or if it doesn't: over the middle of the window */

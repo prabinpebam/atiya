@@ -6,6 +6,7 @@
  * Messages go to this origin only, and only the game's own are heard (§6.9).
  */
 import { sortLink, type FrameMap } from './frameLinks';
+import { applyTheme, pageIsDark, parseTheme, THEMES, THEME_EVENT } from './theme';
 
 const FROM = 'planet-frame';
 const GAME = 'planet-game';
@@ -30,16 +31,25 @@ export function initFrame(bar: HTMLElement, signal: AbortSignal) {
   const post = (m: Record<string, unknown>) => window.parent.postMessage({ source: FROM, ...m }, location.origin);
   const heading = document.querySelector<HTMLElement>('main h1');
   if (heading) heading.tabIndex = -1;
-  const theme = document.documentElement.dataset.theme;
-  const scheme = theme === 'light' || theme === 'dark' ? theme : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const root = document.documentElement;
+  const themeMessage = () => ({ theme: parseTheme(root.dataset.theme), scheme: pageIsDark(root) ? 'dark' : 'light' });
+  const changed = () => post({ type: 'planet:theme', place: here, ...themeMessage() });
+  const observer = new MutationObserver(changed);
+  observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  signal.addEventListener('abort', () => observer.disconnect(), { once: true });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', changed, { signal });
 
   // the game focuses the frame, then asks for the heading (a document can't take the focus from its parent)
   window.addEventListener(
     'message',
     (e) => {
       if (e.origin !== location.origin || e.source !== window.parent) return;
-      const m = e.data as { source?: string; type?: string };
+      const m = e.data as { source?: string; type?: string; theme?: unknown };
       if (m?.source === GAME && m.type === 'planet:focus') heading?.focus({ preventScroll: true });
+      else if (m?.source === GAME && m.type === 'planet:theme' && THEMES.some((t) => t === m.theme)) {
+        applyTheme(parseTheme(String(m.theme)), root, null);
+        document.dispatchEvent(new Event(THEME_EVENT));
+      }
     },
     { signal },
   );
@@ -49,7 +59,7 @@ export function initFrame(bar: HTMLElement, signal: AbortSignal) {
     page,
     title: document.title,
     heading: heading?.textContent?.trim() ?? '',
-    scheme,
+    ...themeMessage(),
     index: bar.dataset.index ? Number(bar.dataset.index) : null,
     count: bar.dataset.count ? Number(bar.dataset.count) : null,
   });

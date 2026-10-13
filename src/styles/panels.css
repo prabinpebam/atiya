@@ -30,7 +30,6 @@
   color: var(--surface-text);
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
-  text-shadow: var(--shadow-text-label);
   pointer-events: none;
   animation: card-fade var(--dur-fast) var(--ease-out);
 }
@@ -106,11 +105,18 @@
   margin-left: var(--space-1-5);
   font-size: var(--text-lg);
   background: var(--color-backpack);
+  color: var(--color-count-text);
 }
 
 .whistle-btn {
   font-size: var(--text-lg);
   background: var(--color-whistle);
+  color: var(--color-count-text);
+}
+
+.backpack-btn:hover,
+.whistle-btn:hover {
+  color: var(--surface-text);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -254,7 +260,7 @@
   max-width: min(var(--c-help-width), calc(100vw - var(--space-6)));
   padding: var(--space-3) var(--space-3-5);
   border-radius: var(--radius-sm);
-  background: var(--color-tooltip-bg);
+  background: var(--surface-bg);
   color: var(--surface-text);
   box-shadow: var(--shadow-panel);
   font-size: var(--text-sm);
@@ -327,7 +333,7 @@
   transform: translate(-50%, calc(-100% - var(--space-1-5)));
   padding: var(--space-1) var(--space-2-5);
   border-radius: var(--radius-xs);
-  background: var(--color-tooltip-bg);
+  background: var(--surface-bg);
   color: var(--surface-text);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
