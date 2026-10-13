@@ -82,9 +82,9 @@
       {
         "id": "talks",
         "kind": "hub",
-        "slug": "talks",
-        "title": "Talks",
-        "summary": "Talks and conversations on design and leadership, with their recordings and slides.",
+        "slug": "gallery",
+        "title": "Gallery",
+        "summary": "A visual way to explore my work.",
         "view": "list",
         "children": []
       },
