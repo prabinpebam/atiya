@@ -1,13 +1,14 @@
 ---
 import Example from '../library/Example.astro';
 import StoryCard from '../components/compounds/StoryCard.astro';
-import { sample } from '../design/samples';
+import { sample, PORTRAIT_SAMPLES } from '../design/samples';
 import { withBase } from '../design/meta';
 
 const workshop = sample('workshop');
 const bridge = sample('bridge');
 const pond = sample('pond');
 const waterfall = sample('waterfall');
+const portrait = PORTRAIT_SAMPLES[0];
 ---
 
 <Example title="Feature" layout="block" description="The lead story: the picture beside the words.">
@@ -41,6 +42,16 @@ const waterfall = sample('waterfall');
   <div class="demo-cards">
     <StoryCard variant="compact" href={withBase('/writing/')} title="Why the planet turns, not the camera" dek="Keeping the sky, the sun and the moon in frame." meta="3 min read" headingLevel={3} />
     <StoryCard href={withBase('/writing/')} title="One thing asks at a time" dek="How the game decides which prompt to show." meta="4 min read" headingLevel={3} />
+  </div>
+</Example>
+
+<Example title="Thumbnail corners" layout="block" description="Corners hug the picture, not the 3:2 letterbox: rounded, square, actual-size, portrait, and a differently shaped dark version.">
+  <div class="demo-cards">
+    <StoryCard href={withBase('/work/')} title="Rounded thumbnail" picture={{ ...bridge, rounded: true }} />
+    <StoryCard href={withBase('/work/')} title="Square thumbnail" picture={{ ...bridge, rounded: false }} />
+    <StoryCard href={withBase('/work/')} title="Actual-size thumbnail" picture={{ ...bridge, src: bridge.thumb, width: 160, height: Math.round(160 * bridge.height / bridge.width), display: 'actual', rounded: true }} />
+    <StoryCard href={withBase('/work/')} title="Portrait thumbnail" picture={portrait} />
+    <StoryCard href={withBase('/work/')} title="Thumbnail with a portrait dark version" picture={{ ...bridge, dark: portrait }} />
   </div>
 </Example>
 

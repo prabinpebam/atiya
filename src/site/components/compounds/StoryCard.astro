@@ -5,7 +5,8 @@
  * finger. Feature spreads the picture beside the words for the lead story; row sets the words first
  * with a small picture at the end, a line of a section's list; compact leaves the picture out. The
  * picture is in a 3:2 frame, shown whole by default (a thumbnail made 3:2 fills the frame); a page can ask
- * for it filled, at its actual size or tiled.
+ * for it filled, at its actual size or tiled. Rounded corners hug the image itself, not the 3:2 layout
+ * frame or the empty room around a fitted thumbnail.
  * @tier compound
  * @a11y One link per card, on the title; the rest of the card is clickable through it (a stretched link), so a screen reader hears the title, not the whole card.
  * @a11y The heading level is set by the page (h2 on an index, h3 under a section heading).
@@ -44,7 +45,7 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
 <article class="card" data-variant={variant}>
   {
     picture && variant !== 'compact' && (
-      <div class="picture" data-square={picture.rounded === false ? '' : undefined} data-shadow={picture.shadow ? '' : undefined}>
+      <div class="picture" data-shadow={picture.shadow ? '' : undefined}>
         <div class="zoom">
           <Image
             src={picture.src}
@@ -115,11 +116,6 @@ const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' :
 
   .picture {
     overflow: hidden;
-    border-radius: var(--c-image-radius);
-  }
-
-  .picture[data-square] {
-    border-radius: var(--radius-none);
   }
 
   /* the shadow on the frame, which clips the picture: drawn outside the clip, in the picture's shape */

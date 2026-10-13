@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "file": "pasted-picture-2026-10-13.webp",
+  "alt": "Switches and toggles",
+  "caption": "Switches and toggles",
+  "visibility": "public",
+  "dark": {
+    "file": "pasted-picture-2026-10-13.dark.webp"
+  }
+}

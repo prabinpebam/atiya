@@ -8,14 +8,15 @@
  * wide as its place): fill, cropped to the frame around its focus point; fit, whole, with room round it;
  * actual, at its own size, centred and never enlarged (made smaller only to fit); tile, repeated at its
  * own size across the frame (the picture itself shows instead until the page's script has drawn the tiles).
- * A picture can have a dark mode version: it shows instead when the page is dark (the reader's theme,
+ * A fitted image hugs its visible picture inside a fixed-ratio frame, so its rounded corners do not
+ * fall on the empty space around it. A picture can have a dark mode version: it shows instead when the page is dark (the reader's theme,
  * or their system's), through a <picture> whose dark source scripts/theme.ts points at the theme; tiles
  * follow it too. An animated picture can carry a still poster, which replaces it when the reader asks
  * for reduced motion.
  * Behind it there can be a colour taken from the picture itself (bg: its edges' colour, and its dark
  * version's), filling the room round a fitted or actual-size picture and its transparent parts; and its
- * corners can be squared (rounded false), and a drop shadow can fall under it (shadow), following its own
- * shape.
+ * picture's corners can be squared (rounded false; the frame itself stays square), and a drop shadow can
+ * fall under it (shadow), following its own shape.
  * While it loads, its place shimmers, and it fades in once it has (a failed load is tried again, then its
  * place stays quiet, never a broken icon); once the page has loaded, the pictures still waiting are fetched
  * nearest the view first (scripts/pictures.ts). Without JavaScript it shows as it loads.
@@ -26,6 +27,7 @@
  * @a11y Tiled, the frame is the image (role="img", named by the alt text), whatever draws it.
  * @a11y The shimmer stops for prefers-reduced-motion: the place is a still colour until the picture fades in.
  */
+import { fittedWidth } from '../../design/pictures';
 
 interface Props {
   /** The picture (the size a middle-sized screen needs). */
@@ -60,7 +62,7 @@ interface Props {
   dark?: { src: string; srcset?: string; width: number; height: number; poster?: string };
   /** A colour behind it (the picture's own edge colour, and its dark version's), filling the space round it and its transparent parts. Left out, nothing behind it. */
   bg?: { light: string; dark?: string };
-  /** Rounded corners (the radius above); false squares them. */
+  /** Rounded corners on the picture itself (the radius above); false squares them. */
   rounded?: boolean;
   /** A drop shadow under it, following its own shape (a fitted or transparent picture casts the shadow of what shows). */
   shadow?: boolean;
@@ -69,15 +71,16 @@ interface Props {
 const { src, alt, width, height, srcset, poster, sizes, ratio, fit = 'cover', display, focus, radius: asked = 'default', priority = false, fill = false, dark, bg, rounded = true, shadow = false } = Astro.props;
 const radius = rounded ? asked : 'none';
 const mode = display ?? (fit === 'contain' ? 'fit' : 'fill');
-// actual and tile draw in a frame of their own (the ratio's, the cell's, or else the picture's own shape)
-const framed = mode === 'actual' || mode === 'tile';
+// Fixed-ratio fit separates the layout box from the image's own shape.
+const fittedRatio = mode === 'fit' && !fill ? ratio : undefined;
+const framed = mode === 'actual' || mode === 'tile' || fittedRatio !== undefined;
 const tile = mode === 'tile';
 // tiles are the picture at its own size: the browser picks the file nearest it
 const shownSizes = tile ? `${width}px` : sizes;
 // the background is data: the picture's own colours, set here and read by the stylesheet
 const bgVars = bg ? [`--picture-bg: ${bg.light}`, `--picture-bg-dark: ${bg.dark ?? bg.light}`] : [];
 const vars = [focus ? `--focus: ${focus}` : '', framed ? `--natural: ${width}px` : '', ...(framed ? [] : bgVars)].filter(Boolean).join('; ') || undefined;
-const frameVars = framed ? [`--own-ratio: ${width} / ${height}`, `--natural: ${width}px`, ...bgVars].join('; ') : undefined;
+const frameVars = framed ? [`--own-ratio: ${width} / ${height}`, `--natural: ${width}px`, ...(fittedRatio ? [`--fit-width: ${fittedWidth(width, height, fittedRatio)}%`] : []), ...bgVars].join('; ') : undefined;
 const imgAlt = tile ? '' : alt;
 ---
 
@@ -88,7 +91,6 @@ const imgAlt = tile ? '' : alt;
       data-picture
       data-mode={mode}
       data-ratio={ratio}
-      data-radius={radius}
       data-fill={fill ? '' : undefined}
       data-tile={tile ? '' : undefined}
       data-bg={bg ? '' : undefined}
@@ -102,14 +104,14 @@ const imgAlt = tile ? '' : alt;
           {dark?.poster && <source srcset={dark.poster} media="(prefers-color-scheme: dark) and (prefers-reduced-motion: reduce)" width={dark.width} height={dark.height} data-dark-reduced="" />}
           {dark && <source srcset={dark.srcset || dark.src} sizes={dark.srcset ? shownSizes : undefined} media="(prefers-color-scheme: dark)" width={dark.width} height={dark.height} data-dark="" />}
           {poster && <source srcset={poster} media="(prefers-reduced-motion: reduce)" width={width} height={height} />}
-          <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} style={vars} />
+          <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} data-radius={radius} style={vars} />
         </picture>
       ) : (
-        <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} style={vars} />
+        <img class="image" src={src} srcset={srcset} sizes={shownSizes} alt={imgAlt} width={width} height={height} loading={priority || tile ? 'eager' : 'lazy'} decoding="async" fetchpriority={priority ? 'high' : undefined} data-mode={mode} data-radius={radius} style={vars} />
       )}
     </span>
   ) : (
-    <span class="shell" data-picture data-radius={radius} data-fill={fill ? '' : undefined}>
+    <span class="shell" data-picture data-fill={fill ? '' : undefined}>
     {dark || poster ? (
     <picture class="themed">
       {dark?.poster && <source srcset={dark.poster} media="(prefers-color-scheme: dark) and (prefers-reduced-motion: reduce)" width={dark.width} height={dark.height} data-dark-reduced="" />}
@@ -166,20 +168,11 @@ const imgAlt = tile ? '' : alt;
     display: contents;
   }
 
-  /* a plain picture's root: as wide as its place, its shape the picture's (or its ratio's), with its corners */
+  /* a plain picture's root: as wide as its place, its shape the picture's (or its ratio's) */
   .shell {
     position: relative;
     display: block;
     width: 100%;
-    border-radius: var(--c-image-radius);
-  }
-
-  .shell[data-radius='feature'] {
-    border-radius: var(--c-image-radius-feature);
-  }
-
-  .shell[data-radius='none'] {
-    border-radius: var(--radius-none);
   }
 
   .shell[data-fill] {
@@ -258,7 +251,7 @@ const imgAlt = tile ? '' : alt;
     aspect-ratio: 21 / 9;
   }
 
-  /* actual and tile: a frame of their own, the picture's shape unless a ratio or a cell gives one */
+  /* The layout frame stays square; only the image owns the radius. */
   .frame {
     position: relative;
     display: grid;
@@ -266,19 +259,16 @@ const imgAlt = tile ? '' : alt;
     width: 100%;
     aspect-ratio: var(--own-ratio);
     overflow: clip;
-    border-radius: var(--c-image-radius);
-  }
-
-  .frame[data-radius='feature'] {
-    border-radius: var(--c-image-radius-feature);
-  }
-
-  .frame[data-radius='none'] {
-    border-radius: var(--radius-none);
   }
 
   .frame[data-fill] {
     height: 100%;
+  }
+
+  .frame[data-mode='fit'] .image {
+    width: var(--fit-width);
+    height: auto;
+    object-fit: contain;
   }
 
   /* actual size: its own width (never more than its place), centred; within a frame, never taller than it */
@@ -289,7 +279,6 @@ const imgAlt = tile ? '' : alt;
   .frame[data-mode='actual'] .image {
     width: min(100%, var(--natural));
     max-height: 100%;
-    border-radius: var(--radius-none);
     object-fit: contain;
   }
 
@@ -309,7 +298,6 @@ const imgAlt = tile ? '' : alt;
   }
 
   .frame[data-mode='tile'] .image {
-    border-radius: var(--radius-none);
     object-fit: contain;
     height: 100%;
   }

@@ -7,8 +7,29 @@
 import { describe, expect, it } from 'vitest';
 import { article, block, PICTURE_DISPLAYS } from '../../src/site/content/schema';
 import { edgeAverage } from '../../src/site/content/edgeColour';
+import { fittedWidth, ratioValue } from '../../src/site/design/pictures';
 
 const base = { id: 'x', type: 'article', kind: 'note', slug: 'x', title: 'X', summary: 'X.', status: 'draft', visibility: 'public', updatedAt: '2026-10-06', locale: 'en', body: [] };
+
+describe('fitted images hug the picture inside their frame', () => {
+  it.each([
+    [900, 600, '3/2', 100],
+    [600, 600, '3/2', 200 / 3],
+    [400, 800, '3/2', 100 / 3],
+    [1600, 900, '3/2', 100],
+    [100, 100, '3/2', 200 / 3],
+    [1600, 900, '21/9', 1600 / 900 / (21 / 9) * 100],
+  ])('fits %i × %i in %s at %f percent width', (width, height, ratio, expected) => {
+    expect(fittedWidth(width, height, ratio)).toBeCloseTo(expected, 8);
+    const frameWidth = 600;
+    const frameHeight = frameWidth / ratioValue(ratio);
+    const shownWidth = frameWidth * fittedWidth(width, height, ratio) / 100;
+    const shownHeight = shownWidth * height / width;
+    expect(shownWidth).toBeLessThanOrEqual(frameWidth);
+    expect(shownHeight).toBeLessThanOrEqual(frameHeight + 1e-9);
+    expect(Math.min(frameWidth - shownWidth, frameHeight - shownHeight)).toBeCloseTo(0, 8);
+  });
+});
 
 describe('the content model: how a picture is shown', () => {
   it('every picture use takes a display, a background, rounding and a drop shadow', () => {

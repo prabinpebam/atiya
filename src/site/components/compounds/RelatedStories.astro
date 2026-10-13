@@ -4,7 +4,8 @@
  * yet first (documentation/sections/spec.md §3.7). The page hands in its candidates, best first (ranked
  * once, at build time: the author's picks, shared topics, the same section, the newest); the browser
  * shows the best few not read yet, then the ones read longest ago, marked Read, and remembers this page
- * as read (on this browser only). Without the script, the best few show.
+ * as read (on this browser only). Without the script, the best few show. Thumbnail corners hug the
+ * image itself; its 3:2 layout wrapper stays square.
  * @tier compound
  * @a11y A region named by its heading; each card is one link, on its title (a stretched link), so a screen reader hears the title.
  * @a11y A story already read says so in words (a Read tag), not by its look alone.
@@ -54,7 +55,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
           <li class="item" data-related-item={s.id} hidden={i >= shown}>
             <article class="card">
               {s.picture && (
-                <div class="picture" data-square={s.picture.rounded === false ? '' : undefined} data-shadow={s.picture.shadow ? '' : undefined}>
+                <div class="picture" data-shadow={s.picture.shadow ? '' : undefined}>
                   <Image src={s.picture.src} srcset={s.picture.srcset} sizes={sizes(['sm', '92vw'], ['lg', '46vw'], { share: 'wide', of: 3 })} alt={s.picture.alt} width={s.picture.width} height={s.picture.height} ratio={PICTURE_SPECS.thumbnail.ratio} display={s.picture.display ?? 'fit'} rounded={s.picture.rounded !== false} bg={s.picture.background && s.picture.bg ? { light: s.picture.bg, dark: s.picture.dark?.bg } : undefined} dark={s.picture.dark} />
                 </div>
               )}
@@ -109,11 +110,6 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
 
   .picture {
     overflow: hidden;
-    border-radius: var(--c-image-radius);
-  }
-
-  .picture[data-square] {
-    border-radius: var(--radius-none);
   }
 
   /* the shadow on the frame, which clips the picture: drawn outside the clip, in the picture's shape */

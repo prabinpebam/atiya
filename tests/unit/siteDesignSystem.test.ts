@@ -44,6 +44,15 @@ const EDITOR_TOKENS_CSS = read(join(ROOT, 'src/site/styles/editor-tokens.css'));
 const BASE_CSS = read(join(ROOT, 'src/site/styles/base.css'));
 const model = siteTokens();
 
+describe('thumbnail corners belong to the image', () => {
+  it('layout wrappers never own the picture radius, and every image branch carries the choice', () => {
+    const image = read(join(TIER_DIRS.fundamental, 'Image.astro'));
+    for (const tag of image.matchAll(/<img\b[\s\S]*?\/>/g)) expect(tag[0]).toContain('data-radius={radius}');
+    const wrappers = all.filter((d) => ['Image.astro', 'StoryCard.astro', 'RelatedStories.astro'].includes(d.file) && d.prop === 'border-radius' && /\.(shell|frame|picture)(?:\b|\[)/.test(d.sel));
+    expect(wrappers.map(where)).toEqual([]);
+  });
+});
+
 // ---------- tokens ----------
 describe('tokens: DTCG 2025.10, one source of truth', () => {
   it('tokens.css and the reference page are generated from the resolver and up to date', () => {

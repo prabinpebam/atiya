@@ -8,6 +8,7 @@
  *
  * Without JavaScript none of this runs, and every picture shows as it loads.
  */
+import { fittedWidth } from '../design/pictures';
 
 /** A box on the page, as getBoundingClientRect gives it. */
 export interface Box {
@@ -48,6 +49,11 @@ export function watchPicture(root: HTMLElement, signal?: AbortSignal): void {
   watched.add(root);
   const hasSource = () => !!(img.getAttribute('src') || img.getAttribute('srcset'));
   const done = () => img.complete && img.naturalWidth > 0;
+  const fit = () => {
+    if (root.dataset.mode === 'fit' && root.dataset.ratio && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      root.style.setProperty('--fit-width', `${fittedWidth(img.naturalWidth, img.naturalHeight, root.dataset.ratio)}%`);
+    }
+  };
   let tries = 0;
   const fail = () => {
     if (!hasSource()) return;
@@ -69,12 +75,16 @@ export function watchPicture(root: HTMLElement, signal?: AbortSignal): void {
   img.addEventListener(
     'load',
     () => {
+      fit();
       if (img.naturalWidth > 0) root.dataset.state = 'loaded';
     },
     { signal },
   );
   img.addEventListener('error', fail, { signal });
-  if (done()) root.dataset.state = 'loaded';
+  if (done()) {
+    fit();
+    root.dataset.state = 'loaded';
+  }
   else {
     root.dataset.state = 'loading';
     // it failed before this saw it

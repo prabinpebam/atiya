@@ -17,6 +17,73 @@ const noSeriousViolations = async (page: Page) => {
 };
 
 test.describe('site design system', () => {
+  test('article and page thumbnails round the image, not their layout wrappers', async ({ page }) => {
+    for (const mode of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: mode });
+      await page.goto('/design/compounds/story-card/');
+      const example = page.locator('.example', { has: page.getByRole('heading', { name: 'Thumbnail corners', exact: true }) });
+      const cards = example.locator('article.card');
+      await expect(cards).toHaveCount(5);
+      for (let i = 0; i < 5; i++) {
+        const card = cards.nth(i);
+        const img = card.locator('img');
+        await expect(card.locator('.picture')).toHaveCSS('border-radius', '0px');
+        await expect(card.locator('[data-picture]')).toHaveCSS('border-radius', '0px');
+        await expect(img).toHaveAttribute('data-radius', i === 1 ? 'none' : 'default');
+        if (i === 1) await expect(img).toHaveCSS('border-radius', '0px');
+        else expect(await img.evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius))).toBeGreaterThan(0);
+        const frame = await card.locator('.picture').boundingBox();
+        expect(frame).not.toBeNull();
+        expect(frame!.width / frame!.height).toBeCloseTo(3 / 2, 1);
+        if (i !== 2) {
+          await img.scrollIntoViewIfNeeded();
+          await expect(card.locator('[data-picture]')).toHaveAttribute('data-state', 'loaded');
+          const shape = await img.evaluate((el: HTMLImageElement) => {
+            const box = el.getBoundingClientRect();
+            return { displayed: box.width / box.height, natural: el.naturalWidth / el.naturalHeight };
+          });
+          expect(shape.displayed).toBeCloseTo(shape.natural, 2);
+        }
+      }
+      const actual = cards.nth(2).locator('img');
+      expect((await actual.boundingBox())!.width).toBeLessThanOrEqual(160);
+      // The hover zoom still stays in its square clipping wrapper.
+      await cards.first().hover();
+      await expect(cards.first().locator('.picture')).toHaveCSS('overflow', 'hidden');
+      await page.goto('/design/compounds/related-stories/');
+      const related = page.locator('[data-related] .picture:visible');
+      await expect(related).toHaveCount(3);
+      for (const picture of await related.all()) {
+        await expect(picture).toHaveCSS('border-radius', '0px');
+        await expect(picture.locator('[data-picture]')).toHaveCSS('border-radius', '0px');
+        expect(await picture.locator('img').evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius))).toBeGreaterThan(0);
+      }
+      await page.goto('/side-projects/');
+      for (const picture of await page.locator('main article.card .picture').all()) {
+        await expect(picture).toHaveCSS('border-radius', '0px');
+        await expect(picture.locator('[data-picture]')).toHaveCSS('border-radius', '0px');
+        const img = picture.locator('img');
+        await img.scrollIntoViewIfNeeded();
+        await expect(picture.locator('[data-picture]')).toHaveAttribute('data-state', 'loaded');
+        if (await img.getAttribute('data-mode') === 'fit') {
+          const shape = await img.evaluate((el: HTMLImageElement) => {
+            const box = el.getBoundingClientRect();
+            return { displayed: box.width / box.height, natural: el.naturalWidth / el.naturalHeight };
+          });
+          expect(shape.displayed).toBeCloseTo(shape.natural, 2);
+        }
+      }
+      await page.setViewportSize({ width: 320, height: 720 });
+      await expect(page.locator('main article.card .picture').first()).toHaveCSS('border-radius', '0px');
+      expect(await page.locator('html').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+      await page.setViewportSize({ width: 1280, height: 800 });
+    }
+    await page.goto('/side-projects/');
+    const card = page.locator('main article.card', { has: page.getByRole('heading', { name: 'Watai: a private AI assistant of my own', exact: true }) });
+    await card.scrollIntoViewIfNeeded();
+    await card.screenshot({ path: test.info().outputPath('thumbnail-corners.png') });
+  });
+
   test('masonry collections expand shorter columns until their card bottoms align', async ({ page }) => {
     await page.goto('/design/compounds/collection/');
     const masonry = page.locator('[data-layout="masonry"]').first();

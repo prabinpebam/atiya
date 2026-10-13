@@ -8,9 +8,9 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-06",
+  "updatedAt": "2026-10-13",
   "locale": "en",
-  "thumbnail": "articles/liquid-glass-for-web/design-library-overview",
+  "thumbnail": "articles/liquid-glass-for-web/pasted-picture-2026-10-13-2",
   "body": [
     {
       "type": "text",
@@ -22,11 +22,10 @@
     },
     {
       "type": "figure",
-      "media": "articles/liquid-glass-for-web/design-library-overview",
-      "width": "popout",
+      "media": "articles/liquid-glass-for-web/pasted-picture-2026-10-13",
+      "width": "wide",
       "lightbox": true,
-      "display": "actual",
-      "background": true
+      "rounded": false
     },
     {
       "type": "heading",
@@ -43,7 +42,7 @@
     },
     {
       "type": "collection",
-      "layout": "columns",
+      "layout": "tiles",
       "items": [
         {
           "heading": "Type",
@@ -65,7 +64,14 @@
           "heading": "Status",
           "subtext": "Early 0.1.0 work, with core refraction math implemented"
         }
-      ]
+      ],
+      "width": "content"
+    },
+    {
+      "type": "figure",
+      "media": "articles/liquid-glass-for-web/screenshot-2026-10-13-103953",
+      "width": "wide",
+      "lightbox": true
     },
     {
       "type": "heading",
@@ -97,13 +103,7 @@
           "text": "The same core API is exposed through vanilla JavaScript, React and a custom element."
         }
       ],
-      "width": "wide"
-    },
-    {
-      "type": "figure",
-      "media": "articles/liquid-glass-for-web/material-options",
-      "width": "content",
-      "lightbox": true
+      "width": "content"
     },
     {
       "type": "heading",
@@ -117,12 +117,6 @@
     {
       "type": "text",
       "markdown": "That limitation shaped the design library. Every glassy part is a surface with content layered on top, and the material values come from tokens. If the refraction path changes, the component model can stay stable. If a designer wants softer frost, stronger chromatic aberration or a different tint, that should be a token change rather than a rewrite."
-    },
-    {
-      "type": "figure",
-      "media": "articles/liquid-glass-for-web/component-catalog",
-      "width": "content",
-      "lightbox": true
     },
     {
       "type": "heading",
@@ -140,7 +134,5 @@
     "liquid-glass",
     "design-system"
   ],
-  "thumbnailStyle": {
-    "background": true
-  }
+  "thumbnailStyle": {}
 }

@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-01",
+  "updatedAt": "2026-10-13",
   "locale": "en",
   "thumbnail": "articles/liquid-glass-pro/liquid-glass-examples",
   "body": [
@@ -89,7 +89,7 @@
       "type": "quote",
       "text": "Hi, great PlugIn, it's very useful.",
       "cite": "Ed Rea-Allison (@edreaallison), on Figma Community",
-      "variant": "block"
+      "variant": "pull"
     },
     {
       "type": "text",

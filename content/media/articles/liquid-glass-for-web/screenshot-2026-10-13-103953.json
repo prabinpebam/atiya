@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "file": "screenshot-2026-10-13-103953.webp",
+  "alt": "Liquid glass buttons",
+  "caption": "Liquid glass buttons",
+  "visibility": "public",
+  "dark": {
+    "file": "screenshot-2026-10-13-103953.dark.webp"
+  }
+}

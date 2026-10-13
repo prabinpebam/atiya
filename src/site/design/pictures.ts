@@ -30,6 +30,9 @@ export const ratioValue = (ratio: string): number => {
   return w / h;
 };
 
+/** The width of a whole fitted image, as a percentage of its fixed-ratio frame. */
+export const fittedWidth = (width: number, height: number, ratio: string): number => Math.min(1, width / height / ratioValue(ratio)) * 100;
+
 /** The smallest picture that stays sharp in a use: its spec's width, and the height its ratio gives. */
 export const sharpSize = (spec: PictureSpec) => ({ width: spec.width, height: Math.round(spec.width / ratioValue(spec.ratio)) });
 

@@ -1,0 +1,17 @@
+{
+  "kind": "image",
+  "alt": "Switches and toggles",
+  "caption": "Switches and toggles",
+  "visibility": "public",
+  "file": "pasted-picture-2026-10-13-3x2.webp",
+  "crop": {
+    "from": "articles/liquid-glass-for-web/pasted-picture-2026-10-13",
+    "x": 0,
+    "y": 0,
+    "width": 2560,
+    "height": 1717
+  },
+  "dark": {
+    "file": "pasted-picture-2026-10-13-3x2.dark.webp"
+  }
+}
