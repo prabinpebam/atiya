@@ -224,7 +224,7 @@ One resource, `structures/planet`, holds the places in their fast-travel order.
 | Town Hall | About | About |
 | Lighthouse | The leadership topics | Leadership |
 | Library | The practice areas (notes later) | Expertise |
-| Amphitheater | Talks (articles of kind `talk`) | A talks page, if the site gets one (O7); About until then |
+| Amphitheater | Gallery: a visual way to explore the owner's work | Gallery (`/gallery/`; renamed from Talks on 13 October 2026, [sections §3.6](../sections/spec.md#36-the-first-sections)) |
 | Greenhouse | Prototypes and experiments; galleries | Work |
 | Post Office | Contact and the résumé | Contact |
 

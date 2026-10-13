@@ -178,11 +178,13 @@ Today's seven topics become the site's first sections, in the planet's order. Ea
 | Town Hall | About | `/about/` | None yet | List |
 | Lighthouse | Leadership | `/leadership/` | Do what makes you proud | Bento |
 | Library | Writing | `/writing/` | None yet | List |
-| Amphitheater | Talks | `/talks/` | None yet | List |
+| Amphitheater | Gallery | `/gallery/` | None yet | List |
 | Greenhouse | Side projects | `/side-projects/` | None yet | Tiles |
 | Post Office | Contact | `/contact/` | None yet | List |
 
 The owner can rename, hide or delete any of them in edit mode. They're sections, not code.
+
+**Renamed (13 October 2026):** Talks is now Gallery, a visual way to explore the owner's work. Its stable node ID remains `talks`, so the navigation and the Amphitheater keep pointing to the same section. Its address is `/gallery/`; its list view and pages are unchanged. The Amphitheater keeps its name and model, with Gallery as its kicker and the section's new summary. The old classic Amphitheater redirect now targets `/gallery/`; `/talks/` is removed without a new redirect (D11).
 
 ### 3.7 The end of a page: what to read next, and back to top
 
@@ -551,6 +553,7 @@ Filled in as each phase lands.
   - **The model:** `menuOf`, `inMenu`, `setInMenu`, `addLink`, `moveEntry`, `relabelEntry`, `removeEntry` and `MENU_MAX` in `model/structure.ts`, unit-tested.
   - **A dev server started before S3 needs a restart** to serve the new screen: edit mode's routes are registered when it starts.
 - **S4 (30 September 2026):** the planet structure.
+  - **Gallery rename (13 October 2026):** the former Talks section is Gallery at `/gallery/`, with its existing `talks` ID, list view and pages preserved. The Amphitheater still shows that section; its kicker and summary now describe Gallery. The classic Amphitheater redirect follows the new address (§3.6).
   - **The world** is `src/game/world/places.ts` (the same numbers as the landmark files had); `tests/unit/fixtures.ts` reads it. The landmark collection, its files and `content.config.ts` are gone.
   - **The contract:** `PLACE_IDS` and `planetStructure` in `schema.ts`; the loader checks V13 to V16; the repository has `getPlanet`, `placeOf` and `placePages` (published pages, in the building's order).
   - **The content:** `content/structures/planet.json`, each building with its words (what it holds, as the sections' summaries do: the status is the game's to show), its view, its section on the site, and the Lighthouse holding the first story.

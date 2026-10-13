@@ -221,6 +221,8 @@ The owner asked for the two screens to be one pattern, for published pages to mo
 
 Each phase is done when every row for it is true and evidenced. **All rows were met on 30 September 2026** (S7's the same day); the evidence is the test or check named, and what each phase built is in the [spec's "As built"](spec.md#11-as-built).
 
+**Gallery rename (13 October 2026):** the content-only rename preserves the section's ID, list view, pages and Amphitheater mapping ([spec §3.6](spec.md#36-the-first-sections)). The unit test "renames Talks to Gallery without changing its identity, view or amphitheater mapping" checks the new route and navigation label, the building's words, the resolved section, the Explore in 3D link and the classic redirect.
+
 | # | Phase | Criterion | Evidence |
 |---|---|---|---|
 | 1 | S1 | No visitor-facing copy says "placeholder", "lorem", "TBD", "TODO", "FIXME" or "POC" | `copy.test.ts` |

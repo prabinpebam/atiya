@@ -10,7 +10,7 @@ import sharp from 'sharp';
 import { normalize, parseInline, runs, parseMarkdown, plainText, renderMarkdown, serializeBlocks, serializeInline, type Inline } from '../../src/site/content/markdown';
 import { buildRoutes } from '../../src/site/content/routes';
 import { ContentError, headingId, headingIds, loadContent, mediaUsed } from '../../src/site/content/load';
-import { content } from '../../src/site/content/repository';
+import { content, placePages, placeSection } from '../../src/site/content/repository';
 import { pageMeasure, pictureCount, readingMinutes } from '../../src/site/content/reading';
 import { article, block, siteStructure, type Article, type SiteStructure } from '../../src/site/content/schema';
 import { exploreHref, siteNav } from '../../src/site/content/navigation';
@@ -657,6 +657,27 @@ describe('a page opens as its kind reads', () => {
 });
 
 describe('the real content is three levels, with its navigation and redirects', () => {
+  it('renames Talks to Gallery without changing its identity, view or amphitheater mapping', () => {
+    const c = content();
+    const section = c.routes.find((r) => r.node.id === 'talks');
+    expect(section).toMatchObject({
+      path: '/gallery/',
+      label: 'Gallery',
+      node: { id: 'talks', kind: 'hub', slug: 'gallery', title: 'Gallery', summary: 'A visual way to explore my work.', view: 'list', children: [] },
+    });
+    expect(c.routes.some((r) => r.path === '/talks/')).toBe(false);
+    const nav = siteNav(c.structure, c.routes, section);
+    expect(nav).toContainEqual({ label: 'Gallery', href: '/gallery/', current: true });
+    expect(nav.some((n) => n.label === 'Talks')).toBe(false);
+    expect(c.planet?.places.find((p) => p.id === 'amphitheater')).toMatchObject({
+      title: 'Amphitheater', kicker: 'Gallery', summary: 'A visual way to explore my work.', site: 'talks',
+    });
+    expect(placeSection('amphitheater')).toBe(section);
+    expect(placePages('amphitheater')).toEqual([]);
+    expect(exploreHref(section, c.planet)).toBe('/play/?at=amphitheater');
+    expect(c.redirects).toContainEqual({ from: '/classic/amphitheater/', to: '/gallery/' });
+  });
+
   it('seven sections in the navigation, the first story in Leadership, and every classic address redirected', () => {
     const c = content();
     const sections = c.structure.home.children ?? [];
