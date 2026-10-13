@@ -8,11 +8,14 @@
  * @tier compound
  * @a11y A banner named after the building; its buttons are named ("Show contents", "Open classic page", "Close"), and Close shows its key.
  * @a11y The note for a link to another building is a status message, read when it shows.
+ * @a11y The colour theme select offers Match system, Light and Dark, shared with the game UI.
  * @key Space: closes the reading and goes back to the planet (a picture's lightbox, or a field, takes it first)
  * @key Esc: the same as Space
  */
 import Button from '../fundamentals/Button.astro';
 import Text from '../fundamentals/Text.astro';
+import Select from '../fundamentals/Select.astro';
+import { THEME_OPTIONS } from '../../scripts/theme';
 
 export interface PlanetFrame {
   /** The building: its ID and its name. */
@@ -36,6 +39,7 @@ interface Props {
 
 const { frame } = Astro.props;
 const map = JSON.stringify(frame.map).replace(/</g, '\\u003c');
+const themeId = `planet-theme-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
 <header
@@ -53,6 +57,7 @@ const map = JSON.stringify(frame.map).replace(/</g, '\\u003c');
     <span class="name">{frame.place.title}</span>
   </p>
   <div class="actions">
+    <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id={themeId} data-theme-switch="" />
     {
       frame.contentsHref && (
         <Button variant="secondary" size="sm" href={frame.contentsHref} icon="arrow-left" data-frame-contents="">
@@ -147,6 +152,17 @@ const map = JSON.stringify(frame.map).replace(/</g, '\\u003c');
 <script>
   import { each } from '../../scripts/page';
   import { initFrame } from '../../scripts/planetFrame';
+  import { bindThemeSwitch } from '../../scripts/theme';
 
-  each<HTMLElement>('[data-place-bar]', (bar, signal) => initFrame(bar, signal));
+  each<HTMLElement>('[data-place-bar]', (bar, signal) => {
+    let store: Storage | null = null;
+    try {
+      store = localStorage;
+    } catch {
+      /* privacy mode: the choice still applies for this visit */
+    }
+    const sw = bar.querySelector<HTMLElement>('[data-theme-switch]');
+    if (sw) bindThemeSwitch(sw, document.documentElement, store, signal);
+    initFrame(bar, signal);
+  });
 </script>

@@ -1,5 +1,5 @@
 /** The menu (settings, the classic site), its How to play page and its fast travel page, loaded on demand by the HUD. */
-import { useRef, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { faBookOpen, faEnvelope, faHouse, faLandmark, faMicrophoneLines, faScrewdriverWrench, faSeedling, faTowerObservation, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
 import { useStore } from 'zustand';
@@ -9,8 +9,32 @@ import { selectAmbientPaused, selectReducedMotion } from '../state/store';
 import type { TimeMode } from '../world/timeOfDay';
 import { Button, KeyCap } from './primitives';
 import { Dialog } from './overlays';
+import { applyGameTheme, gameTheme, gameThemeStorage, GAME_THEME_EVENT } from '../platform/theme';
 
 const toClassic = () => prefs.setMode('classic');
+
+function ThemeSetting() {
+  const [theme, setTheme] = useState(() => gameTheme(document.documentElement));
+  useEffect(() => {
+    const changed = () => setTheme(gameTheme(document.documentElement));
+    window.addEventListener(GAME_THEME_EVENT, changed);
+    return () => window.removeEventListener(GAME_THEME_EVENT, changed);
+  }, []);
+  return (
+    <fieldset className="radio-group">
+      <legend>Colour theme</legend>
+      {(['system', 'light', 'dark'] as const).map((value) => (
+        <label key={value} className="check">
+          <input type="radio" name="colour-theme" value={value} checked={theme === value} onChange={() => {
+            setTheme(value);
+            applyGameTheme(value, document.documentElement, gameThemeStorage());
+          }} />
+          {value === 'system' ? 'Match system' : value === 'light' ? 'Light' : 'Dark'}
+        </label>
+      ))}
+    </fieldset>
+  );
+}
 
 const TIME_OPTIONS: ReadonlyArray<readonly [TimeMode, string]> = [
   ['cycle', 'Day–night cycle (a day every ~6 minutes)'],
@@ -257,6 +281,7 @@ export default function MenuDialog({ controller }: { controller: GameController 
             </section>
             <section aria-labelledby="menu-settings">
               <h3 id="menu-settings">Settings</h3>
+              <ThemeSetting />
               <label className="check">
                 <input
                   type="checkbox"

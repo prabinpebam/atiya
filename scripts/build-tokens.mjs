@@ -3,7 +3,7 @@
  *
  * src/design/tokens.json (W3C DTCG format) is the source of truth. This writes:
  *   - src/styles/tokens.css: every token as a CSS custom property, aliases kept as var() references,
- *     and the two surfaces (.surface-paper, .surface-wood) mapping the --surface-* roles;
+ *     and the surfaces: fixed paper for key caps, and light paper / dark wood for the game;
  *   - documentation/game-ui/tokens.md: the token reference for the docs site.
  * Never hand-edit either. `node scripts/build-tokens.mjs --check` fails if they're out of date.
  */
@@ -125,7 +125,11 @@ export function buildCss({ tokens, byPath } = load()) {
     const roles = tokens.filter((t) => t.path[0] === 'color' && t.path[1] === s);
     const sel = s === 'paper' ? ':root,\n.surface-paper' : `.surface-${s}`;
     lines.push(`${sel} {`);
-    for (const r of roles) lines.push(`  --surface-${r.path.slice(2).join('-')}: var(${r.name});`);
+    for (const r of roles) {
+      const role = r.path.slice(2).join('-');
+      const value = s === 'wood' ? `light-dark(var(--color-paper-${role}), var(${r.name}))` : `var(${r.name})`;
+      lines.push(`  --surface-${role}: ${value};`);
+    }
     lines.push('}', '');
   }
   return lines.join('\n');
@@ -162,7 +166,7 @@ export function buildDoc({ json, tokens, byPath } = load()) {
     }
     out.push('');
   }
-  out.push('## Surfaces', '', '| Role | `.surface-paper` | `.surface-wood` |', '|---|---|---|');
+  out.push('## Surfaces', '', 'The game (`.surface-wood`) resolves each role as `light-dark(paper, wood)`, following the root colour scheme. `.surface-paper` stays light for key caps. The columns below show the light and dark values.', '', '| Role | `.surface-paper` / light game | Dark game |', '|---|---|---|');
   const roles = tokens.filter((t) => t.path[0] === 'color' && t.path[1] === 'paper').map((t) => t.path.slice(2).join('-'));
   for (const r of roles) {
     const p = byPath.get(`color.paper.${r}`);

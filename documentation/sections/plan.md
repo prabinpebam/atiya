@@ -219,6 +219,8 @@ The owner asked for the two screens to be one pattern, for published pages to mo
 
 ## 2. Definition of Done
 
+**Frosted reading and themes (13 October 2026):** section and article overlays have an 8 px token-driven backdrop blur and the existing readable smoke. The place bar and game Menu share Match system, Light and Dark; all game surfaces follow. Evidence is the "reading theme" E2E (section/article navigation, both schemes, live system changes, other tabs, focused-select keys, menu and backpack), the existing reading-navigation/dark-smoke E2E, and the game-theme and design-system units ([spec §6.2](spec.md#62-the-planet-frame)).
+
 Each phase is done when every row for it is true and evidenced. **All rows were met on 30 September 2026** (S7's the same day); the evidence is the test or check named, and what each phase built is in the [spec's "As built"](spec.md#11-as-built).
 
 | # | Phase | Criterion | Evidence |

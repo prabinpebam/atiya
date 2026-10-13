@@ -45,8 +45,9 @@ export function readTheme(storage: Pick<Storage, 'getItem'> | null): Theme {
 
 /** Store the choice and set it on the root (system clears both). */
 export function applyTheme(t: Theme, root: HTMLElement, storage: Pick<Storage, 'setItem' | 'removeItem'> | null): void {
-  if (t === 'system') delete root.dataset.theme;
-  else root.dataset.theme = t;
+  if (t === 'system') {
+    if (root.dataset.theme !== undefined) delete root.dataset.theme;
+  } else if (root.dataset.theme !== t) root.dataset.theme = t;
   try {
     if (t === 'system') storage?.removeItem(THEME_KEY);
     else storage?.setItem(THEME_KEY, t);
@@ -63,7 +64,7 @@ export const THEME_EVENT = 'site:theme';
  * applies a new one. The header's and edit mode's switch are this.
  */
 export function bindThemeSwitch(sw: HTMLElement, root: HTMLElement, storage: Storage | null, signal?: AbortSignal): void {
-  const show = () => sw.dispatchEvent(new CustomEvent('select-set', { detail: { value: readTheme(storage) } }));
+  const show = () => sw.dispatchEvent(new CustomEvent('select-set', { detail: { value: parseTheme(root.dataset.theme) } }));
   if (sw.dataset.ready !== undefined) show();
   else sw.addEventListener('select-ready', show, { once: true, signal });
   document.addEventListener(THEME_EVENT, show, { signal });

@@ -262,6 +262,7 @@ describe('contrast: every text and background role pair is readable', () => {
     ['paper', 'bg-glass', ['text', 'text-muted']],
     ['paper', 'bg-warm', ['text', 'text-muted']],
     ['paper', 'bg-soft', ['text', 'text-muted']],
+    ['paper', 'bg-sunk', ['text', 'text-muted']],
     ['wood', 'bg', ['text', 'text-muted', 'positive', 'negative', 'highlight', 'link']],
     ['wood', 'bg-warm', ['text']],
     ['wood', 'bg-soft', ['text']],
@@ -295,6 +296,16 @@ describe('contrast: every text and background role pair is readable', () => {
 });
 
 describe('surfaces: both define every role', () => {
+  it('every game surface role pairs light paper with dark wood, including nested panels', () => {
+    const css = postcss.parse(TOKENS_CSS);
+    const wood = css.nodes.find((n): n is postcss.Rule => n.type === 'rule' && n.selector === '.surface-wood')!;
+    const paper = Object.keys(TOKENS_JSON.color.paper).filter((k) => !k.startsWith('$'));
+    for (const role of paper) {
+      const value = wood.nodes.find((n): n is postcss.Declaration => n.type === 'decl' && n.prop === `--surface-${role}`)?.value;
+      expect(value, role).toBe(`light-dark(var(--color-paper-${role}), var(--color-wood-${role}))`);
+    }
+  });
+
   it('wood defines every paper role (a missing one would silently show paper colours inside a panel)', () => {
     const paper = Object.keys(TOKENS_JSON.color.paper).filter((k) => !k.startsWith('$'));
     const wood = new Set(Object.keys(TOKENS_JSON.color.wood));

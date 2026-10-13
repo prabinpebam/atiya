@@ -2802,6 +2802,136 @@ test.describe('planet', () => {
     expect(doc.url()).toMatch(/\/play\/workshop\/$/);
   });
 
+  test('reading theme: frosted sections and articles share Light, Dark and Match system with every game surface', async ({ page, context }) => {
+    test.setTimeout(240_000);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await openPlanet(page, '/play/?at=lighthouse&open=1');
+    const overlay = page.getByTestId('landmark-dialog');
+    const iframe = page.getByTestId('reading-frame');
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    const root = page.locator('html');
+    await expect(frame.getByRole('heading', { level: 1, name: 'Lighthouse' })).toBeVisible();
+    expect(await overlay.evaluate((el) => getComputedStyle(el).backdropFilter)).toBe('blur(8px)');
+    const choose = async (label: string) => {
+      await frame.getByRole('combobox', { name: /Colour theme/ }).click();
+      await frame.getByRole('option', { name: label, exact: true }).click();
+    };
+    const surface = () => page.locator('.hotbar').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { bg: style.backgroundColor, text: style.color };
+    });
+    const light = await surface();
+    await choose('Dark');
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    await expect(iframe).toHaveAttribute('data-scheme', 'dark');
+    const dark = await surface();
+    expect(dark.bg).not.toBe(light.bg);
+    expect(dark.text).not.toBe(light.text);
+    await frame.getByRole('link', { name: 'Do what makes you proud' }).click();
+    await expect(frame.getByRole('heading', { level: 1, name: 'Do what makes you proud' })).toBeVisible();
+    await expect(frame.getByRole('combobox', { name: /Colour theme/ })).toContainText('Dark');
+    expect(await overlay.evaluate((el) => getComputedStyle(el).backdropFilter)).toBe('blur(8px)');
+    await choose('Light');
+    await expect(root).toHaveAttribute('data-theme', 'light');
+    await expect(iframe).toHaveAttribute('data-scheme', 'light');
+    expect(await surface()).toEqual(light);
+    expect(await page.evaluate(() => localStorage.getItem('site.theme'))).toBe('light');
+    // Changes in another tab reach both documents without a reload.
+    const other = await context.newPage();
+    await other.goto('/leadership/');
+    await other.evaluate(() => localStorage.setItem('site.theme', 'dark'));
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    await expect(frame.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(frame.getByRole('combobox', { name: /Colour theme/ })).toContainText('Dark');
+    await other.close();
+    await choose('Match system');
+    await expect(root).not.toHaveAttribute('data-theme');
+    await expect(iframe).toHaveAttribute('data-scheme', 'light');
+    expect(await page.evaluate(() => localStorage.getItem('site.theme'))).toBeNull();
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(iframe).toHaveAttribute('data-scheme', 'dark');
+    expect(await surface()).toEqual(dark);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect(iframe).toHaveAttribute('data-scheme', 'light');
+    // A frame theme change never claims focus or closes the reading overlay.
+    await frame.getByRole('combobox', { name: /Colour theme/ }).focus();
+    await page.keyboard.press('Space');
+    await expect(overlay).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(overlay).toBeVisible();
+    await choose('Light');
+    await frame.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(overlay).toBeHidden();
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    const menu = page.getByTestId('menu-dialog');
+    await expect(menu.getByRole('radio', { name: 'Light', exact: true })).toBeChecked();
+    await menu.getByRole('radio', { name: 'Dark', exact: true }).check();
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    const darkMenu = await menu.evaluate((el) => getComputedStyle(el).backgroundColor);
+    await menu.getByRole('radio', { name: 'Light', exact: true }).check();
+    await expect(root).toHaveAttribute('data-theme', 'light');
+    expect(await menu.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(darkMenu);
+    await noSeriousViolations(page);
+    await menu.getByRole('button', { name: /Close/ }).click();
+    await page.getByTestId('preview-card').getByRole('button', { name: /Open/ }).click();
+    await expect(frame.getByRole('heading', { level: 1, name: 'Lighthouse' })).toBeVisible();
+    const doc = page.frames().find((f) => /\/play\/lighthouse\/$/.test(f.url()))!;
+    await doc.evaluate(() => {
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (key === 'site.theme') throw new DOMException('Storage denied', 'SecurityError');
+        set.call(this, key, value);
+      };
+    });
+    await choose('Dark');
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    expect(await page.evaluate(() => localStorage.getItem('site.theme'))).toBe('light');
+    await frame.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByTestId('preview-card').getByRole('button', { name: /Open/ }).click();
+    await expect(frame.getByRole('combobox', { name: /Colour theme/ })).toContainText('Dark');
+    // Neither another window nor a malformed frame message can change the game theme.
+    await page.evaluate(() => {
+      window.postMessage({ source: 'planet-frame', type: 'planet:theme', place: 'lighthouse', theme: 'light' }, location.origin);
+      window.dispatchEvent(new MessageEvent('message', {
+        origin: location.origin,
+        source: document.querySelector<HTMLIFrameElement>('[data-testid="reading-frame"]')!.contentWindow,
+        data: { source: 'planet-frame', type: 'planet:theme', place: 'lighthouse', theme: 'sepia' },
+      }));
+    });
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    await frame.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(overlay).toBeHidden();
+    // Check a light backpack before returning it to dark.
+    await page.evaluate(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'site.theme', newValue: 'light' }));
+    });
+    await expect(root).toHaveAttribute('data-theme', 'light');
+    const backpack = page.getByRole('button', { name: 'Open backpack (I)', exact: true });
+    await backpack.hover();
+    await expect(backpack).toHaveCSS('color', light.text);
+    await backpack.click();
+    const panel = page.locator('.inv-panel');
+    await expect(panel).toBeVisible();
+    const lightPanel = await panel.evaluate((el) => getComputedStyle(el).backgroundColor);
+    await page.evaluate(() => {
+      localStorage.setItem('site.theme', 'dark');
+      window.dispatchEvent(new StorageEvent('storage', { key: 'site.theme', newValue: 'dark' }));
+    });
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    expect(await panel.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(lightPanel);
+    await panel.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(panel).toBeHidden();
+    await page.getByTestId('preview-card').getByRole('button', { name: /Open/ }).click();
+    await expect(frame.getByRole('heading', { level: 1, name: 'Lighthouse' })).toBeVisible();
+    await expect(iframe).toHaveAttribute('data-ready', '');
+    await expect(iframe).toHaveCSS('opacity', '1');
+    await page.setViewportSize({ width: 320, height: 720 });
+    await expect(frame.getByRole('combobox', { name: /Colour theme/ })).toBeVisible();
+    expect(await frame.locator('html').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.screenshot({ path: test.info().outputPath('frosted-reading.png') });
+  });
+
   test("the site's Explore in 3D opens its page in its building; a page that isn't in the building opens its list and says so", async ({ page }) => {
     await page.goto('/leadership/do-what-makes-you-proud/');
     const explore = page.getByRole('banner').getByRole('link', { name: 'Explore in 3D' }).first();

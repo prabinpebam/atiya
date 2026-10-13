@@ -312,13 +312,16 @@ Opening a building shows two kinds of page, both rendered by the site's own `Pag
 
 - **The overlay** is a full-screen, modal `dialog` in the game's HUD, holding a transparent `iframe` of the route above. The game stays visible behind it, paused: its input stops, as under any overlay (`openId`, [lanes](../game-ui/design-system.md)).
 - **The smoke is the site's.** The framed page paints the lightbox's scrim and drifting smoke (`--color-scrim`, `--color-smoke`) over a transparent page: paper-white in light mode and black in dark. So the planet shows faintly through, and the words sit on a scrim opaque enough for their contrast (AA, checked in both modes).
-- **Light and dark follow the site's theme** (`site.theme`: the system, light or dark), not the game's wood.
-  - The framed page resolves its scheme and reports it in its `ready` message.
-  - The game sets the iframe element's `color-scheme` to match. Otherwise a browser paints an opaque backdrop behind a frame whose scheme differs from its parent's.
+- **The planet is frosted as well as tinted.** A backdrop filter on the transparent parent dialog blurs the planet by the game's `blur.reading` token (8 px); a filter inside the iframe cannot sample the game behind it. The native `::backdrop` does not inherit tokens, so the filter belongs on the dialog itself. The frame still paints its own smoke. Browsers without backdrop-filter keep the readable tinted fallback.
+- **Light and dark share the site's theme** (`site.theme`: the system, light or dark), including the game UI.
+  - The place bar offers Match system, Light and Dark using the site's existing theme select; the game's Menu settings offer the same choices.
+  - The game applies the saved choice before paint. Its surfaces pair light paper with dark wood through `light-dark()`; nested panels and native controls inherit the root colour scheme. The planet's day–night lighting is unchanged.
+  - The iframe inherits that scheme so the browser does not paint an opaque backdrop. Theme messages (§6.9) keep both documents synchronized, including when storage is unavailable; storage events follow choices in other tabs, and Match system follows live OS changes.
 - **The frame's chrome is in the framed page:** a place bar (`PlaceBar`, a new compound) with:
   - the building's name;
   - "Show contents" (back to the list), on a page;
   - "Open classic page", to that page's site address (leaving the game);
+  - the colour theme;
   - Close.
 
   There's no site header, footer or breadcrumb.
@@ -403,15 +406,18 @@ The frame and the game talk by `postMessage`, on the same origin. Each side:
 | From the frame | When | Fields |
 |---|---|---|
 | `planet:ready` | Each load | `place`, `page` (or null for the list), `title`, `scheme` (`light` or `dark`), `index` and `count` |
+| `planet:theme` | A theme selection or a system colour-scheme change | `place`, `theme` (`system`, `light` or `dark`), `scheme` |
 | `planet:close` | Space, Esc or Close, when nothing inside the frame takes the key first | `place` |
 
 The game answers `ready` by:
-- setting the iframe's title and `color-scheme`;
+- setting the iframe's title and synchronizing the shared theme (the iframe inherits the game's colour scheme);
 - replacing the address;
 - announcing the move;
 - focusing the frame (the frame focuses its own heading).
 
 A `ready` from a building other than the open one is ignored, because it belongs to an overlay that's closing.
+
+The game also sends `planet:theme` (`theme`) to its frame on ready and when its own theme changes. The frame accepts it only from its parent, applies it without storing again, and updates its theme select and dark pictures. A theme message never moves focus, changes history or announces a page load.
 
 ## 7. Edit mode (U5, U12)
 
@@ -533,6 +539,8 @@ A review of v1 against the code found fifteen problems. This is what each change
 | R15 | The spec described S1 as future work after it had landed | Low | §1 and §2 describe what was and what now is |
 
 ## 11. As built
+
+- **Frosted reading and shared themes (13 October 2026):** section and article overlays blur the paused planet behind their themed smoke. PlaceBar and Menu offer Match system, Light and Dark, sharing `site.theme` with the site. Every game surface (HUD, dialogs, slots, panels and tooltips) follows the same choice without changing the 3D scene. The parent/frame protocol synchronizes choices even without storage, retains them across page swaps, and follows other tabs and OS changes (§6.2, §6.9). Evidence: unit `gameTheme.test.ts` and `designSystem.test.ts`; E2E "reading theme" and the existing reading-navigation and dark-smoke tests.
 
 Filled in as each phase lands.
 
