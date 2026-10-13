@@ -151,7 +151,8 @@ Spec, plan and Definition of Done: [documentation/contact/](./documentation/cont
 
 ### Documentation site (the source of truth)
 
-- `documentation/` is a [Slate](./slate/README.md) host. The package is vendored in `slate/`; the adapter skill is `.github/skills/slate/SKILL.md`.
+- `documentation/` is a [Slate](./slate/README.md) host. The package is a pinned git submodule of `https://github.com/prabinpebam/slate.git` in `slate/`; the adapter skill is `.github/skills/slate/SKILL.md`.
+- Update Slate with `pwsh -File scripts/update-slate.ps1`; review and commit the submodule pointer and generated host runtime together. Fresh checkouts run `git submodule update --init slate`. Do not fork generic Slate changes in this host: contribute them upstream.
 - It's published at `<base>/docs/`: `integrations/docs-site.mjs` serves it in dev and copies it to `dist/docs/` at build.
 - **Update the spec in the same change as the code.** When the build differs from a spec, update its "as built" section and its Definition of Done evidence.
 - **A new page** gets:

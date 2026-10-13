@@ -12,7 +12,7 @@
 | State | zustand 5.0.15 | One store the DOM HUD and the scene both read |
 | Icons | Font Awesome Free (solid), imported by name | Only the icons that are used end up in the bundle |
 | Tests | Vitest (unit), Playwright + axe (E2E, accessibility) | Pure logic is unit-tested; the E2E tests drive `window.__game` in test builds |
-| Docs | Slate (vendored in `slate/`), host folder `documentation/` | Static, offline, Markdown or HTML pages; this site |
+| Docs | Slate (pinned upstream git submodule in `slate/`), host folder `documentation/` | Static, offline, Markdown or HTML pages; this site |
 
 The reasons behind the stack are in [the tech-stack research](../poc-3d-navigation/research/tech-stack.md) and [the POC spec](../poc-3d-navigation/spec.md) §5.
 
@@ -89,4 +89,5 @@ The full rules and triggers are in AGENTS.md ("Validation").
   2. Register it in `docs-manifest.json`, with a group, an order and a Material Symbols icon.
   3. Link it from its section.
 - After a Slate update, run `node slate/scripts/runtime-host.mjs sync --repo . --host documentation`, then `check`.
+- Slate is governed in [its own repository](https://github.com/prabinpebam/slate). This site pins an upstream commit rather than maintaining a copied package. On a fresh checkout, run `git submodule update --init slate`. To fetch upstream `main` and refresh the viewer, run `pwsh -File scripts/update-slate.ps1`, review the resulting changes, and commit the submodule pointer together with the generated runtime. Deployment fetches the pinned commit, never a moving latest version.
 - This site is the source of truth. A spec that changes while building is updated here, in the same change as the code.

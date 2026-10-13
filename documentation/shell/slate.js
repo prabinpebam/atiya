@@ -25,11 +25,14 @@
     projectName: 'Docs',
     landing: null,
     sidebarOpen: false,
+    sidebarCollapsed: false,
     scrollSpyCleanup: null,
     svgMotionCleanup: null,
     svgReplayBound: false,
     searchSel: -1,
     themePref: 'auto',
+    readerPersonas: [],
+    readerPersona: 'all',
   };
 
   /* ==========================================================
@@ -87,6 +90,54 @@
     if (state.config.brandColor) applyBrandColor(state.config.brandColor);
     if (state.config.displayFont) document.documentElement.style.setProperty('--font-family-display', state.config.displayFont);
     if (state.config.density) document.documentElement.setAttribute('data-density', state.config.density);
+    configureReaderPersonas(state.config.readerPersonas, state.config.defaultReaderPersona);
+  }
+  function configureReaderPersonas(personas, defaultPersona) {
+    const root = $('#reader-persona');
+    const select = $('#reader-persona-select');
+    if (!root || !select) return;
+    const ids = new Set();
+    state.readerPersonas = (Array.isArray(personas) ? personas : []).filter(persona => {
+      if (!persona || !/^[a-z][a-z0-9-]*$/.test(persona.id) || !persona.label || ids.has(persona.id)) return false;
+      ids.add(persona.id);
+      return true;
+    });
+    root.classList.toggle('hidden', state.readerPersonas.length === 0);
+    select.replaceChildren(new Option('All readers', 'all'));
+    state.readerPersonas.forEach(persona => select.add(new Option(persona.label, persona.id)));
+    const saved = localStorage.getItem('slate-reader-persona');
+    const initial = saved === 'all' || ids.has(saved) ? saved : ids.has(defaultPersona) ? defaultPersona : 'all';
+    applyReaderPersona(initial, false);
+  }
+  function applyReaderPersona(personaId, persist = true) {
+    const valid = personaId === 'all' || state.readerPersonas.some(persona => persona.id === personaId);
+    state.readerPersona = valid ? personaId : 'all';
+    if (persist) localStorage.setItem('slate-reader-persona', state.readerPersona);
+    const select = $('#reader-persona-select');
+    if (select) select.value = state.readerPersona;
+    document.documentElement.setAttribute('data-reader-persona', state.readerPersona);
+    applyReaderPersonaToSections($('#document'));
+    const persona = state.readerPersonas.find(item => item.id === state.readerPersona);
+    const status = $('#reader-persona-status');
+    if (status) status.textContent = persona
+      ? `Sections most useful to ${persona.label} are expanded. Other sections remain available.`
+      : 'All reader sections are expanded.';
+  }
+  function applyReaderPersonaToSections(container) {
+    if (!container) return;
+    $$('.doc-section[data-reader-personas]', container).forEach(section => {
+      const supported = (section.dataset.readerPersonas || '').split(/\s+/).filter(Boolean);
+      const secondary = state.readerPersona !== 'all' && !supported.includes(state.readerPersona);
+      section.classList.toggle('reader-secondary', secondary);
+      section.classList.toggle('collapsed', secondary);
+      const toggle = section.querySelector(':scope > h2 > .collapse-toggle, :scope > h3 > .collapse-toggle');
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', String(!secondary));
+        toggle.title = secondary ? 'Expand section' : 'Collapse section';
+        toggle.setAttribute('aria-label', toggle.title);
+      }
+      if (!secondary) expandToTarget(section);
+    });
   }
   function applyBrandColor(hex) {
     const root = document.documentElement.style;
@@ -238,28 +289,6 @@
     return html;
   }
 
-  function leavesParentDomain(href) {
-    if (!/^https?:\/\//i.test(href)) return false;
-    const clean = host => host.trim().toLowerCase().replace(/\.$/, '');
-    const within = (host, parent) => host === parent || host.endsWith('.' + parent);
-    const host = clean(new URL(href).hostname);
-    const current = clean(location.hostname);
-    const parent = clean(state.config.parentDomain || current);
-    return !within(host, current) && !within(host, parent);
-  }
-
-  function markNewTab(a) {
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    if (!a.querySelector('[data-slate-new-tab]')) {
-      const note = document.createElement('span');
-      note.className = 'slate-sr-only';
-      note.dataset.slateNewTab = '';
-      note.textContent = ' (opens in a new tab)';
-      a.appendChild(note);
-    }
-  }
-
   /* ==========================================================
      PIPELINE  (REQ-CM-02/07)  order is normative
      ========================================================== */
@@ -268,7 +297,7 @@
     // Links
     container.querySelectorAll('a').forEach(a => {
       const href = a.getAttribute('href'); if (!href) return;
-      if (leavesParentDomain(href)) { markNewTab(a); return; }
+      if (/^https?:\/\//.test(href)) { a.target = '_blank'; a.rel = 'noopener noreferrer'; return; }
       const tool = href.match(/^(.+\.html?)(\?[^#]*)?(#.*)?$/i);
       if (tool && a.target === '_blank') {
         a.setAttribute('href', joinRoot(resolvePath(basePath, tool[1])) + (tool[2] || '') + (tool[3] || ''));
@@ -313,6 +342,7 @@
     });
     enhanceTables(container);
     makeSectionsCollapsible(container);
+    applyReaderPersonaToSections(container);
     processVersionHistory(container);
     enhanceSvgIllustrations(container);
     enhanceGallery(container);
@@ -392,6 +422,7 @@
       $$(tag, container).forEach(heading => {
         if (heading.closest('[class*="slate-"]')) return;   // skip component-internal headings
         const section = document.createElement('section'); section.className = 'doc-section';
+        if (heading.dataset.readerPersonas) section.dataset.readerPersonas = heading.dataset.readerPersonas;
         const body = document.createElement('div'); body.className = 'doc-section-body';
         let sib = heading.nextSibling;
         while (sib) {
@@ -407,7 +438,7 @@
   function addCollapseToggle(heading, section) {
     const t = document.createElement('button');
     t.className = 'collapse-toggle'; t.title = 'Collapse section'; t.setAttribute('aria-label', 'Collapse section'); t.setAttribute('aria-expanded', 'true'); t.innerHTML = CHEVRON_SVG;
-    t.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const c = section.classList.toggle('collapsed'); t.setAttribute('aria-expanded', String(!c)); t.title = c ? 'Expand section' : 'Collapse section'; });
+    t.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const c = section.classList.toggle('collapsed'); t.setAttribute('aria-expanded', String(!c)); t.title = c ? 'Expand section' : 'Collapse section'; t.setAttribute('aria-label', t.title); });
     heading.prepend(t);
   }
   function expandToTarget(el) {
@@ -1073,19 +1104,17 @@
   /* ==========================================================
      NAVIGATION  (REQ-UX-03..07)
      ========================================================== */
+  function navigationGroups(path) {
+    const group = state.docs.get(path)?.group;
+    return group ? String(group).split('/').filter(Boolean) : path.split('/').slice(0, -1);
+  }
   function buildFileTree() {
     const root = { name: '', children: new Map(), files: [] };
     for (const [path, doc] of state.docs) {
       if (doc.hidden) continue;
       if (doc.type && !['page', 'canvas'].includes(doc.type)) continue;
       const pathParts = path.split('/');
-      // Manifest groups are complete narrative navigation paths. Physical folders
-      // must not be appended or they duplicate virtual sections in the tree.
-      let parts = pathParts;
-      if (doc.group) {
-        const groupParts = String(doc.group).split('/').filter(Boolean);
-        parts = [...groupParts, pathParts[pathParts.length - 1]];
-      }
+      const parts = [...navigationGroups(path), pathParts[pathParts.length - 1]];
       let node = root;
       for (let i = 0; i < parts.length - 1; i++) { if (!node.children.has(parts[i])) node.children.set(parts[i], { name: parts[i], children: new Map(), files: [] }); node = node.children.get(parts[i]); }
       node.files.push({ path, title: doc.title, filename: pathParts[pathParts.length - 1], order: doc.order != null ? doc.order : Infinity, icon: doc.icon, badge: doc.badge, status: doc.status, updated: doc.updated, type: doc.type });
@@ -1145,6 +1174,22 @@
     return group;
   }
   function setAllFolders(expanded) { $$('.nav-folder').forEach(folder => setFolderExpanded(folder, expanded)); }
+  function expandNavigationPath(folderPath) {
+    let selected = null;
+    $$('.nav-folder').forEach(folder => {
+      const path = folder.dataset.folderPath;
+      if (path === folderPath || folderPath.startsWith(path + '/')) setFolderExpanded(folder, true);
+      if (path === folderPath) selected = folder;
+    });
+    return selected;
+  }
+  function revealNavigationFolder(folderPath) {
+    setSidebarVisible(true);
+    const folder = expandNavigationPath(folderPath);
+    const header = folder?.querySelector(':scope > .nav-folder-header');
+    header?.focus({ preventScroll: true });
+    header?.scrollIntoView({ block: 'nearest' });
+  }
 
   /* ==========================================================
      STATUS + LAST-UPDATED METADATA
@@ -1197,11 +1242,14 @@
      BREADCRUMBS + PAGER  (REQ-UX-20/21)
      ========================================================== */
   function renderBreadcrumbs(path) {
-    const parts = path.split('/'); const crumbs = [];
-    crumbs.push('<a href="#' + (state.landing || 'README.md') + '">Home</a>');
-    for (let i = 0; i < parts.length - 1; i++) crumbs.push('<span>' + esc(humanize(parts[i])) + '</span>');
-    crumbs.push('<span>' + esc(state.docs.get(path)?.title || humanize(parts[parts.length - 1])) + '</span>');
-    return '<nav class="breadcrumbs" aria-label="Breadcrumb">' + crumbs.join('<span class="sep">/</span>') + '</nav>';
+    const groups = navigationGroups(path);
+    const crumbs = ['<li><a href="#' + esc(state.landing || firstPath() || 'README.md') + '">Home</a></li>'];
+    groups.forEach((group, index) => {
+      const folderPath = groups.slice(0, index + 1).join('/');
+      crumbs.push('<li><button type="button" data-nav-folder="' + encodeURIComponent(folderPath) + '">' + esc(humanize(group)) + '</button></li>');
+    });
+    crumbs.push('<li><span aria-current="page">' + esc(state.docs.get(path)?.title || humanize(path.split('/').pop())) + '</span></li>');
+    return '<nav class="breadcrumbs" aria-label="Breadcrumb"><ol>' + crumbs.join('<li class="sep" aria-hidden="true">/</li>') + '</ol></nav>';
   }
   function renderPager(path) {
     const i = state.orderedPaths.indexOf(path); if (i < 0) return '';
@@ -1262,14 +1310,27 @@
     // Pager appended after body
     article.insertAdjacentHTML('beforeend', renderPager(path));
     article.querySelectorAll('.pager a').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); navigateTo(a.dataset.path); }));
+    article.querySelectorAll('[data-nav-folder]').forEach(button => {
+      button.title = 'Show ' + button.textContent + ' in navigation';
+      button.addEventListener('click', () => revealNavigationFolder(decodeURIComponent(button.dataset.navFolder)));
+    });
 
-    $$('.nav-item').forEach(it => it.classList.toggle('active', it.dataset.path === path));
+    $$('.nav-item').forEach(item => {
+      const active = item.dataset.path === path;
+      item.classList.toggle('active', active);
+      if (active) item.setAttribute('aria-current', 'page'); else item.removeAttribute('aria-current');
+    });
+    expandNavigationPath(navigationGroups(path).join('/'));
+    if (!sidebarIsMobile() && !state.sidebarCollapsed) $('.nav-item.active')?.scrollIntoView({ block: 'nearest' });
     document.title = `${entry.title} - ${state.projectName}`;
     buildToc(body);
     // Reset scroll instantly (not smoothly) - the fade covers the change, so an
     // animated scroll here would read as "same page, just scrolled".
     $('#content').scrollTo({ top: 0, behavior: 'instant' }); window.scrollTo({ top: 0, behavior: 'instant' });
-    if (state.sidebarOpen) toggleSidebar();
+    if (state.sidebarOpen) {
+      setSidebarVisible(false);
+      article.setAttribute('tabindex', '-1'); article.focus({ preventScroll: true });
+    }
 
     const ai = window.location.hash.indexOf('#', 1);
     if (ai > 0) { const anchor = decodeURIComponent(window.location.hash.slice(ai + 1)); requestAnimationFrame(() => { const el = document.getElementById(anchor); if (el) { expandToTarget(el); el.scrollIntoView({ behavior: 'instant', block: 'start' }); } }); }
@@ -1542,9 +1603,52 @@
   }
 
   /* ==========================================================
-     SIDEBAR (mobile)
+     SIDEBAR
      ========================================================== */
-  function toggleSidebar() { state.sidebarOpen = !state.sidebarOpen; $('#sidebar').classList.toggle('open', state.sidebarOpen); $('#overlay').classList.toggle('visible', state.sidebarOpen); }
+  function sidebarIsMobile() { return window.matchMedia('(max-width: 768px)').matches; }
+  function updateSidebarVisibility() {
+    const mobile = sidebarIsMobile();
+    const visible = mobile ? state.sidebarOpen : !state.sidebarCollapsed;
+    const sidebar = $('#sidebar'), button = $('.menu-toggle');
+    $('.app').classList.toggle('sidebar-collapsed', !mobile && state.sidebarCollapsed);
+    sidebar.classList.toggle('open', mobile && visible);
+    sidebar.inert = !visible;
+    sidebar.setAttribute('aria-hidden', String(!visible));
+    $('#overlay').classList.toggle('visible', mobile && visible);
+    $('#content').inert = mobile && visible;
+    $('#toc').inert = mobile && visible;
+    button.setAttribute('aria-controls', 'sidebar');
+    button.setAttribute('aria-expanded', String(visible));
+    button.setAttribute('aria-label', visible ? 'Hide navigation' : 'Show navigation');
+    button.title = visible ? 'Hide navigation' : 'Show navigation';
+    const icon = button.querySelector('.material-symbols-outlined');
+    if (icon) icon.textContent = mobile ? visible ? 'close' : 'menu' : visible ? 'left_panel_close' : 'left_panel_open';
+  }
+  function setSidebarVisible(visible) {
+    if (sidebarIsMobile()) state.sidebarOpen = visible;
+    else {
+      state.sidebarCollapsed = !visible;
+      writeStoredValue(navStorageKey('sidebar-collapsed'), String(!visible));
+    }
+    updateSidebarVisibility();
+  }
+  function toggleSidebar() {
+    const visible = sidebarIsMobile() ? state.sidebarOpen : !state.sidebarCollapsed;
+    setSidebarVisible(!visible);
+    if (sidebarIsMobile() && !visible) {
+      const target = $('#sidebar .nav-item.active') || $('#sidebar button');
+      target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: 'nearest' });
+    } else $('.menu-toggle').focus({ preventScroll: true });
+  }
+  function initSidebarVisibility() {
+    state.sidebarCollapsed = readStoredValue(navStorageKey('sidebar-collapsed')) === 'true';
+    updateSidebarVisibility();
+    window.matchMedia('(max-width: 768px)').addEventListener('change', () => {
+      state.sidebarOpen = false;
+      updateSidebarVisibility();
+      if ($('#sidebar').inert && $('#sidebar').contains(document.activeElement)) $('.menu-toggle').focus();
+    });
+  }
   const SIDEBAR_WIDTH_STORAGE_KEY = 'slate-navigation:sidebar-width';
   function sidebarWidthLimits() { return { min: 220, max: Math.max(220, Math.min(480, Math.floor(window.innerWidth * .45))) }; }
   function setSidebarWidth(width) {
@@ -1613,6 +1717,8 @@
 
   function bindEvents() {
     $('.theme-toggle').addEventListener('click', toggleTheme);
+    const readerPersona = $('#reader-persona-select');
+    if (readerPersona) readerPersona.addEventListener('change', () => applyReaderPersona(readerPersona.value));
     $('.menu-toggle').addEventListener('click', toggleSidebar);
     $('#overlay').addEventListener('click', toggleSidebar);
     $('.logo').addEventListener('click', (e) => { e.preventDefault(); navigateTo(state.landing || firstPath()); });
@@ -1621,7 +1727,7 @@
     if (collapseBtn) collapseBtn.addEventListener('click', () => setAllFolders(false));
     const input = $('.search-input');
     input.addEventListener('input', () => { const q = input.value.trim(); if (q.length < 2) { $('.search-results').classList.remove('visible'); return; } showSearchResults(runSearch(q)); });
-    input.addEventListener('focus', () => { const q = input.value.trim(); if (q.length >= 2) showSearchResults(runSearch(q)); });
+    input.addEventListener('focus', () => { if (state.sidebarOpen) setSidebarVisible(false); const q = input.value.trim(); if (q.length >= 2) showSearchResults(runSearch(q)); });
     input.addEventListener('keydown', (e) => {
       const rc = $('.search-results'); if (!rc.classList.contains('visible')) return;
       if (e.key === 'ArrowDown') { e.preventDefault(); setSearchSel(state.searchSel + 1); }
@@ -1632,7 +1738,16 @@
     document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[href^="#"]'); if (a && (e.metaKey || e.ctrlKey || e.shiftKey)) e.stopPropagation(); }, true);
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); input.focus(); }
-      if (e.key === 'Escape') closeSearch();
+      if (e.key === 'Escape') {
+        closeSearch();
+        if (state.sidebarOpen) { setSidebarVisible(false); $('.menu-toggle').focus(); }
+      }
+      if (e.key === 'Tab' && state.sidebarOpen) {
+        const controls = [$('.menu-toggle'), ...$$('#sidebar button, #sidebar a[href]')].filter(element => element.getClientRects().length && !element.disabled);
+        const current = controls.indexOf(document.activeElement);
+        if (e.shiftKey && current <= 0) { e.preventDefault(); controls.at(-1)?.focus(); }
+        else if (!e.shiftKey && (current === controls.length - 1 || current < 0)) { e.preventDefault(); controls[0]?.focus(); }
+      }
     });
     document.addEventListener('click', (e) => { if (!e.target.closest('.search-container')) $('.search-results').classList.remove('visible'); });
     window.addEventListener('hashchange', onRoute);
@@ -1662,6 +1777,7 @@
     if (!ok) { if (location.protocol === 'file:') showNotice(); else $('#document').innerHTML = '<div class="empty-state"><h2>No content found</h2><p>Add a docs-manifest.json or a README.md.</p></div>'; return; }
     buildFileTree();
     renderNav();
+    initSidebarVisibility();
     buildSearchIndex();
     onRoute();
     if (!state.currentPath) navigateTo(state.landing || firstPath());

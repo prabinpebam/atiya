@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "sourcePackage": "@slate/docs",
-  "sourceVersion": "0.10.1",
+  "sourceVersion": "0.10.3",
   "sourcePath": "../slate",
   "files": [
     {
       "path": "shell/slate.css",
-      "sha256": "92736125b276f06e4d5a4a32d4353eb59c00ac9ae4a10682f72f92d342c0b243"
+      "sha256": "1064096234b1f8d52364fc580c3cc88d87686ec4af589ecdc276d77203fa2ae7"
     },
     {
       "path": "shell/presentation.js",
@@ -14,7 +14,7 @@
     },
     {
       "path": "shell/slate.js",
-      "sha256": "0c7503a9f83d34ed0c373f807a9f2a9662357b759933b7331d1fb8b4c975841f"
+      "sha256": "a48e98ce4cc67cfe762b42e0315c17897da39f88e8e7b767ce08933ae3246d75"
     },
     {
       "path": "shell/canvas/canvas.css",
@@ -30,7 +30,7 @@
     },
     {
       "path": "shell/canvas/index.html",
-      "sha256": "c2c58b238654f2ada50b87a5b23e4433c2adcae51ba327f857c44c5046cde8a4"
+      "sha256": "87fbdce6901bc92d3d791c4b684fea2a112b67647a5250d17e06baa20ab56458"
     },
     {
       "path": "shell/vendor/github-dark.min.css",

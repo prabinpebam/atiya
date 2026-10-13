@@ -38,6 +38,9 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v7
 
+      - name: Fetch the pinned Slate documentation runtime
+        run: git submodule update --init --depth 1 slate
+
       # GitHub turns off a public repository's schedules after 60 days without activity: at 50 days the
       # nightly run fails on purpose, so GitHub emails the owner while there's time (any commit resets it)
       - name: Check the repository's activity
