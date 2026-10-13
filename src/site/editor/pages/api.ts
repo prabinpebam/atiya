@@ -87,6 +87,13 @@ const handle: APIRoute = async ({ request, params, url }) => {
     // ---------- test runs, read only (documentation/editor/test-runs.md §7) ----------
     if (method === 'GET' && parts[0] === 'tests') return await tests(parts, url, request);
 
+    // ---------- where the dev server's time went (documentation/engineering/performance.md §3) ----------
+    if (method === 'GET' && path === 'perf') {
+      const g = globalThis as { __siteRequests?: { at: number }[]; __sitePerfTotals?: Map<string, unknown> };
+      const since = Number(url.searchParams.get('since') ?? 0);
+      return json({ ok: true, now: Date.now(), requests: (g.__siteRequests ?? []).filter((r) => r.at >= since), totals: Object.fromEntries(g.__sitePerfTotals ?? []) });
+    }
+
     // ---------- where the site's launcher leads ----------
     if (method === 'GET' && path === 'where') {
       const at = url.searchParams.get('path') ?? '/';

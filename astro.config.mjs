@@ -6,6 +6,7 @@ import editor from './integrations/editor.mjs';
 import devIsolation from './integrations/dev-isolation.mjs';
 import contentFiles from './integrations/content-files.mjs';
 import sealer from './integrations/seal.mjs';
+import perf from './integrations/perf.mjs';
 
 // GitHub Pages serves this repository as a project site, https://<user>.github.io/<repo>/, so the
 // deploy workflow (.github/workflows/deploy.yml) builds with SITE_URL and BASE_PATH set. Locally, in
@@ -39,8 +40,9 @@ export default defineConfig({
   // the documentation site (documentation/, Slate) is published beside the game at <base>/docs/;
   // contentFiles: the content's files to download (the résumé's PDF) at <base>/media/<id>.pdf;
   // devIsolation: a running dev server's caches are its own, never rewritten by a build or a check (app-separation.md §1)
+  // perf: dev only, where each dev request's time goes (documentation/engineering/performance.md §3)
   // the sealer runs last: it seals what the others have written (documentation/access/spec.md §6.2)
-  integrations: [devIsolation(), react(), docsSite(), contentFiles(), editor(), sealer()],
+  integrations: [devIsolation(), perf(), react(), docsSite(), contentFiles(), editor(), sealer()],
   devToolbar: { enabled: false },
   vite: {
     plugins: [stripShaderComments()],

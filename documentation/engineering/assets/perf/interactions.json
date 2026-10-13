@@ -1,0 +1,122 @@
+{
+  "chart": "GroupedBarChart",
+  "title": "Edit mode interactions: now and the target",
+  "alt": "Selecting, opening the picker and the save itself are already quick; what follows a save (the screen and the canvas drawn again) takes 1 to 4 seconds, far past the 1 second targets.",
+  "props": {
+    "data": [
+      {
+        "interaction": "Select a block",
+        "series": "Now (median)",
+        "seconds": 0.02
+      },
+      {
+        "interaction": "Select a block",
+        "series": "Target",
+        "seconds": 0.1
+      },
+      {
+        "interaction": "Open the picker",
+        "series": "Now (median)",
+        "seconds": 0.05
+      },
+      {
+        "interaction": "Open the picker",
+        "series": "Target",
+        "seconds": 0.1
+      },
+      {
+        "interaction": "Save (round trip)",
+        "series": "Now (median)",
+        "seconds": 0.203
+      },
+      {
+        "interaction": "Save (round trip)",
+        "series": "Target",
+        "seconds": 0.3
+      },
+      {
+        "interaction": "Field to canvas",
+        "series": "Now (median)",
+        "seconds": 0.536
+      },
+      {
+        "interaction": "Field to canvas",
+        "series": "Target",
+        "seconds": 1
+      },
+      {
+        "interaction": "Type to Saved",
+        "series": "Now (median)",
+        "seconds": 1.02
+      },
+      {
+        "interaction": "Type to Saved",
+        "series": "Target",
+        "seconds": 1.2
+      },
+      {
+        "interaction": "A picture's details",
+        "series": "Now (median)",
+        "seconds": 0.967
+      },
+      {
+        "interaction": "A picture's details",
+        "series": "Target",
+        "seconds": 0.3
+      },
+      {
+        "interaction": "Another tab updated",
+        "series": "Now (median)",
+        "seconds": 1.171
+      },
+      {
+        "interaction": "Another tab updated",
+        "series": "Target",
+        "seconds": 1
+      },
+      {
+        "interaction": "Save a picture's details",
+        "series": "Now (median)",
+        "seconds": 1.434
+      },
+      {
+        "interaction": "Save a picture's details",
+        "series": "Target",
+        "seconds": 0.4
+      },
+      {
+        "interaction": "New block on canvas",
+        "series": "Now (median)",
+        "seconds": 3.16
+      },
+      {
+        "interaction": "New block on canvas",
+        "series": "Target",
+        "seconds": 1
+      },
+      {
+        "interaction": "Type to settled",
+        "series": "Now (median)",
+        "seconds": 4.228
+      },
+      {
+        "interaction": "Type to settled",
+        "series": "Target",
+        "seconds": 1.5
+      }
+    ],
+    "categoryAccessor": "interaction",
+    "groupBy": "series",
+    "valueAccessor": "seconds",
+    "orientation": "horizontal",
+    "valueLabel": "Seconds from the key or click",
+    "width": 760,
+    "height": 520,
+    "margin": {
+      "left": 180,
+      "right": 24,
+      "top": 40,
+      "bottom": 60
+    }
+  }
+}

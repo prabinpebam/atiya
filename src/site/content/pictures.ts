@@ -15,6 +15,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { getMedia, getVideo, videoHref } from './repository';
 import { fileOf } from './source';
 import { edgeAverage } from './edgeColour';
+import { timedAsync } from './timing';
 
 const devMeta = new Map<string, { mtime: number; meta: ImageMetadata }>();
 const FORMAT: Record<string, string> = { jpeg: 'jpg', heif: 'avif' };
@@ -33,7 +34,7 @@ async function metadata(master: string): Promise<ImageMetadata> {
   const { default: sharp } = await import('sharp');
   // from the bytes, not the path: sharp keeps files it opened by path open, and Windows then refuses to
   // replace or delete them (the editor's Replace and Delete)
-  const m = await sharp(readFileSync(abs)).metadata();
+  const m = await timedAsync('picture.metadata', () => sharp(readFileSync(abs)).metadata());
   const format = FORMAT[m.format ?? ''] ?? m.format ?? 'webp';
   const url = pathToFileURL(abs);
   url.searchParams.append('origWidth', String(m.width));
@@ -93,7 +94,7 @@ export interface Picture {
   dark?: DarkPicture;
 }
 
-const webp = async (src: ImageMetadata, width: number) => (await getImage({ src, width, format: 'webp', quality: 80 })).src;
+const webp = async (src: ImageMetadata, width: number) => (await timedAsync('picture.url', () => getImage({ src, width, format: 'webp', quality: 80 }))).src;
 
 const edges = new Map<string, { mtime: number; bg: string }>();
 /**
@@ -109,12 +110,13 @@ async function edgeColour(master: string): Promise<string> {
   const { default: sharp } = await import('sharp');
   const N = 24;
   // a GIF is kept as it is, and browsers show ones a strict decoder warns about: read it leniently
-  const { data } = await sharp(readFileSync(abs), { failOn: 'none' }).resize(N, N, { fit: 'fill' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  let bg = edgeAverage(data, N);
-  if (!bg) {
+  const bg = await timedAsync('picture.edge', async () => {
+    const { data } = await sharp(readFileSync(abs), { failOn: 'none' }).resize(N, N, { fit: 'fill' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const edge = edgeAverage(data, N);
+    if (edge) return edge;
     const { dominant } = await sharp(readFileSync(abs), { failOn: 'none' }).stats();
-    bg = `rgb(${dominant.r} ${dominant.g} ${dominant.b})`;
-  }
+    return `rgb(${dominant.r} ${dominant.g} ${dominant.b})`;
+  });
   edges.set(abs, { mtime, bg });
   return bg;
 }

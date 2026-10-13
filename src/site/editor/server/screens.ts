@@ -9,6 +9,7 @@ import type { Article } from '../../content/schema';
 import { hubs } from '../model/structure';
 import { ownerLabel, ownerOf, references } from '../model/references';
 import { withBase } from '../../design/meta';
+import { timedAsync } from '../../content/timing';
 
 export { references, type Reference } from '../model/references';
 
@@ -128,7 +129,11 @@ export interface LibraryPicture {
 }
 
 /** Every picture and video, for the library and the picker: grouped by folder (the article being edited first, when there is one). */
-export async function mediaCards(index: ContentIndex, first?: string): Promise<LibraryPicture[]> {
+export function mediaCards(index: ContentIndex, first?: string): Promise<LibraryPicture[]> {
+  return timedAsync('media.cards', () => buildCards(index, first));
+}
+
+async function buildCards(index: ContentIndex, first?: string): Promise<LibraryPicture[]> {
   const refs = references(index);
   const pictures = await Promise.all(
     [...index.media.values()].map(async (m): Promise<LibraryPicture> => {

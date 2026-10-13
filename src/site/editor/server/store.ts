@@ -13,6 +13,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { contentRoot, contentState, fileOf, privateRoot, readSnapshot, writeKey, MASTER_FILE, type Snapshot } from '../../content/source';
 import { ContentError, describe, loadContent, type Issue } from '../../content/load';
+import { timed } from '../../content/timing';
 import { checkTransitions } from '../../access/grants';
 import type { Grant } from '../../access/types';
 
@@ -102,7 +103,7 @@ async function withRetries(op: () => void): Promise<void> {
 /** The content check: the issues the content would have. */
 function check(snap: Pick<Snapshot, 'docs' | 'masters' | 'errors'>): { issues: Issue[] } {
   try {
-    loadContent(snap.docs, snap.masters, snap.errors);
+    timed('store.check', () => loadContent(snap.docs, snap.masters, snap.errors));
     return { issues: [] };
   } catch (e) {
     if (e instanceof ContentError) return { issues: e.issues };
@@ -165,7 +166,7 @@ async function apply(tx: Transaction, opts: StoreOptions, origin: string | null 
   }
 
   // 2. the whole content check, on the snapshot as it would be; only new issues refuse the change
-  const snap = readSnapshot(root, priv);
+  const snap = timed('store.read', () => readSnapshot(root, priv));
   const was = check(snap);
   const before = new Set(was.issues.map(describe));
   const docs = { ...snap.docs };

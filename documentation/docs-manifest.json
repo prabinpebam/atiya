@@ -656,6 +656,33 @@
       "status": "draft",
       "updated": "2026-09-29",
       "group": "Engineering"
+    },
+    {
+      "path": "engineering/performance-report.md",
+      "title": "Performance report: October 2026",
+      "order": 53,
+      "icon": "leaderboard",
+      "status": "review",
+      "updated": "2026-10-13",
+      "group": "Engineering"
+    },
+    {
+      "path": "engineering/performance.md",
+      "title": "Measuring performance",
+      "order": 54,
+      "icon": "speed",
+      "status": "stable",
+      "updated": "2026-10-13",
+      "group": "Engineering"
+    },
+    {
+      "path": "engineering/perceived-performance.md",
+      "title": "Perceived performance",
+      "order": 55,
+      "icon": "hourglass_top",
+      "status": "stable",
+      "updated": "2026-10-13",
+      "group": "Engineering"
     }
   ]
 }

@@ -118,12 +118,18 @@ export const saveStatus = {
     paint();
   },
   saving() {
+    // the save's round trip, as the person waits for it (documentation/engineering/performance.md §3.2)
+    if (status.state !== 'saving') performance.mark('editor:save-start');
     status.state = 'saving';
     status.detail = '';
     paint();
   },
   /** Saved now: "Saved" (or what was saved, `what`) and how long ago, until the next change. */
   saved(what = '') {
+    if (performance.getEntriesByName('editor:save-start', 'mark').length) {
+      performance.measure('editor:save', 'editor:save-start');
+      performance.clearMarks('editor:save-start');
+    }
     status.state = 'saved';
     status.detail = what;
     status.savedAt = Date.now();
@@ -251,8 +257,11 @@ paint();
  * its place. The counts of changes to publish (the top bar's, the navigation's) always come along.
  */
 export async function swapRegions(names: string[], url = location.href, keep?: () => boolean): Promise<Document | null> {
+  const start = performance.now();
   const html = await (await fetch(url, { headers: { 'X-Editor': '1' } })).text();
+  const fetched = performance.now();
   const next = new DOMParser().parseFromString(html, 'text/html');
+  const parsed = performance.now();
   // the screen may have become busy while it was fetched (someone started typing): then it stays as it is
   if (keep?.()) return null;
   for (const name of new Set([...names, 'editor-pending', 'editor-nav'])) {
@@ -268,6 +277,8 @@ export async function swapRegions(names: string[], url = location.href, keep?: (
   // as after a page swap: what left the page stops listening (each's signals), then the new regions are set up
   document.dispatchEvent(new Event('astro:after-swap'));
   document.dispatchEvent(new Event('astro:page-load'));
+  // a whole screen fetched and parsed to change a few regions: how long, and of what
+  performance.measure('editor:swap', { start, detail: { regions: names, bytes: html.length, fetch: fetched - start, parse: parsed - fetched, swap: performance.now() - parsed } });
   return next;
 }
 

@@ -1,0 +1,132 @@
+{
+  "chart": "StackedBarChart",
+  "title": "Edit mode screens, warm: time until usable",
+  "alt": "Every screen takes about a second or more to open on a warm dev server, and waiting on git status is most of it: 0.877 to 2.154 s of each.",
+  "props": {
+    "data": [
+      {
+        "screen": "Dashboard",
+        "part": "Waiting on git status",
+        "seconds": 1.792
+      },
+      {
+        "screen": "Dashboard",
+        "part": "Everything else",
+        "seconds": 0.069
+      },
+      {
+        "screen": "Pages",
+        "part": "Waiting on git status",
+        "seconds": 0.877
+      },
+      {
+        "screen": "Pages",
+        "part": "Everything else",
+        "seconds": 0.027
+      },
+      {
+        "screen": "Article (typical)",
+        "part": "Waiting on git status",
+        "seconds": 2.154
+      },
+      {
+        "screen": "Article (typical)",
+        "part": "Everything else",
+        "seconds": 0.293
+      },
+      {
+        "screen": "Article (largest)",
+        "part": "Waiting on git status",
+        "seconds": 2.12
+      },
+      {
+        "screen": "Article (largest)",
+        "part": "Everything else",
+        "seconds": 0.331
+      },
+      {
+        "screen": "Sections",
+        "part": "Waiting on git status",
+        "seconds": 0.903
+      },
+      {
+        "screen": "Sections",
+        "part": "Everything else",
+        "seconds": 0.04
+      },
+      {
+        "screen": "Navigation",
+        "part": "Waiting on git status",
+        "seconds": 0.883
+      },
+      {
+        "screen": "Navigation",
+        "part": "Everything else",
+        "seconds": 0.028
+      },
+      {
+        "screen": "Planet",
+        "part": "Waiting on git status",
+        "seconds": 0.888
+      },
+      {
+        "screen": "Planet",
+        "part": "Everything else",
+        "seconds": 0.033
+      },
+      {
+        "screen": "Media",
+        "part": "Waiting on git status",
+        "seconds": 0.878
+      },
+      {
+        "screen": "Media",
+        "part": "Everything else",
+        "seconds": 0.06
+      },
+      {
+        "screen": "Settings",
+        "part": "Waiting on git status",
+        "seconds": 0.904
+      },
+      {
+        "screen": "Settings",
+        "part": "Everything else",
+        "seconds": 0.111
+      },
+      {
+        "screen": "Access",
+        "part": "Waiting on git status",
+        "seconds": 0.909
+      },
+      {
+        "screen": "Access",
+        "part": "Everything else",
+        "seconds": 0.031
+      },
+      {
+        "screen": "Save to remote",
+        "part": "Waiting on git status",
+        "seconds": 2.077
+      },
+      {
+        "screen": "Save to remote",
+        "part": "Everything else",
+        "seconds": 0.061
+      }
+    ],
+    "categoryAccessor": "screen",
+    "stackBy": "part",
+    "valueAccessor": "seconds",
+    "orientation": "horizontal",
+    "valueLabel": "Seconds until usable (median of 5)",
+    "width": 760,
+    "height": 460,
+    "margin": {
+      "left": 150,
+      "right": 24,
+      "top": 40,
+      "bottom": 60
+    }
+  }
+}

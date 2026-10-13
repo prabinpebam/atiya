@@ -1,0 +1,82 @@
+{
+  "chart": "GroupedBarChart",
+  "title": "The site: Largest Contentful Paint",
+  "alt": "The production site paints its largest content in a tenth of a second on a desktop and about half a second on a throttled phone profile, well inside the 2.5 second Web Vitals threshold.",
+  "props": {
+    "data": [
+      {
+        "page": "Home",
+        "profile": "Desktop",
+        "seconds": 0.06
+      },
+      {
+        "page": "Home",
+        "profile": "Phone (CPU x4, 10 Mbps)",
+        "seconds": 0.456
+      },
+      {
+        "page": "A section",
+        "profile": "Desktop",
+        "seconds": 0.084
+      },
+      {
+        "page": "A section",
+        "profile": "Phone (CPU x4, 10 Mbps)",
+        "seconds": 0.66
+      },
+      {
+        "page": "An article",
+        "profile": "Desktop",
+        "seconds": 0.076
+      },
+      {
+        "page": "An article",
+        "profile": "Phone (CPU x4, 10 Mbps)",
+        "seconds": 0.508
+      },
+      {
+        "page": "Largest article",
+        "profile": "Desktop",
+        "seconds": 0.088
+      },
+      {
+        "page": "Largest article",
+        "profile": "Phone (CPU x4, 10 Mbps)",
+        "seconds": 0.656
+      },
+      {
+        "page": "Design library",
+        "profile": "Desktop",
+        "seconds": 0.08
+      },
+      {
+        "page": "Design library",
+        "profile": "Phone (CPU x4, 10 Mbps)",
+        "seconds": 0.64
+      },
+      {
+        "page": "Planet (first paint)",
+        "profile": "Desktop",
+        "seconds": 0.088
+      },
+      {
+        "page": "Planet (first paint)",
+        "profile": "Phone (CPU x4, 10 Mbps)",
+        "seconds": 0.276
+      }
+    ],
+    "categoryAccessor": "page",
+    "groupBy": "profile",
+    "valueAccessor": "seconds",
+    "orientation": "horizontal",
+    "valueLabel": "Seconds to Largest Contentful Paint (median of 5)",
+    "width": 760,
+    "height": 420,
+    "margin": {
+      "left": 170,
+      "right": 24,
+      "top": 40,
+      "bottom": 60
+    }
+  }
+}

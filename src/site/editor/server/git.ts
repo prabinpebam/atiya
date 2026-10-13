@@ -11,6 +11,7 @@ import { execFile } from 'node:child_process';
 import { relative, resolve } from 'node:path';
 import { contentRoot, hasPrivate, privateRoot, readSnapshot } from '../../content/source';
 import { ContentError, loadContent, type Issue } from '../../content/load';
+import { timedAsync } from '../../content/timing';
 import { commit, readFile, versionOf, withWriterLock, type Result } from './store';
 import { suggestMessage, type Titles } from '../model/names';
 
@@ -30,6 +31,10 @@ const ENV = {
 };
 
 export function git(args: string[], opts: { cwd?: string; timeout?: number; input?: string } = {}): Promise<GitResult> {
+  return timedAsync('git', () => run(args, opts));
+}
+
+function run(args: string[], opts: { cwd?: string; timeout?: number; input?: string }): Promise<GitResult> {
   return new Promise((resolvePromise) => {
     const child = execFile('git', args, { cwd: opts.cwd ?? contentRoot(), timeout: opts.timeout ?? 30_000, env: { ...process.env, ...ENV }, maxBuffer: 32 * 1024 * 1024, windowsHide: true }, (err, stdout, stderr) => {
       const code = err ? (typeof (err as { code?: unknown }).code === 'number' ? (err as { code: number }).code : 1) : 0;

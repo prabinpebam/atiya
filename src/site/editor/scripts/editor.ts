@@ -128,7 +128,10 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     queue.push({ ...(opts.section !== undefined ? { section: opts.section } : {}), refresh: opts.refresh ?? {}, ...(opts.ready?.length ? { ready: opts.ready } : {}) });
 
   // ---------- refreshing the outline, the inspector and the canvas ----------
-  const reloadCanvas = () => frame.contentWindow?.location.reload();
+  const reloadCanvas = () => {
+    performance.mark('editor:canvas-start');
+    frame.contentWindow?.location.reload();
+  };
   const swap = async (names: string[]) => {
     const active = document.activeElement as HTMLElement | null;
     const focusKey = active?.id || (active?.dataset.editorSelect !== undefined ? `select:${active.dataset.editorSelect}` : '');
@@ -449,6 +452,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if ((e as MessageEvent).origin !== location.origin || (e as MessageEvent).source !== frame.contentWindow || m?.source !== 'editor-canvas') return;
     switch (m.type) {
       case 'ready': {
+        // the canvas drawn again after a save: from the reload to a canvas that takes edits
+        if (performance.getEntriesByName('editor:canvas-start', 'mark').length) {
+          performance.measure('editor:canvas', 'editor:canvas-start');
+          performance.clearMarks('editor:canvas-start');
+        } else performance.mark('editor:canvas-first');
         toCanvas({ type: 'mode', preview: document.querySelector('[data-editor-preview]')?.getAttribute('aria-pressed') === 'true' });
         if (selected !== null) toCanvas({ type: 'select', index: selected });
         afterReady.splice(0).forEach((fn) => fn());

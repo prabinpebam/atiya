@@ -1,0 +1,42 @@
+{
+  "$comment": "The benchmark's allowances and targets (documentation/engineering/performance.md §4). noise: how much worse than the baseline a median may be before --check calls it a regression (both the ratio and the absolute change must be exceeded). targets: where each key metric should get to (the report's plan, documentation/engineering/performance-report.md §6); they're reported, never enforced, until the plan reaches them.",
+  "noise": {
+    "ms": { "ratio": 0.2, "absolute": 75 },
+    "KB": { "ratio": 0.1, "absolute": 10 },
+    "MB": { "ratio": 0.2, "absolute": 5 },
+    "count": { "ratio": 0.1, "absolute": 2 },
+    "score": { "ratio": 0.5, "absolute": 0.02 }
+  },
+  "targets": {
+    "editor/server-start": { "max": 8000 },
+    "editor/cold/article/ready": { "max": 4000 },
+    "editor/warm/dashboard/ready": { "max": 700 },
+    "editor/warm/article/ready": { "max": 1500 },
+    "editor/warm/article-large/ready": { "max": 2000 },
+    "editor/warm/media/ready": { "max": 1000 },
+    "editor/warm/media/images-settled": { "max": 2000 },
+    "editor/warm/publish/ready": { "max": 1000 },
+    "editor/warm/article/html-kb": { "max": 250 },
+    "editor/interaction/select-block": { "max": 100 },
+    "editor/interaction/save-round-trip": { "max": 300 },
+    "editor/interaction/type-to-saved": { "max": 1200 },
+    "editor/interaction/field-to-saved": { "max": 400 },
+    "editor/interaction/field-to-canvas": { "max": 1000 },
+    "editor/interaction/type-to-settled": { "max": 1500 },
+    "editor/interaction/add-block-to-canvas": { "max": 1000 },
+    "editor/interaction/picker-open": { "max": 100 },
+    "editor/interaction/picker-images": { "max": 1000 },
+    "editor/interaction/media-details": { "max": 300 },
+    "editor/interaction/media-save": { "max": 400 },
+    "editor/interaction/other-tab-updated": { "max": 1000 },
+    "editor/api/changes": { "max": 150 },
+    "site/desktop/home/lcp": { "max": 1200 },
+    "site/desktop/article-large/lcp": { "max": 1500 },
+    "site/phone/home/lcp": { "max": 2500 },
+    "site/phone/article-large/lcp": { "max": 2500 },
+    "site/phone/section/lcp": { "max": 2500 },
+    "site/phone/article-large/tbt": { "max": 200 },
+    "site/phone/article-large/cls": { "max": 0.1 },
+    "site/phone/play-first-paint/fcp": { "max": 1800 }
+  }
+}

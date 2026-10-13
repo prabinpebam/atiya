@@ -4,6 +4,8 @@ dist-test/
 .astro/
 test-results/
 .test-runs/
+# the performance benchmark's runs (perf/baseline.json is the committed reference: documentation/engineering/performance.md)
+perf/runs/
 playwright-report/
 *.log
 .DS_Store

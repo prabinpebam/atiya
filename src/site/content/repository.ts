@@ -7,6 +7,7 @@ import { generation, readSnapshot } from './source';
 import { loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
 import { withBase } from '../design/meta';
 import { placeRoutes } from './navigation';
+import { timed } from './timing';
 import type { Route } from './routes';
 import type { Article, PlaceId } from './schema';
 
@@ -16,8 +17,8 @@ let cached: { generation: number; index: ContentIndex } | undefined;
 export function content(): ContentIndex {
   const now = generation();
   if (!cached || cached.generation !== now) {
-    const snap = readSnapshot();
-    const index = loadContent(snap.docs, snap.masters, snap.errors);
+    const snap = timed('content.read', () => readSnapshot());
+    const index = timed('content.validate', () => loadContent(snap.docs, snap.masters, snap.errors));
     for (const w of index.warnings) console.warn(`[content] ${w}`);
     cached = { generation: now, index };
   }
