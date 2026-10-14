@@ -27,7 +27,9 @@ const errors = validateLandmarks(landmarks);
 if (errors.length) {
   throw new Error(`Invalid landmark content:\n- ${errors.join('\n- ')}`);
 }
-const json = JSON.stringify(landmarks).replace(/</g, '\\u003c');
+// the page carries the mode data (modes.md §5.2), which the host gives the planet at mount; the buildings are
+// joined here too, only to check them at build time (validateLandmarks), and again by the planet's entry
+const json = JSON.stringify(data).replace(/</g, '\\u003c');
 // Prabin's welcome, shown from the first paint (progressive-loading.md §5.3): the keys' version, the
 // touch version and a returning visitor's short one; the page picks one before it paints
 const greeting = { first: welcomeLines(null, false), touch: welcomeLines(TOUCH_COPY.hint, false), back: welcomeLines(null, true) };
@@ -90,7 +92,7 @@ const cross = icon(faXmark);
   <noscript>
     <div class="overlay"><div class="card center-card"><p class="card-title">The 3D planet needs JavaScript.</p><p><a class="btn primary" href={withBase('/#sections')}>Go to the classic site</a></p></div></div>
   </noscript>
-  <script type="application/json" id="landmarks-data" set:html={json} />
+  <script type="application/json" id="mode-data" set:html={json} />
   <script type="application/json" id="greeting-data" set:html={greetingJson} />
   <script type="application/json" id="critical-assets" set:html={criticalJson} />
   <!-- before the first paint: the welcome for a returning visitor or a touchscreen, or none (tests) -->

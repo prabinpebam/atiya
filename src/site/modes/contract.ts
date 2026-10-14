@@ -4,7 +4,6 @@
  * Pure: the site's build and its checks read it; a mode reads only `ModeData`.
  */
 import { z } from 'astro/zod';
-import type { Article, SectionView } from '../content/schema';
 
 /** The contract versions this engine hosts (modes.md §11). */
 export const HOSTED_API = { min: 1, max: 1 } as const;
@@ -77,46 +76,8 @@ export const PLANET_FILE = 'structures/modes/little-planet.json';
 /** Where Little planet's structure was before M1.1: still read, with a warning, until a site moves it. */
 export const LEGACY_PLANET_FILE = 'structures/planet.json';
 
-/** A picture a mode may show (made by the site's picture pipeline). */
-export interface ModePicture {
-  src: string;
-  srcset: string;
-  width: number;
-  height: number;
-  alt: string;
-  bg?: string;
-  dark?: string;
-}
-
-/** A page as a mode sees it: published and open, never a draft or a private page. */
-export interface ModePage {
-  id: string;
-  title: string;
-  summary: string;
-  kind: Article['kind'];
-  url: string;
-  thumbnail?: ModePicture;
-}
-
-/** What the host gives a mode (modes.md §5.2): built once per build, plain JSON. Nothing private, nothing draft. */
-export interface ModeData {
-  api: 1;
-  mode: { id: string; mount: string; settings: unknown };
-  site: { name: string; description: string; locale: string; base: string; owner: { name: string; role?: string; avatar?: ModePicture } };
-  sections: Array<{
-    id: string;
-    title: string;
-    summary: string;
-    view: SectionView;
-    url: string;
-    /** That the section has private pages: never which, or how many. */
-    hasPrivate: boolean;
-    pages: ModePage[];
-  }>;
-  slots: Array<{ id: string; section: string | null; words: Record<string, string> }>;
-  entry: { slot?: string; page?: string };
-  links: { home: string; signIn: string; contact?: string };
-}
+/** The data a mode is given, and the host's calls: the mode kit's types (packages/mode-kit/types.ts), shared with modes. */
+export type { ModeData, ModeEntry, ModeEvent, ModeHost, ModeInstance, ModePage, ModePicture, ModePrefs, ModeTarget } from '../../../packages/mode-kit/types';
 
 /** A mode's structure, read generically: its slots, each naming a section (or none) with the mode's words for it. */
 export interface ModeStructure {
