@@ -1,0 +1,26 @@
+---
+/**
+ * A way of exploring that's turned off, with its structure kept (documentation/desktop/modes.md §2; plan
+ * stage 8A): its own page, built only while it's off, which the mode's address (`/play/`) shows in place
+ * of the mode by a rewrite. It's a page of its own so the mode's page imports none of the site's layouts:
+ * their styles would otherwise be bundled into the planet's page.
+ */
+import NotOffered from '../../site/content/NotOffered.astro';
+import { content, getWays } from '../../site/content/repository';
+import { BUILTIN_MODES } from '../../site/modes/builtin';
+import { LITTLE_PLANET } from '../../site/modes/ways';
+
+export function getStaticPaths() {
+  return getWays().modes.flatMap((m) => {
+    const mode = BUILTIN_MODES.get(m.id);
+    // only a built-in mode turned off whose structure is kept (V37); one never had sends its address home
+    const kept = m.id === LITTLE_PLANET ? !!content().planet : false;
+    if (!mode || m.on || !kept) return [];
+    return [{ params: { mode: m.mount ?? mode.manifest.mount }, props: { name: m.id === LITTLE_PLANET ? 'the little planet' : mode.manifest.name } }];
+  });
+}
+
+const { name } = Astro.props as { name: string };
+---
+
+<NotOffered name={name} />

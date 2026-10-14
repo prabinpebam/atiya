@@ -11,19 +11,19 @@ import { CHARACTERS } from '../game/player/characters';
 import { PLACES } from '../game/world/places';
 import { landmarksFrom } from '../game/world/modeLandmarks';
 import { content, getModeData, getSite } from '../site/content/repository';
-import NotOffered from '../site/content/NotOffered.astro';
 import type { LandmarkData } from '../game/types';
 
 // the buildings: the world's (fixed, in code) joined with the mode data the host builds from the content
 // (documentation/desktop/modes.md §5.2: the slots' words and sections, published open pages only)
 const data = getModeData('little-planet');
-// turned off with its structure kept: the "not offered" page (modes.md §2, plan stage 8A); a site that never
-// had the planet (just the site) sends /play/ home (desktop plan, stage 4)
-const turnedOff = !data && !!content().planet;
-if (!data && !turnedOff) return Astro.redirect(withBase('/'));
+// turned off with its structure kept: this address shows the "not offered" page (modes.md §2, plan stage 8A),
+// a page of its own so this one imports none of the site's layouts (their styles would land on the planet's
+// page); a site that never had the planet (just the site) sends /play/ home (desktop plan, stage 4)
+if (!data && content().planet) return Astro.rewrite(withBase('/not-offered/play/'));
+if (!data) return Astro.redirect(withBase('/'));
 const siteName = getSite().name;
-const landmarks: LandmarkData[] = data ? landmarksFrom(PLACES, data) : [];
-const errors = data ? validateLandmarks(landmarks) : [];
+const landmarks: LandmarkData[] = landmarksFrom(PLACES, data);
+const errors = validateLandmarks(landmarks);
 if (errors.length) {
   throw new Error(`Invalid landmark content:\n- ${errors.join('\n- ')}`);
 }
@@ -44,10 +44,6 @@ const caret = icon(faCaretDown);
 const cross = icon(faXmark);
 ---
 
-{
-  turnedOff ? (
-    <NotOffered name="the little planet" />
-  ) : (
 <BaseLayout title={`Explore the little planet — ${siteName}`} bodyClass="play surface-wood">
   <a class="skip-link" href={withBase('/#sections')} data-classic-link>Skip to classic site</a>
   <header class="play-header">
@@ -147,5 +143,3 @@ const cross = icon(faXmark);
     import '../game/platform/gate';
   </script>
 </BaseLayout>
-  )
-}

@@ -2,7 +2,7 @@
  * Ways to explore, on and off (plan stage 8A: 8A.1 to 8A.3): the ways file in the content contract, the
  * loader holding it to V33 to V37, and the planet following it, in the content and in what the build ships.
  */
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -82,6 +82,13 @@ describe('the loader holds the ways to V33 to V37 (8A.2)', () => {
 });
 
 describe('the planet follows the ways (8A.3)', () => {
+  it("the planet's page imports none of the site's layouts or components, whose styles would land on it", () => {
+    const page = readFileSync(join(ROOT, 'src/pages/play.astro'), 'utf8');
+    const imports = [...page.matchAll(/^import [^;]* from '([^']+)'/gm)].map((m) => m[1]);
+    expect(imports.filter((p) => /\.astro$/.test(p) && p !== '../layouts/BaseLayout.astro')).toEqual([]);
+    expect(imports.filter((p) => /site\/(layouts|components)\//.test(p))).toEqual([]);
+  });
+
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.resetModules();
