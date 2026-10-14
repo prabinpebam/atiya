@@ -1,0 +1,90 @@
+---
+/**
+ * The Ways to explore form (plan stage 8A): which of the engine's ways of exploring the site are on, and
+ * what the home page offers first. One Save writes the ways file (content/structures/ways.json) through the
+ * store; a way turned off keeps its map, so turning it back on restores it.
+ * @tier editor
+ * @a11y Two fieldsets with legends and hints; a refused save is named in a live alert under them; the
+ * home page's offer can only be a way that's on (the others are disabled, and say so).
+ */
+import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import type { Ways } from '../model/ways';
+
+/** One way of exploring the engine carries. */
+export interface WayChoice {
+  /** The mode's ID. */
+  id: string;
+  /** Its name ("Little planet"). */
+  name: string;
+  /** What it is, in a line. */
+  summary: string;
+  /** Its address under the site (`play`). */
+  mount: string;
+  /** Turned off with its map kept: turning it back on restores it. */
+  kept: boolean;
+}
+
+interface Props {
+  /** The ways in as they are now (the file's, or the default without one). */
+  ways: Ways;
+  /** The ways file's version (null: there's no file yet). */
+  version: string | null;
+  /** The engine's ways of exploring. */
+  choices: WayChoice[];
+}
+
+const { ways, version, choices } = Astro.props;
+const on = (id: string) => ways.modes.some((m) => m.id === id && m.on);
+const state = JSON.stringify({ ways, version, mounts: Object.fromEntries(choices.map((c) => [c.id, c.mount])) }).replace(/</g, '\\u003c');
+---
+
+<form class="form" data-editor-ways novalidate aria-label="Ways to explore">
+  <ChoiceGroup
+    legend="Ways to explore the site"
+    type="checkbox"
+    variant="cards"
+    name="mode"
+    value={choices.filter((c) => on(c.id)).map((c) => c.id)}
+    hint="The site itself is always there. Each way turned on gets a button on the home page and its own address."
+    options={choices.map((c) => ({ value: c.id, label: c.name, hint: c.kept && !on(c.id) ? `${c.summary} Its map is kept: turning it on brings it back.` : c.summary }))}
+  />
+  <ChoiceGroup
+    legend="What the home page offers first"
+    name="primary"
+    value={ways.primary}
+    hint="A first-time visitor sees this button first. Only a way that's on can be offered."
+    options={[{ value: 'site', label: 'Read the site' }, ...choices.map((c) => ({ value: c.id, label: c.name, disabled: !on(c.id) }))]}
+  />
+  <p class="issue" role="alert" data-editor-form-issue hidden />
+  <div class="actions">
+    <Button variant="primary" type="submit">Save ways to explore</Button>
+  </div>
+  <script is:inline type="application/json" data-editor-ways-state set:html={state} />
+</form>
+
+<style>
+  .form {
+    display: grid;
+    gap: var(--space-6);
+    max-inline-size: var(--size-measure);
+  }
+
+  .actions {
+    display: flex;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initWays } from '../scripts/ways';
+
+  each<HTMLFormElement>('[data-editor-ways]', (form, signal) => initWays(form, signal));
+</script>

@@ -7,6 +7,10 @@ import type { z } from 'astro/zod';
 import { PLACE_IDS, accessFile, accessMessage, article, documentMedia, imageMedia, overlay as overlaySchema, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, videoMedia, type AccessMessage, type Article, type DocumentMedia, type GrantRecord, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type VideoMedia } from './schema';
 import { buildRoutes, canonicalPaths, withOverlay, type Access, type Route } from './routes';
 import { checkGrant, covers, isValid } from '../access/grants.ts';
+import { WAYS_FILE, waysFile, type Ways } from '../modes/contract';
+import { checkModes } from '../modes/rules';
+import { BUILTIN_MODES } from '../modes/builtin';
+import { effectiveWays } from '../modes/ways';
 
 /** Where a resource comes from: the public content folder, or private-pages/ (documentation/access/spec.md §3). */
 export type Origin = 'public' | 'private';
@@ -63,6 +67,8 @@ export interface ContentIndex {
   redirects: Redirect[];
   /** The planet's buildings and what each holds (documentation/sections/spec.md §5), if the file is there. */
   planet: PlanetStructure | null;
+  /** The site's ways in as written (content/structures/ways.json; plan stage 8A), null without the file: see effectiveWays. */
+  ways: Ways | null;
   /** The private overlay: private pages in their sections (null without private-pages/). */
   overlay: Overlay | null;
   /** The grants (private-pages/access.json), empty without private-pages/. */
@@ -139,6 +145,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   let overlay: Overlay | null = null;
   let grants: GrantRecord[] = [];
   let message: AccessMessage | null = null;
+  let ways: Ways | null = null;
   const articles = new Map<string, Article>();
   // articles whose file is there but doesn't pass its own check: its issues say why, so a node placing one isn't "missing"
   const invalidArticles = new Set<string>();
@@ -163,6 +170,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     else if (file === '/content/structures/site.json') structure = parse(siteStructure, file, data);
     else if (file === '/content/redirects.json') redirects = parse(redirectList, file, data) ?? [];
     else if (file === '/content/structures/planet.json') planet = parse(planetStructure, file, data) ?? null;
+    else if (file === `/content/${WAYS_FILE}`) ways = parse(waysFile, file, data) ?? null;
     else if (file === '/private/structures/overlay.json') overlay = parse(overlaySchema, file, data) ?? null;
     else if (file === '/private/access.json') grants = parse(accessFile, file, data)?.grants ?? [];
     else if (file === '/private/access-message.json') message = parse(accessMessage, file, data) ?? null;
@@ -432,8 +440,16 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     });
   }
 
+  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, warnings };
+  // the ways in (V33 to V37, documentation/desktop/modes.md §6), once the rest holds: a mode's structure that
+  // already fails its own check (the planet's V14 to V16) isn't reported twice
+  if (!issues.length && site && structure) {
+    const structures: Record<string, unknown> = {};
+    for (const [id, mode] of BUILTIN_MODES) if (docs[`/content/${mode.structureFile}`] !== undefined) structures[id] = docs[`/content/${mode.structureFile}`];
+    for (const i of checkModes({ modes: effectiveWays({ ways, hasPlanet: !!planet }), index, structures }).issues) add(i.file, `${i.message} (${i.rule})`);
+  }
   if (issues.length) throw new ContentError(issues);
-  return { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, overlay, grants, accessMessage: message, warnings };
+  return index;
 }
 
 /** A path on this site a link may go to: a page of the tree, or one of the code's own (the planet, the docs, the design library). */

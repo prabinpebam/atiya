@@ -44,12 +44,9 @@ export function footerLinks(site: { privacyPage?: string } | null | undefined, r
 /**
  * A building's pages (documentation/sections/spec.md §5.2): the published, open pages of the section it
  * shows, in the section's order. A private page is never on the planet (V28): it has no way to sign in.
+ * In routes.ts, so the content loader (mode data) reads it without the design system.
  */
-export function placeRoutes(routes: Route[], site: string): Route[] {
-  const section = routes.find((r) => r.node.kind === 'hub' && r.node.id === site);
-  if (!section) return [];
-  return routes.filter((r) => r.parent === section.node && r.node.kind === 'item' && r.node.item.type === 'article' && r.access === 'open' && r.published);
-}
+export { placeRoutes } from './routes';
 
 export function exploreHref(route?: Route, planet?: PlanetStructure | null): string {
   const places = planet?.places ?? [];

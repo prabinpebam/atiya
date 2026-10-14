@@ -10,7 +10,7 @@ import { ENGINE_REPOSITORY } from './engine.mjs';
  *   explore: 'little-planet' | 'site', engine: { version: string, commit: string | null, sha256: string | null } }} SiteFacts
  */
 
-/** @param {SiteFacts} s */
+/** What the app and the build own: the engine's pin, the contract, the developer features and the owner. Which ways in are on is content (`content/structures/ways.json`, plan stage 8A). @param {SiteFacts} s */
 export function atiyaJson(s) {
   return (
     JSON.stringify(
@@ -18,8 +18,6 @@ export function atiyaJson(s) {
         schema: 1,
         engine: s.engine,
         contract: 1,
-        modes: s.explore === 'little-planet' ? [{ id: 'little-planet', on: true, mount: 'play' }] : [],
-        primary: 'site',
         features: { contact: 'off', telemetry: null },
         owner: { login: s.login, id: s.id },
       },

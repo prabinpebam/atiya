@@ -1,0 +1,25 @@
+---
+/**
+ * A way of exploring the site that's turned off (documentation/desktop/modes.md §2; plan stage 8A): its
+ * address answers with this small page, which says the site doesn't offer it now and links home. Not a
+ * redirect, and never indexed. The mode's structure is kept, so turning it back on restores it.
+ */
+import IndexLayout from '../layouts/IndexLayout.astro';
+import Text from '../components/fundamentals/Text.astro';
+import Link from '../components/fundamentals/Link.astro';
+import { getRoutes, getSite, getStructure } from './repository';
+import { footerLinks, siteNav } from './navigation';
+import { withBase } from '../design/meta';
+
+interface Props {
+  /** The way of exploring, in words ("the little planet"). */
+  name: string;
+}
+
+const { name } = Astro.props;
+const site = getSite();
+---
+
+<IndexLayout title={`Not offered — ${site.name}`} heading="This way of exploring isn't offered" standfirst={`${site.name} doesn't offer ${name} now. Everything is on the site itself.`} nav={siteNav(getStructure(), getRoutes())} footer={footerLinks(site, getRoutes())} noindex>
+  <Text variant="lead"><Link href={withBase('/')} variant="standalone">Go to the home page</Link></Text>
+</IndexLayout>

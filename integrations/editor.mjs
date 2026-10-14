@@ -21,7 +21,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { privateRootFor } from './roots.mjs';
-import { siteFeatures } from './features.mjs';
+import { planetOn, siteFeatures } from './features.mjs';
 import { LAUNCH_HEADER, launchAllows } from './launch.mjs';
 
 /** How long edit mode must have been idle before a new site name or planet restarts the server. */
@@ -35,6 +35,7 @@ const ROUTES = [
   ['/_edit/sections', 'sections.astro'],
   ['/_edit/navigation', 'navigation.astro'],
   ['/_edit/planet', 'planet.astro'],
+  ['/_edit/ways', 'ways.astro'],
   ['/_edit/media', 'media.astro'],
   ['/_edit/settings', 'settings.astro'],
   ['/_edit/access', 'access.astro'],
@@ -232,6 +233,8 @@ export default function editor() {
 
       'astro:server:setup': ({ server }) => {
         devServer = server;
+        // this start's own mark: a screen that waits for a restart (Ways to explore) knows the new server by it
+        const started = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         // a managed site's server, started by Atiya Studio, answers only the app's own views (desktop spec §7.3)
         const launchToken = process.env.ATIYA_LAUNCH_TOKEN;
         if (launchToken)
@@ -242,13 +245,14 @@ export default function editor() {
             res.end('This site is open in Atiya Studio. Open it there.');
           });
         const state = contentState();
-        // edit mode's calls in flight: a restart waits for them (a save to remote just after a new name
-        // would otherwise lose its answer, and the browser sends it again)
+        // edit mode's writes in flight: a restart waits for them (a save to remote just after a new name
+        // would otherwise lose its answer, and the browser sends it again). Reads aren't counted: some are
+        // long-lived streams (the Tests screen's), which would hold a restart off for ever
         let busy = 0;
         let quietSince = Date.now();
         if (editing)
           server.middlewares.use((/** @type {any} */ req, /** @type {any} */ res, /** @type {() => void} */ next) => {
-            if (!String(req.url ?? '').includes('/_edit/api/')) return next();
+            if (!String(req.url ?? '').includes('/_edit/api/') || req.method === 'GET' || req.method === 'HEAD') return next();
             busy++;
             let done = false;
             const end = () => {
@@ -283,7 +287,7 @@ export default function editor() {
             if (path === `${edit}__warm`) {
               res.setHeader('content-type', 'application/json');
               res.setHeader('cache-control', 'no-store');
-              return res.end(JSON.stringify(warm));
+              return res.end(JSON.stringify({ ...warm, started }));
             }
             const asked = path === `${edit}__starting`;
             const opening = req.method === 'GET' && req.headers['sec-fetch-mode'] === 'navigate' && req.headers['sec-fetch-dest'] === 'document' && !req.headers['x-editor'] && !req.headers['x-editor-warm'] && !path.startsWith(`${edit}api/`) && !path.startsWith(`${edit}canvas/`);
@@ -325,15 +329,23 @@ export default function editor() {
           state.notify?.([key], false);
         });
         // the site's name and whether it has the planet are set when the server starts: a new name (Settings),
-        // or the planet structure coming or going, restarts it, so every page shows it
+        // or the little planet turned on or off (Ways to explore, or its structure coming or going), restarts it,
+        // so every page shows it
         server.watcher.on('all', (_event, file) => {
           const rel = relative(contentRoot, file).split(/[\\/]/).join('/');
-          if (rel !== 'site.json' && rel !== 'structures/planet.json') return;
+          if (rel !== 'site.json' && rel !== 'structures/planet.json' && rel !== 'structures/ways.json') return;
           const now = siteNameOf(contentRoot);
-          const planet = existsSync(join(contentRoot, 'structures', 'planet.json'));
+          const planet = planetOn(contentRoot);
           if ((now && now !== siteName) || planet !== features.planet) {
             siteName = now || siteName;
             features = { ...features, planet };
+            // a restart builds its server from the configuration it was first given, without this
+            // integration's setup: the new values go into that configuration's defines, so pages see them
+            for (const define of [server.config.inlineConfig?.define, server.config.define]) {
+              if (!define) continue;
+              define.__SITE_NAME__ = JSON.stringify(siteName);
+              define.__SITE_FEATURES__ = JSON.stringify(features);
+            }
             restartWhenQuiet();
           }
         });

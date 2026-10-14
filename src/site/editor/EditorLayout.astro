@@ -38,7 +38,7 @@ interface Props {
   /** The document title: the screen's name. */
   title: string;
   /** Which screen, for the navigation's current item. */
-  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'media' | 'settings' | 'access' | 'publish' | 'tests';
+  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'ways' | 'media' | 'settings' | 'access' | 'publish' | 'tests';
   /** Show the side navigation (the article editor hides it for its studio). */
   nav?: boolean;
   /** The screen's h1, over its content; left out, the content fills the screen (the studio). */
@@ -70,7 +70,7 @@ const groups = [
       { label: 'Pages', href: to('articles/'), current: screen === 'articles' || screen === 'article' },
       { label: 'Sections', href: to('sections/'), current: screen === 'sections' },
       { label: 'Navigation', href: to('navigation/'), current: screen === 'navigation' },
-      // a site without the planet has no buildings to edit (desktop plan, stage 4)
+      // the planet's buildings, while the little planet is on (Ways to explore; desktop plan, stages 4 and 8A)
       ...(SITE_FEATURES.planet ? [{ label: 'Planet', href: to('planet/'), current: screen === 'planet' }] : []),
       { label: 'Media', href: to('media/'), current: screen === 'media' },
     ],
@@ -79,6 +79,7 @@ const groups = [
     title: 'Site',
     items: [
       { label: 'Settings', href: to('settings/'), current: screen === 'settings' },
+      { label: 'Ways to explore', href: to('ways/'), current: screen === 'ways' },
       { label: 'Access', href: to('access/'), current: screen === 'access' },
       { label: 'Save to remote', href: to('publish/'), current: screen === 'publish', note: unknown ? 'Not checked' : pending ? `${pending} to save` : undefined },
     ],

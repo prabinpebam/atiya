@@ -25,7 +25,8 @@
     "perf:audit": "node scripts/perf-audit.mjs",
     "perf:bench": "node scripts/perf-bench.mjs",
     "build:starter": "node scripts/build-starter.mjs",
-    "build:site-only": "node scripts/build-starter.mjs --site-only"
+    "build:site-only": "node scripts/build-starter.mjs --site-only",
+    "build:planet-off": "node scripts/build-starter.mjs --planet-off"
   },
   "dependencies": {
     "@astrojs/react": "6.0.6",

@@ -17,10 +17,10 @@
 </g>
 <g id="settings">
 <rect class="docs" x="690" y="40" width="270" height="150" rx="18" />
-<text class="name" x="710" y="72">atiya.json</text>
-<text class="note" x="710" y="94">which ways to explore are on</text>
-<text class="line" x="710" y="132">Each mode, its version</text>
-<text class="line" x="710" y="162">Its address, its checksum</text>
+<text class="name" x="710" y="72">ways.json</text>
+<text class="note" x="710" y="94">which ways to explore are on (content)</text>
+<text class="line" x="710" y="132">Each mode, on or off</text>
+<text class="line" x="710" y="162">Its address; the first offer</text>
 </g>
 <g id="site">
 <rect class="out" x="40" y="290" width="215" height="120" rx="16" />

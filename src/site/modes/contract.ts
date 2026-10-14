@@ -61,6 +61,18 @@ export const siteModes = z.object({
 });
 export type SiteModes = z.infer<typeof siteModes>;
 
+/**
+ * The site's ways in (`content/structures/ways.json`; plan stage 8A, D-W1): which modes are on, and the
+ * home page's first offer, `site` or a mode that's on. Content: edit mode's Ways to explore screen writes it.
+ */
+export const waysFile = z.strictObject({
+  modes: z.array(siteMode),
+  primary: z.string().min(1),
+});
+export type Ways = z.infer<typeof waysFile>;
+/** Where the ways file lives in the content folder. */
+export const WAYS_FILE = 'structures/ways.json';
+
 /** A picture a mode may show (made by the site's picture pipeline). */
 export interface ModePicture {
   src: string;

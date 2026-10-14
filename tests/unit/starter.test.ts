@@ -28,6 +28,7 @@ describe('the starter content', () => {
         expect(site.name).toBe('Ada Lovelace');
         const files = listFiles(join(dir, 'content'));
         expect(files.includes('structures/planet.json')).toBe(planet);
+        expect(JSON.parse(readFileSync(join(dir, 'content', 'structures', 'ways.json'), 'utf8')).modes).toEqual(planet ? [{ id: 'little-planet', on: true, mount: 'play' }] : []);
         expect(files.some((f: string) => f.startsWith('articles/'))).toBe(samples);
       });
     }

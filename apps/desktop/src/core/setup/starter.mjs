@@ -42,6 +42,8 @@ export function writeStarter(dir, o) {
   const name = o.name.trim() || PLACEHOLDER;
 
   if (!o.planet) rmSync(join(to, 'structures', 'planet.json'), { force: true });
+  // which ways in are on (plan stage 8A, D-W1): edit mode's Ways to explore changes it later
+  writeJson(join(to, 'structures', 'ways.json'), { modes: o.planet ? [{ id: 'little-planet', on: true, mount: 'play' }] : [], primary: 'site' });
 
   const structureFile = join(to, 'structures', 'site.json');
   const structure = readJson(structureFile);

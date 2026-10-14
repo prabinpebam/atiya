@@ -189,36 +189,3 @@ describe("the planet reads mode data (8.1)", () => {
     expect(() => landmarksFrom(PLACES, { ...data, slots: data.slots.slice(1) })).toThrow(/has no/);
   });
 });
-
-describe("the content load holds a managed site to the rules", () => {
-  /** The repository on a starter site with this atiya.json beside its content. */
-  async function load(atiya: unknown) {
-    const dir = mkdtempSync(join(tmpdir(), 'atiya-modes-site-'));
-    writeStarter(dir, { name: 'Ada Lovelace', planet: true, samples: true, today: '2026-10-14', starter: join(ROOT, 'starter', 'content') });
-    writeFileSync(join(dir, 'atiya.json'), JSON.stringify(atiya));
-    vi.stubEnv('CONTENT_ROOT', join(dir, 'content'));
-    vi.stubEnv('PRIVATE_ROOT', join(dir, 'private-pages'));
-    vi.resetModules();
-    const { content } = await import('../../src/site/content/repository');
-    return content;
-  }
-
-  it('loads a site whose modes pass, and refuses one that breaks a rule, naming it', async () => {
-    try {
-      expect((await load({ schema: 1, modes: [{ id: 'little-planet', on: true, mount: 'play' }], primary: 'site' }))().site.name).toBe('Ada Lovelace');
-      const broken = await load({ schema: 1, modes: [{ id: 'little-planet', on: true, mount: 'work' }], primary: 'site' });
-      let issues: { file: string; message: string }[] = [];
-      try {
-        broken();
-      } catch (e) {
-        issues = (e as { issues: typeof issues }).issues;
-      }
-      expect(issues).toHaveLength(1);
-      expect(issues[0]).toMatchObject({ file: 'atiya.json' });
-      expect(issues[0].message).toMatch(/collides with the site's section at \/work\/.*\(V34\)$/);
-    } finally {
-      vi.unstubAllEnvs();
-      vi.resetModules();
-    }
-  });
-});

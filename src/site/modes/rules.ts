@@ -1,6 +1,7 @@
 /**
  * The content contract's rules for navigation modes (documentation/desktop/modes.md §6), checked
- * against a site's `atiya.json`, its content and the modes the engine carries:
+ * against a site's ways in (`content/structures/ways.json`, plan stage 8A), its content and the modes the
+ * engine carries:
  *
  * - V33: every mode turned on resolves to a known manifest, at an `api` the engine hosts; `primary` is
  *   the site or a mode that's on;
@@ -14,7 +15,10 @@ import { z } from 'astro/zod';
 import type { ContentIndex } from '../content/load';
 import { RESERVED } from '../content/routes';
 import { BUILTIN_MODES } from './builtin';
-import { HOSTED_API, type BuiltinMode, type ModeData, type ModeStructure, type SiteModes } from './contract';
+import { HOSTED_API, WAYS_FILE, type BuiltinMode, type ModeData, type ModeStructure, type SiteModes } from './contract';
+
+/** Where the rules' issues about which modes are on point. */
+const WAYS = `content/${WAYS_FILE}`;
 import { buildModeData } from './data';
 
 export interface ModeIssue {
@@ -31,7 +35,7 @@ export interface ModeCheck {
 }
 
 /**
- * @param o the site's modes (atiya.json), its content, each mode's structure file as read (undefined when
+ * @param o the site's ways in, its content, each mode's structure file as read (undefined when
  * it isn't there), and the modes the engine carries
  */
 export function checkModes(o: { modes: SiteModes; index: ContentIndex; structures: Record<string, unknown>; base?: string; catalogue?: ReadonlyMap<string, BuiltinMode> }): ModeCheck {
@@ -55,21 +59,21 @@ export function checkModes(o: { modes: SiteModes; index: ContentIndex; structure
     const mode = catalogue.get(m.id);
     // V33
     if (!mode) {
-      if (m.on) add('V33', 'atiya.json', `the mode "${m.id}" isn't one this engine knows: turn it off, or update the engine`);
+      if (m.on) add('V33', WAYS, `the mode "${m.id}" isn't one this engine knows: turn it off, or update the engine`);
       continue;
     }
     if (m.on && (mode.manifest.api < HOSTED_API.min || mode.manifest.api > HOSTED_API.max)) {
-      add('V33', 'atiya.json', `the mode "${m.id}" is written for version ${mode.manifest.api} of the contract; this engine hosts ${HOSTED_API.min} to ${HOSTED_API.max}`);
+      add('V33', WAYS, `the mode "${m.id}" is written for version ${mode.manifest.api} of the contract; this engine hosts ${HOSTED_API.min} to ${HOSTED_API.max}`);
       continue;
     }
     if (m.on) on.add(m.id);
     // V34: a mode turned off still answers at its address (its "not offered" page), so it holds its mount too
     const mount = m.mount ?? mode.manifest.mount;
     const other = mounts.get(mount);
-    if (other) add('V34', 'atiya.json', `"${m.id}" and "${other}" both want /${mount}/: give one another address`);
+    if (other) add('V34', WAYS, `"${m.id}" and "${other}" both want /${mount}/: give one another address`);
     else mounts.set(mount, m.id);
     const clash = taken.get(mount);
-    if (clash) add('V34', 'atiya.json', `"${m.id}" at /${mount}/ collides with ${clash}: give the mode another address`);
+    if (clash) add('V34', WAYS, `"${m.id}" at /${mount}/ collides with ${clash}: give the mode another address`);
 
     const file = `content/${mode.structureFile}`;
     const raw = o.structures[m.id];
@@ -116,6 +120,6 @@ export function checkModes(o: { modes: SiteModes; index: ContentIndex; structure
     for (const p of leaked) add('V36', file, `mode data would hold "${p.id}", which isn't a published open page`);
     if (!issues.some((i) => i.file === file)) data.push(md);
   }
-  if (o.modes.primary !== 'site' && !on.has(o.modes.primary)) add('V33', 'atiya.json', `"primary" is "${o.modes.primary}", which isn't a mode that's on: choose "site" or a mode that's on`);
+  if (o.modes.primary !== 'site' && !on.has(o.modes.primary)) add('V33', WAYS, `"primary" is "${o.modes.primary}", which isn't a mode that's on: choose "site" or a mode that's on`);
   return { issues, data };
 }

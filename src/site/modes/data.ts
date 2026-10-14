@@ -4,7 +4,7 @@
  * that it has some, never which or how many.
  */
 import type { ContentIndex } from '../content/load';
-import { placeRoutes } from '../content/navigation';
+import { placeRoutes } from '../content/routes';
 import type { ModeData, ModePage, ModeStructure } from './contract';
 
 export interface ModeDataOptions {

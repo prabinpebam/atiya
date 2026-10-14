@@ -31,10 +31,10 @@ The site is one set of pages that can be explored in more than one way. The **si
 </g>
 <g id="md-arch__settings" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
 <rect id="md-arch__body-3" x="690" y="40" width="270" height="150" rx="18" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
-<text x="710" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="md-arch__body-3" data-slate-fit-padding="16">atiya.json</text>
-<text x="710" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="md-arch__body-3" data-slate-fit-padding="16">which ways to explore are on</text>
-<text x="710" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="md-arch__body-3" data-slate-fit-padding="16">Each mode, its version</text>
-<text x="710" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="md-arch__body-3" data-slate-fit-padding="16">Its address, its checksum</text>
+<text x="710" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="md-arch__body-3" data-slate-fit-padding="16">ways.json</text>
+<text x="710" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="md-arch__body-3" data-slate-fit-padding="16">which ways to explore are on (content)</text>
+<text x="710" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="md-arch__body-3" data-slate-fit-padding="16">Each mode, on or off</text>
+<text x="710" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="md-arch__body-3" data-slate-fit-padding="16">Its address; the first offer</text>
 </g>
 <g id="md-arch__site" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
 <rect id="md-arch__body-4" x="40" y="290" width="215" height="120" rx="16" fill="var(--color-brand-bg)" />
@@ -113,23 +113,23 @@ The site is one set of pages that can be explored in more than one way. The **si
   - builds no mode routes and emits no mode chunks or assets (no textures, models or audio in `dist/`);
   - shows no Explore button in the header and no mode buttons on the home page, whose opening uses the home hub's own picture;
   - ignores a visitor's remembered choice (`site.mode`).
-- **Turning a mode on** (edit mode's **Ways to explore** screen, §10, or the app's Settings) adds it to `atiya.json` with its structure: a starting map of its slots to the site's sections, which the person can change. The next Save to remote builds it.
+- **Turning a mode on** (edit mode's **Ways to explore** screen, §10) adds it to the site's ways file with its structure: a starting map of its slots to the site's sections, which the person can change. The next Save to remote builds it.
 - **Turning it off** keeps its structure in content (so turning it back on restores the map) and leaves, at its address, a small static page that says the site doesn't offer that way of exploring any more, with a link to the home page. It isn't a redirect, and it carries `noindex`.
 - **Several modes at once** are allowed, each at its own address. One of them, or the site, is the home page's primary way in (§4.6).
 
-`atiya.json` holds which modes are on (the [desktop spec, §6.3](spec.md#63-what-a-site-repository-holds), names the rest of the file):
+The site's **ways file**, `content/structures/ways.json`, holds which modes are on. It's content, not `atiya.json` (decision D-W1, [plan stage 8A](plan.md#stage-8a-ways-to-explore-on-and-off-the-next-set)): the choice is editorial, made in edit mode, so it goes through edit mode's store (versions, the content check, live updates) and Save to remote like any other content, while `atiya.json` keeps what the app and the build own ([desktop spec, §6.3](spec.md#63-what-a-site-repository-holds)). Without a ways file, a site with a planet structure has Little planet on and offered first, as its home page always did.
 
 ```json
 {
   "modes": [
-    { "id": "little-planet", "version": "1.0.0", "on": true, "mount": "play" }
+    { "id": "little-planet", "on": true, "mount": "play" }
   ],
   "primary": "site"
 }
 ```
 
 - **`id`** names a built-in mode, a site's own (`local:<folder>`, §8.2) or one from elsewhere (`github:<owner>/<repo>`, with `sha256`, §8.3).
-- **`version`** pins it; a built-in mode's version comes with the engine's.
+- **`version`** (optional) pins it; a built-in mode's version comes with the engine's.
 - **`mount`** is its address under the site's base (`/play/`). It defaults to the manifest's, and must not collide with a section's slug, another mode's mount or the site's own routes (V34).
 - **`primary`** is the way in a first-time visitor is offered first on the home page: `site` or a mode's `id`.
 
@@ -184,7 +184,7 @@ The manifest declares what the mode needs (`requires`: WebGL 2, device memory, a
 
 ### 4.6 The home page
 
-The home page's opening keeps the name and the standfirst. Its ways in are the site (**Read the site**, to the sections) and one button per mode that's on, with the mode's label from its structure ("Explore the planet"). The visitor's last choice (`site.mode`, now a mode's `id` or `site`) is the primary button; for a first visit it's `atiya.json`'s `primary`. The painted picture is the primary mode's poster, or the home hub's picture.
+The home page's opening keeps the name and the standfirst. Its ways in are the site (**Read the site**, to the sections) and one button per mode that's on, with the mode's label from its structure ("Explore the planet"). The visitor's last choice (`site.mode`, now a mode's `id` or `site`) is the primary button; for a first visit it's the ways file's `primary`. The painted picture is the primary mode's poster, or the home hub's picture.
 
 ### 4.7 Telemetry
 
@@ -321,7 +321,7 @@ interface ModeInstance {
 
 - **The structure** is `content/structures/modes/<id>.json`: the mode's settings and its slot map, each slot naming a section (or none) and the mode's words for it, in the shapes its schema allows. Little planet's is today's `planet.json` (each place's title, kicker, summary and `site`), unchanged in meaning.
 - **Rules** the content contract adds for every mode:
-  - V33: every mode turned on in `atiya.json` resolves to a known manifest, at an `api` the engine hosts;
+  - V33: every mode turned on in the ways file resolves to a known manifest, at an `api` the engine hosts;
   - V34: mounts are unique and collide with no section slug or site route;
   - V35: the structure validates against the mode's schema, and every slot it names is one of the mode's;
   - V36: a slot shows a section that exists; a section is shown by at most one slot of a mode (V15, per mode); mode data holds no draft or private item (V28);
@@ -422,7 +422,7 @@ Built as stage 8 of the [plan](plan.md#stage-8-navigation-modes), inside the eng
 
 | Phase | What | Leaves |
 |---|---|---|
-| **M1. The host and the contract** | `ModeData` built from the content (today's `PlanetData`, generalized: sections, their published open pages, slots); the mode page (`play.astro` generalized: header, poster, gate from the manifest, fallback card, live region); the reading frame generalized (`frame:*` messages, `/<mount>/<slot>/…` routes, `otherSlot`); `host.storage`, `prefs`, `track`, `setAddress`; `atiya.json`'s `modes` and `primary`; V33 to V37 in the loader; `planet.json` moved to `content/structures/modes/<id>.json` by a contract migration. Today's planet mounts through it unchanged, as the first mode | The planet behind the contract, at `/play/`, identical to visitors |
+| **M1. The host and the contract** | `ModeData` built from the content (today's `PlanetData`, generalized: sections, their published open pages, slots); the mode page (`play.astro` generalized: header, poster, gate from the manifest, fallback card, live region); the reading frame generalized (`frame:*` messages, `/<mount>/<slot>/…` routes, `otherSlot`); `host.storage`, `prefs`, `track`, `setAddress`; the ways file's `modes` and `primary` (stage 8A, D-W1); V33 to V37 in the loader; `planet.json` moved to `content/structures/modes/<id>.json` by a contract migration. Today's planet mounts through it unchanged, as the first mode | The planet behind the contract, at `/play/`, identical to visitors |
 | **M2. Just the site** | A site with no mode on: no mode routes, chunks or assets in `dist/` (the planet's textures, models and audio move from `public/` into the mode's own assets, emitted only when it's on); no Explore button; the home page without a mode; a turned-off mode's "not offered" page | A real classic-only build, tested |
 | **M3. The planet split** | `src/game/` moves to `modes/little-planet/` (its own package, dependencies and tests, the [app separation](../engineering/app-separation.md)'s phase 2 reshaped); the extension points (`createPlanetMode`: residents, music, welcome, targets); Chopper, the family, Prabin and the music move to `modes/prabin-planet/` as residents; Little planet's host (O5) and ambient sound (O6); AGENTS.md split with the code | Little planet for anyone; Prabin's planet on his site, unchanged for his visitors |
 | **M4. The mode kit** | `packages/mode-kit/`: types, the manifest schema, the harness with fixture mode data (one, seven and ten sections; private pages; empty), the conformance suite R1 to R11, the template; both planets pass it | Modes made and tested alone |
@@ -431,10 +431,11 @@ Built as stage 8 of the [plan](plan.md#stage-8-navigation-modes), inside the eng
 
 ## 14. As built
 
-On the `desktop-app` branch ([plan §6](plan.md#6-status) has the evidence).
+On the `desktop-app` branch, and stage 8A on `ways-to-explore` ([plan §6](plan.md#6-status) has the evidence).
 
-- **The contract's first part (M1, 8.2)** is in `src/site/modes/`: `contract.ts` (the manifest's schema, `atiya.json`'s `modes` and `primary`, `ModeData`, `HOSTED_API` 1 to 1), `builtin.ts` (Little planet's manifest; its structure is still `content/structures/planet.json`, read as its seven slots), `data.ts` (`buildModeData`, through the same rule the planet uses for a building's pages) and `rules.ts` (V33 to V37). A section's `view` is any of the site's views (`features` too), and a page's `kind` any of the content contract's (`talk` too), as §5.2 now says.
-- **The rules hold a managed site:** the repository checks them whenever it loads the content of a site with an `atiya.json` beside it (the engine's own repository has none), so its build and its edit mode refuse a bad mode, naming the rule.
+- **The contract's first part (M1, 8.2)** is in `src/site/modes/`: `contract.ts` (the manifest's schema, the ways file, `ModeData`, `HOSTED_API` 1 to 1), `builtin.ts` (Little planet's manifest; its structure is still `content/structures/planet.json`, read as its seven slots), `data.ts` (`buildModeData`, through the same rule the planet uses for a building's pages), `rules.ts` (V33 to V37) and `ways.ts` (`effectiveWays`). A section's `view` is any of the site's views (`features` too), and a page's `kind` any of the content contract's (`talk` too), as §5.2 now says.
+- **The rules are the content contract's (8A):** `loadContent` reads the ways file into `index.ways` and checks V33 to V37 against the effective ways for every site (the engine's own repository too), once the rest of the content holds, so the store refuses a change that breaks one (422) and a build fails on it, naming the rule.
 - **Mounts:** `play`, kept by the site's routes for a mode, is a mode's to take; every other reserved path (`design`, `docs`, `_edit`, …) and every top-level section or page is taken. A mode turned off keeps its mount, since its "not offered" page answers there.
 - **The planet reads mode data (8.1, in part):** `play.astro` gets Little planet's `ModeData` from the repository (`getModeData`) and turns it into the buildings with the game's pure `landmarksFrom` (`src/game/world/modeLandmarks.ts`), which declares the few fields it reads, so the game still imports nothing from the site. A unit test holds the result equal to the join `play.astro` made before, on the owner's site; the game's bundles are the same size, since only the page's build changed.
-- **Not yet:** the mode page and the host's calls (`mount(root, host)`, `host.open`, storage, prefs), and the move of the structure to `structures/modes/`, are the rest of M1. What builds the planet is still the presence of `planet.json` (`integrations/features.mjs`), not `atiya.json`'s modes; M2 changes that.
+- **On and off (8A):** the repository's `getPlanet()` answers only while Little planet is on, so every page that offers the planet (the header's action, the home page, the buildings' pages, the reading frame's pages) leaves it out when it's off; `integrations/features.mjs` (`planetOn`) decides the same for the build (the footer's link, the game's chunks and assets, the Planet screen). Off, `/play/` renders `NotOffered.astro` (`noindex`, a link home); a site that never had the planet still sends `/play/` home. Edit mode's **Ways to explore** (`/_edit/ways/`, in the Site group: `WaysForm.astro`, `scripts/ways.ts`, `model/ways.ts`, `PUT /_edit/api/ways`) turns it on and off and picks the first offer; turned on for a site without a map, it writes the starting map (the first seven sections), or says seven sections are needed. The dev server restarts on the change, with the new defines written into the configuration its restart reads (the integration's setup isn't run again), and the screen waits for the new server's start mark (`/_edit/__warm`'s `started`) before showing the result.
+- **Not yet:** the mode page and the host's calls (`mount(root, host)`, `host.open`, storage, prefs), and the move of the structure to `structures/modes/`, are the rest of M1. The home page follows `primary` for the planet's button (first, or after Read the site); the visitor's remembered choice and other modes' buttons come with the mode host (§4.6, M5).

@@ -40,6 +40,16 @@ export const RESERVED = ['play', 'design', 'docs', '_astro', 'media', 'classic',
 export type ItemTitle = (type: string, id: string) => { slug: string; title: string; navLabel?: string; published: boolean } | undefined;
 
 /**
+ * A section's published, open pages, in its order: what a building on the planet (and any mode's slot)
+ * holds (documentation/sections/spec.md §5.2). A private page is never in a mode (V28, V36).
+ */
+export function placeRoutes(routes: Route[], site: string): Route[] {
+  const section = routes.find((r) => r.node.kind === 'hub' && r.node.id === site);
+  if (!section) return [];
+  return routes.filter((r) => r.parent === section.node && r.node.kind === 'item' && r.node.item.type === 'article' && r.access === 'open' && r.published);
+}
+
+/**
  * The site structure with the private overlay's pages placed in their open sections (documentation/access/
  * spec.md §2): each at its token, in the section's full order (the overlay's `order`, then any page it leaves
  * out: open ones in their order, then private ones in theirs). The public structure is untouched. Returns the

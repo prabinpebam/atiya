@@ -79,7 +79,10 @@ describe('setup on the fake GitHub', () => {
     expect(result).toMatchObject({ ok: true, live: true, applied: true, site: { repository: 'ada/ada.github.io', url: 'https://ada.github.io/' } });
     for (const file of ['atiya.json', '.github/workflows/site.yml', 'AGENTS.md', 'README.md', '.gitattributes', '.gitignore', 'content/site.json', 'content/structures/planet.json', 'content/articles/about-me.json']) expect(existsSync(join(dir, file)), file).toBe(true);
     const atiya = JSON.parse(readFileSync(join(dir, 'atiya.json'), 'utf8'));
-    expect(atiya).toMatchObject({ schema: 1, engine: ENGINE, modes: [{ id: 'little-planet', on: true }], owner: { login: 'ada', id: ADA.id } });
+    expect(atiya).toMatchObject({ schema: 1, engine: ENGINE, owner: { login: 'ada', id: ADA.id } });
+    // which ways in are on is content (plan stage 8A): the little planet, chosen in the first run
+    expect(atiya.modes).toBeUndefined();
+    expect(JSON.parse(readFileSync(join(dir, 'content/structures/ways.json'), 'utf8'))).toEqual({ modes: [{ id: 'little-planet', on: true, mount: 'play' }], primary: 'site' });
     expect(readFileSync(join(dir, '.github/workflows/site.yml'), 'utf8')).toContain('uses: prabinpebam/atiya/.github/workflows/site-build.yml@abc123');
     expect(JSON.parse(readFileSync(join(dir, 'content/site.json'), 'utf8')).name).toBe('Ada Lovelace');
     expect(f.writes().map((c) => `${c.method} ${c.path}`)).toEqual(['POST /user/repos', 'POST /repos/ada/ada.github.io/pages']);
@@ -96,7 +99,8 @@ describe('setup on the fake GitHub', () => {
     expect(result.ok).toBe(true);
     expect(existsSync(join(dir, 'content/structures/planet.json'))).toBe(false);
     expect(existsSync(join(dir, 'content/articles'))).toBe(false);
-    expect(JSON.parse(readFileSync(join(dir, 'atiya.json'), 'utf8')).modes).toEqual([]);
+    expect(JSON.parse(readFileSync(join(dir, 'content/structures/ways.json'), 'utf8'))).toEqual({ modes: [], primary: 'site' });
+    expect(JSON.parse(readFileSync(join(dir, 'atiya.json'), 'utf8')).modes).toBeUndefined();
   });
 
   it('2.1 turns publishing on after the first save when GitHub refuses it on an empty repository', async () => {

@@ -4,43 +4,21 @@
  * save in the editor, or a file changed by hand, in dev); a build reads it once. After an editor save it
  * takes the store's snapshot as written instead of reading the folders again.
  */
-import { currentSnapshot, contentRoot, generation } from './source';
-import { ContentError, loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
+import { currentSnapshot, generation } from './source';
+import { loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
 import { withBase } from '../design/meta';
 import { placeRoutes } from './navigation';
 import { timed } from './timing';
-import { checkModes } from '../modes/rules';
 import { BUILTIN_MODES } from '../modes/builtin';
-import { siteModes, type ModeData } from '../modes/contract';
+import type { ModeData } from '../modes/contract';
 import { buildModeData } from '../modes/data';
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { effectiveWays, isOn, LITTLE_PLANET } from '../modes/ways';
 import type { Route } from './routes';
 import type { Article, PlaceId } from './schema';
 
 let cached: { generation: number; index: ContentIndex } | undefined;
 
-/**
- * A managed site's ways in (atiya.json beside its content; the engine's own repository has none): every
- * mode it names passes V33 to V37 (documentation/desktop/modes.md §6), or the content doesn't load.
- */
-function checkSiteModes(index: ContentIndex) {
-  const root = contentRoot();
-  const file = join(dirname(root), 'atiya.json');
-  if (!existsSync(file)) return;
-  const modes = siteModes.safeParse(JSON.parse(readFileSync(file, 'utf8')));
-  if (!modes.success) throw new ContentError(modes.error.issues.map((i) => ({ file: 'atiya.json', path: i.path.join('.'), message: i.message })));
-  const structures: Record<string, unknown> = {};
-  for (const m of modes.data.modes) {
-    const at = BUILTIN_MODES.get(m.id)?.structureFile;
-    const path = at ? join(root, ...at.split('/')) : null;
-    if (path && existsSync(path)) structures[m.id] = JSON.parse(readFileSync(path, 'utf8'));
-  }
-  const r = checkModes({ modes: modes.data, index, structures });
-  if (r.issues.length) throw new ContentError(r.issues.map((i) => ({ file: i.file, message: `${i.message} (${i.rule})` })));
-}
-
-/** Everything in the content folder, validated; throws a ContentError that lists every problem. */
+/** Everything in the content folder, validated (the ways in too: V33 to V37); throws a ContentError that lists every problem. */
 export function content(): ContentIndex {
   const now = generation();
   if (!cached || cached.generation !== now) {
@@ -48,7 +26,6 @@ export function content(): ContentIndex {
     // documents that changed are parsed again: source.ts)
     const snap = timed('content.read', () => currentSnapshot());
     const index = timed('content.validate', () => loadContent(snap.docs, snap.masters, snap.errors));
-    timed('content.modes', () => checkSiteModes(index));
     for (const w of index.warnings) console.warn(`[content] ${w}`);
     cached = { generation: now, index };
   }
@@ -60,24 +37,29 @@ export const getSite = () => content().site;
 export const getStructure = () => content().structure;
 /** Old addresses and where they now lead. */
 export const getRedirects = () => content().redirects;
-/** The planet's buildings: their words and the section each shows (null without content/structures/planet.json). */
-export const getPlanet = () => content().planet;
+/** The site's ways in: its ways file, or what a site without one has (plan stage 8A). */
+export const getWays = () => effectiveWays({ ways: content().ways, hasPlanet: !!content().planet });
+/**
+ * The planet's buildings, while the little planet is on: their words and the section each shows. Null when
+ * it's off (its structure is kept: V37) or there's no planet structure, so every page leaves the planet out.
+ */
+export const getPlanet = () => (isOn(getWays(), LITTLE_PLANET) ? content().planet : null);
 
 /**
  * What a built-in mode is given (documentation/desktop/modes.md §5.2): its slots and the site's published
- * open pages, nothing private or draft. Null when the mode has no structure.
+ * open pages, nothing private or draft. Null when the mode is off or has no structure.
  */
 export function getModeData(id: string): ModeData | null {
   const mode = BUILTIN_MODES.get(id);
   // Little planet's structure is still the planet structure (until M1 moves it to structures/modes/)
-  const raw = id === 'little-planet' ? content().planet : null;
+  const raw = id === LITTLE_PLANET ? getPlanet() : null;
   if (!mode || !raw) return null;
   return buildModeData(content(), { id, mount: mode.manifest.mount, structure: mode.readStructure(raw), base: import.meta.env.BASE_URL ?? '/' });
 }
 
 /** The section of the site a building shows (documentation/sections/spec.md §5.2). */
 export const placeSection = (placeId: string): Route | undefined => {
-  const site = content().planet?.places.find((p) => p.id === placeId)?.site;
+  const site = getPlanet()?.places.find((p) => p.id === placeId)?.site;
   return site ? getRoutes().find((r) => r.node.kind === 'hub' && r.node.id === site) : undefined;
 };
 
@@ -85,7 +67,7 @@ export const placeSection = (placeId: string): Route | undefined => {
 export const placeOf = (pageId: string): PlaceId | undefined => {
   const route = getRoutes().find((r) => r.node.kind === 'item' && r.node.item.id === pageId);
   if (!route || route.access !== 'open' || !route.parent) return undefined;
-  return content().planet?.places.find((p) => p.site === route.parent!.id)?.id;
+  return getPlanet()?.places.find((p) => p.site === route.parent!.id)?.id;
 };
 
 /**
@@ -93,7 +75,7 @@ export const placeOf = (pageId: string): PlaceId | undefined => {
  * the site. A private page is never on the planet (V28): it has no way to sign in there.
  */
 export function placePages(placeId: string): { article: Article; route: Route }[] {
-  const site = content().planet?.places.find((p) => p.id === placeId)?.site;
+  const site = getPlanet()?.places.find((p) => p.id === placeId)?.site;
   return (site ? placeRoutes(getRoutes(), site) : []).flatMap((route) => {
     const article = route.node.kind === 'item' ? getArticle(route.node.item.id) : undefined;
     return article ? [{ article, route }] : [];

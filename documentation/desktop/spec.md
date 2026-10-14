@@ -447,15 +447,13 @@ If this repository or its releases ever went away, **Keep a copy of the engine**
   "schema": 1,
   "engine": { "version": "1.4.0", "sha256": "…", "commit": "…" },
   "contract": 1,
-  "modes": [{ "id": "little-planet", "on": true, "mount": "play" }],
-  "primary": "site",
   "features": { "contact": "off", "telemetry": null },
   "owner": { "login": "ada", "id": 12345678 }
 }
 ```
 
 - **`engine`** is what CI downloads and checks; **`contract`** is the content contract's version, which migrations move (§10.3).
-- **`modes`** and **`primary`**: which ways to explore are on ([modes §2](modes.md#2-the-site-and-turning-modes-on-and-off)); an empty list is just the site.
+- **Which ways to explore are on** isn't here: it's content, `content/structures/ways.json`, written by edit mode's Ways to explore and by setup from the first run's choice ([modes §2](modes.md#2-the-site-and-turning-modes-on-and-off), decision D-W1).
 - **`features`**: the rest. Secrets are never here; a PostHog key is public configuration, set only if they turn telemetry on.
 
 The workflow the app writes:
@@ -660,12 +658,12 @@ On the `desktop-app` branch, stage by stage ([plan §6](plan.md#6-status) has th
 - **The app** is `apps/desktop/`: Electron 44.6.0 (Node 24), plain ES modules with JSDoc types, no bundler. Pure parts in `src/core/` (the supervisor, the folder check, the view rules, settings, and the setup machine in `src/core/setup/`), Electron in `src/main/` (the main process, the first run's `SetupFlow`, the token store, the preload), the pages in `src/ui/`, styled with the site's own tokens and fonts, copied in by `scripts/sync-ui.mjs` when the app starts (never committed twice).
 - **The owner's app** (stage 1) runs his checkout's own `astro dev` on 4321 under the system's Node; a managed site's runs the engine's `astro dev` with `CONTENT_ROOT` at its workspace on 4325, so the two never collide.
 - **A managed site** (stage 7) runs on the bundled engine (`apps/desktop/engine/`, from a release by `scripts/bundle-engine.mjs`; the checkout the app runs from when there is none) under `utilityProcess.fork`. Setup, sync and the server's own git use the bundled git (dugite 3.2.3, git 2.53). Astro writes its own `.astro/` folder in the engine, so the engine isn't strictly read-only: the installer (stage 9) must put it where the person can write, a per-user install. For real GitHub, the token reaches the managed server's git as configuration in that one process's environment (`GIT_CONFIG_COUNT` with the extra header), for its life rather than per push (§7.5): edit mode's push runs git itself, and a per-push hand-over would need a bridge into the server. It's still never in a URL, an argument, a file or a log.
-- **A new site name restarts the dev server** once edit mode has been quiet for 1.5 s, never under a call in flight.
+- **A new site name, or a way to explore turned on or off, restarts the dev server** once edit mode has had no write in flight for 1.5 s (reads, some of them streams, aren't counted).
 - **Private pages on first use** (stage 5) are `src/core/setup/private.mjs`, run by `atiya private setup` and by the app's `private.html`, which a managed site's edit mode links to (`src/site/editor/model/desktop.ts`) wherever it would offer the access choice. The repository is `<site repository>-private`; the deploy key is titled "Atiya Studio: the site build reads private pages", and a missing key or secret makes both again (the private half is never kept). When it's done the server starts again, because it reads `private-pages/` from its start.
 - **Quitting** is graceful: Chromium keeps the key that safeStorage encrypts the token with in `Local State`, written on its way out, so `app.exit()` would lose the token at every quit. A crash before the first quit can still lose it: the person signs in again.
 - **The CLI** (stage 2) is `apps/desktop/bin/atiya.mjs`; the fake GitHub, `src/core/setup/fake-github.mjs`, is a real HTTP server with real bare git repositories, used by the tests and by `npm start -- --fake-github`.
 - **The starter** (stage 2) is `starter/content/`: seven sections (About, Work, Approach, Writing, Speaking, Projects, Contact), the planet's seven buildings mapped to them, and four sample pages written as instructions.
 - **Setup's state** is the machine's checks: every run checks every step, so the state file (`.atiya/setup.json`) only records what was made; the app also remembers an unfinished setup's choices and resumes it at launch.
 - **Sign-in** uses the device flow when the app has an OAuth App's client ID (`ATIYA_GITHUB_CLIENT_ID`, stage 5); until then the app and the CLI sign in with the GitHub CLI's token or `GH_TOKEN`.
-- **The site's identity and features** (stage 4) come from the content: the name from `content/site.json`, the planet from the presence of `content/structures/planet.json`, the design library and documentation from `atiya.json` (on for the engine's own repository, which has none). A site without the planet builds (it used to fail), sends `/play/` home, and ships none of the planet; the mode host (stage 8) replaces this with the "not offered" page of [modes §2](modes.md#2-the-site-and-turning-modes-on-and-off).
+- **The site's identity and features** (stage 4) come from the content: the name from `content/site.json`, the planet from the ways file (`content/structures/ways.json`, stage 8A; without one, from the presence of `content/structures/planet.json`), the design library and documentation from `atiya.json` (on for the engine's own repository, which has none). A site without the planet builds (it used to fail) and ships none of the planet; `/play/` sends home when it never had one, and is the "not offered" page of [modes §2](modes.md#2-the-site-and-turning-modes-on-and-off) when the planet is turned off.
 - **Found on the way, for later stages:** the access agreement still names the owner (O14). The planet's host and characters are the owner's until stage 8 (O5).
