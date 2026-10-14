@@ -18,7 +18,7 @@
  * file, a private page's path or a line of the build's log. Exits 1 if the builds differ.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, unlinkSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, unlinkSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,7 +49,9 @@ const env = { ...process.env, SITE_URL: starter ? 'https://ada.github.io' : 'htt
 for (const k of ['CONTENT_ROOT', 'PRIVATE_ROOT', 'PUBLIC_CONTACT_ENDPOINT', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_POSTHOG_HOST']) delete env[k];
 const buildSite = (/** @type {string} */ cwd, /** @type {string} */ log) => spawnSync(process.execPath, ['scripts/build-site.mjs', '--log', log], { cwd, env, stdio: 'inherit' }).status === 0;
 
-const work = mkdtempSync(join(tmpdir(), 'build-parity-'));
+// the real path: Windows may give the temporary folder's short name (PRABIN~2), and Vite resolves real paths,
+// so a build under a short name hashes its components differently (Astro's scoped CSS IDs)
+const work = realpathSync.native(mkdtempSync(join(tmpdir(), 'build-parity-')));
 const site = join(work, 'site');
 const engine = join(work, 'engine');
 const aside = [
