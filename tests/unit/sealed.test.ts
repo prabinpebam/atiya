@@ -120,6 +120,9 @@ describe('the sealer', () => {
 });
 
 describe('the leak check', () => {
+  // reading the repository's sources takes seconds on a loaded machine: once, before the tests, not inside the first
+  beforeAll(() => void SOURCES(), 60_000);
+
   it('passes on what the sealer made (QB1)', () => {
     expect(verifySealed({ dist, summary: sealed.summary, provenance, publicText: SOURCES() })).toEqual([]);
   });
