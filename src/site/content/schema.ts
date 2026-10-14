@@ -347,6 +347,19 @@ export const siteSettings = z.strictObject({
   contactPage: id.optional(),
   /** The Privacy page the footer links to (a node of the site structure): what telemetry records (documentation/access/spec.md §9.6). */
   privacyPage: id.optional(),
+  /**
+   * The services the site's pages use (documentation/desktop/spec.md §6.3): addresses and public keys, never
+   * a secret. Every build reads them from here, the owner's from source and a managed site's from an engine
+   * release alike (integrations/services.mjs).
+   */
+  services: z
+    .strictObject({
+      /** The contact form's service (documentation/contact/spec.md): its address. */
+      contact: z.strictObject({ endpoint: z.url({ protocol: /^https$/ }) }).optional(),
+      /** PostHog (documentation/access/spec.md §9): the project's public key and its host. */
+      telemetry: z.strictObject({ key: z.string().regex(/^phc_\w+$/), host: z.url({ protocol: /^https$/ }).optional() }).optional(),
+    })
+    .optional(),
 });
 
 /**

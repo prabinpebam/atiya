@@ -447,14 +447,24 @@ If this repository or its releases ever went away, **Keep a copy of the engine**
   "schema": 1,
   "engine": { "version": "1.4.0", "sha256": "…", "commit": "…" },
   "contract": 1,
-  "features": { "contact": "off", "telemetry": null },
+  "features": { "designLibrary": false, "docs": false },
   "owner": { "login": "ada", "id": 12345678 }
 }
 ```
 
 - **`engine`** is what CI downloads and checks; **`contract`** is the content contract's version, which migrations move (§10.3).
 - **Which ways to explore are on** isn't here: it's content, `content/structures/ways.json`, written by edit mode's Ways to explore and by setup from the first run's choice ([modes §2](modes.md#2-the-site-and-turning-modes-on-and-off), decision D-W1).
-- **`features`**: the rest. Secrets are never here; a PostHog key is public configuration, set only if they turn telemetry on.
+- **`features`**: which of the engine's own parts the site publishes (the design library, the documentation).
+- **The site's services aren't here either** (O15, D): the contact form's endpoint and the telemetry key are `services` in `content/site.json`, so the owner's site, built from source, and every managed site read them from the same place. Secrets are never there; an endpoint is an address, and a PostHog key is public configuration, set only if they turn telemetry on.
+
+```json
+"services": {
+  "contact": { "endpoint": "https://…azurewebsites.net" },
+  "telemetry": { "key": "phc_…", "host": "https://us.i.posthog.com" }
+}
+```
+
+A build makes them the page's `PUBLIC_CONTACT_ENDPOINT`, `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`. The telemetry key is used only in a build for a published address (`SITE_URL` set, as both workflows do), so a local production build never sends anything; a `--mode test` build never reads `services` at all (its endpoint is `.env.test`'s made-up host).
 
 The workflow the app writes:
 
@@ -478,11 +488,15 @@ The reusable `site-build.yml` (in this repository) does what `deploy.yml` does t
 
 Today he's a developer workspace: his repository is the engine's source and his site, built by `deploy.yml`. An engine release never holds his content or his own mode (`content/`, `private-pages/`, `modes/cozy-life/`; a test holds it), and his site turns on his own mode at `/play/`, so his visitors see no change.
 
-**Open (O15):** whether his site should also test what everyone else gets, and how, without losing the source's tight feedback loop (edit the code, see it at once, publish from the same repository). Nothing is decided, and nothing moves meanwhile. The options being weighed:
+**Decided (O15: D, stay on source, and prove both builds match).** His site keeps the source's tight feedback loop (edit the code, see it at once, publish from the same repository) and its address; his live site is never moved. What everyone else gets is proven instead ([plan stage 10](plan.md#stage-10-one-engine-two-builds)):
 
-- **D, stay on source and prove both builds match (leading):** `deploy.yml` and `site-build.yml` call one build script; a CI check builds his content both from source and through the engine pack of the same commit and compares the output (before sealing; only the documentation and the design library may differ), and the starter likewise; his own mode and his site's settings (the contact endpoint, the telemetry key) go through the paths a managed site uses. The release path he doesn't use every day (first run, Update your site, `site-build.yml` on a real repository) is covered by a canary consumer site rebuilt and checked on every release, and a first run with a second GitHub account before each release. His content stays apart (`content/`, `private-pages/`), so a later move stays cheap.
-- **A, B, C, move to a content-only site repository** built by engine releases and edited in the installed app, keeping the address by swapping the two repositories' names (A), moving to `prabinpebam.github.io` with redirect pages at `/atiya/` (B), or a custom domain (C). Every engine change would then reach his site only through a release: the loop he wants to keep.
-- **E, a hybrid:** a content-only site repository that the app builds against his local engine checkout, published from the engine's `main`. It keeps the loop, but every live change needs two repositories to agree.
+- **One build script.** `deploy.yml` and `site-build.yml` both run `scripts/build-site.mjs` (build quietly, check the sealer ran, check for leaks, check the budgets), so the two can't drift. It's in every engine release.
+- **The same settings path.** A site's services (the contact form's endpoint, the telemetry key) are content: `services` in `content/site.json`, read by every build the same way, from source or from a release. Nothing comes from the engine's `.env` or its repository's variables any more.
+- **A parity check.** `scripts/build-parity.mjs` builds one content folder twice from one commit: from the source, as `deploy.yml` does, and through that commit's engine pack, as `site-build.yml` does. It compares the two outputs file by file, with only the sealer's random parts normalised, and allows exactly one difference: `docs/`, which no release carries. It runs on his content (with his private pages, in CI) on every push to `main`, beside the deploy and never blocking it, and on the starter in every release.
+- **A canary site for the release path.** What he doesn't use every day (the first run, Update your site, `site-build.yml` on a real repository) is tested on a second site of his, made with the app and moved to each new release before anyone else gets it (§10.3).
+- **His own mode** goes through the consumer path once the planet is split (M3): Cozy life is built as a site's own mode (modes §8.2) in both builds, so the parity check covers it.
+
+His content stays apart (`content/`, `private-pages/`), so a move to a content-only repository stays possible later; the options weighed are in O15.
 
 ## 7. The app's architecture
 
@@ -585,7 +599,7 @@ Every place the engine names its owner reads the site's own settings instead (`S
 
 ### 10.1 The engine release
 
-A tag `engine-v<version>` runs `release.yml`: the unit tests, `npm run check`, `verify:prod` on the starter, then `engine-<version>.tgz` (code, lockfile, `public/`, generated assets, built-in modes, the mode kit, the starter; never `content/`, `private-pages/`, `modes/cozy-life/`, `assets-src/`, `documentation/`, `tests/`) with its sha256 and commit, as a release asset. Semver: a major version needs a content migration.
+A tag `engine-v<version>` runs `release.yml`: the unit tests, `npm run check`, `verify:prod` on the starter, the parity check on the starter (§6.4: its source build and its build through this commit's engine pack match), then `engine-<version>.tgz` (code, lockfile, `public/`, generated assets, built-in modes, the mode kit, the starter, the shared build script; never `content/`, `private-pages/`, `modes/cozy-life/`, `assets-src/`, `documentation/`, `tests/`) with its sha256 and commit, as a release asset. Semver: a major version needs a content migration.
 
 ### 10.2 The app's release
 
@@ -594,6 +608,8 @@ One engine release, its production dependencies installed per platform, a portab
 ### 10.3 Moving a site to a newer engine
 
 The app opens a site only at its own engine version. **Update your site** runs the content migrations through the store, writes the pin and the workflow's commit, commits and saves to remote, and follows the build; if it fails and no migration ran, **Go back** restores the pin.
+
+**The canary goes first** (O15, D). The owner keeps a second site of his own, made with the app like anyone's, with the starter's samples, private pages and Little planet on. Each new release is installed and the canary moved to it (Update your site), built by `site-build.yml` and looked at before the release is offered to anyone else: the release path his own site, built from source, never takes.
 
 ## 11. Packaging and platforms
 
@@ -639,7 +655,7 @@ Working defaults, used by the build until the owner decides otherwise:
 | O12 | Navigation modes' own decisions | As recommended in [modes §12](modes.md#12-open-decisions) | Stage 8 |
 | O13 | The app's own screens | Static pages on the site's tokens; the site's compiled components later | Stage 9 |
 | O14 | The access agreement's words name the owner ("and Prabin is told") | Change them to "and the site's owner is told" with a new `AGREEMENT_VERSION` (every current reader agrees again), or keep them for the owner and give managed sites their own | Before private pages ship to managed sites (stage 5) |
-| O15 | Whether and how the owner's site tests the consumer version without losing the source's tight loop (§6.4) | D: stay on source, with one build script for both and a CI check that both builds match, plus a canary consumer site (leading); A, B, C: move to a content-only repository at the same address (names swapped), the root address or a custom domain; E: a content-only repository built against his local engine | Open: being weighed by the owner |
+| O15 | Whether and how the owner's site tests the consumer version without losing the source's tight loop (§6.4) | D: stay on source, with one build script for both, the same settings path and a CI check that both builds match, plus a canary consumer site; A, B, C: move to a content-only repository at the same address (names swapped), the root address or a custom domain (every engine change would reach his site only through a release); E: a content-only repository built against his local engine (two repositories to agree on every live change) | **Decided 2026-10-14: D.** His live site never moves; a second site tests releases |
 
 ## 15. Critique of v1, and what changed
 

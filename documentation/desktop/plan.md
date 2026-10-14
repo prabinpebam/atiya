@@ -1,10 +1,10 @@
 # The desktop app: plan and Definitions of Done
 
-How the [desktop app](spec.md) and [navigation modes](modes.md) are built: ten stages, each ending in something the owner can try by hand, each held to its own Definition of Done, all held to the project's. The owner's site keeps working and deploying from `main` throughout: the work happens on the `desktop-app` branch, in its own worktree.
+How the [desktop app](spec.md) and [navigation modes](modes.md) are built: eleven stages, each ending in something the owner can try by hand, each held to its own Definition of Done, all held to the project's. The owner's site keeps working and deploying from `main` throughout: the work happens on the `desktop-app` branch, in its own worktree.
 
 > **TL;DR.**
 > - **How:** every stage is built in loops against its Definition of Done: build, run the stage's checks, fix, record the evidence here, commit. A stage is done when every row has its evidence and its "Try it" works by hand.
-> - **Stages:** 0 the spec; 1 the owner's app; 2 setup and the agent CLI, on a fake GitHub; 3 the first run in the app, on the fake GitHub; 4 just the site; 5 real GitHub, and private pages on first use; 6 the engine release and the site's build; 7 managed sites in the app; 8 navigation modes; 9 distribution and hand-out.
+> - **Stages:** 0 the spec; 1 the owner's app; 2 setup and the agent CLI, on a fake GitHub; 3 the first run in the app, on the fake GitHub; 4 just the site; 5 real GitHub, and private pages on first use; 6 the engine release and the site's build; 7 managed sites in the app; 8 navigation modes; 9 distribution and hand-out; 10 one engine, two builds (the owner's site stays on source, and both builds are proven the same).
 > - **Project Definition of Done:** the spec's seven promises, measured (§2), plus the owner's site unchanged and every budget kept.
 > - **Status:** see §6.
 
@@ -239,9 +239,30 @@ Built in steps, cheapest and safest first, each closed against its own rows befo
 | 9.2 | The security review's findings are fixed or accepted in writing | The review |
 | 9.3 | Five people who don't write code each reach a live site unaided | The study's notes |
 
+### Stage 10: one engine, two builds
+
+The owner's site stays on source (spec §6.4, O15: D): it's developed, built and deployed from this repository as today, and is never moved. What every other site gets is proven instead: the two builds run one script, read their settings from one place, and a check builds his content both ways from one commit and finds them the same. A second site of his, made with the app, takes each release first. The live site must not break at any step: the work happens on a branch, `deploy.yml` keeps its triggers, secrets, permissions and its deploy gate, and the parity check runs beside the deploy, never in its way.
+
+- **Builds:** `scripts/build-site.mjs` (the steps both workflows share); the site's services in `content/site.json` and the build that reads them; `scripts/build-parity.mjs` and its comparison (pure, in `scripts/lib/parity.mjs`); `parity.yml`; the parity step in `release.yml`; the canary's procedure.
+- **Try it:** `node scripts/build-parity.mjs` on this checkout: it builds the owner's site twice and prints `the same, but for docs/`. `node scripts/build-parity.mjs --starter`: the same for the starter. Then change one file of the engine's EXCLUDE list to leave out something a build needs, and see it fail naming the file.
+
+| # | Done when | Evidence |
+|---|---|---|
+| 10.1 | One build script: `deploy.yml`, `site-build.yml` and `site-build-local.mjs` build, check the seal, check for leaks and check the budgets only through `scripts/build-site.mjs`, which every engine release carries | `buildSite.test.ts` (the workflows run the script and no step of their own; the engine pack lists it); the script on the owner's site gives what `verify:prod` gives |
+| 10.2 | The live deploy is unchanged but for that: the same triggers, schedule, permissions, secret, concurrency, Pages steps and deploy gate | `buildSite.test.ts` holds them; the diff reviewed; the owner runs `deploy.yml` once on the branch (its build job; the deploy job runs only on `main`) before merging |
+| 10.3 | A site's services are content: `services` in `content/site.json` (schema), made the build's `PUBLIC_CONTACT_ENDPOINT`, `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`; the telemetry key only for a published address (`SITE_URL`); a test build never reads them; the engine's `.env` holds no endpoint and `deploy.yml` passes no telemetry variables; the contact service's deploy script writes the endpoint to `content/site.json` | `siteServices.test.ts` (the rules for each command and mode); the owner's built pages carry his endpoint; E2E "contact" and the telemetry tests of "protected content" pass |
+| 10.4 | The parity check builds one content folder from source and through the same commit's engine pack, normalises only the sealer's random parts, and allows only `docs/` to differ; it prints counts and public paths, never a sealed file's path or anything from it | `parity.test.ts` (the comparison: equal trees pass, a changed, missing or extra file fails, sealed files are compared by shape and never named); a seeded difference fails |
+| 10.5 | The owner's site passes it: his content, private pages and planet | `node scripts/build-parity.mjs` on this checkout |
+| 10.6 | The starter passes it, just the site and with the planet | `node scripts/build-parity.mjs --starter` and `--starter --site-only` |
+| 10.7 | CI runs it: `parity.yml` on every push to `main` and on demand, with the private pages, quietly, separate from the deploy; `release.yml` on the starter before packing | `buildSite.test.ts` holds both workflows; the first run on GitHub, after the merge (the owner's) |
+| 10.8 | The canary: a second site of the owner's, made with the app, moved to each release before anyone else | Spec §10.3; the first one needs an engine release (6.2b) and the owner's account: **blocked** until then |
+| 10.9 | His own mode goes the consumer's way: Cozy life built as a site's own mode in both builds | Needs the planet's split (M3): **pending** |
+| 10.10 | Nothing else changed: the owner's site, its budgets, its pages | `verify:prod`; unit; type check; E2E "landing & classic" |
+| 10.11 | Docs: spec §6.3, §6.4, §10, O15 and §16, the contact and access specs, AGENTS.md and the whole plan say how it works | Review; the docs checks |
+
 ## 4. Order
 
-Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 needs only 0. 5 needs 3 and the owner's OAuth App. 6 needs 4. 7 needs 3 and 6. 8 needs 4. 9 needs everything. The owner can use stage 1's app as soon as it's done.
+Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 needs only 0. 5 needs 3 and the owner's OAuth App. 6 needs 4. 7 needs 3 and 6. 8 needs 4. 9 needs everything. 10 needs 6 (its rows 10.8 and 10.9 need an engine release and M3). The owner can use stage 1's app as soon as it's done.
 
 ## 5. Tests
 
@@ -267,3 +288,4 @@ Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 need
 | 8 M1.1 | Done (on `ways-to-explore`) | Little planet's structure is `content/structures/modes/little-planet.json` (the owner's content and the starter moved with `git mv`); the old place is read with a warning and both are refused; `scripts/migrate-planet-structure.mjs` moves it and changes nothing a second time. Unit: 4 new tests in `ways.test.ts` (the new place, the old one, both, the script; the integration's and the engine's paths kept equal), and the whole suite (1,375) and the app's (56) pass; the type check is clean. `build:starter`, `build:planet-off` and `build:site-only` pass; `verify:prod` gives the same sizes (game JS 449.6 KB, before live 1588 KB). E2E: the editor's "planet" test, "editor: ways to explore" (2) and the planet's "fast travel" and "reading theme" pass |
 | 8 M1.2 | Done (on `ways-to-explore`) | The gate (the host) calls the planet's `mount(root, host)` with the page's mode data; the contract's types are the mode kit's (`packages/mode-kit/`, now packed with the engine). Budgets: `verify:prod` gives the game's initial JS unchanged at 449.6 KB and the gate 7.7 of its 8 KB (the entry and the host live there: no saving was needed in the game), before live 1589 KB. Unit: `modeHost.test.ts` (5: the data, tier and prefs; storage namespaced, JSON and capped; `open`, `track` and the address; the site's address for a place; the kit's lists equal to the site's); the type check is clean. E2E: "capability gate", the two deep-link tests, Prabin's welcome, the character picker, fast travel and reading theme pass (8). `perf:audit`: the census as the baseline (262 calls, 1.511 M triangles, 89 programs, 94 shadow casters, 73 textures, 0 NaN pixels), live 1.89 s, GPU 2.6 ms and JS 3.0 ms a frame |
 | 9 | Blocked | Needs a code-signing certificate, an Apple Developer account and five study participants |
+| 10 | Started (on `ways-to-explore`) | Planned 2026-10-14 (O15: D) |

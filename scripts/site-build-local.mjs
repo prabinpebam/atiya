@@ -8,7 +8,7 @@
  *
  * Exits 1 at the first step that fails, saying which, as the workflow would.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -53,20 +53,10 @@ try {
   step("Install the engine's packages");
   execFileSync('npm', ['ci', '--no-audit', '--no-fund'], { cwd: engine, stdio: 'inherit', shell: process.platform === 'win32' });
 
-  step('Build');
+  step('Build and check (scripts/build-site.mjs: the build, the seal, the leak check, the budgets)');
   const env = { ...process.env, SITE_URL: 'https://ada.github.io', BASE_PATH: '/' };
-  for (const k of ['CONTENT_ROOT', 'PRIVATE_ROOT', 'PUBLIC_POSTHOG_KEY']) delete env[k];
-  const log = execFileSync(process.execPath, [join(engine, 'node_modules', 'astro', 'bin', 'astro.mjs'), 'build'], { cwd: engine, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-  const sealLine = /\[site-seal\].*/.exec(log)?.[0];
-  if (!sealLine) fail("the sealer didn't run: the build is not sealed");
-  console.log(sealLine);
-
-  step('Check for leaks');
-  execFileSync(process.execPath, ['scripts/verify-sealed.mjs'], { cwd: engine, stdio: 'inherit' });
-
-  step('Check the bundle budgets');
-  if (['modes/little-planet.json', 'planet.json'].some((f) => existsSync(join(engine, 'content', 'structures', ...f.split('/'))))) execFileSync(process.execPath, ['scripts/size-report.mjs', '--prod'], { cwd: engine, stdio: 'inherit' });
-  else console.log('Just the site: no planet budgets to check.');
+  for (const k of ['CONTENT_ROOT', 'PRIVATE_ROOT', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_POSTHOG_HOST', 'PUBLIC_CONTACT_ENDPOINT', 'GITHUB_ACTIONS', 'RUNNER_TEMP']) delete env[k];
+  if (spawnSync(process.execPath, ['scripts/build-site.mjs', '--log', join(work, 'build.log')], { cwd: engine, env, stdio: 'inherit' }).status !== 0) fail('the build or one of its checks failed (above)');
 
   step('The site');
   const home = readFileSync(join(engine, 'dist', 'index.html'), 'utf8');

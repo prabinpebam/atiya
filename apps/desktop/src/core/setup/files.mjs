@@ -18,7 +18,8 @@ export function atiyaJson(s) {
         schema: 1,
         engine: s.engine,
         contract: 1,
-        features: { contact: 'off', telemetry: null },
+        // the engine's own parts it publishes; its services (contact, telemetry) are content/site.json's (spec §6.3)
+        features: { designLibrary: false, docs: false },
         owner: { login: s.login, id: s.id },
       },
       null,

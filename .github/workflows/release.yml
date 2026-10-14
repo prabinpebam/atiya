@@ -49,6 +49,12 @@ jobs:
           npm run build:site-only
           npm run build:starter
 
+      # the same site from source and from this commit's engine pack (documentation/desktop/spec.md §6.4)
+      - name: The starter, built from source and from the engine pack, is the same site
+        run: |
+          node scripts/build-parity.mjs --starter --install
+          node scripts/build-parity.mjs --starter --site-only --install
+
       - name: Pack the engine
         run: node scripts/pack-engine.mjs --out release
 

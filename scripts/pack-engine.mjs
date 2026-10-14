@@ -15,7 +15,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** What an engine is: everything a site's build needs, and nothing of anyone's. */
-export const INCLUDE = ['package.json', 'package-lock.json', '.npmrc', 'astro.config.mjs', 'tsconfig.json', '.gitattributes', 'src/', 'public/', 'integrations/', 'packages/', 'starter/', 'scripts/verify-sealed.mjs', 'scripts/size-report.mjs', 'contact-api/src/rules.mjs'];
+export const INCLUDE = ['package.json', 'package-lock.json', '.npmrc', 'astro.config.mjs', 'tsconfig.json', '.gitattributes', 'src/', 'public/', 'integrations/', 'packages/', 'starter/', 'scripts/build-site.mjs', 'scripts/verify-sealed.mjs', 'scripts/size-report.mjs', 'contact-api/src/rules.mjs'];
 /**
  * Never in an engine, even inside an included folder (the owner's content, his own mode, his secrets'
  * addresses). The contact form's rules are the one file of contact-api/ the site imports (they're pure).

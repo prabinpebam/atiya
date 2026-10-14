@@ -86,27 +86,17 @@ jobs:
         id: pages
         uses: actions/configure-pages@v6
 
-      # a project site lives under the repository's name, e.g. https://<user>.github.io/atiya/. The build's
-      # own log stays in the runner (it can name protected pages); only the sealer's counts are printed
-      - name: Build
+      # a project site lives under the repository's name, e.g. https://<user>.github.io/atiya/. The one build
+      # script every published build runs (a managed site's site-build.yml too: documentation/desktop/spec.md
+      # §6.4): it builds quietly (the log stays in the runner: it can name protected pages; only the sealer's
+      # counts are printed), checks the sealer ran, that nothing readable from a private page is left
+      # (findings name a category and a file, never the words) and the bundle budgets. The site's services
+      # (the contact endpoint, the telemetry key) are content: content/site.json's `services`
+      - name: Build and check
         env:
           SITE_URL: ${{ steps.pages.outputs.origin }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY }}
-          PUBLIC_POSTHOG_HOST: ${{ vars.PUBLIC_POSTHOG_HOST }}
-        run: |
-          if ! npm run build > "$RUNNER_TEMP/build.log" 2>&1; then
-            echo "The build failed. Its log isn't printed here, since it can name protected pages: run npm run build locally to see why."
-            exit 1
-          fi
-          grep -o '\[site-seal\].*' "$RUNNER_TEMP/build.log" || { echo "The sealer didn't run: the build is not sealed."; exit 1; }
-
-      # nothing readable from a locked or private page may be left; findings name a category and a file, never the words
-      - name: Check for leaks
-        run: node scripts/verify-sealed.mjs
-
-      - name: Check the bundle budgets
-        run: node scripts/size-report.mjs --prod
+        run: node scripts/build-site.mjs
 
       - name: Upload the site
         uses: actions/upload-pages-artifact@v5
