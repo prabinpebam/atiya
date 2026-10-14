@@ -127,14 +127,31 @@ export function protectedTerms(privateRoot) {
 
 /**
  * The public repository's own words, folded: every text file of its sources (content/, documentation/,
- * src/; never private-pages/). Words already there are public whatever a private page says, so the build
- * repeating them leaks nothing: a private article about a product the open résumé names, or a heading
- * another open page also uses.
+ * src/; never private-pages/), and the third-party modules the build bundled (published npm code, listed by
+ * the sealer: integrations/seal.mjs). Words already there are public whatever a private page says, so the build
+ * repeating them leaks nothing: a private article about a product the open résumé names, a heading another
+ * open page also uses, or an ordinary word three.js's code holds too.
  */
 export function publicCorpus(root = process.cwd()) {
   const parts = [];
   for (const dir of PUBLIC_SOURCES) for (const f of walk(join(root, dir))) if (SOURCE.test(f) && statSync(f).size <= 5 * 1024 * 1024) parts.push(fold(readFileSync(f, 'utf8')));
+  for (const f of bundledModules(root)) parts.push(fold(readFileSync(f, 'utf8')));
   return parts.join('\u0001');
+}
+
+/**
+ * A published package's file: under node_modules, never in a folder starting with a dot (.cache, .vite:
+ * what a build makes there can come from the content, private pages included).
+ * @param {string} f
+ */
+export const isPackageFile = (f) => /[\\/]node_modules[\\/]/.test(f) && !/[\\/]node_modules[\\/](?:.*[\\/])?\./.test(f);
+
+/** The third-party modules the last build bundled: text files of published packages only, each once. */
+export function bundledModules(root = process.cwd()) {
+  const list = join(root, 'node_modules', '.cache', 'site-protected', 'bundled.txt');
+  if (!existsSync(list)) return [];
+  const files = new Set(readFileSync(list, 'utf8').split('\n').filter(Boolean));
+  return [...files].filter((f) => isPackageFile(f) && SOURCE.test(f) && existsSync(f) && statSync(f).size <= 5 * 1024 * 1024);
 }
 
 /**

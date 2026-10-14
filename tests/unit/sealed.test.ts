@@ -10,7 +10,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { sealSite } from '../../integrations/seal.mjs';
-import { fold, protectedTerms, publicCorpus, verifySealed, wordsToCheck } from '../../scripts/verify-sealed.mjs';
+import { bundledModules, fold, isPackageFile, protectedTerms, publicCorpus, verifySealed, wordsToCheck } from '../../scripts/verify-sealed.mjs';
 import { b64, deriveCodeKey, deriveLinkKey, open, utf8 } from '../../src/site/access/crypto';
 import { cardAad, checkEnvelope, openKeyring, pageAad } from '../../src/site/access/keyring';
 
@@ -185,6 +185,23 @@ describe('the leak check', () => {
     expect([...kept.keys()]).toEqual(expect.arrayContaining(['deltaddd55', 'gfixall22']));
     // the real public sources hold none of the fixtures' words, so every planted leak above is still caught
     expect(wordsToCheck(protectedTerms(FIXTURES), publicCorpus()).public.size).toBe(0);
+  });
+
+  it("counts the npm code a build bundled as public, but never a build's own cache (desktop plan stage 10)", () => {
+    const r = mkdtempSync(join(root, 'bundled-'));
+    const put = (rel: string, text: string) => (mkdirSync(join(r, rel, '..'), { recursive: true }), writeFileSync(join(r, rel), text), join(r, rel));
+    const pkg = put('node_modules/three/build/three.module.js', 'const word = "fixture heading beta";');
+    const cache = put('node_modules/.cache/content/private.js', 'export const t = "deltaddd55 secret words";');
+    const vite = put('node_modules/three/.vite/deps.js', 'export const u = "other words";');
+    put('node_modules/.cache/site-protected/bundled.txt', [pkg, cache, vite, pkg].join('\n') + '\n');
+    expect(isPackageFile(pkg)).toBe(true);
+    expect(isPackageFile(cache)).toBe(false);
+    expect(isPackageFile(vite)).toBe(false);
+    expect(bundledModules(r)).toEqual([pkg]);
+    const corpus = publicCorpus(r);
+    expect(corpus).toContain('fixture heading beta');
+    expect(corpus).not.toContain('deltaddd55');
+    expect(corpus).not.toContain('other words');
   });
 });
 
