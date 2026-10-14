@@ -9,13 +9,15 @@ import { tierTextures } from '../game/world/textures';
 import { TEXTURES } from '../game/world/textureManifest';
 import { CHARACTERS } from '../game/player/characters';
 import { PLACES } from '../game/world/places';
-import { getPlanet, getRoutes, placePages } from '../site/content/repository';
+import { getPlanet, getRoutes, getSite, placePages } from '../site/content/repository';
 import type { LandmarkData } from '../game/types';
 
 // the buildings: the world's (fixed, in code) joined with what the planet structure says each holds
 // (content/structures/planet.json: documentation/sections/spec.md §5)
 const planet = getPlanet();
-if (!planet) throw new Error('content/structures/planet.json is missing: the planet needs its buildings’ words and pages');
+// a site without the planet (just the site: no planet structure) sends /play/ home (desktop plan, stage 4)
+if (!planet) return Astro.redirect(withBase('/'));
+const siteName = getSite().name;
 const routes = getRoutes();
 const landmarks: LandmarkData[] = PLACES.map((world) => {
   const place = planet.places.find((p) => p.id === world.id);
@@ -51,10 +53,10 @@ const caret = icon(faCaretDown);
 const cross = icon(faXmark);
 ---
 
-<BaseLayout title="Explore the little planet — Prabin Pebam" bodyClass="play surface-wood">
+<BaseLayout title={`Explore the little planet — ${siteName}`} bodyClass="play surface-wood">
   <a class="skip-link" href={withBase('/#sections')} data-classic-link>Skip to classic site</a>
   <header class="play-header">
-    <a class="brand" href={withBase('/')}>Prabin Pebam</a>
+    <a class="brand" href={withBase('/')}>{siteName}</a>
     <div class="play-actions">
       <a class="btn" href={withBase('/#sections')} data-classic-link>Classic site</a>
       <div id="hud-actions" class="hud-actions"></div>

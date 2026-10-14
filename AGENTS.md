@@ -149,6 +149,15 @@ Spec, plan and Definition of Done: [documentation/contact/](./documentation/cont
 - **Never let a terminal inherit `.env`:** leave VS Code's `python.terminal.useEnvFile` off (dismiss the Python extension's "environment file is configured" notice with Don't Show Again). Vite lets a variable already in the environment override the `.env.<mode>` files, so an injected `PUBLIC_CONTACT_ENDPOINT` would point test builds and E2E at the real service.
 - **Nothing typed in the form reaches telemetry** (its wrapper is `ph-no-capture`, and it sends no events); keep it that way.
 
+### Desktop app (Atiya Studio)
+
+Spec, navigation modes, plan and Definitions of Done: [documentation/desktop/](./documentation/desktop/spec.md). Built stage by stage on the `desktop-app` branch.
+- **`apps/desktop/` is its own package** (Electron 44.6.0, exact pin; its `postinstall` fetches Electron's binary). Pure logic in `src/core/` (unit-tested: `npx vitest run --config apps/desktop/vitest.config.mjs`), Electron in `src/main/`, the app's pages in `src/ui/`, styled only with the site's semantic tokens and fonts, which `scripts/sync-ui.mjs` copies into `src/ui/site/` at start (never hand-edit or commit that folder).
+- **Views are sandboxed, with no Node;** the bridge answers `app://` pages only; outside links open in the system browser. The GitHub token lives only in the keychain (`safeStorage`) and reaches git as a per-call header: never in a file, an argument, a URL or a log.
+- **Setup is one machine** (`src/core/setup/machine.mjs`): every step a check and an act, so a run twice is harmless and an interrupted one resumes. The first run's screens and the `atiya` CLI (`bin/atiya.mjs`, JSON events and exit codes for agents) both drive it; add a step there, never a one-off in a screen.
+- **Tests never touch real GitHub:** they use the fake GitHub (`src/core/setup/fake-github.mjs`, real bare repositories). Run the app's E2E through the launcher: `node scripts/test-run.mjs --by agent --purpose "…" -- -c apps/desktop/playwright.config.mjs`. A live check against GitHub is made on purpose only, on a test account.
+- **The engine names no owner:** a site's name and features (the planet, the design library, the docs) come from its content and `atiya.json` (`integrations/features.mjs`). `npm run build:site-only` and `npm run build:starter` build the starter as someone else's site and check it.
+
 ### Documentation site (the source of truth)
 
 - `documentation/` is a [Slate](./slate/README.md) host. The package is a pinned git submodule of `https://github.com/prabinpebam/slate.git` in `slate/`; the adapter skill is `.github/skills/slate/SKILL.md`.

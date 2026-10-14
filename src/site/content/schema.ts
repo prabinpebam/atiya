@@ -89,7 +89,7 @@ export const imageMedia = z
 export const documentMedia = z.strictObject({
   kind: z.literal('document'),
   file: z.string().regex(/^[a-z0-9-]+\.pdf$/),
-  /** What it is, in words: a link to it can say so ("Prabin Pebam's résumé"). */
+  /** What it is, in words: a link to it can say so ("Ada Lovelace's résumé"). */
   title: z.string().min(1),
   caption: z.string().optional(),
   visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),

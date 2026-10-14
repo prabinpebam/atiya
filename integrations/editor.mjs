@@ -15,11 +15,13 @@
  * - In dev, unless SITE_EDITOR=off, it injects the editor's routes (all on demand, under /_edit/) and
  *   the middleware that guards them.
  */
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { privateRootFor } from './roots.mjs';
+import { siteFeatures } from './features.mjs';
 
 const ROUTES = [
   ['/_edit', 'dashboard.astro'],
@@ -36,6 +38,38 @@ const ROUTES = [
   ['/_edit/tests', 'tests.astro'],
   ['/_edit/api/[...path]', 'api.ts'],
 ];
+
+/**
+ * The host the site is published under, which links stay in the same tab for: its SITE_URL's host, else
+ * `<owner>.github.io` from the content's own git remote, else '' (desktop spec §9.2: never the code's owner).
+ * @param {string | undefined} siteUrl @param {string} repoDir
+ */
+function parentDomainOf(siteUrl, repoDir) {
+  if (siteUrl) {
+    try {
+      return new URL(siteUrl).hostname.toLowerCase();
+    } catch {
+      // fall through to the remote
+    }
+  }
+  try {
+    const remote = execFileSync('git', ['-C', repoDir, 'config', '--get', 'remote.origin.url'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true }).trim();
+    const owner = /github\.com[:/]([^/]+)\//i.exec(remote)?.[1];
+    return owner ? `${owner.toLowerCase()}.github.io` : '';
+  } catch {
+    return '';
+  }
+}
+
+/** The site's name from its settings (content/site.json), or '' when it can't be read. @param {string} root */
+function siteNameOf(root) {
+  try {
+    const name = JSON.parse(readFileSync(join(root, 'site.json'), 'utf8')).name;
+    return typeof name === 'string' ? name : '';
+  } catch {
+    return '';
+  }
+}
 
 /** @param {string} file */
 const sha1 = (file) => createHash('sha1').update(readFileSync(file)).digest('hex');
@@ -142,6 +176,10 @@ export default function editor() {
   let privateRoot = '';
   /** @type {boolean} */
   let editing = false;
+  /** The site's name the running server was started with. */
+  let siteName = '';
+  /** @type {{ planet: boolean, designLibrary: boolean, docs: boolean, managed: boolean }} */
+  let features = { planet: true, designLibrary: true, docs: true, managed: false };
   return {
     name: 'site-editor',
     hooks: {
@@ -152,9 +190,18 @@ export default function editor() {
         if (override && command === 'build') throw new Error('CONTENT_ROOT is only for the editor in dev and its tests: unset it to build, so the build reads the real content.');
         contentRoot = override && command === 'dev' ? (isAbsolute(override) ? override : resolve(root, override)) : join(root, 'content');
         privateRoot = privateRootFor(root, command);
+        // the header, footer and titles name the site from its own settings, never the code (desktop spec §9.2)
+        siteName = siteNameOf(contentRoot);
+        features = siteFeatures({ root, contentRoot });
         updateConfig({
           vite: {
-            define: { __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot), __SITE_PRIVATE_ROOT__: JSON.stringify(privateRoot) },
+            define: {
+              __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot),
+              __SITE_PRIVATE_ROOT__: JSON.stringify(privateRoot),
+              __SITE_NAME__: JSON.stringify(siteName),
+              __SITE_PARENT_DOMAIN__: JSON.stringify(parentDomainOf(config.site, override && command === 'dev' ? contentRoot : root)),
+              __SITE_FEATURES__: JSON.stringify(features),
+            },
             // the private masters a build imports (masters.ts globs through this alias)
             resolve: { alias: { '@private-pages': privateRoot } },
             server: {
@@ -231,6 +278,19 @@ export default function editor() {
           state.writes.set(writeKey(file), hash);
           state.generation++;
           state.notify?.([key], false);
+        });
+        // the site's name and whether it has the planet are set when the server starts: a new name (Settings),
+        // or the planet structure coming or going, restarts it, so every page shows it
+        server.watcher.on('all', (_event, file) => {
+          const rel = relative(contentRoot, file).split(/[\\/]/).join('/');
+          if (rel !== 'site.json' && rel !== 'structures/planet.json') return;
+          const now = siteNameOf(contentRoot);
+          const planet = existsSync(join(contentRoot, 'structures', 'planet.json'));
+          if ((now && now !== siteName) || planet !== features.planet) {
+            siteName = now || siteName;
+            features = { ...features, planet };
+            void server.restart();
+          }
         });
       },
 

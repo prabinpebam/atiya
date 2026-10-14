@@ -12,6 +12,7 @@ import '@fontsource-variable/fraunces/full.css';
 import '@fontsource-variable/fraunces/full-italic.css';
 import { siteTokens } from '../../design/tokens';
 import { resolve, toCss } from '../../design/tokenModel';
+import { SITE_NAME } from '../../design/meta';
 import { tokenAnchor } from '../tokenLinks';
 
 const m = siteTokens();
@@ -22,7 +23,7 @@ const faces = [
   { token: '--font-ui', name: 'Figtree', role: 'Interface: controls, navigation, captions, meta', by: 'Erik Kennedy, SIL Open Font License', axes: 'Weight 300 to 900; italic', why: 'A clean, friendly geometric sans: clear at 14 px in a caption, round and warm on a button.', sample: 'Explore the planet, or read the classic site', face: 'ui' },
 ];
 const RAMP_FACE: Record<string, string> = { sm: 'ui', md: 'ui', lg: 'ui', body: 'text', lead: 'text', h4: 'display', h3: 'display', h2: 'display', h1: 'display', quote: 'display-italic', display: 'display', jumbo: 'display' };
-const RAMP_SAMPLE: Record<string, string> = { sm: 'A caption under a picture', md: 'Explore the planet', lg: 'Show the code', body: 'The planet turns under your feet as you walk.', lead: 'A standfirst: what the story is about, in a line.', h4: 'A small heading', h3: 'A section heading', h2: 'A chapter heading', h1: 'An article title', quote: 'A line worth lifting', display: 'Prabin Pebam', jumbo: '07' };
+const RAMP_SAMPLE: Record<string, string> = { sm: 'A caption under a picture', md: 'Explore the planet', lg: 'Show the code', body: 'The planet turns under your feet as you walk.', lead: 'A standfirst: what the story is about, in a line.', h4: 'A small heading', h3: 'A section heading', h2: 'A chapter heading', h1: 'An article title', quote: 'A line worth lifting', display: SITE_NAME, jumbo: '07' };
 const px = (v: unknown) => (typeof v === 'object' && v && 'value' in v ? Math.round(Number((v as { value: number }).value) * 16) : null);
 const ramp = pick('text').map((t) => ({ t, min: t.fluidMin !== undefined ? px(t.fluidMin) : px(t.value), max: px(t.value) }));
 const tables = [

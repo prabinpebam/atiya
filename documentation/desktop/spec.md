@@ -634,6 +634,7 @@ Working defaults, used by the build until the owner decides otherwise:
 | O11 | Telemetry for the app | None | — |
 | O12 | Navigation modes' own decisions | As recommended in [modes §12](modes.md#12-open-decisions) | Stage 8 |
 | O13 | The app's own screens | Static pages on the site's tokens; the site's compiled components later | Stage 9 |
+| O14 | The access agreement's words name the owner ("and Prabin is told") | Change them to "and the site's owner is told" with a new `AGREEMENT_VERSION` (every current reader agrees again), or keep them for the owner and give managed sites their own | Before private pages ship to managed sites (stage 5) |
 
 ## 15. Critique of v1, and what changed
 
@@ -654,4 +655,13 @@ v1 was written from the architecture outwards. Read as a newcomer, and as an age
 
 ## 16. As built
 
-What the build settles, stage by stage ([plan](plan.md)), is recorded here.
+On the `desktop-app` branch, stage by stage ([plan §6](plan.md#6-status) has the evidence).
+
+- **The app** is `apps/desktop/`: Electron 44.6.0 (Node 24), plain ES modules with JSDoc types, no bundler. Pure parts in `src/core/` (the supervisor, the folder check, the view rules, settings, and the setup machine in `src/core/setup/`), Electron in `src/main/` (the main process, the first run's `SetupFlow`, the token store, the preload), the pages in `src/ui/`, styled with the site's own tokens and fonts, copied in by `scripts/sync-ui.mjs` when the app starts (never committed twice).
+- **The owner's app** (stage 1) runs his checkout's own `astro dev` on 4321 under the system's Node; a managed site's runs the engine's `astro dev` with `CONTENT_ROOT` at its workspace on 4325, so the two never collide. Until stage 7 bundles a release, a managed site's engine is the checkout the app runs from.
+- **The CLI** (stage 2) is `apps/desktop/bin/atiya.mjs`; the fake GitHub, `src/core/setup/fake-github.mjs`, is a real HTTP server with real bare git repositories, used by the tests and by `npm start -- --fake-github`.
+- **The starter** (stage 2) is `starter/content/`: seven sections (About, Work, Approach, Writing, Speaking, Projects, Contact), the planet's seven buildings mapped to them, and four sample pages written as instructions.
+- **Setup's state** is the machine's checks: every run checks every step, so the state file (`.atiya/setup.json`) only records what was made; the app also remembers an unfinished setup's choices and resumes it at launch.
+- **Sign-in** uses the device flow when the app has an OAuth App's client ID (`ATIYA_GITHUB_CLIENT_ID`, stage 5); until then the app and the CLI sign in with the GitHub CLI's token or `GH_TOKEN`.
+- **The site's identity and features** (stage 4) come from the content: the name from `content/site.json`, the planet from the presence of `content/structures/planet.json`, the design library and documentation from `atiya.json` (on for the engine's own repository, which has none). A site without the planet builds (it used to fail), sends `/play/` home, and ships none of the planet; the mode host (stage 8) replaces this with the "not offered" page of [modes §2](modes.md#2-the-site-and-turning-modes-on-and-off).
+- **Found on the way, for later stages:** edit mode on a managed site still shows the owner's developer tools (the Tests screen, "git" on the dashboard): stage 7 hides them. The access agreement still names the owner (O14). The planet's host and characters are the owner's until stage 8 (O5).

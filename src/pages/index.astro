@@ -3,8 +3,8 @@ import LandingLayout from '../site/layouts/LandingLayout.astro';
 import Button from '../site/components/fundamentals/Button.astro';
 import Link from '../site/components/fundamentals/Link.astro';
 import ContentsList from '../site/components/compounds/ContentsList.astro';
-import { withBase } from '../site/design/meta';
-import { getPerson, getRoute, getRoutes, getSite, getStructure } from '../site/content/repository';
+import { SITE_FEATURES, withBase } from '../site/design/meta';
+import { getPerson, getPlanet, getRoute, getRoutes, getSite, getStructure } from '../site/content/repository';
 import { footerLinks, siteNav } from '../site/content/navigation';
 
 // the home page is the site structure's root (documentation/sections/spec.md §3.5): its words are the
@@ -15,6 +15,8 @@ const home = getRoute('/')!;
 const routes = getRoutes();
 const sections = routes.filter((r) => r.parent === home.node);
 const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === r.node && p.access === 'open').length;
+// just the site (no planet structure): no way into the planet, and the opening has no painting of it
+const planet = !!getPlanet();
 ---
 
 <LandingLayout
@@ -26,20 +28,24 @@ const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === 
   hero={{
     title: home.title,
     standfirst: home.node.kind === 'hub' ? home.node.summary : undefined,
-    picture: {
-      src: withBase('/poster/landing-1200.webp'),
-      srcset: `${withBase('/poster/landing-800.webp')} 800w, ${withBase('/poster/landing-1200.webp')} 1200w`,
-      alt: 'A painted tiny planet with a brick plaza, little buildings and a character.',
-      width: 1200,
-      height: 800,
-    },
+    picture: planet
+      ? {
+          src: withBase('/poster/landing-1200.webp'),
+          srcset: `${withBase('/poster/landing-800.webp')} 800w, ${withBase('/poster/landing-1200.webp')} 1200w`,
+          alt: 'A painted tiny planet with a brick plaza, little buildings and a character.',
+          width: 1200,
+          height: 800,
+        }
+      : undefined,
   }}
 >
-  <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>
-  <Button variant="secondary" size="lg" href="#sections" data-mode="classic">Read the site</Button>
-  <Fragment slot="note">
-    The planet is a small 3D world you can walk around. <Link href={withBase('/docs/')}>How this site was built</Link>
-  </Fragment>
+  {planet && <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>}
+  <Button variant={planet ? 'secondary' : 'primary'} size="lg" href="#sections" data-mode="classic">Read the site</Button>
+  {planet && (
+    <Fragment slot="note">
+      The planet is a small 3D world you can walk around.{SITE_FEATURES.docs && <> <Link href={withBase('/docs/')}>How this site was built</Link></>}
+    </Fragment>
+  )}
   <Fragment slot="after">
     <ContentsList
       label="Sections"
@@ -76,8 +82,8 @@ const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === 
   try {
     last = localStorage.getItem('site.mode');
   } catch {}
-  // the way the visitor went last time is the primary action
-  const primary = last === 'classic' ? 'classic' : 'play';
+  // the way the visitor went last time is the primary action (the site, when there's no planet)
+  const primary = last === 'classic' || !document.querySelector('main a[data-mode="play"]') ? 'classic' : 'play';
   document.querySelectorAll<HTMLAnchorElement>('main a[data-mode]').forEach((a) => {
     a.dataset.variant = a.dataset.mode === primary ? 'primary' : 'secondary';
     a.addEventListener('click', () => store(a.dataset.mode!));

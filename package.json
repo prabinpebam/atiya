@@ -23,7 +23,9 @@
     "verify:sealed": "node scripts/verify-sealed.mjs",
     "preview:protected": "astro build && node scripts/verify-sealed.mjs && astro preview --port 4331",
     "perf:audit": "node scripts/perf-audit.mjs",
-    "perf:bench": "node scripts/perf-bench.mjs"
+    "perf:bench": "node scripts/perf-bench.mjs",
+    "build:starter": "node scripts/build-starter.mjs",
+    "build:site-only": "node scripts/build-starter.mjs --site-only"
   },
   "dependencies": {
     "@astrojs/react": "6.0.6",

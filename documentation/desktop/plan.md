@@ -92,16 +92,25 @@ The worktree is `E:\Projects\Personal\personal-site-desktop` (branch `desktop-ap
 | 3.6 | The failures of spec §4.5 that the fake can cause show their words and their way on | E2E |
 | 3.7 | Each setup screen passes axe in light and dark and works by keyboard; none shows a path, git or a terminal | E2E with axe; a copy check |
 
-### Stage 4: just the site
+### Stage 4: just the site, and nothing of the owner's
 
-- **Builds:** the engine reads `atiya.json` (none, as on the owner's site today, means everything on); with no mode on, no `/play/` routes, no game chunks, no planet assets, no Explore link, and a home page without a mode; `atiya.json`'s schema in the content check.
-- **Try it:** in the worktree, `npm run build:site-only` builds the starter as just the site; `npx astro preview` shows a site with no Explore button and no `/play/`.
+Found while checking stage 3 by hand: a new site's header said the owner's name (it was `SITE_NAME` in code), and a site made with Just the site couldn't build at all (`play.astro` threw without a planet structure). So this stage makes the engine any site's.
+
+- **Builds:**
+  - **The site's identity from its content:** `integrations/editor.mjs` defines, from the content in use, the site's name (`content/site.json`; a rename in Settings restarts the dev server), the host its links stay in the tab for (`SITE_URL`'s, else its git remote's `<owner>.github.io`) and its features (`integrations/features.mjs`).
+  - **The features:** the planet when the content has a planet structure; the design library and the documentation for the engine's own repository, and for a managed site only if its `atiya.json` turns them on.
+  - **Just the site:** no Explore link (header or footer), no planet on the home page, `/play/` sends home, and `integrations/site-only.mjs` removes the game's chunks, the planet's assets, `/design/` and `/docs/` from what a build writes.
+  - **The check:** `scripts/build-starter.mjs` builds the starter as Ada Lovelace's site, with or without the planet, and checks the output.
+- **Try it:** in the worktree, `npm run build:site-only` (about 2 minutes) prints each check; `npx astro preview` then shows Ada Lovelace's site with no Explore button, no planet and no `/play/`. `npm run build:starter` does the same with the planet. Both put this checkout's own content back when they finish.
 
 | # | Done when | Evidence |
 |---|---|---|
-| 4.1 | A site-only build has no `/play/` page, no `game-*` chunk, no texture, model or audio file, no Explore link, and no mode on its home page | Build-output test |
-| 4.2 | Without `atiya.json`, or with the owner's, the build is the same as before | `npm run verify:prod`; the site's E2E groups |
-| 4.3 | A malformed `atiya.json` fails the build, naming the field | Unit test |
+| 4.1 | A site-only build has no game chunk, no planet asset, no design library or documentation, no link to `/play/`, `/design/` or `/docs/`, no planet on its home page, and `/play/` sends home | `npm run build:site-only`: every check passes |
+| 4.2 | The owner's site is the same as before: its budgets, its pages, its links | `npm run verify:prod`; the E2E groups "landing & classic" and "site design system" |
+| 4.3 | A site built from the starter names itself, not the engine's owner, in its header, titles and pages (except the access agreement's words, O14, and the planet's host until stage 8, O5) | `build-starter.mjs`'s checks, with and without the planet |
+| 4.4 | The design system's rules still hold for every changed component | `tests/unit/siteDesignSystem.test.ts` and the unit tests of the changed modules |
+
+`atiya.json` is checked by `atiya doctor` today; the build checks it in stage 6 (its schema) and stage 8 (its modes).
 
 ### Stage 5: real GitHub, and private pages on first use
 
@@ -127,7 +136,7 @@ The worktree is `E:\Projects\Personal\personal-site-desktop` (branch `desktop-ap
 
 ### Stage 7: managed sites in the app
 
-- **Builds:** the bundled engine (`utilityProcess.fork`, read-only, caches to the data folder), the launch token in the guard, the bundled git, sync and its conflicts, Check my site.
+- **Builds:** the bundled engine (`utilityProcess.fork`, read-only, caches to the data folder), the launch token in the guard, the bundled git, sync and its conflicts, Check my site; edit mode for a managed site without the owner's developer tools (the Tests screen, the dashboard's mention of git; found in stage 3).
 - **Try it:** open a site made in stage 3 from the installed app, with no checkout: edit, save to remote, open it on a second workspace.
 
 | # | Done when | Evidence |
@@ -178,4 +187,9 @@ Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 need
 | 1 | Done | 18 unit tests (`apps/desktop/test/stage1.test.mjs`) and 7 E2E tests (`apps/desktop/e2e/stage1.spec.mjs`), one per row, all passing; by hand: the app ran this checkout's own `astro dev` and showed edit mode's dashboard 37 s after Open this checkout, and Quit freed the port. Found on the way: Astro 7's entry is `bin/astro.mjs` (read from its package.json now); Windows can report a listening socket as CLOSED or with no state (a listener is now one with no remote end); npm skipped Electron's binary download (`postinstall` runs it) |
 | 2 | Done | 21 tests in `apps/desktop/test/stage2.test.mjs` (real HTTP to the fake GitHub, real git, the CLI run as an agent would) and 5 in `tests/unit/starter.test.ts` (every starter through the content contract), all passing. By hand: the whole flow on the fake took 5 s; a second run made no write call. Found on the way: a `safe.bareRepository=explicit` git setting refuses bare repositories found by folder (the fake names them with `--git-dir`); exiting while fetch's sockets close crashed Node on Windows (the CLI sets `exitCode`); `doctor --json` printed words too |
 | 3 | Done | 7 E2E tests in `apps/desktop/e2e/stage3.spec.mjs` (the app on the fake GitHub, with a stand-in dev server that reports whose content it was given), all passing, with stage 1's 7 still passing after the new welcome. Screens checked by eye in light and dark. Found on the way: this session has no system clipboard (even PowerShell's reads back empty), so the tests read what the app copied from a log; the first screen's focus was lost when the page loaded after its phase had changed |
-| 4 to 9 | Not started | — |
+| 4 | Done | `npm run build:site-only`: every check passes (Ada Lovelace's site, no game chunk, no planet asset, no design library or docs, no link to any of them, `/play/` sends home); `npm run build:starter`: the planet's site builds, naming the owner only on the planet's page (O5); `npm run verify:prod` on the owner's site: every budget met; the E2E groups "landing & classic" and "site design system": 26 of 27 pass. The one failure is the docs half of "links keep the parent domain in this tab", which fails on `main` too: the Slate runtime refreshed in `0db18bf` no longer reads `parentDomain` (an upstream Slate issue; the site half, which this stage changed, passes). Unit: 383 tests across the six affected files |
+| 5 | Blocked | Needs the owner: register the OAuth App (O8) and a GitHub test account for the live check. The app already signs in with the GitHub CLI's token or `GH_TOKEN` until then, and the CLI works against real GitHub today (it makes public repositories: run it only on purpose) |
+| 6 | Not started | Next: `pack-engine.mjs` and its listing test can be built now; the release and the reusable workflow need pushes to GitHub, and a test site repository |
+| 7 | Not started | Needs stage 6's release to bundle |
+| 8 | Not started | The planet split and the mode host: unblocked, large (it moves `src/game/`) |
+| 9 | Blocked | Needs a code-signing certificate, an Apple Developer account and five study participants |

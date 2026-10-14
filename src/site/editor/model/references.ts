@@ -33,7 +33,7 @@ export function references(index: Pick<ContentIndex, 'articles' | 'people' | 'si
 /** A media ID's folder: its ID without the file name (articles/<id>, people/<id>, shared, site). */
 export const ownerOf = (mediaId: string) => mediaId.slice(0, mediaId.lastIndexOf('/'));
 
-/** A media folder in words: "Article: Do what makes you proud", "Person: Prabin Pebam", "Shared". */
+/** A media folder in words: "Article: Do what makes you proud", "Person: Ada Lovelace", "Shared". */
 export function ownerLabel(index: Pick<ContentIndex, 'articles' | 'people'>, owner: string): string {
   const [kind, id] = owner.split('/');
   if (kind === 'articles') return `Article: ${index.articles.get(id)?.title ?? id}`;

@@ -63,8 +63,9 @@ export function exploreHref(route?: Route, planet?: PlanetStructure | null): str
   return withBase(place ? `/play/?at=${place.id}` : '/play/');
 }
 
-/** The header's action: into the planet, from this page. */
+/** The header's action: into the planet, from this page; none when the site has no planet (just the site). */
 export function exploreAction(route?: Route, planet?: PlanetStructure | null) {
+  if (planet === null) return undefined;
   return {
     label: 'Explore in 3D',
     href: exploreHref(route, planet),

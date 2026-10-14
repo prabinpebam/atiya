@@ -17,5 +17,18 @@ export const THEME_COLOR = {
   dark: resolve(bg, model.byPath, 'dark'),
 } as const;
 
-/** The site's name, as the header and the titles use it. */
-export const SITE_NAME = 'Prabin Pebam';
+/** Defined by integrations/editor.mjs from content/site.json for every command (desktop spec §9.2). */
+declare const __SITE_NAME__: string | undefined;
+
+/** The site's name, as the header and the titles use it: the site's own settings, never the code. */
+export const SITE_NAME: string = (typeof __SITE_NAME__ === 'string' && __SITE_NAME__) || 'This site';
+
+/** A page's default description, from the site's name. */
+export const SITE_DESCRIPTION = `The portfolio of ${SITE_NAME}.`;
+
+/** Defined by integrations/editor.mjs (integrations/features.mjs): the parts of the engine this site has. */
+declare const __SITE_FEATURES__: { planet: boolean; designLibrary: boolean; docs: boolean } | undefined;
+
+/** The parts of the engine this site has: the planet, the design library, the documentation (desktop spec §9.1). */
+export const SITE_FEATURES: { planet: boolean; designLibrary: boolean; docs: boolean } =
+  typeof __SITE_FEATURES__ === 'object' && __SITE_FEATURES__ ? __SITE_FEATURES__ : { planet: true, designLibrary: true, docs: true };

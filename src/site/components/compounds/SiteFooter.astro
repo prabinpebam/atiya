@@ -5,11 +5,11 @@
  * @tier compound
  * @a11y A contentinfo landmark; the link list is labelled.
  */
-import { SITE_NAME, withBase } from '../../design/meta';
+import { SITE_FEATURES, SITE_NAME, withBase } from '../../design/meta';
 import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 
 interface Props {
-  /** Links to show; the defaults are the site's ways around. */
+  /** Links to show; the defaults are the site's ways around (each only if the site has it). */
   links?: { label: string; href: string }[];
   /** Links the content adds after them (the Privacy page). */
   more?: { label: string; href: string }[];
@@ -19,10 +19,10 @@ interface Props {
 
 const {
   links = [
-    { label: 'Explore the planet', href: withBase('/play/') },
+    ...(SITE_FEATURES.planet ? [{ label: 'Explore the planet', href: withBase('/play/') }] : []),
     { label: 'Home', href: withBase('/') },
-    { label: 'Design library', href: withBase('/design/') },
-    { label: 'How this site was built', href: withBase('/docs/') },
+    ...(SITE_FEATURES.designLibrary ? [{ label: 'Design library', href: withBase('/design/') }] : []),
+    ...(SITE_FEATURES.docs ? [{ label: 'How this site was built', href: withBase('/docs/') }] : []),
   ],
   more = [],
   note = 'Views are my own.',

@@ -8,7 +8,9 @@ interface Props {
   bodyClass?: string;
 }
 
-const { title, description = 'Portfolio of Prabin Pebam, Principal Design Manager.', bodyClass } = Astro.props;
+// the site's name, from its settings (integrations/editor.mjs defines it for every command)
+declare const __SITE_NAME__: string | undefined;
+const { title, description = `The portfolio of ${typeof __SITE_NAME__ === 'string' && __SITE_NAME__ ? __SITE_NAME__ : 'this site'}.`, bodyClass } = Astro.props;
 // Social previews need an absolute URL: set `site` in astro.config.mjs when deploying.
 const ogImage = new URL(withBase('/og-image.jpg'), Astro.site ?? Astro.url).href;
 ---
