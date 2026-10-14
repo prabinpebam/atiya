@@ -10,6 +10,15 @@
       "updated": "2026-09-26"
     },
     {
+      "path": "atiya.md",
+      "title": "Atiya: the whole plan",
+      "order": 1,
+      "icon": "flag",
+      "status": "review",
+      "updated": "2026-10-14",
+      "group": "Overview"
+    },
+    {
       "path": "seed-spec.md",
       "title": "Seed spec",
       "order": 11,

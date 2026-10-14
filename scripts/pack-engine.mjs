@@ -20,7 +20,7 @@ export const INCLUDE = ['package.json', 'package-lock.json', '.npmrc', 'astro.co
  * Never in an engine, even inside an included folder (the owner's content, his own mode, his secrets'
  * addresses). The contact form's rules are the one file of contact-api/ the site imports (they're pure).
  */
-export const EXCLUDE = ['content/', 'private-pages/', 'modes/prabin-planet/', 'assets-src/', 'documentation/', 'tests/', '.env', 'apps/', 'slate/', 'perf/', '.github/', 'contact-api/local.settings.json'];
+export const EXCLUDE = ['content/', 'private-pages/', 'modes/cozy-life/', 'assets-src/', 'documentation/', 'tests/', '.env', 'apps/', 'slate/', 'perf/', '.github/', 'contact-api/local.settings.json'];
 
 /**
  * The files an engine release holds, from the repository's tracked files. Pure.

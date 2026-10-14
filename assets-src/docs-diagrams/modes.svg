@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500">
 <title>Navigation modes: one site, many ways to explore it</title>
-<desc>The site's content and the site's settings feed the engine's mode host. The host builds each enabled mode's data from the content (sections and their published open pages, never drafts or private pages) and wraps every mode in the same shell: the header with the way back to the site, the capability gate, the reading frame that shows every page, the fallback and telemetry. The site itself is always on and canonical. Little planet is a mode built into the engine, for any site; the owner's planet is his own mode, built on Little planet with his residents; a new mode is made in isolation with the mode kit, and one from someone else runs sandboxed.</desc>
+<desc>The site's content and the site's settings feed the engine's mode host. The host builds each enabled mode's data from the content (sections and their published open pages, never drafts or private pages) and wraps every mode in the same shell: the header with the way back to Classic, the capability gate, the section overlay that a mode's section triggers open, the fallback and telemetry. Classic, the site itself, is always on and canonical. Little planet is a mode built into the engine, for any site; Cozy life is the owner's personal mode, built on Little planet with his residents; a new mode is made in isolation with the mode kit, and one from someone else runs sandboxed.</desc>
 <g id="content">
 <rect class="src" x="40" y="40" width="270" height="150" rx="18" />
 <text class="name" x="60" y="72">content/</text>
@@ -13,7 +13,7 @@
 <text class="name" x="385" y="72">The mode host</text>
 <text class="note" x="385" y="94">the shell every mode gets</text>
 <text class="line" x="385" y="132">Header, gate, fallback</text>
-<text class="line" x="385" y="162">Reading frame, telemetry</text>
+<text class="line" x="385" y="162">Section overlay, telemetry</text>
 </g>
 <g id="settings">
 <rect class="docs" x="690" y="40" width="270" height="150" rx="18" />
@@ -24,20 +24,20 @@
 </g>
 <g id="site">
 <rect class="out" x="40" y="290" width="215" height="120" rx="16" />
-<text class="out-name" x="60" y="322">The site</text>
-<text class="out-note" x="60" y="344">always on, canonical</text>
+<text class="out-name" x="60" y="322">Classic</text>
+<text class="out-note" x="60" y="344">the default, always on</text>
 <text class="out-note" x="60" y="382">every page's own address</text>
 </g>
 <g id="little-planet">
 <rect class="box" x="275" y="290" width="215" height="120" rx="16" />
 <text class="name" x="295" y="322">Little planet</text>
 <text class="note" x="295" y="344">built in, for any site</text>
-<text class="line" x="295" y="382">Seven buildings</text>
+<text class="line" x="295" y="382">Seven buildings: triggers</text>
 </g>
 <g id="owner-planet">
 <rect class="box" x="510" y="290" width="215" height="120" rx="16" />
-<text class="name" x="530" y="322">Prabin's planet</text>
-<text class="note" x="530" y="344">the owner's own mode</text>
+<text class="name" x="530" y="322">Cozy life</text>
+<text class="note" x="530" y="344">the owner's personal mode</text>
 <text class="line" x="530" y="382">Little planet, his residents</text>
 </g>
 <g id="new-mode">
@@ -50,7 +50,7 @@
 <text class="label" x="646" y="104">turned on</text>
 <text class="label" x="512" y="222">mode data and the host's calls</text>
 <text class="label" x="157" y="244">every page</text>
-<text class="label" x="40" y="460">A mode arranges and moves; it never owns content. Every page reads in the host's frame and has its address on the site.</text>
+<text class="label" x="40" y="460">A mode arranges and moves; it never owns content. Its section triggers open sections and pages in the host's overlay; each has its address on the site.</text>
 <path class="arrow" d="M310 115 H362" />
 <path class="arrow" d="M690 115 H638" />
 <path class="arrow" d="M147 190 V287" />

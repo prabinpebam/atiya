@@ -134,7 +134,7 @@ Found while checking stage 3 by hand: a new site's header said the owner's name 
 
 | # | Done when | Evidence |
 |---|---|---|
-| 6.1 | The archive holds nothing from `content/`, `private-pages/`, `modes/prabin-planet/`, `assets-src/`, `documentation/`, `tests/` or `.env`, holds the one file of `contact-api/` the site imports (its rules), and has its sha256 | `tests/unit/packEngine.test.ts`; the packer checks the archive against its listing |
+| 6.1 | The archive holds nothing from `content/`, `private-pages/`, `modes/cozy-life/`, `assets-src/`, `documentation/`, `tests/` or `.env`, holds the one file of `contact-api/` the site imports (its rules), and has its sha256 | `tests/unit/packEngine.test.ts`; the packer checks the archive against its listing |
 | 6.2a | A site with only content, `atiya.json` and the workflow builds from the archive, seals, passes the leak check and is the person's site; a wrong checksum or commit stops it | `site-build-local.mjs`: every step passes in 75 s; a wrong checksum fails, naming both |
 | 6.2b | The same on GitHub: a released engine and a test site repository deploy | Blocked on the owner: push an `engine-v0.1.0` tag (merging this branch first), and a test account's site repository |
 
@@ -159,7 +159,7 @@ Found while checking stage 3 by hand: a new site's header said the owner's name 
 
 ### Stage 8: navigation modes
 
-The phases of [navigation modes](modes.md): the host and contract (M1), just the site through the contract (M2), the planet split into Little planet and Prabin's planet (M3), the mode kit (M4), Constellation and the Ways to explore screen (M5); modes from others (M6) after v1.
+The phases of [navigation modes](modes.md): the host and contract (M1), just the site through the contract (M2), the planet split into Little planet and Cozy life (M3), the mode kit (M4), Constellation and the Ways to explore screen (M5); modes from others (M6) after v1.
 
 | # | Done when | Evidence |
 |---|---|---|

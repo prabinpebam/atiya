@@ -16,6 +16,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const DIAGRAMS = [
+  { name: 'atiya', page: 'documentation/atiya.md', prefix: 'at-plan' },
   { name: 'architecture', page: 'documentation/content/spec.md', prefix: 'cp-arch' },
   { name: 'model', page: 'documentation/content/model.md', prefix: 'cp-model' },
   { name: 'structures', page: 'documentation/content/ia.md', prefix: 'cp-structures' },

@@ -1,6 +1,6 @@
 # The desktop app: spec
 
-The site as a product: an app that lets the owner write without developer tools, and lets anyone (or their AI agent) go from nothing to their own portfolio on GitHub Pages in one sitting, with the site, edit mode, private pages and, if they want them, ways to explore it like the planet. This page is the spec (v2, for review; v1 is critiqued in §15). Ways to explore are specified in [navigation modes](modes.md); stages, tests and Definitions of Done are in the [plan](plan.md).
+The site as a product: an app that lets the owner write without developer tools, and lets anyone (or their AI agent) go from nothing to their own portfolio on GitHub Pages in one sitting, with the site, edit mode, private pages and, if they want them, ways to explore it like the planet. This page is the spec (v2, for review; v1 is critiqued in §15). Ways to explore are specified in [navigation modes](modes.md); stages, tests and Definitions of Done are in the [plan](plan.md); how the app fits with the site, its private pages and its ways to explore is in [the whole plan](../atiya.md).
 
 > **TL;DR.**
 > - **The promise** (§1): *your own site, live today, in three choices, without a terminal; yours, free, and working without us.* For the owner: *open the app and write.* For agents: *one command, and every answer machine-readable.*
@@ -476,7 +476,7 @@ The reusable `site-build.yml` (in this repository) does what `deploy.yml` does t
 
 ### 6.4 The owner's own site
 
-He stays a developer workspace: his repository is the engine's source and his site, built by `deploy.yml` as today. An engine release never holds his content or his own mode (`content/`, `private-pages/`, `modes/prabin-planet/`; a test holds it), and his site turns on his own mode at `/play/`, so his visitors see no change.
+He stays a developer workspace: his repository is the engine's source and his site, built by `deploy.yml` as today. An engine release never holds his content or his own mode (`content/`, `private-pages/`, `modes/cozy-life/`; a test holds it), and his site turns on his own mode at `/play/`, so his visitors see no change.
 
 ## 7. The app's architecture
 
@@ -554,7 +554,7 @@ Electron's checklist applies: context isolation, the sandbox, no Node in views, 
 | The site: sections, pages, galleries, video, PDFs | Yes | Yes |
 | Edit mode, Save to remote, Publish | Yes | Yes |
 | Private pages, codes and links, the agreement | Yes | Yes, set up on first use (F8); the agreement's email needs the contact relay |
-| Ways to explore | Prabin's planet, his own mode | None, or any built-in mode ([modes](modes.md)) |
+| Ways to explore | Cozy life, his own mode | None, or any built-in mode ([modes](modes.md)) |
 | Chopper, the family, Prabin, his music | In his mode | Not in Little planet (O5, O6) |
 | Contact form | His service | Off by default; the shared relay if offered (O7) |
 | Telemetry | His PostHog | Off; their own PostHog key in Settings |
@@ -579,7 +579,7 @@ Every place the engine names its owner reads the site's own settings instead (`S
 
 ### 10.1 The engine release
 
-A tag `engine-v<version>` runs `release.yml`: the unit tests, `npm run check`, `verify:prod` on the starter, then `engine-<version>.tgz` (code, lockfile, `public/`, generated assets, built-in modes, the mode kit, the starter; never `content/`, `private-pages/`, `modes/prabin-planet/`, `assets-src/`, `documentation/`, `tests/`) with its sha256 and commit, as a release asset. Semver: a major version needs a content migration.
+A tag `engine-v<version>` runs `release.yml`: the unit tests, `npm run check`, `verify:prod` on the starter, then `engine-<version>.tgz` (code, lockfile, `public/`, generated assets, built-in modes, the mode kit, the starter; never `content/`, `private-pages/`, `modes/cozy-life/`, `assets-src/`, `documentation/`, `tests/`) with its sha256 and commit, as a release asset. Semver: a major version needs a content migration.
 
 ### 10.2 The app's release
 
