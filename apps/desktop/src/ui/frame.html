@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atiya Studio</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="frame.css">
+<script type="module" src="frame.js"></script>
+</head>
+<body class="frame">
+<header class="bar" aria-label="Atiya Studio">
+  <div class="site">
+    <span class="mark" aria-hidden="true"></span>
+    <h1 class="name" id="site-name">Atiya Studio</h1>
+    <span class="state" id="state" role="status" aria-live="polite"></span>
+  </div>
+  <nav class="views" aria-label="What to show" id="views" hidden>
+    <button type="button" id="show-editor" aria-pressed="true">Edit mode</button>
+    <button type="button" id="show-site" aria-pressed="false">Site</button>
+  </nav>
+  <div class="tools">
+    <button type="button" class="quiet" id="open-browser" hidden>Open in browser</button>
+    <button type="button" class="quiet" id="restart" hidden>Restart</button>
+  </div>
+</header>
+</body>
+</html>

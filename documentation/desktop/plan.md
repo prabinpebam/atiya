@@ -175,4 +175,5 @@ Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 need
 | Stage | State | Evidence |
 |---|---|---|
 | 0 | Done | The spec v2, modes, this plan; docs checks pass |
-| 1 to 9 | Not started | — |
+| 1 | Done | 18 unit tests (`apps/desktop/test/stage1.test.mjs`) and 7 E2E tests (`apps/desktop/e2e/stage1.spec.mjs`), one per row, all passing; by hand: the app ran this checkout's own `astro dev` and showed edit mode's dashboard 37 s after Open this checkout, and Quit freed the port. Found on the way: Astro 7's entry is `bin/astro.mjs` (read from its package.json now); Windows can report a listening socket as CLOSED or with no state (a listener is now one with no remote end); npm skipped Electron's binary download (`postinstall` runs it) |
+| 2 to 9 | Not started | — |

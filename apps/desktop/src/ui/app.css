@@ -1,0 +1,176 @@
+/* Atiya Studio's own pages: the site's design tokens and fonts (copied in by scripts/sync-ui.mjs), and
+ * nothing but tokens below (documentation/desktop/spec.md §7.2, §12). */
+@import url('site/tokens.css');
+@import url('site/fonts.css');
+
+:root {
+  color-scheme: light dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0 0 var(--space-3);
+}
+
+h1 {
+  font-size: var(--text-h2);
+}
+
+h2 {
+  font-size: var(--text-h4);
+}
+
+p {
+  margin: 0 0 var(--space-4);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.small {
+  font-size: var(--text-sm);
+}
+
+button {
+  font: inherit;
+  font-size: var(--text-md);
+  min-height: var(--size-touch);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-pill);
+  border: var(--border-control) solid var(--color-border-strong);
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+
+button.quiet {
+  border-color: transparent;
+  background: transparent;
+}
+
+button[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+@media (hover: hover) {
+  button:hover:not(:disabled) {
+    background: var(--color-bg-hover);
+  }
+
+  button.primary:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
+}
+
+button:active:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+button.primary:active:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+:focus-visible {
+  outline: var(--border-focus) solid var(--color-focus);
+  outline-offset: var(--border-focus-offset);
+}
+
+.page {
+  max-width: var(--size-measure);
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-6);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-6) 0;
+}
+
+.path {
+  font-family: var(--font-code);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.alert {
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-negative-soft);
+  color: var(--color-text);
+}
+
+.alert:empty {
+  display: none;
+}
+
+details {
+  margin-top: var(--space-6);
+}
+
+summary {
+  cursor: pointer;
+  display: list-item;
+  min-height: var(--size-touch);
+  padding-block: var(--space-3);
+}
+
+pre.log {
+  font-family: var(--font-code);
+  font-size: var(--text-sm);
+  background: var(--color-bg-sunk);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  max-height: 22rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

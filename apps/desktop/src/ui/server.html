@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Edit mode · Atiya Studio</title>
+<link rel="stylesheet" href="app.css">
+<script type="module" src="server.js"></script>
+</head>
+<body>
+<main class="page" id="main">
+  <h1 id="title">Starting edit mode…</h1>
+  <p id="message"></p>
+  <p class="path" id="folder"></p>
+  <div class="actions">
+    <button type="button" class="primary" id="restart" hidden>Restart</button>
+    <button type="button" class="primary" id="use" hidden>Use it</button>
+    <button type="button" id="retry" hidden>Try again</button>
+    <button type="button" id="other" hidden>Open another folder</button>
+  </div>
+  <details id="log-box">
+    <summary>Show the log</summary>
+    <pre class="log" id="log" tabindex="0" aria-label="The dev server's log"></pre>
+  </details>
+</main>
+</body>
+</html>
