@@ -4,21 +4,21 @@
   "kind": "note",
   "slug": "atiya",
   "title": "Atiya: a personal site on a little planet",
-  "summary": "A static portfolio on GitHub Pages with a walkable little planet, classic pages, and a local editor that publishes without a backend.",
+  "summary": "A walkable little planet and a magazine-like portfolio, with a local-first editor, private pages, and a publishing system built around two repositories.",
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-06",
+  "updatedAt": "2026-10-14",
   "locale": "en",
   "hero": {
     "media": "articles/atiya/pasted-picture-2026-10-02",
     "display": "fit"
   },
-  "thumbnail": "articles/atiya/pasted-picture-2026-10-02",
+  "thumbnail": "articles/atiya/whole-planet",
   "body": [
     {
       "type": "text",
-      "markdown": "I needed a personal site, and I wanted to do something different. I love the free hosting from GitHub Pages, but I also wanted the day-to-day editing flow to feel local, fast and mine. The trick was to keep the whole thing static in production, then build a clever local editing and publishing loop so I could completely bypass the need for a backend."
+      "markdown": "I needed a personal site, and I wanted to do something different. I wanted a practical portfolio, a small world to explore, and an editing flow that felt local, fast and mine. Atiya now brings those together: a static Astro site on GitHub Pages, a walkable little planet, and a browser editor that saves content to files and publishes through Git. This is the site as it stands in October 2026—not a finished portfolio, but a working platform whose sections I am still writing."
     },
     {
       "type": "figure",
@@ -33,11 +33,11 @@
     },
     {
       "type": "text",
-      "markdown": "Atiya is still a normal portfolio. The classic site is there for anyone who wants regular pages, fast reading and predictable navigation. But the other entrance is a cozy 3D little planet. You can walk around with a character, approach a building, preview that part of the portfolio and open the same content from there."
+      "markdown": "The home page offers two ways in: explore the planet, or read the site. The classic route has ordinary URLs, a shared navigation menu and sections for Work, About, Leadership, Writing, Gallery, Side projects and Contact. Gallery replaces the earlier Talks section: it is a visual way into my work, rather than a separate destination for talks."
     },
     {
       "type": "text",
-      "markdown": "That balance matters to me. The planet gives the site a personality, but the classic site is always one step away. The playful version should never trap someone inside a canvas or make the content harder to reach."
+      "markdown": "That balance matters to me. The planet gives the site personality, but the classic site stays reachable. The playful entrance should never trap someone inside a canvas, require a powerful device to read a case study, or make the words harder to find."
     },
     {
       "type": "figure",
@@ -48,11 +48,34 @@
     {
       "type": "heading",
       "level": 2,
+      "text": "A magazine for the words and pictures"
+    },
+    {
+      "type": "text",
+      "markdown": "The reading side has its own design system, separate from the game's interface. Natural-white paper, warm dark ink, indigo actions and marigold highlights give it the feel of a small printed magazine. Fraunces carries the headlines and standfirsts, Newsreader the reading, and Figtree the controls. The fonts are self-hosted, and the same system works in light mode, dark mode or the system's choice."
+    },
+    {
+      "type": "text",
+      "markdown": "Pictures are treated as content, not decoration. A page can have a lead picture and a separate thumbnail, choose whether an image fills its frame or is shown whole, and use a dark-mode version where needed. Articles support galleries, carousels, collections, tables and video, with a lightbox for closer viewing and a minimap for moving through a long page."
+    },
+    {
+      "type": "figure",
+      "media": "articles/atiya/design-library",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "The [design library](https://prabinpebam.github.io/atiya/design/) is a living specimen book, not a set of screenshots kept by hand. It draws its examples from the same components the site uses. Tokens, fundamentals, compounds and layouts form four tiers, and tests check the boundaries, colour contrast and responsive rules."
+    },
+    {
+      "type": "heading",
+      "level": 2,
       "text": "The planet is navigation"
     },
     {
       "type": "text",
-      "markdown": "The game mode is built with three.js and React Three Fiber, but I try to treat the 3D part as navigation rather than decoration. Each landmark maps to a section of the site. When you get close, the page preview appears in the DOM, with real buttons and links. Opening a place shows the page over the planet, and the classic route is still available."
+      "markdown": "The planet is built with three.js and React Three Fiber, but its first job is navigation. Each landmark opens a section of the same content system; the amphitheater now maps to Gallery. You can walk to a building or use Fast travel. Prompts, previews and controls are real HTML, not text painted into the canvas."
     },
     {
       "type": "figure",
@@ -62,26 +85,102 @@
     },
     {
       "type": "text",
-      "markdown": "Under the hood, the movement model rotates the planet under a fixed player and camera, and the heavier 3D bundle is loaded only after a capability gate. That keeps the landing page and the classic path light, while the planet can still be rich when the device can handle it."
+      "markdown": "There is more to explore than the buildings: painted terrain, water, grass, wildlife, a home and family, collecting and crafting, and places to sit or rest. Prabin welcomes the visitor, and Chopper is part of the world as a tribute. The full-planet view lets you step back and understand the layout, while the day–night cycle changes its light and atmosphere."
+    },
+    {
+      "type": "figure",
+      "media": "articles/atiya/planet-plaza",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "Under the hood, movement rotates the planet beneath a fixed player and camera. A capability gate checks the device before fetching the game, and progressive loading brings the world in around its first playable core. Mouse, keyboard and touch have their own input paths, with non-drag alternatives for the view controls."
+    },
+    {
+      "type": "figure",
+      "media": "articles/atiya/reading-overlay",
+      "width": "popout",
+      "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "Opening a building keeps the planet behind a frosted reading surface rather than replacing it with a flat black or white veil. The section and its articles use the site's own page layouts. Light, dark and system themes work across the reading surface and the game interface, and the classic page is still one action away."
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "A local CMS without a hosted CMS"
+      "text": "A local-first editor, not a hosted CMS"
     },
     {
       "type": "text",
-      "markdown": "The part I am proudest of is the publishing loop. Content lives as JSON in `content/`, shaped like a mock API. In development, a local edit mode lets me edit pages, blocks, settings and media in the browser. Saves go back to the content files after the same contract checks the build uses."
+      "markdown": "The publishing loop is the part I am proudest of. Editorial content lives as JSON documents and media files, not copy embedded in page templates. On the local dev server, edit mode lets me type into the page itself, arrange blocks in an outline, and change their settings in an inspector. Pages, sections, navigation, the planet's building settings and the media library are all edited in the browser."
     },
     {
       "type": "text",
-      "markdown": "When I am ready to publish, the local editor commits the content changes and pushes them. GitHub Pages then builds the static Astro site through the repository workflow. The production site has no editor, no hosted CMS and no backend to operate. The repo is both the source of truth and the publishing pipe."
+      "markdown": "Saving locally and publishing are different actions. Every save is checked against the content contract before a transaction writes any files; versions catch conflicts, and a refused write leaves the files unchanged. The status line tells me whether a change is saving, saved or failed. Other open pages hear the change without discarding unsaved input."
     },
     {
       "type": "figure",
       "media": "articles/atiya/edit-mode",
       "width": "popout",
       "lightbox": true
+    },
+    {
+      "type": "text",
+      "markdown": "When I am ready, Save to remote commits the content and pushes it to GitHub. GitHub Actions builds the static site, seals private content, checks for leaks and deploys to Pages. The production build contains no editor. Publishing a page means changing its status to Published; saving to remote is what ships the committed changes."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Private work, without a public plaintext copy"
+    },
+    {
+      "type": "text",
+      "markdown": "A portfolio also needs a way to share work that cannot be public. Public content stays in the public repository; private pages, their media and their access grants live in a separate private repository, linked as a submodule. They are managed in the same editor, but their readable sources are never copied into the public content folder."
+    },
+    {
+      "type": "text",
+      "markdown": "The build encrypts private content with AES-256-GCM and publishes sealed payloads. Readers sign in with an access code or a magic link, agree before viewing, and decrypt only the pages their grant covers in the browser. Private pages use opaque addresses and do not appear on the planet or in public menus. The save-to-remote flow coordinates both repositories, with private changes pushed before the public site can point to them."
+    },
+    {
+      "type": "text",
+      "markdown": "The distinction is important: the content and publishing path does not need a hosted CMS, but the entire project is no longer service-free. A separate Azure Functions contact service delivers contact messages and records access agreements. Telemetry uses a restricted allowlist on sensitive pages, so protected titles, access codes and link secrets are not sent."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Making the editor feel immediate"
+    },
+    {
+      "type": "text",
+      "markdown": "Building an editor meant taking its waiting seriously. An audit found that most screen time was spent launching Git processes, and small edits fetched whole screens again. The fix was not just another loading spinner: one cached status per repository, counts checked after the screen appears, targeted region redraws, a picker loaded on demand, incremental content reads and picture facts remembered across restarts."
+    },
+    {
+      "type": "text",
+      "markdown": "Moving, deleting, duplicating or adding a block now shows the result before its save finishes. The server confirms it quietly; a refused change is put back with the reason. Typing does not redraw the page. When the canvas needs a new rendering, it loads behind the existing frame and replaces it only when ready, so the page never goes blank. Longer waits show feedback where the work happens as well as in the status line."
+    },
+    {
+      "type": "collection",
+      "layout": "columns",
+      "items": [
+        {
+          "heading": "Opening the editor",
+          "subtext": "Warm screens: 0.9–2.5 seconds before; about 0.03–0.3 seconds after."
+        },
+        {
+          "heading": "Typing to settled",
+          "subtext": "4.2 seconds before; about 0.86 seconds after."
+        },
+        {
+          "heading": "A new block",
+          "subtext": "About 31 ms to show its place; about 0.27 seconds to draw it on the canvas."
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "markdown": "Those are lab measurements from five runs on the same desktop, not a promise for every device. A CPU-slowed run still exposed client-side work to trim, and the article editor's HTML missed its size target. The [performance report](https://prabinpebam.github.io/atiya/docs/#engineering/performance-report.md) records both the gains and the remaining costs."
     },
     {
       "type": "collection",
@@ -101,7 +200,7 @@
         },
         {
           "heading": "Content",
-          "subtext": "JSON mock API in content/"
+          "subtext": "JSON and media in public and private repositories"
         },
         {
           "heading": "Editing",
@@ -120,7 +219,7 @@
     },
     {
       "type": "text",
-      "markdown": "A personal site is partly a calling card and partly a playground. This one lets me keep the calling card practical: static hosting, accessible pages, normal URLs and source-controlled content. It also gives me room to experiment with interaction design, game-like navigation, local-first tooling and a content system that can grow later without changing how the site is authored today."
+      "markdown": "A personal site is partly a calling card and partly a playground. This one keeps the calling card practical: accessible pages, normal URLs, static hosting and source-controlled content. The planet makes room for play; the editor makes it something I can keep maintaining. The design library and the [Slate documentation site](https://prabinpebam.github.io/atiya/docs/) make the decisions visible, with Slate now linked to its own upstream repository rather than maintained as a copied package."
     },
     {
       "type": "heading",

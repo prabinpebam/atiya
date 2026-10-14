@@ -1,7 +1,10 @@
 {
   "kind": "image",
   "file": "edit-mode.webp",
+  "dark": {
+    "file": "edit-mode.dark.webp"
+  },
   "alt": "Edit mode on an article: the outline of blocks on the left, the page itself in the middle with a paragraph selected and its toolbar, and the block's settings on the right.",
-  "caption": "Edit mode, on the local dev server: the page itself is the editor, and Publish pushes the changes.",
+  "caption": "The current local editor: outline, live page canvas and inspector. Saves stay local until Save to remote commits and pushes them. Captured 14 October 2026.",
   "visibility": "public"
 }

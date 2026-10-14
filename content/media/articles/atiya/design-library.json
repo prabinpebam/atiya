@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "file": "design-library.webp",
+  "dark": {
+    "file": "design-library.dark.webp"
+  },
+  "alt": "The design library overview, with token and component navigation beside an explanation of the site's four design-system tiers.",
+  "caption": "A living design library, rendered from the site's own components and stories. Captured 14 October 2026.",
+  "visibility": "public"
+}
