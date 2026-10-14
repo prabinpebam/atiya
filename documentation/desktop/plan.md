@@ -126,13 +126,14 @@ Found while checking stage 3 by hand: a new site's header said the owner's name 
 
 ### Stage 6: the engine release and the site's build
 
-- **Builds:** `scripts/pack-engine.mjs`, `release.yml`, the reusable `site-build.yml`; the workflow setup writes points at it.
-- **Try it:** `node scripts/pack-engine.mjs --out %TEMP%\engine` lists and packs the engine; a test site repository built by `site-build.yml` from the branch.
+- **Builds:** `scripts/pack-engine.mjs` (`git archive` of the commit through the allow-list, then checked against the listing, with its manifest: version, commit, sha256), `.github/workflows/release.yml` (on an `engine-v*` tag: tests, the type check, the starter built both ways, pack, publish), the reusable `.github/workflows/site-build.yml`, and `scripts/site-build-local.mjs`, which rehearses the workflow's steps on this computer. Setup pins a release's manifest when it has one (`ATIYA_ENGINE_MANIFEST`, or `engine.json` in a bundled engine).
+- **Try it:** `node scripts/pack-engine.mjs --out %TEMP%\engine-rel` packs the engine (about 12 MB). Make a site pinned to it (stage 2's Try it, with `$env:ATIYA_ENGINE_MANIFEST='%TEMP%\engine-rel\engine-0.1.0.json'`), then `node scripts/site-build-local.mjs --engine %TEMP%\engine-rel\engine-0.1.0.tgz --site <its folder> --keep` builds it as GitHub would, and keeps the built site beside the folder.
 
 | # | Done when | Evidence |
 |---|---|---|
-| 6.1 | The archive holds nothing from `content/`, `private-pages/`, `modes/prabin-planet/`, `assets-src/`, `documentation/` or `tests/`, and has its sha256 | Unit test of the listing |
-| 6.2 | A site repository with only content, `atiya.json` and the workflow builds, seals and deploys; a wrong checksum or commit stops it | The test site's runs |
+| 6.1 | The archive holds nothing from `content/`, `private-pages/`, `modes/prabin-planet/`, `assets-src/`, `documentation/`, `tests/` or `.env`, holds the one file of `contact-api/` the site imports (its rules), and has its sha256 | `tests/unit/packEngine.test.ts`; the packer checks the archive against its listing |
+| 6.2a | A site with only content, `atiya.json` and the workflow builds from the archive, seals, passes the leak check and is the person's site; a wrong checksum or commit stops it | `site-build-local.mjs`: every step passes in 75 s; a wrong checksum fails, naming both |
+| 6.2b | The same on GitHub: a released engine and a test site repository deploy | Blocked on the owner: push an `engine-v0.1.0` tag (merging this branch first), and a test account's site repository |
 
 ### Stage 7: managed sites in the app
 
@@ -189,7 +190,7 @@ Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 need
 | 3 | Done | 7 E2E tests in `apps/desktop/e2e/stage3.spec.mjs` (the app on the fake GitHub, with a stand-in dev server that reports whose content it was given), all passing, with stage 1's 7 still passing after the new welcome. Screens checked by eye in light and dark. Found on the way: this session has no system clipboard (even PowerShell's reads back empty), so the tests read what the app copied from a log; the first screen's focus was lost when the page loaded after its phase had changed |
 | 4 | Done | `npm run build:site-only`: every check passes (Ada Lovelace's site, no game chunk, no planet asset, no design library or docs, no link to any of them, `/play/` sends home); `npm run build:starter`: the planet's site builds, naming the owner only on the planet's page (O5); `npm run verify:prod` on the owner's site: every budget met; the E2E groups "landing & classic" and "site design system": 26 of 27 pass. The one failure is the docs half of "links keep the parent domain in this tab", which fails on `main` too: the Slate runtime refreshed in `0db18bf` no longer reads `parentDomain` (an upstream Slate issue; the site half, which this stage changed, passes). Unit: 383 tests across the six affected files |
 | 5 | Blocked | Needs the owner: register the OAuth App (O8) and a GitHub test account for the live check. The app already signs in with the GitHub CLI's token or `GH_TOKEN` until then, and the CLI works against real GitHub today (it makes public repositories: run it only on purpose) |
-| 6 | Not started | Next: `pack-engine.mjs` and its listing test can be built now; the release and the reusable workflow need pushes to GitHub, and a test site repository |
+| 6 | Done here; on GitHub blocked | 6.1: `packEngine.test.ts` (3 tests) and the packer's own check (673 files, 12.4 MB). 6.2a: the rehearsal built a site made by setup from the archive in 75 s and refused a wrong checksum. Found on the way: the site imports the contact form's rules from `contact-api/src/rules.mjs` (now in the engine), the docs integration threw without `documentation/` (now it skips), and `.env` (the owner's contact endpoint) must stay out. 6.2b needs a released tag and a test repository |
 | 7 | Not started | Needs stage 6's release to bundle |
 | 8 | Not started | The planet split and the mode host: unblocked, large (it moves `src/game/`) |
 | 9 | Blocked | Needs a code-signing certificate, an Apple Developer account and five study participants |

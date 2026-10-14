@@ -5,7 +5,7 @@
  * the app lives in; a packaged app (stage 7) points ATIYA_ENGINE_ROOT at its bundled release.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findCheckoutAbove } from '../checkout.mjs';
@@ -18,8 +18,19 @@ export function engineRoot() {
   return found;
 }
 
-/** @param {string} [root] @returns {{ version: string, commit: string | null, sha256: string | null }} */
+/**
+ * The engine's version, commit and checksum for a new site's atiya.json: from a release's manifest (a
+ * bundled release carries `engine.json`; ATIYA_ENGINE_MANIFEST names another), else this checkout's
+ * version and commit, with no checksum (a site made so can't be built by site-build.yml until it's
+ * updated to a release).
+ * @param {string} [root] @returns {{ version: string, commit: string | null, sha256: string | null }}
+ */
 export function engineInfo(root = engineRoot()) {
+  const manifest = [process.env.ATIYA_ENGINE_MANIFEST, join(root, 'engine.json')].find((f) => f && existsSync(f));
+  if (manifest) {
+    const m = JSON.parse(readFileSync(manifest, 'utf8'));
+    return { version: String(m.version), commit: String(m.commit), sha256: String(m.sha256) };
+  }
   const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version ?? '0.0.0';
   let commit = null;
   try {

@@ -1,0 +1,150 @@
+# Builds and publishes a person's site with the engine release its atiya.json pins (documentation/desktop/
+# spec.md §6.3). A site's own workflow calls this one, pinned by commit:
+#
+#   jobs:
+#     site:
+#       uses: prabinpebam/atiya/.github/workflows/site-build.yml@<the engine release's commit>
+#       secrets: inherit
+#
+# It checks out the site (and its private pages, when it has them, with the read-only deploy key in the
+# PRIVATE_CONTENT_KEY secret), downloads the engine release named in atiya.json, refuses it unless its
+# sha256 and commit match, puts the site's content where the engine reads it, builds quietly (a build's log
+# can name private pages), seals, checks for leaks, and deploys to GitHub Pages.
+name: Site build
+
+on:
+  workflow_call:
+    secrets:
+      PRIVATE_CONTENT_KEY:
+        required: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the site
+        uses: actions/checkout@v7
+        with:
+          path: site
+
+      - name: Read the engine it pins
+        id: pin
+        run: |
+          node -e '
+            const a = JSON.parse(require("fs").readFileSync("site/atiya.json", "utf8"));
+            const e = a.engine ?? {};
+            if (a.schema !== 1) { console.log("::error::atiya.json has an unknown schema (" + a.schema + "): update the site from Atiya Studio."); process.exit(1); }
+            if (!e.version || !e.sha256 || !e.commit) { console.log("::error::atiya.json names no engine release (version, sha256 and commit): update the site from Atiya Studio."); process.exit(1); }
+            const out = require("fs").createWriteStream(process.env.GITHUB_OUTPUT, { flags: "a" });
+            out.write("version=" + e.version + "\nsha256=" + e.sha256 + "\ncommit=" + e.commit + "\n");
+          '
+
+      # the pin and this workflow must be the same engine: a moved tag or a hand-edited pin can't change what runs
+      - name: Check the pin is this workflow's commit
+        env:
+          PINNED: ${{ steps.pin.outputs.commit }}
+          RUNNING: ${{ job.workflow_sha }}
+        run: |
+          if [ "$PINNED" != "$RUNNING" ]; then
+            echo "::error::atiya.json pins engine commit $PINNED, but the workflow runs at $RUNNING: update the site from Atiya Studio."
+            exit 1
+          fi
+
+      - name: Download and check the engine release
+        env:
+          VERSION: ${{ steps.pin.outputs.version }}
+          SHA256: ${{ steps.pin.outputs.sha256 }}
+        run: |
+          curl -fsSL -o engine.tgz "https://github.com/prabinpebam/atiya/releases/download/engine-v${VERSION}/engine-${VERSION}.tgz"
+          echo "${SHA256}  engine.tgz" | sha256sum --check --status || { echo "::error::The engine release's checksum doesn't match atiya.json: it was not built."; exit 1; }
+          tar -xzf engine.tgz
+
+      - name: Fetch the private pages
+        env:
+          PRIVATE_CONTENT_KEY: ${{ secrets.PRIVATE_CONTENT_KEY }}
+        run: |
+          if ! grep -q 'path = private-pages' site/.gitmodules 2>/dev/null; then
+            echo "No private pages: nothing to fetch."
+            exit 0
+          fi
+          if [ -z "$PRIVATE_CONTENT_KEY" ]; then
+            echo "::error::The site has private pages but no PRIVATE_CONTENT_KEY secret: set private pages up again from Atiya Studio."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$PRIVATE_CONTENT_KEY" > ~/.ssh/private_pages
+          chmod 600 ~/.ssh/private_pages
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          url=$(git -C site config -f .gitmodules --get submodule.private-pages.url)
+          ssh_url=$(echo "$url" | sed -E 's#^https://github.com/#git@github.com:#')
+          git -C site config submodule.private-pages.url "$ssh_url"
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/private_pages -o IdentitiesOnly=yes" git -C site submodule update --init --depth 1 private-pages
+          rm -f ~/.ssh/private_pages
+
+      # the engine reads one content folder (content/), and private-pages/ beside it, as in its own repository
+      - name: Put the site's content where the engine reads it
+        run: |
+          rm -rf engine/content engine/private-pages
+          mv site/content engine/content
+          if [ -d site/private-pages ]; then mv site/private-pages engine/private-pages; else mkdir engine/private-pages; fi
+          cp site/atiya.json engine/atiya.json
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install the engine's packages
+        working-directory: engine
+        run: |
+          sed -i -E 's#https://[^"]+/npm/registry/#https://registry.npmjs.org/#g' package-lock.json
+          npm config set registry https://registry.npmjs.org/
+          npm ci --no-audit --no-fund
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Build
+        working-directory: engine
+        env:
+          SITE_URL: ${{ steps.pages.outputs.origin }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          if ! npx astro build > "$RUNNER_TEMP/build.log" 2>&1; then
+            echo "::error::The site didn't build. Its log isn't printed here, since it can name private pages: open the site in Atiya Studio and choose Check my site."
+            exit 1
+          fi
+          grep -o '\[site-seal\].*' "$RUNNER_TEMP/build.log" || { echo "::error::The sealer didn't run: the build is not sealed."; exit 1; }
+
+      - name: Check for leaks
+        working-directory: engine
+        run: node scripts/verify-sealed.mjs
+
+      - name: Check the bundle budgets
+        working-directory: engine
+        run: |
+          if [ -f content/structures/planet.json ]; then node scripts/size-report.mjs --prod; else echo "Just the site: no planet budgets to check."; fi
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: engine/dist
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

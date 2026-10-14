@@ -1,0 +1,61 @@
+# Releases the engine (documentation/desktop/spec.md §10.1): on a tag engine-v<version>, it tests the engine,
+# builds the starter as someone else's site (just the site, then with the planet), packs the engine at the
+# tagged commit (scripts/pack-engine.mjs: no content, private pages, docs, tests or asset sources) and
+# publishes the archive with its manifest (version, commit, sha256) as a GitHub release.
+name: Engine release
+
+on:
+  push:
+    tags: ['engine-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the engine
+        uses: actions/checkout@v7
+
+      - name: The tag is the package's version
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          if [ "engine-v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME doesn't match package.json's version $version."
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install
+        run: |
+          sed -i -E 's#https://[^"]+/npm/registry/#https://registry.npmjs.org/#g' package-lock.json
+          npm config set registry https://registry.npmjs.org/
+          npm ci --no-audit --no-fund
+          git checkout -- package-lock.json
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type check
+        run: npm run check
+
+      - name: Build the starter as someone else's site
+        run: |
+          npm run build:site-only
+          npm run build:starter
+
+      - name: Pack the engine
+        run: node scripts/pack-engine.mjs --out release
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          gh release create "$GITHUB_REF_NAME" "release/engine-$version.tgz" "release/engine-$version.json" \
+            --title "Engine $version" --notes "The engine at $(git rev-parse --short HEAD). Sites pin it in atiya.json; Atiya Studio updates them."

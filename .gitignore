@@ -20,3 +20,4 @@ assets-src/audio/.cache/
 
 # the contact service's local settings can hold its secrets (documentation/contact/spec.md §4.4)
 contact-api/local.settings.json
+release/
