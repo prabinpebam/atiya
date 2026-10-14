@@ -45,7 +45,7 @@ function fixture() {
   );
   writeFileSync(join(priv, 'structures', 'overlay.json'), JSON.stringify({ sections: [{ section: 'work', pages: [{ id: 'ada-private-one', token: 'adaprvloom', item: { type: 'article', id: 'ada-private-one' } }] }] }));
   const index = load();
-  const planet = JSON.parse(readFileSync(join(content, 'structures', 'planet.json'), 'utf8'));
+  const planet = JSON.parse(readFileSync(join(content, 'structures', 'modes', 'little-planet.json'), 'utf8'));
   return { index, planet, draftId, draftTitle: index.articles.get(draftId)!.title };
 }
 
@@ -88,7 +88,7 @@ describe('mode data (8.2)', () => {
   it("the owner's own site passes, with his planet as the little planet's structure", () => {
     const snap = readSnapshot(join(ROOT, 'content'), null);
     const index = loadContent(snap.docs, snap.masters, snap.errors);
-    const planet = JSON.parse(readFileSync(join(ROOT, 'content', 'structures', 'planet.json'), 'utf8'));
+    const planet = JSON.parse(readFileSync(join(ROOT, 'content', 'structures', 'modes', 'little-planet.json'), 'utf8'));
     expect(check(index, { 'little-planet': planet }).issues).toEqual([]);
   });
 });

@@ -2,7 +2,7 @@
  * The planet's seven buildings, as the world has them (documentation/sections/spec.md §5.1): where each
  * stands, which way it faces, how big it is, which model it is and its colour, and its fast-travel order.
  * They're the game's sections, so they're fixed here; what each one holds (its words and its pages) is
- * content, in content/structures/planet.json, whose contract names the same seven IDs (a unit test keeps
+ * content, in content/structures/modes/little-planet.json, whose contract names the same seven IDs (a unit test keeps
  * the two lists in step). The /play page joins the two; the game's own code reads the result.
  */
 export interface PlaceWorld {

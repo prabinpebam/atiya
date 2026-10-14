@@ -29,7 +29,7 @@ export function resourceName(dir, file) {
   };
   if (/^content\/articles\/[^/]+\.json$/.test(f)) return titled('Page');
   if (f === 'content/structures/site.json') return 'The sections and navigation';
-  if (f === 'content/structures/planet.json') return "The planet's buildings";
+  if (f === 'content/structures/modes/little-planet.json' || f === 'content/structures/planet.json') return "The planet's buildings";
   if (f === 'content/site.json') return 'The site settings';
   if (/^content\/people\//.test(f)) return titled('Person');
   if (/^content\/media\//.test(f)) return `Picture: ${f.split('/').pop()}`;

@@ -7,7 +7,7 @@ import type { z } from 'astro/zod';
 import { PLACE_IDS, accessFile, accessMessage, article, documentMedia, imageMedia, overlay as overlaySchema, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, videoMedia, type AccessMessage, type Article, type DocumentMedia, type GrantRecord, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type VideoMedia } from './schema';
 import { buildRoutes, canonicalPaths, withOverlay, type Access, type Route } from './routes';
 import { checkGrant, covers, isValid } from '../access/grants.ts';
-import { WAYS_FILE, waysFile, type Ways } from '../modes/contract';
+import { LEGACY_PLANET_FILE, PLANET_FILE, WAYS_FILE, waysFile, type Ways } from '../modes/contract';
 import { checkModes } from '../modes/rules';
 import { BUILTIN_MODES } from '../modes/builtin';
 import { effectiveWays } from '../modes/ways';
@@ -146,6 +146,9 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   let grants: GrantRecord[] = [];
   let message: AccessMessage | null = null;
   let ways: Ways | null = null;
+  // Little planet's structure: where it was read from (the new place, or the old one during the move: M1.1)
+  let planetFile = '';
+  const planetFiles: string[] = [];
   const articles = new Map<string, Article>();
   // articles whose file is there but doesn't pass its own check: its issues say why, so a node placing one isn't "missing"
   const invalidArticles = new Set<string>();
@@ -169,8 +172,15 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     if (file === '/content/site.json') site = parse(siteSettings, file, data);
     else if (file === '/content/structures/site.json') structure = parse(siteStructure, file, data);
     else if (file === '/content/redirects.json') redirects = parse(redirectList, file, data) ?? [];
-    else if (file === '/content/structures/planet.json') planet = parse(planetStructure, file, data) ?? null;
-    else if (file === `/content/${WAYS_FILE}`) ways = parse(waysFile, file, data) ?? null;
+    else if (file === `/content/${PLANET_FILE}` || file === `/content/${LEGACY_PLANET_FILE}`) {
+      // both places at once is refused below; the new one wins meanwhile
+      const p = parse(planetStructure, file, data) ?? null;
+      if (!planetFile || file === `/content/${PLANET_FILE}`) {
+        planet = p;
+        planetFile = file;
+      }
+      planetFiles.push(file);
+    } else if (file === `/content/${WAYS_FILE}`) ways = parse(waysFile, file, data) ?? null;
     else if (file === '/private/structures/overlay.json') overlay = parse(overlaySchema, file, data) ?? null;
     else if (file === '/private/access.json') grants = parse(accessFile, file, data)?.grants ?? [];
     else if (file === '/private/access-message.json') message = parse(accessMessage, file, data) ?? null;
@@ -382,10 +392,13 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         else if (r.access !== 'open') add(STRUCTURE_FILE, `node "${e.node}" is a private page: the navigation names open ones only (V25)`, at);
       } else if (e.href.startsWith('/') && !isSitePath(e.href, routes.filter((x) => x.access === 'open'))) add(STRUCTURE_FILE, `${e.href} isn't a page of this site`, at);
     });
+    // Little planet's structure moved to the modes' folder (M1.1): the old place is still read, but not both
+    if (planetFiles.length > 1) add(`content/${LEGACY_PLANET_FILE}`, `Little planet's structure is in both ${PLANET_FILE} and ${LEGACY_PLANET_FILE}: keep the first and delete the second`);
+    else if (planetFile === `/content/${LEGACY_PLANET_FILE}`) warnings.push(`Little planet's structure is still at content/${LEGACY_PLANET_FILE}: move it to content/${PLANET_FILE} (node scripts/migrate-planet-structure.mjs)`);
     // the planet (V14 to V16): each building once, each showing a section of the site, and a section shown by one
     // building at most. What a building holds follows its section, so it's on the site by construction (V13, V15)
     if (planet) {
-      const PLANET = 'content/structures/planet.json';
+      const PLANET = planetFile.slice(1);
       for (const pid of PLACE_IDS) {
         const n = planet.places.filter((p) => p.id === pid).length;
         if (n !== 1) add(PLANET, n ? `the ${pid} is listed ${n} times; each building is listed once (V14)` : `the ${pid} is missing; every building is listed once (V14)`, 'places');
@@ -445,7 +458,10 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   // already fails its own check (the planet's V14 to V16) isn't reported twice
   if (!issues.length && site && structure) {
     const structures: Record<string, unknown> = {};
-    for (const [id, mode] of BUILTIN_MODES) if (docs[`/content/${mode.structureFile}`] !== undefined) structures[id] = docs[`/content/${mode.structureFile}`];
+    for (const [id, mode] of BUILTIN_MODES) {
+      const at = [mode.structureFile, mode.legacyStructureFile].find((f) => f && docs[`/content/${f}`] !== undefined);
+      if (at) structures[id] = docs[`/content/${at}`];
+    }
     for (const i of checkModes({ modes: effectiveWays({ ways, hasPlanet: !!planet }), index, structures }).issues) add(i.file, `${i.message} (${i.rule})`);
   }
   if (issues.length) throw new ContentError(issues);

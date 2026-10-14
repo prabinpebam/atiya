@@ -24,7 +24,15 @@ export function planetOn(contentRoot) {
       // not JSON: the content check names it; until it's fixed, the planet stays as the structure says
     }
   }
-  return existsSync(join(contentRoot, 'structures', 'planet.json'));
+  return hasPlanetStructure(contentRoot);
+}
+
+/** Little planet's structure in the modes' folder (M1.1), and its old place, still read during the move. */
+export const PLANET_FILES = ['structures/modes/little-planet.json', 'structures/planet.json'];
+
+/** Does the content have Little planet's structure, in either place? @param {string} contentRoot */
+export function hasPlanetStructure(contentRoot) {
+  return PLANET_FILES.some((f) => existsSync(join(contentRoot, ...f.split('/'))));
 }
 
 /**

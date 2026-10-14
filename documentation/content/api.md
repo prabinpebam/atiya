@@ -121,7 +121,7 @@ The `content/` folder is the mock API. Every endpoint maps to a file with exactl
 content/
 ├── site.json                                  GET /v1/site
 ├── structures/site.json                       GET /v1/structures/site
-├── structures/planet.json                     GET /v1/structures/planet
+├── structures/modes/little-planet.json        GET /v1/structures/modes/little-planet
 ├── articles/{id}.json                         GET /v1/articles/{id}
 ├── case-studies/{id}.json                     GET /v1/case-studies/{id}
 ├── practice-areas/{id}.json                   GET /v1/practice-areas/{id}

@@ -1002,7 +1002,7 @@ test.describe('editor', () => {
   });
 
   test('planet: each building shows its section, read-only here; its words and section in Settings, the rules refuse; a page says where it is on the planet', async ({ page }) => {
-    const planet = () => readJson(join(FIXTURE, 'content/structures/planet.json')).places as { id: string; kicker: string; site: string }[];
+    const planet = () => readJson(join(FIXTURE, 'content/structures/modes/little-planet.json')).places as { id: string; kicker: string; site: string }[];
     const before = JSON.stringify(planet());
 
     // the seven buildings and their sections' pages, which move in Sections, not here

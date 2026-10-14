@@ -129,7 +129,7 @@ jobs:
       - name: Check the bundle budgets
         working-directory: engine
         run: |
-          if [ -f content/structures/planet.json ]; then node scripts/size-report.mjs --prod; else echo "Just the site: no planet budgets to check."; fi
+          if [ -f content/structures/modes/little-planet.json ] || [ -f content/structures/planet.json ]; then node scripts/size-report.mjs --prod; else echo "Just the site: no planet budgets to check."; fi
 
       - name: Upload the site
         uses: actions/upload-pages-artifact@v5

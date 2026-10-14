@@ -65,7 +65,7 @@ try {
   execFileSync(process.execPath, ['scripts/verify-sealed.mjs'], { cwd: engine, stdio: 'inherit' });
 
   step('Check the bundle budgets');
-  if (existsSync(join(engine, 'content', 'structures', 'planet.json'))) execFileSync(process.execPath, ['scripts/size-report.mjs', '--prod'], { cwd: engine, stdio: 'inherit' });
+  if (['modes/little-planet.json', 'planet.json'].some((f) => existsSync(join(engine, 'content', 'structures', ...f.split('/'))))) execFileSync(process.execPath, ['scripts/size-report.mjs', '--prod'], { cwd: engine, stdio: 'inherit' });
   else console.log('Just the site: no planet budgets to check.');
 
   step('The site');

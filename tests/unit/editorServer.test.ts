@@ -62,10 +62,10 @@ afterEach(() => {
 // ---------- a page's building follows its section (documentation/sections/spec.md §5.2, §7.6) ----------
 describe("a page's building", () => {
   const PLACES = ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office'];
-  const PLANET = join('structures', 'planet.json');
+  const PLANET = join('structures', 'modes', 'little-planet.json');
   const seedPlanet = () => {
     put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: PLACES.map((id, n) => ({ id: `s${n}`, kind: 'hub', slug: `s${n}`, title: id, children: n === 0 ? [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] : [] })) } });
-    put('/content/structures/planet.json', { places: PLACES.map((id, n) => ({ id, title: id, kicker: 'K', summary: 'S', site: `s${n}` })) });
+    put('/content/structures/modes/little-planet.json', { places: PLACES.map((id, n) => ({ id, title: id, kicker: 'K', summary: 'S', site: `s${n}` })) });
   };
   const save = (over: { section?: string | null }) => {
     const a = readDoc<Record<string, unknown>>('/content/articles/a.json')!;

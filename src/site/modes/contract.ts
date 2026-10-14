@@ -72,6 +72,10 @@ export const waysFile = z.strictObject({
 export type Ways = z.infer<typeof waysFile>;
 /** Where the ways file lives in the content folder. */
 export const WAYS_FILE = 'structures/ways.json';
+/** Little planet's structure (its buildings' words and the section each shows), in the modes' folder (M1.1). */
+export const PLANET_FILE = 'structures/modes/little-planet.json';
+/** Where Little planet's structure was before M1.1: still read, with a warning, until a site moves it. */
+export const LEGACY_PLANET_FILE = 'structures/planet.json';
 
 /** A picture a mode may show (made by the site's picture pipeline). */
 export interface ModePicture {
@@ -125,6 +129,8 @@ export interface BuiltinMode {
   manifest: ModeManifest;
   /** Where its structure lives in the content folder (modes.md §6). */
   structureFile: string;
+  /** Where it lived before, still read during a move (Little planet's `structures/planet.json`, M1.1). */
+  legacyStructureFile?: string;
   /** Validates the structure file and reads it as slots; throws a ZodError when it doesn't fit. */
   readStructure: (raw: unknown) => ModeStructure;
 }

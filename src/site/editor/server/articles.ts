@@ -11,13 +11,19 @@ import { slugify, today, unique } from '../model/ids';
 import { childSlugs, nodeIds, place, sectionOf, unplace } from '../model/structure';
 import { isMeaningful } from '../model/ops';
 import { readSnapshot, fileOf, hasPrivate, privateRoot } from '../../content/source';
+import { LEGACY_PLANET_FILE, PLANET_FILE } from '../../modes/contract';
 import { existsSync } from 'node:fs';
 import { placePrivate, privateNode, sectionOrder, unplacePrivate } from '../model/access';
 import { token } from '../../access/crypto';
 import type { Overlay } from '../../content/schema';
 
 export const STRUCTURE = '/content/structures/site.json';
-export const PLANET = '/content/structures/planet.json';
+/** Little planet's structure (M1.1: the modes' folder). */
+export const PLANET = `/content/${PLANET_FILE}`;
+/** Its old place, still read and written while a site has it there (node scripts/migrate-planet-structure.mjs moves it). */
+export const LEGACY_PLANET = `/content/${LEGACY_PLANET_FILE}`;
+/** Where Little planet's structure is: the new place, else the old one while a site still has it there. */
+export const planetKey = (): string => (!readFile(PLANET) && readFile(LEGACY_PLANET) ? LEGACY_PLANET : PLANET);
 export const OVERLAY = '/private/structures/overlay.json';
 /** An article's file: in private-pages/ when it's private (documentation/access/spec.md §3), else in content/. */
 export const articleKey = (id: string) => (existsSync(fileOf(`/private/articles/${id}.json`)) ? `/private/articles/${id}.json` : `/content/articles/${id}.json`);

@@ -1,10 +1,10 @@
 /**
- * The modes the engine carries (documentation/desktop/modes.md §8.1). Today that's the planet, whose
- * structure is still content/structures/planet.json (each building's words and the section it shows);
- * phase M1 moves it to content/structures/modes/<id>.json.
+ * The modes the engine carries (documentation/desktop/modes.md §8.1). Today that's the planet, whose structure
+ * (each building's words and the section it shows) is content/structures/modes/little-planet.json; its old place,
+ * content/structures/planet.json, is still read during the move (M1.1).
  */
 import { PLACE_IDS, planetStructure } from '../content/schema';
-import { modeManifest, type BuiltinMode } from './contract';
+import { LEGACY_PLANET_FILE, PLANET_FILE, modeManifest, type BuiltinMode } from './contract';
 
 const littlePlanet: BuiltinMode = {
   manifest: modeManifest.parse({
@@ -26,7 +26,8 @@ const littlePlanet: BuiltinMode = {
     frame: { otherSlot: 'note' },
     network: [],
   }),
-  structureFile: 'structures/planet.json',
+  structureFile: PLANET_FILE,
+  legacyStructureFile: LEGACY_PLANET_FILE,
   readStructure: (raw) => {
     const planet = planetStructure.parse(raw);
     return {

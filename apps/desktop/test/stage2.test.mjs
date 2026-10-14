@@ -77,7 +77,7 @@ describe('setup on the fake GitHub', () => {
     const f = await fake();
     const { result, dir, events } = await setup(f);
     expect(result).toMatchObject({ ok: true, live: true, applied: true, site: { repository: 'ada/ada.github.io', url: 'https://ada.github.io/' } });
-    for (const file of ['atiya.json', '.github/workflows/site.yml', 'AGENTS.md', 'README.md', '.gitattributes', '.gitignore', 'content/site.json', 'content/structures/planet.json', 'content/articles/about-me.json']) expect(existsSync(join(dir, file)), file).toBe(true);
+    for (const file of ['atiya.json', '.github/workflows/site.yml', 'AGENTS.md', 'README.md', '.gitattributes', '.gitignore', 'content/site.json', 'content/structures/modes/little-planet.json', 'content/articles/about-me.json']) expect(existsSync(join(dir, file)), file).toBe(true);
     const atiya = JSON.parse(readFileSync(join(dir, 'atiya.json'), 'utf8'));
     expect(atiya).toMatchObject({ schema: 1, engine: ENGINE, owner: { login: 'ada', id: ADA.id } });
     // which ways in are on is content (plan stage 8A): the little planet, chosen in the first run
@@ -97,7 +97,7 @@ describe('setup on the fake GitHub', () => {
     const f = await fake();
     const { result, dir } = await setup(f, { inputs: { explore: 'site', samples: false } });
     expect(result.ok).toBe(true);
-    expect(existsSync(join(dir, 'content/structures/planet.json'))).toBe(false);
+    expect(existsSync(join(dir, 'content/structures/modes/little-planet.json'))).toBe(false);
     expect(existsSync(join(dir, 'content/articles'))).toBe(false);
     expect(JSON.parse(readFileSync(join(dir, 'content/structures/ways.json'), 'utf8'))).toEqual({ modes: [], primary: 'site' });
     expect(JSON.parse(readFileSync(join(dir, 'atiya.json'), 'utf8')).modes).toBeUndefined();

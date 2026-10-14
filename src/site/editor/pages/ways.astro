@@ -8,7 +8,7 @@ import WaysForm, { type WayChoice } from '../components/WaysForm.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import { load } from '../server/screens';
 import { readDoc } from '../server/store';
-import { PLANET } from '../server/articles';
+import { planetKey } from '../server/articles';
 import { BUILTIN_MODES } from '../../modes/builtin';
 import { WAYS_FILE, type Ways } from '../../modes/contract';
 import { effectiveWays } from '../../modes/ways';
@@ -17,14 +17,14 @@ export const prerender = false;
 
 const loaded = load();
 const doc = readDoc<Ways>(`/content/${WAYS_FILE}`);
-const hasPlanet = !!readDoc(PLANET);
+const hasPlanet = !!readDoc(planetKey());
 const ways = effectiveWays({ ways: doc?.value ?? null, hasPlanet });
-const choices: WayChoice[] = [...BUILTIN_MODES.values()].map(({ manifest, structureFile }) => ({
+const choices: WayChoice[] = [...BUILTIN_MODES.values()].map(({ manifest, structureFile, legacyStructureFile }) => ({
   id: manifest.id,
   name: manifest.name,
   summary: manifest.summary,
   mount: manifest.mount,
-  kept: !!readDoc(`/content/${structureFile}`),
+  kept: !!readDoc(`/content/${structureFile}`) || (!!legacyStructureFile && !!readDoc(`/content/${legacyStructureFile}`)),
 }));
 ---
 

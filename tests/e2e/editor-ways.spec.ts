@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { FIXTURE, reset } from '../../scripts/editor-test-server.mjs';
 
 const WAYS = join(FIXTURE, 'content/structures/ways.json');
-const PLANET = join(FIXTURE, 'content/structures/planet.json');
+const PLANET = join(FIXTURE, 'content/structures/modes/little-planet.json');
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
 const status = (page: Page) => page.locator('[data-editor-status]');
 const modeBox = (page: Page) => page.getByRole('checkbox', { name: /^Little planet/ });

@@ -41,7 +41,7 @@ export function writeStarter(dir, o) {
   cpSync(from, to, { recursive: true });
   const name = o.name.trim() || PLACEHOLDER;
 
-  if (!o.planet) rmSync(join(to, 'structures', 'planet.json'), { force: true });
+  if (!o.planet) rmSync(join(to, 'structures', 'modes'), { recursive: true, force: true });
   // which ways in are on (plan stage 8A, D-W1): edit mode's Ways to explore changes it later
   writeJson(join(to, 'structures', 'ways.json'), { modes: o.planet ? [{ id: 'little-planet', on: true, mount: 'play' }] : [], primary: 'site' });
 

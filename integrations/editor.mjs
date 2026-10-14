@@ -21,7 +21,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { privateRootFor } from './roots.mjs';
-import { planetOn, siteFeatures } from './features.mjs';
+import { PLANET_FILES, planetOn, siteFeatures } from './features.mjs';
 import { LAUNCH_HEADER, launchAllows } from './launch.mjs';
 
 /** How long edit mode must have been idle before a new site name or planet restarts the server. */
@@ -333,7 +333,7 @@ export default function editor() {
         // so every page shows it
         server.watcher.on('all', (_event, file) => {
           const rel = relative(contentRoot, file).split(/[\\/]/).join('/');
-          if (rel !== 'site.json' && rel !== 'structures/planet.json' && rel !== 'structures/ways.json') return;
+          if (rel !== 'site.json' && rel !== 'structures/ways.json' && !PLANET_FILES.includes(rel)) return;
           const now = siteNameOf(contentRoot);
           const planet = planetOn(contentRoot);
           if ((now && now !== siteName) || planet !== features.planet) {

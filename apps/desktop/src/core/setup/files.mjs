@@ -56,7 +56,7 @@ This is ${s.name}'s portfolio site, published at ${s.url} by GitHub Pages. It wa
 
 ## What's here
 
-- \`content/\`: everything on the site, as JSON: pages (\`articles/\`), the sections and navigation (\`structures/site.json\`), the planet's buildings (\`structures/planet.json\`, if the planet is on), people, settings (\`site.json\`) and media with their sidecars (\`media/\`).
+- \`content/\`: everything on the site, as JSON: pages (\`articles/\`), the sections and navigation (\`structures/site.json\`), the planet's buildings (\`structures/modes/little-planet.json\`), which ways to explore are on (\`structures/ways.json\`), people, settings (\`site.json\`) and media with their sidecars (\`media/\`).
 - \`atiya.json\`: the engine version this site is built with, and which ways to explore it are on. Don't change \`engine\` by hand: Atiya Studio updates it together with the workflow.
 - \`.github/workflows/site.yml\`: builds and publishes the site with that engine. Don't edit it.
 

@@ -2,14 +2,16 @@
  * Ways to explore, on and off (plan stage 8A: 8A.1 to 8A.3): the ways file in the content contract, the
  * loader holding it to V33 to V37, and the planet following it, in the content and in what the build ships.
  */
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ContentError, loadContent } from '../../src/site/content/load';
 import { readSnapshot } from '../../src/site/content/source';
 import { effectiveWays } from '../../src/site/modes/ways';
-import { planetOn, siteFeatures } from '../../integrations/features.mjs';
+import { PLANET_FILES, planetOn, siteFeatures } from '../../integrations/features.mjs';
+import { LEGACY_PLANET_FILE, PLANET_FILE } from '../../src/site/modes/contract';
 import { writeStarter } from '../../apps/desktop/src/core/setup/starter.mjs';
 
 const ROOT = join(__dirname, '../..');
@@ -74,8 +76,8 @@ describe('the loader holds the ways to V33 to V37 (8A.2)', () => {
   it('refuses each broken case, naming the ways file and the rule', () => {
     const W = 'content/structures/ways.json';
     expect(rule(site({ ways: { modes: [{ id: 'little-planet', on: true, mount: 'work' }], primary: 'site' } }).content)).toEqual([`${W} V34`]);
-    expect(rule(site({ planet: false, ways: ON }).content)).toEqual(['content/structures/planet.json V35']);
-    expect(rule(site({ planet: false, ways: OFF }).content)).toEqual(['content/structures/planet.json V37']);
+    expect(rule(site({ planet: false, ways: ON }).content)).toEqual(['content/structures/modes/little-planet.json V35']);
+    expect(rule(site({ planet: false, ways: OFF }).content)).toEqual(['content/structures/modes/little-planet.json V37']);
     expect(rule(site({ ways: { modes: [{ id: 'orbit', on: true }], primary: 'site' } }).content)).toEqual([`${W} V33`]);
     expect(rule(site({ ways: { ...OFF, primary: 'little-planet' } }).content)).toEqual([`${W} V33`]);
   });
@@ -115,5 +117,47 @@ describe('the planet follows the ways (8A.3)', () => {
     expect(repo.getModeData('little-planet')).toBeNull();
     expect(repo.content().planet).not.toBeNull();
     expect(repo.getWays()).toEqual(OFF);
+  });
+});
+
+describe("Little planet's structure moves to the modes' folder (M1.1)", () => {
+  const NEW = join('structures', 'modes', 'little-planet.json');
+  const OLD = join('structures', 'planet.json');
+  /** The starter with its structure in the old place, the new one, or both. */
+  const placed = (where: 'new' | 'old' | 'both') => {
+    const s = site();
+    const text = readFileSync(join(s.content, NEW), 'utf8');
+    if (where !== 'new') writeFileSync(join(s.content, OLD), text);
+    if (where === 'old') rmSync(join(s.content, NEW));
+    return s;
+  };
+
+  it('is read in the new place, and the engine and the integration name the same places', () => {
+    const index = load(placed('new').content);
+    expect(index.planet?.places).toHaveLength(7);
+    expect(index.warnings.filter((w) => w.includes('structure is still'))).toEqual([]);
+    expect(PLANET_FILES).toEqual([PLANET_FILE, LEGACY_PLANET_FILE]);
+  });
+
+  it('is still read in the old place, with a warning naming the move; the planet stays on', () => {
+    const s = placed('old');
+    const index = load(s.content);
+    expect(index.planet?.places).toHaveLength(7);
+    expect(index.warnings.some((w) => w.includes(`move it to content/${PLANET_FILE}`))).toBe(true);
+    expect(planetOn(s.content)).toBe(true);
+  });
+
+  it('is refused in both places at once', () => {
+    expect(issuesOf(placed('both').content).map((i) => i.file)).toEqual([`content/${LEGACY_PLANET_FILE}`]);
+  });
+
+  it('is moved by the migration script, and a second run changes nothing', () => {
+    const s = placed('old');
+    const run = () => execFileSync(process.execPath, [join(ROOT, 'scripts', 'migrate-planet-structure.mjs'), s.content], { encoding: 'utf8' });
+    expect(run()).toMatch(/Moved Little planet's structure/);
+    expect(existsSync(join(s.content, NEW))).toBe(true);
+    expect(existsSync(join(s.content, OLD))).toBe(false);
+    expect(run()).toMatch(/Already moved/);
+    expect(issuesOf(s.content)).toEqual([]);
   });
 });

@@ -23,7 +23,7 @@ import { load, mediaCards, mediaCount, mediaSummary, sectionOptions, STATUS_LABE
 import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
 import { mediaUsed, videosUsed } from '../../content/load';
 import { readDoc } from '../server/store';
-import { OVERLAY, PLANET, STRUCTURE, articleKey } from '../server/articles';
+import { OVERLAY, STRUCTURE, articleKey, planetKey } from '../server/articles';
 import { sharingView } from '../server/access';
 import { privateNode } from '../model/access';
 import { hasPrivate, privateRoot } from '../../content/source';
@@ -54,7 +54,7 @@ const privateSetup = privateSetupHref(SITE_FEATURES.managed, protectable);
 const section = privateIn ?? (structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '');
 // who it's shared with, for its Share dialog
 const sharing = access === 'private' && loaded.ok ? sharingView(id) : null;
-const planet = readDoc<PlanetStructure>(PLANET);
+const planet = readDoc<PlanetStructure>(planetKey());
 // its building on the planet: the one showing its section (documentation/sections/spec.md §5.2)
 const placeId = planet && structure && access === 'open' ? placeOfPage(planet.value, structure.value, id) : undefined;
 const place = planet?.value.places.find((p) => p.id === placeId)?.title ?? '';
