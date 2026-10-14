@@ -212,7 +212,7 @@ The [plan's status](desktop/plan.md#6-status) holds the evidence for each stage.
 4. **The mode kit (M4):** types, schemas, the harness on starter content, the conformance suite R1 to R12 (section triggers included), a template.
 5. **Constellation and Ways to explore in full (M5):** a second, light mode that proves the contract isn't planet-shaped; slots and settings edited from each mode's schema.
 6. **Distribution (stage 9):** a signed installer that updates itself, a security and accessibility review, and five people who don't write code each reaching a live site.
-7. **An open question:** how the owner's own site, which runs from the source to keep a tight feedback loop, can also prove what everyone else gets: the leading option keeps it on source, with a check that the source build and the consumer build of the same commit match (desktop spec §6.4, O15).
+7. **One engine, two builds (stage 10, decided 14 October 2026):** the owner's site stays on the source, with its tight feedback loop, and is never moved. Both builds run one script and read the site's settings from its content, and a check, on every push, builds his site both from the source and from that commit's engine pack and finds them the same; a second site of his, made with the app, takes each release first (desktop spec §6.4, O15).
 
 Open decisions are kept with the specs: the app's in [desktop §14](desktop/spec.md#14-decisions) (the licence, the GitHub App, the agreement's words) and the modes' in [modes §12](desktop/modes.md#12-open-decisions).
 

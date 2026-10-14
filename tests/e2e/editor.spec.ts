@@ -1638,6 +1638,18 @@ test.describe('editor', () => {
     await expect(dialog.getByRole('heading', { name: '1 commit not on GitHub yet' })).toBeVisible();
   });
 
+  test("the site settings save keeps what the form doesn't show: the services every build reads", async ({ page }) => {
+    // desktop plan stage 10: the contact endpoint and the telemetry key are content/site.json's; a rename must not drop them
+    const before = readJson(join(FIXTURE, 'content/site.json'));
+    expect(before.services?.contact?.endpoint).toMatch(/^https:\/\//);
+    await page.goto('/_edit/settings/');
+    const form = page.locator('[data-settings-form="site"]');
+    await form.getByLabel('Positioning').fill('Set by the services test.');
+    await form.getByRole('button', { name: 'Save the site settings' }).click();
+    await expect.poll(() => readJson(join(FIXTURE, 'content/site.json')).positioning, { timeout: 15_000 }).toBe('Set by the services test.');
+    expect(readJson(join(FIXTURE, 'content/site.json')).services).toEqual(before.services);
+  });
+
   test('publish: commits content/ only, pushes it to the remote, and discard puts a change back', async ({ page }) => {
     // two changes: one to publish, one to discard
     const site = readJson(join(FIXTURE, 'content/site.json'));

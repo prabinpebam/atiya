@@ -118,7 +118,7 @@ Requests are JSON (`Content-Type: application/json`), at most 16 KB (an agreemen
 
 | Setting | Where | What |
 |---|---|---|
-| `PUBLIC_CONTACT_ENDPOINT` | The site's `.env` (committed: an address, not a secret) | The Function app's base URL; the form adds `/api/contact`. Unset (a fork), the form isn't shown and the section says "The contact form isn't set up on this copy of the site." |
+| `PUBLIC_CONTACT_ENDPOINT` | The site's settings: `services.contact.endpoint` in `content/site.json` (committed: an address, not a secret), made the build's variable by `integrations/services.mjs`, so the owner's build and a managed site's read it from the same place (desktop spec §6.3; `.env` until 14 October 2026). A test build takes `.env.test`'s made-up host instead | The Function app's base URL; the form adds `/api/contact`. Unset (a fork), the form isn't shown and the section says "The contact form isn't set up on this copy of the site." |
 | `CONTACT_TO` | Function app setting | Where messages go |
 | `ACS_CONNECTION_STRING`, `CONTACT_FROM` | Function app settings | The Azure email service and its sender, used when Gmail isn't set up |
 | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Function app settings (the password a secret, set by `deploy-contact-api.ps1 -Gmail`, which asks for it without showing it) | Send from Prabin's own Gmail account; both set, or the Azure sender is used |
@@ -200,7 +200,7 @@ The form can't solve the challenge, so it isn't offered: the section shows "The 
 ## 8. Hosting on GitHub Pages
 
 - The site stays static. The form is HTML and a small script; the only network calls are `fetch`es to the Function, cross-origin, allowed by CORS for the site's origin alone.
-- The endpoint's address is in the site's `.env` (public, like any address in the page); every secret is in the Function app's settings in Azure, never in the repository, the build or the page.
+- The endpoint's address is in the site's settings, `services.contact.endpoint` in `content/site.json` (public, like any address in the page); every secret is in the Function app's settings in Azure, never in the repository, the build or the page.
 - The Function is deployed from this repository by `scripts/deploy-contact-api.ps1` (it provisions what's missing and publishes), not by the site's workflow: the site deploys without Azure credentials.
 
 ## 9. Cost
