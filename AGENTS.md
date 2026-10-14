@@ -171,7 +171,7 @@ Spec, navigation modes, plan and Definitions of Done: [documentation/desktop/](.
 - **Update the spec in the same change as the code.** When the build differs from a spec, update its "as built" section and its Definition of Done evidence.
 - **A new page** gets:
   - one H1 and a TL;DR;
-  - an entry in `documentation/docs-manifest.json` with a `group` (Overview, Site, Site UI, Content, Planet, Features, Game UI, Engineering, Desktop app), a global `order` (groups sort by their lowest order: 1s, 10s, 20.1–20.9, 20s, 30s, 40s, 50s, 60s) and a Material Symbols `icon`;
+  - an entry in `documentation/docs-manifest.json` in its part of the whole plan (`group`, nested with `/`: The site, with Information architecture and Design system; Content and publishing, with Edit mode; Private pages and sharing; Atiya Studio; Ways to explore, with Little planet (and its Features and Game UI) and Cozy life; Engineering), a global `order` in its part's range (folders sort by their lowest order: the root 0–1, The site 10s, Content 20s, Private pages 30s, Atiya Studio 40s, Ways to explore 50–89, Engineering 90s) and a Material Symbols `icon`;
   - a card on `landing.html` if it starts a new topic.
 - Slate's rules apply: no emoji, no inline styles or scripts in pages, no invented facts, and no meta-documentation (reviews update the pages they review).
 - **Links must stay inside `documentation/`**, because files outside it aren't published. Link to code and repository files with a GitHub URL (`https://github.com/prabinpebam/atiya/blob/main/<path>`).
