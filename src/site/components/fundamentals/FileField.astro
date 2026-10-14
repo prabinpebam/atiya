@@ -7,6 +7,7 @@
  * @a11y The zone shows focus when the input has it; the chosen files are announced (a live region).
  * @key Enter / Space: opens the system's file dialog
  */
+import { stableId } from '../../design/stableId';
 import { svgOf } from '../../design/icons';
 
 interface Props {
@@ -26,7 +27,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, name, id = `file-${Math.random().toString(36).slice(2, 8)}`, accept, multiple = false, hint, ...rest } = Astro.props;
+const { label, name, id = `file-${stableId(Astro, 'FileField')}`, accept, multiple = false, hint, ...rest } = Astro.props;
 const icon = svgOf('upload');
 const described = hint ? `${id}-hint` : undefined;
 ---

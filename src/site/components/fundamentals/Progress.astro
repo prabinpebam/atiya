@@ -7,6 +7,7 @@
  * @a11y Determinate progress announces min, max and now; indeterminate omits aria-valuenow.
  * @a11y Value text is optional and never the only signal.
  */
+import { stableId } from '../../design/stableId';
 import { clampRangeValue, formatSliderValue } from '../../scripts/controls';
 
 interface Props {
@@ -28,7 +29,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { value, label, hideLabel = false, showValue = false, tone = 'accent', size = 'md', id = `progress-${Math.random().toString(36).slice(2, 8)}`, ...rest } = Astro.props;
+const { value, label, hideLabel = false, showValue = false, tone = 'accent', size = 'md', id = `progress-${stableId(Astro, 'Progress')}`, ...rest } = Astro.props;
 const determinate = value !== undefined;
 const pct = determinate ? clampRangeValue(Number(value), 0, 100) : undefined;
 const labelId = `${id}-label`;

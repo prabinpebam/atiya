@@ -11,6 +11,7 @@
  * @key Left / Right: the previous / next tab (wrapping), shown at once
  * @key Home / End: the first / last tab
  */
+import { stableId } from '../../design/stableId';
 import { svgOf, type IconName } from '../../design/icons';
 
 interface Props {
@@ -26,7 +27,7 @@ interface Props {
   fill?: boolean;
 }
 
-const { label, tabs, selected, fill = false, id = `tabs-${Math.random().toString(36).slice(2, 8)}` } = Astro.props;
+const { label, tabs, selected, fill = false, id = `tabs-${stableId(Astro, 'Tabs')}` } = Astro.props;
 const current = tabs.some((t) => t.id === selected) ? selected : tabs[0]?.id;
 const panels = await Promise.all(tabs.map(async (t) => ({ ...t, html: Astro.slots.has(t.id) ? await Astro.slots.render(t.id) : '' })));
 ---

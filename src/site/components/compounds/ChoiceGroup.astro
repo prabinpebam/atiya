@@ -10,6 +10,7 @@
  * @key Arrow keys: move through a radio group
  * @key Space: selects or toggles a choice
  */
+import { stableId } from '../../design/stableId';
 import Checkbox from '../fundamentals/Checkbox.astro';
 import Radio from '../fundamentals/Radio.astro';
 
@@ -59,7 +60,7 @@ const {
   error,
   orientation = 'vertical',
   variant = 'list',
-  id = `choice-${Math.random().toString(36).slice(2, 8)}`,
+  id = `choice-${stableId(Astro, 'ChoiceGroup')}`,
   ...rest
 } = Astro.props;
 const selected = Array.isArray(value) ? value : value ? [value] : [];

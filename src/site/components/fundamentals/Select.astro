@@ -19,6 +19,7 @@
  * @key Tab: chooses the option and moves on
  * @key Escape: closes the list without choosing
  */
+import { stableId } from '../../design/stableId';
 import { svgOf, type IconName } from '../../design/icons';
 import { describedBy, initialIndex } from '../../scripts/listbox';
 
@@ -61,7 +62,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, options, value, placeholder, name, id = `select-${Math.random().toString(36).slice(2, 8)}`, hint, error, disabled = false, hideLabel = false, size = 'md', trigger = 'field', align = 'start', ...rest } = Astro.props;
+const { label, options, value, placeholder, name, id = `select-${stableId(Astro, 'Select')}`, hint, error, disabled = false, hideLabel = false, size = 'md', trigger = 'field', align = 'start', ...rest } = Astro.props;
 const chosenIndex = initialIndex(options.map((o) => o.value), value, placeholder);
 const chosen = chosenIndex >= 0 ? options[chosenIndex] : null;
 const described = describedBy(id, hint, error);

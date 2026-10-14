@@ -7,6 +7,8 @@
  * @a11y The label is visible on the start side, and the control stays at least 44 px to touch.
  * @key Space: toggles it
  */
+import { stableId } from '../../design/stableId';
+
 interface Props {
   /** The visible label when no slot is supplied. */
   label?: string;
@@ -24,7 +26,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, name, value = 'on', id = `switch-${Math.random().toString(36).slice(2, 8)}`, checked = false, disabled = false, ...rest } = Astro.props;
+const { label, name, value = 'on', id = `switch-${stableId(Astro, 'Switch')}`, checked = false, disabled = false, ...rest } = Astro.props;
 const hasSlot = Astro.slots.has('default');
 ---
 

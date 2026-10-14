@@ -6,6 +6,7 @@
  * @tier compound
  * @a11y The title is the page's h1; the picture has its own alt (or is marked decorative when the words say it all).
  */
+import { stableId } from '../../design/stableId';
 import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
@@ -40,7 +41,7 @@ interface Props {
 
 const { title, standfirst, kicker, picture, layout = picture ? 'split' : 'type', size = 'display', level = 1 } = Astro.props;
 const hasActions = Astro.slots.has('default');
-const titleId = `hero-${Math.random().toString(36).slice(2, 8)}`;
+const titleId = `hero-${stableId(Astro, 'Hero')}`;
 ---
 
 <section class="hero" data-layout={layout} aria-labelledby={titleId}>

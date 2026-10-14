@@ -13,6 +13,7 @@
  * @a11y A tucked-away header comes back when anything in it takes focus, while the menu or the theme list is open, and never moves with reduced motion.
  * @key Escape: closes the menu
  */
+import { stableId } from '../../design/stableId';
 import Button from '../fundamentals/Button.astro';
 import IconButton from '../fundamentals/IconButton.astro';
 import Select from '../fundamentals/Select.astro';
@@ -45,7 +46,7 @@ interface Props {
 const { nav = [], action, homeHref = withBase('/'), section, navLabel = 'Sections', access = false } = Astro.props;
 const signInHref = withBase('/sign-in/');
 // unique per header, so a page can show more than one (the design library does)
-const uid = Math.random().toString(36).slice(2, 8);
+const uid = stableId(Astro, 'SiteHeader');
 const navId = `site-nav-${uid}`;
 const open = svgOf('menu');
 const close = svgOf('close');

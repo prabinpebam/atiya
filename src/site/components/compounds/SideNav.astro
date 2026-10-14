@@ -8,6 +8,8 @@
  * @a11y On narrow screens a native disclosure (details) shows and hides it: nothing to learn.
  * @a11y With follow, the current page moves with the address when the page changes without a reload.
  */
+import { stableId } from '../../design/stableId';
+
 interface Props {
   /** The navigation's accessible name. */
   label: string;
@@ -19,7 +21,7 @@ interface Props {
 
 const { label, groups, follow = false } = Astro.props;
 const current = groups.flatMap((g) => g.items).find((i) => i.current);
-const uid = Math.random().toString(36).slice(2, 8);
+const uid = stableId(Astro, 'SideNav');
 ---
 
 <nav class="side-nav" aria-label={label}>
