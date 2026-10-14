@@ -169,6 +169,31 @@ The phases of [navigation modes](modes.md): the host and contract (M1), just the
 | 8.4 | Both planets, Constellation and the template pass R1 to R11; a mode built to break each fails | `atiya-mode check` |
 | 8.5 | Ways to explore turns modes on and off, maps slots and picks the first way in | E2E "editor: ways to explore" |
 
+#### Stage 8A: ways to explore, on and off (the next set)
+
+The part of stage 8 that delivers PD4 (one switch turns a mode on and off) before the planet is split, built in its own worktree (`E:\Projects\Personal\personal-site-ways`, branch `ways-to-explore`, from `desktop-app`). It comes first because it's the part a person sees: the planet becomes optional for any site, the owner's included, from edit mode.
+
+- **Decision (D-W1): which ways in are on is content, not `atiya.json`.** It's the site's own editorial choice, made in edit mode, so it lives where edit mode writes: `content/structures/ways.json`, through the store (versions, the content check before any byte, rollback, live updates), saved by Save to remote with the rest, and checked by the content contract (V33 to V37). `atiya.json` keeps what the app and the build own: the engine's pin, the contract, the owner and the developer features. Without a ways file (the engine's own repository, and sites made before this), a site with a planet structure has Little planet on and `primary` the site, which is how it behaves today.
+- **Builds:**
+  - **The ways file** in the content contract (`schema.ts`: `ways`, strict), read by `loadContent` into `index.ways`; `effectiveWays(index)` gives the file's, or the default above. `loadContent` checks V33 to V37 against it (the rules move from the repository into the loader), so a bad change is refused by the store with 422, naming the rule.
+  - **The planet follows it** (`integrations/features.mjs`): `planet` is on when the effective ways have Little planet on, not when `planet.json` exists. Off: no Explore link, no planet on the home page, no game chunks or planet assets in `dist/` (`site-only.mjs`, as stage 4), and `/play/` is a small static page that says the site doesn't offer that way of exploring, with a link home and `noindex` (modes §2), not a redirect. The planet's structure stays (V37).
+  - **Edit mode's Ways to explore screen** (`/_edit/ways/`, in the Site group): each of the engine's modes with its name, summary and a switch; the first way in offered on the home page (the site, or a mode that's on); one Save. It goes through `PUT /_edit/api/ways` (the store, with its version). Turning Little planet on for a site without a planet structure writes a starting map in the same transaction (the seven buildings shown the first seven sections, with their names and the sections' words); a site with fewer than seven sections is told it needs seven. The Planet screen shows only while the planet is on.
+  - **The server follows the switch:** a change of what's on restarts the dev server (when edit mode is quiet, as a new name does); the screen waits for the restart, then shows the result.
+  - **Setup writes the ways file** from the first run's choice; `atiya.json` loses `modes` and `primary` (and a site whose `atiya.json` still has them is read as before, once, until its ways file exists).
+- **Try it:** in the worktree, `node scripts/editor-test-server.mjs`, open `http://localhost:4330/_edit/ways/`. Turn Little planet off and save: the server starts again, the header has no Explore link, the home page no planet, `/play/` says the site doesn't offer it, and the Planet screen is gone. Turn it back on: the buildings are as they were. Save to remote lists `content/structures/ways.json`.
+
+| # | Done when | Evidence |
+|---|---|---|
+| 8A.1 | The ways file is part of the content contract: strict, optional, read into the index; without it, a site with a planet structure has Little planet on and `primary` the site | `tests/unit/modes.test.ts` |
+| 8A.2 | The loader holds the ways to V33 to V37: a change that breaks one is refused by the store (422, nothing written), naming the rule | Unit: `loadContent` on each broken case; the store's refusal |
+| 8A.3 | The planet is on exactly when the effective ways say so, for the engine's own repository and for a managed site | Unit: `siteFeatures` with and without a ways file, on and off |
+| 8A.4 | With the planet off, the site has no Explore link, no planet on its home page, no game chunk or planet asset in `dist/`, and `/play/` is the "not offered" page (`noindex`, a link home); the planet's structure is kept | `build-starter.mjs --planet-off` (the starter with a planet structure and Little planet off): every check passes |
+| 8A.5 | Ways to explore turns Little planet off and on, and picks the first way in; the server starts again and the site follows; turning it on without a planet structure writes the starting map, or says seven sections are needed | E2E "editor: ways to explore" (`--project=editor`); unit tests of the starting map and the screen's model |
+| 8A.6 | The screen meets edit mode's rules: tokens only, `saveStatus` for the save, every wait named, keyboard and axe in light and dark | The E2E above; `siteDesignSystem.test.ts` |
+| 8A.7 | Setup writes the ways file from the first run's choice, and `atiya.json` holds no `modes` | `apps/desktop/test/stage2.test.mjs`; `tests/unit/starter.test.ts` |
+| 8A.8 | The owner's site is unchanged: its planet, budgets and pages | `npm run verify:prod`; the planet E2E tests "fast travel from the menu reaches the landmark" and "reading theme"; the "landing & classic" group |
+| 8A.9 | The docs say what was built: modes.md (D-W1, §2, §14), the desktop spec's `atiya.json` (§6.3), the editor spec's screens, AGENTS.md | Review; the docs checks |
+
 ### Stage 9: distribution and hand-out
 
 - **Builds:** signing, auto-update, the installer, macOS, Keep a copy of the engine, Update your site; a security review; accessibility review; a study with five people who don't write code; support pages.
