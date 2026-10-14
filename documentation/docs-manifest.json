@@ -683,6 +683,33 @@
       "status": "stable",
       "updated": "2026-10-13",
       "group": "Engineering"
+    },
+    {
+      "path": "desktop/spec.md",
+      "title": "Desktop app: spec",
+      "order": 61,
+      "icon": "desktop_windows",
+      "status": "review",
+      "updated": "2026-10-14",
+      "group": "Desktop app"
+    },
+    {
+      "path": "desktop/modes.md",
+      "title": "Navigation modes",
+      "order": 61.5,
+      "icon": "explore",
+      "status": "review",
+      "updated": "2026-10-14",
+      "group": "Desktop app"
+    },
+    {
+      "path": "desktop/plan.md",
+      "title": "Desktop app: plan",
+      "order": 62,
+      "icon": "checklist",
+      "status": "review",
+      "updated": "2026-10-14",
+      "group": "Desktop app"
     }
   ]
 }

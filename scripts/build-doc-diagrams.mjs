@@ -23,6 +23,9 @@ const DIAGRAMS = [
   { name: 'separation', page: 'documentation/engineering/app-separation.md', prefix: 'eng-sep' },
   { name: 'editor', page: 'documentation/editor/spec.md', prefix: 'ed-arch' },
   { name: 'access', page: 'documentation/access/spec.md', prefix: 'ac-arch' },
+  { name: 'desktop', page: 'documentation/desktop/spec.md', prefix: 'dk-arch' },
+  { name: 'desktop-engine', page: 'documentation/desktop/spec.md', prefix: 'dk-engine' },
+  { name: 'modes', page: 'documentation/desktop/modes.md', prefix: 'md-arch' },
 ];
 
 const V = (n) => `var(--color-${n})`;

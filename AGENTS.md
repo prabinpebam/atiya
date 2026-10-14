@@ -157,7 +157,7 @@ Spec, plan and Definition of Done: [documentation/contact/](./documentation/cont
 - **Update the spec in the same change as the code.** When the build differs from a spec, update its "as built" section and its Definition of Done evidence.
 - **A new page** gets:
   - one H1 and a TL;DR;
-  - an entry in `documentation/docs-manifest.json` with a `group` (Site, Site UI, Planet, Features, Game UI, Engineering), a global `order` (groups sort by their lowest order: 10s, 20.1–20.9, 20s, 30s, 40s, 50s) and a Material Symbols `icon`;
+  - an entry in `documentation/docs-manifest.json` with a `group` (Site, Site UI, Content, Planet, Features, Game UI, Engineering, Desktop app), a global `order` (groups sort by their lowest order: 10s, 20.1–20.9, 20s, 30s, 40s, 50s, 60s) and a Material Symbols `icon`;
   - a card on `landing.html` if it starts a new topic.
 - Slate's rules apply: no emoji, no inline styles or scripts in pages, no invented facts, and no meta-documentation (reviews update the pages they review).
 - **Links must stay inside `documentation/`**, because files outside it aren't published. Link to code and repository files with a GitHub URL (`https://github.com/prabinpebam/atiya/blob/main/<path>`).

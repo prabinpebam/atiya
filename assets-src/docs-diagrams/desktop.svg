@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640">
+<title>The desktop app: from a window on the person's computer to their GitHub Pages site</title>
+<desc>The app's window shows the setup screens and, once set up, edit mode, which is the engine's own pages. Neither view runs Node: they talk to the main process over a narrow bridge. The main process alone holds the GitHub token, in the system keychain; it signs in, sets up the account's repositories and settings through the GitHub API, supervises the engine and runs git. The engine process is astro dev with edit mode, bundled inside the app at one pinned version; it answers only the app's own views on the loopback address and writes the checked content into the workspace on disk. Save to remote pushes the workspace to the person's two repositories; GitHub Actions builds them with the same pinned engine, seals the private pages, checks for leaks and deploys to GitHub Pages.</desc>
+<g id="window">
+<rect class="src" x="40" y="40" width="270" height="150" rx="18" />
+<text class="name" x="60" y="72">The app window</text>
+<text class="note" x="60" y="94">sandboxed views, no Node</text>
+<text class="line" x="60" y="132">Setup and the app frame</text>
+<text class="line" x="60" y="162">Edit mode: the engine's pages</text>
+</g>
+<g id="main">
+<rect class="gate" x="365" y="40" width="270" height="150" rx="18" />
+<text class="name" x="385" y="72">Main process</text>
+<text class="note" x="385" y="94">the only part with the token</text>
+<text class="line" x="385" y="132">Sign-in, setup, updates</text>
+<text class="line" x="385" y="162">Keychain, git, the engine</text>
+</g>
+<g id="api">
+<rect class="box" x="690" y="40" width="270" height="150" rx="18" />
+<text class="name" x="710" y="72">GitHub API</text>
+<text class="note" x="710" y="94">the person's own account</text>
+<text class="line" x="710" y="132">Repositories, deploy key</text>
+<text class="line" x="710" y="162">Secret, Pages settings</text>
+</g>
+<g id="engine">
+<rect class="gate" x="40" y="270" width="270" height="150" rx="18" />
+<text class="name" x="60" y="302">Engine process</text>
+<text class="note" x="60" y="324">astro dev, pinned, inside the app</text>
+<text class="line" x="60" y="362">Edit mode and its contract</text>
+<text class="line" x="60" y="392">Answers the app's views only</text>
+</g>
+<g id="workspace">
+<rect class="docs" x="365" y="270" width="270" height="150" rx="18" />
+<text class="name" x="385" y="302">Workspace</text>
+<text class="note" x="385" y="324">a folder in your home folder</text>
+<text class="line" x="385" y="362">content/ and atiya.json</text>
+<text class="line" x="385" y="392">private-pages/, once used</text>
+</g>
+<g id="repos">
+<rect class="box" x="690" y="270" width="270" height="150" rx="18" />
+<text class="name" x="710" y="302">Their repositories</text>
+<text class="note" x="710" y="324">on GitHub, owned by the person</text>
+<text class="line" x="710" y="362">The site (public)</text>
+<text class="line" x="710" y="392">Private pages, once used</text>
+</g>
+<g id="actions">
+<rect class="box" x="365" y="500" width="270" height="70" rx="16" />
+<text class="name" x="385" y="530">GitHub Actions</text>
+<text class="note" x="385" y="552">same engine: build, seal, check</text>
+</g>
+<g id="pages">
+<rect class="out" x="40" y="500" width="270" height="70" rx="16" />
+<text class="out-name" x="60" y="530">GitHub Pages</text>
+<text class="out-note" x="60" y="552">login.github.io</text>
+</g>
+<text class="label" x="318" y="104">bridge</text>
+<text class="label" x="643" y="104">REST</text>
+<text class="label" x="92" y="236">edit, preview</text>
+<text class="label" x="300" y="220">starts</text>
+<text class="label" x="570" y="236">clones, syncs</text>
+<text class="label" x="835" y="236">creates</text>
+<text class="label" x="316" y="334">valid writes</text>
+<text class="label" x="641" y="334">push</text>
+<text class="label" x="660" y="526">on push</text>
+<text class="label" x="316" y="526">deploy</text>
+<text class="label" x="40" y="612">Nothing on this computer runs on the person's site, and nothing on the site depends on the app being installed.</text>
+<path class="arrow" d="M310 115 H362" />
+<path class="arrow" d="M635 115 H687" />
+<path class="arrow" d="M175 190 V267" />
+<path class="arrow" d="M420 190 V228 H260 V267" />
+<path class="arrow" d="M560 190 V267" />
+<path class="arrow" d="M825 190 V267" />
+<path class="arrow" d="M310 345 H362" />
+<path class="arrow" d="M635 345 H687" />
+<path class="arrow" d="M825 420 V535 H638" />
+<path class="arrow" d="M365 535 H313" />
+</svg>
