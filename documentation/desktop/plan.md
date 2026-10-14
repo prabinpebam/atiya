@@ -4,7 +4,7 @@ How the [desktop app](spec.md) and [navigation modes](modes.md) are built: ten s
 
 > **TL;DR.**
 > - **How:** every stage is built in loops against its Definition of Done: build, run the stage's checks, fix, record the evidence here, commit. A stage is done when every row has its evidence and its "Try it" works by hand.
-> - **Stages:** 0 the spec; 1 the owner's app; 2 setup and the agent CLI, on a fake GitHub; 3 the first run in the app, on the fake GitHub; 4 just the site; 5 real GitHub, and private pages on first use; 6 the engine release and the site's build; 7 managed sites in the app; 8 navigation modes; 9 distribution and hand-out.
+> - **Stages:** 0 the spec; 1 the owner's app; 2 setup and the agent CLI, on a fake GitHub; 3 the first run in the app, on the fake GitHub; 4 just the site; 5 real GitHub, and private pages on first use; 6 the engine release and the site's build; 7 managed sites in the app; 8 navigation modes; 9 distribution and hand-out; 10 the owner's site on the consumer version (planned).
 > - **Project Definition of Done:** the spec's seven promises, measured (§2), plus the owner's site unchanged and every budget kept.
 > - **Status:** see §6.
 
@@ -239,9 +239,37 @@ Built in steps, cheapest and safest first, each closed against its own rows befo
 | 9.2 | The security review's findings are fixed or accepted in writing | The review |
 | 9.3 | Five people who don't write code each reach a live site unaided | The study's notes |
 
+### Stage 10: the owner's site on the consumer version (planned)
+
+The owner's live site moves from the engine's repository to a content-only site repository built by an engine release, and he edits it in the installed app as a managed site, so that his everyday use tests what everyone gets (spec §6.4, O15). The live site must not break at any point: nothing changes for visitors until a staging copy has been shown to match it, and every step has its way back.
+
+- **Before it can start** (each is its own work, mostly in other stages):
+  - **Cozy life as the site's own mode:** the planet's split (M3), and a site's build that compiles a mode from the site's repository (`local:<folder>`, modes §8.2), so the engine never ships the owner's residents and his site keeps them.
+  - **The contact form and telemetry for a managed site:** today the endpoint comes from the engine's `.env` and the PostHog key from the engine repository's variables (`deploy.yml`); a managed site needs its own (in `atiya.json` or its repository's variables), read by `site-build.yml`.
+  - **A home for the documentation and the design library,** which engine releases leave out: the engine repository's own Pages, with the site's footer linking there.
+  - **An engine release** (6.2b), and "Open my existing site" proven end to end: the site and its private repository cloned and opened.
+  - **The installed app** (stage 9) for the real consumer experience; until then, the app run from source.
+  - **Real GitHub sign-in** (5.1), or the GitHub CLI's token meanwhile.
+- **Steps:**
+  1. **Rehearse the swap** on two throwaway repositories: rename a Pages repository, give another its old name, and time how long the address answers nothing.
+  2. **Staging:** a content-only repository (`atiya-staging`) made from the owner's content with its history, linked to his existing private repository, pinned to the release, with Cozy life as its own mode, built by `site-build.yml` at `prabinpebam.github.io/atiya-staging/`. The live site keeps deploying from the engine's repository.
+  3. **Parity:** staging matches live: every page, link and redirect; a private page by access code and by magic link; the planet with Cozy life; the contact form (test endpoint); the budgets, the leak check and the GPU audit.
+  4. **Dogfooding:** the owner edits staging in the installed app for a trial period. Edits to live pause meanwhile, or are copied across before the switch.
+  5. **The switch:** bring the last content across; turn off `deploy.yml` in the engine's repository; rename it (`atiya-engine`) and the staging repository (`atiya`); point the site's workflow at the renamed engine; deploy; check.
+  6. **After:** the site's engine updates through the app's Update your site; engine work happens in the engine's repository against starter content or a copy of the owner's, and reaches his site only through a release.
+- **The way back** at every step: until step 5 nothing live changes; after it, rename back and re-run the engine repository's last deploy.
+
+| # | Done when | Evidence |
+|---|---|---|
+| 10.1 | The prerequisites above are each done | Their own stages' evidence |
+| 10.2 | The swap is rehearsed, and the gap it leaves is measured | The rehearsal's notes |
+| 10.3 | Staging matches the live site in every check of step 3 | A crawl comparing both, the E2E groups run against staging, the audit |
+| 10.4 | The owner has edited and published staging from the installed app, with nothing done by hand | His notes from the trial |
+| 10.5 | After the switch, the live address serves the consumer build, every old link and magic link works, and the engine's repository publishes only its documentation | The crawl against live; a magic link opened; the deploys |
+
 ## 4. Order
 
-Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 needs only 0. 5 needs 3 and the owner's OAuth App. 6 needs 4. 7 needs 3 and 6. 8 needs 4. 9 needs everything. The owner can use stage 1's app as soon as it's done.
+Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 needs only 0. 5 needs 3 and the owner's OAuth App. 6 needs 4. 7 needs 3 and 6. 8 needs 4. 9 needs everything. 10 needs 9, M3, an engine release and the owner's go-ahead. The owner can use stage 1's app as soon as it's done.
 
 ## 5. Tests
 

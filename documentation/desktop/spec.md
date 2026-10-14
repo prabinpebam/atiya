@@ -476,7 +476,9 @@ The reusable `site-build.yml` (in this repository) does what `deploy.yml` does t
 
 ### 6.4 The owner's own site
 
-He stays a developer workspace: his repository is the engine's source and his site, built by `deploy.yml` as today. An engine release never holds his content or his own mode (`content/`, `private-pages/`, `modes/cozy-life/`; a test holds it), and his site turns on his own mode at `/play/`, so his visitors see no change.
+Today he's a developer workspace: his repository is the engine's source and his site, built by `deploy.yml`. An engine release never holds his content or his own mode (`content/`, `private-pages/`, `modes/cozy-life/`; a test holds it), and his site turns on his own mode at `/play/`, so his visitors see no change.
+
+**Planned (O15, [plan stage 10](plan.md#stage-10-the-owners-site-on-the-consumer-version-planned)):** his site moves to the consumer version, so that using it every day tests what everyone else gets. It becomes a content-only site repository, built by an engine release through `site-build.yml` and edited in the installed app as a managed site, with Cozy life as the site's own mode. The engine's repository keeps only the source, the documentation and the releases. The move happens only after a staging copy matches the live site, and keeps the live address (`prabinpebam.github.io/atiya/`) by swapping the two repositories' names.
 
 ## 7. The app's architecture
 
@@ -633,6 +635,7 @@ Working defaults, used by the build until the owner decides otherwise:
 | O12 | Navigation modes' own decisions | As recommended in [modes §12](modes.md#12-open-decisions) | Stage 8 |
 | O13 | The app's own screens | Static pages on the site's tokens; the site's compiled components later | Stage 9 |
 | O14 | The access agreement's words name the owner ("and Prabin is told") | Change them to "and the site's owner is told" with a new `AGREEMENT_VERSION` (every current reader agrees again), or keep them for the owner and give managed sites their own | Before private pages ship to managed sites (stage 5) |
+| O15 | How the owner's site moves to the consumer version (§6.4), at which address | A: the site repository takes the name `atiya` and the engine's is renamed (`atiya-engine`), so the address, every link and every magic link stay as they are; B: the consumer default, `prabinpebam.github.io`, with redirect pages at `/atiya/`; C: a custom domain | A, provisional, pending the owner's confirmation; rehearsed on throwaway repositories first (stage 10) |
 
 ## 15. Critique of v1, and what changed
 
