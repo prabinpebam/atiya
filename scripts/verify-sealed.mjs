@@ -132,10 +132,10 @@ export function protectedTerms(privateRoot) {
  * repeating them leaks nothing: a private article about a product the open résumé names, a heading another
  * open page also uses, or an ordinary word three.js's code holds too.
  */
-export function publicCorpus(root = process.cwd()) {
+export function publicCorpus(root = process.cwd(), { bundled = true } = {}) {
   const parts = [];
   for (const dir of PUBLIC_SOURCES) for (const f of walk(join(root, dir))) if (SOURCE.test(f) && statSync(f).size <= 5 * 1024 * 1024) parts.push(fold(readFileSync(f, 'utf8')));
-  for (const f of bundledModules(root)) parts.push(fold(readFileSync(f, 'utf8')));
+  if (bundled) for (const f of bundledModules(root)) parts.push(fold(readFileSync(f, 'utf8')));
   return parts.join('\u0001');
 }
 

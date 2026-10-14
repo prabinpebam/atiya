@@ -60,6 +60,10 @@ beforeAll(async () => {
 }, 60_000);
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
+/** The repository's own public sources, without the packages the last real build bundled: the tests don't depend on it. */
+let sources: string | undefined;
+const SOURCES = () => (sources ??= publicCorpus(process.cwd(), { bundled: false }));
+
 describe('the sealer', () => {
   it('seals the page and its card, and leaves no marker or readable copy', () => {
     const shell = readFileSync(join(dist, 'side-projects/alphaaaaa2/index.html'), 'utf8');
@@ -117,7 +121,7 @@ describe('the sealer', () => {
 
 describe('the leak check', () => {
   it('passes on what the sealer made (QB1)', () => {
-    expect(verifySealed({ dist, summary: sealed.summary, provenance })).toEqual([]);
+    expect(verifySealed({ dist, summary: sealed.summary, provenance, publicText: SOURCES() })).toEqual([]);
   });
 
   /** Plants one leak in a fresh copy of the sealed site and returns what the check finds. */
@@ -125,7 +129,7 @@ describe('the leak check', () => {
     const copy = mkdtempSync(join(root, 'leak-'));
     cpSync(dist, copy, { recursive: true });
     plant(copy);
-    return verifySealed({ dist: copy, summary: { ...sealed.summary, dist: copy }, provenance: [...provenance, ...extra] });
+    return verifySealed({ dist: copy, summary: { ...sealed.summary, dist: copy }, provenance: [...provenance, ...extra], publicText: SOURCES() });
   };
   const append = (dir: string, file: string, text: string) => {
     const p = join(dir, file);
@@ -163,7 +167,7 @@ describe('the leak check', () => {
   });
 
   it('fails a build the sealer never ran on', () => {
-    expect(categories(verifySealed({ dist, summary: null as unknown as object, provenance: [] }))).toMatch(/not sealed/);
+    expect(categories(verifySealed({ dist, summary: null as unknown as object, provenance: [], publicText: SOURCES() }))).toMatch(/not sealed/);
   });
 
   it('lets off words the public sources already hold (the open site says them anyway), but never a token or a grant ID', () => {
@@ -184,7 +188,7 @@ describe('the leak check', () => {
     expect(let_off.get('a heading')).toBe(1);
     expect([...kept.keys()]).toEqual(expect.arrayContaining(['deltaddd55', 'gfixall22']));
     // the real public sources hold none of the fixtures' words, so every planted leak above is still caught
-    expect(wordsToCheck(protectedTerms(FIXTURES), publicCorpus()).public.size).toBe(0);
+    expect(wordsToCheck(protectedTerms(FIXTURES), SOURCES()).public.size).toBe(0);
   });
 
   it("counts the npm code a build bundled as public, but never a build's own cache (desktop plan stage 10)", () => {
@@ -222,6 +226,6 @@ describe('a picture both a public and a private page show', () => {
     // the private-only picture still goes, and the private page carries both its pictures sealed
     expect(existsSync(join(dir, ASSET))).toBe(false);
     expect(s.sealedFiles).toBe(2);
-    expect(verifySealed({ dist: dir, summary: s.summary, provenance: prov })).toEqual([]);
+    expect(verifySealed({ dist: dir, summary: s.summary, provenance: prov, publicText: SOURCES() })).toEqual([]);
   });
 });
