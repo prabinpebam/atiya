@@ -478,7 +478,11 @@ The reusable `site-build.yml` (in this repository) does what `deploy.yml` does t
 
 Today he's a developer workspace: his repository is the engine's source and his site, built by `deploy.yml`. An engine release never holds his content or his own mode (`content/`, `private-pages/`, `modes/cozy-life/`; a test holds it), and his site turns on his own mode at `/play/`, so his visitors see no change.
 
-**Planned (O15, [plan stage 10](plan.md#stage-10-the-owners-site-on-the-consumer-version-planned)):** his site moves to the consumer version, so that using it every day tests what everyone else gets. It becomes a content-only site repository, built by an engine release through `site-build.yml` and edited in the installed app as a managed site, with Cozy life as the site's own mode. The engine's repository keeps only the source, the documentation and the releases. The move happens only after a staging copy matches the live site, and keeps the live address (`prabinpebam.github.io/atiya/`) by swapping the two repositories' names.
+**Open (O15):** whether his site should also test what everyone else gets, and how, without losing the source's tight feedback loop (edit the code, see it at once, publish from the same repository). Nothing is decided, and nothing moves meanwhile. The options being weighed:
+
+- **D, stay on source and prove both builds match (leading):** `deploy.yml` and `site-build.yml` call one build script; a CI check builds his content both from source and through the engine pack of the same commit and compares the output (before sealing; only the documentation and the design library may differ), and the starter likewise; his own mode and his site's settings (the contact endpoint, the telemetry key) go through the paths a managed site uses. The release path he doesn't use every day (first run, Update your site, `site-build.yml` on a real repository) is covered by a canary consumer site rebuilt and checked on every release, and a first run with a second GitHub account before each release. His content stays apart (`content/`, `private-pages/`), so a later move stays cheap.
+- **A, B, C, move to a content-only site repository** built by engine releases and edited in the installed app, keeping the address by swapping the two repositories' names (A), moving to `prabinpebam.github.io` with redirect pages at `/atiya/` (B), or a custom domain (C). Every engine change would then reach his site only through a release: the loop he wants to keep.
+- **E, a hybrid:** a content-only site repository that the app builds against his local engine checkout, published from the engine's `main`. It keeps the loop, but every live change needs two repositories to agree.
 
 ## 7. The app's architecture
 
@@ -635,7 +639,7 @@ Working defaults, used by the build until the owner decides otherwise:
 | O12 | Navigation modes' own decisions | As recommended in [modes §12](modes.md#12-open-decisions) | Stage 8 |
 | O13 | The app's own screens | Static pages on the site's tokens; the site's compiled components later | Stage 9 |
 | O14 | The access agreement's words name the owner ("and Prabin is told") | Change them to "and the site's owner is told" with a new `AGREEMENT_VERSION` (every current reader agrees again), or keep them for the owner and give managed sites their own | Before private pages ship to managed sites (stage 5) |
-| O15 | How the owner's site moves to the consumer version (§6.4), at which address | A: the site repository takes the name `atiya` and the engine's is renamed (`atiya-engine`), so the address, every link and every magic link stay as they are; B: the consumer default, `prabinpebam.github.io`, with redirect pages at `/atiya/`; C: a custom domain | A, provisional, pending the owner's confirmation; rehearsed on throwaway repositories first (stage 10) |
+| O15 | Whether and how the owner's site tests the consumer version without losing the source's tight loop (§6.4) | D: stay on source, with one build script for both and a CI check that both builds match, plus a canary consumer site (leading); A, B, C: move to a content-only repository at the same address (names swapped), the root address or a custom domain; E: a content-only repository built against his local engine | Open: being weighed by the owner |
 
 ## 15. Critique of v1, and what changed
 
