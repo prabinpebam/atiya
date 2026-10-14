@@ -137,15 +137,22 @@ Found while checking stage 3 by hand: a new site's header said the owner's name 
 
 ### Stage 7: managed sites in the app
 
-- **Builds:** the bundled engine (`utilityProcess.fork`, read-only, caches to the data folder), the launch token in the guard, the bundled git, sync and its conflicts, Check my site; edit mode for a managed site without the owner's developer tools (the Tests screen, the dashboard's mention of git; found in stage 3).
-- **Try it:** open a site made in stage 3 from the installed app, with no checkout: edit, save to remote, open it on a second workspace.
+- **Builds:**
+  - **The bundled engine:** `apps/desktop/scripts/bundle-engine.mjs --engine <engine-x.y.z.tgz>` unpacks a release (stage 6) with its production dependencies into `apps/desktop/engine/` (about 335 MB; gitignored), and the packaged app carries it in its resources. A managed site's server runs on it with `utilityProcess.fork` (`src/main/utility-spawn.mjs`), with Vite's and Astro's caches in the app's data folder (`ATIYA_CACHE_DIR`).
+  - **The launch token:** the main process makes one per start, gives it to the server (`ATIYA_LAUNCH_TOKEN`) and adds it to every request its views send to that port; `integrations/launch.mjs` answers anything without it with 403.
+  - **The bundled git:** dugite's git (`src/core/setup/bundled-git.mjs`) for setup, sync and the server's own git (`editGitEnv` in `main.mjs`: on the PATH first, no system configuration, the author from `atiya.json`).
+  - **Sync and Check my site:** sync before opening (`src/core/setup/sync.mjs`, with its conflict page `sync.html`), and Check my site (`check.html`) from the same checks as `atiya doctor` (`src/core/setup/doctor.mjs`).
+  - **Edit mode without the owner's tools:** a managed site's edit mode has no Tests screen and no checks group, and no Planet screen without the planet; its dashboard speaks of saving to the site, not of git.
+  - **A quiet restart:** a new site name restarts the dev server only once edit mode has had no call in flight for 1.5 s, so a Save to remote sent just after a rename keeps its answer.
+- **Try it:** in the worktree, `node scripts/pack-engine.mjs --out %TEMP%\engine-rel`, then `node apps/desktop/scripts/bundle-engine.mjs --engine %TEMP%\engine-rel\engine-0.1.0.tgz`. Start the app on a fake GitHub (stage 3's Try it) with `ATIYA_DEV_SERVER` empty: Make my site opens the real edit mode on the bundled engine (about a minute the first time). Rename the site in Settings and save to remote: the change reaches the fake's repository, by the person's no-reply address. Open `http://localhost:4325/` in a browser: it says the site is open in Atiya Studio. Check my site lists the checks `node apps/desktop/bin/atiya.mjs doctor` prints.
 
 | # | Done when | Evidence |
 |---|---|---|
-| 7.1 | Edit mode on a managed site does everything it does in the browser, with the engine read-only | E2E "desktop: managed site" |
-| 7.2 | A browser tab gets 403 from the managed server; the app's views get through | Guard unit tests; E2E |
-| 7.3 | Two workspaces' changes merge; one resource changed on both asks which to keep | Sync tests; E2E |
-| 7.4 | Check my site and `atiya doctor` report the same checks | Unit test |
+| 7.1 | Edit mode on a managed site runs on the bundled engine with no checkout or developer tools, saves and saves to remote; the engine's files are left as they were, apart from Astro's own `.astro/` folder | The hand check below; E2E "desktop: managed site" (on the stand-in server) |
+| 7.2 | A browser tab gets 403 from the managed server; the app's views get through | Guard unit tests; E2E 7.2 |
+| 7.3 | Two workspaces' changes merge; one resource changed on both asks which to keep | Sync tests; E2E 7.3 |
+| 7.4 | Check my site and `atiya doctor` report the same checks | Unit test; E2E 7.4 |
+| 7.5 | Setup, sync and Save to remote use the bundled git, not the computer's | Unit tests (the `Git` class defaults to it); the hand check's commit |
 
 ### Stage 8: navigation modes
 
@@ -191,6 +198,6 @@ Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 need
 | 4 | Done | `npm run build:site-only`: every check passes (Ada Lovelace's site, no game chunk, no planet asset, no design library or docs, no link to any of them, `/play/` sends home); `npm run build:starter`: the planet's site builds, naming the owner only on the planet's page (O5); `npm run verify:prod` on the owner's site: every budget met; the E2E groups "landing & classic" and "site design system": 26 of 27 pass. The one failure is the docs half of "links keep the parent domain in this tab", which fails on `main` too: the Slate runtime refreshed in `0db18bf` no longer reads `parentDomain` (an upstream Slate issue; the site half, which this stage changed, passes). Unit: 383 tests across the six affected files |
 | 5 | Blocked | Needs the owner: register the OAuth App (O8) and a GitHub test account for the live check. The app already signs in with the GitHub CLI's token or `GH_TOKEN` until then, and the CLI works against real GitHub today (it makes public repositories: run it only on purpose) |
 | 6 | Done here; on GitHub blocked | 6.1: `packEngine.test.ts` (3 tests) and the packer's own check (673 files, 12.4 MB). 6.2a: the rehearsal built a site made by setup from the archive in 75 s and refused a wrong checksum. Found on the way: the site imports the contact form's rules from `contact-api/src/rules.mjs` (now in the engine), the docs integration threw without `documentation/` (now it skips), and `.env` (the owner's contact endpoint) must stay out. 6.2b needs a released tag and a test repository |
-| 7 | Not started | Needs stage 6's release to bundle |
+| 7 | Done | 46 app unit tests (`stage7.test.mjs`: sync merges, conflicts and choices; the shared checks; the launch token) and 17 app E2E tests (stage 7's 7.2–7.4 on the stand-in server), all passing. By hand on the real bundled engine under `utilityProcess`: Make my site reached edit mode's dashboard in 52 s; a plain request got 403; a rename in Settings saved, and Save to remote committed as `Ada Lovelace <1001+ada@users.noreply.github.com>` with the bundled git and reached the fake's repository; the restarted server showed the new name. The engine's only writes were Astro's `.astro/` files. Found on the way: renaming the site restarted the server under a Save to remote that followed it, so Chromium sent the POST again and got "there is nothing to save" (the restart now waits for edit mode to be quiet); a managed server pushing to real GitHub needs the token, so the app gives it to that one process as git configuration in its environment (`GIT_CONFIG_*`), not per push as spec §7.5 has it (recorded in spec §16) |
 | 8 | Not started | The planet split and the mode host: unblocked, large (it moves `src/game/`) |
 | 9 | Blocked | Needs a code-signing certificate, an Apple Developer account and five study participants |

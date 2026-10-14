@@ -21,7 +21,7 @@ import Text from '../components/fundamentals/Text.astro';
 import Heading from '../components/fundamentals/Heading.astro';
 import Select from '../components/fundamentals/Select.astro';
 import '../styles/editor-tokens.css';
-import { withBase } from '../design/meta';
+import { SITE_FEATURES, withBase } from '../design/meta';
 import { THEME_OPTIONS } from '../scripts/theme';
 import { changes, peekChanges, pendingCount } from './server/git';
 import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from './model/regions';
@@ -70,7 +70,8 @@ const groups = [
       { label: 'Pages', href: to('articles/'), current: screen === 'articles' || screen === 'article' },
       { label: 'Sections', href: to('sections/'), current: screen === 'sections' },
       { label: 'Navigation', href: to('navigation/'), current: screen === 'navigation' },
-      { label: 'Planet', href: to('planet/'), current: screen === 'planet' },
+      // a site without the planet has no buildings to edit (desktop plan, stage 4)
+      ...(SITE_FEATURES.planet ? [{ label: 'Planet', href: to('planet/'), current: screen === 'planet' }] : []),
       { label: 'Media', href: to('media/'), current: screen === 'media' },
     ],
   },
@@ -82,10 +83,15 @@ const groups = [
       { label: 'Save to remote', href: to('publish/'), current: screen === 'publish', note: unknown ? 'Not checked' : pending ? `${pending} to save` : undefined },
     ],
   },
-  {
-    title: 'Checks',
-    items: [{ label: 'Tests', href: to('tests/'), current: screen === 'tests' }],
-  },
+  // the owner's developer tools: a person's site (made by Atiya Studio) leaves them out (desktop plan, stage 7)
+  ...(SITE_FEATURES.managed
+    ? []
+    : [
+        {
+          title: 'Checks',
+          items: [{ label: 'Tests', href: to('tests/'), current: screen === 'tests' }],
+        },
+      ]),
 ];
 ---
 
@@ -95,7 +101,7 @@ const groups = [
       <a class="brand" href={to('')}>Edit mode</a>
       <div class="title"><slot name="title" /></div>
       <div class="status"><SaveStatus /></div>
-      <TestStatus />
+      {!SITE_FEATURES.managed && <TestStatus />}
       <div class="tools"><slot name="tools" /></div>
       <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" />
       <div class="pending" data-region="editor-pending" data-pending={checking ? undefined : String(pending)} data-pending-checking={checking ? '' : undefined}>

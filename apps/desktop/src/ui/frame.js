@@ -24,6 +24,7 @@ function draw(s) {
   el.dataset.tone = tone;
   $('open-live').hidden = !(up && s.live?.state === 'live');
   $('see-why').hidden = !(up && s.live?.state === 'failed');
+  $('check').hidden = !(up && s.workspace?.kind === 'managed');
   $('views').hidden = !up;
   $('open-browser').hidden = !up;
   $('restart').hidden = !s.server || state === 'external';
@@ -37,6 +38,7 @@ $('open-browser').addEventListener('click', () => window.atiya.openInBrowser());
 $('restart').addEventListener('click', () => window.atiya.restart());
 $('open-live').addEventListener('click', () => window.atiya.openLive());
 $('see-why').addEventListener('click', () => window.atiya.show('publish'));
+$('check').addEventListener('click', () => window.atiya.show('check'));
 
 window.atiya.onState(draw);
 window.atiya.state().then(draw);

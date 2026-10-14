@@ -8,6 +8,7 @@ import { execFile } from 'node:child_process';
 import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { redact } from './tokens.mjs';
+import { bundledGit } from './bundled-git.mjs';
 
 export class GitError extends Error {}
 
@@ -16,7 +17,7 @@ export class Git {
    * @param {{ git?: string, token?: string | null, tokenHost?: string, identity: { name: string, email: string }, configFile: string }} o
    */
   constructor(o) {
-    this.git = o.git ?? 'git';
+    this.git = o.git ?? bundledGit().git;
     this.token = o.token ?? null;
     this.tokenHost = o.tokenHost ?? 'https://github.com/';
     this.identity = o.identity;
@@ -55,12 +56,12 @@ export class Git {
 
   /**
    * @param {string[]} args
-   * @param {{ cwd: string, network?: boolean, timeout?: number }} o
+   * @param {{ cwd: string, network?: boolean, timeout?: number, env?: NodeJS.ProcessEnv }} o
    * @returns {Promise<string>}
    */
   run(args, o) {
     return new Promise((resolvePromise, reject) =>
-      execFile(this.git, ['-c', 'core.autocrlf=false', '-c', 'credential.helper=', ...args], { cwd: o.cwd, env: this.env(!!o.network), timeout: o.timeout ?? 120_000, windowsHide: true, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+      execFile(this.git, ['-c', 'core.autocrlf=false', '-c', 'credential.helper=', ...args], { cwd: o.cwd, env: { ...this.env(!!o.network), ...o.env }, timeout: o.timeout ?? 120_000, windowsHide: true, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
         if (err) reject(new GitError(redact(`git ${args[0]} failed: ${String(stderr || err.message).trim()}`, [this.token ?? ''])));
         else resolvePromise(String(stdout).trim());
       }),

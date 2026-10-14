@@ -22,6 +22,10 @@ import { basename, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { privateRootFor } from './roots.mjs';
 import { siteFeatures } from './features.mjs';
+import { LAUNCH_HEADER, launchAllows } from './launch.mjs';
+
+/** How long edit mode must have been idle before a new site name or planet restarts the server. */
+const RESTART_QUIET_MS = 1500;
 
 const ROUTES = [
   ['/_edit', 'dashboard.astro'],
@@ -112,7 +116,7 @@ async function warmUp(edit, contentRoot, server, logger) {
     warm.screens = { done: 0, total: screens.length };
     for (const s of screens) {
       try {
-        await (await fetch(`${edit}${s}`, { headers: { 'x-editor-warm': '1' } })).arrayBuffer();
+        await (await fetch(`${edit}${s}`, { headers: { 'x-editor-warm': '1', ...(process.env.ATIYA_LAUNCH_TOKEN ? { [LAUNCH_HEADER]: process.env.ATIYA_LAUNCH_TOKEN } : {}) } })).arrayBuffer();
       } catch {
         /* a screen that fails says so when it's opened */
       }
@@ -216,6 +220,8 @@ export default function editor() {
         editing = command === 'dev' && process.env.SITE_EDITOR !== 'off';
         if (!editing) return;
         for (const [pattern, file] of ROUTES) {
+          // the owner's test runner isn't part of a person's site (desktop plan, stage 7)
+          if (features.managed && pattern === '/_edit/tests') continue;
           injectRoute({ pattern, entrypoint: `./src/site/editor/pages/${file}` });
         }
         addMiddleware({ entrypoint: join(root, 'src/site/editor/server/middleware.ts'), order: 'pre' });
@@ -226,7 +232,46 @@ export default function editor() {
 
       'astro:server:setup': ({ server }) => {
         devServer = server;
+        // a managed site's server, started by Atiya Studio, answers only the app's own views (desktop spec §7.3)
+        const launchToken = process.env.ATIYA_LAUNCH_TOKEN;
+        if (launchToken)
+          server.middlewares.use((/** @type {any} */ req, /** @type {any} */ res, /** @type {() => void} */ next) => {
+            if (launchAllows(req.headers[LAUNCH_HEADER], launchToken)) return next();
+            res.statusCode = 403;
+            res.setHeader('content-type', 'text/plain; charset=utf-8');
+            res.end('This site is open in Atiya Studio. Open it there.');
+          });
         const state = contentState();
+        // edit mode's calls in flight: a restart waits for them (a save to remote just after a new name
+        // would otherwise lose its answer, and the browser sends it again)
+        let busy = 0;
+        let quietSince = Date.now();
+        if (editing)
+          server.middlewares.use((/** @type {any} */ req, /** @type {any} */ res, /** @type {() => void} */ next) => {
+            if (!String(req.url ?? '').includes('/_edit/api/')) return next();
+            busy++;
+            let done = false;
+            const end = () => {
+              if (done) return;
+              done = true;
+              busy--;
+              quietSince = Date.now();
+            };
+            res.on('finish', end);
+            res.on('close', end);
+            next();
+          });
+        let restarting = false;
+        const restartWhenQuiet = () => {
+          if (restarting) return;
+          restarting = true;
+          const tick = () => {
+            if (busy > 0 || Date.now() - quietSince < RESTART_QUIET_MS) return void setTimeout(tick, 100);
+            restarting = false;
+            void server.restart();
+          };
+          setTimeout(tick, RESTART_QUIET_MS);
+        };
         // a friendly first start (performance-report.md R12): while the screens compile and the pictures'
         // facts are read, a screen opened in the browser gets a plain page that says so, then the screen
         if (editing) {
@@ -289,7 +334,7 @@ export default function editor() {
           if ((now && now !== siteName) || planet !== features.planet) {
             siteName = now || siteName;
             features = { ...features, planet };
-            void server.restart();
+            restartWhenQuiet();
           }
         });
       },

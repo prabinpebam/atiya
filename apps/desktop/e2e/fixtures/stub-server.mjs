@@ -24,6 +24,11 @@ if (mode === 'never-listen') {
 const page = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title></head><body><main><h1>${title}</h1>${body}</main></body></html>`;
 createServer((req, res) => {
   res.setHeader('content-type', 'text/html; charset=utf-8');
+  // as the engine's dev server does for a managed site (integrations/launch.mjs)
+  if (process.env.ATIYA_LAUNCH_TOKEN && req.headers['x-atiya-launch'] !== process.env.ATIYA_LAUNCH_TOKEN) {
+    res.statusCode = 403;
+    return res.end('This site is open in Atiya Studio. Open it there.');
+  }
   if (req.url?.startsWith('/_edit/')) res.end(page(`Edit mode (stand-in)${owner}`, '<p><a id="out" href="https://example.com/">An outside link</a></p><p><a id="in" href="/">The site</a></p>'));
   else res.end(page('Site (stand-in)', '<p>Home</p>'));
 }).listen(port, 'localhost', () => {

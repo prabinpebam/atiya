@@ -5,18 +5,25 @@
  * page) and a body (the app's pages, or edit mode from the dev server). Views are sandboxed, with no Node.
  */
 import { app, BaseWindow, clipboard, dialog, ipcMain, Menu, nativeImage, net, protocol, session, shell, Tray, WebContentsView } from 'electron';
-import { appendFileSync, existsSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { createHash, randomBytes } from 'node:crypto';
 import { homedir } from 'node:os';
-import { dirname, extname, join, normalize, relative, resolve, sep } from 'node:path';
+import { delimiter, dirname, extname, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { astroEntry, checkCheckout, findCheckoutAbove, siteName } from '../core/checkout.mjs';
 import { APP_ORIGIN, isBridgeCaller, isExternalSafe, staysInWindow, viewPreferences } from '../core/security.mjs';
 import { SettingsStore } from '../core/settings.mjs';
 import { engineInfo, engineRoot } from '../core/setup/engine.mjs';
 import { startFakeGitHub } from '../core/setup/fake-github.mjs';
+import { checkSite } from '../core/setup/doctor.mjs';
+import { Git } from '../core/setup/git.mjs';
+import { GitHub } from '../core/setup/github.mjs';
+import { sync } from '../core/setup/sync.mjs';
+import { bundledGit } from '../core/setup/bundled-git.mjs';
 import { Supervisor } from '../core/supervisor.mjs';
 import { SetupFlow } from './setup-flow.mjs';
 import { tokenStore } from './token-store.mjs';
+import { utilitySpawn } from './utility-spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = resolve(HERE, '..', '..');
@@ -34,6 +41,9 @@ const SITE_PORT = Number(process.env.ATIYA_SITE_PORT || process.env.ATIYA_DEV_PO
 const HOME = process.env.ATIYA_HOME || homedir();
 const FAKE = process.argv.includes('--fake-github') || process.env.ATIYA_FAKE_GITHUB === '1';
 
+/** The launch token: new every launch, given to a managed site's server and sent by the app's views alone (spec §7.3). */
+const LAUNCH_TOKEN = randomBytes(24).toString('base64url');
+
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -48,7 +58,7 @@ let body;
 let server = null;
 /** @type {(import('../core/settings.mjs').Workspace & { repository?: string, url?: string }) | null} */
 let workspace = null;
-/** @type {'welcome' | 'source' | 'setup' | 'server' | 'editor' | 'site' | 'publish'} */
+/** @type {'welcome' | 'source' | 'setup' | 'server' | 'editor' | 'site' | 'publish' | 'check' | 'sync'} */
 let view = 'welcome';
 let port = DEV_PORT;
 let quitting = false;
@@ -144,6 +154,7 @@ function appState() {
     suggested: suggestedCheckout(),
     devUrl: `${devOrigin()}/`,
     live,
+    conflicts,
     setup: flow?.state() ?? null,
     githubWeb: github.web,
   };
@@ -158,7 +169,7 @@ function broadcast() {
 /** @param {typeof view} next */
 function show(next) {
   view = next;
-  const pages = { welcome: 'welcome.html', source: 'source.html', setup: 'setup.html', server: 'server.html', publish: 'publish.html' };
+  const pages = { welcome: 'welcome.html', source: 'source.html', setup: 'setup.html', server: 'server.html', publish: 'publish.html', check: 'check.html', sync: 'sync.html' };
   if (next === 'editor') body.webContents.loadURL(`${devOrigin()}/_edit/`);
   else if (next === 'site') body.webContents.loadURL(`${devOrigin()}/`);
   else body.webContents.loadURL(`${APP_ORIGIN}/${pages[next]}`);
@@ -190,14 +201,15 @@ function serverCommand(engineDir) {
  * Starts a dev server and shows edit mode when it's up.
  * @param {string} engineDir the checkout whose code runs
  * @param {NodeJS.ProcessEnv} extraEnv
+ * @param {{ utility?: boolean }} [o] run it under Electron's own Node (a managed site), not the system's
  */
-async function startServer(engineDir, extraEnv) {
+async function startServer(engineDir, extraEnv, o = {}) {
   await server?.stop();
   server?.removeAllListeners();
   const { command, args } = serverCommand(engineDir);
   const env = { ...process.env, FORCE_COLOR: '0', ...extraEnv };
   delete env.ELECTRON_RUN_AS_NODE;
-  server = new Supervisor({ command, args, cwd: engineDir, env, port });
+  server = new Supervisor({ command, args, cwd: engineDir, env, port, ...(o.utility ? { spawn: /** @type {any} */ (utilitySpawn) } : {}) });
   let wasUp = false;
   server.on('status', (s) => {
     const up = s.state === 'ready' || s.state === 'external';
@@ -225,10 +237,12 @@ async function openWorkspace(dir) {
 
 /**
  * Opens a managed site: the engine's code with the site's own content. Until stage 7 bundles a release,
- * the engine is the checkout the app lives in.
+ * the engine is the checkout the app lives in. First it brings in what another computer saved (§4.7):
+ * a page changed on both asks which to keep before edit mode starts.
  * @param {{ path: string, name?: string, repository?: string, url?: string }} site
+ * @param {import('../core/setup/sync.mjs').Choices} [choices]
  */
-async function openManaged(site) {
+async function openManaged(site, choices) {
   port = SITE_PORT;
   workspace = { kind: 'managed', path: site.path, name: site.name ?? siteName(site.path), repository: site.repository, url: site.url };
   const remembered = { ...workspace };
@@ -237,11 +251,77 @@ async function openManaged(site) {
     s.workspaces = [{ ...remembered, live: before?.live }, ...s.workspaces.filter((w) => w.path.toLowerCase() !== site.path.toLowerCase())].slice(0, 10);
     s.current = site.path;
   });
-  await startServer(engineRoot(), { CONTENT_ROOT: join(site.path, 'content'), PRIVATE_ROOT: join(site.path, 'private-pages') });
+  conflicts = null;
+  try {
+    const r = await sync(siteGit(site.path), site.path, { choices });
+    if (r.state === 'conflict') {
+      conflicts = r.conflicts;
+      show('sync');
+      return;
+    }
+  } catch {
+    // offline, or GitHub unreachable: edit what's here; Save to remote brings the two together later
+  }
+  await startServer(
+    engineRoot(),
+    {
+      CONTENT_ROOT: join(site.path, 'content'),
+      PRIVATE_ROOT: join(site.path, 'private-pages'),
+      ATIYA_LAUNCH_TOKEN: LAUNCH_TOKEN,
+      ATIYA_CACHE_DIR: join(app.getPath('userData'), 'cache', createHash('sha1').update(site.path.toLowerCase()).digest('hex').slice(0, 12)),
+      ...editGitEnv(site.path),
+    },
+    { utility: true },
+  );
+}
+
+/**
+ * What edit mode's own git needs in a managed site's server (Save to remote): the git the app carries,
+ * first on the PATH; the app's git settings, never the person's; who commits (their no-reply address);
+ * and, for github.com, the token as an HTTP header in git's environment. That's this process's memory,
+ * never a file, an argument or a URL (spec §7.5 hands it over per push; this is the stage 7 step there).
+ * @param {string} dir the site's workspace
+ */
+function editGitEnv(dir) {
+  const { dir: gitDir } = bundledGit();
+  /** @type {any} */
+  let owner = {};
+  try {
+    owner = JSON.parse(readFileSync(join(dir, 'atiya.json'), 'utf8')).owner ?? {};
+  } catch {
+    // an older site: git's own fallback names it
+  }
+  const name = workspace?.name ?? 'Atiya Studio';
+  const email = owner.login ? `${owner.id}+${owner.login}@users.noreply.github.com` : 'noreply@users.noreply.github.com';
+  const pathKey = Object.keys(process.env).find((k) => k.toUpperCase() === 'PATH') ?? 'PATH';
+  /** @type {NodeJS.ProcessEnv} */
+  const env = {
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_CONFIG_GLOBAL: join(app.getPath('userData'), 'gitconfig'),
+    GIT_AUTHOR_NAME: name,
+    GIT_AUTHOR_EMAIL: email,
+    GIT_COMMITTER_NAME: name,
+    GIT_COMMITTER_EMAIL: email,
+    ...(gitDir ? { [pathKey]: `${gitDir}${delimiter}${process.env[pathKey] ?? ''}` } : {}),
+  };
+  const token = github.fake ? null : tokens().load();
+  if (token) Object.assign(env, { GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader', GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString('base64')}` });
+  return env;
+}
+
+/** @type {import('../core/setup/sync.mjs').Conflict[] | null} */
+let conflicts = null;
+
+/** git for a site's workspace: the app's own settings, the token only for github.com. @param {string} dir */
+function siteGit(dir) {
+  return new Git({ token: github.fake ? null : tokens().load(), identity: { name: workspace?.name ?? 'Atiya Studio', email: 'noreply@users.noreply.github.com' }, configFile: join(app.getPath('userData'), 'gitconfig') });
 }
 
 /** Where a live site is opened: its address, or the fake's copy of it. @param {string | undefined} repository @param {string | undefined} url */
 const liveUrl = (repository, url) => (github.fake && repository ? `${github.web}/sites/${repository}/` : url ?? '');
+
+/** The GitHub token's store (a fake GitHub's token is kept apart from a real one). */
+const tokens = () => tokenStore(join(app.getPath('userData'), github.fake ? 'github-token.fake.bin' : 'github-token.bin'));
 
 function makeFlow() {
   flow = new SetupFlow({
@@ -251,7 +331,7 @@ function makeFlow() {
     home: HOME,
     gitConfigFile: join(app.getPath('userData'), 'gitconfig'),
     engine: engineInfo(),
-    tokens: tokenStore(join(app.getPath('userData'), github.fake ? 'github-token.fake.bin' : 'github-token.bin')),
+    tokens: tokens(),
     copy: (t) => {
       clipboard.writeText(t);
       // the tests' sessions may have no clipboard: they read what was copied from a log
@@ -301,11 +381,23 @@ function bridge() {
   handle('view:show', (/** @type {string} */ v) => {
     const up = server?.status().state === 'ready' || server?.status().state === 'external';
     if ((v === 'editor' || v === 'site') && up) show(v);
-    if (v === 'source' || v === 'welcome' || v === 'publish') show(v);
+    if (v === 'source' || v === 'welcome' || v === 'publish' || v === 'check') show(v);
   });
   handle('open:external', (/** @type {string} */ url) => openExternal(String(url)));
   handle('open:browser', () => openExternal(`${devOrigin()}/`));
   handle('open:live', () => live?.url && openExternal(live.url));
+  handle('site:check', async () => {
+    if (workspace?.kind !== 'managed') return null;
+    const token = tokens().load();
+    return checkSite(workspace.path, { github: new GitHub({ token, api: github.api, web: github.web }), gitConfigFile: join(app.getPath('userData'), 'gitconfig') });
+  });
+  handle('sync:resolve', async (/** @type {Record<string, string>} */ choices) => {
+    if (workspace?.kind !== 'managed' || !conflicts) return;
+    /** @type {import('../core/setup/sync.mjs').Choices} */
+    const clean = {};
+    for (const c of conflicts) if (choices?.[c.file] === 'mine' || choices?.[c.file] === 'theirs') clean[c.file] = choices[c.file] === 'mine' ? 'mine' : 'theirs';
+    await openManaged({ path: workspace.path, name: workspace.name, repository: workspace.repository, url: workspace.url }, clean);
+  });
   handle('setup:start', (/** @type {'new' | 'existing'} */ mode) => {
     show('setup');
     flow.start(mode === 'existing' ? 'existing' : 'new');
@@ -412,6 +504,11 @@ app.whenReady().then(async () => {
   }
   serveApp();
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'clipboard-sanitized-write' || permission === 'fullscreen'));
+  // the launch token goes on every request the views make to a managed site's server, and nowhere else
+  session.defaultSession.webRequest.onBeforeSendHeaders((details, cb) => {
+    const managed = workspace?.kind === 'managed' && details.url.startsWith(`http://localhost:${SITE_PORT}/`);
+    cb({ requestHeaders: managed ? { ...details.requestHeaders, 'X-Atiya-Launch': LAUNCH_TOKEN } : details.requestHeaders });
+  });
   makeFlow();
   bridge();
   createWindow();

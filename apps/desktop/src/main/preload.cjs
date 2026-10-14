@@ -14,6 +14,8 @@ if (location.protocol === 'app:') {
     openExternal: call('open:external'),
     openInBrowser: call('open:browser'),
     openLive: call('open:live'),
+    checkSite: call('site:check'),
+    resolveSync: call('sync:resolve'),
     setup: {
       start: call('setup:start'),
       signIn: call('setup:sign-in'),

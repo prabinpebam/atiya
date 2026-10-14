@@ -10,10 +10,17 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findCheckoutAbove } from '../checkout.mjs';
 
-/** @returns {string} the engine's root folder */
+/**
+ * The engine's root folder: ATIYA_ENGINE_ROOT, else a bundled release (a packaged app's resources, or
+ * apps/desktop/engine from scripts/bundle-engine.mjs), else the checkout the app lives in.
+ * @returns {string}
+ */
 export function engineRoot() {
   if (process.env.ATIYA_ENGINE_ROOT) return resolve(process.env.ATIYA_ENGINE_ROOT);
-  const found = findCheckoutAbove(dirname(fileURLToPath(import.meta.url)));
+  const here = dirname(fileURLToPath(import.meta.url));
+  const packaged = /** @type {any} */ (process).resourcesPath;
+  for (const dir of [packaged && join(packaged, 'engine'), resolve(here, '..', '..', '..', 'engine')]) if (dir && existsSync(join(dir, 'engine.json'))) return dir;
+  const found = findCheckoutAbove(here);
   if (!found) throw new Error("The site's engine wasn't found next to the app.");
   return found;
 }

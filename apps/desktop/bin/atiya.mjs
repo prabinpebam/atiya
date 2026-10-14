@@ -12,12 +12,12 @@
  * --github <url> points it at another GitHub API (the fake GitHub in the tests). Exit codes: 0 done,
  * 10 needs the person, 20 a conflict, 30 GitHub refused, 1 anything else.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { engineInfo } from '../src/core/setup/engine.mjs';
 import { pollForToken, requestCode } from '../src/core/setup/device.mjs';
-import { Git, sameRemote } from '../src/core/setup/git.mjs';
+import { checkSite } from '../src/core/setup/doctor.mjs';
 import { GitHub, GitHubError } from '../src/core/setup/github.mjs';
 import { EXIT, runSetup, STEPS } from '../src/core/setup/machine.mjs';
 import { findToken, redact } from '../src/core/setup/tokens.mjs';
@@ -152,52 +152,14 @@ export async function main(argv) {
 }
 
 /**
- * A site's state (status), or every check with its fix (doctor).
+ * A site's state (status), or every check with its fix (doctor): the same checks as the app's Check my site.
  * @param {string} dir @param {{ github: GitHub, gitConfigFile: string, out: ReturnType<typeof printer>, doctor: boolean }} o
  */
 async function status(dir, o) {
-  /** @type {{ check: string, ok: boolean, message: string, fix?: string }[]} */
-  const checks = [];
-  const add = (/** @type {string} */ check, /** @type {boolean} */ ok, /** @type {string} */ message, /** @type {string} */ fix = '') => checks.push({ check, ok, message, ...(ok || !fix ? {} : { fix }) });
-  const stateFile = join(dir, '.atiya', 'setup.json');
-  const atiyaFile = join(dir, 'atiya.json');
-  if (!existsSync(atiyaFile)) {
-    add('site', false, `${dir} isn't an Atiya site.`, 'Run atiya status --dir <your site\'s folder>, or atiya setup.');
-    return finish();
-  }
-  let atiya;
-  try {
-    atiya = JSON.parse(readFileSync(atiyaFile, 'utf8'));
-    add('atiya.json', atiya?.schema === 1 && typeof atiya?.engine?.version === 'string', `Engine ${atiya?.engine?.version}`, 'atiya.json is malformed: restore it from git (git checkout -- atiya.json).');
-  } catch {
-    add('atiya.json', false, "atiya.json can't be read.", 'Restore it from git: git checkout -- atiya.json');
-    return finish();
-  }
-  add('content', existsSync(join(dir, 'content', 'site.json')) && existsSync(join(dir, 'content', 'structures', 'site.json')), 'The content folder is there', 'content/ is missing its settings or structure: restore them from git.');
-  const state = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, 'utf8')) : null;
-  const [owner, name] = String(state?.repository ?? `${atiya.owner?.login}/`).split('/');
-  const git = new Git({ token: null, identity: { name: 'Atiya Studio', email: 'noreply@example.com' }, configFile: o.gitConfigFile });
-  const origin = await git.origin(dir);
-  const repo = name ? await o.github.repo(owner, name).catch(() => null) : null;
-  add('repository', !!repo && sameRemote(origin, repo.cloneUrl), repo ? `${owner}/${name}` : 'The repository wasn\'t found on GitHub', 'Run atiya setup --yes --dir . to reconnect it.');
-  const dirty = await git.run(['status', '--porcelain'], { cwd: dir }).catch(() => 'unknown');
-  add('saved', dirty === '', dirty === '' ? 'Every change is committed' : 'There are changes not yet committed', 'Save to remote in Atiya Studio, or commit and push content/.');
-  const head = await git.head(dir);
-  const remote = repo ? await o.github.branchSha(owner, name, 'main').catch(() => null) : null;
-  add('pushed', !!head && head === remote, head === remote ? 'GitHub has every commit' : 'Some commits aren\'t on GitHub yet', 'Save to remote in Atiya Studio, or git push.');
-  const runs = head && repo ? await o.github.runs(owner, name, head).catch(() => []) : [];
-  const run = runs.sort((a, b) => b.id - a.id)[0];
-  add('built', run?.conclusion === 'success', run ? `The last build ${run.status === 'completed' ? run.conclusion : run.status}` : 'Not built yet', run?.conclusion === 'failure' ? `Look at the build: ${run.url}` : 'Wait a few minutes after a save.');
-  const pages = repo ? await o.github.pages(owner, name).catch(() => null) : null;
-  add('publishing', pages?.buildType === 'workflow', pages ? 'Publishing is on' : 'Publishing is off', 'Run atiya setup --yes --dir . to turn it on.');
-  return finish();
-
-  function finish() {
-    const ok = checks.every((c) => c.ok);
-    o.out.event({ type: o.doctor ? 'doctor' : 'status', dir, ok, checks });
-    if (!o.out.json) for (const c of checks) process.stdout.write(`${c.ok ? 'ok      ' : 'problem '} ${c.check}: ${c.message}${c.fix ? ` Fix: ${c.fix}` : ''}\n`);
-    return o.doctor && !ok ? EXIT.other : EXIT.ok;
-  }
+  const r = await checkSite(dir, { github: o.github, gitConfigFile: o.gitConfigFile });
+  o.out.event({ type: o.doctor ? 'doctor' : 'status', dir, ok: r.ok, checks: r.checks });
+  if (!o.out.json) for (const c of r.checks) process.stdout.write(`${c.ok ? 'ok      ' : 'problem '} ${c.check}: ${c.message}${c.fix ? ` Fix: ${c.fix}` : ''}${c.url ? ` ${c.url}` : ''}\n`);
+  return o.doctor && !r.ok ? EXIT.other : EXIT.ok;
 }
 
 const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
