@@ -22,6 +22,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planetOn } from '../integrations/features.mjs';
+import { telemetryNote } from '../integrations/services.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const arg = (/** @type {string} */ k) => {
@@ -60,4 +61,12 @@ if (planetOn(join(ROOT, 'content'))) {
   console.log('Checking the bundle budgets…');
   if (!node(['scripts/size-report.mjs', '--prod'])) fail('A bundle budget was missed: nothing is published.');
 } else console.log('Just the site: no planet budgets to check.');
+
+// a telemetry key left out because of the address is said, not lost silently (it isn't a reason to stop)
+try {
+  const note = telemetryNote(JSON.parse(readFileSync(join(ROOT, 'content', 'site.json'), 'utf8')), { siteUrl: process.env.SITE_URL, base: process.env.BASE_PATH });
+  if (note) console.log(`${ci ? '::warning::' : 'Note: '}${note}`);
+} catch {
+  // the content check has already named an unreadable site.json
+}
 console.log('Built and checked: dist/ is ready to publish.');

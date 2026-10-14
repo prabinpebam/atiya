@@ -38,6 +38,20 @@ export function serviceVars(site, { command, mode, siteUrl, base }) {
 }
 
 /**
+ * Why a published build leaves out a telemetry key the site has, or null: so a wrong address is said, never a
+ * silent loss of telemetry. Only addresses, which are public. Pure.
+ * @param {any} site content/site.json
+ * @param {{ siteUrl?: string, base?: string }} o
+ */
+export function telemetryNote(site, { siteUrl, base }) {
+  const t = site?.services?.telemetry;
+  if (!t?.key || !siteUrl) return null;
+  if (!t.site) return 'content/site.json has a telemetry key but no `site` address, so this build leaves it out: add the site\'s address to services.telemetry.site.';
+  if (sameAddress(t.site, siteUrl, base)) return null;
+  return `This build is for ${new URL((base ?? '/').replace(/^\/?/, '/'), siteUrl).href}, not ${t.site} (services.telemetry.site), so it leaves the telemetry key out.`;
+}
+
+/**
  * Is the build for this address? `https://ada.github.io/` and `https://ada.github.io` with base `/` are, and
  * `https://ada.github.io/atiya/` is `https://ada.github.io` with base `/atiya`. Pure.
  * @param {string} address @param {string} siteUrl @param {string} [base]

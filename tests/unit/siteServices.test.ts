@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { sameAddress, serviceVars } from '../../integrations/services.mjs';
+import { sameAddress, serviceVars, telemetryNote } from '../../integrations/services.mjs';
 import { siteSettings } from '../../src/site/content/schema';
 
 const site = { services: { contact: { endpoint: 'https://contact.example' }, telemetry: { key: 'phc_abc', host: 'https://eu.i.posthog.com', site: 'https://ada.github.io/' } } };
@@ -22,6 +22,14 @@ describe("the site's services are content (desktop spec §6.3, plan stage 10)", 
     const owner = JSON.parse(readFileSync('content/site.json', 'utf8'));
     expect(serviceVars(owner, { command: 'build', siteUrl: 'https://prabinpebam.github.io', base: '/atiya' })?.PUBLIC_POSTHOG_KEY).toMatch(/^phc_/);
     expect(serviceVars(owner, { command: 'build', siteUrl: 'https://someone.github.io', base: '/atiya' })?.PUBLIC_POSTHOG_KEY).toBe('');
+  });
+
+  it("a published build that leaves the key out says why, naming only addresses", () => {
+    expect(telemetryNote(site, { siteUrl: 'https://ada.github.io' })).toBeNull();
+    expect(telemetryNote(site, { siteUrl: 'https://bob.github.io', base: '/copy' })).toBe('This build is for https://bob.github.io/copy, not https://ada.github.io/ (services.telemetry.site), so it leaves the telemetry key out.');
+    expect(telemetryNote({ services: { telemetry: { key: 'phc_abc' } } }, { siteUrl: 'https://ada.github.io' })).toMatch(/no `site` address/);
+    expect(telemetryNote(site, {})).toBeNull();
+    expect(telemetryNote({ name: 'Ada' }, { siteUrl: 'https://ada.github.io' })).toBeNull();
   });
 
   it('compares addresses as a published site has them', () => {
