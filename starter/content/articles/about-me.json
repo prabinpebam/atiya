@@ -1,0 +1,37 @@
+{
+  "id": "about-me",
+  "type": "article",
+  "kind": "page",
+  "slug": "about-me",
+  "title": "About me",
+  "summary": "A few lines about who you are. Replace this page with your own words.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-14",
+  "updatedAt": "2026-10-14",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "This is a sample page. Click any words to change them: this paragraph, the title above, or the line under it."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What I do"
+    },
+    {
+      "type": "text",
+      "markdown": "Say what you do, for whom, and what you care about in it. Two or three sentences are plenty."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "How I work"
+    },
+    {
+      "type": "text",
+      "markdown": "A few lines on how you like to work: with whom, at what pace, and what you need to do your best."
+    }
+  ]
+}

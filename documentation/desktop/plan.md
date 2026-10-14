@@ -63,7 +63,7 @@ The worktree is `E:\Projects\Personal\personal-site-desktop` (branch `desktop-ap
 ### Stage 2: setup and the agent CLI, on a fake GitHub
 
 - **Builds:** the setup machine (spec §4.4 steps 1 to 9, check and act, its state file, resume); the GitHub client (REST, device flow, scopes); token sources (`env`, `gh`, `device`); git with the token per call; the starter (`starter/`) and its personalisation; a fake GitHub (an HTTP server for the calls setup makes, local bare repositories as remotes, simulated builds and a simulated site address, a record of every call); the CLI `atiya` (`setup`, `status`, `doctor`, `sites`) with words or `--json`.
-- **Try it:** `cd apps/desktop; npm run fake-github` in one terminal, then `node bin/atiya.mjs setup --github http://localhost:4390 --token env --yes` with `GH_TOKEN=fake-ada`: the steps tick, and the workspace appears under `%TEMP%\atiya-try\`. Run it again: nothing is made twice. Add `--json` for the agent's view.
+- **Try it:** in `apps/desktop`, start the fake GitHub in one terminal (`npm run fake-github`), then in another: `$env:GH_TOKEN='fake-ada'; node bin/atiya.mjs setup --github http://localhost:4390 --token env --dir $env:TEMP\atiya-try --yes`. The steps tick to Done in a few seconds, and the site's files are in `%TEMP%\atiya-try`. Run it again: nothing is made twice. Leave out `--yes` to see the plan alone; add `--json` for an agent's view; `node bin/atiya.mjs doctor --github http://localhost:4390 --dir $env:TEMP\atiya-try` checks it.
 
 | # | Done when | Evidence |
 |---|---|---|
@@ -176,4 +176,5 @@ Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 need
 |---|---|---|
 | 0 | Done | The spec v2, modes, this plan; docs checks pass |
 | 1 | Done | 18 unit tests (`apps/desktop/test/stage1.test.mjs`) and 7 E2E tests (`apps/desktop/e2e/stage1.spec.mjs`), one per row, all passing; by hand: the app ran this checkout's own `astro dev` and showed edit mode's dashboard 37 s after Open this checkout, and Quit freed the port. Found on the way: Astro 7's entry is `bin/astro.mjs` (read from its package.json now); Windows can report a listening socket as CLOSED or with no state (a listener is now one with no remote end); npm skipped Electron's binary download (`postinstall` runs it) |
-| 2 to 9 | Not started | — |
+| 2 | Done | 21 tests in `apps/desktop/test/stage2.test.mjs` (real HTTP to the fake GitHub, real git, the CLI run as an agent would) and 5 in `tests/unit/starter.test.ts` (every starter through the content contract), all passing. By hand: the whole flow on the fake took 5 s; a second run made no write call. Found on the way: a `safe.bareRepository=explicit` git setting refuses bare repositories found by folder (the fake names them with `--git-dir`); exiting while fetch's sockets close crashed Node on Windows (the CLI sets `exitCode`); `doctor --json` printed words too |
+| 3 to 9 | Not started | — |

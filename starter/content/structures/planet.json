@@ -1,0 +1,53 @@
+{
+  "places": [
+    {
+      "id": "workshop",
+      "title": "Workshop",
+      "kicker": "Selected work",
+      "summary": "Selected projects: the problem, what I did and what changed.",
+      "site": "work"
+    },
+    {
+      "id": "town-hall",
+      "title": "Town Hall",
+      "kicker": "About me",
+      "summary": "Who I am, what I care about and how I work.",
+      "site": "about"
+    },
+    {
+      "id": "lighthouse",
+      "title": "Lighthouse",
+      "kicker": "Approach",
+      "summary": "How I think about my craft, and the principles I work by.",
+      "site": "approach"
+    },
+    {
+      "id": "library",
+      "title": "Library",
+      "kicker": "Writing",
+      "summary": "Essays and notes.",
+      "site": "writing"
+    },
+    {
+      "id": "amphitheater",
+      "title": "Amphitheater",
+      "kicker": "Speaking",
+      "summary": "Talks, panels and workshops.",
+      "site": "speaking"
+    },
+    {
+      "id": "greenhouse",
+      "title": "Greenhouse",
+      "kicker": "Side projects",
+      "summary": "Things I make on the side.",
+      "site": "projects"
+    },
+    {
+      "id": "post-office",
+      "title": "Post Office",
+      "kicker": "Contact",
+      "summary": "Ways to get in touch.",
+      "site": "contact"
+    }
+  ]
+}
