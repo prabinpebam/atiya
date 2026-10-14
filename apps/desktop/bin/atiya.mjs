@@ -8,6 +8,7 @@
  *   atiya status [--dir <folder>] [--json]
  *   atiya doctor [--dir <folder>] [--json]
  *   atiya sites [--json]
+ *   atiya private setup [--dir <folder>] [--yes] [--dry-run] [--json]
  *
  * --github <url> points it at another GitHub API (the fake GitHub in the tests). Exit codes: 0 done,
  * 10 needs the person, 20 a conflict, 30 GitHub refused, 1 anything else.
@@ -20,6 +21,7 @@ import { pollForToken, requestCode } from '../src/core/setup/device.mjs';
 import { checkSite } from '../src/core/setup/doctor.mjs';
 import { GitHub, GitHubError } from '../src/core/setup/github.mjs';
 import { EXIT, runSetup, STEPS } from '../src/core/setup/machine.mjs';
+import { runPrivateSetup } from '../src/core/setup/private.mjs';
 import { findToken, redact } from '../src/core/setup/tokens.mjs';
 
 /** Atiya Studio's OAuth App (registered by the owner; stage 5). Until then, sign in with GH_TOKEN or the GitHub CLI. */
@@ -43,7 +45,7 @@ export function parseArgs(argv) {
     else if (['yes', 'json', 'dry-run', 'wait', 'samples', 'help'].includes(k)) flags[k] = true;
     else flags[k] = argv[++i] ?? '';
   }
-  return { command: rest[0] ?? 'help', flags };
+  return { command: rest[0] ?? 'help', sub: rest[1] ?? null, flags };
 }
 
 /** @param {{ json: boolean, secrets: string[] }} o */
@@ -61,6 +63,7 @@ function printer(o) {
         : e.type === 'action' ? `ACTION   ${e.message}${e.url ? ` ${e.url}` : ''}${e.code ? ` Code: ${e.code}` : ''}`
         : e.type === 'plan' ? `Site     ${e.site.url} (${e.site.repository}), files in ${e.site.dir}`
         : e.type === 'milestone' ? 'Ready    Your site can be edited now (open it in Atiya Studio).'
+        : e.type === 'result' && e.repository !== undefined ? (e.ok ? (e.applied ? `Done     Private pages are set up, kept in ${e.repository}.` : 'Nothing changed. Run again with --yes to do it.') : `Stopped  ${e.message}`)
         : e.type === 'result' ? (e.ok ? (e.applied ? (e.live ? `Done     Your site is live: ${e.site?.url}` : 'Done     Saved. Your site goes live in a few minutes.') : 'Nothing changed. Run again with --yes to do it.') : `Stopped  ${e.message}`)
         : null;
       if (line) process.stdout.write(redact(line, o.secrets) + '\n');
@@ -87,7 +90,7 @@ async function signIn(source, o) {
 
 /** @param {string[]} argv */
 export async function main(argv) {
-  const { command, flags } = parseArgs(argv);
+  const { command, sub, flags } = parseArgs(argv);
   const json = !!flags.json;
   const api = typeof flags.github === 'string' ? flags.github : 'https://api.github.com';
   const web = typeof flags.github === 'string' ? flags.github : 'https://github.com';
@@ -98,7 +101,7 @@ export async function main(argv) {
   const out = printer({ json, secrets });
 
   if (command === 'help' || flags.help) {
-    process.stdout.write(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(3, 15).map((l) => l.replace(/^ \* ?/, '')).join('\n') + '\n');
+    process.stdout.write(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(3, 16).map((l) => l.replace(/^ \* ?/, '')).join('\n') + '\n');
     return EXIT.ok;
   }
 
@@ -145,6 +148,21 @@ export async function main(argv) {
     if (json) process.stdout.write(JSON.stringify({ type: 'sites', sites }) + '\n');
     else for (const s of sites) process.stdout.write(`${s.owner}/${s.name}\n`);
     return EXIT.ok;
+  }
+
+  if (command === 'private') {
+    if (sub !== 'setup') {
+      out.event({ type: 'result', ok: false, applied: false, code: EXIT.other, message: 'Try atiya private setup.' });
+      return EXIT.other;
+    }
+    const r = await runPrivateSetup({
+      github,
+      dir: resolve(typeof flags.dir === 'string' ? flags.dir : '.'),
+      apply: !!flags.yes && !flags['dry-run'],
+      gitConfigFile,
+      emit: out.event,
+    });
+    return r.ok ? EXIT.ok : r.code ?? EXIT.other;
   }
 
   out.event({ type: 'result', ok: false, live: false, applied: false, site: null, code: EXIT.other, message: `Unknown command: ${command}. Try atiya help.` });

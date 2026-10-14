@@ -60,6 +60,7 @@ async function setup(f, o = {}) {
  */
 function cli(args, env) {
   return new Promise((resolvePromise) => {
+    /** @type {Record<string, string | undefined>} */
     const childEnv = { ...process.env, ATIYA_POLL_MS: '30', ATIYA_FIRST_RUN_WAIT_MS: '2000', GH_TOKEN: undefined, GITHUB_TOKEN: undefined, ...env };
     for (const k of Object.keys(childEnv)) if (childEnv[k] === undefined) delete childEnv[k];
     execFile(process.execPath, [CLI, ...args], { env: childEnv, timeout: 60_000, windowsHide: true }, (err, stdout, stderr) =>

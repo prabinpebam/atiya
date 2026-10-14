@@ -6,7 +6,6 @@
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error a plain JavaScript script
 import { engineFiles, EXCLUDE } from '../../scripts/pack-engine.mjs';
 
 const ROOT = join(__dirname, '../..');

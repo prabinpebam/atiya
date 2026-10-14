@@ -171,4 +171,41 @@ export class GitHub {
     for (const repo of r.data ?? []) if (await this.hasFile(repo.owner.login, repo.name, 'atiya.json')) sites.push({ owner: String(repo.owner.login), name: String(repo.name), private: !!repo.private });
     return sites;
   }
+
+  /** A private, empty repository in the token's account. @param {string} name @param {string} description */
+  async createPrivateRepo(name, description) {
+    const r = await this.ok('POST', '/user/repos', { name, description, private: true, auto_init: false, has_wiki: false, has_projects: false, has_issues: false });
+    return { name: String(r.data.name), owner: String(r.data.owner?.login), private: !!r.data.private, cloneUrl: String(r.data.clone_url), htmlUrl: String(r.data.html_url), id: Number(r.data.id) };
+  }
+
+  /** A repository's deploy keys. @param {string} owner @param {string} name */
+  async deployKeys(owner, name) {
+    const r = await this.ok('GET', `/repos/${owner}/${name}/keys?per_page=100`);
+    return /** @type {any[]} */ (r.data ?? []).map((k) => ({ id: Number(k.id), title: String(k.title ?? ''), key: String(k.key ?? ''), readOnly: !!k.read_only }));
+  }
+
+  /** Adds a read-only deploy key. @param {string} owner @param {string} name @param {string} title @param {string} key */
+  async addDeployKey(owner, name, title, key) {
+    await this.ok('POST', `/repos/${owner}/${name}/keys`, { title, key, read_only: true });
+  }
+
+  /** @param {string} owner @param {string} name @param {number} id */
+  async deleteDeployKey(owner, name, id) {
+    await this.ok('DELETE', `/repos/${owner}/${name}/keys/${id}`);
+  }
+
+  /** Is this Actions secret set? (Its value can't be read.) @param {string} owner @param {string} name @param {string} secret */
+  async hasSecret(owner, name, secret) {
+    const r = await this.request('GET', `/repos/${owner}/${name}/actions/secrets/${secret}`);
+    if (r.status === 404) return false;
+    if (r.status !== 200) throw new GitHubError(r.data?.message ?? `GitHub answered ${r.status}`, { status: r.status });
+    return true;
+  }
+
+  /** Sets an Actions secret, sealed by `seal` against the repository's public key. @param {string} owner @param {string} name @param {string} secret @param {string} value @param {(publicKey: string, value: string) => Promise<string>} seal */
+  async putSecret(owner, name, secret, value, seal) {
+    const k = await this.ok('GET', `/repos/${owner}/${name}/actions/secrets/public-key`);
+    const encrypted = await seal(String(k.data.key), value);
+    await this.ok('PUT', `/repos/${owner}/${name}/actions/secrets/${secret}`, { encrypted_value: encrypted, key_id: String(k.data.key_id) });
+  }
 }

@@ -86,6 +86,19 @@ export async function launchSetup(o) {
 }
 
 /**
+ * Quits the app as a person does and waits for it to exit by itself (up to 20 s): Chromium writes its
+ * Local State, which holds the key the token is encrypted with, only on its way out.
+ * @param {import('@playwright/test').ElectronApplication} app
+ */
+export async function quitGracefully(app) {
+  const proc = app.process();
+  const exited = proc.exitCode !== null ? Promise.resolve() : new Promise((r) => proc.once('exit', r));
+  await app.evaluate(({ app: a }) => a.quit()).catch(() => {});
+  await Promise.race([exited, new Promise((r) => setTimeout(r, 20_000))]);
+  await app.close().catch(() => {});
+}
+
+/**
  * The page whose address matches, once it exists.
  * @param {import('@playwright/test').ElectronApplication} app
  * @param {RegExp} url

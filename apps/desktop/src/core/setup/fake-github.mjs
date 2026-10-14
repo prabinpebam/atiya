@@ -8,11 +8,13 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
+import { secretKeyPair } from './seal.mjs';
 
 /**
  * @typedef {{ login: string, id: number, name: string | null, emailVerified: boolean, scopes: string }} FakeUser
  * @typedef {{ id: number, sha: string, created: number, event: string }} FakeRun
- * @typedef {{ id: number, owner: string, name: string, private: boolean, bare: string, pages: null | { buildType: string }, runs: FakeRun[], site: null | { name: string } }} FakeRepo
+ * @typedef {{ id: number, owner: string, name: string, private: boolean, bare: string, pages: null | { buildType: string }, runs: FakeRun[], site: null | { name: string },
+ *   keys: { id: number, title: string, key: string, read_only: boolean }[], secrets: Map<string, string> }} FakeRepo
  * @typedef {{ root: string, port?: number, users?: Record<string, FakeUser>, buildMs?: number, buildFails?: boolean,
  *   pagesNeedsCommit?: boolean, actionsDisabled?: boolean, deviceInterval?: number, deviceApproveAfterMs?: number | null, deviceToken?: string }} FakeOptions
  */
@@ -35,6 +37,8 @@ export async function startFakeGitHub(o) {
   let base = '';
   const buildMs = o.buildMs ?? 1500;
   const settings = { buildFails: !!o.buildFails, pagesNeedsCommit: !!o.pagesNeedsCommit, actionsDisabled: !!o.actionsDisabled, slowCreateMs: 0 };
+  // the secrets' key pair: the fake opens what's sealed for it, so a test can read what was set
+  const secretKeys = await secretKeyPair();
 
   /** @param {FakeRepo} r */
   const mainSha = (r) => {
@@ -92,6 +96,7 @@ export async function startFakeGitHub(o) {
     };
     const auth = /^(?:Bearer|token) (.+)$/i.exec(req.headers.authorization ?? '')?.[1];
     const user = auth ? users[auth] : undefined;
+    /** @type {RegExpExecArray | null} */
     let m;
 
     // the fake's own controls, for tests and the app's --fake-github mode
@@ -159,7 +164,7 @@ export async function startFakeGitHub(o) {
       const bare = join(o.root, login, `${body.name}.git`);
       mkdirSync(bare, { recursive: true });
       execFileSync('git', ['init', '--bare', '--initial-branch=main', bare], { stdio: 'ignore', windowsHide: true });
-      const r = { id: ++ids, owner: login, name: body.name, private: !!body.private, bare, pages: null, runs: [], site: null };
+      const r = { id: ++ids, owner: login, name: body.name, private: !!body.private, bare, pages: null, runs: [], site: null, keys: [], secrets: new Map() };
       repos.set(key, r);
       return send(201, repoView(r));
     }
@@ -184,6 +189,35 @@ export async function startFakeGitHub(o) {
           if (settings.pagesNeedsCommit && !mainSha(r)) return send(422, { message: 'The repository is empty.' });
           r.pages = { buildType: body.build_type ?? 'workflow' };
           return send(method === 'POST' ? 201 : 204, method === 'POST' ? view() : undefined);
+        }
+      }
+      if (rest === '/keys' && method === 'GET') return send(200, r.keys);
+      if (rest === '/keys' && method === 'POST') {
+        if (!/^ssh-ed25519 [A-Za-z0-9+/=]+/.test(String(body.key))) return send(422, { message: 'key is invalid' });
+        const k = { id: ++ids, title: String(body.title ?? ''), key: String(body.key).split(' ').slice(0, 2).join(' '), read_only: !!body.read_only };
+        r.keys.push(k);
+        return send(201, k);
+      }
+      if ((m = /^\/keys\/(\d+)$/.exec(rest)) && method === 'DELETE') {
+        const before = r.keys.length;
+        r.keys = r.keys.filter((k) => k.id !== Number(m?.[1]));
+        return r.keys.length < before ? send(204, undefined) : send(404, { message: 'Not Found' });
+      }
+      if (rest === '/actions/secrets/public-key' && method === 'GET') return send(200, { key_id: 'fake-key-1', key: secretKeys.publicKey });
+      if ((m = /^\/actions\/secrets\/([A-Z0-9_]+)$/.exec(rest))) {
+        const secret = m[1];
+        if (method === 'GET') return r.secrets.has(secret) ? send(200, { name: secret, created_at: new Date().toISOString() }) : send(404, { message: 'Not Found' });
+        if (method === 'PUT') {
+          if (body.key_id !== 'fake-key-1') return send(422, { message: 'key_id is wrong' });
+          let value;
+          try {
+            value = secretKeys.open(String(body.encrypted_value));
+          } catch {
+            return send(422, { message: 'the secret could not be opened' });
+          }
+          const created = !r.secrets.has(secret);
+          r.secrets.set(secret, value);
+          return send(created ? 201 : 204, undefined);
         }
       }
       if (rest === '/actions/runs' && method === 'GET') {

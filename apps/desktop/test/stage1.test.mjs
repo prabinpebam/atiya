@@ -115,6 +115,7 @@ describe('the supervisor (1.1, 1.3, 1.4, 1.5)', () => {
   function rig(o = {}) {
     /** @type {FakeChild[]} */
     const children = [];
+    /** @type {any[]} */
     const killed = [];
     const sup = new Supervisor({
       command: 'node', args: ['astro.js', 'dev'], cwd: '.', port: 4999, backoff: [10, 20, 40], pollMs: 5, stableMs: 10_000,

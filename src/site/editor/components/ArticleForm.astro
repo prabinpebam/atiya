@@ -12,6 +12,7 @@ import Select from '../../components/fundamentals/Select.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Checkbox from '../../components/fundamentals/Checkbox.astro';
 import Text from '../../components/fundamentals/Text.astro';
+import Link from '../../components/fundamentals/Link.astro';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 
 interface Props {
@@ -27,9 +28,11 @@ interface Props {
   article?: string;
   /** Offer "Who can see it" (documentation/access/spec.md §8.2): only when private-pages/ is set up. */
   protectable?: boolean;
+  /** Where to set up private pages, when they aren't yet and the site is in Atiya Studio (documentation/desktop/spec.md F8). */
+  privateSetup?: string | null;
 }
 
-const { mode, sections = [], section = '', kind = 'note', article, protectable = false } = Astro.props;
+const { mode, sections = [], section = '', kind = 'note', article, protectable = false, privateSetup = null } = Astro.props;
 ---
 
 {
@@ -60,6 +63,13 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
             ]}
             hint="A private page is kept in private-pages/ and published encrypted, never in the public repository. Share it with an access code or a magic link from its settings. You can change this later there too."
           />
+        )
+      }
+      {
+        !protectable && privateSetup && (
+          <Text variant="small" tone="muted">
+            Everyone can see the pages you make. To keep some for people you choose, <Link href={privateSetup}>set up private pages</Link>.
+          </Text>
         )
       }
       <p class="issue" role="alert" data-editor-form-issue hidden />

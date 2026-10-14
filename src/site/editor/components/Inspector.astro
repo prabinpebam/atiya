@@ -25,6 +25,7 @@ import IconButton from '../../components/fundamentals/IconButton.astro';
 import Image from '../../components/fundamentals/Image.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
+import Link from '../../components/fundamentals/Link.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
 import Prose from '../../components/fundamentals/Prose.astro';
 import { COLLECTION_MAX, TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, type Article, type Block } from '../../content/schema';
@@ -73,9 +74,11 @@ interface Props {
   published: boolean;
   /** Its address on the site, when placed. */
   path: string | null;
+  /** Where to set up private pages, when they aren't yet and the site is in Atiya Studio (documentation/desktop/spec.md F8). */
+  privateSetup?: string | null;
 }
 
-const { article, media, sections, section, access, place, published, path } = Astro.props;
+const { article, media, sections, section, access, place, published, path, privateSetup = null } = Astro.props;
 const privatePage = access === 'private';
 const onPlanet = privatePage
   ? 'Not on the planet: private pages never are, as it has no way to sign in.'
@@ -606,6 +609,13 @@ const STATUS: SelectOption[] = [
           <Select label="Status" name="status" id="page-status" value={article.status} options={STATUS} hint="A Published page goes on the site when you save to remote; back to Draft takes it off." />
           <Select label="Visibility" name="visibility" id="page-visibility" value={article.visibility} options={[{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }]} />
           {access && <Select label="Who can see it" name="__access" id="page-access" value={access} options={ACCESS} hint="A private page is kept in private-pages/ and published encrypted: never in the public repository. It opens with an access code or a magic link you share. Making it public moves it back." />}
+          {
+            !access && privateSetup && (
+              <Text variant="small" tone="muted">
+                Everyone can see this page. To keep pages for people you choose, <Link href={privateSetup}>set up private pages</Link>.
+              </Text>
+            )
+          }
           {
             privatePage && (
               <div class="private-field">

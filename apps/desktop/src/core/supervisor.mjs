@@ -154,7 +154,7 @@ export class Supervisor extends EventEmitter {
         await this.o.killTree(child.pid ?? 0);
         return;
       }
-      await new Promise((r) => this.o.setTimer(r, this.o.pollMs));
+      await new Promise((r) => this.o.setTimer(() => r(undefined), this.o.pollMs));
     }
   }
 
@@ -200,7 +200,7 @@ export class Supervisor extends EventEmitter {
     }
     const gone = new Promise((r) => child.once('exit', r));
     await this.o.killTree(child.pid ?? 0);
-    await Promise.race([gone, new Promise((r) => this.o.setTimer(r, 5000))]);
+    await Promise.race([gone, new Promise((r) => this.o.setTimer(() => r(undefined), 5000))]);
     if (this.child === child) {
       this.child = null;
       this.set({ state: 'stopped' });

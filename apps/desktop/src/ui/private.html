@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Set up private pages · Atiya Studio</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="check.css">
+<script type="module" src="private.js"></script>
+</head>
+<body>
+<main class="page" id="main" aria-busy="true">
+  <h1>Set up private pages</h1>
+  <p class="lead muted" id="summary" role="status">Checking your site…</p>
+  <p id="about" hidden>Your private pages are kept in a second repository on GitHub that only you can see. Your site's build gets a key that can only read it, and publishes the pages encrypted: only the people you share them with can open them.</p>
+  <ul class="checks" id="steps" aria-label="Steps" hidden></ul>
+  <div class="actions">
+    <button type="button" class="primary" id="go" hidden>Set up private pages</button>
+    <button type="button" class="primary" id="done" hidden>Back to edit mode</button>
+    <button type="button" id="back">Not now</button>
+  </div>
+</main>
+</body>
+</html>

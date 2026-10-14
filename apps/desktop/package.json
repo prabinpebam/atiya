@@ -19,6 +19,7 @@
     "electron": "44.6.0"
   },
   "dependencies": {
-    "dugite": "3.2.3"
+    "dugite": "3.2.3",
+    "libsodium-wrappers": "0.8.4"
   }
 }

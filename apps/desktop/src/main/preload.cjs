@@ -16,6 +16,11 @@ if (location.protocol === 'app:') {
     openLive: call('open:live'),
     checkSite: call('site:check'),
     resolveSync: call('sync:resolve'),
+    privatePages: {
+      state: call('private:state'),
+      setUp: call('private:setup'),
+      finish: call('private:finish'),
+    },
     setup: {
       start: call('setup:start'),
       signIn: call('setup:sign-in'),

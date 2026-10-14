@@ -18,6 +18,7 @@ import { startFakeGitHub } from '../core/setup/fake-github.mjs';
 import { checkSite } from '../core/setup/doctor.mjs';
 import { Git } from '../core/setup/git.mjs';
 import { GitHub } from '../core/setup/github.mjs';
+import { runPrivateSetup } from '../core/setup/private.mjs';
 import { sync } from '../core/setup/sync.mjs';
 import { bundledGit } from '../core/setup/bundled-git.mjs';
 import { Supervisor } from '../core/supervisor.mjs';
@@ -58,7 +59,8 @@ let body;
 let server = null;
 /** @type {(import('../core/settings.mjs').Workspace & { repository?: string, url?: string }) | null} */
 let workspace = null;
-/** @type {'welcome' | 'source' | 'setup' | 'server' | 'editor' | 'site' | 'publish' | 'check' | 'sync'} */
+/** @typedef {'welcome' | 'source' | 'setup' | 'server' | 'editor' | 'site' | 'publish' | 'check' | 'sync' | 'private'} View */
+/** @type {View} */
 let view = 'welcome';
 let port = DEV_PORT;
 let quitting = false;
@@ -155,6 +157,7 @@ function appState() {
     devUrl: `${devOrigin()}/`,
     live,
     conflicts,
+    privatePages: privatePagesState(),
     setup: flow?.state() ?? null,
     githubWeb: github.web,
   };
@@ -166,10 +169,11 @@ function broadcast() {
   tray?.setToolTip(`Atiya Studio: ${s.workspace?.name ?? 'no site open'}`);
 }
 
-/** @param {typeof view} next */
+/** @param {View} next */
 function show(next) {
   view = next;
-  const pages = { welcome: 'welcome.html', source: 'source.html', setup: 'setup.html', server: 'server.html', publish: 'publish.html', check: 'check.html', sync: 'sync.html' };
+  /** @type {Record<Exclude<View, 'editor' | 'site'>, string>} */
+  const pages = { welcome: 'welcome.html', source: 'source.html', setup: 'setup.html', server: 'server.html', publish: 'publish.html', check: 'check.html', sync: 'sync.html', private: 'private.html' };
   if (next === 'editor') body.webContents.loadURL(`${devOrigin()}/_edit/`);
   else if (next === 'site') body.webContents.loadURL(`${devOrigin()}/`);
   else body.webContents.loadURL(`${APP_ORIGIN}/${pages[next]}`);
@@ -207,6 +211,7 @@ async function startServer(engineDir, extraEnv, o = {}) {
   await server?.stop();
   server?.removeAllListeners();
   const { command, args } = serverCommand(engineDir);
+  /** @type {NodeJS.ProcessEnv} */
   const env = { ...process.env, FORCE_COLOR: '0', ...extraEnv };
   delete env.ELECTRON_RUN_AS_NODE;
   server = new Supervisor({ command, args, cwd: engineDir, env, port, ...(o.utility ? { spawn: /** @type {any} */ (utilitySpawn) } : {}) });
@@ -312,6 +317,17 @@ function editGitEnv(dir) {
 /** @type {import('../core/setup/sync.mjs').Conflict[] | null} */
 let conflicts = null;
 
+/** Setting up private pages, while it runs and after (spec F8). @type {{ state: 'running' | 'done' | 'failed', steps: Record<string, { state: string, message: string }>, message?: string } | null} */
+let privateRun = null;
+
+/** Private pages for the open site: not offered, set up already, being set up, or not yet. */
+function privatePagesState() {
+  if (workspace?.kind !== 'managed') return { state: 'unavailable', steps: {} };
+  if (privateRun) return privateRun;
+  const ready = existsSync(join(workspace.path, 'private-pages', 'access.json'));
+  return { state: ready ? 'ready' : 'idle', steps: {} };
+}
+
 /** git for a site's workspace: the app's own settings, the token only for github.com. @param {string} dir */
 function siteGit(dir) {
   return new Git({ token: github.fake ? null : tokens().load(), identity: { name: workspace?.name ?? 'Atiya Studio', email: 'noreply@users.noreply.github.com' }, configFile: join(app.getPath('userData'), 'gitconfig') });
@@ -381,7 +397,7 @@ function bridge() {
   handle('view:show', (/** @type {string} */ v) => {
     const up = server?.status().state === 'ready' || server?.status().state === 'external';
     if ((v === 'editor' || v === 'site') && up) show(v);
-    if (v === 'source' || v === 'welcome' || v === 'publish' || v === 'check') show(v);
+    if (v === 'source' || v === 'welcome' || v === 'publish' || v === 'check' || v === 'private') show(v);
   });
   handle('open:external', (/** @type {string} */ url) => openExternal(String(url)));
   handle('open:browser', () => openExternal(`${devOrigin()}/`));
@@ -390,6 +406,35 @@ function bridge() {
     if (workspace?.kind !== 'managed') return null;
     const token = tokens().load();
     return checkSite(workspace.path, { github: new GitHub({ token, api: github.api, web: github.web }), gitConfigFile: join(app.getPath('userData'), 'gitconfig') });
+  });
+  handle('private:state', () => privatePagesState());
+  handle('private:setup', async () => {
+    if (workspace?.kind !== 'managed' || privateRun?.state === 'running') return privatePagesState();
+    const dir = workspace.path;
+    privateRun = { state: 'running', steps: {} };
+    broadcast();
+    const r = await runPrivateSetup({
+      github: new GitHub({ token: tokens().load(), api: github.api, web: github.web }),
+      dir,
+      apply: true,
+      gitConfigFile: join(app.getPath('userData'), 'gitconfig'),
+      emit: (e) => {
+        if (e.type !== 'step' || !privateRun) return;
+        privateRun.steps[e.step] = { state: e.state, message: e.message };
+        broadcast();
+      },
+    });
+    privateRun = { ...privateRun, state: r.ok ? 'done' : 'failed', message: r.message };
+    broadcast();
+    return privatePagesState();
+  });
+  // the server reads private-pages/ from its start: it starts again to bring them in
+  handle('private:finish', async () => {
+    privateRun = null;
+    if (server) {
+      show('server');
+      await server.restart();
+    }
   });
   handle('sync:resolve', async (/** @type {Record<string, string>} */ choices) => {
     if (workspace?.kind !== 'managed' || !conflicts) return;
@@ -476,7 +521,9 @@ async function quit() {
   await server?.stop();
   await closeFake?.();
   tray?.destroy();
-  app.exit(0);
+  // a graceful quit, never app.exit(): Chromium writes Local State on its way out, which holds the key
+  // safeStorage encrypts the GitHub token with, so the token opens again next time
+  app.quit();
 }
 
 app.on('second-instance', () => {

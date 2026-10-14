@@ -6,6 +6,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Git, sameRemote } from './git.mjs';
+import { GitHubError } from './github.mjs';
 
 /** The checks, in the order they're reported. */
 export const CHECKS = ['atiya.json', 'content', 'repository', 'saved', 'pushed', 'built', 'publishing'];
@@ -44,8 +45,15 @@ export async function checkSite(dir, o) {
   const [owner, name] = String(state?.repository ?? `${atiya.owner?.login ?? ''}/`).split('/');
   const git = new Git({ token: null, identity: { name: 'Atiya Studio', email: 'noreply@example.com' }, configFile: o.gitConfigFile });
   const origin = await git.origin(dir);
-  const repo = owner && name ? await o.github.repo(owner, name).catch(() => null) : null;
-  add('repository', !!repo && sameRemote(origin, repo.cloneUrl), repo ? `${owner}/${name} on GitHub` : "The site wasn't found on GitHub", 'Run setup again for this folder: it reconnects it.');
+  let signedOut = false;
+  const repo = owner && name
+    ? await o.github.repo(owner, name).catch((e) => {
+        signedOut = e instanceof GitHubError && e.kind === 'auth';
+        return null;
+      })
+    : null;
+  if (signedOut || !o.github.token) add('repository', false, "GitHub isn't connected", 'Sign in to GitHub again: in Atiya Studio, open the site; from the command line, set GH_TOKEN or run gh auth login.');
+  else add('repository', !!repo && sameRemote(origin, repo.cloneUrl), repo ? `${owner}/${name} on GitHub` : "The site wasn't found on GitHub", 'Run setup again for this folder: it reconnects it.');
   const dirty = await git.run(['status', '--porcelain'], { cwd: dir }).catch(() => 'unknown');
   add('saved', dirty === '', dirty === '' ? 'Every change is committed' : 'Some changes aren\'t committed yet', 'Choose Save to remote in edit mode.');
   const head = await git.head(dir);
