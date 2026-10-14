@@ -13,6 +13,21 @@ if (location.protocol === 'app:') {
     show: call('view:show'),
     openExternal: call('open:external'),
     openInBrowser: call('open:browser'),
+    openLive: call('open:live'),
+    setup: {
+      start: call('setup:start'),
+      signIn: call('setup:sign-in'),
+      copyCode: call('setup:copy-code'),
+      openGitHub: call('setup:open-github'),
+      checkEmail: call('setup:check-email'),
+      edit: call('setup:edit'),
+      chooseFolder: call('setup:choose-folder'),
+      create: call('setup:create'),
+      chooseSite: call('setup:choose-site'),
+      retry: call('setup:retry'),
+      back: call('setup:back'),
+      retryPublish: call('publish:retry'),
+    },
     onState(cb) {
       const listener = (_e, s) => cb(s);
       ipcRenderer.on('app:state', listener);

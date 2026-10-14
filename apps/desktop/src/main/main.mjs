@@ -1,17 +1,22 @@
 // @ts-check
 /**
  * Atiya Studio's main process (documentation/desktop/spec.md §7). It alone holds secrets, starts and
- * stops the site's dev server, and drives the window: a frame across the top (the app's own page) and a
- * body (the app's pages, or edit mode from the dev server). Views are sandboxed and get no Node.
+ * stops the site's dev server, runs setup, and drives the window: a frame across the top (the app's own
+ * page) and a body (the app's pages, or edit mode from the dev server). Views are sandboxed, with no Node.
  */
-import { app, BaseWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, session, shell, Tray, WebContentsView } from 'electron';
+import { app, BaseWindow, clipboard, dialog, ipcMain, Menu, nativeImage, net, protocol, session, shell, Tray, WebContentsView } from 'electron';
 import { appendFileSync, existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, extname, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { astroEntry, checkCheckout, findCheckoutAbove, siteName } from '../core/checkout.mjs';
 import { APP_ORIGIN, isBridgeCaller, isExternalSafe, staysInWindow, viewPreferences } from '../core/security.mjs';
 import { SettingsStore } from '../core/settings.mjs';
+import { engineInfo, engineRoot } from '../core/setup/engine.mjs';
+import { startFakeGitHub } from '../core/setup/fake-github.mjs';
 import { Supervisor } from '../core/supervisor.mjs';
+import { SetupFlow } from './setup-flow.mjs';
+import { tokenStore } from './token-store.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = resolve(HERE, '..', '..');
@@ -23,7 +28,11 @@ const FRAME_HEIGHT = 56;
 // tests and a second copy of the app keep their own data folder
 if (process.env.ATIYA_USER_DATA) app.setPath('userData', process.env.ATIYA_USER_DATA);
 const settings = new SettingsStore(app.getPath('userData'));
+/** The owner's checkout keeps 4321; a managed site gets its own port, so the two never collide. */
 const DEV_PORT = Number(process.env.ATIYA_DEV_PORT || 4321);
+const SITE_PORT = Number(process.env.ATIYA_SITE_PORT || process.env.ATIYA_DEV_PORT || 4325);
+const HOME = process.env.ATIYA_HOME || homedir();
+const FAKE = process.argv.includes('--fake-github') || process.env.ATIYA_FAKE_GITHUB === '1';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
@@ -37,13 +46,20 @@ let frame;
 let body;
 /** @type {Supervisor | null} */
 let server = null;
-/** @type {import('../core/settings.mjs').Workspace | null} */
+/** @type {(import('../core/settings.mjs').Workspace & { repository?: string, url?: string }) | null} */
 let workspace = null;
-/** @type {'welcome' | 'server' | 'editor' | 'site'} */
+/** @type {'welcome' | 'source' | 'setup' | 'server' | 'editor' | 'site' | 'publish'} */
 let view = 'welcome';
+let port = DEV_PORT;
 let quitting = false;
 /** @type {Tray | null} */
 let tray = null;
+/** @type {{ state: 'going' | 'live' | 'failed', message?: string, url?: string } | null} */
+let live = null;
+/** @type {SetupFlow} */
+let flow;
+/** The GitHub the app talks to: github.com, or a fake for trying it and for the tests. */
+let github = { api: 'https://api.github.com', web: 'https://github.com', fake: false };
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json' };
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
@@ -72,7 +88,7 @@ function openExternal(url) {
   shell.openExternal(url);
 }
 
-const devOrigin = () => `http://localhost:${DEV_PORT}`;
+const devOrigin = () => `http://localhost:${port}`;
 
 /** Keeps a view in its origin; anything else opens outside. @param {WebContentsView} v */
 function lockNavigation(v) {
@@ -127,6 +143,9 @@ function appState() {
     view,
     suggested: suggestedCheckout(),
     devUrl: `${devOrigin()}/`,
+    live,
+    setup: flow?.state() ?? null,
+    githubWeb: github.web,
   };
 }
 
@@ -136,45 +155,49 @@ function broadcast() {
   tray?.setToolTip(`Atiya Studio: ${s.workspace?.name ?? 'no site open'}`);
 }
 
-/** @param {'welcome' | 'server' | 'editor' | 'site'} next */
+/** @param {typeof view} next */
 function show(next) {
   view = next;
-  if (next === 'welcome') body.webContents.loadURL(`${APP_ORIGIN}/welcome.html`);
-  else if (next === 'server') body.webContents.loadURL(`${APP_ORIGIN}/server.html`);
-  else if (next === 'editor') body.webContents.loadURL(`${devOrigin()}/_edit/`);
-  else body.webContents.loadURL(`${devOrigin()}/`);
+  const pages = { welcome: 'welcome.html', source: 'source.html', setup: 'setup.html', server: 'server.html', publish: 'publish.html' };
+  if (next === 'editor') body.webContents.loadURL(`${devOrigin()}/_edit/`);
+  else if (next === 'site') body.webContents.loadURL(`${devOrigin()}/`);
+  else body.webContents.loadURL(`${APP_ORIGIN}/${pages[next]}`);
   broadcast();
 }
 
-/** The checkout the app was started from, if any (offered on the welcome). */
+/** The checkout the app was started from, if any (offered to developers). */
 function suggestedCheckout() {
-  const dir = process.env.ATIYA_SUGGEST_DIR || findCheckoutAbove(APP_ROOT);
+  const dir = process.env.ATIYA_SUGGEST_DIR ?? findCheckoutAbove(APP_ROOT);
   if (!dir) return null;
   const check = checkCheckout(dir);
   return { path: dir, ok: check.ok, reason: check.ok ? undefined : check.reason };
 }
 
-/** The dev server's command: a stand-in for the tests, else the checkout's own astro dev under the system's Node. @param {string} dir */
-function serverCommand(dir) {
+/**
+ * The dev server's command: a stand-in for the tests, else astro dev under the system's Node: the
+ * checkout's own (a developer workspace) or the engine's with the site's content (a managed site).
+ * @param {string} engineDir
+ */
+function serverCommand(engineDir) {
   if (process.env.ATIYA_DEV_SERVER) {
     const { command, args } = JSON.parse(process.env.ATIYA_DEV_SERVER);
-    return { command, args: [...args, String(DEV_PORT)] };
+    return { command, args: [...args, String(port)] };
   }
-  return { command: 'node', args: [/** @type {string} */ (astroEntry(dir)), 'dev', '--port', String(DEV_PORT)] };
+  return { command: 'node', args: [/** @type {string} */ (astroEntry(engineDir)), 'dev', '--port', String(port)] };
 }
 
-/** Opens a developer workspace: remembers it and starts its dev server. @param {string} dir */
-async function openWorkspace(dir) {
-  const check = checkCheckout(dir);
-  if (!check.ok) return { ok: false, reason: check.reason };
+/**
+ * Starts a dev server and shows edit mode when it's up.
+ * @param {string} engineDir the checkout whose code runs
+ * @param {NodeJS.ProcessEnv} extraEnv
+ */
+async function startServer(engineDir, extraEnv) {
   await server?.stop();
   server?.removeAllListeners();
-  workspace = { kind: 'developer', path: dir, name: check.name };
-  settings.remember(workspace);
-  const { command, args } = serverCommand(dir);
-  const env = { ...process.env, FORCE_COLOR: '0' };
+  const { command, args } = serverCommand(engineDir);
+  const env = { ...process.env, FORCE_COLOR: '0', ...extraEnv };
   delete env.ELECTRON_RUN_AS_NODE;
-  server = new Supervisor({ command, args, cwd: dir, env, port: DEV_PORT });
+  server = new Supervisor({ command, args, cwd: engineDir, env, port });
   let wasUp = false;
   server.on('status', (s) => {
     const up = s.state === 'ready' || s.state === 'external';
@@ -186,7 +209,76 @@ async function openWorkspace(dir) {
   server.on('log', () => broadcast());
   show('server');
   server.start();
+}
+
+/** Opens a developer workspace: the checkout's own code and content. @param {string} dir */
+async function openWorkspace(dir) {
+  const check = checkCheckout(dir);
+  if (!check.ok) return { ok: false, reason: check.reason };
+  port = DEV_PORT;
+  live = null;
+  workspace = { kind: 'developer', path: dir, name: check.name };
+  settings.remember(workspace);
+  await startServer(dir, {});
   return { ok: true };
+}
+
+/**
+ * Opens a managed site: the engine's code with the site's own content. Until stage 7 bundles a release,
+ * the engine is the checkout the app lives in.
+ * @param {{ path: string, name?: string, repository?: string, url?: string }} site
+ */
+async function openManaged(site) {
+  port = SITE_PORT;
+  workspace = { kind: 'managed', path: site.path, name: site.name ?? siteName(site.path), repository: site.repository, url: site.url };
+  const remembered = { ...workspace };
+  settings.update((s) => {
+    const before = /** @type {any} */ (s.workspaces.find((w) => w.path.toLowerCase() === site.path.toLowerCase()));
+    s.workspaces = [{ ...remembered, live: before?.live }, ...s.workspaces.filter((w) => w.path.toLowerCase() !== site.path.toLowerCase())].slice(0, 10);
+    s.current = site.path;
+  });
+  await startServer(engineRoot(), { CONTENT_ROOT: join(site.path, 'content'), PRIVATE_ROOT: join(site.path, 'private-pages') });
+}
+
+/** Where a live site is opened: its address, or the fake's copy of it. @param {string | undefined} repository @param {string | undefined} url */
+const liveUrl = (repository, url) => (github.fake && repository ? `${github.web}/sites/${repository}/` : url ?? '');
+
+function makeFlow() {
+  flow = new SetupFlow({
+    api: github.api,
+    web: github.web,
+    clientId: github.fake ? 'fake-client' : process.env.ATIYA_GITHUB_CLIENT_ID ?? null,
+    home: HOME,
+    gitConfigFile: join(app.getPath('userData'), 'gitconfig'),
+    engine: engineInfo(),
+    tokens: tokenStore(join(app.getPath('userData'), github.fake ? 'github-token.fake.bin' : 'github-token.bin')),
+    copy: (t) => {
+      clipboard.writeText(t);
+      // the tests' sessions may have no clipboard: they read what was copied from a log
+      if (process.env.ATIYA_CLIPBOARD_LOG) appendFileSync(process.env.ATIYA_CLIPBOARD_LOG, t + '\n');
+    },
+    openExternal,
+    onReadyToEdit: (site) => {
+      openManaged({ path: site.dir, name: site.name, repository: site.repository, url: site.url });
+    },
+    onLive: (s) => {
+      live = s.state === 'live' ? { state: 'live', url: liveUrl(workspace?.repository, s.url) } : s;
+      if (s.state === 'live')
+        settings.update((st) => {
+          const w = st.workspaces.find((x) => x.path === workspace?.path);
+          if (w) /** @type {any} */ (w).live = true;
+        });
+      broadcast();
+    },
+    saveSetup: (s) =>
+      settings.update((st) => {
+        /** @type {any} */ (st).setup = s;
+      }),
+    pollMs: Number(process.env.ATIYA_POLL_MS ?? 5000),
+    emailPollMs: Number(process.env.ATIYA_EMAIL_POLL_MS ?? 5000),
+    firstRunWaitMs: Number(process.env.ATIYA_FIRST_RUN_WAIT_MS ?? 30_000),
+  });
+  flow.on('change', () => broadcast());
 }
 
 /** The bridge: answers only the app's own pages. */
@@ -207,10 +299,41 @@ function bridge() {
   handle('server:restart', () => server?.restart());
   handle('server:use-existing', () => server?.useExisting());
   handle('view:show', (/** @type {string} */ v) => {
-    if ((v === 'editor' || v === 'site') && (server?.status().state === 'ready' || server?.status().state === 'external')) show(v);
+    const up = server?.status().state === 'ready' || server?.status().state === 'external';
+    if ((v === 'editor' || v === 'site') && up) show(v);
+    if (v === 'source' || v === 'welcome' || v === 'publish') show(v);
   });
   handle('open:external', (/** @type {string} */ url) => openExternal(String(url)));
   handle('open:browser', () => openExternal(`${devOrigin()}/`));
+  handle('open:live', () => live?.url && openExternal(live.url));
+  handle('setup:start', (/** @type {'new' | 'existing'} */ mode) => {
+    show('setup');
+    flow.start(mode === 'existing' ? 'existing' : 'new');
+  });
+  handle('setup:sign-in', () => flow.signIn());
+  handle('setup:copy-code', () => flow.copyCode());
+  handle('setup:open-github', () => flow.openGitHubAgain());
+  handle('setup:check-email', () => flow.checkEmail());
+  handle('setup:edit', (/** @type {any} */ patch) => flow.edit(patch ?? {}));
+  handle('setup:choose-folder', async () => {
+    const r = await dialog.showOpenDialog({ title: 'Where to keep your site', properties: ['openDirectory', 'createDirectory'] });
+    const p = flow.state().proposal;
+    if (!r.canceled && r.filePaths[0] && p) flow.edit({ dir: join(r.filePaths[0], p.repo) });
+  });
+  handle('setup:create', () => flow.create());
+  handle('setup:choose-site', (/** @type {string} */ name) => flow.chooseSite(String(name)));
+  handle('setup:retry', () => (flow.state().error?.retry === 'sign-in' ? flow.signIn() : flow.create()));
+  handle('setup:back', () => {
+    flow.reset();
+    show('welcome');
+  });
+  handle('publish:retry', async () => {
+    const w = /** @type {any} */ (settings.read().workspaces.find((x) => x.path === workspace?.path));
+    if (!w?.repository) return;
+    live = { state: 'going' };
+    broadcast();
+    flow.create({ name: w.name, repo: String(w.repository).split('/')[1], url: w.url, dir: w.path, explore: 'little-planet', samples: true });
+  });
 }
 
 function menus() {
@@ -219,7 +342,8 @@ function menus() {
     {
       label: 'File',
       submenu: [
-        { label: 'Open a source folder…', accelerator: 'CmdOrCtrl+O', click: () => show('welcome') },
+        { label: 'Make a new site', click: () => show('welcome') },
+        { label: 'Open a source folder…', accelerator: 'CmdOrCtrl+O', click: () => show('source') },
         { label: 'Open in browser', click: () => openExternal(`${devOrigin()}/`) },
         restart,
         { type: 'separator' },
@@ -250,10 +374,15 @@ function menus() {
   tray.on('click', () => win?.show());
 }
 
+/** @type {(() => Promise<unknown>) | null} */
+let closeFake = null;
+
 async function quit() {
   if (quitting) return;
   quitting = true;
+  flow?.stop();
   await server?.stop();
+  await closeFake?.();
   tray?.destroy();
   app.exit(0);
 }
@@ -274,13 +403,29 @@ app.on('window-all-closed', () => {
   if (process.env.ATIYA_NO_TRAY) quit();
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  if (process.env.ATIYA_GITHUB_URL) github = { api: process.env.ATIYA_GITHUB_URL, web: process.env.ATIYA_GITHUB_URL, fake: true };
+  else if (FAKE) {
+    const fake = await startFakeGitHub({ root: join(app.getPath('userData'), 'fake-github'), port: Number(process.env.ATIYA_FAKE_PORT || 0), deviceApproveAfterMs: Number(process.env.ATIYA_FAKE_APPROVE_MS ?? 2000), buildMs: Number(process.env.ATIYA_FAKE_BUILD_MS ?? 8000) });
+    closeFake = fake.close;
+    github = { api: fake.url, web: fake.url, fake: true };
+  }
   serveApp();
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'clipboard-sanitized-write' || permission === 'fullscreen'));
+  makeFlow();
   bridge();
   createWindow();
   menus();
-  const remembered = settings.current();
-  if (remembered?.kind === 'developer' && checkCheckout(remembered.path).ok) openWorkspace(remembered.path);
-  else show('welcome');
+  const saved = /** @type {any} */ (settings.read());
+  const remembered = /** @type {any} */ (settings.current());
+  if (saved.setup?.inputs) {
+    // setup was stopped while creating: carry on where it stopped (spec §4.4)
+    show('setup');
+    flow.s.mode = saved.setup.mode ?? 'new';
+    flow.create(saved.setup.inputs);
+  } else if (remembered?.kind === 'developer' && checkCheckout(remembered.path).ok) openWorkspace(remembered.path);
+  else if (remembered?.kind === 'managed' && existsSync(join(remembered.path, 'atiya.json'))) {
+    live = remembered.live ? { state: 'live', url: liveUrl(remembered.repository, remembered.url) } : null;
+    await openManaged({ path: remembered.path, name: remembered.name, repository: remembered.repository, url: remembered.url });
+  } else show('welcome');
 });

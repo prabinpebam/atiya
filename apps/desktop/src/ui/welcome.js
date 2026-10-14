@@ -1,25 +1,13 @@
-// Stage 1's welcome: open a checkout of the site's source (a developer workspace).
+// The welcome (documentation/desktop/spec.md §4.3): Make my site, Open my existing site, and for
+// developers, the checkout the app was started from (F12).
 const $ = (id) => document.getElementById(id);
 
-async function open(fn) {
-  $('error').textContent = '';
-  const r = await fn();
-  if (r && !r.ok && !r.canceled) $('error').textContent = r.reason;
-}
+$('make').addEventListener('click', () => window.atiya.setup.start('new'));
+$('existing').addEventListener('click', () => window.atiya.setup.start('existing'));
+$('make').focus();
 
 window.atiya.state().then((s) => {
-  const sug = s.suggested;
-  if (!sug) return;
-  $('suggested').hidden = false;
-  $('suggested-path').textContent = sug.path;
-  if (sug.ok) {
-    $('open-suggested').hidden = false;
-    $('open-suggested').addEventListener('click', () => open(() => window.atiya.openWorkspace(sug.path)));
-    $('open-suggested').focus();
-  } else {
-    $('suggested-reason').hidden = false;
-    $('suggested-reason').textContent = sug.reason;
-  }
+  if (!s.suggested?.ok) return;
+  $('developer').hidden = false;
+  $('open-suggested').addEventListener('click', () => window.atiya.openWorkspace(s.suggested.path));
 });
-
-$('choose').addEventListener('click', () => open(() => window.atiya.chooseWorkspace()));

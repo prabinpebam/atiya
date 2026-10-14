@@ -52,6 +52,40 @@ export async function launch(o = {}) {
 }
 
 /**
+ * The app on a fake GitHub (stage 3): a fresh data folder and home, the stand-in server for edit mode.
+ * @param {{ fakeUrl: string, root?: string, env?: Record<string, string> }} o
+ */
+export async function launchSetup(o) {
+  const root = o.root ?? mkdtempSync(join(tmpdir(), 'atiya-e2e-setup-'));
+  const externalLog = join(root, 'external.log');
+  const clipboardLog = join(root, 'clipboard.log');
+  const app = await electron.launch({
+    executablePath: ELECTRON,
+    args: [APP_DIR],
+    env: {
+      ...process.env,
+      ATIYA_CLIPBOARD_LOG: clipboardLog,
+      ATIYA_USER_DATA: join(root, 'data'),
+      ATIYA_HOME: join(root, 'home'),
+      ATIYA_GITHUB_URL: o.fakeUrl,
+      ATIYA_DEV_SERVER: JSON.stringify({ command: process.execPath, args: [STUB] }),
+      ATIYA_SITE_PORT: '4381',
+      ATIYA_SUGGEST_DIR: '',
+      ATIYA_EXTERNAL_LOG: externalLog,
+      ATIYA_POLL_MS: '150',
+      ATIYA_EMAIL_POLL_MS: '200',
+      ATIYA_FIRST_RUN_WAIT_MS: '600',
+      GH_TOKEN: '',
+      GITHUB_TOKEN: '',
+      ...o.env,
+    },
+  });
+  const externals = () => (existsSync(externalLog) ? readFileSync(externalLog, 'utf8').split('\n').filter(Boolean) : []);
+  const copied = () => (existsSync(clipboardLog) ? readFileSync(clipboardLog, 'utf8').split('\n').filter(Boolean) : []);
+  return { app, root, externals, copied };
+}
+
+/**
  * The page whose address matches, once it exists.
  * @param {import('@playwright/test').ElectronApplication} app
  * @param {RegExp} url

@@ -2,24 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Open your site's source · Atiya Studio</title>
+<title>Welcome · Atiya Studio</title>
 <link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="setup.css">
 <script type="module" src="welcome.js"></script>
 </head>
 <body>
-<main class="page" id="main">
-  <h1>Open your site's source</h1>
-  <p>Atiya Studio runs your site's dev server and shows edit mode here, for as long as the app is open. Closing VS Code or a terminal won't stop it.</p>
-  <section id="suggested" hidden aria-labelledby="suggested-title">
-    <h2 id="suggested-title">The checkout this app came from</h2>
-    <p class="path" id="suggested-path"></p>
-    <p class="muted small" id="suggested-reason" hidden></p>
-  </section>
+<main class="page welcome" id="main">
+  <h1>Your own site, live today</h1>
+  <p class="lead">Atiya Studio makes you a portfolio site and publishes it with GitHub, free. Your GitHub username becomes its address.</p>
   <div class="actions">
-    <button type="button" class="primary" id="open-suggested" hidden>Open this checkout</button>
-    <button type="button" id="choose">Choose a folder</button>
+    <button type="button" class="primary" id="make">Make my site</button>
+    <button type="button" id="existing">Open my existing site</button>
   </div>
-  <p class="alert" id="error" role="alert"></p>
+  <section class="developer" id="developer" hidden aria-labelledby="developer-title">
+    <h2 id="developer-title">Working on the site's own code?</h2>
+    <p class="muted small">This app was started from a checkout of the site's source. Open it to run its dev server and edit it here.</p>
+    <button type="button" class="quiet" id="open-suggested">Open this checkout</button>
+  </section>
 </main>
 </body>
 </html>

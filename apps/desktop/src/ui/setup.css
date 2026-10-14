@@ -1,0 +1,180 @@
+/* The welcome and the first run's screens (documentation/desktop/spec.md §4.3): tokens only. */
+.lead {
+  font-size: var(--text-lead);
+  color: var(--color-text-muted);
+}
+
+.welcome h1 {
+  font-size: var(--text-h1);
+}
+
+.developer {
+  margin-top: var(--space-16);
+  padding-top: var(--space-6);
+  border-top: var(--border-hairline) solid var(--color-rule);
+}
+
+.field {
+  margin: var(--space-6) 0;
+}
+
+.field label,
+.field .label,
+legend {
+  display: block;
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+input[type='text'] {
+  font: inherit;
+  width: 100%;
+  min-height: var(--size-touch);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  border: var(--border-control) solid var(--color-border-strong);
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+}
+
+.address {
+  font-family: var(--font-display);
+  font-size: var(--text-h4);
+  margin: 0;
+}
+
+.code {
+  font-family: var(--font-code);
+  font-size: var(--text-h1);
+  letter-spacing: 0.1em;
+  margin: var(--space-6) 0;
+  user-select: all;
+}
+
+fieldset.cards {
+  border: 0;
+  padding: 0;
+  margin: var(--space-6) 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.card,
+.switch {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: var(--border-control) solid var(--color-border);
+  background: var(--color-bg-raised);
+  cursor: pointer;
+}
+
+.card:has(input:checked) {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.card input,
+.switch input {
+  margin: var(--space-1) 0 0;
+  width: var(--size-icon);
+  height: var(--size-icon);
+  accent-color: var(--color-accent);
+}
+
+.card-title {
+  font-weight: 600;
+  display: block;
+}
+
+.card-text {
+  grid-column: 2;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  display: block;
+}
+
+.switch {
+  margin: var(--space-6) 0;
+}
+
+.more {
+  margin: var(--space-6) 0;
+}
+
+.site-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ticks {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-6) 0;
+  display: grid;
+  gap: var(--space-4);
+  font-size: var(--text-lead);
+}
+
+.ticks li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.ticks li::before {
+  content: '';
+  width: var(--size-icon);
+  height: var(--size-icon);
+  border-radius: var(--radius-round);
+  border: var(--border-control) solid var(--color-border-strong);
+  flex: none;
+}
+
+.ticks li[data-state='doing'] {
+  color: var(--color-text);
+}
+
+.ticks li[data-state='doing']::before {
+  border-color: var(--color-accent);
+  border-top-color: transparent;
+  animation: spin var(--duration-slower) linear infinite;
+}
+
+.ticks li[data-state='done'] {
+  color: var(--color-text);
+}
+
+.ticks li[data-state='done']::before {
+  background: var(--color-positive);
+  border-color: var(--color-positive);
+}
+
+.ticks li[data-state='failed']::before {
+  background: var(--color-negative);
+  border-color: var(--color-negative);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticks li[data-state='doing']::before {
+    animation: none;
+    border-top-color: var(--color-accent);
+  }
+}
+
+/* a screen's heading takes the focus as it appears (for screen readers); it isn't a control, so no ring */
+h1[tabindex='-1']:focus {
+  outline: none;
+}

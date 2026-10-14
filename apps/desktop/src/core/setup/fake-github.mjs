@@ -34,7 +34,7 @@ export async function startFakeGitHub(o) {
   let ids = 5000;
   let base = '';
   const buildMs = o.buildMs ?? 1500;
-  const settings = { buildFails: !!o.buildFails, pagesNeedsCommit: !!o.pagesNeedsCommit, actionsDisabled: !!o.actionsDisabled };
+  const settings = { buildFails: !!o.buildFails, pagesNeedsCommit: !!o.pagesNeedsCommit, actionsDisabled: !!o.actionsDisabled, slowCreateMs: 0 };
 
   /** @param {FakeRepo} r */
   const mainSha = (r) => {
@@ -152,6 +152,7 @@ export async function startFakeGitHub(o) {
     if (path === '/user/emails' && method === 'GET') return send(200, [{ email: `${login}@example.com`, primary: true, verified: user.emailVerified }]);
     if (path === '/user/repos' && method === 'GET') return send(200, [...repos.values()].filter((r) => r.owner === login).map(repoView));
     if (path === '/user/repos' && method === 'POST') {
+      if (settings.slowCreateMs) await new Promise((r) => setTimeout(r, settings.slowCreateMs));
       if (!user.emailVerified) return send(403, { message: 'You need to verify your email address first.' });
       const key = `${login}/${body.name}`.toLowerCase();
       if (repos.has(key)) return send(422, { message: 'Repository creation failed: name already exists on this account' });

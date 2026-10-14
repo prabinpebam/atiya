@@ -55,7 +55,11 @@ test.describe('desktop: developer workspace', () => {
     writeFileSync(join(other, 'package.json'), JSON.stringify({ name: 'something-else' }));
     const refused = await launch({ suggest: other });
     try {
-      const w = await pageMatching(refused.app, /welcome\.html/);
+      const welcome = await pageMatching(refused.app, /welcome\.html/);
+      // a newcomer's welcome says nothing of it; the developer's page (File, Open a source folder) says why
+      await expect(welcome.getByRole('button', { name: 'Open this checkout' })).toBeHidden();
+      await welcome.evaluate(() => /** @type {any} */ (window).atiya.show('source'));
+      const w = await pageMatching(refused.app, /source\.html/);
       await expect(w.locator('#suggested-reason')).toHaveText(/another project/);
       await expect(w.getByRole('button', { name: 'Open this checkout' })).toBeHidden();
       const r = await w.evaluate((dir) => /** @type {any} */ (window).atiya.openWorkspace(dir), other);
@@ -152,6 +156,9 @@ test.describe('desktop: developer workspace', () => {
           expect(r.violations.map((v) => `${scheme} ${p.url()}: ${v.id}`)).toEqual([]);
         }
       }
+      await expect(welcome.getByRole('button', { name: 'Make my site' })).toBeFocused();
+      await welcome.keyboard.press('Tab');
+      await welcome.keyboard.press('Tab');
       await expect(welcome.getByRole('button', { name: 'Open this checkout' })).toBeFocused();
       await welcome.keyboard.press('Enter');
       const page = await pageMatching(app, /server\.html/);
