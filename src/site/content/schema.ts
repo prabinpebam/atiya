@@ -89,7 +89,7 @@ export const imageMedia = z
 export const documentMedia = z.strictObject({
   kind: z.literal('document'),
   file: z.string().regex(/^[a-z0-9-]+\.pdf$/),
-  /** What it is, in words: a link to it can say so ("Prabin Pebam's résumé"). */
+  /** What it is, in words: a link to it can say so ("Ada Lovelace's résumé"). */
   title: z.string().min(1),
   caption: z.string().optional(),
   visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
@@ -347,6 +347,22 @@ export const siteSettings = z.strictObject({
   contactPage: id.optional(),
   /** The Privacy page the footer links to (a node of the site structure): what telemetry records (documentation/access/spec.md §9.6). */
   privacyPage: id.optional(),
+  /**
+   * The services the site's pages use (documentation/desktop/spec.md §6.3): addresses and public keys, never
+   * a secret. Every build reads them from here, the owner's from source and a managed site's from an engine
+   * release alike (integrations/services.mjs).
+   */
+  services: z
+    .strictObject({
+      /** The contact form's service (documentation/contact/spec.md): its address. */
+      contact: z.strictObject({ endpoint: z.url({ protocol: /^https$/ }) }).optional(),
+      /**
+       * PostHog (documentation/access/spec.md §9): the project's public key, its host, and the site's own address:
+       * a build for any other address (a copy of the site, this computer) leaves the key out.
+       */
+      telemetry: z.strictObject({ key: z.string().regex(/^phc_\w+$/), host: z.url({ protocol: /^https$/ }).optional(), site: z.url({ protocol: /^https$/ }) }).optional(),
+    })
+    .optional(),
 });
 
 /**

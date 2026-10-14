@@ -1,0 +1,46 @@
+{
+  "id": "sample-project",
+  "type": "article",
+  "kind": "note",
+  "slug": "sample-project",
+  "title": "A project I am proud of",
+  "summary": "Replace this with a project: the problem, what you did, and what changed because of it.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-14",
+  "updatedAt": "2026-10-14",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "This is a sample case study. Keep its shape, or make your own."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The problem"
+    },
+    {
+      "type": "text",
+      "markdown": "Who had it, why it mattered, and what made it hard."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What I did"
+    },
+    {
+      "type": "text",
+      "markdown": "Your part in it: the decisions you made, the people you worked with, and what you tried that did not work."
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What changed"
+    },
+    {
+      "type": "text",
+      "markdown": "The result, in numbers if you have them and in words if you do not. Add pictures with the + between blocks."
+    }
+  ]
+}

@@ -4,5 +4,15 @@
   "owner": "prabin",
   "locale": "en",
   "contactPage": "contact",
-  "privacyPage": "privacy"
+  "privacyPage": "privacy",
+  "services": {
+    "contact": {
+      "endpoint": "https://atiya-contact-8a66d9.azurewebsites.net"
+    },
+    "telemetry": {
+      "key": "phc_ncCbe7g9NG4FFDPvgj3q7r7tLJ8DepUMahajL3Xzn5Qq",
+      "host": "https://us.i.posthog.com",
+      "site": "https://prabinpebam.github.io/atiya/"
+    }
+  }
 }

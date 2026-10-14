@@ -23,6 +23,8 @@ const SHOWS: Record<string, (key: string) => boolean> = {
   sections: (k) => isArticle(k) || isStructure(k) || isMedia(k),
   navigation: (k) => isArticle(k) || isStructure(k),
   planet: (k) => isArticle(k) || isStructure(k) || isMedia(k),
+  // the ways file, and the structures a way keeps
+  ways: (k) => isStructure(k),
   // every picture, and what uses each
   media: (k) => isMedia(k) || isArticle(k) || isSettings(k),
   settings: (k) => isSettings(k) || isMedia(k) || isArticle(k) || isStructure(k),

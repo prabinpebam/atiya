@@ -8,6 +8,7 @@
  * @a11y Hints are tied to the input with aria-describedby.
  * @key Space: toggles it
  */
+import { stableId } from '../../design/stableId';
 import { svgOf } from '../../design/icons';
 
 interface Props {
@@ -33,7 +34,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, name, value = 'on', id = `checkbox-${Math.random().toString(36).slice(2, 8)}`, checked = false, indeterminate = false, disabled = false, hint, required = false, ...rest } = Astro.props;
+const { label, name, value = 'on', id = `checkbox-${stableId(Astro, 'Checkbox')}`, checked = false, indeterminate = false, disabled = false, hint, required = false, ...rest } = Astro.props;
 const check = svgOf('check');
 const minus = svgOf('minus');
 const hasSlot = Astro.slots.has('default');

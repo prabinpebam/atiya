@@ -11,7 +11,7 @@ import Link from '../../site/components/fundamentals/Link.astro';
 import { byTier, routeOf, TIERS } from '../../site/library/registry';
 import { libraryNav, TOKEN_PAGES } from '../../site/library/nav';
 import { siteTokens } from '../../site/design/tokens';
-import { withBase } from '../../site/design/meta';
+import { SITE_NAME, withBase } from '../../site/design/meta';
 
 const tokenCount = siteTokens().tokens.length;
 const tiers = [
@@ -26,7 +26,7 @@ const tiers = [
 ];
 ---
 
-<LibraryLayout title="Overview" description="The design system behind Prabin Pebam's site: tokens, fundamentals, compounds and layouts, live." nav={libraryNav('/design/')} footer={footerLinks(getSite(), getRoutes())}>
+<LibraryLayout title="Overview" description={`The design system behind ${SITE_NAME}'s site: tokens, fundamentals, compounds and layouts, live.`} nav={libraryNav('/design/')} footer={footerLinks(getSite(), getRoutes())}>
   <article class="overview">
     <header class="intro">
       <Heading level={1} size="display">Design library</Heading>

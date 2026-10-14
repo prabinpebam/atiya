@@ -11,6 +11,7 @@
  * @key Home / End: minimum / maximum
  * @key Page Up / Page Down: larger steps
  */
+import { stableId } from '../../design/stableId';
 import { clampRangeValue, formatSliderValue, sliderFillPercent, type SliderFormat } from '../../scripts/controls';
 
 interface Props {
@@ -40,7 +41,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, name, id = `slider-${Math.random().toString(36).slice(2, 8)}`, min = 0, max = 100, step = 1, value = min, hint, unit = '', format = 'number', disabled = false, ...rest } = Astro.props;
+const { label, name, id = `slider-${stableId(Astro, 'Slider')}`, min = 0, max = 100, step = 1, value = min, hint, unit = '', format = 'number', disabled = false, ...rest } = Astro.props;
 const current = clampRangeValue(Number(value), Number(min), Number(max));
 const fill = sliderFillPercent(current, Number(min), Number(max));
 const output = formatSliderValue(current, format, unit);

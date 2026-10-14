@@ -6,13 +6,16 @@
 import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, VideoMedia } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
-import { articleKey, createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE } from '../server/articles';
+import { articleKey, createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE, planetKey } from '../server/articles';
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { measureVideo } from '../server/videoShape';
 import { changes, discard, git, publish, push } from '../server/git';
 import { changeAddress, createGrant, deleteGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, updateGrant, withdrawGrant, type GrantEdit, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
+import { WAYS_FILE, type Ways } from '../../modes/contract';
+import { isOn } from '../../modes/ways';
+import { LITTLE_PLANET, PLANET_NEEDS, startingPlanet } from '../model/ways';
 import { picture } from '../../content/pictures';
 
 export const prerender = false;
@@ -175,7 +178,27 @@ const handle: APIRoute = async ({ request, params, url }) => {
     // the planet structure: what each building holds (documentation/sections/spec.md §7.4); the loader checks V13 to V16
     if (method === 'PUT' && path === 'planet') {
       const b = await body<{ planet: PlanetStructure; ifMatch: Record<string, string | null> }>(request);
-      return result(await commit({ changes: [{ key: PLANET, bytes: jsonBytes(b.planet) }], ifMatch: { [PLANET]: b.ifMatch?.[PLANET] ?? null } }));
+      // wherever the structure is now (the old place during the move, M1.1); the version the screen read it at
+      const key = planetKey();
+      const version = b.ifMatch?.[key] ?? Object.values(b.ifMatch ?? {})[0] ?? null;
+      return result(await commit({ changes: [{ key, bytes: jsonBytes(b.planet) }], ifMatch: { [key]: version } }));
+    }
+    // which ways in are on (plan stage 8A): the little planet turned on for a site that's never had it gets
+    // its starting map in the same transaction, or is refused when there aren't enough sections for one
+    if (method === 'PUT' && path === 'ways') {
+      const b = await body<{ ways: Ways; ifMatch: Record<string, string | null> }>(request);
+      const key = `/content/${WAYS_FILE}`;
+      const changes = [{ key, bytes: jsonBytes(b.ways) }];
+      const ifMatch: Record<string, string | null> = { [key]: b.ifMatch?.[key] ?? null };
+      if (isOn(b.ways, LITTLE_PLANET) && !readDoc(planetKey())) {
+        const tree = readDoc<SiteStructure>(STRUCTURE)?.value;
+        const sections = (tree?.home.children ?? []).flatMap((n) => (n.kind === 'hub' ? [{ id: n.id, title: n.title, summary: n.summary }] : []));
+        const start = startingPlanet(sections);
+        if (!start) return json({ ok: false, issues: [{ file: PLANET.slice(1), message: PLANET_NEEDS }] }, 422);
+        changes.push({ key: PLANET, bytes: jsonBytes(start) });
+        ifMatch[PLANET] = null;
+      }
+      return result(await commit({ changes, ifMatch }));
     }
     if (method === 'PUT' && path === 'site') {
       const b = await body<{ site: SiteSettings; ifMatch: Record<string, string | null> }>(request);

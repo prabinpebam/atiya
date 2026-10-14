@@ -9,6 +9,7 @@
  * @key Tab: moves focus
  * @key Enter: submits a single-line field
  */
+import { stableId } from '../../design/stableId';
 import { svgOf, type IconName } from '../../design/icons';
 
 interface Props {
@@ -54,7 +55,7 @@ const {
   label,
   type = 'text',
   name,
-  id = `field-${Math.random().toString(36).slice(2, 8)}`,
+  id = `field-${stableId(Astro, 'TextField')}`,
   value = '',
   placeholder,
   hint,

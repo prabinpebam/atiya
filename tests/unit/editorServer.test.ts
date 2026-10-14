@@ -62,10 +62,10 @@ afterEach(() => {
 // ---------- a page's building follows its section (documentation/sections/spec.md §5.2, §7.6) ----------
 describe("a page's building", () => {
   const PLACES = ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office'];
-  const PLANET = join('structures', 'planet.json');
+  const PLANET = join('structures', 'modes', 'little-planet.json');
   const seedPlanet = () => {
     put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: PLACES.map((id, n) => ({ id: `s${n}`, kind: 'hub', slug: `s${n}`, title: id, children: n === 0 ? [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] : [] })) } });
-    put('/content/structures/planet.json', { places: PLACES.map((id, n) => ({ id, title: id, kicker: 'K', summary: 'S', site: `s${n}` })) });
+    put('/content/structures/modes/little-planet.json', { places: PLACES.map((id, n) => ({ id, title: id, kicker: 'K', summary: 'S', site: `s${n}` })) });
   };
   const save = (over: { section?: string | null }) => {
     const a = readDoc<Record<string, unknown>>('/content/articles/a.json')!;
@@ -562,7 +562,12 @@ describe('the dev integration', () => {
     for (const command of ['build', 'preview'] as const) {
       const c = setup(command);
       expect(c).toMatchObject({ routes: [], scripts: 0, middleware: 0 });
-      expect(c.define).toEqual({ __SITE_CONTENT_ROOT__: JSON.stringify(join(ROOT, 'content')), __SITE_PRIVATE_ROOT__: JSON.stringify(join(ROOT, 'private-pages')) });
+      const define = c.define as Record<string, string>;
+      expect(define).toMatchObject({ __SITE_CONTENT_ROOT__: JSON.stringify(join(ROOT, 'content')), __SITE_PRIVATE_ROOT__: JSON.stringify(join(ROOT, 'private-pages')) });
+      // the site's own name and features, from its content (documentation/desktop/plan.md, stage 4)
+      expect(Object.keys(define).sort()).toEqual(['__SITE_CONTENT_ROOT__', '__SITE_FEATURES__', '__SITE_NAME__', '__SITE_PARENT_DOMAIN__', '__SITE_PRIVATE_ROOT__']);
+      expect(JSON.parse(define.__SITE_NAME__)).toBe(JSON.parse(readFileSync(join(ROOT, 'content', 'site.json'), 'utf8')).name);
+      expect(JSON.parse(define.__SITE_FEATURES__)).toMatchObject({ planet: true, managed: false });
     }
   });
 

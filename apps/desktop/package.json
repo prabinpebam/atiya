@@ -1,0 +1,25 @@
+{
+  "name": "atiya-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Atiya Studio: edit mode in its own window, and a site of your own in three choices.",
+  "type": "module",
+  "main": "src/main/main.mjs",
+  "scripts": {
+    "postinstall": "node node_modules/electron/install.js",
+    "prestart": "node scripts/sync-ui.mjs",
+    "start": "electron .",
+    "test": "node scripts/sync-ui.mjs && cd ../.. && npx vitest run --config apps/desktop/vitest.config.mjs",
+    "e2e": "node scripts/sync-ui.mjs && cd ../.. && npx playwright test -c apps/desktop/playwright.config.mjs",
+    "fake-github": "node bin/fake-github.mjs",
+    "atiya": "node bin/atiya.mjs",
+    "icons": "node scripts/build-icons.mjs"
+  },
+  "devDependencies": {
+    "electron": "44.6.0"
+  },
+  "dependencies": {
+    "dugite": "3.2.3",
+    "libsodium-wrappers": "0.8.4"
+  }
+}

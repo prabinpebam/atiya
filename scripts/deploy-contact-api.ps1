@@ -9,7 +9,7 @@
   Service linked to it. Sets the app's settings (generating CONTACT_SECRET the first time, keeping it after)
   and its CORS origins, publishes contact-api/ with its production packages installed here (Azure can't
   reach the package feed the lockfile names), checks the challenge answers, and writes the endpoint to the
-  site's .env. It never prints a secret.
+  site's settings (content/site.json's services). It never prints a secret.
 
   Run again at any time: it changes only what differs.
 
@@ -157,7 +157,7 @@ Invoke-Az functionapp deployment source config-zip -n $app -g $ResourceGroup --s
 Remove-Item $stage -Recurse -Force; Remove-Item $zip -Force
 Write-Host 'Published contact-api'
 
-# the endpoint, checked, and written to the site's .env (an address, not a secret)
+# the endpoint, checked, and written to content/site.json's services (an address, not a secret)
 # Flex Consumption reports it under properties; other plans at the top
 $host_ = (AzJson functionapp show -n $app -g $ResourceGroup --query "properties.defaultHostName || defaultHostName")
 $endpoint = "https://$host_"
@@ -169,8 +169,10 @@ for ($i = 0; $i -lt 12 -and -not $ok; $i++) {
   } catch { Start-Sleep -Seconds 10 }
 }
 if (-not $ok) { throw "The service didn't answer at $endpoint/api/contact/challenge" }
-$envFile = Join-Path $root '.env'
-$line = "PUBLIC_CONTACT_ENDPOINT=$endpoint"
-$lines = if (Test-Path $envFile) { @(Get-Content $envFile | Where-Object { $_ -notmatch '^PUBLIC_CONTACT_ENDPOINT=' }) } else { @('# the contact form''s service (documentation/contact/spec.md §4.4): an address, not a secret') }
-Set-Content -Path $envFile -Value (@($lines) + $line) -Encoding utf8
-Write-Host "The service answers at $endpoint; .env updated"
+$siteFile = Join-Path $root 'content/site.json'
+# the site's services are content (documentation/desktop/spec.md §6.3): every build reads the endpoint from there
+$env:CONTACT_ENDPOINT_NEW = $endpoint
+node -e "const fs=require('fs');const f=process.argv[1];const raw=fs.readFileSync(f,'utf8');const eol=raw.includes('\r\n')?'\r\n':'\n';const s=JSON.parse(raw);s.services={...(s.services||{}),contact:{endpoint:process.env.CONTACT_ENDPOINT_NEW}};fs.writeFileSync(f,(JSON.stringify(s,null,2)+'\n').replace(/\n/g,eol));" $siteFile
+if ($LASTEXITCODE -ne 0) { throw "content/site.json couldn't be updated: set services.contact.endpoint to $endpoint by hand" }
+Remove-Item Env:CONTACT_ENDPOINT_NEW
+Write-Host "The service answers at $endpoint; content/site.json updated (commit it to publish)"

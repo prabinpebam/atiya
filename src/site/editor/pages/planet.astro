@@ -6,13 +6,14 @@ import PlaceForms, { type PlaceSettings } from '../components/PlaceForms.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import { listedPage, load, sectionOptions } from '../server/screens';
 import { readDoc } from '../server/store';
-import { PLANET } from '../server/articles';
+import { planetKey } from '../server/articles';
 import type { PlanetStructure } from '../../content/schema';
 
 export const prerender = false;
 
 const loaded = load();
-const doc = readDoc<PlanetStructure>(PLANET);
+const key = planetKey();
+const doc = readDoc<PlanetStructure>(key);
 const tab = Astro.url.searchParams.get('tab') === 'settings' ? 'settings' : 'pages';
 let sections: ManagedSection[] = [];
 let places: PlaceSettings[] = [];
@@ -56,7 +57,7 @@ if (loaded.ok && doc) {
         <PlaceForms slot="settings" places={places} selected={selected} sections={sectionOptions(loaded.index)} planet={doc.value} version={doc.version} />
       </SectionManager>
     ) : (
-      <ContentIssues issues={loaded.ok ? [{ file: 'content/structures/planet.json', message: 'missing' }] : loaded.issues} />
+      <ContentIssues issues={loaded.ok ? [{ file: key.slice(1), message: 'missing' }] : loaded.issues} />
     )
   }
 </EditorLayout>

@@ -16,6 +16,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const DIAGRAMS = [
+  { name: 'atiya', page: 'documentation/atiya.md', prefix: 'at-plan' },
+  { name: 'atiya', page: 'documentation/landing.html', prefix: 'at-landing' },
   { name: 'architecture', page: 'documentation/content/spec.md', prefix: 'cp-arch' },
   { name: 'model', page: 'documentation/content/model.md', prefix: 'cp-model' },
   { name: 'structures', page: 'documentation/content/ia.md', prefix: 'cp-structures' },
@@ -23,6 +25,9 @@ const DIAGRAMS = [
   { name: 'separation', page: 'documentation/engineering/app-separation.md', prefix: 'eng-sep' },
   { name: 'editor', page: 'documentation/editor/spec.md', prefix: 'ed-arch' },
   { name: 'access', page: 'documentation/access/spec.md', prefix: 'ac-arch' },
+  { name: 'desktop', page: 'documentation/desktop/spec.md', prefix: 'dk-arch' },
+  { name: 'desktop-engine', page: 'documentation/desktop/spec.md', prefix: 'dk-engine' },
+  { name: 'modes', page: 'documentation/desktop/modes.md', prefix: 'md-arch' },
 ];
 
 const V = (n) => `var(--color-${n})`;

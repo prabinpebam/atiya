@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 505">
+<title>One engine, pinned: the same release in the app and in the site's build</title>
+<desc>The engine's source is this repository. A release workflow tests it, builds it and packs it, without anyone's content, into a versioned engine release with a checksum. The app bundles that release with its installed dependencies; each person's site build downloads the same release, checks its checksum and builds their content with it, through a reusable workflow pinned to the release's commit. The site's atiya.json names the version and the checksum. The app opens a site only at its own engine version, and moving a site to a newer one is a commit the app makes: the pin, the workflow reference and any content migrations together.</desc>
+<g id="source">
+<rect class="src" x="40" y="40" width="270" height="150" rx="18" />
+<text class="name" x="60" y="72">Engine source</text>
+<text class="note" x="60" y="94">this repository</text>
+<text class="line" x="60" y="132">Site, planet, edit mode</text>
+<text class="line" x="60" y="162">Starter content, tests</text>
+</g>
+<g id="release-workflow">
+<rect class="box" x="365" y="40" width="270" height="150" rx="18" />
+<text class="name" x="385" y="72">Release workflow</text>
+<text class="note" x="385" y="94">on a version tag</text>
+<text class="line" x="385" y="132">Tests, verify:prod</text>
+<text class="line" x="385" y="162">Packs code, no content</text>
+</g>
+<g id="release">
+<rect class="docs" x="690" y="40" width="270" height="150" rx="18" />
+<text class="name" x="710" y="72">Engine release</text>
+<text class="note" x="710" y="94">immutable, with a checksum</text>
+<text class="line" x="710" y="132">engine-1.4.0.tgz</text>
+<text class="line" x="710" y="162">sha256 and commit</text>
+</g>
+<g id="pin">
+<rect class="gate" x="40" y="290" width="270" height="130" rx="18" />
+<text class="name" x="60" y="322">atiya.json</text>
+<text class="note" x="60" y="344">in the person's site repository</text>
+<text class="line" x="60" y="382">engine 1.4.0 and its sha256</text>
+</g>
+<g id="build">
+<rect class="box" x="365" y="290" width="270" height="130" rx="18" />
+<text class="name" x="385" y="322">The site's build</text>
+<text class="note" x="385" y="344">reusable workflow at the commit</text>
+<text class="line" x="385" y="382">Their content, this engine</text>
+</g>
+<g id="app">
+<rect class="box" x="690" y="290" width="270" height="130" rx="18" />
+<text class="name" x="710" y="322">The app</text>
+<text class="note" x="710" y="344">one engine version inside</text>
+<text class="line" x="710" y="382">With its node_modules</text>
+</g>
+<text class="label" x="318" y="104">tag</text>
+<text class="label" x="643" y="104">publishes</text>
+<text class="label" x="835" y="244">bundled</text>
+<text class="label" x="560" y="222">downloaded, checksum checked</text>
+<text class="label" x="318" y="346">pins</text>
+<text class="label" x="190" y="464">opens a site only at its own version; updating the pin is a commit it makes</text>
+<path class="arrow" d="M310 115 H362" />
+<path class="arrow" d="M635 115 H687" />
+<path class="arrow" d="M825 190 V287" />
+<path class="arrow" d="M760 190 V230 H500 V287" />
+<path class="arrow" d="M310 355 H362" />
+<path class="dashed" d="M825 420 V480 H175 V423" />
+</svg>

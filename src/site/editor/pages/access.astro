@@ -12,6 +12,10 @@ import { load } from '../server/screens';
 import { posthogPerson, shareMessage, sharingView } from '../server/access';
 import { hasPrivate, privateRoot } from '../../content/source';
 import { grantGroups, scopeGroups } from '../model/access';
+import { privateSetupHref } from '../model/desktop';
+import { SITE_FEATURES } from '../../design/meta';
+import Text from '../../components/fundamentals/Text.astro';
+import Link from '../../components/fundamentals/Link.astro';
 
 export const prerender = false;
 
@@ -35,6 +39,7 @@ const preset =
 const options = view ? scopeGroups(view, grant?.scope) : null;
 const share = grant && grant.state !== 'withdrawn' ? shareMessage(grant) : undefined;
 const person = posthogPerson();
+const privateSetup = privateSetupHref(SITE_FEATURES.managed, hasPrivate(privateRoot()));
 ---
 
 <EditorLayout
@@ -46,6 +51,10 @@ const person = posthogPerson();
   {
     !loaded.ok ? (
       <ContentIssues issues={loaded.issues} />
+    ) : (!view || !options) && privateSetup ? (
+      <Text variant="ui">
+        You don't have private pages yet, so there's nothing to share. <Link href={privateSetup}>Set up private pages</Link>: they're kept in a second repository on GitHub that only you can see.
+      </Text>
     ) : !view || !options ? (
       <ContentIssues issues={[{ file: 'private-pages/', message: "isn't set up, so there's nothing to share: run scripts/setup-private-pages.ps1, then start the site again" }]} />
     ) : (

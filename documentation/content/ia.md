@@ -87,7 +87,7 @@ They can diverge freely: changing one never changes an item or the other structu
 | Its own words | Hub titles, introductions and sections | Each place's label, kicker, summary and dialog |
 | Navigation | Menus, breadcrumbs, local navigation, previous/next | Fast travel (by `order`), proximity, the full-page link |
 | Owned by | The IA (editorial) | The planet (editorial words; engineering-owned `world`) |
-| File | `content/structures/site.json` | `content/structures/planet.json` |
+| File | `content/structures/site.json` | `content/structures/modes/little-planet.json` (before 14 October 2026, `content/structures/planet.json`, still read with a warning) |
 
 </details>
 

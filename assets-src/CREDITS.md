@@ -92,6 +92,6 @@ The docs at `/docs/` use [Slate](../slate/README.md), the owner's own documentat
 | DOMPurify (HTML sanitizing) | https://github.com/cure53/DOMPurify | Apache-2.0 or MPL-2.0 |
 | Material Symbols Outlined (the docs' navigation icons) | https://github.com/google/material-design-icons | Apache-2.0 |
 
-The docs map (`documentation/assets/docs-map.svg`) and the screen-region diagram (`documentation/game-ui/assets/regions.svg`) are original.
+The screen-region diagram (`documentation/game-ui/assets/regions.svg`) is original.
 
 **The family's talking heads (original, 2026-09-29):** `public/avatars/npc/*.webp` are rendered from the family's own in-game models (the CC0 Kenney character with this project's skins, hair and glasses) by `scripts/render-npc-portraits.mjs` (`world/home/portrait.ts`); no third-party assets. The fast travel tiles' signs are Font Awesome Free icons (CC BY 4.0, as above).

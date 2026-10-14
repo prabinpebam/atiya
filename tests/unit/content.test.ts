@@ -610,7 +610,7 @@ describe('the planet structure (documentation/sections/spec.md §5)', () => {
         })),
       },
     },
-    '/content/structures/planet.json': planet,
+    '/content/structures/modes/little-planet.json': planet,
   });
   const problems = (d: Record<string, unknown>) => {
     try {

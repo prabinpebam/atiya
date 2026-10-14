@@ -1,34 +1,124 @@
 <header class="slate-hero">
   <p class="slate-hero__eyebrow">Documentation</p>
   <h1 class="slate-hero__title">Atiya: how this site was built</h1>
-  <p class="slate-hero__summary">Every spec, plan, research report and Definition of Done behind Prabin Pebam's portfolio site and its little-planet game. This is the source of truth for people and for AI agents.</p>
+  <p class="slate-hero__summary">Every spec, plan, research report and Definition of Done behind Prabin Pebam's portfolio site, its little-planet game, and Atiya, the product it's becoming: a personal site anyone can have, made and published with a desktop app. This is the source of truth for people and for AI agents.</p>
 </header>
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>The site is an Astro static site with a classic set of pages and a 3D planet you walk around to reach the same content. Start with <a href="seed-spec.md">the seed spec</a> for the why, <a href="poc-3d-navigation/spec.md">the planet spec</a> for the game, <a href="game-ui/design-system.md">the game's design system</a> and <a href="site-ui/design-system.md">the site's</a> for the UI rules and <a href="engineering/overview.md">the engineering overview</a> for how it's built and shipped.</p>
+  <p>Start with <a href="atiya.md">the whole plan</a>: a site on GitHub Pages with public and private pages, the Atiya Studio app that makes and publishes it, Classic as the default navigation, and ways to explore that plug in. The site is an Astro static site with a classic set of pages and a 3D planet you walk around to reach the same content. Then read <a href="seed-spec.md">the seed spec</a> for the why, <a href="poc-3d-navigation/spec.md">the planet spec</a> for the game, <a href="game-ui/design-system.md">the game's design system</a> and <a href="site-ui/design-system.md">the site's</a> for the UI rules and <a href="engineering/overview.md">the engineering overview</a> for how it's built and shipped.</p>
 </aside>
 
-<figure class="slate-figure">
-  <img src="assets/docs-map.svg" alt="The site's seed spec and information architecture lead to the planet spec, which leads to the feature specs. The game UI design system applies across the planet and its features, and engineering sits under everything." />
-  <figcaption>How the documents relate: each layer builds on the one before it.</figcaption>
+<figure class="slate-figure" data-diagram="atiya">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" role="img" aria-labelledby="at-landing__title at-landing__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
+<title id="at-landing__title">Atiya: the whole plan</title>
+<desc id="at-landing__desc">Atiya Studio, the desktop app, sets up a person's site and edits and publishes it. It saves to two repositories in the person's own GitHub account: a public one with the site's content and a private one with their private pages. GitHub Actions builds the site and GitHub Pages serves it, with private pages sealed. Visitors explore it with Classic, the default navigation that is always on, or with a way to explore that's turned on: Little planet, built in for any site; Cozy life, the owner's personal mode; or any mode that sticks to the schema. Every mode has section triggers, and each opens a section and its pages in the engine's section overlay, the same in every mode. Private pages open only for readers with an access code or a magic link.</desc>
+<g id="at-landing__studio" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
+<rect id="at-landing__body-1" x="40" y="40" width="270" height="150" rx="18" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
+<text x="60" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="at-landing__body-1" data-slate-fit-padding="16">Atiya Studio</text>
+<text x="60" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="at-landing__body-1" data-slate-fit-padding="16">the desktop app</text>
+<text x="60" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-1" data-slate-fit-padding="16">Set up, edit, publish</text>
+<text x="60" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-1" data-slate-fit-padding="16">Sync, Check my site</text>
+</g>
+<g id="at-landing__github" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
+<rect id="at-landing__body-2" x="365" y="40" width="270" height="150" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="385" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="at-landing__body-2" data-slate-fit-padding="16">Their GitHub account</text>
+<text x="385" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="at-landing__body-2" data-slate-fit-padding="16">two repositories, theirs</text>
+<text x="385" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-2" data-slate-fit-padding="16">Public: the site's content</text>
+<text x="385" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-2" data-slate-fit-padding="16">Private: private pages</text>
+</g>
+<g id="at-landing__pages" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
+<rect id="at-landing__body-3" x="690" y="40" width="270" height="150" rx="18" fill="var(--color-brand-bg)" />
+<text x="710" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="17" font-weight="600" data-slate-fit-target="at-landing__body-3" data-slate-fit-padding="16">GitHub Pages</text>
+<text x="710" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="13" data-slate-fit-target="at-landing__body-3" data-slate-fit-padding="16">built by Actions, free</text>
+<text x="710" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="13" data-slate-fit-target="at-landing__body-3" data-slate-fit-padding="16">Public pages, open to all</text>
+<text x="710" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="13" data-slate-fit-target="at-landing__body-3" data-slate-fit-padding="16">Private pages, sealed</text>
+</g>
+<g id="at-landing__classic" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
+<rect id="at-landing__body-4" x="40" y="290" width="215" height="120" rx="16" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
+<text x="60" y="322" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="at-landing__body-4" data-slate-fit-padding="16">Classic</text>
+<text x="60" y="344" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="at-landing__body-4" data-slate-fit-padding="16">the default, always on</text>
+<text x="60" y="382" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-4" data-slate-fit-padding="16">Header, sections, pages</text>
+</g>
+<g id="at-landing__little-planet" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
+<rect id="at-landing__body-5" x="275" y="290" width="215" height="120" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="295" y="322" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="at-landing__body-5" data-slate-fit-padding="16">Little planet</text>
+<text x="295" y="344" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="at-landing__body-5" data-slate-fit-padding="16">built in, for any site</text>
+<text x="295" y="382" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-5" data-slate-fit-padding="16">Buildings are triggers</text>
+</g>
+<g id="at-landing__cozy-life" data-slate-svg-step="6" data-slate-svg-effect="fade-rise">
+<rect id="at-landing__body-6" x="510" y="290" width="215" height="120" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="530" y="322" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="at-landing__body-6" data-slate-fit-padding="16">Cozy life</text>
+<text x="530" y="344" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="at-landing__body-6" data-slate-fit-padding="16">the owner's personal mode</text>
+<text x="530" y="382" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-6" data-slate-fit-padding="16">Little planet, his residents</text>
+</g>
+<g id="at-landing__any-mode" data-slate-svg-step="7" data-slate-svg-effect="fade-rise">
+<rect id="at-landing__body-7" x="745" y="290" width="215" height="120" rx="16" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" stroke-dasharray="6 5" />
+<text x="765" y="322" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="at-landing__body-7" data-slate-fit-padding="16">Any mode</text>
+<text x="765" y="344" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="at-landing__body-7" data-slate-fit-padding="16">that sticks to the schema</text>
+<text x="765" y="382" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-7" data-slate-fit-padding="16">Its own section triggers</text>
+</g>
+<g id="at-landing__overlay" data-slate-svg-step="8" data-slate-svg-effect="fade-rise">
+<rect id="at-landing__body-8" x="275" y="455" width="685" height="95" rx="16" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
+<text x="295" y="487" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="at-landing__body-8" data-slate-fit-padding="16">The section overlay</text>
+<text x="295" y="509" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="at-landing__body-8" data-slate-fit-padding="16">the engine's, the same in every mode</text>
+<text x="295" y="535" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="at-landing__body-8" data-slate-fit-padding="16">A trigger opens a section and its pages; Classic is one click away</text>
+</g>
+<text x="318" y="104" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">saves</text>
+<text x="646" y="104" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">builds</text>
+<text x="300" y="228" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">visitors explore with Classic, or a way to explore that's on</text>
+<text x="40" y="580" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">Private pages open only for readers with an access code or a magic link.</text>
+<g id="at-landing__flow-1" data-slate-svg-step="9" data-slate-svg-effect="draw">
+<path d="M310 115 L355 115" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="364,115 355,120 355,110" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="at-landing__flow-2" data-slate-svg-step="10" data-slate-svg-effect="draw">
+<path d="M635 115 L680 115" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="689,115 680,120 680,110" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="at-landing__flow-3" data-slate-svg-step="11" data-slate-svg-effect="draw">
+<path d="M825 190 L825 240 L147 240 L147 280" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="147,289 152,280 142,280" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="at-landing__flow-4" data-slate-svg-step="12" data-slate-svg-effect="draw">
+<path d="M382 240 L382 280" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="382,289 387,280 377,280" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="at-landing__flow-5" data-slate-svg-step="13" data-slate-svg-effect="draw">
+<path d="M617 240 L617 280" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="617,289 622,280 612,280" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="at-landing__flow-6" data-slate-svg-step="14" data-slate-svg-effect="draw">
+<path d="M852 240 L852 280" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" stroke-dasharray="6 5" />
+<polygon points="852,289 857,280 847,280" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="at-landing__flow-7" data-slate-svg-step="15" data-slate-svg-effect="draw">
+<path d="M382 410 L382 445" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="382,454 387,445 377,445" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="at-landing__flow-8" data-slate-svg-step="16" data-slate-svg-effect="draw">
+<path d="M617 410 L617 445" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="617,454 622,445 612,445" fill="var(--color-neutral-fg-2)" />
+</g>
+<g id="at-landing__flow-9" data-slate-svg-step="17" data-slate-svg-effect="draw">
+<path d="M852 410 L852 445" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" stroke-dasharray="6 5" />
+<polygon points="852,454 857,445 847,445" fill="var(--color-neutral-fg-2)" />
+</g>
+</svg>
+<figcaption>The whole plan: the app saves to the person's GitHub, which builds and serves the site; visitors explore it with Classic or a way to explore, and every way to explore opens sections in the same overlay.</figcaption>
 </figure>
-<details class="slate-figure-data">
-  <summary>What each layer holds</summary>
-  <table>
-    <thead><tr><th>Layer</th><th>Documents</th></tr></thead>
-    <tbody>
-      <tr><td>The site</td><td>Seed spec; information architecture (goals, sitemap, taxonomy, navigation, templates, content inventory, editorial rules, validation)</td></tr>
-      <tr><td>The planet</td><td>Spec, plan, Definition of Done; stack and interaction research; art direction; performance audit</td></tr>
-      <tr><td>Features</td><td>Collecting and the backpack; crafting and Chopper's house; Chopper; home and family; Prabin, navigation and the plaza</td></tr>
-      <tr><td>Game UI</td><td>Design system, spec, touch controls, tokens, Definition of Done</td></tr>
-      <tr><td>Site UI</td><td>The website's own design system, visual language, spec, tokens, Definition of Done (separate from the game's)</td></tr>
-      <tr><td>Engineering</td><td>Stack, repository map, commands, validation tiers, deploy, this docs site</td></tr>
-    </tbody>
-  </table>
-</details>
 
-<h2>The site</h2>
+<h2>The whole plan</h2>
+<div class="slate-card-grid" data-cols="2">
+  <article class="slate-card slate-card--interactive">
+    <a href="atiya.md">
+      <h3 class="slate-card__title">Atiya: the whole plan</h3>
+      <p class="slate-card__body">The site anyone can have, its public, private and shared pages, the Atiya Studio app, Classic, and ways to explore that open sections through their section triggers.</p>
+    </a>
+  </article>
+</div>
+
+<h2>The site: Classic</h2>
 <div class="slate-card-grid" data-cols="2">
   <article class="slate-card slate-card--interactive">
     <a href="seed-spec.md">
@@ -45,7 +135,6 @@
 </div>
 
 <h2>The site's design system</h2>
-<p>The landing, the classic site and the design library are set like a clean printed magazine, with their own design system in four tiers (tokens, fundamentals, compounds, layouts). It's separate from the game's. The live catalogue is on the site at <code>/design/</code>.</p>
 <div class="slate-card-grid" data-cols="3">
   <article class="slate-card slate-card--interactive">
     <a href="site-ui/design-system.md">
@@ -67,7 +156,7 @@
   </article>
 </div>
 
-<h2>Content</h2>
+<h2>Content and publishing</h2>
 <div class="slate-card-grid" data-cols="3">
   <article class="slate-card slate-card--interactive">
     <a href="content/spec.md">
@@ -100,12 +189,6 @@
     </a>
   </article>
   <article class="slate-card slate-card--interactive">
-    <a href="access/spec.md">
-      <h3 class="slate-card__title">Protected content and telemetry</h3>
-      <p class="slate-card__body">Private pages listed only for the readers they're shared with, by an access code or a magic link per recipient, sealed at build time and opened in the browser, and visits measured with PostHog.</p>
-    </a>
-  </article>
-  <article class="slate-card slate-card--interactive">
     <a href="contact/spec.md">
       <h3 class="slate-card__title">The contact form</h3>
       <p class="slate-card__body">A message to Prabin's inbox from the Contact page, sent by a small Azure Function, with bots kept out by proof of work, a honeypot and rate limits instead of a CAPTCHA.</p>
@@ -113,7 +196,49 @@
   </article>
 </div>
 
-<h2>The planet</h2>
+<h2>Private pages and sharing</h2>
+<div class="slate-card-grid" data-cols="2">
+  <article class="slate-card slate-card--interactive">
+    <a href="access/spec.md">
+      <h3 class="slate-card__title">Protected content and telemetry</h3>
+      <p class="slate-card__body">Private pages listed only for the readers they're shared with, by an access code or a magic link per recipient, sealed at build time and opened in the browser, and visits measured with PostHog.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="access/plan.md">
+      <h3 class="slate-card__title">Protected content: plan and DoD</h3>
+      <p class="slate-card__body">The stages that built private pages, access codes, magic links and telemetry, with their evidence.</p>
+    </a>
+  </article>
+</div>
+
+<h2>Atiya Studio, the desktop app</h2>
+<div class="slate-card-grid" data-cols="2">
+  <article class="slate-card slate-card--interactive">
+    <a href="desktop/spec.md">
+      <h3 class="slate-card__title">Desktop app spec</h3>
+      <p class="slate-card__body">Your own site, live today, in three choices: the promise, the jobs, the first run, setup by an AI agent, and the app behind them.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="desktop/plan.md">
+      <h3 class="slate-card__title">Desktop app plan</h3>
+      <p class="slate-card__body">Ten stages, each ending in something to try by hand, with the project's and each stage's Definition of Done.</p>
+    </a>
+  </article>
+</div>
+
+<h2>Ways to explore</h2>
+<div class="slate-card-grid" data-cols="2">
+  <article class="slate-card slate-card--interactive">
+    <a href="desktop/modes.md">
+      <h3 class="slate-card__title">Navigation modes</h3>
+      <p class="slate-card__body">Classic is always there; the planet and any other way to explore plug in through one contract, open sections through their section triggers in one overlay, and are turned on or off per site.</p>
+    </a>
+  </article>
+</div>
+
+<h2>Little planet</h2>
 <div class="slate-card-grid" data-cols="3">
   <article class="slate-card slate-card--interactive">
     <a href="poc-3d-navigation/spec.md">
@@ -153,8 +278,8 @@
   </article>
 </div>
 
-<h2>Features</h2>
-<div class="slate-card-grid" data-cols="3">
+<h2>Little planet: features</h2>
+<div class="slate-card-grid" data-cols="2">
   <article class="slate-card slate-card--interactive">
     <a href="poc-3d-navigation/collection-inventory.md">
       <h3 class="slate-card__title">Collecting and backpack</h3>
@@ -168,24 +293,6 @@
     </a>
   </article>
   <article class="slate-card slate-card--interactive">
-    <a href="poc-3d-navigation/chopper.md">
-      <h3 class="slate-card__title">Chopper</h3>
-      <p class="slate-card__body">The companion dog: his mind, his body, his fur and his card.</p>
-    </a>
-  </article>
-  <article class="slate-card slate-card--interactive">
-    <a href="poc-3d-navigation/family.md">
-      <h3 class="slate-card__title">Home and family</h3>
-      <p class="slate-card__body">The house by the pond, the yard, and the family's routines.</p>
-    </a>
-  </article>
-  <article class="slate-card slate-card--interactive">
-    <a href="poc-3d-navigation/prabin-npc.md">
-      <h3 class="slate-card__title">Prabin, navigation and the plaza</h3>
-      <p class="slate-card__body">Prabin as an NPC, route planning, seats, doors and the plaza layout.</p>
-    </a>
-  </article>
-  <article class="slate-card slate-card--interactive">
     <a href="poc-3d-navigation/collision.md">
       <h3 class="slate-card__title">Collision and making way</h3>
       <p class="slate-card__body">Hard and soft things, plants that part, and how the family and Chopper get out of your way.</p>
@@ -193,8 +300,8 @@
   </article>
 </div>
 
-<h2>Game UI</h2>
-<div class="slate-card-grid" data-cols="2">
+<h2>Little planet: game UI</h2>
+<div class="slate-card-grid" data-cols="3">
   <article class="slate-card slate-card--interactive">
     <a href="game-ui/design-system.md">
       <h3 class="slate-card__title">Design system</h3>
@@ -211,6 +318,28 @@
     <a href="game-ui/touch.md">
       <h3 class="slate-card__title">Touch controls</h3>
       <p class="slate-card__body">Playing on a phone: the floating stick, the gestures and the HUD under a thumb.</p>
+    </a>
+  </article>
+</div>
+
+<h2>Cozy life, the owner's personal mode</h2>
+<div class="slate-card-grid" data-cols="3">
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/chopper.md">
+      <h3 class="slate-card__title">Chopper</h3>
+      <p class="slate-card__body">The companion dog: his mind, his body, his fur and his card.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/family.md">
+      <h3 class="slate-card__title">Home and family</h3>
+      <p class="slate-card__body">The house by the pond, the yard, and the family's routines.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="poc-3d-navigation/prabin-npc.md">
+      <h3 class="slate-card__title">Prabin, navigation and the plaza</h3>
+      <p class="slate-card__body">Prabin as an NPC, route planning, seats, doors and the plaza layout.</p>
     </a>
   </article>
 </div>
@@ -267,7 +396,7 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Follow the design system</p>
-    <p>Any UI change uses the tokens, the components and the priority lanes in <a href="game-ui/design-system.md">the design system</a>.</p>
+    <p>Any UI change uses the tokens and components of its design system: <a href="site-ui/design-system.md">the site's</a> for the site, edit mode and the app, and <a href="game-ui/design-system.md">the game's</a> (with its priority lanes) for Little planet.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Keep it true</p>

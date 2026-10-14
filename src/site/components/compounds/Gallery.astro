@@ -12,6 +12,7 @@
  * @a11y A spanning picture keeps its place in the source order, so focus and the lightbox follow the sequence.
  * @key Enter: opens the focused picture link
  */
+import { stableId } from '../../design/stableId';
 import Image from '../fundamentals/Image.astro';
 import Video from '../fundamentals/Video.astro';
 import Caption from '../fundamentals/Caption.astro';
@@ -87,7 +88,7 @@ interface Props {
   shadow?: boolean;
 }
 
-const { items, caption, layout = 'grid', span = true, width = 'wide', lightbox = `gallery-${Math.random().toString(36).slice(2, 8)}`, sizes, fit = 'cover', display, background = false, rounded = true, shadow = false } = Astro.props;
+const { items, caption, layout = 'grid', span = true, width = 'wide', lightbox = `gallery-${stableId(Astro, 'Gallery')}`, sizes, fit = 'cover', display, background = false, rounded = true, shadow = false } = Astro.props;
 const shown = display ?? (fit === 'contain' ? 'fit' : 'fill');
 const columns = items.length > 2 ? '3' : '2';
 const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined;

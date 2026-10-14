@@ -9,12 +9,16 @@ import { loadContent, type ContentIndex, type MediaRecord, type VideoRecord } fr
 import { withBase } from '../design/meta';
 import { placeRoutes } from './navigation';
 import { timed } from './timing';
+import { BUILTIN_MODES } from '../modes/builtin';
+import type { ModeData } from '../modes/contract';
+import { buildModeData } from '../modes/data';
+import { effectiveWays, isOn, LITTLE_PLANET } from '../modes/ways';
 import type { Route } from './routes';
 import type { Article, PlaceId } from './schema';
 
 let cached: { generation: number; index: ContentIndex } | undefined;
 
-/** Everything in the content folder, validated; throws a ContentError that lists every problem. */
+/** Everything in the content folder, validated (the ways in too: V33 to V37); throws a ContentError that lists every problem. */
 export function content(): ContentIndex {
   const now = generation();
   if (!cached || cached.generation !== now) {
@@ -33,12 +37,29 @@ export const getSite = () => content().site;
 export const getStructure = () => content().structure;
 /** Old addresses and where they now lead. */
 export const getRedirects = () => content().redirects;
-/** The planet's buildings: their words and the section each shows (null without content/structures/planet.json). */
-export const getPlanet = () => content().planet;
+/** The site's ways in: its ways file, or what a site without one has (plan stage 8A). */
+export const getWays = () => effectiveWays({ ways: content().ways, hasPlanet: !!content().planet });
+/**
+ * The planet's buildings, while the little planet is on: their words and the section each shows. Null when
+ * it's off (its structure is kept: V37) or there's no planet structure, so every page leaves the planet out.
+ */
+export const getPlanet = () => (isOn(getWays(), LITTLE_PLANET) ? content().planet : null);
+
+/**
+ * What a built-in mode is given (documentation/desktop/modes.md §5.2): its slots and the site's published
+ * open pages, nothing private or draft. Null when the mode is off or has no structure.
+ */
+export function getModeData(id: string): ModeData | null {
+  const mode = BUILTIN_MODES.get(id);
+  // Little planet's structure is still the planet structure (until M1 moves it to structures/modes/)
+  const raw = id === LITTLE_PLANET ? getPlanet() : null;
+  if (!mode || !raw) return null;
+  return buildModeData(content(), { id, mount: mode.manifest.mount, structure: mode.readStructure(raw), base: import.meta.env.BASE_URL ?? '/' });
+}
 
 /** The section of the site a building shows (documentation/sections/spec.md §5.2). */
 export const placeSection = (placeId: string): Route | undefined => {
-  const site = content().planet?.places.find((p) => p.id === placeId)?.site;
+  const site = getPlanet()?.places.find((p) => p.id === placeId)?.site;
   return site ? getRoutes().find((r) => r.node.kind === 'hub' && r.node.id === site) : undefined;
 };
 
@@ -46,7 +67,7 @@ export const placeSection = (placeId: string): Route | undefined => {
 export const placeOf = (pageId: string): PlaceId | undefined => {
   const route = getRoutes().find((r) => r.node.kind === 'item' && r.node.item.id === pageId);
   if (!route || route.access !== 'open' || !route.parent) return undefined;
-  return content().planet?.places.find((p) => p.site === route.parent!.id)?.id;
+  return getPlanet()?.places.find((p) => p.site === route.parent!.id)?.id;
 };
 
 /**
@@ -54,7 +75,7 @@ export const placeOf = (pageId: string): PlaceId | undefined => {
  * the site. A private page is never on the planet (V28): it has no way to sign in there.
  */
 export function placePages(placeId: string): { article: Article; route: Route }[] {
-  const site = content().planet?.places.find((p) => p.id === placeId)?.site;
+  const site = getPlanet()?.places.find((p) => p.id === placeId)?.site;
   return (site ? placeRoutes(getRoutes(), site) : []).flatMap((route) => {
     const article = route.node.kind === 'item' ? getArticle(route.node.item.id) : undefined;
     return article ? [{ article, route }] : [];

@@ -260,7 +260,7 @@ The planet has seven buildings, and each is one of the game's sections. Their sh
 
 ### 5.2 The planet structure
 
-`content/structures/planet.json` has one entry for each of the seven places, in the world's order:
+`content/structures/modes/little-planet.json` (`content/structures/planet.json` until the [modes' M1.1](../desktop/plan.md#stage-8-m1-the-mode-host-and-the-contract)) has one entry for each of the seven places, in the world's order:
 
 ```json
 { "places": [

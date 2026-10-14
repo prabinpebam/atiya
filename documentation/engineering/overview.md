@@ -41,7 +41,10 @@ The site and the planet share this layout today. [Separating the site and the pl
 | `documentation/` | This docs site: every spec, plan and Definition of Done |
 | `integrations/docs-site.mjs` | Publishes `documentation/` at `<base>/docs/` |
 | `integrations/dev-isolation.mjs` | Each command's own Vite and Astro caches, so a build or check never rewrites a running dev server's bundles ([why](app-separation.md#1-why-site-work-breaks-the-planet)) |
-| `integrations/editor.mjs` | [Edit mode](../editor/spec.md): its routes, guard and Edit button in `npm run dev` only; the content folder's path for every command |
+| `integrations/editor.mjs` | [Edit mode](../editor/spec.md): its routes, guard and Edit button in `npm run dev` only; the content folder's path for every command; the site's name, host and features, from its content |
+| `integrations/site-only.mjs`, `integrations/features.mjs` | What a site has (the planet, the design library, the docs) and leaving out the rest from a build ([desktop plan, stage 4](../desktop/plan.md)) |
+| `apps/desktop/` | [Atiya Studio](../desktop/spec.md), the desktop app: edit mode in its own window, the first run that makes anyone a site, and the `atiya` CLI for agents |
+| `starter/content/` | A new site's first content, which setup copies and personalises |
 
 ## Commands
 
@@ -55,6 +58,8 @@ The site and the planet share this layout today. [Separating the site and the pl
 | `npm run perf:audit` | Real-GPU load and frame measurements (see [the performance audit](../poc-3d-navigation/performance-audit.md)) |
 | `node scripts/build-tokens.mjs` | Regenerates the game's `tokens.css` and [the token reference](../game-ui/tokens.md) |
 | `node scripts/build-site-tokens.mjs` | Regenerates the site's `src/site/styles/tokens.css` and [its token reference](../site-ui/tokens.md) from the DTCG resolver |
+| `cd apps/desktop; npm install; npm start` | The desktop app ([its plan](../desktop/plan.md)); `npm start -- --fake-github` tries the first run without touching GitHub |
+| `npm run build:site-only`, `npm run build:starter` | Build the starter as someone else's site (just the site, or with the planet) and check the output |
 | `python scripts/build-textures.py`, `build-audio.py`, `gen-icons.py` | Regenerate textures, sounds and item icons; never hand-edit their outputs |
 
 ## Validation: run what the change needs

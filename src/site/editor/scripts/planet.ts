@@ -9,7 +9,8 @@ import { api, describeIssue, saveStatus } from './client';
 import { updatePlace } from '../model/planet';
 import type { PlaceId, PlanetStructure } from '../../content/schema';
 
-const PLANET = '/content/structures/planet.json';
+/** Little planet's structure; the server writes it wherever it is now (the old place during the move, M1.1). */
+const PLANET = '/content/structures/modes/little-planet.json';
 const FOCUS = 'editor.planet.focus';
 
 export function initPlanet(root: HTMLElement, signal: AbortSignal) {

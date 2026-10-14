@@ -27,7 +27,7 @@ export function resourceName(key: string, titles: Titles): { kind: string; name:
   if (key === '/private/access-message.json') return { kind: 'Sharing', name: 'The share message' };
   if (key === '/private/structures/overlay.json') return { kind: 'Private places', name: 'Where private pages are listed' };
   if (key === '/content/structures/site.json') return { kind: 'Sections', name: 'The site structure' };
-  if (key === '/content/structures/planet.json') return { kind: 'Planet', name: 'The planet' };
+  if (key === '/content/structures/modes/little-planet.json' || key === '/content/structures/planet.json') return { kind: 'Planet', name: 'The planet' };
   if (key === '/content/redirects.json') return { kind: 'Redirects', name: 'The redirects' };
   if (key === '/content/site.json') return { kind: 'Settings', name: 'The site settings' };
   return { kind: 'File', name: key.replace(/^\/content\//, '') };

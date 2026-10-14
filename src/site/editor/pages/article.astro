@@ -23,7 +23,7 @@ import { load, mediaCards, mediaCount, mediaSummary, sectionOptions, STATUS_LABE
 import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
 import { mediaUsed, videosUsed } from '../../content/load';
 import { readDoc } from '../server/store';
-import { OVERLAY, PLANET, STRUCTURE, articleKey } from '../server/articles';
+import { OVERLAY, STRUCTURE, articleKey, planetKey } from '../server/articles';
 import { sharingView } from '../server/access';
 import { privateNode } from '../model/access';
 import { hasPrivate, privateRoot } from '../../content/source';
@@ -32,7 +32,8 @@ import { getPlacement } from '../../content/repository';
 import { sectionOf } from '../model/structure';
 import { placeOfPage } from '../model/planet';
 import { excerptOf, kindOf } from '../model/ops';
-import { withBase } from '../../design/meta';
+import { SITE_FEATURES, withBase } from '../../design/meta';
+import { privateSetupHref } from '../model/desktop';
 import type { Article, Block, Overlay, PlanetStructure, SiteStructure } from '../../content/schema';
 import type { IconName } from '../../design/icons';
 
@@ -49,10 +50,11 @@ const published = isPublished(article);
 const privateIn = privateNode(readDoc<Overlay>(OVERLAY)?.value, id)?.section;
 const access: 'open' | 'private' = privateIn ? 'private' : 'open';
 const protectable = hasPrivate(privateRoot());
+const privateSetup = privateSetupHref(SITE_FEATURES.managed, protectable);
 const section = privateIn ?? (structure ? (sectionOf(structure.value, { type: 'article', id }) ?? '') : '');
 // who it's shared with, for its Share dialog
 const sharing = access === 'private' && loaded.ok ? sharingView(id) : null;
-const planet = readDoc<PlanetStructure>(PLANET);
+const planet = readDoc<PlanetStructure>(planetKey());
 // its building on the planet: the one showing its section (documentation/sections/spec.md §5.2)
 const placeId = planet && structure && access === 'open' ? placeOfPage(planet.value, structure.value, id) : undefined;
 const place = planet?.value.places.find((p) => p.id === placeId)?.title ?? '';
@@ -132,7 +134,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
       <Studio>
         {draw('outline') && <Outline slot="outline" blocks={blocks} icons={ICON} />}
         <CanvasFrame slot="canvas" src={state.canvas} />
-        {draw('inspector') && <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} place={place} published={published} path={route?.path ?? null} />}
+        {draw('inspector') && <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} privateSetup={privateSetup} place={place} published={published} path={route?.path ?? null} />}
         <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
         <Dialog id="editor-palette" title="Add a block" size="lg">
           <BlockPalette />

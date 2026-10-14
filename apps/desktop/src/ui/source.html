@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Open your site's source · Atiya Studio</title>
+<link rel="stylesheet" href="app.css">
+<script type="module" src="source.js"></script>
+</head>
+<body>
+<main class="page" id="main">
+  <h1>Open your site's source</h1>
+  <p>Atiya Studio runs your site's dev server and shows edit mode here, for as long as the app is open. Closing VS Code or a terminal won't stop it.</p>
+  <section id="suggested" hidden aria-labelledby="suggested-title">
+    <h2 id="suggested-title">The checkout this app came from</h2>
+    <p class="path" id="suggested-path"></p>
+    <p class="muted small" id="suggested-reason" hidden></p>
+  </section>
+  <div class="actions">
+    <button type="button" class="primary" id="open-suggested" hidden>Open this checkout</button>
+    <button type="button" id="choose">Choose a folder</button>
+  </div>
+  <p class="alert" id="error" role="alert"></p>
+</main>
+</body>
+</html>

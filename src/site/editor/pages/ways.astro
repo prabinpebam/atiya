@@ -1,0 +1,38 @@
+---
+/**
+ * Edit mode's Ways to explore (plan stage 8A): which of the engine's ways of exploring the site are on, and
+ * what the home page offers first. Dev only: injected by integrations/editor.mjs.
+ */
+import EditorLayout from '../EditorLayout.astro';
+import WaysForm, { type WayChoice } from '../components/WaysForm.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load } from '../server/screens';
+import { readDoc } from '../server/store';
+import { planetKey } from '../server/articles';
+import { BUILTIN_MODES } from '../../modes/builtin';
+import { WAYS_FILE, type Ways } from '../../modes/contract';
+import { effectiveWays } from '../../modes/ways';
+
+export const prerender = false;
+
+const loaded = load();
+const doc = readDoc<Ways>(`/content/${WAYS_FILE}`);
+const hasPlanet = !!readDoc(planetKey());
+const ways = effectiveWays({ ways: doc?.value ?? null, hasPlanet });
+const choices: WayChoice[] = [...BUILTIN_MODES.values()].map(({ manifest, structureFile, legacyStructureFile }) => ({
+  id: manifest.id,
+  name: manifest.name,
+  summary: manifest.summary,
+  mount: manifest.mount,
+  kept: !!readDoc(`/content/${structureFile}`) || (!!legacyStructureFile && !!readDoc(`/content/${legacyStructureFile}`)),
+}));
+---
+
+<EditorLayout
+  title="Ways to explore"
+  screen="ways"
+  heading="Ways to explore"
+  intro="The site is always there, with its sections and pages. A way to explore is another way in to the same pages, like walking round the little planet. Turn them on or off, and choose what the home page offers first. Saved to content/; save to remote to put it on the site."
+>
+  {loaded.ok ? <WaysForm ways={ways} version={doc?.version ?? null} choices={choices} /> : <ContentIssues issues={loaded.issues} />}
+</EditorLayout>

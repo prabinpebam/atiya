@@ -3,18 +3,20 @@
  * no React or three imports — the game bundle is only fetched if this passes.
  */
 import { CONFIG } from '../config';
-import type { LandmarkData } from '../types';
+import type { ModeData } from '../../../packages/mode-kit/types';
 import { decide, probeCapabilities, type GateDecision } from './capabilities';
 import { prefs } from './prefs';
 import { parsePlayUrl } from './url';
 import { withBase } from './base';
 import { hideLoadScene, startLoadScene, warmCriticalAssets } from './greeting';
+import { createHost } from './host';
+import { mount } from '../entry';
 
 const container = document.getElementById('game-container') as HTMLElement;
 
-function landmarks(): LandmarkData[] {
-  const el = document.getElementById('landmarks-data');
-  return el?.textContent ? (JSON.parse(el.textContent) as LandmarkData[]) : [];
+/** The mode data the page carries (modes.md §5.2): what the host gives the planet at mount. */
+function modeData(): ModeData {
+  return JSON.parse(document.getElementById('mode-data')?.textContent ?? 'null') as ModeData;
 }
 
 /** A gate card over the page (the loading scene and the welcome are hidden behind it). */
@@ -120,12 +122,14 @@ async function load(quality: 'high' | 'low' = 'high'): Promise<void> {
   }, CONFIG.loadTimeoutMs);
   try {
     await installDevRefreshPreamble();
-    const { mountGame } = await import('../game-mount');
+    // the game's chunk, timed here; the planet's entry finds it in the module cache when it mounts
+    await import('../game-mount');
     if (timedOut) return;
     performance.mark('game:chunk');
     window.clearTimeout(timer);
     container.dataset.gate = 'loaded';
-    await mountGame(container, landmarks(), { quality });
+    // the mode host (modes.md §5.3): the planet mounts through the contract, with the page's mode data
+    await mount(container, createHost(modeData(), quality, new AbortController().signal));
   } catch (err) {
     window.clearTimeout(timer);
     console.error(err);

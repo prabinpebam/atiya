@@ -8,8 +8,8 @@
  * The crypto is the browser's own module (src/site/access/), loaded here through Node's type stripping.
  */
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, sep } from 'node:path';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { privateRootFor } from './roots.mjs';
 import { readProvenance, resetProvenance } from '../src/site/content/provenance.ts';
@@ -194,6 +194,37 @@ export async function sealSite({ dist, base, privateRoot, now = new Date(), log 
   return { build, sealedPages, sealedCards, sealedFiles: sealedMedia.size, removed: removed.size, keyrings, summary };
 }
 
+/**
+ * The third-party modules a build bundles (node_modules), one absolute path a line: published npm code, so
+ * the leak check counts their words as public (scripts/verify-sealed.mjs). Without this, an ordinary word a
+ * private table cell shares with three.js or React was let off only where the engine's documentation
+ * happened to hold it too, so a managed site's build (no documentation) failed where the owner's passed
+ * (found by the parity check, desktop plan stage 10).
+ */
+export const BUNDLED_FILE = join(process.cwd(), 'node_modules', '.cache', 'site-protected', 'bundled.txt');
+
+/** @returns {import('vite').Plugin} */
+function recordBundled() {
+  return {
+    name: 'site-seal:bundled',
+    apply: 'build',
+    generateBundle(_, bundle) {
+      const ids = new Set();
+      for (const c of Object.values(bundle)) {
+        if (c.type !== 'chunk') continue;
+        for (const id of [...(c.moduleIds ?? []), ...Object.keys(c.modules ?? {})]) {
+          const file = id.replace(/^\0/, '').split('?')[0];
+          // published packages only: never a dot folder (.cache, .vite), which a build fills from the content
+          if (/[\\/]node_modules[\\/]/.test(file) && !/[\\/]node_modules[\\/](?:.*[\\/])?\./.test(file) && isAbsolute(file)) ids.add(file);
+        }
+      }
+      if (!ids.size) return;
+      mkdirSync(dirname(BUNDLED_FILE), { recursive: true });
+      appendFileSync(BUNDLED_FILE, [...ids].join('\n') + '\n');
+    },
+  };
+}
+
 /** @returns {import('astro').AstroIntegration} */
 export default function sealer() {
   let base = '';
@@ -201,11 +232,17 @@ export default function sealer() {
   return {
     name: 'site-seal',
     hooks: {
-      'astro:config:setup': ({ command, config }) => {
+      'astro:config:setup': ({ command, config, updateConfig }) => {
         base = config.base.replace(/\/$/, '');
-        if (command === 'build') privateRoot = privateRootFor(fileURLToPath(config.root), command);
+        if (command === 'build') {
+          privateRoot = privateRootFor(fileURLToPath(config.root), command);
+          updateConfig({ vite: { plugins: [recordBundled()] } });
+        }
       },
-      'astro:build:start': () => resetProvenance(),
+      'astro:build:start': () => {
+        resetProvenance();
+        rmSync(BUNDLED_FILE, { force: true });
+      },
       'astro:build:done': async ({ dir, logger }) => {
         await sealSite({ dist: fileURLToPath(dir), base, privateRoot, log: (m) => logger.info(m) });
       },

@@ -17,6 +17,7 @@
  * @a11y Without the buttons the counter stays for screen readers (announced as the slide changes); the dots or filmstrip remain the visible way to move.
  * @key Left / Right: previous / next slide when the track is focused
  */
+import { stableId } from '../../design/stableId';
 import Image from '../fundamentals/Image.astro';
 import Video from '../fundamentals/Video.astro';
 import Caption from '../fundamentals/Caption.astro';
@@ -100,7 +101,7 @@ const {
   width = 'wide',
   peek = false,
   lightbox,
-  id = `carousel-${Math.random().toString(36).slice(2, 8)}`,
+  id = `carousel-${stableId(Astro, 'Carousel')}`,
   sizes,
   arrows = true,
   pager = 'dots',

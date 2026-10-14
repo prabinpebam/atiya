@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600">
+<title>Atiya: the whole plan</title>
+<desc>Atiya Studio, the desktop app, sets up a person's site and edits and publishes it. It saves to two repositories in the person's own GitHub account: a public one with the site's content and a private one with their private pages. GitHub Actions builds the site and GitHub Pages serves it, with private pages sealed. Visitors explore it with Classic, the default navigation that is always on, or with a way to explore that's turned on: Little planet, built in for any site; Cozy life, the owner's personal mode; or any mode that sticks to the schema. Every mode has section triggers, and each opens a section and its pages in the engine's section overlay, the same in every mode. Private pages open only for readers with an access code or a magic link.</desc>
+<g id="studio">
+<rect class="src" x="40" y="40" width="270" height="150" rx="18" />
+<text class="name" x="60" y="72">Atiya Studio</text>
+<text class="note" x="60" y="94">the desktop app</text>
+<text class="line" x="60" y="132">Set up, edit, publish</text>
+<text class="line" x="60" y="162">Sync, Check my site</text>
+</g>
+<g id="github">
+<rect class="box" x="365" y="40" width="270" height="150" rx="18" />
+<text class="name" x="385" y="72">Their GitHub account</text>
+<text class="note" x="385" y="94">two repositories, theirs</text>
+<text class="line" x="385" y="132">Public: the site's content</text>
+<text class="line" x="385" y="162">Private: private pages</text>
+</g>
+<g id="pages">
+<rect class="out" x="690" y="40" width="270" height="150" rx="18" />
+<text class="out-name" x="710" y="72">GitHub Pages</text>
+<text class="out-note" x="710" y="94">built by Actions, free</text>
+<text class="out-note" x="710" y="132">Public pages, open to all</text>
+<text class="out-note" x="710" y="162">Private pages, sealed</text>
+</g>
+<g id="classic">
+<rect class="docs" x="40" y="290" width="215" height="120" rx="16" />
+<text class="name" x="60" y="322">Classic</text>
+<text class="note" x="60" y="344">the default, always on</text>
+<text class="line" x="60" y="382">Header, sections, pages</text>
+</g>
+<g id="little-planet">
+<rect class="box" x="275" y="290" width="215" height="120" rx="16" />
+<text class="name" x="295" y="322">Little planet</text>
+<text class="note" x="295" y="344">built in, for any site</text>
+<text class="line" x="295" y="382">Buildings are triggers</text>
+</g>
+<g id="cozy-life">
+<rect class="box" x="510" y="290" width="215" height="120" rx="16" />
+<text class="name" x="530" y="322">Cozy life</text>
+<text class="note" x="530" y="344">the owner's personal mode</text>
+<text class="line" x="530" y="382">Little planet, his residents</text>
+</g>
+<g id="any-mode">
+<rect class="later" x="745" y="290" width="215" height="120" rx="16" />
+<text class="name" x="765" y="322">Any mode</text>
+<text class="note" x="765" y="344">that sticks to the schema</text>
+<text class="line" x="765" y="382">Its own section triggers</text>
+</g>
+<g id="overlay">
+<rect class="gate" x="275" y="455" width="685" height="95" rx="16" />
+<text class="name" x="295" y="487">The section overlay</text>
+<text class="note" x="295" y="509">the engine's, the same in every mode</text>
+<text class="line" x="295" y="535">A trigger opens a section and its pages; Classic is one click away</text>
+</g>
+<text class="label" x="318" y="104">saves</text>
+<text class="label" x="646" y="104">builds</text>
+<text class="label" x="300" y="228">visitors explore with Classic, or a way to explore that's on</text>
+<text class="label" x="40" y="580">Private pages open only for readers with an access code or a magic link.</text>
+<path class="arrow" d="M310 115 H362" />
+<path class="arrow" d="M635 115 H687" />
+<path class="arrow" d="M825 190 V240 H147 V287" />
+<path class="arrow" d="M382 240 V287" />
+<path class="arrow" d="M617 240 V287" />
+<path class="dashed" d="M852 240 V287" />
+<path class="arrow" d="M382 410 V452" />
+<path class="arrow" d="M617 410 V452" />
+<path class="dashed" d="M852 410 V452" />
+</svg>

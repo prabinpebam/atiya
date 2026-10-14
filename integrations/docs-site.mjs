@@ -51,6 +51,8 @@ export default function docsSite({ source = 'documentation', route = 'docs' } = 
         });
       },
       'astro:build:done': ({ dir }) => {
+        // an engine release (a person's site) has no documentation: nothing to publish
+        if (!existsSync(root)) return;
         cpSync(root, join(fileURLToPath(dir), route), { recursive: true });
       },
     },

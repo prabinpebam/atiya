@@ -1,0 +1,19 @@
+{
+  "id": "get-in-touch",
+  "type": "article",
+  "kind": "page",
+  "slug": "get-in-touch",
+  "title": "Get in touch",
+  "summary": "How people can reach you.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-14",
+  "updatedAt": "2026-10-14",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Say how people can reach you: an email address, LinkedIn, or wherever you are easiest to find."
+    }
+  ]
+}

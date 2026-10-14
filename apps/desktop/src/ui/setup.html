@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Make your site · Atiya Studio</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="setup.css">
+<script type="module" src="setup.js"></script>
+</head>
+<body>
+<main class="page" id="main" aria-live="polite">
+
+  <section data-phase="connect" hidden aria-labelledby="connect-title">
+    <h1 id="connect-title">Connect GitHub</h1>
+    <p class="lead">GitHub keeps your site and publishes it. If you don't have an account, you can create one on the next page.</p>
+    <p class="alert" role="alert" data-error></p>
+    <div class="actions">
+      <button type="button" class="primary" id="sign-in">Continue with GitHub</button>
+      <button type="button" class="quiet" data-back>Go back</button>
+    </div>
+  </section>
+
+  <section data-phase="code" hidden aria-labelledby="code-title">
+    <h1 id="code-title">Paste the code on GitHub</h1>
+    <p class="lead">GitHub's page is open in your browser, and this code is copied. Paste it there, then choose Authorize.</p>
+    <p class="code" id="user-code" aria-label="Your code"></p>
+    <p class="muted" id="time-left"></p>
+    <div class="actions">
+      <button type="button" id="copy-code">Copy code</button>
+      <button type="button" id="open-github">Open GitHub again</button>
+      <button type="button" class="quiet" data-back>Go back</button>
+    </div>
+  </section>
+
+  <section data-phase="email" hidden aria-labelledby="email-title">
+    <h1 id="email-title">Confirm your email</h1>
+    <p class="lead">GitHub needs you to confirm your email before it can keep your site. Open the email from GitHub and choose its link. This page carries on by itself.</p>
+    <div class="actions">
+      <button type="button" class="primary" id="check-email">Check now</button>
+      <button type="button" id="email-settings">Open GitHub's email settings</button>
+    </div>
+  </section>
+
+  <section data-phase="site" hidden aria-labelledby="site-title">
+    <h1 id="site-title">Your site</h1>
+    <p class="signed-in muted small" id="signed-in"></p>
+    <div class="field">
+      <label for="name">Your name</label>
+      <input id="name" type="text" autocomplete="name" maxlength="80">
+    </div>
+    <div class="field">
+      <span class="label" id="address-label">Its address</span>
+      <p class="address" id="address" aria-labelledby="address-label"></p>
+    </div>
+    <fieldset class="cards">
+      <legend>How visitors explore it</legend>
+      <label class="card">
+        <input type="radio" name="explore" value="little-planet">
+        <span class="card-title">The site, with a little planet to walk around</span>
+        <span class="card-text">Visitors can walk a small planet where each building holds one of your sections, or read it all as plain pages.</span>
+      </label>
+      <label class="card">
+        <input type="radio" name="explore" value="site">
+        <span class="card-title">Just the site</span>
+        <span class="card-text">Clear pages, quick to load. You can add the planet later.</span>
+      </label>
+    </fieldset>
+    <label class="switch">
+      <input type="checkbox" id="samples">
+      <span><span class="card-title">Start with sample pages</span><span class="card-text">A few pages written as instructions, to replace with your own.</span></span>
+    </label>
+    <details class="more">
+      <summary>More options</summary>
+      <div class="field">
+        <label for="repo">Address name</label>
+        <input id="repo" type="text" spellcheck="false" autocapitalize="off">
+        <p class="muted small">The part of the address after github.io. Your username's own address is the shortest.</p>
+      </div>
+      <div class="field">
+        <span class="label">Where it's kept on this computer</span>
+        <p class="path" id="dir"></p>
+        <button type="button" id="change-folder">Change folder</button>
+      </div>
+    </details>
+    <div class="actions">
+      <button type="button" class="primary" id="create">Create my site</button>
+    </div>
+  </section>
+
+  <section data-phase="choose-site" hidden aria-labelledby="choose-title">
+    <h1 id="choose-title">Your sites</h1>
+    <p class="lead" id="choose-lead">Choose the site to open on this computer.</p>
+    <ul class="site-list" id="sites"></ul>
+    <div class="actions"><button type="button" class="quiet" data-back>Go back</button></div>
+  </section>
+
+  <section data-phase="creating" hidden aria-labelledby="creating-title">
+    <h1 id="creating-title">Creating your site</h1>
+    <ol class="ticks" id="ticks"></ol>
+  </section>
+
+  <section data-phase="error" hidden aria-labelledby="error-title">
+    <h1 id="error-title">Setup stopped</h1>
+    <p class="alert" role="alert" data-error></p>
+    <div class="actions">
+      <button type="button" class="primary" id="retry">Try again</button>
+      <button type="button" class="quiet" data-back>Go back</button>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

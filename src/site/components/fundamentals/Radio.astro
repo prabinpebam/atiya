@@ -8,6 +8,8 @@
  * @key Arrow keys: move through radios with the same name
  * @key Space: selects it
  */
+import { stableId } from '../../design/stableId';
+
 interface Props {
   /** The visible label when no slot is supplied. */
   label?: string;
@@ -29,7 +31,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, name, value, id = `radio-${Math.random().toString(36).slice(2, 8)}`, checked = false, disabled = false, hint, required = false, ...rest } = Astro.props;
+const { label, name, value, id = `radio-${stableId(Astro, 'Radio')}`, checked = false, disabled = false, hint, required = false, ...rest } = Astro.props;
 const hasSlot = Astro.slots.has('default');
 const described = hint ? `${id}-hint` : undefined;
 ---

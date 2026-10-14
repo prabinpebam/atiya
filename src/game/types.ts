@@ -2,7 +2,7 @@ import type { PlaceWorld } from './world/places';
 
 /**
  * A building as the game has it (documentation/sections/spec.md §5.4): its world (world/places.ts) and
- * what the planet structure says of it (content/structures/planet.json), joined by the /play page.
+ * what the planet structure says of it (content/structures/modes/little-planet.json), joined by the /play page.
  */
 export interface LandmarkData extends PlaceWorld {
   /** Its name, on its card, in fast travel and at the head of its list. */

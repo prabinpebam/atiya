@@ -1,0 +1,6 @@
+node_modules/
+src/ui/site/
+test-results/
+playwright-report/
+engine/
+.engine-unpacking/

@@ -10,639 +10,674 @@
       "updated": "2026-09-26"
     },
     {
+      "path": "atiya.md",
+      "title": "Atiya: the whole plan",
+      "order": 1,
+      "icon": "flag",
+      "status": "review",
+      "updated": "2026-10-14"
+    },
+    {
       "path": "seed-spec.md",
       "title": "Seed spec",
-      "order": 11,
+      "order": 10,
       "icon": "lightbulb",
       "status": "stable",
       "updated": "2026-09-25",
-      "group": "Site"
+      "group": "The site"
     },
     {
       "path": "ia-navigation/README.md",
       "title": "Information architecture",
-      "order": 12,
+      "order": 11,
       "icon": "account_tree",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "ia-navigation/01-goals-audiences-and-journeys.md",
       "title": "Goals, audiences, journeys",
-      "order": 13,
+      "order": 11.1,
       "icon": "groups",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "ia-navigation/02-sitemap.md",
       "title": "Sitemap",
-      "order": 14,
+      "order": 11.2,
       "icon": "lan",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "ia-navigation/03-taxonomy-and-content-model.md",
       "title": "Taxonomy and content model",
-      "order": 15,
+      "order": 11.3,
       "icon": "category",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "ia-navigation/04-navigation-specification.md",
       "title": "Navigation",
-      "order": 16,
+      "order": 11.4,
       "icon": "explore",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "ia-navigation/05-page-and-content-templates.md",
       "title": "Page templates",
-      "order": 17,
+      "order": 11.5,
       "icon": "dashboard",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "ia-navigation/06-content-inventory-and-mapping.md",
       "title": "Content inventory",
-      "order": 18,
+      "order": 11.6,
       "icon": "inventory_2",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "ia-navigation/07-editorial-and-governance.md",
       "title": "Editorial and governance",
-      "order": 19,
+      "order": 11.7,
       "icon": "gavel",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "ia-navigation/08-validation-plan.md",
       "title": "Validation plan",
-      "order": 20,
+      "order": 11.8,
       "icon": "fact_check",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Site"
+      "group": "The site/Information architecture"
     },
     {
       "path": "site-ui/design-system.md",
       "title": "Site design system",
-      "order": 20.1,
+      "order": 15,
       "icon": "style",
       "status": "stable",
       "updated": "2026-09-29",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "site-ui/visual-language.md",
       "title": "Visual language",
-      "order": 20.2,
+      "order": 15.1,
       "icon": "newspaper",
       "status": "stable",
       "updated": "2026-09-29",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "site-ui/spec.md",
       "title": "Spec: research to v2",
-      "order": 20.3,
+      "order": 15.2,
       "icon": "rule",
       "status": "done",
       "updated": "2026-09-29",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "site-ui/tokens.md",
       "title": "Site design tokens",
-      "order": 20.4,
+      "order": 15.3,
       "icon": "token",
       "status": "stable",
       "updated": "2026-09-29",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "site-ui/dod.md",
       "title": "Definition of Done",
-      "order": 20.5,
+      "order": 15.4,
       "icon": "task_alt",
       "status": "done",
       "updated": "2026-09-29",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "site-ui/mobile-audit.md",
       "title": "On a phone: audit and fixes",
-      "order": 20.6,
+      "order": 15.5,
       "icon": "smartphone",
       "status": "done",
       "updated": "2026-09-29",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "site-ui/minimap.md",
       "title": "The article minimap",
-      "order": 20.7,
+      "order": 15.6,
       "icon": "view_timeline",
       "status": "done",
       "updated": "2026-09-29",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "site-ui/design-system-audit.md",
       "title": "Design systems: audit and fixes",
-      "order": 20.75,
+      "order": 15.7,
       "icon": "checklist",
       "status": "done",
       "updated": "2026-10-11",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "site-ui/design-system-review.md",
       "title": "Design systems: maturity review and next steps",
-      "order": 20.76,
+      "order": 15.8,
       "icon": "workspace_premium",
       "status": "planned",
       "updated": "2026-10-11",
-      "group": "Site UI"
+      "group": "The site/Design system"
     },
     {
       "path": "content/spec.md",
       "title": "Content platform",
-      "order": 20.8,
+      "order": 20,
       "icon": "schema",
       "status": "draft",
       "updated": "2026-09-29",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "content/model.md",
       "title": "Content model",
-      "order": 20.81,
+      "order": 20.1,
       "icon": "data_object",
       "status": "draft",
       "updated": "2026-09-29",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "content/ia.md",
       "title": "Navigation structures",
-      "order": 20.82,
+      "order": 20.2,
       "icon": "account_tree",
       "status": "draft",
       "updated": "2026-09-29",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "content/api.md",
       "title": "Content API contract",
-      "order": 20.83,
+      "order": 20.3,
       "icon": "api",
       "status": "draft",
       "updated": "2026-09-29",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "content/media.md",
       "title": "Media and assets",
-      "order": 20.84,
+      "order": 20.4,
       "icon": "perm_media",
       "status": "draft",
       "updated": "2026-09-29",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "content/plan.md",
       "title": "Plan and Definition of Done",
-      "order": 20.85,
+      "order": 20.5,
       "icon": "checklist",
       "status": "draft",
       "updated": "2026-09-29",
-      "group": "Content"
-    },
-    {
-      "path": "editor/spec.md",
-      "title": "Edit mode: a local CMS",
-      "order": 20.86,
-      "icon": "edit_note",
-      "status": "draft",
-      "updated": "2026-09-30",
-      "group": "Content"
-    },
-    {
-      "path": "editor/plan.md",
-      "title": "Edit mode: plan and DoD",
-      "order": 20.87,
-      "icon": "checklist",
-      "status": "draft",
-      "updated": "2026-09-30",
-      "group": "Content"
-    },
-    {
-      "path": "editor/research.md",
-      "title": "Edit mode: research",
-      "order": 20.88,
-      "icon": "travel_explore",
-      "status": "draft",
-      "updated": "2026-09-30",
-      "group": "Content"
-    },
-    {
-      "path": "editor/table-editing.md",
-      "title": "Inline table editing",
-      "order": 20.885,
-      "icon": "table_chart",
-      "status": "planned",
-      "updated": "2026-10-09",
-      "group": "Content"
-    },
-    {
-      "path": "editor/test-runs.md",
-      "title": "Edit mode: live test runs",
-      "order": 20.887,
-      "icon": "monitor_heart",
-      "status": "draft",
-      "updated": "2026-10-11",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "sections/spec.md",
       "title": "Sections, pages and the planet",
-      "order": 20.89,
+      "order": 20.6,
       "icon": "view_quilt",
       "status": "stable",
       "updated": "2026-09-30",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "sections/plan.md",
       "title": "Sections: plan and DoD",
-      "order": 20.895,
+      "order": 20.7,
       "icon": "checklist",
       "status": "stable",
       "updated": "2026-09-30",
-      "group": "Content"
-    },
-    {
-      "path": "access/spec.md",
-      "title": "Protected content and telemetry",
-      "order": 20.896,
-      "icon": "lock",
-      "status": "draft",
-      "updated": "2026-10-05",
-      "group": "Content"
-    },
-    {
-      "path": "access/plan.md",
-      "title": "Protected content: plan and DoD",
-      "order": 20.897,
-      "icon": "checklist",
-      "status": "draft",
-      "updated": "2026-10-05",
-      "group": "Content"
-    },
-    {
-      "path": "access/benchmark.md",
-      "title": "Protected content: quality benchmark",
-      "order": 20.898,
-      "icon": "verified",
-      "status": "draft",
-      "updated": "2026-10-05",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "contact/spec.md",
       "title": "The contact form",
-      "order": 20.8985,
+      "order": 20.8,
       "icon": "mail",
       "status": "draft",
       "updated": "2026-10-06",
-      "group": "Content"
+      "group": "Content and publishing"
     },
     {
       "path": "contact/plan.md",
       "title": "Contact form: plan and DoD",
-      "order": 20.899,
+      "order": 20.9,
       "icon": "checklist",
       "status": "draft",
       "updated": "2026-10-06",
-      "group": "Content"
+      "group": "Content and publishing"
+    },
+    {
+      "path": "editor/spec.md",
+      "title": "Edit mode: a local CMS",
+      "order": 25,
+      "icon": "edit_note",
+      "status": "draft",
+      "updated": "2026-09-30",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
+      "path": "editor/plan.md",
+      "title": "Edit mode: plan and DoD",
+      "order": 25.1,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-09-30",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
+      "path": "editor/research.md",
+      "title": "Edit mode: research",
+      "order": 25.2,
+      "icon": "travel_explore",
+      "status": "draft",
+      "updated": "2026-09-30",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
+      "path": "editor/table-editing.md",
+      "title": "Inline table editing",
+      "order": 25.3,
+      "icon": "table_chart",
+      "status": "planned",
+      "updated": "2026-10-09",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
+      "path": "editor/test-runs.md",
+      "title": "Edit mode: live test runs",
+      "order": 25.4,
+      "icon": "monitor_heart",
+      "status": "draft",
+      "updated": "2026-10-11",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
+      "path": "access/spec.md",
+      "title": "Protected content and telemetry",
+      "order": 30,
+      "icon": "lock",
+      "status": "draft",
+      "updated": "2026-10-05",
+      "group": "Private pages and sharing"
+    },
+    {
+      "path": "access/plan.md",
+      "title": "Protected content: plan and DoD",
+      "order": 30.1,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-10-05",
+      "group": "Private pages and sharing"
+    },
+    {
+      "path": "access/benchmark.md",
+      "title": "Protected content: quality benchmark",
+      "order": 30.2,
+      "icon": "verified",
+      "status": "draft",
+      "updated": "2026-10-05",
+      "group": "Private pages and sharing"
+    },
+    {
+      "path": "desktop/spec.md",
+      "title": "Desktop app: spec",
+      "order": 40,
+      "icon": "desktop_windows",
+      "status": "review",
+      "updated": "2026-10-14",
+      "group": "Atiya Studio"
+    },
+    {
+      "path": "desktop/plan.md",
+      "title": "Desktop app: plan",
+      "order": 40.1,
+      "icon": "checklist",
+      "status": "review",
+      "updated": "2026-10-14",
+      "group": "Atiya Studio"
+    },
+    {
+      "path": "desktop/modes.md",
+      "title": "Navigation modes",
+      "order": 50,
+      "icon": "explore",
+      "status": "review",
+      "updated": "2026-10-14",
+      "group": "Ways to explore"
     },
     {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
-      "order": 21,
+      "order": 51,
       "icon": "public",
       "status": "stable",
       "updated": "2026-09-26",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/plan.md",
       "title": "Plan",
-      "order": 22,
+      "order": 51.1,
       "icon": "event_note",
       "status": "stable",
       "updated": "2026-09-26",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/definition-of-done.md",
       "title": "Definition of Done",
-      "order": 23,
+      "order": 51.2,
       "icon": "task_alt",
       "status": "done",
       "updated": "2026-09-24",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/research/tech-stack.md",
       "title": "Research: tech stack",
-      "order": 24,
+      "order": 51.3,
       "icon": "science",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/research/interaction-design.md",
       "title": "Research: interaction design",
-      "order": 25,
+      "order": 51.4,
       "icon": "touch_app",
       "status": "stable",
       "updated": "2026-09-24",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/art-direction/README.md",
       "title": "Art direction",
-      "order": 26,
+      "order": 51.5,
       "icon": "palette",
       "status": "stable",
       "updated": "2026-09-25",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/art-pipeline.md",
       "title": "Texture style pipeline",
-      "order": 26.5,
+      "order": 51.6,
       "icon": "brush",
       "status": "stable",
       "updated": "2026-09-26",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/performance-audit.md",
       "title": "Performance audit",
-      "order": 27,
+      "order": 51.7,
       "icon": "speed",
       "status": "stable",
       "updated": "2026-09-25",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/progressive-loading.md",
       "title": "Progressive loading",
-      "order": 27.5,
+      "order": 51.8,
       "icon": "hourglass_top",
       "status": "draft",
       "updated": "2026-09-28",
-      "group": "Planet"
+      "group": "Ways to explore/Little planet"
     },
     {
       "path": "poc-3d-navigation/collection-inventory.md",
       "title": "Collecting and inventory",
-      "order": 31,
+      "order": 60,
       "icon": "backpack",
       "status": "done",
       "updated": "2026-09-25",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/crafting.md",
       "title": "Crafting and Chopper's house",
-      "order": 32,
+      "order": 60.1,
       "icon": "handyman",
       "status": "done",
       "updated": "2026-09-26",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/crafting-dod.md",
       "title": "Crafting: Definition of Done",
-      "order": 33,
+      "order": 60.2,
       "icon": "task_alt",
       "status": "done",
       "updated": "2026-09-26",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/swing.md",
       "title": "The swing, jute and rope",
-      "order": 33.5,
+      "order": 60.3,
       "icon": "park",
       "status": "done",
       "updated": "2026-09-27",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/viewing-deck.md",
       "title": "The viewing deck, iron ore and nails",
-      "order": 33.6,
+      "order": 60.4,
       "icon": "stairs",
       "status": "done",
       "updated": "2026-09-28",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/furnace.md",
       "title": "The furnace, clay and iron ingots",
-      "order": 33.7,
+      "order": 60.5,
       "icon": "local_fire_department",
       "status": "done",
       "updated": "2026-09-28",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/rest.md",
       "title": "Jumping, resting, the lantern and shooting stars",
-      "order": 33.8,
+      "order": 60.6,
       "icon": "self_improvement",
       "status": "done",
       "updated": "2026-09-28",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/full-planet.md",
       "title": "Full planet, and the fog on a fast travel",
-      "order": 33.9,
+      "order": 60.7,
       "icon": "public",
       "status": "done",
       "updated": "2026-10-01",
-      "group": "Features"
-    },
-    {
-      "path": "poc-3d-navigation/chopper.md",
-      "title": "Chopper",
-      "order": 34,
-      "icon": "pets",
-      "status": "done",
-      "updated": "2026-09-26",
-      "group": "Features"
-    },
-    {
-      "path": "poc-3d-navigation/family.md",
-      "title": "Home and family",
-      "order": 35,
-      "icon": "cottage",
-      "status": "done",
-      "updated": "2026-09-26",
-      "group": "Features"
-    },
-    {
-      "path": "poc-3d-navigation/family-dod.md",
-      "title": "Home and family: Definition of Done",
-      "order": 36,
-      "icon": "task_alt",
-      "status": "done",
-      "updated": "2026-09-26",
-      "group": "Features"
-    },
-    {
-      "path": "poc-3d-navigation/prabin-npc.md",
-      "title": "Prabin, navigation and the plaza",
-      "order": 37,
-      "icon": "person_pin_circle",
-      "status": "done",
-      "updated": "2026-09-26",
-      "group": "Features"
-    },
-    {
-      "path": "poc-3d-navigation/prabin-dod.md",
-      "title": "Prabin: Definition of Done",
-      "order": 38,
-      "icon": "task_alt",
-      "status": "done",
-      "updated": "2026-09-26",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/collision.md",
       "title": "Collision: hard and soft things, and making way",
-      "order": 38.5,
+      "order": 60.8,
       "icon": "back_hand",
       "status": "done",
       "updated": "2026-09-28",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/ground.md",
       "title": "Levelled ground and cobbles",
-      "order": 39,
+      "order": 60.9,
       "icon": "foundation",
       "status": "done",
       "updated": "2026-09-26",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/vegetation/proposal.md",
       "title": "Vegetation: proposal",
-      "order": 39.1,
+      "order": 61,
       "icon": "grass",
       "status": "review",
       "updated": "2026-09-26",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/vegetation/spec.md",
       "title": "Vegetation: spec, plan and DoD",
-      "order": 39.2,
+      "order": 61.1,
       "icon": "rule",
       "status": "review",
       "updated": "2026-09-26",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "poc-3d-navigation/vegetation/research.md",
       "title": "Vegetation: research",
-      "order": 39.3,
+      "order": 61.2,
       "icon": "travel_explore",
       "status": "done",
       "updated": "2026-09-26",
-      "group": "Features"
+      "group": "Ways to explore/Little planet/Features"
     },
     {
       "path": "game-ui/design-system.md",
       "title": "Design system",
-      "order": 41,
+      "order": 70,
       "icon": "design_services",
       "status": "stable",
       "updated": "2026-09-26",
-      "group": "Game UI"
+      "group": "Ways to explore/Little planet/Game UI"
     },
     {
       "path": "game-ui/spec.md",
       "title": "Spec: research to v2",
-      "order": 42,
+      "order": 70.1,
       "icon": "rule",
       "status": "done",
       "updated": "2026-09-26",
-      "group": "Game UI"
+      "group": "Ways to explore/Little planet/Game UI"
     },
     {
       "path": "game-ui/touch.md",
       "title": "Touch controls",
-      "order": 42.5,
+      "order": 70.2,
       "icon": "swipe",
       "status": "done",
       "updated": "2026-09-27",
-      "group": "Game UI"
+      "group": "Ways to explore/Little planet/Game UI"
     },
     {
       "path": "game-ui/crafting-screen.md",
       "title": "Crafting screen and HUD chrome",
-      "order": 42.7,
+      "order": 70.3,
       "icon": "handyman",
       "status": "done",
       "updated": "2026-09-27",
-      "group": "Game UI"
+      "group": "Ways to explore/Little planet/Game UI"
     },
     {
       "path": "game-ui/tokens.md",
       "title": "Design tokens",
-      "order": 43,
+      "order": 70.4,
       "icon": "token",
       "status": "stable",
       "updated": "2026-09-26",
-      "group": "Game UI"
+      "group": "Ways to explore/Little planet/Game UI"
     },
     {
       "path": "game-ui/dod.md",
       "title": "Definition of Done",
-      "order": 44,
+      "order": 70.5,
       "icon": "task_alt",
       "status": "done",
       "updated": "2026-09-26",
-      "group": "Game UI"
+      "group": "Ways to explore/Little planet/Game UI"
+    },
+    {
+      "path": "poc-3d-navigation/chopper.md",
+      "title": "Chopper",
+      "order": 80,
+      "icon": "pets",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Ways to explore/Cozy life"
+    },
+    {
+      "path": "poc-3d-navigation/family.md",
+      "title": "Home and family",
+      "order": 80.1,
+      "icon": "cottage",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Ways to explore/Cozy life"
+    },
+    {
+      "path": "poc-3d-navigation/family-dod.md",
+      "title": "Home and family: Definition of Done",
+      "order": 80.2,
+      "icon": "task_alt",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Ways to explore/Cozy life"
+    },
+    {
+      "path": "poc-3d-navigation/prabin-npc.md",
+      "title": "Prabin, navigation and the plaza",
+      "order": 80.3,
+      "icon": "person_pin_circle",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Ways to explore/Cozy life"
+    },
+    {
+      "path": "poc-3d-navigation/prabin-dod.md",
+      "title": "Prabin: Definition of Done",
+      "order": 80.4,
+      "icon": "task_alt",
+      "status": "done",
+      "updated": "2026-09-26",
+      "group": "Ways to explore/Cozy life"
     },
     {
       "path": "engineering/overview.md",
       "title": "Engineering overview",
-      "order": 51,
+      "order": 90,
       "icon": "engineering",
       "status": "stable",
       "updated": "2026-09-26",
@@ -651,7 +686,7 @@
     {
       "path": "engineering/app-separation.md",
       "title": "Separating the site and the planet",
-      "order": 52,
+      "order": 90.1,
       "icon": "call_split",
       "status": "draft",
       "updated": "2026-09-29",
@@ -660,7 +695,7 @@
     {
       "path": "engineering/performance-report.md",
       "title": "Performance report: October 2026",
-      "order": 53,
+      "order": 90.2,
       "icon": "leaderboard",
       "status": "review",
       "updated": "2026-10-13",
@@ -669,7 +704,7 @@
     {
       "path": "engineering/performance.md",
       "title": "Measuring performance",
-      "order": 54,
+      "order": 90.3,
       "icon": "speed",
       "status": "stable",
       "updated": "2026-10-13",
@@ -678,7 +713,7 @@
     {
       "path": "engineering/perceived-performance.md",
       "title": "Perceived performance",
-      "order": 55,
+      "order": 90.4,
       "icon": "hourglass_top",
       "status": "stable",
       "updated": "2026-10-13",

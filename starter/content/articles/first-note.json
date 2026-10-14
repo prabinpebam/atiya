@@ -1,0 +1,23 @@
+{
+  "id": "first-note",
+  "type": "article",
+  "kind": "note",
+  "slug": "first-note",
+  "title": "A first note",
+  "summary": "Your first piece of writing. Edit it, or delete it and write your own.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-14",
+  "updatedAt": "2026-10-14",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Writing is the quickest way to show how you think. Start with something you know well, and keep it short."
+    },
+    {
+      "type": "text",
+      "markdown": "When you are ready, choose Save to remote at the top of edit mode, and it will be on your site in a few minutes."
+    }
+  ]
+}

@@ -7,7 +7,7 @@
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Link from '../components/fundamentals/Link.astro';
-import { getRoutes, getSite, getStructure } from './repository';
+import { getPlanet, getRoutes, getSite, getStructure } from './repository';
 import { exploreAction, footerLinks, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import type { Redirect } from './schema';
@@ -21,11 +21,11 @@ const { redirect } = Astro.props;
 ---
 
 <IndexLayout
-  title="This page has moved — Prabin Pebam"
+  title={`This page has moved — ${getSite().name}`}
   heading="This page has moved"
   nav={siteNav(getStructure(), getRoutes())}
   footer={footerLinks(getSite(), getRoutes())}
-  action={exploreAction()}
+  action={exploreAction(undefined, getPlanet())}
   redirect={redirect.to}
 >
   <Text variant="lead"><Link href={withBase(redirect.to)} variant="standalone">Go to its new address</Link></Text>

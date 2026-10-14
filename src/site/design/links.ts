@@ -1,5 +1,8 @@
-/** The production host shared by this site and the owner's other GitHub Pages projects. */
-export const SITE_PARENT_DOMAIN = 'prabinpebam.github.io';
+/** Defined by integrations/editor.mjs: the host the site is published under (its own, never the code's owner's). */
+declare const __SITE_PARENT_DOMAIN__: string | undefined;
+
+/** The production host the site shares with its owner's other GitHub Pages projects ('' when unknown). */
+export const SITE_PARENT_DOMAIN: string = typeof __SITE_PARENT_DOMAIN__ === 'string' ? __SITE_PARENT_DOMAIN__ : '';
 
 /** The accessible note appended to links that open a separate tab. */
 export const NEW_TAB_NOTE = ' (opens in a new tab)';
@@ -16,7 +19,7 @@ export function leavesParentDomain(href: string, currentHostname = SITE_PARENT_D
   const host = normalHost(new URL(href).hostname);
   const current = normalHost(currentHostname);
   const parent = normalHost(SITE_PARENT_DOMAIN);
-  return !within(host, current) && !within(host, parent);
+  return !within(host, current) && !(parent && within(host, parent));
 }
 
 /** The navigation attributes for a link under the site's tab policy. */

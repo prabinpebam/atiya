@@ -1,0 +1,78 @@
+/* Check my site: one row per check, its state as a sign and in words. Tokens only. */
+.checks {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-6) 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.checks li {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: var(--border-control) solid var(--color-border);
+  background: var(--color-bg-raised);
+}
+
+.checks li[data-ok='false'] {
+  border-color: var(--color-negative);
+  background: var(--color-negative-soft);
+}
+
+.check-name {
+  font-weight: 600;
+  margin: 0 0 var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.check-name::before {
+  content: '';
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-round);
+  background: var(--color-positive);
+  flex: none;
+}
+
+.checks li[data-ok='false'] .check-name::before {
+  background: var(--color-negative);
+}
+
+.check-message {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.lead {
+  font-size: var(--text-lead);
+}
+
+fieldset.choice {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+
+fieldset.choice legend {
+  width: 100%;
+  margin-bottom: var(--space-2);
+}
+
+fieldset.choice label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch);
+  cursor: pointer;
+}
+
+fieldset.choice input {
+  width: var(--size-icon);
+  height: var(--size-icon);
+  accent-color: var(--color-accent);
+}

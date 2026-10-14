@@ -15,11 +15,17 @@
  * - In dev, unless SITE_EDITOR=off, it injects the editor's routes (all on demand, under /_edit/) and
  *   the middleware that guards them.
  */
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { privateRootFor } from './roots.mjs';
+import { PLANET_FILES, planetOn, siteFeatures } from './features.mjs';
+import { LAUNCH_HEADER, launchAllows } from './launch.mjs';
+
+/** How long edit mode must have been idle before a new site name or planet restarts the server. */
+const RESTART_QUIET_MS = 1500;
 
 const ROUTES = [
   ['/_edit', 'dashboard.astro'],
@@ -29,6 +35,7 @@ const ROUTES = [
   ['/_edit/sections', 'sections.astro'],
   ['/_edit/navigation', 'navigation.astro'],
   ['/_edit/planet', 'planet.astro'],
+  ['/_edit/ways', 'ways.astro'],
   ['/_edit/media', 'media.astro'],
   ['/_edit/settings', 'settings.astro'],
   ['/_edit/access', 'access.astro'],
@@ -36,6 +43,38 @@ const ROUTES = [
   ['/_edit/tests', 'tests.astro'],
   ['/_edit/api/[...path]', 'api.ts'],
 ];
+
+/**
+ * The host the site is published under, which links stay in the same tab for: its SITE_URL's host, else
+ * `<owner>.github.io` from the content's own git remote, else '' (desktop spec §9.2: never the code's owner).
+ * @param {string | undefined} siteUrl @param {string} repoDir
+ */
+function parentDomainOf(siteUrl, repoDir) {
+  if (siteUrl) {
+    try {
+      return new URL(siteUrl).hostname.toLowerCase();
+    } catch {
+      // fall through to the remote
+    }
+  }
+  try {
+    const remote = execFileSync('git', ['-C', repoDir, 'config', '--get', 'remote.origin.url'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true }).trim();
+    const owner = /github\.com[:/]([^/]+)\//i.exec(remote)?.[1];
+    return owner ? `${owner.toLowerCase()}.github.io` : '';
+  } catch {
+    return '';
+  }
+}
+
+/** The site's name from its settings (content/site.json), or '' when it can't be read. @param {string} root */
+function siteNameOf(root) {
+  try {
+    const name = JSON.parse(readFileSync(join(root, 'site.json'), 'utf8')).name;
+    return typeof name === 'string' ? name : '';
+  } catch {
+    return '';
+  }
+}
 
 /** @param {string} file */
 const sha1 = (file) => createHash('sha1').update(readFileSync(file)).digest('hex');
@@ -78,7 +117,7 @@ async function warmUp(edit, contentRoot, server, logger) {
     warm.screens = { done: 0, total: screens.length };
     for (const s of screens) {
       try {
-        await (await fetch(`${edit}${s}`, { headers: { 'x-editor-warm': '1' } })).arrayBuffer();
+        await (await fetch(`${edit}${s}`, { headers: { 'x-editor-warm': '1', ...(process.env.ATIYA_LAUNCH_TOKEN ? { [LAUNCH_HEADER]: process.env.ATIYA_LAUNCH_TOKEN } : {}) } })).arrayBuffer();
       } catch {
         /* a screen that fails says so when it's opened */
       }
@@ -142,6 +181,10 @@ export default function editor() {
   let privateRoot = '';
   /** @type {boolean} */
   let editing = false;
+  /** The site's name the running server was started with. */
+  let siteName = '';
+  /** @type {{ planet: boolean, designLibrary: boolean, docs: boolean, managed: boolean }} */
+  let features = { planet: true, designLibrary: true, docs: true, managed: false };
   return {
     name: 'site-editor',
     hooks: {
@@ -152,9 +195,18 @@ export default function editor() {
         if (override && command === 'build') throw new Error('CONTENT_ROOT is only for the editor in dev and its tests: unset it to build, so the build reads the real content.');
         contentRoot = override && command === 'dev' ? (isAbsolute(override) ? override : resolve(root, override)) : join(root, 'content');
         privateRoot = privateRootFor(root, command);
+        // the header, footer and titles name the site from its own settings, never the code (desktop spec §9.2)
+        siteName = siteNameOf(contentRoot);
+        features = siteFeatures({ root, contentRoot });
         updateConfig({
           vite: {
-            define: { __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot), __SITE_PRIVATE_ROOT__: JSON.stringify(privateRoot) },
+            define: {
+              __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot),
+              __SITE_PRIVATE_ROOT__: JSON.stringify(privateRoot),
+              __SITE_NAME__: JSON.stringify(siteName),
+              __SITE_PARENT_DOMAIN__: JSON.stringify(parentDomainOf(config.site, override && command === 'dev' ? contentRoot : root)),
+              __SITE_FEATURES__: JSON.stringify(features),
+            },
             // the private masters a build imports (masters.ts globs through this alias)
             resolve: { alias: { '@private-pages': privateRoot } },
             server: {
@@ -169,6 +221,8 @@ export default function editor() {
         editing = command === 'dev' && process.env.SITE_EDITOR !== 'off';
         if (!editing) return;
         for (const [pattern, file] of ROUTES) {
+          // the owner's test runner isn't part of a person's site (desktop plan, stage 7)
+          if (features.managed && pattern === '/_edit/tests') continue;
           injectRoute({ pattern, entrypoint: `./src/site/editor/pages/${file}` });
         }
         addMiddleware({ entrypoint: join(root, 'src/site/editor/server/middleware.ts'), order: 'pre' });
@@ -179,7 +233,49 @@ export default function editor() {
 
       'astro:server:setup': ({ server }) => {
         devServer = server;
+        // this start's own mark: a screen that waits for a restart (Ways to explore) knows the new server by it
+        const started = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        // a managed site's server, started by Atiya Studio, answers only the app's own views (desktop spec §7.3)
+        const launchToken = process.env.ATIYA_LAUNCH_TOKEN;
+        if (launchToken)
+          server.middlewares.use((/** @type {any} */ req, /** @type {any} */ res, /** @type {() => void} */ next) => {
+            if (launchAllows(req.headers[LAUNCH_HEADER], launchToken)) return next();
+            res.statusCode = 403;
+            res.setHeader('content-type', 'text/plain; charset=utf-8');
+            res.end('This site is open in Atiya Studio. Open it there.');
+          });
         const state = contentState();
+        // edit mode's writes in flight: a restart waits for them (a save to remote just after a new name
+        // would otherwise lose its answer, and the browser sends it again). Reads aren't counted: some are
+        // long-lived streams (the Tests screen's), which would hold a restart off for ever
+        let busy = 0;
+        let quietSince = Date.now();
+        if (editing)
+          server.middlewares.use((/** @type {any} */ req, /** @type {any} */ res, /** @type {() => void} */ next) => {
+            if (!String(req.url ?? '').includes('/_edit/api/') || req.method === 'GET' || req.method === 'HEAD') return next();
+            busy++;
+            let done = false;
+            const end = () => {
+              if (done) return;
+              done = true;
+              busy--;
+              quietSince = Date.now();
+            };
+            res.on('finish', end);
+            res.on('close', end);
+            next();
+          });
+        let restarting = false;
+        const restartWhenQuiet = () => {
+          if (restarting) return;
+          restarting = true;
+          const tick = () => {
+            if (busy > 0 || Date.now() - quietSince < RESTART_QUIET_MS) return void setTimeout(tick, 100);
+            restarting = false;
+            void server.restart();
+          };
+          setTimeout(tick, RESTART_QUIET_MS);
+        };
         // a friendly first start (performance-report.md R12): while the screens compile and the pictures'
         // facts are read, a screen opened in the browser gets a plain page that says so, then the screen
         if (editing) {
@@ -191,7 +287,7 @@ export default function editor() {
             if (path === `${edit}__warm`) {
               res.setHeader('content-type', 'application/json');
               res.setHeader('cache-control', 'no-store');
-              return res.end(JSON.stringify(warm));
+              return res.end(JSON.stringify({ ...warm, started }));
             }
             const asked = path === `${edit}__starting`;
             const opening = req.method === 'GET' && req.headers['sec-fetch-mode'] === 'navigate' && req.headers['sec-fetch-dest'] === 'document' && !req.headers['x-editor'] && !req.headers['x-editor-warm'] && !path.startsWith(`${edit}api/`) && !path.startsWith(`${edit}canvas/`);
@@ -231,6 +327,27 @@ export default function editor() {
           state.writes.set(writeKey(file), hash);
           state.generation++;
           state.notify?.([key], false);
+        });
+        // the site's name and whether it has the planet are set when the server starts: a new name (Settings),
+        // or the little planet turned on or off (Ways to explore, or its structure coming or going), restarts it,
+        // so every page shows it
+        server.watcher.on('all', (_event, file) => {
+          const rel = relative(contentRoot, file).split(/[\\/]/).join('/');
+          if (rel !== 'site.json' && rel !== 'structures/ways.json' && !PLANET_FILES.includes(rel)) return;
+          const now = siteNameOf(contentRoot);
+          const planet = planetOn(contentRoot);
+          if ((now && now !== siteName) || planet !== features.planet) {
+            siteName = now || siteName;
+            features = { ...features, planet };
+            // a restart builds its server from the configuration it was first given, without this
+            // integration's setup: the new values go into that configuration's defines, so pages see them
+            for (const define of [server.config.inlineConfig?.define, server.config.define]) {
+              if (!define) continue;
+              define.__SITE_NAME__ = JSON.stringify(siteName);
+              define.__SITE_FEATURES__ = JSON.stringify(features);
+            }
+            restartWhenQuiet();
+          }
         });
       },
 

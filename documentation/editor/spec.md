@@ -133,6 +133,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 | Navigation | `/_edit/navigation/` | The top navigation: a preview of the header, its entries in order (sections, pages, custom links), their labels, and adding, moving and removing them ([sections spec §7.3](../sections/spec.md#73-navigation-new-screen-u5)) |
 | Media | `/_edit/media/` | The media library: upload, alt text, captions, credits, focus points, where each picture is used (§6) |
 | Settings | `/_edit/settings/` | The site settings and the owner's profile |
+| Ways to explore | `/_edit/ways/` | Which ways of exploring the site are on (the little planet), and what the home page offers first; turning one off keeps its map, and turning the planet on for a site that never had it writes a starting map ([desktop plan, stage 8A](../desktop/plan.md#stage-8a-ways-to-explore-on-and-off-the-next-set)). The Planet screen shows only while the planet is on |
 | Access | `/_edit/access/` | Every access code and magic link that opens private pages, grouped by state beside the chosen one's details: made, changed, withdrawn and deleted there ([access spec §8.1](../access/spec.md#81-sharing-the-access-screen)) |
 | Save to remote | `/_edit/publish/` | What changed in `content/` and `private-pages/`, the contract check, discard, publishing drafts, and saving to remote (§7) |
 
@@ -599,6 +600,7 @@ All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's vers
 | `DELETE articles/{id}` | Deletes a draft and its node (and, with `?media=1`, the pictures in its folder that nothing else uses) |
 | `PUT structure` | Saves the site structure |
 | `PUT site`, `PUT people/{id}` | Saves the settings or a person |
+| `PUT ways` | Saves the ways in (`content/structures/ways.json`): `{ ways, ifMatch }`; with the little planet turned on and no planet structure, writes its starting map in the same transaction, or refuses (422) a site with fewer than seven sections |
 | `POST media` | Uploads (multipart: `file`, `alt` or `decorative`, `caption`, `owner`, and `crop`: a JSON rectangle with the size it's in, `{ x, y, width, height, of: { width, height } }`) → `{ id }` |
 | `POST media/{id}/replace` | Writes a new master for a picture, keeping its ID and sidecar (multipart: `file`) |
 | `POST media/{id}/dark`, `DELETE media/{id}/dark` | Adds or replaces a picture's dark mode version (multipart: `file`, and an optional `crop` as for an upload) → both sizes; removes it |

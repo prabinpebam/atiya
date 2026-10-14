@@ -45,9 +45,12 @@ export default function devIsolation() {
       'astro:config:setup': ({ command, config, updateConfig }) => {
         const root = fileURLToPath(config.root);
         const mode = modeArg();
-        const vite = viteCacheFor(command, mode, process.env.SITE_VITE_CACHE);
+        // a managed site's server, run by Atiya Studio, keeps both caches in the app's data folder, so
+        // nothing it runs writes beside the engine (documentation/desktop/spec.md §7.3)
+        const own = command === 'dev' ? process.env.ATIYA_CACHE_DIR : undefined;
+        const vite = own ? join(own, 'vite') : viteCacheFor(command, mode, process.env.SITE_VITE_CACHE);
         updateConfig({
-          cacheDir: pathToFileURL(`${resolve(root, astroCacheFor(command, mode))}/`),
+          cacheDir: pathToFileURL(`${own ? join(own, 'astro') : resolve(root, astroCacheFor(command, mode))}/`),
           vite: { cacheDir: isAbsolute(vite) ? vite : resolve(root, vite) },
         });
       },

@@ -1,0 +1,82 @@
+/* The frame across the top of the window (documentation/desktop/spec.md §7.2). */
+body.frame {
+  background: var(--color-bg-raised);
+  overflow: hidden;
+}
+
+.bar {
+  height: var(--size-chrome-block-compact);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  border-bottom: var(--border-hairline) solid var(--color-rule);
+}
+
+.site {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+}
+
+.mark {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  border-radius: var(--radius-round);
+  background: var(--color-accent);
+  flex: none;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.state {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.state[data-tone='good']::before,
+.state[data-tone='busy']::before,
+.state[data-tone='bad']::before {
+  content: '';
+  display: inline-block;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-round);
+  margin-right: var(--space-2);
+  vertical-align: middle;
+  background: var(--color-text-muted);
+}
+
+.state[data-tone='good']::before {
+  background: var(--color-positive);
+}
+
+.state[data-tone='busy']::before {
+  background: var(--color-accent);
+}
+
+.state[data-tone='bad']::before {
+  background: var(--color-negative);
+}
+
+.views,
+.tools {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.views[hidden],
+.tools [hidden] {
+  display: none;
+}

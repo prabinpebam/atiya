@@ -1002,7 +1002,7 @@ test.describe('editor', () => {
   });
 
   test('planet: each building shows its section, read-only here; its words and section in Settings, the rules refuse; a page says where it is on the planet', async ({ page }) => {
-    const planet = () => readJson(join(FIXTURE, 'content/structures/planet.json')).places as { id: string; kicker: string; site: string }[];
+    const planet = () => readJson(join(FIXTURE, 'content/structures/modes/little-planet.json')).places as { id: string; kicker: string; site: string }[];
     const before = JSON.stringify(planet());
 
     // the seven buildings and their sections' pages, which move in Sections, not here
@@ -1636,6 +1636,18 @@ test.describe('editor', () => {
     await page.getByRole('button', { name: 'Save to remote', exact: true }).click();
     await expect(dialog.getByRole('heading', { name: 'Changes to save' })).toBeVisible({ timeout: 15_000 });
     await expect(dialog.getByRole('heading', { name: '1 commit not on GitHub yet' })).toBeVisible();
+  });
+
+  test("the site settings save keeps what the form doesn't show: the services every build reads", async ({ page }) => {
+    // desktop plan stage 10: the contact endpoint and the telemetry key are content/site.json's; a rename must not drop them
+    const before = readJson(join(FIXTURE, 'content/site.json'));
+    expect(before.services?.contact?.endpoint).toMatch(/^https:\/\//);
+    await page.goto('/_edit/settings/');
+    const form = page.locator('[data-settings-form="site"]');
+    await form.getByLabel('Positioning').fill('Set by the services test.');
+    await form.getByRole('button', { name: 'Save the site settings' }).click();
+    await expect.poll(() => readJson(join(FIXTURE, 'content/site.json')).positioning, { timeout: 15_000 }).toBe('Set by the services test.');
+    expect(readJson(join(FIXTURE, 'content/site.json')).services).toEqual(before.services);
   });
 
   test('publish: commits content/ only, pushes it to the remote, and discard puts a change back', async ({ page }) => {

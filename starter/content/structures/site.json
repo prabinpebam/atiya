@@ -1,0 +1,136 @@
+{
+  "home": {
+    "id": "home",
+    "kind": "hub",
+    "slug": "",
+    "title": "Your Name",
+    "navLabel": "Home",
+    "summary": "A line about you: what you do, and what a visitor should know first.",
+    "children": [
+      {
+        "id": "about",
+        "kind": "hub",
+        "slug": "about",
+        "title": "About",
+        "summary": "Who I am, what I care about and how I work.",
+        "view": "features",
+        "children": [
+          {
+            "id": "about-me",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "about-me"
+            }
+          }
+        ]
+      },
+      {
+        "id": "work",
+        "kind": "hub",
+        "slug": "work",
+        "title": "Work",
+        "summary": "Selected projects: the problem, what I did and what changed.",
+        "view": "features",
+        "children": [
+          {
+            "id": "sample-project",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "sample-project"
+            }
+          }
+        ]
+      },
+      {
+        "id": "approach",
+        "kind": "hub",
+        "slug": "approach",
+        "title": "Approach",
+        "summary": "How I think about my craft, and the principles I work by.",
+        "view": "list",
+        "children": []
+      },
+      {
+        "id": "writing",
+        "kind": "hub",
+        "slug": "writing",
+        "title": "Writing",
+        "summary": "Essays and notes.",
+        "view": "list",
+        "children": [
+          {
+            "id": "first-note",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "first-note"
+            }
+          }
+        ]
+      },
+      {
+        "id": "speaking",
+        "kind": "hub",
+        "slug": "speaking",
+        "title": "Speaking",
+        "summary": "Talks, panels and workshops.",
+        "view": "list",
+        "children": []
+      },
+      {
+        "id": "projects",
+        "kind": "hub",
+        "slug": "projects",
+        "title": "Projects",
+        "summary": "Things I make on the side.",
+        "view": "tiles",
+        "children": []
+      },
+      {
+        "id": "contact",
+        "kind": "hub",
+        "slug": "contact",
+        "title": "Contact",
+        "summary": "Ways to get in touch.",
+        "view": "list",
+        "children": [
+          {
+            "id": "get-in-touch",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "get-in-touch"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "menus": {
+    "primary": [
+      {
+        "node": "about"
+      },
+      {
+        "node": "work"
+      },
+      {
+        "node": "approach"
+      },
+      {
+        "node": "writing"
+      },
+      {
+        "node": "speaking"
+      },
+      {
+        "node": "projects"
+      },
+      {
+        "node": "contact"
+      }
+    ]
+  }
+}

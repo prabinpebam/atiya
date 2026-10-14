@@ -12,6 +12,7 @@
  * @key Space: closes the reading and goes back to the planet (a picture's lightbox, or a field, takes it first)
  * @key Esc: the same as Space
  */
+import { stableId } from '../../design/stableId';
 import Button from '../fundamentals/Button.astro';
 import Text from '../fundamentals/Text.astro';
 import Select from '../fundamentals/Select.astro';
@@ -39,7 +40,7 @@ interface Props {
 
 const { frame } = Astro.props;
 const map = JSON.stringify(frame.map).replace(/</g, '\\u003c');
-const themeId = `planet-theme-${Math.random().toString(36).slice(2, 8)}`;
+const themeId = `planet-theme-${stableId(Astro, 'PlaceBar')}`;
 ---
 
 <header
