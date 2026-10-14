@@ -253,10 +253,10 @@ interface ModeData {
     owner: { name: string; role?: string; avatar?: Picture };
   };
   sections: Array<{
-    id: string; title: string; summary: string; view: 'list' | 'tiles' | 'bento';
+    id: string; title: string; summary: string; view: SectionView;           // the site's: list, tiles, bento, features
     url: string;                                                 // the section's site address
     hasPrivate: boolean;                                         // never which, or how many
-    pages: Array<{ id: string; title: string; summary: string; kind: 'note' | 'page' | 'gallery';
+    pages: Array<{ id: string; title: string; summary: string; kind: Article['kind'];
                    url: string; thumbnail?: Picture }>;          // published, open, in the section's order
   }>;
   slots: Array<{ id: string; section: string | null; words: Record<string, string> }>;
@@ -431,4 +431,9 @@ Built as stage 8 of the [plan](plan.md#stage-8-navigation-modes), inside the eng
 
 ## 14. As built
 
-Nothing is built yet.
+On the `desktop-app` branch ([plan §6](plan.md#6-status) has the evidence).
+
+- **The contract's first part (M1, 8.2)** is in `src/site/modes/`: `contract.ts` (the manifest's schema, `atiya.json`'s `modes` and `primary`, `ModeData`, `HOSTED_API` 1 to 1), `builtin.ts` (Little planet's manifest; its structure is still `content/structures/planet.json`, read as its seven slots), `data.ts` (`buildModeData`, through the same rule the planet uses for a building's pages) and `rules.ts` (V33 to V37). A section's `view` is any of the site's views (`features` too), and a page's `kind` any of the content contract's (`talk` too), as §5.2 now says.
+- **The rules hold a managed site:** the repository checks them whenever it loads the content of a site with an `atiya.json` beside it (the engine's own repository has none), so its build and its edit mode refuse a bad mode, naming the rule.
+- **Mounts:** `play`, kept by the site's routes for a mode, is a mode's to take; every other reserved path (`design`, `docs`, `_edit`, …) and every top-level section or page is taken. A mode turned off keeps its mount, since its "not offered" page answers there.
+- **Not yet:** the planet doesn't read `ModeData` (`play.astro` builds its own landmarks as before); the mode page, the host's calls and the move of the structure to `structures/modes/` are the rest of M1. What builds the planet is still the presence of `planet.json` (`integrations/features.mjs`), not `atiya.json`'s modes; M2 changes that.

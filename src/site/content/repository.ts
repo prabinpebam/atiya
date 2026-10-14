@@ -4,15 +4,40 @@
  * save in the editor, or a file changed by hand, in dev); a build reads it once. After an editor save it
  * takes the store's snapshot as written instead of reading the folders again.
  */
-import { currentSnapshot, generation } from './source';
-import { loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
+import { currentSnapshot, contentRoot, generation } from './source';
+import { ContentError, loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
 import { withBase } from '../design/meta';
 import { placeRoutes } from './navigation';
 import { timed } from './timing';
+import { checkModes } from '../modes/rules';
+import { BUILTIN_MODES } from '../modes/builtin';
+import { siteModes } from '../modes/contract';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import type { Route } from './routes';
 import type { Article, PlaceId } from './schema';
 
 let cached: { generation: number; index: ContentIndex } | undefined;
+
+/**
+ * A managed site's ways in (atiya.json beside its content; the engine's own repository has none): every
+ * mode it names passes V33 to V37 (documentation/desktop/modes.md §6), or the content doesn't load.
+ */
+function checkSiteModes(index: ContentIndex) {
+  const root = contentRoot();
+  const file = join(dirname(root), 'atiya.json');
+  if (!existsSync(file)) return;
+  const modes = siteModes.safeParse(JSON.parse(readFileSync(file, 'utf8')));
+  if (!modes.success) throw new ContentError(modes.error.issues.map((i) => ({ file: 'atiya.json', path: i.path.join('.'), message: i.message })));
+  const structures: Record<string, unknown> = {};
+  for (const m of modes.data.modes) {
+    const at = BUILTIN_MODES.get(m.id)?.structureFile;
+    const path = at ? join(root, ...at.split('/')) : null;
+    if (path && existsSync(path)) structures[m.id] = JSON.parse(readFileSync(path, 'utf8'));
+  }
+  const r = checkModes({ modes: modes.data, index, structures });
+  if (r.issues.length) throw new ContentError(r.issues.map((i) => ({ file: i.file, message: `${i.message} (${i.rule})` })));
+}
 
 /** Everything in the content folder, validated; throws a ContentError that lists every problem. */
 export function content(): ContentIndex {
@@ -22,6 +47,7 @@ export function content(): ContentIndex {
     // documents that changed are parsed again: source.ts)
     const snap = timed('content.read', () => currentSnapshot());
     const index = timed('content.validate', () => loadContent(snap.docs, snap.masters, snap.errors));
+    timed('content.modes', () => checkSiteModes(index));
     for (const w of index.warnings) console.warn(`[content] ${w}`);
     cached = { generation: now, index };
   }
