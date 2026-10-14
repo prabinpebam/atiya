@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-02",
+  "updatedAt": "2026-10-14",
   "locale": "en",
   "thumbnail": "articles/watai/pasted-picture-2026-10-02",
   "body": [
@@ -50,7 +50,8 @@
       "type": "figure",
       "media": "articles/watai/pasted-picture-2026-10-02-2",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "rounded": false
     },
     {
       "type": "heading",
@@ -71,7 +72,8 @@
       "type": "figure",
       "media": "articles/watai/pasted-picture-2026-10-02-3",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "rounded": false
     },
     {
       "type": "text",

@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "file": "reading-overlay.webp",
+  "dark": {
+    "file": "reading-overlay.dark.webp"
+  },
+  "alt": "The Town Hall's About section over a frosted view of the planet, with the My journey with DesignUp card, theme control, Open classic page and Close actions.",
+  "caption": "Reading stays on the planet: the site's pages on a frosted surface, with a theme choice and a direct route to the classic page. Captured 14 October 2026.",
+  "visibility": "public"
+}
