@@ -18,7 +18,7 @@ export interface ModeDataOptions {
 
 /** @param index the validated content @param o the mode, its structure and the site's base */
 export function buildModeData(index: ContentIndex, o: ModeDataOptions): ModeData {
-  const at = (path: string) => `${o.base.replace(/\/$/, '')}${path}`;
+  const at = (path: string) => `${o.base.replace(/\/+$/, '')}${path}`;
   const sections = (index.structure.home.children ?? []).flatMap((node) => {
     if (node.kind !== 'hub') return [];
     const route = index.routes.find((r) => r.node.kind === 'hub' && r.node.id === node.id);

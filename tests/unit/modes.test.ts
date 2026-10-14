@@ -149,6 +149,47 @@ describe('V33 to V37 refuse what they name (8.2)', () => {
   });
 });
 
+describe("the planet reads mode data (8.1)", () => {
+  it("its buildings are exactly what they were: the owner's site, with private fixtures beside it", async () => {
+    vi.resetModules();
+    const repo = await import('../../src/site/content/repository');
+    const { PLACES } = await import('../../src/game/world/places');
+    const { landmarksFrom } = await import('../../src/game/world/modeLandmarks');
+    const { withBase } = await import('../../src/game/platform/base');
+    // play.astro's own join, before mode data
+    const planet = repo.getPlanet()!;
+    const routes = repo.getRoutes();
+    const before = PLACES.map((world) => {
+      const place = planet.places.find((p) => p.id === world.id)!;
+      const site = place.site ? routes.find((r) => r.node.id === place.site)?.path : undefined;
+      return {
+        ...world,
+        title: place.title,
+        kicker: place.kicker,
+        summary: place.summary,
+        pages: repo.placePages(world.id).map(({ article, route }) => ({ id: article.id, title: article.title, href: withBase(route.path) })),
+        siteHref: withBase(site ?? '/#sections'),
+      };
+    });
+    const after = landmarksFrom(PLACES, repo.getModeData('little-planet')!);
+    expect(after).toEqual(before);
+    expect(after.some((l) => l.pages.length > 0)).toBe(true);
+  });
+
+  it('a slot with no section has no pages and leads to the list of sections', async () => {
+    const { PLACES } = await import('../../src/game/world/places');
+    const { landmarksFrom } = await import('../../src/game/world/modeLandmarks');
+    const f = fixture();
+    const structure = PLANET.readStructure(f.planet);
+    structure.slots[0] = { ...structure.slots[0], section: null };
+    const data = buildModeData(f.index, { id: 'little-planet', mount: 'play', structure, base: '/atiya/' });
+    const first = landmarksFrom(PLACES, data).find((l) => l.id === structure.slots[0].id)!;
+    expect(first.pages).toEqual([]);
+    expect(first.siteHref).toBe('/atiya/#sections');
+    expect(() => landmarksFrom(PLACES, { ...data, slots: data.slots.slice(1) })).toThrow(/has no/);
+  });
+});
+
 describe("the content load holds a managed site to the rules", () => {
   /** The repository on a starter site with this atiya.json beside its content. */
   async function load(atiya: unknown) {

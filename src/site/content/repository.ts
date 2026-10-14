@@ -11,7 +11,8 @@ import { placeRoutes } from './navigation';
 import { timed } from './timing';
 import { checkModes } from '../modes/rules';
 import { BUILTIN_MODES } from '../modes/builtin';
-import { siteModes } from '../modes/contract';
+import { siteModes, type ModeData } from '../modes/contract';
+import { buildModeData } from '../modes/data';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Route } from './routes';
@@ -61,6 +62,18 @@ export const getStructure = () => content().structure;
 export const getRedirects = () => content().redirects;
 /** The planet's buildings: their words and the section each shows (null without content/structures/planet.json). */
 export const getPlanet = () => content().planet;
+
+/**
+ * What a built-in mode is given (documentation/desktop/modes.md §5.2): its slots and the site's published
+ * open pages, nothing private or draft. Null when the mode has no structure.
+ */
+export function getModeData(id: string): ModeData | null {
+  const mode = BUILTIN_MODES.get(id);
+  // Little planet's structure is still the planet structure (until M1 moves it to structures/modes/)
+  const raw = id === 'little-planet' ? content().planet : null;
+  if (!mode || !raw) return null;
+  return buildModeData(content(), { id, mount: mode.manifest.mount, structure: mode.readStructure(raw), base: import.meta.env.BASE_URL ?? '/' });
+}
 
 /** The section of the site a building shows (documentation/sections/spec.md §5.2). */
 export const placeSection = (placeId: string): Route | undefined => {
