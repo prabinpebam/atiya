@@ -356,8 +356,11 @@ export const siteSettings = z.strictObject({
     .strictObject({
       /** The contact form's service (documentation/contact/spec.md): its address. */
       contact: z.strictObject({ endpoint: z.url({ protocol: /^https$/ }) }).optional(),
-      /** PostHog (documentation/access/spec.md §9): the project's public key and its host. */
-      telemetry: z.strictObject({ key: z.string().regex(/^phc_\w+$/), host: z.url({ protocol: /^https$/ }).optional() }).optional(),
+      /**
+       * PostHog (documentation/access/spec.md §9): the project's public key, its host, and the site's own address:
+       * a build for any other address (a copy of the site, this computer) leaves the key out.
+       */
+      telemetry: z.strictObject({ key: z.string().regex(/^phc_\w+$/), host: z.url({ protocol: /^https$/ }).optional(), site: z.url({ protocol: /^https$/ }) }).optional(),
     })
     .optional(),
 });

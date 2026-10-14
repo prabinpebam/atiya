@@ -99,6 +99,8 @@ try {
   }
   if (!buildSite(ROOT, join(work, 'source.log'))) fail('the source build failed (above)');
   cpSync(join(ROOT, 'dist'), join(work, 'source-dist'), { recursive: true });
+  // built for the published address, it holds the telemetry key: never leave it where a preview or a benchmark would serve it
+  rmSync(join(ROOT, 'dist'), { recursive: true, force: true });
 
   step("Through this commit's engine pack, as site-build.yml builds");
   execFileSync(process.execPath, ['scripts/pack-engine.mjs', '--out', join(work, 'release')], { cwd: ROOT, stdio: ['ignore', 'ignore', 'inherit'] });
@@ -128,7 +130,8 @@ try {
   if (!report.ok) fail('the two builds differ: the engine release would not make the same site');
 } catch (e) {
   if (!(e instanceof Error && e.message === 'stop')) {
-    console.log(`${ci ? '::error::' : 'FAILED: '}${e instanceof Error ? e.message : String(e)}`);
+    // a workflow's log is public, and an error's message can hold a path under private-pages/ (a page's ID)
+    console.log(ci ? "::error::The parity check stopped on an unexpected error. Its message isn't printed here, since it can name a private file: run node scripts/build-parity.mjs locally to see it." : `FAILED: ${e instanceof Error ? e.message : String(e)}`);
     process.exitCode = 1;
   }
 } finally {

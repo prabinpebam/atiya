@@ -21,3 +21,8 @@ assets-src/audio/.cache/
 # the contact service's local settings can hold its secrets (documentation/contact/spec.md §4.4)
 contact-api/local.settings.json
 release/
+
+# the owner's content and private pages, moved aside while the starter is built (scripts/build-starter.mjs,
+# build-parity.mjs --starter): never committed, even if a run is interrupted and leaves them here
+.content-owner-aside/
+.private-pages-owner-aside/

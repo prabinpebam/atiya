@@ -7,8 +7,9 @@
  *
  * - A `--mode test` build never reads them: its endpoint is .env.test's made-up host, and telemetry has its own
  *   test switch, so a test can never reach the real services.
- * - The telemetry key is used only in a build for a published address (`SITE_URL` set, as both workflows do):
- *   a production build on this computer, its preview or a benchmark never sends anything.
+ * - The telemetry key is used only in a build for the address it names (`services.telemetry.site`, compared with
+ *   `SITE_URL` and `BASE_PATH`, which both workflows set): a production build on this computer, its preview, a
+ *   benchmark, and a copy of the site published anywhere else never send to the owner's project.
  * - Otherwise the content wins over the environment, so a variable left in a terminal can't point a build elsewhere.
  */
 import { existsSync, readFileSync } from 'node:fs';
@@ -22,18 +23,32 @@ export const SERVICE_VARS = ['PUBLIC_CONTACT_ENDPOINT', 'PUBLIC_POSTHOG_KEY', 'P
 /**
  * What the build's variables are, from the site's settings. Pure.
  * @param {any} site content/site.json, or null
- * @param {{ command: string, mode?: string, siteUrl?: string }} o
+ * @param {{ command: string, mode?: string, siteUrl?: string, base?: string }} o
  * @returns {Record<string, string> | null} null: leave them to the environment (a test build)
  */
-export function serviceVars(site, { command, mode, siteUrl }) {
+export function serviceVars(site, { command, mode, siteUrl, base }) {
   if (mode === 'test') return null;
   const s = site?.services ?? {};
-  const published = command === 'build' && !!siteUrl;
+  const published = command === 'build' && !!siteUrl && !!s.telemetry?.site && sameAddress(s.telemetry.site, siteUrl, base);
   return {
     PUBLIC_CONTACT_ENDPOINT: s.contact?.endpoint ?? '',
     PUBLIC_POSTHOG_KEY: published ? (s.telemetry?.key ?? '') : '',
     PUBLIC_POSTHOG_HOST: published ? (s.telemetry?.host ?? '') : '',
   };
+}
+
+/**
+ * Is the build for this address? `https://ada.github.io/` and `https://ada.github.io` with base `/` are, and
+ * `https://ada.github.io/atiya/` is `https://ada.github.io` with base `/atiya`. Pure.
+ * @param {string} address @param {string} siteUrl @param {string} [base]
+ */
+export function sameAddress(address, siteUrl, base = '/') {
+  try {
+    const norm = (/** @type {URL} */ u) => `${u.origin}${u.pathname.replace(/\/?$/, '/')}`;
+    return norm(new URL(address)) === norm(new URL(base.replace(/^\/?/, '/'), siteUrl));
+  } catch {
+    return false;
+  }
 }
 
 /** @returns {import('astro').AstroIntegration} */
@@ -53,7 +68,7 @@ export default function services() {
         } catch {
           // not JSON: the content check names it, and the build fails there
         }
-        const vars = serviceVars(site, { command, mode: astroMode(), siteUrl: process.env.SITE_URL });
+        const vars = serviceVars(site, { command, mode: astroMode(), siteUrl: process.env.SITE_URL, base: process.env.BASE_PATH });
         if (!vars) return;
         updateConfig({ vite: { define: Object.fromEntries(Object.entries(vars).map(([k, v]) => [`import.meta.env.${k}`, JSON.stringify(v)])) } });
       },
