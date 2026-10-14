@@ -38,6 +38,8 @@ export function buildIdOf(paths) {
  */
 export function normalise(text, build) {
   let t = build ? text.split(build).join('BUILD') : text;
+  // a site with no private pages has no sealed folder to learn the ID from, but its pages still name it
+  t = t.replace(/(<meta name="site-build" content=")[^"]*(")/g, '$1BUILD$2');
   t = t.replace(/(<template data-sealed="(?:main|card)") data-kid="[^"]*">([^<]*)<\/template>/g, (_, open, body) => `${open} data-kid="KID">SEALED:${body.length}</template>`);
   t = t.replace(/(_sealed\/BUILD\/)[A-Za-z0-9_-]+(\.bin)/g, '$1MEDIA$2');
   return t;
@@ -131,6 +133,6 @@ export function describe(r, max = 20) {
     ...(r.hiddenOnly ? [`${r.hiddenOnly} private pages are in one build only (not named)`] : []),
     `sealed files: ${r.sealed.source} and ${r.sealed.engine}${r.sealed.same ? ', the same shapes' : ', NOT the same shapes'}`,
     ...(allowed.length ? [`only in the source build, as expected: ${allowed.join(', ')}`] : []),
-    r.ok ? `the same, but for ${Object.keys(r.allowed).join(', ') || 'nothing'}` : 'the builds DIFFER',
+    r.ok ? (Object.keys(r.allowed).length ? `the same, but for ${Object.keys(r.allowed).join(', ')}` : 'the same') : 'the builds DIFFER',
   ].join('\n');
 }

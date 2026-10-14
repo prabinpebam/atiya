@@ -38,6 +38,8 @@ describe('the parity check (desktop plan stage 10)', () => {
     expect(compareBuilds(one, bigger)).toMatchObject({ ok: false, sealed: { same: false } });
     expect(normalise(page('B1', 'k1', 'AAAA', 'm1'), 'B1')).toBe(normalise(page('B2', 'k2', 'ZZZZ', 'm7'), 'B2'));
     expect(buildIdOf(['index.html', '_sealed/B1/m1.bin'])).toBe('B1');
+    // a site with no private pages: no sealed folder, but the page still names its build
+    expect(compareBuilds([f('index.html', '<meta name="site-build" content="X1"><p>a</p>')], [f('index.html', '<meta name="site-build" content="Y2"><p>a</p>')]).ok).toBe(true);
   });
 
   it("never names a private page or a sealed file, only counts them", () => {
