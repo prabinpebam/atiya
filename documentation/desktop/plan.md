@@ -421,7 +421,7 @@ Where the project stands against its goal (15 October 2026): a person who doesn'
 3. **No engine release** (6.2b, blocked on the owner). A person's site builds on GitHub from a tagged `engine-v*` release, and none is tagged, so a new site's first deploy would fail.
 4. **What a new site doesn't get yet:**
    - **A generic Little planet** (stage 8: M1.1 and M1.2 done, M1.3 on). Splitting the owner's planet from a generic one is M3; until then the starter's planet names the owner on its page.
-   - **The contact form and telemetry**, off for a new site by design: they use the owner's Azure service and PostHog key (spec §9.1). The shared relay for the form is opt-in and later (O7); a site's own PostHog key goes in Settings.
+   - **The contact form and telemetry**, off for a new site by design: they use the owner's Azure service and PostHog key (spec §9.1). The shared relay for the form is opt-in and later (O7); a site's own PostHog key goes in Settings. The options, in three tiers by setup effort, are proposed in [contact and visitor counts](site-services.md).
    - Ready: just the site, edit mode, private pages on first use (rehearsed to a sealed build), Ways to explore, the action center.
 5. **No one has tried it** (9.2, 9.3): the security review, and five people who don't write code each reaching a live site unaided.
 

@@ -378,6 +378,15 @@
       "group": "Atiya Studio"
     },
     {
+      "path": "desktop/site-services.md",
+      "title": "Desktop app: contact and visitor counts (proposal)",
+      "order": 40.3,
+      "icon": "contact_mail",
+      "status": "draft",
+      "updated": "2026-10-15",
+      "group": "Atiya Studio"
+    },
+    {
       "path": "desktop/modes.md",
       "title": "Navigation modes",
       "order": 50,
