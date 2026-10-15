@@ -49,7 +49,19 @@ body.frame {
   bottom: var(--card-inset);
   border-radius: var(--card-radius);
   box-shadow: 0 0 0 100vmax var(--color-bg-raised);
-  outline: var(--border-hairline) solid var(--color-rule);
+  pointer-events: none;
+}
+
+/* the card's edge: drawn above the bar, which paints the same surface and would hide its top line */
+.card-edge {
+  position: absolute;
+  z-index: calc(var(--layer-raised) + 1);
+  top: var(--bar-height);
+  left: var(--card-inset);
+  right: var(--card-inset);
+  bottom: var(--card-inset);
+  border-radius: var(--card-radius);
+  box-shadow: 0 0 0 var(--border-hairline) var(--color-rule);
   pointer-events: none;
 }
 
@@ -515,4 +527,359 @@ body.frame {
 :root[data-frame='native'] .bar button,
 :root[data-frame='native'] .segmented {
   -webkit-app-region: no-drag;
+}
+
+/* the screen's header, drawn in the row (plan stage 7B): its title after the start, its controls before the end */
+.context {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1 1 auto;
+  margin-inline-start: var(--space-2);
+  padding-inline-start: var(--space-3);
+  border-inline-start: var(--border-hairline) solid var(--color-rule);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.context:empty {
+  display: none;
+}
+
+.page-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.page-text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.page-text.strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.page-tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--color-rule);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.page-tag[data-tone='positive'] {
+  color: var(--color-positive);
+}
+
+.page-tag[data-tone='highlight'],
+.page-tag[data-tone='accent'] {
+  color: var(--color-accent);
+}
+
+.page-tag .glyph,
+.page-status .glyph,
+.page-icon .glyph,
+.page-button .glyph,
+.choice .glyph {
+  width: var(--size-icon);
+  height: var(--size-icon);
+  flex: none;
+  fill: currentColor;
+}
+
+.glyph .icon-secondary {
+  fill: var(--color-accent);
+  opacity: 0.4;
+}
+
+.page-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-inline: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.page-status[data-state='failed'],
+.page-status[data-state='offline'] {
+  color: var(--color-negative);
+}
+
+.page-icon,
+.page-link {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-touch);
+  height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.page-link {
+  padding-inline: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.page-icon[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-on-accent-soft);
+}
+
+.page-icon[data-tone] {
+  font-size: var(--text-sm);
+}
+
+.page-button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.page-button[data-variant='primary'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.page-button[data-variant='quiet'] {
+  border-color: transparent;
+  background: transparent;
+}
+
+.page-icon:focus-visible,
+.page-link:focus-visible,
+.page-button:focus-visible,
+.choice:focus-visible {
+  outline: var(--border-focus) solid var(--color-focus);
+  outline-offset: calc(-1 * var(--border-focus));
+}
+
+@media (hover: hover) {
+  .page-icon:hover:not(:disabled),
+  .page-link:hover {
+    background: var(--color-accent-soft);
+  }
+}
+
+.page-icon:active:not(:disabled),
+.page-link:active {
+  background: var(--color-accent-soft);
+}
+
+/* a choice (the theme): a menu of options */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 12rem;
+  padding: var(--space-1);
+}
+
+.choices[hidden] {
+  display: none;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-content: flex-start;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.choice[aria-checked='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-on-accent-soft);
+}
+
+@media (hover: hover) {
+  .choice:hover {
+    background: var(--color-accent-soft);
+  }
+}
+
+.spin {
+  display: inline-block;
+  flex: none;
+  width: var(--size-icon);
+  height: var(--size-icon);
+  border-radius: var(--radius-round);
+  border: var(--border-strong) solid var(--color-rule);
+  border-top-color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spin {
+    animation: spin var(--duration-slower) linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* a screen opening, or a wait: a line under the row, as edit mode's own header had */
+:root[data-busy='on'] .bar::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: var(--border-strong);
+  background: var(--color-accent);
+  opacity: 0.6;
+}
+
+/* a narrow window keeps the controls: the app's title goes first, then the screen's title shrinks */
+@media (max-width: 80rem) {
+  /* still the page's heading, for screen readers */
+  .title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* when the row is full (an article's header holds a lot): what never gives way, and what does */
+.logo,
+.segmented,
+.icon-button,
+.server,
+.controls,
+.page-controls > * {
+  flex-shrink: 0;
+}
+
+/* the app's name steps aside for the screen's own title (the logo stays; the heading stays for screen readers) */
+:root:has(#page-context:not(:empty)) .title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.context .page-text.strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.context .page-link,
+.context .page-tag {
+  flex-shrink: 0;
+}
+
+/* a tool: the bar's height to press, a little narrower than the app's own buttons so a full header fits */
+.page-controls .page-icon {
+  min-width: var(--space-10);
+}
+
+/* a status that links somewhere (Tests): a compact chip, coloured by its health, not a button's pill */
+.page-button[data-tone] {
+  min-height: var(--size-touch);
+  padding: 0 var(--space-2);
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.page-button[data-tone] .glyph {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+/* the Tests screen's health names (TestRuns.astro) */
+.page-button[data-tone='ok'],
+.page-button[data-tone='passed'] {
+  color: var(--color-positive);
+}
+
+.page-button[data-tone='failed'],
+.page-button[data-tone='dead'] {
+  color: var(--color-negative);
+}
+
+/* a full row (an article's header holds a lot): the window's controls and the screen's tools never give way; the
+   start group shrinks, clipping rather than going under the end; and the script squeezes (frame.js): first the save
+   status and the Tests chip lose their words (kept in their names), then the screen's tags */
+.group.start {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.group.end {
+  flex: none;
+}
+
+.context .page-text.strong {
+  flex: 0 1 auto;
+}
+
+:root[data-squeeze] .page-status > span:last-child,
+:root[data-squeeze] .page-button[data-tone] > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[data-squeeze='2'] .context .page-tag {
+  display: none;
+}
+/* an icon on a filled button takes the button's text colour for both its layers (the site's tonal icon) */
+.page-button[data-variant='primary'] .glyph,
+.page-button[data-variant='primary'] .glyph .icon-secondary {
+  fill: currentColor;
+}
+
+.page-button[data-variant='primary'] .glyph .icon-secondary {
+  opacity: 0.4;
 }

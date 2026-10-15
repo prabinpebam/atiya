@@ -22,6 +22,34 @@ if (mode === 'never-listen') {
   process.exit(3);
 }
 const page = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title></head><body><main><h1>${title}</h1>${body}</main></body></html>`;
+// edit mode in the app describes its header to the title bar and takes its commands (plan stage 7B): the stand-in
+// does the same with a fixed header, records the commands it's given, and applies a theme as edit mode would
+const studio = (asked) => `<p id="studio-asked">${asked ? 'asked' : 'not asked'}</p><ol id="commands"></ol><script>
+  const b = window.atiyaStudio;
+  if (b) {
+    let theme = 'system';
+    const header = () => ({
+      context: [{ kind: 'link', id: 's1', label: 'Pages', text: 'Pages' }, { kind: 'text', text: 'A stand-in page', strong: true }, { kind: 'tag', text: 'Published', tone: 'positive' }],
+      controls: [
+        { kind: 'status', state: 'saved', text: 'All changes saved' },
+        { kind: 'button', id: 's2', label: 'Undo', icon: 'undo' },
+        { kind: 'button', id: 's3', label: 'Desktop width', icon: 'desktop', pressed: true },
+        { kind: 'select', id: 's4', label: 'Colour theme', value: theme, options: [{ value: 'system', label: 'System', icon: 'theme-system' }, { value: 'light', label: 'Light', icon: 'theme-light' }, { value: 'dark', label: 'Dark', icon: 'theme-dark' }] },
+        { kind: 'button', id: 's5', label: 'Save to remote', text: 'Save to remote', icon: 'upload', variant: 'primary' },
+        { kind: 'html', id: 's6', label: '<b>not drawn</b>' },
+      ],
+      theme,
+      busy: false,
+    });
+    b.onCommand((c) => {
+      const li = document.createElement('li');
+      li.textContent = c.action + ' ' + c.id + (c.value ? ' ' + c.value : '');
+      document.getElementById('commands').append(li);
+      if (c.action === 'select' && c.id === 's4') { theme = c.value; b.publish(header()); }
+    });
+    b.publish(header());
+  }
+</script>`;
 createServer((req, res) => {
   res.setHeader('content-type', 'text/html; charset=utf-8');
   // as the engine's dev server does for a managed site (integrations/launch.mjs)
@@ -29,7 +57,7 @@ createServer((req, res) => {
     res.statusCode = 403;
     return res.end('This site is open in Atiya Studio. Open it there.');
   }
-  if (req.url?.startsWith('/_edit/')) res.end(page(`Edit mode (stand-in)${owner}`, '<p><a id="out" href="https://example.com/">An outside link</a></p><p><a id="in" href="/">The site</a></p>'));
+  if (req.url?.startsWith('/_edit/')) res.end(page(`Edit mode (stand-in)${owner}`, `<p><a id="out" href="https://example.com/">An outside link</a></p><p><a id="in" href="/">The site</a></p>${studio(req.headers['x-atiya-studio'] === '1')}`));
   else res.end(page('Site (stand-in)', '<p>Home</p>'));
 }).listen(port, 'localhost', () => {
   console.log(`stand-in: listening on http://localhost:${port}/`);

@@ -60,5 +60,26 @@ if (location.protocol === 'app:') {
       raise: (up) => ipcRenderer.send('frame:raise', up),
       menu: (x, y) => ipcRenderer.send('app:menu', x, y),
     },
+    // edit mode's header, as the row draws it (plan stage 7B): what edit mode described, and pressing it
+    onHeader(cb) {
+      const listener = (_e, h) => cb(h);
+      ipcRenderer.on('studio:header', listener);
+      return () => ipcRenderer.removeListener('studio:header', listener);
+    },
+    header: () => ipcRenderer.invoke('studio:header'),
+    command: (c) => ipcRenderer.send('studio:command', c),
+  });
+}
+
+// Edit mode in the app's own view gets one thing: describing its header to the app's one title bar row, and
+// hearing the row's commands (plan stage 7B, src/site/editor/scripts/studio.ts). The main process checks both.
+if (location.protocol === 'http:' && location.hostname === 'localhost' && location.pathname.startsWith('/_edit/')) {
+  contextBridge.exposeInMainWorld('atiyaStudio', {
+    publish: (header) => ipcRenderer.send('studio:header', header),
+    onCommand(cb) {
+      const listener = (_e, c) => cb(c);
+      ipcRenderer.on('studio:command', listener);
+      return () => ipcRenderer.removeListener('studio:command', listener);
+    },
   });
 }

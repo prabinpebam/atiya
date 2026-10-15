@@ -39,6 +39,8 @@ export async function launch(o = {}) {
     env: {
       ...process.env,
       ATIYA_USER_DATA: join(root, 'data'),
+      // the window shows without taking focus from whoever is at the computer
+      ATIYA_BACKGROUND: '1',
       ATIYA_DEV_SERVER: JSON.stringify({ command: process.execPath, args: [STUB] }),
       ATIYA_DEV_PORT: String(port),
       ATIYA_SUGGEST_DIR: o.suggest === null ? '' : (o.suggest ?? checkout),
@@ -66,6 +68,8 @@ export async function launchSetup(o) {
       ...process.env,
       ATIYA_CLIPBOARD_LOG: clipboardLog,
       ATIYA_USER_DATA: join(root, 'data'),
+      // the window shows without taking focus from whoever is at the computer
+      ATIYA_BACKGROUND: '1',
       ATIYA_HOME: join(root, 'home'),
       ATIYA_GITHUB_URL: o.fakeUrl,
       ATIYA_DEV_SERVER: JSON.stringify({ command: process.execPath, args: [STUB] }),

@@ -343,3 +343,151 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', accent);
 
 win.onState(applyWindow);
 win.state().then(applyWindow);
+
+// ---------- the screen's header, drawn here (plan stage 7B) ----------
+// Edit mode describes its header (its title, tools, save status, theme, Save to remote) and keeps it hidden; the
+// row draws it with its own controls, and each one asks edit mode to press the original, so they work as they did.
+
+/** @param {string} name */
+function glyph(name) {
+  const icon = ICONS[name];
+  if (!icon) return null;
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', icon.viewBox);
+  s.setAttribute('aria-hidden', 'true');
+  s.setAttribute('focusable', 'false');
+  s.classList.add('glyph');
+  s.innerHTML = icon.body;
+  return s;
+}
+const node = (tag, cls) => Object.assign(document.createElement(tag), cls ? { className: cls } : {});
+const spinner = () => Object.assign(node('span', 'spin'), { ariaHidden: 'true' });
+const STATUS_ICON = { saved: 'success', idle: 'success', dirty: 'edit', failed: 'error', offline: 'error' };
+const command = (c) => window.atiya.command(c);
+
+function drawItem(it) {
+  if (it.kind === 'text') {
+    const s = node('span', it.strong ? 'page-text strong' : 'page-text');
+    if (it.busy) s.append(spinner());
+    s.append(it.text);
+    return s;
+  }
+  if (it.kind === 'tag') {
+    const s = node('span', 'page-tag');
+    if (it.tone) s.dataset.tone = it.tone;
+    const g = it.icon && glyph(it.icon);
+    if (g) s.append(g);
+    s.append(it.text);
+    return s;
+  }
+  if (it.kind === 'status') {
+    // edit mode's own line is hidden with its header, so this one is heard instead
+    const s = node('span', 'page-status');
+    s.dataset.state = it.state ?? 'idle';
+    const mark = it.state === 'saving' ? spinner() : glyph(STATUS_ICON[it.state] ?? 'success');
+    if (mark) {
+      mark.setAttribute?.('aria-hidden', 'true');
+      s.append(mark);
+    }
+    const t = node('span');
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
+    t.textContent = it.text ?? '';
+    s.append(t);
+    return s;
+  }
+  const b = node('button');
+  b.type = 'button';
+  b.dataset.id = it.id;
+  if (it.kind === 'select') {
+    const chosen = it.options.find((o) => o.value === it.value) ?? it.options[0];
+    b.className = 'page-icon';
+    b.setAttribute('aria-label', `${it.label}: ${chosen?.label ?? ''}`);
+    b.title = it.label;
+    b.setAttribute('aria-haspopup', 'menu');
+    b.setAttribute('aria-expanded', 'false');
+    b.setAttribute('aria-controls', 'choices');
+    const g = chosen?.icon && glyph(chosen.icon);
+    if (g) b.append(g);
+    b.addEventListener('click', () => (open?.panel === $('choices') ? closePopover(true) : openChoices(it, b)));
+    return b;
+  }
+  const inContext = it.kind === 'link' && !it.icon;
+  b.className = inContext ? 'page-link' : it.text ? 'page-button' : 'page-icon';
+  if (it.variant) b.dataset.variant = it.variant;
+  if (it.tone) b.dataset.tone = it.tone;
+  const g = it.icon && glyph(it.icon);
+  if (g) b.append(g);
+  if (it.text) b.append(Object.assign(node('span'), { textContent: it.text }));
+  if (!it.text || it.text !== it.label) b.setAttribute('aria-label', it.label);
+  b.title = it.label;
+  if (typeof it.pressed === 'boolean') b.setAttribute('aria-pressed', String(it.pressed));
+  b.disabled = Boolean(it.disabled);
+  b.addEventListener('click', () => command({ id: it.id, action: 'click' }));
+  return b;
+}
+
+function openChoices(it, trigger) {
+  const box = $('choices');
+  box.setAttribute('aria-label', it.label);
+  box.replaceChildren(
+    ...it.options.map((o) => {
+      const b = node('button', 'choice');
+      b.type = 'button';
+      b.setAttribute('role', 'menuitemradio');
+      b.setAttribute('aria-checked', String(o.value === it.value));
+      const g = o.icon && glyph(o.icon);
+      if (g) b.append(g);
+      b.append(Object.assign(node('span'), { textContent: o.label }));
+      b.addEventListener('click', () => {
+        closePopover(true);
+        command({ id: it.id, action: 'select', value: o.value });
+      });
+      return b;
+    }),
+  );
+  openPopover(box, trigger, 'end');
+  (box.querySelector('[aria-checked="true"]') ?? box.querySelector('button'))?.focus();
+}
+$('choices').addEventListener('keydown', (e) => {
+  const items = [...$('choices').querySelectorAll('button')];
+  const i = items.indexOf(document.activeElement);
+  const to = (n) => items[(n + items.length) % items.length]?.focus();
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') to(i + 1);
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') to(i - 1);
+  else if (e.key === 'Home') to(0);
+  else if (e.key === 'End') to(items.length - 1);
+  else return;
+  e.preventDefault();
+});
+
+function drawHeader(h) {
+  const focused = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.id : undefined;
+  $('page-context').replaceChildren(...(h?.context ?? []).map(drawItem));
+  $('page-controls').replaceChildren(...(h?.controls ?? []).map(drawItem));
+  $('page-controls').hidden = !h?.controls?.length;
+  // the row follows the theme chosen in edit mode
+  root.style.colorScheme = h?.theme === 'light' || h?.theme === 'dark' ? h.theme : '';
+  if (h?.busy) root.dataset.busy = 'on';
+  else delete root.dataset.busy;
+  if (focused) document.querySelector(`[data-id="${CSS.escape(focused)}"]`)?.focus();
+  // a popover whose trigger was drawn again follows the new one
+  if (open && !open.trigger.isConnected) open.trigger = document.querySelector(`[data-id="${CSS.escape(open.trigger.dataset.id ?? '')}"]`) ?? $('page-controls');
+  accent();
+}
+window.atiya.onHeader(drawHeader);
+window.atiya.header().then(drawHeader);
+
+// a full row: squeeze until the screen's title has room (frame.css), one step at a time; the words of a squeezed
+// status stay in its name
+const ROOM = 256;
+function squeeze() {
+  delete root.dataset.squeeze;
+  const ctx = $('page-context');
+  for (const level of ['1', '2']) {
+    if (!ctx.childElementCount || ctx.getBoundingClientRect().width >= ROOM) return;
+    root.dataset.squeeze = level;
+  }
+}
+new ResizeObserver(squeeze).observe($('window'));
+window.atiya.onHeader(() => requestAnimationFrame(squeeze));

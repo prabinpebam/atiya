@@ -62,6 +62,9 @@ const pending = git ? pendingCount(git) : 0;
 const unknown = !!git?.error;
 const articlePublish = screen === 'article' && git && wants(asked, 'publish', 'publish-issues') ? await publishView(Astro.url) : null;
 const to = (p: string) => withBase(`/_edit/${p}`);
+// in Atiya Studio the app's one title bar row draws this header (desktop spec §7.2, scripts/studio.ts): the app's
+// view asks with this request header, so the page comes without its own row, and never flashes one
+const studio = Astro.request.headers.get('x-atiya-studio') === '1';
 const groups = [
   {
     title: 'Content',
@@ -97,7 +100,7 @@ const groups = [
 ---
 
 <PageShell title={`${title} · Edit mode`} noindex preload={['ui']} liveContent={false}>
-  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined} data-generation={generation()}>
+  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined} data-generation={generation()} data-studio={studio ? '' : undefined}>
     <header class="top">
       <a class="brand" href={to('')}>Edit mode</a>
       <div class="title"><slot name="title" /></div>
@@ -205,6 +208,16 @@ const groups = [
 
   .editor:not([data-nav]) {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* in Atiya Studio the app's row is the header: this one stays in the page, hidden, for the app to read and press */
+  .editor[data-studio] {
+    --c-editor-topbar: var(--space-0);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .editor[data-studio] .top {
+    display: none;
   }
 
   .top {
@@ -427,6 +440,10 @@ const groups = [
       grid-template-rows: auto auto minmax(0, 1fr);
     }
 
+    .editor[data-studio] {
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
     .top {
       flex-wrap: wrap;
       padding-block: var(--space-2);
@@ -458,6 +475,10 @@ const groups = [
   import { bindThemeSwitch } from '../scripts/theme';
   import { initLive } from './scripts/live';
   import { editorUrl, pendingCheckedAt, refreshPending, resumePending, startTask, type Task } from './scripts/client';
+  import { initStudio } from './scripts/studio';
+
+  // in Atiya Studio: the app's row draws this header, from its description, and presses it
+  each<HTMLElement>('[data-editor-app][data-studio]', (app, signal) => initStudio(app, signal));
 
   // what changes elsewhere (another tab, a file changed by hand) comes in live; unsaved input stays
   each<HTMLElement>('[data-editor-app]', (app, signal) => initLive(app, signal));

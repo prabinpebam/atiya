@@ -77,9 +77,11 @@ test.describe('desktop: the window', () => {
       await frame.getByRole('button', { name: 'Restore' }).click();
       await expect.poll(async () => (await windowInfo(app)).bounds).toEqual(before);
       await expect(frame.locator('html')).toHaveAttribute('data-margin', 'rest');
-      await frame.getByRole('heading', { name: 'Atiya Studio' }).dblclick();
+      // the bar's empty band (the screen's title is part of it: the app's own name steps aside for it)
+      await frame.locator('#page-context .page-text').first().dblclick();
       await expect(frame.locator('html')).toHaveAttribute('data-maximized', 'true');
-      await frame.getByRole('heading', { name: 'Atiya Studio' }).dblclick();
+      // the bar's empty band (the screen's title is part of it: the app's own name steps aside for it)
+      await frame.locator('#page-context .page-text').first().dblclick();
       await expect(frame.locator('html')).toHaveAttribute('data-maximized', 'false');
       await frame.getByRole('button', { name: 'Minimize' }).click();
       if (process.platform === 'win32') await expect.poll(async () => (await windowInfo(app)).minimized).toBe(true);

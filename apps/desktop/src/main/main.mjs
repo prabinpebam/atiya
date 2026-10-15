@@ -26,6 +26,7 @@ import { SetupFlow } from './setup-flow.mjs';
 import { tokenStore } from './token-store.mjs';
 import { utilitySpawn } from './utility-spawn.mjs';
 import { AppWindowFrame, frameKindFor } from './window-frame.mjs';
+import { isEditMode, sanitizeCommand, sanitizeHeader } from '../core/studio-header.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = resolve(HERE, '..', '..');
@@ -46,6 +47,8 @@ const DEV_PORT = Number(process.env.ATIYA_DEV_PORT || 4321);
 const SITE_PORT = Number(process.env.ATIYA_SITE_PORT || process.env.ATIYA_DEV_PORT || 4325);
 const HOME = process.env.ATIYA_HOME || homedir();
 const FAKE = process.argv.includes('--fake-github') || process.env.ATIYA_FAKE_GITHUB === '1';
+/** Launched by a test or a script (ATIYA_BACKGROUND=1): the window never takes focus from the person at the computer. */
+const BACKGROUND = process.env.ATIYA_BACKGROUND === '1';
 
 /** The launch token: new every launch, given to a managed site's server and sent by the app's views alone (spec §7.3). */
 const LAUNCH_TOKEN = randomBytes(24).toString('base64url');
@@ -58,6 +61,8 @@ if (!app.requestSingleInstanceLock()) app.quit();
 let win = null;
 /** @type {AppWindowFrame} */
 let windowFrame;
+/** Edit mode's header, as the row draws it (plan stage 7B); null away from edit mode. @type {import('../core/studio-header.mjs').StudioHeader | null} */
+let studioHeader = null;
 /** @type {WebContentsView} */
 let frame;
 /** @type {WebContentsView} */
@@ -148,7 +153,9 @@ function icon(name = 'icon.png') {
 
 function createWindow() {
   windowFrame = new AppWindowFrame(frameKindFor(process.platform, process.argv, process.env), join(app.getPath('userData'), 'window.json'));
-  win = new BaseWindow({ ...windowFrame.options(), title: 'Atiya Studio', icon: icon(), show: true });
+  win = new BaseWindow({ ...windowFrame.options(), title: 'Atiya Studio', icon: icon(), show: !BACKGROUND });
+  // a test's window shows without taking focus from whoever is at the computer
+  if (BACKGROUND) win.showInactive();
   frame = new WebContentsView({ webPreferences: viewPreferences({ preload: PRELOAD }) });
   body = new WebContentsView({ webPreferences: viewPreferences({ preload: PRELOAD }) });
   // the frame's page is transparent where the body is and in the margin
@@ -180,6 +187,28 @@ function createWindow() {
   ipcMain.handle('window:state', (e) => (fromFrame(e) ? windowFrame.state() : null));
   ipcMain.on('frame:raise', (e, up) => fromFrame(e) && raiseFrame(up === true));
   ipcMain.on('app:menu', (e, x, y) => fromFrame(e) && Number.isFinite(x) && Number.isFinite(y) && popupMenu(x, y));
+  // edit mode's header, drawn by the row (plan stage 7B): described by edit mode, pressed from the row; both checked
+  const inEditMode = () => isEditMode(body.webContents.getURL(), devOrigin());
+  const sendHeader = () => !frame.webContents.isDestroyed() && frame.webContents.send('studio:header', studioHeader);
+  ipcMain.on('studio:header', (e, h) => {
+    if (e.sender !== body.webContents || !inEditMode()) return;
+    studioHeader = sanitizeHeader(h);
+    sendHeader();
+  });
+  ipcMain.handle('studio:header', (e) => (fromFrame(e) ? studioHeader : null));
+  ipcMain.on('studio:command', (e, c) => {
+    const cmd = sanitizeCommand(c);
+    if (fromFrame(e) && cmd && studioHeader && inEditMode()) body.webContents.send('studio:command', cmd);
+  });
+  // leaving edit mode (the site, the app's own pages) takes its controls out of the row; another screen of it
+  // replaces them as soon as it has described its own
+  body.webContents.on('did-start-navigation', (/** @type {any} */ d, /** @type {any} */ url, /** @type {any} */ inPlace, /** @type {any} */ mainFrame) => {
+    const main = d?.isMainFrame ?? mainFrame;
+    const same = d?.isSameDocument ?? inPlace;
+    if (!main || same || isEditMode(d?.url ?? url ?? '', devOrigin()) || !studioHeader) return;
+    studioHeader = null;
+    sendHeader();
+  });
   layout();
   win.on('resize', layout);
   win.on('close', (e) => {
@@ -615,7 +644,11 @@ app.whenReady().then(async () => {
   // the launch token goes on every request the views make to a managed site's server, and nowhere else
   session.defaultSession.webRequest.onBeforeSendHeaders((details, cb) => {
     const managed = workspace?.kind === 'managed' && details.url.startsWith(`http://localhost:${SITE_PORT}/`);
-    cb({ requestHeaders: managed ? { ...details.requestHeaders, 'X-Atiya-Launch': LAUNCH_TOKEN } : details.requestHeaders });
+    /** @type {Record<string, string>} */
+    const headers = managed ? { ...details.requestHeaders, 'X-Atiya-Launch': LAUNCH_TOKEN } : { ...details.requestHeaders };
+    // edit mode in the app's view comes without its own header row: the app's row draws it (plan stage 7B)
+    if (body && details.webContentsId === body.webContents.id && details.url.startsWith(`${devOrigin()}/`)) headers['X-Atiya-Studio'] = '1';
+    cb({ requestHeaders: headers });
   });
   makeFlow();
   bridge();

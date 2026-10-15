@@ -22,8 +22,12 @@
       </div>
       <button type="button" class="icon-button" id="open-browser" aria-label="Open in browser" title="Open in browser"><svg data-icon="external" aria-hidden="true" focusable="false"></svg></button>
       <button type="button" class="server" id="server" aria-haspopup="dialog" aria-expanded="false" aria-controls="server-panel" aria-label="Edit mode: starting" title="Edit mode"><span class="dot" id="server-dot" data-tone="busy"></span></button>
+      <!-- the screen's title (edit mode describes its header: plan stage 7B) -->
+      <div class="context" id="page-context"></div>
     </div>
     <div class="group end">
+      <!-- the screen's own controls: its tools, save status, theme and Save to remote -->
+      <div class="page-controls" id="page-controls" role="group" aria-label="This screen" hidden></div>
       <span class="live" id="state" role="status" aria-live="polite"></span>
       <button type="button" class="quiet" id="open-live" hidden>Open my site</button>
       <button type="button" class="quiet" id="see-why" hidden>See why</button>
@@ -35,6 +39,8 @@
       </div>
     </div>
   </header>
+  <!-- the card's edge, over the bar's surface so its top line shows whole -->
+  <div class="card-edge" aria-hidden="true"></div>
 </div>
 
 <section class="popover" id="server-panel" role="dialog" aria-labelledby="server-title" tabindex="-1" hidden>
@@ -52,6 +58,8 @@
 </section>
 
 <section class="popover layouts" id="layouts" role="dialog" aria-label="Snap layouts" hidden></section>
+
+<section class="popover choices" id="choices" role="menu" aria-label="Choose" hidden></section>
 
 <div class="handles" id="handles" aria-hidden="true">
   <div class="handle" data-window-handle="n"></div><div class="handle" data-window-handle="s"></div>
