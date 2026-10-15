@@ -1,11 +1,10 @@
 // @ts-check
-/** Stage 9P (documentation/desktop/plan.md): the engine an installed app carries as one archive, and the client ID. */
+/** Stage 9P (documentation/desktop/plan.md): the engine an installed app carries as one archive. */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { githubClientId } from '../src/core/setup/client-id.mjs';
 import { engineArchive, engineFolder, unpackEngine } from '../src/core/setup/engine-archive.mjs';
 
 const roots = /** @type {string[]} */ ([]);
@@ -71,18 +70,5 @@ describe('the engine as one archive', () => {
     await expect(unpackEngine({ tar: join(res, 'engine.tar') }, folder)).rejects.toThrow(/no engine\.json/);
     expect(existsSync(join(folder, 'engine.json'))).toBe(false);
     await expect(unpackEngine({ tar: join(res, 'missing.tar') }, folder)).rejects.toThrow(/couldn't be unpacked/);
-  });
-});
-
-describe("the OAuth App's client ID", () => {
-  it("is the environment's, else the one the app was built with, else none; checked for shape", () => {
-    const pkg = JSON.stringify({ name: 'atiya-studio', atiya: { githubClientId: 'Ov23liABCDEFGH123456' } });
-    expect(githubClientId({ ATIYA_GITHUB_CLIENT_ID: 'Iv1.0123456789abcdef' }, pkg)).toBe('Iv1.0123456789abcdef');
-    expect(githubClientId({}, pkg)).toBe('Ov23liABCDEFGH123456');
-    expect(githubClientId({}, JSON.stringify({ name: 'atiya-studio' }))).toBeNull();
-    expect(githubClientId({}, null)).toBeNull();
-    expect(githubClientId({}, 'not json')).toBeNull();
-    expect(githubClientId({}, JSON.stringify({ atiya: { githubClientId: 'x"; alert(1)' } }))).toBeNull();
-    expect(githubClientId({ ATIYA_GITHUB_CLIENT_ID: 'short' }, pkg)).toBeNull();
   });
 });

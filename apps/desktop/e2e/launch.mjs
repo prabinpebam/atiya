@@ -48,6 +48,9 @@ export async function launch(o = {}) {
       ATIYA_SUGGEST_DIR: o.suggest === null ? '' : (o.suggest ?? checkout),
       ATIYA_EXTERNAL_LOG: externalLog,
       STUB_MODE: o.stubMode ?? 'ok',
+      // never the person's own GitHub CLI or its sign-in: a stand-in, with an empty keychain of the test's own
+      ATIYA_GH: JSON.stringify({ command: process.execPath, args: [join(APP_DIR, 'bin', 'fake-gh.mjs')] }),
+      GH_CONFIG_DIR: join(root, 'gh'),
       ...o.env,
     },
   });

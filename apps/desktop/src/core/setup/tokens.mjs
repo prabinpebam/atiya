@@ -3,7 +3,8 @@
  * Where an agent's token comes from (documentation/desktop/spec.md §5.2): GH_TOKEN or GITHUB_TOKEN, then
  * the GitHub CLI's (`gh auth token`). The device flow is the third source, run by the caller.
  */
-import { execFile } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { ghCommand, ghToken as cliToken } from './gh-login.mjs';
 
 /**
  * @param {'env' | 'gh' | 'auto'} source
@@ -21,11 +22,9 @@ export async function findToken(source, o = {}) {
   return t ? { token: t, source: 'gh' } : null;
 }
 
-/** The GitHub CLI's token, or null if it isn't installed or signed in. @returns {Promise<string | null>} */
+/** The GitHub CLI's token (the person's own CLI, else the one the app carries), or null if it isn't signed in. @returns {Promise<string | null>} */
 export function ghToken() {
-  return new Promise((resolvePromise) =>
-    execFile('gh', ['auth', 'token'], { windowsHide: true, timeout: 10_000 }, (err, out) => resolvePromise(err ? null : String(out).trim() || null)),
-  );
+  return cliToken(ghCommand({ appDir: fileURLToPath(new URL('../../..', import.meta.url)) }));
 }
 
 /** Hides anything that looks like a token in text bound for a log or the screen. @param {string} text @param {string[]} [secrets] */

@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { pollForToken } from '../src/core/setup/device.mjs';
+import { deviceCode, ghCommand, ghLogin, ghLogout, ghToken, signInProblem } from '../src/core/setup/gh-login.mjs';
 import { ADA, startFakeGitHub } from '../src/core/setup/fake-github.mjs';
 import { Git, sameRemote } from '../src/core/setup/git.mjs';
 import { GitHub, missingScopes } from '../src/core/setup/github.mjs';
@@ -187,7 +187,7 @@ describe('the CLI, as an agent runs it', () => {
     expect(lines(none.stdout).find((e) => e.type === 'action')).toMatchObject({ needs: 'sign-in' });
   });
 
-  it('2.4 signs in with the device flow, showing the code as an action', async () => {
+  it('2.4 signs in with device login through the GitHub CLI, showing the code as an action', async () => {
     const f = await fake({ deviceApproveAfterMs: 200, deviceInterval: 0 });
     const r = await cli(['setup', '--github', f.url, '--token', 'device', '--yes', '--json', '--no-wait'], { ATIYA_HOME: tmp() });
     expect(r.code).toBe(0);
@@ -237,31 +237,55 @@ describe('the CLI, as an agent runs it', () => {
 });
 
 describe('the pieces', () => {
-  it('2.8 the device flow keeps the interval, adds 5 s on slow_down, and stops on expiry or refusal', async () => {
-    /** @param {string[]} answers */
-    const run = async (answers, expiresIn = 900) => {
-      /** @type {number[]} */
-      const waits = [];
-      let t = 0;
-      const r = await pollForToken({
-        web: 'https://github.example', clientId: 'c', deviceCode: 'd', interval: 5, expiresIn,
-        sleep: async (ms) => {
-          waits.push(ms);
-          t += ms;
-        },
-        now: () => t,
-        fetch: /** @type {any} */ (async () => ({ json: async () => { const a = answers.shift(); return a === 'token' ? { access_token: 'tok', scope: 'repo' } : { error: a }; } })),
-      });
-      return { r, waits };
-    };
-    const ok = await run(['authorization_pending', 'slow_down', 'authorization_pending', 'token']);
-    expect(ok.r).toEqual({ ok: true, token: 'tok', scopes: 'repo' });
-    expect(ok.waits).toEqual([5000, 5000, 10000, 10000]);
-    expect((await run(['access_denied'])).r).toEqual({ ok: false, reason: 'denied' });
-    expect((await run(['expired_token'])).r).toEqual({ ok: false, reason: 'expired' });
-    expect((await run(['authorization_pending', 'authorization_pending', 'authorization_pending'], 12)).r).toEqual({ ok: false, reason: 'expired' });
+  it('2.8 device login runs through the GitHub CLI: the code shown, and the sign-in kept by the CLI, one for the computer', async () => {
+    expect(deviceCode('\n! First copy your one-time code: C683-02C3\nOpen this URL to continue in your web browser: https://github.com/login/device\n')).toEqual({ code: 'C683-02C3', url: 'https://github.com/login/device' });
+    expect(deviceCode('nothing yet')).toBeNull();
+    expect(signInProblem('error: access_denied: The user has denied your application access.')).toBe('declined');
+    expect(signInProblem('error: the device code has expired')).toBe('expired');
+    expect(signInProblem('error: could not resolve host github.com')).toBe('offline');
+    expect(signInProblem('something else')).toBe('failed');
+
+    const f = await fake({ deviceApproveAfterMs: 200, deviceInterval: 0 });
+    // the stand-in CLI's keychain
+    const configDir = join(tmp(), 'gh');
+    const env = { ...process.env, ATIYA_FAKE_GH_WEB: f.url };
+    /** @type {{ code: string, url: string }[]} */
+    const shown = [];
+    const gh = { command: process.execPath, args: [join(APP, 'bin', 'fake-gh.mjs')] };
+    expect(await ghToken(gh, { env, configDir })).toBeNull();
+    const r = await ghLogin({ gh, configDir, env, onCode: (c) => shown.push(c) });
+    expect(r).toEqual({ ok: true, token: 'fake-ada' });
+    expect(shown).toEqual([{ code: 'WDJB-MJHT', url: `${f.url}/login/device` }]);
+    // the CLI keeps the sign-in: the next start reads it, and signing out is the CLI's too
+    expect(await ghToken(gh, { env, configDir })).toBe('fake-ada');
+    expect(await ghLogout(gh, { env, configDir })).toBe(true);
+    expect(await ghToken(gh, { env, configDir })).toBeNull();
+    // adding the scopes a sign-in lacks is the same code on the same page
+    const again = await ghLogin({ gh, configDir, env, refresh: true, onCode: (c) => shown.push(c) });
+    expect(again).toEqual({ ok: true, token: 'fake-ada' });
+    // without a CLI, or with one that won't start, it says so
+    expect(await ghLogin({ gh: null, onCode: () => {} })).toEqual({ ok: false, problem: 'missing' });
+    expect(await ghLogin({ gh: { command: join(tmp(), 'no-such-gh.exe'), args: [] }, onCode: () => {} })).toEqual({ ok: false, problem: 'missing' });
+    // a GitHub that can't be reached says so
+    const off = await ghLogin({ gh, configDir, env: { ...process.env, ATIYA_FAKE_GH_WEB: 'http://127.0.0.1:9' }, onCode: () => {} });
+    expect(off).toEqual({ ok: false, problem: 'offline' });
   });
 
+  it("the GitHub CLI is the person's own (one sign-in with their terminal), else the one the app carries, or a stand-in", () => {
+    const exe = process.platform === 'win32' ? 'gh.exe' : 'gh';
+    const appDir = tmp();
+    expect(ghCommand({ appDir, env: { PATH: '' } })).toBeNull();
+    const carried = join(appDir, 'vendor', 'gh', 'bin');
+    mkdirSync(carried, { recursive: true });
+    writeFileSync(join(carried, exe), '');
+    expect(ghCommand({ appDir, env: { PATH: '' } })).toEqual({ command: join(carried, exe), args: [], carried: true });
+    const own = join(tmp(), 'tools');
+    mkdirSync(own);
+    writeFileSync(join(own, exe), '');
+    expect(ghCommand({ appDir, env: { PATH: own, PATHEXT: '.EXE' } })).toEqual({ command: join(own, exe), args: [] });
+    expect(ghCommand({ appDir, env: { PATH: own, PATHEXT: '.EXE' }, own: false })?.command).toBe(join(carried, exe));
+    expect(ghCommand({ appDir, env: { ATIYA_GH: JSON.stringify({ command: 'node', args: ['fake-gh.mjs'] }) } })).toEqual({ command: 'node', args: ['fake-gh.mjs'] });
+  });
   it('missing scopes come from the scopes header; none is checked without one', () => {
     expect(missingScopes('repo, workflow')).toEqual([]);
     expect(missingScopes('public_repo, workflow')).toEqual([]);

@@ -25,6 +25,10 @@ extraResources:
   - from: node_modules/dugite/git
     to: git
     filter: ['**/*']
+  # the GitHub CLI, for device login with no app of ours registered with GitHub (decision O8)
+  - from: vendor/gh
+    to: gh
+    filter: ['**/*']
 afterPack: scripts/after-pack.cjs
 win:
   target:

@@ -29,7 +29,7 @@ async function makeSite(app) {
 const walk = (dir) => (existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)])) : []);
 
 test.describe('desktop: GitHub and private pages', () => {
-  test('5.3 the token is kept only through the keychain, and still works after a restart', async () => {
+  test('5.3 the sign-in is the GitHub CLI’s, kept where it keeps it, never by the app, and still works after a restart', async () => {
     const gh = await fake();
     const first = await launchSetup({ fakeUrl: gh.url });
     try {
@@ -37,13 +37,11 @@ test.describe('desktop: GitHub and private pages', () => {
     } finally {
       await quitGracefully(first.app);
     }
-    const file = join(first.root, 'data', 'github-token.fake.bin');
-    expect(existsSync(file)).toBe(true);
-    // the key it's encrypted with is kept by Chromium in Local State, written on a graceful quit
-    expect(JSON.parse(readFileSync(join(first.root, 'data', 'Local State'), 'utf8')).os_crypt?.encrypted_key).toBeTruthy();
-    // DPAPI's output: nothing of the token in the clear, here or in any other file the app or setup wrote
-    expect(readFileSync(file).includes('fake-ada')).toBe(false);
-    expect(walk(first.root).filter((f) => readFileSync(f).includes('fake-ada'))).toEqual([]);
+    // the stand-in CLI's keychain holds the sign-in (the real CLI's is the system's keychain)
+    const keychain = join(first.root, 'data', 'gh-fake');
+    expect(existsSync(join(keychain, 'fake-token'))).toBe(true);
+    // nothing of the token in any other file the app or setup wrote
+    expect(walk(first.root).filter((f) => !f.startsWith(keychain) && readFileSync(f).includes('fake-ada'))).toEqual([]);
     const again = await launchSetup({ fakeUrl: gh.url, root: first.root });
     try {
       await pageMatching(again.app, /localhost:4381\/_edit\//, 30_000);

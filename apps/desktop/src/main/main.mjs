@@ -5,7 +5,7 @@
  * page) and a body (the app's pages, or edit mode from the dev server). Views are sandboxed, with no Node.
  */
 import { app, BaseWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, net, protocol, session, shell, Tray, WebContentsView } from 'electron';
-import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { homedir } from 'node:os';
 import { delimiter, dirname, extname, join, normalize, relative, resolve, sep } from 'node:path';
@@ -15,17 +15,16 @@ import { APP_ORIGIN, isBridgeCaller, isExternalSafe, staysInWindow, viewPreferen
 import { SettingsStore } from '../core/settings.mjs';
 import { engineInfo, engineRoot } from '../core/setup/engine.mjs';
 import { engineArchive, engineFolder, unpackEngine } from '../core/setup/engine-archive.mjs';
-import { githubClientId as clientIdFor } from '../core/setup/client-id.mjs';
+import { ghCommand, ghLogin, ghLogout, ghToken } from '../core/setup/gh-login.mjs';
 import { startFakeGitHub } from '../core/setup/fake-github.mjs';
 import { checkSite } from '../core/setup/doctor.mjs';
 import { Git } from '../core/setup/git.mjs';
-import { GitHub, GitHubError } from '../core/setup/github.mjs';
+import { GitHub, GitHubError, missingScopes } from '../core/setup/github.mjs';
 import { runPrivateSetup } from '../core/setup/private.mjs';
 import { sync } from '../core/setup/sync.mjs';
 import { bundledGit } from '../core/setup/bundled-git.mjs';
 import { Supervisor } from '../core/supervisor.mjs';
 import { SetupFlow } from './setup-flow.mjs';
-import { tokenStore } from './token-store.mjs';
 import { utilitySpawn } from './utility-spawn.mjs';
 import { AppWindowFrame, frameKindFor } from './window-frame.mjs';
 import { isEditMode, sanitizeCommand, sanitizeHeader } from '../core/studio-header.mjs';
@@ -480,6 +479,8 @@ let beforeSignIn = 'editor';
 
 /** Reads who the stored token belongs to. */
 async function loadAccount() {
+  // one sign-in for the computer: the GitHub CLI's, read once here and after a sign-in
+  if (!githubToken) githubToken = await ghToken(gh(), ghOptions());
   const token = tokens().load();
   if (!token) {
     account = null;
@@ -527,17 +528,56 @@ function siteGit(dir) {
 /** Where a live site is opened: its address, or the fake's copy of it. @param {string | undefined} repository @param {string | undefined} url */
 const liveUrl = (repository, url) => (github.fake && repository ? `${github.web}/sites/${repository}/` : url ?? '');
 
-/** The OAuth App's client ID (plan 5.1, 9P.5): the environment's, else the one the app was built with. */
-const githubClientId = () => clientIdFor(process.env, readFileSync(join(APP_ROOT, 'package.json'), 'utf8'));
+/**
+ * The GitHub CLI that signs in (decision O8): the person's own, else the one the app carries; on a fake GitHub, the
+ * stand-in (bin/fake-gh.mjs) against it, with a folder of the app's own as its keychain.
+ */
+function gh() {
+  if (github.fake && !process.env.ATIYA_GH) return { command: process.execPath, args: [join(APP_ROOT, 'bin', 'fake-gh.mjs')] };
+  return ghCommand({ resources: app.isPackaged ? process.resourcesPath : undefined, appDir: APP_ROOT });
+}
+/** @returns {{ env?: NodeJS.ProcessEnv, configDir?: string }} */
+const ghOptions = () => (github.fake ? { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ATIYA_FAKE_GH_WEB: github.web }, configDir: join(app.getPath('userData'), 'gh-fake') } : {});
 
+/**
+ * Device login (decision O8): a GitHub CLI sign-in already on this computer with the scopes setup needs is used as
+ * it is; one without them is refreshed; else the CLI signs in, showing its one-time code. No app of ours is
+ * registered with GitHub, and the token stays where the CLI keeps it.
+ * @param {{ onCode: (c: { code: string, url: string }) => void, signal?: AbortSignal }} o
+ */
+async function deviceLogin(o) {
+  const cli = gh();
+  const existing = await ghToken(cli, ghOptions());
+  let refresh = false;
+  if (existing) {
+    try {
+      const u = await new GitHub({ token: existing, api: github.api, web: github.web }).user();
+      if (!missingScopes(u.scopes).length) return /** @type {const} */ ({ ok: true, token: existing });
+      refresh = true;
+    } catch {
+      // a sign-in GitHub refuses: sign in again
+    }
+  }
+  return ghLogin({ ...o, ...ghOptions(), gh: cli, refresh });
+}
 /** The GitHub token's store (a fake GitHub's token is kept apart from a real one). */
-const tokens = () => tokenStore(join(app.getPath('userData'), github.fake ? 'github-token.fake.bin' : 'github-token.bin'));
+/** The GitHub token, in memory only: it lives where the GitHub CLI keeps it (decision O8). @type {string | null} */
+let githubToken = null;
+const tokens = () => ({
+  load: () => githubToken,
+  save: (/** @type {string} */ t) => {
+    githubToken = t;
+  },
+  clear: () => {
+    githubToken = null;
+  },
+});
 
 function makeFlow() {
   flow = new SetupFlow({
     api: github.api,
     web: github.web,
-    clientId: github.fake ? 'fake-client' : githubClientId(),
+    deviceLogin,
     home: HOME,
     gitConfigFile: join(app.getPath('userData'), 'gitconfig'),
     engine: engineInfo(),
@@ -622,8 +662,8 @@ function setTheme(t) {
 
 async function signIn() {
   if (view !== 'setup') beforeSignIn = view;
-  // the device flow shows its code in setup's page; the GitHub CLI's token needs no page unless it fails
-  if (flow.d.clientId) show('setup');
+  // device login shows its code in setup's page
+  show('setup');
   await flow.signInOnly();
   // not signed in (the GitHub CLI isn't, say): setup's page says why and offers it again
   if (accountState !== 'signed-in' && view !== 'setup') show('setup');
@@ -891,6 +931,8 @@ function bridge() {
   // the title bar's account menu (plan stage 7C)
   handle('account:sign-in', () => signIn());
   handle('account:sign-out', async () => {
+    // one sign-in for the computer: signing out is the GitHub CLI's too
+    await ghLogout(gh(), ghOptions());
     tokens().clear();
     account = null;
     accountState = 'signed-out';
@@ -977,8 +1019,7 @@ async function quit() {
   await server?.stop();
   await closeFake?.();
   tray?.destroy();
-  // a graceful quit, never app.exit(): Chromium writes Local State on its way out, which holds the key
-  // safeStorage encrypts the GitHub token with, so the token opens again next time
+  // a graceful quit, never app.exit(): Chromium writes its state on the way out (and the dev server stops)
   app.quit();
 }
 
@@ -1023,6 +1064,10 @@ app.whenReady().then(async () => {
   makeFlow();
   bridge();
   createWindow();
+  // the token the app kept itself before decision O8 goes: the GitHub CLI's sign-in is the one sign-in now
+  for (const f of ['github-token.bin', 'github-token.fake.bin']) rmSync(join(app.getPath('userData'), f), { force: true });
+  // the GitHub CLI's sign-in, before a site's server is given it for its pushes (a local read, quick)
+  githubToken = await ghToken(gh(), ghOptions());
   // who's signed in, for the account menu: asked of GitHub once the window is up, never in its way
   loadAccount();
   menus();

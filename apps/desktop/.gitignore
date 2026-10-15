@@ -5,3 +5,4 @@ playwright-report/
 engine/
 .engine-unpacking/
 dist/
+vendor/

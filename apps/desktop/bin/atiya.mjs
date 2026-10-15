@@ -17,17 +17,24 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { engineInfo } from '../src/core/setup/engine.mjs';
-import { pollForToken, requestCode } from '../src/core/setup/device.mjs';
 import { checkSite } from '../src/core/setup/doctor.mjs';
 import { GitHub, GitHubError } from '../src/core/setup/github.mjs';
 import { EXIT, runSetup, STEPS } from '../src/core/setup/machine.mjs';
 import { runPrivateSetup } from '../src/core/setup/private.mjs';
 import { findToken, redact } from '../src/core/setup/tokens.mjs';
-import { githubClientId } from '../src/core/setup/client-id.mjs';
+import { ghCommand, ghLogin } from '../src/core/setup/gh-login.mjs';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
-/** Atiya Studio's OAuth App (registered by the owner; stage 5). Until then, sign in with GH_TOKEN or the GitHub CLI. */
-// the OAuth App's client ID: the environment's, else the one in the app's package.json (plan 5.1, 9P.5)
-const CLIENT_ID = githubClientId(process.env, readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+/**
+ * The GitHub CLI for device login (decision O8): ATIYA_GH, the one the app carries, else the computer's own gh. On a
+ * fake GitHub (--github), the stand-in CLI against it.
+ * @param {string | null} fake the fake GitHub's address
+ */
+function ghFor(fake) {
+  if (fake) return { gh: { command: process.execPath, args: [fileURLToPath(new URL('./fake-gh.mjs', import.meta.url))] }, env: { ...process.env, ATIYA_FAKE_GH_WEB: fake }, configDir: join(tmpdir(), `atiya-fake-gh-${process.pid}`) };
+  return { gh: ghCommand({ appDir: fileURLToPath(new URL('..', import.meta.url)) }), env: process.env, configDir: undefined };
+}
 
 /** @param {string[]} argv */
 export function parseArgs(argv) {
@@ -75,7 +82,7 @@ function printer(o) {
 
 /**
  * The token, from the source asked for (spec §5.2).
- * @param {string} source @param {{ web: string, emit: (e: any) => void, clientId: string | null }} o
+ * @param {string} source @param {{ web: string, emit: (e: any) => void, fake: string | null }} o
  */
 async function signIn(source, o) {
   if (source !== 'device') {
@@ -83,10 +90,14 @@ async function signIn(source, o) {
     if (found) return found.token;
     if (source !== 'auto') return null;
   }
-  if (!o.clientId) return null;
-  const code = await requestCode({ web: o.web, clientId: o.clientId });
-  o.emit({ type: 'action', needs: 'sign-in', message: `Open ${code.verificationUri} and enter the code ${code.userCode}, then choose Authorize.`, url: code.verificationUri, code: code.userCode });
-  const r = await pollForToken({ web: o.web, clientId: o.clientId, deviceCode: code.deviceCode, interval: code.interval, expiresIn: code.expiresIn });
+  // device login, through the GitHub CLI: the person enters the code on GitHub's page
+  const { gh, env, configDir } = ghFor(o.fake);
+  const r = await ghLogin({
+    gh,
+    env,
+    configDir,
+    onCode: ({ code, url }) => o.emit({ type: 'action', needs: 'sign-in', message: `Open ${url} and enter the code ${code}, then choose Authorize.`, url, code }),
+  });
   return r.ok ? r.token : null;
 }
 
@@ -97,7 +108,6 @@ export async function main(argv) {
   const api = typeof flags.github === 'string' ? flags.github : 'https://api.github.com';
   const web = typeof flags.github === 'string' ? flags.github : 'https://github.com';
   const home = process.env.ATIYA_HOME ?? homedir();
-  const clientId = typeof flags.github === 'string' ? 'fake-client' : CLIENT_ID;
   /** @type {string[]} */
   const secrets = [];
   const out = printer({ json, secrets });
@@ -107,7 +117,7 @@ export async function main(argv) {
     return EXIT.ok;
   }
 
-  const token = await signIn(String(flags.token ?? 'auto'), { web, emit: out.event, clientId });
+  const token = await signIn(String(flags.token ?? 'auto'), { web, emit: out.event, fake: typeof flags.github === 'string' ? flags.github : null });
   if (!token) {
     out.event({ type: 'action', needs: 'sign-in', message: 'Sign in to GitHub: set GH_TOKEN, sign in with the GitHub CLI (gh auth login), or use Atiya Studio.' });
     out.event({ type: 'result', ok: false, live: false, applied: false, site: null, code: EXIT.needsPerson, message: "Not signed in to GitHub." });

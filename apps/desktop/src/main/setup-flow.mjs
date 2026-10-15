@@ -7,10 +7,9 @@
  */
 import { EventEmitter } from 'node:events';
 import { join } from 'node:path';
-import { pollForToken, requestCode } from '../core/setup/device.mjs';
+import { PROBLEM_WORDS } from '../core/setup/gh-login.mjs';
 import { GitHub, GitHubError } from '../core/setup/github.mjs';
 import { runSetup, siteUrl } from '../core/setup/machine.mjs';
-import { findToken } from '../core/setup/tokens.mjs';
 
 /**
  * @typedef {{ name: string, repo: string, url: string, dir: string, explore: 'little-planet' | 'site', samples: boolean, dirChanged?: boolean }} Proposal
@@ -27,7 +26,8 @@ import { findToken } from '../core/setup/tokens.mjs';
  *   notice: string | null,
  * }} FlowState
  * @typedef {{
- *   api: string, web: string, clientId: string | null, home: string, gitConfigFile: string,
+ *   api: string, web: string, home: string, gitConfigFile: string,
+ *   deviceLogin(o: { onCode: (c: { code: string, url: string }) => void, signal?: AbortSignal }): Promise<{ ok: true, token: string } | { ok: false, problem: import('../core/setup/gh-login.mjs').SignInProblem }>,
  *   engine: { version: string, commit: string | null, sha256: string | null }, starter?: string,
  *   tokens: { load(): string | null, save(t: string): void, clear(): void },
  *   copy(text: string): void, openExternal(url: string): void,
@@ -69,8 +69,8 @@ export class SetupFlow extends EventEmitter {
   }
 
   /**
-   * Sign in, and nothing else (the title bar's account menu, plan stage 7C): the same sign-in as setup's (the device
-   * flow, or until the app's OAuth App exists the GitHub CLI's token), ending with 'signed-in' instead of a site.
+   * Sign in, and nothing else (the title bar's account menu, plan stage 7C): the same device login as setup's,
+   * ending with 'signed-in' instead of a site.
    */
   async signInOnly() {
     this.abort.abort();
@@ -79,33 +79,32 @@ export class SetupFlow extends EventEmitter {
     await this.signIn();
   }
 
-  /** Continue with GitHub: the device flow, with the code copied and GitHub's page opened (F1, F2). */
+  /**
+   * Continue with GitHub: device login (F1, F2; decision O8). The GitHub CLI the app carries asks GitHub for a
+   * one-time code; the app copies it, opens GitHub's device page and shows it; the person enters it and approves
+   * there. No app of ours is registered with GitHub, and no server of ours is in the way.
+   */
   async signIn() {
     this.set({ busy: true, error: null });
     try {
-      if (!this.d.clientId) {
-        // until the app's OAuth App is registered (stage 5), sign in as the GitHub CLI or GH_TOKEN does
-        const found = await findToken('auto');
-        if (found && (await this.useToken(found.token))) return;
-        this.set({ busy: false, phase: 'connect', error: { message: "Signing in with GitHub isn't set up in this copy of the app yet. Sign in with the GitHub CLI (gh auth login), then choose Continue with GitHub again.", retry: 'sign-in' } });
-        return;
-      }
-      const code = await requestCode({ web: this.d.web, clientId: this.d.clientId });
-      this.d.copy(code.userCode);
-      this.d.openExternal(code.verificationUri);
-      this.set({ busy: false, phase: 'code', code: { userCode: code.userCode, verificationUri: code.verificationUri, expiresAt: Date.now() + code.expiresIn * 1000 } });
-      const r = await pollForToken({ web: this.d.web, clientId: this.d.clientId, deviceCode: code.deviceCode, interval: code.interval, expiresIn: code.expiresIn, signal: this.abort.signal });
+      const r = await this.d.deviceLogin({
+        signal: this.abort.signal,
+        onCode: ({ code, url }) => {
+          this.d.copy(code);
+          this.d.openExternal(url);
+          this.set({ busy: false, phase: 'code', code: { userCode: code, verificationUri: url, expiresAt: Date.now() + 15 * 60 * 1000 } });
+        },
+      });
+      if (this.abort.signal.aborted) return;
       if (r.ok) {
-        await this.useToken(r.token);
+        if (!(await this.useToken(r.token))) this.set({ busy: false, phase: 'connect', code: null, error: { message: "GitHub didn't accept that sign-in. Try again.", retry: 'sign-in' } });
         return;
       }
-      const message = r.reason === 'denied' ? "GitHub wasn't connected. Atiya Studio needs it to keep and publish your site." : r.reason === 'expired' ? 'That code has run out.' : '';
-      if (message) this.set({ phase: 'connect', code: null, error: { message, retry: 'sign-in' } });
+      this.set({ busy: false, phase: 'connect', code: null, error: { message: PROBLEM_WORDS[r.problem], retry: 'sign-in' } });
     } catch (e) {
-      this.set({ busy: false, phase: 'connect', error: { message: e instanceof GitHubError && e.kind === 'network' ? "Can't reach GitHub. Check your connection, then try again." : /** @type {Error} */ (e).message, retry: 'sign-in' } });
+      this.set({ busy: false, phase: 'connect', code: null, error: { message: e instanceof GitHubError && e.kind === 'network' ? PROBLEM_WORDS.offline : /** @type {Error} */ (e).message, retry: 'sign-in' } });
     }
   }
-
   /** Opens GitHub's device page again. */
   openGitHubAgain() {
     if (this.s.code) this.d.openExternal(this.s.code.verificationUri);

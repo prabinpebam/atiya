@@ -24,6 +24,8 @@ if (process.argv.includes('--before')) {
   else ok('the engine is bundled');
   if (!existsSync(join(APP, 'node_modules', 'dugite', 'git', 'cmd', 'git.exe')) && process.platform === 'win32') fail("no git in node_modules/dugite: run npm install in apps/desktop");
   else ok('git is there');
+  if (!existsSync(join(APP, 'vendor', 'gh', 'bin', process.platform === 'win32' ? 'gh.exe' : 'gh'))) fail('no GitHub CLI in vendor/gh: run node scripts/fetch-gh.mjs');
+  else ok('the GitHub CLI is there');
 } else {
   const dist = join(APP, 'dist');
   const installer = existsSync(dist) ? readdirSync(dist).find((f) => /^Atiya-Studio-Setup-.*\.exe$/.test(f)) : undefined;
@@ -38,6 +40,7 @@ if (process.argv.includes('--before')) {
     ['the engine, as one archive', join(res, 'engine.tar')],
     ["the engine's manifest", join(res, 'engine.json')],
     ['git', join(res, 'git', 'cmd', 'git.exe')],
+    ['the GitHub CLI, for device login', join(res, 'gh', 'bin', 'gh.exe')],
     ["the app's archive", join(res, 'app.asar')],
   ])
     if (existsSync(file)) ok(`${what} is in the app`);

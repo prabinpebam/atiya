@@ -51,7 +51,7 @@ test.describe('desktop: account and sites', () => {
 
       // signing out asks once, inline; staying keeps it
       await panel.getByRole('button', { name: 'Sign out' }).click();
-      await expect(panel.getByText("Sign out of GitHub? You'll need to sign in again to save to remote.")).toBeVisible();
+      await expect(panel.getByText("Sign out of GitHub on this computer? The GitHub CLI signs out too, and you'll need to sign in again to save to remote.")).toBeVisible();
       await expect(panel.getByRole('button', { name: 'Stay signed in' })).toBeFocused();
       await panel.getByRole('button', { name: 'Stay signed in' }).click();
       await expect(panel.getByRole('button', { name: 'Sign out' })).toBeFocused();
@@ -60,7 +60,8 @@ test.describe('desktop: account and sites', () => {
       await expect(panel.locator('#who')).toHaveText('Not signed in to GitHub.');
       await expect(panel.getByRole('button', { name: 'Sign in with GitHub' })).toBeFocused();
       await expect(frame.getByRole('button', { name: 'Ada Lovelace, not signed in to GitHub' })).toBeVisible();
-      expect(existsSync(join(root, 'data', 'github-token.fake.bin'))).toBe(false);
+      // one sign-in for the computer: the GitHub CLI (the stand-in's keychain) signed out too
+      expect(existsSync(join(root, 'data', 'gh-fake', 'fake-token'))).toBe(false);
       // the site's server starts again without the token, and edit mode comes back
       await expect.poll(() => editor.url(), { timeout: 30_000 }).toMatch(/localhost:4381\/_edit\//);
 
@@ -68,7 +69,7 @@ test.describe('desktop: account and sites', () => {
       await panel.getByRole('button', { name: 'Sign in with GitHub' }).click();
       await expect(frame.getByRole('button', { name: 'Ada Lovelace, signed in to GitHub as ada' })).toBeVisible({ timeout: 20_000 });
       await expect.poll(() => editor.url(), { timeout: 20_000 }).toMatch(/localhost:4381\/_edit\//);
-      expect(existsSync(join(root, 'data', 'github-token.fake.bin'))).toBe(true);
+      expect(existsSync(join(root, 'data', 'gh-fake', 'fake-token'))).toBe(true);
     } finally {
       await quit(app);
       await gh.close();

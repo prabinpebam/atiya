@@ -195,7 +195,7 @@ A **navigation mode** is another way into the same pages, like Steam's Big Pictu
 | The contact form | Live | `main` |
 | The planet (Little planet and Cozy life in one) | Live at `/play/` | `main` |
 | Atiya Studio: the owner's app, setup and the CLI, the first run, just the site, the engine release, managed sites | Built (stages 1 to 4, 6 and 7) | `desktop-app` |
-| Real GitHub sign-in, private pages on first use | Built; the live check waits on the OAuth App and a test account | `desktop-app` |
+| Real GitHub sign-in, private pages on first use | Built (device login through the GitHub CLI: no app of ours); the live check waits on a test account and the first engine release | `desktop-app` |
 | Ways to explore: the contract, mode data, V33 to V37, the planet reading mode data, turning modes on and off | Built (8.1 in part, 8.2, 8A) | `desktop-app`, `ways-to-explore` |
 | Section triggers as a contract requirement (R12) | Specified; the planet's buildings already behave this way | [modes §4.4](desktop/modes.md#44-section-triggers-and-the-section-overlay) |
 | The mode host, the planet's split into Little planet and Cozy life, the mode kit, Constellation | Planned (stage 8: M1 to M5) | [plan](desktop/plan.md#stage-8-navigation-modes) |
