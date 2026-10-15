@@ -8,7 +8,7 @@
  *   node scripts/bundle-engine.mjs --engine <engine-x.y.z.tgz>
  */
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,6 +30,12 @@ rmSync(scratch, { recursive: true, force: true });
 mkdirSync(scratch, { recursive: true });
 execFileSync('tar', ['-xzf', archive, '-C', scratch]);
 const engine = join(scratch, 'engine');
+// on GitHub's runners (--public-registry): the lockfile was written through a package-feed mirror of the public
+// registry; the same tarballs and integrity hashes are fetched from the public registry, as the site's workflows do
+if (process.argv.includes('--public-registry')) {
+  const lock = join(engine, 'package-lock.json');
+  writeFileSync(lock, readFileSync(lock, 'utf8').replace(/https:\/\/[^"]+\/npm\/registry\//g, 'https://registry.npmjs.org/'));
+}
 console.log('installing the engine\'s production packages…');
 execFileSync('npm', ['ci', '--omit=dev', '--no-audit', '--no-fund'], { cwd: engine, stdio: 'inherit', shell: process.platform === 'win32' });
 copyFileSync(manifest, join(engine, 'engine.json'));

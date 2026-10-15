@@ -621,7 +621,7 @@ The app opens a site only at its own engine version. **Update your site** runs t
 
 - Windows 10 and 11 first (x64, then arm64), then macOS; Linux later.
 - Electron 44.6.0 (Node 24; the newest stable the package feed carries), pinned exactly.
-- An installer under 250 MB, measured once the engine is bundled.
+- An installer under 250 MB, measured once the engine is bundled: the preview installer (plan stage 9P) is 209 MB. It installs per user with no administrator, and carries the engine as one archive the app unpacks on its first start (into its own data folder, one folder per release), because an installer writing the engine's 29,000 files one by one took more than ten minutes.
 - Signing: Azure Trusted Signing (Windows), Developer ID and notarization (macOS). A new signed app still meets SmartScreen's warning until it builds reputation, so the download page shows it.
 - The app is built on GitHub Actions runners per platform; on the owner's managed laptop, `apps/desktop` installs through the package feed proxy.
 

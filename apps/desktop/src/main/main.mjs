@@ -14,6 +14,8 @@ import { astroEntry, checkCheckout, findCheckoutAbove, siteName } from '../core/
 import { APP_ORIGIN, isBridgeCaller, isExternalSafe, staysInWindow, viewPreferences } from '../core/security.mjs';
 import { SettingsStore } from '../core/settings.mjs';
 import { engineInfo, engineRoot } from '../core/setup/engine.mjs';
+import { engineArchive, engineFolder, unpackEngine } from '../core/setup/engine-archive.mjs';
+import { githubClientId as clientIdFor } from '../core/setup/client-id.mjs';
 import { startFakeGitHub } from '../core/setup/fake-github.mjs';
 import { checkSite } from '../core/setup/doctor.mjs';
 import { Git } from '../core/setup/git.mjs';
@@ -47,6 +49,15 @@ const BODY_RADIUS = 12;
 // tests and a second copy of the app keep their own data folder
 if (process.env.ATIYA_USER_DATA) app.setPath('userData', process.env.ATIYA_USER_DATA);
 const settings = new SettingsStore(app.getPath('userData'));
+// an installed app carries its engine as one archive (plan stage 9P): the engine is where it's unpacked, its
+// manifest beside the archive until then
+const ENGINE_ARCHIVE = app.isPackaged ? engineArchive(process.resourcesPath) : null;
+if (ENGINE_ARCHIVE && !process.env.ATIYA_ENGINE_ROOT) {
+  process.env.ATIYA_ENGINE_ROOT = engineFolder(app.getPath('userData'), ENGINE_ARCHIVE);
+  process.env.ATIYA_ENGINE_MANIFEST ||= ENGINE_ARCHIVE.manifest;
+}
+/** The engine unpacked (at once when there's nothing to unpack); started when the app is ready. @type {Promise<unknown>} */
+let engineReady = Promise.resolve();
 /** The owner's checkout keeps 4321; a managed site gets its own port, so the two never collide. */
 const DEV_PORT = Number(process.env.ATIYA_DEV_PORT || 4321);
 const SITE_PORT = Number(process.env.ATIYA_SITE_PORT || process.env.ATIYA_DEV_PORT || 4325);
@@ -403,6 +414,8 @@ async function openManaged(site, choices) {
   } catch {
     // offline, or GitHub unreachable: edit what's here; Save to remote brings the two together later
   }
+  // a first start unpacks the engine while the person signs in: edit mode waits for it
+  await engineReady;
   await startServer(
     engineRoot(),
     {
@@ -514,6 +527,9 @@ function siteGit(dir) {
 /** Where a live site is opened: its address, or the fake's copy of it. @param {string | undefined} repository @param {string | undefined} url */
 const liveUrl = (repository, url) => (github.fake && repository ? `${github.web}/sites/${repository}/` : url ?? '');
 
+/** The OAuth App's client ID (plan 5.1, 9P.5): the environment's, else the one the app was built with. */
+const githubClientId = () => clientIdFor(process.env, readFileSync(join(APP_ROOT, 'package.json'), 'utf8'));
+
 /** The GitHub token's store (a fake GitHub's token is kept apart from a real one). */
 const tokens = () => tokenStore(join(app.getPath('userData'), github.fake ? 'github-token.fake.bin' : 'github-token.bin'));
 
@@ -521,11 +537,12 @@ function makeFlow() {
   flow = new SetupFlow({
     api: github.api,
     web: github.web,
-    clientId: github.fake ? 'fake-client' : process.env.ATIYA_GITHUB_CLIENT_ID ?? null,
+    clientId: github.fake ? 'fake-client' : githubClientId(),
     home: HOME,
     gitConfigFile: join(app.getPath('userData'), 'gitconfig'),
     engine: engineInfo(),
     tokens: tokens(),
+    engineReady: () => engineReady,
     copy: (t) => {
       clipboard.writeText(t);
       // the tests' sessions may have no clipboard: they read what was copied from a log
@@ -989,6 +1006,8 @@ app.whenReady().then(async () => {
     github = { api: fake.url, web: fake.url, fake: true };
   }
   serveApp();
+  if (ENGINE_ARCHIVE && process.env.ATIYA_ENGINE_ROOT)
+    engineReady = unpackEngine(ENGINE_ARCHIVE, process.env.ATIYA_ENGINE_ROOT).catch((e) => console.error(String(e)));
   // one theme for the whole app, before any view paints (plan stage 7D)
   nativeTheme.themeSource = parseTheme(settings.read().theme);
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'clipboard-sanitized-write' || permission === 'fullscreen'));

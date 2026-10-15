@@ -217,6 +217,8 @@ export class SetupFlow extends EventEmitter {
     // creating is never the account menu's sign-in: what's saved is always a new or an existing site
     this.d.saveSetup({ mode: this.s.mode === 'existing' ? 'existing' : 'new', inputs });
     this.set({ phase: 'creating', proposal: inputs, steps: {}, error: null });
+    // an installed app unpacks its engine on its first start: the starter content comes from it
+    await this.d.engineReady?.();
     let editing = false;
     const result = await runSetup({
       github: /** @type {GitHub} */ (this.gh),

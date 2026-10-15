@@ -1,0 +1,85 @@
+# Atiya Studio's preview installer (documentation/desktop/plan.md, stage 9P): a per-user Windows installer, unsigned,
+# with the site's engine (packed from this commit) and git inside. Run by hand, it leaves the installer as the run's
+# artifact; on a studio-v<version> tag it also makes a draft pre-release for the owner to look at and publish. It
+# never signs, never publishes by itself, and never touches the site's deploy.
+name: Studio preview installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['studio-v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: studio-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the engine and the app
+        uses: actions/checkout@v7
+
+      - name: The tag is the app's version
+        if: startsWith(github.ref, 'refs/tags/studio-v')
+        run: |
+          version=$(node -p 'require("./apps/desktop/package.json").version')
+          if [ "studio-v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME doesn't match apps/desktop/package.json's version $version."
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # the lockfiles were written through a package-feed mirror of the public registry: the same tarballs and
+      # integrity hashes come from the public registry here, as in the site's workflows
+      - name: Use the public npm registry
+        run: |
+          sed -i -E 's#https://[^"]+/npm/registry/#https://registry.npmjs.org/#g' apps/desktop/package-lock.json
+          npm config set registry https://registry.npmjs.org/
+
+      - name: Pack the engine at this commit
+        run: node scripts/pack-engine.mjs --out "$RUNNER_TEMP/engine-rel"
+
+      - name: Install the app's packages
+        working-directory: apps/desktop
+        run: npm ci --no-audit --no-fund
+
+      - name: Bundle the engine into the app
+        run: node apps/desktop/scripts/bundle-engine.mjs --engine "$(ls "$RUNNER_TEMP"/engine-rel/engine-*.tgz)" --public-registry
+
+      - name: Build the installer, and check it
+        working-directory: apps/desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist
+
+      - name: Keep the installer with the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: atiya-studio-preview-${{ github.sha }}
+          path: |
+            apps/desktop/dist/Atiya-Studio-Setup-*.exe
+            apps/desktop/dist/Atiya-Studio-Setup-*.exe.blockmap
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: A draft pre-release, for the owner to publish
+        if: startsWith(github.ref, 'refs/tags/studio-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" apps/desktop/dist/Atiya-Studio-Setup-*.exe \
+            --draft --prerelease \
+            --title "Atiya Studio ${GITHUB_REF_NAME#studio-v} (preview)" \
+            --notes "A preview for testers: unsigned, so Windows SmartScreen warns about an unknown publisher (More info, then Run anyway). Installs for you alone; no administrator needed."

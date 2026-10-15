@@ -23,9 +23,11 @@ import { GitHub, GitHubError } from '../src/core/setup/github.mjs';
 import { EXIT, runSetup, STEPS } from '../src/core/setup/machine.mjs';
 import { runPrivateSetup } from '../src/core/setup/private.mjs';
 import { findToken, redact } from '../src/core/setup/tokens.mjs';
+import { githubClientId } from '../src/core/setup/client-id.mjs';
 
 /** Atiya Studio's OAuth App (registered by the owner; stage 5). Until then, sign in with GH_TOKEN or the GitHub CLI. */
-const CLIENT_ID = process.env.ATIYA_GITHUB_CLIENT_ID ?? null;
+// the OAuth App's client ID: the environment's, else the one in the app's package.json (plan 5.1, 9P.5)
+const CLIENT_ID = githubClientId(process.env, readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 /** @param {string[]} argv */
 export function parseArgs(argv) {

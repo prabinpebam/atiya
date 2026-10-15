@@ -13,10 +13,12 @@
     "e2e": "node scripts/sync-ui.mjs && cd ../.. && npx playwright test -c apps/desktop/playwright.config.mjs",
     "fake-github": "node bin/fake-github.mjs",
     "atiya": "node bin/atiya.mjs",
-    "icons": "node scripts/build-icons.mjs"
+    "icons": "node scripts/build-icons.mjs",
+    "dist": "node scripts/sync-ui.mjs && node scripts/check-dist.mjs --before && electron-builder --win --publish never && node scripts/check-dist.mjs"
   },
   "devDependencies": {
-    "electron": "44.6.0"
+    "electron": "44.6.0",
+    "electron-builder": "26.17.0"
   },
   "dependencies": {
     "dugite": "3.2.3",

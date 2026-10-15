@@ -1,0 +1,43 @@
+# Atiya Studio's preview installer (documentation/desktop/plan.md, stage 9P): a per-user Windows installer,
+# unsigned, with the site's engine and git inside. Built by `npm run dist` once scripts/bundle-engine.mjs has put
+# a release in engine/; GitHub builds the same in .github/workflows/studio-preview.yml.
+appId: io.github.prabinpebam.atiya-studio
+productName: Atiya Studio
+copyright: Prabin Pebam
+directories:
+  output: dist
+  buildResources: assets
+# the app's own code and what it needs at run time; never the tests, the scripts, the engine's sources or a cache
+files:
+  - package.json
+  - src/**
+  - bin/**
+  - assets/**
+  - '!src/**/*.test.*'
+  - '!**/*.map'
+  - '!node_modules/dugite/**'
+asar: true
+npmRebuild: false
+# the engine (a release with its production packages) and git sit beside the app, where engineRoot() and
+# bundledGit() look for them in a packaged app (process.resourcesPath): git here, the engine by the afterPack hook
+# (extraResources leave out the engine's node_modules)
+extraResources:
+  - from: node_modules/dugite/git
+    to: git
+    filter: ['**/*']
+afterPack: scripts/after-pack.cjs
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: assets/icon.png
+  # unsigned for now: signing waits for the certificate (stage 9)
+  signAndEditExecutable: true
+nsis:
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  artifactName: Atiya-Studio-Setup-${version}.${ext}
+  shortcutName: Atiya Studio
+  uninstallDisplayName: Atiya Studio
+  deleteAppDataOnUninstall: false
