@@ -157,6 +157,70 @@ test.describe('desktop: the window', () => {
     }
   });
 
+  test('7A.6 Edit mode | Site is a proper segmented control, and the bar\'s hover states apply, in light and dark', async () => {
+    const { app, frame } = await openEditMode({ port: 4406 });
+    try {
+      const anatomy = () =>
+        frame.evaluate(() => {
+          const track = /** @type {HTMLElement} */ (document.querySelector('.segmented'));
+          const bar = /** @type {HTMLElement} */ (document.querySelector('.bar'));
+          const [chosen, other] = ['[aria-checked="true"]', '[aria-checked="false"]'].map((s) => /** @type {HTMLElement} */ (track.querySelector(s)));
+          const t = getComputedStyle(track);
+          const pill = (/** @type {HTMLElement} */ el) => {
+            const p = getComputedStyle(el, '::before');
+            return { bg: p.backgroundColor, border: p.borderTopWidth, borderColor: p.borderTopColor, shadow: p.boxShadow, top: p.top, left: p.left, right: p.right, bottom: p.bottom };
+          };
+          return {
+            track: { bg: t.backgroundColor, border: t.borderTopWidth, shadow: t.boxShadow, outline: t.outlineStyle },
+            barBg: getComputedStyle(bar).backgroundColor,
+            optionBg: [getComputedStyle(chosen).backgroundColor, getComputedStyle(other).backgroundColor],
+            optionHeight: chosen.getBoundingClientRect().height,
+            chosen: pill(chosen),
+            other: pill(other),
+          };
+        });
+      for (const scheme of /** @type {const} */ (['light', 'dark'])) {
+        await frame.emulateMedia({ colorScheme: scheme });
+        await frame.mouse.move(700, 600);
+        const a = await anatomy();
+        // the track: a fill of its own, no border, no ring
+        expect(a.track.border, scheme).toBe('0px');
+        expect(a.track.shadow, scheme).toBe('none');
+        expect(a.track.bg, scheme).not.toBe(a.barBg);
+        expect(a.track.bg, scheme).not.toBe('rgba(0, 0, 0, 0)');
+        // the options paint nothing of their own: only their pills
+        expect(a.optionBg, scheme).toEqual(['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']);
+        expect(a.optionHeight, scheme).toBeGreaterThanOrEqual(44);
+        // the chosen pill: its own fill, a border and a drop shadow, with room all round inside the track
+        expect(a.chosen.bg, scheme).not.toBe(a.track.bg);
+        expect(a.chosen.bg, scheme).not.toBe('rgba(0, 0, 0, 0)');
+        expect(a.chosen.border, scheme).toBe('1px');
+        expect(a.chosen.borderColor, scheme).not.toBe('rgba(0, 0, 0, 0)');
+        expect(a.chosen.shadow, scheme).not.toBe('none');
+        for (const side of /** @type {const} */ (['top', 'left', 'right', 'bottom'])) expect(parseFloat(a.chosen[side]), `${scheme} ${side}`).toBeGreaterThanOrEqual(3);
+        // the other: nothing at rest
+        expect(a.other.bg, scheme).toBe('rgba(0, 0, 0, 0)');
+        expect(a.other.shadow, scheme).toBe('none');
+        // the bar's hover states apply (a broken selector list once dropped them all)
+        const close = frame.getByRole('button', { name: 'Close' });
+        await close.hover();
+        const red = await frame.evaluate(() => {
+          const probe = document.createElement('i');
+          probe.style.color = 'var(--color-negative)';
+          document.body.append(probe);
+          const c = getComputedStyle(probe).color;
+          probe.remove();
+          return c;
+        });
+        expect(await close.evaluate((b) => getComputedStyle(b).backgroundColor), `${scheme} close on hover`).toBe(red);
+        await frame.getByRole('button', { name: 'Atiya Studio menu' }).hover();
+        expect(await frame.getByRole('button', { name: 'Atiya Studio menu' }).evaluate((b) => getComputedStyle(b).backgroundColor), `${scheme} logo on hover`).not.toBe('rgba(0, 0, 0, 0)');
+      }
+    } finally {
+      await quit(app);
+    }
+  });
+
   test('7A.5 the logo opens the app\'s menu (the window has no menu bar), and the place and size are remembered', async () => {
     const first = await openEditMode({ port: 4405 });
     try {

@@ -276,6 +276,24 @@ Spec, navigation modes, plan and Definitions of Done: [documentation/desktop/](.
   - The occlusion outline (`player/outline.ts`) depends on draw order: opaque scenery at renderOrder 0, the outline twins at 1, the character at 2. Don't give opaque scenery a renderOrder of 1 or more (it would draw after the twins and never show them), and call `addOcclusionOutline` for any new avatar.
   - Keep `useGLTF(url, false, false)` (no Draco/Meshopt), so no decoder is fetched from a CDN.
 
+### Working modes and throughput
+
+Work is measured by **validated progress per hour**, not completeness per task (learned from the owner's focus-notes loop). The owner's time and attention are the constraint: never make him wait on checks a change doesn't need, and never make him micromanage basic quality.
+
+- **Which mode:** attended while the owner has written in the last 30 minutes; unattended when he says he's away or hasn't written for 30 minutes.
+- **Attended** (he's testing and giving feedback): one fix at a time, about **15 minutes from report to a fix he can see**. Run only the fast checks for what changed (**5 minutes or less**): the unit tests it touches, and the one E2E file or group that covers it. Then merge to `main`, push, and say what to reopen. Never run a full suite, the editor project or `perf:bench` here. Queue new feedback rather than widening the running fix.
+- **Unattended** (he's away): deeper work on the plan's critical path in **45-minute time-boxes**, each ending in a merge of what works. Run the full suites (tier 3) before merging. Leave a handoff summary: what's done with evidence, what's in progress, what's waiting on him, and what to try first.
+- **Atiya Studio's checks, by what changed:**
+  - `apps/desktop/src/ui/*.css`: `test/css.test.mjs`, plus the one `e2e/stage7*.spec.mjs` for that surface.
+  - `frame.js` or `frame.html`: that stage's spec.
+  - `main.mjs`, `preload.cjs` or `core/`: the unit test for the module, plus the spec of the stage that uses it.
+  - The app's whole E2E suite (about 4 minutes) runs only when unattended, or when a change touches the window, the supervisor or setup's flow broadly.
+- **Visual changes get their basics right the first time:** before showing the owner, check the component's whole anatomy in light and dark, at rest, hover, active, focus and disabled, with one enlarged capture. Put a test on the anatomy (the segmented control's is `7A.6`), so the same flaw can't come back.
+- **Never take his focus:** test and script launches of the app set `ATIYA_BACKGROUND=1` (`e2e/launch.mjs` does). Never restart his running app without asking; say "quit from the tray and reopen" instead.
+- **Merge exactly what was tested, and keep branches short:** an hour at most. Fast-forward `main`, push, and watch the deploy and the parity check (`gh run watch`); the live site deploys from `main`.
+- **Log every step:** one timestamped line in `E:\Projects\Personal\atiya-progress.log` (outside the repository), so the owner can watch.
+- **Challenge the approach** every 30 minutes of running work, with the throughput reviewer (`.github/agents/throughput-reviewer.agent.md`), and act on its top finding.
+
 ### Validation: run what the change needs, not everything
 
 Headless E2E is slow here (SwiftShader at 1–2.5 fps, one worker, a test build per run: about 1–2 min per test, about 22 min for the full suite). So validation is scoped to the change's blast radius, the way large teams do it: test impact analysis (Microsoft, Google TAP) and predictive test selection (Meta) run the tests a change can affect on every change, keep the full suite for milestones, and fall back to "run everything" when the impact is unclear. Pick the **lowest tier that covers the change**; escalate only for the reasons in tier 3.
