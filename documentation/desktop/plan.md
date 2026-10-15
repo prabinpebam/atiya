@@ -205,7 +205,7 @@ Stage 7A's row sat above edit mode's own header, so the window had two rows. Edi
 | 7C.2 | Every remembered site is listed with its address, the open one first and marked; choosing another opens it | App E2E 7C.2; unit `account.test.mjs` |
 | 7C.3 | Sign out asks once, forgets the token (none left on disk), and the app keeps working signed out; Sign in brings it back without leaving where you were | App E2E 7C.1 |
 | 7C.4 | axe passes on the popover in light and dark; it works by keyboard (focus in, Esc back to the button) | App E2E 7C.1 |
-| 7C.5 | Every setup screen captured, light and dark, for the owner's review | The tour: 21 screens in `atiya-review/setup-flow/`, with an index |
+| 7C.5 | Every setup screen captured, light and dark, for the owner's review | The tour: 21 screens in `atiya-review/setup-flow/`, with an index; reviewed by the owner on 15 October 2026, no changes asked for |
 
 ### Stage 7D: one theme for the whole app
 
@@ -361,6 +361,53 @@ The owner's site stays on source (spec §6.4, O15: D): it's developed, built and
 | 10.10 | Nothing else changed: the owner's site, its budgets, its pages | `verify:prod`; unit; type check; E2E "landing & classic" |
 | 10.11 | Docs: spec §6.3, §6.4, §10, O15 and §16, the contact and access specs, AGENTS.md and the whole plan say how it works | Review; the docs checks |
 
+### Stage 11: contact and visitor counts on a person's site
+
+A person's site gets a way for visitors to reach them and, if they want it, a count of who visits, from their own accounts with third-party services in three tiers by setup effort, with no server of ours ([spec §9.5](spec.md), O7, O16, O17; the research in [contact and visitor counts](site-services.md)). The owner's site keeps his relay and PostHog, unchanged.
+
+- **The settings** (`services` in `content/site.json`, the content contract):
+  - `contact`, one of: `{ kind: 'email', address }` (Email me, the default for a new site), `{ kind: 'web3forms', key }` (a UUID), `{ kind: 'embed', url }` (https, on an allowed host), or `{ endpoint }` / `{ kind: 'relay', endpoint }` (the owner's service, today's shape).
+  - `telemetry` (PostHog, today's shape: `key`, `host`, `site`), unchanged.
+  - `counts`, one of `{ kind: 'goatcounter', code }`, `{ kind: 'umami', id, host? }` or `{ kind: 'ga4', id }`, with `site` (the address it counts), and `clarity: { id }` optionally beside any. At most one counting tool: `counts` or `telemetry`, never both.
+  - Every value is public by design; shapes are checked (a Web3Forms key is a UUID, a GoatCounter code is `[a-z0-9-]{2,50}`, an Umami ID a UUID, a GA4 ID `G-[A-Z0-9]{4,}`, a Clarity ID `[a-z0-9]{6,20}`, an embed's host on the allowlist).
+- **One catalogue** (`src/site/services/catalogue.json`): every option with its kind, tier (simple, balanced, powerful), name, what you get, what you do (steps, each marked *person* or *agent*), the value's shape, a link to the provider's page and its pricing page, whether it needs a cookie banner, and the embed hosts allowed. Edit mode's cards, the `atiya services` command and the site's skill read it; a unit test holds it to the content contract's shapes.
+- **The site:**
+  - The Contact page (the hub `site.contactPage` names) draws, by kind: **email**, a button "Email me" (`mailto:`, the address also as text to copy); **web3forms**, the site's own Contact form posting to `https://api.web3forms.com/submit` (the access key, name, email, message, a honeypot; Web3Forms' own spam check); **embed**, a frame titled after the form, with "Open the form in a new tab" beside it and no third-party script on the page; **relay**, today's form, unchanged. Read at render time from the content (so edit mode shows a change at once); a test build keeps `.env.test`'s relay.
+  - **Counts:** one loader per tool, added to the page only in a build for the site's own address (`counts.site`, as `telemetry.site` today), never on a private page, the Sign in page or a page showing shared cards, never with GPC, DNT or `?telemetry=off`, and reporting the path without a query or fragment (GoatCounter's `path`, Umami's `data-auto-pageview="false"` and a manual track, GA4's `page_location` with `send_page_view: false`). Clarity loads only beside a cookie notice. The 1.2 KB shim's budget holds (the loaders are their own idle chunk).
+  - **A cookie notice** (a small banner with Accept and No thanks, remembered) appears only when the chosen tools need one: Clarity, GA4, or PostHog with `cookies: true`; nothing loads until Accept.
+  - `verify-sealed.mjs` fails a build that has a counting tool's script on a sealed page.
+- **Edit mode:** Settings gets two cards, **Contact** and **Visitor counts**. Each shows the three tiers as choices, with what you get and what you do; the chosen one's steps, a button to the provider's page, the value's field (checked as you type), and a check: Send a test message (Web3Forms, through the site's own form in a new tab), a preview of the embed, or Open my dashboard. Saved with the site's settings, through the store. The action center finds both cards (Go to: Contact, Visitor counts).
+- **Agents:** `atiya services list|set|check|off [--dir] [--json]` reads the catalogue, writes `content/site.json` in the site's folder (checked, never anything but `services`), and says when a person must act (exit 10, the step and its address). Setup writes `.github/skills/site-services/SKILL.md` into a new site's repository, made from the catalogue.
+- **Try it:** open edit mode's Settings on a site made by the app: the Contact card shows Email me chosen. Choose Web3Forms, paste a key, save: the Contact page shows the site's own form. Choose an embedded form and paste a Tally link: the page shows the frame. In Visitor counts choose GoatCounter, type a code: the next build for the site's address carries GoatCounter's script, and a private page doesn't. `node apps/desktop/bin/atiya.mjs services list --json` lists the tiers.
+
+| # | Done when | Evidence |
+|---|---|---|
+| 11.1 | The content contract takes every kind above, refuses a value of the wrong shape, an embed from another host, and counts beside telemetry; the owner's settings stay valid as they are | Unit `siteServices.test.ts` |
+| 11.2 | The catalogue lists every option with its tier, steps (person or agent), value shape and links, and agrees with the contract | Unit `servicesCatalogue.test.ts` |
+| 11.3 | The Contact page draws Email me, the Web3Forms form (posting the key and fields, saying sent or why not), the embed with its new-tab link, or the relay form, by kind; a test build keeps the relay | E2E "editor: contact and visitor counts" on the fixture (Web3Forms' address intercepted); unit for the choice of view; E2E "contact" unchanged |
+| 11.4 | Counting tools load only in a build for the site's address, never on private, Sign in or shared-card pages, never with GPC, DNT or `?telemetry=off`; paths go without queries or fragments; Clarity, GA4 and PostHog with cookies wait for Accept | Unit `servicesCounts.test.ts` (the loader's rules and the tags it writes); `size-report` budgets |
+| 11.5 | `verify-sealed.mjs` fails on a counting tool's script in a sealed page | Unit (the rule on a crafted page) |
+| 11.6 | Edit mode's Contact and Visitor counts cards: the tiers, the steps, the field checked, saved through the store, the Contact page following at once; axe in light and dark | The E2E of 11.3 |
+| 11.7 | `atiya services` lists, sets, checks and turns off, in words and JSON, with exit 10 for a person's step; setup writes the site's skill | App unit `services.test.mjs`; `stage2.test.mjs` (the skill in a new site) |
+| 11.8 | The owner's site is unchanged: his relay form, his PostHog, his budgets | `verify:prod`; E2E "contact" and the telemetry tests of "protected content" |
+| 11.9 | Docs: spec §6.3 and §9.5, the contact and access specs, AGENTS.md | Review; the docs checks |
+
+### Stage 8, M3a: Little planet for anyone
+
+The part of M3 a person sees, before the planet's code moves into its own package: on a site made by the app, Little planet is the world, the buildings, the sky, the wildlife and collecting, without the owner's residents or music, and greets visitors with the site owner's own words. The owner's site keeps everything (Cozy life, in effect). The move of `src/game/` into `modes/little-planet/` and `modes/cozy-life/` (M3b) follows, with nothing visible changing.
+
+- **Residents are the owner's alone:** a build feature, `residents` (on for the engine's own repository, off for a managed site, like `designLibrary` and `docs` in `integrations/features.mjs`), decides whether the game imports Chopper, the home and family, and Prabin. Off: their chunks are never fetched or emitted, nothing waits for them, and the targets and lines that name them are absent.
+- **The welcome is the site owner's:** off, the talk box shows the site's person (their name and their picture from `content/people/<owner>.json`, or their initials) and the welcome lines from Little planet's structure (`welcome`, optional; the generic lines otherwise: "Welcome to my site. Walk up to a building and choose Open to read what's inside."), never Prabin's portrait or name.
+- **Music:** off, the owner's tracks are neither fetched nor emitted; the ambient sounds stay (O6).
+- **Try it:** `npm run build:starter` (the planet on, a managed site's features): `/play/` has no Chopper, family or Prabin, greets with the starter person's name, and fetches no music; the owner's `/play/` is unchanged.
+
+| # | Done when | Evidence |
+|---|---|---|
+| M3a.1 | `residents` follows the site: on for the engine's repository, off for a managed site | Unit `siteFeatures` |
+| M3a.2 | Off, the starter's planet build has no resident or music chunk or asset, and its pages name no one of the owner's | `build-starter.mjs` checks (the owner-name scan extended to `/play/`) |
+| M3a.3 | Off, the welcome is the site owner's: their name, picture or initials, and the structure's lines or the generic ones | Unit for the welcome's words; the starter build's `/play/` |
+| M3a.4 | On, the owner's planet is unchanged, within its budgets | Planet E2E "fast travel", "reading theme" and Prabin's welcome; `verify:prod` with the same sizes |
+| M3a.5 | Docs: modes.md §9 and §13, the spec's §9.1 and O5 and O6 | Review; the docs checks |
 ## 4. Order
 
 Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 needs only 0. 5 needs 3. 6 needs 4. 7 needs 3 and 6. 8 needs 4. 9 needs everything. 10 needs 6 (its rows 10.8 and 10.9 need an engine release and M3). The owner can use stage 1's app as soon as it's done.
