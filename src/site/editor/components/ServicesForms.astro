@@ -1,0 +1,174 @@
+---
+/**
+ * Edit mode's Contact and Visitor counts cards (desktop spec §9.5, plan stage 11.6): how visitors reach the
+ * person and how visits are counted, each a choice of options in three tiers (Simple, Balanced, Powerful) from
+ * the services catalogue, saying what each gives and asks. The chosen one shows its steps (what you do, what you
+ * or your agent can do), a button to the service, the value to paste (checked as it's typed) and a way to check
+ * it. Each card saves content/site.json's `services` with its own Save, through the store.
+ * @tier editor
+ * @a11y Each card is a labelled form; its options are a radio group of cards, each named and described.
+ * @a11y Only the chosen option's steps and field show; a value that doesn't fit says why under its field.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
+import { contactChoices, countsChoices, dashboardOf, TIER_LABEL, type ServiceChoice } from '../model/services';
+import type { SiteSettings } from '../../content/schema';
+
+interface Props {
+  /** The site settings as on disk, and their version. */
+  site: SiteSettings;
+  siteVersion: string;
+  /** The site's published address, from its GitHub remote ('' when it can't be told). */
+  address: string;
+  /** The site's Contact page in this dev server, to try the form ('' when the site has none). */
+  contactHref: string;
+}
+
+const { site, siteVersion, address, contactHref } = Astro.props;
+const contact = contactChoices(site);
+const counts = countsChoices(site, address);
+const cards = [
+  { group: 'contact', title: 'Contact', intro: 'How visitors reach you. Every option is your own account: nothing goes through a server of ours.', legend: 'How visitors reach you', save: 'Save contact', ...contact },
+  { group: 'counts', title: 'Visitor counts', intro: "Whether and how visits are counted. Counting starts with the next build for your site's address, and never on a private page.", legend: 'How to count visits', save: 'Save visitor counts', ...counts },
+] as const;
+const hint = (c: ServiceChoice) => `${TIER_LABEL[c.tier]}. ${c.gives} You: ${c.asks.replace(/^./, (s) => s.toLowerCase())}`;
+const state = JSON.stringify({ site, siteVersion, address, choices: { contact: contact.choices, counts: counts.choices } }).replace(/</g, '\\u003c');
+---
+
+<div class="services" data-region="services" data-editor-services>
+  {
+    cards.map((card) => (
+      <form class="card" data-services-form={card.group} id={`settings-${card.group}`} novalidate aria-labelledby={`services-${card.group}-title`}>
+        <div class="head">
+          <Heading level={2} size="h4" id={`services-${card.group}-title`}>
+            {card.title}
+          </Heading>
+          <Text variant="small" tone="muted">
+            {card.intro}
+          </Text>
+        </div>
+        <ChoiceGroup legend={card.legend} name="option" variant="cards" value={card.chosen} options={card.choices.map((c) => ({ value: c.id, label: c.name, hint: hint(c) }))} />
+        {card.choices.map((c) => (
+          <div class="option" data-services-option={c.id} hidden={c.id !== card.chosen}>
+            {c.steps.length > 0 && (
+              <ol class="steps">
+                {c.steps.map((s) => (
+                  <li>
+                    <Text variant="small">
+                      <span class="who">{s.who === 'person' ? 'You' : 'You or your agent'}</span> {s.text}
+                    </Text>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <div class="row">
+              {c.site && (
+                <Button href={c.site} external size="sm" variant="secondary" icon="external">
+                  {`Open ${c.name}`}
+                </Button>
+              )}
+              {c.dashboard && (
+                <Button href={dashboardOf(c, c.current ?? '')} external size="sm" variant="secondary" icon="dashboard" data-services-dashboard={c.dashboard}>
+                  Open my dashboard
+                </Button>
+              )}
+              {(c.check === 'test-message' || c.check === 'preview') && contactHref && (
+                <Button href={contactHref} external size="sm" variant="quiet" icon="preview">
+                  Try the form
+                </Button>
+              )}
+            </div>
+            {c.value && <TextField label={c.value.label} name={`value-${c.id}`} value={c.current ?? ''} placeholder={c.value.example} hint={c.value.hint} liveError data-services-value={c.id} />}
+            {c.kept && (
+              <Text variant="small" tone="muted">
+                Kept as content/site.json has it.
+              </Text>
+            )}
+          </div>
+        ))}
+        {card.group === 'counts' && (
+          <div class="extra" data-services-extra hidden={card.chosen === 'none'}>
+            <TextField label="Your site's address" name="address" type="url" value={card.address} hint="Only a build for this address counts visits, so a copy elsewhere never does." />
+            <TextField label="Microsoft Clarity project ID" name="clarity" value={card.clarity} optional hint="Heatmaps and recordings beside the count. It uses cookies, so visitors are asked first." liveError data-services-clarity="" />
+          </div>
+        )}
+        <p class="issue" role="alert" data-editor-form-issue hidden />
+        <div class="actions">
+          <Button variant="primary" type="submit">
+            {card.save}
+          </Button>
+        </div>
+      </form>
+    ))
+  }
+  <script is:inline type="application/json" data-services-state set:html={state} />
+</div>
+
+<style>
+  .services {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--size-measure-narrow)), 1fr));
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .card {
+    display: grid;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .head,
+  .option,
+  .extra {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .option[hidden],
+  .extra[hidden] {
+    display: none;
+  }
+
+  .steps {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding-inline-start: var(--space-5);
+  }
+
+  .who {
+    font-weight: var(--weight-semibold);
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: end;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initServices } from '../scripts/services';
+
+  each<HTMLElement>('[data-editor-services]', (root, signal) => initServices(root, signal));
+</script>

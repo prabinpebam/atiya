@@ -8,8 +8,8 @@
  * public commit only when nothing private changed. A failed push leaves its commit local, with Push again.
  */
 import { execFile } from 'node:child_process';
-import { statSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { contentRoot, generation as contentGeneration, hasPrivate, privateRoot, readSnapshot } from '../../content/source';
 import { ContentError, loadContent, type Issue } from '../../content/load';
 import { timedAsync } from '../../content/timing';
@@ -345,6 +345,31 @@ export async function remoteUrl(upstream: string | null): Promise<string | null>
 }
 /** Each remote's address, asked once (a remote's address doesn't change while the server runs). */
 const remotes = new Map<string, string | null>();
+
+/**
+ * The content repository's `origin` address, read from its git config file (no git process, so a screen can ask
+ * on its way: editor spec §2.2), or null. A worktree's config is its main repository's.
+ */
+export function originUrl(dir = contentRoot()): string | null {
+  for (let d = resolve(dir); ; d = dirname(d)) {
+    const dot = join(d, '.git');
+    if (existsSync(dot)) {
+      try {
+        let gitDir = dot;
+        if (statSync(dot).isFile()) {
+          gitDir = resolve(d, readFileSync(dot, 'utf8').replace(/^gitdir:\s*/, '').trim());
+          const common = join(gitDir, 'commondir');
+          if (existsSync(common)) gitDir = resolve(gitDir, readFileSync(common, 'utf8').trim());
+        }
+        const config = readFileSync(join(gitDir, 'config'), 'utf8');
+        return /\[remote "origin"\][^[]*?\burl\s*=\s*(\S+)/.exec(config)?.[1] ?? null;
+      } catch {
+        return null;
+      }
+    }
+    if (dirname(d) === d) return null;
+  }
+}
 
 function showBinary(cwd: string, path: string): Promise<Buffer | null> {
   return new Promise((resolvePromise) => {

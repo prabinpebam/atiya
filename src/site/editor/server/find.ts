@@ -11,7 +11,7 @@ import { SITE_FEATURES, withBase } from '../../design/meta';
 import { BUILTIN_MODES } from '../../modes/builtin';
 import type { Ways } from '../../modes/contract';
 import { effectiveWays } from '../../modes/ways';
-import { bodyText, checkSiteText, editScreens, findSettings, isSiteText, modeOf, waysWith, withSiteText, type FindSetting } from '../model/find';
+import { bodyText, checkSiteText, editScreens, findSettings, SCREEN_PLACES, isSiteText, modeOf, waysWith, withSiteText, type FindSetting } from '../model/find';
 import { hubs } from '../model/structure';
 import { ownerLabel, ownerOf } from '../model/references';
 import { planetKey } from './articles';
@@ -63,7 +63,7 @@ export function findIndex(index: ContentIndex) {
       ...[...index.media.values()].map((m) => ({ id: m.id, kind: 'image' as const, title: m.alt ?? '', caption: m.caption ?? '', decorative: !!m.decorative, owner: ownerOf(m.id), ownerLabel: ownerLabel(index, ownerOf(m.id)), private: m.origin === 'private' })),
       ...[...index.videos.values()].map((v) => ({ id: v.id, kind: 'video' as const, title: v.title, caption: v.caption ?? '', decorative: false, owner: ownerOf(v.id), ownerLabel: ownerLabel(index, ownerOf(v.id)), private: v.origin === 'private', width: v.width, height: v.height, ...(v.duration ? { duration: v.duration } : {}) })),
     ];
-    const screens = editScreens(SITE_FEATURES).map((s) => ({ id: s.id, label: s.label, href: withBase(`/_edit/${s.path}`), words: s.words, about: s.about, icon: s.icon }));
+    const screens = [...editScreens(SITE_FEATURES), ...SCREEN_PLACES].map((s) => ({ id: s.id, label: s.label, href: withBase(`/_edit/${s.path}`), words: s.words, about: s.about, icon: s.icon }));
     return { ok: true as const, pages, sections, media, screens, settings: settingsNow() };
   });
 }

@@ -41,6 +41,12 @@ export function editScreens(features: { planet: boolean; managed: boolean }): Ed
   return SCREENS.filter((s) => (s.needs === 'planet' ? features.planet : s.needs === 'source' ? !features.managed : true)).map(({ needs: _, ...s }) => s);
 }
 
+/** Places within a screen the action center goes to as if they were screens (never in the side navigation). */
+export const SCREEN_PLACES: EditScreen[] = [
+  { id: 'settings-contact', label: 'Contact', path: 'settings/#settings-contact', group: 'Site', words: ['contact form', 'email me', 'web3forms', 'tally', 'google forms', 'booking', 'messages'], about: 'How visitors reach you: Email me, a form, or a booking page.', icon: 'mail' },
+  { id: 'settings-counts', label: 'Visitor counts', path: 'settings/#settings-counts', group: 'Site', words: ['analytics', 'statistics', 'visits', 'traffic', 'goatcounter', 'umami', 'google analytics', 'clarity', 'cookies'], about: 'Whether and how visits to your site are counted.', icon: 'dashboard' },
+];
+
 /** How much of a page's body the index carries (§8.2). */
 export const BODY_TEXT_MAX = 4000;
 

@@ -146,7 +146,7 @@ export function initSettings(root: HTMLElement, signal: AbortSignal) {
       saveStatus.failed(`Not saved: ${why}`);
       return say(form, r.status === 409 ? 'This file changed elsewhere since you opened it. Reload the page to see it, then make your change again.' : why);
     }
-    await swapRegions(['settings']);
+    await swapRegions(['settings', 'services']);
     saveStatus.saved(`Saved ${what.toLowerCase()}`);
   };
 

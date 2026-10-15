@@ -70,7 +70,7 @@ describe('the Visitor counts card', () => {
     expect(countsChoices(on, '')).toMatchObject({ chosen: 'goatcounter', address: SITE, clarity: 'abc123def4' });
     const off = valid(withCounts(on, 'none', '', SITE, ''));
     expect(off.services).toBeUndefined();
-    expect(withCounts(on, 'none', '', SITE, 'abc123def4')).toMatchObject({ issue: expect.stringMatching(/^Clarity counts beside/) });
+    expect(valid(withCounts(on, 'none', '', SITE, 'abc123def4')).services).toBeUndefined();
   });
 
   it('needs an https address and a value of the right shape', () => {
@@ -95,5 +95,13 @@ describe('the Visitor counts card', () => {
     expect(pagesAddress('https://github.com/prabinpebam/atiya')).toBe('https://prabinpebam.github.io/atiya/');
     expect(pagesAddress('E:/tmp/remote.git')).toBe('');
     expect(pagesAddress(null)).toBe('');
+  });
+});
+
+describe("the site's address from its repository", () => {
+  it("reads origin from the git config (a worktree's from its main repository), without running git", async () => {
+    const { originUrl } = await import('../../src/site/editor/server/git');
+    expect(pagesAddress(originUrl(process.cwd()))).toBe('https://prabinpebam.github.io/atiya/');
+    expect(originUrl('C:/')).toBeNull();
   });
 });

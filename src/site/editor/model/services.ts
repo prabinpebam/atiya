@@ -131,10 +131,13 @@ export function withCounts(site: SiteSettings, id: string, value: string, addres
   const at = address.trim();
   const cl = clarity.trim();
   if (id === 'none') {
+    // nothing counts, Clarity included (its field is hidden with the choice)
     delete services.counts;
     delete services.telemetry;
-    if (cl) return { issue: 'Clarity counts beside a counting tool: choose one, or clear its project ID.' };
-  } else if (!choice.kept) {
+    delete services.clarity;
+    return { site: settingsWith(site, services) };
+  }
+  if (!choice.kept) {
     const issue = valueIssue(choice, v);
     if (issue) return { issue };
     if (!/^https:\/\/[^/\s]+\/?/.test(at)) return { issue: "Write your site's address, starting with https://: only a build for that address counts visits." };
@@ -145,7 +148,12 @@ export function withCounts(site: SiteSettings, id: string, value: string, addres
   if (cl && !fits('clarity', cl)) return { issue: `That Clarity project ID doesn't look right: ${shapeText('clarity')}` };
   if (cl) services.clarity = { id: cl };
   else delete services.clarity;
+  return { site: settingsWith(site, services) };
+}
+
+/** The settings with these services (none: no services at all). */
+function settingsWith(site: SiteSettings, services: Record<string, unknown>): SiteSettings {
   const next = { ...site, services } as SiteSettings;
   if (!Object.keys(services).length) delete next.services;
-  return { site: next };
+  return next;
 }
