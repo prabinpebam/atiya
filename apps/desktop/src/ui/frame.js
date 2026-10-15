@@ -491,3 +491,127 @@ function squeeze() {
 }
 new ResizeObserver(squeeze).observe($('window'));
 window.atiya.onHeader(() => requestAnimationFrame(squeeze));
+
+// ---------- who's signed in, and which site is open (plan stage 7C) ----------
+
+const initials = (a) => (a.name || a.login || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+function avatarOf(a, size) {
+  const box = node('span', `avatar-img ${size}`);
+  if (a?.avatar) {
+    const img = document.createElement('img');
+    img.src = a.avatar;
+    img.alt = '';
+    img.addEventListener('error', () => img.replaceWith(document.createTextNode(initials(a))));
+    box.append(img);
+  } else if (a?.login) box.textContent = initials(a);
+  else {
+    const g = glyph('user');
+    if (g) box.append(g);
+  }
+  return box;
+}
+
+let lastAccount = '';
+let lastState = null;
+function drawAccount(s) {
+  lastState = s;
+  const a = s.account ?? { state: 'checking' };
+  const site = s.workspace?.name ?? 'No site open';
+  const signedIn = a.state === 'signed-in' || (a.state === 'offline' && a.login);
+  const who = signedIn ? `signed in to GitHub as ${a.login}` : a.state === 'checking' ? 'checking GitHub' : 'not signed in to GitHub';
+  // the button: the avatar and the open site's name
+  const button = $('account');
+  button.setAttribute('aria-label', `${site}, ${who}`);
+  button.title = `${site} · ${signedIn ? `@${a.login}` : 'Not signed in'}`;
+  const key = JSON.stringify([a.login, a.avatar, a.state]);
+  if (key !== lastAccount) {
+    lastAccount = key;
+    $('account-avatar').replaceChildren(avatarOf(signedIn ? a : null, 'sm'));
+  }
+  $('account-site').textContent = site;
+
+  // the popover's GitHub part
+  const whoBox = $('who');
+  if (signedIn) {
+    const words = node('span', 'who-words');
+    words.append(Object.assign(node('strong'), { textContent: a.name || a.login }), Object.assign(node('span', 'muted'), { textContent: `@${a.login}${a.state === 'offline' ? ' · offline' : ''}` }));
+    whoBox.replaceChildren(avatarOf(a, 'lg'), words);
+  } else whoBox.replaceChildren(Object.assign(node('span', 'muted'), { textContent: a.state === 'checking' ? 'Checking GitHub…' : 'Not signed in to GitHub.' }));
+  $('sign-in').hidden = signedIn || a.state === 'checking';
+  $('sign-out').hidden = !signedIn || !$('sign-out-confirm').hidden;
+  $('pushes-note').hidden = s.pushesWith !== 'computer';
+
+  // the sites: the open one first and marked; another opens on a press
+  const list = $('sites');
+  list.replaceChildren(
+    ...(s.sites ?? []).map((site) => {
+      const li = node('li');
+      const b = node('button', 'site');
+      b.type = 'button';
+      b.dataset.path = site.path;
+      if (site.current) b.setAttribute('aria-current', 'true');
+      const mark = site.current ? glyph('check') : null;
+      const words = node('span', 'site-words');
+      words.append(Object.assign(node('span', 'site-name'), { textContent: site.name }), Object.assign(node('span', 'site-address'), { textContent: site.address }));
+      b.append(words);
+      if (mark) b.append(mark);
+      b.setAttribute('aria-label', `${site.name}, ${site.address}${site.current ? ', open now' : ''}`);
+      li.append(b);
+      return li;
+    }),
+  );
+}
+window.atiya.onState(drawAccount);
+window.atiya.state().then(drawAccount);
+
+$('account').addEventListener('click', () => {
+  if (open?.panel === $('account-panel')) return closePopover(true);
+  $('site-error').hidden = true;
+  // never reopened halfway through signing out
+  $('sign-out-confirm').hidden = true;
+  if (lastState) drawAccount(lastState);
+  openPopover($('account-panel'), $('account'), 'end');
+  $('account-panel').focus();
+});
+$('sign-in').addEventListener('click', () => {
+  closePopover(false);
+  window.atiya.account.signIn();
+});
+$('sign-out').addEventListener('click', () => {
+  $('sign-out').hidden = true;
+  $('sign-out-confirm').hidden = false;
+  $('keep-signed-in').focus();
+});
+$('keep-signed-in').addEventListener('click', () => {
+  $('sign-out-confirm').hidden = true;
+  $('sign-out').hidden = false;
+  $('sign-out').focus();
+});
+$('sign-out-yes').addEventListener('click', async () => {
+  $('sign-out-confirm').hidden = true;
+  await window.atiya.account.signOut();
+  $('sign-in').focus();
+});
+$('sites').addEventListener('click', async (e) => {
+  const b = e.target.closest?.('button.site');
+  if (!b || b.getAttribute('aria-current') === 'true') return;
+  const r = await window.atiya.account.switchSite(b.dataset.path);
+  if (r?.ok === false) {
+    $('site-error').textContent = r.reason;
+    $('site-error').hidden = false;
+    return;
+  }
+  closePopover(true);
+});
+$('new-site').addEventListener('click', () => {
+  closePopover(false);
+  window.atiya.show('welcome');
+});
+$('existing-site').addEventListener('click', () => {
+  closePopover(false);
+  window.atiya.setup.start('existing');
+});
+$('source-folder').addEventListener('click', () => {
+  closePopover(false);
+  window.atiya.show('source');
+});

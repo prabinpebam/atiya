@@ -21,7 +21,14 @@ if (mode === 'never-listen') {
   console.log('stand-in: exiting without listening');
   process.exit(3);
 }
-const page = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title></head><body><main><h1>${title}</h1>${body}</main></body></html>`;
+const page = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title><style>
+  /* plain, and theme-aware: a test window someone sees should read as a placeholder, not a broken page */
+  :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+  body { margin: 0; padding: 2.5rem 3rem; background: Canvas; color: CanvasText; line-height: 1.5; }
+  h1 { margin: 0 0 0.25rem; font-size: 1.75rem; font-weight: 600; }
+  .note { margin: 0 0 1.5rem; color: GrayText; font-size: 0.875rem; }
+  a { color: LinkText; }
+</style></head><body><main><h1>${title}</h1><p class="note">A stand-in for the site's dev server, used by Atiya Studio's tests.</p>${body}</main></body></html>`;
 // edit mode in the app describes its header to the title bar and takes its commands (plan stage 7B): the stand-in
 // does the same with a fixed header, records the commands it's given, and applies a theme as edit mode would
 const studio = (asked) => `<p id="studio-asked">${asked ? 'asked' : 'not asked'}</p><ol id="commands"></ol><script>

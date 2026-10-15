@@ -17,7 +17,7 @@ import { engineInfo, engineRoot } from '../core/setup/engine.mjs';
 import { startFakeGitHub } from '../core/setup/fake-github.mjs';
 import { checkSite } from '../core/setup/doctor.mjs';
 import { Git } from '../core/setup/git.mjs';
-import { GitHub } from '../core/setup/github.mjs';
+import { GitHub, GitHubError } from '../core/setup/github.mjs';
 import { runPrivateSetup } from '../core/setup/private.mjs';
 import { sync } from '../core/setup/sync.mjs';
 import { bundledGit } from '../core/setup/bundled-git.mjs';
@@ -27,6 +27,8 @@ import { tokenStore } from './token-store.mjs';
 import { utilitySpawn } from './utility-spawn.mjs';
 import { AppWindowFrame, frameKindFor } from './window-frame.mjs';
 import { isEditMode, sanitizeCommand, sanitizeHeader } from '../core/studio-header.mjs';
+import { parseRemote, siteAddress, sitesFor } from '../core/account.mjs';
+import { execFile } from 'node:child_process';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = resolve(HERE, '..', '..');
@@ -235,6 +237,11 @@ function appState() {
     privatePages: privatePagesState(),
     setup: flow?.state() ?? null,
     githubWeb: github.web,
+    // the title bar's account menu (plan stage 7C): who's signed in, the sites the app remembers, and who pushes
+    account: account ? { ...account, state: accountState } : { login: null, name: null, avatar: null, state: accountState },
+    sites: sitesFor(/** @type {any} */ (settings.read().workspaces), workspace?.path),
+    // a source checkout saves to remote with this computer's own git sign-in; a managed site, with the app's account
+    pushesWith: workspace?.kind === 'developer' ? 'computer' : workspace ? 'account' : null,
   };
 }
 
@@ -314,6 +321,25 @@ async function openWorkspace(dir) {
   workspace = { kind: 'developer', path: dir, name: check.name };
   settings.remember(workspace);
   await startServer(dir, {});
+  // where it lives on GitHub, for the account menu: read after the start, never in its way
+  remoteRepository(dir).then((repository) => {
+    if (!repository || workspace?.path !== dir) return;
+    workspace = { ...workspace, repository, url: siteAddress(repository) ?? undefined };
+    settings.remember(/** @type {any} */ (workspace));
+    broadcast();
+  });
+  return { ok: true };
+}
+
+/** Opens a remembered site: the account menu's list (plan stage 7C). @param {string} path */
+async function switchSite(path) {
+  if (workspace && workspace.path.toLowerCase() === path.toLowerCase()) return { ok: true };
+  const w = /** @type {any} */ (settings.read().workspaces.find((x) => x.path.toLowerCase() === path.toLowerCase()));
+  if (!w) return { ok: false, reason: "That site isn't one the app remembers." };
+  if (w.kind === 'developer') return openWorkspace(w.path);
+  if (!existsSync(join(w.path, 'atiya.json'))) return { ok: false, reason: `${w.name ?? 'That site'} isn't where it was on this computer.` };
+  live = w.live ? { state: 'live', url: liveUrl(w.repository, w.url) } : null;
+  await openManaged({ path: w.path, name: w.name, repository: w.repository, url: w.url });
   return { ok: true };
 }
 
@@ -396,6 +422,48 @@ let conflicts = null;
 
 /** Setting up private pages, while it runs and after (spec F8). @type {{ state: 'running' | 'done' | 'failed', steps: Record<string, { state: string, message: string }>, message?: string } | null} */
 let privateRun = null;
+/**
+ * Who's signed in to GitHub in the app (plan stage 7C): read from the stored token at start and after a sign-in;
+ * null when signed out. `checking` until the first answer; `offline` when GitHub couldn't be reached.
+ * @type {{ login: string, name: string | null, avatar: string | null } | null}
+ */
+let account = null;
+let accountState = /** @type {'checking' | 'signed-in' | 'signed-out' | 'offline'} */ ('checking');
+/** The view to go back to after signing in from the account menu. @type {View} */
+let beforeSignIn = 'editor';
+
+/** Reads who the stored token belongs to. */
+async function loadAccount() {
+  const token = tokens().load();
+  if (!token) {
+    account = null;
+    accountState = 'signed-out';
+    return broadcast();
+  }
+  try {
+    const u = await new GitHub({ token, api: github.api, web: github.web }).user();
+    account = { login: u.login, name: u.name, avatar: u.avatar };
+    accountState = 'signed-in';
+  } catch (e) {
+    // a token GitHub refuses is forgotten; without a connection the account is unknown for now, and kept
+    if (e instanceof GitHubError && e.kind === 'auth') {
+      tokens().clear();
+      account = null;
+      accountState = 'signed-out';
+    } else accountState = 'offline';
+  }
+  broadcast();
+}
+
+/** The GitHub repository a checkout's remote names, if it's on GitHub. @param {string} dir @returns {Promise<string | null>} */
+function remoteRepository(dir) {
+  return new Promise((done) =>
+    execFile('git', ['-C', dir, 'remote', 'get-url', 'origin'], { windowsHide: true, timeout: 10_000 }, (err, out) => {
+      const r = err ? null : parseRemote(String(out));
+      done(r ? `${r.owner}/${r.repo}` : null);
+    }),
+  );
+}
 
 /** Private pages for the open site: not offered, set up already, being set up, or not yet. */
 function privatePagesState() {
@@ -451,7 +519,24 @@ function makeFlow() {
     emailPollMs: Number(process.env.ATIYA_EMAIL_POLL_MS ?? 5000),
     firstRunWaitMs: Number(process.env.ATIYA_FIRST_RUN_WAIT_MS ?? 30_000),
   });
-  flow.on('change', () => broadcast());
+  flow.on('change', () => {
+    // a sign-in during setup is the account's too: the row shows it at once
+    const u = flow.s.user;
+    if (u && (accountState !== 'signed-in' || account?.login !== u.login)) {
+      account = { login: u.login, name: u.name, avatar: u.avatar };
+      accountState = 'signed-in';
+    }
+    broadcast();
+  });
+  // signed in from the account menu: who it is, and back where it was
+  flow.on('signed-in', (/** @type {{ login: string, name: string | null, avatar: string | null }} */ u) => {
+    account = u;
+    accountState = 'signed-in';
+    flow.reset();
+    flow.s.mode = 'new';
+    if (view === 'setup') show(beforeSignIn);
+    broadcast();
+  });
 }
 
 /** The bridge: answers only the app's own pages. */
@@ -538,9 +623,37 @@ function bridge() {
   handle('setup:choose-site', (/** @type {string} */ name) => flow.chooseSite(String(name)));
   handle('setup:retry', () => (flow.state().error?.retry === 'sign-in' ? flow.signIn() : flow.create()));
   handle('setup:back', () => {
+    // signing in from the account menu goes back where it came from
+    const account = flow.s.mode === 'account';
     flow.reset();
+    if (account) {
+      flow.s.mode = 'new';
+      return show(beforeSignIn);
+    }
     show('welcome');
   });
+  // the title bar's account menu (plan stage 7C)
+  handle('account:sign-in', async () => {
+    if (view !== 'setup') beforeSignIn = view;
+    // the device flow shows its code in setup's page; the GitHub CLI's token needs no page unless it fails
+    if (flow.d.clientId) show('setup');
+    await flow.signInOnly();
+    // not signed in (the GitHub CLI isn't, say): setup's page says why and offers it again
+    if (accountState !== 'signed-in' && view !== 'setup') show('setup');
+  });
+  handle('account:sign-out', async () => {
+    tokens().clear();
+    account = null;
+    accountState = 'signed-out';
+    // forget the user before the reset, whose change would otherwise show it signed in again
+    flow.s.user = null;
+    flow.gh = null;
+    flow.reset();
+    broadcast();
+    // a managed site's server was given the token for its pushes: it starts again without it
+    if (workspace?.kind === 'managed') await openManaged({ path: workspace.path, name: workspace.name, repository: workspace.repository, url: workspace.url });
+  });
+  handle('site:switch', (/** @type {string} */ path) => switchSite(String(path)));
   handle('publish:retry', async () => {
     const w = /** @type {any} */ (settings.read().workspaces.find((x) => x.path === workspace?.path));
     if (!w?.repository) return;
@@ -653,6 +766,8 @@ app.whenReady().then(async () => {
   makeFlow();
   bridge();
   createWindow();
+  // who's signed in, for the account menu: asked of GitHub once the window is up, never in its way
+  loadAccount();
   menus();
   const saved = /** @type {any} */ (settings.read());
   const remembered = /** @type {any} */ (settings.current());

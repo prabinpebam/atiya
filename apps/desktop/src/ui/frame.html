@@ -32,6 +32,8 @@
       <button type="button" class="quiet" id="open-live" hidden>Open my site</button>
       <button type="button" class="quiet" id="see-why" hidden>See why</button>
       <button type="button" class="quiet" id="check" hidden>Check my site</button>
+      <!-- who's signed in, and which site is open (plan stage 7C) -->
+      <button type="button" class="account" id="account" aria-haspopup="dialog" aria-expanded="false" aria-controls="account-panel"><span class="avatar" id="account-avatar" aria-hidden="true"></span><span class="account-site" id="account-site"></span></button>
       <div class="controls" role="group" aria-label="Window" id="controls">
         <button type="button" class="control" id="minimize" aria-label="Minimize"><svg viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M0 5.5h10"/></svg></button>
         <button type="button" class="control" id="maximize" aria-label="Maximize" aria-haspopup="dialog" aria-expanded="false" aria-controls="layouts"><svg viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path data-glyph="maximize" d="M.5.5h9v9h-9z"/><path data-glyph="restore" d="M2.5 2.5h7v7h-7zM2.5 2.5V.5h7v7h-2"/></svg></button>
@@ -57,6 +59,35 @@
   </div>
 </section>
 
+<section class="popover account-panel" id="account-panel" role="dialog" aria-labelledby="account-title" tabindex="-1" hidden>
+  <h2 class="sr-only" id="account-title">Your account and sites</h2>
+  <div class="account-part">
+    <h3 class="part-title">GitHub</h3>
+    <div class="who" id="who"></div>
+    <p class="note" id="pushes-note" hidden>Save to remote here uses this computer's own git sign-in, not the app's.</p>
+    <div class="actions" id="account-actions">
+      <button type="button" id="sign-in" hidden>Sign in with GitHub</button>
+      <button type="button" id="sign-out" hidden>Sign out</button>
+    </div>
+    <div class="confirm" id="sign-out-confirm" role="group" aria-labelledby="sign-out-question" hidden>
+      <p id="sign-out-question">Sign out of GitHub? You'll need to sign in again to save to remote.</p>
+      <div class="actions">
+        <button type="button" class="quiet" id="keep-signed-in">Stay signed in</button>
+        <button type="button" class="primary" id="sign-out-yes">Sign out</button>
+      </div>
+    </div>
+  </div>
+  <div class="account-part">
+    <h3 class="part-title" id="sites-title">Your sites</h3>
+    <ul class="sites" id="sites" aria-labelledby="sites-title"></ul>
+    <p class="alert" id="site-error" role="alert" hidden></p>
+    <div class="more">
+      <button type="button" class="quiet" id="new-site">Make a new site</button>
+      <button type="button" class="quiet" id="existing-site">Open my existing site</button>
+      <button type="button" class="quiet" id="source-folder">Open a source folder</button>
+    </div>
+  </div>
+</section>
 <section class="popover layouts" id="layouts" role="dialog" aria-label="Snap layouts" hidden></section>
 
 <section class="popover choices" id="choices" role="menu" aria-label="Choose" hidden></section>

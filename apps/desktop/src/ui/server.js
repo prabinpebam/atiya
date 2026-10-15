@@ -18,11 +18,13 @@ function draw(s) {
   }[st] ?? ['', ''];
   if ($('title').textContent !== text[0]) $('title').textContent = text[0];
   $('message').textContent = text[1];
-  $('folder').textContent = s.workspace?.path ?? '';
+  // a path is for a source checkout's developer; a site the app made never shows one (spec §12)
+  const developer = s.workspace?.kind === 'developer';
+  $('folder').textContent = developer ? (s.workspace?.path ?? '') : '';
   $('restart').hidden = !(st === 'failed' || st === 'stopped');
   $('use').hidden = st !== 'port-busy';
   $('retry').hidden = st !== 'port-busy';
-  $('other').hidden = !(st === 'failed' || st === 'port-busy' || st === 'stopped');
+  $('other').hidden = !developer || !(st === 'failed' || st === 'port-busy' || st === 'stopped');
   const log = (s.server?.log ?? []).join('\n');
   if ($('log').textContent !== log) {
     $('log').textContent = log;

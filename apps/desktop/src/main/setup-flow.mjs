@@ -15,8 +15,8 @@ import { findToken } from '../core/setup/tokens.mjs';
 /**
  * @typedef {{ name: string, repo: string, url: string, dir: string, explore: 'little-planet' | 'site', samples: boolean, dirChanged?: boolean }} Proposal
  * @typedef {{
- *   phase: 'welcome' | 'connect' | 'code' | 'email' | 'site' | 'choose-site' | 'creating' | 'error',
- *   mode: 'new' | 'existing',
+ *   phase: 'welcome' | 'connect' | 'code' | 'email' | 'site' | 'choose-site' | 'creating' | 'error' | 'signed-in',
+ *   mode: 'new' | 'existing' | 'account',
  *   code: null | { userCode: string, verificationUri: string, expiresAt: number },
  *   user: null | { login: string, name: string | null, avatar: string | null },
  *   proposal: null | Proposal,
@@ -66,6 +66,17 @@ export class SetupFlow extends EventEmitter {
     this.set({ mode, phase: 'connect', error: null, notice: null });
     const token = this.d.tokens.load();
     if (token && (await this.useToken(token))) return;
+  }
+
+  /**
+   * Sign in, and nothing else (the title bar's account menu, plan stage 7C): the same sign-in as setup's (the device
+   * flow, or until the app's OAuth App exists the GitHub CLI's token), ending with 'signed-in' instead of a site.
+   */
+  async signInOnly() {
+    this.abort.abort();
+    this.abort = new AbortController();
+    this.set({ mode: 'account', phase: 'connect', code: null, error: null, notice: null, busy: false });
+    await this.signIn();
   }
 
   /** Continue with GitHub: the device flow, with the code copied and GitHub's page opened (F1, F2). */
@@ -119,6 +130,12 @@ export class SetupFlow extends EventEmitter {
     this.d.tokens.save(token);
     this.gh = gh;
     this.set({ busy: false, code: null, user: { login: user.login, name: user.name, avatar: user.avatar } });
+    // signing in from the account menu stops here: there's no site to make or choose
+    if (this.s.mode === 'account') {
+      this.set({ phase: 'signed-in' });
+      this.emit('signed-in', { login: user.login, name: user.name, avatar: user.avatar });
+      return true;
+    }
     // a new account must confirm its email before GitHub lets it keep a site (F3)
     let verified = await gh.primaryEmailVerified();
     if (verified === false) {
@@ -197,7 +214,8 @@ export class SetupFlow extends EventEmitter {
         return;
       }
     }
-    this.d.saveSetup({ mode: this.s.mode, inputs });
+    // creating is never the account menu's sign-in: what's saved is always a new or an existing site
+    this.d.saveSetup({ mode: this.s.mode === 'existing' ? 'existing' : 'new', inputs });
     this.set({ phase: 'creating', proposal: inputs, steps: {}, error: null });
     let editing = false;
     const result = await runSetup({

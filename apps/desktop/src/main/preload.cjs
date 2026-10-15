@@ -15,6 +15,12 @@ if (location.protocol === 'app:') {
     openInBrowser: call('open:browser'),
     openLive: call('open:live'),
     checkSite: call('site:check'),
+    // the title bar's account menu (plan stage 7C)
+    account: {
+      signIn: call('account:sign-in'),
+      signOut: call('account:sign-out'),
+      switchSite: call('site:switch'),
+    },
     resolveSync: call('sync:resolve'),
     privatePages: {
       state: call('private:state'),
