@@ -92,6 +92,22 @@ function atoms(el: Element, root: Element, out: StudioItem[]) {
   if (!(el instanceof HTMLElement) || hiddenIn(el, root) || el.classList.contains('sr-only')) return;
   // the app chooses the theme for the whole app, edit mode and the site included: its own switch isn't drawn
   if (el.matches('[data-editor-theme-switch]')) return;
+  // what became of the last save to remote is said by Save to remote's own screen, not in the row
+  if (el.matches('[data-editor-remote-status]')) return;
+  // the device widths are one choice in the row: a single button opening a menu, not three toggles
+  if (el.matches('[data-editor-device]')) {
+    const group = [...root.querySelectorAll<HTMLElement>('[data-editor-device]')];
+    if (el !== group[0]) return;
+    const chosen = group.find((b) => b.getAttribute('aria-pressed') === 'true') ?? group[0];
+    out.push({
+      kind: 'select',
+      id: idOf(el),
+      label: 'Preview width',
+      value: chosen.dataset.editorDevice ?? '',
+      options: group.map((b) => ({ value: b.dataset.editorDevice ?? '', label: (b.getAttribute('aria-label') ?? words(b)).replace(/ width$/, ''), ...(iconOf(b) ? { icon: iconOf(b) } : {}) })),
+    });
+    return;
+  }
   if (el.matches('[data-editor-save]')) {
     const text = [words(el.querySelector('[data-editor-status]') ?? el), words(el.querySelector('[data-editor-save-time]') ?? document.createElement('i'))].filter(Boolean).join(' ');
     out.push({ kind: 'status', state: el.dataset.state ?? 'idle', text });
@@ -129,6 +145,11 @@ export function readHeader(top: HTMLElement, root: HTMLElement = document.docume
 export function runCommand(top: HTMLElement, c: StudioCommand): void {
   const el = top.querySelector<HTMLElement>(`[data-studio-id="${CSS.escape(c.id)}"]`);
   if (!el) return;
+  // the device widths, one choice in the row: press the width chosen
+  if (c.action === 'select' && el.matches('[data-editor-device]') && typeof c.value === 'string') {
+    top.querySelector<HTMLElement>(`[data-editor-device="${CSS.escape(c.value)}"]`)?.click();
+    return;
+  }
   if (c.action === 'select' && el.matches('[data-select]') && typeof c.value === 'string') el.dispatchEvent(new CustomEvent('select-change', { detail: { value: c.value } }));
   else if (c.action === 'click') el.click();
 }

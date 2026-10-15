@@ -3,7 +3,8 @@
  * The site's masthead: the name, the sections, Sign in (Sign out while signed in), the colour theme and
  * the way into the planet. It stays
  * at the top while you read; on a phone (or a phone on its side) it's compact and tucks away as you
- * scroll down, and comes back the moment you scroll up. Under 56 rem the sections fold into a menu,
+ * scroll down, and comes back the moment you scroll up. The bar is always one line: sections that don't fit go behind More,
+ * a popover under it (the current one marks More). Under 56 rem the sections fold into a menu,
  * which also carries the way into the planet on a phone.
  * @tier compound
  * @a11y A banner landmark with a labelled navigation; the current section is marked aria-current.
@@ -11,7 +12,8 @@
  * @a11y The theme switch is the custom select: Match system, Light or Dark, remembered.
  * @a11y Sign in and Sign out are named by their words; only the one that applies is shown (a signed-in device says so from the first paint).
  * @a11y A tucked-away header comes back when anything in it takes focus, while the menu or the theme list is open, and never moves with reduced motion.
- * @key Escape: closes the menu
+ * @a11y More is a disclosure button (aria-expanded, aria-controls) naming itself 'including the current one' when it holds the current section; the popover's first section takes focus, and Tab out or Escape closes it.
+ * @key Escape: closes the menu, or More's popover (focus back on More)
  */
 import { stableId } from '../../design/stableId';
 import Button from '../fundamentals/Button.astro';
@@ -48,6 +50,7 @@ const signInHref = withBase('/sign-in/');
 // unique per header, so a page can show more than one (the design library does)
 const uid = stableId(Astro, 'SiteHeader');
 const navId = `site-nav-${uid}`;
+const moreId = `site-more-${uid}`;
 const open = svgOf('menu');
 const close = svgOf('close');
 const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
@@ -80,13 +83,31 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
             {nav.map((n) => {
               const policy = navPolicy(n.href);
               return (
-                <li>
+                <li data-nav-item>
                   <a href={n.href} target={policy.target} rel={policy.rel} aria-current={n.current ? 'page' : undefined}>
                     {n.label}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
                   </a>
                 </li>
               );
             })}
+            {/* the sections that don't fit on the bar's one line, behind More (the script decides which) */}
+            <li class="more" data-nav-more hidden>
+              <IconButton label="More sections" icon="more" aria-controls={moreId} aria-expanded="false" tooltip="none" data-more-toggle="" />
+              <div class="more-list" id={moreId} popover="manual" data-more-list>
+                <ul>
+                  {nav.map((n) => {
+                    const policy = navPolicy(n.href);
+                    return (
+                      <li data-more-item hidden>
+                        <a href={n.href} target={policy.target} rel={policy.rel} aria-current={n.current ? 'page' : undefined}>
+                          {n.label}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </li>
             {action && (
               <li class="nav-action">
                 <Button variant="primary" href={action.href} icon={action.icon} block {...action.data}>
@@ -200,9 +221,16 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
     font-variation-settings: var(--axes-display-italic);
   }
 
+  /* the sections share the bar's one line: what doesn't fit goes behind More (the script measures) */
+  .nav {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
   .nav ul {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: var(--space-1) var(--space-5);
     margin: 0;
     padding: 0;
@@ -256,6 +284,92 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
   }
 
   /* ---------- tablets and phones: the sections fold into a menu ---------- */
+  .nav li {
+    flex: none;
+  }
+
+  /* More: the sections that don't fit, in a popover under its button */
+  .more {
+    position: relative;
+    display: none;
+  }
+
+  .more:not([hidden]) {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* a section behind More is the current one: More carries its mark */
+  .more[data-current]::after {
+    content: '';
+    position: absolute;
+    inset-inline: var(--space-2);
+    inset-block-end: var(--space-1);
+    block-size: var(--border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    pointer-events: none;
+  }
+
+  .more-list {
+    position: fixed;
+    inset: auto;
+    inset-block-start: calc(var(--more-top) + var(--space-2));
+    inset-inline-start: var(--more-left);
+    margin: 0;
+    padding: var(--space-1-5);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--c-header-more-radius);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-md);
+  }
+
+  .more-list:not(:popover-open) {
+    display: none;
+  }
+
+  .more-list ul {
+    display: grid;
+    gap: var(--c-list-item-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .more-list a {
+    display: flex;
+    align-items: center;
+    min-height: var(--size-touch);
+    padding-inline: var(--space-3) var(--space-6);
+    border-radius: var(--c-header-more-item-radius);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .more-list a[aria-current='page'] {
+    background-color: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  @media (hover: hover) {
+    .more-list a:hover {
+      background-color: var(--color-bg-hover);
+    }
+  }
+
+  .more-list a:active {
+    background-color: var(--color-bg-hover);
+  }
+
+  .more-list a:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: calc(-1 * var(--border-focus));
+  }
+
   @media (max-width: 56rem) {
     .bar {
       flex-wrap: wrap;
@@ -264,6 +378,12 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
 
     .menu {
       display: inline-flex;
+    }
+
+    /* the menu holds every section: no More here */
+    .more,
+    .more:not([hidden]) {
+      display: none;
     }
 
     .nav {
@@ -408,6 +528,78 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
         }, { signal });
       // back to the wide layout: nothing stays open behind it
       matchMedia(media('md', 'min')).addEventListener('change', (m) => m.matches && setOpen(false), { signal });
+    }
+
+    // the bar is always one line: sections that don't fit go behind More, the current one marked on it
+    const more = header.querySelector<HTMLElement>('[data-nav-more]');
+    const moreToggle = header.querySelector<HTMLButtonElement>('[data-more-toggle]');
+    const moreList = header.querySelector<HTMLElement>('[data-more-list]');
+    if (nav && more && moreToggle && moreList) {
+      const items = [...nav.querySelectorAll<HTMLElement>(':scope > ul > [data-nav-item]')];
+      const copies = [...moreList.querySelectorAll<HTMLElement>('[data-more-item]')];
+      const menuMode = matchMedia(media('md'));
+      const moreOpen = () => moreList.matches(':popover-open');
+      const place = () => {
+        const r = moreToggle.getBoundingClientRect();
+        moreList.style.setProperty('--more-top', `${Math.round(r.bottom)}px`);
+        const w = moreList.offsetWidth;
+        moreList.style.setProperty('--more-left', `${Math.round(Math.max(8, Math.min(r.right - w, innerWidth - w - 8)))}px`);
+      };
+      const setMore = (open: boolean, refocus = false) => {
+        if (open === moreOpen()) return;
+        if (open) {
+          moreList.showPopover();
+          place();
+          moreList.querySelector<HTMLElement>('[data-more-item]:not([hidden]) a')?.focus();
+        } else {
+          moreList.hidePopover();
+          if (refocus) moreToggle.focus();
+        }
+        moreToggle.setAttribute('aria-expanded', String(open));
+      };
+      const fit = () => {
+        // under 56 rem the menu holds every section
+        if (menuMode.matches) {
+          for (const li of items) li.hidden = false;
+          more.hidden = true;
+          return setMore(false);
+        }
+        for (const li of items) li.hidden = false;
+        more.hidden = true;
+        const fits = () => nav.scrollWidth <= nav.clientWidth + 1;
+        if (!fits()) {
+          more.hidden = false;
+          // from the end, until the rest and More share the line
+          for (let i = items.length - 1; i >= 0 && !fits(); i--) items[i].hidden = true;
+        }
+        items.forEach((li, i) => (copies[i].hidden = !li.hidden));
+        const hiddenCurrent = items.some((li) => li.hidden && li.querySelector('[aria-current="page"]'));
+        more.toggleAttribute('data-current', hiddenCurrent);
+        moreToggle.setAttribute('aria-label', hiddenCurrent ? 'More sections, including the current one' : 'More sections');
+        if (more.hidden) setMore(false);
+        else if (moreOpen()) place();
+      };
+      new ResizeObserver(() => fit()).observe(header.querySelector('.bar') ?? header);
+      menuMode.addEventListener('change', fit, { signal });
+      document.fonts?.ready.then(fit);
+      fit();
+      moreToggle.addEventListener('click', () => setMore(!moreOpen()));
+      moreList.addEventListener('click', (e) => (e.target as Element).closest('a') && setMore(false));
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && moreOpen()) {
+          e.stopPropagation();
+          setMore(false, true);
+        }
+      });
+      document.addEventListener('keydown', (e) => e.key === 'Escape' && moreOpen() && setMore(false, true), { signal });
+      document.addEventListener('pointerdown', (e) => {
+        if (moreOpen() && !more.contains(e.target as Node)) setMore(false);
+      }, { signal });
+      // leaving the popover by Tab closes it
+      moreList.addEventListener('focusout', (e) => {
+        if (moreOpen() && !more.contains(e.relatedTarget as Node | null)) setMore(false);
+      });
+      addEventListener('scroll', () => moreOpen() && place(), { passive: true, signal });
     }
 
     // tuck the header away while reading down on a phone; bring it back on the way up

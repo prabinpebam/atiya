@@ -322,6 +322,8 @@
   --c-header-height: var(--size-chrome-block);
   --c-header-bg: var(--color-bg);
   --c-header-height-compact: var(--size-chrome-block-compact);
+  --c-header-more-radius: var(--radius-lg);
+  --c-header-more-item-radius: var(--radius-md);
   --c-lightbox-drift-scale: 1.04;
   --c-lightbox-thumb: 4.5rem;
   --c-lightbox-thumb-on: var(--color-highlight);

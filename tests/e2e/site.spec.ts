@@ -17,6 +17,50 @@ const noSeriousViolations = async (page: Page) => {
 };
 
 test.describe('site design system', () => {
+  test('the header is always one line: sections that do not fit go behind More, a popover that keeps the current one marked', async ({ page }) => {
+    const bar = () => page.evaluate(() => {
+      const b = document.querySelector('.site-header .bar') as HTMLElement;
+      // one line: every visible section and More share a vertical centre (More is a little taller than a link)
+      const tops = [...b.querySelectorAll<HTMLElement>('.nav [data-nav-item]:not([hidden]) a, [data-nav-more]:not([hidden]) button')].map((e) => { const r = e.getBoundingClientRect(); return Math.round((r.top + r.height / 2) / 4); });
+      return { height: b.getBoundingClientRect().height, lines: new Set(tops).size, overflow: b.scrollWidth > b.clientWidth + 1 };
+    });
+    // wide: every section on the line, no More
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/leadership/do-what-makes-you-proud/');
+    const more = page.getByRole('button', { name: /^More sections/ });
+    await expect(more).toBeHidden();
+    expect((await bar()).lines).toBe(1);
+    // between the menu and the wide bar: one line, the rest behind More
+    for (const width of [1100, 960, 900]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect.poll(async () => (await bar()).lines).toBe(1);
+      const b = await bar();
+      expect(b.overflow, `${width}: nothing spills`).toBe(false);
+      expect(b.height, `${width}: one row tall`).toBeLessThan(90);
+    }
+    await expect(more).toBeVisible();
+    const shown = await page.locator('.nav [data-nav-item]:not([hidden]) a').allTextContents();
+    await more.click();
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+    const list = page.locator('[data-more-list]');
+    await expect(list).toBeVisible();
+    const behind = await list.locator('[data-more-item]:not([hidden]) a').allTextContents();
+    // each section once: on the bar or behind More
+    expect([...shown, ...behind].map((s) => s.trim()).sort()).toEqual((await page.locator('.nav [data-nav-item] a').allTextContents()).map((s) => s.trim()).sort());
+    expect(behind.length).toBeGreaterThan(0);
+    await expect(list.locator('a').filter({ visible: true }).first()).toBeFocused();
+    await noSeriousViolations(page);
+    await page.keyboard.press('Escape');
+    await expect(list).toBeHidden();
+    await expect(more).toBeFocused();
+    // the current section behind More: More says so
+    const hiddenCurrent = await page.locator('.nav [data-nav-item][hidden] a[aria-current="page"]').count();
+    if (hiddenCurrent) await expect(more).toHaveAccessibleName('More sections, including the current one');
+    // under 56 rem the menu takes over: no More
+    await page.setViewportSize({ width: 800, height: 900 });
+    await expect(more).toBeHidden();
+    await expect(page.locator('[data-menu-toggle]')).toBeVisible();
+  });
   test('article and page thumbnails round the image, not their layout wrappers', async ({ page }) => {
     for (const mode of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: mode });

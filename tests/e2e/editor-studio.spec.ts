@@ -60,10 +60,16 @@ test.describe('editor: in Atiya Studio', () => {
     const h = await latest(page);
     expect(h.context.some((i) => i.kind === 'link' && i.label === 'Pages')).toBe(true);
     expect(h.context.some((i) => i.kind === 'tag')).toBe(true);
-    const phone = find(h, (i) => i.label === 'Phone width');
-    expect(phone).toMatchObject({ kind: 'button', icon: expect.any(String) });
-    await send(page, { id: phone!.id!, action: 'click' });
-    await expect.poll(async () => find(await latest(page), (i) => i.label === 'Phone width')).toMatchObject({ pressed: true });
+    // the device widths are one choice (a single button and its menu in the row), not three toggles
+    for (const label of ['Desktop width', 'Tablet width', 'Phone width']) expect(find(h, (i) => i.label === label)).toBeUndefined();
+    const widths = find(h, (i) => i.label === 'Preview width');
+    expect(widths).toMatchObject({ kind: 'select', value: 'desktop' });
+    expect(widths?.options?.map((o) => o.value)).toEqual(['desktop', 'tablet', 'phone']);
+    await send(page, { id: widths!.id!, action: 'select', value: 'phone' });
+    await expect(page.locator('[data-editor-device="phone"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(async () => find(await latest(page), (i) => i.label === 'Preview width')?.value).toBe('phone');
+    // what became of the last save to remote isn't in the row
+    expect(JSON.stringify(await latest(page))).not.toContain('Saved to remote');
   });
 
   test('in a browser, edit mode keeps its own header', async ({ page }) => {
