@@ -6,7 +6,7 @@ How the [desktop app](spec.md) and [navigation modes](modes.md) are built: eleve
 > - **How:** every stage is built in loops against its Definition of Done: build, run the stage's checks, fix, record the evidence here, commit. A stage is done when every row has its evidence and its "Try it" works by hand.
 > - **Stages:** 0 the spec; 1 the owner's app; 2 setup and the agent CLI, on a fake GitHub; 3 the first run in the app, on the fake GitHub; 4 just the site; 5 real GitHub, and private pages on first use; 6 the engine release and the site's build; 7 managed sites in the app; 7A the app's own window (one title bar row); 7B edit mode's header in that row; 7C who's signed in and which site; 7D one theme for the whole app; 7E the action center (Ctrl+/); 8 navigation modes; 9 distribution and hand-out; 10 one engine, two builds (the owner's site stays on source, and both builds are proven the same).
 > - **Project Definition of Done:** the spec's seven promises, measured (§2), plus the owner's site unchanged and every budget kept.
-> - **Status:** see §6.
+> - **Status:** see §6; against a download anyone can use, see §7 (not yet: an installer, the OAuth App and the first engine release are missing).
 
 ## 1. How each stage is built
 
@@ -174,6 +174,7 @@ The window the app draws itself, with one title bar row (spec §7.2), from the o
 | 7A.5 | The app's menu from the logo (and Alt+Space, a right-click on the bar) holds the menu bar's commands and the window's; the place, size and state are remembered | E2E 7A.5; unit (placement) |
 | 7A.6 | axe passes in light and dark, the popover open and closed; every control works by keyboard; 44 px targets | E2E 1.7, 7A.1, 7A.3 |
 | 7A.7 | Stages 1, 3, 5 and 7 still pass | The app's E2E suite |
+| 7A.8 | The window's shadow stays inside its margin on every side, so the window's bounds never cut it off (added 15 October 2026: `--shadow-lg` reached 44 px into a 16 px margin) | E2E `stage7a.spec.mjs` 7A.7 (each shadow's reach measured in light and dark); an enlarged capture of the corner |
 
 ### Stage 7B: one row, with edit mode's header in it
 
@@ -377,3 +378,40 @@ Stages 1 and 2 need only stage 0, and can run side by side; 3 needs both. 4 need
 | 8 M1.2 | Done (merged into `main` 2026-10-15) | The gate (the host) calls the planet's `mount(root, host)` with the page's mode data; the contract's types are the mode kit's (`packages/mode-kit/`, now packed with the engine). Budgets: `verify:prod` gives the game's initial JS unchanged at 449.6 KB and the gate 7.7 of its 8 KB (the entry and the host live there: no saving was needed in the game), before live 1589 KB. Unit: `modeHost.test.ts` (5: the data, tier and prefs; storage namespaced, JSON and capped; `open`, `track` and the address; the site's address for a place; the kit's lists equal to the site's); the type check is clean. E2E: "capability gate", the two deep-link tests, Prabin's welcome, the character picker, fast travel and reading theme pass (8). `perf:audit`: the census as the baseline (262 calls, 1.511 M triangles, 89 programs, 94 shadow casters, 73 textures, 0 NaN pixels), live 1.89 s, GPU 2.6 ms and JS 3.0 ms a frame |
 | 9 | Blocked | Needs a code-signing certificate, an Apple Developer account and five study participants |
 | 10 | Done (merged into `main` 2026-10-15); 10.8 blocked; 10.9 pending M3 | 10.2: `deploy.yml`'s build job ran on the branch on GitHub (run 38637652698: the private pages fetched, 3 pages, 3 cards and 251 files sealed, the leak check and every budget passed, no telemetry note: the address matched; the deploy job skipped off `main`); merged as `977c8dc` after the full E2E suite (202 passed; the 3 planet timeouts and the editor's one pass alone and in order; the 26 the rich-copy failure kept from running pass; the 2 left, rich copy and the docs' parent domain, fail on `main` too), then deployed (run 38638044068): the live site answers with its new build, the Contact page carries the endpoint and the service answers its challenge, the telemetry chunk carries the key, the Work page its 3 sealed cards. 10.7: `parity.yml`'s first run on `main` (38638044387, with `npm ci` for the engine): 890 files the same, 254 sealed files of the same shapes, `docs/` only in the source build. 10.1: `buildSite.test.ts` (4: the workflows and the rehearsal run only `build-site.mjs`; the pack carries it; the deploy's triggers, schedule, permissions, secret, concurrency, Pages steps and gate held; parity beside the deploy and in the release); the script built, sealed (3 pages, 3 cards, 251 files, 3 keyrings), leak-checked and budget-checked the owner's site in both builds. 10.3: `siteServices.test.ts` (6); both published builds carry his endpoint on the Contact page and the PostHog key in one chunk; `verify:prod` (no `SITE_URL`) the endpoint and no key; dev the endpoint and no key; E2E "contact" (10) and the telemetry tests (8) pass; the editor's new "the site settings save keeps what the form doesn't show" passes, with the page settings and publish tests. 10.4: `parity.test.ts` (6); a seeded word: refused uncommitted, and with `--allow-dirty` 13 pages named. 10.5: the owner's site, 890 files the same, 254 sealed files of the same shapes, `docs/` (228 files) only in the source build, 80 s. 10.6: the starter 221 files the same, just the site 106. 10.10: `verify:prod` (game 449.6 KB, gate 7.7 KB, before live 1589 KB), unit 1,401 and the app's 56, type check clean; E2E "landing & classic", "site design system" and "site on a phone" 49 of 50 (the docs half of "links keep the parent domain", which fails on `main` too: stage 4). **Found on the way:** (1) the leak check let a private table's ordinary words off only because `documentation/` held them too, so an engine release's build failed where the owner's passed: the bundled packages' files are now public sources (access spec §6.3 as built); (2) no two builds were the same: 16 components made element IDs with `Math.random()` (now `stableId`); (3) on Windows the temporary folder's short name (`PRABIN~2`) changes Astro's scoped CSS hashes, so the check builds in its real path |
+
+## 7. Against a download anyone can use
+
+Where the project stands against its goal (15 October 2026): a person who doesn't write code downloads the app, sets up, and ends with their own site on GitHub Pages with everything this site has. **Not yet:** the app works in the owner's checkout and, for a new person, against the fake GitHub; the way from someone else's computer to real GitHub isn't open. Update this section when a gap closes.
+
+| # | Promise | State | What's missing |
+|---|---|---|---|
+| PD1 | Live today | Not proven | The OAuth App (5.1) and the first engine release (6.2b), then the live check on a test account |
+| PD2 | Three choices, no terminal | Done on the fake GitHub | – |
+| PD3 | Theirs, free, without us | Done on this computer | Shown on GitHub, which needs the engine release (6.2b) |
+| PD4 | Just the site, or a mode | Done | – |
+| PD5 | Open the app and write | Done for the owner | – |
+| PD6 | Agents | Done | – |
+| PD7 | Nothing silent | Done on the fake GitHub | – |
+| PD8 | The owner's site unchanged | Holding | – |
+| PD9 | Docs | Up to date through 7E | – |
+| PD10 | Find and do anything | Done | – |
+
+**The gaps, in the order they block a download:**
+
+1. **No installer** (stage 9, blocked). The app has no packaging: no installer, no signing, no auto-update. The engine it carries (`apps/desktop/engine/`, about 335 MB) is made by `bundle-engine.mjs` and isn't in the repository. Needs a code-signing certificate (and an Apple Developer account for macOS).
+2. **Sign-in on real GitHub** (5.1, blocked on the owner). The OAuth App with the device flow isn't registered, so Continue with GitHub has no client ID; the only real sign-in today borrows the GitHub CLI's token, which a person who doesn't write code won't have.
+3. **No engine release** (6.2b, blocked on the owner). A person's site builds on GitHub from a tagged `engine-v*` release, and none is tagged, so a new site's first deploy would fail.
+4. **What a new site doesn't get yet:**
+   - **A generic Little planet** (stage 8: M1.1 and M1.2 done, M1.3 on). Splitting the owner's planet from a generic one is M3; until then the starter's planet names the owner on its page.
+   - **The contact form and telemetry**, off for a new site by design: they use the owner's Azure service and PostHog key (spec §9.1). The shared relay for the form is opt-in and later (O7); a site's own PostHog key goes in Settings.
+   - Ready: just the site, edit mode, private pages on first use (rehearsed to a sealed build), Ways to explore, the action center.
+5. **No one has tried it** (9.2, 9.3): the security review, and five people who don't write code each reaching a live site unaided.
+
+**The fastest way to a first download, for testers:**
+
+1. The owner registers the OAuth App (device flow on) and gives its client ID (about 10 minutes).
+2. Tag `engine-v0.1.0`; run the live check on a test account (PD1, 6.2b).
+3. A packaging workflow that attaches an **unsigned** Windows build to a GitHub release marked as a preview (SmartScreen warns about an unknown publisher).
+4. In parallel, stage 8's M2 and M3, so a new site gets a generic Little planet.
+
+Signing, auto-update, macOS and the study stay in stage 9, for a public release.

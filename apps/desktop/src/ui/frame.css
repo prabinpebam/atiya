@@ -30,7 +30,12 @@ body.frame {
   inset: var(--window-margin);
   border-radius: var(--window-radius);
   overflow: hidden;
-  box-shadow: var(--shadow-lg), 0 0 0 var(--border-hairline) var(--color-rule);
+  /* the shadow is drawn inside the margin, the window's own bounds clip anything past it: so it's made from the
+   * margin (offset + spread + blur ≤ the margin on every side), never --shadow-lg, whose 64 px blur was cut off
+   * in a hard line at the margin's edge. A margin of 0 (maximized, snapped) leaves only the hairline. */
+  --window-shadow-near: 0 calc(var(--window-margin) / 8) calc(var(--window-margin) / 2) calc(var(--window-margin) / -8) var(--color-shadow);
+  --window-shadow-far: 0 calc(var(--window-margin) / 2) var(--window-margin) calc(var(--window-margin) / -2) var(--color-shadow-strong);
+  box-shadow: var(--window-shadow-near), var(--window-shadow-far), 0 0 0 var(--border-hairline) var(--color-rule);
 }
 
 /* the window's own system frame (macOS): no margin, corners or shadow of ours */

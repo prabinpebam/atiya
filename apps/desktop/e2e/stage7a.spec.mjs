@@ -221,6 +221,31 @@ test.describe('desktop: the window', () => {
     }
   });
 
+  test('7A.7 the window\'s shadow stays inside its margin on every side, so the window\'s bounds never cut it off', async () => {
+    const { app, frame } = await openEditMode({ port: 4407 });
+    try {
+      for (const scheme of /** @type {const} */ (['light', 'dark'])) {
+        await frame.emulateMedia({ colorScheme: scheme });
+        const r = await frame.evaluate(() => {
+          const w = /** @type {HTMLElement} */ (document.querySelector('.window'));
+          const s = getComputedStyle(w);
+          // each shadow: its colour, then x y blur spread (px); the hairline ring has no offset or blur
+          const shadows = s.boxShadow.split(/,(?![^(]*\))/).map((one) => (one.match(/-?[\d.]+px/g) ?? []).map(parseFloat));
+          return { margin: parseFloat(s.top), shadows, inner: [innerWidth, innerHeight] };
+        });
+        expect(r.margin, scheme).toBe(16);
+        let reach = { top: 0, right: 0, bottom: 0, left: 0 };
+        for (const [x = 0, y = 0, blur = 0, spread = 0] of r.shadows)
+          reach = { top: Math.max(reach.top, spread + blur - y), right: Math.max(reach.right, spread + blur + x), bottom: Math.max(reach.bottom, spread + blur + y), left: Math.max(reach.left, spread + blur - x) };
+        for (const [side, px] of Object.entries(reach)) expect(px, `${scheme} ${side}`).toBeLessThanOrEqual(r.margin);
+        // and there is a shadow: it reaches the bottom of the margin
+        expect(reach.bottom, scheme).toBeGreaterThanOrEqual(r.margin / 2);
+      }
+    } finally {
+      await quit(app);
+    }
+  });
+
   test('7A.5 the logo opens the app\'s menu (the window has no menu bar), and the place and size are remembered', async () => {
     const first = await openEditMode({ port: 4405 });
     try {
