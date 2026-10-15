@@ -86,4 +86,6 @@ jobs:
         run: |
           $installer = (Get-ChildItem apps/desktop/dist -Filter 'Atiya-Studio-Setup-*.exe' | Select-Object -First 1).FullName
           $version = $env:GITHUB_REF_NAME -replace '^studio-v', ''
-          gh release create $env:GITHUB_REF_NAME $installer --draft --prerelease --title "Atiya Studio $version (preview)" --notes "A preview for testers: unsigned, so Windows SmartScreen warns about an unknown publisher (More info, then Run anyway). Installs for you alone; no administrator needed."
+          # not code-signed, by decision (documentation/desktop/spec.md O18): the notes say so and give the checksum
+          $sha = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
+          gh release create $env:GITHUB_REF_NAME $installer --draft --prerelease --title "Atiya Studio $version (preview)" --notes "A preview for testers. Atiya Studio is open source and its installers aren't code-signed, so Windows SmartScreen warns about an unknown publisher: choose More info, then Run anyway. Installs for you alone; no administrator needed. SHA-256 of the installer: $sha"

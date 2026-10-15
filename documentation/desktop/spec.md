@@ -572,7 +572,7 @@ His content stays apart (`content/`, `private-pages/`), so a move to a content-o
 | The engine or its workflow is changed under a site | Pinned by commit; the release checked against `atiya.json`'s checksum |
 | Private content leaks through the new build | The same sealer and leak check in `site-build.yml` before upload; the build log stays in the runner |
 | The deploy key is copied | Read-only, on the private repository only; its private half exists only in memory while it's sealed into the secret; **Replace the key** in Settings |
-| A fake update | A signed app and signed updates |
+| A fake update | Updates come only from the project's own GitHub releases over HTTPS, and each download is checked against the checksum in that release's manifest before it's applied. The app isn't code-signed (O18), so this can't defend against a compromised release: the release notes carry each installer's SHA-256 for anyone who wants to check by hand |
 | The app reports on people | Nothing is sent to us; crash reports are a GitHub issue they see before sending |
 
 Electron's checklist applies: context isolation, the sandbox, no Node in views, a content security policy for `app://` (served by `protocol.handle` from a fixed list), permission requests refused, and, for the shipped app, the fuses off (`runAsNode`, Node options, the inspector) and the archive's integrity checked.
@@ -641,7 +641,7 @@ A tag `engine-v<version>` runs `release.yml`: the unit tests, `npm run check`, `
 
 ### 10.2 The app's release
 
-One engine release, its production dependencies installed per platform, a portable git and an ffmpeg without GPL parts, packed per user on Windows (no administrator) and as a notarized disk image on macOS. Auto-update downloads in the background and applies at the next restart, never during a write or a save to remote.
+One engine release, its production dependencies installed per platform, a portable git and an ffmpeg without GPL parts, packed per user on Windows (no administrator) and as a disk image on macOS, none of them code-signed (O18). Auto-update downloads in the background and applies at the next restart, never during a write or a save to remote.
 
 ### 10.3 Moving a site to a newer engine
 
@@ -654,7 +654,7 @@ The app opens a site only at its own engine version. **Update your site** runs t
 - Windows 10 and 11 first (x64, then arm64), then macOS; Linux later.
 - Electron 44.6.0 (Node 24; the newest stable the package feed carries), pinned exactly.
 - An installer under 250 MB, measured once the engine is bundled: the preview installer (plan stage 9P) is 209 MB. It installs per user with no administrator, and carries the engine as one archive the app unpacks on its first start (into its own data folder, one folder per release), because an installer writing the engine's 29,000 files one by one took more than ten minutes.
-- Signing: Azure Trusted Signing (Windows), Developer ID and notarization (macOS). A new signed app still meets SmartScreen's warning until it builds reputation, so the download page shows it.
+- **Not code-signed** (O18, decided 16 October 2026): it's an open-source project, published on GitHub for anyone to use as they see fit. Windows SmartScreen therefore warns about an unknown publisher (**More info**, then **Run anyway**), and macOS asks to be allowed in System Settings (**Privacy & Security**, **Open Anyway**); the release notes say so, with each installer's SHA-256. Auto-update works unsigned on Windows (electron-updater checks each download's checksum); on macOS, where an unsigned app can't update itself, the app says when a newer release is out and links to it.
 - The app is built on GitHub Actions runners per platform; on the owner's managed laptop, `apps/desktop` installs through the package feed proxy.
 
 ## 12. Accessibility and copy
@@ -669,8 +669,6 @@ The app opens a site only at its own engine version. **Update your site** runs t
 |---|---|---|
 | A person | GitHub Free: a public repository with Pages and Actions, a private one | Nothing |
 | A person | Contact and visitor counts (§9.5) | Nothing on the providers' free tiers; their paid tiers only if they choose |
-| The owner | Windows code signing | About US$10 a month |
-| The owner | Apple Developer Program, for macOS | US$99 a year |
 | The owner | Releases, the reusable workflow | Nothing (no app registered with GitHub, no server) |
 
 ## 14. Decisions
@@ -696,6 +694,7 @@ Working defaults, used by the build until the owner decides otherwise:
 | O15 | Whether and how the owner's site tests the consumer version without losing the source's tight loop (§6.4) | D: stay on source, with one build script for both, the same settings path and a CI check that both builds match, plus a canary consumer site; A, B, C: move to a content-only repository at the same address (names swapped), the root address or a custom domain (every engine change would reach his site only through a release); E: a content-only repository built against his local engine (two repositories to agree on every live change) | **Decided 2026-10-14: D.** His live site never moves; a second site tests releases |
 | O16 | Visitor counts on a person's site | Three tiers of their own services (§9.5): GoatCounter (Simple), Umami Cloud with Microsoft Clarity as an add-on (Balanced), PostHog in memory only by default, or GA4 (Powerful); tools that need a cookie banner only in Balanced's add-on and Powerful, with the banner turned on with them | Before managed sites ship |
 | O17 | How a reader's agreement to a private page (access spec §7.6) reaches a person without a relay | Kept and shown in the Access screen once the reader opens the page; emailed only where the site's contact can carry it (the owner's relay; Web3Forms if its terms allow it) | Before private pages ship to managed sites (stage 5) |
+| O18 | Code signing | **Decided 2026-10-16: none.** An open-source project, used as anyone sees fit: unsigned installers on GitHub releases, with checksums (§11) | – |
 
 ## 15. Critique of v1, and what changed
 

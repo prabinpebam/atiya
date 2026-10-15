@@ -35,7 +35,7 @@ win:
     - target: nsis
       arch: [x64]
   icon: assets/icon.png
-  # unsigned for now: signing waits for the certificate (stage 9)
+  # unsigned by decision (spec O18): an open-source download; the release notes give each installer's SHA-256
   signAndEditExecutable: true
 nsis:
   oneClick: true
