@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { CustomWindow, frameKindFor, POINTER_EDGE_PX } from '../src/core/window/custom-window.mjs';
 import {
-  clampToDisplays, hitZone, keyboardStep, layoutsFor, resizeBounds, restoreUnderPointer, snapZoneAt, WINDOW_METRICS, zoneRect,
+  clampToDisplays, hitZone, keyboardStep, layoutsFor, resizeBounds, restoreUnderPointer, snapZoneAt, verticalRect, verticalSnapAt, WINDOW_METRICS, zoneRect,
 } from '../src/core/window/geometry.mjs';
 import { initialPlacement, MIN_SIZE, parseWindowMemory } from '../src/core/window/placement.mjs';
 
@@ -136,6 +136,77 @@ function controller(cursor = { x: 0, y: 0 }) {
 }
 
 describe('the window controller', () => {
+  it("resizing by the top or bottom edge to the screen's edge fills the work area's height at the same width (Windows' vertical maximize)", () => {
+    // the top edge at the top of the screen; the bottom edge at the taskbar, or past it to the screen's bottom
+    expect(verticalSnapAt('n', { x: 600, y: 2 }, [display])).toBe(display);
+    expect(verticalSnapAt('n', { x: 600, y: 40 }, [display])).toBeUndefined();
+    expect(verticalSnapAt('s', { x: 600, y: 1035 }, [display])).toBe(display);
+    expect(verticalSnapAt('s', { x: 600, y: 1079 }, [display])).toBe(display);
+    expect(verticalSnapAt('s', { x: 600, y: 1000 }, [display])).toBeUndefined();
+    // only the top and bottom edges, not the sides or the corners
+    for (const edge of /** @type {const} */ (['e', 'w', 'ne', 'se'])) expect(verticalSnapAt(edge, { x: 600, y: 2 }, [display])).toBeUndefined();
+    // not where another display continues below
+    const below = { id: 3, bounds: { x: 0, y: 1080, width: 1920, height: 1080 }, workArea: { x: 0, y: 1080, width: 1920, height: 1040 }, scaleFactor: 1 };
+    const flat = { ...display, workArea: display.bounds };
+    expect(verticalSnapAt('s', { x: 600, y: 1078 }, [flat, below])).toBeUndefined();
+    expect(verticalRect({ x: 240, y: 60, width: 1440, height: 920 }, wa)).toEqual({ x: 240, y: 0, width: 1440, height: 1040 });
+  });
+
+  it('a top-edge drag to the screen previews and takes the full height; a drag by the bar puts the height back; remembered as a size', () => {
+    const { c, w, previews, saved } = controller();
+    c.drag('start', 'n', 900, 44, false);
+    c.drag('move', 'n', 900, 300, false);
+    expect(previews.filter(Boolean)).toEqual([]);
+    c.drag('move', 'n', 900, 1, false);
+    expect(previews.at(-1)).toEqual({ x: 240, y: 0, width: 1440, height: 1040 });
+    c.drag('end', 'n', 900, 1, false);
+    expect(previews.at(-1)).toBeNull();
+    expect(c.vertical).toBe(true);
+    expect(w.bounds).toEqual({ x: 240, y: 0, width: 1440, height: 1040 });
+    expect(c.report()).toMatchObject({ maximized: false, snapped: true, margin: 0 });
+    expect(saved.at(-1)).toEqual({ version: 1, bounds: { x: 240, y: 0, width: 1440, height: 1040 } });
+    // moving it by the bar brings back the height it had before
+    c.drag('start', 'move', 900, 20, false);
+    c.drag('move', 'move', 900, 200, false);
+    c.drag('end', 'move', 900, 200, false);
+    expect(c.vertical).toBe(false);
+    expect(c.content()).toMatchObject({ width: 1440, height: 920 });
+  });
+
+  it('a bottom-edge drag to the taskbar does the same; leaving the edge before letting go cancels it', () => {
+    const { c, previews } = controller();
+    c.drag('start', 's', 900, 980, false);
+    c.drag('move', 's', 900, 1060, false);
+    expect(previews.at(-1)).toEqual({ x: 240, y: 0, width: 1440, height: 1040 });
+    c.drag('move', 's', 900, 900, false);
+    expect(previews.at(-1)).toBeNull();
+    c.drag('end', 's', 900, 900, false);
+    expect(c.vertical).toBe(false);
+    expect(c.content()).toMatchObject({ y: 60, height: 840 });
+    c.drag('start', 's', 900, 900, false);
+    c.drag('end', 's', 900, 1075, false);
+    expect(c.vertical).toBe(true);
+    expect(c.content()).toEqual({ x: 240, y: 0, width: 1440, height: 1040 });
+  });
+
+  it('a double-click on the top or bottom edge fills the height, and again puts it back; never while maximized', () => {
+    const { c } = controller();
+    c.verticalize();
+    expect(c.content()).toEqual({ x: 240, y: 0, width: 1440, height: 1040 });
+    c.verticalize();
+    expect(c.vertical).toBe(false);
+    expect(c.content()).toEqual({ x: 240, y: 60, width: 1440, height: 920 });
+    c.maximize();
+    c.verticalize();
+    expect(c.report().maximized).toBe(true);
+    // maximized from a full-height window, Restore brings back the height it had before either
+    c.restore();
+    c.verticalize();
+    c.maximize();
+    c.restore();
+    expect(c.content()).toEqual({ x: 240, y: 60, width: 1440, height: 920 });
+  });
+
   it('at rest the window has its shadow margin; maximized it fills the work area with none, and Restore puts it back', () => {
     const { c, w, saved } = controller();
     expect(w.bounds).toEqual({ x: 240 - 16, y: 60 - 16, width: 1440 + 32, height: 920 + 32 });

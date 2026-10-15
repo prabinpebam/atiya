@@ -196,6 +196,8 @@ export class AppWindowFrame {
       this.#custom?.drag(phase, /** @type {'move' | ResizeEdge} */ (kind), Math.round(x), Math.round(y), shift === true);
     });
     on('window:toggle-maximize', () => this.#custom?.toggleMaximize());
+    // a double-click on the top or bottom edge fills the height (Windows' vertical maximize), and again puts it back
+    on('window:vertical', () => this.#custom?.verticalize());
     on('window:accent', (/** @type {unknown} */ color) => {
       const m = typeof color === 'string' ? /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color) : null;
       if (m) this.#accent = `#${m.slice(1, 4).map((v) => Number(v).toString(16).padStart(2, '0')).join('')}`;

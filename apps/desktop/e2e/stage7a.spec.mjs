@@ -13,7 +13,8 @@ const quit = async (app) => {
 /** The window, its views' bounds and order, and its display's work area. @param {import('@playwright/test').ElectronApplication} app */
 const windowInfo = (app) =>
   app.evaluate(({ BaseWindow, screen }) => {
-    const w = BaseWindow.getAllWindows()[0];
+    // the app's window, not the snap preview (a window of its own, which never takes focus)
+    const w = BaseWindow.getAllWindows().find((x) => x.isFocusable()) ?? BaseWindow.getAllWindows()[0];
     const kids = w.contentView.children;
     return {
       bounds: w.getBounds(),
@@ -241,6 +242,41 @@ test.describe('desktop: the window', () => {
         // and there is a shadow: it reaches the bottom of the margin
         expect(reach.bottom, scheme).toBeGreaterThanOrEqual(r.margin / 2);
       }
+    } finally {
+      await quit(app);
+    }
+  });
+
+  test("7A.9 the top or bottom edge dragged to the screen's edge, or double-clicked, fills the height at the same width; a move by the bar puts it back", async () => {
+    const { app, frame } = await openEditMode({ port: 4408 });
+    try {
+      const before = await windowInfo(app);
+      const content = { x: before.bounds.x + 16, y: before.bounds.y + 16, width: before.bounds.width - 32 };
+      // the top edge, dragged by the page's reports up to the top of the work area
+      await frame.evaluate(({ x, y, top }) => {
+        const w = /** @type {any} */ (window).atiya.window;
+        w.drag('start', 'n', x, y, false);
+        w.drag('move', 'n', x, top + 1, false);
+        w.drag('end', 'n', x, top + 1, false);
+      }, { x: content.x + 300, y: content.y, top: before.workArea.y });
+      await expect.poll(async () => (await windowInfo(app)).bounds).toEqual({ x: content.x, y: before.workArea.y, width: content.width, height: before.workArea.height });
+      await expect(frame.locator('html')).toHaveAttribute('data-margin', '0');
+      // moved by the bar: its height comes back
+      const full = (await windowInfo(app)).bounds;
+      await frame.evaluate(({ x, y }) => {
+        const w = /** @type {any} */ (window).atiya.window;
+        w.drag('start', 'move', x, y, false);
+        w.drag('move', 'move', x, y + 120, false);
+        w.drag('end', 'move', x, y + 120, false);
+      }, { x: full.x + 300, y: full.y + 20 });
+      await expect.poll(async () => (await windowInfo(app)).bounds.height).toBe(before.bounds.height);
+      await expect(frame.locator('html')).toHaveAttribute('data-margin', 'rest');
+      // a double-click on the bottom edge's handle fills the height, and again puts it back
+      const h = (await windowInfo(app)).bounds.height;
+      await frame.locator('[data-window-handle="s"]').dispatchEvent('dblclick');
+      await expect.poll(async () => (await windowInfo(app)).bounds.height).toBe(before.workArea.height);
+      await frame.locator('[data-window-handle="s"]').dispatchEvent('dblclick');
+      await expect.poll(async () => (await windowInfo(app)).bounds.height).toBe(h);
     } finally {
       await quit(app);
     }

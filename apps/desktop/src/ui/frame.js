@@ -311,7 +311,10 @@ const end = (e) => {
 document.addEventListener('pointerup', end);
 document.addEventListener('pointercancel', end);
 document.addEventListener('dblclick', (e) => {
-  if (ws?.frame === 'custom' && onBand(e.target)) win.toggleMaximize();
+  if (ws?.frame !== 'custom') return;
+  const edge = e.target instanceof Element ? e.target.closest('[data-window-handle]')?.getAttribute('data-window-handle') : null;
+  if (edge === 'n' || edge === 's') win.vertical();
+  else if (onBand(e.target)) win.toggleMaximize();
 });
 document.addEventListener('contextmenu', (e) => {
   if (!onBand(e.target)) return;

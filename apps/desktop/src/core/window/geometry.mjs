@@ -205,6 +205,27 @@ export function snapZoneAt(p, displays) {
 }
 
 /**
+ * Resizing by the top or bottom edge until the pointer reaches that edge of the screen fills the work area's
+ * height and keeps the width and place across, as Windows does (the bottom counts at the taskbar too). Not where
+ * another display continues past that edge.
+ * @param {ResizeEdge} edge @param {Point} p @param {readonly DisplayInfo[]} displays
+ * @returns {DisplayInfo | undefined}
+ */
+export function verticalSnapAt(edge, p, displays) {
+  if (edge !== 'n' && edge !== 's') return undefined;
+  const display = displays.find((d) => contains(d.bounds, p));
+  if (!display) return undefined;
+  const b = display.bounds;
+  const wa = display.workArea;
+  const open = (/** @type {Point} */ q) => !displays.some((d) => contains(d.bounds, q));
+  if (edge === 'n') return p.y < wa.y + SNAP_EDGE && (wa.y > b.y || open({ x: p.x, y: b.y - 1 })) ? display : undefined;
+  return p.y >= bottom(wa) - SNAP_EDGE && (bottom(wa) < bottom(b) || open({ x: p.x, y: bottom(b) })) ? display : undefined;
+}
+
+/** A window filling its work area's height, at its own place and width across. @param {Rect} r @param {Rect} wa @returns {Rect} */
+export const verticalRect = (r, wa) => ({ x: r.x, y: wa.y, width: r.width, height: wa.height });
+
+/**
  * Keeps a window's size in DIP on the display it's moving to, shrinking it to the work area if it doesn't
  * fit, and keeping it inside.
  * @param {Rect} r @param {DisplayInfo} d @returns {Rect}

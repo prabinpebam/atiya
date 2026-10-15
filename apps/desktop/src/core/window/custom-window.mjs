@@ -9,7 +9,7 @@
  */
 import {
   clampToDisplays, contentBounds, displayFor, DRAG_THRESHOLD, fitToDisplay, hitZone, keyboardStep, layoutsFor, needsRemeasure, outerBounds,
-  resizeBounds, restoreUnderPointer, snapZoneAt, WINDOW_METRICS, zoneRect,
+  resizeBounds, restoreUnderPointer, snapZoneAt, verticalRect, verticalSnapAt, WINDOW_METRICS, zoneRect,
 } from './geometry.mjs';
 import { MIN_SIZE } from './placement.mjs';
 
@@ -54,7 +54,9 @@ export class CustomWindow {
   /** @type {WindowMode} */ #mode;
   /** @type {SnapZone | undefined} */ #zone;
   /** @type {Rect} */ #restore;
-  /** @type {{ kind: 'move' | ResizeEdge, start: Point, from: Rect, moved: boolean, snap?: { zone: SnapZone, display: DisplayInfo } } | undefined} */ #drag;
+  /** @type {{ kind: 'move' | ResizeEdge, start: Point, from: Rect, moved: boolean, snap?: { zone: SnapZone, display: DisplayInfo }, vertical?: DisplayInfo } | undefined} */ #drag;
+  /** Snapped to the work area's full height at its own width (a top or bottom edge dragged to the screen's edge). */
+  #vertical = false;
   /** @type {{ mode: 'move' | 'size', edge?: ResizeEdge, original: Rect, current: Rect } | undefined} */ #keys;
   #ignoring = false;
   /** Full screen is the app's own too: Electron doesn't track it for transparent windows. */
@@ -113,12 +115,13 @@ export class CustomWindow {
   }
   /** @returns {WindowMemory} */
   memory() {
-    const bounds = this.#mode === 'normal' && !this.#full ? this.content() : this.#restore;
+    // a window filling the height at its own width comes back as it is: it's a size, not a zone
+    const bounds = (this.#mode === 'normal' || this.#vertical) && !this.#full ? this.content() : this.#restore;
     return {
       version: 1,
       bounds,
       ...(this.#mode === 'maximized' ? { maximized: true } : {}),
-      ...(this.#mode === 'snapped' && this.#zone ? { zone: this.#zone } : {}),
+      ...(this.#mode === 'snapped' && this.#zone && !this.#vertical ? { zone: this.#zone } : {}),
       ...(this.#full ? { fullScreen: true } : {}),
     };
   }
@@ -130,6 +133,7 @@ export class CustomWindow {
   #setMode(mode, zone) {
     this.#mode = mode;
     this.#zone = zone;
+    this.#vertical = false;
     // the frame's page redraws the corners and the margin as the window changes shape
     this.notify();
   }
@@ -148,6 +152,23 @@ export class CustomWindow {
     this.#setMode(zone === 'maximize' ? 'maximized' : 'snapped', zone === 'maximize' ? undefined : zone);
     this.#apply(zoneRect(zone, display.workArea));
     this.save();
+  }
+  /**
+   * Fills the work area's height at the window's own place and width (Windows' vertical maximize: a top or bottom
+   * edge dragged to the screen's edge, or double-clicked); again, or a drag by the bar, puts the height back.
+   * @param {DisplayInfo} [display] @param {Rect} [from] the window as it was before (a resize's start)
+   */
+  verticalize(display = this.#display(), from = this.content()) {
+    if (this.#full || this.#mode === 'maximized') return;
+    if (this.#vertical) return this.restore();
+    if (this.#mode === 'normal') this.#restore = from;
+    this.#setMode('snapped');
+    this.#vertical = true;
+    this.#apply(verticalRect(from, display.workArea));
+    this.save();
+  }
+  get vertical() {
+    return this.#vertical;
   }
   restore() {
     if (this.#mode === 'normal' || this.#full) return;
@@ -219,11 +240,17 @@ export class CustomWindow {
       this.#showPreview(snap ? zoneRect(snap.zone, snap.display.workArea) : undefined);
     } else {
       this.#apply(resizeBounds(d.from, d.kind, delta, MIN_SIZE, shift));
+      // the top or bottom edge at the screen's edge: a preview of the full height, taken on release
+      const v = verticalSnapAt(d.kind, p, this.#displays());
+      if (v) d.vertical = v;
+      else delete d.vertical;
+      this.#showPreview(v ? verticalRect(d.from, v.workArea) : undefined);
     }
     if (phase !== 'end') return;
     this.#drag = undefined;
     this.#showPreview(undefined);
     if (d.kind === 'move' && d.snap) return this.snap(d.snap.zone, d.snap.display);
+    if (d.kind !== 'move' && d.vertical) return this.verticalize(d.vertical, d.from);
     if (d.kind === 'move') this.#remeasure({ width: d.from.width, height: d.from.height });
     this.#restore = this.content();
     this.notify();
@@ -298,7 +325,8 @@ export class CustomWindow {
       const now = this.content();
       const fit = clampToDisplays(now, displays, MIN_SIZE);
       if (fit.x !== now.x || fit.y !== now.y || fit.width !== now.width || fit.height !== now.height) this.#apply(fit);
-    } else this.#apply(zoneRect(this.#mode === 'maximized' ? 'maximize' : (this.#zone ?? 'maximize'), this.#display().workArea));
+    } else if (this.#vertical) this.#apply(verticalRect(this.content(), this.#display().workArea));
+    else this.#apply(zoneRect(this.#mode === 'maximized' ? 'maximize' : (this.#zone ?? 'maximize'), this.#display().workArea));
     this.notify();
   }
 

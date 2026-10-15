@@ -175,6 +175,7 @@ The window the app draws itself, with one title bar row (spec §7.2), from the o
 | 7A.6 | axe passes in light and dark, the popover open and closed; every control works by keyboard; 44 px targets | E2E 1.7, 7A.1, 7A.3 |
 | 7A.7 | Stages 1, 3, 5 and 7 still pass | The app's E2E suite |
 | 7A.8 | The window's shadow stays inside its margin on every side, so the window's bounds never cut it off (added 15 October 2026: `--shadow-lg` reached 44 px into a 16 px margin) | E2E `stage7a.spec.mjs` 7A.7 (each shadow's reach measured in light and dark); an enlarged capture of the corner |
+| 7A.9 | The top or bottom edge dragged to that edge of the screen (or the taskbar), or double-clicked, fills the work area's height at the same width and place, with a preview while dragging; a move by the bar or another double-click puts the height back; not where another display continues past that edge (added 15 October 2026, Windows' vertical maximize) | Unit `window.test.mjs` (4: the edges and the taskbar, the preview and its cancelling, the restore, a double-click, after maximize, remembered as a size); E2E `stage7a.spec.mjs` 7A.9 on the real window |
 
 ### Stage 7B: one row, with edit mode's header in it
 

@@ -61,6 +61,7 @@ if (location.protocol === 'app:') {
       restore: () => ipcRenderer.send('window:restore'),
       close: () => ipcRenderer.send('window:close'),
       toggleMaximize: () => ipcRenderer.send('window:toggle-maximize'),
+      vertical: () => ipcRenderer.send('window:vertical'),
       snap: (zone) => ipcRenderer.send('window:snap', zone),
       drag: (phase, kind, x, y, shift) => ipcRenderer.send('window:drag', phase, kind, x, y, shift),
       pointer: () => ipcRenderer.send('window:pointer'),
