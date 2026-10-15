@@ -25,10 +25,11 @@ test.describe('desktop: developer workspace', () => {
       const editor = await pageMatching(app, /localhost:4391\/_edit\//);
       await expect(editor.locator('h1')).toHaveText('Edit mode (stand-in)');
       await expect(frame.locator('#site-name')).toHaveText('Test Site');
-      await expect(frame.locator('#state')).toHaveText('Edit mode ready');
-      await frame.getByRole('button', { name: 'Site' }).click();
+      // the dev server's state is the dot's name (its popover has the details)
+      await expect(frame.locator('#server')).toHaveAttribute('aria-label', 'Edit mode ready');
+      await frame.getByRole('radio', { name: 'Site' }).click();
       await expect.poll(() => editor.url()).toBe('http://localhost:4391/');
-      await expect(frame.getByRole('button', { name: 'Site' })).toHaveAttribute('aria-pressed', 'true');
+      await expect(frame.getByRole('radio', { name: 'Site' })).toHaveAttribute('aria-checked', 'true');
       expect(await app.evaluate(({ BaseWindow }) => BaseWindow.getAllWindows().length)).toBe(1);
     } finally {
       await quit(app);
@@ -89,7 +90,7 @@ test.describe('desktop: developer workspace', () => {
       const frame = await pageMatching(app, /frame\.html/);
       const welcome = await pageMatching(app, /welcome\.html/);
       await welcome.getByRole('button', { name: 'Open this checkout' }).click();
-      await expect(frame.locator('#state')).toHaveText('Restarting edit mode…', { timeout: 15_000 });
+      await expect(frame.locator('#server')).toHaveAttribute('aria-label', 'Restarting edit mode…', { timeout: 15_000 });
       const page = await pageMatching(app, /server\.html|_edit\//);
       await expect.poll(() => page.url(), { timeout: 30_000 }).toMatch(/server\.html/);
       await expect(page.locator('h1')).toHaveText('Edit mode stopped', { timeout: 30_000 });

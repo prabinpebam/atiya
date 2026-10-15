@@ -8,23 +8,56 @@
 <script type="module" src="frame.js"></script>
 </head>
 <body class="frame">
-<header class="bar" aria-label="Atiya Studio">
-  <div class="site">
-    <span class="mark" aria-hidden="true"></span>
-    <h1 class="name" id="site-name">Atiya Studio</h1>
-    <span class="state" id="state" role="status" aria-live="polite"></span>
-    <button type="button" class="quiet" id="open-live" hidden>Open my site</button>
-    <button type="button" class="quiet" id="see-why" hidden>See why</button>
-    <button type="button" class="quiet" id="check" hidden>Check my site</button>
+<!-- the window the app draws itself (documentation/desktop/spec.md §7.2): its corners, shadow and one title bar row;
+     the body (edit mode, the site, the app's pages) is a card in the hole, from its own view -->
+<div class="window" id="window">
+  <div class="hole" aria-hidden="true"></div>
+  <header class="bar" aria-label="Atiya Studio" data-drag-band>
+    <div class="group start">
+      <button type="button" class="logo" id="menu" aria-label="Atiya Studio menu" aria-haspopup="menu" title="Menu"><img src="site/logo.svg" alt=""></button>
+      <h1 class="title" id="app-title">Atiya Studio</h1>
+      <div class="segmented" role="radiogroup" aria-label="What to show" id="views">
+        <button type="button" role="radio" id="show-editor" aria-checked="true">Edit mode</button>
+        <button type="button" role="radio" id="show-site" aria-checked="false" tabindex="-1">Site</button>
+      </div>
+      <button type="button" class="icon-button" id="open-browser" aria-label="Open in browser" title="Open in browser"><svg data-icon="external" aria-hidden="true" focusable="false"></svg></button>
+      <button type="button" class="server" id="server" aria-haspopup="dialog" aria-expanded="false" aria-controls="server-panel" aria-label="Edit mode: starting" title="Edit mode"><span class="dot" id="server-dot" data-tone="busy"></span></button>
+    </div>
+    <div class="group end">
+      <span class="live" id="state" role="status" aria-live="polite"></span>
+      <button type="button" class="quiet" id="open-live" hidden>Open my site</button>
+      <button type="button" class="quiet" id="see-why" hidden>See why</button>
+      <button type="button" class="quiet" id="check" hidden>Check my site</button>
+      <div class="controls" role="group" aria-label="Window" id="controls">
+        <button type="button" class="control" id="minimize" aria-label="Minimize"><svg viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M0 5.5h10"/></svg></button>
+        <button type="button" class="control" id="maximize" aria-label="Maximize" aria-haspopup="dialog" aria-expanded="false" aria-controls="layouts"><svg viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path data-glyph="maximize" d="M.5.5h9v9h-9z"/><path data-glyph="restore" d="M2.5 2.5h7v7h-7zM2.5 2.5V.5h7v7h-2"/></svg></button>
+        <button type="button" class="control close" id="close" aria-label="Close"><svg viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M.5.5l9 9M9.5.5l-9 9"/></svg></button>
+      </div>
+    </div>
+  </header>
+</div>
+
+<section class="popover" id="server-panel" role="dialog" aria-labelledby="server-title" tabindex="-1" hidden>
+  <h2 class="panel-title"><span class="dot" id="server-panel-dot" data-tone="busy"></span><span id="server-title">Starting edit mode…</span></h2>
+  <dl class="facts">
+    <dt>Site</dt><dd id="site-name">Atiya Studio</dd>
+    <dt>Address</dt><dd id="server-address"></dd>
+  </dl>
+  <p class="message" id="server-message" hidden></p>
+  <pre class="log" id="server-log" tabindex="0" aria-label="The dev server's last lines" hidden></pre>
+  <div class="actions">
+    <button type="button" class="primary" id="restart" hidden>Restart</button>
+    <button type="button" class="primary" id="use" hidden>Use it</button>
   </div>
-  <nav class="views" aria-label="What to show" id="views" hidden>
-    <button type="button" id="show-editor" aria-pressed="true">Edit mode</button>
-    <button type="button" id="show-site" aria-pressed="false">Site</button>
-  </nav>
-  <div class="tools">
-    <button type="button" class="quiet" id="open-browser" hidden>Open in browser</button>
-    <button type="button" class="quiet" id="restart" hidden>Restart</button>
-  </div>
-</header>
+</section>
+
+<section class="popover layouts" id="layouts" role="dialog" aria-label="Snap layouts" hidden></section>
+
+<div class="handles" id="handles" aria-hidden="true">
+  <div class="handle" data-window-handle="n"></div><div class="handle" data-window-handle="s"></div>
+  <div class="handle" data-window-handle="e"></div><div class="handle" data-window-handle="w"></div>
+  <div class="handle" data-window-handle="nw"></div><div class="handle" data-window-handle="ne"></div>
+  <div class="handle" data-window-handle="sw"></div><div class="handle" data-window-handle="se"></div>
+</div>
 </body>
 </html>

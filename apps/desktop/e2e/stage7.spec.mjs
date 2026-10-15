@@ -38,7 +38,7 @@ test.describe('desktop: managed site', () => {
       expect((await fetch('http://localhost:4381/')).status).toBe(403);
       // the site, shown in the app's own view, gets through too
       const frame = await pageMatching(app, /frame\.html/);
-      await frame.getByRole('button', { name: 'Site', exact: true }).click();
+      await frame.getByRole('radio', { name: 'Site', exact: true }).click();
       await expect(editor.locator('h1')).toHaveText('Site (stand-in)');
     } finally {
       await quit(app);

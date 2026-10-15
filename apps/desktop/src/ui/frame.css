@@ -1,82 +1,518 @@
-/* The frame across the top of the window (documentation/desktop/spec.md §7.2). */
+/* The window the app draws itself, and its one title bar row (documentation/desktop/spec.md §7.2, plan stage 7A).
+ * The page covers the whole window: the shadow margin (transparent, clicks pass through), the visible window
+ * with its corners and shadow, the bar, and a hole where the body's own view sits as an inset card. */
+:root {
+  /* the shadow margin at rest, and the window's corners; a maximized, snapped or full-screen window has neither */
+  --window-margin: var(--space-4);
+  --window-radius: var(--radius-lg);
+  --bar-height: var(--size-chrome-block-compact);
+  /* the body's card: inset by --space-2, its corners following the window's (main.mjs BODY_INSET, BODY_RADIUS) */
+  --card-inset: var(--space-2);
+  --card-radius: calc(var(--radius-lg) - var(--space-2));
+  /* the resize band just outside the visible window, and its corner squares (core/window/geometry.mjs) */
+  --handle-edge: var(--space-1-5);
+  --handle-corner: calc(var(--space-3) + var(--space-0-5));
+}
+
+:root[data-margin='0'] {
+  --window-margin: var(--space-0);
+  --window-radius: var(--radius-none);
+}
+
+html,
 body.frame {
-  background: var(--color-bg-raised);
+  background: transparent;
   overflow: hidden;
+}
+
+.window {
+  position: fixed;
+  inset: var(--window-margin);
+  border-radius: var(--window-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg), 0 0 0 var(--border-hairline) var(--color-rule);
+}
+
+/* the window's own system frame (macOS): no margin, corners or shadow of ours */
+:root[data-frame='native'] .window {
+  inset: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* everything but the card is the window's surface: one spread shadow round a transparent, rounded hole */
+.hole {
+  position: absolute;
+  top: var(--bar-height);
+  left: var(--card-inset);
+  right: var(--card-inset);
+  bottom: var(--card-inset);
+  border-radius: var(--card-radius);
+  box-shadow: 0 0 0 100vmax var(--color-bg-raised);
+  outline: var(--border-hairline) solid var(--color-rule);
+  pointer-events: none;
 }
 
 .bar {
-  height: var(--size-chrome-block-compact);
+  position: relative;
+  z-index: var(--layer-raised);
+  height: var(--bar-height);
+  /* the same surface the hole's spread paints, given to the bar itself so its text has a background to measure */
+  background: var(--color-bg-raised);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-4);
-  padding: 0 var(--space-4);
-  border-bottom: var(--border-hairline) solid var(--color-rule);
+  padding-inline-start: var(--space-3);
+  user-select: none;
 }
 
-.site {
+:root[data-frame='native'] .bar {
+  /* room for the traffic lights */
+  padding-inline-start: var(--space-20);
+}
+
+.group {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
-  flex: 1;
+  height: 100%;
 }
 
-.mark {
-  width: var(--size-icon-lg);
-  height: var(--size-icon-lg);
-  border-radius: var(--radius-round);
-  background: var(--color-accent);
+.group.start {
+  flex: 1 1 auto;
+}
+
+.group.end {
   flex: none;
 }
 
-.name {
-  margin: 0;
+.logo,
+.icon-button,
+.server {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-touch);
+  height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.logo img {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
+.icon-button svg {
+  width: var(--size-icon);
+  height: var(--size-icon);
+  fill: currentColor;
+}
+
+.icon-button svg .icon-secondary {
+  fill: var(--color-accent);
+  opacity: 0.4;
+}
+
+.title {
+  margin: 0 var(--space-2) 0 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
-.state {
+:root[data-active='false'] .title {
+  color: var(--color-text-muted);
+}
+
+/* Edit mode | Site: a segmented control */
+.segmented {
+  flex: none;
+  display: inline-flex;
+  align-items: stretch;
+  /* each option keeps the 44 px target (app.css), inside a hairline track */
+  height: calc(var(--size-touch) + 2 * var(--space-0-5));
+  padding: var(--space-0-5);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--color-rule);
+}
+
+.segmented [role='radio'] {
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.segmented [role='radio'][aria-checked='true'] {
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm), 0 0 0 var(--border-hairline) var(--color-rule);
+}
+
+.segmented[aria-disabled='true'] [role='radio'] {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* the dev server: its state as a dot, the details in its popover */
+.dot {
+  display: inline-block;
+  flex: none;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-round);
+  background: var(--color-text-muted);
+}
+
+.dot[data-tone='good'] {
+  background: var(--color-positive);
+}
+
+.dot[data-tone='busy'] {
+  background: var(--color-accent);
+}
+
+.dot[data-tone='bad'] {
+  background: var(--color-negative);
+}
+
+.server .dot {
+  width: var(--space-3);
+  height: var(--space-3);
+  box-shadow: 0 0 0 var(--space-1) var(--color-bg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .server .dot[data-tone='busy'] {
+    animation: pulse var(--duration-slower) var(--ease-standard) infinite alternate;
+  }
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.35;
+  }
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
-.state[data-tone='good']::before,
-.state[data-tone='busy']::before,
-.state[data-tone='bad']::before {
+.live:empty {
+  display: none;
+}
+
+.live[data-tone]::before {
   content: '';
-  display: inline-block;
   width: var(--space-2);
   height: var(--space-2);
   border-radius: var(--radius-round);
-  margin-right: var(--space-2);
-  vertical-align: middle;
   background: var(--color-text-muted);
 }
 
-.state[data-tone='good']::before {
+.live[data-tone='good']::before {
   background: var(--color-positive);
 }
 
-.state[data-tone='busy']::before {
+.live[data-tone='busy']::before {
   background: var(--color-accent);
 }
 
-.state[data-tone='bad']::before {
+.live[data-tone='bad']::before {
   background: var(--color-negative);
 }
 
-.views,
-.tools {
-  display: flex;
-  gap: var(--space-2);
+.group.end .quiet {
+  min-height: var(--size-touch);
 }
 
-.views[hidden],
-.tools [hidden] {
+.group [hidden],
+.popover [hidden] {
   display: none;
+}
+
+/* minimize, maximize or restore, close: the bar's full height, square at the window's corner */
+.controls {
+  display: flex;
+  align-self: stretch;
+  margin-inline-start: var(--space-2);
+}
+
+:root[data-frame='native'] .controls {
+  display: none;
+}
+
+.control {
+  width: var(--size-touch);
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.control svg {
+  width: calc(var(--space-2) + var(--space-0-5));
+  height: calc(var(--space-2) + var(--space-0-5));
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--border-hairline);
+  shape-rendering: crispEdges;
+}
+
+.control [data-glyph='restore'],
+:root[data-maximized='true'] .control [data-glyph='maximize'] {
+  display: none;
+}
+
+:root[data-maximized='true'] .control [data-glyph='restore'] {
+  display: inline;
+}
+
+.close svg {
+  shape-rendering: geometricPrecision;
+}
+
+.control:focus-visible,
+.logo:focus-visible,
+.icon-button:focus-visible,
+.server:focus-visible,
+.segmented [role='radio']:focus-visible {
+  outline: var(--border-focus) solid var(--color-focus);
+  outline-offset: calc(-1 * var(--border-focus));
+}
+
+@media (hover: hover) {
+  .logo:hover,
+  .icon-button:hover,
+  .server:hover,
+  .control:hover {
+    background: var(--color-accent-soft);
+  }
+
+  .segmented [role='radio'][aria-checked='false']:hover {
+    color: var(--color-text);
+  }
+
+  .control.close:hover {
+    background: var(--color-negative);
+    color: var(--color-on-accent);
+  }
+}
+
+.logo:active,
+.icon-button:active,
+.server:active,
+.control:active {
+  background: var(--color-accent-soft);
+}
+
+.control.close:active {
+  background: var(--color-negative);
+  color: var(--color-on-accent);
+}
+
+/* the popovers drop from the bar over the body (the frame's view comes on top while one is open) */
+.popover {
+  position: fixed;
+  z-index: var(--layer-dropdown);
+  margin: 0;
+  padding: var(--space-4);
+  min-width: 18rem;
+  max-width: min(28rem, calc(100vw - 4rem));
+  border-radius: var(--radius-md);
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg), 0 0 0 var(--border-hairline) var(--color-rule);
+}
+
+.popover:focus {
+  outline: none;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-md);
+  font-family: var(--font-ui);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.facts dt {
+  color: var(--color-text-muted);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.message {
+  font-size: var(--text-sm);
+}
+
+.log {
+  max-height: 10rem;
+  overflow: auto;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.actions:not(:has(> :not([hidden]))) {
+  display: none;
+}
+
+/* Snap Layouts: each layout is a small screen whose zones place the window */
+.layouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+}
+
+.layouts[hidden] {
+  display: none;
+}
+
+.layout {
+  display: grid;
+  /* big enough that a quarter's zone is at least 24 px each way (WCAG 2.5.8) */
+  width: 6rem;
+  height: 4rem;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--color-rule);
+}
+
+.layout[data-layout='halves'] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.layout[data-layout='thirds'] {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.layout[data-layout='quarters'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.zone {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: var(--color-rule);
+}
+
+.zone:focus-visible {
+  outline: var(--border-focus) solid var(--color-focus);
+  outline-offset: 0;
+}
+
+@media (hover: hover) {
+  .zone:hover {
+    background: var(--color-accent);
+  }
+}
+
+.zone:active,
+.zone:focus-visible {
+  background: var(--color-accent);
+}
+
+/* the resize handles: a band just outside the visible window, in the margin; with no margin, just inside */
+.handles {
+  position: fixed;
+  inset: calc(var(--window-margin) - var(--handle-edge));
+  z-index: var(--layer-overlay);
+  pointer-events: none;
+}
+
+:root[data-margin='0'] .handles {
+  inset: 0;
+}
+
+:root[data-resizable='false'] .handles,
+:root[data-frame='native'] .handles {
+  display: none;
+}
+
+.handle {
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+[data-window-handle='n'] { top: 0; left: var(--handle-corner); right: var(--handle-corner); height: var(--handle-edge); cursor: ns-resize; }
+[data-window-handle='s'] { bottom: 0; left: var(--handle-corner); right: var(--handle-corner); height: var(--handle-edge); cursor: ns-resize; }
+[data-window-handle='w'] { left: 0; top: var(--handle-corner); bottom: var(--handle-corner); width: var(--handle-edge); cursor: ew-resize; }
+[data-window-handle='e'] { right: 0; top: var(--handle-corner); bottom: var(--handle-corner); width: var(--handle-edge); cursor: ew-resize; }
+[data-window-handle='nw'] { top: 0; left: 0; width: var(--handle-corner); height: var(--handle-corner); cursor: nwse-resize; }
+[data-window-handle='se'] { bottom: 0; right: 0; width: var(--handle-corner); height: var(--handle-corner); cursor: nwse-resize; }
+[data-window-handle='ne'] { top: 0; right: 0; width: var(--handle-corner); height: var(--handle-corner); cursor: nesw-resize; }
+[data-window-handle='sw'] { bottom: 0; left: 0; width: var(--handle-corner); height: var(--handle-corner); cursor: nesw-resize; }
+
+.accent-probe {
+  position: fixed;
+  width: 0;
+  height: 0;
+  color: var(--color-accent);
+}
+
+/* the system's window (macOS): the bar is its drag region, as the app moves only a window it draws */
+:root[data-frame='native'] .bar {
+  -webkit-app-region: drag;
+}
+
+:root[data-frame='native'] .bar button,
+:root[data-frame='native'] .segmented {
+  -webkit-app-region: no-drag;
 }

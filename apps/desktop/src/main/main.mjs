@@ -25,13 +25,18 @@ import { Supervisor } from '../core/supervisor.mjs';
 import { SetupFlow } from './setup-flow.mjs';
 import { tokenStore } from './token-store.mjs';
 import { utilitySpawn } from './utility-spawn.mjs';
+import { AppWindowFrame, frameKindFor } from './window-frame.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = resolve(HERE, '..', '..');
 const UI_ROOT = join(APP_ROOT, 'src', 'ui');
 const PRELOAD = join(HERE, 'preload.cjs');
-// the site's compact chrome height (--size-chrome-block-compact, 3.5rem)
+// the title bar's one row: the site's compact chrome height (--size-chrome-block-compact, 3.5rem)
 const FRAME_HEIGHT = 56;
+// the body sits in the window as a card: inset by --space-2, its corners --radius-lg less that inset, so they
+// follow the window's (a view can only round all four corners alike, so it can't meet the window's edges)
+const BODY_INSET = 8;
+const BODY_RADIUS = 12;
 
 // tests and a second copy of the app keep their own data folder
 if (process.env.ATIYA_USER_DATA) app.setPath('userData', process.env.ATIYA_USER_DATA);
@@ -51,6 +56,8 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 /** @type {BaseWindow | null} */
 let win = null;
+/** @type {AppWindowFrame} */
+let windowFrame;
 /** @type {WebContentsView} */
 let frame;
 /** @type {WebContentsView} */
@@ -118,8 +125,21 @@ function lockNavigation(v) {
 function layout() {
   if (!win) return;
   const { width, height } = win.getContentBounds();
-  frame.setBounds({ x: 0, y: 0, width, height: FRAME_HEIGHT });
-  body.setBounds({ x: 0, y: FRAME_HEIGHT, width, height: Math.max(0, height - FRAME_HEIGHT) });
+  // the frame's page draws the whole window (its margin, corners, shadow and title bar); the body is a card inside
+  const m = windowFrame.margin();
+  frame.setBounds({ x: 0, y: 0, width, height });
+  body.setBounds({
+    x: m + BODY_INSET,
+    y: m + FRAME_HEIGHT,
+    width: Math.max(0, width - 2 * m - 2 * BODY_INSET),
+    height: Math.max(0, height - 2 * m - FRAME_HEIGHT - BODY_INSET),
+  });
+}
+
+/** A popover in the title bar (the server's, Snap Layouts) drops over the body: the frame comes on top while it's open. @param {boolean} up */
+function raiseFrame(up) {
+  if (!win) return;
+  win.contentView.addChildView(up ? frame : body);
 }
 
 function icon(name = 'icon.png') {
@@ -127,13 +147,39 @@ function icon(name = 'icon.png') {
 }
 
 function createWindow() {
-  win = new BaseWindow({ width: 1440, height: 920, minWidth: 720, minHeight: 480, title: 'Atiya Studio', icon: icon(), show: true });
+  windowFrame = new AppWindowFrame(frameKindFor(process.platform, process.argv, process.env), join(app.getPath('userData'), 'window.json'));
+  win = new BaseWindow({ ...windowFrame.options(), title: 'Atiya Studio', icon: icon(), show: true });
   frame = new WebContentsView({ webPreferences: viewPreferences({ preload: PRELOAD }) });
   body = new WebContentsView({ webPreferences: viewPreferences({ preload: PRELOAD }) });
+  // the frame's page is transparent where the body is and in the margin
+  frame.setBackgroundColor('#00000000');
+  body.setBorderRadius(BODY_RADIUS);
   win.contentView.addChildView(frame);
   win.contentView.addChildView(body);
   lockNavigation(frame);
   lockNavigation(body);
+  windowFrame.attach(win, {
+    notify: (s) => {
+      layout();
+      if (!frame.webContents.isDestroyed()) frame.webContents.send('window:state', s);
+    },
+    views: () => [frame.webContents, body.webContents],
+  });
+  // Alt+Space opens the app's menu at the bar's start: the system's can't maximize a window the app draws
+  for (const wc of [frame.webContents, body.webContents])
+    wc.on('before-input-event', (e, input) => {
+      if (input.type === 'keyDown' && input.alt && !input.control && !input.meta && !input.shift && (input.code === 'Space' || input.key === ' ')) {
+        e.preventDefault();
+        const m = windowFrame.margin();
+        popupMenu(m + BODY_INSET, m + FRAME_HEIGHT);
+      }
+    });
+  // the window's own channels answer the frame's page alone
+  const fromFrame = (/** @type {Electron.IpcMainEvent | Electron.IpcMainInvokeEvent} */ e) => e.sender === frame.webContents;
+  windowFrame.registerIpc(fromFrame, () => win);
+  ipcMain.handle('window:state', (e) => (fromFrame(e) ? windowFrame.state() : null));
+  ipcMain.on('frame:raise', (e, up) => fromFrame(e) && raiseFrame(up === true));
+  ipcMain.on('app:menu', (e, x, y) => fromFrame(e) && Number.isFinite(x) && Number.isFinite(y) && popupMenu(x, y));
   layout();
   win.on('resize', layout);
   win.on('close', (e) => {
@@ -167,6 +213,8 @@ function broadcast() {
   const s = appState();
   for (const v of [frame, body]) if (v && !v.webContents.isDestroyed()) v.webContents.send('app:state', s);
   tray?.setToolTip(`Atiya Studio: ${s.workspace?.name ?? 'no site open'}`);
+  // the taskbar names the site, as the title bar no longer does
+  win?.setTitle(s.workspace?.name ? `${s.workspace.name} · Atiya Studio` : 'Atiya Studio');
 }
 
 /** @param {View} next */
@@ -473,37 +521,50 @@ function bridge() {
   });
 }
 
-function menus() {
-  const restart = { label: 'Restart the dev server', click: () => server?.restart(), enabled: true };
-  const template = /** @type {Electron.MenuItemConstructorOptions[]} */ ([
-    {
-      label: 'File',
-      submenu: [
-        { label: 'Make a new site', click: () => show('welcome') },
-        { label: 'Open a source folder…', accelerator: 'CmdOrCtrl+O', click: () => show('source') },
-        { label: 'Open in browser', click: () => openExternal(`${devOrigin()}/`) },
-        restart,
-        { type: 'separator' },
-        { label: 'Quit', accelerator: 'CmdOrCtrl+Q', click: () => quit() },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [
-        { label: 'Edit mode', accelerator: 'CmdOrCtrl+1', click: () => server && show('editor') },
-        { label: 'Site', accelerator: 'CmdOrCtrl+2', click: () => server && show('site') },
-        { type: 'separator' },
-        { label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => body.webContents.reload() },
-        { label: 'Developer tools', accelerator: 'CmdOrCtrl+Shift+I', click: () => body.webContents.toggleDevTools() },
-      ],
-    },
+/** The app's commands: the logo's menu and Alt+Space (the window has no menu bar), and the shortcuts. */
+function commands() {
+  const custom = windowFrame?.kind === 'custom';
+  const report = windowFrame?.state();
+  return /** @type {Electron.MenuItemConstructorOptions[]} */ ([
+    { label: 'Make a new site', click: () => show('welcome') },
+    { label: 'Open a source folder…', accelerator: 'CmdOrCtrl+O', click: () => show('source') },
+    { type: 'separator' },
+    { label: 'Edit mode', accelerator: 'CmdOrCtrl+1', click: () => server && show('editor') },
+    { label: 'Site', accelerator: 'CmdOrCtrl+2', click: () => server && show('site') },
+    { label: 'Open in browser', click: () => openExternal(`${devOrigin()}/`) },
+    { label: 'Restart the dev server', click: () => server?.restart() },
+    { type: 'separator' },
+    { label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => body.webContents.reload() },
+    { label: 'Developer tools', accelerator: 'CmdOrCtrl+Shift+I', click: () => body.webContents.toggleDevTools() },
+    ...(custom ? /** @type {Electron.MenuItemConstructorOptions[]} */ ([{ label: 'Full screen', accelerator: 'F11', click: () => windowFrame.toggleFullScreen() }]) : []),
+    { type: 'separator' },
+    { label: 'Minimize', click: () => win?.minimize() },
+    report?.maximized ? { label: 'Restore', click: () => windowFrame.toggleMaximize() } : { label: 'Maximize', click: () => (custom ? windowFrame.toggleMaximize() : win?.maximize()) },
+    ...(custom && !report?.maximized && !report?.fullScreen
+      ? /** @type {Electron.MenuItemConstructorOptions[]} */ ([
+          { label: 'Move with the keyboard', click: () => windowFrame.keyboard('move') },
+          { label: 'Size with the keyboard', click: () => windowFrame.keyboard('size') },
+        ])
+      : []),
+    { type: 'separator' },
+    { label: 'Quit', accelerator: 'CmdOrCtrl+Q', click: () => quit() },
   ]);
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+/** The app's menu, at a point in the window (CSS px of the frame's page, which covers the window). @param {number} x @param {number} y */
+function popupMenu(x, y) {
+  if (!win) return;
+  Menu.buildFromTemplate(commands()).popup({ window: win, x: Math.round(x), y: Math.round(y) });
+}
+
+function menus() {
+  // the shortcuts; on Windows and Linux there's no menu bar to show them (the logo opens the same menu)
+  Menu.setApplicationMenu(Menu.buildFromTemplate([{ label: 'Atiya Studio', submenu: commands() }]));
   tray = new Tray(icon('tray.png'));
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: 'Show Atiya Studio', click: () => win?.show() },
-      restart,
+      { label: 'Restart the dev server', click: () => server?.restart() },
       { type: 'separator' },
       { label: 'Quit', click: () => quit() },
     ]),

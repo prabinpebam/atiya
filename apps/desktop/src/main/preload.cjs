@@ -40,5 +40,25 @@ if (location.protocol === 'app:') {
       ipcRenderer.on('app:state', listener);
       return () => ipcRenderer.removeListener('app:state', listener);
     },
+    // the window the app draws itself (plan stage 7A): the main process answers the frame's page alone
+    window: {
+      state: () => ipcRenderer.invoke('window:state'),
+      onState(cb) {
+        const listener = (_e, s) => cb(s);
+        ipcRenderer.on('window:state', listener);
+        return () => ipcRenderer.removeListener('window:state', listener);
+      },
+      minimize: () => ipcRenderer.send('window:minimize'),
+      maximize: () => ipcRenderer.send('window:maximize'),
+      restore: () => ipcRenderer.send('window:restore'),
+      close: () => ipcRenderer.send('window:close'),
+      toggleMaximize: () => ipcRenderer.send('window:toggle-maximize'),
+      snap: (zone) => ipcRenderer.send('window:snap', zone),
+      drag: (phase, kind, x, y, shift) => ipcRenderer.send('window:drag', phase, kind, x, y, shift),
+      pointer: () => ipcRenderer.send('window:pointer'),
+      accent: (color) => ipcRenderer.send('window:accent', color),
+      raise: (up) => ipcRenderer.send('frame:raise', up),
+      menu: (x, y) => ipcRenderer.send('app:menu', x, y),
+    },
   });
 }
