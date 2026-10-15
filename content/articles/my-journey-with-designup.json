@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-12",
+  "updatedAt": "2026-10-15",
   "locale": "en",
   "topics": [
     "designup",
@@ -107,7 +107,8 @@
       },
       "title": "DesignUp 2017 recap",
       "poster": "articles/my-journey-with-designup/designup-2017-poster",
-      "caption": "The DesignUp 2017 recap."
+      "caption": "The DesignUp 2017 recap, videography and editing",
+      "credit": "Prabin Pebam"
     },
     {
       "type": "figure",
