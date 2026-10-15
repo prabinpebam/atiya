@@ -32,3 +32,36 @@ export function siteThemeScript(theme) {
   document.dispatchEvent(new Event('site:theme'));
 })();`;
 }
+
+  /**
+   * Is this page the documentation (Slate, at `<base>/docs/`)? It keeps its own theme, so it gets its own script.
+   * @param {string} url
+   */
+  export function isDocsPage(url) {
+    try {
+      return /^\/(?:[^/]+\/)?docs\//.test(new URL(url).pathname);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * The script that makes the documentation follow the app's theme. Slate stores its own choice
+   * (`slate-theme-pref`: light, dark or auto) and, on auto, follows `prefers-color-scheme`, which in the app is
+   * Electron's `nativeTheme`, the app's choice. So the stored choice becomes auto (Slate then follows every later
+   * change itself, its code highlighting too), and `data-theme`, which Slate's styles read, is set to the app's
+   * theme at once.
+   * @param {unknown} theme
+   */
+  export function docsThemeScript(theme) {
+    const t = parseTheme(theme);
+    return `(() => {
+    const t = ${JSON.stringify(t)};
+    try { localStorage.setItem('slate-theme-pref', 'auto'); } catch {}
+    const dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  })();`;
+  }
+
+  /** What the app hides in its pages: the site's and edit mode's theme switches, and the documentation's. */
+  export const THEME_SWITCHES_CSS = '[data-theme-switch], [data-editor-theme-switch], .theme-toggle { display: none !important; }';

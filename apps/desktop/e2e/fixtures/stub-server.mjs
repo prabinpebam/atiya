@@ -137,6 +137,14 @@ createServer(async (req, res) => {
   }
   if ((await find(req, res)) !== false) return;
   if (req.url?.startsWith('/_edit/')) res.end(page(`Edit mode (stand-in)${owner}`, `<p><a id="out" href="https://example.com/">An outside link</a></p><p><a id="in" href="/">The site</a></p>${studio(req.headers['x-atiya-studio'] === '1')}`));
+  // the documentation, as Slate keeps its theme: its own stored choice, auto following the system's, and a toggle
+  else if (req.url?.startsWith('/docs/'))
+    res.end(`<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><title>Docs (stand-in)</title><style>:root{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}body{background:Canvas;color:CanvasText}</style></head><body><h1>Docs (stand-in)</h1><button class="theme-toggle" type="button">Theme</button><script>
+  const pref = () => localStorage.getItem('slate-theme-pref') || 'auto';
+  const apply = () => document.documentElement.setAttribute('data-theme', pref() === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : pref());
+  apply();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => pref() === 'auto' && apply());
+</script></body></html>`);
   else res.end(page('Site (stand-in)', '<p>Home</p>'));
 }).listen(port, 'localhost', () => {
   console.log(`stand-in: listening on http://localhost:${port}/`);

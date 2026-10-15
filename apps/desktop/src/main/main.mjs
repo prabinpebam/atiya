@@ -28,7 +28,7 @@ import { utilitySpawn } from './utility-spawn.mjs';
 import { AppWindowFrame, frameKindFor } from './window-frame.mjs';
 import { isEditMode, sanitizeCommand, sanitizeHeader } from '../core/studio-header.mjs';
 import { parseRemote, siteAddress, sitesFor } from '../core/account.mjs';
-import { parseTheme, siteThemeScript } from '../core/theme.mjs';
+import { docsThemeScript, isDocsPage, parseTheme, siteThemeScript, THEME_SWITCHES_CSS } from '../core/theme.mjs';
 import { addressFor, checkTarget, recentFor, rememberFor } from '../core/finder.mjs';
 import { ACTION_IDS, checkAppSetting } from '../ui/find-catalogue.mjs';
 import { execFile } from 'node:child_process';
@@ -158,13 +158,16 @@ function icon(name = 'icon.png') {
 
 /**
  * The site's pages (and edit mode) follow the app's theme (plan stage 7D): its choice goes into the dev server's
- * own theme storage, which they read before their first paint, so they never choose a theme of their own here.
+ * own theme storage, which they read before their first paint, so they never choose a theme of their own here. The
+ * documentation (Slate) keeps its own choice, so it gets its own script.
  */
 function followAppTheme() {
   if (!body || body.webContents.isDestroyed() || !body.webContents.getURL().startsWith(`${devOrigin()}/`)) return;
-  body.webContents.executeJavaScript(siteThemeScript(settings.read().theme)).catch(() => {});
-  // the site's own theme switches have nothing to choose here: the title bar chooses for the whole app
-  body.webContents.insertCSS('[data-theme-switch], [data-editor-theme-switch] { display: none !important; }').catch(() => {});
+  const url = body.webContents.getURL();
+  const theme = settings.read().theme;
+  body.webContents.executeJavaScript(isDocsPage(url) ? docsThemeScript(theme) : siteThemeScript(theme)).catch(() => {});
+  // the pages' own theme switches have nothing to choose here: the title bar chooses for the whole app
+  body.webContents.insertCSS(THEME_SWITCHES_CSS).catch(() => {});
 }
 
 function createWindow() {

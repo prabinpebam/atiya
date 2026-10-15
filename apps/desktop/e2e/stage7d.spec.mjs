@@ -60,4 +60,26 @@ test.describe('desktop: one theme', () => {
       await quit(app);
     }
   });
+
+  test("7D.4 the documentation follows the app's theme too: its own stored choice set to follow, its toggle hidden", async () => {
+    const { app } = await launch({ port: 4420 });
+    try {
+      const frame = await pageMatching(app, /frame\.html/);
+      await (await pageMatching(app, /welcome\.html/)).getByRole('button', { name: 'Open this checkout' }).click();
+      const body = await pageMatching(app, /localhost:4420\/_edit\//);
+      // as if the docs' own toggle had once chosen Light
+      await body.evaluate(() => localStorage.setItem('slate-theme-pref', 'light'));
+      await frame.getByRole('button', { name: /^Colour theme/ }).click();
+      await frame.getByRole('menu', { name: 'Colour theme' }).getByRole('menuitemradio', { name: 'Dark' }).click();
+      await body.goto('http://localhost:4420/docs/#engineering/overview.md');
+      await expect.poll(() => body.evaluate(() => [localStorage.getItem('slate-theme-pref'), document.documentElement.getAttribute('data-theme')])).toEqual(['auto', 'dark']);
+      await expect(body.locator('.theme-toggle')).toBeHidden();
+      // a change in the title bar reaches the open documentation
+      await frame.getByRole('button', { name: 'Colour theme: Dark' }).click();
+      await frame.getByRole('menu', { name: 'Colour theme' }).getByRole('menuitemradio', { name: 'Light' }).click();
+      await expect.poll(() => body.evaluate(() => document.documentElement.getAttribute('data-theme'))).toBe('light');
+    } finally {
+      await quit(app);
+    }
+  });
 });

@@ -213,6 +213,7 @@ Stage 7A's row sat above edit mode's own header, so the window had two rows. Edi
 | 7D.1 | The title bar's left group holds the colour theme; the bar, the app's pages, edit mode and the site all follow it, and it's remembered | App E2E `stage7d.spec.mjs` |
 | 7D.2 | The site and edit mode never choose their own theme in the app: their switches are hidden there, and edit mode's isn't in the row; in a browser they keep theirs | App E2E 7D.1 (the site's switch hidden); `editor-studio.spec.ts` |
 | 7D.3 | The site's stored choice is written exactly (and cleared for the system's), never anything else | Unit `theme.test.mjs` |
+| 7D.4 | The documentation follows the app's theme too, a choice made on its own toggle included, and changes with it; its toggle is hidden in the app (added 15 October 2026) | App E2E `stage7d.spec.mjs` 7D.4 (a Slate-like page on the stand-in); unit `theme.test.mjs`; by eye on the real docs in the app, dark then light |
 
 ### Stage 7E: the action center
 
