@@ -623,7 +623,7 @@ Any other form or booking page that gives an embed link (Microsoft Forms, Fillou
 
 **Private stays private, whatever the tool:**
 - No counting script loads on a private page, the Sign in page, a page that can show shared cards (anything sealed on it), a magic link, or any page while the visitor is signed in; the leak check (`verify-sealed.mjs`) fails a build that has one in a sealed page.
-- Every other page reports its own path only, never a query or a fragment, and a referrer cut to its origin and path. Clarity, which records the page and its whole address, also stays off a page opened with a query or a fragment.
+- Every other page reports its own path only, never a query or a fragment, and a referrer cut to its origin and path: GoatCounter's hit is sent by the site (its own script adds the query), Umami excludes the query and fragment, and Google Analytics' every event, its automatic ones too, names the page by its path and stops on a page it may not count. Clarity, which records the page and its whole address, also stays off a page opened with a query or a fragment.
 - A cookie notice appears only when the chosen tool needs one (Clarity, GA4), naming the tool, with **Accept cookies** and **Decline** (remembered on the device); nothing of those tools loads before Accept.
 - At most one counting tool, plus Clarity.
 

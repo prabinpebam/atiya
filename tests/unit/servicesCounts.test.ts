@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanReferrer, COUNT_HOSTS, mayCount, needsConsent, scriptOf, toolsOf, type CountPage, type Tool } from '../../src/site/scripts/countsRules';
+import { cleanReferrer, COUNT_HOSTS, goatcounterHit, mayCount, needsConsent, scriptOf, toolsOf, type CountPage, type Tool } from '../../src/site/scripts/countsRules';
 import { COUNT_HOSTS as LEAK_CHECK_HOSTS, countingScriptIn } from '../../scripts/verify-sealed.mjs';
 import { readFileSync } from 'node:fs';
 
@@ -48,8 +48,16 @@ describe("each tool's script and what it is told", () => {
   it('GoatCounter counts by hand (no count on load), at the code name', () => {
     expect(scriptOf({ tool: 'goatcounter', code: 'ada' })).toEqual({ src: 'https://gc.zgo.at/count.js', attrs: { 'data-goatcounter': 'https://ada.goatcounter.com/count', 'data-goatcounter-settings': '{"no_onload":true}' } });
   });
-  it('Umami tracks by hand, on its cloud or the host given', () => {
-    expect(scriptOf({ tool: 'umami', id: ID })).toEqual({ src: 'https://cloud.umami.is/script.js', attrs: { 'data-website-id': ID, 'data-auto-track': 'false' } });
+  it("GoatCounter's hit is the site's own: its count.js would add the page's query", () => {
+    const hit = new URL(goatcounterHit('ada', { path: '/contact/', referrer: 'https://ada.github.io/work/', title: 'Contact', rnd: 'x1' }));
+    expect(hit.origin).toBe('https://ada.goatcounter.com');
+    expect(hit.pathname).toBe('/count');
+    expect(Object.fromEntries(hit.searchParams)).toEqual({ p: '/contact/', r: 'https://ada.github.io/work/', t: 'Contact', rnd: 'x1' });
+    expect(new URL(goatcounterHit('ada', { path: '/', referrer: '', title: 'Home', rnd: 'y' })).searchParams.has('r')).toBe(false);
+    expect(readFileSync('src/site/scripts/countsClient.ts', 'utf8')).not.toMatch(/goatcounter\?\.count|load\(t\)\.then\(\(\) => w\.goatcounter/);
+  });
+  it('Umami tracks by hand, never the query or the fragment, on its cloud or the host given', () => {
+    expect(scriptOf({ tool: 'umami', id: ID })).toEqual({ src: 'https://cloud.umami.is/script.js', attrs: { 'data-website-id': ID, 'data-auto-track': 'false', 'data-exclude-search': 'true', 'data-exclude-hash': 'true' } });
     expect(scriptOf({ tool: 'umami', id: ID, host: 'https://umami.example/' }).src).toBe('https://umami.example/script.js');
   });
   it('Google Analytics and Clarity load their tags with the ID', () => {
@@ -62,6 +70,15 @@ describe("each tool's script and what it is told", () => {
     expect(told).not.toMatch(/location\.(href|search|hash)/);
     expect(told).toMatch(/const path = location\.pathname/);
     expect(told).toMatch(/send_page_view: false/);
+    // Google Analytics' own events (engagement, scrolls) name the page by its path too, and stop where it may not count
+    expect(told).toMatch(/gtag\('set', \{ page_location: `\$\{location\.origin\}\$\{path\}`/);
+    expect(src).toMatch(/ga-disable-\$\{t\.id\}`\] = true/);
+  });
+
+  it('a session is read where the sign-in runtime keeps it, not only from the root attribute the router swaps away', () => {
+    const src = readFileSync('src/site/scripts/countsClient.ts', 'utf8');
+    expect(src).toMatch(/sessionStorage\.getItem\('site\.access'\) \|\| localStorage\.getItem\('site\.access'\)/);
+    expect(src).toMatch(/signedIn: signedIn\(\)/);
   });
 });
 

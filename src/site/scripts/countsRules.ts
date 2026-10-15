@@ -59,13 +59,22 @@ export function cleanReferrer(ref: string): string {
   }
 }
 
-/** The script each tool loads, with its attributes. */
+/**
+ * GoatCounter's hit, sent by the site itself rather than its count.js, which always adds the page's query (`q`).
+ * Its own endpoint's parameters: path, referrer, title, and a random value against caching.
+ */
+export function goatcounterHit(code: string, o: { path: string; referrer: string; title: string; rnd: string }): string {
+  const q = new URLSearchParams({ p: o.path, ...(o.referrer ? { r: o.referrer } : {}), t: o.title, rnd: o.rnd });
+  return `https://${code}.goatcounter.com/count?${q}`;
+}
+
+/** The script each tool loads, with its attributes (GoatCounter's only names its host: the site sends its hits, goatcounterHit). */
 export function scriptOf(t: Tool): { src: string; attrs: Record<string, string> } {
   switch (t.tool) {
     case 'goatcounter':
       return { src: 'https://gc.zgo.at/count.js', attrs: { 'data-goatcounter': `https://${t.code}.goatcounter.com/count`, 'data-goatcounter-settings': '{"no_onload":true}' } };
     case 'umami':
-      return { src: `${(t.host ?? 'https://cloud.umami.is').replace(/\/+$/, '')}/script.js`, attrs: { 'data-website-id': t.id, 'data-auto-track': 'false' } };
+      return { src: `${(t.host ?? 'https://cloud.umami.is').replace(/\/+$/, '')}/script.js`, attrs: { 'data-website-id': t.id, 'data-auto-track': 'false', 'data-exclude-search': 'true', 'data-exclude-hash': 'true' } };
     case 'ga4':
       return { src: `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(t.id)}`, attrs: {} };
     case 'clarity':

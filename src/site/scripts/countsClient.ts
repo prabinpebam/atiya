@@ -4,11 +4,10 @@
  * the site's own address, and never where the visitor opted out. Each page it may count (scripts/countsRules.ts)
  * tells the tools its path; the tools that set cookies wait for the cookie notice's Accept.
  */
-import { CONSENT_KEY, cleanReferrer, mayCount, needsConsent, scriptOf, toolsOf, type CountPage, type Tool } from './countsRules';
+import { CONSENT_KEY, cleanReferrer, goatcounterHit, mayCount, needsConsent, scriptOf, toolsOf, type CountPage, type Tool } from './countsRules';
 
 type Fn = ((...a: unknown[]) => void) & { q?: unknown[] };
 type W = Window & {
-  goatcounter?: { count(o: Record<string, unknown>): void };
   umami?: { track(f: (p: Record<string, unknown>) => Record<string, unknown>): void };
   dataLayer?: unknown[];
   gtag?: Fn;
@@ -16,11 +15,25 @@ type W = Window & {
 };
 const w = window as W;
 
+/**
+ * A session on this device, read where the sign-in runtime keeps it: `<html data-signed-in>` alone isn't enough (the
+ * library's router swaps the root's attributes, and /play/ never sets it).
+ */
+function signedIn(): boolean {
+  if (document.documentElement.dataset.signedIn !== undefined) return true;
+  try {
+    return !!(sessionStorage.getItem('site.access') || localStorage.getItem('site.access'));
+  } catch {
+    // storage off: no session could have been kept
+    return false;
+  }
+}
+
 function page(): CountPage {
   const h = document.documentElement;
   return {
     access: h.dataset.access,
-    signedIn: h.dataset.signedIn !== undefined,
+    signedIn: signedIn(),
     sealed: !!document.querySelector('template[data-sealed], [data-unlock-panel], [data-access-gate], [data-sealed-cards]'),
     hash: location.hash,
     search: location.search,
@@ -61,7 +74,8 @@ function countOne(t: Tool) {
   const quiet = () => {
     /* blocked or offline: nothing is counted */
   };
-  if (t.tool === 'goatcounter') void load(t).then(() => w.goatcounter?.count({ path, referrer, title: document.title }), quiet);
+  // GoatCounter's own count.js always sends the query, so the site sends its hit itself
+  if (t.tool === 'goatcounter') new Image().src = goatcounterHit(t.code, { path, referrer, title: document.title, rnd: Math.random().toString(36).slice(2) });
   else if (t.tool === 'umami') void load(t).then(() => w.umami?.track((p) => ({ ...p, url: path, referrer })), quiet);
   else if (t.tool === 'ga4') {
     if (!w.gtag) {
@@ -73,7 +87,10 @@ function countOne(t: Tool) {
       w.gtag('js', new Date());
       w.gtag('config', t.id, { send_page_view: false });
     }
-    w.gtag('event', 'page_view', { page_location: `${location.origin}${path}`, page_referrer: referrer, page_title: document.title });
+    // every event from here on (its own engagement and scroll events too) names this page by its path alone
+    (w as unknown as Record<string, boolean>)[`ga-disable-${t.id}`] = false;
+    w.gtag('set', { page_location: `${location.origin}${path}`, page_referrer: referrer, page_title: document.title });
+    w.gtag('event', 'page_view');
     void load(t).catch(quiet);
   } else {
     w.clarity ??= Object.assign((...a: unknown[]) => void (w.clarity!.q ??= []).push(a), {});
@@ -88,7 +105,9 @@ function countPage(tools: Tool[]) {
   const answer = consent();
   for (const t of tools) {
     if (!mayCount(p, t)) {
+      // a tool already running on an earlier page stops here
       if (t.tool === 'clarity') w.clarity?.('stop');
+      if (t.tool === 'ga4') (w as unknown as Record<string, boolean>)[`ga-disable-${t.id}`] = true;
       continue;
     }
     if (needsConsent(t) && answer !== 'yes') continue;
