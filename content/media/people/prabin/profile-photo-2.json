@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "profile-photo-2.webp",
+  "alt": "Prabin profile",
+  "caption": "Prabin profile",
+  "facts": {
+    "width": 305,
+    "height": 305,
+    "bg": "rgb(199 199 199)",
+    "bytes": 7142
+  },
+  "visibility": "public"
+}
