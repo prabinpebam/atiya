@@ -369,6 +369,15 @@
       "group": "Atiya Studio"
     },
     {
+      "path": "desktop/action-center.md",
+      "title": "Desktop app: the action center",
+      "order": 40.2,
+      "icon": "search",
+      "status": "review",
+      "updated": "2026-10-15",
+      "group": "Atiya Studio"
+    },
+    {
       "path": "desktop/modes.md",
       "title": "Navigation modes",
       "order": 50,
