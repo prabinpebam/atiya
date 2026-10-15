@@ -4,7 +4,7 @@
  * stops the site's dev server, runs setup, and drives the window: a frame across the top (the app's own
  * page) and a body (the app's pages, or edit mode from the dev server). Views are sandboxed, with no Node.
  */
-import { app, BaseWindow, clipboard, dialog, ipcMain, Menu, nativeImage, net, protocol, session, shell, Tray, WebContentsView } from 'electron';
+import { app, BaseWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, net, protocol, session, shell, Tray, WebContentsView } from 'electron';
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { homedir } from 'node:os';
@@ -28,6 +28,7 @@ import { utilitySpawn } from './utility-spawn.mjs';
 import { AppWindowFrame, frameKindFor } from './window-frame.mjs';
 import { isEditMode, sanitizeCommand, sanitizeHeader } from '../core/studio-header.mjs';
 import { parseRemote, siteAddress, sitesFor } from '../core/account.mjs';
+import { parseTheme, siteThemeScript } from '../core/theme.mjs';
 import { execFile } from 'node:child_process';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -153,6 +154,17 @@ function icon(name = 'icon.png') {
   return nativeImage.createFromPath(join(APP_ROOT, 'assets', name));
 }
 
+/**
+ * The site's pages (and edit mode) follow the app's theme (plan stage 7D): its choice goes into the dev server's
+ * own theme storage, which they read before their first paint, so they never choose a theme of their own here.
+ */
+function followAppTheme() {
+  if (!body || body.webContents.isDestroyed() || !body.webContents.getURL().startsWith(`${devOrigin()}/`)) return;
+  body.webContents.executeJavaScript(siteThemeScript(settings.read().theme)).catch(() => {});
+  // the site's own theme switches have nothing to choose here: the title bar chooses for the whole app
+  body.webContents.insertCSS('[data-theme-switch], [data-editor-theme-switch] { display: none !important; }').catch(() => {});
+}
+
 function createWindow() {
   windowFrame = new AppWindowFrame(frameKindFor(process.platform, process.argv, process.env), join(app.getPath('userData'), 'window.json'));
   win = new BaseWindow({ ...windowFrame.options(), title: 'Atiya Studio', icon: icon(), show: !BACKGROUND });
@@ -165,6 +177,9 @@ function createWindow() {
   body.setBorderRadius(BODY_RADIUS);
   win.contentView.addChildView(frame);
   win.contentView.addChildView(body);
+  // every page the site's dev server loads in the body follows the app's theme (a page loaded before a change, or a
+  // choice made on the site's own switch outside the app, is put right)
+  body.webContents.on('dom-ready', followAppTheme);
   lockNavigation(frame);
   lockNavigation(body);
   windowFrame.attach(win, {
@@ -237,6 +252,7 @@ function appState() {
     privatePages: privatePagesState(),
     setup: flow?.state() ?? null,
     githubWeb: github.web,
+    theme: parseTheme(settings.read().theme),
     // the title bar's account menu (plan stage 7C): who's signed in, the sites the app remembers, and who pushes
     account: account ? { ...account, state: accountState } : { login: null, name: null, avatar: null, state: accountState },
     sites: sitesFor(/** @type {any} */ (settings.read().workspaces), workspace?.path),
@@ -654,6 +670,16 @@ function bridge() {
     if (workspace?.kind === 'managed') await openManaged({ path: workspace.path, name: workspace.name, repository: workspace.repository, url: workspace.url });
   });
   handle('site:switch', (/** @type {string} */ path) => switchSite(String(path)));
+  // one theme for the whole app (plan stage 7D): every view follows nativeTheme; the site's own pages follow it too
+  handle('app:theme', (/** @type {unknown} */ t) => {
+    const theme = parseTheme(t);
+    settings.update((s) => {
+      s.theme = theme;
+    });
+    nativeTheme.themeSource = theme;
+    followAppTheme();
+    broadcast();
+  });
   handle('publish:retry', async () => {
     const w = /** @type {any} */ (settings.read().workspaces.find((x) => x.path === workspace?.path));
     if (!w?.repository) return;
@@ -753,6 +779,8 @@ app.whenReady().then(async () => {
     github = { api: fake.url, web: fake.url, fake: true };
   }
   serveApp();
+  // one theme for the whole app, before any view paints (plan stage 7D)
+  nativeTheme.themeSource = parseTheme(settings.read().theme);
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'clipboard-sanitized-write' || permission === 'fullscreen'));
   // the launch token goes on every request the views make to a managed site's server, and nowhere else
   session.defaultSession.webRequest.onBeforeSendHeaders((details, cb) => {

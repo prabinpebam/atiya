@@ -36,6 +36,8 @@ export async function launch(o = {}) {
   const app = await electron.launch({
     executablePath: ELECTRON,
     args: [APP_DIR],
+    // the app's own theme reaches its views (Playwright would otherwise pin every page to light)
+    colorScheme: null,
     env: {
       ...process.env,
       ATIYA_USER_DATA: join(root, 'data'),
@@ -64,6 +66,8 @@ export async function launchSetup(o) {
   const app = await electron.launch({
     executablePath: ELECTRON,
     args: [APP_DIR],
+    // the app's own theme reaches its views (Playwright would otherwise pin every page to light)
+    colorScheme: null,
     env: {
       ...process.env,
       ATIYA_CLIPBOARD_LOG: clipboardLog,

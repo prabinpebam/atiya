@@ -427,7 +427,13 @@ function drawItem(it) {
   return b;
 }
 
-function openChoices(it, trigger) {
+function openChoices(it, trigger, align = 'end') {
+  return openMenu(trigger, it.label, it.options, it.value, (value) => command({ id: it.id, action: 'select', value }), align);
+}
+
+/** A menu of choices over the body: the screen's (a Select of edit mode's) or the app's own (the theme). */
+function openMenu(trigger, label, options, current, onPick, align = 'end') {
+  const it = { label, options, value: current };
   const box = $('choices');
   box.setAttribute('aria-label', it.label);
   box.replaceChildren(
@@ -441,12 +447,12 @@ function openChoices(it, trigger) {
       b.append(Object.assign(node('span'), { textContent: o.label }));
       b.addEventListener('click', () => {
         closePopover(true);
-        command({ id: it.id, action: 'select', value: o.value });
+        onPick(o.value);
       });
       return b;
     }),
   );
-  openPopover(box, trigger, 'end');
+  openPopover(box, trigger, align);
   (box.querySelector('[aria-checked="true"]') ?? box.querySelector('button'))?.focus();
 }
 $('choices').addEventListener('keydown', (e) => {
@@ -466,8 +472,6 @@ function drawHeader(h) {
   $('page-context').replaceChildren(...(h?.context ?? []).map(drawItem));
   $('page-controls').replaceChildren(...(h?.controls ?? []).map(drawItem));
   $('page-controls').hidden = !h?.controls?.length;
-  // the row follows the theme chosen in edit mode
-  root.style.colorScheme = h?.theme === 'light' || h?.theme === 'dark' ? h.theme : '';
   if (h?.busy) root.dataset.busy = 'on';
   else delete root.dataset.busy;
   if (focused) document.querySelector(`[data-id="${CSS.escape(focused)}"]`)?.focus();
@@ -614,4 +618,32 @@ $('existing-site').addEventListener('click', () => {
 $('source-folder').addEventListener('click', () => {
   closePopover(false);
   window.atiya.show('source');
+});
+
+// ---------- one theme for the whole app (plan stage 7D) ----------
+// The title bar, the app's pages, edit mode and the site all follow it: the main process sets the system theme the
+// views read, and the site's own theme storage.
+const THEMES = [
+  { value: 'system', label: 'Match the system', icon: 'theme-system' },
+  { value: 'light', label: 'Light', icon: 'theme-light' },
+  { value: 'dark', label: 'Dark', icon: 'theme-dark' },
+];
+let theme = 'system';
+function drawTheme(s) {
+  theme = s.theme ?? 'system';
+  const t = THEMES.find((x) => x.value === theme) ?? THEMES[0];
+  $('theme').setAttribute('aria-label', `Colour theme: ${t.label}`);
+  const svg = $('theme').querySelector('svg');
+  const icon = ICONS[t.icon];
+  if (svg && icon && svg.dataset.icon !== t.icon) {
+    svg.dataset.icon = t.icon;
+    svg.setAttribute('viewBox', icon.viewBox);
+    svg.innerHTML = icon.body;
+  }
+}
+window.atiya.onState(drawTheme);
+window.atiya.state().then(drawTheme);
+$('theme').addEventListener('click', () => {
+  if (open?.panel === $('choices') && open.trigger === $('theme')) return closePopover(true);
+  openMenu($('theme'), 'Colour theme', THEMES, theme, (value) => window.atiya.setTheme(value), 'start');
 });

@@ -31,17 +31,17 @@ const page = (title, body) => `<!doctype html><html lang="en"><head><meta charse
 </style></head><body><main><h1>${title}</h1><p class="note">A stand-in for the site's dev server, used by Atiya Studio's tests.</p>${body}</main></body></html>`;
 // edit mode in the app describes its header to the title bar and takes its commands (plan stage 7B): the stand-in
 // does the same with a fixed header, records the commands it's given, and applies a theme as edit mode would
-const studio = (asked) => `<p id="studio-asked">${asked ? 'asked' : 'not asked'}</p><ol id="commands"></ol><script>
+const studio = (asked) => `<p id="studio-asked">${asked ? 'asked' : 'not asked'}</p><p><button type="button" data-theme-switch id="site-switch">The site's own theme switch</button></p><ol id="commands"></ol><script>
   const b = window.atiyaStudio;
   if (b) {
-    let theme = 'system';
+    let theme = 'everything';
     const header = () => ({
       context: [{ kind: 'link', id: 's1', label: 'Pages', text: 'Pages' }, { kind: 'text', text: 'A stand-in page', strong: true }, { kind: 'tag', text: 'Published', tone: 'positive' }],
       controls: [
         { kind: 'status', state: 'saved', text: 'All changes saved' },
         { kind: 'button', id: 's2', label: 'Undo', icon: 'undo' },
         { kind: 'button', id: 's3', label: 'Desktop width', icon: 'desktop', pressed: true },
-        { kind: 'select', id: 's4', label: 'Colour theme', value: theme, options: [{ value: 'system', label: 'System', icon: 'theme-system' }, { value: 'light', label: 'Light', icon: 'theme-light' }, { value: 'dark', label: 'Dark', icon: 'theme-dark' }] },
+        { kind: 'select', id: 's4', label: 'Show', value: theme, options: [{ value: 'everything', label: 'Everything', icon: 'collection' }, { value: 'drafts', label: 'Drafts', icon: 'edit' }, { value: 'published', label: 'Published', icon: 'success' }] },
         { kind: 'button', id: 's5', label: 'Save to remote', text: 'Save to remote', icon: 'upload', variant: 'primary' },
         { kind: 'html', id: 's6', label: '<b>not drawn</b>' },
       ],

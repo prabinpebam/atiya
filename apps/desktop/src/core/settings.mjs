@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 
 /**
  * @typedef {{ kind: 'developer' | 'managed', path: string, name?: string }} Workspace
- * @typedef {{ workspaces: Workspace[], current: string | null, keepInTray: boolean }} Settings
+ * @typedef {{ workspaces: Workspace[], current: string | null, keepInTray: boolean, theme?: 'system' | 'light' | 'dark' }} Settings
  */
 
 /** @returns {Settings} */

@@ -33,7 +33,7 @@ test.describe('desktop: one row', () => {
       await expect(controls.getByRole('status')).toHaveText('All changes saved');
       await expect(controls.getByRole('button', { name: 'Undo' })).toBeVisible();
       await expect(controls.getByRole('button', { name: 'Desktop width' })).toHaveAttribute('aria-pressed', 'true');
-      await expect(controls.getByRole('button', { name: 'Colour theme: System' })).toBeVisible();
+      await expect(controls.getByRole('button', { name: 'Show: Everything' })).toBeVisible();
       await expect(controls.getByRole('button', { name: 'Save to remote' })).toBeVisible();
       // what the row can't draw isn't drawn
       await expect(bar).not.toContainText('not drawn');
@@ -50,7 +50,7 @@ test.describe('desktop: one row', () => {
     }
   });
 
-  test('7B.2 the row\'s controls press edit mode\'s own, a choice goes through, and the row follows the theme', async () => {
+  test('7B.2 the row\'s controls press edit mode\'s own, a choice goes through, and every control reads well in both themes', async () => {
     const { app } = await launch({ port: 4412 });
     try {
       const frame = await pageMatching(app, /frame\.html/);
@@ -62,26 +62,19 @@ test.describe('desktop: one row', () => {
       await frame.locator('#page-context').getByRole('button', { name: 'Pages' }).click();
       await expect(editor.locator('#commands li')).toHaveText(['click s2', 'click s5', 'click s1']);
       // a choice: the menu over the body, keyboard and all
-      const theme = controls.getByRole('button', { name: 'Colour theme: System' });
-      await theme.click();
-      const menu = frame.getByRole('menu', { name: 'Colour theme' });
+      const show = controls.getByRole('button', { name: 'Show: Everything' });
+      await show.click();
+      const menu = frame.getByRole('menu', { name: 'Show' });
       await expect(menu).toBeVisible();
-      await expect(menu.getByRole('menuitemradio', { name: 'System' })).toBeFocused();
+      await expect(menu.getByRole('menuitemradio', { name: 'Everything' })).toBeFocused();
       await frame.keyboard.press('ArrowDown');
-      await frame.keyboard.press('ArrowDown');
-      await expect(menu.getByRole('menuitemradio', { name: 'Dark' })).toBeFocused();
+      await expect(menu.getByRole('menuitemradio', { name: 'Drafts' })).toBeFocused();
       await frame.keyboard.press('Enter');
       await expect(menu).toBeHidden();
-      await expect(editor.locator('#commands li').last()).toHaveText('select s4 dark');
-      await expect(controls.getByRole('button', { name: 'Colour theme: Dark' })).toBeFocused();
-      expect(await frame.evaluate(() => document.documentElement.style.colorScheme)).toBe('dark');
-      for (const scheme of /** @type {const} */ (['light', 'dark'])) {
-        await frame.emulateMedia({ colorScheme: scheme });
-        const r = await new AxeBuilder({ page: frame }).setLegacyMode(true).disableRules(['landmark-one-main']).analyze();
-        expect(r.violations.map((v) => `${scheme}: ${v.id}`)).toEqual([]);
-      }
+      await expect(editor.locator('#commands li').last()).toHaveText('select s4 drafts');
+      await expect(controls.getByRole('button', { name: 'Show: Drafts' })).toBeFocused();
       // every control of the screen's keeps its words readable at rest and on hover, light and dark (a filled
-      // button once lost its fill on hover, leaving its on-accent text on the plain hover colour)
+      // button once lost its fill on hover, leaving its on-accent text on the plain hover colour), and axe passes
       const contrast = (/** @type {import('@playwright/test').Locator} */ b) =>
         b.evaluate((el) => {
           const rgb = (/** @type {string} */ c) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
@@ -93,20 +86,20 @@ test.describe('desktop: one row', () => {
           return (a + 0.05) / (z + 0.05);
         });
       for (const [scheme, label] of /** @type {const} */ ([['light', 'Light'], ['dark', 'Dark']])) {
-        // the row follows the theme chosen in edit mode: choose it from the row, as a person would
-        await controls.getByRole('button', { name: /^Colour theme: / }).click();
+        // the app's own theme, from the title bar, as a person would choose it
+        await frame.getByRole('button', { name: /^Colour theme: / }).click();
         await frame.getByRole('menu', { name: 'Colour theme' }).getByRole('menuitemradio', { name: label }).click();
-        await expect(controls.getByRole('button', { name: `Colour theme: ${label}` })).toBeVisible();
-        expect(await frame.evaluate(() => document.documentElement.style.colorScheme)).toBe(scheme);
-        for (const name of ['Save to remote', 'Undo', `Colour theme: ${label}`]) {
+        await expect.poll(() => frame.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)).toBe(scheme === 'dark');
+        const r = await new AxeBuilder({ page: frame }).setLegacyMode(true).disableRules(['landmark-one-main']).analyze();
+        expect(r.violations.map((v) => `${scheme}: ${v.id}`)).toEqual([]);
+        for (const name of ['Save to remote', 'Undo', 'Show: Drafts']) {
           const b = controls.getByRole('button', { name });
           await frame.mouse.move(5, 300);
           expect(await contrast(b), `${scheme} ${name} at rest`).toBeGreaterThanOrEqual(4.5);
           await b.hover();
           expect(await contrast(b), `${scheme} ${name} on hover`).toBeGreaterThanOrEqual(4.5);
         }
-      }
-      // the site has no header of edit mode's: the row's go
+      }      // the site has no header of edit mode's: the row's go
       await frame.getByRole('radio', { name: 'Site' }).click();
       await expect(frame.locator('#page-controls')).toBeHidden();
       await expect(frame.locator('#page-context')).toBeEmpty();

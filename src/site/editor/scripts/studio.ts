@@ -90,6 +90,8 @@ function select(el: HTMLElement): StudioItem {
 /** The header's pieces in order: what the app's row draws. Pure of the app: it reads the page alone. */
 function atoms(el: Element, root: Element, out: StudioItem[]) {
   if (!(el instanceof HTMLElement) || hiddenIn(el, root) || el.classList.contains('sr-only')) return;
+  // the app chooses the theme for the whole app, edit mode and the site included: its own switch isn't drawn
+  if (el.matches('[data-editor-theme-switch]')) return;
   if (el.matches('[data-editor-save]')) {
     const text = [words(el.querySelector('[data-editor-status]') ?? el), words(el.querySelector('[data-editor-save-time]') ?? document.createElement('i'))].filter(Boolean).join(' ');
     out.push({ kind: 'status', state: el.dataset.state ?? 'idle', text });

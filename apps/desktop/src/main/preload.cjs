@@ -22,6 +22,8 @@ if (location.protocol === 'app:') {
       switchSite: call('site:switch'),
     },
     resolveSync: call('sync:resolve'),
+    // one theme for the whole app (plan stage 7D)
+    setTheme: call('app:theme'),
     privatePages: {
       state: call('private:state'),
       setUp: call('private:setup'),

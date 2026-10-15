@@ -29,7 +29,7 @@ test.describe('editor: in Atiya Studio', () => {
   test.beforeEach(() => reset());
   test.afterAll(() => reset());
 
-  test('a screen comes without its header row and describes it: the save status, the theme, Save to remote', async ({ page }) => {
+  test('a screen comes without its header row and describes it: the save status and Save to remote, not the theme (the app chooses it)', async ({ page }) => {
     await asTheApp(page);
     await page.goto('/_edit/');
     await expect(page.locator('[data-editor-app]')).toHaveAttribute('data-studio', '');
@@ -37,19 +37,15 @@ test.describe('editor: in Atiya Studio', () => {
     await expect.poll(async () => (await latest(page))?.controls.length ?? 0).toBeGreaterThan(0);
     const h = await latest(page);
     expect(h.controls.some((i) => i.kind === 'status')).toBe(true);
-    const theme = find(h, (i) => i.kind === 'select');
-    expect(theme?.label).toBe('Colour theme');
-    expect(theme?.options?.map((o) => o.value)).toEqual(['system', 'light', 'dark']);
+    // the app chooses the theme for the whole app: edit mode's own switch isn't in the description
+    expect(find(h, (i) => i.kind === 'select' && i.label === 'Colour theme')).toBeUndefined();
     const save = find(h, (i) => i.label === 'Save to remote');
     expect(save).toMatchObject({ kind: 'link', text: 'Save to remote', icon: expect.any(String) });
     // nothing in the description is markup
     expect(JSON.stringify(h)).not.toMatch(/<[a-z]/i);
     // the main column starts at the top: no row of its own
     expect((await page.locator('#main').boundingBox())?.y).toBeLessThan(2);
-    // a choice from the row: the theme
-    await send(page, { id: theme!.id!, action: 'select', value: 'dark' });
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect.poll(async () => (await latest(page)).theme).toBe('dark');
+
     // a press from the row: Save to remote goes where it goes
     await send(page, { id: save!.id!, action: 'click' });
     await expect(page).toHaveURL(/\/_edit\/publish\/$/);
@@ -74,5 +70,6 @@ test.describe('editor: in Atiya Studio', () => {
     await page.goto('/_edit/');
     await expect(page.locator('[data-editor-app]')).not.toHaveAttribute('data-studio', '');
     await expect(page.locator('.top')).toBeVisible();
+    await expect(page.locator('[data-editor-theme-switch]')).toBeVisible();
   });
 });
