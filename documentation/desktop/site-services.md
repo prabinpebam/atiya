@@ -1,6 +1,6 @@
 # Contact and visitor counts: options for a person's site
 
-Proposal, for the owner's review (15 October 2026): how a person who doesn't write code adds a contact form and visitor counts to the site Atiya Studio made for them, with no server of ours, in three tiers by setup effort. Once chosen, it becomes a stage of the [plan](plan.md) and a section of the [spec](spec.md).
+The research and comparison behind the [desktop spec's §9.5](spec.md) (15 October 2026): how a person who doesn't write code adds a contact form and visitor counts to the site Atiya Studio made for them, with no server of ours, in three tiers by setup effort. The spec holds what's decided (O7, O16, O17); this page holds every option looked at, why it was or wasn't chosen, and the sources.
 
 > **TL;DR.**
 > - **No server of ours, ever.** Every option is the person's own account with a third party, or nothing. Their site stays a static site on their GitHub Pages.
@@ -103,9 +103,11 @@ Proposal, for the owner's review (15 October 2026): how a person who doesn't wri
 - **A skill in every site's repository** (`.github/skills/site-services/SKILL.md`, beside its `AGENTS.md`): the tiers, each option's steps split into *the agent does* and *the person does*, the shapes of the values, the private-page rule, and "never use a provider's admin API without the person's own key".
 - The app and the skill read one catalogue (`services.json` in the engine: options, tiers, steps, value shapes, links), so the two never disagree.
 
-## 7. Decisions for the owner
+## 7. Decisions
 
-| # | Question | Recommendation |
+The owner decided on 15 October 2026 that there's no server of ours and that options come in three tiers by setup effort (spec O7). The picks below are the working defaults in the spec's O7 and O16, open until managed sites ship.
+
+| # | Question | Working default |
 |---|---|---|
 | S1 | Contact's default for a new site | **Email me**, with the address the person chooses in setup |
 | S2 | Simple-tier form | **Web3Forms**; FormSubmit as the fallback |

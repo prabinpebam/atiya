@@ -8,6 +8,7 @@ The site as a product: an app that lets the owner write without developer tools,
 > - **Less to set up:** no private repository, deploy key or secret until the person first makes a page private (§4.4); no username screen (GitHub's sign-up asks); email confirmation detected, not asked about; the workspace kept out of synced folders.
 > - **Agents** (§5) use the same setup through a CLI: `atiya setup --name "Ada Lovelace" --yes --json` takes a token from `GH_TOKEN` or the GitHub CLI, prints JSON events, exits with codes that say what's needed, and resumes when run again. The site's repository carries an `AGENTS.md` so an agent can maintain it too.
 > - **The engine is pinned** (§6): a person's repository holds only content, `atiya.json` and a short workflow; the site's code is a versioned engine release, the same in the app and in every build.
+> - **Contact and visitor counts** (§9.5) are the person's own accounts with third-party services, never a server of ours, in three tiers by setup effort: **Simple** (an Email me link, or Web3Forms; GoatCounter), **Balanced** (an embedded Tally or Google Forms form; Umami, with Clarity for heatmaps), **Powerful** (Jotform or Cal.com; PostHog or Google Analytics). Agents set them up with `atiya services`, leaving only sign-ups to the person.
 > - **Processes** (§7): only the main process holds the token; edit mode runs as a supervised `astro dev` on loopback, answering only the app's views; views are sandboxed, with no Node.
 > - **The owner** opens his checkout in the app (a *developer workspace*): his own `astro dev`, edit mode in a window, alive as long as the app (§7.6). It replaces `serve.ps1`.
 
@@ -128,7 +129,7 @@ The site as a product: an app that lets the owner write without developer tools,
 |---|---|---|---|---|
 | P1 | Anyone | **Your own portfolio site, live at your own address, today.** | Time from opening the app to edit mode on their site, with a GitHub account / without | ≤ 3 min / ≤ 10 min of their time |
 | P2 | Anyone | **Three choices, no terminal, no developer words.** | Choices made in the app before edit mode; terminals, SSH keys, git commands or file paths they must see | 3; none |
-| P3 | Anyone | **Yours, free, and working without us.** | Where every repository, secret and setting lives; recurring cost; services of ours in the path | Their GitHub account; nothing; none (the contact relay is opt-in) |
+| P3 | Anyone | **Yours, free, and working without us.** | Where every repository, secret and setting lives; recurring cost; services of ours in the path | Their GitHub account; nothing; none (contact and visitor counts are the person's own accounts with third parties, §9.5) |
 | P4 | Anyone | **Just the site, or a way to explore it, changeable any time.** | Steps to turn the planet on or off | One switch |
 | P5 | The owner | **Open the app and write.** | Steps from a closed app to typing in edit mode; things that stop the server | One launch; only quitting the app |
 | P6 | Agents | **One command sets a site up or checks it, and every answer is machine-readable.** | Commands for a full setup; output; a second run | One; JSON events and exit codes; resumes, changes nothing done |
@@ -275,6 +276,7 @@ The same setup machine, without screens. It ships inside the app (`<install>/res
 | `atiya status [--dir <dir>] [--json]` | The site's state: signed in, saved, pushed, last build, live |
 | `atiya doctor [--dir <dir>] [--json]` | Every check of §4.4 and the site's content contract, each with its fix |
 | `atiya private setup` | Sets up private pages (§4.4) |
+| `atiya services list\|set\|check\|off [--json]` | Contact and visitor counts (§9.5): the options by tier with their steps, saving a choice, checking it (a test message, the counting script answering), turning it off |
 | `atiya sites [--json]` | The person's Atiya sites on GitHub |
 
 `atiya setup` options, all optional:
@@ -322,6 +324,8 @@ The token needs the `repo` and `workflow` scopes (a classic token, or the GitHub
 ### 5.4 Agents maintaining a site
 
 Setup writes `AGENTS.md` into the site repository: what the repository is (content only; the engine is pinned), where each kind of content lives and its contract (a link to the [content spec](../content/spec.md)), never to edit `atiya.json`'s engine pin or the workflow by hand, how to check a change (`atiya doctor`), and that a push to `main` publishes. The build checks every push with the content contract, so a bad edit fails the build and the live site keeps its last good version.
+
+Beside it, setup writes a skill, `.github/skills/site-services/SKILL.md`: the contact and counting options by tier, each option's steps split into what the agent does and what the person must do (sign up, click an email), the shape of each value, the private-page rule (§9.5) and "never use a provider's admin API without the person's own key". It and the app read one catalogue (§9.5), so they never disagree.
 
 ## 6. The product model
 
@@ -455,16 +459,18 @@ If this repository or its releases ever went away, **Keep a copy of the engine**
 - **`engine`** is what CI downloads and checks; **`contract`** is the content contract's version, which migrations move (§10.3).
 - **Which ways to explore are on** isn't here: it's content, `content/structures/ways.json`, written by edit mode's Ways to explore and by setup from the first run's choice ([modes §2](modes.md#2-the-site-and-turning-modes-on-and-off), decision D-W1).
 - **`features`**: which of the engine's own parts the site publishes (the design library, the documentation).
-- **The site's services aren't here either** (O15, D): the contact form's endpoint and the telemetry key are `services` in `content/site.json`, so the owner's site, built from source, and every managed site read them from the same place. Secrets are never there; an endpoint is an address, and a PostHog key is public configuration, set only if they turn telemetry on.
+- **The site's services aren't here either** (O15, D): the contact form and visitor counts are `services` in `content/site.json`, so the owner's site, built from source, and every managed site read them from the same place. Secrets are never there: every value is public by design (an address, a public key, a site ID), set only when the person turns one on (§9.5).
 
 ```json
 "services": {
-  "contact": { "endpoint": "https://…azurewebsites.net" },
-  "telemetry": { "key": "phc_…", "host": "https://us.i.posthog.com", "site": "https://ada.github.io/" }
+  "contact": { "kind": "web3forms", "key": "…" },
+  "counts": { "kind": "goatcounter", "code": "ada" }
 }
 ```
 
-A build makes them the page's `PUBLIC_CONTACT_ENDPOINT`, `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`. The telemetry key is used only in a build for the address `telemetry.site` names (compared with `SITE_URL` and `BASE_PATH`, which both workflows set), so a local production build never sends anything, and nor does a copy of the site published at another address (the key is in the content, which a fork copies); a `--mode test` build never reads `services` at all (its endpoint is `.env.test`'s made-up host).
+`contact` is one of `{ kind: 'email', address }` (the default), `{ kind: 'web3forms', key }`, `{ kind: 'embed', url }` (a form or booking page from an allowed host) or `{ kind: 'relay', endpoint }` (the owner's own service). `counts` is one of `{ kind: 'goatcounter', code }`, `{ kind: 'umami', id }`, `{ kind: 'posthog', key, host, site, cookies? }` or `{ kind: 'ga4', id }`, with `clarity: { id }` beside any of them. The owner's settings as they are today (`contact.endpoint`, `telemetry`) read as `relay` and `posthog`.
+
+A build makes them the page's settings (today `PUBLIC_CONTACT_ENDPOINT`, `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST`). A counting tool is used only in a build for the site's own address (`telemetry.site` today, compared with `SITE_URL` and `BASE_PATH`, which both workflows set), so a local production build never sends anything, and nor does a copy of the site published at another address (the values are in the content, which a fork copies); a `--mode test` build never reads `services` at all (its endpoint is `.env.test`'s made-up host).
 
 The workflow the app writes:
 
@@ -579,11 +585,11 @@ Electron's checklist applies: context isolation, the sandbox, no Node in views, 
 |---|---|---|
 | The site: sections, pages, galleries, video, PDFs | Yes | Yes |
 | Edit mode, Save to remote, Publish | Yes | Yes |
-| Private pages, codes and links, the agreement | Yes | Yes, set up on first use (F8); the agreement's email needs the contact relay |
+| Private pages, codes and links, the agreement | Yes | Yes, set up on first use (F8); how a reader's agreement reaches a person without a relay is open (O17) |
 | Ways to explore | Cozy life, his own mode | None, or any built-in mode ([modes](modes.md)) |
 | Chopper, the family, Prabin, his music | In his mode | Not in Little planet (O5, O6) |
-| Contact form | His service | Off by default; the shared relay if offered (O7) |
-| Telemetry | His PostHog | Off; their own PostHog key in Settings |
+| Contact | His service (`relay`) | **Email me** by default; a form or a booking page of their own in three tiers (§9.5) |
+| Visitor counts | His PostHog | Off by default; a counting tool of their own in three tiers (§9.5) |
 | The design library and the documentation | Yes | Off |
 | Site icons (Font Awesome Pro) | His licence | A decision before release (O4) |
 
@@ -600,6 +606,32 @@ Every place the engine names its owner reads the site's own settings instead (`S
 - **Pages:** a site of at most 1 GB, about 100 GB of traffic a month, published only from a public repository on GitHub Free.
 - **Files:** git refuses a file over 100 MB; edit mode keeps a video under it.
 - **The nightly build stops after 60 days without a commit** (GitHub turns off a public repository's schedules). For a managed site the reusable workflow skips the owner's activity guard; the app turns the schedule back on when it opens a site, and while any grant has an expiry date it offers **Keep expiry dates working** (an empty commit). Withdraw now still takes effect at once.
+
+### 9.5 Contact and visitor counts
+
+**The promise:** *a way for visitors to reach you, and a sense of who visits, in the few minutes you choose to spend; still yours, free, and working without us.* There's no server of ours, ever (decided 15 October 2026): every option is the person's own account with a third-party service, or nothing, and the site stays a static site on their GitHub Pages. The research behind the choices, with every option compared and its sources, is [contact and visitor counts](site-services.md).
+
+**Three tiers per kind, by setup effort.** The more steps, the more power, and the app says plainly what each gives and asks:
+
+| Tier | Contact | Visitor counts |
+|---|---|---|
+| **Simple** (nothing, or one value to paste) | **Email me** (the default): a button that opens the visitor's email app. **Web3Forms**: the site's own Contact form, emailed to the person, spam protection, about 250 messages a month free; a key from one email | **GoatCounter**: visits, pages, where visitors came from, browsers and countries; no cookies, so no banner; a code name |
+| **Balanced** (a free account, a few choices) | An embedded form: **Tally** (any fields, unlimited responses free, an email per response) or **Google Forms** (answers in a sheet) | **Umami Cloud**: the same, plus events and goals; no banner. Add **Microsoft Clarity** for heatmaps and replays (it uses cookies: the banner comes with it) |
+| **Powerful** (more steps, the most power) | **Jotform** (logic, file uploads, payments; an agent can build the form through its API once given a key) or **Cal.com** (book a call) | **PostHog** (events, funnels, replays; in memory only by default, so no banner; cookies as a choice) or **Google Analytics 4** (needs the banner) |
+
+Any other form or booking page that gives an embed link (Microsoft Forms, Fillout, Formbricks, Airtable, Zoho, Cognito, Typeform, Calendly) goes in the same *Embed a form* setting. Free tiers are the providers' to change: the app links each option to its pricing page rather than promising numbers.
+
+**Private stays private, whatever the tool:**
+- No counting script loads on a private page, the Sign in page or a page showing shared cards; the leak check (`verify-sealed.mjs`) fails a build that has one there.
+- Every other page reports its own path only, never a query or a fragment.
+- A cookie banner appears only when the chosen tool needs one (Clarity, PostHog with cookies, GA4), naming the tool and why.
+- At most one counting tool, plus Clarity.
+
+**In the app:** edit mode's Settings has two cards, **Contact** and **Visitor counts** (the action center finds both). Each lists the three tiers with what they give and ask, the current choice first. Choosing one opens its steps, a button to the provider's page in the browser, a field for the value (checked for its shape: a Web3Forms key, a GoatCounter code, a `phc_` key, a `G-` ID, an embed link from an allowed host) and a check: **Send a test message**, a preview of the embed, or **Open my dashboard**. It's saved in `services` (§6.3) through the store and published with Save to remote.
+
+**The site:** the Contact page draws the site's own form for `web3forms` and `relay`, the Email me button for `email`, and for `embed` an accessible frame (a title, and **Open the form in a new tab** beside it). Each counting tool is a small loader fetched on idle, never on the pages above, within the 1.2 KB telemetry shim's budget.
+
+**Agents:** `atiya services` (§5.1) and the site's skill (§5.4) read one catalogue in the engine (`services.json`: the options, tiers, steps, value shapes and links), as the app's cards do. An agent does everything but the sign-up and email confirmations, which stay a person's (GoatCounter's terms forbid accounts made by bots); with a key the person gives it, it may use a provider's API (Jotform's forms, Umami's sites, PostHog's projects, GA4's properties).
 
 ## 10. Versions and updates
 
@@ -636,9 +668,9 @@ The app opens a site only at its own engine version. **Update your site** runs t
 | Who | What | Cost |
 |---|---|---|
 | A person | GitHub Free: a public repository with Pages and Actions, a private one | Nothing |
+| A person | Contact and visitor counts (§9.5) | Nothing on the providers' free tiers; their paid tiers only if they choose |
 | The owner | Windows code signing | About US$10 a month |
 | The owner | Apple Developer Program, for macOS | US$99 a year |
-| The owner, if offered | The contact relay | Cents to a few dollars a month |
 | The owner | The OAuth App, releases, the reusable workflow | Nothing |
 
 ## 14. Decisions
@@ -653,7 +685,7 @@ Working defaults, used by the build until the owner decides otherwise:
 | O4 | The site icons for managed sites | Font Awesome Free behind the same `iconData.ts`, unless the Pro licence allows other people's sites | Before managed sites ship |
 | O5 | Who greets visitors in Little planet | The site owner's own avatar, on the player characters' rigs | Stage 8 |
 | O6 | Little planet's music | Ambient sounds only | Stage 8 |
-| O7 | The contact form | Off; the shared relay, opt-in, later | Before managed sites ship |
+| O7 | The contact form | **Decided 2026-10-15: no server of ours.** Three tiers of the person's own services (§9.5); working picks: Email me by default, Web3Forms (Simple, FormSubmit as its fallback), an embedded Tally or Google Forms form (Balanced), Jotform or Cal.com (Powerful) | The picks: before managed sites ship |
 | O8 | Sign-in | An OAuth App (device flow); a GitHub App if a spike proves it | Stage 5 |
 | O9 | Platforms | Windows first | Stage 9 |
 | O10 | Crash reports | A pre-filled GitHub issue | Stage 9 |
@@ -662,6 +694,8 @@ Working defaults, used by the build until the owner decides otherwise:
 | O13 | The app's own screens | Static pages on the site's tokens; the site's compiled components later | Stage 9 |
 | O14 | The access agreement's words name the owner ("and Prabin is told") | Change them to "and the site's owner is told" with a new `AGREEMENT_VERSION` (every current reader agrees again), or keep them for the owner and give managed sites their own | Before private pages ship to managed sites (stage 5) |
 | O15 | Whether and how the owner's site tests the consumer version without losing the source's tight loop (§6.4) | D: stay on source, with one build script for both, the same settings path and a CI check that both builds match, plus a canary consumer site; A, B, C: move to a content-only repository at the same address (names swapped), the root address or a custom domain (every engine change would reach his site only through a release); E: a content-only repository built against his local engine (two repositories to agree on every live change) | **Decided 2026-10-14: D.** His live site never moves; a second site tests releases |
+| O16 | Visitor counts on a person's site | Three tiers of their own services (§9.5): GoatCounter (Simple), Umami Cloud with Microsoft Clarity as an add-on (Balanced), PostHog in memory only by default, or GA4 (Powerful); tools that need a cookie banner only in Balanced's add-on and Powerful, with the banner turned on with them | Before managed sites ship |
+| O17 | How a reader's agreement to a private page (access spec §7.6) reaches a person without a relay | Kept and shown in the Access screen once the reader opens the page; emailed only where the site's contact can carry it (the owner's relay; Web3Forms if its terms allow it) | Before private pages ship to managed sites (stage 5) |
 
 ## 15. Critique of v1, and what changed
 
