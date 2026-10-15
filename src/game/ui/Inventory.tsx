@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { useStore } from 'zustand';
 import { faBriefcase, faDog } from '@fortawesome/free-solid-svg-icons';
+import { RESIDENTS } from '../platform/residents';
 import type { GameController } from '../controller';
 import { HOTBAR, type Slot } from '../inventory/inventory';
 import { itemDef, stackLabel, type ItemId } from '../inventory/items';
@@ -93,6 +94,7 @@ export function Hotbar({ controller }: { controller: GameController }) {
             I
           </span>
         </Button>
+        {RESIDENTS && (
         <Button
           variant="bare"
           className="slot whistle-btn"
@@ -109,6 +111,7 @@ export function Hotbar({ controller }: { controller: GameController }) {
             F
           </span>
         </Button>
+        )}
       </div>
     </div>
   );

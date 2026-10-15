@@ -27,17 +27,18 @@ export const SITE_NAME: string = (typeof __SITE_NAME__ === 'string' && __SITE_NA
 export const SITE_DESCRIPTION = `The portfolio of ${SITE_NAME}.`;
 
 /** Defined by integrations/editor.mjs (integrations/features.mjs): the parts of the engine this site has. */
-declare const __SITE_FEATURES__: { planet: boolean; designLibrary: boolean; docs: boolean; managed?: boolean } | undefined;
+declare const __SITE_FEATURES__: { planet: boolean; designLibrary: boolean; docs: boolean; managed?: boolean; residents?: boolean } | undefined;
 
 /**
  * The parts of the engine this site has: the planet, the design library, the documentation (desktop spec
  * §9.1), and whether it's a managed site (a person's, made by Atiya Studio: edit mode leaves out the
- * owner's developer tools).
+ * owner's developer tools), and whether the planet has the owner's residents (plan M3a).
  */
-export const SITE_FEATURES: { planet: boolean; designLibrary: boolean; docs: boolean; managed: boolean } = {
+export const SITE_FEATURES: { planet: boolean; designLibrary: boolean; docs: boolean; managed: boolean; residents: boolean } = {
   planet: true,
   designLibrary: true,
   docs: true,
   managed: false,
+  residents: true,
   ...(typeof __SITE_FEATURES__ === 'object' && __SITE_FEATURES__ ? __SITE_FEATURES__ : {}),
 };

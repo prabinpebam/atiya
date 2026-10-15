@@ -37,7 +37,7 @@ export function hasPlanetStructure(contentRoot) {
 
 /**
  * @param {{ root: string, contentRoot: string }} o the project's root and the content folder in use
- * @returns {{ planet: boolean, designLibrary: boolean, docs: boolean, managed: boolean }}
+ * @returns {{ planet: boolean, designLibrary: boolean, docs: boolean, managed: boolean, residents: boolean }}
  */
 export function siteFeatures({ root, contentRoot }) {
   // a managed site's atiya.json sits beside its content: at the root in its build, beside CONTENT_ROOT in dev
@@ -56,5 +56,7 @@ export function siteFeatures({ root, contentRoot }) {
     designLibrary: atiya ? atiya.features?.designLibrary === true : true,
     docs: atiya ? atiya.features?.docs === true : existsSync(join(root, 'documentation', 'docs-manifest.json')),
     managed: !!atiya,
+    // the planet's residents (Chopper, the family, Prabin) and the owner's music are his alone (plan M3a, O5, O6)
+    residents: !atiya,
   };
 }

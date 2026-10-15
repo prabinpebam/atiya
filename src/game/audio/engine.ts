@@ -5,6 +5,7 @@
  */
 import { AUDIO } from './audioManifest';
 import { MUSIC } from './musicManifest';
+import { RESIDENTS } from '../platform/residents';
 import { CHORDS, birdsSing, cricketLevel, frogLevel, nextBirdDelay, nextCroakDelay, nightSoon, pickVariant, strumSamples, windMix, type Surface } from './audioLogic';
 import { withBase } from '../platform/base';
 
@@ -150,7 +151,8 @@ export class SoundEngine {
   /** Start the music (once unlocked, with sound and music on): a random track, fading in gently. */
   private startMusic(): void {
     const ctx = this.ctx;
-    if (!ctx || !this.master || !this.enabled || !this.musicOn || typeof Audio === 'undefined') return;
+    // the music is the owner's own tracks, on his site alone (plan M3a, O6)
+    if (!RESIDENTS || !ctx || !this.master || !this.enabled || !this.musicOn || typeof Audio === 'undefined') return;
     if (this.music) {
       this.resumeMusic();
       return;

@@ -19,7 +19,7 @@ import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeStarter } from '../apps/desktop/src/core/setup/starter.mjs';
 import { atiyaJson } from '../apps/desktop/src/core/setup/files.mjs';
-import { PLANET_ASSETS } from '../integrations/site-only.mjs';
+import { PLANET_ASSETS, RESIDENT_ASSETS } from '../integrations/site-only.mjs';
 import { writeFileSync } from 'node:fs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -74,11 +74,10 @@ try {
   const home = read(join(dist, 'index.html'));
   check(home.includes(`>${NAME}</a>`), `the header names the site "${NAME}"`);
   check(/<title>[^<]*Ada Lovelace/.test(home), 'the home page\'s title is the site\'s');
-  // the access agreement's words name the owner until O14 is decided (desktop spec §14), and the planet's
-  // host is the owner (Prabin's welcome, his family) until stage 8 makes Little planet for anyone (O5)
-  const hostedByOwner = (f) => !noPlanet && relative(dist, f).replace(/\\/g, '/') === 'play/index.html';
-  const named = html.filter((f) => !hostedByOwner(f) && read(f).replace(/and Prabin is told\./g, '').match(/Prabin|Pebam/));
-  check(named.length === 0, `no page names the engine's owner${named.length ? `: ${named.map((f) => relative(dist, f)).join(', ')}` : ''}${noPlanet ? '' : ' (but the planet, whose host is his until stage 8)'}`);
+  // the access agreement's words name the owner until O14 is decided (desktop spec §14); the planet's welcome is
+  // the site's own person's since M3a (O5)
+  const named = html.filter((f) => read(f).replace(/and Prabin is told\./g, '').match(/Prabin|Pebam/));
+  check(named.length === 0, `no page names the engine's owner${named.length ? `: ${named.map((f) => relative(dist, f)).join(', ')}` : ''}`);
   check(!existsSync(join(dist, 'design')) && !existsSync(join(dist, 'docs')), 'no design library or documentation (the owner\'s, off for a managed site)');
   const extras = html.filter((f) => /href="[^"]*\/(design|docs)\/"/.test(read(f)));
   check(extras.length === 0, `no page links to them${extras.length ? `: ${extras.slice(0, 5).map((f) => relative(dist, f)).join(', ')}` : ''}`);
@@ -116,6 +115,13 @@ try {
       check(budgets, 'every bundle budget holds, the telemetry shim and the counting tools included');
     }
     check(home.includes('Explore the planet'), 'the home page offers the planet');
+    // Little planet for anyone (plan M3a): none of the owner's residents or music, and the site's own person says hello
+    const residentChunks = readdirSync(join(dist, '_astro')).filter((f) => /^(Chopper|ChopperCard|home)\./.test(f));
+    check(residentChunks.length === 0, `no chunk of the owner's residents (Chopper, his card, the home and family)${residentChunks.length ? `: ${residentChunks.join(', ')}` : ''}`);
+    const residentFiles = RESIDENT_ASSETS.filter((f) => existsSync(join(dist, f)));
+    check(residentFiles.length === 0, `none of their files or the owner's music${residentFiles.length ? `: ${residentFiles.join(', ')}` : ''}`);
+    const play = read(join(dist, 'play', 'index.html'));
+    check(play.includes(`aria-label="Talking with ${NAME}"`) && play.includes(`>${NAME}</p>`) && play.includes('Hi, I’m Ada Lovelace') && play.includes('class="talk-initials"'), `the welcome is the site's person's: ${NAME}, by name and initials`);
     check(existsSync(join(dist, 'play', 'workshop', 'index.html')), 'the buildings\' pages are built');
     check(readdirSync(join(dist, '_astro')).some((f) => f.startsWith('game-')), 'the game\'s chunks are there');
   }

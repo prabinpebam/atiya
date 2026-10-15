@@ -86,10 +86,13 @@ function greeting(container: HTMLElement, screen: LoadScreen): Greeting | null {
     // (a link or another button keeps its own Enter)
     const other = t?.closest('a, button') && !t.closest('[data-greeting]');
     if (e.code === 'KeyE' || (e.code === 'Enter' && !other)) {
+      // (the welcome's keys are its own: they don't reach the planet, which may be live under it)
       e.preventDefault();
+      e.stopPropagation();
       if (!e.repeat) next();
     } else if ((e.code === 'Space' && !other) || e.code === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       if (!e.repeat) close();
     }
   }

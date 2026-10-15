@@ -1,6 +1,10 @@
 import { ImageBitmapLoader, LinearMipmapLinearFilter, NoColorSpace, RepeatWrapping, SRGBColorSpace, Texture, TextureLoader } from 'three';
 import { TEXTURES, type TextureName } from './textureManifest';
 import { withBase } from '../platform/base';
+import { RESIDENTS } from '../platform/residents';
+
+/** The textures only the owner's residents use. */
+const RESIDENT_TEXTURES = new Set<string>(['chopper-fur']);
 
 /**
  * Generated textures (see scripts/build-textures.py), fetched in tiers (progressive-loading.md §5.7):
@@ -17,7 +21,8 @@ const preloads = new Map<TextureTier, Promise<void>>();
 
 /** The textures of a loading tier. */
 export function tierTextures(tier: TextureTier): TextureName[] {
-  return (Object.keys(TEXTURES) as TextureName[]).filter((n) => ((TEXTURES[n] as { tier?: number }).tier ?? 1) === tier);
+  // Chopper's fur only where he lives (plan M3a)
+  return (Object.keys(TEXTURES) as TextureName[]).filter((n) => ((TEXTURES[n] as { tier?: number }).tier ?? 1) === tier && (RESIDENTS || !RESIDENT_TEXTURES.has(n)));
 }
 
 function configure(name: TextureName, t: Texture): Texture {

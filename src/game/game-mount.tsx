@@ -6,6 +6,7 @@ import type { LandmarkData } from './types';
 import { grassEnv } from './world/grassEnv';
 import { prepareGround } from './world/Planet';
 import { preloadTextures, textureStatus, tierTextures } from './world/textures';
+import { RESIDENTS } from './platform/residents';
 
 /** The page's loading scene (platform/greeting.ts), if the gate started it. */
 const loadScreen = () => (window as unknown as { __loadScreen?: { progress(f: number): void; live(): void } }).__loadScreen;
@@ -64,8 +65,9 @@ export async function mountGame(container: HTMLElement, landmarks: LandmarkData[
   // and the crafting level the ground under what they build), and drawn once summoned.
   const [, chopper, home, craft, touch] = await Promise.all([
     textures,
-    import('./world/Chopper').catch(() => null),
-    import('./world/home').catch(() => null),
+    // the owner's residents only on his own site (plan M3a): a build without them never emits these chunks
+    RESIDENTS ? import('./world/Chopper').catch(() => null) : null,
+    RESIDENTS ? import('./world/home').catch(() => null) : null,
     import('./world/craft').catch(() => null),
     // touch controls (game-ui/touch.md): only where there's a touchscreen
     matchMedia('(any-pointer: coarse)').matches ? import('./input/touch').catch(() => null) : null,

@@ -10,7 +10,10 @@ import { TEXTURES } from '../game/world/textureManifest';
 import { CHARACTERS } from '../game/player/characters';
 import { PLACES } from '../game/world/places';
 import { landmarksFrom } from '../game/world/modeLandmarks';
-import { content, getModeData, getSite } from '../site/content/repository';
+import { content, getModeData, getPerson, getSite } from '../site/content/repository';
+import { picture } from '../site/content/pictures';
+import { SITE_FEATURES } from '../site/design/meta';
+import { initialsOf, siteWelcomeLines } from '../game/platform/siteWelcome';
 import type { LandmarkData } from '../game/types';
 
 // the buildings: the world's (fixed, in code) joined with the mode data the host builds from the content
@@ -32,7 +35,13 @@ if (errors.length) {
 const json = JSON.stringify(data).replace(/</g, '\\u003c');
 // Prabin's welcome, shown from the first paint (progressive-loading.md §5.3): the keys' version, the
 // touch version and a returning visitor's short one; the page picks one before it paints
-const greeting = { first: welcomeLines(null, false), touch: welcomeLines(TOUCH_COPY.hint, false), back: welcomeLines(null, true) };
+// on a site without the owner's residents (plan M3a) the site's own person welcomes, in the planet structure's words
+const owner = getPerson(getSite().owner);
+const hostName = SITE_FEATURES.residents ? 'Prabin' : (owner?.name ?? siteName);
+const hostHead = SITE_FEATURES.residents ? withBase('/avatars/npc/prabin.webp') : owner?.avatar ? (await picture(owner.avatar, 'card')).thumb : null;
+const own = content().planet?.welcome;
+const lines = (touch: readonly string[] | null, back: boolean) => (SITE_FEATURES.residents ? welcomeLines(touch, back) : siteWelcomeLines({ name: hostName, lines: own, touch, back }));
+const greeting = { first: lines(null, false), touch: lines(TOUCH_COPY.hint, false), back: lines(null, true) };
 const greetingJson = JSON.stringify(greeting).replace(/</g, '\\u003c');
 // what the planet needs before it's live (tier 1), fetched as soon as the gate passes (§5.7)
 const critical = {
@@ -72,9 +81,9 @@ const cross = icon(faXmark);
       <div class="load-bar" aria-hidden="true"><span class="load-fill" data-load-fill></span></div>
       <p class="load-status" role="status" data-load-status></p>
     </div>
-    <section class="card talk-box lane has-head" role="dialog" aria-label="Talking with Prabin" data-greeting hidden>
-      <div class="talk-head" aria-hidden="true"><img src={withBase('/avatars/npc/prabin.webp')} alt="" width="192" height="192" /></div>
-      <p class="talk-name">Prabin</p>
+    <section class="card talk-box lane has-head" role="dialog" aria-label={`Talking with ${hostName}`} data-greeting hidden>
+      <div class="talk-head" aria-hidden="true">{hostHead ? <img src={hostHead} alt="" width="192" height="192" /> : <span class="talk-initials">{initialsOf(hostName)}</span>}</div>
+      <p class="talk-name">{hostName}</p>
       <p class="talk-line" data-greeting-line>{greeting.first[0]}</p>
       <div class="talk-actions">
         <button type="button" class="btn primary talk-next" data-greeting-next>

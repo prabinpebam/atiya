@@ -27,6 +27,7 @@ import { Hotbar, InventoryScreen } from './Inventory';
 import { Icon } from './Icon';
 import { Button, IconButton, KeyCap } from './primitives';
 import { focusLane } from './lanes';
+import { RESIDENTS } from '../platform/residents';
 
 // (the targets a chunk adds bring their own icon: the crafting table, the site, the watering can, the plants)
 const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment, notice: faClipboardList } as const;
@@ -78,7 +79,8 @@ function Later({ controller, open, Screen }: { controller: GameController; open:
 }
 
 // Chopper's profile card (with its own little 3D canvas) loads the first time it's opened
-const ChopperCard = lazy(() => import('./ChopperCard'));
+// (his profile card only where he lives: plan M3a)
+const ChopperCard = RESIDENTS ? lazy(() => import('./ChopperCard')) : null;
 
 function ChopperCardSlot({ controller }: { controller: GameController }) {
   const open = useStore(controller.store, (s) => s.chopperOpen);
@@ -89,7 +91,7 @@ function ChopperCardSlot({ controller }: { controller: GameController }) {
   if (!wanted) return null;
   return (
     <Suspense fallback={null}>
-      <ChopperCard controller={controller} />
+      {ChopperCard && <ChopperCard controller={controller} />}
     </Suspense>
   );
 }

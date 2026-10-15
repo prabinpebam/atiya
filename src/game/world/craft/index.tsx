@@ -29,6 +29,7 @@ import { CraftScreens } from './ui';
 import { attachDeck } from './deck';
 import { attachFurnace } from './furnace';
 import { attachGear } from './gear';
+import { RESIDENTS } from '../../platform/residents';
 
 const KEY = 'site.dogHouse';
 const SWING_KEY = 'site.swing';
@@ -113,7 +114,8 @@ export interface Crafting {
 
 export function attachCraft(controller: GameController): CraftAttachment | null {
   const R = CONFIG.planetRadius;
-  const site = controller.props.home?.dogHouse ?? null;
+  // Chopper's house, where he lives (plan M3a: not on a site without the owner's residents)
+  const site = RESIDENTS ? (controller.props.home?.dogHouse ?? null) : null;
   const saved = load();
   const home = controller.props.home;
   const swingSaved = loadSwing();

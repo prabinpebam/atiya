@@ -565,9 +565,10 @@ describe('the dev integration', () => {
       const define = c.define as Record<string, string>;
       expect(define).toMatchObject({ __SITE_CONTENT_ROOT__: JSON.stringify(join(ROOT, 'content')), __SITE_PRIVATE_ROOT__: JSON.stringify(join(ROOT, 'private-pages')) });
       // the site's own name and features, from its content (documentation/desktop/plan.md, stage 4)
-      expect(Object.keys(define).sort()).toEqual(['__SITE_CONTENT_ROOT__', '__SITE_FEATURES__', '__SITE_NAME__', '__SITE_PARENT_DOMAIN__', '__SITE_PRIVATE_ROOT__']);
+      expect(Object.keys(define).sort()).toEqual(['__GAME_RESIDENTS__', '__SITE_CONTENT_ROOT__', '__SITE_FEATURES__', '__SITE_NAME__', '__SITE_PARENT_DOMAIN__', '__SITE_PRIVATE_ROOT__']);
       expect(JSON.parse(define.__SITE_NAME__)).toBe(JSON.parse(readFileSync(join(ROOT, 'content', 'site.json'), 'utf8')).name);
-      expect(JSON.parse(define.__SITE_FEATURES__)).toMatchObject({ planet: true, managed: false });
+      expect(JSON.parse(define.__SITE_FEATURES__)).toMatchObject({ planet: true, managed: false, residents: true });
+    expect(define.__GAME_RESIDENTS__).toBe('true');
     }
   });
 

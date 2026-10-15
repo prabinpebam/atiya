@@ -16,6 +16,7 @@ Spec, plan and Definition of Done: [documentation/poc-3d-navigation/](./document
 - All actionable UI (prompts, dialogs, menus) is **semantic DOM**, not in-canvas. The classic site must stay reachable from every state.
 - `/play` uses a **capability-gated dynamic import**, not a `client:only` island. `src/game/platform/gate.ts` must never import React or three. Game code is emitted as `game-*` chunks, and gated-out devices must never request them.
 - `window.__game` exists only in dev and `--mode test` builds, never in production.
+- **The residents are the owner's** (desktop plan M3a): Chopper, the family, Prabin, his music and anything that names them are gated by `RESIDENTS` (`src/game/platform/residents.ts`, the build constant `__GAME_RESIDENTS__`: on for this repository, off for a site made by Atiya Studio). Gate a new resident `import()` with it and list its chunk in `RESIDENT_CHUNKS` and its files in `RESIDENT_ASSETS` (`integrations/site-only.mjs`); `build-starter.mjs` fails a managed build that still has one. On such a site the welcome is the site's person's (`platform/siteWelcome.ts`).
 
 ### Site design system (the website, not the game)
 

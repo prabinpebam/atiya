@@ -38,6 +38,7 @@ import { streamLevel, surfaceAt, type Surface } from './audio/audioLogic';
 import { characterById, type CharacterId } from './player/characters';
 import { withBase } from './platform/base';
 import { Summoner } from './world/summoner';
+import { RESIDENTS } from './platform/residents';
 import { waveTimes, type SummonGroup } from './world/summon';
 
 const PLAY_PATH = withBase('/play/');
@@ -612,6 +613,13 @@ export class GameController {
   private welcomeFromPage(open: boolean): void {
     const page = (window as unknown as { __greeting?: PageGreeting }).__greeting;
     if (!page) return;
+    // no one to hand it to (a site without the owner's residents, plan M3a): the page's own box stays, with its
+    // own keys, until it's read or the visitor sets off
+    if (open && !page.closed && !this.home) {
+      this.pageWelcome = page;
+      prefs.setOnboardingSeen();
+      return;
+    }
     const still = open && !page.closed && this.home;
     page.handOver();
     prefs.setOnboardingSeen();
@@ -620,6 +628,13 @@ export class GameController {
     const at = moveAlong(p, this.forwardLocal(new Vector3()), 1.25 / CONFIG.planetRadius);
     const g = this.home.greet(at, tangentToward(at, p) ?? new Vector3(0, 0, 1), { touch: null, back: false });
     this.openTalk(g.id, page.lines, { index: page.index, welcome: true });
+  }
+
+  /** The page's welcome left up (no one to hand it to): a step or a click on the planet ends it. */
+  private pageWelcome: PageGreeting | null = null;
+  private endPageWelcome(): void {
+    this.pageWelcome?.handOver();
+    this.pageWelcome = null;
   }
 
   focusRegion(): void {
@@ -928,6 +943,7 @@ export class GameController {
     }
     // Prabin's welcome doesn't hold you: a step ends it and walks (progressive-loading.md §5.4)
     if (s.talk) this.endTalk();
+    if (MOVES.has(action)) this.endPageWelcome();
     // full planet takes the keys it uses (turning, going back) and the ones that would move the character
     if (this.overview?.key(action, true, e.code)) return;
     if (action === 'back') {
@@ -1358,6 +1374,7 @@ export class GameController {
   walkToWorldPoint(point: Vector3): void {
     // (a click on the planet ends Prabin's welcome and walks, as a step does)
     if (this.store.getState().talk?.welcome) this.endTalk();
+    this.endPageWelcome();
     const s = this.store.getState();
     if (s.phase !== 'playing' || s.openId || s.menuOpen || s.chopperOpen || s.talk || s.craftScreen || this.sim.travel || this.overview?.on) return;
     if (this.seatMotion.stage || this.rest.kind) {
@@ -1442,6 +1459,8 @@ export class GameController {
 
   /** F, or the whistle button: he drops everything and comes (a 2 s cooldown). */
   whistle(): void {
+    // (no Chopper on a site without the owner's residents: plan M3a)
+    if (!RESIDENTS) return;
     const s = this.store.getState();
     if (s.phase !== 'playing' || s.openId || s.chopperOpen || this.sim.travel) return;
     const now = performance.now();

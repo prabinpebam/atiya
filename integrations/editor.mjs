@@ -183,8 +183,8 @@ export default function editor() {
   let editing = false;
   /** The site's name the running server was started with. */
   let siteName = '';
-  /** @type {{ planet: boolean, designLibrary: boolean, docs: boolean, managed: boolean }} */
-  let features = { planet: true, designLibrary: true, docs: true, managed: false };
+  /** @type {{ planet: boolean, designLibrary: boolean, docs: boolean, managed: boolean, residents: boolean }} */
+  let features = { planet: true, designLibrary: true, docs: true, managed: false, residents: true };
   return {
     name: 'site-editor',
     hooks: {
@@ -206,6 +206,8 @@ export default function editor() {
               __SITE_NAME__: JSON.stringify(siteName),
               __SITE_PARENT_DOMAIN__: JSON.stringify(parentDomainOf(config.site, override && command === 'dev' ? contentRoot : root)),
               __SITE_FEATURES__: JSON.stringify(features),
+              // a plain boolean, so a build without the planet's residents drops their chunks (plan M3a)
+              __GAME_RESIDENTS__: JSON.stringify(features.residents),
             },
             // the private masters a build imports (masters.ts globs through this alias)
             resolve: { alias: { '@private-pages': privateRoot } },
@@ -345,6 +347,7 @@ export default function editor() {
               if (!define) continue;
               define.__SITE_NAME__ = JSON.stringify(siteName);
               define.__SITE_FEATURES__ = JSON.stringify(features);
+        define.__GAME_RESIDENTS__ = JSON.stringify(features.residents);
             }
             restartWhenQuiet();
           }

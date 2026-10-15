@@ -10,6 +10,7 @@ import type { TimeMode } from '../world/timeOfDay';
 import { Button, KeyCap } from './primitives';
 import { Dialog } from './overlays';
 import { applyGameTheme, gameTheme, gameThemeStorage, GAME_THEME_EVENT } from '../platform/theme';
+import { RESIDENTS } from '../platform/residents';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -174,7 +175,7 @@ function HowToPlay({ controller }: { controller: GameController }) {
               <Keys k="X" />: sit on the grass. <Keys k="Z" />: lie back and look at the sky. The same key, <Keys k="Space" /> or a step gets you up.
             </li>
             <li>
-              <Keys k="I" /> or <Keys k="B" />: open or close the backpack. <Keys k="1" />–<Keys k="9" />: pick a hotbar slot. <Keys k="F" />: whistle for Chopper.
+              <Keys k="I" /> or <Keys k="B" />: open or close the backpack. <Keys k="1" />–<Keys k="9" />: pick a hotbar slot.{RESIDENTS && <> <Keys k="F" />: whistle for Chopper.</>}
             </li>
             <li>
               <Keys k="T" />: fast travel, every place as a tile (its number flies there). <Keys k="M" />: the menu.
@@ -303,10 +304,12 @@ export default function MenuDialog({ controller }: { controller: GameController 
                 <input type="checkbox" checked={soundOn} onChange={(e) => controller.setSound(e.currentTarget.checked)} />
                 Sound effects
               </label>
-              <label className="check">
-                <input type="checkbox" checked={musicOn} onChange={(e) => controller.setMusic(e.currentTarget.checked)} />
-                Background music
-              </label>
+              {RESIDENTS && (
+                <label className="check">
+                  <input type="checkbox" checked={musicOn} onChange={(e) => controller.setMusic(e.currentTarget.checked)} />
+                  Background music
+                </label>
+              )}
               <fieldset className="radio-group">
                 <legend>Time of day</legend>
                 {TIME_OPTIONS.map(([value, label]) => (

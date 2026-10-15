@@ -476,7 +476,11 @@ const place = z.strictObject({
 });
 
 /** The planet structure (spec §5.2): each of the seven buildings once (V14). */
-export const planetStructure = z.strictObject({ places: z.array(place) });
+export const planetStructure = z.strictObject({
+  places: z.array(place),
+  /** What the site's person says to welcome a visitor, a line at a time, on a site without the owner's residents (desktop plan M3a); left out, a generic hello. */
+  welcome: z.array(z.string().min(1).max(280)).min(1).max(4).optional(),
+});
 
 /** A page's old address sent on to its new one (spec §3.5, V19): both paths on this site. */
 export const redirects = z.array(
