@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { astroMode } from './roots.mjs';
 
 /** The variables the services become. */
-export const SERVICE_VARS = ['PUBLIC_CONTACT_ENDPOINT', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_POSTHOG_HOST'];
+export const SERVICE_VARS = ['PUBLIC_CONTACT_ENDPOINT', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_POSTHOG_HOST', 'PUBLIC_COUNTS'];
 
 /**
  * What the build's variables are, from the site's settings. Pure.
@@ -29,12 +29,32 @@ export const SERVICE_VARS = ['PUBLIC_CONTACT_ENDPOINT', 'PUBLIC_POSTHOG_KEY', 'P
 export function serviceVars(site, { command, mode, siteUrl, base }) {
   if (mode === 'test') return null;
   const s = site?.services ?? {};
-  const published = command === 'build' && !!siteUrl && !!s.telemetry?.site && sameAddress(s.telemetry.site, siteUrl, base);
+  const forHere = (/** @type {string | undefined} */ site) => command === 'build' && !!siteUrl && !!site && sameAddress(site, siteUrl, base);
+  const published = forHere(s.telemetry?.site);
   return {
     PUBLIC_CONTACT_ENDPOINT: s.contact?.endpoint ?? '',
     PUBLIC_POSTHOG_KEY: published ? (s.telemetry?.key ?? '') : '',
     PUBLIC_POSTHOG_HOST: published ? (s.telemetry?.host ?? '') : '',
+    PUBLIC_COUNTS: countsVar(s, forHere(s.counts?.site ?? s.telemetry?.site)),
   };
+}
+
+/**
+ * The other counting tools (desktop spec §9.5) as one variable, for the telemetry shim to load their own chunk:
+ * a JSON list of `{ tool, …ids }` (`goatcounter`, `umami`, `ga4`, `clarity`), or '' (none, or a build for another
+ * address). Clarity counts beside the site's tool and, without one, at the address of PostHog's. Pure.
+ * @param {any} s services @param {boolean} here a build for the tools' address
+ */
+export function countsVar(s, here) {
+  if (!here) return '';
+  const c = s.counts;
+  const tools = [
+    ...(c?.kind === 'goatcounter' ? [{ tool: 'goatcounter', code: c.code }] : []),
+    ...(c?.kind === 'umami' ? [{ tool: 'umami', id: c.id, ...(c.host ? { host: c.host } : {}) }] : []),
+    ...(c?.kind === 'ga4' ? [{ tool: 'ga4', id: c.id }] : []),
+    ...(s.clarity?.id ? [{ tool: 'clarity', id: s.clarity.id }] : []),
+  ];
+  return tools.length ? JSON.stringify(tools) : '';
 }
 
 /**

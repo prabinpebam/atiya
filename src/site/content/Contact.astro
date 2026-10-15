@@ -1,0 +1,33 @@
+---
+/**
+ * The Contact page's lead (documentation/contact/spec.md §2.1, desktop spec §9.5): by the site's setting, the
+ * Contact form (the owner's contact service, or Web3Forms with the person's key), an Email me button, or a form
+ * embedded from a service they chose. Read from the content at render time, so edit mode shows a change at
+ * once; a test build always draws the relay form on .env.test's made-up endpoint.
+ */
+import ContactForm from '../components/compounds/ContactForm.astro';
+import ContactPanel from '../components/compounds/ContactPanel.astro';
+import { contactView, type ContactSetting } from '../services/services';
+import { getSite } from './repository';
+
+interface Props {
+  /** The Privacy page, linked under the form's Send. */
+  privacy?: string;
+}
+
+const view = contactView(getSite().services?.contact as ContactSetting | undefined, { test: import.meta.env.MODE === 'test', testEndpoint: import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | undefined });
+---
+
+{
+  view.kind === 'relay' ? (
+    <ContactForm endpoint={view.endpoint} privacy={Astro.props.privacy} />
+  ) : view.kind === 'web3forms' ? (
+    <ContactForm web3forms={view.key} privacy={Astro.props.privacy} />
+  ) : view.kind === 'email' ? (
+    <ContactPanel email={view.address} />
+  ) : view.kind === 'embed' ? (
+    <ContactPanel form={{ url: view.url, name: view.name }} />
+  ) : (
+    <ContactForm privacy={Astro.props.privacy} />
+  )
+}

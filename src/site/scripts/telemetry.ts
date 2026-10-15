@@ -33,8 +33,18 @@ function enabled(): boolean {
   if (o.store) s?.setItem(OPT_OUT_KEY, o.store);
   else if (o.store === null) s?.removeItem(OPT_OUT_KEY);
   if (o.off) return false;
+  // the other counting tools (desktop spec §9.5): their own chunk, on idle, whatever PostHog does
+  const counts = import.meta.env.PUBLIC_COUNTS;
+  if (counts && !TEST) idleAfter(loadAfter, () => import('./countsClient').then((m) => m.startCounts(counts), () => {}));
   return TEST ? s?.getItem('site.test.telemetry') === '1' : !!import.meta.env.PUBLIC_POSTHOG_KEY;
 }
+
+let loadAfter: Promise<unknown> | undefined;
+/** Runs `f` on idle, after `after` if given. */
+const idleAfter = (after: Promise<unknown> | undefined, f: () => unknown) => {
+  const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 4000 }) : setTimeout(f, 1500));
+  void (after ?? Promise.resolve()).then(idle, idle);
+};
 
 /** What this page is: a protected page, the Sign in page or a page showing shared cards is allowlisted. */
 export function pageFacts(): PageFacts {
@@ -79,6 +89,7 @@ function onAccess(e: Event) {
  * so it never slows the planet's own loading).
  */
 export function startTelemetry(o: { loadAfter?: Promise<unknown> } = {}): void {
+  loadAfter = o.loadAfter;
   if (started || !enabled()) return;
   started = true;
   const d = document;
@@ -113,6 +124,5 @@ export function startTelemetry(o: { loadAfter?: Promise<unknown> } = {}): void {
         /* blocked or offline: nothing is sent */
       },
     );
-  const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(load, { timeout: 4000 }) : setTimeout(load, 1500));
-  void (o.loadAfter ?? Promise.resolve()).then(idle, idle);
+  idleAfter(o.loadAfter, load);
 }

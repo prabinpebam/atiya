@@ -9,7 +9,7 @@
  */
 import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
-import ContactForm from '../components/compounds/ContactForm.astro';
+import Contact from './Contact.astro';
 import Blocks from './Blocks.astro';
 import { getOpenRoutes, getPlanet, getRoutes, getSite, placePages, placeSection } from './repository';
 import { pageMeasure } from './reading';
@@ -84,7 +84,7 @@ const stories = current
       empty="Nothing here yet. This building is still being fitted out."
       frame={frame}
     >
-      {isContact && <ContactForm slot="lead" endpoint={import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | undefined} privacy={privacy} />}
+      {isContact && <Contact slot="lead" privacy={privacy} />}
     </IndexLayout>
   )
 }

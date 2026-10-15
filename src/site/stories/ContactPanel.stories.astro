@@ -1,0 +1,16 @@
+---
+import Example from '../library/Example.astro';
+import ContactPanel from '../components/compounds/ContactPanel.astro';
+---
+
+<Example title="Email me" layout="block" description="The default on a new site: a button that opens the visitor's email app, with the address written out to copy.">
+  <ContactPanel email="ada@example.com" id="story-contact-email" level={3} />
+</Example>
+
+<Example title="An embedded form" layout="block" description="A form or booking page from a service the person chose, in a frame titled after it, with a link to open it in a new tab. Here the link goes nowhere real.">
+  <ContactPanel form={{ url: 'https://forms.example.invalid/contact', name: 'Tally' }} id="story-contact-embed" level={3} />
+</Example>
+
+<Example title="Not set up" layout="block" description="With neither, it says so.">
+  <ContactPanel id="story-contact-panel-unset" level={3} />
+</Example>

@@ -8,7 +8,7 @@
  */
 import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
-import ContactForm from '../components/compounds/ContactForm.astro';
+import Contact from './Contact.astro';
 import Blocks from './Blocks.astro';
 import { getArticle, getOpenRoutes, getPlanet, getRoutes, getSite, getStructure } from './repository';
 import { pageMeasure } from './reading';
@@ -46,7 +46,6 @@ const contact = withBase(getOpenRoutes().find((r) => r.node.id === site.contactP
 // the Contact page opens with its form (documentation/contact/spec.md §2.1), which links to the Privacy page
 const isContact = node?.kind === 'hub' && node.id === site.contactPage;
 const privacy = withBase(getOpenRoutes().find((r) => r.node.id === site.privacyPage)?.path ?? '/');
-const contactEndpoint = import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | undefined;
 const signInHref = (from: string) => withBase(`/sign-in/?return=${encodeURIComponent(withBase(from))}`);
 // a private page: sealed in a build, open with its ribbon in dev; the build's sealer finds it in the provenance record
 const access = route?.access ?? 'open';
@@ -125,7 +124,7 @@ const shows = import.meta.env.DEV ? (article ? [article.id, ...relatedIds] : nod
         shows={shows}
         empty="Nothing here yet. This section is being written."
       >
-        {isContact && <ContactForm slot="lead" endpoint={contactEndpoint} privacy={privacy} />}
+        {isContact && <Contact slot="lead" privacy={privacy} />}
       </IndexLayout>
     )
   )

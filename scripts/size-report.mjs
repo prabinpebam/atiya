@@ -74,7 +74,7 @@ const pages = (dir) => readdirSync(join(DIST, dir), { withFileTypes: true }).fla
 const reached = staticClosure(js.filter((f) => /^game-mount\./.test(f)));
 // telemetry (documentation/access/spec.md §9.5): PostHog's own chunk, fetched on idle by the site and after
 // live by /play, never the game's
-const telemetry = staticClosure(js.filter((f) => /^telemetryClient\./.test(f)));
+const telemetry = staticClosure(js.filter((f) => /^(telemetryClient|countsClient)\./.test(f)));
 const siteOnly = [...new Set(pages('').filter((p) => p !== 'index.html' && p !== join('play', 'index.html')).flatMap(eagerScripts))].filter((f) => !reached.includes(f) && !gate.includes(f) && !landing.includes(f));
 const game = js.filter((f) => !gate.includes(f) && !landing.includes(f) && !siteOnly.includes(f) && !telemetry.includes(f));
 // the game the gate loads to become playable, and what it fetches later on demand
@@ -175,7 +175,7 @@ if (telemetry.length) {
   const everywhere = new Set(pages('').flatMap(eagerScripts));
   const telemetryKB = sum(telemetry.filter((f) => !everywhere.has(f)));
   console.log(`telemetry:        ${telemetryKB.toFixed(1)} KB gz, fetched on idle (budget ${TELEMETRY_BUDGET_KB} KB)`);
-  const eager = telemetry.filter((f) => /^telemetryClient\./.test(f) && everywhere.has(f));
+  const eager = telemetry.filter((f) => /^(telemetryClient|countsClient)\./.test(f) && everywhere.has(f));
   if (eager.length) {
     console.error(`✗ a page loads telemetry up front: ${eager.join(', ')}`);
     failed = true;
@@ -185,6 +185,16 @@ if (telemetry.length) {
     failed = true;
   }
 } else console.log('telemetry:        not in this build');
+// the other counting tools' loader (desktop spec §9.5): its own small chunk, fetched on idle, only in a build that has them
+const COUNTS_BUDGET_KB = 3;
+const countsKB = sum(js.filter((f) => /^countsClient\./.test(f)));
+if (countsKB) {
+  console.log(`counting tools:   ${countsKB.toFixed(2)} KB gz, fetched on idle (budget ${COUNTS_BUDGET_KB} KB)`);
+  if (countsKB > COUNTS_BUDGET_KB) {
+    console.error('✗ the counting tools\' loader is over budget');
+    failed = true;
+  }
+}
 if (gameKB > GAME_BUDGET_KB) {
   console.error(`✗ game JS over budget`);
   failed = true;

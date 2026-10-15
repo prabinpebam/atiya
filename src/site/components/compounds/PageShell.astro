@@ -9,6 +9,7 @@
  * @a11y Fetches the faces the first screen is set in first, so text doesn't re-wrap as fonts arrive (layout shift).
  * @a11y With router, links within the section change the page without a reload; the new page's title is announced.
  * @a11y Sets up the overlay scrollbars (the page's and every data-scrollbar region's): scrolling stays native, the handle only shows it.
+ * @a11y A build whose counting tools set cookies asks first, in a labelled notice at the foot of the screen, with Accept cookies and Decline.
  */
 import { ClientRouter } from 'astro:transitions';
 import '../../styles/fonts.css';
@@ -18,6 +19,9 @@ import frauncesItalic from '../../assets/fonts/fraunces-italic.woff2?url';
 import newsreaderRoman from '../../assets/fonts/newsreader-roman.woff2?url';
 import figtreeRoman from '../../assets/fonts/figtree-roman.woff2?url';
 import { SITE_DESCRIPTION, THEME_COLOR, withBase } from '../../design/meta';
+import Text from '../fundamentals/Text.astro';
+import Button from '../fundamentals/Button.astro';
+import { needsConsent, TOOL_NAMES, toolsOf } from '../../scripts/countsRules';
 
 /** The faces a page can ask to have first: the ones its opening sets in. */
 export type PreloadFace = 'display' | 'display-italic' | 'text' | 'ui';
@@ -72,6 +76,8 @@ const {
   shows,
 } = Astro.props;
 // social previews need an absolute URL: `site` is set when deploying
+// the counting tools that set cookies (desktop spec §9.5): the notice asks before they load
+const asks = toolsOf(import.meta.env.PUBLIC_COUNTS).filter(needsConsent).map((t) => TOOL_NAMES[t.tool]);
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
 // a build never names a protected page in its head; the dev server shows its real title
 const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
@@ -152,6 +158,21 @@ const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
   <body data-live-content={import.meta.env.DEV && !liveContent ? 'off' : undefined} data-live-shows={import.meta.env.DEV && shows ? shows.join(' ') : undefined}>
     <a class="skip" href="#main">Skip to content</a>
     <slot />
+    {
+      asks.length > 0 && (
+        <aside class="consent" aria-label="Cookies" data-consent hidden>
+          <Text variant="small">This site counts visits with {asks.join(' and ')}, which set cookies. Nothing is counted with them unless you accept.</Text>
+          <div class="consent-actions">
+            <Button size="sm" variant="primary" data-consent-answer="yes">
+              Accept cookies
+            </Button>
+            <Button size="sm" data-consent-answer="no">
+              Decline
+            </Button>
+          </div>
+        </aside>
+      )
+    }
   </body>
 </html>
 
@@ -210,5 +231,32 @@ const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
 
   .skip:focus {
     transform: none;
+  }
+
+  .consent {
+    position: fixed;
+    inset-inline: var(--space-4);
+    inset-block-end: var(--space-4);
+    z-index: var(--layer-toast);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
+    max-inline-size: var(--size-measure);
+    margin-inline: auto;
+    padding: var(--space-4) var(--space-5);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-md);
+  }
+
+  .consent[hidden] {
+    display: none;
+  }
+
+  .consent-actions {
+    display: flex;
+    gap: var(--space-3);
   }
 </style>

@@ -1,0 +1,211 @@
+{
+  "$comment": "The site's contact and visitor-count options (documentation/desktop/spec.md §9.5, plan stage 11; the research in documentation/desktop/site-services.md). Edit mode's Settings cards, the app's `atiya services` command and the site's skill read this file; tests/unit/servicesCatalogue.test.ts holds it to the content contract (src/site/content/schema.ts). Every value an option asks for is public by design: never a secret.",
+  "embedHosts": [
+    { "host": "tally.so", "name": "Tally" },
+    { "host": "docs.google.com", "path": "/forms/", "name": "Google Forms" },
+    { "host": "forms.office.com", "name": "Microsoft Forms" },
+    { "host": "forms.microsoft.com", "name": "Microsoft Forms" },
+    { "host": "jotform.com", "name": "Jotform" },
+    { "host": "cal.com", "name": "Cal.com" },
+    { "host": "calendly.com", "name": "Calendly" },
+    { "host": "fillout.com", "name": "Fillout" },
+    { "host": "formbricks.com", "name": "Formbricks" },
+    { "host": "airtable.com", "name": "Airtable" },
+    { "host": "zohopublic.com", "name": "Zoho Forms" },
+    { "host": "cognitoforms.com", "name": "Cognito Forms" },
+    { "host": "typeform.com", "name": "Typeform" }
+  ],
+  "contact": [
+    {
+      "id": "email",
+      "kind": "email",
+      "tier": "simple",
+      "name": "Email me",
+      "gives": "A button that opens the visitor's email app, addressed to you.",
+      "asks": "Nothing but the address it opens.",
+      "value": { "field": "address", "label": "Your email address", "shape": "email", "example": "ada@example.com" },
+      "steps": [{ "who": "agent", "text": "Write the address you want visitors to use (never GitHub's no-reply one)." }],
+      "cookies": false,
+      "check": "none"
+    },
+    {
+      "id": "web3forms",
+      "kind": "web3forms",
+      "tier": "simple",
+      "name": "Web3Forms",
+      "gives": "Your site's own Contact form, emailed to you on each message, with spam protection. No file uploads.",
+      "asks": "One key, sent to your inbox.",
+      "value": { "field": "key", "label": "Access key", "shape": "uuid", "example": "0f8fad5b-d9cb-469f-a165-70867728950e" },
+      "steps": [
+        { "who": "person", "text": "Enter your email on Web3Forms' page.", "url": "https://web3forms.com/" },
+        { "who": "person", "text": "Open the email Web3Forms sends and copy the access key." },
+        { "who": "agent", "text": "Paste the key here, then send yourself a test message from the Contact page." }
+      ],
+      "site": "https://web3forms.com/",
+      "pricing": "https://web3forms.com/pricing",
+      "cookies": false,
+      "check": "test-message"
+    },
+    {
+      "id": "tally",
+      "kind": "embed",
+      "tier": "balanced",
+      "name": "Tally",
+      "gives": "Your own form with any fields, unlimited answers free, and an email for each one.",
+      "asks": "A free account, a form you build, and its link.",
+      "value": { "field": "url", "label": "The form's link", "shape": "embed", "example": "https://tally.so/r/wA1bC2" },
+      "steps": [
+        { "who": "person", "text": "Sign up at Tally and build your form.", "url": "https://tally.so/" },
+        { "who": "person", "text": "Turn on email notifications in the form's settings." },
+        { "who": "person", "text": "Publish it and copy its link." },
+        { "who": "agent", "text": "Paste the link here." }
+      ],
+      "site": "https://tally.so/",
+      "pricing": "https://tally.so/pricing",
+      "cookies": false,
+      "check": "preview"
+    },
+    {
+      "id": "google-forms",
+      "kind": "embed",
+      "tier": "balanced",
+      "name": "Google Forms",
+      "gives": "A form most people know how to build, with the answers in a sheet.",
+      "asks": "A Google account, a form you build, and its link.",
+      "value": { "field": "url", "label": "The form's link", "shape": "embed", "example": "https://docs.google.com/forms/d/e/1FAIpQL/viewform" },
+      "steps": [
+        { "who": "person", "text": "Build the form in Google Forms.", "url": "https://forms.google.com/" },
+        { "who": "person", "text": "In Responses, turn on Get email notifications for new responses." },
+        { "who": "person", "text": "Choose Send, then the link, and copy the full link (not the short one)." },
+        { "who": "agent", "text": "Paste the link here." }
+      ],
+      "site": "https://forms.google.com/",
+      "pricing": "https://workspace.google.com/products/forms/",
+      "cookies": false,
+      "check": "preview"
+    },
+    {
+      "id": "jotform",
+      "kind": "embed",
+      "tier": "powerful",
+      "name": "Jotform",
+      "gives": "Long forms with conditions, file uploads and payments, and an email for each answer.",
+      "asks": "A free account and a form, built by you or by your agent through Jotform's API.",
+      "value": { "field": "url", "label": "The form's link", "shape": "embed", "example": "https://form.jotform.com/241234567890" },
+      "steps": [
+        { "who": "person", "text": "Sign up at Jotform.", "url": "https://www.jotform.com/" },
+        { "who": "person", "text": "Build the form, or give your agent an API key from Settings to build it." },
+        { "who": "agent", "text": "Paste the form's link here." }
+      ],
+      "site": "https://www.jotform.com/",
+      "pricing": "https://www.jotform.com/pricing/",
+      "cookies": false,
+      "check": "preview"
+    },
+    {
+      "id": "cal-com",
+      "kind": "embed",
+      "tier": "powerful",
+      "name": "Cal.com",
+      "gives": "Book a call: your free times, the visitor picks one, and you both get an email.",
+      "asks": "A free account, your calendar connected, and an event type.",
+      "value": { "field": "url", "label": "Your booking link", "shape": "embed", "example": "https://cal.com/ada/30min" },
+      "steps": [
+        { "who": "person", "text": "Sign up at Cal.com and connect your calendar.", "url": "https://cal.com/signup" },
+        { "who": "person", "text": "Make an event type and copy its link." },
+        { "who": "agent", "text": "Paste the link here." }
+      ],
+      "site": "https://cal.com/",
+      "pricing": "https://cal.com/pricing",
+      "cookies": false,
+      "check": "preview"
+    }
+  ],
+  "counts": [
+    {
+      "id": "goatcounter",
+      "kind": "goatcounter",
+      "tier": "simple",
+      "name": "GoatCounter",
+      "gives": "Visits, pages, where visitors came from and their countries. No cookies, so no banner.",
+      "asks": "A free account and its code name.",
+      "value": { "field": "code", "label": "Your code name", "shape": "goatcounter", "example": "ada" },
+      "steps": [
+        { "who": "person", "text": "Sign up at GoatCounter (a code name and your email).", "url": "https://www.goatcounter.com/signup" },
+        { "who": "agent", "text": "Type the code name here." }
+      ],
+      "site": "https://www.goatcounter.com/",
+      "pricing": "https://www.goatcounter.com/help/sponsor",
+      "dashboard": "https://{code}.goatcounter.com/",
+      "cookies": false,
+      "check": "dashboard"
+    },
+    {
+      "id": "umami",
+      "kind": "umami",
+      "tier": "balanced",
+      "name": "Umami Cloud",
+      "gives": "Visits and pages like GoatCounter, plus events and goals, in a nicer dashboard. No cookies.",
+      "asks": "A free account, your site added, and its website ID.",
+      "value": { "field": "id", "label": "Website ID", "shape": "uuid", "example": "0f8fad5b-d9cb-469f-a165-70867728950e" },
+      "steps": [
+        { "who": "person", "text": "Sign up at Umami Cloud.", "url": "https://cloud.umami.is/signup" },
+        { "who": "person", "text": "Add your site and copy its website ID." },
+        { "who": "agent", "text": "Paste the ID here." }
+      ],
+      "site": "https://umami.is/",
+      "pricing": "https://umami.is/pricing",
+      "dashboard": "https://cloud.umami.is/",
+      "cookies": false,
+      "check": "dashboard"
+    },
+    {
+      "id": "ga4",
+      "kind": "ga4",
+      "tier": "powerful",
+      "name": "Google Analytics",
+      "gives": "Audiences, sources and links to Search Console. It uses a cookie, so visitors are asked first.",
+      "asks": "A Google account, a property and a web stream.",
+      "value": { "field": "id", "label": "Measurement ID", "shape": "ga4", "example": "G-AB12CD34EF" },
+      "steps": [
+        { "who": "person", "text": "Sign up at Google Analytics.", "url": "https://analytics.google.com/" },
+        { "who": "person", "text": "Make a property and a web stream for your site's address." },
+        { "who": "agent", "text": "Paste the measurement ID (G-…) here." }
+      ],
+      "site": "https://analytics.google.com/",
+      "pricing": "https://marketingplatform.google.com/about/analytics/",
+      "dashboard": "https://analytics.google.com/",
+      "cookies": true,
+      "check": "dashboard"
+    }
+  ],
+  "addons": [
+    {
+      "id": "clarity",
+      "kind": "clarity",
+      "tier": "balanced",
+      "name": "Microsoft Clarity",
+      "gives": "Heatmaps and recordings of visits, free. It uses cookies, so visitors are asked first.",
+      "asks": "A Microsoft account, your site added, and its project ID.",
+      "value": { "field": "id", "label": "Project ID", "shape": "clarity", "example": "abc123def4" },
+      "steps": [
+        { "who": "person", "text": "Sign up at Clarity with a Microsoft account.", "url": "https://clarity.microsoft.com/" },
+        { "who": "person", "text": "Add your site and copy its project ID (Settings, Overview)." },
+        { "who": "agent", "text": "Paste the ID here." }
+      ],
+      "site": "https://clarity.microsoft.com/",
+      "pricing": "https://clarity.microsoft.com/",
+      "dashboard": "https://clarity.microsoft.com/projects",
+      "cookies": true,
+      "check": "dashboard"
+    }
+  ],
+  "shapes": {
+    "email": "An email address.",
+    "uuid": "A UUID, like 0f8fad5b-d9cb-469f-a165-70867728950e.",
+    "embed": "An https link to a form on one of the allowed services.",
+    "goatcounter": "2 to 50 lowercase letters, digits or dashes.",
+    "ga4": "G- and then letters and digits.",
+    "clarity": "6 to 20 lowercase letters and digits."
+  }
+}

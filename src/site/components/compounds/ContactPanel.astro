@@ -1,0 +1,83 @@
+---
+/**
+ * How visitors reach the person when the site has no form of its own (desktop spec §9.5): an Email me button
+ * addressed to them, with the address written out to copy, or a form or booking page from a service they
+ * chose (Tally, Google Forms, Cal.com…) in a frame, with a link to open it in a new tab.
+ * @tier compound
+ * @a11y A labelled section; Email me is a link to the visitor's email app.
+ * @a11y The frame carries the form's title, and the new-tab link beside it is the way in for anyone the frame doesn't suit.
+ * @a11y The frame sends only the site's origin as its referrer.
+ * @key Tab: moves to Email me, or into the frame and to the new-tab link
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Button from '../fundamentals/Button.astro';
+import Text from '../fundamentals/Text.astro';
+import Link from '../fundamentals/Link.astro';
+
+interface Props {
+  /** The address Email me writes to. */
+  email?: string;
+  /** An embedded form: its link and the service it's on (named in the frame's title). */
+  form?: { url: string; name: string };
+  /** Its section's heading level (2 on a page under its h1). */
+  level?: 2 | 3;
+  /** Its id: the page's anchor to it (#contact-form, which Ask for access links to). */
+  id?: string;
+}
+
+const { email, form, level = 2, id = 'contact-form' } = Astro.props;
+---
+
+<section class="contact" id={id} aria-labelledby={`${id}-heading`} data-contact-panel>
+  <Heading level={level} size="h3" id={`${id}-heading`}>{form ? 'Send a message' : 'Email me'}</Heading>
+  {
+    form ? (
+      <>
+        <iframe class="frame" src={form.url} title={`Contact form (${form.name})`} loading="lazy" referrerpolicy="strict-origin" data-contact-frame />
+        <Text variant="small" tone="muted">
+          <Link href={form.url} external>
+            Open the form in a new tab
+          </Link>
+        </Text>
+      </>
+    ) : email ? (
+      <>
+        <Text variant="body">
+          Write to me at <span class="address">{email}</span>, and I'll reply from there.
+        </Text>
+        <div>
+          <Button href={`mailto:${email}`} variant="primary" icon="mail" data-contact-email="">
+            Email me
+          </Button>
+        </div>
+      </>
+    ) : (
+      <Text variant="body" tone="muted">
+        Contact isn't set up on this copy of the site.
+      </Text>
+    )
+  }
+</section>
+
+<style>
+  .contact {
+    display: grid;
+    gap: var(--space-6);
+    max-width: var(--size-measure);
+    scroll-margin-block-start: var(--space-section);
+  }
+
+  .frame {
+    inline-size: 100%;
+    block-size: var(--c-contact-panel-frame);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .address {
+    font-weight: var(--weight-medium);
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+</style>

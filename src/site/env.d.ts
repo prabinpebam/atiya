@@ -9,4 +9,6 @@ declare namespace App {
 interface ImportMetaEnv {
   readonly PUBLIC_POSTHOG_KEY?: string;
   readonly PUBLIC_POSTHOG_HOST?: string;
+  /** The other counting tools, for a build of the site's own address (integrations/services.mjs countsVar): a JSON list, or ''. */
+  readonly PUBLIC_COUNTS?: string;
 }

@@ -7,12 +7,15 @@
 import { z } from 'astro/zod';
 import { paragraphsOf, plainText } from './markdown';
 import { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX } from './limits';
+import { SHAPES, embedHost } from '../services/services';
 
 export { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX };
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'lowercase kebab-case');
 /** A media ID: its path under content/media/ without the extension. */
 export const mediaId = z.string().regex(/^[a-z0-9-]+(\/[a-z0-9-]+)+$/, 'a path under content/media/, without the extension');
+/** An https address. */
+const https = z.url({ protocol: /^https$/ });
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z)?$/, 'an ISO 8601 date');
 const width = z.enum(['content', 'popout', 'wide', 'full']);
 /** A video's width: a layout place, or its own size (`actual`, a video file only). */
@@ -354,14 +357,37 @@ export const siteSettings = z.strictObject({
    */
   services: z
     .strictObject({
-      /** The contact form's service (documentation/contact/spec.md): its address. */
-      contact: z.strictObject({ endpoint: z.url({ protocol: /^https$/ }) }).optional(),
+      /**
+       * How visitors reach the person (desktop spec §9.5, the options in src/site/services/catalogue.json): the
+       * owner's contact service (documentation/contact/spec.md, its address), an Email me button, the site's own
+       * form sent through Web3Forms, or a form embedded from an allowed host.
+       */
+      contact: z
+        .union([
+          z.strictObject({ kind: z.literal('relay').optional(), endpoint: https }),
+          z.strictObject({ kind: z.literal('email'), address: z.email() }),
+          z.strictObject({ kind: z.literal('web3forms'), key: z.string().regex(SHAPES.uuid) }),
+          z.strictObject({ kind: z.literal('embed'), url: https.refine((u) => !!embedHost(u), 'not a form on one of the allowed services (src/site/services/catalogue.json)') }),
+        ])
+        .optional(),
       /**
        * PostHog (documentation/access/spec.md §9): the project's public key, its host, and the site's own address:
        * a build for any other address (a copy of the site, this computer) leaves the key out.
        */
-      telemetry: z.strictObject({ key: z.string().regex(/^phc_\w+$/), host: z.url({ protocol: /^https$/ }).optional(), site: z.url({ protocol: /^https$/ }) }).optional(),
+      telemetry: z.strictObject({ key: z.string().regex(/^phc_\w+$/), host: https.optional(), site: https }).optional(),
+      /** Another counting tool (desktop spec §9.5), counting only in a build for `site`, like telemetry. */
+      counts: z
+        .discriminatedUnion('kind', [
+          z.strictObject({ kind: z.literal('goatcounter'), code: z.string().regex(SHAPES.goatcounter), site: https }),
+          z.strictObject({ kind: z.literal('umami'), id: z.string().regex(SHAPES.uuid), host: https.optional(), site: https }),
+          z.strictObject({ kind: z.literal('ga4'), id: z.string().regex(SHAPES.ga4), site: https }),
+        ])
+        .optional(),
+      /** Microsoft Clarity's heatmaps beside the count: its project ID (it waits for the visitor's consent). */
+      clarity: z.strictObject({ id: z.string().regex(SHAPES.clarity) }).optional(),
     })
+    .refine((s) => !(s.counts && s.telemetry), { message: 'one counting tool at a time: counts or telemetry, not both', path: ['counts'] })
+    .refine((s) => !s.clarity || !!(s.counts || s.telemetry), { message: 'Clarity counts beside a counting tool: choose one in counts (or telemetry) for its address', path: ['clarity'] })
     .optional(),
 });
 

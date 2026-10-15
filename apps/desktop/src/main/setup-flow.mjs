@@ -35,6 +35,7 @@ import { runSetup, siteUrl } from '../core/setup/machine.mjs';
  *   onLive(state: { state: 'going' | 'live' | 'failed', message?: string, url?: string }): void,
  *   saveSetup(s: { mode: 'new' | 'existing', inputs: Proposal } | null): void,
  *   pollMs?: number, emailPollMs?: number, firstRunWaitMs?: number,
+ *   engineReady?: () => Promise<unknown>,
  * }} FlowDeps
  */
 

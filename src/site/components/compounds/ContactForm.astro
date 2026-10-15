@@ -1,7 +1,8 @@
 ---
 /**
  * A message to the site's owner (documentation/contact/spec.md): the visitor's name, their email so he can
- * reply, and the message in plain text, sent by the contact service (contact-api/) to his inbox. It checks
+ * reply, and the message in plain text, sent by the contact service (contact-api/) or, on a person's site, by
+ * Web3Forms with their own key, to their inbox. It checks
  * each field as it's left and all of them on Send, keeps a draft in the tab, solves the service's
  * proof-of-work challenge while the visitor types, and says what happened: sent (a confirmation in its
  * place), a field to fix, or why it didn't send, with everything typed kept. Opened with ?access=<section>
@@ -22,8 +23,10 @@ import Icon from '../fundamentals/Icon.astro';
 import { LIMITS } from '../../scripts/contactRules';
 
 interface Props {
-  /** The contact service's address (PUBLIC_CONTACT_ENDPOINT). Left out, the form says it isn't set up. */
+  /** The contact service's address (PUBLIC_CONTACT_ENDPOINT). Left out, with no `web3forms` key, the form says it isn't set up. */
   endpoint?: string;
+  /** Sends through Web3Forms instead (desktop spec §9.5): the person's public access key. */
+  web3forms?: string;
   /** The Privacy page, linked under Send. */
   privacy?: string;
   /** Its section's heading level (2 on a page under its h1). */
@@ -32,14 +35,14 @@ interface Props {
   id?: string;
 }
 
-const { endpoint, privacy, level = 2, id = 'contact-form' } = Astro.props;
+const { endpoint, web3forms, privacy, level = 2, id = 'contact-form' } = Astro.props;
 const service = endpoint?.replace(/\/+$/, '');
 ---
 
-<section class="contact ph-no-capture" id={id} aria-labelledby={`${id}-heading`} data-contact-form data-endpoint={service}>
+<section class="contact ph-no-capture" id={id} aria-labelledby={`${id}-heading`} data-contact-form data-endpoint={service} data-web3forms={web3forms}>
   <Heading level={level} size="h3" id={`${id}-heading`}>Send a message</Heading>
   {
-    service ? (
+    service || web3forms ? (
       <>
         <div class="body" data-contact-body hidden>
           <form class="form" novalidate data-contact-fields>
@@ -167,6 +170,7 @@ const service = endpoint?.replace(/\/+$/, '');
   import { each } from '../../scripts/page';
   import { solve } from '../../scripts/contactWork';
   import { accessRequest, checkField, cleanFields, errorText, firstName, LIMITS } from '../../scripts/contactRules';
+  import { sendWeb3Forms } from '../../scripts/web3forms';
 
   type Field = 'name' | 'email' | 'message';
   type Work = { challenge: string; signature: string; nonce: string };
@@ -182,6 +186,7 @@ const service = endpoint?.replace(/\/+$/, '');
 
   each<HTMLElement>('[data-contact-form]', (root, signal) => {
     const service = root.dataset.endpoint;
+    const w3 = root.dataset.web3forms;
     const body = root.querySelector<HTMLElement>('[data-contact-body]');
     const form = root.querySelector<HTMLFormElement>('[data-contact-fields]');
     const sent = root.querySelector<HTMLElement>('[data-contact-sent]');
@@ -189,7 +194,7 @@ const service = endpoint?.replace(/\/+$/, '');
     const sendButton = root.querySelector<HTMLButtonElement>('[data-contact-send]');
     const again = root.querySelector<HTMLButtonElement>('[data-contact-again]');
     const thanks = root.querySelector<HTMLElement>('[data-contact-thanks]');
-    if (!service || !body || !form || !sent || !alert || !sendButton || !again || !thanks) return;
+    if (!(service || w3) || !body || !form || !sent || !alert || !sendButton || !again || !thanks) return;
     const input = (k: Field) => form.elements.namedItem(k) as HTMLInputElement | HTMLTextAreaElement;
     const trap = form.elements.namedItem('website') as HTMLInputElement;
     const hint = root.querySelector<HTMLElement>(`#${CSS.escape(root.id)}-message-hint`);
@@ -286,7 +291,7 @@ const service = endpoint?.replace(/\/+$/, '');
         work = null;
         return null;
       }));
-    form.addEventListener('focusin', () => void getWork(), { signal, once: true });
+    form.addEventListener('focusin', () => service && void getWork(), { signal, once: true });
 
     // ---------- sending ----------
     let busy = false;
@@ -308,7 +313,7 @@ const service = endpoint?.replace(/\/+$/, '');
       say(FAILED[kind]);
       // a fresh challenge for the next try
       work = null;
-      void getWork();
+      if (service) void getWork();
     };
     const done = (name: string, email: string) => {
       setBusy(false);
@@ -324,6 +329,11 @@ const service = endpoint?.replace(/\/+$/, '');
     };
 
     const post = async (retried: boolean): Promise<void> => {
+      if (w3) {
+        const f = cleanFields({ name: input('name').value, email: input('email').value, message: input('message').value });
+        const how = await sendWeb3Forms(w3, f, { about, trap: trap.value, timeout: TIMEOUT });
+        return how === 'sent' ? done(f.name, f.email) : fail(how);
+      }
       const w = await getWork();
       // a challenge is used once
       work = null;

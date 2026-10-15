@@ -56,6 +56,22 @@ export function fold(/** @type {string} */ text) {
 /** Markdown as plain words: link targets, marks and code ticks dropped. */
 const plain = (/** @type {string} */ md) => md.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`~#>]/g, '').replace(/\\(.)/g, '$1');
 
+/** Where the counting tools' scripts come from (src/site/scripts/countsRules.ts `COUNT_HOSTS`; a unit test keeps them equal). */
+export const COUNT_HOSTS = ['gc.zgo.at', 'goatcounter.com', 'cloud.umami.is', 'umami.is', 'googletagmanager.com', 'google-analytics.com', 'clarity.ms'];
+
+/** Whether a page's HTML loads a counting tool's script (desktop spec §9.5: never on a sealed page). */
+export function countingScriptIn(/** @type {string} */ html) {
+  for (const m of html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/gi)) {
+    try {
+      const h = new URL(m[1], 'https://site.invalid/').hostname;
+      if (COUNT_HOSTS.some((c) => h === c || h.endsWith(`.${c}`))) return true;
+    } catch {
+      /* not an address */
+    }
+  }
+  return false;
+}
+
 /**
  * Every protected word worth looking for: titles, summaries, headings, captions, alt texts, quotes, the
  * items of collections, link texts and every sentence-like run of 12 characters or more; IDs, slugs, tokens; grants' IDs,
@@ -232,6 +248,7 @@ export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = r
       if (title !== 'Private page') report('a sealed page has a real title', rel(f));
       if (!/<meta name="robots" content="noindex, nofollow">/.test(text)) report('a sealed page is not kept out of search', rel(f));
       if (/<meta name="description"/.test(text) || /property="og:/.test(text)) report('a sealed page has a description or social card', rel(f));
+      if (countingScriptIn(text)) report("a sealed page carries a counting tool's script", rel(f));
     } else {
       for (const t of tokens) if (text.includes(`/${t}/`)) report('an open page links to a protected page', rel(f));
     }
