@@ -4,12 +4,16 @@
  * Track, or `?telemetry=off` on this device). This part runs on every page and stays small: it hears the
  * sign-in runtime's `site:access` events, links followed on allowlisted pages and videos played, and queues
  * them; PostHog, the rules for what it may send and the field data (scripts/telemetryClient.ts) are fetched on idle. A test
- * build sends to a fake host, and only when a test asks (`localStorage['site.test.telemetry']`).
+ * build sends to a fake host, and only when a test asks (`localStorage['site.test.telemetry']`). A person's other counting
+ * tools (desktop spec §9.5: GoatCounter, Umami, Google Analytics, Clarity) are fetched on idle the same way, from
+ * scripts/countsClient.ts, in a build for the site's own address (`PUBLIC_COUNTS`).
  */
 import { OPT_OUT_KEY, optOut, type PageFacts, type Queued } from './telemetryRules';
 
 export const TEST_HOST = 'https://telemetry.test';
 const TEST = import.meta.env.MODE === 'test';
+/** A build with PostHog (a test build, or one given a key): without it, everything below the counting tools drops out of the bundle. */
+const POSTHOG = TEST || !!import.meta.env.PUBLIC_POSTHOG_KEY;
 const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
 const html = document.documentElement;
 
@@ -36,7 +40,7 @@ function enabled(): boolean {
   // the other counting tools (desktop spec §9.5): their own chunk, on idle, whatever PostHog does
   const counts = import.meta.env.PUBLIC_COUNTS;
   if (counts && !TEST) idleAfter(loadAfter, () => import('./countsClient').then((m) => m.startCounts(counts), () => {}));
-  return TEST ? s?.getItem('site.test.telemetry') === '1' : !!import.meta.env.PUBLIC_POSTHOG_KEY;
+  return TEST ? s?.getItem('site.test.telemetry') === '1' : POSTHOG;
 }
 
 let loadAfter: Promise<unknown> | undefined;
@@ -91,6 +95,11 @@ function onAccess(e: Event) {
 export function startTelemetry(o: { loadAfter?: Promise<unknown> } = {}): void {
   loadAfter = o.loadAfter;
   if (started || !enabled()) return;
+  // a build without PostHog leaves the rest out of the bundle (a branch on a constant; code after a return stays)
+  if (POSTHOG) startPostHog(o.loadAfter);
+}
+
+function startPostHog(after: Promise<unknown> | undefined) {
   started = true;
   const d = document;
   d.addEventListener('site:access', onAccess);
@@ -124,5 +133,5 @@ export function startTelemetry(o: { loadAfter?: Promise<unknown> } = {}): void {
         /* blocked or offline: nothing is sent */
       },
     );
-  idleAfter(o.loadAfter, load);
+  idleAfter(after, load);
 }

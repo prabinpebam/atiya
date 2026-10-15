@@ -8,6 +8,7 @@ A form on the site's Contact page that sends a visitor's message to Prabin's inb
 > - **How it sends:** the browser posts JSON to an Azure Function (Flex Consumption, Central India) in Prabin's own subscription, which emails him from his own Gmail account over Gmail's SMTP (so Gmail files it as his own mail, not spam), or through Azure Communication Services when Gmail isn't set up, with the visitor's address as Reply-To. Nothing is stored; no copy goes to the visitor.
 > - **Against bots and spam**, all invisible to a person: a proof-of-work challenge the browser solves while they type, a honeypot field, a minimum time on the form, strict validation, a limit on links, rate limits per visitor and per day, and one use per challenge.
 > - **Costs** a few cents a month (§9). **GitHub Pages** only serves the form; the endpoint's address is public configuration, and every secret lives in the Function's settings.
+> - **This is the owner's own service** (`services.contact.endpoint`). A site made by Atiya Studio has no server of ours: its Contact page shows Email me, this same form sent through Web3Forms with the person's own key, or an embedded form from a service they chose ([desktop spec §9.5](../desktop/spec.md)).
 
 ## 1. Goals and non-goals
 

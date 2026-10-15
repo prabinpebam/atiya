@@ -8,6 +8,8 @@
  *   node scripts/build-starter.mjs --site-only   just the site: no planet anywhere in dist/
  *   node scripts/build-starter.mjs --planet-off  a planet structure, with the little planet turned off (plan 8A)
  *   node scripts/build-starter.mjs               the site and the planet
+ *   node scripts/build-starter.mjs --services    the site and the planet, with Email me, GoatCounter and Clarity, built for
+ *                                                its own address (plan stage 11), then every bundle budget
  *
  * It prints each check and exits 1 if any fails. dist/ is left for `npx astro preview`.
  */
@@ -25,6 +27,9 @@ const siteOnly = process.argv.includes('--site-only');
 // the planet's structure kept, the little planet turned off in the ways file (plan stage 8A)
 const planetOff = !siteOnly && process.argv.includes('--planet-off');
 const noPlanet = siteOnly || planetOff;
+// contact and visitor counts of the person's own (plan stage 11), in a build for the site's own address
+const services = !noPlanet && process.argv.includes('--services');
+const ADDRESS = 'https://ada.github.io/';
 const NAME = 'Ada Lovelace';
 const aside = [
   ['content', '.content-owner-aside'],
@@ -47,13 +52,20 @@ const check = (ok, what) => {
 try {
   for (const [from, to] of aside) if (existsSync(from)) renameSync(from, to);
   mkdirSync(join(ROOT, 'private-pages'), { recursive: true });
-  writeStarter(ROOT, { name: NAME, planet: !siteOnly, samples: true, today: new Date().toISOString().slice(0, 10) });
+  writeStarter(ROOT, { name: NAME, planet: !siteOnly, samples: true, today: new Date().toISOString().slice(0, 10), email: services ? 'ada@example.com' : null });
+  if (services) {
+    const file = join(ROOT, 'content', 'site.json');
+    const site = JSON.parse(readFileSync(file, 'utf8'));
+    site.services = { ...site.services, counts: { kind: 'goatcounter', code: 'ada', site: ADDRESS }, clarity: { id: 'abc123def4' } };
+    writeFileSync(file, JSON.stringify(site, null, 2) + '\n');
+  }
   if (planetOff) writeFileSync(join(ROOT, 'content', 'structures', 'ways.json'), JSON.stringify({ modes: [{ id: 'little-planet', on: false, mount: 'play' }], primary: 'site' }, null, 2) + '\n');
   // a managed site's build has its atiya.json at the root (the site-build workflow puts it there, stage 6)
   writeFileSync(join(ROOT, 'atiya.json'), atiyaJson({ login: 'ada', id: 1, name: NAME, repo: 'ada.github.io', url: 'https://ada.github.io/', explore: siteOnly ? 'site' : 'little-planet', engine: { version: '0.0.0', commit: null, sha256: null } }));
-  console.log(`building the starter as ${siteOnly ? 'just the site' : planetOff ? 'the site, with the little planet turned off' : 'the site and the planet'}…`);
+  console.log(`building the starter as ${siteOnly ? 'just the site' : planetOff ? 'the site, with the little planet turned off' : services ? 'the site and the planet, with contact and visitor counts' : 'the site and the planet'}…`);
   const env = { ...process.env };
-  for (const k of ['CONTENT_ROOT', 'PRIVATE_ROOT', 'SITE_URL', 'BASE_PATH', 'PUBLIC_POSTHOG_KEY']) delete env[k];
+  for (const k of ['CONTENT_ROOT', 'PRIVATE_ROOT', 'SITE_URL', 'BASE_PATH', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_COUNTS']) delete env[k];
+  if (services) env.SITE_URL = ADDRESS.replace(/\/$/, '');
   execFileSync(process.execPath, [join(ROOT, 'node_modules', 'astro', 'bin', 'astro.mjs'), 'build'], { cwd: ROOT, env, stdio: ['ignore', 'ignore', 'inherit'] });
 
   const dist = join(ROOT, 'dist');
@@ -88,6 +100,21 @@ try {
     const assets = PLANET_ASSETS.filter((f) => existsSync(join(dist, f)));
     check(assets.length === 0, `no planet assets${assets.length ? `: ${assets.join(', ')}` : ''}`);
   } else {
+    if (services) {
+      const contact = read(join(dist, 'contact', 'index.html'));
+      check(contact.includes('href="mailto:ada@example.com"') && !contact.includes('data-contact-form'), 'the Contact page offers Email me, and no form')
+      const assets = readdirSync(join(dist, '_astro'));
+      check(assets.some((f) => /^countsClient\./.test(f)), 'the counting tools are their own chunk');
+      check(home.includes('data-consent') && home.includes('Microsoft Clarity'), 'pages carry the cookie notice, naming Clarity');
+      check(!html.some((f) => /gc\.zgo\.at|clarity\.ms/.test(read(f))), 'no page loads a counting script by itself (the loader does, on idle)');
+      let budgets = true;
+      try {
+        execFileSync(process.execPath, [join(ROOT, 'scripts', 'size-report.mjs'), '--prod'], { cwd: ROOT, stdio: ['ignore', 'inherit', 'inherit'] });
+      } catch {
+        budgets = false;
+      }
+      check(budgets, 'every bundle budget holds, the telemetry shim and the counting tools included');
+    }
     check(home.includes('Explore the planet'), 'the home page offers the planet');
     check(existsSync(join(dist, 'play', 'workshop', 'index.html')), 'the buildings\' pages are built');
     check(readdirSync(join(dist, '_astro')).some((f) => f.startsWith('game-')), 'the game\'s chunks are there');

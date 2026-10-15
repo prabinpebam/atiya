@@ -3,12 +3,14 @@
 /**
  * atiya: Atiya Studio's command line, for people and AI agents (documentation/desktop/spec.md §5).
  *
- *   atiya setup [--name "<name>"] [--repo <name>] [--explore little-planet|site] [--no-samples]
+ *   atiya setup [--name "<name>"] [--repo <name>] [--email <address>] [--explore little-planet|site] [--no-samples]
  *               [--dir <folder>] [--token env|gh|device] [--yes] [--no-wait] [--dry-run] [--json]
  *   atiya status [--dir <folder>] [--json]
  *   atiya doctor [--dir <folder>] [--json]
  *   atiya sites [--json]
  *   atiya private setup [--dir <folder>] [--yes] [--dry-run] [--json]
+ *   atiya services list|check|set <option> --value <v> [--address <url>]|off contact|counts|clarity
+ *               [--dir <folder>] [--send] [--dry-run] [--json]
  *
  * --github <url> points it at another GitHub API (the fake GitHub in the tests). Exit codes: 0 done,
  * 10 needs the person, 20 a conflict, 30 GitHub refused, 1 anything else.
@@ -23,6 +25,8 @@ import { EXIT, runSetup, STEPS } from '../src/core/setup/machine.mjs';
 import { runPrivateSetup } from '../src/core/setup/private.mjs';
 import { findToken, redact } from '../src/core/setup/tokens.mjs';
 import { ghCommand, ghLogin } from '../src/core/setup/gh-login.mjs';
+import { allOptions, checkServices, chosenIn, loadCatalogue, offService, readSite, setService, siteFile, writeSite } from '../src/core/services.mjs';
+import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -51,10 +55,10 @@ export function parseArgs(argv) {
     const [k, v] = a.slice(2).split('=', 2);
     if (k.startsWith('no-')) flags[k.slice(3)] = false;
     else if (v !== undefined) flags[k] = v;
-    else if (['yes', 'json', 'dry-run', 'wait', 'samples', 'help'].includes(k)) flags[k] = true;
+    else if (['yes', 'json', 'dry-run', 'wait', 'samples', 'help', 'send'].includes(k)) flags[k] = true;
     else flags[k] = argv[++i] ?? '';
   }
-  return { command: rest[0] ?? 'help', sub: rest[1] ?? null, flags };
+  return { command: rest[0] ?? 'help', sub: rest[1] ?? null, args: rest.slice(2), flags };
 }
 
 /** @param {{ json: boolean, secrets: string[] }} o */
@@ -103,7 +107,7 @@ async function signIn(source, o) {
 
 /** @param {string[]} argv */
 export async function main(argv) {
-  const { command, sub, flags } = parseArgs(argv);
+  const { command, sub, args, flags } = parseArgs(argv);
   const json = !!flags.json;
   const api = typeof flags.github === 'string' ? flags.github : 'https://api.github.com';
   const web = typeof flags.github === 'string' ? flags.github : 'https://github.com';
@@ -113,9 +117,12 @@ export async function main(argv) {
   const out = printer({ json, secrets });
 
   if (command === 'help' || flags.help) {
-    process.stdout.write(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(3, 16).map((l) => l.replace(/^ \* ?/, '')).join('\n') + '\n');
+    process.stdout.write(readFileSync(new URL(import.meta.url), 'utf8').split(/\r?\n/).slice(3).join('\n').split(/\n \*\/\n/)[0].split('\n').map((l) => l.replace(/^ \* ?/, '')).join('\n') + '\n');
     return EXIT.ok;
   }
+
+  // contact and visitor counts: the site folder's own settings, no GitHub needed
+  if (command === 'services') return services(sub, args, flags);
 
   const token = await signIn(String(flags.token ?? 'auto'), { web, emit: out.event, fake: typeof flags.github === 'string' ? flags.github : null });
   if (!token) {
@@ -134,6 +141,7 @@ export async function main(argv) {
       inputs: {
         name: typeof flags.name === 'string' ? flags.name : null,
         repo: typeof flags.repo === 'string' ? flags.repo : null,
+        email: typeof flags.email === 'string' ? flags.email : null,
         explore: flags.explore === 'site' ? 'site' : 'little-planet',
         samples: flags.samples !== false,
         dir: typeof flags.dir === 'string' ? resolve(flags.dir) : null,
@@ -181,6 +189,56 @@ export async function main(argv) {
   return EXIT.other;
 }
 
+/**
+ * Contact and visitor counts (spec §5.1, §9.5): list the options, set one, check them, turn one off, in the site
+ * folder's content/site.json. Exit 10 when a step needs the person (a sign-up, a key from their inbox).
+ * @param {string | null} sub @param {string[]} args @param {Record<string, string | boolean>} flags
+ */
+async function services(sub, args, flags) {
+  const json = !!flags.json;
+  const say = (/** @type {any} */ e, /** @type {string} */ text) => (json || text) && process.stdout.write((json ? JSON.stringify(e) : text) + '\n');
+  const dir = resolve(typeof flags.dir === 'string' ? flags.dir : '.');
+  const c = loadCatalogue();
+  if (sub === 'list') {
+    const site = existsSync(siteFile(dir)) ? readSite(dir) : null;
+    const chosen = site ? { contact: chosenIn(c, site.services, 'contact'), counts: chosenIn(c, site.services, 'counts'), clarity: !!site.services?.clarity } : null;
+    const options = allOptions(c).map(({ id, group, tier, name, gives, asks, value, steps, cookies, site: page, pricing, dashboard }) => ({ id, group, tier, name, gives, asks, value, steps, cookies, site: page, pricing, dashboard }));
+    if (json) say({ type: 'services', chosen, options }, '');
+    else
+      for (const g of ['contact', 'counts', 'addons']) {
+        process.stdout.write(`${g === 'contact' ? 'Contact' : g === 'counts' ? 'Visitor counts' : 'Beside a count'}\n`);
+        for (const o of options.filter((x) => x.group === g)) process.stdout.write(`  ${chosen && (chosen.contact === o.id || chosen.counts === o.id || (o.id === 'clarity' && chosen.clarity)) ? '*' : ' '} ${o.id.padEnd(14)} ${o.tier.padEnd(9)} ${o.gives}\n`);
+      }
+    return EXIT.ok;
+  }
+  if (sub === 'set' || sub === 'off') {
+    const site = readSite(dir);
+    const what = args[0] ?? '';
+    let r;
+    if (sub === 'set') r = setService(c, site, { id: what, value: typeof flags.value === 'string' ? flags.value : '', address: typeof flags.address === 'string' ? flags.address : undefined });
+    else r = ['contact', 'counts', 'clarity'].includes(what) ? { ok: /** @type {const} */ (true), site: offService(site, /** @type {'contact'} */ (what)) } : { ok: /** @type {const} */ (false), needsPerson: false, message: 'Turn off contact, counts or clarity.' };
+    if (!r.ok) {
+      const url = r.steps?.find((s) => s.who === 'person' && s.url)?.url;
+      if (r.needsPerson) say({ type: 'action', needs: 'person', message: r.message, url, steps: r.steps }, `ACTION   ${r.message}`);
+      const code = r.needsPerson ? EXIT.needsPerson : EXIT.other;
+      say({ type: 'result', ok: false, applied: false, code, message: r.message }, r.needsPerson ? '' : `Stopped  ${r.message}`);
+      return code;
+    }
+    const apply = !flags['dry-run'];
+    if (apply) writeSite(dir, r.site);
+    const message = apply ? `Saved content/site.json. Commit and push it (or Save to remote in Atiya Studio) to put it on the site.` : 'Nothing changed (--dry-run).';
+    say({ type: 'result', ok: true, applied: apply, services: r.site.services ?? null, message }, `Done     ${message}`);
+    return EXIT.ok;
+  }
+  if (sub === 'check') {
+    const checks = await checkServices(c, readSite(dir), { send: !!flags.send });
+    if (json) say({ type: 'check', ok: checks.every((x) => x.ok), checks }, '');
+    else for (const x of checks) process.stdout.write(`${x.ok ? 'ok      ' : 'problem '} ${x.check}: ${x.message}\n`);
+    return checks.every((x) => x.ok) ? EXIT.ok : EXIT.other;
+  }
+  say({ type: 'result', ok: false, applied: false, code: EXIT.other, message: 'Try atiya services list, set, check or off.' }, 'Try atiya services list, set, check or off.');
+  return EXIT.other;
+}
 /**
  * A site's state (status), or every check with its fix (doctor): the same checks as the app's Check my site.
  * @param {string} dir @param {{ github: GitHub, gitConfigFile: string, out: ReturnType<typeof printer>, doctor: boolean }} o

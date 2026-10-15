@@ -4,7 +4,7 @@
  * contract, the pages, edit mode and the app's `atiya services` command alike. The options themselves are
  * catalogue.json.
  */
-import catalogue from './catalogue.json';
+import catalogue from './catalogue.json' with { type: 'json' };
 
 export { catalogue };
 

@@ -11,6 +11,7 @@ import { agentsMd, atiyaJson, GITATTRIBUTES, GITIGNORE, readme, workflow } from 
 import { Git, sameRemote } from './git.mjs';
 import { GitHubError, missingScopes } from './github.mjs';
 import { writeStarter } from './starter.mjs';
+import { loadCatalogue, servicesSkill } from '../services.mjs';
 
 /** The exit codes of spec §5.3. */
 export const EXIT = { ok: 0, needsPerson: 10, conflict: 20, refused: 30, other: 1 };
@@ -37,7 +38,7 @@ export class SetupError extends Error {
  * @typedef {{ repository: string, url: string, dir: string }} SiteRef
  * @typedef {{
  *   github: import('./github.mjs').GitHub,
- *   inputs: { name?: string | null, repo?: string | null, explore?: 'little-planet' | 'site', samples?: boolean, dir?: string | null, home: string },
+ *   inputs: { name?: string | null, repo?: string | null, explore?: 'little-planet' | 'site', samples?: boolean, dir?: string | null, home: string, email?: string | null },
  *   apply: boolean, wait?: boolean, waitForEmail?: boolean,
  *   engine: { version: string, commit: string | null, sha256: string | null },
  *   gitConfigFile: string, git?: string, starter?: string,
@@ -301,7 +302,7 @@ async function latestRun(gh, owner, name, sha, since) {
  * into place when it's whole, so an interrupted run leaves no half-made workspace. If the repository
  * already holds an Atiya site (another computer), clones it instead.
  * @param {{ o: SetupOptions, git: Git, gh: import('./github.mjs').GitHub, repo: NonNullable<Awaited<ReturnType<import('./github.mjs').GitHub['repo']>>>,
- *   dir: string, name: string, user: { login: string, id: number }, site: SiteRef }} a
+ *   dir: string, name: string, user: { login: string, id: number, email?: string | null }, site: SiteRef }} a
  */
 async function makeWorkspace({ o, git, gh, repo, dir, name, user, site }) {
   const parent = join(dir, '..');
@@ -314,11 +315,14 @@ async function makeWorkspace({ o, git, gh, repo, dir, name, user, site }) {
     rmSync(partial, { recursive: true, force: true });
     mkdirSync(partial, { recursive: true });
     const facts = { login: user.login, id: user.id, name, repo: repo.name, url: site.url, explore: o.inputs.explore ?? 'little-planet', engine: o.engine };
-    writeStarter(partial, { name, planet: facts.explore === 'little-planet', samples: o.inputs.samples ?? true, today: o.today ?? new Date().toISOString().slice(0, 10), starter: o.starter });
+    // Email me, at the address given or the person's public GitHub one (spec §9.5, S1); edit mode's Contact card changes it
+    writeStarter(partial, { name, planet: facts.explore === 'little-planet', samples: o.inputs.samples ?? true, today: o.today ?? new Date().toISOString().slice(0, 10), starter: o.starter, email: o.inputs.email ?? user.email ?? null });
     writeFileSync(join(partial, 'atiya.json'), atiyaJson(facts));
     mkdirSync(join(partial, '.github', 'workflows'), { recursive: true });
     writeFileSync(join(partial, '.github', 'workflows', 'site.yml'), workflow(facts));
     writeFileSync(join(partial, 'AGENTS.md'), agentsMd(facts));
+    mkdirSync(join(partial, '.github', 'skills', 'site-services'), { recursive: true });
+    writeFileSync(join(partial, '.github', 'skills', 'site-services', 'SKILL.md'), servicesSkill(loadCatalogue()));
     writeFileSync(join(partial, 'README.md'), readme(facts));
     writeFileSync(join(partial, '.gitattributes'), GITATTRIBUTES);
     writeFileSync(join(partial, '.gitignore'), GITIGNORE);

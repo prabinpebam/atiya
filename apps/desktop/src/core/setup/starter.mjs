@@ -31,7 +31,7 @@ export function listFiles(dir, prefix = '') {
 /**
  * Writes `content/` for a new site into `dir`.
  * @param {string} dir the workspace
- * @param {{ name: string, planet: boolean, samples: boolean, today: string, starter?: string }} o
+ * @param {{ name: string, planet: boolean, samples: boolean, today: string, starter?: string, email?: string | null }} o
  * @returns {string[]} the files written, relative to `dir`
  */
 export function writeStarter(dir, o) {
@@ -69,6 +69,9 @@ export function writeStarter(dir, o) {
   const site = readJson(siteFile);
   site.name = name;
   site.description = `The portfolio of ${name}.`.slice(0, 160);
+  // how visitors reach them: Email me, when there's an address that's read (never GitHub's no-reply one)
+  const email = o.email?.trim();
+  if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !/noreply\.github\.com$/i.test(email)) site.services = { contact: { kind: 'email', address: email } };
   writeJson(siteFile, site);
 
   const personFile = join(to, 'people', `${site.owner}.json`);

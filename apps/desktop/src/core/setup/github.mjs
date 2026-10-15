@@ -88,7 +88,7 @@ export class GitHub {
   /** Who the token belongs to, and its scopes header. */
   async user() {
     const r = await this.ok('GET', '/user');
-    return { login: String(r.data.login), id: Number(r.data.id), name: r.data.name ? String(r.data.name) : null, avatar: r.data.avatar_url ?? null, scopes: r.headers.get('x-oauth-scopes') };
+    return { login: String(r.data.login), id: Number(r.data.id), name: r.data.name ? String(r.data.name) : null, avatar: r.data.avatar_url ?? null, email: r.data.email ? String(r.data.email) : null, scopes: r.headers.get('x-oauth-scopes') };
   }
 
   /** Is the primary email confirmed? null when the token can't read emails. */

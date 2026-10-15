@@ -85,6 +85,9 @@ describe('setup on the fake GitHub', () => {
     expect(JSON.parse(readFileSync(join(dir, 'content/structures/ways.json'), 'utf8'))).toEqual({ modes: [{ id: 'little-planet', on: true, mount: 'play' }], primary: 'site' });
     expect(readFileSync(join(dir, '.github/workflows/site.yml'), 'utf8')).toContain('uses: prabinpebam/atiya/.github/workflows/site-build.yml@abc123');
     expect(JSON.parse(readFileSync(join(dir, 'content/site.json'), 'utf8')).name).toBe('Ada Lovelace');
+    // no address that's read: no contact yet (edit mode's Contact card sets it); the services skill is there for agents (11.7)
+    expect(JSON.parse(readFileSync(join(dir, 'content/site.json'), 'utf8')).services).toBeUndefined();
+    expect(readFileSync(join(dir, '.github/skills/site-services/SKILL.md'), 'utf8')).toMatch(/^---\nname: site-services\n/);
     expect(f.writes().map((c) => `${c.method} ${c.path}`)).toEqual(['POST /user/repos', 'POST /repos/ada/ada.github.io/pages']);
     const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
     expect(await new GitHub({ token: 'fake-ada', api: f.url }).branchSha('ada', 'ada.github.io', 'main')).toBe(head);
@@ -93,10 +96,11 @@ describe('setup on the fake GitHub', () => {
     expect(author).toBe(`Ada Lovelace <${ADA.id}+ada@users.noreply.github.com>`);
   });
 
-  it('2.1 just the site, without sample pages', async () => {
+  it('2.1 just the site, without sample pages, reached by Email me at the address given (11.7)', async () => {
     const f = await fake();
-    const { result, dir } = await setup(f, { inputs: { explore: 'site', samples: false } });
+    const { result, dir } = await setup(f, { inputs: { explore: 'site', samples: false, email: 'ada@example.com' } });
     expect(result.ok).toBe(true);
+    expect(JSON.parse(readFileSync(join(dir, 'content/site.json'), 'utf8')).services).toEqual({ contact: { kind: 'email', address: 'ada@example.com' } });
     expect(existsSync(join(dir, 'content/structures/modes/little-planet.json'))).toBe(false);
     expect(existsSync(join(dir, 'content/articles'))).toBe(false);
     expect(JSON.parse(readFileSync(join(dir, 'content/structures/ways.json'), 'utf8'))).toEqual({ modes: [], primary: 'site' });
