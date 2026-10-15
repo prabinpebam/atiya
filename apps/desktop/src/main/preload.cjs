@@ -76,6 +76,20 @@ if (location.protocol === 'app:') {
     },
     header: () => ipcRenderer.invoke('studio:header'),
     command: (c) => ipcRenderer.send('studio:command', c),
+    // the action center (documentation/desktop/action-center.md §8.4): the main process answers the frame alone
+    finder: {
+      onToggle(cb) {
+        const listener = (_e, from) => cb(from);
+        ipcRenderer.on('finder:toggle', listener);
+        return () => ipcRenderer.removeListener('finder:toggle', listener);
+      },
+      index: () => ipcRenderer.invoke('finder:index'),
+      thumb: (id) => ipcRenderer.invoke('finder:thumb', id),
+      set: (id, value) => ipcRenderer.invoke('finder:set', id, value),
+      run: (target) => ipcRenderer.send('finder:run', target),
+      remember: (key, isPrivate) => ipcRenderer.send('finder:remember', key, isPrivate),
+      closed: () => ipcRenderer.send('finder:closed'),
+    },
   });
 }
 

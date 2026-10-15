@@ -32,7 +32,7 @@ export const VIEW_OPTIONS = [
   { value: 'features', label: 'Features', description: 'Every page a lead: picture beside its words' },
 ];
 
-const KIND_LABEL: Record<Article['kind'], string> = { note: 'Article', page: 'Page', gallery: 'Gallery', talk: 'Talk' };
+export const KIND_LABEL: Record<Article['kind'], string> = { note: 'Article', page: 'Page', gallery: 'Gallery', talk: 'Talk' };
 
 /** A page as the Sections and Planet screens list it. */
 export interface ListedPage {

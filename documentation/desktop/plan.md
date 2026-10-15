@@ -226,7 +226,7 @@ Ctrl+/ anywhere in the app opens one panel to find anything and do anything ([th
 
 | # | Done when | Evidence |
 |---|---|---|
-| 7E.1 | Ctrl+/ opens the panel from edit mode, the site and the app's pages, with focus in the field, and closes it again; Esc and a press outside close it and focus goes back; the keys never reach the page | App E2E `stage7e.spec.mjs` 7E.1 |
+| 7E.1 | Ctrl+/ opens the panel from edit mode, the site and the app's pages, with focus in the field, and closes it again; Esc closes it with focus back where it was, a press outside closes it (keys taken from the page go back to it); the keys never reach the page | App E2E `stage7e.spec.mjs` 7E.1 |
 | 7E.2 | The panel is drawn ≤ 50 ms after the keys, and holds its size while typing; results follow each letter | App E2E 7E.1 (timed, the panel's box measured before and after typing) |
 | 7E.3 | Finding and ordering follow the spec's §7: every word must match; title start beats inside; initials; recent and kind boosts; the top hit; a search over 2,000 results is fast | Unit `find-rank.test.mjs` |
 | 7E.4 | Every app action of spec §4.2 that applies is found and does what its button does; the screen's own controls (each choice of a menu) press edit mode's | App E2E 7E.2 (Show the site, Restart edit mode, a stub screen's button and choice) |
@@ -238,7 +238,7 @@ Ctrl+/ anywhere in the app opens one panel to find anything and do anything ([th
 | 7E.10 | Until edit mode is ready, the content groups are replaced by the spec's line (with Restart edit mode when it's stopped), and the app's own results work | App E2E 7E.4 (the stub never listening) |
 | 7E.11 | The site's settings change on their cards through the store: the name (a refusal said), a way to explore (the restart waited for, then Saved), a conflict shown | `editor-find.spec.ts`; the real app on the owner's site, by eye |
 | 7E.12 | axe passes on the panel in light and dark, with a page, a picture and a setting chosen; keyboard alone does every flow of spec §5; the live region says counts and changes | App E2E 7E.5 |
-| 7E.13 | The panel's anatomy in light and dark: rest, hover, chosen, focus, disabled, a card of each kind, one enlarged capture | `atiya-review/action-center/` captures; a CSS anatomy test |
+| 7E.13 | The panel's anatomy in light and dark: rest, hover, chosen, focus, disabled, a card of each kind, one enlarged capture | `atiya-review/action-center/` captures (21, on the owner's own site); app E2E 7E.13 (the chosen row's fill and edge, thin scrollbars, the card's title clamped, the switch's track, in both themes) |
 
 ### Stage 8: navigation modes
 

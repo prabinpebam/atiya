@@ -25,6 +25,7 @@ import { SITE_FEATURES, withBase } from '../design/meta';
 import { THEME_OPTIONS } from '../scripts/theme';
 import { changes, peekChanges, pendingCount } from './server/git';
 import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from './model/regions';
+import { editScreens } from './model/find';
 import Spinner from '../components/fundamentals/Spinner.astro';
 import Skeleton from '../components/fundamentals/Skeleton.astro';
 import { generation } from '../content/source';
@@ -65,38 +66,21 @@ const to = (p: string) => withBase(`/_edit/${p}`);
 // in Atiya Studio the app's one title bar row draws this header (desktop spec §7.2, scripts/studio.ts): the app's
 // view asks with this request header, so the page comes without its own row, and never flashes one
 const studio = Astro.request.headers.get('x-atiya-studio') === '1';
-const groups = [
-  {
-    title: 'Content',
-    items: [
-      { label: 'Dashboard', href: to(''), current: screen === 'dashboard' },
-      { label: 'Pages', href: to('articles/'), current: screen === 'articles' || screen === 'article' },
-      { label: 'Sections', href: to('sections/'), current: screen === 'sections' },
-      { label: 'Navigation', href: to('navigation/'), current: screen === 'navigation' },
-      // the planet's buildings, while the little planet is on (Ways to explore; desktop plan, stages 4 and 8A)
-      ...(SITE_FEATURES.planet ? [{ label: 'Planet', href: to('planet/'), current: screen === 'planet' }] : []),
-      { label: 'Media', href: to('media/'), current: screen === 'media' },
-    ],
-  },
-  {
-    title: 'Site',
-    items: [
-      { label: 'Settings', href: to('settings/'), current: screen === 'settings' },
-      { label: 'Ways to explore', href: to('ways/'), current: screen === 'ways' },
-      { label: 'Access', href: to('access/'), current: screen === 'access' },
-      { label: 'Save to remote', href: to('publish/'), current: screen === 'publish', note: unknown ? 'Not checked' : pending ? `${pending} to save` : undefined },
-    ],
-  },
-  // the owner's developer tools: a person's site (made by Atiya Studio) leaves them out (desktop plan, stage 7)
-  ...(SITE_FEATURES.managed
-    ? []
-    : [
-        {
-          title: 'Checks',
-          items: [{ label: 'Tests', href: to('tests/'), current: screen === 'tests' }],
-        },
-      ]),
-];
+// the side navigation: edit mode's screens, as the action center finds them too (model/find.ts)
+const screens = editScreens(SITE_FEATURES);
+const groups = (['Content', 'Site', 'Checks'] as const)
+  .map((title) => ({
+    title,
+    items: screens
+      .filter((s) => s.group === title)
+      .map((s) => ({
+        label: s.label,
+        href: to(s.path),
+        current: screen === s.id || (s.id === 'articles' && screen === 'article'),
+        ...(s.id === 'publish' ? { note: unknown ? 'Not checked' : pending ? `${pending} to save` : undefined } : {}),
+      })),
+  }))
+  .filter((g) => g.items.length);
 ---
 
 <PageShell title={`${title} · Edit mode`} noindex preload={['ui']} liveContent={false}>

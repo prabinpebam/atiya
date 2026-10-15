@@ -1,0 +1,454 @@
+/* The action center (documentation/desktop/action-center.md §6): one floating panel over the window, the search
+ * field across its top, the results on the left and the chosen result's card on the right (under them when the
+ * panel is narrow). It holds its size while you type. The app's tokens only. */
+
+.finder {
+  position: fixed;
+  z-index: var(--layer-overlay);
+  top: max(calc(var(--size-chrome-block-compact) + var(--space-4)), 20vh);
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  width: min(56rem, calc(100vw - 4rem));
+  height: min(34rem, calc(100vh - max(calc(var(--size-chrome-block-compact) + var(--space-4)), 20vh) - 2rem));
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg), 0 0 0 var(--border-hairline) var(--color-rule);
+  overflow: hidden;
+  animation: finder-in var(--duration-fast) var(--ease-enter);
+}
+
+.finder[hidden] {
+  display: none;
+}
+
+@keyframes finder-in {
+  from {
+    opacity: 0;
+    translate: -50% calc(-1 * var(--space-2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finder {
+    animation: none;
+  }
+}
+
+/* the search field */
+.finder-field {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3) 0 var(--space-5);
+  min-height: calc(var(--size-touch) + var(--space-3));
+  border-bottom: var(--border-hairline) solid var(--color-rule);
+}
+
+.finder-field > svg {
+  flex: none;
+  width: var(--size-icon);
+  height: var(--size-icon);
+  fill: var(--color-text-muted);
+}
+
+.finder-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-lg);
+}
+
+.finder-field input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.finder-field input:focus-visible {
+  outline: none;
+}
+
+.finder:has(.finder-field input:focus-visible) .finder-field {
+  border-bottom-color: var(--color-focus);
+}
+
+/* the results and the card */
+.finder-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+}
+
+.finder-list {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-rule-strong) transparent;
+  padding: var(--space-2);
+  border-right: var(--border-hairline) solid var(--color-rule);
+}
+
+.finder-results:focus {
+  outline: none;
+}
+
+.finder-heading {
+  margin: var(--space-3) var(--space-3) var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.finder-heading:first-child {
+  margin-top: var(--space-1);
+}
+
+.finder-heading .finder-more {
+  font-weight: 400;
+}
+
+.finder-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-touch);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 0 var(--color-accent);
+  cursor: pointer;
+}
+
+.finder-row[aria-selected='true'] {
+  background: var(--color-bg-sunk);
+  box-shadow: inset var(--space-1) 0 0 0 var(--color-accent);
+}
+
+.finder-row:active {
+  background: var(--color-bg-hover);
+}
+
+.finder-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.finder-icon svg {
+  width: var(--size-icon);
+  height: var(--size-icon);
+  fill: currentColor;
+}
+
+.finder-icon svg .icon-secondary,
+.finder-card-icon svg .icon-secondary,
+.finder-field svg .icon-secondary {
+  fill: var(--color-accent);
+  opacity: 0.4;
+}
+
+.finder-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.finder-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.finder-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finder-title b {
+  font-weight: 700;
+}
+
+.finder-detail {
+  flex: 0 10 auto;
+  min-width: 0;
+  margin-inline-start: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.finder-note {
+  margin: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.finder-note button {
+  margin-top: var(--space-2);
+}
+
+/* the chosen result's card */
+.finder-card {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-rule-strong) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.finder-card:empty {
+  display: none;
+}
+
+.finder-picture {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 10;
+  max-height: 10rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-sunk);
+  overflow: hidden;
+}
+
+.finder-picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.finder-card-icon {
+  display: inline-flex;
+  width: var(--size-avatar-md);
+  height: var(--size-avatar-md);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-sunk);
+}
+
+.finder-card-icon svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  fill: currentColor;
+}
+
+.finder-card h2 {
+  margin: 0;
+  font-size: var(--text-h4);
+  overflow-wrap: anywhere;
+  /* a picture's alt text can be long: its first lines, the rest in the list's row */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.finder-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.finder-facts li {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-sunk);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.finder-about {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.finder-about mark {
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+}
+
+/* a setting's control */
+.finder-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.finder-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) 0 var(--space-2);
+}
+
+.finder-switch .track {
+  position: relative;
+  flex: none;
+  width: calc(var(--size-icon-lg) * 1.75);
+  height: var(--size-icon);
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+.finder-switch .track::after {
+  content: '';
+  position: absolute;
+  top: var(--space-0-5);
+  left: var(--space-0-5);
+  width: calc(var(--size-icon) - 2 * var(--space-0-5));
+  height: calc(var(--size-icon) - 2 * var(--space-0-5));
+  border-radius: var(--radius-round);
+  background: var(--color-bg-raised);
+  box-shadow: var(--shadow-sm);
+  transition: translate var(--duration-fast) var(--ease-standard);
+}
+
+.finder-switch[aria-checked='true'] .track {
+  background: var(--color-accent);
+}
+
+.finder-switch[aria-checked='true'] .track::after {
+  translate: calc(var(--size-icon-lg) * 1.75 - var(--size-icon)) 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finder-switch .track::after {
+    transition: none;
+  }
+}
+
+.finder-slider {
+  flex: 1 1 10rem;
+  min-height: var(--size-touch);
+  accent-color: var(--color-accent);
+}
+
+.finder-value {
+  min-width: 3.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.finder-text-field {
+  flex: 1 1 12rem;
+  min-height: var(--size-touch);
+  padding: 0 var(--space-3);
+  border: var(--border-control) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.finder-card .segmented {
+  align-self: flex-start;
+}
+
+.finder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.finder-actions kbd,
+.finder-hints kbd {
+  margin-inline-start: var(--space-2);
+  padding: 0 var(--space-1);
+  border: var(--border-hairline) solid var(--color-rule-strong);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+button.primary kbd {
+  border-color: currentColor;
+}
+
+.finder-status {
+  margin: 0;
+  min-height: 1.5em;
+  font-size: var(--text-sm);
+}
+
+.finder-status[data-tone='bad'] {
+  color: var(--color-negative);
+}
+
+.finder-status[data-tone='good'] {
+  color: var(--color-positive);
+}
+
+/* the keys for the chosen result */
+.finder-hints {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  margin: 0;
+  padding: var(--space-2) var(--space-5);
+  border-top: var(--border-hairline) solid var(--color-rule);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.finder-hints kbd {
+  margin: 0 var(--space-1) 0 0;
+}
+
+/* narrower: the card under the results */
+@media (max-width: 46rem) {
+  .finder-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .finder-list {
+    border-right: 0;
+    border-bottom: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .finder-card {
+    max-height: 45%;
+  }
+
+  .finder-picture {
+    display: none;
+  }
+}

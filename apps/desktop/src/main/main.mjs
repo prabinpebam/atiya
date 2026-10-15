@@ -29,6 +29,8 @@ import { AppWindowFrame, frameKindFor } from './window-frame.mjs';
 import { isEditMode, sanitizeCommand, sanitizeHeader } from '../core/studio-header.mjs';
 import { parseRemote, siteAddress, sitesFor } from '../core/account.mjs';
 import { parseTheme, siteThemeScript } from '../core/theme.mjs';
+import { addressFor, checkTarget, recentFor, rememberFor } from '../core/finder.mjs';
+import { ACTION_IDS, checkAppSetting } from '../ui/find-catalogue.mjs';
 import { execFile } from 'node:child_process';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -180,6 +182,8 @@ function createWindow() {
   // every page the site's dev server loads in the body follows the app's theme (a page loaded before a change, or a
   // choice made on the site's own switch outside the app, is put right)
   body.webContents.on('dom-ready', followAppTheme);
+  // the action center's Zoom (action-center.md §8.6): every page the body loads takes it; the frame never zooms
+  body.webContents.on('dom-ready', applyZoom);
   lockNavigation(frame);
   lockNavigation(body);
   windowFrame.attach(win, {
@@ -189,13 +193,18 @@ function createWindow() {
     },
     views: () => [frame.webContents, body.webContents],
   });
-  // Alt+Space opens the app's menu at the bar's start: the system's can't maximize a window the app draws
+  // Alt+Space opens the app's menu at the bar's start: the system's can't maximize a window the app draws; Ctrl+/
+  // opens the action center (action-center.md §8.1), and neither reaches the page
   for (const wc of [frame.webContents, body.webContents])
     wc.on('before-input-event', (e, input) => {
       if (input.type === 'keyDown' && input.alt && !input.control && !input.meta && !input.shift && (input.code === 'Space' || input.key === ' ')) {
         e.preventDefault();
         const m = windowFrame.margin();
         popupMenu(m + BODY_INSET, m + FRAME_HEIGHT);
+      }
+      if (input.type === 'keyDown' && (input.control || input.meta) && !input.alt && (input.code === 'Slash' || input.key === '/')) {
+        e.preventDefault();
+        if (!input.isAutoRepeat) toggleFinder(wc === body.webContents ? 'body' : 'frame');
       }
     });
   // the window's own channels answer the frame's page alone
@@ -217,6 +226,7 @@ function createWindow() {
     const cmd = sanitizeCommand(c);
     if (fromFrame(e) && cmd && studioHeader && inEditMode()) body.webContents.send('studio:command', cmd);
   });
+  finderIpc(fromFrame, inEditMode);
   // leaving edit mode (the site, the app's own pages) takes its controls out of the row; another screen of it
   // replaces them as soon as it has described its own
   body.webContents.on('did-start-navigation', (/** @type {any} */ d, /** @type {any} */ url, /** @type {any} */ inPlace, /** @type {any} */ mainFrame) => {
@@ -241,6 +251,7 @@ function createWindow() {
 
 /** What the app's pages need to draw themselves. */
 function appState() {
+  const saved = /** @type {any} */ (settings.read());
   return {
     workspace: workspace ? { ...workspace, name: workspace.name ?? siteName(workspace.path) } : null,
     server: server?.status() ?? null,
@@ -258,6 +269,9 @@ function appState() {
     sites: sitesFor(/** @type {any} */ (settings.read().workspaces), workspace?.path),
     // a source checkout saves to remote with this computer's own git sign-in; a managed site, with the app's account
     pushesWith: workspace?.kind === 'developer' ? 'computer' : workspace ? 'account' : null,
+    // the action center's (action-center.md §4.3, §8.5): the app's own settings, and the open site's Recent
+    prefs: { zoom: saved.zoom ?? 1, keepInTray: saved.keepInTray !== false },
+    recent: recentFor(saved.recent, workspace?.path),
   };
 }
 
@@ -269,13 +283,13 @@ function broadcast() {
   win?.setTitle(s.workspace?.name ? `${s.workspace.name} · Atiya Studio` : 'Atiya Studio');
 }
 
-/** @param {View} next */
-function show(next) {
+/** @param {View} next @param {string} [path] where in edit mode or the site (the action center's results) */
+function show(next, path) {
   view = next;
   /** @type {Record<Exclude<View, 'editor' | 'site'>, string>} */
   const pages = { welcome: 'welcome.html', source: 'source.html', setup: 'setup.html', server: 'server.html', publish: 'publish.html', check: 'check.html', sync: 'sync.html', private: 'private.html' };
-  if (next === 'editor') body.webContents.loadURL(`${devOrigin()}/_edit/`);
-  else if (next === 'site') body.webContents.loadURL(`${devOrigin()}/`);
+  if (next === 'editor') body.webContents.loadURL(`${devOrigin()}${path ?? '/_edit/'}`);
+  else if (next === 'site') body.webContents.loadURL(`${devOrigin()}${path ?? '/'}`);
   else body.webContents.loadURL(`${APP_ORIGIN}/${pages[next]}`);
   broadcast();
 }
@@ -555,6 +569,212 @@ function makeFlow() {
   });
 }
 
+// ---------- the action center (documentation/desktop/action-center.md §8) ----------
+
+/** Edit mode's last index, for the open site: kept when edit mode can't answer (§5.6). @type {{ site: string, data: any } | null} */
+let finderIndex = null;
+/** Thumbnails as data: URLs, the last 200 (§8.2). @type {Map<string, string | null>} */
+const thumbs = new Map();
+
+/** Opens or closes the panel, giving the frame the keys. @param {'body' | 'frame' | 'menu'} from where the keys were */
+function toggleFinder(from) {
+  if (!frame || frame.webContents.isDestroyed()) return;
+  frame.webContents.focus();
+  frame.webContents.send('finder:toggle', from);
+}
+
+function applyZoom() {
+  if (!body || body.webContents.isDestroyed()) return;
+  const z = checkAppSetting('zoom', /** @type {any} */ (settings.read()).zoom ?? 1) ?? 1;
+  body.webContents.setZoomFactor(/** @type {number} */ (z));
+}
+
+/** @param {unknown} t */
+function setTheme(t) {
+  const theme = parseTheme(t);
+  settings.update((s) => {
+    s.theme = theme;
+  });
+  nativeTheme.themeSource = theme;
+  followAppTheme();
+  broadcast();
+}
+
+async function signIn() {
+  if (view !== 'setup') beforeSignIn = view;
+  // the device flow shows its code in setup's page; the GitHub CLI's token needs no page unless it fails
+  if (flow.d.clientId) show('setup');
+  await flow.signInOnly();
+  // not signed in (the GitHub CLI isn't, say): setup's page says why and offers it again
+  if (accountState !== 'signed-in' && view !== 'setup') show('setup');
+}
+
+const serverUp = () => server?.status().state === 'ready' || server?.status().state === 'external';
+
+/**
+ * A request to edit mode from the main process: the launch token for a managed site, and what edit mode's guard
+ * asks of a write (an X-Editor header, this origin).
+ * @param {string} path @param {{ method?: string, body?: unknown, timeout?: number }} [o]
+ */
+function editFetch(path, o = {}) {
+  /** @type {Record<string, string>} */
+  const headers = { 'x-editor': '1' };
+  if (workspace?.kind === 'managed') headers['x-atiya-launch'] = LAUNCH_TOKEN;
+  if (o.body !== undefined) Object.assign(headers, { 'content-type': 'application/json', origin: devOrigin() });
+  return fetch(`${devOrigin()}${path}`, { method: o.method ?? 'GET', headers, body: o.body === undefined ? undefined : JSON.stringify(o.body), signal: AbortSignal.timeout(o.timeout ?? 8000) });
+}
+
+/** Edit mode's index for the open site, fresh; the last one, marked, when edit mode can't answer. */
+async function findIndex() {
+  const site = workspace?.path ?? '';
+  const kept = finderIndex?.site === site ? finderIndex.data : null;
+  if (!serverUp()) return { state: 'unavailable', server: server?.status().state ?? null, index: kept };
+  try {
+    const res = await editFetch('/_edit/api/find');
+    if (!res.ok) throw new Error(String(res.status));
+    const data = await res.json();
+    finderIndex = { site, data };
+    return { state: 'ready', index: data };
+  } catch {
+    return { state: 'unavailable', server: server?.status().state ?? null, index: kept };
+  }
+}
+
+/** A picture's or video's thumbnail, as a data: URL (the frame loads nothing from the dev server). @param {unknown} id */
+async function findThumb(id) {
+  if (typeof id !== 'string' || !serverUp() || !(finderIndex?.data?.media ?? []).some((/** @type {any} */ m) => m.id === id)) return null;
+  const key = `${workspace?.path}|${id}`;
+  if (thumbs.has(key)) return thumbs.get(key) ?? null;
+  let url = null;
+  try {
+    const r = await editFetch(`/_edit/api/find/thumb?id=${encodeURIComponent(id)}`);
+    const { thumb } = r.ok ? await r.json() : {};
+    if (typeof thumb === 'string' && thumb.startsWith('/') && !thumb.startsWith('//')) {
+      const img = await editFetch(thumb);
+      const type = img.headers.get('content-type') ?? '';
+      const bytes = Buffer.from(await img.arrayBuffer());
+      if (img.ok && /^image\/(webp|png|jpeg|avif|gif)/.test(type) && bytes.length < 2_000_000) url = `data:${type.split(';')[0]};base64,${bytes.toString('base64')}`;
+    }
+  } catch {
+    // not drawn: the row keeps its icon
+  }
+  thumbs.set(key, url);
+  if (thumbs.size > 200) thumbs.delete(/** @type {string} */ (thumbs.keys().next().value));
+  return url;
+}
+
+/** One of the app's own actions (§4.2): what its button or menu item does. @param {string} id */
+function runAction(id) {
+  if (!ACTION_IDS.has(id)) return;
+  const up = serverUp();
+  if (id === 'show-editor' && up) show('editor');
+  else if (id === 'show-site' && up) show('site');
+  else if (id === 'open-browser' && up) openExternal(`${devOrigin()}/`);
+  else if (id === 'restart') server?.restart();
+  else if (id === 'open-live' && live?.url) openExternal(live.url);
+  else if (id === 'check' && workspace?.kind === 'managed') show('check');
+  else if (id === 'new-page' && up) show('editor', '/_edit/articles/?new=article');
+  else if (id === 'new-site') show('welcome');
+  else if (id === 'sign-in') signIn();
+  else if (id === 'reload') body.webContents.reload();
+  else if (id === 'quit') quit();
+}
+
+/**
+ * Changes a setting from its card (§4.3): the app's own here, the site's through edit mode's store (§8.3).
+ * @param {unknown} id @param {unknown} value
+ * @returns {Promise<{ ok: true, value: unknown, restarts?: boolean } | { ok: false, message: string, value?: unknown }>}
+ */
+async function findSet(id, value) {
+  if (id === 'theme' || id === 'zoom' || id === 'tray') {
+    const v = checkAppSetting(id, value);
+    if (v === undefined) return { ok: false, message: "That isn't a value this setting takes." };
+    if (id === 'theme') setTheme(v);
+    else {
+      settings.update((s) => {
+        if (id === 'zoom') /** @type {any} */ (s).zoom = v;
+        else s.keepInTray = /** @type {boolean} */ (v);
+      });
+      if (id === 'zoom') applyZoom();
+      broadcast();
+    }
+    return { ok: true, value: v };
+  }
+  const known = (finderIndex?.data?.settings ?? []).find((/** @type {any} */ s) => s.id === id);
+  if (typeof id !== 'string' || !known) return { ok: false, message: 'That setting is no longer there. Search again.' };
+  if (!serverUp()) return { ok: false, message: 'Edit mode is starting. Try again when it’s ready.' };
+  const before = known.restarts ? await warmMark() : null;
+  try {
+    const res = await editFetch(`/_edit/api/find/settings/${encodeURIComponent(id)}`, { method: 'PUT', body: { value, version: known.version ?? null }, timeout: 30_000 });
+    const r = await res.json().catch(() => ({}));
+    if (r.setting) Object.assign(known, r.setting);
+    if (!res.ok || !r.ok) {
+      const message = res.status === 409 ? 'Changed elsewhere: this is the saved one now.' : (r.issues ?? []).map((/** @type {any} */ i) => i.message).filter(Boolean).join(' ') || "It wasn't saved.";
+      return { ok: false, message, value: r.setting?.value ?? known.value };
+    }
+    if (r.restarts) await waitForRestart(before);
+    return { ok: true, value: r.setting?.value ?? value, restarts: !!r.restarts };
+  } catch {
+    return { ok: false, message: "Edit mode didn't answer. Try again in a moment." };
+  }
+}
+
+/** The dev server's start mark (`/_edit/__warm`), which a restart changes. */
+async function warmMark() {
+  try {
+    const r = await editFetch('/_edit/__warm', { timeout: 3000 });
+    return r.ok ? ((await r.json()).started ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Waits for edit mode's server to start again after a way to explore changed (up to 90 s). @param {string | null} before */
+async function waitForRestart(before) {
+  const end = Date.now() + 90_000;
+  while (Date.now() < end) {
+    await new Promise((r) => setTimeout(r, 500));
+    const now = await warmMark();
+    if (now && now !== before) return;
+  }
+}
+
+/**
+ * The panel's channels: the frame's page alone may call them (§8.4).
+ * @param {(e: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => boolean} fromFrame
+ * @param {() => boolean} inEditMode
+ */
+function finderIpc(fromFrame, inEditMode) {
+  ipcMain.handle('finder:index', (e) => (fromFrame(e) ? findIndex() : null));
+  ipcMain.handle('finder:thumb', (e, id) => (fromFrame(e) ? findThumb(id) : null));
+  ipcMain.handle('finder:set', (e, id, value) => (fromFrame(e) ? findSet(id, value) : null));
+  ipcMain.on('finder:remember', (e, key, isPrivate) => {
+    if (!fromFrame(e) || !workspace) return;
+    const site = workspace.path;
+    settings.update((s) => {
+      /** @type {any} */ (s).recent = rememberFor(/** @type {any} */ (s).recent ?? {}, site, String(key), isPrivate === true);
+    });
+    broadcast();
+  });
+  ipcMain.on('finder:run', (e, raw) => {
+    const t = fromFrame(e) ? checkTarget(raw) : null;
+    if (!t) return;
+    if (t.kind === 'action') return runAction(t.id);
+    if (t.kind === 'switch') return void switchSite(t.id);
+    if (t.kind === 'command') {
+      const cmd = sanitizeCommand({ id: t.id, action: t.value === undefined ? 'click' : 'select', value: t.value });
+      if (cmd && studioHeader && inEditMode()) body.webContents.send('studio:command', cmd);
+      return body.webContents.focus();
+    }
+    const to = serverUp() ? addressFor(t, finderIndex?.data) : null;
+    if (!to) return;
+    show(to.view, to.path);
+    body.webContents.focus();
+  });
+  // the panel closed: the keys go back to the page
+  ipcMain.on('finder:closed', (e) => fromFrame(e) && body.webContents.focus());
+}
+
 /** The bridge: answers only the app's own pages. */
 function bridge() {
   /** @param {string} channel @param {(...args: any[]) => any} fn */
@@ -649,14 +869,7 @@ function bridge() {
     show('welcome');
   });
   // the title bar's account menu (plan stage 7C)
-  handle('account:sign-in', async () => {
-    if (view !== 'setup') beforeSignIn = view;
-    // the device flow shows its code in setup's page; the GitHub CLI's token needs no page unless it fails
-    if (flow.d.clientId) show('setup');
-    await flow.signInOnly();
-    // not signed in (the GitHub CLI isn't, say): setup's page says why and offers it again
-    if (accountState !== 'signed-in' && view !== 'setup') show('setup');
-  });
+  handle('account:sign-in', () => signIn());
   handle('account:sign-out', async () => {
     tokens().clear();
     account = null;
@@ -671,15 +884,7 @@ function bridge() {
   });
   handle('site:switch', (/** @type {string} */ path) => switchSite(String(path)));
   // one theme for the whole app (plan stage 7D): every view follows nativeTheme; the site's own pages follow it too
-  handle('app:theme', (/** @type {unknown} */ t) => {
-    const theme = parseTheme(t);
-    settings.update((s) => {
-      s.theme = theme;
-    });
-    nativeTheme.themeSource = theme;
-    followAppTheme();
-    broadcast();
-  });
+  handle('app:theme', (/** @type {unknown} */ t) => setTheme(t));
   handle('publish:retry', async () => {
     const w = /** @type {any} */ (settings.read().workspaces.find((x) => x.path === workspace?.path));
     if (!w?.repository) return;
@@ -696,6 +901,8 @@ function commands() {
   return /** @type {Electron.MenuItemConstructorOptions[]} */ ([
     { label: 'Make a new site', click: () => show('welcome') },
     { label: 'Open a source folder…', accelerator: 'CmdOrCtrl+O', click: () => show('source') },
+    // the keys are caught on the views themselves (before-input-event): shown here, never registered twice
+    { label: 'Action center', accelerator: 'CmdOrCtrl+/', registerAccelerator: false, click: () => toggleFinder('menu') },
     { type: 'separator' },
     { label: 'Edit mode', accelerator: 'CmdOrCtrl+1', click: () => server && show('editor') },
     { label: 'Site', accelerator: 'CmdOrCtrl+2', click: () => server && show('site') },

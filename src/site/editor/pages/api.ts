@@ -13,9 +13,9 @@ import { measureVideo } from '../server/videoShape';
 import { changes, discard, git, publish, push } from '../server/git';
 import { changeAddress, createGrant, deleteGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, updateGrant, withdrawGrant, type GrantEdit, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
-import { WAYS_FILE, type Ways } from '../../modes/contract';
-import { isOn } from '../../modes/ways';
-import { LITTLE_PLANET, PLANET_NEEDS, startingPlanet } from '../model/ways';
+import type { Ways } from '../../modes/contract';
+import { saveWays, WAYS_KEY } from '../server/ways';
+import { load } from '../server/screens';
 import { picture } from '../../content/pictures';
 
 export const prerender = false;
@@ -120,6 +120,25 @@ const handle: APIRoute = async ({ request, params, url }) => {
       return r.ok ? json({ ok: true, ...r.shape }) : json({ ok: false, issues: [{ file: '', path: 'url', message: r.message }] }, 422);
     }
 
+    // ---------- the action center (documentation/desktop/action-center.md §8.2, §8.3) ----------
+    if (parts[0] === 'find') {
+      const { findIndex, findThumb, setFindSetting } = await import('../server/find');
+      if (method === 'GET' && parts.length === 1) {
+        const loaded = load();
+        return loaded.ok ? json(findIndex(loaded.index)) : json({ ok: false, issues: loaded.issues }, 422);
+      }
+      if (method === 'GET' && parts[1] === 'thumb') {
+        const index = content();
+        const thumb = await findThumb(index, url.searchParams.get('id') ?? '');
+        return thumb ? json({ ok: true, thumb }) : json({ ok: false }, 404);
+      }
+      if (method === 'PUT' && parts[1] === 'settings' && parts[2]) {
+        const b = await body<{ value: unknown; version: string | null }>(request);
+        const r = await setFindSetting(decodeURIComponent(parts.slice(2).join('/')), b.value, b.version ?? null);
+        return r ? json(r, r.ok ? 200 : r.status) : json({ ok: false, issues: [{ file: '', message: 'no such setting' }] }, 404);
+      }
+    }
+
     // ---------- articles ----------
     if (parts[0] === 'articles') {
       const id = parts[1];
@@ -183,22 +202,10 @@ const handle: APIRoute = async ({ request, params, url }) => {
       const version = b.ifMatch?.[key] ?? Object.values(b.ifMatch ?? {})[0] ?? null;
       return result(await commit({ changes: [{ key, bytes: jsonBytes(b.planet) }], ifMatch: { [key]: version } }));
     }
-    // which ways in are on (plan stage 8A): the little planet turned on for a site that's never had it gets
-    // its starting map in the same transaction, or is refused when there aren't enough sections for one
+    // which ways in are on (plan stage 8A), saved as the action center's switches save them (server/ways.ts)
     if (method === 'PUT' && path === 'ways') {
       const b = await body<{ ways: Ways; ifMatch: Record<string, string | null> }>(request);
-      const key = `/content/${WAYS_FILE}`;
-      const changes = [{ key, bytes: jsonBytes(b.ways) }];
-      const ifMatch: Record<string, string | null> = { [key]: b.ifMatch?.[key] ?? null };
-      if (isOn(b.ways, LITTLE_PLANET) && !readDoc(planetKey())) {
-        const tree = readDoc<SiteStructure>(STRUCTURE)?.value;
-        const sections = (tree?.home.children ?? []).flatMap((n) => (n.kind === 'hub' ? [{ id: n.id, title: n.title, summary: n.summary }] : []));
-        const start = startingPlanet(sections);
-        if (!start) return json({ ok: false, issues: [{ file: PLANET.slice(1), message: PLANET_NEEDS }] }, 422);
-        changes.push({ key: PLANET, bytes: jsonBytes(start) });
-        ifMatch[PLANET] = null;
-      }
-      return result(await commit({ changes, ifMatch }));
+      return result(await saveWays(b.ways, b.ifMatch?.[WAYS_KEY] ?? null));
     }
     if (method === 'PUT' && path === 'site') {
       const b = await body<{ site: SiteSettings; ifMatch: Record<string, string | null> }>(request);

@@ -173,7 +173,7 @@ While edit mode starts (or after it stops), the app's actions and settings are t
 - One panel, centred on the window, its top a fifth of the way down the window (never closer than 1 rem below the title bar).
 - Width: up to 56 rem, at least 2 rem clear of the window's sides. Height: up to 34 rem, at least 2 rem clear of the bottom. **The panel holds its size** while you type: results change, the panel doesn't (AP1).
 - From 46 rem wide, the card sits to the right of the results (results 58%, card 42%). Narrower, the card sits under the results.
-- No dimming: like Spotlight, the window stays as it is behind the panel. While it's open the rest of the window doesn't respond; a press outside closes it.
+- No dimming: like Spotlight, the window stays as it is behind the panel. While it's open the rest of the window doesn't respond; a press outside closes it, and focus stays where the press put it (keys taken from the page go back to it).
 
 ### 6.2 Anatomy
 
@@ -233,7 +233,7 @@ Sentence case; labels are verbs ("Edit page", "View on site", "Open in Media", "
 
 Pure, in the app (`src/ui/find-rank.mjs`), unit-tested:
 
-- **Matching:** case, accents and punctuation don't matter; every word typed must match somewhere in the result (titles, other words, the quieter line, a page's body), each word as the start of a word, a part of a word, or (titles only) the initials of its words in order ("lp" finds Little planet).
+- **Matching:** case, accents and punctuation don't matter; every word typed must match somewhere in the result (titles, other words, the quieter line, a page's body), each word as the start of a word, a part of a word (three letters or more, and never inside a body's words), or (titles only) the initials of its words in order ("lp" finds Little planet).
 - **Score:** the best place each word matched: the whole title (100), the title's start (90), a word's start in the title (75), inside the title (55), the initials (50), a word's start in its other words (45), inside its other words or quieter line (30), the body (15). A result's score is its words' lowest, plus: used recently (+12, fading over the last 8), an action or setting (+4, so "theme" finds the setting before a page titled Theme).
 - **Order:** the top hit is the best score of all; then the groups in §4.1's order, each sorted by score, then by shorter title, then alphabetically.
 - **Speed:** a search over 5,000 results takes under 8 ms (a unit test measures 2,000 under a generous bound); the field never waits on it.
@@ -252,7 +252,7 @@ Pure, in the app (`src/ui/find-rank.mjs`), unit-tested:
 
 - `pages`: id, title, kind, status and its label, published, private, section (id and title), its site path (or none), summary, body text (headings and paragraphs as plain text, up to 4,000 characters), its card picture's id, updated;
 - `sections`: id, title, path, how many pages;
-- `media`: id, kind (picture or video), alt or title, caption, decorative, owner and its label, private, width, height, a video's length;
+- `media`: id, kind (picture or video), alt or title, caption, decorative, owner and its label, private, a video's size and length (a picture's size needs it drawn, so it isn't here);
 - `screens`: id, label, href and other words, from the same list as edit mode's side navigation;
 - `settings`: id, title, description, control, value, version and limits (§4.3).
 
@@ -315,3 +315,14 @@ A new app setting, `zoom` (0.5 to 2, default 1): the body's view takes it on eve
 - A page's status (Publish, back to Draft) on its card.
 - Headings inside a page, to jump to one.
 - People shared with (the Access screen's grants), found by name.
+
+## 11. As built
+
+Stage 7E, on the `action-center` branch (evidence in the [plan](plan.md), §6):
+
+- **Where:** the panel is `apps/desktop/src/ui/finder.js` and `finder.css`, its markup in `frame.html`; finding and ordering are `src/ui/find-rank.mjs`, what's found is `src/ui/find-catalogue.mjs` (both pure, shared by the frame and the main process); the main process's rules are `src/core/finder.mjs` (the addresses, the checks, Recent). Edit mode's side: `src/site/editor/model/find.ts` (the screens, which the side navigation now reads too, a page's body as text, the site's settings) and `server/find.ts`, behind `GET /_edit/api/find`, `GET /_edit/api/find/thumb` and `PUT /_edit/api/find/settings/<id>`; saving the ways is `server/ways.ts`, shared with the Ways to explore screen.
+- **The keys:** Ctrl+/ is caught in the main process on both views (`before-input-event`); the frame also listens for it, for keys that reach its page without passing there (an automation's). The tests press it with `sendInputEvent`, as a person's keys arrive.
+- **Matching, refined after a look at the owner's site:** a word of one or two letters matches only where a word starts, and a page's body matches only at word starts ("my" no longer finds every page with "my" in its words).
+- **A press outside** closes the panel and leaves focus where the press put it, as the title bar's other popovers do; keys taken from the body go back to it.
+- **Pictures** have no size until drawn, so the index gives only a video's size; a picture's card shows its kind, its page and whether it has alt text.
+- **Not changed:** at about 760 px wide the title bar's left group already overflows under its right group (before the search button too); left for the row's own work.

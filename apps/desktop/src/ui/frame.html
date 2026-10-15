@@ -5,6 +5,7 @@
 <title>Atiya Studio</title>
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="frame.css">
+<link rel="stylesheet" href="finder.css">
 <script type="module" src="frame.js"></script>
 </head>
 <body class="frame">
@@ -24,6 +25,8 @@
       <button type="button" class="server" id="server" aria-haspopup="dialog" aria-expanded="false" aria-controls="server-panel" aria-label="Edit mode: starting" title="Edit mode"><span class="dot" id="server-dot" data-tone="busy"></span></button>
       <!-- one theme for the whole app: the title bar, the app's pages, edit mode and the site (plan stage 7D) -->
       <button type="button" class="icon-button" id="theme" aria-haspopup="menu" aria-expanded="false" aria-controls="choices" aria-label="Colour theme: Match the system" title="Colour theme"><svg data-icon="theme-system" aria-hidden="true" focusable="false"></svg></button>
+      <!-- the action center: Ctrl+/ from anywhere (documentation/desktop/action-center.md, D3) -->
+      <button type="button" class="icon-button" id="find" aria-haspopup="dialog" aria-expanded="false" aria-controls="finder" aria-keyshortcuts="Control+Slash" aria-label="Action center" title="Action center (Ctrl+/)"><svg data-icon="search" aria-hidden="true" focusable="false"></svg></button>
       <!-- the screen's title (edit mode describes its header: plan stage 7B) -->
       <div class="context" id="page-context"></div>
     </div>
@@ -93,6 +96,24 @@
 <section class="popover layouts" id="layouts" role="dialog" aria-label="Snap layouts" hidden></section>
 
 <section class="popover choices" id="choices" role="menu" aria-label="Choose" hidden></section>
+
+<!-- the action center (documentation/desktop/action-center.md §6): find anything, do anything -->
+<section class="finder" id="finder" role="dialog" aria-modal="true" aria-label="Action center" hidden>
+  <div class="finder-field">
+    <svg data-icon="search" aria-hidden="true" focusable="false"></svg>
+    <input id="finder-input" type="text" role="combobox" aria-expanded="true" aria-controls="finder-results" aria-autocomplete="list" aria-describedby="finder-hints" aria-label="Search" placeholder="Search pages, pictures, settings and actions" autocomplete="off" spellcheck="false">
+    <button type="button" class="icon-button" id="finder-clear" tabindex="-1" aria-label="Clear the search" title="Clear the search" hidden><svg data-icon="close" aria-hidden="true" focusable="false"></svg></button>
+  </div>
+  <div class="finder-body">
+    <div class="finder-list">
+      <div class="finder-results" id="finder-results" role="listbox" aria-label="Results"></div>
+      <div class="finder-note" id="finder-note" hidden></div>
+    </div>
+    <section class="finder-card" id="finder-card" aria-live="off"></section>
+  </div>
+  <p class="finder-hints" id="finder-hints"></p>
+  <p class="sr-only" id="finder-live" role="status" aria-live="polite"></p>
+</section>
 
 <div class="handles" id="handles" aria-hidden="true">
   <div class="handle" data-window-handle="n"></div><div class="handle" data-window-handle="s"></div>

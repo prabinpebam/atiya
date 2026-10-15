@@ -3,6 +3,7 @@
 // going live and its actions; the window's controls. It moves and resizes the window by reporting the pointer
 // to the main process, which does the rest (core/window/custom-window.mjs). Ported in part from focus-notes.
 import { ICONS } from './site/icons.js';
+import { initFinder } from './finder.js';
 
 const $ = (id) => document.getElementById(id);
 const root = document.documentElement;
@@ -646,4 +647,15 @@ window.atiya.state().then(drawTheme);
 $('theme').addEventListener('click', () => {
   if (open?.panel === $('choices') && open.trigger === $('theme')) return closePopover(true);
   openMenu($('theme'), 'Colour theme', THEMES, theme, (value) => window.atiya.setTheme(value), 'start');
+});
+
+// ---------- the action center (documentation/desktop/action-center.md) ----------
+initFinder({
+  glyph,
+  closePopovers: () => closePopover(false),
+  // signing out asks first, in the account menu (§4.2)
+  signOut: () => {
+    $('account').click();
+    $('sign-out').click();
+  },
 });
