@@ -883,3 +883,19 @@ body.frame {
 .page-button[data-variant='primary'] .glyph .icon-secondary {
   opacity: 0.4;
 }
+
+/* a filled button keeps its fill on hover and press (the general button:hover would swap in the plain hover
+   colour under its on-accent text: dark on dark in dark mode, white on light grey in light) */
+@media (hover: hover) {
+  .page-button[data-variant='primary']:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+    color: var(--color-on-accent);
+  }
+}
+
+.page-button[data-variant='primary']:active:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: var(--color-on-accent);
+}

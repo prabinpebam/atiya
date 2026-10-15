@@ -80,6 +80,32 @@ test.describe('desktop: one row', () => {
         const r = await new AxeBuilder({ page: frame }).setLegacyMode(true).disableRules(['landmark-one-main']).analyze();
         expect(r.violations.map((v) => `${scheme}: ${v.id}`)).toEqual([]);
       }
+      // every control of the screen's keeps its words readable at rest and on hover, light and dark (a filled
+      // button once lost its fill on hover, leaving its on-accent text on the plain hover colour)
+      const contrast = (/** @type {import('@playwright/test').Locator} */ b) =>
+        b.evaluate((el) => {
+          const rgb = (/** @type {string} */ c) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+          const lum = (/** @type {number[]} */ [r, g, b]) => [r, g, b].map((v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+          const s = getComputedStyle(el);
+          let bg = s.backgroundColor;
+          for (let e = /** @type {HTMLElement | null} */ (el); e && /rgba\(0, 0, 0, 0\)|transparent/.test(bg); e = e.parentElement) bg = getComputedStyle(e).backgroundColor;
+          const [a, z] = [lum(rgb(s.color)), lum(rgb(bg))].sort((x, y) => y - x);
+          return (a + 0.05) / (z + 0.05);
+        });
+      for (const [scheme, label] of /** @type {const} */ ([['light', 'Light'], ['dark', 'Dark']])) {
+        // the row follows the theme chosen in edit mode: choose it from the row, as a person would
+        await controls.getByRole('button', { name: /^Colour theme: / }).click();
+        await frame.getByRole('menu', { name: 'Colour theme' }).getByRole('menuitemradio', { name: label }).click();
+        await expect(controls.getByRole('button', { name: `Colour theme: ${label}` })).toBeVisible();
+        expect(await frame.evaluate(() => document.documentElement.style.colorScheme)).toBe(scheme);
+        for (const name of ['Save to remote', 'Undo', `Colour theme: ${label}`]) {
+          const b = controls.getByRole('button', { name });
+          await frame.mouse.move(5, 300);
+          expect(await contrast(b), `${scheme} ${name} at rest`).toBeGreaterThanOrEqual(4.5);
+          await b.hover();
+          expect(await contrast(b), `${scheme} ${name} on hover`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
       // the site has no header of edit mode's: the row's go
       await frame.getByRole('radio', { name: 'Site' }).click();
       await expect(frame.locator('#page-controls')).toBeHidden();
