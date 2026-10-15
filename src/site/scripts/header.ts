@@ -17,3 +17,20 @@ export function tuck(from: number, to: number, headerHeight: number, tucked: boo
   if (Math.abs(dy) < TUCK_SLACK) return tucked;
   return dy > 0;
 }
+
+/**
+ * One section link is the current one at a time (SiteHeader's More): the bar's while it shows, else its copy in
+ * More. Both carry `data-is-current`; `aria-current` follows whichever is shown.
+ */
+export function followCurrent(items: readonly HTMLElement[], copies: readonly HTMLElement[]): boolean {
+  let hiddenCurrent = false;
+  items.forEach((li, i) => {
+    const own = li.querySelector('a[data-is-current]');
+    const copy = copies[i]?.querySelector('a[data-is-current]');
+    if (!own || !copy) return;
+    (li.hidden ? own : copy).removeAttribute('aria-current');
+    (li.hidden ? copy : own).setAttribute('aria-current', 'page');
+    hiddenCurrent ||= li.hidden;
+  });
+  return hiddenCurrent;
+}

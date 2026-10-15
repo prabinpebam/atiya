@@ -84,7 +84,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
               const policy = navPolicy(n.href);
               return (
                 <li data-nav-item>
-                  <a href={n.href} target={policy.target} rel={policy.rel} aria-current={n.current ? 'page' : undefined}>
+                  <a href={n.href} target={policy.target} rel={policy.rel} aria-current={n.current ? 'page' : undefined} data-is-current={n.current ? '' : undefined}>
                     {n.label}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
                   </a>
                 </li>
@@ -99,7 +99,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
                     const policy = navPolicy(n.href);
                     return (
                       <li data-more-item hidden>
-                        <a href={n.href} target={policy.target} rel={policy.rel} aria-current={n.current ? 'page' : undefined}>
+                        <a href={n.href} target={policy.target} rel={policy.rel} data-is-current={n.current ? '' : undefined}>
                           {n.label}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
                         </a>
                       </li>
@@ -476,7 +476,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
 <script>
   import { each } from '../../scripts/page';
   import { bindThemeSwitch } from '../../scripts/theme';
-  import { tuck } from '../../scripts/header';
+  import { followCurrent, tuck } from '../../scripts/header';
   import { media } from '../../design/responsive';
 
   const store = (() => {
@@ -573,7 +573,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
           for (let i = items.length - 1; i >= 0 && !fits(); i--) items[i].hidden = true;
         }
         items.forEach((li, i) => (copies[i].hidden = !li.hidden));
-        const hiddenCurrent = items.some((li) => li.hidden && li.querySelector('[aria-current="page"]'));
+        const hiddenCurrent = followCurrent(items, copies);
         more.toggleAttribute('data-current', hiddenCurrent);
         moreToggle.setAttribute('aria-label', hiddenCurrent ? 'More sections, including the current one' : 'More sections');
         if (more.hidden) setMore(false);

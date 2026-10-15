@@ -53,9 +53,13 @@ test.describe('site design system', () => {
     await page.keyboard.press('Escape');
     await expect(list).toBeHidden();
     await expect(more).toBeFocused();
-    // the current section behind More: More says so
-    const hiddenCurrent = await page.locator('.nav [data-nav-item][hidden] a[aria-current="page"]').count();
-    if (hiddenCurrent) await expect(more).toHaveAccessibleName('More sections, including the current one');
+    // the current section behind More: More says so, and its copy there is the one current link
+    const hiddenCurrent = await page.locator('.nav [data-nav-item][hidden] a[data-is-current]').count();
+    if (hiddenCurrent) {
+      await expect(more).toHaveAccessibleName('More sections, including the current one');
+      await expect(list.locator('[data-more-item]:not([hidden]) a[aria-current="page"]')).toHaveCount(1);
+    }
+    await expect(page.getByRole('navigation', { name: 'Sections' }).locator('[aria-current]')).toHaveCount(1);
     // under 56 rem the menu takes over: no More
     await page.setViewportSize({ width: 800, height: 900 });
     await expect(more).toBeHidden();
