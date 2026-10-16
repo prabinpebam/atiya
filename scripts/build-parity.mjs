@@ -22,7 +22,7 @@ import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, rea
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compareBuilds, describe } from './lib/parity.mjs';
+import { compareBuilds, describe, ownerAtiya } from './lib/parity.mjs';
 import { INCLUDE } from './pack-engine.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -109,10 +109,10 @@ try {
   rmSync(join(engine, 'content'), { recursive: true, force: true });
   cpSync(join(site, 'content'), join(engine, 'content'), { recursive: true });
   cpSync(join(site, 'private-pages'), join(engine, 'private-pages'), { recursive: true });
-  // a managed site's settings: the starter's own; the owner's, as his site would have them (the design
-  // library and the documentation on: no release has the documentation, the one difference allowed)
+  // a managed site's settings: the starter's own; the owner's, as his site would have them (the design library,
+  // the documentation and the planet's residents on: no release has the documentation, the one difference allowed)
   if (starter) cpSync(join(site, 'atiya.json'), join(engine, 'atiya.json'));
-  else writeFileSync(join(engine, 'atiya.json'), JSON.stringify({ schema: 1, engine: { version: manifest.version, sha256: manifest.sha256, commit: manifest.commit }, contract: 1, features: { designLibrary: true, docs: true }, owner: { login: 'prabinpebam', id: 0 } }, null, 2) + '\n');
+  else writeFileSync(join(engine, 'atiya.json'), JSON.stringify(ownerAtiya(manifest), null, 2) + '\n');
   console.log(`engine ${manifest.version} at ${manifest.commit.slice(0, 12)}: ${manifest.files} files`);
   if (has('install')) {
     // on GitHub's runners, as site-build.yml does: the lockfile names the package-feed mirror it was written through

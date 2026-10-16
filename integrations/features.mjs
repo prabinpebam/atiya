@@ -56,7 +56,8 @@ export function siteFeatures({ root, contentRoot }) {
     designLibrary: atiya ? atiya.features?.designLibrary === true : true,
     docs: atiya ? atiya.features?.docs === true : existsSync(join(root, 'documentation', 'docs-manifest.json')),
     managed: !!atiya,
-    // the planet's residents (Chopper, the family, Prabin) and the owner's music are his alone (plan M3a, O5, O6)
-    residents: !atiya,
+    // the planet's residents (Chopper, the family, Prabin) and the owner's music are his alone (plan M3a, O5, O6): on for the
+    // engine's own repository, and for a site whose atiya.json turns them on (his, built from a release); never by default
+    residents: atiya ? atiya.features?.residents === true : true,
   };
 }

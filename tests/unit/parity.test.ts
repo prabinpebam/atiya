@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildIdOf, compareBuilds, describe as words, normalise } from '../../scripts/lib/parity.mjs';
+import { buildIdOf, compareBuilds, describe as words, normalise, ownerAtiya } from '../../scripts/lib/parity.mjs';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { siteFeatures } from '../../integrations/features.mjs';
 
 const enc = new TextEncoder();
 const f = (path: string, text: string) => ({ path, bytes: () => enc.encode(text) });
@@ -57,5 +61,20 @@ describe('the parity check (desktop plan stage 10)', () => {
     const png = (b: number[]) => ({ path: 'a.webp', bytes: () => new Uint8Array(b) });
     expect(compareBuilds([png([1, 2, 3])], [png([1, 2, 3])]).ok).toBe(true);
     expect(compareBuilds([png([1, 2, 3])], [png([1, 2, 4])]).differ).toEqual(['a.webp']);
+  });
+});
+
+describe("the owner's site built from an engine release has every feature his source build has", () => {
+  it('the same features but managed (a feature must follow a setting in atiya.json, never "this is a managed site")', () => {
+    const root = process.cwd();
+    const source = siteFeatures({ root, contentRoot: join(root, 'content') });
+    const dir = mkdtempSync(join(tmpdir(), 'parity-features-'));
+    mkdirSync(join(dir, 'content'));
+    writeFileSync(join(dir, 'atiya.json'), JSON.stringify(ownerAtiya({ version: '0.0.0', sha256: 'x', commit: 'y' })));
+    const engine = siteFeatures({ root: dir, contentRoot: join(root, 'content') });
+    const { managed: _s, ...fromSource } = source;
+    const { managed: _e, ...fromEngine } = engine;
+    expect(fromEngine).toEqual(fromSource);
+    expect(engine.managed).toBe(true);
   });
 });

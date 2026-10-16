@@ -136,3 +136,14 @@ export function describe(r, max = 20) {
     r.ok ? (Object.keys(r.allowed).length ? `the same, but for ${Object.keys(r.allowed).join(', ')}` : 'the same') : 'the builds DIFFER',
   ].join('\n');
 }
+
+/**
+ * The owner's site's atiya.json, as it would be if his site were built from an engine release: every feature his
+ * source build has turned on (the design library, the documentation, the planet's residents). The parity check builds
+ * his site through the engine pack with it; tests/unit/parity.test.ts holds that it gives the source build's features,
+ * so a feature that keys on a managed site instead of on a setting fails there, not in CI.
+ * @param {{ version: string, sha256: string, commit: string }} engine
+ */
+export function ownerAtiya(engine) {
+  return { schema: 1, engine: { version: engine.version, sha256: engine.sha256, commit: engine.commit }, contract: 1, features: { designLibrary: true, docs: true, residents: true }, owner: { login: 'prabinpebam', id: 0 } };
+}

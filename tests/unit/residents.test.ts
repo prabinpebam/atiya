@@ -11,12 +11,15 @@ import { planetStructure } from '../../src/site/content/schema';
 
 /** Little planet for anyone (desktop plan M3a): the owner's residents and music are his site's alone. */
 describe('the residents follow the site', () => {
-  it("on for the engine's own repository, off for a site made by Atiya Studio", () => {
+  it("on for the engine's own repository and where atiya.json turns them on; off for a site made by Atiya Studio", () => {
     expect(siteFeatures({ root: process.cwd(), contentRoot: join(process.cwd(), 'content') }).residents).toBe(true);
     const dir = mkdtempSync(join(tmpdir(), 'atiya-residents-'));
     mkdirSync(join(dir, 'content'));
     writeFileSync(join(dir, 'atiya.json'), JSON.stringify({ schema: 1 }));
     expect(siteFeatures({ root: dir, contentRoot: join(dir, 'content') })).toMatchObject({ managed: true, residents: false });
+    // the owner's site built from a release keeps them: a setting, never inferred from being a managed site
+    writeFileSync(join(dir, 'atiya.json'), JSON.stringify({ schema: 1, features: { residents: true } }));
+    expect(siteFeatures({ root: dir, contentRoot: join(dir, 'content') })).toMatchObject({ managed: true, residents: true });
   });
 
   it("a build without them leaves out every file of theirs and the owner's music", () => {
