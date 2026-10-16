@@ -16,7 +16,8 @@
  * Astro's in `node_modules/.astro` for dev (as before) and `node_modules/.astro-<command>` otherwise.
  * SITE_VITE_CACHE (the editor's test server) names another Vite folder for a second dev server.
  */
-import { isAbsolute, join, resolve } from 'node:path';
+import { existsSync, readdirSync, realpathSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /** The folder a run's pre-bundled dependencies go in (Vite's cacheDir), relative to the project root. */
@@ -28,6 +29,29 @@ export function viteCacheFor(/** @type {string} */ command, /** @type {string | 
 /** The folder for Astro's own cache (its content store, optimised images), relative to the root: dev keeps the default. */
 export function astroCacheFor(/** @type {string} */ command, /** @type {string | undefined} */ mode) {
   return command === 'dev' ? join('node_modules', '.astro') : join('node_modules', `.astro-${command}${mode ? `-${mode}` : ''}`);
+}
+
+/**
+ * The folders a root's links lead to, outside it: Atiya Studio's Store build runs the engine from the package's
+ * read-only folder through a writable folder of links (desktop plan 9S), and Vite serves a file by its real path,
+ * so those folders must be allowed too. [] for an ordinary checkout.
+ * @param {string} root
+ */
+export function linkedFolders(root) {
+  if (!existsSync(root)) return [];
+  const real = realpathSync(root);
+  const out = new Set();
+  for (const name of readdirSync(root)) {
+    let to;
+    try {
+      to = realpathSync(join(root, name));
+    } catch {
+      continue;
+    }
+    const rel = relative(real, to);
+    if (rel.startsWith('..') || isAbsolute(rel)) out.add(dirname(to));
+  }
+  return [...out];
 }
 
 /** The --mode a command was run with, if any (astro build --mode test). */
@@ -49,9 +73,10 @@ export default function devIsolation() {
         // nothing it runs writes beside the engine (documentation/desktop/spec.md §7.3)
         const own = command === 'dev' ? process.env.ATIYA_CACHE_DIR : undefined;
         const vite = own ? join(own, 'vite') : viteCacheFor(command, mode, process.env.SITE_VITE_CACHE);
+        const linked = command === 'dev' ? linkedFolders(root) : [];
         updateConfig({
           cacheDir: pathToFileURL(`${own ? join(own, 'astro') : resolve(root, astroCacheFor(command, mode))}/`),
-          vite: { cacheDir: isAbsolute(vite) ? vite : resolve(root, vite) },
+          vite: { cacheDir: isAbsolute(vite) ? vite : resolve(root, vite), ...(linked.length ? { server: { fs: { allow: [root, ...linked] } } } : {}) },
         });
       },
     },
