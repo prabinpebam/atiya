@@ -33,6 +33,7 @@ import SaveStatus from './components/SaveStatus.astro';
 import TestStatus from './components/TestStatus.astro';
 import ChangeList from './components/ChangeList.astro';
 import ContentIssues from './components/ContentIssues.astro';
+import IconPattern from './components/IconPattern.astro';
 import { publishView } from './server/publishView';
 
 interface Props {
@@ -126,6 +127,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
         </aside>
       )
     }
+    {heading && <div class="backdrop"><IconPattern /></div>}
     <main id="main" class="main" tabindex="-1" data-scrollbar>
       <div class="opening" aria-hidden="true" data-editor-opening>
         <Skeleton shape="text" lines={1} size="lg" />
@@ -361,7 +363,21 @@ const groups = (['Content', 'Site', 'Checks'] as const)
     border-inline-end: var(--border-hairline) solid var(--color-rule);
   }
 
+  /* the main area and the icon watermark share the last cell (placed, so the top bar and navigation still flow) */
+  .main,
+  .backdrop {
+    grid-column: -2 / -1;
+    grid-row: -2 / -1;
+  }
+
+  .backdrop {
+    display: grid;
+    min-inline-size: 0;
+    min-block-size: 0;
+  }
+
   .main {
+    z-index: var(--layer-raised);
     min-block-size: 0;
     overflow: auto;
     scrollbar-width: none;

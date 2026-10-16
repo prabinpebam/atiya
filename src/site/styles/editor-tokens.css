@@ -24,4 +24,8 @@
   --c-editor-feedback-done: 2s;
   --c-editor-crop-veil: 0.72;
   --c-editor-crop-handle: 0.875rem;
+  --c-editor-pattern-cell: 2.25rem;
+  --c-editor-pattern-icon: 1.25rem;
+  --c-editor-pattern-opacity: 0.07;
+  --c-editor-pattern-fade: 8rem;
 }

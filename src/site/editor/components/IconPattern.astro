@@ -1,0 +1,50 @@
+---
+/**
+ * The icon watermark in the space beside a screen's content: every icon edit mode uses, on a grid, sized by
+ * low-frequency noise so the large ones gather in soft clouds that thin to dots, in the text colour at a
+ * watermark's strength, fading in from the content's edge. Only where the window is wider than a screen's
+ * content; nothing on a narrow window, the article editor's studio, or in forced colours.
+ * @tier editor
+ * @a11y Decorative: hidden from assistive technology, never takes a pointer or focus.
+ */
+---
+
+<div class="pattern" aria-hidden="true" data-icon-pattern>
+  <canvas class="canvas"></canvas>
+</div>
+
+<style>
+  .pattern {
+    position: relative;
+    min-inline-size: 0;
+    overflow: hidden;
+    margin-inline-start: var(--size-wide);
+    color: var(--color-text);
+    pointer-events: none;
+    mask-image: linear-gradient(to right, transparent, var(--color-text) var(--c-editor-pattern-fade));
+  }
+
+  .canvas {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    /* the window's size, not the field's (the base styles cap a canvas at its container's width) */
+    max-inline-size: none;
+    inline-size: var(--pattern-w, 100%);
+    block-size: var(--pattern-h, 100%);
+    opacity: var(--c-editor-pattern-opacity);
+  }
+
+  @media (forced-colors: active) {
+    .pattern {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initIconPattern } from '../scripts/iconPattern';
+
+  each<HTMLElement>('[data-icon-pattern]', (field, signal) => initIconPattern(field, signal));
+</script>

@@ -139,7 +139,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 
 A private page ([access spec §2](../access/spec.md#2-private-pages)) is a page like any other: it's listed, filtered, moved and edited on these screens, tagged Private, and there's no screen of its own. Who it's shared with (the access codes and magic links) is the Access screen's.
 
-Every screen shares one frame: a side navigation to the screens, and a top bar with the screen's title, the save status and the number of unpublished changes (linking to Publish). To the content model a page is an article whose `kind` is `page` (About, Contact; [model §3](../content/model.md#3-content-item-types)), so pages are listed with the rest and filtered by kind.
+Every screen shares one frame: a side navigation to the screens, and a top bar with the screen's title, the save status and the number of unpublished changes (linking to Publish). A screen's content stops at the wide measure (`--size-wide`); on a wider window the space beside it carries a watermark of every icon edit mode uses, on a grid, each sized by low-frequency Perlin noise so the large ones gather in soft clouds that thin to dots, in the text colour at the `c.editor.pattern-opacity` strength (so it suits both themes), fading in from the content's edge (`components/IconPattern.astro`, the cells pure in `model/iconPattern.ts`, drawn on idle by `scripts/iconPattern.ts` in a few milliseconds, `editor:icon-pattern`). It's decorative: hidden from assistive technology, never in the article editor's studio, and gone in forced colours. To the content model a page is an article whose `kind` is `page` (About, Contact; [model §3](../content/model.md#3-content-item-types)), so pages are listed with the rest and filtered by kind.
 
 ### 2.1 Saved, and live
 
@@ -619,7 +619,7 @@ All JSON, under `/_edit/api/`. A write sends `ifMatch` (each touched file's vers
 | `integrations/editor.mjs` | The dev-only integration (§8.1, §8.4) |
 | `src/site/editor/pages/` | The routes: the screens, the canvas and the API endpoint |
 | `src/site/editor/components/` | The editor's parts (the outline, the inspector's fields, the media grid, the canvas frame, the section manager): built from the site's fundamentals, compounds and tier 0 only. A part never imports another part; the editor's layout and pages compose them |
-| `src/site/editor/EditorLayout.astro` | The editor's frame: side navigation, top bar, live status |
+| `src/site/editor/EditorLayout.astro` | The editor's frame: side navigation, top bar, live status, the icon watermark beside a screen |
 | `src/site/editor/model/` | Pure and shared by the browser and the server: document operations (insert, move, duplicate, delete, split, merge, update), text to Markdown, IDs and slugs, the guard, the change list's names, the reference graph, the save queue |
 | `src/site/editor/server/` | Node only: the store, uploads (sharp), git |
 | `src/site/editor/scripts/` | The browser's controllers: the editor, the canvas, the screens, and the site's Edit button (the launcher, in a shadow root so it touches nothing of the page) |
