@@ -17,6 +17,8 @@ import SiteFooter from '../components/compounds/SiteFooter.astro';
 import Breadcrumbs from '../components/compounds/Breadcrumbs.astro';
 import StoryCard from '../components/compounds/StoryCard.astro';
 import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
+import Recommendations, { type RecommendationCard } from '../components/compounds/Recommendations.astro';
+import Dialog from '../components/compounds/Dialog.astro';
 import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Button from '../components/fundamentals/Button.astro';
@@ -76,9 +78,23 @@ interface Props {
   noindex?: boolean;
   /** The articles the page shows (dev only): a change to another article's files doesn't reload it. */
   shows?: string[];
+  /**
+   * The section's recommendations (documentation/sections/recommendations.md §3): a band with its heading, before
+   * the pages (`start`), after them (`end`) or across the list right after one page (`after`, its node).
+   */
+  recommendations?: {
+    heading: string;
+    intro?: string;
+    items: RecommendationCard[];
+    layout: 'tiles' | 'rows' | 'wall' | 'spotlight';
+    open: 'dialog' | 'inline';
+    place: { at: 'start' | 'end' } | { after: string };
+  };
 }
 
-const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, invited = 0, ask, view = 'tiles', empty, redirect, frame, noindex, shows } = Astro.props;
+const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, invited = 0, ask, view = 'tiles', empty, redirect, frame, noindex, shows, recommendations: recs } = Astro.props;
+const recsAt = recs && recs.items.length > 0 ? ('after' in recs.place ? 'after' : recs.place.at) : null;
+const recsAfter = recs && 'after' in recs.place ? recs.place.after : null;
 const shown = stories;
 const sealed = privatePages;
 const hasPrivate = sealed.length > 0 || shown.some((s) => s.privateTag);
@@ -97,21 +113,29 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
       {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
     </header>
     <slot name="lead" />
+    {recs && recsAt === 'start' && <Recommendations {...recs} id="recommendations" />}
     <div class="list" data-view={view}>
       {
         shown.length > 0 || sealed.length > 0 ? (
           <div class={view === 'features' ? 'features' : view === 'list' ? 'rows' : view === 'bento' ? 'bento' : 'grid'} data-cards>
-            {shown.map((s, i) =>
-              view === 'bento' ? (
-                <div class="cell" data-node={s.node}>
-                  <StoryCard {...s} variant={variantOf(i)} columns={columnsOf(i)} shared={s.privateTag ? 'private' : undefined} />
-                </div>
-              ) : (
-                <div class="item" data-node={s.node}>
-                  <StoryCard {...s} variant={variantOf(i)} shared={s.privateTag ? 'private' : undefined} />
-                </div>
-              ),
-            )}
+            {shown.map((s, i) => (
+              <Fragment>
+                {view === 'bento' ? (
+                  <div class="cell" data-node={s.node}>
+                    <StoryCard {...s} variant={variantOf(i)} columns={columnsOf(i)} shared={s.privateTag ? 'private' : undefined} />
+                  </div>
+                ) : (
+                  <div class="item" data-node={s.node}>
+                    <StoryCard {...s} variant={variantOf(i)} shared={s.privateTag ? 'private' : undefined} />
+                  </div>
+                )}
+                {recs && recsAt === 'after' && s.node === recsAfter && (
+                  <div class="band">
+                    <Recommendations {...recs} id="recommendations" />
+                  </div>
+                )}
+              </Fragment>
+            ))}
           </div>
         ) : null
       }
@@ -179,6 +203,14 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
       }
       <slot />
     </div>
+    {recs && recsAt === 'end' && <Recommendations {...recs} id="recommendations" />}
+    {
+      recsAt && (
+        <Dialog id="recommendation-dialog" title="Recommendation" size="lg">
+          <div class="full" data-recommendation-full />
+        </Dialog>
+      )
+    }
   </main>
   {!frame && <SiteFooter more={footer} />}
 </PageShell>
@@ -294,13 +326,26 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
     grid-column: span 2;
   }
 
-  .cell:first-child {
+  /* counted among the cells only, so a recommendations band between them doesn't shift the pattern */
+  .cell:nth-child(1 of .cell) {
     grid-column: 1 / -1;
   }
 
-  .cell:nth-child(5n + 2),
-  .cell:nth-child(5n + 3) {
+  .cell:nth-child(5n + 2 of .cell),
+  .cell:nth-child(5n + 3 of .cell) {
     grid-column: span 3;
+  }
+
+  /* the recommendations band after one page: across the whole list, whatever its view */
+  .band {
+    grid-column: 1 / -1;
+    padding-block: var(--space-8);
+  }
+
+  /* the dialog's copy of a recommendation: its words, then the person */
+  .full {
+    display: grid;
+    gap: var(--space-6);
   }
 
   .empty {
@@ -315,12 +360,12 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
     }
 
     .cell,
-    .cell:nth-child(5n + 2),
-    .cell:nth-child(5n + 3) {
+    .cell:nth-child(5n + 2 of .cell),
+    .cell:nth-child(5n + 3 of .cell) {
       grid-column: span 1;
     }
 
-    .cell:first-child {
+    .cell:nth-child(1 of .cell) {
       grid-column: 1 / -1;
     }
   }

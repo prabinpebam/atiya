@@ -1,0 +1,61 @@
+---
+/**
+ * Edit mode's Recommendations (documentation/sections/recommendations.md §4): what people say about the site's
+ * owner, and where a section shows them. Dev only: injected by integrations/editor.mjs.
+ */
+import EditorLayout from '../EditorLayout.astro';
+import RecommendationsManager, { type RecSection } from '../components/RecommendationsManager.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load } from '../server/screens';
+import { readDoc } from '../server/store';
+import { STRUCTURE } from '../server/articles';
+import { RECOMMENDATIONS_KEY } from '../server/recommendations';
+import { chosenSection } from '../model/recommendations';
+import type { RecommendationsFile, SiteStructure } from '../../content/schema';
+import { picture } from '../../content/pictures';
+
+export const prerender = false;
+
+const loaded = load();
+const structure = readDoc<SiteStructure>(STRUCTURE);
+const list = readDoc<RecommendationsFile>(RECOMMENDATIONS_KEY);
+const titleOf = (id: string) => readDoc<{ title?: string }>(`/content/articles/${id}.json`)?.value.title ?? id;
+const sections: RecSection[] = (structure?.value.home.children ?? []).flatMap((n) =>
+  n.kind === 'hub'
+    ? [
+        {
+          id: n.id,
+          title: n.title,
+          settings: n.recommendations,
+          pages: (n.children ?? []).flatMap((c) => (c.kind === 'item' && c.item.type === 'article' ? [{ id: c.id, title: titleOf(c.item.id) }] : [])),
+        },
+      ]
+    : [],
+);
+const chosen = chosenSection(sections, Astro.url.searchParams.get('section'));
+// each photo at the card's size (a missing one shows initials: the content check names it)
+const photos: Record<string, string> = {};
+for (const r of list?.value.items ?? []) {
+  if (!r.photo || r.noPhoto) continue;
+  try {
+    photos[r.id] = (await picture(r.photo, 'card')).thumb;
+  } catch {
+    /* initials */
+  }
+}
+---
+
+<EditorLayout
+  title="Recommendations"
+  screen="recommendations"
+  heading="Recommendations"
+  intro="What people you've worked with say about you: their name, their title, a link to their profile and their words. Choose which section shows them, where among its pages and how. Saved to content/; save to remote to put them on the site."
+>
+  {
+    loaded.ok ? (
+      <RecommendationsManager sections={sections} chosen={chosen} items={list?.value.items ?? []} listVersion={list?.version ?? null} structureVersion={structure?.version ?? null} photos={photos} />
+    ) : (
+      <ContentIssues issues={loaded.issues} />
+    )
+  }
+</EditorLayout>

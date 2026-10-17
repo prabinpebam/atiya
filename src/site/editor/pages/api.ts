@@ -14,6 +14,7 @@ import { changes, discard, git, publish, push } from '../server/git';
 import { changeAddress, createGrant, deleteGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, updateGrant, withdrawGrant, type GrantEdit, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
 import type { Ways } from '../../modes/contract';
+import type { Recommendation, RecommendationSettings } from '../../content/recommendations';
 import { saveWays, WAYS_KEY } from '../server/ways';
 import { load } from '../server/screens';
 import { picture } from '../../content/pictures';
@@ -206,6 +207,30 @@ const handle: APIRoute = async ({ request, params, url }) => {
     if (method === 'PUT' && path === 'ways') {
       const b = await body<{ ways: Ways; ifMatch: Record<string, string | null> }>(request);
       return result(await saveWays(b.ways, b.ifMatch?.[WAYS_KEY] ?? null));
+    }
+    // recommendations (documentation/sections/recommendations.md §4): the list, and a section's settings
+    // a recommendation's photo: uploaded (multipart: id, file), or taken once from its LinkedIn profile (JSON: id)
+    if (method === 'POST' && path === 'recommendations/photo') {
+      const { setPhoto } = await import('../server/recommendations');
+      if ((request.headers.get('content-type') ?? '').startsWith('multipart/')) {
+        const form = await request.formData();
+        const file = form.get('file');
+        if (!(file instanceof File) || !file.size) return json({ ok: false, issues: [{ file: 'content/recommendations.json', path: 'photo', message: 'Choose a picture to upload.' }] }, 422);
+        return result(await setPhoto(String(form.get('id') ?? ''), { name: file.name, bytes: Buffer.from(await file.arrayBuffer()) }));
+      }
+      const b = await body<{ id: string }>(request);
+      return result(await setPhoto(b.id ?? ''));
+    }
+    if (parts[0] === 'recommendations' && method === 'PUT') {
+      const { saveRecommendations, saveSectionRecommendations, RECOMMENDATIONS_KEY } = await import('../server/recommendations');
+      if (parts[1] === 'section') {
+        const b = await body<{ section: string; settings: Partial<RecommendationSettings>; ifMatch?: Record<string, string | null> }>(request);
+        return result(await saveSectionRecommendations(b.section, b.settings ?? {}, b.ifMatch?.[STRUCTURE] ?? null));
+      }
+      if (parts.length === 1) {
+        const b = await body<{ items: Recommendation[]; ifMatch?: Record<string, string | null> }>(request);
+        return result(await saveRecommendations(Array.isArray(b.items) ? b.items : [], b.ifMatch?.[RECOMMENDATIONS_KEY] ?? null));
+      }
     }
     // themes (documentation/site-ui/theming.md §8): a person's own, never a preset
     if (parts[0] === 'themes') {

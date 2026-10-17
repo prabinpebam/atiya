@@ -10,6 +10,7 @@ import { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX } from './limits';
 import { SHAPES, embedHost } from '../services/services';
 import { COLOR_ROLES, CORNERS, FONT_REF, NEUTRALS, SPACINGS, TYPE_RANGE, type Corners, type Neutral, type Spacing } from '../theme/model';
 import { FONT_CATEGORIES, type FontCategory } from '../theme/fonts';
+import { LIMITS as REC_LIMITS, RECOMMENDATION_LAYOUTS, RECOMMENDATION_OPENINGS, RECOMMENDATION_PLACES, type RecommendationSettings } from './recommendations';
 
 export { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX };
 
@@ -408,6 +409,35 @@ export type SectionView = (typeof SECTION_VIEWS)[number];
 /** A navigation label: short enough for the header's row (V17). */
 const navLabel = z.string().min(1).max(24);
 
+/** A section's settings for showing recommendations (documentation/sections/recommendations.md §2.2). */
+const recommendationSettings = z.strictObject({
+  show: z.boolean(),
+  at: z.enum(RECOMMENDATION_PLACES),
+  after: id.optional(),
+  layout: z.enum(RECOMMENDATION_LAYOUTS),
+  open: z.enum(RECOMMENDATION_OPENINGS),
+  heading: z.string().trim().min(1).max(REC_LIMITS.heading).optional(),
+  intro: z.string().trim().min(1).max(REC_LIMITS.intro).optional(),
+});
+
+/** The site's recommendations, in order (content/recommendations.json; §2.1). */
+export const recommendationsFile = z.strictObject({
+  items: z.array(
+    z.strictObject({
+      id,
+      name: z.string().trim().min(1, 'needs the person’s name').max(REC_LIMITS.name),
+      title: z.string().trim().min(1, 'needs their title').max(REC_LIMITS.title),
+      link: https.optional(),
+      relationship: z.string().trim().min(1).max(REC_LIMITS.relationship).optional(),
+      date: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'a month as YYYY-MM').optional(),
+      text: z.string().trim().min(1, 'needs the words').max(REC_LIMITS.text),
+      photo: mediaId.optional(),
+      noPhoto: z.literal(true).optional(),
+      hidden: z.boolean().optional(),
+    }),
+  ),
+});
+
 export interface ItemNode {
   id: string;
   kind: 'item';
@@ -425,6 +455,8 @@ export interface HubNode {
   summary?: string;
   view?: SectionView;
   sequence?: boolean;
+  /** Recommendations shown in this section, and where and how (documentation/sections/recommendations.md §2.2). */
+  recommendations?: RecommendationSettings;
   children?: SiteNode[];
 }
 export type SiteNode = HubNode | ItemNode;
@@ -440,6 +472,7 @@ const hubNode: z.ZodType<HubNode> = z.lazy(() =>
     summary: z.string().max(160).optional(),
     view: z.enum(SECTION_VIEWS).optional(),
     sequence: z.boolean().optional(),
+    recommendations: recommendationSettings.optional(),
     children: z.array(z.union([hubNode, itemNode])).optional(),
   }),
 );
@@ -594,4 +627,5 @@ export type GrantRecord = z.infer<typeof grant>;
 export type AccessMessage = z.infer<typeof accessMessage>;
 export type Place = PlanetStructure['places'][number];
 export type ThemeFile = z.infer<typeof themeFile>;
+export type RecommendationsFile = z.infer<typeof recommendationsFile>;
 export type FontFileDoc = z.infer<typeof fontFile>;

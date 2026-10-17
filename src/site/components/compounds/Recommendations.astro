@@ -1,0 +1,319 @@
+---
+/**
+ * A section's recommendations (documentation/sections/recommendations.md §3): what people the site's owner has
+ * worked with say, each with the person's name, their title and their profile. Laid out as tiles (an even grid),
+ * rows (one under another), a wall (columns of cards of their own heights) or a spotlight (the first large, the
+ * rest as tiles). Each card shows the start of its words; longer ones open in full in the page's dialog (the
+ * layout places it: id `recommendation-dialog`) or, in rows and on the wall, expand in place.
+ * @tier compound
+ * @a11y A section named by its heading; each card an article named by the person; the words a blockquote.
+ * @a11y The control shows only when the words are cut short; Show it all says whether it's expanded (aria-expanded); Read in full opens a modal dialog titled with the person's name, and focus comes back to the button.
+ * @a11y Without scripts every card shows all its words.
+ * @key Enter / Space: opens the whole recommendation, or expands it
+ */
+import Avatar from '../fundamentals/Avatar.astro';
+import Button from '../fundamentals/Button.astro';
+import Heading from '../fundamentals/Heading.astro';
+import Link from '../fundamentals/Link.astro';
+import Text from '../fundamentals/Text.astro';
+import { stableId } from '../../design/stableId';
+
+export interface RecommendationCard {
+  /** Its ID (content/recommendations.json). */
+  id: string;
+  /** The person's name. */
+  name: string;
+  /** Their role and where. */
+  title: string;
+  /** Their profile, and the words for the link (LinkedIn profile, or the site's name). */
+  link?: { href: string; label: string };
+  /** How they know the owner, and when it was written ("Managed me at Microsoft · March 2025"). */
+  meta?: string;
+  /** The words, a paragraph each. */
+  paragraphs: string[];
+  /** Their photo (square; cropped round), and its dark mode version. Without one, their initials. */
+  photo?: { src: string; srcDark?: string };
+}
+
+interface Props {
+  /** The band's heading (an h2). */
+  heading: string;
+  /** One line under the heading. */
+  intro?: string;
+  /** The recommendations, in order. */
+  items: RecommendationCard[];
+  /** tiles, rows, wall or spotlight. */
+  layout?: 'tiles' | 'rows' | 'wall' | 'spotlight';
+  /** Long words: open in the page's dialog, or expand in place (rows and the wall only). */
+  open?: 'dialog' | 'inline';
+  /** The band's id. */
+  id?: string;
+}
+
+const { heading, intro, items, layout = 'tiles', open = 'dialog', id = `recommendations-${stableId(Astro, 'Recommendations')}` } = Astro.props;
+const inline = open === 'inline' && (layout === 'rows' || layout === 'wall');
+---
+
+<section class="recs" id={id} aria-labelledby={`${id}-heading`} data-layout={layout} data-open={inline ? 'inline' : 'dialog'} data-recommendations>
+  <header class="head">
+    <Heading level={2} size="h2" id={`${id}-heading`}>{heading}</Heading>
+    {intro && <Text variant="lead" tone="muted">{intro}</Text>}
+  </header>
+  <div class="cards">
+    {
+      items.map((r, i) => {
+        const card = `${id}-${r.id}`;
+        const featured = layout === 'spotlight' && i === 0;
+        return (
+          <article class="card" aria-labelledby={`${card}-name`} data-featured={featured ? '' : undefined} data-recommendation={r.id}>
+            <span class="mark" aria-hidden="true">
+              “
+            </span>
+            <blockquote class="words" id={`${card}-words`} data-words={featured ? undefined : ''}>
+              {r.paragraphs.map((p) => (
+                <p class="paragraph">{p}</p>
+              ))}
+            </blockquote>
+            {!featured && (
+              <span class="more" hidden data-more>
+                <Button variant="quiet" size="sm" data-more-button="" data-controls={`${card}-words`}>
+                  {inline ? 'Show it all' : 'Read in full'}
+                </Button>
+              </span>
+            )}
+            <footer class="person" data-person>
+              <span class="face">
+                <Avatar name={r.name} src={r.photo?.src} srcDark={r.photo?.srcDark} size="sm" decorative />
+              </span>
+              <span class="who">
+                <span class="name" id={`${card}-name`}>
+                  {r.name}
+                </span>
+                <span class="title">{r.title}</span>
+                {r.meta && <span class="meta">{r.meta}</span>}
+                {r.link && (
+                  <span class="link">
+                    <Link href={r.link.href} variant="quiet" external>
+                      {r.link.label}
+                    </Link>
+                  </span>
+                )}
+              </span>
+            </footer>
+          </article>
+        );
+      })
+    }
+  </div>
+</section>
+
+<style>
+  .recs {
+    display: grid;
+    gap: var(--space-8);
+    --lines: var(--c-recommendation-lines-tile);
+  }
+
+  .recs[data-layout='rows'] {
+    --lines: var(--c-recommendation-lines-row);
+  }
+
+  .recs[data-layout='wall'] {
+    --lines: var(--c-recommendation-lines-wall);
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-3);
+    max-inline-size: var(--size-popout);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-recommendation-card-min)), 1fr));
+    gap: var(--space-8);
+    align-items: stretch;
+  }
+
+  .recs[data-layout='rows'] .cards {
+    grid-template-columns: minmax(0, 1fr);
+    max-inline-size: var(--size-popout);
+  }
+
+  .recs[data-layout='wall'] .cards {
+    display: block;
+    columns: var(--c-recommendation-card-min);
+    column-gap: var(--space-8);
+  }
+
+  .recs[data-layout='wall'] .card {
+    break-inside: avoid;
+    margin-block-end: var(--space-8);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-inline-size: 0;
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .card[data-featured] {
+    grid-column: 1 / -1;
+    padding: var(--space-8);
+  }
+
+  /*
+   * Tiles (and the spotlight's): every card spans four rows of the band's grid (the mark, the words, the control,
+   * the person), shared through subgrid, so each part lines up across the cards. The person's rows are the only
+   * flexible ones, and flexible rows in a grid of no set height all take the tallest's size: every person
+   * section, and so every tile, is the same height. The words keep their lines' room even when shorter, and the
+   * control's row is kept where there's nothing to open.
+   */
+  .recs:is([data-layout='tiles'], [data-layout='spotlight']) .cards {
+    grid-auto-rows: auto auto auto 1fr;
+  }
+
+  /* the spotlight's lead has rows of its own: its person section doesn't set the tiles' */
+  .recs[data-layout='spotlight'] .cards {
+    grid-template-rows: repeat(4, auto);
+  }
+
+  .recs:is([data-layout='tiles'], [data-layout='spotlight']) .card {
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    row-gap: var(--space-4);
+  }
+
+  .recs:is([data-layout='tiles'], [data-layout='spotlight']) .card:not([data-featured]) .words {
+    min-block-size: calc(var(--lines) * var(--leading-body) * var(--text-body));
+  }
+
+  .recs:is([data-layout='tiles'], [data-layout='spotlight']) .more[hidden] {
+    display: flex;
+    visibility: hidden;
+  }
+
+  /* each part in its own row (the spotlight's lead has no control, and keeps the person in the fourth) */
+  .recs:is([data-layout='tiles'], [data-layout='spotlight']) .mark {
+    grid-row: 1;
+  }
+
+  .recs:is([data-layout='tiles'], [data-layout='spotlight']) .words {
+    grid-row: 2;
+  }
+
+  .recs:is([data-layout='tiles'], [data-layout='spotlight']) .more {
+    grid-row: 3;
+  }
+
+  .recs:is([data-layout='tiles'], [data-layout='spotlight']) .person {
+    grid-row: 4;
+    margin-block-start: 0;
+  }
+  .mark {
+    block-size: var(--space-6);
+    color: var(--c-recommendation-mark);
+    font-family: var(--font-display);
+    font-size: var(--text-h1);
+    line-height: var(--leading-tight);
+  }
+
+  .words {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    color: var(--color-text);
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+  }
+
+  .card[data-featured] .words {
+    max-inline-size: var(--size-measure);
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    line-height: var(--leading-heading);
+  }
+
+  .paragraph {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* cut to the layout's lines once the script has measured it (without scripts, every word shows) */
+  .words[data-clamped] {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--lines);
+    overflow: hidden;
+  }
+
+  .words[data-clamped] .paragraph {
+    display: inline;
+  }
+
+  .words[data-clamped] .paragraph + .paragraph::before {
+    content: ' ';
+  }
+
+  /* the quiet button's label flush with the words above (its wash still shows round it on hover) */
+  .more {
+    display: flex;
+    margin-inline-start: calc(var(--space-4) * -1);
+  }
+
+  .more[hidden] {
+    display: none;
+  }
+
+  .person {
+    display: flex;
+    align-items: start;
+    gap: var(--space-3);
+    margin-block-start: auto;
+    padding-block-start: var(--space-2);
+  }
+
+  .face {
+    display: flex;
+    flex: none;
+  }
+
+  .who {
+    display: grid;
+    gap: var(--space-0-5);
+    min-inline-size: 0;
+    font-family: var(--font-ui);
+    line-height: var(--leading-ui);
+  }
+
+  .name {
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+  }
+
+  .title,
+  .meta {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .link {
+    display: flex;
+    font-size: var(--text-sm);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { clampRecommendations } from '../../scripts/recommendations';
+
+  each<HTMLElement>('[data-recommendations]', (band, signal) => clampRecommendations(band, signal));
+</script>

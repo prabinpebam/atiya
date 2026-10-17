@@ -38,6 +38,7 @@ const ROUTES = [
   ['/_edit/planet', 'planet.astro'],
   ['/_edit/ways', 'ways.astro'],
   ['/_edit/media', 'media.astro'],
+  ['/_edit/recommendations', 'recommendations.astro'],
   ['/_edit/settings', 'settings.astro'],
   ['/_edit/access', 'access.astro'],
   ['/_edit/publish', 'publish.astro'],

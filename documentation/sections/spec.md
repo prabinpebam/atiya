@@ -132,7 +132,7 @@ Every page is the same resource, `content/articles/<id>.json` with its blocks, a
 
 ### 3.4 The section view (U6)
 
-A section's page is its heading, its standfirst and its pages, in its `view`:
+A section's page is its heading, its standfirst and its pages, in its `view`. It can also show the site's recommendations, before its pages, after them or after one of them, in a layout of their own ([recommendations](recommendations.md)):
 
 | View | Look | Best for |
 |---|---|---|

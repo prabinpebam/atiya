@@ -1,0 +1,277 @@
+---
+/**
+ * The Recommendations screen (documentation/sections/recommendations.md §4): where a section shows them (on or
+ * off, before or after its pages or after one, the layout, how long ones open, the heading and intro), and the
+ * recommendations themselves, in order: add, edit, hide, move and delete. Each part saves on its own through the
+ * store; the screen redraws its region after a save.
+ * @tier editor
+ * @a11y Two sections with headings; the settings a form with labelled fields and fieldsets; the list an ordered
+ * list whose rows name the person in each button ("Edit Ada Lovelace"); the editor a modal dialog with a form;
+ * a refused save is named in a live alert by the form.
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Avatar from '../../components/fundamentals/Avatar.astro';
+import FileField from '../../components/fundamentals/FileField.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import { DEFAULT_HEADING, DEFAULT_SETTINGS, LAYOUT_ABOUT, LIMITS, RECOMMENDATION_LAYOUTS, type Recommendation, type RecommendationSettings } from '../model/recommendations';
+
+/** A section the recommendations can show on. */
+export interface RecSection {
+  /** Its node's ID. */
+  id: string;
+  /** Its title. */
+  title: string;
+  /** Its pages, in order (for "after a page"). */
+  pages: { id: string; title: string }[];
+  /** Its settings (none: never set). */
+  settings?: RecommendationSettings;
+}
+
+interface Props {
+  /** The site's sections. */
+  sections: RecSection[];
+  /** The section the settings show. */
+  chosen?: string;
+  /** The recommendations, in order. */
+  items: Recommendation[];
+  /** The list file's version (null: no file yet). */
+  listVersion: string | null;
+  /** The site structure's version. */
+  structureVersion: string | null;
+  /** Each recommendation's photo, by its ID, as a picture's address. */
+  photos?: Record<string, string>;
+}
+
+const { sections, chosen, items, listVersion, structureVersion, photos = {} } = Astro.props;
+const section = sections.find((s) => s.id === chosen);
+const s: RecommendationSettings = { ...DEFAULT_SETTINGS, ...section?.settings };
+const fixedDialog = s.layout === 'tiles' || s.layout === 'spotlight';
+const state = JSON.stringify({ items, listVersion, structureVersion, section: section?.id ?? null, structureKey: '/content/structures/site.json', listKey: '/content/recommendations.json' }).replace(/</g, '\\u003c');
+---
+
+<div class="manager" data-region="recommendations" data-editor-recs>
+  <section class="part" aria-labelledby="recs-where-heading">
+    <Heading level={2} size="h4" id="recs-where-heading">Where they show</Heading>
+    {
+      section ? (
+        <form class="form" data-recs-place novalidate aria-labelledby="recs-where-heading">
+          <Select label="Section" name="section" value={section.id} options={sections.map((x) => ({ value: x.id, label: x.title }))} hint="Each section has its own settings." />
+          <Switch label="Show on this section" name="show" checked={s.show} />
+          <ChoiceGroup
+            legend="Where"
+            name="at"
+            value={s.at}
+            options={[
+              { value: 'start', label: 'Before the pages' },
+              { value: 'end', label: 'After the pages' },
+              { value: 'after', label: 'After a page', disabled: section.pages.length === 0 },
+            ]}
+          />
+          <div class="after" data-recs-after hidden={s.at !== 'after'}>
+            <Select label="After the page" name="after" value={s.after ?? section.pages[0]?.id} options={section.pages.map((p) => ({ value: p.id, label: p.title }))} />
+          </div>
+          <ChoiceGroup legend="Layout" name="layout" variant="cards" value={s.layout} options={RECOMMENDATION_LAYOUTS.map((l) => ({ value: l, label: LAYOUT_ABOUT[l].label, hint: LAYOUT_ABOUT[l].about }))} />
+          <ChoiceGroup
+            legend="Long recommendations"
+            name="open"
+            value={fixedDialog ? 'dialog' : s.open}
+            hint="Tiles and the spotlight always open a dialog, so their grid never breaks."
+            options={[
+              { value: 'dialog', label: 'Open in a dialog' },
+              { value: 'inline', label: 'Expand in place', disabled: fixedDialog },
+            ]}
+          />
+          <TextField label="Heading" name="heading" value={s.heading ?? ''} placeholder={DEFAULT_HEADING} optional maxlength={LIMITS.heading} />
+          <TextField label="Intro" name="intro" value={s.intro ?? ''} optional maxlength={LIMITS.intro} hint="One line under the heading." />
+          <p class="issue" role="alert" data-editor-form-issue hidden />
+          <div class="actions">
+            <Button variant="primary" type="submit">Save where they show</Button>
+          </div>
+        </form>
+      ) : (
+        <Text variant="body" tone="muted">The site has no sections yet. Add one on the Sections screen first.</Text>
+      )
+    }
+  </section>
+
+  <section class="part" aria-labelledby="recs-list-heading">
+    <div class="list-head">
+      <Heading level={2} size="h4" id="recs-list-heading">All recommendations</Heading>
+      <Button variant="secondary" size="sm" icon="plus" data-recs-add="">Add recommendation</Button>
+    </div>
+    {
+      items.length ? (
+        <ol class="list">
+          {items.map((r, i) => (
+            <li class="row" data-rec-row={r.id}>
+              <Avatar name={r.name} src={photos[r.id]} size="sm" decorative />
+              <span class="who">
+                <span class="name">{r.name}</span>
+                <span class="title">{r.title}</span>
+              </span>
+              {r.hidden && <Tag size="sm">Hidden</Tag>}
+              <span class="tools">
+                <IconButton label={`Move ${r.name} up`} icon="arrow-up" size="sm" disabled={i === 0} data-rec-move="-1" data-rec={r.id} />
+                <IconButton label={`Move ${r.name} down`} icon="arrow-down" size="sm" disabled={i === items.length - 1} data-rec-move="1" data-rec={r.id} />
+                <IconButton label={`Edit ${r.name}`} icon="edit" size="sm" data-rec-edit={r.id} />
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <Text variant="body" tone="muted">None yet. Add the first: the person's name, their title, a link to their profile and their words.</Text>
+      )
+    }
+    <p class="issue" role="alert" data-recs-list-issue hidden />
+  </section>
+
+  <Dialog id="recs-edit" title="Add recommendation" size="md">
+    <form class="form" data-recs-form novalidate>
+      <input type="hidden" name="id" value="" />
+      <TextField label="Name" name="name" required maxlength={LIMITS.name} />
+      <TextField label="Title" name="title" required maxlength={LIMITS.title} hint="Their role and where, as they'd write it." />
+      <TextField label="Profile link" name="link" type="url" optional placeholder="https://www.linkedin.com/in/…" hint="Their LinkedIn profile or their own site." />
+      <TextField label="How you know each other" name="relationship" optional maxlength={LIMITS.relationship} placeholder="Managed me at …" />
+      <TextField label="Month written" name="date" optional placeholder="2025-03" hint="As year and month: 2025-03." />
+      <TextField label="Recommendation" name="text" multiline rows={8} required maxlength={LIMITS.text} hint="A blank line starts a new paragraph." />
+      <FileField label="Photo" name="file" accept="image/*" hint="A square picture of them. Without one, the photo their LinkedIn profile shows is taken when you save, if the profile is public." />
+      <p class="note" data-recs-photo-note hidden>They have a photo. Upload another to replace it.</p>
+      <Checkbox label="Show their initials only" name="noPhoto" hint="No photo, and none taken from their profile." />
+      <Checkbox label="Hide from the site" name="hidden" hint="Kept here, shown nowhere." />
+      <p class="issue" role="alert" data-editor-form-issue hidden />
+      <div class="actions">
+        <Button variant="primary" type="submit">Save recommendation</Button>
+        <Button variant="secondary" data-dialog-close="">Cancel</Button>
+        <span class="spacer" />
+        <span class="delete" data-recs-delete-wrap hidden>
+          <Button variant="quiet" icon="delete" data-recs-delete="">Delete</Button>
+        </span>
+      </div>
+    </form>
+  </Dialog>
+  <script is:inline type="application/json" data-recs-state set:html={state} />
+</div>
+
+<style>
+  .manager {
+    display: grid;
+    gap: var(--space-12);
+    max-inline-size: var(--size-measure);
+  }
+
+  .part {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .form {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .after[hidden] {
+    display: none;
+  }
+
+  .list-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+    list-style: none;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-block: var(--space-3);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .who {
+    display: grid;
+    flex: 1;
+    gap: var(--space-0-5);
+    min-inline-size: 0;
+    font-family: var(--font-ui);
+    line-height: var(--leading-ui);
+  }
+
+  .name {
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+  }
+
+  .title {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tools {
+    display: flex;
+    flex: none;
+    gap: var(--space-1);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .spacer {
+    flex: 1;
+  }
+
+  .note {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .note[hidden] {
+    display: none;
+  }
+
+  .issue {
+    margin: 0;
+    color: var(--color-negative);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  .issue[hidden],
+  .delete[hidden] {
+    display: none;
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initRecommendations } from '../scripts/recommendations';
+
+  each<HTMLElement>('[data-editor-recs]', (el, signal) => initRecommendations(el, signal));
+</script>

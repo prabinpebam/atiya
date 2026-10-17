@@ -4,7 +4,8 @@
  * them all. Pure: the files and the list of media masters come in as arguments, so tests can feed it.
  */
 import type { z } from 'astro/zod';
-import { PLACE_IDS, accessFile, accessMessage, article, documentMedia, fontFile, imageMedia, overlay as overlaySchema, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, themeFile, videoMedia, type AccessMessage, type Article, type DocumentMedia, type FontFileDoc, type GrantRecord, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type ThemeFile, type VideoMedia } from './schema';
+import { PLACE_IDS, accessFile, accessMessage, article, documentMedia, fontFile, imageMedia, overlay as overlaySchema, person, planetStructure, recommendationsFile, redirects as redirectList, siteSettings, siteStructure, themeFile, videoMedia, type AccessMessage, type Article, type DocumentMedia, type FontFileDoc, type GrantRecord, type HubNode, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type ThemeFile, type VideoMedia } from './schema';
+import type { Recommendation } from './recommendations';
 import { CUSTOM_FONT, FONT_ROLES, isPreset } from '../theme/model';
 import { buildRoutes, canonicalPaths, withOverlay, type Access, type Route } from './routes';
 import { checkGrant, covers, isValid } from '../access/grants.ts';
@@ -78,6 +79,8 @@ export interface ContentIndex {
   accessMessage: AccessMessage | null;
   /** The person's own themes (content/themes/), by ID (documentation/site-ui/theming.md §3). */
   themes: Map<string, ThemeFile>;
+  /** The site's recommendations, in order (content/recommendations.json), hidden ones included. */
+  recommendations: Recommendation[];
   /** The fonts imported into the site (content/fonts/), by ID. */
   fonts: Map<string, FontFileDoc>;
   /** Reported, not failed: a published item the site doesn't place (it has no page). */
@@ -163,6 +166,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   const documents = new Map<string, DocumentRecord>();
   const videos = new Map<string, VideoRecord>();
   const themes = new Map<string, ThemeFile>();
+  let recommendations: Recommendation[] = [];
   const fonts = new Map<string, FontFileDoc>();
   // a media ID is unique across both folders (V24)
   const mediaTaken = new Map<string, string>();
@@ -188,6 +192,14 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       }
       planetFiles.push(file);
     } else if (file === `/content/${WAYS_FILE}`) ways = parse(waysFile, file, data) ?? null;
+    else if (file === '/content/recommendations.json') {
+      recommendations = parse(recommendationsFile, file, data)?.items ?? [];
+      const seen = new Set<string>();
+      recommendations.forEach((r, i) => {
+        if (seen.has(r.id)) add(file, `"${r.id}" is listed twice: a recommendation's ID is unique`, `items.${i}.id`);
+        seen.add(r.id);
+      });
+    }
     else if (file === '/private/structures/overlay.json') overlay = parse(overlaySchema, file, data) ?? null;
     else if (file === '/private/access.json') grants = parse(accessFile, file, data)?.grants ?? [];
     else if (file === '/private/access-message.json') message = parse(accessMessage, file, data) ?? null;
@@ -301,6 +313,15 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       if (fid && !fonts.has(fid)) add(`content/themes/${t.id}.json`, `the font "${fid}" isn't imported (content/fonts/${fid}.json)`, `fonts.${role}`);
     }
   if (site?.theme && !isPreset(site.theme) && !themes.has(site.theme)) add('content/site.json', `the theme "${site.theme}" is neither a preset nor in content/themes/`, 'theme');
+  // a section's recommendations that follow a page: one of its own (documentation/sections/recommendations.md §2.2)
+  const hubs = (n: SiteNode): HubNode[] => (n.kind === 'hub' ? [n, ...(n.children ?? []).flatMap(hubs)] : []);
+  for (const h of structure ? hubs(structure.home) : []) {
+    const r = h.recommendations;
+    if (!r || r.at !== 'after') continue;
+    if (!r.after) add('content/structures/site.json', `the section "${h.id}" shows its recommendations after a page, but doesn't say which`, `${h.id}.recommendations.after`);
+    else if (!(h.children ?? []).some((c) => c.kind === 'item' && c.id === r.after))
+      add('content/structures/site.json', `the section "${h.id}" shows its recommendations after "${r.after}", which isn't one of its pages`, `${h.id}.recommendations.after`);
+  }
 
   // references (V3, V5): media, people; a public page never points at anything private (V25), and a
   // protected page's own `related` names open pages only (V32)
@@ -362,6 +383,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     });
   }
   for (const p of people.values()) if (p.avatar) needMedia(`content/people/${p.id}.json`, p.avatar);
+  for (const r of recommendations) if (r.photo) needMedia('content/recommendations.json', r.photo);
   if (site?.socialImage) needMedia('content/site.json', site.socialImage);
   if (site && !people.has(site.owner)) add('content/site.json', `owner "${site.owner}" isn't in content/people/`, 'owner');
 
@@ -488,7 +510,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     });
   }
 
-  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, warnings };
+  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, warnings };
   // the ways in (V33 to V37, documentation/desktop/modes.md §6), once the rest holds: a mode's structure that
   // already fails its own check (the planet's V14 to V16) isn't reported twice
   if (!issues.length && site && structure) {

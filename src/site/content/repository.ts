@@ -82,6 +82,8 @@ export function placePages(placeId: string): { article: Article; route: Route }[
   });
 }
 export const getArticle = (id: string) => content().articles.get(id);
+/** The site's recommendations, in their order (hidden ones too: `recommendationBand` leaves them out). */
+export const getRecommendations = () => content().recommendations;
 export const getPerson = (id: string) => content().people.get(id);
 /** The routes the site builds: hubs and published items, private ones included (they're built sealed). */
 export const getRoutes = (): Route[] => content().routes.filter((r) => r.published);

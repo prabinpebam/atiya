@@ -11,7 +11,9 @@ import ArticleLayout from '../layouts/ArticleLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Contact from './Contact.astro';
 import Blocks from './Blocks.astro';
-import { getOpenRoutes, getPlanet, getRoutes, getSite, placePages, placeSection } from './repository';
+import { getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, placePages, placeSection } from './repository';
+import { recommendationBand } from './recommendations';
+import { withPhotos } from './recommendationsBand';
 import { pageMeasure } from './reading';
 import { cardPicture, openingOf, relatedOf } from './opening';
 import { withBase } from '../design/meta';
@@ -59,10 +61,12 @@ const link = (k: number) => (pages[k] ? { href: pageHref(pages[k].article.id), t
 const stories = current
   ? []
   : await Promise.all(
-      pages.map(async ({ article: a }) => {
-        return { href: pageHref(a.id), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: await cardPicture(a) };
+      pages.map(async ({ article: a, route: r }) => {
+        return { node: r.node.id, href: pageHref(a.id), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: await cardPicture(a) };
       }),
     );
+// the section's recommendations, in the same place as on the site (recommendations.md §3)
+const recommendations = !current && sectionNode ? await withPhotos(recommendationBand(sectionNode.recommendations, getRecommendations(), stories.map((s) => s.node))) : undefined;
 ---
 
 {
@@ -81,7 +85,8 @@ const stories = current
       invited={invited}
       signIn={invited ? signIn : undefined}
       ask={invited && contactPath ? withBase(contactPath) : undefined}
-      empty="Nothing here yet. This building is still being fitted out."
+      recommendations={recommendations}
+      empty={recommendations ? undefined : 'Nothing here yet. This building is still being fitted out.'}
       frame={frame}
     >
       {isContact && <Contact slot="lead" privacy={privacy} />}

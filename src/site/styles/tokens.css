@@ -342,6 +342,11 @@
   --c-video-play-icon: 1.75rem;
   --c-contact-panel-frame: 40rem;
   --c-index-card-min: 18rem;
+  --c-recommendation-card-min: 18rem;
+  --c-recommendation-lines-tile: 7;
+  --c-recommendation-lines-row: 5;
+  --c-recommendation-lines-wall: 9;
+  --c-recommendation-mark: var(--color-highlight);
   --c-story-card-row-picture: 11rem;
   --c-story-card-row-picture-compact: 6rem;
   --c-scroll-area-height-sm: 13rem;

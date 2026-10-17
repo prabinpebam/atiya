@@ -1,0 +1,50 @@
+---
+import Example from '../library/Example.astro';
+import Recommendations from '../components/compounds/Recommendations.astro';
+import Dialog from '../components/compounds/Dialog.astro';
+import type { RecommendationCard } from '../components/compounds/Recommendations.astro';
+import { withBase } from '../design/meta';
+
+const items: RecommendationCard[] = [
+  {
+    id: 'sample-one',
+    name: 'Sam Rivera',
+    photo: { src: withBase('/avatars/skater.webp') },
+    title: 'Design Director, a sample company',
+    meta: 'Worked on the same team · March 2025',
+    link: { href: 'https://www.linkedin.com/', label: 'LinkedIn profile' },
+    paragraphs: [
+      'A sample recommendation for the design library. It is long enough to be cut short in a tile, so the card shows its control and the whole of it opens in the dialog.',
+      'A second paragraph follows the first, as a recommendation often has one: what working together was like, and what the person brought to the team.',
+    ],
+  },
+  { id: 'sample-two', name: 'Jo Chen', title: 'Engineering Manager, a sample studio', paragraphs: ['A short one: it fits, so it has no control.'] },
+  {
+    id: 'sample-three',
+    name: 'Alex Morgan',
+    title: 'Product Lead, a sample team',
+    link: { href: 'https://example.com/', label: 'example.com' },
+    paragraphs: ['A third sample, of middling length, to show how cards of different lengths sit together in each layout: an even grid, rows, a wall and a spotlight.'],
+  },
+];
+---
+
+<Example title="Tiles" layout="stack" description="An even grid; long words open in full in the page's dialog.">
+  <Recommendations heading="Recommendations" intro="From people I've worked with." items={items} layout="tiles" id="story-tiles" />
+</Example>
+
+<Example title="Rows, expanding in place" layout="stack" description="One under another; Show it all expands the words in the card.">
+  <Recommendations heading="Recommendations" items={items} layout="rows" open="inline" id="story-rows" />
+</Example>
+
+<Example title="Wall" layout="stack" description="Columns of cards, each as tall as its words.">
+  <Recommendations heading="Recommendations" items={items} layout="wall" id="story-wall" />
+</Example>
+
+<Example title="Spotlight" layout="stack" description="The first large and whole, the others as tiles under it.">
+  <Recommendations heading="What people say" items={items} layout="spotlight" id="story-spotlight" />
+</Example>
+
+<Dialog id="recommendation-dialog" title="Recommendation">
+  <div data-recommendation-full></div>
+</Dialog>

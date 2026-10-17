@@ -270,6 +270,15 @@
       "group": "Content and publishing"
     },
     {
+      "path": "sections/recommendations.md",
+      "title": "Recommendations",
+      "order": 20.75,
+      "icon": "format_quote",
+      "status": "done",
+      "updated": "2026-10-17",
+      "group": "Content and publishing"
+    },
+    {
       "path": "contact/spec.md",
       "title": "The contact form",
       "order": 20.8,
