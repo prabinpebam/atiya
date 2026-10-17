@@ -14,6 +14,44 @@ const quit = async (app) => {
 const fetchPage = (url) => new Promise((resolve, reject) => get(url, (r) => { let s = ''; r.on('data', (d) => (s += d)); r.on('end', () => resolve(s)); }).on('error', reject));
 
 test.describe('desktop: one row', () => {
+  test('7B.4 photo avatars stay vertically centred with and without the site name', async ({}, testInfo) => {
+    const { app } = await launch({ port: 4428 });
+    try {
+      const frame = await pageMatching(app, /frame\.html/);
+      await expect(frame.locator('#account .avatar-img')).toBeVisible();
+      await frame.locator('#account .avatar-img').evaluate(async (el) => {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#3a3c9e"/><circle cx="50" cy="50" r="35" fill="#f4b942"/></svg>');
+        await img.decode();
+        el.replaceChildren(img);
+      });
+      for (const theme of ['light', 'dark']) {
+        await frame.emulateMedia({ colorScheme: theme === 'light' ? 'light' : 'dark' });
+        for (const compact of [false, true]) {
+          await frame.evaluate((compact) => {
+            if (compact) document.documentElement.dataset.squeeze = '1';
+            else delete document.documentElement.dataset.squeeze;
+          }, compact);
+          const positions = await frame.locator('#account').evaluate((el) => {
+            const box = el.getBoundingClientRect();
+            const photo = el.querySelector('img');
+            if (!photo) throw new Error('Photo avatar missing');
+            const r = photo.getBoundingClientRect();
+            return { offset: r.y + r.height / 2 - (box.y + box.height / 2), height: r.height };
+          });
+          expect(positions.height).toBe(28);
+          expect(Math.abs(positions.offset), `${theme}, compact=${compact}: photo centre`).toBeLessThanOrEqual(0.5);
+          const path = testInfo.outputPath(`photo-${theme}-${compact ? 'compact' : 'named'}.png`);
+          await frame.locator('#account').screenshot({ path });
+          await testInfo.attach(`photo-${theme}-${compact ? 'compact' : 'named'}`, { path, contentType: 'image/png' });
+        }
+      }
+    } finally {
+      await quitGracefully(app);
+    }
+  });
+
   test('7B.3 title-bar spacing: centred avatars, separated save actions and full-size tool targets', async ({}, testInfo) => {
     const { app } = await launch({ port: 4427 });
     try {
