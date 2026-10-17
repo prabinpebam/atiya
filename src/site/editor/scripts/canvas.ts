@@ -749,6 +749,56 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     s.addRange(caret);
     markDirty();
   };
+  /** The link the collapsed caret sits at the very end of, in this block: inside it with nothing of it after the caret, or just after it (where a browser would carry the link on). */
+  const linkAtCaretEnd = (el: HTMLElement): HTMLAnchorElement | null => {
+    const s = getSelection();
+    if (!s || !s.isCollapsed || !s.rangeCount) return null;
+    const r = s.getRangeAt(0);
+    const at = r.startContainer.nodeType === 1 ? (r.startContainer as Element) : r.startContainer.parentElement;
+    const inside = at?.closest('a');
+    if (inside && el.contains(inside)) {
+      const rest = document.createRange();
+      rest.setStart(r.startContainer, r.startOffset);
+      rest.setEnd(inside, inside.childNodes.length);
+      // the words only a screen reader hears ("opens in a new tab") aren't the link's text
+      const after = rest.cloneContents();
+      after.querySelectorAll('.sr-only').forEach((n) => n.remove());
+      return after.textContent ? null : inside;
+    }
+    // just after one: the node before the caret (its deepest last child) is in a link
+    let before: Node | null = r.startContainer.nodeType === 1 ? r.startContainer.childNodes[r.startOffset - 1] ?? null : r.startOffset === 0 ? r.startContainer.previousSibling : null;
+    while (before && before.nodeType === 1 && before.lastChild && (before as Element).nodeName !== 'A') before = before.lastChild;
+    const prev = before ? (before.nodeType === 1 ? (before as Element) : before.parentElement)?.closest('a') : null;
+    return prev && el.contains(prev) ? prev : null;
+  };
+  const atLinkEnd = (el: HTMLElement) => !!linkAtCaretEnd(el);
+  /** Types after the link the caret ends: into the text that follows it, or a new text node, the caret after the typing. */
+  const typeAfterLink = (data: string) => {
+    const el = current()?.el;
+    const a = el && linkAtCaretEnd(el);
+    if (!a) return;
+    const next = a.nextSibling;
+    let node: Text;
+    let length = data.length;
+    if (next && next.nodeType === 3 && next.textContent) {
+      node = next as Text;
+      node.insertData(0, data);
+    } else {
+      // nothing after the link yet: a space here would be the block's last character, which a browser doesn't
+      // show and drops as the next letter comes, so it goes in as a no-break space (saved as a plain one, model/dom.ts)
+      const text = data.replace(/ /g, '\u00a0');
+      length = text.length;
+      node = document.createTextNode(text);
+      a.after(node);
+    }
+    const caret = document.createRange();
+    caret.setStart(node, length);
+    caret.collapse(true);
+    const s = getSelection()!;
+    s.removeAllRanges();
+    s.addRange(caret);
+    markDirty();
+  };
 
   on('beforeinput', (e) => {
     const c = current();
@@ -771,6 +821,12 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       clearTimeout(timer);
       post({ type: 'text', index, value: markdownOf(el), session, final: true });
       post({ type: 'merge', index });
+      return;
+    }
+    if (type === 'insertText' && e.data && !composing && rich && atLinkEnd(el)) {
+      // typing at the very end of a link carries on after it, never inside it (as a document editor does)
+      e.preventDefault();
+      typeAfterLink(e.data);
       return;
     }
     if (type === 'insertFromPaste' || type === 'insertFromDrop' || type === 'insertFromYank') {
