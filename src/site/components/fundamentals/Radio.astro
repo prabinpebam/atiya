@@ -64,6 +64,15 @@ const described = hint ? `${id}-hint` : undefined;
     cursor: not-allowed;
   }
 
+  /* with a hint under it, the circle sits on the label's line, not between the two */
+  .radio:has(.hint) {
+    align-items: start;
+  }
+
+  .radio:has(.hint) .circle {
+    margin-block-start: calc((var(--leading-ui) * var(--text-md) - var(--c-check-size)) / 2);
+  }
+
   .circle {
     position: relative;
     display: grid;

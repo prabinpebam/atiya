@@ -114,11 +114,18 @@ const described = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean)
     color: var(--color-text);
   }
 
+  /* a legend isn't one of the fieldset's grid items (the browser draws it apart), so the gap never reaches it:
+     it keeps its own room, tight to its hint, the group's gap to the choices */
   .legend {
     padding: 0;
+    margin-block-end: var(--space-3);
     font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-ui);
+  }
+
+  .legend:has(+ .hint) {
+    margin-block-end: var(--space-1);
   }
 
   .hint,
@@ -146,6 +153,12 @@ const described = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean)
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-3);
+  }
+
+  /* cards side by side: an even row of tiles, as many as fit, wrapping on a narrow screen */
+  .choice-group[data-orientation='horizontal'][data-variant='cards'] .choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--c-check-card-min)), 1fr));
   }
 
   .choice-card {

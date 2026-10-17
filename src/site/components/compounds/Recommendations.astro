@@ -83,7 +83,7 @@ const inline = open === 'inline' && (layout === 'rows' || layout === 'wall');
             )}
             <footer class="person" data-person>
               <span class="face">
-                <Avatar name={r.name} src={r.photo?.src} srcDark={r.photo?.srcDark} size="sm" decorative />
+                <Avatar name={r.name} src={r.photo?.src} srcDark={r.photo?.srcDark} size={featured ? 'lg' : 'md'} decorative />
               </span>
               <span class="who">
                 <span class="name" id={`${card}-name`}>

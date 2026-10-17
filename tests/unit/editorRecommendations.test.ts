@@ -97,3 +97,22 @@ describe('recommendations: photos', () => {
     expect(cleanRecommendation({ id: 'a', name: 'A', title: 'T', text: 'w', photo: 'shared/a-photo', noPhoto: true })).toEqual({ id: 'a', name: 'A', title: 'T', text: 'w', noPhoto: true });
   });
 });
+
+describe('edit mode: recommendations screen', () => {
+  it('says where they show in a line', async () => {
+    const { placeLine } = await import('../../src/site/editor/model/recommendations');
+    expect(placeLine([{ title: 'About' }])).toBe('Not on any section yet');
+    expect(placeLine([{ title: 'About', settings: { show: true, at: 'end', layout: 'wall', open: 'dialog' } }, { title: 'Work', settings: { show: false, at: 'start', layout: 'tiles', open: 'dialog' } }])).toBe('About, after the pages, as a wall');
+    expect(placeLine([{ title: 'About', settings: { show: true, at: 'start', layout: 'rows', open: 'dialog' } }])).toBe('About, before the pages, as rows');
+    const on = { show: true, at: 'end' as const, layout: 'tiles' as const, open: 'dialog' as const };
+    expect(placeLine([{ title: 'A', settings: on }, { title: 'B', settings: on }])).toBe('On 2 sections');
+  });
+
+  it('opens on the one asked for, else the first, else a new one', async () => {
+    const { chosenDetail } = await import('../../src/site/editor/model/recommendations');
+    expect(chosenDetail([{ id: 'a' }, { id: 'b' }], 'b')).toBe('b');
+    expect(chosenDetail([{ id: 'a' }], 'gone')).toBe('a');
+    expect(chosenDetail([{ id: 'a' }], 'place')).toBe('place');
+    expect(chosenDetail([], null)).toBe('new');
+  });
+});

@@ -1,27 +1,26 @@
 ---
 /**
- * The Recommendations screen (documentation/sections/recommendations.md §4): where a section shows them (on or
- * off, before or after its pages or after one, the layout, how long ones open, the heading and intro), and the
- * recommendations themselves, in order: add, edit, hide, move and delete. Each part saves on its own through the
- * store; the screen redraws its region after a save.
+ * The Recommendations screen (documentation/sections/recommendations.md §4), laid out as the other managers are
+ * (Sections, Access): a list on the left, Where they show above its rule and the recommendations under it (Add
+ * recommendation first, then the people in order), beside the chosen one's details on the right: a recommendation's
+ * form, the new one's, or
+ * where a section shows them. The whole is one region, drawn again from the server after every choice and save.
  * @tier editor
- * @a11y Two sections with headings; the settings a form with labelled fields and fieldsets; the list an ordered
- * list whose rows name the person in each button ("Edit Ada Lovelace"); the editor a modal dialog with a form;
- * a refused save is named in a live alert by the form.
+ * @a11y The list is a navigation landmark whose current item says so (aria-current); the details are a section
+ * named by its heading; every field is labelled; a refused save is named in a live alert in the form.
  */
+import Avatar from '../../components/fundamentals/Avatar.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import FileField from '../../components/fundamentals/FileField.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
-import IconButton from '../../components/fundamentals/IconButton.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
-import Checkbox from '../../components/fundamentals/Checkbox.astro';
-import Avatar from '../../components/fundamentals/Avatar.astro';
-import FileField from '../../components/fundamentals/FileField.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
-import Dialog from '../../components/compounds/Dialog.astro';
 import { DEFAULT_HEADING, DEFAULT_SETTINGS, LAYOUT_ABOUT, LIMITS, RECOMMENDATION_LAYOUTS, type Recommendation, type RecommendationSettings } from '../model/recommendations';
 
 /** A section the recommendations can show on. */
@@ -39,8 +38,10 @@ export interface RecSection {
 interface Props {
   /** The site's sections. */
   sections: RecSection[];
-  /** The section the settings show. */
+  /** The section Where they show is for. */
   chosen?: string;
+  /** What the details show: a recommendation's ID, `new`, or `place` (where they show). */
+  selected: string;
   /** The recommendations, in order. */
   items: Recommendation[];
   /** The list file's version (null: no file yet). */
@@ -49,179 +50,335 @@ interface Props {
   structureVersion: string | null;
   /** Each recommendation's photo, by its ID, as a picture's address. */
   photos?: Record<string, string>;
+  /** Where they show now, in a line ("About, after the pages, as a wall"). */
+  placeLine: string;
 }
 
-const { sections, chosen, items, listVersion, structureVersion, photos = {} } = Astro.props;
+const { sections, chosen, selected, items, listVersion, structureVersion, photos = {}, placeLine } = Astro.props;
 const section = sections.find((s) => s.id === chosen);
 const s: RecommendationSettings = { ...DEFAULT_SETTINGS, ...section?.settings };
 const fixedDialog = s.layout === 'tiles' || s.layout === 'spotlight';
-const state = JSON.stringify({ items, listVersion, structureVersion, section: section?.id ?? null, structureKey: '/content/structures/site.json', listKey: '/content/recommendations.json' }).replace(/</g, '\\u003c');
+const index = items.findIndex((r) => r.id === selected);
+const rec = index >= 0 ? items[index] : undefined;
+const mode = selected === 'place' ? 'place' : rec ? 'rec' : 'new';
+const state = JSON.stringify({ items, listVersion, structureVersion, section: section?.id ?? null, selected: mode === 'rec' ? rec!.id : mode, structureKey: '/content/structures/site.json', listKey: '/content/recommendations.json' }).replace(/</g, '\\u003c');
 ---
 
-<div class="manager" data-region="recommendations" data-editor-recs>
-  <section class="part" aria-labelledby="recs-where-heading">
-    <Heading level={2} size="h4" id="recs-where-heading">Where they show</Heading>
-    {
-      section ? (
-        <form class="form" data-recs-place novalidate aria-labelledby="recs-where-heading">
-          <Select label="Section" name="section" value={section.id} options={sections.map((x) => ({ value: x.id, label: x.title }))} hint="Each section has its own settings." />
-          <Switch label="Show on this section" name="show" checked={s.show} />
-          <ChoiceGroup
-            legend="Where"
-            name="at"
-            value={s.at}
-            options={[
-              { value: 'start', label: 'Before the pages' },
-              { value: 'end', label: 'After the pages' },
-              { value: 'after', label: 'After a page', disabled: section.pages.length === 0 },
-            ]}
-          />
-          <div class="after" data-recs-after hidden={s.at !== 'after'}>
-            <Select label="After the page" name="after" value={s.after ?? section.pages[0]?.id} options={section.pages.map((p) => ({ value: p.id, label: p.title }))} />
-          </div>
-          <ChoiceGroup legend="Layout" name="layout" variant="cards" value={s.layout} options={RECOMMENDATION_LAYOUTS.map((l) => ({ value: l, label: LAYOUT_ABOUT[l].label, hint: LAYOUT_ABOUT[l].about }))} />
-          <ChoiceGroup
-            legend="Long recommendations"
-            name="open"
-            value={fixedDialog ? 'dialog' : s.open}
-            hint="Tiles and the spotlight always open a dialog, so their grid never breaks."
-            options={[
-              { value: 'dialog', label: 'Open in a dialog' },
-              { value: 'inline', label: 'Expand in place', disabled: fixedDialog },
-            ]}
-          />
-          <TextField label="Heading" name="heading" value={s.heading ?? ''} placeholder={DEFAULT_HEADING} optional maxlength={LIMITS.heading} />
-          <TextField label="Intro" name="intro" value={s.intro ?? ''} optional maxlength={LIMITS.intro} hint="One line under the heading." />
-          <p class="issue" role="alert" data-editor-form-issue hidden />
-          <div class="actions">
-            <Button variant="primary" type="submit">Save where they show</Button>
-          </div>
-        </form>
-      ) : (
-        <Text variant="body" tone="muted">The site has no sections yet. Add one on the Sections screen first.</Text>
-      )
-    }
-  </section>
-
-  <section class="part" aria-labelledby="recs-list-heading">
-    <div class="list-head">
-      <Heading level={2} size="h4" id="recs-list-heading">All recommendations</Heading>
-      <Button variant="secondary" size="sm" icon="plus" data-recs-add="">Add recommendation</Button>
-    </div>
-    {
-      items.length ? (
-        <ol class="list">
-          {items.map((r, i) => (
-            <li class="row" data-rec-row={r.id}>
-              <Avatar name={r.name} src={photos[r.id]} size="sm" decorative />
-              <span class="who">
-                <span class="name">{r.name}</span>
-                <span class="title">{r.title}</span>
-              </span>
-              {r.hidden && <Tag size="sm">Hidden</Tag>}
-              <span class="tools">
-                <IconButton label={`Move ${r.name} up`} icon="arrow-up" size="sm" disabled={i === 0} data-rec-move="-1" data-rec={r.id} />
-                <IconButton label={`Move ${r.name} down`} icon="arrow-down" size="sm" disabled={i === items.length - 1} data-rec-move="1" data-rec={r.id} />
-                <IconButton label={`Edit ${r.name}`} icon="edit" size="sm" data-rec-edit={r.id} />
-              </span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <Text variant="body" tone="muted">None yet. Add the first: the person's name, their title, a link to their profile and their words.</Text>
-      )
-    }
-    <p class="issue" role="alert" data-recs-list-issue hidden />
-  </section>
-
-  <Dialog id="recs-edit" title="Add recommendation" size="md">
-    <form class="form" data-recs-form novalidate>
-      <input type="hidden" name="id" value="" />
-      <TextField label="Name" name="name" required maxlength={LIMITS.name} />
-      <TextField label="Title" name="title" required maxlength={LIMITS.title} hint="Their role and where, as they'd write it." />
-      <TextField label="Profile link" name="link" type="url" optional placeholder="https://www.linkedin.com/in/…" hint="Their LinkedIn profile or their own site." />
-      <TextField label="How you know each other" name="relationship" optional maxlength={LIMITS.relationship} placeholder="Managed me at …" />
-      <TextField label="Month written" name="date" optional placeholder="2025-03" hint="As year and month: 2025-03." />
-      <TextField label="Recommendation" name="text" multiline rows={8} required maxlength={LIMITS.text} hint="A blank line starts a new paragraph." />
-      <FileField label="Photo" name="file" accept="image/*" hint="A square picture of them. Without one, the photo their LinkedIn profile shows is taken when you save, if the profile is public." />
-      <p class="note" data-recs-photo-note hidden>They have a photo. Upload another to replace it.</p>
-      <Checkbox label="Show their initials only" name="noPhoto" hint="No photo, and none taken from their profile." />
-      <Checkbox label="Hide from the site" name="hidden" hint="Kept here, shown nowhere." />
-      <p class="issue" role="alert" data-editor-form-issue hidden />
-      <div class="actions">
-        <Button variant="primary" type="submit">Save recommendation</Button>
-        <Button variant="secondary" data-dialog-close="">Cancel</Button>
-        <span class="spacer" />
-        <span class="delete" data-recs-delete-wrap hidden>
-          <Button variant="quiet" icon="delete" data-recs-delete="">Delete</Button>
-        </span>
+<div class="recs" data-region="recommendations" data-editor-recs>
+  <div class="split">
+    <nav class="list" aria-label="Recommendations" data-recs-list>
+      <div class="list-head">
+        <a class="item" href="?rec=place" aria-current={mode === 'place' ? 'true' : undefined} data-recs-go="place">
+          <span class="mark">
+            <Icon name="settings" />
+          </span>
+          <span class="words">
+            <span class="name">Where they show</span>
+            <span class="meta">{placeLine}</span>
+          </span>
+        </a>
       </div>
-    </form>
-  </Dialog>
+      <div class="add">
+        <Button variant="primary" icon="plus" href="?rec=new" block data-recs-go="new" data-chosen={mode === 'new' ? '' : undefined}>Add recommendation</Button>
+      </div>
+      <div class="people" data-scrollbar>
+        {
+          items.length ? (
+            <ol class="items">
+              {items.map((r) => (
+                <li data-rec-row={r.id}>
+                  <a class="item" href={`?rec=${r.id}`} aria-current={r.id === rec?.id ? 'true' : undefined} data-recs-go={r.id}>
+                    <span class="face">
+                      <Avatar name={r.name} src={photos[r.id]} size="sm" decorative />
+                    </span>
+                    <span class="words">
+                      <span class="name">{r.name}</span>
+                      <span class="meta">{r.hidden ? `Hidden · ${r.title}` : r.title}</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p class="empty">
+              <Text as="span" variant="small" tone="muted">
+                None yet. Add the first: their name, their title, a link to their profile and their words.
+              </Text>
+            </p>
+          )
+        }
+      </div>
+    </nav>
+
+    <section class="detail" aria-labelledby="recs-detail-title">
+      {
+        mode === 'place' ? (
+          <div class="pane">
+            <header class="head">
+              <div class="title">
+                <Heading level={2} size="h3" id="recs-detail-title">
+                  Where they show
+                </Heading>
+                <Text variant="ui" tone="muted">
+                  Each section has its own settings: whether it shows them, where among its pages and how.
+                </Text>
+              </div>
+            </header>
+            {section ? (
+              <form class="form" data-recs-place novalidate aria-labelledby="recs-detail-title">
+                <div class="fields">
+                  <Select label="Section" name="section" value={section.id} options={sections.map((x) => ({ value: x.id, label: x.title }))} />
+                  <Switch label="Show on this section" name="show" checked={s.show} />
+                </div>
+                <ChoiceGroup
+                  legend="Where"
+                  name="at"
+                  value={s.at}
+                  orientation="horizontal"
+                  options={[
+                    { value: 'start', label: 'Before the pages' },
+                    { value: 'end', label: 'After the pages' },
+                    { value: 'after', label: 'After a page', disabled: section.pages.length === 0 },
+                  ]}
+                />
+                <div class="after" data-recs-after hidden={s.at !== 'after'}>
+                  <Select label="After the page" name="after" value={s.after ?? section.pages[0]?.id} options={section.pages.map((p) => ({ value: p.id, label: p.title }))} />
+                </div>
+                <ChoiceGroup legend="Layout" name="layout" variant="cards" orientation="horizontal" value={s.layout} options={RECOMMENDATION_LAYOUTS.map((l) => ({ value: l, label: LAYOUT_ABOUT[l].label, hint: LAYOUT_ABOUT[l].about }))} />
+                <ChoiceGroup
+                  legend="Long recommendations"
+                  name="open"
+                  value={fixedDialog ? 'dialog' : s.open}
+                  orientation="horizontal"
+                  hint="Tiles and the spotlight always open a dialog, so their grid never breaks."
+                  options={[
+                    { value: 'dialog', label: 'Open in a dialog' },
+                    { value: 'inline', label: 'Expand in place', disabled: fixedDialog },
+                  ]}
+                />
+                <div class="fields">
+                  <TextField label="Heading" name="heading" value={s.heading ?? ''} placeholder={DEFAULT_HEADING} optional maxlength={LIMITS.heading} />
+                  <TextField label="Intro" name="intro" value={s.intro ?? ''} optional maxlength={LIMITS.intro} hint="One line under the heading." />
+                </div>
+                <p class="issue" role="alert" data-editor-form-issue hidden />
+                <div class="actions">
+                  <Button variant="primary" type="submit">
+                    Save where they show
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <Text variant="ui" tone="muted">
+                The site has no sections yet. Add one on the Sections screen first.
+              </Text>
+            )}
+          </div>
+        ) : (
+          <div class="pane">
+            <header class="head">
+              {rec ? (
+                <Fragment>
+                  <div class="who">
+                    <Avatar name={rec.name} src={photos[rec.id]} size="lg" decorative />
+                    <div class="title">
+                      <Heading level={2} size="h3" id="recs-detail-title">
+                        {rec.name}
+                      </Heading>
+                      <Text variant="ui" tone="muted">
+                        {rec.title}
+                      </Text>
+                      {rec.hidden && (
+                        <span class="tags">
+                          <Tag size="sm">Hidden</Tag>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div class="order">
+                    <Button variant="secondary" size="sm" icon="arrow-up" disabled={index === 0} data-rec-move="-1">
+                      Move up
+                    </Button>
+                    <Button variant="secondary" size="sm" icon="arrow-down" disabled={index === items.length - 1} data-rec-move="1">
+                      Move down
+                    </Button>
+                  </div>
+                </Fragment>
+              ) : (
+                <div class="title">
+                  <Heading level={2} size="h3" id="recs-detail-title">
+                    Add recommendation
+                  </Heading>
+                  <Text variant="ui" tone="muted">
+                    What someone you've worked with says about you, with their name, their title and a link to their profile.
+                  </Text>
+                </div>
+              )}
+            </header>
+            <form class="form" data-recs-form novalidate aria-labelledby="recs-detail-title">
+              <input type="hidden" name="id" value={rec?.id ?? ''} />
+              <section class="part" aria-labelledby="recs-who">
+                <Heading level={3} size="h4" id="recs-who">
+                  Who
+                </Heading>
+                <div class="fields">
+                  <TextField label="Name" name="name" value={rec?.name ?? ''} required maxlength={LIMITS.name} />
+                  <TextField label="Title" name="title" value={rec?.title ?? ''} required maxlength={LIMITS.title} hint="Their role and where, as they'd write it." />
+                  <TextField label="Profile link" name="link" type="url" value={rec?.link ?? ''} optional placeholder="https://www.linkedin.com/in/…" hint="Their LinkedIn profile or their own site." />
+                  <TextField label="How you know each other" name="relationship" value={rec?.relationship ?? ''} optional maxlength={LIMITS.relationship} placeholder="Managed me at …" />
+                  <TextField label="Month written" name="date" value={rec?.date ?? ''} optional placeholder="2025-03" hint="As year and month: 2025-03." />
+                </div>
+              </section>
+              <section class="part" aria-labelledby="recs-photo">
+                <Heading level={3} size="h4" id="recs-photo">
+                  Photo
+                </Heading>
+                <FileField
+                  label={rec?.photo && !rec.noPhoto ? 'Replace their photo' : 'Upload their photo'}
+                  name="file"
+                  accept="image/*"
+                  hint="A square picture of them. Without one, the photo their LinkedIn profile shows is taken when you save, if the profile is public."
+                />
+                <Checkbox label="Show their initials only" name="noPhoto" checked={!!rec?.noPhoto} hint="No photo, and none taken from their profile." />
+              </section>
+              <section class="part" aria-labelledby="recs-words">
+                <Heading level={3} size="h4" id="recs-words">
+                  Their words
+                </Heading>
+                <TextField label="Recommendation" name="text" value={rec?.text ?? ''} multiline rows={10} required maxlength={LIMITS.text} hint="A blank line starts a new paragraph." />
+                <Checkbox label="Hide from the site" name="hidden" checked={!!rec?.hidden} hint="Kept here, shown nowhere." />
+              </section>
+              <p class="issue" role="alert" data-editor-form-issue hidden />
+              <div class="actions">
+                <Button variant="primary" type="submit">
+                  {rec ? 'Save recommendation' : 'Add recommendation'}
+                </Button>
+                {rec && (
+                  <Fragment>
+                    <span class="spacer" />
+                    <Button variant="quiet" icon="delete" data-recs-delete="">
+                      Delete
+                    </Button>
+                  </Fragment>
+                )}
+              </div>
+            </form>
+          </div>
+        )
+      }
+    </section>
+  </div>
   <script is:inline type="application/json" data-recs-state set:html={state} />
 </div>
 
 <style>
-  .manager {
-    display: grid;
-    gap: var(--space-12);
-    max-inline-size: var(--size-measure);
+  .recs {
+    min-inline-size: 0;
   }
 
-  .part {
+  .split {
     display: grid;
-    gap: var(--space-6);
+    grid-template-columns: var(--c-editor-section-list) minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: start;
   }
 
-  .form {
+  /* the list stays in view: where they show above the rule, then the people's group (Add recommendation on top,
+     staying in view, and the people scrolling under it), beside a long form */
+  .list {
+    position: sticky;
+    inset-block-start: var(--space-4);
     display: grid;
-    gap: var(--space-6);
-  }
-
-  .after[hidden] {
-    display: none;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    max-block-size: calc(100dvh - var(--c-editor-topbar) - var(--space-8));
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
   }
 
   .list-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-  }
-
-  .list {
     display: grid;
-    margin: 0;
-    padding: 0;
-    border-block-start: var(--border-hairline) solid var(--color-rule);
-    list-style: none;
-  }
-
-  .row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding-block: var(--space-3);
+    padding: var(--space-3);
     border-block-end: var(--border-hairline) solid var(--color-rule);
   }
 
-  .who {
+  .add {
     display: grid;
-    flex: 1;
+    padding: var(--space-3) var(--space-3) 0;
+  }
+
+  .people {
+    min-block-size: 0;
+    overflow: auto;
+    scrollbar-width: none;
+    padding: var(--space-3);
+  }
+
+  .items {
+    display: grid;
     gap: var(--space-0-5);
-    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+    min-block-size: var(--size-touch);
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
     font-family: var(--font-ui);
     line-height: var(--leading-ui);
+    text-decoration: none;
+  }
+
+  @media (hover: hover) {
+    .item:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .item:active {
+    background: var(--color-bg-hover);
+  }
+
+  .item[aria-current='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .item:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: calc(var(--border-focus) * -1);
+  }
+
+  .mark {
+    display: grid;
+    place-items: center;
+    inline-size: var(--size-avatar-sm);
+  }
+
+  .face {
+    display: flex;
+  }
+
+  .words {
+    display: grid;
+    min-inline-size: 0;
   }
 
   .name {
-    color: var(--color-text);
+    overflow: hidden;
     font-size: var(--text-md);
     font-weight: var(--weight-semibold);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .title {
+  .meta {
     overflow: hidden;
     color: var(--color-text-muted);
     font-size: var(--text-sm);
@@ -229,10 +386,74 @@ const state = JSON.stringify({ items, listVersion, structureVersion, section: se
     white-space: nowrap;
   }
 
-  .tools {
+  .item[aria-current='true'] .meta {
+    color: inherit;
+  }
+
+  .empty {
+    margin: 0;
+    padding: var(--space-2);
+  }
+
+  .detail {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .pane {
+    display: grid;
+    gap: var(--space-8);
+    max-inline-size: var(--size-popout);
+  }
+
+  .head {
     display: flex;
-    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .who {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .title {
+    display: grid;
     gap: var(--space-1);
+    min-inline-size: 0;
+  }
+
+  .tags {
+    display: flex;
+  }
+
+  .order {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .form {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .part {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .fields {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .after[hidden] {
+    display: none;
   }
 
   .actions {
@@ -246,26 +467,33 @@ const state = JSON.stringify({ items, listVersion, structureVersion, section: se
     flex: 1;
   }
 
-  .note {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
-
-  .note[hidden] {
-    display: none;
-  }
-
   .issue {
     margin: 0;
     color: var(--color-negative);
+    font-family: var(--font-ui);
     font-size: var(--text-sm);
     font-weight: var(--weight-medium);
   }
 
-  .issue[hidden],
-  .delete[hidden] {
+  .issue[hidden] {
     display: none;
+  }
+
+  /* one column: the list above the details */
+  @media (max-width: 56rem) {
+    .split {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-6);
+    }
+
+    .list {
+      position: static;
+      max-block-size: none;
+    }
+
+    .people {
+      max-block-size: var(--c-editor-scope-list);
+    }
   }
 </style>
 

@@ -9,7 +9,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { readFileSync } from 'node:fs';
+import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FIXTURE, reset } from '../../scripts/editor-test-server.mjs';
 
@@ -23,6 +23,21 @@ const PEOPLE = [
 const recsFile = () => JSON.parse(readFileSync(join(FIXTURE, 'content/recommendations.json'), 'utf8')) as { items: { id: string; name: string; hidden?: boolean }[] };
 const siteTree = () => JSON.parse(readFileSync(join(FIXTURE, 'content/structures/site.json'), 'utf8'));
 const status = (page: Page) => page.locator('[data-editor-status]');
+
+/**
+ * The fixture is a copy of content/ as it is on disk, which may hold the owner's own recommendations: every test
+ * starts from none, and no section showing them (the fixture only, never content/).
+ */
+function startEmpty() {
+  reset();
+  rmSync(join(FIXTURE, 'content/recommendations.json'), { force: true });
+  const tree = siteTree();
+  for (const n of tree.home.children) delete n.recommendations;
+  // whole, never half-written: the dev server's watcher reads it the moment it changes
+  const file = join(FIXTURE, 'content/structures/site.json');
+  writeFileSync(`${file}.tmp`, `${JSON.stringify(tree, null, 2)}\n`);
+  renameSync(`${file}.tmp`, file);
+}
 const band = (page: Page) => page.locator('#recommendations');
 
 /** The list and About's settings, saved through the editor's API as the screen saves them. */
@@ -51,60 +66,78 @@ async function axe(page: Page, scope: string) {
 test.describe('editor: recommendations', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(240_000);
-  test.beforeEach(() => reset());
+  test.beforeEach(async () => {
+    startEmpty();
+    // the dev server notices files changed by hand a moment later
+    await new Promise((r) => setTimeout(r, 1500));
+  });
   test.afterAll(() => reset());
 
-  test('the screen adds, edits, hides, orders and deletes them, and turns them on for About', async ({ page }) => {
+  test('the screen lists them beside the chosen one: adds, edits, hides, orders and deletes them, and turns them on for About', async ({ page }) => {
     await page.goto('/_edit/recommendations/');
-    await expect(page.getByRole('heading', { name: 'Where they show' })).toBeVisible();
-    // About first, off by default
-    await expect(page.locator('[data-recs-place] input[name="section"]')).toHaveValue('about');
-    await expect(page.getByRole('switch', { name: 'Show on this section' })).not.toBeChecked();
+    const list = page.getByRole('navigation', { name: 'Recommendations' });
+    const detail = page.locator('[data-editor-recs] .detail');
+    const row = (id: string) => list.locator(`[data-rec-row="${id}"]`);
+    const save = (name: string) => detail.getByRole('button', { name, exact: true }).click();
+    // with none yet, the details are a new one's form
+    await expect(detail.getByRole('heading', { name: 'Add recommendation' })).toBeVisible();
 
-    const dialog = page.locator('#recs-edit');
     for (const p of PEOPLE.slice(0, 2)) {
-      await page.getByRole('button', { name: 'Add recommendation' }).click();
-      await expect(dialog).toBeVisible();
-      await dialog.locator('input[name="name"]').fill(p.name);
-      await dialog.locator('input[name="title"]').fill(p.title);
-      if (p.link) await dialog.locator('input[name="link"]').fill(p.link);
-      await dialog.locator('textarea[name="text"]').fill(p.text);
-      await dialog.getByRole('button', { name: 'Save recommendation' }).click();
-      await expect(page.locator('[data-rec-row]', { hasText: p.name })).toBeVisible({ timeout: 30_000 });
-      // focus comes back to the new row's Edit
-      await expect(page.getByRole('button', { name: `Edit ${p.name}` })).toBeFocused();
+      await list.getByRole('link', { name: 'Add recommendation' }).click();
+      await expect(detail.getByRole('heading', { name: 'Add recommendation' })).toBeVisible();
+      await expect(page.locator('input[name="name"]')).toBeFocused();
+      await detail.locator('input[name="name"]').fill(p.name);
+      await detail.locator('input[name="title"]').fill(p.title);
+      if (p.link) await detail.locator('input[name="link"]').fill(p.link);
+      await detail.locator('textarea[name="text"]').fill(p.text);
+      await save('Add recommendation');
+      // chosen in the list, its details beside it
+      await expect(row(p.id).getByRole('link')).toHaveAttribute('aria-current', 'true', { timeout: 30_000 });
+      await expect(detail.getByRole('heading', { level: 2, name: p.name })).toBeVisible();
+      await expect(row(p.id).getByRole('link')).toBeFocused();
     }
     expect(recsFile().items.map((r) => r.id)).toEqual(['test-person-one', 'test-person-two']);
 
-    // a photo uploaded: kept as a picture of the site's, shown in the list (the fixture server never asks LinkedIn)
-    await page.getByRole('button', { name: 'Edit Test Person One' }).click();
-    await dialog.locator('input[name="file"]').setInputFiles(join(process.cwd(), 'public/avatars/skater.webp'));
-    await dialog.getByRole('button', { name: 'Save recommendation' }).click();
-    await expect(page.locator('[data-rec-row="test-person-one"] img')).toBeVisible({ timeout: 30_000 });
+    // a photo uploaded: kept as a picture of the site's, shown in the list and the details (the fixture server never asks LinkedIn)
+    await row('test-person-one').getByRole('link').click();
+    await expect(detail.getByRole('heading', { level: 2, name: 'Test Person One' })).toBeVisible();
+    await detail.locator('input[name="file"]').setInputFiles(join(process.cwd(), 'public/avatars/skater.webp'));
+    await save('Save recommendation');
+    await expect(row('test-person-one').locator('img')).toBeVisible({ timeout: 30_000 });
+    await expect(detail.locator('.head img')).toBeVisible();
     expect((recsFile().items[0] as { photo?: string }).photo).toMatch(/^shared\/test-person-one-photo/);
 
-    // a link that isn't https is refused in the form, said in words
-    await page.getByRole('button', { name: 'Edit Test Person Two' }).click();
-    await dialog.locator('input[name="link"]').fill('example.com');
-    await dialog.getByRole('button', { name: 'Save recommendation' }).click();
-    await expect(dialog.locator('[data-editor-form-issue]')).toContainText('https://');
-    await dialog.locator('input[name="link"]').fill('');
-    await dialog.getByRole('checkbox', { name: 'Hide from the site' }).check();
-    await dialog.getByRole('button', { name: 'Save recommendation' }).click();
-    await expect(page.locator('[data-rec-row="test-person-two"]')).toContainText('Hidden', { timeout: 30_000 });
+    // a link that isn't https is refused in the form, said in words; then hidden
+    await row('test-person-two').getByRole('link').click();
+    await expect(detail.getByRole('heading', { level: 2, name: 'Test Person Two' })).toBeVisible();
+    await detail.locator('input[name="link"]').fill('example.com');
+    await save('Save recommendation');
+    await expect(detail.locator('[data-editor-form-issue]')).toContainText('https://');
+    await detail.locator('input[name="link"]').fill('');
+    await detail.getByRole('checkbox', { name: 'Hide from the site' }).check();
+    await save('Save recommendation');
+    await expect(row('test-person-two')).toContainText('Hidden', { timeout: 30_000 });
     expect(recsFile().items[1].hidden).toBe(true);
 
     // ordered: two up to the top
-    await page.getByRole('button', { name: 'Move Test Person Two up' }).click();
-    await expect(page.locator('[data-rec-row]').first()).toContainText('Test Person Two', { timeout: 30_000 });
+    await detail.getByRole('button', { name: 'Move up' }).click();
+    await expect(list.locator('[data-rec-row]').first()).toHaveAttribute('data-rec-row', 'test-person-two', { timeout: 30_000 });
     expect(recsFile().items.map((r) => r.id)).toEqual(['test-person-two', 'test-person-one']);
 
-    // on for About, after its pages, as a wall; the rest of the section kept
+    // where they show: About first, off; on, after its pages, as a wall, the rest of the section kept
+    await list.getByRole('link', { name: /Where they show/ }).click();
+    await expect(page.locator('[data-recs-place] input[name="section"]')).toHaveValue('about');
+    await expect(page.getByRole('switch', { name: 'Show on this section' })).not.toBeChecked();
+    // the layouts are tiles in one row
+    const layouts = page.locator('[data-recs-place] fieldset', { has: page.getByText('Layout', { exact: true }) }).locator('.choice-card');
+    const tops = await layouts.evaluateAll((cards) => cards.map((c) => Math.round(c.getBoundingClientRect().top)));
+    expect(new Set(tops).size, JSON.stringify(tops)).toBe(1);
     const before = siteTree().home.children.find((n: { id: string }) => n.id === 'about');
     await page.getByRole('switch', { name: 'Show on this section' }).check();
     await page.locator('[data-recs-place]').getByRole('radio', { name: /^Wall/ }).check();
     await page.getByRole('button', { name: 'Save where they show' }).click();
     await expect(status(page)).toContainText('Saved where recommendations show', { timeout: 30_000 });
+    await expect(list.getByRole('link', { name: /Where they show/ })).toContainText('About, after the pages, as a wall');
     const about = siteTree().home.children.find((n: { id: string }) => n.id === 'about');
     expect(about.recommendations).toEqual({ show: true, at: 'end', layout: 'wall', open: 'dialog' });
     expect({ ...about, recommendations: undefined }).toEqual({ ...before, recommendations: undefined });
@@ -112,21 +145,30 @@ test.describe('editor: recommendations', () => {
     // expanding in place can't be chosen for tiles
     await page.locator('[data-recs-place]').getByRole('radio', { name: /^Tiles/ }).check();
     await expect(page.getByRole('radio', { name: 'Expand in place' })).toBeDisabled();
+    await page.locator('[data-recs-place]').getByRole('radio', { name: /^Wall/ }).check();
 
-    // deleted, after asking
-    await page.getByRole('button', { name: 'Edit Test Person One' }).click();
-    await dialog.getByRole('button', { name: 'Delete', exact: true }).click();
-    await dialog.getByRole('button', { name: 'Delete for good' }).click();
-    await expect(page.locator('[data-rec-row="test-person-one"]')).toHaveCount(0, { timeout: 30_000 });
+    // deleted, after asking: the next one is chosen (leaving the unsaved layout change asks first)
+    const asked = page.waitForEvent('dialog').then(async (d) => {
+      expect(d.message()).toContain('without saving');
+      await d.accept();
+    });
+    await row('test-person-one').getByRole('link').click();
+    await asked;
+    await expect(detail.getByRole('heading', { level: 2, name: 'Test Person One' })).toBeVisible();
+    await detail.getByRole('button', { name: 'Delete', exact: true }).click();
+    await detail.getByRole('button', { name: 'Delete for good' }).click();
+    await expect(row('test-person-one')).toHaveCount(0, { timeout: 30_000 });
+    await expect(detail.getByRole('heading', { level: 2, name: 'Test Person Two' })).toBeVisible();
 
     for (const scheme of ['light', 'dark'] as const) {
-      await page.emulateMedia({ colorScheme: scheme });
-      await page.goto('/_edit/recommendations/');
-      await expect(page.locator('[data-editor-recs]')).toBeVisible();
-      expect(await axe(page, '[data-editor-recs]'), scheme).toEqual([]);
+      for (const rec of ['test-person-two', 'place']) {
+        await page.emulateMedia({ colorScheme: scheme });
+        await page.goto(`/_edit/recommendations/?rec=${rec}`);
+        await expect(page.locator('[data-editor-recs]')).toBeVisible();
+        expect(await axe(page, '[data-editor-recs]'), `${scheme} ${rec}`).toEqual([]);
+      }
     }
   });
-
   test('About shows the visible ones after its pages as tiles, long ones read in full in a dialog', async ({ page }) => {
     await seed(page, { show: true, at: 'end', layout: 'tiles', open: 'inline' });
     await page.goto('/about/');

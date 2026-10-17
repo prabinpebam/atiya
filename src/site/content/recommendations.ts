@@ -52,10 +52,10 @@ export const DEFAULT_HEADING = 'Recommendations';
 
 /** What each layout is, for edit mode's choices. */
 export const LAYOUT_ABOUT: Record<RecommendationLayout, { label: string; about: string }> = {
-  tiles: { label: 'Tiles', about: 'An even grid of cards, each the same height.' },
-  rows: { label: 'Rows', about: 'One under another, in the reading measure.' },
-  wall: { label: 'Wall', about: 'Columns of cards, each as tall as its words.' },
-  spotlight: { label: 'Spotlight', about: 'The first one large, the others as tiles under it.' },
+  tiles: { label: 'Tiles', about: 'An even grid.' },
+  rows: { label: 'Rows', about: 'One under another.' },
+  wall: { label: 'Wall', about: 'Columns, each card its own height.' },
+  spotlight: { label: 'Spotlight', about: 'One large, the rest as tiles.' },
 };
 
 /** Expanding in place would break an even grid: tiles and the spotlight's tiles always open a dialog. */

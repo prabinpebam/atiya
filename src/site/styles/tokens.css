@@ -244,6 +244,7 @@
   --c-check-radius: var(--radius-sm);
   --c-check-on: var(--color-accent);
   --c-check-mark: var(--color-on-accent);
+  --c-check-card-min: 9rem;
   --c-switch-width: 3rem;
   --c-switch-height: 1.75rem;
   --c-switch-thumb: 1.25rem;

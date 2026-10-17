@@ -10,7 +10,7 @@ import { load } from '../server/screens';
 import { readDoc } from '../server/store';
 import { STRUCTURE } from '../server/articles';
 import { RECOMMENDATIONS_KEY } from '../server/recommendations';
-import { chosenSection } from '../model/recommendations';
+import { chosenDetail, chosenSection, placeLine } from '../model/recommendations';
 import type { RecommendationsFile, SiteStructure } from '../../content/schema';
 import { picture } from '../../content/pictures';
 
@@ -33,6 +33,7 @@ const sections: RecSection[] = (structure?.value.home.children ?? []).flatMap((n
     : [],
 );
 const chosen = chosenSection(sections, Astro.url.searchParams.get('section'));
+const selected = chosenDetail(list?.value.items ?? [], Astro.url.searchParams.get('rec'));
 // each photo at the card's size (a missing one shows initials: the content check names it)
 const photos: Record<string, string> = {};
 for (const r of list?.value.items ?? []) {
@@ -49,11 +50,11 @@ for (const r of list?.value.items ?? []) {
   title="Recommendations"
   screen="recommendations"
   heading="Recommendations"
-  intro="What people you've worked with say about you: their name, their title, a link to their profile and their words. Choose which section shows them, where among its pages and how. Saved to content/; save to remote to put them on the site."
+  intro="What people you've worked with say about you. Choose one to change it, add one, or choose where they show. Saved to content/; save to remote to put them on the site."
 >
   {
     loaded.ok ? (
-      <RecommendationsManager sections={sections} chosen={chosen} items={list?.value.items ?? []} listVersion={list?.version ?? null} structureVersion={structure?.version ?? null} photos={photos} />
+      <RecommendationsManager sections={sections} chosen={chosen} items={list?.value.items ?? []} listVersion={list?.version ?? null} structureVersion={structure?.version ?? null} photos={photos} selected={selected} placeLine={placeLine(sections)} />
     ) : (
       <ContentIssues issues={loaded.issues} />
     )

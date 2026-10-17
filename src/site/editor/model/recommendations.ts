@@ -74,3 +74,20 @@ export function chosenSection(sections: readonly { id: string; title: string }[]
     sections[0]?.id
   );
 }
+
+const AT: Record<RecommendationSettings['at'], string> = { start: 'before the pages', end: 'after the pages', after: 'after a page' };
+
+/** Where they show now, in a line for the list: the sections they're on, where and how ("About, after the pages, as a wall"). */
+export function placeLine(sections: readonly { title: string; settings?: RecommendationSettings }[]): string {
+  const on = sections.filter((s) => s.settings?.show);
+  if (!on.length) return 'Not on any section yet';
+  if (on.length > 1) return `On ${on.length} sections`;
+  const s = on[0].settings!;
+  return `${on[0].title}, ${AT[s.at]}, as ${s.layout === 'wall' ? 'a wall' : s.layout === 'spotlight' ? 'a spotlight' : s.layout}`;
+}
+
+/** What the details show: the one asked for (a recommendation, new, or where they show), else the first recommendation, else a new one. */
+export function chosenDetail(items: readonly { id: string }[], asked: string | null): string {
+  if (asked === 'new' || asked === 'place') return asked;
+  return items.find((r) => r.id === asked)?.id ?? items[0]?.id ?? 'new';
+}

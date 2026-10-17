@@ -86,6 +86,15 @@ const described = hint ? `${id}-hint` : undefined;
     cursor: not-allowed;
   }
 
+  /* with a hint under it, the box sits on the label's line, not between the two */
+  .checkbox:has(.hint) {
+    align-items: start;
+  }
+
+  .checkbox:has(.hint) .box {
+    margin-block-start: calc((var(--leading-ui) * var(--text-md) - var(--c-check-size)) / 2);
+  }
+
   .box {
     position: relative;
     display: grid;

@@ -95,10 +95,12 @@ The settings belong to the section, so moving or renaming the section keeps them
 
 `/_edit/recommendations/` (Content group in the navigation, after Media; the action center finds it by "testimonials", "references", "endorsements" too):
 
-- **Where they show:** the section (a select; About first if there is one), Show on this section (a switch), Where (Before the pages, After the pages, After a page with a select of the section's pages), Layout (four choices, each with a line saying what it is), Long recommendations (Open in a dialog, Expand in place: the second disabled for tiles and spotlight, with why), Heading, Intro, and Save.
-- **All recommendations:** every one in order, each with its photo (or initials), name, title and Hidden when it's hidden, and Edit, Move up and Move down; Add recommendation opens the form.
-- **The form** (a dialog): Name, Title, Profile link, How you know each other, Month written, Recommendation, Photo (an upload), Show their initials only, Hide from the site; Save recommendation and, for one that exists, Delete (asks once: Delete for good). A refused save says what to fix in the form.
+The screen is laid out as the other managers are (Sections, Access): a list on the left, beside the chosen item's details on the right (`?rec=<id>`, `?rec=new`, `?rec=place`). Choosing in the list draws the screen again without a reload; leaving unsaved changes asks first, and a redraw that arrives once typing has started is dropped, never landed over the typing.
 
+- **The list:** Where they show (a line saying where: "About, after the pages, as a wall") above its rule; under it, Add recommendation, then every recommendation in order, with its photo (or initials), name and title ("Hidden" before the title when it's hidden).
+- **Where they show:** the section (a select; About first if there is one), Show on this section (a switch), Where (Before the pages, After the pages, After a page with a select of the section's pages), Layout (four tiles in a row, each with a line saying what it is), Long recommendations (Open in a dialog, Expand in place: the second disabled for tiles and spotlight, with why), Heading, Intro, and Save where they show.
+- **A recommendation:** its photo large, its name and title, Move up and Move down; then the form in three parts (Who: Name, Title, Profile link, How you know each other, Month written; Photo: an upload, Show their initials only; Their words: Recommendation, Hide from the site), Save recommendation and Delete (asks once: Delete for good, then the next one is chosen). Add recommendation is the same form, empty. A refused save says what to fix in the form.
+- Every write goes through the store, at the version it was read at.
 ### 4.1 The photo
 
 - **Uploaded:** saved after the recommendation, as a picture of the site's (`content/media/shared/`), described by the person's name; uploading another replaces it.
