@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-15",
+  "updatedAt": "2026-10-17",
   "locale": "en",
   "topics": [
     "designup",
@@ -34,18 +34,13 @@
       "type": "divider"
     },
     {
-      "type": "heading",
-      "level": 2,
-      "text": "How it started"
-    },
-    {
       "type": "text",
       "markdown": "Some of the best things in my life happened because I was lucky enough to be in the right room, with the right people, at the right time. DesignUp was one of them. This is the story of how it shaped me, as a person and as a Designer, and a chance to share the work I was fortunate to create along the way.",
       "dropcap": true
     },
     {
       "type": "text",
-      "markdown": "Back in 2015, I was leading the Design team at Belong. Through work, I was introduced to [Jay Dutta](https://www.linkedin.com/in/jaydutta/), and JD soon became someone I'd go to for all sorts of guidance: managing a team, hiring, and much more. JD used to give talks and organise small Design events in Bengaluru. I was curious and ambitious, so I'd attend as many as I could and help out wherever I could."
+      "markdown": "Back in 2015, I was leading the Design team at Belong. Through work, I was introduced to [Jay Dutta](https://www.linkedin.com/in/jaydutta/), and JD soon became someone I'd go to for all sorts of guidance: managing a team, hiring, my own growth as a Designer etc. JD used to give talks and organise small Design events in Bengaluru. I was curious and ambitious, so I'd attend as many as I could and help out wherever I could."
     },
     {
       "type": "text",
@@ -62,8 +57,27 @@
     },
     {
       "type": "text",
-      "markdown": "All I had was a basic DSLR, a Canon 1000D, and my job was to take photographs at the event. I was counting heavily on my 50mm f/1.8 prime lens to do the heavy lifting. I took photos, made a video for the event too, and I was super stoked with the result. It was at DesignUp 2016 that I saw Ranganath Krishnamani's work, which left me fascinated, inspired and wanting to do more.",
+      "markdown": "Summer of 2016, we frequented a coffee shop in Koramangala. JD would tease the idea of a Design conference we would spend hours discussing details and sharing opinions.  He was looking for people who constantly shows up. Then it was decided, we are going to have the first DesignUp conference.",
       "dropcap": true
+    },
+    {
+      "type": "text",
+      "markdown": "It was going to be a small event with just 200 people at a small venue in Church street, Bengaluru. We got all excited and the bunch of volunteers got together and starting preparing and planning the event. I was figuring a way to be useful and the one thing I had was a basic DSLR, and I offered to take photographs at the event."
+    },
+    {
+      "type": "figure",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-17",
+      "width": "content",
+      "lightbox": true,
+      "caption": "Meticulous planning for seamless entry, DUP2016"
+    },
+    {
+      "type": "text",
+      "markdown": "This was my first conference experience of any kind. The excitement, the hustle, and the energy, both while preparing and during to the event, was intoxicating. The talks, the interactions, the magic show, and the afterparty are all stuff that I fondly remember to this day."
+    },
+    {
+      "type": "text",
+      "markdown": "It was at DesignUp 2016 that I saw Ranganath Krishnamani's work, which left me fascinated, inspired and wanting to do more. This became a theme for me, every DesignUp would inspire a changes me in a way that would define the direction of my future."
     },
     {
       "type": "figure",
