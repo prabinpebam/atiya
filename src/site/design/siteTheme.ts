@@ -40,10 +40,16 @@ export interface SiteTheme {
   color: { light: string; dark: string };
 }
 
-/** The active theme, resolved and written. */
+/** The active theme, resolved and written (once per theme and fonts: a build renders it on every page). */
 export function siteTheme(): SiteTheme {
   const id = content().site.theme ?? DEFAULT_THEME;
   const theme = themeById(id) ?? presetById(DEFAULT_THEME)!;
-  const resolved = resolveTheme(theme, siteThemeBase(), siteFonts());
-  return { resolved, css: themeCss(resolved, siteThemeBase(), fontUrl), color: themeColor(resolved) };
+  const fonts = siteFonts();
+  const key = JSON.stringify([theme, [...fonts.values()]]);
+  if (last?.key === key) return last.value;
+  const resolved = resolveTheme(theme, siteThemeBase(), fonts);
+  const value = { resolved, css: themeCss(resolved, siteThemeBase(), fontUrl), color: themeColor(resolved) };
+  last = { key, value };
+  return value;
 }
+let last: { key: string; value: SiteTheme } | undefined;
