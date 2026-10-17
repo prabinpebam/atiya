@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "prabu-ambravaneswaran-photo.webp",
+  "alt": "Prabu Ambravaneswaran",
+  "facts": {
+    "width": 800,
+    "height": 800,
+    "bg": "rgb(30 29 25)",
+    "bytes": 96520
+  },
+  "visibility": "public"
+}

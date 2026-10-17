@@ -41,7 +41,13 @@
               "id": "my-journey-with-designup"
             }
           }
-        ]
+        ],
+        "recommendations": {
+          "show": true,
+          "at": "end",
+          "layout": "wall",
+          "open": "dialog"
+        }
       },
       {
         "id": "leadership",

@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "diego-baca-photo.webp",
+  "alt": "Diego Baca",
+  "facts": {
+    "width": 800,
+    "height": 800,
+    "bg": "rgb(23 23 23)",
+    "bytes": 55490
+  },
+  "visibility": "public"
+}

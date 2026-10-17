@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "id": "diego-baca",
+      "name": "Diego Baca",
+      "title": "Vice President of Product Design, Windows, Microsoft",
+      "text": "I had the pleasure of having Prabin on my team, and he brings a rare combination of strong leadership, design craft, and hands-on technical ability. He is a great manager who stays deeply involved in the work, helping his team turn ambitious ideas into exceptional experiences.\n\nPrabin is both a designer and a maker. He can envision an experience, design it thoughtfully, and then build it. He stays at the cutting edge of AI, exploring frontier tools and techniques and finding meaningful ways to apply them.\n\nHe embodies what a modern design leader can be: creative, technically fluent, curious, and able to turn vision into reality. I would wholeheartedly recommend him to any team looking to push the boundaries of what’s possible.",
+      "link": "https://www.linkedin.com/in/bacadd/",
+      "photo": "shared/diego-baca-photo"
+    },
+    {
+      "id": "march-roger",
+      "name": "March Roger",
+      "title": "Partner Design Director, Windows, Microsoft",
+      "text": "I've had the privilege of working with Prabin, and he is one of the most complete design leaders I know. He works where product strategy, design and technology meet, and he moves easily between all three.\n \nPrabin doesn't just answer the design problem in front of him. He questions the problem itself. He's very good at finding the customer insight or hidden assumption that changes a product's direction, and his partners in product and engineering come to rely on that. He pairs this thinking with real craft. He leads from the front, stays hands-on and sets a high bar for quality that lifts the whole team. He's also technically fluent and endlessly curious. Long before it was common, he was experimenting with AI in his own work. Today he's helping shape how agentic experiences can change both what we build and how we build it.\n \nWhat sets Prabin apart is how he makes everyone around him better. He brings design, product and engineering together in uncertain situations and turns ideas into shipped experiences. He also builds strong teams, develops people and raises the standards of the organization he's part of. I recommend him without hesitation to any team that wants a design leader who can shape strategy, build what he imagines and push what's possible with AI.\n \nAny product team would be very lucky to have him.",
+      "link": "https://www.linkedin.com/in/marchrogers/",
+      "photo": "shared/march-roger-photo"
+    },
+    {
+      "id": "prabu-ambravaneswaran",
+      "name": "Prabu Ambravaneswaran",
+      "title": "Principal Group Product Manager,  Windows AI and Agents, Microsoft",
+      "text": "I worked very closely with Prabin Pebam for five years, and he is one of the rare UX designers I have worked with who can challenge the strongest product thinkers on their own turf.\n\nPrabin has an extraordinary instinct for finding the customer insight, behavioral insight, or unstated assumption that everyone else has missed. I have lost count of the number of times a question or observation from him caused us to rethink an experience and ultimately build a much better product. Working with him often meant having to raise my own game.\n\nHe combines that product thinking with outstanding design craft and an unusual willingness to get hands-on. Long before AI-assisted design and prototyping became commonplace, Prabin was already experimenting with it on a custom RTX 4090 rig he built himself. That curiosity, combined with his passion for solving hard problems, is a big part of what makes him exceptional.\n\nWe partnered across Family Safety, Windows sharing experiences, multiple incubations, AI experiences, and more recently agentic experiences in Windows. Whatever the problem, I could always count on Prabin to care deeply, challenge our thinking, and bring his best.\n\nHe is also a terrific leader who leads from the front. He sets the bar through his own work and is a role model for people across both design and product.\n\nPrabin makes products better, but just as importantly, he makes the people working with him better. Any product team would be incredibly fortunate to have him.",
+      "link": "https://www.linkedin.com/in/prabu-ambravaneswaran/",
+      "photo": "shared/prabu-ambravaneswaran-photo"
+    }
+  ]
+}

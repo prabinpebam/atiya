@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "march-roger-photo.webp",
+  "alt": "March Roger",
+  "facts": {
+    "width": 500,
+    "height": 500,
+    "bg": "rgb(206 206 206)",
+    "bytes": 15488
+  },
+  "visibility": "public"
+}
