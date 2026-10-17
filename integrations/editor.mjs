@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { privateRootFor } from './roots.mjs';
 import { PLANET_FILES, planetOn, siteFeatures } from './features.mjs';
 import { LAUNCH_HEADER, launchAllows } from './launch.mjs';
+import { draftScript } from '../src/site/theme/draft.ts';
 
 /** How long edit mode must have been idle before a new site name or planet restarts the server. */
 const RESTART_QUIET_MS = 1500;
@@ -40,6 +41,7 @@ const ROUTES = [
   ['/_edit/settings', 'settings.astro'],
   ['/_edit/access', 'access.astro'],
   ['/_edit/publish', 'publish.astro'],
+  ['/_edit/theme', 'theme.astro'],
   ['/_edit/tests', 'tests.astro'],
   ['/_edit/api/[...path]', 'api.ts'],
 ];
@@ -230,6 +232,8 @@ export default function editor() {
         addMiddleware({ entrypoint: join(root, 'src/site/editor/server/middleware.ts'), order: 'pre' });
         // the way in: a button on every page the dev server serves (never in a build)
         injectScript('page', `import { launch } from '/src/site/editor/scripts/launcher.ts'; launch();`);
+        // the themes panel's live draft, on every site page before its first paint (documentation/site-ui/theming.md §7)
+        injectScript('head-inline', draftScript(base));
         if (override) logger.info(`editing the content in ${contentRoot}`);
       },
 

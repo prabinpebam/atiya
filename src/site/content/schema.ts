@@ -8,6 +8,8 @@ import { z } from 'astro/zod';
 import { paragraphsOf, plainText } from './markdown';
 import { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX } from './limits';
 import { SHAPES, embedHost } from '../services/services';
+import { COLOR_ROLES, CORNERS, FONT_REF, NEUTRALS, SPACINGS, TYPE_RANGE, type Corners, type Neutral, type Spacing } from '../theme/model';
+import { FONT_CATEGORIES, type FontCategory } from '../theme/fonts';
 
 export { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX };
 
@@ -348,8 +350,10 @@ export const siteSettings = z.strictObject({
   contactEmail: z.email().optional(),
   /** The page "Get in touch" goes to (a node of the site structure): where a reader asks for access. */
   contactPage: id.optional(),
-  /** The Privacy page the footer links to (a node of the site structure): what telemetry records (documentation/access/spec.md §9.6). */
+  /** The privacy page the footer links to (a node of the site structure): what telemetry records (documentation/access/spec.md §9.6). */
   privacyPage: id.optional(),
+  /** The site's theme (documentation/site-ui/theming.md §3): a preset's ID or a theme in content/themes/; without it, the site's own (Atiya). */
+  theme: id.optional(),
   /**
    * The services the site's pages use (documentation/desktop/spec.md §6.3): addresses and public keys, never
    * a secret. Every build reads them from here, the owner's from source and a managed site's from an engine
@@ -533,6 +537,48 @@ export const accessFile = z.strictObject({ grants: z.array(grant) });
 /** The message offered with a new grant ({name}, {code}, {link} and {expires} are filled in), and the live site's address a magic link starts with. */
 export const accessMessage = z.strictObject({ site: z.url(), code: z.string().min(1), link: z.string().min(1) });
 
+// ---------- themes and fonts (documentation/site-ui/theming.md §3) ----------
+
+const hex = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'a colour as #RRGGBB');
+const step = (k: keyof typeof TYPE_RANGE) => z.number().int().min(TYPE_RANGE[k].min).max(TYPE_RANGE[k].max);
+const roleColours = z.partialRecord(z.enum(COLOR_ROLES), hex);
+
+/** A person's own theme: content/themes/<id>.json. */
+export const themeFile = z.strictObject({
+  id,
+  name: z.string().trim().min(1).max(60),
+  /** The preset it started from, so Reset knows where to go back to. */
+  basedOn: id.optional(),
+  spacing: z.enum(SPACINGS as [Spacing, ...Spacing[]]),
+  corners: z.enum(CORNERS as [Corners, ...Corners[]]),
+  fonts: z.strictObject({ display: z.string().regex(FONT_REF), text: z.string().regex(FONT_REF), ui: z.string().regex(FONT_REF) }),
+  type: z.strictObject({ size: step('size'), largest: step('largest'), smallest: step('smallest'), contrast: step('contrast') }),
+  colors: z.strictObject({
+    seed: z.strictObject({ accent: hex, highlight: hex.optional(), neutral: z.enum(NEUTRALS as [Neutral, ...Neutral[]]).optional() }).optional(),
+    light: roleColours.optional(),
+    dark: roleColours.optional(),
+  }),
+});
+
+/** A font imported into the site: content/fonts/<id>.json, its files beside it (content/fonts/<id>-<style>.woff2). */
+export const fontFile = z.strictObject({
+  id,
+  family: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9 -]{0,59}$/, 'letters, digits, spaces and hyphens'),
+  category: z.enum(FONT_CATEGORIES as [FontCategory, ...FontCategory[]]),
+  source: https,
+  licence: z.string().max(120).optional(),
+  faces: z
+    .array(
+      z.strictObject({
+        style: z.enum(['normal', 'italic']),
+        weight: z.string().regex(/^\d{3}( \d{3})?$/, 'a weight (400) or a range (100 900)'),
+        file: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*\.woff2$/, 'a .woff2 file beside it'),
+      }),
+    )
+    .min(1)
+    .max(4),
+});
+
 export type ImageMedia = z.infer<typeof imageMedia>;
 export type DocumentMedia = z.infer<typeof documentMedia>;
 export type VideoMedia = z.infer<typeof videoMedia>;
@@ -547,3 +593,5 @@ export type Overlay = z.infer<typeof overlay>;
 export type GrantRecord = z.infer<typeof grant>;
 export type AccessMessage = z.infer<typeof accessMessage>;
 export type Place = PlanetStructure['places'][number];
+export type ThemeFile = z.infer<typeof themeFile>;
+export type FontFileDoc = z.infer<typeof fontFile>;

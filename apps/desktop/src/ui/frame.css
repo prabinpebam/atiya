@@ -70,6 +70,27 @@ body.frame {
   pointer-events: none;
 }
 
+/* the themes panel docked beside the site (theming.md §8): the body's card narrows, and the dock is a second card
+ * (its view draws over the frame, so it needs only its edge); --dock-width comes from the app (core/dock.mjs) */
+:root[data-dock] .hole,
+:root[data-dock] .card-edge:not(.dock-edge) {
+  right: calc(var(--card-inset) * 2 + var(--dock-width));
+}
+
+.dock-edge {
+  left: auto;
+  width: var(--dock-width);
+}
+
+.dock-edge[hidden] {
+  display: none;
+}
+
+.icon-button[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-on-accent-soft);
+}
+
 .bar {
   position: relative;
   z-index: var(--layer-raised);

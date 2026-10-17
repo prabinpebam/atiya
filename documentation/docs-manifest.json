@@ -144,6 +144,15 @@
       "group": "The site/Design system"
     },
     {
+      "path": "site-ui/theming.md",
+      "title": "Theming",
+      "order": 15.35,
+      "icon": "palette",
+      "status": "draft",
+      "updated": "2026-10-17",
+      "group": "The site/Design system"
+    },
+    {
       "path": "site-ui/dod.md",
       "title": "Definition of Done",
       "order": 15.4,

@@ -584,8 +584,9 @@ describe('the dev integration', () => {
   it('injects the screens, the API, the guard and the launcher in dev, unless SITE_EDITOR is off', () => {
     delete process.env.CONTENT_ROOT;
     const c = setup('dev');
-    expect(c.routes).toEqual(expect.arrayContaining(['/_edit', '/_edit/articles/[id]', '/_edit/media', '/_edit/publish', '/_edit/api/[...path]']));
-    expect(c).toMatchObject({ scripts: 1, middleware: 1 });
+    expect(c.routes).toEqual(expect.arrayContaining(['/_edit', '/_edit/articles/[id]', '/_edit/media', '/_edit/publish', '/_edit/theme', '/_edit/api/[...path]']));
+    // the launcher, and the themes panel's live draft (documentation/site-ui/theming.md §7)
+    expect(c).toMatchObject({ scripts: 2, middleware: 1 });
     process.env.SITE_EDITOR = 'off';
     expect(setup('dev')).toMatchObject({ routes: [], scripts: 0, middleware: 0 });
     delete process.env.SITE_EDITOR;

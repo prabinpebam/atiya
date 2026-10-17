@@ -40,9 +40,11 @@ interface Props {
   /** The document title: the screen's name. */
   title: string;
   /** Which screen, for the navigation's current item. */
-  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'ways' | 'media' | 'settings' | 'access' | 'publish' | 'tests';
+  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'ways' | 'media' | 'settings' | 'access' | 'publish' | 'tests' | 'theme';
   /** Show the side navigation (the article editor hides it for its studio). */
   nav?: boolean;
+  /** Docked beside the site in Atiya Studio (the themes panel): no top bar of its own, the screen fills the view. */
+  dock?: boolean;
   /** The screen's h1, over its content; left out, the content fills the screen (the studio). */
   heading?: string;
   /** One line under the heading. */
@@ -51,7 +53,7 @@ interface Props {
   asideLabel?: string;
 }
 
-const { title, screen, nav = true, heading, intro, asideLabel } = Astro.props;
+const { title, screen, nav = true, dock = false, heading, intro, asideLabel } = Astro.props;
 const aside = Astro.slots.has('aside');
 // a swap names its regions; a whole screen never waits for git (performance-report.md R1, R2): the counts
 // come from the cached status, or, when there's none yet, are checked once the screen has painted
@@ -84,8 +86,8 @@ const groups = (['Content', 'Site', 'Checks'] as const)
   .filter((g) => g.items.length);
 ---
 
-<PageShell title={`${title} · Edit mode`} noindex preload={['ui']} liveContent={false}>
-  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined} data-generation={generation()} data-studio={studio ? '' : undefined}>
+<PageShell title={`${title} · Edit mode`} noindex preload={['ui']} liveContent={false} themed={false}>
+  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined} data-generation={generation()} data-studio={studio ? '' : undefined} data-dock={dock ? '' : undefined}>
     <header class="top">
       <a class="brand" href={to('')}>Edit mode</a>
       <div class="title"><slot name="title" /></div>
@@ -203,6 +205,16 @@ const groups = (['Content', 'Site', 'Checks'] as const)
   }
 
   .editor[data-studio] .top {
+    display: none;
+  }
+
+  /* docked beside the site in Atiya Studio: the panel is the whole view */
+  .editor[data-dock] {
+    --c-editor-topbar: var(--space-0);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .editor[data-dock] .top {
     display: none;
   }
 

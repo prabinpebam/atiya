@@ -1,0 +1,42 @@
+---
+/**
+ * Edit mode's themes panel (documentation/site-ui/theming.md §8). In a browser: the site beside the panel. In Atiya
+ * Studio the app docks the panel beside its own view of the site (`?dock`), so the site keeps the room. Dev only:
+ * injected by integrations/editor.mjs.
+ */
+import EditorLayout from '../EditorLayout.astro';
+import ThemePanel from '../components/ThemePanel.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { load } from '../server/screens';
+import { readDoc } from '../server/store';
+import { siteThemeBase } from '../../design/siteTheme';
+import { content } from '../../content/repository';
+import { resolveTheme } from '../../theme/css';
+import { DEFAULT_THEME, PALETTES, PRESETS, presetById, type Theme } from '../../theme/model';
+import type { FontFile } from '../../theme/fonts';
+import { swatchesOf, type ThemeEntry } from '../model/theme';
+
+export const prerender = false;
+
+const loaded = load();
+const dock = Astro.url.searchParams.has('dock');
+const base = siteThemeBase();
+const index = loaded.ok ? content() : null;
+const own: ThemeEntry[] = index
+  ? [...index.themes.values()].sort((a, b) => a.name.localeCompare(b.name)).map((t) => ({ theme: t as Theme, version: readDoc(`/content/themes/${t.id}.json`)?.version ?? null }))
+  : [];
+const entries: ThemeEntry[] = [...PRESETS.map(({ about: _, ...t }) => ({ theme: t, version: null })), ...own];
+const fonts = index ? ([...index.fonts.values()] as FontFile[]) : [];
+const atiya = presetById(DEFAULT_THEME)!;
+const paletteSwatches = Object.fromEntries(PALETTES.map((p) => [p.id, swatchesOf(resolveTheme({ ...atiya, colors: p.seed ? { seed: p.seed } : {} }, base))]));
+---
+
+<EditorLayout title="Theme" screen="theme" nav={false} dock={dock}>
+  {
+    loaded.ok ? (
+      <ThemePanel base={base} entries={entries} fonts={fonts} active={index?.site.theme ?? DEFAULT_THEME} siteVersion={readDoc('/content/site.json')?.version ?? null} paletteSwatches={paletteSwatches} preview={!dock} />
+    ) : (
+      <ContentIssues issues={loaded.issues} />
+    )
+  }
+</EditorLayout>

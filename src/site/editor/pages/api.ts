@@ -4,7 +4,7 @@
  * { ok, versions } or { ok: false, issues } with 409 (a conflict) or 422 (the contract's refusal).
  */
 import type { APIRoute } from 'astro';
-import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, VideoMedia } from '../../content/schema';
+import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, ThemeFile, VideoMedia } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { articleKey, createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE, planetKey } from '../server/articles';
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
@@ -206,6 +206,30 @@ const handle: APIRoute = async ({ request, params, url }) => {
     if (method === 'PUT' && path === 'ways') {
       const b = await body<{ ways: Ways; ifMatch: Record<string, string | null> }>(request);
       return result(await saveWays(b.ways, b.ifMatch?.[WAYS_KEY] ?? null));
+    }
+    // themes (documentation/site-ui/theming.md §8): a person's own, never a preset
+    if (parts[0] === 'themes') {
+      const { applyTheme, deleteTheme, saveTheme, themeKey, SITE_KEY } = await import('../server/themes');
+      if (method === 'PUT' && parts[1] === 'active') {
+        const b = await body<{ id: string; ifMatch?: Record<string, string | null> }>(request);
+        if (!ID.test(b.id ?? '')) return json({ ok: false, issues: [{ file: 'content/site.json', message: 'not a theme' }] }, 422);
+        return result(await applyTheme(b.id, b.ifMatch?.[SITE_KEY] ?? null));
+      }
+      if (parts[1] && ID.test(parts[1])) {
+        if (method === 'PUT') {
+          const b = await body<{ theme: ThemeFile; ifMatch?: Record<string, string | null> }>(request);
+          return result(await saveTheme({ ...b.theme, id: parts[1] }, b.ifMatch?.[themeKey(parts[1])] ?? null));
+        }
+        if (method === 'DELETE') {
+          const b = await body<{ ifMatch?: Record<string, string | null> }>(request).catch(() => ({}) as { ifMatch?: Record<string, string | null> });
+          return result(await deleteTheme(parts[1], b.ifMatch?.[themeKey(parts[1])] ?? readDoc(themeKey(parts[1]))?.version ?? null));
+        }
+      }
+      if (method === 'POST' && parts[1] === 'fonts') {
+        const { importFont } = await import('../server/fonts');
+        const b = await body<{ url: string; category?: string }>(request);
+        return result(await importFont(b.url, b.category));
+      }
     }
     if (method === 'PUT' && path === 'site') {
       const b = await body<{ site: SiteSettings; ifMatch: Record<string, string | null> }>(request);

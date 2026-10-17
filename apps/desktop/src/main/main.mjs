@@ -12,6 +12,10 @@ import { delimiter, dirname, extname, join, normalize, relative, resolve, sep } 
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { astroEntry, checkCheckout, findCheckoutAbove, siteName } from '../core/checkout.mjs';
 import { APP_ORIGIN, isBridgeCaller, isExternalSafe, staysInWindow, viewPreferences } from '../core/security.mjs';
+import { DOCK_PATH, dockLayout, isDockPage, isThemeScreen } from '../core/dock.mjs';
+
+/** Where the themes panel keeps its live draft on the dev server's origin (src/site/theme/draft.ts DRAFT_KEY). */
+const DRAFT_STORAGE_KEY = 'atiya.themeDraft';
 import { SettingsStore } from '../core/settings.mjs';
 import { engineInfo, engineRoot } from '../core/setup/engine.mjs';
 import { engineArchive, engineFolder, unpackEngine } from '../core/setup/engine-archive.mjs';
@@ -82,6 +86,8 @@ let studioHeader = null;
 let frame;
 /** @type {WebContentsView} */
 let body;
+/** The themes panel, docked beside the site (documentation/site-ui/theming.md §8); null while it's closed. @type {WebContentsView | null} */
+let dock = null;
 /** @type {Supervisor | null} */
 let server = null;
 /** @type {(import('../core/settings.mjs').Workspace & { repository?: string, url?: string }) | null} */
@@ -145,21 +151,55 @@ function lockNavigation(v) {
 function layout() {
   if (!win) return;
   const { width, height } = win.getContentBounds();
-  // the frame's page draws the whole window (its margin, corners, shadow and title bar); the body is a card inside
+  // the frame's page draws the whole window (its margin, corners, shadow and title bar); the body is a card inside,
+  // and the themes panel, when it's open, another card beside it
   const m = windowFrame.margin();
   frame.setBounds({ x: 0, y: 0, width, height });
-  body.setBounds({
-    x: m + BODY_INSET,
-    y: m + FRAME_HEIGHT,
-    width: Math.max(0, width - 2 * m - 2 * BODY_INSET),
-    height: Math.max(0, height - 2 * m - FRAME_HEIGHT - BODY_INSET),
-  });
+  const l = dockLayout({ width, height }, { margin: m, inset: BODY_INSET, top: FRAME_HEIGHT, open: !!dock });
+  body.setBounds(l.body);
+  if (dock && l.dock) {
+    dock.setBounds(l.dock);
+    // the frame draws the dock's card: tell it when its width changes (a resize)
+    if (l.dock.width !== dockWidth) {
+      dockWidth = l.dock.width;
+      broadcast();
+    }
+  }
+}
+let dockWidth = 0;
+
+/** Opens the themes panel beside the site (the site first, if something else is showing). */
+function openDock() {
+  if (!win || !serverUp()) return;
+  if (view !== 'site') show('site');
+  if (!dock) {
+    dock = new WebContentsView({ webPreferences: viewPreferences({ preload: PRELOAD }) });
+    dock.setBorderRadius(BODY_RADIUS);
+    lockNavigation(dock);
+    win.contentView.addChildView(dock);
+    dock.webContents.loadURL(`${devOrigin()}${DOCK_PATH}`);
+  }
+  layout();
+  broadcast();
+}
+
+/** Closes the themes panel: its draft goes, so the site goes back to the theme in use. */
+function closeDock() {
+  if (!dock) return;
+  const d = dock;
+  dock = null;
+  dockWidth = 0;
+  if (!d.webContents.isDestroyed()) d.webContents.executeJavaScript(`localStorage.removeItem(${JSON.stringify(DRAFT_STORAGE_KEY)})`).catch(() => {}).finally(() => d.webContents.close());
+  win?.contentView.removeChildView(d);
+  layout();
+  broadcast();
 }
 
 /** A popover in the title bar (the server's, Snap Layouts) drops over the body: the frame comes on top while it's open. @param {boolean} up */
 function raiseFrame(up) {
   if (!win) return;
   win.contentView.addChildView(up ? frame : body);
+  if (!up && dock) win.contentView.addChildView(dock);
 }
 
 function icon(name = 'icon.png') {
@@ -240,6 +280,16 @@ function createWindow() {
     if (fromFrame(e) && cmd && studioHeader && inEditMode()) body.webContents.send('studio:command', cmd);
   });
   finderIpc(fromFrame, inEditMode);
+  // the dock's Close, from its own page alone
+  ipcMain.on('dock:close', (e) => {
+    if (dock && e.sender === dock.webContents && isDockPage(dock.webContents.getURL(), devOrigin())) closeDock();
+  });
+  // edit mode's Theme screen (its navigation, a link) opens the panel beside the site instead
+  body.webContents.on('will-navigate', (e, url) => {
+    if (!isThemeScreen(url, devOrigin())) return;
+    e.preventDefault();
+    openDock();
+  });
   // leaving edit mode (the site, the app's own pages) takes its controls out of the row; another screen of it
   // replaces them as soon as it has described its own
   body.webContents.on('did-start-navigation', (/** @type {any} */ d, /** @type {any} */ url, /** @type {any} */ inPlace, /** @type {any} */ mainFrame) => {
@@ -277,6 +327,8 @@ function appState() {
     setup: flow?.state() ?? null,
     githubWeb: github.web,
     theme: parseTheme(settings.read().theme),
+    // the themes panel, docked beside the site (theming.md §8): its width, for the frame's second card
+    themes: dock ? dockWidth : 0,
     // the title bar's account menu (plan stage 7C): who's signed in, the sites the app remembers, and who pushes
     account: account ? { ...account, state: accountState } : { login: null, name: null, avatar: null, state: accountState },
     sites: sitesFor(/** @type {any} */ (settings.read().workspaces), workspace?.path),
@@ -298,6 +350,10 @@ function broadcast() {
 
 /** @param {View} next @param {string} [path] where in edit mode or the site (the action center's results) */
 function show(next, path) {
+  // edit mode's Theme screen is the themes panel, docked beside the site (theming.md §8)
+  if (next === 'editor' && path && isThemeScreen(`${devOrigin()}${path}`, devOrigin())) return openDock();
+  // the panel belongs to the site: anything else closes it
+  if (next !== 'site') closeDock();
   view = next;
   /** @type {Record<Exclude<View, 'editor' | 'site'>, string>} */
   const pages = { welcome: 'welcome.html', source: 'source.html', setup: 'setup.html', server: 'server.html', publish: 'publish.html', check: 'check.html', sync: 'sync.html', private: 'private.html' };
@@ -857,6 +913,8 @@ function bridge() {
     if ((v === 'editor' || v === 'site') && up) show(v);
     if (v === 'source' || v === 'welcome' || v === 'publish' || v === 'check' || v === 'private') show(v);
   });
+  // the title bar's Theme button: the themes panel beside the site, or closed
+  handle('view:themes', () => (dock ? closeDock() : openDock()));
   handle('open:external', (/** @type {string} */ url) => openExternal(String(url)));
   handle('open:browser', () => openExternal(`${devOrigin()}/`));
   handle('open:live', () => live?.url && openExternal(live.url));

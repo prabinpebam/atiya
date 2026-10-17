@@ -22,6 +22,8 @@
         <button type="button" role="radio" id="show-site" aria-checked="false" tabindex="-1">Site</button>
       </div>
       <button type="button" class="icon-button" id="open-browser" aria-label="Open in browser" title="Open in browser"><svg data-icon="external" aria-hidden="true" focusable="false"></svg></button>
+      <!-- the themes panel, docked beside the site (documentation/site-ui/theming.md §8) -->
+      <button type="button" class="icon-button" id="themes" aria-pressed="false" aria-label="Theme" title="Theme: try and change the site's look" hidden><svg data-icon="palette" aria-hidden="true" focusable="false"></svg></button>
       <button type="button" class="server" id="server" aria-haspopup="dialog" aria-expanded="false" aria-controls="server-panel" aria-label="Edit mode: starting" title="Edit mode"><span class="dot" id="server-dot" data-tone="busy"></span></button>
       <!-- one theme for the whole app: the title bar, the app's pages, edit mode and the site (plan stage 7D) -->
       <button type="button" class="icon-button" id="theme" aria-haspopup="menu" aria-expanded="false" aria-controls="choices" aria-label="Colour theme: Match the system" title="Colour theme"><svg data-icon="theme-system" aria-hidden="true" focusable="false"></svg></button>
@@ -48,6 +50,7 @@
   </header>
   <!-- the card's edge, over the bar's surface so its top line shows whole -->
   <div class="card-edge" aria-hidden="true"></div>
+  <div class="card-edge dock-edge" aria-hidden="true" hidden></div>
 </div>
 
 <section class="popover" id="server-panel" role="dialog" aria-labelledby="server-title" tabindex="-1" hidden>

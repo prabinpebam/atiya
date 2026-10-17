@@ -30,7 +30,7 @@ export interface Snapshot {
   digest: string;
 }
 
-export const MASTER_FILE = /\.(webp|jpe?g|png|avif|gif|pdf|mp4|webm)$/i;
+export const MASTER_FILE = /\.(webp|jpe?g|png|avif|gif|pdf|mp4|webm|woff2)$/i;
 /** The editor's temporary files and anything hidden: never content. */
 export const IGNORED_FILE = /^\.|\.tmp$/;
 /** A private file's key starts with this; a public one's with `/content/`. */

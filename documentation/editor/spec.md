@@ -134,6 +134,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 | Media | `/_edit/media/` | The media library: upload, alt text, captions, credits, focus points, where each picture is used (§6) |
 | Settings | `/_edit/settings/` | The site settings and the owner's profile |
 | Ways to explore | `/_edit/ways/` | Which ways of exploring the site are on (the little planet), and what the home page offers first; turning one off keeps its map, and turning the planet on for a site that never had it writes a starting map ([desktop plan, stage 8A](../desktop/plan.md#stage-8a-ways-to-explore-on-and-off-the-next-set)). The Planet screen shows only while the planet is on |
+| Theme | `/_edit/theme/` | The themes panel ([theming](../site-ui/theming.md) §8): the live site beside it, every change shown on it at once and on every page navigated to; presets read only, Save as new, Save, Apply, Revert, Rename, Delete; colours from a palette, one accent, a picture or one by one; fonts, an imported font, the type ramp, spacing and corners. In Atiya Studio it docks beside the app's own view of the site |
 | Access | `/_edit/access/` | Every access code and magic link that opens private pages, grouped by state beside the chosen one's details: made, changed, withdrawn and deleted there ([access spec §8.1](../access/spec.md#81-sharing-the-access-screen)) |
 | Save to remote | `/_edit/publish/` | What changed in `content/` and `private-pages/`, the contract check, discard, publishing drafts, and saving to remote (§7) |
 

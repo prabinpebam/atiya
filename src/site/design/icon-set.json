@@ -55,6 +55,7 @@
     "numbered": "list-ol",
     "outdent": "outdent",
     "page": "file-lines",
+    "palette": "palette",
     "paragraph": "paragraph",
     "pause": "pause",
     "pen": "pen-nib",

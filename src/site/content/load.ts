@@ -4,7 +4,8 @@
  * them all. Pure: the files and the list of media masters come in as arguments, so tests can feed it.
  */
 import type { z } from 'astro/zod';
-import { PLACE_IDS, accessFile, accessMessage, article, documentMedia, imageMedia, overlay as overlaySchema, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, videoMedia, type AccessMessage, type Article, type DocumentMedia, type GrantRecord, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type VideoMedia } from './schema';
+import { PLACE_IDS, accessFile, accessMessage, article, documentMedia, fontFile, imageMedia, overlay as overlaySchema, person, planetStructure, redirects as redirectList, siteSettings, siteStructure, themeFile, videoMedia, type AccessMessage, type Article, type DocumentMedia, type FontFileDoc, type GrantRecord, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type ThemeFile, type VideoMedia } from './schema';
+import { CUSTOM_FONT, FONT_ROLES, isPreset } from '../theme/model';
 import { buildRoutes, canonicalPaths, withOverlay, type Access, type Route } from './routes';
 import { checkGrant, covers, isValid } from '../access/grants.ts';
 import { LEGACY_PLANET_FILE, PLANET_FILE, WAYS_FILE, waysFile, type Ways } from '../modes/contract';
@@ -75,6 +76,10 @@ export interface ContentIndex {
   grants: GrantRecord[];
   /** The message offered with a new grant. */
   accessMessage: AccessMessage | null;
+  /** The person's own themes (content/themes/), by ID (documentation/site-ui/theming.md §3). */
+  themes: Map<string, ThemeFile>;
+  /** The fonts imported into the site (content/fonts/), by ID. */
+  fonts: Map<string, FontFileDoc>;
   /** Reported, not failed: a published item the site doesn't place (it has no page). */
   warnings: string[];
 }
@@ -157,6 +162,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   const media = new Map<string, MediaRecord>();
   const documents = new Map<string, DocumentRecord>();
   const videos = new Map<string, VideoRecord>();
+  const themes = new Map<string, ThemeFile>();
+  const fonts = new Map<string, FontFileDoc>();
   // a media ID is unique across both folders (V24)
   const mediaTaken = new Map<string, string>();
   const claimMedia = (file: string, id: string) => {
@@ -197,6 +204,19 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       const p = parse(person, file, data);
       if (p && p.id !== name) add(file, `id "${p.id}" must match the file name`, 'id');
       else if (p) people.set(p.id, p);
+    } else if (/^\/content\/themes\/[^/]+\.json$/.test(file)) {
+      const t = parse(themeFile, file, data);
+      if (t && t.id !== name) add(file, `id "${t.id}" must match the file name`, 'id');
+      else if (t && isPreset(t.id)) add(file, `"${t.id}" is a preset's ID: a theme of your own needs another`, 'id');
+      else if (t) themes.set(t.id, t);
+    } else if (/^\/content\/fonts\/[^/]+\.json$/.test(file)) {
+      const f = parse(fontFile, file, data);
+      if (f && f.id !== name) add(file, `id "${f.id}" must match the file name`, 'id');
+      else if (f) {
+        const missing = f.faces.filter((face) => !masters.has(`/content/fonts/${face.file}`));
+        if (missing.length) add(file, `its file ${missing.map((m) => `content/fonts/${m.file}`).join(', ')} is missing`, 'faces');
+        else fonts.set(f.id, f);
+      }
     } else if ((m = /^\/(content|private)\/media\/(.+)\.json$/.exec(file))) {
       const origin: Origin = m[1] === 'private' ? 'private' : 'public';
       const mediaKey = m[2];
@@ -253,6 +273,13 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     } else add(file, 'not a resource the content model knows');
   }
   for (const master of masters) {
+    // a font's files are named by its own sidecar (content/fonts/<id>.json), checked below
+    if (master.startsWith('/content/fonts/')) {
+      if (!/^\/content\/fonts\/[^/]+\.woff2$/.test(master)) add(master, 'only .woff2 files belong in content/fonts/');
+      else if (![...Object.entries(docs)].some(([k, d]) => k.startsWith('/content/fonts/') && (d as { faces?: { file?: string }[] } | null)?.faces?.some((f) => `/content/fonts/${f.file}` === master)))
+        add(master, 'a font file no font names (import the font again, or delete it)');
+      continue;
+    }
     const darkPoster = /\.dark\.poster\.\w+$/.test(master);
     const dark = !darkPoster && /\.dark\.\w+$/.test(master);
     const poster = !darkPoster && /\.poster\.\w+$/.test(master);
@@ -266,6 +293,14 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   }
   if (!site) add('content/site.json', 'missing');
   if (!structure) add('content/structures/site.json', 'missing');
+
+  // themes (documentation/site-ui/theming.md §3): the fonts a theme names are imported, and the site's theme exists
+  for (const t of themes.values())
+    for (const role of FONT_ROLES) {
+      const fid = CUSTOM_FONT.exec(t.fonts[role])?.[1];
+      if (fid && !fonts.has(fid)) add(`content/themes/${t.id}.json`, `the font "${fid}" isn't imported (content/fonts/${fid}.json)`, `fonts.${role}`);
+    }
+  if (site?.theme && !isPreset(site.theme) && !themes.has(site.theme)) add('content/site.json', `the theme "${site.theme}" is neither a preset nor in content/themes/`, 'theme');
 
   // references (V3, V5): media, people; a public page never points at anything private (V25), and a
   // protected page's own `related` names open pages only (V32)
@@ -453,7 +488,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     });
   }
 
-  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, warnings };
+  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, warnings };
   // the ways in (V33 to V37, documentation/desktop/modes.md §6), once the rest holds: a mode's structure that
   // already fails its own check (the planet's V14 to V16) isn't reported twice
   if (!issues.length && site && structure) {

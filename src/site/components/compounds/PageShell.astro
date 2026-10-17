@@ -19,6 +19,7 @@ import frauncesItalic from '../../assets/fonts/fraunces-italic.woff2?url';
 import newsreaderRoman from '../../assets/fonts/newsreader-roman.woff2?url';
 import figtreeRoman from '../../assets/fonts/figtree-roman.woff2?url';
 import { SITE_DESCRIPTION, THEME_COLOR, withBase } from '../../design/meta';
+import { fontUrl, siteTheme } from '../../design/siteTheme';
 import Text from '../fundamentals/Text.astro';
 import Button from '../fundamentals/Button.astro';
 import { needsConsent, TOOL_NAMES, toolsOf } from '../../scripts/countsRules';
@@ -58,6 +59,8 @@ interface Props {
   sealed?: 'private';
   /** In dev, the articles the page shows: a change to any other article's own files leaves it as it is (documentation/engineering/performance-report.md R10); left out, any change reloads it. */
   shows?: string[];
+  /** Draw the page in the site's theme (documentation/site-ui/theming.md §7); off for edit mode and the design library, which show the design system as it is. */
+  themed?: boolean;
 }
 
 const {
@@ -74,7 +77,31 @@ const {
   frame = 'site',
   sealed,
   shows,
+  themed = true,
 } = Astro.props;
+// the site's theme (theming.md §7): its CSS over the tokens (none for the site's own), its page colour, its faces
+const theme = themed ? siteTheme() : null;
+const chrome = theme?.color ?? THEME_COLOR;
+const FACE_FILE: Record<string, { normal?: string; italic?: string }> = {
+  fraunces: { normal: frauncesRoman, italic: frauncesItalic },
+  newsreader: { normal: newsreaderRoman },
+  figtree: { normal: figtreeRoman },
+};
+const ROLE_OF: Record<PreloadFace, ['display' | 'text' | 'ui', 'normal' | 'italic']> = { display: ['display', 'normal'], 'display-italic': ['display', 'italic'], text: ['text', 'normal'], ui: ['ui', 'normal'] };
+// the first screen's faces as the theme sets them: a preset face's file, an imported font's, or none (the reader's own fonts)
+const preloads = [
+  ...new Set(
+    preload.flatMap((face) => {
+      if (!theme) return [FONT_URL[face]];
+      const [role, style] = ROLE_OF[face];
+      const ref = theme.resolved.fonts[role].ref;
+      const own = theme.resolved.imported.find((f) => `font:${f.id}` === ref);
+      const file = own?.faces.find((f) => f.style === style)?.file;
+      const url = own ? file && fontUrl(file) : FACE_FILE[ref]?.[style];
+      return url ? [url] : [];
+    }),
+  ),
+];
 // social previews need an absolute URL: `site` is set when deploying
 // the counting tools that set cookies (desktop spec §9.5): the notice asks before they load
 const asks = toolsOf(import.meta.env.PUBLIC_COUNTS).filter(needsConsent).map((t) => TOOL_NAMES[t.tool]);
@@ -95,10 +122,11 @@ const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
     {redirect && <meta http-equiv="refresh" content={`0; url=${withBase(redirect)}`} />}
     {(canonical ?? redirect) && <link rel="canonical" href={new URL(withBase(canonical ?? redirect!), Astro.site ?? Astro.url).href} />}
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content={THEME_COLOR.light} media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content={THEME_COLOR.dark} media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content={chrome.light} media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content={chrome.dark} media="(prefers-color-scheme: dark)" />
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
-    {preload.map((face) => <link rel="preload" href={FONT_URL[face]} as="font" type="font/woff2" crossorigin />)}
+    {preloads.map((href) => <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />)}
+    {theme?.css && <style is:inline data-site-theme set:html={theme.css} />}
     {
       !neutral && (
         <Fragment>

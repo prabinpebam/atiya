@@ -77,6 +77,7 @@ export default function contentFiles() {
   /** @type {{ root: string; private: boolean }[]} */
   let mediaRoots = [];
   let base = '/';
+  let fontsRoot = '';
   return {
     name: 'content-files',
     hooks: {
@@ -91,8 +92,20 @@ export default function contentFiles() {
           { root: join(privateRootFor(root, command), 'media'), private: true },
         ];
         base = config.base.replace(/\/$/, '');
+        fontsRoot = join(content, 'fonts');
       },
       'astro:server:setup': ({ server }) => {
+        // the fonts imported for a theme (documentation/site-ui/theming.md §5.2): <base>/fonts/<file>.woff2
+        server.middlewares.use((req, res, next) => {
+          const url = decodeURIComponent((req.url ?? '').split('?')[0]);
+          const m = new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/fonts/([a-z0-9-]+\\.woff2)$`).exec(url) ?? /^\/fonts\/([a-z0-9-]+\.woff2)$/.exec(url);
+          const file = m ? join(fontsRoot, m[1]) : '';
+          if (!m || !existsSync(file)) return next();
+          res.setHeader('Content-Type', 'font/woff2');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Content-Length', String(statSync(file).size));
+          createReadStream(file).pipe(res);
+        });
         server.middlewares.use((req, res, next) => {
           const url = decodeURIComponent((req.url ?? '').split('?')[0]);
           const at = url.startsWith(`${base}/media/`) ? base.length : url.startsWith('/media/') ? 0 : -1;
@@ -131,6 +144,12 @@ export default function contentFiles() {
           if (found.private) recordProvenance({ kind: 'asset', url: `${base}/media/${id}.${ext}`, master: `/private/media/${id}.${ext}` });
         }
         if (files.length) logger.info(`copied ${files.length} file${files.length === 1 ? '' : 's'} (to download and videos) into media/`);
+        const fonts = existsSync(fontsRoot) ? readdirSync(fontsRoot).filter((f) => /^[a-z0-9-]+\.woff2$/.test(f)) : [];
+        for (const f of fonts) {
+          mkdirSync(join(out, 'fonts'), { recursive: true });
+          copyFileSync(join(fontsRoot, f), join(out, 'fonts', f));
+        }
+        if (fonts.length) logger.info(`copied ${fonts.length} imported font file${fonts.length === 1 ? '' : 's'} into fonts/`);
       },
     },
   };

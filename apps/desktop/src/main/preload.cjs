@@ -11,6 +11,7 @@ if (location.protocol === 'app:') {
     restart: call('server:restart'),
     useExisting: call('server:use-existing'),
     show: call('view:show'),
+    toggleThemes: call('view:themes'),
     openExternal: call('open:external'),
     openInBrowser: call('open:browser'),
     openLive: call('open:live'),
@@ -105,4 +106,9 @@ if (location.protocol === 'http:' && location.hostname === 'localhost' && locati
       return () => ipcRenderer.removeListener('studio:command', listener);
     },
   });
+}
+
+// The themes panel docked beside the site (documentation/site-ui/theming.md §8) gets one thing more: closing itself.
+if (location.protocol === 'http:' && location.hostname === 'localhost' && /^\/_edit\/theme\/?$/.test(location.pathname) && new URLSearchParams(location.search).has('dock')) {
+  contextBridge.exposeInMainWorld('atiyaDock', { close: () => ipcRenderer.send('dock:close') });
 }

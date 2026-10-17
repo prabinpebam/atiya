@@ -66,6 +66,14 @@ function draw(s) {
   $('show-editor').tabIndex = checked === 'show-editor' ? 0 : -1;
   $('show-site').tabIndex = checked === 'show-site' ? 0 : -1;
   $('open-browser').disabled = !up;
+  // the themes panel: offered while the site shows, pressed while it's docked (theming.md §8)
+  $('themes').hidden = !(up && s.view === 'site');
+  $('themes').setAttribute('aria-pressed', String(!!s.themes));
+  if (s.themes) {
+    root.dataset.dock = '';
+    root.style.setProperty('--dock-width', `${s.themes}px`);
+  } else delete root.dataset.dock;
+  document.querySelector('.dock-edge').hidden = !s.themes;
 
   // going live, and what to do next
   const [liveWords, liveTone] = up && s.live ? LIVE[s.live.state] : ['', ''];
@@ -90,6 +98,7 @@ $('views').addEventListener('keydown', (e) => {
   next.click();
 });
 $('open-browser').addEventListener('click', () => window.atiya.openInBrowser());
+$('themes').addEventListener('click', () => window.atiya.toggleThemes());
 $('restart').addEventListener('click', () => {
   closePopover(true);
   window.atiya.restart();
