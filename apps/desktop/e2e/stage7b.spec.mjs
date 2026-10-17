@@ -35,13 +35,26 @@ test.describe('desktop: one row', () => {
           }, compact);
           const positions = await frame.locator('#account').evaluate((el) => {
             const box = el.getBoundingClientRect();
+            const border = parseFloat(getComputedStyle(el).borderTopWidth);
             const photo = el.querySelector('img');
             if (!photo) throw new Error('Photo avatar missing');
             const r = photo.getBoundingClientRect();
-            return { offset: r.y + r.height / 2 - (box.y + box.height / 2), height: r.height };
+            return {
+              offset: r.y + r.height / 2 - (box.y + box.height / 2),
+              height: r.height,
+              top: r.top - box.top - border,
+              bottom: box.bottom - r.bottom - border,
+              start: r.left - box.left - border,
+              end: box.right - r.right - border,
+            };
           });
+          const where = `${theme}, compact=${compact}`;
           expect(positions.height).toBe(28);
-          expect(Math.abs(positions.offset), `${theme}, compact=${compact}: photo centre`).toBeLessThanOrEqual(0.5);
+          expect(Math.abs(positions.offset), `${where}: photo centre`).toBeLessThanOrEqual(0.5);
+          // uniform inset: the avatar sits as far from the pill's start as from its top and bottom
+          expect(Math.abs(positions.start - positions.top), `${where}: start inset ${positions.start} vs top ${positions.top}`).toBeLessThanOrEqual(0.5);
+          expect(Math.abs(positions.bottom - positions.top), `${where}: bottom inset`).toBeLessThanOrEqual(0.5);
+          if (compact) expect(Math.abs(positions.end - positions.top), `${where}: end inset when compact`).toBeLessThanOrEqual(0.5);
           const path = testInfo.outputPath(`photo-${theme}-${compact ? 'compact' : 'named'}.png`);
           await frame.locator('#account').screenshot({ path });
           await testInfo.attach(`photo-${theme}-${compact ? 'compact' : 'named'}`, { path, contentType: 'image/png' });

@@ -953,7 +953,9 @@ body.frame {
   max-width: 16rem;
   min-width: var(--size-touch);
   min-height: var(--size-touch);
-  padding: 0 var(--space-3) 0 var(--space-1);
+  /* the avatar's inset on its start equals its inset above and below: (the pill's height - the avatar) / 2 */
+  --account-inset: calc(var(--space-2) - var(--border-hairline));
+  padding: 0 var(--space-3) 0 var(--account-inset);
   border: var(--border-hairline) solid var(--color-rule);
   border-radius: var(--radius-pill);
   background: var(--color-bg);
@@ -986,7 +988,7 @@ body.frame {
 
 /* a full row: the site's name steps aside first (it stays in the button's name) */
 :root[data-squeeze] .account {
-  padding-inline: var(--space-1);
+  padding-inline: var(--account-inset);
   justify-content: center;
 }
 
