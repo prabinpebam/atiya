@@ -290,6 +290,32 @@
   }
 
   /* ==========================================================
+     LINKS: a link that leaves the documentation's own domain (the served one, or config.parentDomain and its
+     subdomains) opens in a new tab and says so to screen readers; one that stays keeps the reader's tab
+     ========================================================== */
+  function leavesParentDomain(href, here, parentDomain) {
+    if (!/^https?:\/\//i.test(href)) return false;
+    const clean = (host) => String(host || '').trim().toLowerCase().replace(/\.$/, '');
+    const within = (host, parent) => !!parent && (host === parent || host.endsWith('.' + parent));
+    let host;
+    try { host = clean(new URL(href).hostname); } catch (e) { return true; }
+    const current = clean(here);
+    return !within(host, current) && !within(host, clean(parentDomain || current));
+  }
+
+  function markNewTab(a) {
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    if (!a.querySelector('[data-slate-new-tab]')) {
+      const note = document.createElement('span');
+      note.className = 'slate-sr-only';
+      note.setAttribute('data-slate-new-tab', '');
+      note.textContent = ' (opens in a new tab)';
+      a.appendChild(note);
+    }
+  }
+
+  /* ==========================================================
      PIPELINE  (REQ-CM-02/07)  order is normative
      ========================================================== */
   function postProcess(container, basePath) {
@@ -297,7 +323,10 @@
     // Links
     container.querySelectorAll('a').forEach(a => {
       const href = a.getAttribute('href'); if (!href) return;
-      if (/^https?:\/\//.test(href)) { a.target = '_blank'; a.rel = 'noopener noreferrer'; return; }
+      if (/^https?:\/\//i.test(href)) {
+        if (leavesParentDomain(href, location.hostname, state.config && state.config.parentDomain)) markNewTab(a);
+        return;
+      }
       const tool = href.match(/^(.+\.html?)(\?[^#]*)?(#.*)?$/i);
       if (tool && a.target === '_blank') {
         a.setAttribute('href', joinRoot(resolvePath(basePath, tool[1])) + (tool[2] || '') + (tool[3] || ''));

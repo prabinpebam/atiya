@@ -201,7 +201,7 @@ Built on 17 October 2026, in one change, unattended.
 - **Font import fetches with a browser's user agent** (Google Fonts serves WOFF2 only to one), keeps the Latin subset and refuses local addresses (it's the dev server that fetches).
 - **No phone-width preview in the panel:** narrow the window (or open the site on a phone) instead; later if asked.
 
-**Known, not theming's:** the site E2E "links keep the parent domain in this tab" fails because the pinned Slate shell (`documentation/shell/slate.js`) opens every `http(s)` link in a new tab and has no parent-domain rule; and the action center's "a way to explore turns off" test can land while the previous test's site rename restarts the dev server (it passes on its own).
+**Fixed since:** the docs link policy (Slate `parentDomain`, upstream `26b5619`, pinned here) and the action center test's wait for the dev server to settle after the reset's rename.
 
 ## 12. Later
 

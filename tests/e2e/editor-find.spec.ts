@@ -91,6 +91,20 @@ test.describe('editor: the action center', () => {
 
   test('a way to explore turns off as the Ways to explore screen turns it off, and edit mode starts again', async ({ request }) => {
     const startedNow = async () => (await (await request.get('/_edit/__warm').catch(() => null))?.json().catch(() => null))?.started ?? null;
+    // the reset can rename the site back (the test before renames it), which restarts the dev server once it's
+    // quiet: begin only when it has stayed up, the same start, for longer than that
+    let seen: string | null = null;
+    await expect
+      .poll(
+        async () => {
+          const now = await startedNow();
+          const settled = now !== null && now === seen;
+          seen = now;
+          return settled;
+        },
+        { timeout: 120_000, intervals: [4000] },
+      )
+      .toBe(true);
     const index = (await (await request.get('/_edit/api/find')).json()) as Index;
     const way = index.settings.find((s) => s.id === 'way:little-planet')!;
     expect(way.value).toBe(true);
