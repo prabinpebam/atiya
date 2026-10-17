@@ -3,7 +3,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { get } from 'node:http';
-import { launch, pageMatching } from './launch.mjs';
+import { launch, pageMatching, quitGracefully } from './launch.mjs';
 
 /** @param {import('@playwright/test').ElectronApplication} app */
 const quit = async (app) => {
@@ -14,6 +14,108 @@ const quit = async (app) => {
 const fetchPage = (url) => new Promise((resolve, reject) => get(url, (r) => { let s = ''; r.on('data', (d) => (s += d)); r.on('end', () => resolve(s)); }).on('error', reject));
 
 test.describe('desktop: one row', () => {
+  test('7B.3 title-bar spacing: centred avatars, separated save actions and full-size tool targets', async ({}, testInfo) => {
+    const { app } = await launch({ port: 4427 });
+    try {
+      const frame = await pageMatching(app, /frame\.html/);
+      await (await pageMatching(app, /welcome\.html/)).getByRole('button', { name: 'Open this checkout' }).click();
+      const editor = await pageMatching(app, /localhost:4427\/_edit\//);
+      await editor.evaluate(() => {
+        const bridge = /** @type {Window & { atiyaStudio?: { publish(header: unknown): void } }} */ (window).atiyaStudio;
+        if (!bridge) throw new Error('The editor header bridge is unavailable');
+        bridge.publish({
+          context: [{ kind: 'text', text: 'An article with a longer title', strong: true }],
+          controls: [
+            { kind: 'status', state: 'saved', text: 'All changes saved' },
+            ...['undo', 'redo', 'desktop', 'eye', 'external'].map((icon, i) => ({ kind: 'button', id: `s${20 + i}`, label: `Tool ${i}`, icon })),
+            { kind: 'text', text: '1 change to save' },
+            { kind: 'button', id: 's25', label: 'Save to remote', text: 'Save to remote', icon: 'upload', variant: 'primary' },
+          ],
+          theme: 'system',
+          busy: false,
+        });
+      });
+      await expect(frame.locator('#page-controls .page-icon')).toHaveCount(5);
+      for (const theme of ['light', 'dark']) {
+        await frame.getByRole('button', { name: /^Colour theme:/ }).click();
+        await frame.getByRole('menu', { name: 'Colour theme' }).getByRole('menuitemradio', { name: theme === 'light' ? 'Light' : 'Dark' }).click();
+        await frame.evaluate(() => document.fonts.ready);
+        const anatomy = async () => frame.evaluate(() => {
+          const rect = (/** @type {string} */ selector) => {
+            const el = document.querySelector(selector);
+            if (!el) throw new Error(`Missing title-bar element: ${selector}`);
+            return el.getBoundingClientRect();
+          };
+          const bar = rect('.bar');
+          const account = rect('#account');
+          const avatar = rect('#account .avatar-img');
+          const tools = [...document.querySelectorAll('#page-controls .page-icon')].map((el) => {
+            const r = el.getBoundingClientRect();
+            return { width: r.width, height: r.height, centre: r.y + r.height / 2 };
+          });
+          const count = rect('#page-controls > .page-text');
+          const save = rect('#page-controls .page-button');
+          const controls = rect('#controls');
+          return {
+            avatarOffset: Math.abs(avatar.y + avatar.height / 2 - (account.y + account.height / 2)),
+            centre: bar.y + bar.height / 2,
+            tools,
+            saveGap: save.left - count.right,
+            windowGap: controls.left - account.right,
+            accountWidth: account.width,
+            controlsFit: rect('#page-controls').left >= bar.left && controls.right <= bar.right,
+            actionMargins: [...document.querySelectorAll('.popover .actions')].map((el) => getComputedStyle(el).marginBottom),
+          };
+        });
+        const check = async () => {
+          const a = await anatomy();
+          expect(a.avatarOffset, `${theme}: avatar centred in account pill`).toBeLessThanOrEqual(0.5);
+          expect(a.accountWidth, 'account retains a full target when squeezed').toBeGreaterThanOrEqual(44);
+          expect(a.saveGap, 'count does not run into Save to remote').toBeGreaterThanOrEqual(12);
+          expect(a.windowGap, 'one group gap before window controls').toBe(8);
+          expect(a.controlsFit, 'screen and window controls stay in the bar').toBe(true);
+          expect(a.actionMargins.every((margin) => margin === '0px'), 'popover actions have no inherited page margin').toBe(true);
+          for (const tool of a.tools) {
+            expect(tool.width).toBeGreaterThanOrEqual(44);
+            expect(tool.height).toBeGreaterThanOrEqual(44);
+            expect(Math.abs(tool.centre - a.centre)).toBeLessThanOrEqual(0.5);
+          }
+        };
+        for (const width of [1280, 1440]) {
+          await app.evaluate(({ BaseWindow }, width) => {
+            const win = BaseWindow.getAllWindows().find((w) => w.isFocusable());
+            if (!win) throw new Error('No Studio window');
+            const bounds = win.getBounds();
+            win.setBounds({ ...bounds, width });
+          }, width);
+          await expect.poll(() => frame.evaluate(() => innerWidth)).toBe(width);
+          await check();
+        }
+        await check();
+        const tool = frame.locator('#page-controls .page-icon').first();
+        await tool.hover();
+        await check();
+        await frame.mouse.down();
+        await check();
+        await frame.mouse.up();
+        await tool.focus();
+        await expect(tool).toBeFocused();
+        await check();
+        await tool.evaluate((el) => el.setAttribute('disabled', ''));
+        await check();
+        await tool.evaluate((el) => el.removeAttribute('disabled'));
+        const barPath = testInfo.outputPath(`title-bar-${theme}.png`);
+        const accountPath = testInfo.outputPath(`account-${theme}.png`);
+        await frame.locator('.bar').screenshot({ path: barPath });
+        await frame.locator('#account').screenshot({ path: accountPath, scale: 'device' });
+        await testInfo.attach(`title-bar-${theme}`, { path: barPath, contentType: 'image/png' });
+        await testInfo.attach(`account-${theme}`, { path: accountPath, contentType: 'image/png' });
+      }
+    } finally {
+      await quitGracefully(app);
+    }
+  });
+
   test('7B.1 edit mode comes without its own header in the app (not in a browser), and the row draws its title and controls', async () => {
     const { app } = await launch({ port: 4411 });
     try {

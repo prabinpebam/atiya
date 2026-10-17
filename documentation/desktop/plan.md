@@ -193,6 +193,7 @@ Stage 7A's row sat above edit mode's own header, so the window had two rows. Edi
 | 7B.5 | A full row keeps the window's controls and the screen's tools, squeezing the rest by priority | The real app's article at 1440 px, captured |
 | 7B.6 | axe passes on the row in light and dark with a header drawn; keyboard: the choice menu by arrows, focus back on its button | App E2E 7B.2 |
 | 7B.7 | The app's tests never take focus from the person at the computer | A foreground sampler during the app's E2E: the foreground stayed with the person's own windows |
+| 7B.8 | Title-bar targets, avatar alignment and group spacing remain consistent in both themes | App E2E 7B.3: measured 44 px tool and compact-account targets, centred avatar, change-count separation, one gap before window controls and no inherited page margin on popover actions; 1280 and 1440 px, tool interaction states and light/dark captures |
 
 ### Stage 7C: who's signed in, which site, signing out
 

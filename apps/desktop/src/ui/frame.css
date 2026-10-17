@@ -315,7 +315,6 @@ body.frame {
 .controls {
   display: flex;
   align-self: stretch;
-  margin-inline-start: var(--space-2);
 }
 
 :root[data-frame='native'] .controls {
@@ -453,6 +452,7 @@ body.frame {
 .actions {
   display: flex;
   gap: var(--space-2);
+  margin: 0;
   justify-content: flex-end;
 }
 
@@ -597,6 +597,11 @@ body.frame {
   min-width: 0;
 }
 
+.page-controls > .page-text {
+  margin-inline: var(--space-2);
+  white-space: nowrap;
+}
+
 .page-text {
   display: inline-flex;
   align-items: center;
@@ -703,6 +708,7 @@ body.frame {
   flex: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   min-height: var(--size-touch);
   padding: 0 var(--space-4);
@@ -856,11 +862,6 @@ body.frame {
   flex-shrink: 0;
 }
 
-/* a tool: the bar's height to press, a little narrower than the app's own buttons so a full header fits */
-.page-controls .page-icon {
-  min-width: var(--space-10);
-}
-
 /* a status that links somewhere (Tests): a compact chip, coloured by its health, not a button's pill */
 .page-button[data-tone] {
   min-height: var(--size-touch);
@@ -950,8 +951,8 @@ body.frame {
   align-items: center;
   gap: var(--space-2);
   max-width: 16rem;
+  min-width: var(--size-touch);
   min-height: var(--size-touch);
-  margin-inline-start: var(--space-2);
   padding: 0 var(--space-3) 0 var(--space-1);
   border: var(--border-hairline) solid var(--color-rule);
   border-radius: var(--radius-pill);
@@ -985,7 +986,8 @@ body.frame {
 
 /* a full row: the site's name steps aside first (it stays in the button's name) */
 :root[data-squeeze] .account {
-  padding-inline-end: var(--space-1);
+  padding-inline: var(--space-1);
+  justify-content: center;
 }
 
 :root[data-squeeze] .account-site {
@@ -1006,6 +1008,12 @@ body.frame {
   background: var(--color-accent-soft);
   color: var(--color-on-accent-soft);
   font-weight: 600;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
 }
 
 .avatar-img.sm {
