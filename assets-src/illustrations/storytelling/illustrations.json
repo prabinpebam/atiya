@@ -1,0 +1,139 @@
+{
+  "article": "you-dont-have-a-storytelling-problem",
+  "references": [
+    "style/ref-ink-bird.png",
+    "style/ref-sketch-cliff.png",
+    "style/ref-characters.png"
+  ],
+  "characterStyle": "Original quirky cartoon creatures with huge slightly mismatched round eyes, simple asymmetrical bodies, spindly limbs and exaggerated comic expressions, guided by style/ref-characters.png.",
+  "style": {
+    "light": "Hand-drawn ink sketch in the drawing style of the reference images: loose, fast, confident pen lines; dense parallel and scribbled hatching for shade; broken, unfinished outlines and generous empty paper. Original quirky cartoon creatures have huge slightly mismatched eyes, simple asymmetrical bodies, spindly limbs and comic expressions. The recurring explorer matches the approved lead: a floppy expedition hat, oversized backpack and battered field journal. Black ink only on white paper, then extracted to a transparent ink-only master. No colour, grey wash, gradients, frame, signature or watermark. Reference subjects are not the article's metaphors.",
+    "dark": "Redraw this exact illustration, same composition, same characters, same poses and placement, as a highlight sketch on dark paper. The paper is a deep, warm charcoal (#191714) and stands for the shadows; the artist draws with white ink only where light falls: lit edges, rim light, highlights, the bright side of every form, with white hatching building up the brightest areas. Shadowed sides stay as bare dark paper. This is not an inversion of the original: the dense black hatching becomes empty dark paper and the lightest areas become white strokes. Keep the loose, scribbly pen style of the style references. White ink only, no colour, no grey wash, no border, no signature, no watermark."
+  },
+  "images": [
+    {
+      "name": "the-storyteller",
+      "lightSource": "the-storyteller.light.png",
+      "inkSource": "the-storyteller.ink.png",
+      "inkExtraction": "Black RGB with alpha=max(0, round(255*(248-luminance)/248)) from the light source; removes near-white paper and preserves partially transparent stroke edges.",
+      "lightPrompt": "the-storyteller.prompt.txt",
+      "darkSource": "the-storyteller.dark.png",
+      "darkInkSource": "the-storyteller.dark.ink.png",
+      "darkInkExtraction": "White RGB with alpha=max(0, round(255*(luminance-36)/(255-36))) from the dark source; removes charcoal paper and preserves partially transparent highlight strokes.",
+      "darkPrompt": "the-storyteller.dark.prompt.txt",
+      "generation": {
+        "model": "gpt-image-2.5-sunburst",
+        "quality": "high",
+        "date": "2026-10-18",
+        "credit": "Generated with GPT Image 2.5 using owner-supplied style references"
+      },
+      "use": "hero",
+      "size": "2688x1152",
+      "subject": "Wide scene. The explorer stands on a small wooden stage, reading to a rapt, leaning-in audience from a huge, mud-stained, overstuffed field journal; pressed leaves, a torn map, a feather and a ticket stub spill out of it. Next to him a rival storyteller holds up a gleaming, gold-edged, completely empty book and shouts through a megaphone, striking a dramatic pose; his audience is fast asleep, one person snoring with a bubble of z's.",
+      "alt": "An explorer reads from a battered, overflowing journal to an audience leaning in, while a rival with a gleaming, empty book and a megaphone has put his audience to sleep."
+    },
+    {
+      "name": "wrong",
+      "use": "figure",
+      "after": "## \"WRONG.\"",
+      "size": "1536x1024",
+      "subject": "The explorer, holding a small tour-guide flag, leads a tour group of office stakeholders in shirts and lanyards across a river on what looks like a fallen log. Halfway across, the log opens one big eye: it is a crocodile. The explorer, delighted rather than scared, holds up a hand-lettered sign that reads exactly WRONG. while the group's hats fly off in surprise.",
+      "alt": "A tour group crossing a river on a log realises the log is a crocodile, while their guide cheerfully holds up a sign reading WRONG.",
+      "lightSource": "wrong.light.png",
+      "lightPrompt": "wrong.light.prompt.txt",
+      "darkSource": "wrong.dark.png",
+      "darkPrompt": "wrong.dark.prompt.txt",
+      "inkSource": "wrong.ink.png",
+      "darkInkSource": "wrong.dark.ink.png"
+    },
+    {
+      "name": "the-staircase",
+      "use": "figure",
+      "after": "## Knowing the answer isn't the same as understanding it",
+      "size": "1536x1024",
+      "subject": "A museum hall with a grand staircase whose landings each display an atom model on a plinth: a plain solid ball, then a plum pudding with electrons as raisins and a spoon stuck in it, then a tiny dense nucleus with orbiting electrons at the top. The explorer climbs the stairs step by step, studying each model with a magnifying glass. Beside the staircase, a tourist steps out of a lift straight at the top and squints, baffled, at the final model's plaque.",
+      "alt": "An explorer climbs a museum staircase past three historical models of the atom, while a tourist who took the lift to the top stares at the last one, baffled.",
+      "lightSource": "the-staircase.light.png",
+      "lightPrompt": "the-staircase.light.prompt.txt",
+      "darkSource": "the-staircase.dark.png",
+      "darkPrompt": "the-staircase.dark.prompt.txt",
+      "inkSource": "the-staircase.ink.png",
+      "darkInkSource": "the-staircase.dark.ink.png"
+    },
+    {
+      "name": "the-trail",
+      "use": "figure",
+      "after": "## The same principle applies to making products",
+      "size": "1536x1024",
+      "subject": "Office stakeholders dressed as detectives with magnifying glasses and deerstalker hats follow a winding trail of footprints across the page. Along the trail lie clues: crumpled sketches, an abandoned alternative design crossed out with a big X, a broken prototype, a sticky note. The trail ends at the final design, a simple elegant object on a plinth. The explorer watches from behind a bush, pleased.",
+      "alt": "Stakeholders dressed as detectives follow footprints past crumpled sketches and a crossed-out alternative to the final design on a plinth.",
+      "lightSource": "the-trail.light.png",
+      "lightPrompt": "the-trail.light.prompt.txt",
+      "darkSource": "the-trail.dark.png",
+      "darkPrompt": "the-trail.dark.prompt.txt",
+      "inkSource": "the-trail.ink.png",
+      "darkInkSource": "the-trail.dark.ink.png"
+    },
+    {
+      "name": "the-summit-selfie",
+      "use": "figure",
+      "after": "## You can't reconstruct a journey you never took",
+      "size": "1536x1024",
+      "subject": "A person in a cosy armchair in their living room takes a triumphant summit selfie with a little flag, in front of a painted cardboard mountain propped up with sticks and tape. Brand-new hiking boots with the price tags still on sit untouched beside the armchair, next to a mug and slippers. A cat looks on, unimpressed.",
+      "alt": "Someone in an armchair takes a summit selfie in front of a cardboard mountain, brand-new hiking boots with the tags still on beside them.",
+      "lightSource": "the-summit-selfie.light.png",
+      "lightPrompt": "the-summit-selfie.light.prompt.txt",
+      "darkSource": "the-summit-selfie.dark.png",
+      "darkPrompt": "the-summit-selfie.dark.prompt.txt",
+      "inkSource": "the-summit-selfie.ink.png",
+      "darkInkSource": "the-summit-selfie.dark.ink.png"
+    },
+    {
+      "name": "the-polished-chest",
+      "use": "figure",
+      "after": "**Bad discipline in making product decisions often masquerades as bad storytelling.**",
+      "size": "1536x1024",
+      "subject": "A presenter in a suit polishes an enormous, ornate treasure chest to a dazzling shine, with sparkle marks, a spotlight and a velvet curtain, mid-rehearsal of a grand reveal with one arm flung out. The lid is open and the chest is empty except for a single moth fluttering out.",
+      "alt": "A presenter polishes an ornate treasure chest for a grand reveal, but the open chest is empty except for a single moth flying out.",
+      "lightSource": "the-polished-chest.light.png",
+      "lightPrompt": "the-polished-chest.light.prompt.txt",
+      "darkSource": "the-polished-chest.dark.png",
+      "darkPrompt": "the-polished-chest.dark.prompt.txt",
+      "inkSource": "the-polished-chest.ink.png",
+      "darkInkSource": "the-polished-chest.dark.ink.png"
+    },
+    {
+      "name": "the-packing-list",
+      "use": "figure",
+      "after": "## The story starts before the presentation",
+      "size": "1536x1024",
+      "subject": "The explorer packs for an expedition, kneeling by his open backpack. Propped open in front of him is his journal: pages with pencilled chapter headings and empty frames, each with a checkbox, used as a packing list; some boxes are ticked. One chapter heading is crossed out and replaced by a hand-drawn arrow pointing off the page somewhere unexpected. Rope, a compass, a lantern and a butterfly net lie around him.",
+      "alt": "An explorer packs for a trip using a journal of empty, pencilled chapters as a checklist; one chapter is crossed out and redirected with an arrow.",
+      "lightSource": "the-packing-list.light.png",
+      "lightPrompt": "the-packing-list.light.prompt.txt",
+      "darkSource": "the-packing-list.dark.png",
+      "darkPrompt": "the-packing-list.dark.prompt.txt",
+      "inkSource": "the-packing-list.ink.png",
+      "darkInkSource": "the-packing-list.dark.ink.png"
+    },
+    {
+      "name": "the-map",
+      "use": "figure",
+      "after": "## Make a story worth reconstructing",
+      "size": "1536x1024",
+      "subject": "The explorer, now weathered, patched and happy, has handed his worn, much-folded map to a group from the audience. They set off up a winding mountain trail themselves, following his footprints and pointing at landmarks on the map, while he waves to them from a rock at the trailhead, his empty backpack beside him.",
+      "alt": "A weathered explorer waves from a rock as people he has handed his worn map to set off up the trail, following his footprints.",
+      "lightSource": "the-map.light.png",
+      "lightPrompt": "the-map.light.prompt.txt",
+      "darkSource": "the-map.dark.png",
+      "darkPrompt": "the-map.dark.prompt.txt",
+      "inkSource": "the-map.ink.png",
+      "darkInkSource": "the-map.dark.ink.png"
+    }
+  ],
+  "inkExtraction": {
+    "light": "Black RGB; alpha=max(0,round(255*(248-luminance)/248)).",
+    "dark": "White RGB; alpha=max(0,round(255*(luminance-36)/219)).",
+    "content": "Lossless alpha WebP, at most 2560 pixels wide; same dimensions within each light/dark pair."
+  }
+}
