@@ -19,9 +19,8 @@
   },
   "body": [
     {
-      "type": "heading",
-      "level": 2,
-      "text": "\"WRONG.\""
+      "type": "marker",
+      "text": "WRONG!"
     },
     {
       "type": "text",
