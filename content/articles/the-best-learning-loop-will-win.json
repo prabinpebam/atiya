@@ -11,7 +11,11 @@
   "updatedAt": "2026-10-01",
   "locale": "en",
   "hero": {
-    "media": "articles/the-best-learning-loop-will-win/the-sketchbook"
+    "media": "articles/the-best-learning-loop-will-win/the-two-gardens",
+    "display": "fit",
+    "background": false,
+    "rounded": false,
+    "showCaption": false
   },
   "body": [
     {
@@ -46,6 +50,16 @@
       "markdown": "Scenarios range from the granular (\"remove the background from this image\") to the ambitious (\"plan my complete trip to Japan\"). Small ones are reliable but add little value; big ones are valuable but fall apart. The real work is mapping what AI can reliably do at every level, then stitching that into a complete outcome, not a demo that falls apart at step six. And the map keeps moving: what the model couldn't do three months ago, it can do today."
     },
     {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-tea-tray",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "Eight steps that each work 80% of the time make a feature that mostly fails."
@@ -56,9 +70,13 @@
     },
     {
       "type": "figure",
-      "media": "articles/the-best-learning-loop-will-win/the-chain",
-      "width": "content",
-      "lightbox": true
+      "media": "articles/the-best-learning-loop-will-win/the-relay",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
     },
     {
       "type": "text",
@@ -72,6 +90,16 @@
     {
       "type": "text",
       "markdown": "Product-market fit for AI has to play out bottom-up, with real users doing real work. The product team's job shifts from designing scenarios to watching which ones emerge, survive, and repeat."
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-desire-path",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
     },
     {
       "type": "heading",
@@ -95,6 +123,16 @@
       "markdown": "None of these were planned features. Cat Wu, the product's PM, named the metric that mattered: \"the number of features you wouldn't have otherwise built.\""
     },
     {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-cardboard-box",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "Then Anthropic paved the paths its users had already walked."
@@ -102,6 +140,16 @@
     {
       "type": "text",
       "markdown": "In January 2026, Anthropic launched [Claude Cowork](https://claude.com/product/cowork), \"Claude Code for the rest of your work.\" It took the scenarios technical users had already proven (file organization, spreadsheets, reports, data analysis) and packaged them in a desktop app with a sandbox and an approval-based workflow. It was generally available on macOS and Windows by April."
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/paving-the-path",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
     },
     {
       "type": "heading",
@@ -114,9 +162,13 @@
     },
     {
       "type": "figure",
-      "media": "articles/the-best-learning-loop-will-win/the-flywheel",
-      "width": "content",
-      "lightbox": true
+      "media": "articles/the-best-learning-loop-will-win/the-roundabout",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
     },
     {
       "type": "text",
@@ -140,6 +192,16 @@
       "markdown": "That's why trust in a vendor isn't enough. \"I trust this company with my data\" is different from \"I trust this AI feature to work.\" Ship scenarios where trust hasn't been earned, and users learn to distrust AI features altogether."
     },
     {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-tested-bridge",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "The open-source community is already running this loop, in public."
@@ -151,6 +213,16 @@
     {
       "type": "text",
       "markdown": "One user put it bluntly: \"A megacorp like Anthropic or OpenAI could not build this. Literally impossible with how corpo works.\" The speed comes from the operating model: visible code, shared ownership, and anyone can open a PR. That model outlasted its founder. Steinberger [joined OpenAI](https://www.cnbc.com/2026/02/15/openclaw-creator-peter-steinberger-joining-openai-altman-says.html) in February 2026, the project moved to an independent foundation, and its stars have kept climbing."
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-treehouse",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
     },
     {
       "type": "text",
@@ -167,9 +239,13 @@
     },
     {
       "type": "figure",
-      "media": "articles/the-best-learning-loop-will-win/prototype-to-production",
-      "width": "popout",
-      "lightbox": true
+      "media": "articles/the-best-learning-loop-will-win/invent-then-encode",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
     },
     {
       "type": "collection",
@@ -208,6 +284,16 @@
       "markdown": "- **Keep it thin** and composable, so it rides every model improvement.\n- **Instrument everything:** what people attempt, finish, repeat, and abandon.\n- **Run it as innersource:** visible code, open PRs, and a small core team owning direction.\n- **Widen the circle:** technical users first, then finance, HR, marketing, and operations."
     },
     {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/inside-the-walls",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
       "type": "text",
       "markdown": "When a scenario proves itself, fast-track it into the mainstream product, stabilized through MCP."
     },
@@ -221,15 +307,19 @@
       "markdown": "Fast following works for features, not for learning systems. By the time you've copied what a flywheel discovered, it has moved on to the next cycle. Distribution doesn't save you either: it buys time, and the flywheel is how you use it."
     },
     {
+      "type": "figure",
+      "media": "articles/the-best-learning-loop-will-win/the-copycat",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "The best model won't win. The best learning loop will."
-    },
-    {
-      "type": "figure",
-      "media": "articles/the-best-learning-loop-will-win/the-multiplier",
-      "width": "content",
-      "lightbox": true
     },
     {
       "type": "text",

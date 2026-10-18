@@ -26,3 +26,4 @@ release/
 # build-parity.mjs --starter): never committed, even if a run is interrupted and leaves them here
 .content-owner-aside/
 .private-pages-owner-aside/
+assets-src/illustrations/*/.preview/
