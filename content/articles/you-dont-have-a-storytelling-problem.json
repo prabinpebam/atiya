@@ -63,7 +63,7 @@
     {
       "type": "figure",
       "media": "articles/you-dont-have-a-storytelling-problem/wrong",
-      "width": "popout",
+      "width": "wide",
       "lightbox": true,
       "display": "fit",
       "background": false,
@@ -138,7 +138,7 @@
     {
       "type": "figure",
       "media": "articles/you-dont-have-a-storytelling-problem/the-staircase",
-      "width": "popout",
+      "width": "wide",
       "lightbox": true,
       "display": "fit",
       "background": false,
@@ -210,7 +210,7 @@
     {
       "type": "figure",
       "media": "articles/you-dont-have-a-storytelling-problem/the-trail",
-      "width": "popout",
+      "width": "wide",
       "lightbox": true,
       "display": "fit",
       "background": false,
@@ -261,7 +261,7 @@
     {
       "type": "figure",
       "media": "articles/you-dont-have-a-storytelling-problem/the-summit-selfie",
-      "width": "popout",
+      "width": "wide",
       "lightbox": true,
       "display": "fit",
       "background": false,
@@ -296,7 +296,7 @@
     {
       "type": "figure",
       "media": "articles/you-dont-have-a-storytelling-problem/the-polished-chest",
-      "width": "popout",
+      "width": "wide",
       "lightbox": true,
       "display": "fit",
       "background": false,
@@ -336,7 +336,7 @@
     {
       "type": "figure",
       "media": "articles/you-dont-have-a-storytelling-problem/the-packing-list",
-      "width": "popout",
+      "width": "wide",
       "lightbox": true,
       "display": "fit",
       "background": false,
@@ -403,7 +403,7 @@
     {
       "type": "figure",
       "media": "articles/you-dont-have-a-storytelling-problem/the-map",
-      "width": "popout",
+      "width": "wide",
       "lightbox": true,
       "display": "fit",
       "background": false,
