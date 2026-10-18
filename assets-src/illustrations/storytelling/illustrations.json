@@ -36,15 +36,17 @@
       "name": "wrong",
       "use": "figure",
       "after": "## \"WRONG.\"",
-      "size": "1536x1024",
-      "subject": "The explorer, holding a small tour-guide flag, leads a tour group of office stakeholders in shirts and lanyards across a river on what looks like a fallen log. Halfway across, the log opens one big eye: it is a crocodile. The explorer, delighted rather than scared, holds up a hand-lettered sign that reads exactly WRONG. while the group's hats fly off in surprise.",
-      "alt": "A tour group crossing a river on a log realises the log is a crocodile, while their guide cheerfully holds up a sign reading WRONG.",
+      "size": "3072x1024",
+      "subject": "Comic strip, the monster and the footprints. 1: stakeholders measure huge three-toed clawed tracks and draw a towering monster; the explorer watches calmly from a stump. 2: the explorer parts a fern to reveal the giant tracks end at carved wooden monster-foot clogs, with tiny ordinary footprints beyond. 3: the group redraws the culprit as a small creature in big clogs; the real one peeks shyly from behind a tree holding a half-carved clog; the explorer ticks his journal. No lettering.",
+      "alt": "A three-panel comic: office creatures measure huge clawed footprints and sketch a monster; their guide shows the tracks end at carved monster-foot clogs, with tiny prints beyond; they redraw the culprit as a small creature in big clogs.",
       "lightSource": "wrong.light.png",
       "lightPrompt": "wrong.light.prompt.txt",
       "darkSource": "wrong.dark.png",
       "darkPrompt": "wrong.dark.prompt.txt",
       "inkSource": "wrong.ink.png",
-      "darkInkSource": "wrong.dark.ink.png"
+      "darkInkSource": "wrong.dark.ink.png",
+      "format": "three-panel comic strip, one row",
+      "replaces": "2026-10-18: a crocodile-log scene with a WRONG sign, replaced because the guide read as clueless and the reasoning wasn't visible."
     },
     {
       "name": "the-staircase",
