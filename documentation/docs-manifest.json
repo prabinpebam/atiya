@@ -756,6 +756,15 @@
       "group": "Engineering"
     },
     {
+      "path": "engineering/security-review.md",
+      "title": "Security and privacy: review and plan",
+      "order": 90.25,
+      "icon": "shield",
+      "status": "wip",
+      "updated": "2026-10-20",
+      "group": "Engineering"
+    },
+    {
       "path": "engineering/performance.md",
       "title": "Measuring performance",
       "order": 90.3,
