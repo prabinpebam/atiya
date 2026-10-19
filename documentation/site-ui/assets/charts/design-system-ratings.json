@@ -1,0 +1,162 @@
+{
+  "chart": "GroupedBarChart",
+  "title": "Design system ratings out of 10, 19 October 2026",
+  "alt": "The website rates 8.5 to 9.5 on every aspect but quality checks and governance. Edit mode matches it on tokens but drops to 5 to 6 on component architecture, reuse and documentation. The game UI is strict on tokens and reuse but weakest on responsiveness, accessibility and documentation.",
+  "props": {
+    "data": [
+      {
+        "aspect": "Token architecture",
+        "system": "Website",
+        "rating": 9.5
+      },
+      {
+        "aspect": "Token architecture",
+        "system": "Edit mode",
+        "rating": 8
+      },
+      {
+        "aspect": "Token architecture",
+        "system": "Game UI",
+        "rating": 8
+      },
+      {
+        "aspect": "Token discipline",
+        "system": "Website",
+        "rating": 9.5
+      },
+      {
+        "aspect": "Token discipline",
+        "system": "Edit mode",
+        "rating": 9
+      },
+      {
+        "aspect": "Token discipline",
+        "system": "Game UI",
+        "rating": 9
+      },
+      {
+        "aspect": "Accessibility",
+        "system": "Website",
+        "rating": 9.5
+      },
+      {
+        "aspect": "Accessibility",
+        "system": "Edit mode",
+        "rating": 8.5
+      },
+      {
+        "aspect": "Accessibility",
+        "system": "Game UI",
+        "rating": 6
+      },
+      {
+        "aspect": "Component architecture",
+        "system": "Website",
+        "rating": 8.5
+      },
+      {
+        "aspect": "Component architecture",
+        "system": "Edit mode",
+        "rating": 5.5
+      },
+      {
+        "aspect": "Component architecture",
+        "system": "Game UI",
+        "rating": 6.5
+      },
+      {
+        "aspect": "Reuse in practice",
+        "system": "Website",
+        "rating": 8.5
+      },
+      {
+        "aspect": "Reuse in practice",
+        "system": "Edit mode",
+        "rating": 5
+      },
+      {
+        "aspect": "Reuse in practice",
+        "system": "Game UI",
+        "rating": 8
+      },
+      {
+        "aspect": "Documentation",
+        "system": "Website",
+        "rating": 9
+      },
+      {
+        "aspect": "Documentation",
+        "system": "Edit mode",
+        "rating": 6
+      },
+      {
+        "aspect": "Documentation",
+        "system": "Game UI",
+        "rating": 6
+      },
+      {
+        "aspect": "Responsive and RTL",
+        "system": "Website",
+        "rating": 9
+      },
+      {
+        "aspect": "Responsive and RTL",
+        "system": "Edit mode",
+        "rating": 8.5
+      },
+      {
+        "aspect": "Responsive and RTL",
+        "system": "Game UI",
+        "rating": 4.5
+      },
+      {
+        "aspect": "Quality checks",
+        "system": "Website",
+        "rating": 7.5
+      },
+      {
+        "aspect": "Quality checks",
+        "system": "Edit mode",
+        "rating": 7.5
+      },
+      {
+        "aspect": "Quality checks",
+        "system": "Game UI",
+        "rating": 7
+      },
+      {
+        "aspect": "Governance",
+        "system": "Website",
+        "rating": 7
+      },
+      {
+        "aspect": "Governance",
+        "system": "Edit mode",
+        "rating": 6.5
+      },
+      {
+        "aspect": "Governance",
+        "system": "Game UI",
+        "rating": 6.5
+      }
+    ],
+    "categoryAccessor": "aspect",
+    "valueAccessor": "rating",
+    "groupBy": "system",
+    "orientation": "horizontal",
+    "width": 760,
+    "height": 560,
+    "margin": {
+      "left": 190,
+      "right": 30,
+      "top": 20,
+      "bottom": 60
+    },
+    "showGrid": true,
+    "showLegend": true,
+    "rExtent": [
+      0,
+      10
+    ]
+  }
+}
