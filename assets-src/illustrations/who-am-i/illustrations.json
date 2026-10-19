@@ -2,15 +2,15 @@
   "style": "ink-sketch",
   "article": "who-am-i",
   "theme": "The inventor's workshop: a maker who switches between a jeweller's loupe and a spyglass, the finest detail and the far horizon, and who takes everything apart to find out why it works.",
-  "castAnchor": "the-loupe-and-the-spyglass",
+  "castAnchor": "why-it-ticks",
   "cast": "THE MAKER, the recurring hero: a small, round, fuzzy creature with huge, slightly mismatched round eyes, a jeweller's loupe screwed into one eye, a battered brass spyglass tucked under one arm, a single curly antenna-like tuft of hair on top of his head, patched dungarees and a tool belt stuffed with pencils, screwdrivers and a tiny hammer; endlessly curious, delighted and a little obsessive. THE SIDEKICK (only where the subject asks for him): a scrappy, hand-built little robot made of tin cans and a dented kettle, with a bendy desk lamp for a head that glows, riveted patches and mismatched bolt eyes; eager, helpful and a little clumsy. THE TOWNSFOLK: tall, solemn, slightly droopy creatures in bowler hats and long buttoned coats, mostly bemused or astonished by the maker.",
   "images": [
     {
-      "name": "the-loupe-and-the-spyglass",
+      "name": "the-pancake-machine",
       "use": "hero",
       "format": "hero",
-      "subject": "A huge, wonderful, ramshackle machine stands in a workshop yard: towers of gears, pipes, chimneys, a big flywheel. High up on its scaffold, the maker hangs upside down by his knees from a scaffold bar. His head and arms are deep inside an open hatch, and through a cutaway we see him peering through his loupe at one tiny cog among hundreds, a tweezer in his hand. At the same time one of his feet sticks up and out of the top of the machine, holding the brass spyglass, pointed at a far horizon of rolling hills, odd towers and a rising sun. A couple of townsfolk on the ground stare up at him, hats tipping back.",
-      "alt": "A small fuzzy maker hangs upside down inside a giant machine, studying a tiny cog through a loupe, while one foot sticks out of the top holding a spyglass towards a far horizon."
+      "subject": "A simple, uncluttered scene with lots of empty white paper around it. The maker, large and clearly visible from the front in the centre, grins with delight as he pedals a little bicycle bolted to a homemade pancake-flipping machine: the pedals turn a chain and a big gear, which swings a spring-loaded wooden arm with a spatula on the end. The arm has just flung a pancake high out of a frying pan on a small camping stove, the pancake flipping mid-air with motion lines and a puff of steam. On the right, the tin-can robot sidekick, its desk-lamp head tilted up and eyes wide, holds out a plate with a tall, wobbly stack of pancakes to catch it. A jug of batter and a pat of butter sit on a crate. Only these elements; no crowd, no background buildings.",
+      "alt": "A grinning fuzzy maker pedals a homemade machine that flips a pancake high out of a frying pan, while a tin-can robot holds out a plate with a tall stack of pancakes to catch it."
     },
     {
       "name": "why-it-ticks",
