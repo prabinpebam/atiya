@@ -187,7 +187,8 @@ export function scriptImports(src: string): string[] {
 /** The examples in a story file: each <Example title="…"> block's source, dedented. */
 export function examplesOf(story: string): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const m of story.matchAll(/<Example\b([^>]*)>([\s\S]*?)<\/Example>/g)) {
+  // a checkout's line endings (CRLF on Windows) never reach the code shown: the same story gives the same page
+  for (const m of story.replace(/\r\n?/g, '\n').matchAll(/<Example\b([^>]*)>([\s\S]*?)<\/Example>/g)) {
     const title = /\btitle="([^"]+)"/.exec(m[1])?.[1];
     if (!title) continue;
     out[title] = dedent(m[2]);

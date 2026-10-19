@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { join } from 'node:path';
 import { toCss } from '../../src/site/design/tokenModel';
 import { narrowerThan, videoSources } from '../../src/site/scripts/media';
-import { reexportedTypes } from '../../src/site/library/registry';
+import { examplesOf, reexportedTypes } from '../../src/site/library/registry';
 
 const ref = (p: string) => `var(--${p.split('.').join('-')})`;
 
@@ -45,5 +45,13 @@ describe('design library: types a component re-exports from tier 0', () => {
     expect(types.map((t) => t.name)).toEqual(['CollectionPicture', 'CollectionItem']);
     expect(types[1].props.map((p) => p.name)).toEqual(['when', 'heading', 'picture', 'subtext', 'html']);
     expect(types[0].props.every((p) => p.description.length > 0)).toBe(true);
+  });
+});
+
+describe("design library: a story's code", () => {
+  it("is the same whatever the checkout's line endings (the engine build and the source build agree)", () => {
+    const lf = '<Example title="A">\n  <Button>Go</Button>\n</Example>\n';
+    expect(examplesOf(lf.replace(/\n/g, '\r\n'))).toEqual(examplesOf(lf));
+    expect(examplesOf(lf.replace(/\n/g, '\r\n')).A).toBe('<Button>Go</Button>');
   });
 });
