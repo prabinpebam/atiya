@@ -79,7 +79,8 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$PRIVATE_CONTENT_KEY" > ~/.ssh/private_pages
           chmod 600 ~/.ssh/private_pages
-          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          # GitHub's published host key (api.github.com/meta), never whatever the network answers
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
           url=$(git -C site config -f .gitmodules --get submodule.private-pages.url)
           ssh_url=$(echo "$url" | sed -E 's#^https://github.com/#git@github.com:#')
           git -C site config submodule.private-pages.url "$ssh_url"

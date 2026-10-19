@@ -49,6 +49,46 @@ export interface Session {
   kek: string;
   via: 'code' | 'link';
   expiresAt?: string;
+  /** Kept on the device (Keep me signed in): when it's forgotten, `REMEMBER_DAYS` after signing in. */
+  rememberedUntil?: string;
+}
+
+/** How long Keep me signed in lasts on a device (spec §7.3): then the reader signs in again. */
+export const REMEMBER_DAYS = 30;
+const DAY_MS = 86_400_000;
+
+/** A session to keep on the device: it ends `REMEMBER_DAYS` from now. */
+export const remembered = (s: Session, now = new Date()): Session => ({ ...s, rememberedUntil: new Date(now.getTime() + REMEMBER_DAYS * DAY_MS).toISOString() });
+
+/**
+ * What a storage holds, at `now`, and what to write back. A remembered session (one with `rememberedUntil`) is
+ * gone once that's past, or if it isn't a date (`ended`: removed). One kept on the device before the limit
+ * (in `localStorage`, `device`, without it) or claiming longer than the limit gets it from now (stamped).
+ * Anything that isn't a session is removed.
+ */
+export function deviceSession(text: string | null, device: boolean, now = new Date()): { session: Session | null; ended?: boolean; write?: 'remove' | Session } {
+  if (!text) return { session: null };
+  const s = readSession(text);
+  if (!s) return { session: null, write: 'remove' };
+  if (s.rememberedUntil === undefined) {
+    if (!device) return { session: s };
+    const r = remembered(s, now);
+    return { session: r, write: r };
+  }
+  const until = Date.parse(s.rememberedUntil);
+  if (!(until > now.getTime())) return { session: null, ended: true, write: 'remove' };
+  if (until > now.getTime() + REMEMBER_DAYS * DAY_MS) {
+    const r = remembered(s, now);
+    return { session: r, write: r };
+  }
+  return { session: s };
+}
+
+/** When a signed-in reader is told their session ends (the Sign in page's signed-in state). */
+export function untilNote(s: Session): string {
+  if (!s.rememberedUntil) return 'You’re signed in until you close this tab.';
+  const end = s.expiresAt && Date.parse(s.expiresAt) < Date.parse(s.rememberedUntil) ? s.expiresAt : s.rememberedUntil;
+  return `You’re signed in on this device until ${longDate(end)}.`;
 }
 
 export function readSession(text: string | null): Session | null {
@@ -56,6 +96,7 @@ export function readSession(text: string | null): Session | null {
   try {
     const s = JSON.parse(text) as Session;
     if (s?.v !== 1 || typeof s.grant !== 'string' || typeof s.lookup !== 'string' || typeof s.kek !== 'string' || !/^(c\/[a-z]+|l\/g[a-z2-7]{8})$/.test(s.lookup)) return null;
+    if (s.rememberedUntil !== undefined && typeof s.rememberedUntil !== 'string') return null;
     return s;
   } catch {
     return null;
@@ -70,7 +111,7 @@ export const sessionExpired = (s: Session, now = new Date()) => !!s.expiresAt &&
  */
 export const onMissingKeyring = (reloadedForBuild: string | null, build: string): 'reload' | 'withdrawn' => (reloadedForBuild === build ? 'withdrawn' : 'reload');
 
-export type Outcome = 'wrong' | 'expired' | 'withdrawn' | 'not-shared' | 'link-not-cover' | 'unsupported' | 'stale' | 'offline' | 'opened' | 'cards' | 'signed-in' | 'signed-out';
+export type Outcome = 'wrong' | 'expired' | 'ended' | 'withdrawn' | 'not-shared' | 'link-not-cover' | 'unsupported' | 'stale' | 'offline' | 'opened' | 'cards' | 'signed-in' | 'signed-out';
 
 const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -81,6 +122,8 @@ export function messageFor(outcome: Outcome, o: { expiresAt?: string; cards?: nu
       return "That access code doesn't work. Check it and try again, or get in touch for a new one.";
     case 'expired':
       return o.expiresAt ? `This access expired on ${longDate(o.expiresAt)}. Get in touch for a new one.` : 'This access has expired. Get in touch for a new one.';
+    case 'ended':
+      return `You were signed out after ${REMEMBER_DAYS} days on this device. Sign in again to see what's shared with you.`;
     case 'withdrawn':
       return 'This access code no longer works. Get in touch for a new one.';
     case 'not-shared':

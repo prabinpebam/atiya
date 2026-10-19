@@ -424,6 +424,16 @@ Every step stays on Actions' free minutes for public repositories.
 
 It runs in the deploy, in `npm run verify:prod`, and on the E2E build, and its own unit tests plant every kind of leak (a short title, an attribute, an encoded word, JSON, a picture size, a dark version, a poster, a video, an orphan file) and expect each to fail. It's the gate that makes the pipeline fail closed.
 
+### 6.4 The Content Security Policy
+
+GitHub Pages sends no security headers, so every built page of the site and the planet carries its policy as the first things in its head, right after the character set: `<meta http-equiv="Content-Security-Policy">` and `<meta name="referrer" content="strict-origin-when-cross-origin">` (`same-origin` on a private page, §5.4). Dev has neither: Vite runs inline modules, eval and a websocket, and edit mode is dev only. The docs (Slate) are their own site and out of its scope. (Security review F4, P4; added 20 October 2026.)
+
+- **Made from the site's services**, so every site the engine builds allows exactly its own: [`src/site/services/csp.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/services/csp.ts) (pure, unit-tested), called by `integrations/services.mjs` with the settings it already reads. The base is `default-src 'self'`, scripts from the site only, styles inline allowed (the components set custom properties in `style`), pictures from the site, `data:` and `blob:` (decrypted media), fonts from the site, connections to the site and `blob:` (the planet's glTF loader reads the pictures packed in its models through blob URLs it makes), `frame-src 'self'` plus the two video players (`www.youtube-nocookie.com`, `player.vimeo.com`), media and workers from the site and `blob:`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`. Then each service adds its own hosts: the contact service's origin (the form and a private page's agreement post there), Web3Forms' API, an embedded form's origin (framed), PostHog's host, and each counting tool's script, connection and image hosts. The hosts of each catalogue option are its `csp` field in `src/site/services/catalogue.json`, so a new option names them where it's added.
+- **Inline scripts by hash, not `'unsafe-inline'`.** The site has only a few, all static (the theme and signed-in marks before the first paint, the planet's welcome), so once the pages are written `integrations/csp.mjs` hashes every inline script any page runs and puts the hashes in every page's policy: one policy for the whole site, because the client-side router (the design library, the planet's frame) keeps the first page's while it swaps others in. It runs before the sealer, so a private page's own inline scripts (re-created when it opens) are hashed too; only the hashes are written. A new inline script needs nothing: the next build hashes it. An inline event handler (`onclick="…"`) can't be allowed by a hash, so there must be none.
+- **No `'unsafe-eval'` and no `'wasm-unsafe-eval'`:** nothing the site or the planet runs needs them (the glTF loader's Draco and meshopt decoders are bundled but never used: the models load without them). `frame-ancestors` and `report-uri` are ignored in a meta tag, so the policy leaves them out; nothing can stop another site framing the pages on GitHub Pages.
+- **A test build** allows its made-up services only (`https://contact.test`, `https://telemetry.test`), so the E2E tests run under the policy; the group "content security policy" (`tests/e2e/csp.spec.ts`) visits every kind of page and fails on any violation.
+- **Checked on every build** by the leak check (§6.3, `verifyPolicies`): every page but the docs carries the policy and the referrer policy before its first script, link or style, one policy for all, its inline scripts' hashes all in it, no `'unsafe-inline'` or `'unsafe-eval'` for scripts, no wildcard host or scheme for scripts or connections (`blob:` aside for connections), and no inline event handler.
+
 ## 7. What a visitor sees
 
 ### 7.1 Signing in
@@ -432,7 +442,7 @@ A compound, `UnlockPanel`, is the form on the Sign in page (`/sign-in/`) and on 
 - a line saying some work is shared with invited readers;
 - the **Access code** field (a password field with Show, so a password manager can keep it);
 - **Sign in** (the primary button);
-- **Remember on this device** (a checkbox, off by default);
+- **Keep me signed in on this device for 30 days** (a checkbox, off by default; it was "Remember on this device" until 20 October 2026);
 - a line on how to ask for access, linking to the contact page.
 
 On a section, the signed-out state is only the sign-in line under its list (§2.1), never the form.
@@ -458,20 +468,21 @@ Every message follows the site's copy rules: sentence case, says what happened a
 | A browser without Web Crypto (very old ones) | "This browser can't open shared pages. Try a current version of Edge, Chrome, Firefox or Safari." |
 | The page and its keyring are from different deploys, after one reload | "The site was just updated. Reload the page in a minute." |
 | Offline, or the keyring can't be fetched | "Couldn't reach the site to sign in. Check your connection and try again." |
+| A remembered session past its 30 days (§7.3), on a private page's panel or the Sign in page only | "You were signed out after 30 days on this device. Sign in again to see what's shared with you." |
 
 Each message goes into the page's live region as well as on the screen.
 
 ### 7.3 Staying signed in
 
 - **By default, for the session:** the grant key is kept in `sessionStorage`, so moving between pages, or coming back in the same tab, needs no code.
-- **Remember on this device** keeps it in `localStorage` until it expires.
+- **Keep me signed in on this device for 30 days** keeps it in `localStorage` too, for 30 days from signing in (`REMEMBER_DAYS` and `rememberedUntil` in `src/site/access/session.ts`), or until the grant expires if that's sooner. Past that day the session is removed from both storages and the reader is signed out quietly: a private page's panel and the Sign in page say so gently (§7.2), nothing else does, and nothing is sent. A session kept before the limit (no `rememberedUntil`), or claiming a later day, is given 30 days from when it's next read. The Sign in page's signed-in state says until when ("You're signed in on this device until 19 November 2026", or "until you close this tab"). It narrows, but doesn't close, the exposure of a key kept on an origin other sites share (security review F2; a custom domain is decision D1).
 - **Sign out**, the header's Sign in while signed in (top right; on a phone, in the menu), from the first paint on a signed-in device:
   - forgets the key in both storages, and tells every other open tab of the site to do the same (a `BroadcastChannel`, with the `storage` event as its fallback);
   - revokes the page's `blob:` URLs, removes the decrypted regions and cards and puts back the neutral title;
   - resets telemetry's identity (§9.3);
   - and moves on with `location.replace`: from a private page to its section, elsewhere to the same page, so Back doesn't return to the decrypted page.
 - **The back and forward cache:** a page shown again from it (`pageshow` with `persisted`) checks whether the visitor is still signed in, and reloads if not.
-- **What's stored:** the grant key and the grant's `id`, `expiresAt` and lookup, never the code or the link's secret. After a deploy the same key opens the new keyring, until the grant expires or is withdrawn.
+- **What's stored:** the grant key and the grant's `id`, `expiresAt` and lookup, and for a remembered session its `rememberedUntil`; never the code or the link's secret. After a deploy the same key opens the new keyring, until the grant expires or is withdrawn, or a remembered session's 30 days are up.
 - **Signing in is per browser.** Nothing is sent anywhere to check it; telemetry only records that it happened (§9).
 
 ### 7.4 After signing in
@@ -606,9 +617,9 @@ Alternatives considered:
 
 | Event | When | Properties |
 |---|---|---|
-| `$pageview` | A protected page or the Sign in page loads | `$current_url` and `$pathname` as the page's route with its token (opaque); `$title` "Private page" or "Sign in"; the referrer's origin only |
+| `$pageview` | A protected page or the Sign in page loads | `$current_url` and `$pathname` as the page's route, a private page's token replaced by `private` (`/work/private/`); `$title` "Private page" or "Sign in"; the referrer's origin only |
 | `access_signed_in` | A code or link signs the visitor in | `grant` (its `id`), `via` (code or link) |
-| `access_opened` | A private page opens, or a section shows shared cards | `grant`, `place` (the page's token, or the section's path), `cards` (on a section: how many were shown) |
+| `access_opened` | A private page opens, or a section shows shared cards | `grant`, `place` (the page's section then `private`, or the section's path), `cards` (on a section: how many were shown) |
 | `access_failed` | A code or link doesn't work | `reason`: wrong, expired, withdrawn, unsupported, offline. Never the code |
 | `access_signed_out` | Sign out | `grant` |
 | `access_agreed` | The reader agrees before anything opens (§7.6) | `grant` |
@@ -641,6 +652,7 @@ The pages read over the planet send their own page views (their `/play/<building
 ### 9.4 Never sent
 
 - **No code, no link secret:** URLs are sent without their fragment (`before_send` strips it from every address property, on every page), and the fragment is gone from the address bar anyway (§4.3).
+- **No private page's address** (security review F7, P7): on every page, `before_send` replaces a private page's token with `private` wherever it appears, in any property at any depth: the page's own address, the referrers, the previous page, the session's first page, the person properties, autocapture's element chain, a `place`, and a `?return=` address, encoded or not (`maskTokens` in `telemetrySanitize.ts`). The page being sent is private when it says so (`<html data-access="private">`); any other address is taken for one by its shape (a 10-character token from a–z and 2–7 under a section, never the code's own `/play/` or `/design/`), so an open page whose slug happens to have that shape is sent as `private` in another page's referrer, though never in its own page view. Which private page a grant opened is no longer in PostHog, only its section.
 - **No protected text, title or address:** on protected pages, only the allowlist above leaves the browser. `before_send` drops any event that isn't on it, and any property that isn't, as a second line. Session replay is off everywhere.
 - **No editor or dev traffic:** telemetry loads only in production builds, never in dev, edit mode or test builds (the E2E tests point it at a fake host to inspect what would be sent).
 
@@ -821,6 +833,8 @@ Built 5 to 6 October 2026, phase by phase as the [plan](plan.md) sets out, and c
 - **`video_played`** carries `media` (the file's ID) on open pages, `place` on protected ones.
 - **`web_vitals`** (13 October 2026; the performance plan's R13) is measured in PostHog's chunk (`scripts/webVitals.ts`, PostHog's own Web Vitals being off: they'd load a script): buffered `PerformanceObserver`s for `largest-contentful-paint`, `layout-shift` (CLS by session windows) and `event` (INP, `durationThreshold` 40 ms, the 98th percentile), started when the chunk connects, so the always-on part is unchanged, and sent once with `sendBeacon` on the first `visibilitychange` to hidden or `pagehide`. A page that's left before the chunk has loaded sends nothing, like any of its events; a page opened in the background isn't measured. Its kind is taken from the path's depth, its access and its frame, never its address. Unit: `tests/unit/telemetry.test.ts` ("field data"); E2E: "web vitals: one event when a page is left…" in the group "protected content: telemetry".
 - **The Privacy page's address** comes from the site settings' `privacyPage` (like `contactPage`, checked by the loader: a node, and open); the layouts take a `footer` prop and the footer adds it after its own links.
+- **A remembered session ends after 30 days** (20 October 2026; security review P2, F2): `keep` stamps `rememberedUntil` (`remembered`), and `stored` reads each storage through the pure `deviceSession` (`src/site/access/session.ts`), which removes one past its day (the runtime then says `ended` where a panel is, and nothing else), stamps one kept before the limit, and caps one claiming longer. The checkbox reads "Keep me signed in on this device for 30 days" (`UnlockPanel`, held equal to `REMEMBER_DAYS` by a unit test), and the Sign in page's signed-in state says until when (`untilNote`, `[data-unlock-until]`). The head script still marks a device signed in from the stored item alone, so for the moment before the runtime reads it the header shows Sign out. Unit: `tests/unit/accessSession.test.ts` ("a remembered session"); E2E: "Keep me signed in…" and "every failure says what happened".
+- **No private page's token in telemetry** (20 October 2026; security review P7, F7): `maskTokens` in `telemetrySanitize.ts`, run on every string of every event before the allowlist (§9.4); `sanitize` takes the site's base. The E2E reads the fixtures' tokens from their overlay and checks no request to the fake host holds one, including the referrer of an open page reached from a private one. Unit: `tests/unit/telemetry.test.ts` ("a private page's token never leaves").
 
 ### 15.3 Evidence
 

@@ -1,11 +1,13 @@
 /**
  * Telemetry's last line before anything leaves the browser (documentation/access/spec.md §9.2, §9.4), pure
  * so it's unit-tested: how a followed link and a played video are described, and `before_send`, which
- * strips fragments from every address on every page, and on protected pages and the Sign in page lets
+ * strips fragments from every address on every page and replaces a private page's token with `private`
+ * wherever it appears (security review P7), and on protected pages and the Sign in page lets
  * through only the allowlisted events and properties, with the page's address, title and referrer replaced
  * by opaque ones. Only the PostHog chunk (scripts/telemetryClient.ts) carries it.
  */
 import type { PageFacts } from './telemetryRules';
+import { RESERVED } from '../content/routes';
 
 /** A followed link, as `access_link` describes it: its kind and, if it leaves the site, its domain only. */
 export function linkKind(href: string, here: string, base: string): { kind: 'internal' | 'outbound' | 'download'; domain?: string } | null {
@@ -45,11 +47,33 @@ export function withoutFragment(value: string): string {
 
 const URLISH = /^(https?:)?\/\/|^\//;
 
-/** Every address-like string, at any depth, without its fragment (every page). Only plain objects and arrays are copied: a `Date` (the event's timestamp) is kept as it is. */
-function stripFragments(v: unknown): unknown {
-  if (typeof v === 'string') return URLISH.test(v) && v.includes('#') ? withoutFragment(v) : v;
-  if (Array.isArray(v)) return v.map(stripFragments);
-  if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, stripFragments(x)]));
+/** A private page's token, the last segment of its address (the schema's `accessToken`; documentation/access/spec.md §2). */
+const TOKEN = '[a-z2-7]{10}';
+const masks = new Map<string, RegExp>();
+
+/**
+ * `v` with every private page's token replaced by `private` (`/work/private/`), wherever it is: an address,
+ * a path, or inside a longer string (autocapture's element chain). A private page is a token under a section
+ * (`<base>/<section>/<token>`), so every path of that shape is taken for one, except the code's own
+ * (`/play/<building>/`, the design library) and `own`, the open page being sent (a public slug can have the shape).
+ */
+export function maskTokens(v: string, base: string, own?: string): string {
+  if (!v.includes('/') && !/%2f/i.test(v)) return v;
+  let re = masks.get(base);
+  // a slash, or one encoded in a query (`?return=%2Fwork%2F…`)
+  const s = '(/|%2[Ff])';
+  const b = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\//g, '(?:/|%2[Ff])');
+  if (!re) masks.set(base, (re = new RegExp(`(^|["'=\\s(]|//[^/"'\\s]+)(${b})${s}([a-z0-9][a-z0-9-]*)${s}(${TOKEN})(?=[/?#&%"'\\s)]|$)`, 'g')));
+  return v.replace(re, (m, pre: string, at: string, s1: string, seg: string, s2: string, tok: string) =>
+    RESERVED.includes(seg) || own?.startsWith(`${base}/${seg}/${tok}/`) || own === `${base}/${seg}/${tok}` ? m : `${pre}${at}${s1}${seg}${s2}private`,
+  );
+}
+
+/** Every string, at any depth, without a private page's token, and every address-like one without its fragment (every page). Only plain objects and arrays are copied: a `Date` (the event's timestamp) is kept as it is. */
+function scrub(v: unknown, mask: (s: string) => string): unknown {
+  if (typeof v === 'string') return mask(URLISH.test(v) && v.includes('#') ? withoutFragment(v) : v);
+  if (Array.isArray(v)) return v.map((x) => scrub(x, mask));
+  if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, scrub(x, mask)]));
   return v;
 }
 
@@ -122,10 +146,18 @@ function originOnly(v: unknown): string | undefined {
   }
 }
 
-/** `before_send`: the event as it may leave the browser, or null to drop it. */
-export function sanitize(e: CaptureEvent | null, page: PageFacts): CaptureEvent | null {
+/**
+ * `before_send`: the event as it may leave the browser, or null to drop it. `base` is the site's base path
+ * (`/atiya`, or empty), so a private page's token is found in every address it sends.
+ */
+export function sanitize(e: CaptureEvent | null, page: PageFacts, base: string): CaptureEvent | null {
   if (!e) return null;
-  const clean = stripFragments(e) as CaptureEvent;
+  // the page being sent keeps its own address when it's open (never a private page's)
+  const self = page.access ? undefined : page.pathname;
+  const clean = scrub(e, (s) => maskTokens(s, base, self)) as CaptureEvent;
+  // a place is a path without the base (`/work/<token>/`)
+  const place = clean.properties?.place;
+  if (typeof place === 'string') clean.properties!.place = maskTokens(place, '', self?.slice(base.length));
   if (page.mode === 'open') return clean;
   const own = ALLOWLIST[clean.event];
   if (!own) return null;
@@ -133,8 +165,9 @@ export function sanitize(e: CaptureEvent | null, page: PageFacts): CaptureEvent 
   const kept: Record<string, unknown> = {};
   for (const k of [...SYSTEM_PROPS, ...own]) if (k in props) kept[k] = props[k];
   if (clean.event === '$pageview') {
-    kept.$current_url = `${page.origin}${page.pathname}`;
-    kept.$pathname = page.pathname;
+    const path = maskTokens(page.pathname, base, self);
+    kept.$current_url = `${page.origin}${path}`;
+    kept.$pathname = path;
     kept.$title = neutralTitle(page.access, page.signIn);
     const ref = originOnly(props.$referrer);
     if (ref) kept.$referrer = ref;

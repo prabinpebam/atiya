@@ -195,6 +195,15 @@ describe("the service's request handling", () => {
     expect(clientIp('2001:db8::1')).toBe('2001:db8::1');
     expect(clientIp(null)).toBe('unknown');
   });
+
+  it("never takes the client's own x-forwarded-for: the address the front end appended wins", () => {
+    // a client sends a made-up address to get a fresh limit; Azure appends the one it saw
+    expect(clientIp('198.51.100.99, 203.0.113.7:51234')).toBe('203.0.113.7');
+    expect(clientIp('1.1.1.1, 2.2.2.2, 203.0.113.7:51234, 10.0.0.1')).toBe('203.0.113.7');
+    expect(clientIp('[2001:db8::9]:1, [2001:db8::1]:443, [fd00::1]:80')).toBe('2001:db8::1');
+    // only internal hops: the last one, so the limit still applies to something
+    expect(clientIp('10.0.0.1, 10.0.0.2')).toBe('10.0.0.2');
+  });
 });
 
 describe('the email', () => {

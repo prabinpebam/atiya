@@ -6,13 +6,15 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { optOut } from '../../src/site/scripts/telemetryRules';
-import { ALLOWLIST, linkKind, mediaId, neutralTitle, sanitize } from '../../src/site/scripts/telemetrySanitize';
+import { ALLOWLIST, linkKind, maskTokens, mediaId, neutralTitle, sanitize as sanitizeAt, type CaptureEvent } from '../../src/site/scripts/telemetrySanitize';
 import { addInteraction, clsOf, inpOf, lcpOf, pageKind, rating, rounded, VITALS_PROPS, vitalsProps } from '../../src/site/scripts/webVitals';
 import type { PageFacts } from '../../src/site/scripts/telemetryRules';
 
 const open: PageFacts = { mode: 'open', signIn: false, origin: 'https://site.example', pathname: '/atiya/work/' };
 const locked: PageFacts = { mode: 'allowlist', access: 'locked', signIn: false, origin: 'https://site.example', pathname: '/atiya/work/k7d2q9xh/' };
-const privatePage: PageFacts = { ...locked, access: 'private', pathname: '/atiya/p/privone222/' };
+const privatePage: PageFacts = { ...locked, access: 'private', pathname: '/atiya/work/privone222/' };
+/** The site's base path in these tests. */
+const sanitize = (e: CaptureEvent | null, page: PageFacts) => sanitizeAt(e, page, '/atiya');
 const signIn: PageFacts = { mode: 'allowlist', signIn: true, origin: 'https://site.example', pathname: '/atiya/sign-in/' };
 
 const device = { token: 'phc_x', distinct_id: 'gfixall22', $os: 'Windows', $browser: 'Chrome', $device_type: 'Desktop', $session_id: 's', $lib: 'web', $time: 1 };
@@ -123,7 +125,7 @@ describe('before_send', () => {
       open,
     )!;
     expect(JSON.stringify(e)).not.toMatch(/#|secret/);
-    expect(e.properties!.$current_url).toBe('https://site.example/atiya/p/privone222/');
+    expect(e.properties!.$current_url).toBe('https://site.example/atiya/p/private/');
   });
 
   it("keeps the event's timestamp a Date on every page (PostHog refuses an event whose timestamp isn't one)", () => {
@@ -158,7 +160,8 @@ describe('before_send', () => {
         },
         page,
       )!;
-      expect(e.properties!.$current_url).toBe(`https://site.example${page.pathname}`);
+      // a private page's token never leaves: its address is its section's, then private
+      expect(e.properties!.$current_url).toBe(`https://site.example${page.pathname.replace('privone222', 'private')}`);
       expect(e.properties!.$title).toBe(neutralTitle(page.access, page.signIn));
       expect(e.properties!.$referrer).toBe('https://site.example');
       expect(JSON.stringify(e)).not.toMatch(/Secret|\?|#/);
@@ -197,5 +200,47 @@ describe('before_send', () => {
     expect(shim).not.toMatch(/from 'posthog-js/);
     expect(shim).toMatch(/import\('\.\/telemetryClient'\)/);
     expect(readFileSync('src/site/scripts/telemetryClient.ts', 'utf8')).toMatch(/from 'posthog-js\/dist\/module\.no-external'/);
+  });
+});
+
+describe("a private page's token never leaves (security review P7)", () => {
+  const TOK = 'privone222';
+  it('is replaced by private in an address, a path, a place, and inside a longer string, under any base', () => {
+    expect(maskTokens(`https://site.example/atiya/work/${TOK}/`, '/atiya')).toBe('https://site.example/atiya/work/private/');
+    expect(maskTokens(`https://site.example/atiya/work/${TOK}/?x=1`, '/atiya')).toBe('https://site.example/atiya/work/private/?x=1');
+    expect(maskTokens(`/atiya/work/${TOK}/`, '/atiya')).toBe('/atiya/work/private/');
+    expect(maskTokens(`/atiya/work/${TOK}`, '/atiya')).toBe('/atiya/work/private');
+    expect(maskTokens(`/work/${TOK}/`, '')).toBe('/work/private/');
+    expect(maskTokens(`http://localhost:4329/side-projects/${TOK}/`, '')).toBe('http://localhost:4329/side-projects/private/');
+    expect(maskTokens(`a:href="/atiya/work/${TOK}/"nth-child="2";span:text="x"`, '/atiya')).toBe('a:href="/atiya/work/private/"nth-child="2";span:text="x"');
+    expect(maskTokens(`https://site.example/atiya/sign-in/?return=%2Fatiya%2Fwork%2F${TOK}%2F`, '/atiya')).toBe('https://site.example/atiya/sign-in/?return=%2Fatiya%2Fwork%2Fprivate%2F');
+  });
+  it("leaves alone what isn't one: other lengths and letters, the code's own addresses, other places in a path, and the open page being sent", () => {
+    for (const v of ['/atiya/work/', '/atiya/work/k7d2q9xh/', '/atiya/work/abcdefghijk/', '/atiya/work/abcdefgh18/', '/atiya/work/Privone222/', '/atiya/play/lighthouse/', '/atiya/design/typography/', '/atiya/abcdefghij/', 'https://other.example/x/y/work/privone222/'])
+      expect(maskTokens(v, '/atiya')).toBe(v);
+    // a public page whose slug has the shape keeps its own address, but not as another page's referrer
+    expect(maskTokens('https://site.example/atiya/writing/typography/', '/atiya', '/atiya/writing/typography/')).toBe('https://site.example/atiya/writing/typography/');
+    expect(maskTokens('https://site.example/atiya/writing/typography/', '/atiya', '/atiya/work/')).toBe('https://site.example/atiya/writing/private/');
+  });
+  it('on an open page: in every address PostHog adds (the referrers, the previous page, the session and the person properties)', () => {
+    const at = `https://site.example/atiya/work/${TOK}/`;
+    const e = sanitize(
+      {
+        event: '$pageview',
+        properties: { ...device, $current_url: 'https://site.example/atiya/work/', $pathname: '/atiya/work/', $referrer: at, $initial_referrer: at, $prev_pageview_pathname: `/atiya/work/${TOK}/`, $session_entry_url: at, $session_entry_pathname: `/atiya/work/${TOK}/`, $elements_chain: `a:href="/atiya/work/${TOK}/"` },
+        $set_once: { $initial_current_url: at, $initial_pathname: `/atiya/work/${TOK}/` },
+      },
+      open,
+    )!;
+    expect(JSON.stringify(e)).not.toContain(TOK);
+    expect(e.properties).toMatchObject({ $current_url: 'https://site.example/atiya/work/', $referrer: 'https://site.example/atiya/work/private/', $prev_pageview_pathname: '/atiya/work/private/' });
+  });
+  it("on a private page: its page view, and the place an event names", () => {
+    const pv = sanitize({ event: '$pageview', properties: { ...device, $current_url: `https://site.example${privatePage.pathname}`, $pathname: privatePage.pathname } }, privatePage)!;
+    expect(pv.properties).toMatchObject({ $current_url: 'https://site.example/atiya/work/private/', $pathname: '/atiya/work/private/', $title: 'Private page' });
+    expect(sanitize({ event: 'access_opened', properties: { ...device, grant: 'gfixall22', place: `/work/${TOK}/` } }, privatePage)!.properties!.place).toBe('/work/private/');
+    expect(sanitize({ event: 'video_played', properties: { ...device, place: `/work/${TOK}/` } }, privatePage)!.properties!.place).toBe('/work/private/');
+    // a section's place is its own
+    expect(sanitize({ event: 'access_opened', properties: { ...device, grant: 'gfixall22', place: '/work/', cards: 2 } }, { ...open, mode: 'allowlist' })!.properties!.place).toBe('/work/');
   });
 });

@@ -1,5 +1,5 @@
 {
-  "$comment": "The site's contact and visitor-count options (documentation/desktop/spec.md §9.5, plan stage 11; the research in documentation/desktop/site-services.md). Edit mode's Settings cards, the app's `atiya services` command and the site's skill read this file; tests/unit/servicesCatalogue.test.ts holds it to the content contract (src/site/content/schema.ts). Every value an option asks for is public by design: never a secret.",
+  "$comment": "The site's contact and visitor-count options (documentation/desktop/spec.md §9.5, plan stage 11; the research in documentation/desktop/site-services.md). Edit mode's Settings cards, the app's `atiya services` command and the site's skill read this file; tests/unit/servicesCatalogue.test.ts holds it to the content contract (src/site/content/schema.ts). Every value an option asks for is public by design: never a secret. An option's `csp` names the hosts the site's Content Security Policy must allow for it, by directive (src/site/services/csp.ts): `{origin}` is the origin of the link a person pasted, `{code}` GoatCounter's code name, `{host}` Umami's host.",
   "embedHosts": [
     { "host": "tally.so", "name": "Tally" },
     { "host": "docs.google.com", "path": "/forms/", "name": "Google Forms" },
@@ -44,7 +44,8 @@
       "site": "https://web3forms.com/",
       "pricing": "https://web3forms.com/pricing",
       "cookies": false,
-      "check": "test-message"
+      "check": "test-message",
+      "csp": { "connect-src": ["https://api.web3forms.com"] }
     },
     {
       "id": "tally",
@@ -63,7 +64,8 @@
       "site": "https://tally.so/",
       "pricing": "https://tally.so/pricing",
       "cookies": false,
-      "check": "preview"
+      "check": "preview",
+      "csp": { "frame-src": ["{origin}"] }
     },
     {
       "id": "google-forms",
@@ -82,7 +84,8 @@
       "site": "https://forms.google.com/",
       "pricing": "https://workspace.google.com/products/forms/",
       "cookies": false,
-      "check": "preview"
+      "check": "preview",
+      "csp": { "frame-src": ["{origin}"] }
     },
     {
       "id": "jotform",
@@ -100,7 +103,8 @@
       "site": "https://www.jotform.com/",
       "pricing": "https://www.jotform.com/pricing/",
       "cookies": false,
-      "check": "preview"
+      "check": "preview",
+      "csp": { "frame-src": ["{origin}"] }
     },
     {
       "id": "cal-com",
@@ -118,7 +122,8 @@
       "site": "https://cal.com/",
       "pricing": "https://cal.com/pricing",
       "cookies": false,
-      "check": "preview"
+      "check": "preview",
+      "csp": { "frame-src": ["{origin}"] }
     }
   ],
   "counts": [
@@ -138,7 +143,8 @@
       "pricing": "https://www.goatcounter.com/help/sponsor",
       "dashboard": "https://{code}.goatcounter.com/",
       "cookies": false,
-      "check": "dashboard"
+      "check": "dashboard",
+      "csp": { "img-src": ["https://{code}.goatcounter.com"] }
     },
     {
       "id": "umami",
@@ -157,7 +163,8 @@
       "pricing": "https://umami.is/pricing",
       "dashboard": "https://cloud.umami.is/",
       "cookies": false,
-      "check": "dashboard"
+      "check": "dashboard",
+      "csp": { "script-src": ["{host}"], "connect-src": ["{host}", "https://gateway.umami.is", "https://api-gateway.umami.dev", "https://eu.umami.is", "https://api-gateway-eu.umami.dev"] }
     },
     {
       "id": "ga4",
@@ -176,7 +183,8 @@
       "pricing": "https://marketingplatform.google.com/about/analytics/",
       "dashboard": "https://analytics.google.com/",
       "cookies": true,
-      "check": "dashboard"
+      "check": "dashboard",
+      "csp": { "script-src": ["https://www.googletagmanager.com"], "connect-src": ["https://*.google-analytics.com", "https://*.analytics.google.com", "https://*.googletagmanager.com"], "img-src": ["https://*.google-analytics.com", "https://*.googletagmanager.com"] }
     }
   ],
   "addons": [
@@ -197,7 +205,8 @@
       "pricing": "https://clarity.microsoft.com/",
       "dashboard": "https://clarity.microsoft.com/projects",
       "cookies": true,
-      "check": "dashboard"
+      "check": "dashboard",
+      "csp": { "script-src": ["https://www.clarity.ms", "https://scripts.clarity.ms"], "connect-src": ["https://*.clarity.ms", "https://c.bing.com"], "img-src": ["https://*.clarity.ms", "https://c.bing.com"] }
     }
   ],
   "shapes": {

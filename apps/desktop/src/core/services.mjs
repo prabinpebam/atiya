@@ -13,7 +13,7 @@ import { engineRoot } from './setup/engine.mjs';
 import { findCheckoutAbove } from './checkout.mjs';
 
 /** @typedef {{ who: 'person' | 'agent', text: string, url?: string }} Step */
-/** @typedef {{ id: string, kind: string, tier: string, name: string, gives: string, asks: string, value: { field: string, label: string, shape: string, example: string }, steps: Step[], site?: string, pricing?: string, dashboard?: string, cookies: boolean, check: string }} Option */
+/** @typedef {{ id: string, kind: string, tier: string, name: string, gives: string, asks: string, value: { field: string, label: string, shape: string, example: string }, steps: Step[], site?: string, pricing?: string, dashboard?: string, cookies: boolean, check: string, csp?: Record<string, string[]> }} Option */
 /** @typedef {{ embedHosts: { host: string, name: string, path?: string }[], contact: Option[], counts: Option[], addons: Option[], shapes: Record<string, string> }} Catalogue */
 
 /**

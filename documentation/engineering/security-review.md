@@ -2,7 +2,7 @@
 
 A review of the whole app, the website, its private pages, edit mode, Atiya Studio, the contact service and the build, for security and privacy. It scores each area for what this is (a personal site with some confidential work behind codes), sets the level worth reaching, and records the plan and its Definition of Done.
 
-> **TL;DR.** On 20 October 2026 the app scores **about 7.4 out of 10** overall.
+> **TL;DR.** On 20 October 2026 the app scored **about 7.4 out of 10**; after the plan below it scores **about 8.7**, every area at its target. The one gap left is the shared origin (decision D1).
 > - **Strong:** the private-page crypto and sealing, secrets hygiene, the desktop app and privacy transparency.
 > - **One high finding:** edit mode's starting page could be turned into a script by a link opened while the dev server runs, which would hand over every access code and the push to the live site.
 > - **One medium finding:** the site shares its origin with 24 other GitHub Pages sites of the owner's, which can read a signed-in reader's key.
@@ -37,19 +37,21 @@ Each area is scored out of 10 for this kind of app:
 - **5 to 6:** a real gap;
 - **below 5:** missing.
 
-| Area | Score | Target | Why |
+Each cell is the score at the review and after the plan (20 October 2026).
+
+| Area | Review → now | Target | Evidence now |
 |---|---|---|---|
-| Private-page confidentiality (crypto, sealing, leak check) | 9 | 9 | AES-256-GCM with random IVs and the build bound in, new page keys each build, PBKDF2-SHA256 at 600k iterations, 4-word codes (about 52 bits), magic-link secrets kept in the fragment and removed at once, and a leak check that fails the build. |
-| Browser isolation of a reader's session | 5 | 7 (9 with a custom domain) | The site's origin, `prabinpebam.github.io`, is shared with 24 other Pages sites, some loading scripts from CDNs. A signed-in reader's key sits in Web Storage there with no time limit when remembered. |
-| Web page hardening (XSS, CSP, framing, referrer) | 6 | 8 | No injection point was found, and the markdown renderer and Slate escape their input. But nothing limits what a script could load or send if one appeared, and GitHub Pages sends no security headers. |
-| Owner's tools: edit mode and the dev server | 5 | 9 | The guard against cross-site requests and DNS rebinding is good. But the starting page's `?to=` parameter is written into an inline script, outside the guard. |
-| Owner's tools: Atiya Studio | 9 | 9 | Sandboxed views with context isolation, a bridge that answers only the app's pages, a strict CSP, the GitHub token in memory only, the deploy key sealed, and the bundled `gh` checked against a pinned hash. |
-| Contact service (abuse, input, secrets) | 7 | 8.5 | Origin check, signed proof of work on the form, header-safe fields, plain-text email, secrets only in the app's settings. But its per-IP limits trust the first `X-Forwarded-For` hop, which a client sets. |
-| Supply chain and CI | 7 | 8.5 | Minimal workflow permissions, no `pull_request_target`, official actions, integrity hashes on every lockfile entry. But 4 high and 1 moderate advisories in transitive dependencies (all fixable), and the workflows trust whatever `ssh-keyscan github.com` returns. |
-| Secrets hygiene | 9 | 9 | No secret is tracked; the contact service's settings, the GitHub token and the deploy key never touch the repository. |
-| Privacy: what's collected | 8 | 9 | A clear notice, no cookies, GPC/DNT/`?telemetry=off` honoured, an allowlist on protected pages, consent before Clarity or GA4, and nothing from the contact form. But a private page's opaque address reaches PostHog in the URL and the referrer. |
-| Privacy: control and retention | 8.5 | 8.5 | Opting out, deletion on request, retention stated (a year), and the agreement record explained. |
-| **Overall** | **7.4** | **8.6** | |
+| Private-page confidentiality (crypto, sealing, leak check) | 9 → 9 | 9 | AES-256-GCM with random IVs and the build bound in, new page keys each build, PBKDF2-SHA256 at 600k iterations, 4-word codes (about 52 bits), magic-link secrets kept in the fragment and removed at once, and a leak check that fails the build. |
+| Browser isolation of a reader's session | 5 → 7 | 7 (9 with a custom domain) | A remembered session now ends after 30 days (it held the key forever), and the reader sees when. The origin is still shared with the owner's other Pages sites until D1. |
+| Web page hardening (XSS, CSP, framing, referrer) | 6 → 8.5 | 8 | Every built page carries a Content Security Policy: inline scripts allowed only by their hashes, no `unsafe-eval`, connections only to the site's own services, `object-src 'none'`, `base-uri 'self'`. It also has an explicit referrer policy. The build fails if a page lacks them. Framing can't be blocked from a meta tag. |
+| Owner's tools: edit mode and the dev server | 5 → 9 | 9 | The starting page validates its target, never writes it into a script, runs edit mode's guard, and refuses frames with a hash-only CSP; hostile values are tested. |
+| Owner's tools: Atiya Studio | 9 → 9 | 9 | Unchanged: sandboxed views, an origin-checked bridge, a strict CSP, the GitHub token in memory only. |
+| Contact service (abuse, input, secrets) | 7 → 8.5 | 8.5 | The per-IP limits now read the address Azure's front end appended, so they can't be dodged. Deployed. |
+| Supply chain and CI | 7 → 9 | 8.5 | 0 `npm audit` advisories in the site, Atiya Studio and the contact service. The workflows pin GitHub's published host key, never run on `pull_request_target`, and never put an event's text in a shell command, all tested. |
+| Secrets hygiene | 9 → 9 | 9 | Unchanged: nothing secret tracked. |
+| Privacy: what's collected | 8 → 9 | 9 | Telemetry masks a private page's token in every value it sends, so PostHog sees `/work/private/`; the privacy notice says so. |
+| Privacy: control and retention | 8.5 → 8.5 | 8.5 | Unchanged: opting out, deletion on request, a stated retention. |
+| **Overall** | **7.4 → 8.7** | **8.6** | |
 
 ## 3. Findings
 
@@ -90,9 +92,27 @@ Each area is scored out of 10 for this kind of app:
 
 ## 5. Definition of Done
 
-- [ ] P1 to P8 are done, each held by the test named in the plan.
-- [ ] The audit's scores in §2 are re-scored with the evidence, at or above their targets (the origin area at 7 without D1).
-- [ ] `npm audit` reports no advisories in the site, Atiya Studio or the contact service, or each remaining one is explained here.
-- [ ] Unit tests, `npm run check`, `npm run verify:prod` and `node scripts/build-parity.mjs` pass; the browser groups touched (site, protected content, contact, planet, editor) pass, apart from failures that predate this work.
-- [ ] The live site serves the CSP and referrer policy, and its pages, the planet, a private page and the contact form work there.
-- [ ] D1 and D2 are put to the owner; this page says what was decided.
+- [x] P1 to P8 are done, each held by the test named in the plan (§6).
+- [x] The scores in §2 are re-scored with the evidence, at or above their targets (the origin area at 7, pending D1).
+- [x] `npm audit` reports no advisories in the site, Atiya Studio or the contact service.
+- [x] Unit tests (1,802), `npm run check`, `npm run verify:prod` (137 pages carry the policy, budgets met) and `node scripts/build-parity.mjs` pass. The browser groups touched pass: protected content (24), content security policy (4), landing and classic (3), contact (11), capability gate (2), edit mode's guard and first start (5), and the screenshots (145; the 3 deliberately changed stories updated on purpose).
+- [ ] The live site serves the CSP and referrer policy, and its pages, the planet, a private page and the contact form work there: waits for the push.
+- [x] D1 and D2 are put to the owner (§7).
+
+## 6. As built
+
+| Item | What was built | Held by |
+|---|---|---|
+| P1 | `src/site/editor/model/starting.ts`: the starting page's target is validated (edit mode's address, safe segments and query), written only into escaped markup the script reads, behind edit mode's guard (loopback, Host, never cross-site, never framed), with a hash-only CSP and `frame-ancestors 'none'`. `__warm` runs the guard too. | `tests/unit/editorStarting.test.ts` (30+ hostile values); editor E2E "the first start", "the guard" |
+| P2 | A remembered session ends 30 days after signing in (`REMEMBER_DAYS`, `deviceSession` in `src/site/access/session.ts`); older sessions get 30 days from now, longer ones are cut back. The checkbox says "for 30 days", the Sign in page says when the session ends, and an ended one signs out quietly with a line saying why. PageShell's head script applies the same date rule, so the header never shows Sign out for an ended session. | `tests/unit/accessSession.test.ts`; "protected content" E2E |
+| P3 | `clientIp` takes the last public `X-Forwarded-For` entry (the one Azure's front end appended), never the client's own. Deployed on 20 October 2026 with `deploy-contact-api.ps1 -CodeOnly`; the service answers. | `tests/unit/contact.test.ts` |
+| P4 | `src/site/services/csp.ts` builds the policy from the site's services (each catalogue option names its hosts in `csp`); `integrations/csp.mjs` hashes every inline script after the build (4 in all) and writes one policy into every page; a referrer policy of `strict-origin-when-cross-origin` (private pages keep `same-origin`). No `unsafe-inline` or `unsafe-eval` for scripts. Never in dev. | `tests/unit/csp.test.ts`; `verify-sealed.mjs` (every page, in `verify:prod` and the deploy); `tests/e2e/csp.spec.ts` (no violation on the home page, a section, the design library, Sign in, a video article, a private page, the contact form and the planet) |
+| P5 | `npm audit fix` through the package feed proxy: sharp 0.35.5 (libvips 8.18.7) and the transitive fixes. | `npm audit`: 0 |
+| P6 | The three workflows write GitHub's published `ssh-ed25519` host key. | `tests/unit/security.test.ts` (also: no `pull_request_target`, permissions declared, no event text in `run:`) |
+| P7 | `maskTokens` in `telemetrySanitize.ts` replaces a private page's token with `private` in every string of every event, on every page; `access_opened` records only the section. The privacy notice says so. | `tests/unit/telemetry.test.ts`; "protected content" E2E (no fixture token in any request) |
+| P8 | AGENTS.md: no request value in a script (edit mode), the CSP rule, the 30-day session and token masking, and the repository-wide rules (host key, workflow text, contact IP, `npm audit` at 0). | — |
+
+## 7. Decisions
+
+- **D1, a custom domain:** put to the owner on 20 October 2026, not yet decided. Until then, a reader's session on the shared `prabinpebam.github.io` origin is limited to 30 days, and the score for that area stays at 7.
+- **D2, deploying the contact service fix:** made with the deploy script (code only), since the change narrows what the service trusts and changes nothing it accepts. No live message was sent (it would email the owner); the unit tests cover the rule.

@@ -1,7 +1,7 @@
 ---
 /**
  * Signing in to see work shared with invited readers (documentation/access/spec.md §7.1): the access
- * code, Sign in, Remember on this device, and how to ask for access, on the Sign in page and on a private
+ * code, Sign in, Keep me signed in on this device (for 30 days), and how to ask for access, on the Sign in page and on a private
  * page opened without access (a magic link signs its reader in before the panel is needed). On the Sign in
  * page (given `shared`), a reader already signed in sees that instead: the sections where
  * shared work is listed, Use another code and Sign out. The sign-in runtime (scripts/sealed.ts) gives the
@@ -63,7 +63,8 @@ const { contact, headingLevel = 2, returnTo, id = 'access', shared, signedIn = f
           Show code
         </Button>
       </div>
-      <Checkbox label="Remember on this device" name="remember" id={`${id}-remember`} hint="Leave it off on a shared computer." data-unlock-remember="" />
+      {/* the days are access/session.ts's REMEMBER_DAYS (tests/unit/accessSession.test.ts holds them equal) */}
+      <Checkbox label="Keep me signed in on this device for 30 days" name="remember" id={`${id}-remember`} hint="Leave it off on a shared computer." data-unlock-remember="" />
       <p class="status" id={`${id}-status`} role="status" aria-live="polite" data-unlock-status />
     </form>
     <Text variant="small" tone="muted">
@@ -121,6 +122,8 @@ const { contact, headingLevel = 2, returnTo, id = 'access', shared, signedIn = f
         <Text variant="body" tone="muted">
           You can see the work shared with you. It’s listed in its section, marked Shared with you.
         </Text>
+        {/* how long it lasts: until the tab closes, or the day a remembered session (or the access) ends; the runtime fills it */}
+        <p class="status" data-unlock-until />
         {shared.length > 0 && (
           <nav class="places" aria-label="Where shared work is listed">
             <ul>

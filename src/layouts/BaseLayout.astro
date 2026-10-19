@@ -13,12 +13,22 @@ declare const __SITE_NAME__: string | undefined;
 const { title, description = `The portfolio of ${typeof __SITE_NAME__ === 'string' && __SITE_NAME__ ? __SITE_NAME__ : 'this site'}.`, bodyClass } = Astro.props;
 // Social previews need an absolute URL: set `site` in astro.config.mjs when deploying.
 const ogImage = new URL(withBase('/og-image.jpg'), Astro.site ?? Astro.url).href;
+// a build's Content Security Policy (src/site/services/csp.ts, the site's: integrations/services.mjs), first in the head
+const csp = import.meta.env.PROD ? (import.meta.env.PUBLIC_CSP as string | undefined) : undefined;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    {
+      csp && (
+        <Fragment>
+          <meta http-equiv="Content-Security-Policy" content={csp} />
+          <meta name="referrer" content="strict-origin-when-cross-origin" />
+        </Fragment>
+      )
+    }
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content={description} />
     <meta name="color-scheme" content="light dark" />

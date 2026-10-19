@@ -11,11 +11,15 @@
  *   `SITE_URL` and `BASE_PATH`, which both workflows set): a production build on this computer, its preview, a
  *   benchmark, and a copy of the site published anywhere else never send to the owner's project.
  * - Otherwise the content wins over the environment, so a variable left in a terminal can't point a build elsewhere.
+ * - A build's Content Security Policy is made from the same settings (`PUBLIC_CSP`, src/site/services/csp.ts), so it
+ *   allows exactly the services the site uses; dev has none.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadEnv } from 'vite';
 import { astroMode } from './roots.mjs';
+import { cspPolicy, POSTHOG_DEFAULT, TEST_TELEMETRY } from '../src/site/services/csp.ts';
 
 /** The variables the services become. */
 export const SERVICE_VARS = ['PUBLIC_CONTACT_ENDPOINT', 'PUBLIC_POSTHOG_KEY', 'PUBLIC_POSTHOG_HOST', 'PUBLIC_COUNTS'];
@@ -85,6 +89,33 @@ export function sameAddress(address, siteUrl, base = '/') {
   }
 }
 
+/**
+ * The site's Content Security Policy for a build (src/site/services/csp.ts), from the same settings as the
+ * variables, or '' in dev (Vite needs inline modules, eval and a websocket). A test build allows its made-up
+ * hosts only, so the E2E tests run under the policy. Its scripts are `'unsafe-inline'` here, swapped for the
+ * build's inline scripts' hashes once the pages are written (integrations/csp.mjs). Pure.
+ * @param {any} site content/site.json, or null
+ * @param {Record<string, string> | null} vars what serviceVars made (null: a test build)
+ * @param {{ command: string, testEndpoint?: string }} o
+ */
+export function cspVar(site, vars, { command, testEndpoint }) {
+  if (command !== 'build') return '';
+  if (!vars) return cspPolicy({ contactEndpoint: testEndpoint, telemetryHost: TEST_TELEMETRY });
+  /** @type {any[]} */
+  let counts = [];
+  try {
+    counts = vars.PUBLIC_COUNTS ? JSON.parse(vars.PUBLIC_COUNTS) : [];
+  } catch {
+    // countsVar wrote it: always JSON
+  }
+  return cspPolicy({
+    contact: site?.services?.contact,
+    contactEndpoint: vars.PUBLIC_CONTACT_ENDPOINT,
+    telemetryHost: vars.PUBLIC_POSTHOG_KEY ? vars.PUBLIC_POSTHOG_HOST || POSTHOG_DEFAULT : undefined,
+    counts,
+  });
+}
+
 /** @returns {import('astro').AstroIntegration} */
 export default function services() {
   return {
@@ -102,9 +133,12 @@ export default function services() {
         } catch {
           // not JSON: the content check names it, and the build fails there
         }
-        const vars = serviceVars(site, { command, mode: astroMode(), siteUrl: process.env.SITE_URL, base: process.env.BASE_PATH });
-        if (!vars) return;
-        updateConfig({ vite: { define: Object.fromEntries(Object.entries(vars).map(([k, v]) => [`import.meta.env.${k}`, JSON.stringify(v)])) } });
+        const mode = astroMode();
+        const vars = serviceVars(site, { command, mode, siteUrl: process.env.SITE_URL, base: process.env.BASE_PATH });
+        // the test build's endpoint, as its pages will read it (.env.test, unless the environment overrides it)
+        const testEndpoint = vars ? undefined : loadEnv(mode ?? 'test', root, 'PUBLIC_').PUBLIC_CONTACT_ENDPOINT;
+        const csp = cspVar(site, vars, { command, testEndpoint });
+        updateConfig({ vite: { define: Object.fromEntries(Object.entries({ ...vars, PUBLIC_CSP: csp }).map(([k, v]) => [`import.meta.env.${k}`, JSON.stringify(v)])) } });
       },
     },
   };

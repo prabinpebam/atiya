@@ -25,6 +25,8 @@ const TITLES = ['fx-private-alpha', 'fx-private-beta', 'fx-private-gamma', 'fx-p
 const SECTION = '/side-projects/';
 const ALPHA = '/side-projects/alphaaaaa2/';
 const BETA = '/side-projects/betabbbbb3/';
+/** Every private page's opaque address token in the fixtures. */
+const TOKENS = [...readFileSync(join(FIX, 'structures', 'overlay.json'), 'utf8').matchAll(/"token":\s*"([a-z2-7]{10})"/g)].map((m) => m[1]);
 
 const noSeriousViolations = async (page: Page) => {
   const results = await new AxeBuilder({ page }).analyze();
@@ -208,12 +210,15 @@ test.describe('protected content', () => {
     await expect(source).toHaveAttribute('media', 'not all');
   });
 
-  test('Remember on this device keeps the key; sign-out clears it here, in another tab, and from Back (QB5)', async ({ page, context }) => {
+  test('Keep me signed in keeps the key for 30 days; sign-out clears it here, in another tab, and from Back (QB5)', async ({ page, context }) => {
     await page.goto(SECTION);
     await page.goto(ALPHA);
     await signIn(page, ALL, true);
     await expect(page.locator('h1')).toHaveText(title('fx-private-alpha'));
     expect(await page.evaluate(() => !!localStorage.getItem('site.access'))).toBe(true);
+    // remembered for 30 days from now, never for good (security review P2)
+    const until = await page.evaluate(() => Date.parse(JSON.parse(localStorage.getItem('site.access')!).rememberedUntil) - Date.now());
+    expect(Math.abs(until - 30 * 86_400_000)).toBeLessThan(10 * 60_000);
     const other = await context.newPage();
     await other.goto(SECTION);
     await expect(other.locator('[data-shared]')).toHaveCount(3);
@@ -249,6 +254,12 @@ test.describe('protected content', () => {
     await page.evaluate(() => sessionStorage.setItem('site.access', JSON.stringify({ v: 1, grant: 'gfixall22', lookup: 'c/harbor', kek: 'A'.repeat(43), via: 'code', expiresAt: '2026-01-05T00:00:00+05:30' })));
     await page.goto(ALPHA);
     await expect(page.locator('[data-access-gate] [data-unlock-status]')).toHaveText('This access expired on 5 January 2026. Get in touch for a new one.');
+    // a remembered session past its 30 days: gone from the device, and said gently where the reader signs in again
+    await page.evaluate(() => localStorage.setItem('site.access', JSON.stringify({ v: 1, grant: 'gfixall22', lookup: 'c/harbor', kek: 'A'.repeat(43), via: 'code', rememberedUntil: '2026-01-05T00:00:00Z' })));
+    await page.goto(ALPHA);
+    await expect(page.locator('[data-access-gate] [data-unlock-status]')).toHaveText("You were signed out after 30 days on this device. Sign in again to see what's shared with you.");
+    expect(await page.evaluate(() => [sessionStorage.getItem('site.access'), localStorage.getItem('site.access')])).toEqual([null, null]);
+    await expect(headerSignOut(page)).toBeHidden();
     // offline
     await page.route('**/_access/**', (r) => r.abort());
     await signIn(page, ALL);
@@ -315,6 +326,8 @@ test.describe('protected content', () => {
     const done = page.locator('[data-unlock-done]');
     await expect(done.getByRole('heading', { name: 'You’re signed in' })).toBeVisible();
     await expect(done).toBeFocused();
+    // how long it lasts: this tab, as Keep me signed in wasn't ticked
+    await expect(done.locator('[data-unlock-until]')).toHaveText('You’re signed in until you close this tab.');
     await expect(page.locator('[data-unlock-form]')).toBeHidden();
     // the sections where shared work is listed (the open sections holding private pages)
     await expect(done.getByRole('navigation', { name: 'Where shared work is listed' }).getByRole('link')).toHaveText(['Work', 'Writing', 'Side projects']);
@@ -438,6 +451,15 @@ test.describe('protected content: telemetry (QB6)', () => {
     await expect.poll(() => t.sent.some((e) => e.event === '$pageview' && e.properties.$title === 'Private page'), { timeout: 15_000 }).toBe(true);
     await page.locator('main a[href*="/side-projects/"]').first().click();
     await expect.poll(() => t.sent.find((e) => e.event === 'access_link')?.properties.kind, { timeout: 15_000 }).toBe('internal');
+    // a visit that starts from a private page's address (PostHog keeps a session's first referrer): its referrer
+    // names the section, never the token (security review P7)
+    const fresh = await page.context().newPage();
+    await fresh.goto('/', { referer: new URL(ALPHA, page.url()).href });
+    const fromPrivate = () => t.sent.find((e) => e.event === '$pageview' && e.at === '/' && /^http/.test(String(e.properties.$referrer ?? '')));
+    await expect.poll(() => !!fromPrivate(), { timeout: 15_000 }).toBe(true);
+    // an open page (that tab isn't signed in): the whole address, with its token replaced
+    expect(String(fromPrivate()!.properties.$referrer)).toMatch(/^http:\/\/[^/]+\/side-projects\/private\/$/);
+    await fresh.close();
     // sign out: the next page's events are anonymous again
     await page.goto(SECTION);
     await expect(headerSignOut(page)).toBeVisible();
@@ -456,8 +478,11 @@ test.describe('protected content: telemetry (QB6)', () => {
     expect(all).not.toContain('wrong-words-that-are-not-a-code');
     expect(all).not.toMatch(/#|%23/);
     for (const g of grants) if (g.secret.key) expect(all).not.toContain(g.secret.key);
+    // no private page's token, in any address or place: its page view is its section's, then private
+    for (const token of TOKENS) expect(all, token).not.toContain(token);
+    expect(t.sent.some((e) => e.event === '$pageview' && e.at === '/side-projects/private/')).toBe(true);
     // protected pages and the Sign in page sent only the allowlist
-    const guarded = t.sent.filter((e) => e.at === '/sign-in/' || e.at.startsWith(ALPHA) || e.event.startsWith('access_'));
+    const guarded = t.sent.filter((e) => e.at === '/sign-in/' || e.at === '/side-projects/private/' || e.event.startsWith('access_'));
     for (const e of guarded) {
       expect(Object.keys(ALLOWED), e.event).toContain(e.event);
       const own = Object.keys(e.properties).filter((k) => !k.startsWith('$') && !['token', 'distinct_id'].includes(k));

@@ -96,6 +96,7 @@ The research and comparison behind the [desktop spec's §9.5](spec.md) (15 Octob
 - `services.counts`: `{ kind: 'goatcounter', code }`, `{ kind: 'umami', id }`, `{ kind: 'posthog', key, host }` (today's), `{ kind: 'ga4', id }`, and optionally `clarity: { id }`.
 - The Contact page draws the site's own form for `web3forms` and `relay`, an accessible frame (a title, a "Open the form in a new tab" link beside it, its height from the service's resize message where it sends one) for `embed`, and the Email me button for `email`.
 - One small loader per counting tool, fetched on idle like today's PostHog chunk, never on the pages of §5; the 1.2 KB telemetry shim's budget holds.
+- The site's Content Security Policy allows exactly the chosen services' hosts: each option names them in the catalogue's `csp` field (by directive; `{origin}` is a pasted link's origin, `{code}` GoatCounter's code name, `{host}` Umami's host), and the build makes the policy from the site's settings (access spec §6.4). A new option isn't done until it names its hosts there.
 
 ### 6.3 For agents
 

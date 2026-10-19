@@ -4,7 +4,8 @@
  * decrypt, what a signed-in browser keeps, the reload on a missing keyring, and every message.
  */
 import { describe, expect, it } from 'vitest';
-import { afterSignOut, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, readSession, safeReturn, sessionExpired, withoutSecret } from '../../src/site/access/session';
+import { readFileSync } from 'node:fs';
+import { afterSignOut, deviceSession, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, readSession, remembered, REMEMBER_DAYS, safeReturn, sessionExpired, untilNote, withoutSecret } from '../../src/site/access/session';
 
 const SECRET = 'A'.repeat(43);
 
@@ -54,6 +55,55 @@ describe('what a signed-in browser keeps', () => {
     expect(sessionExpired(s as never, new Date('2026-11-04T00:00:00+05:30'))).toBe(false);
     expect(sessionExpired(s as never, new Date('2026-11-05T00:00:00+05:30'))).toBe(true);
     expect(sessionExpired({ ...s, expiresAt: undefined } as never)).toBe(false);
+  });
+});
+
+describe('a remembered session (Keep me signed in, security review P2)', () => {
+  const s = { v: 1, grant: 'gfixall22', lookup: 'c/harbor', kek: SECRET, via: 'code' } as const;
+  const now = new Date('2026-10-20T00:00:00Z');
+  const day = 86_400_000;
+  const at = (ms: number) => new Date(now.getTime() + ms);
+  it(`lasts ${REMEMBER_DAYS} days from signing in`, () => {
+    expect(REMEMBER_DAYS).toBe(30);
+    expect(remembered(s, now).rememberedUntil).toBe('2026-11-19T00:00:00.000Z');
+  });
+  it('is kept until then, and gone (removed, quietly ended) from that moment', () => {
+    const r = JSON.stringify(remembered(s, now));
+    for (const kind of [true, false]) {
+      expect(deviceSession(r, kind, at(29 * day)).session?.grant).toBe('gfixall22');
+      expect(deviceSession(r, kind, at(29 * day)).write).toBeUndefined();
+      expect(deviceSession(r, kind, at(30 * day))).toEqual({ session: null, ended: true, write: 'remove' });
+      expect(deviceSession(r, kind, at(400 * day))).toEqual({ session: null, ended: true, write: 'remove' });
+    }
+  });
+  it('one kept on the device before the limit gets it from now (stamped); a tab-only one has none', () => {
+    const old = JSON.stringify(s);
+    const r = deviceSession(old, true, now);
+    expect(r.session?.rememberedUntil).toBe('2026-11-19T00:00:00.000Z');
+    expect(r.write).toEqual(r.session);
+    expect(deviceSession(old, false, now)).toEqual({ session: s });
+  });
+  it("one claiming longer than the limit, or a date that isn't one, isn't believed", () => {
+    const long = deviceSession(JSON.stringify({ ...s, rememberedUntil: '2099-01-01T00:00:00Z' }), true, now);
+    expect(long.session?.rememberedUntil).toBe('2026-11-19T00:00:00.000Z');
+    expect(long.write).toEqual(long.session);
+    expect(deviceSession(JSON.stringify({ ...s, rememberedUntil: 'soon' }), true, now)).toEqual({ session: null, ended: true, write: 'remove' });
+    expect(deviceSession(JSON.stringify({ ...s, rememberedUntil: 5 }), true, now)).toEqual({ session: null, write: 'remove' });
+  });
+  it('anything else in the store is removed, and nothing is nothing', () => {
+    expect(deviceSession('not json', true, now)).toEqual({ session: null, write: 'remove' });
+    expect(deviceSession(null, true, now)).toEqual({ session: null });
+  });
+  it('the reader sees when it ends: the earlier of its day and the access’s', () => {
+    expect(untilNote(remembered(s, now))).toBe('You’re signed in on this device until 19 November 2026.');
+    expect(untilNote({ ...remembered(s, now), expiresAt: '2026-11-05T00:00:00Z' })).toBe('You’re signed in on this device until 5 November 2026.');
+    expect(untilNote(s)).toBe('You’re signed in until you close this tab.');
+  });
+  it('the Sign in page offers it for the same number of days', () => {
+    expect(readFileSync('src/site/components/compounds/UnlockPanel.astro', 'utf8')).toContain(`label="Keep me signed in on this device for ${REMEMBER_DAYS} days"`);
+  });
+  it('ending is said gently: what happened and what to do', () => {
+    expect(messageFor('ended')).toBe("You were signed out after 30 days on this device. Sign in again to see what's shared with you.");
   });
 });
 

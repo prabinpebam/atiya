@@ -29,13 +29,27 @@ const KEYS = new Set(['name', 'email', 'message', 'website', 'elapsed', 'challen
  * }} Deps
  */
 
-/** A client's IP as the front end passes it (x-forwarded-for: its first address, without a port). */
-export function clientIp(/** @type {string | null} */ forwarded) {
-  const first = (forwarded ?? '').split(',')[0].trim();
-  const v4 = /^(\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?$/.exec(first);
+/** An address on a private, loopback or link-local network: an internal hop, never the client. */
+const internal = (/** @type {string} */ ip) =>
+  /^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ip) || /^(::1$|f[cd][0-9a-f]{2}:|fe80:)/i.test(ip);
+
+/** One x-forwarded-for entry without its port: `1.2.3.4:5`, `[::1]:5` or a bare address. */
+const hostOf = (/** @type {string} */ entry) => {
+  const v4 = /^(\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?$/.exec(entry);
   if (v4) return v4[1];
-  const v6 = /^\[([^\]]+)\](?::\d+)?$/.exec(first);
-  return v6 ? v6[1] : first || 'unknown';
+  const v6 = /^\[([^\]]+)\](?::\d+)?$/.exec(entry);
+  return v6 ? v6[1] : entry;
+};
+
+/**
+ * A client's IP as the front end passes it. A client can send its own x-forwarded-for, and Azure's front end
+ * appends the address it saw after it, so the client's own entries come first: the IP is the last public entry
+ * (an internal hop after it is skipped), never the first, which anyone can set.
+ */
+export function clientIp(/** @type {string | null} */ forwarded) {
+  const entries = (forwarded ?? '').split(',').map((e) => hostOf(e.trim())).filter(Boolean);
+  for (let i = entries.length - 1; i >= 0; i--) if (!internal(entries[i])) return entries[i];
+  return entries[entries.length - 1] || 'unknown';
 }
 
 /** GET /api/contact/challenge */

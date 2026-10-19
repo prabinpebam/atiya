@@ -42,7 +42,8 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$PRIVATE_CONTENT_KEY" > ~/.ssh/private_pages
           chmod 600 ~/.ssh/private_pages
-          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          # GitHub's published host key (api.github.com/meta), never whatever the network answers
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
           git config --global url."git@github.com:prabinpebam/atiya-private".insteadOf "https://github.com/prabinpebam/atiya-private"
           GIT_SSH_COMMAND="ssh -i ~/.ssh/private_pages -o IdentitiesOnly=yes" git submodule update --init --depth 1 private-pages
           rm -f ~/.ssh/private_pages

@@ -24,6 +24,8 @@ import { privateRootFor } from './roots.mjs';
 import { PLANET_FILES, planetOn, siteFeatures } from './features.mjs';
 import { LAUNCH_HEADER, launchAllows } from './launch.mjs';
 import { draftScript } from '../src/site/theme/draft.ts';
+import { FRAME_HEADERS, guard } from '../src/site/editor/model/guard.ts';
+import { STARTING_HEADERS, startingGuard, startingPage } from '../src/site/editor/model/starting.ts';
 
 /** How long edit mode must have been idle before a new site name or planet restarts the server. */
 const RESTART_QUIET_MS = 1500;
@@ -145,33 +147,23 @@ async function warmUp(edit, contentRoot, server, logger) {
 }
 
 /**
- * The starting page: plain, at once, and honest about what it waits for; it opens the screen asked for
- * once edit mode is ready (or at once, with Open it now).
- * @param {string} to
- * @param {string} status
+ * A Node request in the shape edit mode's guard reads (src/site/editor/model/guard.ts).
+ * @param {any} req
+ * @returns {import('../src/site/editor/model/guard.ts').GuardRequest}
  */
-function startingPage(to, status) {
-  const safe = (/** @type {string} */ s) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Starting edit mode</title>
-<style>:root{color-scheme:light dark;font-family:system-ui,sans-serif}body{display:grid;place-items:center;min-height:100dvh;margin:0}main{display:grid;gap:.75rem;width:min(28rem,90vw)}h1{margin:0;font-size:1.5rem}p{margin:0}progress{width:100%}@media (prefers-reduced-motion:reduce){progress:indeterminate{opacity:.6}}</style></head>
-<body data-editor-starting><main aria-busy="true"><h1>Starting edit mode</h1><p role="status" aria-live="polite" data-starting-what>Compiling the screens…</p><progress data-starting-progress></progress><p><a href="${safe(to)}" data-starting-open>Open it now</a></p></main>
-<script>
-const to = ${JSON.stringify(to)};
-const what = document.querySelector('[data-starting-what]');
-const bar = document.querySelector('[data-starting-progress]');
-async function poll() {
+function guardRequest(req) {
+  /** @param {string} name */
+  const header = (name) => {
+    const v = req.headers[name.toLowerCase()];
+    return v === undefined ? null : Array.isArray(v) ? v.join(', ') : String(v);
+  };
+  let url;
   try {
-    const w = await (await fetch(${JSON.stringify(status)}, { cache: 'no-store' })).json();
-    if (!w.running) return location.replace(to);
-    const [label, p] = w.phase === 'pictures' ? ['Preparing pictures', w.pictures] : ['Compiling the screens', w.screens];
-    what.textContent = p.total ? label + ': ' + p.done + ' of ' + p.total : label + '…';
-    if (p.total) { bar.max = p.total; bar.value = p.done; }
-  } catch {}
-  setTimeout(poll, 400);
-}
-poll();
-</script></body></html>`;
+    url = new URL(String(req.url ?? '/'), 'http://localhost');
+  } catch {
+    url = new URL('http://localhost/');
+  }
+  return { method: String(req.method ?? 'GET'), url, clientAddress: req.socket?.remoteAddress, header };
 }
 
 /** @returns {import('astro').AstroIntegration} */
@@ -294,7 +286,16 @@ export default function editor() {
             const url = String(req.url ?? '');
             const path = url.split('?')[0];
             if (!path.startsWith(edit)) return next();
+            /** @param {Record<string, string>} headers */
+            const refuse = (headers) => {
+              res.statusCode = 403;
+              for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+              res.setHeader('content-type', 'text/plain; charset=utf-8');
+              res.end('Forbidden');
+            };
             if (path === `${edit}__warm`) {
+              // edit mode's guard, as for every editor route: from this computer, to a local host name
+              if (!guard(guardRequest(req)).ok) return refuse(FRAME_HEADERS);
               res.setHeader('content-type', 'application/json');
               res.setHeader('cache-control', 'no-store');
               return res.end(JSON.stringify({ ...warm, started }));
@@ -302,11 +303,13 @@ export default function editor() {
             const asked = path === `${edit}__starting`;
             const opening = req.method === 'GET' && req.headers['sec-fetch-mode'] === 'navigate' && req.headers['sec-fetch-dest'] === 'document' && !req.headers['x-editor'] && !req.headers['x-editor-warm'] && !path.startsWith(`${edit}api/`) && !path.startsWith(`${edit}canvas/`);
             if (!asked && !(opening && warm.running)) return next();
-            const wanted = asked ? new URLSearchParams(url.split('?')[1] ?? '').get('to') ?? edit : url;
+            // a top-level page load from this computer only (security review F1): never framed, never
+            // opened by another site; a screen opened that way while warming goes on to edit mode's guard
+            if (!startingGuard(guardRequest(req)).ok) return asked ? refuse(STARTING_HEADERS) : next();
+            const wanted = asked ? new URLSearchParams(url.split('?')[1] ?? '').get('to') : url;
             res.statusCode = 200;
-            res.setHeader('content-type', 'text/html; charset=utf-8');
-            res.setHeader('cache-control', 'no-store');
-            res.end(startingPage(wanted.startsWith(edit) ? wanted : edit, `${edit}__warm`));
+            for (const [name, value] of Object.entries(STARTING_HEADERS)) res.setHeader(name, value);
+            res.end(startingPage(wanted, edit));
           });
         }
         state.notify = (files, fromEditor, origin = null) => {

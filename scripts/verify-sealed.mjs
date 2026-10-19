@@ -15,13 +15,17 @@
  * A finding names its category, the file and a count, never the protected words or bytes (a build's log is
  * public).
  *
+ * It also checks every page's Content Security Policy and referrer policy (verifyPolicies, security review P4),
+ * since it runs on every build that's published.
+ *
  *   node scripts/verify-sealed.mjs [dist]
  */
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
+import { headFindings, policyIn } from '../src/site/services/csp.ts';
+import { scriptHash } from '../integrations/csp.mjs';
 const SUMMARY = join(process.cwd(), 'node_modules', '.cache', 'site-protected', 'sealed.json');
 const PROVENANCE = join(process.cwd(), 'node_modules', '.cache', 'site-protected', 'provenance.jsonl');
 const TEXT = /\.(html?|js|mjs|css|json|xml|txt|md|svg|map|webmanifest)$/i;
@@ -282,11 +286,39 @@ function readLines(/** @type {string} */ f) {
   return existsSync(f) ? readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
 }
 
+/**
+ * Every page of the site (not the docs, Slate's own) carries the Content Security Policy and the referrer policy
+ * first in its head, one policy for all (the client-side router keeps the first page's), with its inline scripts
+ * allowed by hash, no `'unsafe-eval'`, no wildcard host for scripts or connections, and no inline event handler
+ * (src/site/services/csp.ts, security review P4). Categories and files only.
+ * @param {string} dist
+ */
+export function verifyPolicies(dist) {
+  /** @type {Map<string, { category: string; file: string; count: number }>} */
+  const found = new Map();
+  const report = (/** @type {string} */ category, /** @type {string} */ file) => {
+    const f = found.get(category);
+    if (f) f.count++;
+    else found.set(category, { category, file, count: 1 });
+  };
+  const pages = walk(dist).filter((f) => f.endsWith('.html') && !relative(dist, f).split(sep).join('/').startsWith('docs/'));
+  const policies = new Set();
+  for (const f of pages) {
+    const html = readFileSync(f, 'utf8');
+    const r = relative(dist, f).split(sep).join('/');
+    for (const c of headFindings(html, scriptHash)) report(`the policy: ${c}`, r);
+    const p = policyIn(html);
+    if (p) policies.add(p);
+  }
+  if (policies.size > 1) report(`the policy: pages carry ${policies.size} different policies, not one`, 'dist');
+  return [...found.values()];
+}
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
   const dist = join(process.cwd(), process.argv[2] ?? 'dist');
   const publicText = publicCorpus();
-  const findings = verifySealed({ dist, publicText });
+  const findings = [...verifySealed({ dist, publicText }), ...verifyPolicies(dist)];
   // how many protected words the public sources already hold, by category (never the words)
   const privateRoot = readJson(SUMMARY)?.privateRoot;
   if (privateRoot) {
@@ -298,5 +330,5 @@ if (isMain) {
     for (const f of findings) console.error(`- ${f.category}: ${f.file}${f.count > 1 ? ` (${f.count})` : ''}`);
     process.exit(1);
   }
-  console.log('The leak check passed: nothing readable from a private page is in the build.');
+  console.log('The leak check passed: nothing readable from a private page is in the build, and every page carries the Content Security Policy.');
 }

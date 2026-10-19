@@ -1,8 +1,8 @@
 ---
 /**
- * The page's frame: the document and its head (title, description, social card, the browser's theme
- * colour, the fonts), the saved colour theme applied before the first paint, and a skip link. Every
- * layout starts with it and puts id="main" on its main content.
+ * The page's frame: the document and its head (in a build, the Content Security Policy and referrer policy first;
+ * then the title, description, social card, the browser's theme colour, the fonts), the saved colour theme applied
+ * before the first paint, and a skip link. Every layout starts with it and puts id="main" on its main content.
  * @tier compound
  * @a11y Sets the page's language and a skip link to #main, the first thing Tab reaches.
  * @a11y Applies the saved theme before paint, so there's no flash of the wrong mode.
@@ -108,17 +108,28 @@ const asks = toolsOf(import.meta.env.PUBLIC_COUNTS).filter(needsConsent).map((t)
 const ogImage = new URL(withBase(image), Astro.site ?? Astro.url).href;
 // a build never names a protected page in its head; the dev server shows its real title
 const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
+// a build's Content Security Policy (src/site/services/csp.ts, made by integrations/services.mjs from the site's
+// services; its script hashes added once the pages are written): first in the head, before anything it governs
+const csp = import.meta.env.PROD ? import.meta.env.PUBLIC_CSP : undefined;
 ---
 
 <!doctype html>
 <html lang="en" data-frame={frame === 'planet' ? 'planet' : undefined} data-access={sealed}>
   <head>
     <meta charset="utf-8" />
+    {
+      csp && (
+        <Fragment>
+          <meta http-equiv="Content-Security-Policy" content={csp} />
+          <meta name="referrer" content={sealed ? 'same-origin' : 'strict-origin-when-cross-origin'} />
+        </Fragment>
+      )
+    }
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{neutral ?? title}</title>
     {!neutral && <meta name="description" content={description} />}
     {sealed ? <meta name="robots" content="noindex, nofollow" /> : (noindex || redirect || frame === 'planet') && <meta name="robots" content="noindex" />}
-    {sealed && <meta name="referrer" content="same-origin" />}
+    {sealed && !csp && <meta name="referrer" content="same-origin" />}
     {redirect && <meta http-equiv="refresh" content={`0; url=${withBase(redirect)}`} />}
     {(canonical ?? redirect) && <link rel="canonical" href={new URL(withBase(canonical ?? redirect!), Astro.site ?? Astro.url).href} />}
     <meta name="color-scheme" content="light dark" />
@@ -146,7 +157,10 @@ const neutral = sealed && import.meta.env.PROD ? 'Private page' : undefined;
       // signed in on this device (documentation/access/spec.md §7.3): marked before the first paint, so a
       // section's sign-in line and a private page's panel don't flash while the key is tried (scripts/sealed.ts)
       try {
-        if (sessionStorage.getItem('site.access') || localStorage.getItem('site.access')) document.documentElement.dataset.signedIn = '';
+        // a remembered session past its 30 days (access/session.ts deviceSession) isn't signed in: sealed.ts removes it
+        var siteAccess = sessionStorage.getItem('site.access') || localStorage.getItem('site.access');
+        var siteUntil = siteAccess && JSON.parse(siteAccess).rememberedUntil;
+        if (siteAccess && !(siteUntil && !(Date.parse(siteUntil) > Date.now()))) document.documentElement.dataset.signedIn = '';
       } catch (e) {}
       // the saved theme, before the first paint (scripts/theme.ts owns the rules)
       var siteTheme = '';

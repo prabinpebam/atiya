@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-06",
-  "updatedAt": "2026-10-08",
+  "updatedAt": "2026-10-20",
   "locale": "en",
   "body": [
     {
@@ -22,7 +22,7 @@
     },
     {
       "type": "text",
-      "markdown": "- The pages you open, with their address (never the part after a #), their title and the site you came from.\n- The links and buttons you click, and the videos you play.\n- Your device and browser, your IP address, and the city and country it suggests.\n- If you sign in with an access code or a link I sent you, the ID of that code or link (not your name), and which shared pages it opened. On those pages only these events are recorded: never their titles, words or links."
+      "markdown": "- The pages you open, with their address (never the part after a #), their title and the site you came from.\n- The links and buttons you click, and the videos you play.\n- Your device and browser, your IP address, and the city and country it suggests.\n- If you sign in with an access code or a link I sent you, the ID of that code or link (not your name), and when it opened a shared page and in which section (never that page's own address). On those pages only these events are recorded: never their titles, words or links."
     },
     {
       "type": "heading",

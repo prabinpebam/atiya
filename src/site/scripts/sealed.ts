@@ -11,7 +11,7 @@ import { parseTheme, syncDarkSources } from './theme';
 import { b64, deriveCodeKey, deriveLinkKey, open, utf8 } from '../access/crypto.ts';
 import { KeyringError, cardAad, checkEnvelope, mediaAad, openKeyring, pageAad } from '../access/keyring.ts';
 import { parseCode } from '../access/parse.ts';
-import { afterSignOut, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, readSession, safeReturn, sessionExpired, withoutSecret, type Outcome, type Session } from '../access/session.ts';
+import { afterSignOut, deviceSession, messageFor, onMissingKeyring, parseFragment, pickFromSrcset, remembered, safeReturn, sessionExpired, untilNote, withoutSecret, type Outcome, type Session } from '../access/session.ts';
 import type { KeyringBody } from '../access/types.ts';
 import { needsAgreement, readAgreed, readOutbox, recordFor, shownFor, withAgreement } from '../access/agreement.ts';
 
@@ -37,11 +37,26 @@ function storage(kind: 'session' | 'local'): Storage | null {
     return null;
   }
 }
-const stored = (): Session | null => readSession(storage('session')?.getItem(STORE) ?? null) ?? readSession(storage('local')?.getItem(STORE) ?? null);
+/** A remembered session ran out on this page's load (spec §7.3): the reader is signed out, and told gently where they'd sign in. */
+let ended = false;
+/** The session kept here: this tab's, else this device's (stamped, or forgotten once its days are up). */
+function stored(): Session | null {
+  for (const kind of ['session', 'local'] as const) {
+    const st = storage(kind);
+    const r = deviceSession(st?.getItem(STORE) ?? null, kind === 'local');
+    if (r.write === 'remove') st?.removeItem(STORE);
+    else if (r.write) st?.setItem(STORE, JSON.stringify(r.write));
+    if (r.ended) ended = true;
+    if (r.session) return r.session;
+  }
+  return null;
+}
 function keep(s: Session, remember: boolean) {
-  storage('session')?.setItem(STORE, JSON.stringify(s));
-  if (remember) storage('local')?.setItem(STORE, JSON.stringify(s));
+  const k = remember ? remembered(s) : s;
+  storage('session')?.setItem(STORE, JSON.stringify(k));
+  if (remember) storage('local')?.setItem(STORE, JSON.stringify(k));
   html.dataset.signedIn = '';
+  return k;
 }
 function forget() {
   storage('session')?.removeItem(STORE);
@@ -468,6 +483,8 @@ const agreePanel = () => document.querySelector<HTMLElement>('[data-access-gate]
   }
   showBar();
   panelState('signed-in');
+  const until = signInPanel()?.querySelector('[data-unlock-until]');
+  if (until) until.textContent = untilNote(s);
   await openCards(r.body.keys, s.grant);
   // the section's message goes once its shared pages are open; any the access doesn't cover, it says so
   const line = document.querySelector<HTMLElement>('[data-sign-in-line]');
@@ -505,8 +522,7 @@ async function signInWithCode(form: HTMLFormElement, panel: HTMLElement) {
     const kek = await deriveCodeKey(parsed.secret, b64.decode(env.salt));
     const body = await openKeyring(kek, lookup, env);
     performance.measure('access:derive', 'access:sign-in');
-    const s: Session = { v: 1, grant: body.grant, lookup, kek: b64.encode(kek), via: 'code', ...(body.expiresAt ? { expiresAt: body.expiresAt } : {}) };
-    keep(s, remember);
+    const s = keep({ v: 1, grant: body.grant, lookup, kek: b64.encode(kek), via: 'code', ...(body.expiresAt ? { expiresAt: body.expiresAt } : {}) }, remember);
     input.value = '';
     input.removeAttribute('aria-invalid');
     tell('access_signed_in', { grant: s.grant, via: 'code' });
@@ -642,6 +658,11 @@ export function start() {
       // telemetry puts what follows on the grant's timeline (it never sees more than the grant's ID)
       tell('access_session', { grant: s.grant });
       await apply(s, null);
-    } else if (html.dataset.signedIn !== undefined) delete html.dataset.signedIn;
+    } else {
+      if (html.dataset.signedIn !== undefined) delete html.dataset.signedIn;
+      // a remembered session past its days: signed out, said only where the reader would sign in again
+      const panel = ended && agreePanel();
+      if (panel) say('ended', panel);
+    }
   })();
 }

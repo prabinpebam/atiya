@@ -13,7 +13,7 @@ const run = spawnSync(
   ['scripts/test-run.mjs', '--by', 'script', '--purpose', 'Update screenshot baselines', '--', '--project=visual', '--update-snapshots', '--reporter=line', ...extra],
   { stdio: 'inherit' },
 );
-const status = spawnSync('git', ['status', '--porcelain', '--untracked-files=all', '--', DIR], { encoding: 'utf8' }).stdout.trim();
+const status = spawnSync('git', ['status', '--porcelain', '--untracked-files=all', '--', DIR], { encoding: 'utf8' }).stdout.trimEnd();
 const changed = status ? status.split('\n') : [];
 const label = { '??': 'new', ' M': 'changed', ' D': 'removed', M: 'changed', A: 'new', D: 'removed' };
 console.log(`\n${changed.length} baseline${changed.length === 1 ? '' : 's'} changed:`);

@@ -33,7 +33,7 @@ export function connect(o: { test: boolean; testHost: string; base: string; page
     // the test build sends at once and uncompressed, so a test sees and reads every event before it leaves the
     // page, and from headless Chromium too (PostHog drops bots' events)
     ...(o.test ? { request_batching: false, disable_compression: true, opt_out_useragent_filter: true } : {}),
-    before_send: (e) => sanitize(e as CaptureEvent | null, o.page()) as typeof e,
+    before_send: (e) => sanitize(e as CaptureEvent | null, o.page(), o.base) as typeof e,
   });
   // signed out since this tab's identity was set (a session that ran out): anonymous again
   if (document.documentElement.dataset.signedIn === undefined && posthog.get_property('$user_state') === 'identified') posthog.reset();
